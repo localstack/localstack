@@ -8,8 +8,8 @@ from localstack.utils.aws import aws_stack
 function_arn_regex = re.compile(
     r"arn:(aws[a-zA-Z-]*)?:lambda:[a-z]{2}(-gov)?-[a-z]+-\d{1}:\d{12}:function:[a-zA-Z0-9-_\.]+(:(\$LATEST|[a-zA-Z0-9-_]+))?"
 )
-function_name_regex = re.compile(
-    r"(arn:(aws[a-zA-Z-]*)?:lambda:)?([a-z]{2}(-gov)?-[a-z]+-\d{1}:)?(\d{12}:)?(function:)?(?P<name>[a-zA-Z0-9-_\.]+)(:(\$LATEST|[a-zA-Z0-9-_]+))?"
+FUNCTION_NAME_REGEX = re.compile(
+    r"(arn:(aws[a-zA-Z-]*)?:lambda:)?([a-z]{2}(-gov)?-[a-z]+-\d{1}:)?(\d{12}:)?(function:)?(?P<name>[a-zA-Z0-9-_\.]+)(:(?P<qualifier>\$LATEST|[a-zA-Z0-9-_]+))?"
 )  # also length 1-170 incl.
 handler_regex = re.compile(r"[^\s]+")
 kms_key_arn_regex = re.compile(r"(arn:(aws[a-zA-Z-]*)?:[a-z0-9-.]+:.*)|()")
@@ -30,7 +30,7 @@ def is_qualified_lambda_arn(arn: str):
 
 
 def function_name_from_arn(arn: str):
-    return function_name_regex.match(arn).group("name")
+    return FUNCTION_NAME_REGEX.match(arn).group("name")
 
 
 def lambda_arn_without_qualifier(function_name: str, account: str, region: str):

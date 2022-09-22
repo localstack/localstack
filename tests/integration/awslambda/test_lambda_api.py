@@ -149,6 +149,87 @@ class TestLambdaFunction:
             FunctionName=function_name, Description="1st update description"
         )
         snapshot.match("redundant_update_result", redundant_update_result)
+        lambda_client.get_waiter("function_updated_v2").wait(FunctionName=function_name)
+        get_fn_result_after_redundant_update = lambda_client.get_function(
+            FunctionName=function_name
+        )
+        snapshot.match("get_fn_result_after_redundant_update", get_fn_result_after_redundant_update)
+
+    @pytest.mark.parametrize(
+        "clientfn",
+        [
+            "delete_function",
+            "get_function",
+            "get_function_configuration",
+        ],
+    )
+    @pytest.mark.aws_validated
+    def test_ops_with_arn_qualifier_mismatch(
+        self, lambda_client, create_lambda_function, snapshot, account_id, clientfn
+    ):
+        function_name = "some-function"
+        method = getattr(lambda_client, clientfn)
+        with pytest.raises(ClientError) as e:
+            method(
+                FunctionName=f"arn:aws:lambda:{lambda_client.meta.region_name}:{account_id}:function:{function_name}:1",
+                Qualifier="$LATEST",
+            )
+        snapshot.match("not_match_exception", e.value.response)
+        # check if it works if it matches - still no function there
+        with pytest.raises(ClientError) as e:
+            method(
+                FunctionName=f"arn:aws:lambda:{lambda_client.meta.region_name}:{account_id}:function:{function_name}:$LATEST",
+                Qualifier="$LATEST",
+            )
+        snapshot.match("match_exception", e.value.response)
+
+    @pytest.mark.parametrize(
+        "clientfn",
+        [
+            "get_function",
+            "get_function_configuration",
+            "get_function_event_invoke_config",
+        ],
+    )
+    @pytest.mark.aws_validated
+    def test_ops_on_nonexisting_version(
+        self, lambda_client, create_lambda_function, snapshot, clientfn
+    ):
+        """Test API responses on existing function names, but not existing versions"""
+        function_name = f"i-exist-{short_uid()}"
+        snapshot.add_transformer(snapshot.transform.regex(function_name, "<fn-name>"))
+        create_lambda_function(
+            handler_file=TEST_LAMBDA_PYTHON_ECHO,
+            func_name=function_name,
+            runtime=Runtime.python3_9,
+            Description="Initial description",
+        )
+        with pytest.raises(lambda_client.exceptions.ResourceNotFoundException) as e:
+            method = getattr(lambda_client, clientfn)
+            method(FunctionName=function_name, Qualifier="1221")
+        snapshot.match("version_not_found_exception", e.value.response)
+
+    @pytest.mark.aws_validated
+    def test_delete_on_nonexisting_version(self, lambda_client, create_lambda_function, snapshot):
+        """Test API responses on existing function names, but not existing versions"""
+        function_name = f"i-exist-{short_uid()}"
+        snapshot.add_transformer(snapshot.transform.regex(function_name, "<fn-name>"))
+        create_lambda_function(
+            handler_file=TEST_LAMBDA_PYTHON_ECHO,
+            func_name=function_name,
+            runtime=Runtime.python3_9,
+            Description="Initial description",
+        )
+        # it seems delete function on a random qualifier is idempotent
+        lambda_client.delete_function(FunctionName=function_name, Qualifier="1233")
+        lambda_client.delete_function(FunctionName=function_name, Qualifier="1233")
+        lambda_client.delete_function(FunctionName=function_name)
+        with pytest.raises(lambda_client.exceptions.ResourceNotFoundException) as e:
+            lambda_client.delete_function(FunctionName=function_name)
+        snapshot.match("delete_function_response_non_existent", e.value.response)
+        with pytest.raises(lambda_client.exceptions.ResourceNotFoundException) as e:
+            lambda_client.delete_function(FunctionName=function_name, Qualifier="1233")
+        snapshot.match("delete_function_response_non_existent_with_qualifier", e.value.response)
 
     @pytest.mark.parametrize(
         "clientfn",
@@ -172,6 +253,9 @@ class TestLambdaFunction:
             method = getattr(lambda_client, clientfn)
             method(FunctionName=function_name)
         snapshot.match("not_found_exception", e.value.response)
+
+    # TODO test with arn with included qualifier (version)
+    # TODO test with arn with wrong region (not matching client)
 
     def test_lambda_code_location_zipfile(
         self, lambda_client, snapshot, create_lambda_function_aws, lambda_su_role

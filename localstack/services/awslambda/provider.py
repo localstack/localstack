@@ -3,7 +3,6 @@ import dataclasses
 import datetime
 import json
 import logging
-import re
 import threading
 import time
 from typing import IO
@@ -41,6 +40,7 @@ from localstack.aws.api.lambda_ import (
     GetFunctionResponse,
     GetFunctionUrlConfigResponse,
     GetPolicyResponse,
+    InvalidParameterValueException,
     InvocationResponse,
     InvocationType,
     LambdaApi,
@@ -76,6 +76,7 @@ from localstack.aws.api.lambda_ import (
     Version,
 )
 from localstack.services.awslambda import api_utils
+from localstack.services.awslambda.api_utils import get_name_and_qualifier
 from localstack.services.awslambda.invocation.lambda_models import (
     Function,
     FunctionResourcePolicy,
@@ -97,7 +98,6 @@ from localstack.services.awslambda.invocation.lambda_service import (
 )
 from localstack.services.awslambda.invocation.lambda_util import (
     format_lambda_date,
-    function_name_from_arn,
     generate_lambda_date,
     lambda_arn_without_qualifier,
     qualified_lambda_arn,
@@ -125,25 +125,63 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
     def on_before_stop(self) -> None:
         self.lambda_service.stop()
 
+    @staticmethod
+    def _get_function_version(
+        function_name: str, qualifier: str | None, account_id: str, region: str
+    ):
+        state = lambda_stores[account_id][region]
+        qualifier_or_latest = qualifier or "$LATEST"
+        function = state.functions.get(function_name, {})
+        version = function.versions.get(qualifier_or_latest)
+        if not function or not version:
+            if qualifier:
+                arn = qualified_lambda_arn(
+                    function_name=function_name,
+                    qualifier=qualifier,
+                    account=account_id,
+                    region=region,
+                )
+            else:
+                arn = lambda_arn_without_qualifier(
+                    function_name=function_name, region=region, account=account_id
+                )
+            raise ResourceNotFoundException(
+                f"Function not found: {arn}",
+                Type="User",
+            )
+        # TODO what if version is missing?
+        return version
+
+    @staticmethod
+    def _map_version_config(version: FunctionVersion) -> dict[str, str]:
+        result = {}
+        if version.config.last_update:
+            if version.config.last_update.status:
+                result["LastUpdateStatus"] = version.config.last_update.status
+            if version.config.last_update.code:
+                result["LastUpdateStatusReasonCode"] = version.config.last_update.code
+            if version.config.last_update.reason:
+                result["LastUpdateStatusReason"] = version.config.last_update.reason
+        return result
+
+    @staticmethod
+    def _map_state_config(version: FunctionVersion) -> dict[str, str]:
+        result = {}
+        if version_state := version.config.state:
+            if version_state.state:
+                result["State"] = version_state.state
+            if version_state.reason:
+                result["StateReason"] = version_state.reason
+            if version_state.code:
+                result["StateReasonCode"] = version_state.code
+        return result
+
     def _map_config_out(self, version: FunctionVersion) -> FunctionConfiguration:
 
         # handle optional entries that shouldn't be rendered at all if not present
         optional_kwargs = {}
-        if version.config.last_update:
-            if version.config.last_update.status:
-                optional_kwargs["LastUpdateStatus"] = version.config.last_update.status
-            if version.config.last_update.code:
-                optional_kwargs["LastUpdateStatusReasonCode"] = version.config.last_update.code
-            if version.config.last_update.reason:
-                optional_kwargs["LastUpdateStatusReason"] = version.config.last_update.reason
-
-        if version_state := version.config.state:
-            if version_state.state:
-                optional_kwargs["State"] = version_state.state
-            if version_state.reason:
-                optional_kwargs["StateReason"] = version_state.reason
-            if version_state.code:
-                optional_kwargs["StateReasonCode"] = version_state.code
+        optional_kwargs |= self._map_version_config(version)
+        optional_kwargs |= self._map_state_config(version)
 
         if version.config.architectures:
             optional_kwargs["Architectures"] = version.config.architectures
@@ -415,41 +453,29 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
         function_name: FunctionName,
         qualifier: Qualifier = None,
     ) -> None:
-        FN_ARN_PATTERN = re.compile(
-            r"^arn:aws:lambda:(?P<region_name>[^:]+):(?P<account_id>\d{12}):function:(?P<function_name>[^:]+)(:(?P<qualifier>.*))?$"
-        )
-        arn_match = re.search(FN_ARN_PATTERN, function_name)
         state = lambda_stores[context.account_id][context.region]
+        function_name, qualifier = get_name_and_qualifier(function_name, qualifier)
+        if qualifier == "$LATEST":
+            raise InvalidParameterValueException(
+                "$LATEST version cannot be deleted without deleting the function.", Type="User"
+            )
 
-        if arn_match:
-            # function_name is actually an ARN, so parse actual name and qualifier
-            groups = arn_match.groupdict()
-            function_name = groups["function_name"]
-            group_qualifier = groups["qualifier"]
-
-            if group_qualifier:
-                qualifier = group_qualifier
-
-        # TODO: error message if just the version is not there
         if function_name not in state.functions:
             e = ResourceNotFoundException(
                 f"Function not found: {lambda_arn_without_qualifier(function_name=function_name, region=context.region, account=context.account_id)}",
                 Type="User",
-            )  # TODO: should probably include qualifier if one is available?
+            )
             raise e
-        function = state.functions.pop(function_name)
+        function = state.functions.get(function_name)
 
         if qualifier:
             # delete a version of the function
-            if qualifier not in function.versions:
-                raise ResourceNotFoundException(
-                    f"Function not found: {lambda_arn_without_qualifier(function_name=function_name, region=context.region, account=context.account_id)}",
-                    Type="User",
-                )  # TODO: adapt to version?
-            version = function.versions.pop(qualifier)
-            self.lambda_service.stop_version(version.qualified_arn())
+            version = function.versions.pop(qualifier, None)
+            if version:
+                self.lambda_service.stop_version(version.qualified_arn())
         else:
             # delete the whole function
+            function = state.functions.pop(function_name)
             for version in function.versions.values():
                 self.lambda_service.stop_version(qualified_arn=version.id.qualified_arn())
                 # we can safely destroy the code here
@@ -475,9 +501,14 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
         function_name: NamespacedFunctionName,
         qualifier: Qualifier = None,  # TODO
     ) -> GetFunctionResponse:
-        qualifier = qualifier or "$LATEST"
-        state = lambda_stores[context.account_id][context.region]
-        version = state.functions[function_name].versions[qualifier]
+        function_name, qualifier = get_name_and_qualifier(function_name, qualifier)
+        version = self._get_function_version(
+            function_name=function_name,
+            qualifier=qualifier,
+            account_id=context.account_id,
+            region=context.region,
+        )
+        # TODO what if no version?
         code = version.config.code
         return GetFunctionResponse(
             Configuration=self._map_config_out(version),
@@ -493,8 +524,16 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
         context: RequestContext,
         function_name: NamespacedFunctionName,
         qualifier: Qualifier = None,
-    ) -> FunctionConfiguration:  # CAVE: THIS RETURN VALUE IS *NOT* THE SAME AS IN get_function (!)
-        return FunctionConfiguration()
+    ) -> FunctionConfiguration:
+        # CAVE: THIS RETURN VALUE IS *NOT* THE SAME AS IN get_function (!) but seems to be only configuration part?
+        function_name, qualifier = get_name_and_qualifier(function_name, qualifier)
+        version = self._get_function_version(
+            function_name=function_name,
+            qualifier=qualifier,
+            account_id=context.account_id,
+            region=context.region,
+        )
+        return self._map_config_out(version)
 
     def invoke(
         self,
@@ -506,12 +545,18 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
         payload: IO[Blob] = None,
         qualifier: Qualifier = None,
     ) -> InvocationResponse:
-        LOG.debug("Lambda function got invoked! Params: %s", dict(locals()))
 
-        # TODO discuss where function data is stored - might need to be passed here
-        function_name = function_name_from_arn(function_name)
+        function_name, qualifier = get_name_and_qualifier(function_name, qualifier)
+        qualifier = qualifier or "$LATEST"
+        # we do not really need the version here, but check if it is there
+        self._get_function_version(
+            function_name=function_name,
+            qualifier=qualifier,
+            account_id=context.account_id,
+            region=context.region,
+        )
         qualified_arn = qualified_lambda_arn(
-            function_name, "$LATEST", context.account_id, context.region
+            function_name, qualifier, context.account_id, context.region
         )
         time_before = time.perf_counter()
         result = self.lambda_service.invoke(
@@ -536,7 +581,7 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
         response = InvocationResponse(
             StatusCode=200,
             Payload=invocation_result.payload,
-            ExecutedVersion="$LATEST",  # TODO: should be resolved version from qualifier
+            ExecutedVersion=qualifier,
             FunctionError=function_error,
             # TODO: should be conditional. Might have to get this from the invoke result as well
         )
@@ -726,7 +771,7 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
     ) -> GetFunctionUrlConfigResponse:
         state = lambda_stores[context.account_id][context.region]
 
-        fn_name = api_utils.get_function_name(function_name)
+        fn_name, qualifier = get_name_and_qualifier(function_name, qualifier)
         resolved_fn = state.functions.get(fn_name)
         if not resolved_fn:
             raise ResourceNotFoundException("The resource you requested does not exist.")

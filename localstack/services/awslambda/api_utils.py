@@ -3,8 +3,9 @@ import re
 from typing import Any, Optional
 
 from localstack.aws.api import lambda_ as api_spec
-from localstack.aws.api.lambda_ import FunctionUrlAuthType
+from localstack.aws.api.lambda_ import FunctionUrlAuthType, InvalidParameterValueException
 from localstack.services.awslambda.invocation.lambda_models import FunctionUrlConfig
+from localstack.services.awslambda.invocation.lambda_util import FUNCTION_NAME_REGEX
 from localstack.services.awslambda.invocation.models import LambdaStore
 
 FN_ARN_PATTERN = re.compile(
@@ -80,6 +81,36 @@ def get_function_name(function_arn_or_name: str) -> str:
         return function_arn_or_name
 
     return pattern_match.groupdict().get("function_name")
+
+
+def function_name_and_qualifier_from_arn(arn: str) -> tuple[str, str | None]:
+    """
+    Takes a full or partial arn, or a name
+    :param arn: Given arn (or name)
+    :return: tuple with (name, qualifier). Qualifier is none if missing
+    """
+    return FUNCTION_NAME_REGEX.match(arn).group("name", "qualifier")
+
+
+def get_name_and_qualifier(
+    function_arn_or_name: str, qualifier: str | None
+) -> tuple[str, str | None]:
+    """
+    Takes a full or partial arn, or a name and a qualifier
+    Will raise exception if a qualified arn is provided and the qualifier does not match (but is given)
+
+    :param function_arn_or_name: Given arn (or name)
+    :param qualifier: A qualifier for the function (or None)
+    :return: tuple with (name, qualifier). Qualifier is none if missing
+    """
+    function_name, arn_qualifier = function_name_and_qualifier_from_arn(function_arn_or_name)
+    if qualifier and arn_qualifier and arn_qualifier != qualifier:
+        raise InvalidParameterValueException(
+            "The derived qualifier from the function name does not match the specified qualifier.",
+            Type="User",
+        )
+    qualifier = qualifier or arn_qualifier
+    return function_name, qualifier
 
 
 def build_statement(
