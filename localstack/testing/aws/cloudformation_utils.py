@@ -40,5 +40,5 @@ def render_template(template_body: str, **template_vars) -> str:
     return template_body
 
 
-def load_template_raw(file_name: str):
-    return load_template_file(os.path.join(os.path.dirname(__file__), "../templates", file_name))
+def load_template_raw(path: str):
+    return load_template_file(path)
