@@ -8,6 +8,8 @@ from botocore.exceptions import ClientError
 
 from localstack.aws.api.lambda_ import (
     Architecture,
+    Cors,
+    FunctionUrlAuthType,
     InvocationType,
     LastUpdateStatus,
     PackageType,
@@ -27,6 +29,25 @@ if TYPE_CHECKING:
     from mypy_boto3_s3 import S3Client
 
 LOG = logging.getLogger(__name__)
+
+
+# class LambdaNameOrArn(frozen=True):
+#     function_name: str
+#     qualifier: Optional[str] = None
+#
+#     def is_arn(self) -> bool:
+#         return True  # TODO
+#
+#     def get_actual_fn_name(self) -> str:
+#         return ""  # TODO
+
+# @dataclasses.dataclass(frozen=True)
+# class LambdaFunctionArn:
+#     arn: str
+#     account_id: str
+#     region_id: str
+#     function_name: str
+#     qualifier: Optional[str] = None
 
 
 @dataclasses.dataclass(frozen=True)
@@ -110,6 +131,27 @@ class LambdaEphemeralStorage:
     size: int
 
 
+@dataclasses.dataclass
+class FunctionUrlConfig:
+    """
+    * HTTP(s)
+    * You can apply function URLs to any function alias, or to the $LATEST unpublished function version. You can't add a function URL to any other function version.
+    * Once you create a function URL, its URL endpoint never changes
+    """
+
+    function_arn: str  # fully qualified ARN
+    function_name: str  # resolved name
+    cors: Cors
+    url_id: str  # generated unique subdomain id  e.g. pfn5bdb2dl5mzkbn6eb2oi3xfe0nthdn
+    url: str  # full URL (e.g. "https://pfn5bdb2dl5mzkbn6eb2oi3xfe0nthdn.lambda-url.eu-west-3.on.aws/")
+    auth_type: FunctionUrlAuthType
+    creation_time: str  # time
+    last_modified_time: Optional[
+        str
+    ] = None  # TODO: check if this is the creation time when initially creating
+    function_qualifier: Optional[str] = "$LATEST"  # only $LATEST or alias name
+
+
 @dataclasses.dataclass(frozen=True)
 class VersionFunctionConfiguration:
     # fields
@@ -188,7 +230,7 @@ class VersionAlias:
     function_version: int
     name: str
     description: str
-    routing_configuration: Optional[AliasRoutingConfiguration]
+    routing_configuration: Optional[AliasRoutingConfiguration] = None
     provisioned_concurrency_configuration: Optional[ProvisionedConcurrencyConfiguration] = None
 
 
@@ -209,6 +251,7 @@ class Function:
     function_name: str
     aliases: dict[str, VersionAlias] = dataclasses.field(default_factory=dict)
     versions: dict[str, FunctionVersion] = dataclasses.field(default_factory=dict)
+    function_url_configs: dict[str, FunctionUrlConfig] = dataclasses.field(default_factory=dict)
 
     lock: threading.RLock = dataclasses.field(default_factory=threading.RLock)
     next_version: int = 1

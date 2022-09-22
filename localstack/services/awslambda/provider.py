@@ -15,8 +15,10 @@ from localstack.aws.api.lambda_ import (
     Architecture,
     Arn,
     Blob,
+    Cors,
     CreateEventSourceMappingRequest,
     CreateFunctionRequest,
+    CreateFunctionUrlConfigResponse,
     Description,
     EnvironmentResponse,
     EphemeralStorage,
@@ -24,7 +26,10 @@ from localstack.aws.api.lambda_ import (
     FunctionCodeLocation,
     FunctionConfiguration,
     FunctionName,
+    FunctionUrlAuthType,
+    FunctionUrlQualifier,
     GetFunctionResponse,
+    GetFunctionUrlConfigResponse,
     InvocationResponse,
     InvocationType,
     LambdaApi,
@@ -32,9 +37,11 @@ from localstack.aws.api.lambda_ import (
     ListAliasesResponse,
     ListEventSourceMappingsResponse,
     ListFunctionsResponse,
+    ListFunctionUrlConfigsResponse,
     ListVersionsByFunctionResponse,
     LogType,
     MasterRegion,
+    MaxItems,
     MaxListItems,
     NamespacedFunctionName,
     PackageType,
@@ -49,10 +56,13 @@ from localstack.aws.api.lambda_ import (
     TracingMode,
     UpdateFunctionCodeRequest,
     UpdateFunctionConfigurationRequest,
+    UpdateFunctionUrlConfigResponse,
     Version,
 )
+from localstack.services.awslambda import api_utils
 from localstack.services.awslambda.invocation.lambda_models import (
     Function,
+    FunctionUrlConfig,
     FunctionVersion,
     InvocationError,
     LambdaEphemeralStorage,
@@ -74,6 +84,7 @@ from localstack.services.awslambda.invocation.lambda_util import (
     qualified_lambda_arn,
 )
 from localstack.services.plugins import ServiceLifecycleHook
+from localstack.utils.collections import PaginatedList
 from localstack.utils.strings import short_uid, to_bytes, to_str
 
 LOG = logging.getLogger(__name__)
@@ -621,6 +632,181 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
         max_items: MaxListItems = None,
     ) -> ListEventSourceMappingsResponse:
         ...
+
+    # =======================================
+    # ============ FUNCTION URLS ============
+    # =======================================
+
+    # TODO: what happens if function state is not active?
+    # TODO: qualifier both in function_name as ARN and in qualifier?
+    # TODO: test for qualifier being a number (i.e. version)
+    # TODO: test for conflicts between function_name as ARN and provided qualifier
+    def create_function_url_config(
+        self,
+        context: RequestContext,
+        function_name: FunctionName,
+        auth_type: FunctionUrlAuthType,
+        qualifier: FunctionUrlQualifier = None,
+        cors: Cors = None,
+    ) -> CreateFunctionUrlConfigResponse:
+        state = lambda_stores[context.account_id][context.region]
+
+        resolved_fn_name = api_utils.get_function_name(function_name)
+        fn = state.functions.get(resolved_fn_name)
+        if fn is None:
+            raise ResourceNotFoundException("Function does not exist", Type="User")
+
+        # check if fn already exists
+        url_config = fn.function_url_configs.get(qualifier or "$LATEST")
+        if url_config:
+            raise ResourceConflictException(
+                f"Failed to create function url config for [functionArn = {url_config.function_arn}]. Error message:  FunctionUrlConfig exists for this Lambda function",
+                Type="User",
+            )
+
+        if qualifier and qualifier != "$LATEST" and qualifier not in fn.aliases:
+            raise ResourceNotFoundException("Where Alias?")
+
+        normalized_qualifier = qualifier or "$LATEST"
+
+        function_arn = (
+            qualified_lambda_arn(resolved_fn_name, qualifier, context.account_id, context.region)
+            if qualifier
+            else lambda_arn_without_qualifier(resolved_fn_name, context.account_id, context.region)
+        )
+
+        fn.function_url_configs[normalized_qualifier] = FunctionUrlConfig(
+            function_arn=function_arn,
+            function_name=resolved_fn_name,
+            cors=cors,
+            url_id="something",  # TODO
+            url="something",  # TODO
+            auth_type=auth_type,
+            creation_time=generate_lambda_date(),
+            last_modified_time=generate_lambda_date(),
+        )
+
+        # persist and start URL
+        api_url_config = api_utils.map_function_url_config(
+            fn.function_url_configs[normalized_qualifier]
+        )
+
+        return CreateFunctionUrlConfigResponse(
+            FunctionUrl=api_url_config["FunctionUrl"],
+            FunctionArn=api_url_config["FunctionArn"],
+            AuthType=api_url_config["AuthType"],
+            Cors=api_url_config["Cors"],
+            CreationTime=api_url_config["CreationTime"],
+        )
+
+    def get_function_url_config(
+        self,
+        context: RequestContext,
+        function_name: FunctionName,
+        qualifier: FunctionUrlQualifier = None,
+    ) -> GetFunctionUrlConfigResponse:
+        state = lambda_stores[context.account_id][context.region]
+
+        fn_name = api_utils.get_function_name(function_name)
+        resolved_fn = state.functions.get(fn_name)
+        if not resolved_fn:
+            raise ResourceNotFoundException("The resource you requested does not exist.")
+
+        qualifier = qualifier or "$LATEST"
+        url_config = resolved_fn.function_url_configs.get(qualifier)
+        if not url_config:
+            raise ResourceNotFoundException(
+                "The resource you requested does not exist.", Type="User"
+            )
+
+        return api_utils.map_function_url_config(url_config)
+
+    def update_function_url_config(
+        self,
+        context: RequestContext,
+        function_name: FunctionName,
+        qualifier: FunctionUrlQualifier = None,
+        auth_type: FunctionUrlAuthType = None,
+        cors: Cors = None,
+    ) -> UpdateFunctionUrlConfigResponse:
+        state = lambda_stores[context.account_id][context.region]
+
+        resolved_fn_name = api_utils.get_function_name(function_name)
+        fn = state.functions.get(resolved_fn_name)
+        if not fn:
+            raise ResourceNotFoundException("Function does not exist")
+            # raise ResourceNotFoundException("Function does not exist", Type="User")
+
+        normalized_qualifier = qualifier or "$LATEST"
+        url_config = fn.function_url_configs.get(normalized_qualifier)
+        if not url_config:
+            raise ResourceNotFoundException("Config does not exist")
+
+        changes = {
+            "last_modified_time": generate_lambda_date(),
+            **({"cors": cors} if cors else {}),
+            **({"auth_type": auth_type} if auth_type else {}),
+        }
+        new_url_config = dataclasses.replace(url_config, **changes)
+        fn.function_url_configs[normalized_qualifier] = new_url_config
+
+        return UpdateFunctionUrlConfigResponse(
+            FunctionUrl=new_url_config.url,
+            FunctionArn=new_url_config.function_arn,
+            AuthType=new_url_config.auth_type,
+            Cors=new_url_config.cors,
+            CreationTime=new_url_config.creation_time,
+            LastModifiedTime=new_url_config.last_modified_time,
+        )
+
+    # TODO: does only specifying the function name, also delete the ones from all related aliases?
+    def delete_function_url_config(
+        self,
+        context: RequestContext,
+        function_name: FunctionName,
+        qualifier: FunctionUrlQualifier = None,
+    ) -> None:
+        state = lambda_stores[context.account_id][context.region]
+
+        fn_name = api_utils.get_function_name(function_name)
+        resolved_fn = state.functions.get(fn_name)
+        if not resolved_fn:
+            raise ResourceNotFoundException("???")  # TODO: cover with test
+
+        qualifier = qualifier or "$LATEST"
+        url_config = resolved_fn.function_url_configs.get(qualifier)
+        if not url_config:
+            raise ResourceNotFoundException("???")  # TODO: cover with test
+
+        # TODO: locking
+        del resolved_fn.function_url_configs[qualifier]
+
+    def list_function_url_configs(
+        self,
+        context: RequestContext,
+        function_name: FunctionName,
+        marker: String = None,
+        max_items: MaxItems = None,
+    ) -> ListFunctionUrlConfigsResponse:
+        state = lambda_stores[context.account_id][context.region]
+
+        fn_name = api_utils.get_function_name(function_name)
+        resolved_fn = state.functions.get(fn_name)
+        if not resolved_fn:
+            raise ResourceNotFoundException("???")
+
+        url_configs = [
+            api_utils.map_function_url_config(fn_conf)
+            for fn_conf in resolved_fn.function_url_configs
+        ]
+        url_configs = PaginatedList(url_configs)
+        page, token = url_configs.get_page(
+            lambda url_config: url_config["FunctionArn"],
+            marker,
+            max_items,  # TODO: check what these are ordered by
+        )
+        url_configs = page
+        return ListFunctionUrlConfigsResponse(FunctionUrlConfigs=url_configs, NextMarker=token)
 
     # TODO(s)
     # Provisioned Concurrency Config
