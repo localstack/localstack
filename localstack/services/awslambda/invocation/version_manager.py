@@ -9,6 +9,7 @@ from queue import Queue
 from threading import Thread
 from typing import TYPE_CHECKING, Dict, List, Optional, Union
 
+from localstack import config
 from localstack.aws.api.lambda_ import State, StateReasonCode
 from localstack.services.awslambda.invocation.lambda_models import (
     FunctionVersion,
@@ -26,6 +27,7 @@ from localstack.services.awslambda.invocation.runtime_environment import (
 )
 from localstack.services.awslambda.invocation.runtime_executor import RuntimeExecutor
 from localstack.utils.cloudwatch.cloudwatch_util import store_cloudwatch_logs
+from localstack.utils.strings import truncate
 
 if TYPE_CHECKING:
     from localstack.services.awslambda.invocation.lambda_service import LambdaService
@@ -350,7 +352,7 @@ class LambdaVersionManager(ServiceEndpoint):
     def invocation_logs(self, invoke_id: str, invocation_logs: InvocationLogs) -> None:
         LOG.debug("Got logs for invocation '%s'", invoke_id)
         for log_line in invocation_logs.logs.splitlines():
-            LOG.debug("> %s", log_line)
+            LOG.debug("> %s", truncate(log_line, config.LAMBDA_TRUNCATE_STDOUT))
         running_invocation = self.running_invocations.get(invoke_id, None)
         if running_invocation is None:
             raise Exception(f"Cannot map invocation result {invoke_id} to invocation")

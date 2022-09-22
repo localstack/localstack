@@ -1,10 +1,10 @@
+import json
 import logging
-import re
 import shutil
 import time
 from pathlib import Path
 from tempfile import NamedTemporaryFile
-from typing import Dict, Literal, Optional, Tuple
+from typing import Dict, Literal, Optional
 
 from localstack import config
 from localstack.services.awslambda.invocation.executor_endpoint import (
@@ -21,6 +21,7 @@ from localstack.utils.archives import unzip
 from localstack.utils.container_utils.container_client import ContainerConfiguration
 from localstack.utils.docker_utils import DOCKER_CLIENT as CONTAINER_CLIENT
 from localstack.utils.net import get_free_tcp_port
+from localstack.utils.strings import truncate
 
 LOG = logging.getLogger(__name__)
 
@@ -38,19 +39,24 @@ COPY aws-lambda-rie {rapid_entrypoint}
 COPY code/ /var/task
 """
 
-
-# TODO provided runtimes
-# TODO a tad hacky, might cause problems in the future.. just use mapping?
-def get_runtime_split(runtime: str) -> Tuple[str, str]:
-    match = re.match(RUNTIME_REGEX, runtime)
-    if match:
-        runtime, version = match.group("runtime"), match.group("version")
-        # sad exception for .net
-        if runtime == "dotnetcore":
-            runtime = "dotnet"
-            version = f"core{version}"
-        return runtime, version
-    raise ValueError(f"Unknown/unsupported runtime '{runtime}'")
+# To add support for a new runtime, just add it here with the accompanying image postfix
+IMAGE_MAPPING = {
+    "python3.7": "python:3.7",
+    "python3.8": "python:3.8",
+    "python3.9": "python:3.9",
+    "nodejs12.x": "nodejs:12",
+    "nodejs14.x": "nodejs:14",
+    "nodejs16.x": "nodejs:16",
+    "ruby2.7": "ruby:2.7",
+    "java8": "java:8",
+    "java8.al2": "java:8.al2",
+    "java11": "java:11",
+    "dotnetcore3.1": "dotnet:core3.1",
+    "dotnet6": "dotnet:6",
+    "go1.x": "go:1",
+    "provided": "provided:alami",
+    "provided.al2": "provided:al2",
+}
 
 
 def get_path_for_function(function_version: FunctionVersion) -> Path:
@@ -68,8 +74,10 @@ def get_image_name_for_function(function_version: FunctionVersion) -> str:
 
 
 def get_image_for_runtime(runtime: str) -> str:
-    runtime, version = get_runtime_split(runtime)
-    return f"{IMAGE_PREFIX}{runtime}:{version}"
+    postfix = IMAGE_MAPPING.get(runtime)
+    if not postfix:
+        raise ValueError(f"Unsupported runtime {runtime}!")
+    return f"{IMAGE_PREFIX}{postfix}"
 
 
 def get_runtime_client_path() -> Path:
@@ -171,7 +179,7 @@ class RuntimeExecutor:
                 self.id, str(get_runtime_client_path()), RAPID_ENTRYPOINT
             )
             CONTAINER_CLIENT.copy_into_container(
-                self.id, f"{str(get_code_path_for_function(self.function_version))}/", "/var/task/"
+                self.id, f"{str(get_code_path_for_function(self.function_version))}/.", "/var/task"
             )
 
         CONTAINER_CLIENT.start_container(self.id)
@@ -204,7 +212,11 @@ class RuntimeExecutor:
         return get_container_network_for_lambda()
 
     def invoke(self, payload: Dict[str, str]):
-        LOG.debug("Sending invoke-payload '%s' to executor '%s'", payload, self.id)
+        LOG.debug(
+            "Sending invoke-payload '%s' to executor '%s'",
+            truncate(json.dumps(payload), config.LAMBDA_TRUNCATE_STDOUT),
+            self.id,
+        )
         self.executor_endpoint.invoke(payload)
 
     @staticmethod

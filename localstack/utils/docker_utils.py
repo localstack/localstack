@@ -37,7 +37,9 @@ def is_docker_sdk_installed() -> bool:
 
 def create_docker_client() -> ContainerClient:
     # never use the sdk client if it is not installed or not in docker - too risky for wrong version
-    if config.LEGACY_DOCKER_CLIENT or not is_docker_sdk_installed() or not config.is_in_docker:
+    if False and (
+        config.LEGACY_DOCKER_CLIENT or not is_docker_sdk_installed() or not config.is_in_docker
+    ):
         from localstack.utils.container_utils.docker_cmd_client import CmdDockerClient
 
         LOG.debug(

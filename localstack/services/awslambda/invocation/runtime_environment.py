@@ -85,12 +85,12 @@ class RuntimeEnvironment:
             # General Lambda Environment Variables
             "AWS_LAMBDA_LOG_GROUP_NAME": self.get_log_group_name(),
             "AWS_LAMBDA_LOG_STREAM_NAME": self.get_log_stream_name(),
-            "AWS_LAMBDA_FUNCTION_NAME": self.function_version.qualified_arn,  # TODO use name instead of arn
+            "AWS_LAMBDA_FUNCTION_NAME": self.function_version.id.function_name,
             "AWS_LAMBDA_FUNCTION_TIMEOUT": self.function_version.config.timeout,
             "AWS_LAMBDA_FUNCTION_MEMORY_SIZE": self.function_version.config.memory_size,  # TODO use correct memory size
-            "AWS_LAMBDA_FUNCTION_VERSION": self.function_version.qualifier,  # TODO use name instead of arn
-            "AWS_DEFAULT_REGION": self.function_version.qualified_arn,  # TODO use region instead of arn
-            "AWS_REGION": self.function_version.qualified_arn,  # TODO use region instead of arn
+            "AWS_LAMBDA_FUNCTION_VERSION": self.function_version.qualifier,
+            "AWS_DEFAULT_REGION": self.function_version.id.region,
+            "AWS_REGION": self.function_version.id.region,
             "TASK_ROOT": "/var/task",  # TODO custom runtimes?
             "RUNTIME_ROOT": "/var/runtime",  # TODO custom runtimes?
             "AWS_LAMBDA_INITIALIZATION_TYPE": self.initialization_type,

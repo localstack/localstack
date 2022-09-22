@@ -539,7 +539,6 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
             # TODO: should be conditional. Might have to get this from the invoke result as well
         )
         LOG.debug("Lambda invocation duration: %0.2fms", (time.perf_counter() - time_before) * 1000)
-        LOG.debug("Result: %s", invocation_result)
 
         if log_type == LogType.Tail:
             response["LogResult"] = to_str(
