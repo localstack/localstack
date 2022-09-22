@@ -1,12 +1,9 @@
 import os.path
 
-import jinja2
 import pytest
 
-from localstack.testing.aws.cloudformation_utils import load_template_raw
 from localstack.testing.aws.util import is_aws_cloud
 from localstack.utils.common import short_uid
-from localstack.utils.generic.wait_utils import wait_until
 
 
 def test_sns_topic_fifo_with_deduplication(cfn_client, sns_client, deploy_cfn_template):
@@ -43,46 +40,21 @@ def test_sns_topic_fifo_without_suffix_fails(cfn_client, sns_client, deploy_cfn_
         assert stack.get("StackStatus") == "CREATE_FAILED"
 
 
-def test_sns_subscription(
-    cfn_client,
-    sns_client,
-    cleanup_stacks,
-    cleanup_changesets,
-    is_change_set_created_and_available,
-    is_stack_created,
-):
-    stack_name = f"stack-{short_uid()}"
-    change_set_name = f"change-set-{short_uid()}"
+def test_sns_subscription(cfn_client, sns_client, deploy_cfn_template):
     topic_name = f"topic-{short_uid()}"
     queue_name = f"topic-{short_uid()}"
-    template_rendered = jinja2.Template(load_template_raw("sns_topic_subscription.yaml")).render(
-        topic_name=topic_name, queue_name=queue_name
+    stack = deploy_cfn_template(
+        parameters={"TopicName": topic_name, "QueueName": queue_name},
+        template_path=os.path.join(
+            os.path.dirname(__file__), "../templates/sns_topic_subscription.yaml"
+        ),
     )
-    response = cfn_client.create_change_set(
-        StackName=stack_name,
-        ChangeSetName=change_set_name,
-        TemplateBody=template_rendered,
-        ChangeSetType="CREATE",
-    )
-    change_set_id = response["Id"]
-    stack_id = response["StackId"]
 
-    try:
-        wait_until(is_change_set_created_and_available(change_set_id))
-        cfn_client.execute_change_set(ChangeSetName=change_set_id)
-        wait_until(is_stack_created(stack_id))
+    topic_arn = stack.outputs["TopicArnOutput"]
+    assert topic_arn is not None
 
-        outputs = cfn_client.describe_stacks(StackName=stack_id)["Stacks"][0]["Outputs"]
-        assert len(outputs) == 1 and outputs[0]["OutputKey"] == "TopicArnOutput"
-        topic_arn = outputs[0]["OutputValue"]
-        assert topic_arn is not None
-
-        subscriptions = sns_client.list_subscriptions_by_topic(TopicArn=topic_arn)
-        assert len(subscriptions["Subscriptions"]) > 0
-
-    finally:
-        cleanup_changesets([change_set_id])
-        cleanup_stacks([stack_id])
+    subscriptions = sns_client.list_subscriptions_by_topic(TopicArn=topic_arn)
+    assert len(subscriptions["Subscriptions"]) > 0
 
 
 def test_deploy_stack_with_sns_topic(sns_client, deploy_cfn_template):
