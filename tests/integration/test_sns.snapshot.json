@@ -2031,5 +2031,65 @@
         }
       }
     }
+  },
+  "tests/integration/test_sns.py::TestSNSProvider::test_empty_or_wrong_message_attributes": {
+    "recorded-date": "26-09-2022, 19:13:57",
+    "recorded-content": {
+      "missing_string_attr": {
+        "Error": {
+          "Code": "ParameterValueInvalid",
+          "Message": "The message attribute 'attr1' must contain non-empty message attribute value for message attribute type 'String'.",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "missing_binary_attr": {
+        "Error": {
+          "Code": "ParameterValueInvalid",
+          "Message": "The message attribute 'attr1' must contain non-empty message attribute value for message attribute type 'Binary'.",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "str_attr_binary_value": {
+        "Error": {
+          "Code": "ParameterValueInvalid",
+          "Message": "The message attribute 'attr1' with type 'String' must use field 'String'.",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "int_attr_binary_value": {
+        "Error": {
+          "Code": "ParameterValueInvalid",
+          "Message": "The message attribute 'attr1' with type 'Number' must use field 'String'.",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "binary_attr_string_value": {
+        "Error": {
+          "Code": "ParameterValueInvalid",
+          "Message": "The message attribute 'attr1' with type 'Binary' must use field 'Binary'.",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
   }
 }
