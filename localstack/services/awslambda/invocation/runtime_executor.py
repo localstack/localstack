@@ -17,7 +17,7 @@ from localstack.services.awslambda.lambda_utils import (
     get_container_network_for_lambda,
     get_main_endpoint_from_container,
 )
-from localstack.services.install import LAMBDA_RUNTIME_INIT_PATH
+from localstack.services.awslambda.packages import awslambda_runtime_package
 from localstack.utils.archives import unzip
 from localstack.utils.container_utils.container_client import ContainerConfiguration
 from localstack.utils.docker_utils import DOCKER_CLIENT as CONTAINER_CLIENT
@@ -63,7 +63,11 @@ def get_image_for_runtime(runtime: str) -> str:
 
 
 def get_runtime_client_path() -> Path:
-    return Path(LAMBDA_RUNTIME_INIT_PATH)
+    # TODO: discuss: Lambda seems to have a lot of code related to copying runtimes. Should this all be moved
+    #   to the installer, or remain here because it is "business logic"?
+    installer = awslambda_runtime_package.get_installer()
+    return Path(installer._get_install_marker_path(installer.get_installed_dir()))
+    # return Path(awslambda_runtime_package.get_installed_dir())
 
 
 def prepare_image(target_path: Path, function_version: FunctionVersion) -> None:

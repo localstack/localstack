@@ -135,9 +135,6 @@ TEST_LAMBDA_JAR_URL = "{url}/cloud/localstack/{name}/{version}/{name}-{version}-
     version=LOCALSTACK_MAVEN_VERSION, url=MAVEN_REPO_URL, name="localstack-utils"
 )
 
-LAMBDA_RUNTIME_INIT_URL = "https://github.com/localstack/lambda-runtime-init/releases/download/v0.1.4-pre/aws-lambda-rie-{arch}"
-LAMBDA_RUNTIME_INIT_PATH = os.path.join(config.dirs.static_libs, "aws-lambda-rie")
-
 
 def install_sqs_provider():
     if SQS_BACKEND_IMPL == "elasticmq":
@@ -345,18 +342,6 @@ def install_go_lambda_runtime():
     os.chmod(GO_LAMBDA_MOCKSERVER, st.st_mode | stat.S_IXUSR | stat.S_IXGRP | stat.S_IXOTH)
 
 
-def install_lambda_runtime():
-    if os.path.isfile(LAMBDA_RUNTIME_INIT_PATH):
-        return
-    log_install_msg("Installing lambda runtime")
-    arch = get_arch()
-    arch = "x86_64" if arch == "amd64" else arch
-    download_url = LAMBDA_RUNTIME_INIT_URL.format(arch=arch)
-    download(download_url, LAMBDA_RUNTIME_INIT_PATH)
-    st = os.stat(LAMBDA_RUNTIME_INIT_PATH)
-    os.chmod(LAMBDA_RUNTIME_INIT_PATH, mode=st.st_mode | stat.S_IXUSR | stat.S_IXGRP | stat.S_IXOTH)
-
-
 def install_cloudformation_libs():
     from localstack.services.cloudformation import deployment_utils
 
@@ -389,6 +374,7 @@ def get_terraform_binary() -> str:
 
 
 def install_component(name):
+    from localstack.services.awslambda.packages import awslambda_runtime_package
     from localstack.services.dynamodb.packages import dynamodblocal_package
     from localstack.services.kinesis.packages import kinesismock_package
 
@@ -397,7 +383,7 @@ def install_component(name):
         "dynamodb": dynamodblocal_package.install,
         "kinesis": kinesismock_package.install,
         "kms": install_local_kms,
-        "lambda": install_lambda_runtime,
+        "lambda": awslambda_runtime_package.install,
         "sqs": install_sqs_provider,
         "stepfunctions": install_stepfunctions_local,
     }
@@ -494,6 +480,7 @@ class CommunityInstallerRepository(InstallerRepository):
 
     def get_installer(self) -> List[Installer]:
         from localstack.packages.postgres import PostgresqlPackage
+        from localstack.services.awslambda.packages import awslambda_runtime_package
         from localstack.services.dynamodb.packages import dynamodblocal_package
         from localstack.services.kinesis.packages import kinesalite_package, kinesismock_package
         from localstack.services.opensearch.packages import (
@@ -503,7 +490,7 @@ class CommunityInstallerRepository(InstallerRepository):
 
         return [
             ("awslamba-go-runtime", install_go_lambda_runtime),
-            ("awslambda-runtime", install_lambda_runtime),
+            ("awslambda-runtime", awslambda_runtime_package),
             ("cloudformation-libs", install_cloudformation_libs),
             ("dynamodb-local", dynamodblocal_package),
             ("elasticmq", install_elasticmq),
