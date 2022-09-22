@@ -15,13 +15,18 @@ from localstack.aws.api.lambda_ import (
     Alias,
     AliasConfiguration,
     AliasRoutingConfiguration,
+    AllowedPublishers,
     Architecture,
     Arn,
     Blob,
+    CodeSigningConfigArn,
+    CodeSigningPolicies,
     Cors,
+    CreateCodeSigningConfigResponse,
     CreateEventSourceMappingRequest,
     CreateFunctionRequest,
     CreateFunctionUrlConfigResponse,
+    DeleteCodeSigningConfigResponse,
     Description,
     EnvironmentResponse,
     EphemeralStorage,
@@ -31,6 +36,8 @@ from localstack.aws.api.lambda_ import (
     FunctionName,
     FunctionUrlAuthType,
     FunctionUrlQualifier,
+    GetCodeSigningConfigResponse,
+    GetFunctionCodeSigningConfigResponse,
     GetFunctionResponse,
     GetFunctionUrlConfigResponse,
     GetPolicyResponse,
@@ -39,7 +46,9 @@ from localstack.aws.api.lambda_ import (
     LambdaApi,
     LastUpdateStatus,
     ListAliasesResponse,
+    ListCodeSigningConfigsResponse,
     ListEventSourceMappingsResponse,
+    ListFunctionsByCodeSigningConfigResponse,
     ListFunctionsResponse,
     ListFunctionUrlConfigsResponse,
     ListVersionsByFunctionResponse,
@@ -50,6 +59,7 @@ from localstack.aws.api.lambda_ import (
     NamespacedFunctionName,
     NamespacedStatementId,
     PackageType,
+    PutFunctionCodeSigningConfigResponse,
     Qualifier,
     ResourceConflictException,
     ResourceNotFoundException,
@@ -59,6 +69,7 @@ from localstack.aws.api.lambda_ import (
     String,
     TracingConfig,
     TracingMode,
+    UpdateCodeSigningConfigResponse,
     UpdateFunctionCodeRequest,
     UpdateFunctionConfigurationRequest,
     UpdateFunctionUrlConfigResponse,
@@ -941,14 +952,71 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
         )
 
     # =======================================
-    # ============  ?  ============
+    # ========  Code signing config  ========
     # =======================================
+
+    def create_code_signing_config(
+        self,
+        context: RequestContext,
+        allowed_publishers: AllowedPublishers,
+        description: Description = None,
+        code_signing_policies: CodeSigningPolicies = None,
+    ) -> CreateCodeSigningConfigResponse:
+        ...
+
+    def put_function_code_signing_config(
+        self,
+        context: RequestContext,
+        code_signing_config_arn: CodeSigningConfigArn,
+        function_name: FunctionName,
+    ) -> PutFunctionCodeSigningConfigResponse:
+        ...
+
+    def update_code_signing_config(
+        self,
+        context: RequestContext,
+        code_signing_config_arn: CodeSigningConfigArn,
+        description: Description = None,
+        allowed_publishers: AllowedPublishers = None,
+        code_signing_policies: CodeSigningPolicies = None,
+    ) -> UpdateCodeSigningConfigResponse:
+        ...
+
+    def get_code_signing_config(
+        self, context: RequestContext, code_signing_config_arn: CodeSigningConfigArn
+    ) -> GetCodeSigningConfigResponse:
+        ...
+
+    def get_function_code_signing_config(
+        self, context: RequestContext, function_name: FunctionName
+    ) -> GetFunctionCodeSigningConfigResponse:
+        ...
+
+    def delete_function_code_signing_config(
+        self, context: RequestContext, function_name: FunctionName
+    ) -> None:
+        ...
+
+    def delete_code_signing_config(
+        self, context: RequestContext, code_signing_config_arn: CodeSigningConfigArn
+    ) -> DeleteCodeSigningConfigResponse:
+        ...
+
+    def list_code_signing_configs(
+        self, context: RequestContext, marker: String = None, max_items: MaxListItems = None
+    ) -> ListCodeSigningConfigsResponse:
+        ...
+
+    def list_functions_by_code_signing_config(
+        self,
+        context: RequestContext,
+        code_signing_config_arn: CodeSigningConfigArn,
+        marker: String = None,
+        max_items: MaxListItems = None,
+    ) -> ListFunctionsByCodeSigningConfigResponse:
+        ...
 
     # TODO(s)
     # Provisioned Concurrency Config
     # Event Invoke Config
-    # Permission /Policy
-    # Code signing config
-    # Function URL
     # Event Invoke Config
-    # Layer & Layer Version
