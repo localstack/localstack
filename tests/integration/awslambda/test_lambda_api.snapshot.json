@@ -609,7 +609,7 @@
     }
   },
   "tests/integration/awslambda/test_lambda_api.py::TestLambdaFunction::test_lambda_code_location_zipfile": {
-    "recorded-date": "22-09-2022, 12:55:51",
+    "recorded-date": "22-09-2022, 20:12:55",
     "recorded-content": {
       "create-response-zip-file": {
         "Architectures": [

@@ -131,8 +131,8 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
     ):
         state = lambda_stores[account_id][region]
         qualifier_or_latest = qualifier or "$LATEST"
-        function = state.functions.get(function_name, {})
-        version = function.versions.get(qualifier_or_latest)
+        function = state.functions.get(function_name)
+        version = function and function.versions.get(qualifier_or_latest)
         if not function or not version:
             if qualifier:
                 arn = qualified_lambda_arn(
@@ -185,6 +185,10 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
 
         if version.config.architectures:
             optional_kwargs["Architectures"] = version.config.architectures
+        if version.config.environment is not None:
+            optional_kwargs["Environment"] = EnvironmentResponse(
+                Variables=version.config.environment
+            )  # TODO: Errors key?
 
         func_conf = FunctionConfiguration(
             RevisionId=version.config.revision_id,
@@ -197,9 +201,6 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
             Timeout=version.config.timeout,
             Runtime=version.config.runtime,
             Handler=version.config.handler,
-            Environment=EnvironmentResponse(
-                Variables=version.config.environment
-            ),  # TODO: Errors key?
             CodeSize=version.config.code.code_size,
             CodeSha256=version.config.code.code_sha256,
             MemorySize=version.config.memory_size,
@@ -291,9 +292,7 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
                     handler=request["Handler"],
                     package_type=PackageType.Zip,  # TODO
                     reserved_concurrent_executions=0,
-                    environment={
-                        k: v for k, v in request.get("Environment", {}).get("Variables", {}).items()
-                    },
+                    environment=request.get("Environment", {}).get("Variables"),
                     architectures=request.get("Architectures") or ["x86_64"],  # TODO
                     tracing_config_mode=TracingMode.PassThrough,  # TODO
                     image_config=None,  # TODO
@@ -547,7 +546,6 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
     ) -> InvocationResponse:
 
         function_name, qualifier = get_name_and_qualifier(function_name, qualifier)
-        qualifier = qualifier or "$LATEST"
         # we do not really need the version here, but check if it is there
         self._get_function_version(
             function_name=function_name,
@@ -555,6 +553,7 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
             account_id=context.account_id,
             region=context.region,
         )
+        qualifier = qualifier or "$LATEST"
         qualified_arn = qualified_lambda_arn(
             function_name, qualifier, context.account_id, context.region
         )
@@ -570,7 +569,7 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
         except Exception as e:
             LOG.error("Error while invoking lambda", exc_info=e)
             # TODO map to correct exception
-            raise ServiceException()
+            raise ServiceException() from e
 
         LOG.debug("Type of result: %s", type(invocation_result))
 
