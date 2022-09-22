@@ -237,7 +237,7 @@ class SSEUtils:
         )
         key_id = key_data["KeyMetadata"]["KeyId"]
 
-        provider.set_key_managed(key_id)
+        provider.set_key_managed(key_id, get_aws_account_id(), aws_stack.get_region())
         MANAGED_KMS_KEYS[aws_stack.get_region()] = key_id
         return key_id
 
