@@ -7,9 +7,7 @@ import uuid
 from concurrent.futures import Executor, Future, ThreadPoolExecutor
 from hashlib import sha256
 from threading import RLock
-from typing import Dict, Optional
-
-from mypy_boto3_s3 import S3Client
+from typing import TYPE_CHECKING, Dict, Optional
 
 from localstack.aws.api.lambda_ import InvocationType, LastUpdateStatus, State
 from localstack.services.awslambda.invocation.lambda_models import (
@@ -24,6 +22,9 @@ from localstack.services.awslambda.invocation.models import lambda_stores
 from localstack.services.awslambda.invocation.version_manager import LambdaVersionManager
 from localstack.utils.aws import aws_stack
 from localstack.utils.strings import to_str
+
+if TYPE_CHECKING:
+    from mypy_boto3_s3 import S3Client
 
 LOG = logging.getLogger(__name__)
 

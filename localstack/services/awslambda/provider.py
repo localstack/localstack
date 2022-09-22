@@ -97,6 +97,7 @@ from localstack.services.awslambda.invocation.lambda_service import (
 )
 from localstack.services.awslambda.invocation.lambda_util import (
     format_lambda_date,
+    function_name_from_arn,
     generate_lambda_date,
     lambda_arn_without_qualifier,
     qualified_lambda_arn,
@@ -508,6 +509,7 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
         LOG.debug("Lambda function got invoked! Params: %s", dict(locals()))
 
         # TODO discuss where function data is stored - might need to be passed here
+        function_name = function_name_from_arn(function_name)
         qualified_arn = qualified_lambda_arn(
             function_name, "$LATEST", context.account_id, context.region
         )
