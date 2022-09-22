@@ -1,7 +1,7 @@
 import copy
 import datetime
 import logging
-from typing import Dict, List
+from typing import Dict
 
 from cryptography.hazmat.primitives import hashes
 from cryptography.hazmat.primitives.asymmetric import padding
@@ -85,7 +85,6 @@ from localstack.aws.api.kms import (
     VerifyResponse,
     WrappingKeySpec,
 )
-from localstack.services.generic_proxy import RegionBackend
 from localstack.services.kms.models import (
     KeyImportState,
     KmsAlias,
@@ -125,37 +124,6 @@ VALID_OPERATIONS = [
     "GenerateDataKeyPairWithoutPlaintext",
 ]
 
-# grant attributes
-KEY_ID = "KeyId"
-GRANTEE_PRINCIPAL = "GranteePrincipal"
-RETIRING_PRINCIPAL = "RetiringPrincipal"
-OPERATIONS = "Operations"
-GRANT_ID = "GrantId"
-GRANT_TOKENS = "GrantTokens"
-NAME = "Name"
-CONSTRAINTS = "Constraints"
-ISSUING_ACCOUNT = "IssuingAccount"
-CREATION_DATE = "CreationDate"
-
-
-# TODO The backend is no longer in use. But before we remove it from this code, have to update localstack-ext to switch
-#  persistence from the backend to the new stores.
-class KMSBackend(RegionBackend):
-    # maps grant ID to grant details
-    grants: Dict[str, Dict]
-    # maps pagination markers to result lists
-    markers: Dict[str, List]
-    # maps key ID to keypair details
-    key_pairs: Dict[str, Dict]
-    # maps import tokens to import states
-    imports: Dict[str, KeyImportState]
-
-    def __init__(self):
-        self.grants = {}
-        self.markers = {}
-        self.key_pairs = {}
-        self.imports = {}
-
 
 class ValidationError(CommonServiceException):
     """General validation error type (defined in the AWS docs, but not part of the botocore spec)"""
@@ -164,13 +132,15 @@ class ValidationError(CommonServiceException):
         super().__init__("ValidationError", message=message)
 
 
+# For all operations constraints for states of keys are based on
+# https://docs.aws.amazon.com/kms/latest/developerguide/key-state.html
 class KmsProvider(KmsApi, ServiceLifecycleHook):
     @staticmethod
     def _get_store(context: RequestContext) -> KmsStore:
         return kms_stores[context.account_id][context.region]
 
-    def _get_key(self, context: RequestContext, key_id: str) -> KmsKey:
-        return self._get_store(context).get_key(key_id)
+    def _get_key(self, context: RequestContext, key_id: str, **kwargs) -> KmsKey:
+        return self._get_store(context).get_key(key_id, **kwargs)
 
     @handler("CreateKey", expand=False)
     def create_key(
@@ -190,7 +160,9 @@ class KmsProvider(KmsApi, ServiceLifecycleHook):
             raise ValidationException(
                 f"PendingWindowInDays should be between 7 and 30, but it is {pending_window}"
             )
-        key = self._get_key(context, request.get("KeyId"))
+        key = self._get_key(
+            context, request.get("KeyId"), enabled_key_allowed=True, disabled_key_allowed=True
+        )
         key.schedule_key_deletion(pending_window)
         attrs = ["DeletionDate", "KeyId", "KeyState"]
         result = select_attributes(key.metadata, attrs)
@@ -201,7 +173,12 @@ class KmsProvider(KmsApi, ServiceLifecycleHook):
     def cancel_key_deletion(
         self, context: RequestContext, request: CancelKeyDeletionRequest
     ) -> CancelKeyDeletionResponse:
-        key = self._get_key(context, request.get("KeyId"))
+        key = self._get_key(
+            context,
+            request.get("KeyId"),
+            enabled_key_allowed=False,
+            pending_deletion_key_allowed=True,
+        )
         key.metadata["KeyState"] = KeyState.Disabled
         key.metadata["DeletionDate"] = None
         # https://docs.aws.amazon.com/kms/latest/APIReference/API_CancelKeyDeletion.html#API_CancelKeyDeletion_ResponseElements
@@ -210,13 +187,18 @@ class KmsProvider(KmsApi, ServiceLifecycleHook):
 
     @handler("DisableKey", expand=False)
     def disable_key(self, context: RequestContext, request: DisableKeyRequest) -> None:
-        key = self._get_key(context, request.get("KeyId"))
+        # Technically, AWS allows DisableKey for keys that are already disabled.
+        key = self._get_key(
+            context, request.get("KeyId"), enabled_key_allowed=True, disabled_key_allowed=True
+        )
         key.metadata["KeyState"] = KeyState.Disabled
         key.metadata["Enabled"] = False
 
     @handler("EnableKey", expand=False)
     def enable_key(self, context: RequestContext, request: EnableKeyRequest) -> None:
-        key = self._get_key(context, request.get("KeyId"))
+        key = self._get_key(
+            context, request.get("KeyId"), enabled_key_allowed=True, disabled_key_allowed=True
+        )
         key.metadata["KeyState"] = KeyState.Enabled
         key.metadata["Enabled"] = True
 
@@ -244,7 +226,7 @@ class KmsProvider(KmsApi, ServiceLifecycleHook):
     def describe_key(
         self, context: RequestContext, request: DescribeKeyRequest
     ) -> DescribeKeyResponse:
-        key = self._get_key(context, request.get("KeyId"))
+        key = self._get_key(context, request.get("KeyId"), any_key_state_allowed=True)
         return DescribeKeyResponse(KeyMetadata=key.metadata)
 
     @handler("ReplicateKey", expand=False)
@@ -278,20 +260,20 @@ class KmsProvider(KmsApi, ServiceLifecycleHook):
     def update_key_description(
         self, context: RequestContext, request: UpdateKeyDescriptionRequest
     ) -> None:
-        key = self._get_store(context).get_key(request.get("KeyId"))
+        key = self._get_key(
+            context, request.get("KeyId"), enabled_key_allowed=True, disabled_key_allowed=True
+        )
         key.metadata["Description"] = request.get("Description")
 
-    # TODO If there is an attempt to create a grant for a key pending deletion, the following error is generated in AWS:
-    #      KMSInvalidStateException("<KEY ARN> is pending deletion")
-    #  Should implement that in LocalStack as well.
     @handler("CreateGrant", expand=False)
     def create_grant(
         self, context: RequestContext, request: CreateGrantRequest
     ) -> CreateGrantResponse:
         store = self._get_store(context)
-        # KeyId can potentially hold one of multiple different types of key identifiers. get_key finds a key no
+        # KeyId can potentially hold one of multiple different types of key identifiers. Here we find a key no
         # matter which type of id is used.
-        request["KeyId"] = store.get_canonical_key_id(request.get("KeyId"))
+        key = store.get_key(request.get("KeyId"))
+        request["KeyId"] = key.metadata.get("KeyId")
         self._validate_grant_request(request, store)
         grant_name = request.get("Name")
         if grant_name and grant_name in store.grant_names:
@@ -322,7 +304,8 @@ class KmsProvider(KmsApi, ServiceLifecycleHook):
         store = self._get_store(context)
         # KeyId can potentially hold one of multiple different types of key identifiers. Here we find a key no
         # matter which type of id is used.
-        key_id = store.get_canonical_key_id(request.get("KeyId"))
+        key = store.get_key(request.get("KeyId"), any_key_state_allowed=True)
+        key_id = key.metadata.get("KeyId")
 
         grant_id = request.get("GrantId")
         if grant_id:
@@ -383,7 +366,9 @@ class KmsProvider(KmsApi, ServiceLifecycleHook):
 
         # KeyId can potentially hold one of multiple different types of key identifiers. Here we find a key no
         # matter which type of id is used.
-        key_id = store.get_canonical_key_id(key_id)
+        key = store.get_key(key_id, any_key_state_allowed=True)
+        key_id = key.metadata.get("KeyId")
+
         if grant_id not in store.grants:
             raise InvalidGrantIdException()
         if store.grants[grant_id].metadata["KeyId"] != key_id:
@@ -425,7 +410,7 @@ class KmsProvider(KmsApi, ServiceLifecycleHook):
         marker: MarkerType = None,
     ) -> ListGrantsResponse:
         if not retiring_principal:
-            raise ValidationError(f"Required input parameter '{RETIRING_PRINCIPAL}' not specified")
+            raise ValidationError("Required input parameter 'RetiringPrincipal' not specified")
 
         matching_grants = [
             grant.metadata
@@ -446,7 +431,9 @@ class KmsProvider(KmsApi, ServiceLifecycleHook):
     def get_public_key(
         self, context: RequestContext, key_id: KeyIdType, grant_tokens: GrantTokenList = None
     ) -> GetPublicKeyResponse:
-        key = self._get_key(context, key_id)
+        # According to https://docs.aws.amazon.com/kms/latest/developerguide/key-state.html, GetPublicKey is supposed
+        # to fail for disabled keys. But it actually doesn't fail in AWS.
+        key = self._get_key(context, key_id, enabled_key_allowed=True, disabled_key_allowed=True)
         attrs = [
             "KeySpec",
             "KeyUsage",
@@ -630,7 +617,9 @@ class KmsProvider(KmsApi, ServiceLifecycleHook):
         store = self._get_store(context)
         # KeyId can potentially hold one of multiple different types of key identifiers. get_key finds a key no
         # matter which type of id is used.
-        key_to_import_material_to = store.get_key(key_id)
+        key_to_import_material_to = store.get_key(
+            key_id, enabled_key_allowed=True, disabled_key_allowed=True
+        )
         if key_to_import_material_to.metadata.get("Origin") != "EXTERNAL":
             raise UnsupportedOperationException(
                 "Key material can only be imported into keys with Origin of EXTERNAL"
@@ -669,7 +658,9 @@ class KmsProvider(KmsApi, ServiceLifecycleHook):
         import_state = store.imports.get(import_token)
         if not import_state:
             raise NotFoundException(f"Unable to find key import token '{import_token}'")
-        key_to_import_material_to = store.get_key(key_id)
+        key_to_import_material_to = store.get_key(
+            key_id, enabled_key_allowed=True, disabled_key_allowed=True
+        )
         self._validate_key_for_encryption_decryption(key_to_import_material_to)
 
         if import_state.wrapping_algo == AlgorithmSpec.RSAES_PKCS1_V1_5:
@@ -699,12 +690,17 @@ class KmsProvider(KmsApi, ServiceLifecycleHook):
             raise AlreadyExistsException(f"An alias with the name {alias_arn} already exists")
         # KeyId can potentially hold one of multiple different types of key identifiers. Here we find a key no
         # matter which type of id is used.
-        request["TargetKeyId"] = store.get_canonical_key_id(request["TargetKeyId"])
+        key = self._get_key(
+            context, request.get("TargetKeyId"), enabled_key_allowed=True, disabled_key_allowed=True
+        )
+        request["TargetKeyId"] = key.metadata.get("KeyId")
         alias = KmsAlias(request)
         store.aliases[alias_name] = alias
 
     @handler("DeleteAlias", expand=False)
     def delete_alias(self, context: RequestContext, request: DeleteAliasRequest) -> None:
+        # We do not check the state of the key, as, according to AWS docs, all key states, that are possible in
+        # LocalStack, are supported by this operation.
         store = self._get_store(context)
         alias_name = request["AliasName"]
         if alias_name not in store.aliases:
@@ -715,14 +711,21 @@ class KmsProvider(KmsApi, ServiceLifecycleHook):
 
     @handler("UpdateAlias", expand=False)
     def update_alias(self, context: RequestContext, request: UpdateAliasRequest) -> None:
+        # https://docs.aws.amazon.com/kms/latest/developerguide/key-state.html
+        # "If the source KMS key is pending deletion, the command succeeds. If the destination KMS key is pending
+        # deletion, the command fails with error: KMSInvalidStateException : <key ARN> is pending deletion."
+        # Also disabled keys are accepted for this operation (see the table on that page).
+        #
+        # As such, we do not care about the state of the source key, but check the destination one.
+
         alias_name = request["AliasName"]
         # This API, per AWS docs, accepts only names, not ARNs.
         validate_alias_name(alias_name)
         store = self._get_store(context)
         alias = store.get_alias(alias_name, context.account_id, context.region)
         key_id = request["TargetKeyId"]
-        # Don't care about the key, just want to validate it is there.
-        store.get_key(key_id)
+        # Don't care about the key itself, just want to validate its state.
+        store.get_key(key_id, enabled_key_allowed=True, disabled_key_allowed=True)
         alias.metadata["TargetKeyId"] = key_id
         alias.update_date_of_last_update()
 
@@ -738,7 +741,8 @@ class KmsProvider(KmsApi, ServiceLifecycleHook):
         if key_id:
             # KeyId can potentially hold one of multiple different types of key identifiers. Here we find a key no
             # matter which type of id is used.
-            key_id = store.get_canonical_key_id(key_id)
+            key = store.get_key(key_id, any_key_state_allowed=True)
+            key_id = key.metadata.get("KeyId")
 
         matching_aliases = []
         for alias in store.aliases.values():
@@ -759,13 +763,19 @@ class KmsProvider(KmsApi, ServiceLifecycleHook):
     def get_key_rotation_status(
         self, context: RequestContext, request: GetKeyRotationStatusRequest
     ) -> GetKeyRotationStatusResponse:
-        key = self._get_key(context, request.get("KeyId"))
+        # https://docs.aws.amazon.com/kms/latest/developerguide/key-state.html
+        # "If the KMS key has imported key material or is in a custom key store: UnsupportedOperationException."
+        # We do not model that here, though.
+        key = self._get_key(context, request.get("KeyId"), any_key_state_allowed=True)
         return GetKeyRotationStatusResponse(KeyRotationEnabled=key.is_key_rotation_enabled)
 
     @handler("DisableKeyRotation", expand=False)
     def disable_key_rotation(
         self, context: RequestContext, request: DisableKeyRotationRequest
     ) -> None:
+        # https://docs.aws.amazon.com/kms/latest/developerguide/key-state.html
+        # "If the KMS key has imported key material or is in a custom key store: UnsupportedOperationException."
+        # We do not model that here, though.
         key = self._get_key(context, request.get("KeyId"))
         key.is_key_rotation_enabled = False
 
@@ -773,6 +783,9 @@ class KmsProvider(KmsApi, ServiceLifecycleHook):
     def enable_key_rotation(
         self, context: RequestContext, request: DisableKeyRotationRequest
     ) -> None:
+        # https://docs.aws.amazon.com/kms/latest/developerguide/key-state.html
+        # "If the KMS key has imported key material or is in a custom key store: UnsupportedOperationException."
+        # We do not model that here, though.
         key = self._get_key(context, request.get("KeyId"))
         key.is_key_rotation_enabled = True
 
@@ -783,12 +796,12 @@ class KmsProvider(KmsApi, ServiceLifecycleHook):
         # We just care if the key exists. The response, by AWS specifications, is the same for all keys, as the only
         # supported policy is "default":
         # https://docs.aws.amazon.com/kms/latest/APIReference/API_ListKeyPolicies.html#API_ListKeyPolicies_ResponseElements
-        self._get_key(context, request.get("KeyId"))
+        self._get_key(context, request.get("KeyId"), any_key_state_allowed=True)
         return ListKeyPoliciesResponse(PolicyNames=["default"], Truncated=False)
 
     @handler("PutKeyPolicy", expand=False)
     def put_key_policy(self, context: RequestContext, request: PutKeyPolicyRequest) -> None:
-        key = self._get_key(context, request.get("KeyId"))
+        key = self._get_key(context, request.get("KeyId"), any_key_state_allowed=True)
         if request.get("PolicyName") != "default":
             raise UnsupportedOperationException("Only default policy is supported")
         key.policy = request.get("Policy")
@@ -797,7 +810,7 @@ class KmsProvider(KmsApi, ServiceLifecycleHook):
     def get_key_policy(
         self, context: RequestContext, request: GetKeyPolicyRequest
     ) -> GetKeyPolicyResponse:
-        key = self._get_key(context, request.get("KeyId"))
+        key = self._get_key(context, request.get("KeyId"), any_key_state_allowed=True)
         if request.get("PolicyName") != "default":
             raise NotFoundException("No such policy exists")
         return GetKeyPolicyResponse(Policy=key.policy)
@@ -806,7 +819,7 @@ class KmsProvider(KmsApi, ServiceLifecycleHook):
     def list_resource_tags(
         self, context: RequestContext, request: ListResourceTagsRequest
     ) -> ListResourceTagsResponse:
-        key = self._get_key(context, request.get("KeyId"))
+        key = self._get_key(context, request.get("KeyId"), any_key_state_allowed=True)
         keys_list = PaginatedList(
             [{"TagKey": tag_key, "TagValue": tag_value} for tag_key, tag_value in key.tags.items()]
         )
@@ -820,12 +833,16 @@ class KmsProvider(KmsApi, ServiceLifecycleHook):
 
     @handler("TagResource", expand=False)
     def tag_resource(self, context: RequestContext, request: TagResourceRequest) -> None:
-        key = self._get_key(context, request.get("KeyId"))
+        key = self._get_key(
+            context, request.get("KeyId"), enabled_key_allowed=True, disabled_key_allowed=True
+        )
         key.add_tags(request.get("Tags"))
 
     @handler("UntagResource", expand=False)
     def untag_resource(self, context: RequestContext, request: UntagResourceRequest) -> None:
-        key = self._get_key(context, request.get("KeyId"))
+        key = self._get_key(
+            context, request.get("KeyId"), enabled_key_allowed=True, disabled_key_allowed=True
+        )
         if not request.get("TagKeys"):
             return
         for tag_key in request.get("TagKeys"):
@@ -845,13 +862,13 @@ class KmsProvider(KmsApi, ServiceLifecycleHook):
             )
 
     def _validate_grant_request(self, data: Dict, store: KmsStore):
-        if KEY_ID not in data or GRANTEE_PRINCIPAL not in data or OPERATIONS not in data:
+        if "KeyId" not in data or "GranteePrincipal" not in data or "Operations" not in data:
             raise ValidationError("Grant ID, key ID and grantee principal must be specified")
 
-        for operation in data[OPERATIONS]:
+        for operation in data["Operations"]:
             if operation not in VALID_OPERATIONS:
                 raise ValidationError(
-                    f"Value {[OPERATIONS]} at 'operations' failed to satisfy constraint: Member must satisfy"
+                    f"Value {['Operations']} at 'operations' failed to satisfy constraint: Member must satisfy"
                     f" constraint: [Member must satisfy enum value set: {VALID_OPERATIONS}]"
                 )
 
