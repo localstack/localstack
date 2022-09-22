@@ -89,7 +89,7 @@ class S3Provider(S3Api, ServiceLifecycleHook):
         context: RequestContext,
         request: CreateBucketRequest,
     ) -> CreateBucketOutput:
-        bucket_name = request.get("Bucket", "")
+        bucket_name = request["Bucket"]
         validate_bucket_name(bucket=bucket_name)
         response: CreateBucketOutput = call_moto(context)
         # Location is always contained in response -> full url for LocationConstraint outside us-east-1
@@ -138,7 +138,7 @@ class S3Provider(S3Api, ServiceLifecycleHook):
 
         if "BucketRegion" not in response:
             moto_backend = get_moto_s3_backend(context)
-            bucket = get_bucket_from_moto(moto_backend, bucket=request.get("Bucket", ""))
+            bucket = get_bucket_from_moto(moto_backend, bucket=request["Bucket"])
             response["BucketRegion"] = bucket.region_name
 
         return ListObjectsOutput(**response)
@@ -163,7 +163,7 @@ class S3Provider(S3Api, ServiceLifecycleHook):
 
         if "BucketRegion" not in response:
             moto_backend = get_moto_s3_backend(context)
-            bucket = get_bucket_from_moto(moto_backend, bucket=request.get("Bucket", ""))
+            bucket = get_bucket_from_moto(moto_backend, bucket=request["Bucket"])
             response["BucketRegion"] = bucket.region_name
 
         return response
@@ -180,8 +180,8 @@ class S3Provider(S3Api, ServiceLifecycleHook):
 
     @handler("GetObject", expand=False)
     def get_object(self, context: RequestContext, request: GetObjectRequest) -> GetObjectOutput:
-        key = request.get("Key", "")
-        if is_object_expired(context, bucket=request.get("Bucket", ""), key=key):
+        key = request["Key"]
+        if is_object_expired(context, bucket=request["Bucket"], key=key):
             # TODO: old behaviour was deleting key instantly if expired. AWS cleans up only once a day generally
             # see if we need to implement a feature flag
             # but you can still HeadObject on it and you get the expiry time
@@ -205,9 +205,8 @@ class S3Provider(S3Api, ServiceLifecycleHook):
 
         if expires := request.get("Expires"):
             moto_backend = get_moto_s3_backend(context)
-            bucket = get_bucket_from_moto(moto_backend, bucket=request.get("Bucket", ""))
-            key = request.get("Key", "")
-            key_object = get_key_from_moto_bucket(bucket, key=key)
+            bucket = get_bucket_from_moto(moto_backend, bucket=request["Bucket"])
+            key_object = get_key_from_moto_bucket(bucket, key=request["Key"])
             key_object.set_expiry(expires)
 
         return response
@@ -218,7 +217,7 @@ class S3Provider(S3Api, ServiceLifecycleHook):
         context: RequestContext,
         request: PutBucketRequestPaymentRequest,
     ) -> None:
-        bucket_name = request.get("Bucket", "")
+        bucket_name = request["Bucket"]
         payer = request.get("RequestPaymentConfiguration", {}).get("Payer")
         if payer not in ["Requester", "BucketOwner"]:
             raise MalformedXML(
@@ -235,7 +234,7 @@ class S3Provider(S3Api, ServiceLifecycleHook):
         context: RequestContext,
         request: GetBucketRequestPaymentRequest,
     ) -> GetBucketRequestPaymentOutput:
-        bucket_name = request.get("Bucket", "")
+        bucket_name = request["Bucket"]
         moto_backend = get_moto_s3_backend(context)
         bucket = get_bucket_from_moto(moto_backend, bucket=bucket_name)
         return GetBucketRequestPaymentOutput(Payer=bucket.payer)
@@ -285,7 +284,7 @@ class S3Provider(S3Api, ServiceLifecycleHook):
         somehow. For now the behaviour is the same as before, aka no validation
         """
         # test if bucket exists in moto
-        bucket = request.get("Bucket", "")
+        bucket = request["Bucket"]
         moto_backend = get_moto_s3_backend(context)
         get_bucket_from_moto(moto_backend, bucket=bucket)
         store = self.get_store()
