@@ -1,6 +1,7 @@
 import base64
 import dataclasses
 import datetime
+import json
 import logging
 import re
 import threading
@@ -9,6 +10,8 @@ from typing import IO
 
 from localstack.aws.api import RequestContext, handler
 from localstack.aws.api.lambda_ import (
+    AddPermissionRequest,
+    AddPermissionResponse,
     Alias,
     AliasConfiguration,
     AliasRoutingConfiguration,
@@ -30,6 +33,7 @@ from localstack.aws.api.lambda_ import (
     FunctionUrlQualifier,
     GetFunctionResponse,
     GetFunctionUrlConfigResponse,
+    GetPolicyResponse,
     InvocationResponse,
     InvocationType,
     LambdaApi,
@@ -44,6 +48,7 @@ from localstack.aws.api.lambda_ import (
     MaxItems,
     MaxListItems,
     NamespacedFunctionName,
+    NamespacedStatementId,
     PackageType,
     Qualifier,
     ResourceConflictException,
@@ -62,10 +67,12 @@ from localstack.aws.api.lambda_ import (
 from localstack.services.awslambda import api_utils
 from localstack.services.awslambda.invocation.lambda_models import (
     Function,
+    FunctionResourcePolicy,
     FunctionUrlConfig,
     FunctionVersion,
     InvocationError,
     LambdaEphemeralStorage,
+    ResourcePolicy,
     UpdateStatus,
     VersionFunctionConfiguration,
     VersionIdentifier,
@@ -85,7 +92,7 @@ from localstack.services.awslambda.invocation.lambda_util import (
 )
 from localstack.services.plugins import ServiceLifecycleHook
 from localstack.utils.collections import PaginatedList
-from localstack.utils.strings import short_uid, to_bytes, to_str
+from localstack.utils.strings import long_uid, short_uid, to_bytes, to_str
 
 LOG = logging.getLogger(__name__)
 
@@ -807,6 +814,135 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
         )
         url_configs = page
         return ListFunctionUrlConfigsResponse(FunctionUrlConfigs=url_configs, NextMarker=token)
+
+    # =======================================
+    # ============  Permissions  ============
+    # =======================================
+
+    # TODO: add test for event_source_token (alexa smart home) and auth_type
+    @handler("AddPermission", expand=False)
+    def add_permission(
+        self,
+        context: RequestContext,
+        request: AddPermissionRequest,
+    ) -> AddPermissionResponse:
+        state = lambda_stores[context.account_id][context.region]
+
+        resolved_fn_name = api_utils.get_function_name(request["FunctionName"])
+        resolved_fn = state.functions.get(resolved_fn_name)
+
+        if not resolved_fn:
+            raise ResourceNotFoundException("Where Function???")  # TODO: test
+
+        resolved_qualifier = request.get("Qualifier", "$LATEST")
+
+        resource = lambda_arn_without_qualifier(
+            resolved_fn_name, context.account_id, context.region
+        )
+        if api_utils.qualifier_is_alias(resolved_qualifier):
+            if resolved_qualifier not in resolved_fn.aliases:
+                raise ResourceNotFoundException("Where Alias???")  # TODO: test
+            resource = qualified_lambda_arn(
+                resolved_fn_name, resolved_qualifier, context.account_id, context.region
+            )
+        elif api_utils.qualifier_is_version(resolved_qualifier):
+            if resolved_qualifier not in resolved_fn.versions:
+                raise ResourceNotFoundException("Where Version???")  # TODO: test
+            resource = qualified_lambda_arn(
+                resolved_fn_name, resolved_qualifier, context.account_id, context.region
+            )
+        elif resolved_qualifier != "$LATEST":
+            raise ResourceNotFoundException("Wrong format for qualifier?")
+        # TODO: is there a different int he resulting policy when adding $LATEST manually?
+
+        # check for an already existing policy and any conflicts in existing statements
+        existing_policy = resolved_fn.permissions.get(resolved_qualifier)
+        if existing_policy:
+            if request["StatementId"] in [s["Sid"] for s in existing_policy.policy.Statement]:
+                # TODO: is this unique just in the policy or across all policies in region/account/function (?)
+                raise ResourceConflictException("Double Statement!")
+
+        permission_statement = api_utils.build_statement(
+            resource,
+            request["StatementId"],
+            request["Action"],
+            request["Principal"],
+            source_arn=request.get("SourceArn"),
+        )
+        policy = existing_policy
+        if not existing_policy:
+            policy = FunctionResourcePolicy(
+                long_uid(), policy=ResourcePolicy(Version="2012-10-17", Id="default", Statement=[])
+            )
+        policy.policy.Statement.append(permission_statement)
+        if not existing_policy:
+            resolved_fn.permissions[resolved_qualifier] = policy
+        return AddPermissionResponse(Statement=json.dumps(permission_statement))
+
+    # TODO: test if get_policy works after removing all permissions
+    def remove_permission(
+        self,
+        context: RequestContext,
+        function_name: FunctionName,
+        statement_id: NamespacedStatementId,
+        qualifier: Qualifier = None,
+        revision_id: String = None,  # TODO
+    ) -> None:
+        state = lambda_stores[context.account_id][context.region]
+
+        resolved_fn = state.functions.get(function_name)
+        if resolved_fn is None:
+            raise ResourceNotFoundException("Where function???")  # TODO: test
+
+        resolved_qualifier = qualifier or "$LATEST"
+        function_permission = resolved_fn.permissions.get(resolved_qualifier)
+        if not function_permission:
+            raise ResourceNotFoundException("Where permission???")  # TODO: test
+
+        # try to find statement in policy and delete it
+        statement = None
+        for s in function_permission.policy.Statement:
+            if s["Sid"] == statement_id:
+                statement = s
+                break
+
+        if not statement:
+            raise ResourceNotFoundException(
+                f"Statement {statement_id} is not found in resource policy.", Type="User"
+            )
+        function_permission.policy.Statement.remove(statement)
+
+        # remove the policy as a whole when there's no statement left in it
+        if len(function_permission.policy.Statement) == 0:
+            del resolved_fn.permissions[resolved_qualifier]
+
+    def get_policy(
+        self,
+        context: RequestContext,
+        function_name: NamespacedFunctionName,
+        qualifier: Qualifier = None,
+    ) -> GetPolicyResponse:
+        state = lambda_stores[context.account_id][context.region]
+
+        resolved_fn = state.functions.get(function_name)
+        if resolved_fn is None:
+            raise ResourceNotFoundException("Where function???")  # TODO: test
+
+        resolved_qualifier = qualifier or "$LATEST"
+        function_permission = resolved_fn.permissions.get(resolved_qualifier)
+        if not function_permission:
+            raise ResourceNotFoundException(
+                "The resource you requested does not exist.", Type="User"
+            )
+
+        return GetPolicyResponse(
+            Policy=json.dumps(dataclasses.asdict(function_permission.policy)),
+            RevisionId=function_permission.revision_id,
+        )
+
+    # =======================================
+    # ============  ?  ============
+    # =======================================
 
     # TODO(s)
     # Provisioned Concurrency Config

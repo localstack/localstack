@@ -1076,7 +1076,7 @@ class TestLambdaPermissions:
         )
         snapshot.match("policy_after_2_add", policy_response)
 
-        with pytest.raises(ClientError) as e:
+        with pytest.raises(lambda_client.exceptions.ResourceNotFoundException) as e:
             lambda_client.remove_permission(
                 FunctionName=function_name,
                 StatementId="non-existent",
@@ -1101,53 +1101,6 @@ class TestLambdaPermissions:
         with pytest.raises(lambda_client.exceptions.ResourceNotFoundException) as ctx:
             lambda_client.get_policy(FunctionName=function_name)
         snapshot.match("expect_exception_get_policy", ctx.value.response)
-
-    @pytest.mark.aws_validated
-    def test_function_code_signing_config(self, lambda_client, create_lambda_function, snapshot):
-        """Testing the API of code signing config"""
-
-        function_name = f"lambda_func-{short_uid()}"
-
-        create_lambda_function(
-            handler_file=TEST_LAMBDA_PYTHON_ECHO,
-            func_name=function_name,
-            runtime=Runtime.python3_9,
-        )
-
-        response = lambda_client.create_code_signing_config(
-            Description="Testing CodeSigning Config",
-            AllowedPublishers={
-                "SigningProfileVersionArns": [
-                    f"arn:aws:signer:{aws_stack.get_region()}:000000000000:/signing-profiles/test",
-                ]
-            },
-            CodeSigningPolicies={"UntrustedArtifactOnDeployment": "Enforce"},
-        )
-        snapshot.match("create_code_signing_config", response)
-
-        code_signing_arn = response["CodeSigningConfig"]["CodeSigningConfigArn"]
-        response = lambda_client.update_code_signing_config(
-            CodeSigningConfigArn=code_signing_arn,
-            CodeSigningPolicies={"UntrustedArtifactOnDeployment": "Warn"},
-        )
-        snapshot.match("update_code_signing_config", response)
-
-        response = lambda_client.get_code_signing_config(CodeSigningConfigArn=code_signing_arn)
-        snapshot.match("get_code_signing_config", response)
-
-        response = lambda_client.put_function_code_signing_config(
-            CodeSigningConfigArn=code_signing_arn, FunctionName=function_name
-        )
-        snapshot.match("put_function_code_signing_config", response)
-
-        response = lambda_client.get_function_code_signing_config(FunctionName=function_name)
-        snapshot.match("get_function_code_signing_config", response)
-
-        response = lambda_client.delete_function_code_signing_config(FunctionName=function_name)
-        snapshot.match("delete_function_code_signing_config", response)
-
-        response = lambda_client.delete_code_signing_config(CodeSigningConfigArn=code_signing_arn)
-        snapshot.match("delete_code_signing_config", response)
 
     @pytest.mark.aws_validated
     def test_create_multiple_lambda_permissions(
@@ -1411,3 +1364,52 @@ class TestLambdaSizeLimits:
 
         snapshot.match("successful_create_fn_result", res)
         lambda_client.get_function(FunctionName=function_name)
+
+
+class TestCodeSigningConfig:
+    @pytest.mark.aws_validated
+    def test_function_code_signing_config(self, lambda_client, create_lambda_function, snapshot):
+        """Testing the API of code signing config"""
+
+        function_name = f"lambda_func-{short_uid()}"
+
+        create_lambda_function(
+            handler_file=TEST_LAMBDA_PYTHON_ECHO,
+            func_name=function_name,
+            runtime=Runtime.python3_9,
+        )
+
+        response = lambda_client.create_code_signing_config(
+            Description="Testing CodeSigning Config",
+            AllowedPublishers={
+                "SigningProfileVersionArns": [
+                    f"arn:aws:signer:{aws_stack.get_region()}:000000000000:/signing-profiles/test",
+                ]
+            },
+            CodeSigningPolicies={"UntrustedArtifactOnDeployment": "Enforce"},
+        )
+        snapshot.match("create_code_signing_config", response)
+
+        code_signing_arn = response["CodeSigningConfig"]["CodeSigningConfigArn"]
+        response = lambda_client.update_code_signing_config(
+            CodeSigningConfigArn=code_signing_arn,
+            CodeSigningPolicies={"UntrustedArtifactOnDeployment": "Warn"},
+        )
+        snapshot.match("update_code_signing_config", response)
+
+        response = lambda_client.get_code_signing_config(CodeSigningConfigArn=code_signing_arn)
+        snapshot.match("get_code_signing_config", response)
+
+        response = lambda_client.put_function_code_signing_config(
+            CodeSigningConfigArn=code_signing_arn, FunctionName=function_name
+        )
+        snapshot.match("put_function_code_signing_config", response)
+
+        response = lambda_client.get_function_code_signing_config(FunctionName=function_name)
+        snapshot.match("get_function_code_signing_config", response)
+
+        response = lambda_client.delete_function_code_signing_config(FunctionName=function_name)
+        snapshot.match("delete_function_code_signing_config", response)
+
+        response = lambda_client.delete_code_signing_config(CodeSigningConfigArn=code_signing_arn)
+        snapshot.match("delete_code_signing_config", response)

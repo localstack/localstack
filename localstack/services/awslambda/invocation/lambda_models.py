@@ -247,11 +247,29 @@ class FunctionVersion:
 
 
 @dataclasses.dataclass
+class ResourcePolicy:
+    Version: str
+    Id: str
+    Statement: list[dict]
+
+
+@dataclasses.dataclass
+class FunctionResourcePolicy:
+    revision_id: str
+    policy: ResourcePolicy  # TODO: do we have a typed IAM policy somewhere already?
+
+
+@dataclasses.dataclass
 class Function:
     function_name: str
     aliases: dict[str, VersionAlias] = dataclasses.field(default_factory=dict)
     versions: dict[str, FunctionVersion] = dataclasses.field(default_factory=dict)
-    function_url_configs: dict[str, FunctionUrlConfig] = dataclasses.field(default_factory=dict)
+    function_url_configs: dict[str, FunctionUrlConfig] = dataclasses.field(
+        default_factory=dict
+    )  # key has to be $LATEST or alias name
+    permissions: dict[str, FunctionResourcePolicy] = dataclasses.field(
+        default_factory=dict
+    )  # key is $LATEST, version or alias
 
     lock: threading.RLock = dataclasses.field(default_factory=threading.RLock)
     next_version: int = 1
