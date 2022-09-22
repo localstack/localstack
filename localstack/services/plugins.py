@@ -708,16 +708,21 @@ def local_api_checker(service: str) -> Callable:
         return lambda *args, **kwargs: None
 
     def _check(expect_shutdown=False, print_error=False):
+        port = None
         try:
             if service not in PROXY_LISTENERS:
                 LOG.debug("cannot find backend port for service %s", service)
                 return
             port = PROXY_LISTENERS[service][1]
 
+            if port is None:
+                # for modern ASF services, the port can be none since the service is just served by localstack
+                return
+
             LOG.debug("checking service health %s:%d", service, port)
             wait_for_port_status(port, expect_success=not expect_shutdown)
         except Exception:
             if print_error:
-                LOG.exception("service health check %s:%d failed", service, port)
+                LOG.exception("service health check %s:%s failed", service, port)
 
     return _check
