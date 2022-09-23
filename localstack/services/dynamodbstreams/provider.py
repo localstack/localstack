@@ -1,6 +1,7 @@
 import copy
-import bson
 import logging
+
+import bson
 
 from localstack.aws.api import RequestContext, handler
 from localstack.aws.api.dynamodbstreams import (
@@ -33,7 +34,6 @@ from localstack.services.dynamodbstreams.dynamodbstreams_api import (
 from localstack.services.plugins import ServiceLifecycleHook
 from localstack.utils.aws import aws_stack
 from localstack.utils.collections import select_from_typed_dict
-from localstack.utils.common import to_str
 
 LOG = logging.getLogger(__name__)
 

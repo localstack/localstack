@@ -1,15 +1,15 @@
-import bson
 import logging
 import threading
 import time
 from typing import Dict
+
+import bson
 
 from localstack.aws.accounts import get_aws_account_id
 from localstack.aws.api.dynamodbstreams import StreamStatus, StreamViewType
 from localstack.services.dynamodbstreams.models import DynamoDbStreamsStore, dynamodbstreams_stores
 from localstack.utils.aws import aws_stack
 from localstack.utils.common import now_utc
-from localstack.utils.json import BytesEncoder
 
 DDB_KINESIS_STREAM_NAME_PREFIX = "__ddb_stream_"
 
