@@ -1452,6 +1452,7 @@ class TestLambdaSizeLimits:
 
 # TODO: test paging
 # TODO: test function name / ARN resolving
+@pytest.mark.skipif(is_old_provider(), reason="not implemented")
 class TestCodeSigningConfig:
     @pytest.mark.aws_validated
     def test_function_code_signing_config(
@@ -1616,6 +1617,7 @@ class TestCodeSigningConfig:
         snapshot.match("list_functions_by_csc_invalid_cscarn", e.value.response)
 
 
+@pytest.mark.skipif(is_old_provider(), reason="not implemented")
 class TestLambdaAccountSettings:
 
     # TODO: for now probably fine if it just returns some static values, but might be interesting to properly implement this in the new provider
