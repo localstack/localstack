@@ -12,7 +12,7 @@ def test_parameter_defaults(ssm_client, deploy_cfn_template):
         template_path=os.path.join(
             os.path.dirname(__file__), "../templates/ssm_parameter_defaultname.yaml"
         ),
-        template_mapping={"ssm_parameter_value": ssm_parameter_value},
+        parameters={"Input": ssm_parameter_value},
     )
 
     parameter_name = stack.outputs["CustomParameterOutput"]

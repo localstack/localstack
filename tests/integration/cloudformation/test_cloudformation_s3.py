@@ -13,7 +13,8 @@ def test_bucketpolicy(
     bucket_name = f"ls-bucket-{short_uid()}"
     deploy_result = deploy_cfn_template(
         template_path=os.path.join(os.path.dirname(__file__), "../templates/s3_bucketpolicy.yaml"),
-        template_mapping={"bucket_name": bucket_name, "include_policy": True},
+        parameters={"BucketName": bucket_name},
+        template_mapping={"include_policy": True},
     )
     bucket_policy = s3_client.get_bucket_policy(Bucket=bucket_name)["Policy"]
     assert bucket_policy
@@ -21,8 +22,9 @@ def test_bucketpolicy(
     deploy_cfn_template(
         is_update=True,
         stack_name=deploy_result.stack_id,
+        parameters={"BucketName": bucket_name},
         template_path=os.path.join(os.path.dirname(__file__), "../templates/s3_bucketpolicy.yaml"),
-        template_mapping={"bucket_name": bucket_name, "include_policy": False},
+        template_mapping={"include_policy": False},
     )
     with pytest.raises(Exception) as err:
         s3_client.get_bucket_policy(Bucket=bucket_name).get("Policy")

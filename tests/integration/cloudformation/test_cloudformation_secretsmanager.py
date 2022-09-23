@@ -28,6 +28,7 @@ Outputs:
 )
 
 
+<<<<<<< HEAD
 TEST_TEMPLATE_11 = """
 AWSTemplateFormatVersion: 2010-09-09
 Parameters:
@@ -44,9 +45,7 @@ Resources:
 """
 
 
-def test_cfn_secretsmanager_gen_secret(
-    cfn_client, secretsmanager_client, is_stack_created, cleanup_stacks, deploy_cfn_template
-):
+def test_cfn_secretsmanager_gen_secret(cfn_client, secretsmanager_client, deploy_cfn_template):
     stack = deploy_cfn_template(template=TEMPLATE_GENERATE_SECRET)
 
     secret = secretsmanager_client.describe_secret(SecretId="/dev/db/pass")
