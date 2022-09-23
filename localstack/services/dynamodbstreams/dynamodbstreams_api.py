@@ -1,4 +1,4 @@
-import json
+import bson
 import logging
 import threading
 import time
@@ -73,7 +73,7 @@ def forward_events(records: Dict) -> None:
             stream_name = get_kinesis_stream_name(table_name)
             kinesis.put_record(
                 StreamName=stream_name,
-                Data=json.dumps(record, cls=BytesEncoder),
+                Data=bson.BSON.encode(record),
                 PartitionKey="TODO",
             )
 
