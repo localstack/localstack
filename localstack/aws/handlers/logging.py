@@ -1,6 +1,7 @@
 """Handlers for logging."""
 import logging
 from functools import cached_property
+from re import findall
 from typing import Type
 
 from localstack.aws.api import RequestContext, ServiceException
@@ -147,3 +148,45 @@ class ResponseLogger:
                     "response_headers": dict(response.headers),
                 },
             )
+
+
+class RequestLogger:
+    def __call__(self, _: HandlerChain, context: RequestContext, response: Response):
+        if context.request.path == "/health":
+            # special case so the health check doesn't spam the logs
+            return
+        self._log(context, response)
+
+    @cached_property
+    def aws_logger(self):
+        return self._prepare_logger(
+            logging.getLogger("localstack.request.aws"), formatter=AwsTraceLoggingFormatter
+        )
+
+    # make sure loggers are loaded after logging config is loaded
+    def _prepare_logger(self, logger: logging.Logger, formatter: Type):
+        if logger.isEnabledFor(logging.DEBUG):
+            logger.propagate = False
+            handler = create_default_handler(logger.level)
+            handler.setFormatter(formatter())
+            logger.addHandler(handler)
+        return logger
+
+    def _log(self, context: RequestContext, response: Response):
+        aws_logger = self.aws_logger
+        probable_cli_operation_name_words = findall(
+            r"[A-Z](?:[a-z]+|[A-Z]*(?=[A-Z]|$))", context.operation.name
+        )
+        probable_cli_operation_name = "-".join(
+            [word.lower() for word in probable_cli_operation_name_words]
+        )
+        aws_logger.info(
+            "AWS request to %s.%s. Can reproduce in CLI with: awslocal %s %s --region %s --cli-input-json "
+            "'%s'",
+            context.service.service_name,
+            context.operation.name,
+            context.service.service_name,
+            probable_cli_operation_name,
+            context.region,
+            restore_payload(context.request).decode(),
+        )
