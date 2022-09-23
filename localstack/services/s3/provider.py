@@ -6,15 +6,20 @@ from urllib.parse import SplitResult, quote, urlsplit, urlunsplit
 import moto.s3.models as moto_s3_models
 import moto.s3.responses as moto_s3_responses
 from moto.s3 import s3_backends as moto_s3_backends
+from moto.s3.exceptions import MissingBucket
 
 from localstack.aws.accounts import get_aws_account_id
-from localstack.aws.api import RequestContext, handler
+from localstack.aws.api import CommonServiceException, RequestContext, handler
 from localstack.aws.api.s3 import (
     AccountId,
     BucketName,
     CreateBucketOutput,
     CreateBucketRequest,
+    GetBucketLifecycleConfigurationOutput,
+    GetBucketLifecycleOutput,
     GetBucketLocationOutput,
+    GetBucketRequestPaymentOutput,
+    GetBucketRequestPaymentRequest,
     GetObjectOutput,
     GetObjectRequest,
     HeadObjectOutput,
@@ -24,6 +29,13 @@ from localstack.aws.api.s3 import (
     ListObjectsRequest,
     ListObjectsV2Output,
     ListObjectsV2Request,
+    NoSuchBucket,
+    NoSuchKey,
+    NoSuchLifecycleConfiguration,
+    ObjectKey,
+    PutBucketLifecycleConfigurationRequest,
+    PutBucketLifecycleRequest,
+    PutBucketRequestPaymentRequest,
     PutObjectOutput,
     PutObjectRequest,
     S3Api,
@@ -36,7 +48,7 @@ from localstack.services.edge import ROUTER
 from localstack.services.moto import call_moto
 from localstack.services.plugins import ServiceLifecycleHook
 from localstack.services.s3.models import S3Store, s3_stores
-from localstack.services.s3.utils import verify_checksum
+from localstack.services.s3.utils import is_bucket_name_valid, is_key_expired, verify_checksum
 from localstack.utils.aws import aws_stack
 from localstack.utils.aws.request_context import AWS_REGION_REGEX
 from localstack.utils.objects import singleton_factory
@@ -47,6 +59,11 @@ LOG = logging.getLogger(__name__)
 os.environ[
     "MOTO_S3_CUSTOM_ENDPOINTS"
 ] = "s3.localhost.localstack.cloud:4566,s3.localhost.localstack.cloud"
+
+
+class MalformedXML(CommonServiceException):
+    def __init__(self, message=None):
+        super().__init__("MalformedXML", status_code=400, message=message)
 
 
 def get_moto_s3_backend(context: RequestContext) -> moto_s3_models.S3Backend:
@@ -72,7 +89,7 @@ class S3Provider(S3Api, ServiceLifecycleHook):
         context: RequestContext,
         request: CreateBucketRequest,
     ) -> CreateBucketOutput:
-        bucket_name = request.get("Bucket", "")
+        bucket_name = request["Bucket"]
         validate_bucket_name(bucket=bucket_name)
         response: CreateBucketOutput = call_moto(context)
         # Location is always contained in response -> full url for LocationConstraint outside us-east-1
@@ -83,6 +100,14 @@ class S3Provider(S3Api, ServiceLifecycleHook):
         if "Location" not in response:
             response["Location"] = f"/{bucket_name}"
         return response
+
+    def delete_bucket(
+        self, context: RequestContext, bucket: BucketName, expected_bucket_owner: AccountId = None
+    ) -> None:
+        call_moto(context)
+        store = self.get_store()
+        # TODO: create a helper method for cleaning up the store, already done in next PR
+        store.bucket_lifecycle_configuration.pop(bucket, None)
 
     def get_bucket_location(
         self, context: RequestContext, bucket: BucketName, expected_bucket_owner: AccountId = None
@@ -113,7 +138,7 @@ class S3Provider(S3Api, ServiceLifecycleHook):
 
         if "BucketRegion" not in response:
             moto_backend = get_moto_s3_backend(context)
-            bucket = get_bucket_from_moto(moto_backend, bucket=request.get("Bucket", ""))
+            bucket = get_bucket_from_moto(moto_backend, bucket=request["Bucket"])
             response["BucketRegion"] = bucket.region_name
 
         return ListObjectsOutput(**response)
@@ -138,7 +163,7 @@ class S3Provider(S3Api, ServiceLifecycleHook):
 
         if "BucketRegion" not in response:
             moto_backend = get_moto_s3_backend(context)
-            bucket = get_bucket_from_moto(moto_backend, bucket=request.get("Bucket", ""))
+            bucket = get_bucket_from_moto(moto_backend, bucket=request["Bucket"])
             response["BucketRegion"] = bucket.region_name
 
         return response
@@ -155,6 +180,14 @@ class S3Provider(S3Api, ServiceLifecycleHook):
 
     @handler("GetObject", expand=False)
     def get_object(self, context: RequestContext, request: GetObjectRequest) -> GetObjectOutput:
+        key = request["Key"]
+        if is_object_expired(context, bucket=request["Bucket"], key=key):
+            # TODO: old behaviour was deleting key instantly if expired. AWS cleans up only once a day generally
+            # see if we need to implement a feature flag
+            # but you can still HeadObject on it and you get the expiry time
+            ex = NoSuchKey("The specified key does not exist.")
+            ex.Key = key
+            raise ex
         response: GetObjectOutput = call_moto(context)
         response["AcceptRanges"] = "bytes"
         return response
@@ -169,7 +202,104 @@ class S3Provider(S3Api, ServiceLifecycleHook):
             verify_checksum(checksum_algorithm, context.request.data, request)
 
         response: PutObjectOutput = call_moto(context)
+
+        if expires := request.get("Expires"):
+            moto_backend = get_moto_s3_backend(context)
+            bucket = get_bucket_from_moto(moto_backend, bucket=request["Bucket"])
+            key_object = get_key_from_moto_bucket(bucket, key=request["Key"])
+            key_object.set_expiry(expires)
+
         return response
+
+    @handler("PutBucketRequestPayment", expand=False)
+    def put_bucket_request_payment(
+        self,
+        context: RequestContext,
+        request: PutBucketRequestPaymentRequest,
+    ) -> None:
+        bucket_name = request["Bucket"]
+        payer = request.get("RequestPaymentConfiguration", {}).get("Payer")
+        if payer not in ["Requester", "BucketOwner"]:
+            raise MalformedXML(
+                message="The XML you provided was not well-formed or did not validate against our published schema"
+            )
+
+        moto_backend = get_moto_s3_backend(context)
+        bucket = get_bucket_from_moto(moto_backend, bucket=bucket_name)
+        bucket.payer = payer
+
+    @handler("GetBucketRequestPayment", expand=False)
+    def get_bucket_request_payment(
+        self,
+        context: RequestContext,
+        request: GetBucketRequestPaymentRequest,
+    ) -> GetBucketRequestPaymentOutput:
+        bucket_name = request["Bucket"]
+        moto_backend = get_moto_s3_backend(context)
+        bucket = get_bucket_from_moto(moto_backend, bucket=bucket_name)
+        return GetBucketRequestPaymentOutput(Payer=bucket.payer)
+
+    def get_bucket_lifecycle(
+        self, context: RequestContext, bucket: BucketName, expected_bucket_owner: AccountId = None
+    ) -> GetBucketLifecycleOutput:
+        # deprecated for older rules created. Not sure what to do with this?
+        response = self.get_bucket_lifecycle_configuration(context, bucket, expected_bucket_owner)
+        return GetBucketLifecycleOutput(**response)
+
+    def get_bucket_lifecycle_configuration(
+        self, context: RequestContext, bucket: BucketName, expected_bucket_owner: AccountId = None
+    ) -> GetBucketLifecycleConfigurationOutput:
+        # test if bucket exists in moto
+        moto_backend = get_moto_s3_backend(context)
+        get_bucket_from_moto(moto_backend, bucket=bucket)
+
+        store = self.get_store()
+        bucket_lifecycle = store.bucket_lifecycle_configuration.get(bucket)
+        if not bucket_lifecycle:
+            ex = NoSuchLifecycleConfiguration("The lifecycle configuration does not exist")
+            ex.BucketName = bucket
+            raise ex
+
+        return GetBucketLifecycleConfigurationOutput(Rules=bucket_lifecycle["Rules"])
+
+    @handler("PutBucketLifecycle", expand=False)
+    def put_bucket_lifecycle(
+        self,
+        context: RequestContext,
+        request: PutBucketLifecycleRequest,
+    ) -> None:
+        # deprecated for older rules created. Not sure what to do with this?
+        # same URI as PutBucketLifecycleConfiguration
+        self.put_bucket_lifecycle_configuration(context, request)
+
+    @handler("PutBucketLifecycleConfiguration", expand=False)
+    def put_bucket_lifecycle_configuration(
+        self,
+        context: RequestContext,
+        request: PutBucketLifecycleConfigurationRequest,
+    ) -> None:
+        """This is technically supported in moto, however moto does not support multiple transitions action
+        It will raise an TypeError trying to get dict attributes on a list. It would need a bigger rework on moto's side
+        Moto has quite a good validation for the other Lifecycle fields, so it would be nice to be able to use it
+        somehow. For now the behaviour is the same as before, aka no validation
+        """
+        # test if bucket exists in moto
+        bucket = request["Bucket"]
+        moto_backend = get_moto_s3_backend(context)
+        get_bucket_from_moto(moto_backend, bucket=bucket)
+        store = self.get_store()
+        # TODO: add validation on the BucketLifecycleConfiguration
+        store.bucket_lifecycle_configuration[bucket] = request.get("LifecycleConfiguration")
+
+    def delete_bucket_lifecycle(
+        self, context: RequestContext, bucket: BucketName, expected_bucket_owner: AccountId = None
+    ) -> None:
+        # test if bucket exists in moto
+        moto_backend = get_moto_s3_backend(context)
+        get_bucket_from_moto(moto_backend, bucket=bucket)
+
+        store = self.get_store()
+        store.bucket_lifecycle_configuration.pop(bucket, None)
 
     def add_custom_routes(self):
         # virtual-host style: https://bucket-name.s3.region-code.amazonaws.com/key-name
@@ -248,8 +378,11 @@ class S3Provider(S3Api, ServiceLifecycleHook):
 
 
 def validate_bucket_name(bucket: BucketName):
-    # TODO: add rules to validate bucket name
-    if not bucket.islower():
+    """
+    Validate s3 bucket name based on the documentation
+    ref. https://docs.aws.amazon.com/AmazonS3/latest/userguide/bucketnamingrules.html
+    """
+    if not is_bucket_name_valid(bucket_name=bucket):
         ex = InvalidBucketName("The specified bucket is not valid.")
         ex.BucketName = bucket
         raise ex
@@ -258,16 +391,50 @@ def validate_bucket_name(bucket: BucketName):
 def get_bucket_from_moto(
     moto_backend: moto_s3_models.S3Backend, bucket: BucketName
 ) -> moto_s3_models.FakeBucket:
-    return moto_backend.get_bucket(bucket_name=bucket)
+    # TODO: check authorization for buckets as well?
+    try:
+        return moto_backend.get_bucket(bucket_name=bucket)
+    except MissingBucket:
+        ex = NoSuchBucket("The specified bucket does not exist")
+        ex.BucketName = bucket
+        raise ex
+
+
+def get_key_from_moto_bucket(
+    moto_bucket: moto_s3_models.FakeBucket, key: ObjectKey
+) -> moto_s3_models.FakeKey:
+    fake_key = moto_bucket.keys.get(key)
+    if not fake_key:
+        ex = NoSuchKey("The specified key does not exist.")
+        ex.Key = key
+        raise ex
+
+    return fake_key
+
+
+def is_object_expired(context: RequestContext, bucket: BucketName, key: ObjectKey) -> bool:
+    moto_backend = get_moto_s3_backend(context)
+    moto_bucket = get_bucket_from_moto(moto_backend, bucket)
+    key_object = get_key_from_moto_bucket(moto_bucket, key)
+    return is_key_expired(key_object=key_object)
 
 
 @singleton_factory
 def apply_moto_patches():
+    # importing here in case we need InvalidObjectState from `localstack.aws.api.s3`
+    from moto.s3.exceptions import InvalidObjectState
+
     @patch(moto_s3_responses.S3Response.key_response)
     def _fix_key_response(fn, self, *args, **kwargs):
         """Change casing of Last-Modified headers to be picked by the parser"""
         status_code, resp_headers, key_value = fn(self, *args, **kwargs)
-        for low_case_header in ["last-modified", "content-type", "content-length"]:
+        for low_case_header in [
+            "last-modified",
+            "content-type",
+            "content-length",
+            "content-range",
+            "content-encoding",
+        ]:
             if header_value := resp_headers.pop(low_case_header, None):
                 header_name = _capitalize_header_name_from_snake_case(low_case_header)
                 resp_headers[header_name] = header_value
@@ -275,11 +442,21 @@ def apply_moto_patches():
         return status_code, resp_headers, key_value
 
     @patch(moto_s3_responses.S3Response._bucket_response_head)
-    def _bucket_response_head(fn, self, bucket_name, *args, **kwargs):
+    def _fix_bucket_response_head(fn, self, bucket_name, *args, **kwargs):
         code, headers, body = fn(self, bucket_name, *args, **kwargs)
         bucket = self.backend.get_bucket(bucket_name)
         headers["x-amz-bucket-region"] = bucket.region_name
         headers["content-type"] = "application/xml"
+        return code, headers, body
+
+    @patch(moto_s3_responses.S3Response._key_response_get)
+    def _fix_key_response_get(fn, *args, **kwargs):
+        code, headers, body = fn(*args, **kwargs)
+        storage_class = headers.get("x-amz-storage-class")
+
+        if storage_class == "DEEP_ARCHIVE" and not headers.get("x-amz-restore"):
+            raise InvalidObjectState(storage_class=storage_class)
+
         return code, headers, body
 
 

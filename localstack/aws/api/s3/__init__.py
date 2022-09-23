@@ -164,6 +164,8 @@ WebsiteRedirectLocation = str
 Years = int
 BucketRegion = str
 BucketContentType = str
+IfCondition = str
+RestoreObjectOutputStatusCode = int
 
 
 class AnalyticsS3ExportFileFormat(str):
@@ -558,6 +560,7 @@ class BucketAlreadyOwnedByYou(ServiceException):
     code: str = "BucketAlreadyOwnedByYou"
     sender_fault: bool = False
     status_code: int = 400
+    BucketName: Optional[BucketName]
 
 
 class InvalidObjectState(ServiceException):
@@ -578,7 +581,8 @@ class NoSuchBucket(ServiceException):
 class NoSuchKey(ServiceException):
     code: str = "NoSuchKey"
     sender_fault: bool = False
-    status_code: int = 400
+    status_code: int = 404
+    Key: Optional[ObjectKey]
 
 
 class NoSuchUpload(ServiceException):
@@ -611,6 +615,24 @@ class InvalidBucketName(ServiceException):
     sender_fault: bool = False
     status_code: int = 400
     BucketName: Optional[BucketName]
+
+
+class PreconditionFailed(ServiceException):
+    code: str = "PreconditionFailed"
+    sender_fault: bool = False
+    status_code: int = 412
+    Condition: Optional[IfCondition]
+
+
+ObjectSize = int
+
+
+class InvalidRange(ServiceException):
+    code: str = "InvalidRange"
+    sender_fault: bool = False
+    status_code: int = 416
+    ActualObjectSize: Optional[ObjectSize]
+    RangeRequested: Optional[ContentRange]
 
 
 AbortDate = datetime
@@ -1223,32 +1245,6 @@ class DeleteObjectTaggingRequest(ServiceRequest):
     ExpectedBucketOwner: Optional[AccountId]
 
 
-class Error(TypedDict, total=False):
-    Key: Optional[ObjectKey]
-    VersionId: Optional[ObjectVersionId]
-    Code: Optional[Code]
-    Message: Optional[Message]
-
-
-Errors = List[Error]
-
-
-class DeletedObject(TypedDict, total=False):
-    Key: Optional[ObjectKey]
-    VersionId: Optional[ObjectVersionId]
-    DeleteMarker: Optional[DeleteMarker]
-    DeleteMarkerVersionId: Optional[DeleteMarkerVersionId]
-
-
-DeletedObjects = List[DeletedObject]
-
-
-class DeleteObjectsOutput(TypedDict, total=False):
-    Deleted: Optional[DeletedObjects]
-    RequestCharged: Optional[RequestCharged]
-    Errors: Optional[Errors]
-
-
 class DeleteObjectsRequest(ServiceRequest):
     Bucket: BucketName
     Delete: Delete
@@ -1262,6 +1258,16 @@ class DeleteObjectsRequest(ServiceRequest):
 class DeletePublicAccessBlockRequest(ServiceRequest):
     Bucket: BucketName
     ExpectedBucketOwner: Optional[AccountId]
+
+
+class DeletedObject(TypedDict, total=False):
+    Key: Optional[ObjectKey]
+    VersionId: Optional[ObjectVersionId]
+    DeleteMarker: Optional[DeleteMarker]
+    DeleteMarkerVersionId: Optional[DeleteMarkerVersionId]
+
+
+DeletedObjects = List[DeletedObject]
 
 
 class ReplicationTimeValue(TypedDict, total=False):
@@ -1305,8 +1311,18 @@ class EndEvent(TypedDict, total=False):
     pass
 
 
+class Error(TypedDict, total=False):
+    Key: Optional[ObjectKey]
+    VersionId: Optional[ObjectVersionId]
+    Code: Optional[Code]
+    Message: Optional[Message]
+
+
 class ErrorDocument(TypedDict, total=False):
     Key: ObjectKey
+
+
+Errors = List[Error]
 
 
 class EventBridgeConfiguration(TypedDict, total=False):
@@ -1737,9 +1753,6 @@ class GetObjectAclRequest(ServiceRequest):
     ExpectedBucketOwner: Optional[AccountId]
 
 
-ObjectSize = int
-
-
 class ObjectPart(TypedDict, total=False):
     PartNumber: Optional[PartNumber]
     Size: Optional[Size]
@@ -1861,6 +1874,7 @@ class GetObjectOutput(TypedDict, total=False):
     ObjectLockMode: Optional[ObjectLockMode]
     ObjectLockRetainUntilDate: Optional[ObjectLockRetainUntilDate]
     ObjectLockLegalHoldStatus: Optional[ObjectLockLegalHoldStatus]
+    StatusCode: Optional[GetObjectResponseStatusCode]
 
 
 ResponseExpires = datetime
@@ -2741,6 +2755,7 @@ class RequestProgress(TypedDict, total=False):
 class RestoreObjectOutput(TypedDict, total=False):
     RequestCharged: Optional[RequestCharged]
     RestoreOutputPath: Optional[RestoreOutputPath]
+    StatusCode: Optional[RestoreObjectOutputStatusCode]
 
 
 class SelectParameters(TypedDict, total=False):
@@ -2928,6 +2943,12 @@ class WriteGetObjectResponseRequest(ServiceRequest):
 class HeadBucketOutput(TypedDict, total=False):
     BucketRegion: Optional[BucketRegion]
     BucketContentType: Optional[BucketContentType]
+
+
+class DeleteResult(TypedDict, total=False):
+    Deleted: Optional[DeletedObjects]
+    RequestCharged: Optional[RequestCharged]
+    Errors: Optional[Errors]
 
 
 class S3Api:
@@ -3195,7 +3216,7 @@ class S3Api:
         bypass_governance_retention: BypassGovernanceRetention = None,
         expected_bucket_owner: AccountId = None,
         checksum_algorithm: ChecksumAlgorithm = None,
-    ) -> DeleteObjectsOutput:
+    ) -> DeleteResult:
         raise NotImplementedError
 
     @handler("DeletePublicAccessBlock")
