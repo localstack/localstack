@@ -1544,6 +1544,7 @@ class TestDynamoDB:
         table = client.describe_table(TableName=table_name)
         assert table.get("Table")
 
+    @pytest.mark.skip_snapshot_verify(paths=["$..eventID", "$..SequenceNumber"])
     def test_data_encoding_consistency(self, dynamodbstreams_client, dynamodb_create_table_with_parameters, wait_for_stream_ready, dynamodb_client, snapshot):
         table_name = f"table-{short_uid()}"
         table = dynamodb_create_table_with_parameters(
