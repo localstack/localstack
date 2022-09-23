@@ -105,6 +105,7 @@ class LambdaService:
     def invoke(
         self,
         function_arn_qualified: str,
+        invoked_arn: str,
         invocation_type: InvocationType,
         client_context: Optional[str],
         payload: bytes,
@@ -113,15 +114,20 @@ class LambdaService:
         Invokes a specific version of a lambda
 
         :param function_arn_qualified: Qualified function arn
+        :param invoked_arn: Function arn, qualified if qualifier is specified, unqualified if not
         :param invocation_type: Invocation Type
         :param client_context: Client Context, if applicable
         :param payload: Invocation payload
         :return: A future for the invocation result
         """
+        # TODO alias routing
         version_manager = self.get_lambda_version_manager(function_arn_qualified)
         return version_manager.invoke(
             invocation=Invocation(
-                payload=payload, client_context=client_context, invocation_type=invocation_type
+                payload=payload,
+                invoked_arn=invoked_arn,
+                client_context=client_context,
+                invocation_type=invocation_type,
             )
         )
 

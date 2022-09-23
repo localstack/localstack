@@ -33,7 +33,7 @@ def function_name_from_arn(arn: str):
     return FUNCTION_NAME_REGEX.match(arn).group("name")
 
 
-def lambda_arn_without_qualifier(function_name: str, account: str, region: str):
+def unqualified_lambda_arn(function_name: str, account: str, region: str):
     partition = aws_stack.get_partition(region)
     return f"arn:{partition}:lambda:{region}:{account}:function:{function_name}"
 
@@ -42,7 +42,25 @@ def qualified_lambda_arn(
     function_name: str, qualifier: Optional[str], account: str, region: str
 ) -> str:
     qualifier = qualifier or "$LATEST"
-    return f"{lambda_arn_without_qualifier(function_name=function_name, account=account, region=region)}:{qualifier}"
+    return f"{unqualified_lambda_arn(function_name=function_name, account=account, region=region)}:{qualifier}"
+
+
+def lambda_arn(function_name: str, qualifier: Optional[str], account: str, region: str) -> str:
+    """
+    Return the lambda arn for the given parameters, with a qualifier if supplied, without otherwise
+
+    :param function_name: Function name
+    :param qualifier: Qualifier. May be left out, then the returning arn does not have one either
+    :param account: Account ID
+    :param region: Region of the Lambda
+    :return: Lambda Arn with or without qualifier
+    """
+    if qualifier:
+        return qualified_lambda_arn(
+            function_name=function_name, qualifier=qualifier, account=account, region=region
+        )
+    else:
+        return unqualified_lambda_arn(function_name=function_name, account=account, region=region)
 
 
 LAMBDA_DATE_FORMAT = "%Y-%m-%dT%H:%M:%S.%f+0000"

@@ -183,6 +183,7 @@ class RuntimeEnvironment:
             self.status = RuntimeStatus.RUNNING
         invoke_payload = {
             "invoke-id": invocation_event.invocation_id,
+            "invoked-function-arn": invocation_event.invocation.invoked_arn,
             "payload": to_str(invocation_event.invocation.payload),
         }
         self.runtime_executor.invoke(payload=invoke_payload)

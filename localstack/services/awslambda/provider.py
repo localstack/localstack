@@ -104,8 +104,9 @@ from localstack.services.awslambda.invocation.lambda_service import (
 from localstack.services.awslambda.invocation.lambda_util import (
     format_lambda_date,
     generate_lambda_date,
-    lambda_arn_without_qualifier,
+    lambda_arn,
     qualified_lambda_arn,
+    unqualified_lambda_arn,
 )
 from localstack.services.plugins import ServiceLifecycleHook
 from localstack.utils.collections import PaginatedList
@@ -139,17 +140,12 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
         function = state.functions.get(function_name)
         version = function and function.versions.get(qualifier_or_latest)
         if not function or not version:
-            if qualifier:
-                arn = qualified_lambda_arn(
-                    function_name=function_name,
-                    qualifier=qualifier,
-                    account=account_id,
-                    region=region,
-                )
-            else:
-                arn = lambda_arn_without_qualifier(
-                    function_name=function_name, region=region, account=account_id
-                )
+            arn = lambda_arn(
+                function_name=function_name,
+                qualifier=qualifier,
+                account=account_id,
+                region=region,
+            )
             raise ResourceNotFoundException(
                 f"Function not found: {arn}",
                 Type="User",
@@ -334,7 +330,7 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
 
         if function_name not in state.functions:
             raise ResourceNotFoundException(
-                f"Function not found: {lambda_arn_without_qualifier(function_name=function_name, region=context.region, account=context.account_id)}",
+                f"Function not found: {unqualified_lambda_arn(function_name=function_name, region=context.region, account=context.account_id)}",
                 Type="User",
             )
         function = state.functions[function_name]
@@ -401,7 +397,7 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
         state = lambda_stores[context.account_id][context.region]
         if function_name not in state.functions:
             raise ResourceNotFoundException(
-                f"Function not found: {lambda_arn_without_qualifier(function_name=function_name, region=context.region, account=context.account_id)}",
+                f"Function not found: {unqualified_lambda_arn(function_name=function_name, region=context.region, account=context.account_id)}",
                 Type="User",
             )
         function = state.functions[function_name]
@@ -466,7 +462,7 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
 
         if function_name not in state.functions:
             e = ResourceNotFoundException(
-                f"Function not found: {lambda_arn_without_qualifier(function_name=function_name, region=context.region, account=context.account_id)}",
+                f"Function not found: {unqualified_lambda_arn(function_name=function_name, region=context.region, account=context.account_id)}",
                 Type="User",
             )
             raise e
@@ -558,7 +554,15 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
             account_id=context.account_id,
             region=context.region,
         )
+        # Invoked arn (for lambda context) does not have qualifier if not supplied
+        invoked_arn = lambda_arn(
+            function_name=function_name,
+            qualifier=qualifier,
+            account=context.account_id,
+            region=context.region,
+        )
         qualifier = qualifier or "$LATEST"
+        # Need the qualified arn to exactly get the target lambda
         qualified_arn = qualified_lambda_arn(
             function_name, qualifier, context.account_id, context.region
         )
@@ -568,6 +572,7 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
             invocation_type=invocation_type,
             client_context=client_context,
             payload=payload.read() if payload else None,
+            invoked_arn=invoked_arn,
         )
         try:
             invocation_result = result.result()
@@ -578,17 +583,16 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
 
         LOG.debug("Type of result: %s", type(invocation_result))
 
-        function_error = None
-        if isinstance(invocation_result, InvocationError):
-            function_error = "Unhandled"
-
         response = InvocationResponse(
             StatusCode=200,
             Payload=invocation_result.payload,
             ExecutedVersion=qualifier,
-            FunctionError=function_error,
             # TODO: should be conditional. Might have to get this from the invoke result as well
         )
+
+        if isinstance(invocation_result, InvocationError):
+            response["FunctionError"] = "Unhandled"
+
         LOG.debug("Lambda invocation duration: %0.2fms", (time.perf_counter() - time_before) * 1000)
 
         if log_type == LogType.Tail:
@@ -740,7 +744,7 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
         function_arn = (
             qualified_lambda_arn(resolved_fn_name, qualifier, context.account_id, context.region)
             if qualifier
-            else lambda_arn_without_qualifier(resolved_fn_name, context.account_id, context.region)
+            else unqualified_lambda_arn(resolved_fn_name, context.account_id, context.region)
         )
 
         fn.function_url_configs[normalized_qualifier] = FunctionUrlConfig(
@@ -897,9 +901,7 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
 
         resolved_qualifier = request.get("Qualifier", "$LATEST")
 
-        resource = lambda_arn_without_qualifier(
-            resolved_fn_name, context.account_id, context.region
-        )
+        resource = unqualified_lambda_arn(resolved_fn_name, context.account_id, context.region)
         if api_utils.qualifier_is_alias(resolved_qualifier):
             if resolved_qualifier not in resolved_fn.aliases:
                 raise ResourceNotFoundException("Where Alias???")  # TODO: test
@@ -1047,7 +1049,7 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
             )
 
         fn = state.functions.get(function_name)
-        fn_arn = lambda_arn_without_qualifier(function_name, context.account_id, context.region)
+        fn_arn = unqualified_lambda_arn(function_name, context.account_id, context.region)
         if not fn:
             raise ResourceNotFoundException(f"Function not found: {fn_arn}", Type="User")
 
@@ -1099,7 +1101,7 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
         state = lambda_stores[context.account_id][context.region]
         function_name = api_utils.get_function_name(function_name)
         fn = state.functions.get(function_name)
-        fn_arn = lambda_arn_without_qualifier(function_name, context.account_id, context.region)
+        fn_arn = unqualified_lambda_arn(function_name, context.account_id, context.region)
         if not fn:
             raise ResourceNotFoundException(f"Function not found: {fn_arn}", Type="User")
 
@@ -1116,7 +1118,7 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
         state = lambda_stores[context.account_id][context.region]
         function_name = api_utils.get_function_name(function_name)
         fn = state.functions.get(function_name)
-        fn_arn = lambda_arn_without_qualifier(function_name, context.account_id, context.region)
+        fn_arn = unqualified_lambda_arn(function_name, context.account_id, context.region)
         if not fn:
             raise ResourceNotFoundException(f"Function not found: {fn_arn}", Type="User")
 
@@ -1166,7 +1168,7 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
             )
 
         fn_arns = [
-            lambda_arn_without_qualifier(fn.function_name, context.account_id, context.region)
+            unqualified_lambda_arn(fn.function_name, context.account_id, context.region)
             for fn in state.functions.values()
             if fn.code_signing_config_arn == code_signing_config_arn
         ]

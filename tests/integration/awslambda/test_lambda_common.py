@@ -106,6 +106,17 @@ class TestLambdaRuntimesCommon:
         assert "packages" in invocation_result_payload
         snapshot.match("invocation_result_payload", invocation_result_payload)
 
+        # Check again with a qualified arn as function name
+        invoke_result_qualified = lambda_client.invoke(
+            FunctionName=f"{create_function_result['FunctionArn']}:$LATEST",
+            Payload=b'{"simple": "payload"}',
+        )
+
+        assert invoke_result["StatusCode"] == 200
+        invocation_result_payload_qualified = to_str(invoke_result_qualified["Payload"].read())
+        invocation_result_payload_qualified = json.loads(invocation_result_payload_qualified)
+        snapshot.match("invocation_result_payload_qualified", invocation_result_payload_qualified)
+
     @pytest.mark.multiruntime(scenario="uncaughtexception")
     def test_uncaught_exception_invoke(self, lambda_client, multiruntime_lambda, snapshot):
         create_function_result = multiruntime_lambda.create_function(MemorySize=1024)

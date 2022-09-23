@@ -21,8 +21,8 @@ from localstack.aws.api.lambda_ import (
     TracingMode,
 )
 from localstack.services.awslambda.invocation.lambda_util import (
-    lambda_arn_without_qualifier,
     qualified_lambda_arn,
+    unqualified_lambda_arn,
 )
 from localstack.utils.aws import aws_stack
 from localstack.utils.strings import long_uid
@@ -62,6 +62,7 @@ class VersionState:
 @dataclasses.dataclass
 class Invocation:
     payload: bytes
+    invoked_arn: str
     client_context: Optional[str]
     invocation_type: InvocationType
 
@@ -220,7 +221,7 @@ class VersionIdentifier:
         )
 
     def unqualified_arn(self):
-        return lambda_arn_without_qualifier(
+        return unqualified_lambda_arn(
             function_name=self.function_name,
             region=self.region,
             account=self.account,
