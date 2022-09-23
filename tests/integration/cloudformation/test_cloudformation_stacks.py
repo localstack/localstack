@@ -4,9 +4,9 @@ import os
 import pytest
 import yaml
 
+from localstack.testing.aws.cloudformation_utils import load_template_file, load_template_raw
 from localstack.utils.aws import aws_stack
 from localstack.utils.files import load_file
-from localstack.testing.aws.cloudformation_utils import load_template_file, load_template_raw
 from localstack.utils.generic.wait_utils import wait_until
 from localstack.utils.strings import short_uid
 from localstack.utils.sync import retry

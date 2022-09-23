@@ -136,6 +136,7 @@ def test_event_rule_creation_without_target(cfn_client, events_client, deploy_cf
     response = events_client.describe_rule(
         Name=event_rule_name,
     )
+    assert response
 
 
 def test_cfn_event_bus_resource(events_client, deploy_cfn_template):
