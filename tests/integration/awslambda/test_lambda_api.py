@@ -1450,9 +1450,9 @@ class TestLambdaSizeLimits:
         lambda_client.get_function(FunctionName=function_name)
 
 
+# TODO: test paging
+# TODO: test function name / ARN resolving
 class TestCodeSigningConfig:
-
-    # TODO: test paging
     @pytest.mark.aws_validated
     def test_function_code_signing_config(
         self, lambda_client, create_lambda_function, snapshot, account_id
@@ -1510,24 +1510,110 @@ class TestCodeSigningConfig:
         response = lambda_client.delete_code_signing_config(CodeSigningConfigArn=code_signing_arn)
         snapshot.match("delete_code_signing_config", response)
 
-    # def test_code_signing_not_found_excs(self, snapshot, lambda_client, account_id):
-    #     response = lambda_client.create_code_signing_config(
-    #         Description="Testing CodeSigning Config",
-    #         AllowedPublishers={
-    #             "SigningProfileVersionArns": [
-    #                 f"arn:aws:signer:{lambda_client.meta.region_name}:{account_id}:/signing-profiles/test",
-    #             ]
-    #         },
-    #         CodeSigningPolicies={"UntrustedArtifactOnDeployment": "Enforce"},
-    #     )
-    #     snapshot.match("create_code_signing_config", response)
-    #
-    #     csc_id = response['CodeSigningConfig']['CodeSigningConfigId']
-    #     csc_arn = response['CodeSigningConfig']['CodeSigningConfigArn']
-    #
-    #     with pytest.raises(lambda_client.exceptions.ResourceNotFoundException) as e:
-    #         lambda_client.delete_code_signing_config(CodeSigningConfigArn=f"{csc_arn[:-1]}x")
-    #     snapshot.match("delete_csc_notfound", e.value.response)
+    def test_code_signing_not_found_excs(
+        self, snapshot, lambda_client, create_lambda_function, account_id
+    ):
+        """tests for exceptions on missing resources and related corner cases"""
+
+        function_name = f"lambda_func-{short_uid()}"
+
+        create_lambda_function(
+            handler_file=TEST_LAMBDA_PYTHON_ECHO,
+            func_name=function_name,
+            runtime=Runtime.python3_9,
+        )
+
+        response = lambda_client.create_code_signing_config(
+            Description="Testing CodeSigning Config",
+            AllowedPublishers={
+                "SigningProfileVersionArns": [
+                    f"arn:aws:signer:{lambda_client.meta.region_name}:{account_id}:/signing-profiles/test",
+                ]
+            },
+            CodeSigningPolicies={"UntrustedArtifactOnDeployment": "Enforce"},
+        )
+        snapshot.match("create_code_signing_config", response)
+
+        csc_arn = response["CodeSigningConfig"]["CodeSigningConfigArn"]
+        csc_arn_invalid = f"{csc_arn[:-1]}x"
+        snapshot.add_transformer(snapshot.transform.regex(csc_arn_invalid, "<csc_arn_invalid>"))
+
+        nonexisting_fn_name = "csc-test-doesnotexist"
+
+        # deletes
+        with pytest.raises(lambda_client.exceptions.ResourceNotFoundException) as e:
+            lambda_client.delete_code_signing_config(CodeSigningConfigArn=csc_arn_invalid)
+        snapshot.match("delete_csc_notfound", e.value.response)
+
+        nothing_to_delete_response = lambda_client.delete_function_code_signing_config(
+            FunctionName=function_name
+        )
+        snapshot.match("nothing_to_delete_response", nothing_to_delete_response)
+
+        with pytest.raises(lambda_client.exceptions.ResourceNotFoundException) as e:
+            lambda_client.delete_function_code_signing_config(FunctionName="csc-test-doesnotexist")
+        snapshot.match("delete_function_csc_fnnotfound", e.value.response)
+
+        # put
+        with pytest.raises(lambda_client.exceptions.ResourceNotFoundException) as e:
+            lambda_client.put_function_code_signing_config(
+                FunctionName=nonexisting_fn_name, CodeSigningConfigArn=csc_arn
+            )
+        snapshot.match("put_function_csc_invalid_fnname", e.value.response)
+
+        with pytest.raises(lambda_client.exceptions.CodeSigningConfigNotFoundException) as e:
+            lambda_client.put_function_code_signing_config(
+                FunctionName=function_name, CodeSigningConfigArn=csc_arn_invalid
+            )
+        snapshot.match("put_function_csc_invalid_csc_arn", e.value.response)
+
+        with pytest.raises(lambda_client.exceptions.CodeSigningConfigNotFoundException) as e:
+            lambda_client.put_function_code_signing_config(
+                FunctionName=nonexisting_fn_name, CodeSigningConfigArn=csc_arn_invalid
+            )
+        snapshot.match("put_function_csc_invalid_both", e.value.response)
+
+        # update csc
+        with pytest.raises(lambda_client.exceptions.ResourceNotFoundException) as e:
+            lambda_client.update_code_signing_config(
+                CodeSigningConfigArn=csc_arn_invalid, Description="new-description"
+            )
+        snapshot.match("update_csc_invalid_csc_arn", e.value.response)
+
+        with pytest.raises(lambda_client.exceptions.ResourceNotFoundException) as e:
+            lambda_client.update_code_signing_config(CodeSigningConfigArn=csc_arn_invalid)
+        snapshot.match("update_csc_noupdates", e.value.response)
+
+        update_csc_noupdate_response = lambda_client.update_code_signing_config(
+            CodeSigningConfigArn=csc_arn
+        )
+        snapshot.match("update_csc_noupdate_response", update_csc_noupdate_response)
+
+        # get
+        with pytest.raises(lambda_client.exceptions.ResourceNotFoundException) as e:
+            lambda_client.get_code_signing_config(CodeSigningConfigArn=csc_arn_invalid)
+        snapshot.match("get_csc_invalid", e.value.response)
+
+        get_function_csc_fnwithoutcsc = lambda_client.get_function_code_signing_config(
+            FunctionName=function_name
+        )
+        snapshot.match("get_function_csc_fnwithoutcsc", get_function_csc_fnwithoutcsc)
+
+        with pytest.raises(lambda_client.exceptions.ResourceNotFoundException) as e:
+            lambda_client.get_function_code_signing_config(FunctionName=nonexisting_fn_name)
+        snapshot.match("get_function_csc_nonexistingfn", e.value.response)
+
+        # list
+        list_functions_by_csc_fnwithoutcsc = lambda_client.list_functions_by_code_signing_config(
+            CodeSigningConfigArn=csc_arn
+        )
+        snapshot.match("list_functions_by_csc_fnwithoutcsc", list_functions_by_csc_fnwithoutcsc)
+
+        with pytest.raises(lambda_client.exceptions.ResourceNotFoundException) as e:
+            lambda_client.list_functions_by_code_signing_config(
+                CodeSigningConfigArn=csc_arn_invalid
+            )
+        snapshot.match("list_functions_by_csc_invalid_cscarn", e.value.response)
 
 
 class TestLambdaAccountSettings:

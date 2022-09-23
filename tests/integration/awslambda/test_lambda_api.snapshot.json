@@ -3418,5 +3418,184 @@
         }
       }
     }
+  },
+  "tests/integration/awslambda/test_lambda_api.py::TestCodeSigningConfig::test_code_signing_not_found_excs": {
+    "recorded-date": "23-09-2022, 09:13:35",
+    "recorded-content": {
+      "create_code_signing_config": {
+        "CodeSigningConfig": {
+          "AllowedPublishers": {
+            "SigningProfileVersionArns": [
+              "arn:aws:signer:<region>:111111111111:/signing-profiles/test"
+            ]
+          },
+          "CodeSigningConfigArn": "arn:aws:lambda:<region>:111111111111:code-signing-config:<resource:1>",
+          "CodeSigningConfigId": "<resource:1>",
+          "CodeSigningPolicies": {
+            "UntrustedArtifactOnDeployment": "Enforce"
+          },
+          "Description": "Testing CodeSigning Config",
+          "LastModified": "date"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 201
+        }
+      },
+      "delete_csc_notfound": {
+        "Error": {
+          "Code": "ResourceNotFoundException",
+          "Message": "The Lambda code signing configuration <csc_arn_invalid> can not be found."
+        },
+        "Message": "The Lambda code signing configuration <csc_arn_invalid> can not be found.",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 404
+        }
+      },
+      "nothing_to_delete_response": {
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 204
+        }
+      },
+      "delete_function_csc_fnnotfound": {
+        "Error": {
+          "Code": "ResourceNotFoundException",
+          "Message": "Function not found: arn:aws:lambda:<region>:111111111111:function:csc-test-doesnotexist"
+        },
+        "Message": "Function not found: arn:aws:lambda:<region>:111111111111:function:csc-test-doesnotexist",
+        "Type": "User",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 404
+        }
+      },
+      "put_function_csc_invalid_fnname": {
+        "Error": {
+          "Code": "ResourceNotFoundException",
+          "Message": "Function not found: arn:aws:lambda:<region>:111111111111:function:csc-test-doesnotexist"
+        },
+        "Message": "Function not found: arn:aws:lambda:<region>:111111111111:function:csc-test-doesnotexist",
+        "Type": "User",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 404
+        }
+      },
+      "put_function_csc_invalid_csc_arn": {
+        "Error": {
+          "Code": "CodeSigningConfigNotFoundException",
+          "Message": "The code signing configuration cannot be found. Check that the provided configuration is not deleted: <csc_arn_invalid>."
+        },
+        "Message": "The code signing configuration cannot be found. Check that the provided configuration is not deleted: <csc_arn_invalid>.",
+        "Type": "User",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 404
+        }
+      },
+      "put_function_csc_invalid_both": {
+        "Error": {
+          "Code": "CodeSigningConfigNotFoundException",
+          "Message": "The code signing configuration cannot be found. Check that the provided configuration is not deleted: <csc_arn_invalid>."
+        },
+        "Message": "The code signing configuration cannot be found. Check that the provided configuration is not deleted: <csc_arn_invalid>.",
+        "Type": "User",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 404
+        }
+      },
+      "update_csc_invalid_csc_arn": {
+        "Error": {
+          "Code": "ResourceNotFoundException",
+          "Message": "The Lambda code signing configuration <csc_arn_invalid> can not be found."
+        },
+        "Message": "The Lambda code signing configuration <csc_arn_invalid> can not be found.",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 404
+        }
+      },
+      "update_csc_noupdates": {
+        "Error": {
+          "Code": "ResourceNotFoundException",
+          "Message": "The Lambda code signing configuration <csc_arn_invalid> can not be found."
+        },
+        "Message": "The Lambda code signing configuration <csc_arn_invalid> can not be found.",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 404
+        }
+      },
+      "update_csc_noupdate_response": {
+        "CodeSigningConfig": {
+          "AllowedPublishers": {
+            "SigningProfileVersionArns": [
+              "arn:aws:signer:<region>:111111111111:/signing-profiles/test"
+            ]
+          },
+          "CodeSigningConfigArn": "arn:aws:lambda:<region>:111111111111:code-signing-config:<resource:1>",
+          "CodeSigningConfigId": "<resource:1>",
+          "CodeSigningPolicies": {
+            "UntrustedArtifactOnDeployment": "Enforce"
+          },
+          "Description": "Testing CodeSigning Config",
+          "LastModified": "date"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "get_csc_invalid": {
+        "Error": {
+          "Code": "ResourceNotFoundException",
+          "Message": "The Lambda code signing configuration <csc_arn_invalid> can not be found."
+        },
+        "Message": "The Lambda code signing configuration <csc_arn_invalid> can not be found.",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 404
+        }
+      },
+      "get_function_csc_fnwithoutcsc": {
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "get_function_csc_nonexistingfn": {
+        "Error": {
+          "Code": "ResourceNotFoundException",
+          "Message": "Function not found: arn:aws:lambda:<region>:111111111111:function:csc-test-doesnotexist"
+        },
+        "Message": "Function not found: arn:aws:lambda:<region>:111111111111:function:csc-test-doesnotexist",
+        "Type": "User",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 404
+        }
+      },
+      "list_functions_by_csc_fnwithoutcsc": {
+        "FunctionArns": [],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "list_functions_by_csc_invalid_cscarn": {
+        "Error": {
+          "Code": "ResourceNotFoundException",
+          "Message": "The Lambda code signing configuration <csc_arn_invalid> can not be found."
+        },
+        "Message": "The Lambda code signing configuration <csc_arn_invalid> can not be found.",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 404
+        }
+      }
+    }
   }
 }

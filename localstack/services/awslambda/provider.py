@@ -21,6 +21,7 @@ from localstack.aws.api.lambda_ import (
     Arn,
     Blob,
     CodeSigningConfigArn,
+    CodeSigningConfigNotFoundException,
     CodeSigningPolicies,
     Cors,
     CreateCodeSigningConfigResponse,
@@ -1003,7 +1004,6 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
     # =======================================
     # ========  Code signing config  ========
     # =======================================
-    # TODO: add tests for non-canonical function names
 
     def create_code_signing_config(
         self,
@@ -1036,13 +1036,20 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
         code_signing_config_arn: CodeSigningConfigArn,
         function_name: FunctionName,
     ) -> PutFunctionCodeSigningConfigResponse:
-        # TODO: normalize function name
         state = lambda_stores[context.account_id][context.region]
-        fn = state.functions.get(function_name)
-        if not fn:
-            raise ResourceNotFoundException("Where Function?")  # TODO: test
+        function_name = api_utils.get_function_name(function_name)
 
-        # TODO: verify code signing config exists?
+        csc = state.code_signing_configs.get(code_signing_config_arn)
+        if not csc:
+            raise CodeSigningConfigNotFoundException(
+                f"The code signing configuration cannot be found. Check that the provided configuration is not deleted: {code_signing_config_arn}.",
+                Type="User",
+            )
+
+        fn = state.functions.get(function_name)
+        fn_arn = lambda_arn_without_qualifier(function_name, context.account_id, context.region)
+        if not fn:
+            raise ResourceNotFoundException(f"Function not found: {fn_arn}", Type="User")
 
         fn.code_signing_config_arn = code_signing_config_arn
         return PutFunctionCodeSigningConfigResponse(
@@ -1057,13 +1064,12 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
         allowed_publishers: AllowedPublishers = None,
         code_signing_policies: CodeSigningPolicies = None,
     ) -> UpdateCodeSigningConfigResponse:
-        if all([not x for x in [description, allowed_publishers, code_signing_policies]]):
-            raise InvalidParameterValueException("Where params?")  # TODO: test
-
         state = lambda_stores[context.account_id][context.region]
         csc = state.code_signing_configs.get(code_signing_config_arn)
         if not csc:
-            raise ResourceNotFoundException("Where csc?")  # TODO: test
+            raise ResourceNotFoundException(
+                f"The Lambda code signing configuration {code_signing_config_arn} can not be found."
+            )
 
         changes = {
             **({"allowed_publishers": allowed_publishers} if allowed_publishers else {}),
@@ -1081,7 +1087,9 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
         state = lambda_stores[context.account_id][context.region]
         csc = state.code_signing_configs.get(code_signing_config_arn)
         if not csc:
-            raise ResourceNotFoundException("Where csc?")  # TODO: test
+            raise ResourceNotFoundException(
+                f"The Lambda code signing configuration {code_signing_config_arn} can not be found."
+            )
 
         return GetCodeSigningConfigResponse(CodeSigningConfig=api_utils.map_csc(csc))
 
@@ -1089,24 +1097,28 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
         self, context: RequestContext, function_name: FunctionName
     ) -> GetFunctionCodeSigningConfigResponse:
         state = lambda_stores[context.account_id][context.region]
+        function_name = api_utils.get_function_name(function_name)
         fn = state.functions.get(function_name)
+        fn_arn = lambda_arn_without_qualifier(function_name, context.account_id, context.region)
         if not fn:
-            raise ResourceNotFoundException("where Function?")  # TODO: test
+            raise ResourceNotFoundException(f"Function not found: {fn_arn}", Type="User")
 
-        if not fn.code_signing_config_arn:
-            raise ResourceNotFoundException("where csc?")  # TODO: test
+        if fn.code_signing_config_arn:
+            return GetFunctionCodeSigningConfigResponse(
+                CodeSigningConfigArn=fn.code_signing_config_arn, FunctionName=function_name
+            )
 
-        return GetFunctionCodeSigningConfigResponse(
-            CodeSigningConfigArn=fn.code_signing_config_arn, FunctionName=function_name
-        )
+        return GetFunctionCodeSigningConfigResponse()
 
     def delete_function_code_signing_config(
         self, context: RequestContext, function_name: FunctionName
     ) -> None:
         state = lambda_stores[context.account_id][context.region]
+        function_name = api_utils.get_function_name(function_name)
         fn = state.functions.get(function_name)
+        fn_arn = lambda_arn_without_qualifier(function_name, context.account_id, context.region)
         if not fn:
-            raise ResourceNotFoundException("where Function?")  # TODO: test
+            raise ResourceNotFoundException(f"Function not found: {fn_arn}", Type="User")
 
         fn.code_signing_config_arn = None
 
@@ -1117,7 +1129,9 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
 
         csc = state.code_signing_configs.get(code_signing_config_arn)
         if not csc:
-            raise ResourceNotFoundException("Where csc?")  # TODO: test
+            raise ResourceNotFoundException(
+                f"The Lambda code signing configuration {code_signing_config_arn} can not be found."
+            )
 
         del state.code_signing_configs[code_signing_config_arn]
 
@@ -1146,12 +1160,16 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
     ) -> ListFunctionsByCodeSigningConfigResponse:
         state = lambda_stores[context.account_id][context.region]
 
+        if code_signing_config_arn not in state.code_signing_configs:
+            raise ResourceNotFoundException(
+                f"The Lambda code signing configuration {code_signing_config_arn} can not be found."
+            )
+
         fn_arns = [
             lambda_arn_without_qualifier(fn.function_name, context.account_id, context.region)
             for fn in state.functions.values()
             if fn.code_signing_config_arn == code_signing_config_arn
         ]
-        # TODO: test for non-existing ARN
 
         cscs = PaginatedList(fn_arns)
         page, token = cscs.get_page(
