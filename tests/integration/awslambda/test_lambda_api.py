@@ -1451,8 +1451,12 @@ class TestLambdaSizeLimits:
 
 
 class TestCodeSigningConfig:
+
+    # TODO: test paging
     @pytest.mark.aws_validated
-    def test_function_code_signing_config(self, lambda_client, create_lambda_function, snapshot):
+    def test_function_code_signing_config(
+        self, lambda_client, create_lambda_function, snapshot, account_id
+    ):
         """Testing the API of code signing config"""
 
         function_name = f"lambda_func-{short_uid()}"
@@ -1467,7 +1471,7 @@ class TestCodeSigningConfig:
             Description="Testing CodeSigning Config",
             AllowedPublishers={
                 "SigningProfileVersionArns": [
-                    f"arn:aws:signer:{aws_stack.get_region()}:000000000000:/signing-profiles/test",
+                    f"arn:aws:signer:{lambda_client.meta.region_name}:{account_id}:/signing-profiles/test",
                 ]
             },
             CodeSigningPolicies={"UntrustedArtifactOnDeployment": "Enforce"},
@@ -1492,8 +1496,46 @@ class TestCodeSigningConfig:
         response = lambda_client.get_function_code_signing_config(FunctionName=function_name)
         snapshot.match("get_function_code_signing_config", response)
 
+        response = lambda_client.list_code_signing_configs()
+        snapshot.match("list_code_signing_configs", response)
+
+        response = lambda_client.list_functions_by_code_signing_config(
+            CodeSigningConfigArn=code_signing_arn
+        )
+        snapshot.match("list_functions_by_code_signing_config", response)
+
         response = lambda_client.delete_function_code_signing_config(FunctionName=function_name)
         snapshot.match("delete_function_code_signing_config", response)
 
         response = lambda_client.delete_code_signing_config(CodeSigningConfigArn=code_signing_arn)
         snapshot.match("delete_code_signing_config", response)
+
+    # def test_code_signing_not_found_excs(self, snapshot, lambda_client, account_id):
+    #     response = lambda_client.create_code_signing_config(
+    #         Description="Testing CodeSigning Config",
+    #         AllowedPublishers={
+    #             "SigningProfileVersionArns": [
+    #                 f"arn:aws:signer:{lambda_client.meta.region_name}:{account_id}:/signing-profiles/test",
+    #             ]
+    #         },
+    #         CodeSigningPolicies={"UntrustedArtifactOnDeployment": "Enforce"},
+    #     )
+    #     snapshot.match("create_code_signing_config", response)
+    #
+    #     csc_id = response['CodeSigningConfig']['CodeSigningConfigId']
+    #     csc_arn = response['CodeSigningConfig']['CodeSigningConfigArn']
+    #
+    #     with pytest.raises(lambda_client.exceptions.ResourceNotFoundException) as e:
+    #         lambda_client.delete_code_signing_config(CodeSigningConfigArn=f"{csc_arn[:-1]}x")
+    #     snapshot.match("delete_csc_notfound", e.value.response)
+
+
+class TestLambdaAccountSettings:
+
+    # TODO: for now probably fine if it just returns some static values, but might be interesting to properly implement this in the new provider
+    @pytest.mark.aws_validated
+    def test_account_settings(self, lambda_client, snapshot):
+        acc_settings = lambda_client.get_account_settings()
+        acc_settings["AccountLimit"] = sorted(list(acc_settings["AccountLimit"].keys()))
+        acc_settings["AccountUsage"] = sorted(list(acc_settings["AccountUsage"].keys()))
+        snapshot.match("acc_settings_modded", acc_settings)

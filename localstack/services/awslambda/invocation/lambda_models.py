@@ -7,7 +7,9 @@ from typing import TYPE_CHECKING, Optional
 from botocore.exceptions import ClientError
 
 from localstack.aws.api.lambda_ import (
+    AllowedPublishers,
     Architecture,
+    CodeSigningPolicies,
     Cors,
     FunctionUrlAuthType,
     InvocationType,
@@ -262,6 +264,7 @@ class FunctionResourcePolicy:
 @dataclasses.dataclass
 class Function:
     function_name: str
+    code_signing_config_arn: Optional[str] = None
     aliases: dict[str, VersionAlias] = dataclasses.field(default_factory=dict)
     versions: dict[str, FunctionVersion] = dataclasses.field(default_factory=dict)
     function_url_configs: dict[str, FunctionUrlConfig] = dataclasses.field(
@@ -344,9 +347,15 @@ class EventSourceMapping:
     ...
 
 
-@dataclasses.dataclass
+@dataclasses.dataclass(frozen=True)
 class CodeSigningConfig:
-    ...
+    csc_id: str
+    arn: str
+
+    allowed_publishers: AllowedPublishers
+    policies: CodeSigningPolicies
+    last_modified: str
+    description: Optional[str] = None
 
 
 @dataclasses.dataclass

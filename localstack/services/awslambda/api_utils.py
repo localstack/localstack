@@ -4,34 +4,16 @@ from typing import Any, Optional
 
 from localstack.aws.api import lambda_ as api_spec
 from localstack.aws.api.lambda_ import FunctionUrlAuthType, InvalidParameterValueException
-from localstack.services.awslambda.invocation.lambda_models import FunctionUrlConfig
+from localstack.services.awslambda.invocation.lambda_models import (
+    CodeSigningConfig,
+    FunctionUrlConfig,
+)
 from localstack.services.awslambda.invocation.lambda_util import FUNCTION_NAME_REGEX
 from localstack.services.awslambda.invocation.models import LambdaStore
 
 FN_ARN_PATTERN = re.compile(
     r"^arn:aws:lambda:(?P<region_name>[^:]+):(?P<account_id>\d{12}):function:(?P<function_name>[^:]+)(:(?P<qualifier>.*))?$"
 )
-
-
-# def assert_function_exists():
-#     ...
-#
-# def assert_is_alias():
-#     ...
-#
-# def assert_is_function_version():
-#     ...
-#
-# def is_alias():
-#     ...
-#
-# def alias_exists():
-#     ...
-#
-#
-
-
-# Function URL utils
 
 
 def map_function_url_config(model: FunctionUrlConfig) -> api_spec.FunctionUrlConfig:
@@ -42,6 +24,17 @@ def map_function_url_config(model: FunctionUrlConfig) -> api_spec.FunctionUrlCon
         LastModifiedTime=model.last_modified_time,
         Cors=model.cors,
         AuthType=model.auth_type,
+    )
+
+
+def map_csc(model: CodeSigningConfig) -> api_spec.CodeSigningConfig:
+    return api_spec.CodeSigningConfig(
+        CodeSigningConfigId=model.csc_id,
+        CodeSigningConfigArn=model.arn,
+        Description=model.description,
+        AllowedPublishers=model.allowed_publishers,
+        CodeSigningPolicies=model.policies,
+        LastModified=model.last_modified,
     )
 
 

@@ -9,6 +9,8 @@ from typing import IO
 
 from localstack.aws.api import RequestContext, handler
 from localstack.aws.api.lambda_ import (
+    AccountLimit,
+    AccountUsage,
     AddPermissionRequest,
     AddPermissionResponse,
     Alias,
@@ -35,6 +37,7 @@ from localstack.aws.api.lambda_ import (
     FunctionName,
     FunctionUrlAuthType,
     FunctionUrlQualifier,
+    GetAccountSettingsResponse,
     GetCodeSigningConfigResponse,
     GetFunctionCodeSigningConfigResponse,
     GetFunctionResponse,
@@ -78,6 +81,7 @@ from localstack.aws.api.lambda_ import (
 from localstack.services.awslambda import api_utils
 from localstack.services.awslambda.api_utils import get_name_and_qualifier
 from localstack.services.awslambda.invocation.lambda_models import (
+    CodeSigningConfig,
     Function,
     FunctionResourcePolicy,
     FunctionUrlConfig,
@@ -104,7 +108,7 @@ from localstack.services.awslambda.invocation.lambda_util import (
 )
 from localstack.services.plugins import ServiceLifecycleHook
 from localstack.utils.collections import PaginatedList
-from localstack.utils.strings import long_uid, short_uid, to_bytes, to_str
+from localstack.utils.strings import get_random_hex, long_uid, short_uid, to_bytes, to_str
 
 LOG = logging.getLogger(__name__)
 
@@ -999,6 +1003,7 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
     # =======================================
     # ========  Code signing config  ========
     # =======================================
+    # TODO: add tests for non-canonical function names
 
     def create_code_signing_config(
         self,
@@ -1007,7 +1012,23 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
         description: Description = None,
         code_signing_policies: CodeSigningPolicies = None,
     ) -> CreateCodeSigningConfigResponse:
-        ...
+
+        state = lambda_stores[context.account_id][context.region]
+        # TODO: can there be duplicates?
+        csc_id = f"csc-{get_random_hex(17)}"  # e.g. 'csc-077c33b4c19e26036'
+        csc_arn = (
+            f"arn:aws:lambda:{context.region}:{context.account_id}:code-signing-config:{csc_id}"
+        )
+        csc = CodeSigningConfig(
+            csc_id=csc_id,
+            arn=csc_arn,
+            allowed_publishers=allowed_publishers,
+            policies=code_signing_policies,
+            last_modified=generate_lambda_date(),
+            description=description,
+        )
+        state.code_signing_configs[csc_arn] = csc
+        return CreateCodeSigningConfigResponse(CodeSigningConfig=api_utils.map_csc(csc))
 
     def put_function_code_signing_config(
         self,
@@ -1015,7 +1036,18 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
         code_signing_config_arn: CodeSigningConfigArn,
         function_name: FunctionName,
     ) -> PutFunctionCodeSigningConfigResponse:
-        ...
+        # TODO: normalize function name
+        state = lambda_stores[context.account_id][context.region]
+        fn = state.functions.get(function_name)
+        if not fn:
+            raise ResourceNotFoundException("Where Function?")  # TODO: test
+
+        # TODO: verify code signing config exists?
+
+        fn.code_signing_config_arn = code_signing_config_arn
+        return PutFunctionCodeSigningConfigResponse(
+            CodeSigningConfigArn=code_signing_config_arn, FunctionName=function_name
+        )
 
     def update_code_signing_config(
         self,
@@ -1025,32 +1057,85 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
         allowed_publishers: AllowedPublishers = None,
         code_signing_policies: CodeSigningPolicies = None,
     ) -> UpdateCodeSigningConfigResponse:
-        ...
+        if all([not x for x in [description, allowed_publishers, code_signing_policies]]):
+            raise InvalidParameterValueException("Where params?")  # TODO: test
+
+        state = lambda_stores[context.account_id][context.region]
+        csc = state.code_signing_configs.get(code_signing_config_arn)
+        if not csc:
+            raise ResourceNotFoundException("Where csc?")  # TODO: test
+
+        changes = {
+            **({"allowed_publishers": allowed_publishers} if allowed_publishers else {}),
+            **({"policies": code_signing_policies} if code_signing_policies else {}),
+            **({"description": description} if description else {}),
+        }
+        new_csc = dataclasses.replace(csc, last_modified=generate_lambda_date(), **changes)
+        state.code_signing_configs[code_signing_config_arn] = new_csc
+
+        return UpdateCodeSigningConfigResponse(CodeSigningConfig=api_utils.map_csc(new_csc))
 
     def get_code_signing_config(
         self, context: RequestContext, code_signing_config_arn: CodeSigningConfigArn
     ) -> GetCodeSigningConfigResponse:
-        ...
+        state = lambda_stores[context.account_id][context.region]
+        csc = state.code_signing_configs.get(code_signing_config_arn)
+        if not csc:
+            raise ResourceNotFoundException("Where csc?")  # TODO: test
+
+        return GetCodeSigningConfigResponse(CodeSigningConfig=api_utils.map_csc(csc))
 
     def get_function_code_signing_config(
         self, context: RequestContext, function_name: FunctionName
     ) -> GetFunctionCodeSigningConfigResponse:
-        ...
+        state = lambda_stores[context.account_id][context.region]
+        fn = state.functions.get(function_name)
+        if not fn:
+            raise ResourceNotFoundException("where Function?")  # TODO: test
+
+        if not fn.code_signing_config_arn:
+            raise ResourceNotFoundException("where csc?")  # TODO: test
+
+        return GetFunctionCodeSigningConfigResponse(
+            CodeSigningConfigArn=fn.code_signing_config_arn, FunctionName=function_name
+        )
 
     def delete_function_code_signing_config(
         self, context: RequestContext, function_name: FunctionName
     ) -> None:
-        ...
+        state = lambda_stores[context.account_id][context.region]
+        fn = state.functions.get(function_name)
+        if not fn:
+            raise ResourceNotFoundException("where Function?")  # TODO: test
+
+        fn.code_signing_config_arn = None
 
     def delete_code_signing_config(
         self, context: RequestContext, code_signing_config_arn: CodeSigningConfigArn
     ) -> DeleteCodeSigningConfigResponse:
-        ...
+        state = lambda_stores[context.account_id][context.region]
+
+        csc = state.code_signing_configs.get(code_signing_config_arn)
+        if not csc:
+            raise ResourceNotFoundException("Where csc?")  # TODO: test
+
+        del state.code_signing_configs[code_signing_config_arn]
+
+        return DeleteCodeSigningConfigResponse()
 
     def list_code_signing_configs(
         self, context: RequestContext, marker: String = None, max_items: MaxListItems = None
     ) -> ListCodeSigningConfigsResponse:
-        ...
+        state = lambda_stores[context.account_id][context.region]
+
+        cscs = [api_utils.map_csc(csc) for csc in state.code_signing_configs.values()]
+        cscs = PaginatedList(cscs)
+        page, token = cscs.get_page(
+            lambda csc: csc["CodeSigningConfigId"],
+            marker,
+            max_items,  # TODO: check what these are ordered by
+        )
+        return ListCodeSigningConfigsResponse(CodeSigningConfigs=page, NextMarker=token)
 
     def list_functions_by_code_signing_config(
         self,
@@ -1059,9 +1144,48 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
         marker: String = None,
         max_items: MaxListItems = None,
     ) -> ListFunctionsByCodeSigningConfigResponse:
-        ...
+        state = lambda_stores[context.account_id][context.region]
+
+        fn_arns = [
+            lambda_arn_without_qualifier(fn.function_name, context.account_id, context.region)
+            for fn in state.functions.values()
+            if fn.code_signing_config_arn == code_signing_config_arn
+        ]
+        # TODO: test for non-existing ARN
+
+        cscs = PaginatedList(fn_arns)
+        page, token = cscs.get_page(
+            lambda x: x,
+            marker,
+            max_items,
+        )
+        return ListFunctionsByCodeSigningConfigResponse(FunctionArns=page, NextMarker=token)
+
+    # =======================================
+    # =========  Account Settings   =========
+    # =======================================
+
+    # TODO: add to store
+    # TODO: update these values throughout the provider where applicable
+    # CAVE: these settings & usages are *per* region!
+    def get_account_settings(
+        self,
+        context: RequestContext,
+    ) -> GetAccountSettingsResponse:
+        return GetAccountSettingsResponse(
+            AccountLimit=AccountLimit(
+                TotalCodeSize=0,
+                CodeSizeZipped=0,
+                CodeSizeUnzipped=0,
+                ConcurrentExecutions=0,
+                UnreservedConcurrentExecutions=0,
+            ),
+            AccountUsage=AccountUsage(
+                TotalCodeSize=0,
+                FunctionCount=0,
+            ),
+        )
 
     # TODO(s)
     # Provisioned Concurrency Config
-    # Event Invoke Config
     # Event Invoke Config
