@@ -103,7 +103,7 @@ class DynamoDBStreamsProvider(DynamodbstreamsApi, ServiceLifecycleHook):
             "NextShardIterator": kinesis_records.get("NextShardIterator"),
         }
         for record in kinesis_records["Records"]:
-            record_data = bson.BSON.decode(record["Data"])
+            record_data = bson.loads(record["Data"])
             record_data["dynamodb"]["SequenceNumber"] = record["SequenceNumber"]
             result["Records"].append(record_data)
         return GetRecordsOutput(**result)

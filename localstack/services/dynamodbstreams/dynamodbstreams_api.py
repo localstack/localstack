@@ -73,7 +73,7 @@ def forward_events(records: Dict) -> None:
             stream_name = get_kinesis_stream_name(table_name)
             kinesis.put_record(
                 StreamName=stream_name,
-                Data=bson.BSON.encode(record),
+                Data=bson.dumps(record),
                 PartitionKey="TODO",
             )
 
