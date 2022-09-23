@@ -109,7 +109,8 @@ class RuntimeEnvironment:
             env_vars["_HANDLER"] = self.function_version.config.handler
         if self.function_version.config.runtime:
             env_vars["AWS_EXECUTION_ENV"] = f"Aws_Lambda_{self.function_version.config.runtime}"
-        env_vars.update(self.function_version.config.environment)
+        if self.function_version.config.environment:
+            env_vars.update(self.function_version.config.environment)
         return env_vars
 
     # Lifecycle methods
