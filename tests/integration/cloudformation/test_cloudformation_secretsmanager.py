@@ -28,7 +28,6 @@ Outputs:
 )
 
 
-<<<<<<< HEAD
 TEST_TEMPLATE_11 = """
 AWSTemplateFormatVersion: 2010-09-09
 Parameters:

@@ -137,7 +137,6 @@ def test_event_rule_creation_without_target(cfn_client, events_client, deploy_cf
         Name=event_rule_name,
     )
 
-<<<<<<< HEAD
 
 def test_cfn_event_bus_resource(events_client, deploy_cfn_template):
     def _assert(expected_len):
@@ -248,6 +247,3 @@ def test_cfn_handle_events_rule_without_name(events_client, deploy_cfn_template)
 
     rs = events_client.list_rules()
     assert rule["Name"] not in [r["Name"] for r in rs["Rules"]]
-=======
-    assert response["Name"] == event_rule_name
->>>>>>> 5fdd8c67 (events tests refactored)
