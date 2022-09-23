@@ -21,6 +21,8 @@ jdk.crypto.cryptoki,\
 jdk.zipfs,\
 # OpenSearch needs some jdk modules
 jdk.httpserver,jdk.management,\
+# MQ Broker requires management agent
+jdk.management.agent,\
 # Elasticsearch 7+ crashes without Thai Segmentation support
 jdk.localedata --include-locales en,th \
     --compress 2 --strip-debug --no-header-files --no-man-pages --output /usr/lib/jvm/java-11 && \
