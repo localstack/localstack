@@ -10,6 +10,7 @@ import pytest
 
 from localstack import config
 from localstack.config import in_docker
+from localstack.utils import docker_utils
 from localstack.utils.common import is_ipv4_address, safe_run, save_file, short_uid, to_str
 from localstack.utils.container_utils.container_client import (
     AccessDenied,
@@ -25,7 +26,13 @@ from localstack.utils.container_utils.container_client import (
     VolumeInfo,
 )
 from localstack.utils.container_utils.docker_cmd_client import CmdDockerClient
-from localstack.utils.net import get_free_tcp_port
+from localstack.utils.docker_utils import (
+    container_port_can_be_bound,
+    is_container_port_reserved,
+    reserve_available_container_port,
+    reserve_container_port,
+)
+from localstack.utils.net import PortNotAvailableException, get_free_tcp_port
 
 ContainerInfo = NamedTuple(
     "ContainerInfo",
@@ -1356,3 +1363,50 @@ class TestDockerClient:
             container_name_or_id=container.container_id
         )
         assert security_opt == inspect_result["HostConfig"]["SecurityOpt"]
+
+
+class TestDockerPorts:
+    def test_reserve_container_port(self, monkeypatch):
+        monkeypatch.setattr(docker_utils, "PORTS_CHECK_DOCKER_IMAGE", "alpine")
+
+        # reserve available container port
+        port = reserve_available_container_port(duration=1)
+        assert is_container_port_reserved(port)
+        assert container_port_can_be_bound(port)
+
+        # reservation should fail immediately after
+        with pytest.raises(PortNotAvailableException):
+            reserve_container_port(port)
+
+        # reservation should work after expiry time
+        time.sleep(1)
+        assert not is_container_port_reserved(port)
+        reserve_container_port(port, duration=1)
+        assert is_container_port_reserved(port)
+        assert container_port_can_be_bound(port)
+
+    def test_container_port_can_be_bound(self, docker_client, monkeypatch):
+        monkeypatch.setattr(docker_utils, "PORTS_CHECK_DOCKER_IMAGE", "alpine")
+
+        # reserve available container port
+        port = reserve_available_container_port(duration=1)
+        assert container_port_can_be_bound(port)
+
+        # run test container with port exposed
+        ports = PortMappings()
+        ports.add(port, port)
+        name = f"c-{short_uid()}"
+        docker_client.run_container(
+            "alpine",
+            name=name,
+            command=["sleep", "5"],
+            entrypoint="",
+            ports=ports,
+            detach=True,
+        )
+        # assert that port can no longer be bound by new containers
+        assert not container_port_can_be_bound(port)
+
+        # remove container, assert that port can be bound again
+        docker_client.remove_container(name, force=True)
+        assert container_port_can_be_bound(port)
