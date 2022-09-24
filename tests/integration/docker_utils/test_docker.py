@@ -1366,7 +1366,7 @@ class TestDockerClient:
 
 
 class TestDockerPorts:
-    def test_reserve_container_port(self, monkeypatch):
+    def test_reserve_container_port(self, docker_client, monkeypatch):
         monkeypatch.setattr(docker_utils, "PORTS_CHECK_DOCKER_IMAGE", "alpine")
 
         # reserve available container port
