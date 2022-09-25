@@ -1355,7 +1355,7 @@ class TestS3:
         )
         temp_folder = create_tmp_folder_lambda(
             handler_file,
-            run_command="npm i @aws-sdk/client-s3; npm i @aws-sdk/s3-request-presigner",
+            run_command="npm i @aws-sdk/client-s3; npm i @aws-sdk/s3-request-presigner; npm i @aws-sdk/middleware-endpoint",
         )
 
         function_name = f"func-integration-{short_uid()}"
