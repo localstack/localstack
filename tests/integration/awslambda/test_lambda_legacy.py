@@ -217,6 +217,20 @@ class TestLambdaLegacyProvider:
             lambda_client.delete_function(FunctionName=func_name)
         assert "ResourceNotFoundException" in str(exc)
 
+    def test_update_lambda_with_layers(self, iam_client, lambda_client, create_lambda_function):
+        func_name = f"lambda-{short_uid()}"
+        create_lambda_function(
+            handler_file=TEST_LAMBDA_PYTHON_ECHO,
+            func_name=func_name,
+            runtime=Runtime.python3_9,
+        )
+
+        # update function config with Layers - should be ignored (and not raise a serializer error)
+        result = lambda_client.update_function_configuration(
+            FunctionName=func_name, Layers=["foo:bar"]
+        )
+        assert "Layers" not in result
+
 
 # Ruby and Golang runtimes aren't heavily used and therefore not covered by the complete test suite
 # A legacy integration test can be found here

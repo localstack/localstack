@@ -5,6 +5,7 @@ from typing import Dict, List, Optional
 from cachetools import TTLCache
 from moto.core.exceptions import JsonRESTError
 
+from localstack.aws.api.dynamodb import ResourceNotFoundException
 from localstack.utils.aws import aws_stack
 from localstack.utils.json import canonical_json
 from localstack.utils.testutil import list_all_resources
@@ -63,7 +64,9 @@ class SchemaExtractor:
         table_definitions: Dict = get_store().table_definitions
         table_def = table_definitions.get(table_name)
         if not table_def:
-            raise Exception(f"Unknown table: {table_name} not found in {table_definitions.keys()}")
+            raise ResourceNotFoundException(
+                f"Unknown table: {table_name} not found in {table_definitions.keys()}"
+            )
         return table_def["KeySchema"]
 
     @classmethod
@@ -71,9 +74,15 @@ class SchemaExtractor:
         key = f"{aws_stack.get_region()}/{table_name}"
         schema = SCHEMA_CACHE.get(key)
         if not schema:
+            # TODO: consider making in-memory lookup instead of API call
             ddb_client = aws_stack.connect_to_service("dynamodb")
-            schema = ddb_client.describe_table(TableName=table_name)
-            SCHEMA_CACHE[key] = schema
+            try:
+                schema = ddb_client.describe_table(TableName=table_name)
+                SCHEMA_CACHE[key] = schema
+            except Exception as e:
+                if "ResourceNotFoundException" in str(e):
+                    raise ResourceNotFoundException(f"Unknown table: {table_name}") from e
+                raise
         return schema
 
 
