@@ -179,3 +179,8 @@ class TestInitScriptManager:
         # check script output
         assert (tmp_path / "script_01.out").read_text().strip() == "hello 1"
         assert (tmp_path / "script_03.out").read_text().strip() == "hello 3"
+
+    def test_empty_init_path(self):
+        manager = InitScriptManager(script_root=None)
+        scripts = manager.scripts
+        assert scripts == {}
