@@ -1904,6 +1904,27 @@ class TestS3:
         response = s3_client.list_objects(Bucket=s3_bucket)
         snapshot.match("list-remaining-objects", response)
 
+    def test_s3_header_value_boolean_to_lowercase(self, s3_client, s3_create_bucket):
+        bucket_name = "encrypted-bucket"
+        s3_create_bucket(Bucket=bucket_name)
+        s3_client.put_bucket_encryption(
+            Bucket=bucket_name,
+            ServerSideEncryptionConfiguration={
+                "Rules": [
+                    {
+                        "ApplyServerSideEncryptionByDefault": {
+                            "SSEAlgorithm": "AES256",
+                            "KMSMasterKeyID": "secret",
+                        }
+                    },
+                ]
+            },
+        )
+        response = s3_client.put_object(Bucket=bucket_name, Key="test-key", Body="test-value")
+        assert response["ResponseMetadata"]["HTTPHeaders"][
+            "x-amz-server-side-encryption-bucket-key-enabled"
+        ] in ["false", "true"]
+
 
 class TestS3TerraformRawRequests:
     @pytest.mark.only_localstack

@@ -19,6 +19,7 @@ from quart import asgi as quart_asgi
 from quart import make_response, request
 from quart import utils as quart_utils
 from quart.app import _cancel_all_tasks
+from werkzeug.datastructures import Headers
 
 from localstack import config
 from localstack.utils.asyncio import ensure_event_loop, run_coroutine, run_sync
@@ -132,6 +133,15 @@ def apply_patches():
     suppress_body_orig = hypercorn_utils.suppress_body
     hypercorn_utils.suppress_body = suppress_body
     http_stream.suppress_body = suppress_body
+
+    # apply patch for header boolean value (e.g., some AWS SDKs require header boolean value to be in lowercase)
+    def header_value_boolean_to_lowercase(self, _key, _value, **kw):
+        if isinstance(_value, bool):
+            _value = str(_value).lower()
+        header_add_orig(self, _key, _value, **kw)
+
+    header_add_orig = Headers.add
+    Headers.add = header_value_boolean_to_lowercase
 
 
 class HTTPErrorResponse(Exception):
