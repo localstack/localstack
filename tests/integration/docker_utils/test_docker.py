@@ -1,3 +1,4 @@
+import datetime
 import ipaddress
 import logging
 import os
@@ -29,6 +30,7 @@ from localstack.utils.container_utils.docker_cmd_client import CmdDockerClient
 from localstack.utils.docker_utils import (
     container_port_can_be_bound,
     is_container_port_reserved,
+    is_port_available_for_containers,
     reserve_available_container_port,
     reserve_container_port,
 )
@@ -1367,12 +1369,16 @@ class TestDockerClient:
 
 class TestDockerPorts:
     def test_reserve_container_port(self, docker_client, monkeypatch):
+        if isinstance(docker_client, CmdDockerClient):
+            pytest.skip("Running test only for one Docker executor")
+
         monkeypatch.setattr(docker_utils, "PORTS_CHECK_DOCKER_IMAGE", "alpine")
 
         # reserve available container port
         port = reserve_available_container_port(duration=1)
         assert is_container_port_reserved(port)
         assert container_port_can_be_bound(port)
+        assert not is_port_available_for_containers(port)
 
         # reservation should fail immediately after
         with pytest.raises(PortNotAvailableException):
@@ -1381,16 +1387,22 @@ class TestDockerPorts:
         # reservation should work after expiry time
         time.sleep(1)
         assert not is_container_port_reserved(port)
+        assert is_port_available_for_containers(port)
         reserve_container_port(port, duration=1)
         assert is_container_port_reserved(port)
         assert container_port_can_be_bound(port)
 
     def test_container_port_can_be_bound(self, docker_client, monkeypatch):
+        if isinstance(docker_client, CmdDockerClient):
+            pytest.skip("Running test only for one Docker executor")
+
         monkeypatch.setattr(docker_utils, "PORTS_CHECK_DOCKER_IMAGE", "alpine")
 
         # reserve available container port
         port = reserve_available_container_port(duration=1)
+        start_time = datetime.datetime.now()
         assert container_port_can_be_bound(port)
+        assert not is_port_available_for_containers(port)
 
         # run test container with port exposed
         ports = PortMappings()
@@ -1410,3 +1422,7 @@ class TestDockerPorts:
         # remove container, assert that port can be bound again
         docker_client.remove_container(name, force=True)
         assert container_port_can_be_bound(port)
+        delta = (datetime.datetime.now() - start_time).total_seconds()
+        if delta <= 1:
+            time.sleep(1.01 - delta)
+        assert is_port_available_for_containers(port)
