@@ -31,6 +31,8 @@ ClientVpnEndpointId = str
 CloudWatchLogGroupArn = str
 CoipPoolId = str
 CoipPoolMaxResults = int
+ComponentAccount = str
+ComponentRegion = str
 ConnectionNotificationId = str
 ConversionTaskId = str
 CoreCount = int
@@ -333,6 +335,10 @@ class AllocationStrategy(str):
     diversified = "diversified"
     capacityOptimized = "capacityOptimized"
     capacityOptimizedPrioritized = "capacityOptimizedPrioritized"
+
+
+class AllocationType(str):
+    used = "used"
 
 
 class AllowsMultipleInstanceTypes(str):
@@ -2966,6 +2972,12 @@ class AcceptVpcPeeringConnectionResult(TypedDict, total=False):
     VpcPeeringConnection: Optional[VpcPeeringConnection]
 
 
+class AnalysisComponent(TypedDict, total=False):
+    Id: Optional[String]
+    Arn: Optional[String]
+    Name: Optional[String]
+
+
 class TransitGatewayRouteTableRoute(TypedDict, total=False):
     DestinationCidr: Optional[String]
     State: Optional[String]
@@ -2976,18 +2988,7 @@ class TransitGatewayRouteTableRoute(TypedDict, total=False):
     ResourceType: Optional[String]
 
 
-class AnalysisComponent(TypedDict, total=False):
-    Id: Optional[String]
-    Arn: Optional[String]
-    Name: Optional[String]
-
-
-class AdditionalDetail(TypedDict, total=False):
-    AdditionalDetailType: Optional[String]
-    Component: Optional[AnalysisComponent]
-
-
-AdditionalDetailList = List[AdditionalDetail]
+AnalysisComponentList = List[AnalysisComponent]
 
 
 class PortRange(TypedDict, total=False):
@@ -3015,18 +3016,26 @@ class AnalysisRouteTableRoute(TypedDict, total=False):
     Origin: Optional[String]
     TransitGatewayId: Optional[String]
     VpcPeeringConnectionId: Optional[String]
+    State: Optional[String]
 
 
+StringList = List[String]
 PortRangeList = List[PortRange]
+
+
+class AnalysisLoadBalancerTarget(TypedDict, total=False):
+    Address: Optional[IpAddress]
+    AvailabilityZone: Optional[String]
+    Instance: Optional[AnalysisComponent]
+    Port: Optional[Port]
+
+
+class AnalysisLoadBalancerListener(TypedDict, total=False):
+    LoadBalancerPort: Optional[Port]
+    InstancePort: Optional[Port]
+
+
 IpAddressList = List[IpAddress]
-
-
-class AnalysisPacketHeader(TypedDict, total=False):
-    DestinationAddresses: Optional[IpAddressList]
-    DestinationPortRanges: Optional[PortRangeList]
-    Protocol: Optional[String]
-    SourceAddresses: Optional[IpAddressList]
-    SourcePortRanges: Optional[PortRangeList]
 
 
 class AnalysisAclRule(TypedDict, total=False):
@@ -3036,6 +3045,79 @@ class AnalysisAclRule(TypedDict, total=False):
     Protocol: Optional[String]
     RuleAction: Optional[String]
     RuleNumber: Optional[Integer]
+
+
+class Explanation(TypedDict, total=False):
+    Acl: Optional[AnalysisComponent]
+    AclRule: Optional[AnalysisAclRule]
+    Address: Optional[IpAddress]
+    Addresses: Optional[IpAddressList]
+    AttachedTo: Optional[AnalysisComponent]
+    AvailabilityZones: Optional[ValueStringList]
+    Cidrs: Optional[ValueStringList]
+    Component: Optional[AnalysisComponent]
+    CustomerGateway: Optional[AnalysisComponent]
+    Destination: Optional[AnalysisComponent]
+    DestinationVpc: Optional[AnalysisComponent]
+    Direction: Optional[String]
+    ExplanationCode: Optional[String]
+    IngressRouteTable: Optional[AnalysisComponent]
+    InternetGateway: Optional[AnalysisComponent]
+    LoadBalancerArn: Optional[ResourceArn]
+    ClassicLoadBalancerListener: Optional[AnalysisLoadBalancerListener]
+    LoadBalancerListenerPort: Optional[Port]
+    LoadBalancerTarget: Optional[AnalysisLoadBalancerTarget]
+    LoadBalancerTargetGroup: Optional[AnalysisComponent]
+    LoadBalancerTargetGroups: Optional[AnalysisComponentList]
+    LoadBalancerTargetPort: Optional[Port]
+    ElasticLoadBalancerListener: Optional[AnalysisComponent]
+    MissingComponent: Optional[String]
+    NatGateway: Optional[AnalysisComponent]
+    NetworkInterface: Optional[AnalysisComponent]
+    PacketField: Optional[String]
+    VpcPeeringConnection: Optional[AnalysisComponent]
+    Port: Optional[Port]
+    PortRanges: Optional[PortRangeList]
+    PrefixList: Optional[AnalysisComponent]
+    Protocols: Optional[StringList]
+    RouteTableRoute: Optional[AnalysisRouteTableRoute]
+    RouteTable: Optional[AnalysisComponent]
+    SecurityGroup: Optional[AnalysisComponent]
+    SecurityGroupRule: Optional[AnalysisSecurityGroupRule]
+    SecurityGroups: Optional[AnalysisComponentList]
+    SourceVpc: Optional[AnalysisComponent]
+    State: Optional[String]
+    Subnet: Optional[AnalysisComponent]
+    SubnetRouteTable: Optional[AnalysisComponent]
+    Vpc: Optional[AnalysisComponent]
+    VpcEndpoint: Optional[AnalysisComponent]
+    VpnConnection: Optional[AnalysisComponent]
+    VpnGateway: Optional[AnalysisComponent]
+    TransitGateway: Optional[AnalysisComponent]
+    TransitGatewayRouteTable: Optional[AnalysisComponent]
+    TransitGatewayRouteTableRoute: Optional[TransitGatewayRouteTableRoute]
+    TransitGatewayAttachment: Optional[AnalysisComponent]
+    ComponentAccount: Optional[ComponentAccount]
+    ComponentRegion: Optional[ComponentRegion]
+
+
+ExplanationList = List[Explanation]
+
+
+class AdditionalDetail(TypedDict, total=False):
+    AdditionalDetailType: Optional[String]
+    Component: Optional[AnalysisComponent]
+
+
+AdditionalDetailList = List[AdditionalDetail]
+
+
+class AnalysisPacketHeader(TypedDict, total=False):
+    DestinationAddresses: Optional[IpAddressList]
+    DestinationPortRanges: Optional[PortRangeList]
+    Protocol: Optional[String]
+    SourceAddresses: Optional[IpAddressList]
+    SourcePortRanges: Optional[PortRangeList]
 
 
 class PathComponent(TypedDict, total=False):
@@ -3054,6 +3136,8 @@ class PathComponent(TypedDict, total=False):
     AdditionalDetails: Optional[AdditionalDetailList]
     TransitGateway: Optional[AnalysisComponent]
     TransitGatewayRouteTableRoute: Optional[TransitGatewayRouteTableRoute]
+    Explanations: Optional[ExplanationList]
+    ElasticLoadBalancerListener: Optional[AnalysisComponent]
 
 
 PathComponentList = List[PathComponent]
@@ -3340,21 +3424,6 @@ class AlternatePathHint(TypedDict, total=False):
 
 
 AlternatePathHintList = List[AlternatePathHint]
-AnalysisComponentList = List[AnalysisComponent]
-
-
-class AnalysisLoadBalancerListener(TypedDict, total=False):
-    LoadBalancerPort: Optional[Port]
-    InstancePort: Optional[Port]
-
-
-class AnalysisLoadBalancerTarget(TypedDict, total=False):
-    Address: Optional[IpAddress]
-    AvailabilityZone: Optional[String]
-    Instance: Optional[AnalysisComponent]
-    Port: Optional[Port]
-
-
 ClientVpnSecurityGroupIdSet = List[SecurityGroupId]
 
 
@@ -4230,6 +4299,14 @@ class CancelSpotInstanceRequestsResult(TypedDict, total=False):
     CancelledSpotInstanceRequests: Optional[CancelledSpotInstanceRequestList]
 
 
+class CapacityAllocation(TypedDict, total=False):
+    AllocationType: Optional[AllocationType]
+    Count: Optional[Integer]
+
+
+CapacityAllocations = List[CapacityAllocation]
+
+
 class CapacityReservation(TypedDict, total=False):
     CapacityReservationId: Optional[String]
     OwnerId: Optional[String]
@@ -4253,6 +4330,7 @@ class CapacityReservation(TypedDict, total=False):
     OutpostArn: Optional[OutpostArn]
     CapacityReservationFleetId: Optional[String]
     PlacementGroupArn: Optional[PlacementGroupArn]
+    CapacityAllocations: Optional[CapacityAllocations]
 
 
 class FleetCapacityReservation(TypedDict, total=False):
@@ -5092,6 +5170,7 @@ class FleetLaunchTemplateOverrides(TypedDict, total=False):
     Priority: Optional[Double]
     Placement: Optional[PlacementResponse]
     InstanceRequirements: Optional[InstanceRequirements]
+    ImageId: Optional[ImageId]
 
 
 class FleetLaunchTemplateSpecification(TypedDict, total=False):
@@ -5204,6 +5283,7 @@ class FleetLaunchTemplateOverridesRequest(TypedDict, total=False):
     Priority: Optional[Double]
     Placement: Optional[Placement]
     InstanceRequirements: Optional[InstanceRequirementsRequest]
+    ImageId: Optional[ImageId]
 
 
 FleetLaunchTemplateOverridesListRequest = List[FleetLaunchTemplateOverridesRequest]
@@ -10529,64 +10609,6 @@ class DescribeNetworkInsightsAnalysesRequest(ServiceRequest):
     MaxResults: Optional[NetworkInsightsMaxResults]
     DryRun: Optional[Boolean]
     NextToken: Optional[NextToken]
-
-
-StringList = List[String]
-
-
-class Explanation(TypedDict, total=False):
-    Acl: Optional[AnalysisComponent]
-    AclRule: Optional[AnalysisAclRule]
-    Address: Optional[IpAddress]
-    Addresses: Optional[IpAddressList]
-    AttachedTo: Optional[AnalysisComponent]
-    AvailabilityZones: Optional[ValueStringList]
-    Cidrs: Optional[ValueStringList]
-    Component: Optional[AnalysisComponent]
-    CustomerGateway: Optional[AnalysisComponent]
-    Destination: Optional[AnalysisComponent]
-    DestinationVpc: Optional[AnalysisComponent]
-    Direction: Optional[String]
-    ExplanationCode: Optional[String]
-    IngressRouteTable: Optional[AnalysisComponent]
-    InternetGateway: Optional[AnalysisComponent]
-    LoadBalancerArn: Optional[ResourceArn]
-    ClassicLoadBalancerListener: Optional[AnalysisLoadBalancerListener]
-    LoadBalancerListenerPort: Optional[Port]
-    LoadBalancerTarget: Optional[AnalysisLoadBalancerTarget]
-    LoadBalancerTargetGroup: Optional[AnalysisComponent]
-    LoadBalancerTargetGroups: Optional[AnalysisComponentList]
-    LoadBalancerTargetPort: Optional[Port]
-    ElasticLoadBalancerListener: Optional[AnalysisComponent]
-    MissingComponent: Optional[String]
-    NatGateway: Optional[AnalysisComponent]
-    NetworkInterface: Optional[AnalysisComponent]
-    PacketField: Optional[String]
-    VpcPeeringConnection: Optional[AnalysisComponent]
-    Port: Optional[Port]
-    PortRanges: Optional[PortRangeList]
-    PrefixList: Optional[AnalysisComponent]
-    Protocols: Optional[StringList]
-    RouteTableRoute: Optional[AnalysisRouteTableRoute]
-    RouteTable: Optional[AnalysisComponent]
-    SecurityGroup: Optional[AnalysisComponent]
-    SecurityGroupRule: Optional[AnalysisSecurityGroupRule]
-    SecurityGroups: Optional[AnalysisComponentList]
-    SourceVpc: Optional[AnalysisComponent]
-    State: Optional[String]
-    Subnet: Optional[AnalysisComponent]
-    SubnetRouteTable: Optional[AnalysisComponent]
-    Vpc: Optional[AnalysisComponent]
-    VpcEndpoint: Optional[AnalysisComponent]
-    VpnConnection: Optional[AnalysisComponent]
-    VpnGateway: Optional[AnalysisComponent]
-    TransitGateway: Optional[AnalysisComponent]
-    TransitGatewayRouteTable: Optional[AnalysisComponent]
-    TransitGatewayRouteTableRoute: Optional[TransitGatewayRouteTableRoute]
-    TransitGatewayAttachment: Optional[AnalysisComponent]
-
-
-ExplanationList = List[Explanation]
 
 
 class NetworkInsightsAnalysis(TypedDict, total=False):
