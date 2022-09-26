@@ -267,12 +267,41 @@ class TestKMS:
         key_spec = "RSA_2048" if key_type == "rsa" else "ECC_NIST_P256"
         result = kms_create_key(KeyUsage="SIGN_VERIFY", KeySpec=key_spec)
         key_id = result["KeyId"]
-
-        message = b"test message 123 !%$@"
+        # 32 bytes to also match the expected length of SHA 256 digest. Initially our code didn't react to
+        # MessageType at all, so both "RAW" and "DIGEST" values had the same result, i.e. digests were being treated
+        # like plaintext. So using this message both as a plaintext and a digest of some plaintext allows us to test
+        # that we have different implementations for different MessageTypes.
+        message = b"test message 123 !%$@ 1234567890"
         algo = "RSASSA_PSS_SHA_256" if key_type == "rsa" else "ECDSA_SHA_256"
         kwargs = {"KeyId": key_id, "Message": message, "SigningAlgorithm": algo}
-        signature = kms_client.sign(**kwargs)["Signature"]
-        assert kms_client.verify(Signature=signature, **kwargs)["SignatureValid"]
+
+        # These following locks basically test that MessageType="DIGEST" results in a different outcome
+        # from the default MessageType="RAW". As long as both Sign and Verify are called with the same MessageType,
+        # everything should work, while if this parameter mismatches between such two calls - the verifications is
+        # supposed to fail.
+        #
+        # There is a possibility that I do not understand how digests work, so can't write better tests. So if we
+        # have any issues with the digests - know that the current approach is not a calculated design, but rather a
+        # guess.
+        signature = kms_client.sign(MessageType="RAW", **kwargs)["Signature"]
+        assert kms_client.verify(MessageType="RAW", Signature=signature, **kwargs)["SignatureValid"]
+
+        signature = kms_client.sign(MessageType="RAW", **kwargs)["Signature"]
+        with pytest.raises(kms_client.exceptions.KMSInvalidSignatureException):
+            assert not kms_client.verify(MessageType="DIGEST", Signature=signature, **kwargs)[
+                "SignatureValid"
+            ]
+
+        signature = kms_client.sign(MessageType="DIGEST", **kwargs)["Signature"]
+        with pytest.raises(kms_client.exceptions.KMSInvalidSignatureException):
+            assert not kms_client.verify(MessageType="RAW", Signature=signature, **kwargs)[
+                "SignatureValid"
+            ]
+
+        signature = kms_client.sign(MessageType="DIGEST", **kwargs)["Signature"]
+        assert kms_client.verify(MessageType="DIGEST", Signature=signature, **kwargs)[
+            "SignatureValid"
+        ]
 
     @pytest.mark.aws_validated
     def test_get_public_key(self, kms_client, kms_create_key):
