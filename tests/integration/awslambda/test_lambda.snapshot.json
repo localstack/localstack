@@ -902,5 +902,107 @@
         }
       }
     }
+  },
+  "tests/integration/awslambda/test_lambda.py::TestLambdaConcurrency::test_lambda_concurrency_block": {
+    "recorded-date": "26-09-2022, 11:33:01",
+    "recorded-content": {
+      "v1_result": {
+        "CodeSha256": "code-sha256",
+        "CodeSize": 264,
+        "Description": "",
+        "Environment": {
+          "Variables": {}
+        },
+        "EphemeralStorage": {
+          "Size": 512
+        },
+        "FunctionArn": "arn:aws:lambda:<region>:111111111111:function:<function-name:1>:1",
+        "FunctionName": "<function-name:1>",
+        "Handler": "handler.handler",
+        "LastModified": "date",
+        "LastUpdateStatus": "Successful",
+        "MemorySize": 128,
+        "PackageType": "Zip",
+        "RevisionId": "<uuid:1>",
+        "Role": "arn:aws:iam::111111111111:role/<resource:2>",
+        "Runtime": "python3.9",
+        "State": "Active",
+        "Timeout": 30,
+        "TracingConfig": {
+          "Mode": "PassThrough"
+        },
+        "Version": "1",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 201
+        }
+      },
+      "reserved_concurrency_result": {
+        "ReservedConcurrentExecutions": 1,
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "invoke_latest_before_block": {
+        "ExecutedVersion": "$LATEST",
+        "Payload": {
+          "hello": "world"
+        },
+        "StatusCode": 200,
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "provisioned_concurrency_result": {
+        "AllocatedProvisionedConcurrentExecutions": 0,
+        "AvailableProvisionedConcurrentExecutions": 0,
+        "LastModified": "date",
+        "RequestedProvisionedConcurrentExecutions": 1,
+        "Status": "IN_PROGRESS",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 202
+        }
+      },
+      "invoke_latest_first_exc": {
+        "Error": {
+          "Code": "TooManyRequestsException",
+          "Message": "Rate Exceeded."
+        },
+        "Reason": "ReservedFunctionConcurrentInvocationLimitExceeded",
+        "Type": "User",
+        "message": "Rate Exceeded.",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 429
+        }
+      },
+      "invoke_v1_after_block": {
+        "ExecutedVersion": "1",
+        "Payload": {
+          "hello": "world"
+        },
+        "StatusCode": 200,
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "invoke_latest_second_exc": {
+        "Error": {
+          "Code": "TooManyRequestsException",
+          "Message": "Rate Exceeded."
+        },
+        "Reason": "ReservedFunctionConcurrentInvocationLimitExceeded",
+        "Type": "User",
+        "message": "Rate Exceeded.",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 429
+        }
+      }
+    }
   }
 }

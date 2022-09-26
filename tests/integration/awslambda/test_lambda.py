@@ -11,7 +11,7 @@ from botocore.response import StreamingBody
 
 from localstack.aws.api.lambda_ import Runtime
 from localstack.services.awslambda.lambda_api import use_docker
-from localstack.testing.aws.lambda_utils import is_old_provider
+from localstack.testing.aws.lambda_utils import concurrency_update_done, is_old_provider
 from localstack.testing.snapshots.transformer import KeyValueBasedTransformer
 from localstack.testing.snapshots.transformer_utility import PATTERN_UUID
 from localstack.utils import testutil
@@ -767,3 +767,68 @@ class TestLambdaFeatures:
 
     # TODO general invocation tests, all runtimes except ruby and go, payload with strings, unicode, large payloads etc.
     # TODO general error tests, all runtimes except ruby and go
+
+
+class TestLambdaConcurrency:
+    def test_lambda_concurrency_block(self, snapshot, create_lambda_function, lambda_client):
+        """
+        Tests an edge case where reserved concurrency is equal to the sum of all provisioned concurrencies for a function.
+        In this case we can't call $LATEST anymore since there's no "free"/unclaimed concurrency left to execute the function with
+        """
+        # function
+        func_name = f"fn-concurrency-{short_uid()}"
+        create_lambda_function(
+            func_name=func_name,
+            handler_file=TEST_LAMBDA_PYTHON_ECHO,
+            runtime=Runtime.python3_9,
+        )
+
+        # reserved concurrency
+        v1_result = lambda_client.publish_version(FunctionName=func_name)
+        snapshot.match("v1_result", v1_result)
+        v1 = v1_result["Version"]
+
+        # assert version is available(!)
+        lambda_client.get_waiter(waiter_name="function_active_v2").wait(
+            FunctionName=func_name, Qualifier=v1
+        )
+
+        # Reserved concurrency works on the whole function
+        reserved_concurrency_result = lambda_client.put_function_concurrency(
+            FunctionName=func_name, ReservedConcurrentExecutions=1
+        )
+        snapshot.match("reserved_concurrency_result", reserved_concurrency_result)
+
+        # verify we can call $LATEST
+        invoke_latest_before_block = lambda_client.invoke(
+            FunctionName=func_name, Qualifier="$LATEST", Payload=json.dumps({"hello": "world"})
+        )
+        snapshot.match("invoke_latest_before_block", invoke_latest_before_block)
+
+        # Provisioned concurrency works on individual version/aliases, but *not* on $LATEST
+        provisioned_concurrency_result = lambda_client.put_provisioned_concurrency_config(
+            FunctionName=func_name, Qualifier=v1, ProvisionedConcurrentExecutions=1
+        )
+        snapshot.match("provisioned_concurrency_result", provisioned_concurrency_result)
+
+        assert wait_until(concurrency_update_done(lambda_client, func_name, v1))
+
+        # verify we can't call $LATEST anymore
+        with pytest.raises(lambda_client.exceptions.TooManyRequestsException) as e:
+            lambda_client.invoke(
+                FunctionName=func_name, Qualifier="$LATEST", Payload=json.dumps({"hello": "world"})
+            )
+        snapshot.match("invoke_latest_first_exc", e.value.response)
+
+        # but we can call the version with provisioned cocurrency
+        invoke_v1_after_block = lambda_client.invoke(
+            FunctionName=func_name, Qualifier=v1, Payload=json.dumps({"hello": "world"})
+        )
+        snapshot.match("invoke_v1_after_block", invoke_v1_after_block)
+
+        # verify we can't call $LATEST again
+        with pytest.raises(lambda_client.exceptions.TooManyRequestsException) as e:
+            lambda_client.invoke(
+                FunctionName=func_name, Qualifier="$LATEST", Payload=json.dumps({"hello": "world"})
+            )
+        snapshot.match("invoke_latest_second_exc", e.value.response)
