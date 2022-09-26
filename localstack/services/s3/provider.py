@@ -41,6 +41,7 @@ from localstack.aws.api.s3 import (
     PutBucketLifecycleConfigurationRequest,
     PutBucketLifecycleRequest,
     PutBucketRequestPaymentRequest,
+    PutBucketVersioningRequest,
     PutObjectOutput,
     PutObjectRequest,
     S3Api,
@@ -55,6 +56,7 @@ from localstack.services.moto import call_moto
 from localstack.services.plugins import ServiceLifecycleHook
 from localstack.services.s3.models import S3Store, s3_stores
 from localstack.services.s3.utils import (
+    ALLOWED_HEADER_OVERRIDES,
     VALID_ACL_PREDEFINED_GROUPS,
     VALID_GRANTEE_PERMISSIONS,
     get_header_name,
@@ -101,6 +103,11 @@ class S3Provider(S3Api, ServiceLifecycleHook):
     def get_store() -> S3Store:
         return s3_stores[get_aws_account_id()][aws_stack.get_region()]
 
+    def _clear_bucket_from_store(self, bucket: BucketName):
+        store = self.get_store()
+        store.bucket_lifecycle_configuration.pop(bucket, None)
+        store.bucket_versioning_status.pop(bucket, None)
+
     def on_after_init(self):
         apply_moto_patches()
         self.add_custom_routes()
@@ -127,9 +134,7 @@ class S3Provider(S3Api, ServiceLifecycleHook):
         self, context: RequestContext, bucket: BucketName, expected_bucket_owner: AccountId = None
     ) -> None:
         call_moto(context)
-        store = self.get_store()
-        # TODO: create a helper method for cleaning up the store, already done in next PR
-        store.bucket_lifecycle_configuration.pop(bucket, None)
+        self._clear_bucket_from_store(bucket)
 
     def get_bucket_location(
         self, context: RequestContext, bucket: BucketName, expected_bucket_owner: AccountId = None
@@ -203,14 +208,24 @@ class S3Provider(S3Api, ServiceLifecycleHook):
     @handler("GetObject", expand=False)
     def get_object(self, context: RequestContext, request: GetObjectRequest) -> GetObjectOutput:
         key = request["Key"]
-        if is_object_expired(context, bucket=request["Bucket"], key=key):
+        bucket = request["Bucket"]
+        if is_object_expired(context, bucket=bucket, key=key):
             # TODO: old behaviour was deleting key instantly if expired. AWS cleans up only once a day generally
             # see if we need to implement a feature flag
             # but you can still HeadObject on it and you get the expiry time
             ex = NoSuchKey("The specified key does not exist.")
             ex.Key = key
             raise ex
+
         response: GetObjectOutput = call_moto(context)
+        # check for the presence in the response, might be fixed by moto one day
+        if "VersionId" in response and bucket not in self.get_store().bucket_versioning_status:
+            response.pop("VersionId")
+
+        for request_param, response_param in ALLOWED_HEADER_OVERRIDES.items():
+            if request_param_value := request.get(request_param):  # noqa
+                response[response_param] = request_param_value  # noqa
+
         response["AcceptRanges"] = "bytes"
         return response
 
@@ -225,11 +240,16 @@ class S3Provider(S3Api, ServiceLifecycleHook):
 
         response: PutObjectOutput = call_moto(context)
 
+        # moto interprets the Expires in query string for presigned URL as an Expires header and use it for the object
+        # we set it to the correctly parsed value in Request, else we remove it from moto metadata
+        moto_backend = get_moto_s3_backend(context)
+        bucket = get_bucket_from_moto(moto_backend, bucket=request["Bucket"])
+        key_object = get_key_from_moto_bucket(bucket, key=request["Key"])
         if expires := request.get("Expires"):
-            moto_backend = get_moto_s3_backend(context)
-            bucket = get_bucket_from_moto(moto_backend, bucket=request["Bucket"])
-            key_object = get_key_from_moto_bucket(bucket, key=request["Key"])
             key_object.set_expiry(expires)
+        elif "expires" in key_object.metadata:  # if it got added from query string parameter
+            metadata = {k: v for k, v in key_object.metadata.items() if k != "expires"}
+            key_object.set_metadata(metadata, replace=True)
 
         return response
 
@@ -361,6 +381,19 @@ class S3Provider(S3Api, ServiceLifecycleHook):
             validate_acl_acp(acp)
 
         call_moto(context)
+
+    @handler("PutBucketVersioning", expand=False)
+    def put_bucket_versioning(
+        self,
+        context: RequestContext,
+        request: PutBucketVersioningRequest,
+    ) -> None:
+        call_moto(context)
+        # set it in the store, so we can keep the state if it was ever enabled
+        if versioning_status := request.get("VersioningConfiguration", {}).get("Status"):
+            bucket_name = request.get("Bucket", "")
+            store = self.get_store()
+            store.bucket_versioning_status[bucket_name] = versioning_status == "Enabled"
 
     def add_custom_routes(self):
         # virtual-host style: https://bucket-name.s3.region-code.amazonaws.com/key-name
@@ -600,6 +633,15 @@ def apply_moto_patches():
 
         if storage_class == "DEEP_ARCHIVE" and not headers.get("x-amz-restore"):
             raise InvalidObjectState(storage_class=storage_class)
+
+        return code, headers, body
+
+    @patch(moto_s3_responses.S3Response._key_response_post)
+    def _fix_key_response_post(fn, self, request, body, bucket_name, *args, **kwargs):
+        code, headers, body = fn(self, request, body, bucket_name, *args, **kwargs)
+        bucket = self.backend.get_bucket(bucket_name)
+        if not bucket.is_versioned:
+            headers.pop("x-amz-version-id", None)
 
         return code, headers, body
 
