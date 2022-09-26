@@ -520,3 +520,27 @@ class TestKMS:
         kms_client.untag_resource(KeyId=key_id, TagKeys=[new_tag_one.get("TagKey")])
         assert _are_tags_there([tag_two, tag_three], key_id) is True
         assert _are_tags_there([new_tag_one], key_id) is False
+
+    @pytest.mark.aws_validated
+    def test_cant_use_disabled_or_deleted_keys(self, kms_client, kms_create_key):
+        key_id = kms_create_key(KeySpec="SYMMETRIC_DEFAULT", KeyUsage="ENCRYPT_DECRYPT")["KeyId"]
+        kms_client.generate_data_key(KeyId=key_id, KeySpec="AES_256")
+
+        kms_client.disable_key(KeyId=key_id)
+        with pytest.raises(botocore.exceptions.ClientError) as e:
+            kms_client.generate_data_key(KeyId=key_id, KeySpec="AES_256")
+        e.match("DisabledException")
+
+        kms_client.schedule_key_deletion(KeyId=key_id)
+        with pytest.raises(botocore.exceptions.ClientError) as e:
+            kms_client.generate_data_key(KeyId=key_id, KeySpec="AES_256")
+        e.match("KMSInvalidStateException")
+
+    @pytest.mark.aws_validated
+    def test_cant_delete_deleted_key(self, kms_client, kms_create_key):
+        key_id = kms_create_key()["KeyId"]
+        kms_client.schedule_key_deletion(KeyId=key_id)
+
+        with pytest.raises(botocore.exceptions.ClientError) as e:
+            kms_client.schedule_key_deletion(KeyId=key_id)
+        e.match("KMSInvalidStateException")
