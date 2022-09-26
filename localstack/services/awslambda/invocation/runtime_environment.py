@@ -71,7 +71,7 @@ class RuntimeEnvironment:
         return f"/aws/lambda/{self.function_version.id.function_name}"
 
     def get_log_stream_name(self) -> str:
-        return f"{date.today():%Y/%m/%d}/[{self.function_version.qualifier}]{self.id}"
+        return f"{date.today():%Y/%m/%d}/[{self.function_version.id.qualifier}]{self.id}"
 
     def get_environment_variables(self) -> Dict[str, str]:
         """
@@ -88,7 +88,7 @@ class RuntimeEnvironment:
             "AWS_LAMBDA_FUNCTION_NAME": self.function_version.id.function_name,
             "AWS_LAMBDA_FUNCTION_TIMEOUT": self.function_version.config.timeout,
             "AWS_LAMBDA_FUNCTION_MEMORY_SIZE": self.function_version.config.memory_size,  # TODO use correct memory size
-            "AWS_LAMBDA_FUNCTION_VERSION": self.function_version.qualifier,
+            "AWS_LAMBDA_FUNCTION_VERSION": self.function_version.id.qualifier,
             "AWS_DEFAULT_REGION": self.function_version.id.region,
             "AWS_REGION": self.function_version.id.region,
             "TASK_ROOT": "/var/task",  # TODO custom runtimes?

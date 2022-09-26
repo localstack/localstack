@@ -63,6 +63,7 @@ from localstack.aws.api.lambda_ import (
     NamespacedFunctionName,
     NamespacedStatementId,
     PackageType,
+    PreconditionFailedException,
     PutFunctionCodeSigningConfigResponse,
     Qualifier,
     ResourceConflictException,
@@ -103,6 +104,7 @@ from localstack.services.awslambda.invocation.lambda_service import (
 )
 from localstack.services.awslambda.invocation.lambda_util import (
     format_lambda_date,
+    function_name_from_arn,
     generate_lambda_date,
     lambda_arn,
     qualified_lambda_arn,
@@ -136,8 +138,8 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
         function_name: str, qualifier: str | None, account_id: str, region: str
     ):
         state = lambda_stores[account_id][region]
-        qualifier_or_latest = qualifier or "$LATEST"
         function = state.functions.get(function_name)
+        qualifier_or_latest = qualifier or "$LATEST"
         version = function and function.versions.get(qualifier_or_latest)
         if not function or not version:
             arn = lambda_arn(
@@ -177,7 +179,9 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
                 result["StateReasonCode"] = version_state.code
         return result
 
-    def _map_config_out(self, version: FunctionVersion) -> FunctionConfiguration:
+    def _map_config_out(
+        self, version: FunctionVersion, return_qualified_arn: bool = False
+    ) -> FunctionConfiguration:
 
         # handle optional entries that shouldn't be rendered at all if not present
         optional_kwargs = {}
@@ -194,7 +198,9 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
         func_conf = FunctionConfiguration(
             RevisionId=version.config.revision_id,
             FunctionName=version.id.function_name,
-            FunctionArn=version.id.unqualified_arn(),  # qualifier usually not included
+            FunctionArn=version.id.qualified_arn()
+            if return_qualified_arn
+            else version.id.unqualified_arn(),  # qualifier usually not included
             LastModified=version.config.last_modified,
             Version=version.id.qualifier,
             Description=version.config.description,
@@ -226,6 +232,54 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
                 del shallow_copy[k]
         return shallow_copy
 
+    def _publish_version(
+        self,
+        function_name: str,
+        region: str,
+        account_id: str,
+        description: str | None,
+        revision_id: str | None,
+        code_sha256: str | None,
+    ):
+        current_latest_version = self._get_function_version(
+            function_name=function_name, qualifier="$LATEST", account_id=account_id, region=region
+        )
+        if revision_id and current_latest_version.config.revision_id != revision_id:
+            raise PreconditionFailedException(
+                "The Revision Id provided does not match the latest Revision Id. Call the GetFunction/GetAlias API to retrieve the latest Revision Id",
+                Type="User",
+            )
+        current_hash = current_latest_version.config.code.code_sha256
+        if code_sha256 and current_hash != code_sha256:
+            raise InvalidParameterValueException(
+                f"CodeSHA256 ({code_sha256}) is different from current CodeSHA256 in $LATEST ({current_hash}). Please try again with the CodeSHA256 in $LATEST.",
+                Type="User",
+            )
+        state = lambda_stores[account_id][region]
+        function = state.functions.get(function_name)
+        changes = {}
+        if description is not None:
+            changes["description"] = description
+        with function.lock:
+            # TODO check if there was a change since last version
+            next_version = str(function.next_version)
+            function.next_version += 1
+            new_id = VersionIdentifier(
+                function_name=function_name,
+                qualifier=next_version,
+                region=region,
+                account=account_id,
+            )
+            new_version = dataclasses.replace(
+                current_latest_version,
+                config=dataclasses.replace(current_latest_version.config, **changes),
+                id=new_id,
+            )
+            function.versions[next_version] = new_version
+        # TODO state active from the start?
+        self.lambda_service.create_function_version(new_version)
+        return new_version
+
     @handler(operation="CreateFunction", expand=False)
     def create_function(
         self,
@@ -242,11 +296,10 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
         state = lambda_stores[context.account_id][context.region]
 
         function_name = request["FunctionName"]
-        if function_name in state.functions:
-            raise ResourceConflictException(f"Function already exist: {function_name}")
-        fn = Function(function_name=function_name)
-
         with self.create_fn_lock:
+            if function_name in state.functions:
+                raise ResourceConflictException(f"Function already exist: {function_name}")
+            fn = Function(function_name=function_name)
             arn = VersionIdentifier(
                 function_name=function_name,
                 qualifier="$LATEST",
@@ -281,7 +334,6 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
 
             version = FunctionVersion(
                 id=arn,
-                qualifier="$LATEST",
                 config=VersionFunctionConfiguration(
                     function_arn=arn.qualified_arn(),
                     last_modified=format_lambda_date(datetime.datetime.now()),
@@ -511,7 +563,7 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
         # TODO what if no version?
         code = version.config.code
         return GetFunctionResponse(
-            Configuration=self._map_config_out(version),
+            Configuration=self._map_config_out(version, return_qualified_arn=bool(qualifier)),
             Code=FunctionCodeLocation(
                 Location=code.generate_presigned_url(), RepositoryType="S3"
             ),  # TODO
@@ -533,7 +585,7 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
             account_id=context.account_id,
             region=context.region,
         )
-        return self._map_config_out(version)
+        return self._map_config_out(version, return_qualified_arn=bool(qualifier))
 
     def invoke(
         self,
@@ -547,33 +599,17 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
     ) -> InvocationResponse:
 
         function_name, qualifier = get_name_and_qualifier(function_name, qualifier)
-        # we do not really need the version here, but check if it is there
-        self._get_function_version(
-            function_name=function_name,
-            qualifier=qualifier,
-            account_id=context.account_id,
-            region=context.region,
-        )
-        # Invoked arn (for lambda context) does not have qualifier if not supplied
-        invoked_arn = lambda_arn(
-            function_name=function_name,
-            qualifier=qualifier,
-            account=context.account_id,
-            region=context.region,
-        )
-        qualifier = qualifier or "$LATEST"
-        # Need the qualified arn to exactly get the target lambda
-        qualified_arn = qualified_lambda_arn(
-            function_name, qualifier, context.account_id, context.region
-        )
         time_before = time.perf_counter()
         result = self.lambda_service.invoke(
-            function_arn_qualified=qualified_arn,
+            function_name=function_name,
+            qualifier=qualifier,
+            region=context.region,
+            account_id=context.account_id,
             invocation_type=invocation_type,
             client_context=client_context,
             payload=payload.read() if payload else None,
-            invoked_arn=invoked_arn,
         )
+        qualifier = qualifier or "$LATEST"
         try:
             invocation_result = result.result()
         except Exception as e:
@@ -611,7 +647,16 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
         description: Description = None,
         revision_id: String = None,
     ) -> FunctionConfiguration:
-        ...
+        function_name = function_name_from_arn(function_name)
+        new_version = self._publish_version(
+            function_name=function_name,
+            description=description,
+            account_id=context.account_id,
+            region=context.region,
+            revision_id=revision_id,
+            code_sha256=code_sha256,
+        )
+        return self._map_config_out(new_version, return_qualified_arn=True)
 
     def list_versions_by_function(
         self,

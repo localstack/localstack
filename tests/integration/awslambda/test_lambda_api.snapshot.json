@@ -1,6 +1,6 @@
 {
   "tests/integration/awslambda/test_lambda_api.py::TestLambdaFunction::test_function_lifecycle": {
-    "recorded-date": "22-09-2022, 12:55:27",
+    "recorded-date": "26-09-2022, 21:21:23",
     "recorded-content": {
       "create_response": {
         "CreateEventSourceMappingResponse": null,
@@ -8,7 +8,7 @@
           "Architectures": [
             "x86_64"
           ],
-          "CodeSha256": "code-sha256",
+          "CodeSha256": "<code-sha256:1>",
           "CodeSize": 264,
           "Description": "",
           "Environment": {
@@ -49,7 +49,7 @@
           "Architectures": [
             "x86_64"
           ],
-          "CodeSha256": "code-sha256",
+          "CodeSha256": "<code-sha256:1>",
           "CodeSize": 264,
           "Description": "",
           "Environment": {
@@ -84,7 +84,7 @@
         "Architectures": [
           "x86_64"
         ],
-        "CodeSha256": "code-sha256",
+        "CodeSha256": "<code-sha256:1>",
         "CodeSize": 264,
         "Description": "Changed-Description",
         "Environment": {
@@ -127,7 +127,7 @@
           "Architectures": [
             "x86_64"
           ],
-          "CodeSha256": "code-sha256",
+          "CodeSha256": "<code-sha256:1>",
           "CodeSize": 264,
           "Description": "Changed-Description",
           "Environment": {
@@ -164,7 +164,7 @@
         "Architectures": [
           "x86_64"
         ],
-        "CodeSha256": "code-sha256",
+        "CodeSha256": "<code-sha256:2>",
         "CodeSize": 311,
         "Description": "Changed-Description",
         "Environment": {
@@ -207,7 +207,7 @@
           "Architectures": [
             "x86_64"
           ],
-          "CodeSha256": "code-sha256",
+          "CodeSha256": "<code-sha256:2>",
           "CodeSize": 311,
           "Description": "Changed-Description",
           "Environment": {
@@ -261,7 +261,7 @@
     }
   },
   "tests/integration/awslambda/test_lambda_api.py::TestLambdaFunction::test_redundant_updates": {
-    "recorded-date": "22-09-2022, 17:49:35",
+    "recorded-date": "26-09-2022, 21:21:41",
     "recorded-content": {
       "create_response": {
         "CreateEventSourceMappingResponse": null,
@@ -269,7 +269,7 @@
           "Architectures": [
             "x86_64"
           ],
-          "CodeSha256": "code-sha256",
+          "CodeSha256": "<code-sha256:1>",
           "CodeSize": 264,
           "Description": "Initial description",
           "Environment": {
@@ -305,7 +305,7 @@
         "Architectures": [
           "x86_64"
         ],
-        "CodeSha256": "code-sha256",
+        "CodeSha256": "<code-sha256:1>",
         "CodeSize": 264,
         "Description": "1st update description",
         "Environment": {
@@ -341,7 +341,7 @@
         "Architectures": [
           "x86_64"
         ],
-        "CodeSha256": "code-sha256",
+        "CodeSha256": "<code-sha256:1>",
         "CodeSize": 264,
         "Description": "1st update description",
         "Environment": {
@@ -380,7 +380,7 @@
           "Architectures": [
             "x86_64"
           ],
-          "CodeSha256": "code-sha256",
+          "CodeSha256": "<code-sha256:1>",
           "CodeSize": 264,
           "Description": "1st update description",
           "Environment": {
@@ -415,7 +415,7 @@
         "Architectures": [
           "x86_64"
         ],
-        "CodeSha256": "code-sha256",
+        "CodeSha256": "<code-sha256:1>",
         "CodeSize": 264,
         "Description": "1st update description",
         "Environment": {
@@ -456,7 +456,7 @@
           "Architectures": [
             "x86_64"
           ],
-          "CodeSha256": "code-sha256",
+          "CodeSha256": "<code-sha256:1>",
           "CodeSize": 264,
           "Description": "1st update description",
           "Environment": {
@@ -489,8 +489,175 @@
       }
     }
   },
+  "tests/integration/awslambda/test_lambda_api.py::TestLambdaFunction::test_ops_with_arn_qualifier_mismatch[delete_function]": {
+    "recorded-date": "26-09-2022, 21:21:41",
+    "recorded-content": {
+      "not_match_exception": {
+        "Error": {
+          "Code": "InvalidParameterValueException",
+          "Message": "The derived qualifier from the function name does not match the specified qualifier."
+        },
+        "Type": "User",
+        "message": "The derived qualifier from the function name does not match the specified qualifier.",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "match_exception": {
+        "Error": {
+          "Code": "InvalidParameterValueException",
+          "Message": "$LATEST version cannot be deleted without deleting the function."
+        },
+        "Type": "User",
+        "message": "$LATEST version cannot be deleted without deleting the function.",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/integration/awslambda/test_lambda_api.py::TestLambdaFunction::test_ops_with_arn_qualifier_mismatch[get_function]": {
+    "recorded-date": "26-09-2022, 21:21:41",
+    "recorded-content": {
+      "not_match_exception": {
+        "Error": {
+          "Code": "InvalidParameterValueException",
+          "Message": "The derived qualifier from the function name does not match the specified qualifier."
+        },
+        "Type": "User",
+        "message": "The derived qualifier from the function name does not match the specified qualifier.",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "match_exception": {
+        "Error": {
+          "Code": "ResourceNotFoundException",
+          "Message": "Function not found: arn:aws:lambda:<region>:111111111111:function:some-function:$LATEST"
+        },
+        "Message": "Function not found: arn:aws:lambda:<region>:111111111111:function:some-function:$LATEST",
+        "Type": "User",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 404
+        }
+      }
+    }
+  },
+  "tests/integration/awslambda/test_lambda_api.py::TestLambdaFunction::test_ops_with_arn_qualifier_mismatch[get_function_configuration]": {
+    "recorded-date": "26-09-2022, 21:21:41",
+    "recorded-content": {
+      "not_match_exception": {
+        "Error": {
+          "Code": "InvalidParameterValueException",
+          "Message": "The derived qualifier from the function name does not match the specified qualifier."
+        },
+        "Type": "User",
+        "message": "The derived qualifier from the function name does not match the specified qualifier.",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "match_exception": {
+        "Error": {
+          "Code": "ResourceNotFoundException",
+          "Message": "Function not found: arn:aws:lambda:<region>:111111111111:function:some-function:$LATEST"
+        },
+        "Message": "Function not found: arn:aws:lambda:<region>:111111111111:function:some-function:$LATEST",
+        "Type": "User",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 404
+        }
+      }
+    }
+  },
+  "tests/integration/awslambda/test_lambda_api.py::TestLambdaFunction::test_ops_on_nonexisting_version[get_function]": {
+    "recorded-date": "26-09-2022, 21:21:57",
+    "recorded-content": {
+      "version_not_found_exception": {
+        "Error": {
+          "Code": "ResourceNotFoundException",
+          "Message": "Function not found: arn:aws:lambda:<region>:111111111111:function:<fn-name>:1221"
+        },
+        "Message": "Function not found: arn:aws:lambda:<region>:111111111111:function:<fn-name>:1221",
+        "Type": "User",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 404
+        }
+      }
+    }
+  },
+  "tests/integration/awslambda/test_lambda_api.py::TestLambdaFunction::test_ops_on_nonexisting_version[get_function_configuration]": {
+    "recorded-date": "26-09-2022, 21:22:12",
+    "recorded-content": {
+      "version_not_found_exception": {
+        "Error": {
+          "Code": "ResourceNotFoundException",
+          "Message": "Function not found: arn:aws:lambda:<region>:111111111111:function:<fn-name>:1221"
+        },
+        "Message": "Function not found: arn:aws:lambda:<region>:111111111111:function:<fn-name>:1221",
+        "Type": "User",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 404
+        }
+      }
+    }
+  },
+  "tests/integration/awslambda/test_lambda_api.py::TestLambdaFunction::test_ops_on_nonexisting_version[get_function_event_invoke_config]": {
+    "recorded-date": "26-09-2022, 21:22:27",
+    "recorded-content": {
+      "version_not_found_exception": {
+        "Error": {
+          "Code": "ResourceNotFoundException",
+          "Message": "The function arn:aws:lambda:<region>:111111111111:function:<fn-name>:1221 doesn't have an EventInvokeConfig"
+        },
+        "Message": "The function arn:aws:lambda:<region>:111111111111:function:<fn-name>:1221 doesn't have an EventInvokeConfig",
+        "Type": "User",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 404
+        }
+      }
+    }
+  },
+  "tests/integration/awslambda/test_lambda_api.py::TestLambdaFunction::test_delete_on_nonexisting_version": {
+    "recorded-date": "26-09-2022, 21:22:43",
+    "recorded-content": {
+      "delete_function_response_non_existent": {
+        "Error": {
+          "Code": "ResourceNotFoundException",
+          "Message": "Function not found: arn:aws:lambda:<region>:111111111111:function:<fn-name>"
+        },
+        "Message": "Function not found: arn:aws:lambda:<region>:111111111111:function:<fn-name>",
+        "Type": "User",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 404
+        }
+      },
+      "delete_function_response_non_existent_with_qualifier": {
+        "Error": {
+          "Code": "ResourceNotFoundException",
+          "Message": "Function not found: arn:aws:lambda:<region>:111111111111:function:<fn-name>"
+        },
+        "Message": "Function not found: arn:aws:lambda:<region>:111111111111:function:<fn-name>",
+        "Type": "User",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 404
+        }
+      }
+    }
+  },
   "tests/integration/awslambda/test_lambda_api.py::TestLambdaFunction::test_ops_on_nonexisting_fn[delete_function]": {
-    "recorded-date": "22-09-2022, 12:55:46",
+    "recorded-date": "26-09-2022, 21:22:43",
     "recorded-content": {
       "not_found_exception": {
         "Error": {
@@ -507,7 +674,7 @@
     }
   },
   "tests/integration/awslambda/test_lambda_api.py::TestLambdaFunction::test_ops_on_nonexisting_fn[get_function]": {
-    "recorded-date": "22-09-2022, 12:55:46",
+    "recorded-date": "26-09-2022, 21:22:43",
     "recorded-content": {
       "not_found_exception": {
         "Error": {
@@ -524,7 +691,7 @@
     }
   },
   "tests/integration/awslambda/test_lambda_api.py::TestLambdaFunction::test_ops_on_nonexisting_fn[get_function_configuration]": {
-    "recorded-date": "22-09-2022, 12:55:46",
+    "recorded-date": "26-09-2022, 21:22:43",
     "recorded-content": {
       "not_found_exception": {
         "Error": {
@@ -541,7 +708,7 @@
     }
   },
   "tests/integration/awslambda/test_lambda_api.py::TestLambdaFunction::test_ops_on_nonexisting_fn[get_function_url_config]": {
-    "recorded-date": "22-09-2022, 12:55:46",
+    "recorded-date": "26-09-2022, 21:22:44",
     "recorded-content": {
       "not_found_exception": {
         "Error": {
@@ -558,7 +725,7 @@
     }
   },
   "tests/integration/awslambda/test_lambda_api.py::TestLambdaFunction::test_ops_on_nonexisting_fn[get_function_code_signing_config]": {
-    "recorded-date": "22-09-2022, 12:55:46",
+    "recorded-date": "26-09-2022, 21:22:44",
     "recorded-content": {
       "not_found_exception": {
         "Error": {
@@ -575,7 +742,7 @@
     }
   },
   "tests/integration/awslambda/test_lambda_api.py::TestLambdaFunction::test_ops_on_nonexisting_fn[get_function_event_invoke_config]": {
-    "recorded-date": "22-09-2022, 12:55:47",
+    "recorded-date": "26-09-2022, 21:22:44",
     "recorded-content": {
       "not_found_exception": {
         "Error": {
@@ -592,7 +759,7 @@
     }
   },
   "tests/integration/awslambda/test_lambda_api.py::TestLambdaFunction::test_ops_on_nonexisting_fn[get_function_concurrency]": {
-    "recorded-date": "22-09-2022, 12:55:47",
+    "recorded-date": "26-09-2022, 21:22:44",
     "recorded-content": {
       "not_found_exception": {
         "Error": {
@@ -609,13 +776,13 @@
     }
   },
   "tests/integration/awslambda/test_lambda_api.py::TestLambdaFunction::test_lambda_code_location_zipfile": {
-    "recorded-date": "22-09-2022, 20:12:55",
+    "recorded-date": "26-09-2022, 21:22:46",
     "recorded-content": {
       "create-response-zip-file": {
         "Architectures": [
           "x86_64"
         ],
-        "CodeSha256": "code-sha256",
+        "CodeSha256": "<code-sha256:1>",
         "CodeSize": 264,
         "Description": "",
         "EphemeralStorage": {
@@ -652,7 +819,7 @@
           "Architectures": [
             "x86_64"
           ],
-          "CodeSha256": "code-sha256",
+          "CodeSha256": "<code-sha256:1>",
           "CodeSize": 264,
           "Description": "",
           "EphemeralStorage": {
@@ -684,7 +851,7 @@
         "Architectures": [
           "x86_64"
         ],
-        "CodeSha256": "code-sha256",
+        "CodeSha256": "<code-sha256:2>",
         "CodeSize": 311,
         "Description": "",
         "EphemeralStorage": {
@@ -722,7 +889,7 @@
           "Architectures": [
             "x86_64"
           ],
-          "CodeSha256": "code-sha256",
+          "CodeSha256": "<code-sha256:2>",
           "CodeSize": 311,
           "Description": "",
           "EphemeralStorage": {
@@ -755,13 +922,13 @@
     }
   },
   "tests/integration/awslambda/test_lambda_api.py::TestLambdaFunction::test_lambda_code_location_s3": {
-    "recorded-date": "22-09-2022, 12:55:57",
+    "recorded-date": "26-09-2022, 21:22:50",
     "recorded-content": {
       "create_response_s3": {
         "Architectures": [
           "x86_64"
         ],
-        "CodeSha256": "code-sha256",
+        "CodeSha256": "<code-sha256:1>",
         "CodeSize": 264,
         "Description": "",
         "EphemeralStorage": {
@@ -798,7 +965,7 @@
           "Architectures": [
             "x86_64"
           ],
-          "CodeSha256": "code-sha256",
+          "CodeSha256": "<code-sha256:1>",
           "CodeSize": 264,
           "Description": "",
           "EphemeralStorage": {
@@ -830,7 +997,7 @@
         "Architectures": [
           "x86_64"
         ],
-        "CodeSha256": "code-sha256",
+        "CodeSha256": "<code-sha256:2>",
         "CodeSize": 311,
         "Description": "",
         "EphemeralStorage": {
@@ -868,7 +1035,7 @@
           "Architectures": [
             "x86_64"
           ],
-          "CodeSha256": "code-sha256",
+          "CodeSha256": "<code-sha256:2>",
           "CodeSize": 311,
           "Description": "",
           "EphemeralStorage": {
@@ -901,13 +1068,13 @@
     }
   },
   "tests/integration/awslambda/test_lambda_api.py::TestLambdaVersions::test_publish_version_on_create": {
-    "recorded-date": "22-09-2022, 12:56:06",
+    "recorded-date": "26-09-2022, 21:37:06",
     "recorded-content": {
       "create_response": {
         "Architectures": [
           "x86_64"
         ],
-        "CodeSha256": "code-sha256",
+        "CodeSha256": "<code-sha256:1>",
         "CodeSize": 264,
         "Description": "",
         "EphemeralStorage": {
@@ -944,7 +1111,7 @@
           "Architectures": [
             "x86_64"
           ],
-          "CodeSha256": "code-sha256",
+          "CodeSha256": "<code-sha256:1>",
           "CodeSize": 264,
           "Description": "",
           "EphemeralStorage": {
@@ -972,13 +1139,87 @@
           "HTTPStatusCode": 200
         }
       },
+      "get_function_version_result": {
+        "Code": {
+          "Location": "<location>",
+          "RepositoryType": "S3"
+        },
+        "Configuration": {
+          "Architectures": [
+            "x86_64"
+          ],
+          "CodeSha256": "<code-sha256:1>",
+          "CodeSize": 264,
+          "Description": "",
+          "EphemeralStorage": {
+            "Size": 512
+          },
+          "FunctionArn": "arn:aws:lambda:<region>:111111111111:function:<function-name:1>:1",
+          "FunctionName": "<function-name:1>",
+          "Handler": "index.handler",
+          "LastModified": "date",
+          "LastUpdateStatus": "Successful",
+          "MemorySize": 128,
+          "PackageType": "Zip",
+          "RevisionId": "<uuid:3>",
+          "Role": "arn:aws:iam::111111111111:role/<resource:1>",
+          "Runtime": "python3.9",
+          "State": "Active",
+          "Timeout": 3,
+          "TracingConfig": {
+            "Mode": "PassThrough"
+          },
+          "Version": "1"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "get_function_latest_result": {
+        "Code": {
+          "Location": "<location>",
+          "RepositoryType": "S3"
+        },
+        "Configuration": {
+          "Architectures": [
+            "x86_64"
+          ],
+          "CodeSha256": "<code-sha256:1>",
+          "CodeSize": 264,
+          "Description": "",
+          "EphemeralStorage": {
+            "Size": 512
+          },
+          "FunctionArn": "arn:aws:lambda:<region>:111111111111:function:<function-name:1>:$LATEST",
+          "FunctionName": "<function-name:1>",
+          "Handler": "index.handler",
+          "LastModified": "date",
+          "LastUpdateStatus": "Successful",
+          "MemorySize": 128,
+          "PackageType": "Zip",
+          "RevisionId": "<uuid:2>",
+          "Role": "arn:aws:iam::111111111111:role/<resource:1>",
+          "Runtime": "python3.9",
+          "State": "Active",
+          "Timeout": 3,
+          "TracingConfig": {
+            "Mode": "PassThrough"
+          },
+          "Version": "$LATEST"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
       "list_versions_result": {
         "Versions": [
           {
             "Architectures": [
               "x86_64"
             ],
-            "CodeSha256": "code-sha256",
+            "CodeSha256": "<code-sha256:1>",
             "CodeSize": 264,
             "Description": "",
             "EphemeralStorage": {
@@ -1003,7 +1244,7 @@
             "Architectures": [
               "x86_64"
             ],
-            "CodeSha256": "code-sha256",
+            "CodeSha256": "<code-sha256:1>",
             "CodeSize": 264,
             "Description": "",
             "EphemeralStorage": {
@@ -1033,13 +1274,13 @@
     }
   },
   "tests/integration/awslambda/test_lambda_api.py::TestLambdaVersions::test_version_lifecycle": {
-    "recorded-date": "22-09-2022, 12:56:12",
+    "recorded-date": "26-09-2022, 21:23:02",
     "recorded-content": {
       "create_response": {
         "Architectures": [
           "x86_64"
         ],
-        "CodeSha256": "code-sha256",
+        "CodeSha256": "<code-sha256:1>",
         "CodeSize": 264,
         "Description": "No version :(",
         "EphemeralStorage": {
@@ -1076,7 +1317,7 @@
           "Architectures": [
             "x86_64"
           ],
-          "CodeSha256": "code-sha256",
+          "CodeSha256": "<code-sha256:1>",
           "CodeSize": 264,
           "Description": "No version :(",
           "EphemeralStorage": {
@@ -1110,7 +1351,7 @@
             "Architectures": [
               "x86_64"
             ],
-            "CodeSha256": "code-sha256",
+            "CodeSha256": "<code-sha256:1>",
             "CodeSize": 264,
             "Description": "No version :(",
             "EphemeralStorage": {
@@ -1141,7 +1382,7 @@
         "Architectures": [
           "x86_64"
         ],
-        "CodeSha256": "code-sha256",
+        "CodeSha256": "<code-sha256:1>",
         "CodeSize": 264,
         "Description": "First version :)",
         "EphemeralStorage": {
@@ -1170,11 +1411,48 @@
           "HTTPStatusCode": 200
         }
       },
+      "first_update_get_function": {
+        "Code": {
+          "Location": "<location>",
+          "RepositoryType": "S3"
+        },
+        "Configuration": {
+          "Architectures": [
+            "x86_64"
+          ],
+          "CodeSha256": "<code-sha256:1>",
+          "CodeSize": 264,
+          "Description": "First version :)",
+          "EphemeralStorage": {
+            "Size": 512
+          },
+          "FunctionArn": "arn:aws:lambda:<region>:111111111111:function:<function-name:1>",
+          "FunctionName": "<function-name:1>",
+          "Handler": "index.handler",
+          "LastModified": "date",
+          "LastUpdateStatus": "Successful",
+          "MemorySize": 128,
+          "PackageType": "Zip",
+          "RevisionId": "<uuid:4>",
+          "Role": "arn:aws:iam::111111111111:role/<resource:1>",
+          "Runtime": "python3.9",
+          "State": "Active",
+          "Timeout": 3,
+          "TracingConfig": {
+            "Mode": "PassThrough"
+          },
+          "Version": "$LATEST"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
       "first_publish_response": {
         "Architectures": [
           "x86_64"
         ],
-        "CodeSha256": "code-sha256",
+        "CodeSha256": "<code-sha256:1>",
         "CodeSize": 264,
         "Description": "First version description :)",
         "EphemeralStorage": {
@@ -1187,7 +1465,7 @@
         "LastUpdateStatus": "Successful",
         "MemorySize": 128,
         "PackageType": "Zip",
-        "RevisionId": "<uuid:4>",
+        "RevisionId": "<uuid:5>",
         "Role": "arn:aws:iam::111111111111:role/<resource:1>",
         "Runtime": "python3.9",
         "State": "Active",
@@ -1201,11 +1479,48 @@
           "HTTPStatusCode": 201
         }
       },
+      "first_publish_get_function": {
+        "Code": {
+          "Location": "<location>",
+          "RepositoryType": "S3"
+        },
+        "Configuration": {
+          "Architectures": [
+            "x86_64"
+          ],
+          "CodeSha256": "<code-sha256:1>",
+          "CodeSize": 264,
+          "Description": "First version description :)",
+          "EphemeralStorage": {
+            "Size": 512
+          },
+          "FunctionArn": "arn:aws:lambda:<region>:111111111111:function:<function-name:1>:1",
+          "FunctionName": "<function-name:1>",
+          "Handler": "index.handler",
+          "LastModified": "date",
+          "LastUpdateStatus": "Successful",
+          "MemorySize": 128,
+          "PackageType": "Zip",
+          "RevisionId": "<uuid:5>",
+          "Role": "arn:aws:iam::111111111111:role/<resource:1>",
+          "Runtime": "python3.9",
+          "State": "Active",
+          "Timeout": 3,
+          "TracingConfig": {
+            "Mode": "PassThrough"
+          },
+          "Version": "1"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
       "second_update_response": {
         "Architectures": [
           "x86_64"
         ],
-        "CodeSha256": "code-sha256",
+        "CodeSha256": "<code-sha256:1>",
         "CodeSize": 264,
         "Description": "Second version :))",
         "EphemeralStorage": {
@@ -1220,7 +1535,7 @@
         "LastUpdateStatusReasonCode": "Creating",
         "MemorySize": 128,
         "PackageType": "Zip",
-        "RevisionId": "<uuid:5>",
+        "RevisionId": "<uuid:6>",
         "Role": "arn:aws:iam::111111111111:role/<resource:1>",
         "Runtime": "python3.9",
         "State": "Active",
@@ -1234,13 +1549,50 @@
           "HTTPStatusCode": 200
         }
       },
+      "first_publish_get_function_after_update": {
+        "Code": {
+          "Location": "<location>",
+          "RepositoryType": "S3"
+        },
+        "Configuration": {
+          "Architectures": [
+            "x86_64"
+          ],
+          "CodeSha256": "<code-sha256:1>",
+          "CodeSize": 264,
+          "Description": "First version description :)",
+          "EphemeralStorage": {
+            "Size": 512
+          },
+          "FunctionArn": "arn:aws:lambda:<region>:111111111111:function:<function-name:1>:1",
+          "FunctionName": "<function-name:1>",
+          "Handler": "index.handler",
+          "LastModified": "date",
+          "LastUpdateStatus": "Successful",
+          "MemorySize": 128,
+          "PackageType": "Zip",
+          "RevisionId": "<uuid:5>",
+          "Role": "arn:aws:iam::111111111111:role/<resource:1>",
+          "Runtime": "python3.9",
+          "State": "Active",
+          "Timeout": 3,
+          "TracingConfig": {
+            "Mode": "PassThrough"
+          },
+          "Version": "1"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
       "second_publish_response": {
         "Architectures": [
           "x86_64"
         ],
-        "CodeSha256": "code-sha256",
+        "CodeSha256": "<code-sha256:1>",
         "CodeSize": 264,
-        "Description": "Second version description :))",
+        "Description": "Second version :))",
         "EphemeralStorage": {
           "Size": 512
         },
@@ -1251,7 +1603,7 @@
         "LastUpdateStatus": "Successful",
         "MemorySize": 128,
         "PackageType": "Zip",
-        "RevisionId": "<uuid:6>",
+        "RevisionId": "<uuid:7>",
         "Role": "arn:aws:iam::111111111111:role/<resource:1>",
         "Runtime": "python3.9",
         "State": "Active",
@@ -1269,9 +1621,9 @@
         "Architectures": [
           "x86_64"
         ],
-        "CodeSha256": "code-sha256",
+        "CodeSha256": "<code-sha256:1>",
         "CodeSize": 264,
-        "Description": "Second version description :))",
+        "Description": "Second version :))",
         "EphemeralStorage": {
           "Size": 512
         },
@@ -1282,7 +1634,7 @@
         "LastUpdateStatus": "Successful",
         "MemorySize": 128,
         "PackageType": "Zip",
-        "RevisionId": "<uuid:6>",
+        "RevisionId": "<uuid:7>",
         "Role": "arn:aws:iam::111111111111:role/<resource:1>",
         "Runtime": "python3.9",
         "State": "Active",
@@ -1302,7 +1654,7 @@
             "Architectures": [
               "x86_64"
             ],
-            "CodeSha256": "code-sha256",
+            "CodeSha256": "<code-sha256:1>",
             "CodeSize": 264,
             "Description": "Second version :))",
             "EphemeralStorage": {
@@ -1314,7 +1666,7 @@
             "LastModified": "date",
             "MemorySize": 128,
             "PackageType": "Zip",
-            "RevisionId": "<uuid:7>",
+            "RevisionId": "<uuid:8>",
             "Role": "arn:aws:iam::111111111111:role/<resource:1>",
             "Runtime": "python3.9",
             "Timeout": 3,
@@ -1327,7 +1679,7 @@
             "Architectures": [
               "x86_64"
             ],
-            "CodeSha256": "code-sha256",
+            "CodeSha256": "<code-sha256:1>",
             "CodeSize": 264,
             "Description": "First version description :)",
             "EphemeralStorage": {
@@ -1339,7 +1691,7 @@
             "LastModified": "date",
             "MemorySize": 128,
             "PackageType": "Zip",
-            "RevisionId": "<uuid:4>",
+            "RevisionId": "<uuid:5>",
             "Role": "arn:aws:iam::111111111111:role/<resource:1>",
             "Runtime": "python3.9",
             "Timeout": 3,
@@ -1352,9 +1704,9 @@
             "Architectures": [
               "x86_64"
             ],
-            "CodeSha256": "code-sha256",
+            "CodeSha256": "<code-sha256:1>",
             "CodeSize": 264,
-            "Description": "Second version description :))",
+            "Description": "Second version :))",
             "EphemeralStorage": {
               "Size": 512
             },
@@ -1364,7 +1716,7 @@
             "LastModified": "date",
             "MemorySize": 128,
             "PackageType": "Zip",
-            "RevisionId": "<uuid:6>",
+            "RevisionId": "<uuid:7>",
             "Role": "arn:aws:iam::111111111111:role/<resource:1>",
             "Runtime": "python3.9",
             "Timeout": 3,
@@ -1382,13 +1734,13 @@
     }
   },
   "tests/integration/awslambda/test_lambda_api.py::TestLambdaVersions::test_publish_with_wrong_revisionid": {
-    "recorded-date": "22-09-2022, 12:56:15",
+    "recorded-date": "26-09-2022, 21:23:04",
     "recorded-content": {
       "create_response": {
         "Architectures": [
           "x86_64"
         ],
-        "CodeSha256": "code-sha256",
+        "CodeSha256": "<code-sha256:1>",
         "CodeSize": 264,
         "Description": "",
         "EphemeralStorage": {
@@ -1425,7 +1777,7 @@
           "Architectures": [
             "x86_64"
           ],
-          "CodeSha256": "code-sha256",
+          "CodeSha256": "<code-sha256:1>",
           "CodeSize": 264,
           "Description": "",
           "EphemeralStorage": {
@@ -1469,7 +1821,124 @@
         "Architectures": [
           "x86_64"
         ],
-        "CodeSha256": "code-sha256",
+        "CodeSha256": "<code-sha256:1>",
+        "CodeSize": 264,
+        "Description": "",
+        "EphemeralStorage": {
+          "Size": 512
+        },
+        "FunctionArn": "arn:aws:lambda:<region>:111111111111:function:<function-name:1>:1",
+        "FunctionName": "<function-name:1>",
+        "Handler": "index.handler",
+        "LastModified": "date",
+        "LastUpdateStatus": "Successful",
+        "MemorySize": 128,
+        "PackageType": "Zip",
+        "RevisionId": "<uuid:3>",
+        "Role": "arn:aws:iam::111111111111:role/<resource:1>",
+        "Runtime": "python3.9",
+        "State": "Active",
+        "Timeout": 3,
+        "TracingConfig": {
+          "Mode": "PassThrough"
+        },
+        "Version": "1",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 201
+        }
+      }
+    }
+  },
+  "tests/integration/awslambda/test_lambda_api.py::TestLambdaVersions::test_publish_with_wrong_sha256": {
+    "recorded-date": "26-09-2022, 21:23:08",
+    "recorded-content": {
+      "create_response": {
+        "Architectures": [
+          "x86_64"
+        ],
+        "CodeSha256": "<code-sha256:1>",
+        "CodeSize": 264,
+        "Description": "",
+        "EphemeralStorage": {
+          "Size": 512
+        },
+        "FunctionArn": "arn:aws:lambda:<region>:111111111111:function:<function-name:1>",
+        "FunctionName": "<function-name:1>",
+        "Handler": "index.handler",
+        "LastModified": "date",
+        "MemorySize": 128,
+        "PackageType": "Zip",
+        "RevisionId": "<uuid:1>",
+        "Role": "arn:aws:iam::111111111111:role/<resource:1>",
+        "Runtime": "python3.9",
+        "State": "Pending",
+        "StateReason": "The function is being created.",
+        "StateReasonCode": "Creating",
+        "Timeout": 3,
+        "TracingConfig": {
+          "Mode": "PassThrough"
+        },
+        "Version": "$LATEST",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 201
+        }
+      },
+      "get_fn_response": {
+        "Code": {
+          "Location": "<location>",
+          "RepositoryType": "S3"
+        },
+        "Configuration": {
+          "Architectures": [
+            "x86_64"
+          ],
+          "CodeSha256": "<code-sha256:1>",
+          "CodeSize": 264,
+          "Description": "",
+          "EphemeralStorage": {
+            "Size": 512
+          },
+          "FunctionArn": "arn:aws:lambda:<region>:111111111111:function:<function-name:1>",
+          "FunctionName": "<function-name:1>",
+          "Handler": "index.handler",
+          "LastModified": "date",
+          "LastUpdateStatus": "Successful",
+          "MemorySize": 128,
+          "PackageType": "Zip",
+          "RevisionId": "<uuid:2>",
+          "Role": "arn:aws:iam::111111111111:role/<resource:1>",
+          "Runtime": "python3.9",
+          "State": "Active",
+          "Timeout": 3,
+          "TracingConfig": {
+            "Mode": "PassThrough"
+          },
+          "Version": "$LATEST"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "publish_wrong_sha256_exc": {
+        "Error": {
+          "Code": "InvalidParameterValueException",
+          "Message": "CodeSHA256 (somenonexistentsha256) is different from current CodeSHA256 in $LATEST (<code-sha256:1>). Please try again with the CodeSHA256 in $LATEST."
+        },
+        "Type": "User",
+        "message": "CodeSHA256 (somenonexistentsha256) is different from current CodeSHA256 in $LATEST (<code-sha256:1>). Please try again with the CodeSHA256 in $LATEST.",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "publish_result": {
+        "Architectures": [
+          "x86_64"
+        ],
+        "CodeSha256": "<code-sha256:1>",
         "CodeSize": 264,
         "Description": "",
         "EphemeralStorage": {
@@ -1499,13 +1968,13 @@
     }
   },
   "tests/integration/awslambda/test_lambda_api.py::TestLambdaAlias::test_alias_lifecycle": {
-    "recorded-date": "22-09-2022, 12:56:27",
+    "recorded-date": "26-09-2022, 21:23:18",
     "recorded-content": {
       "create_response": {
         "Architectures": [
           "x86_64"
         ],
-        "CodeSha256": "code-sha256",
+        "CodeSha256": "<code-sha256:1>",
         "CodeSize": 264,
         "Description": "",
         "Environment": {
@@ -1542,7 +2011,7 @@
         "Architectures": [
           "x86_64"
         ],
-        "CodeSha256": "code-sha256",
+        "CodeSha256": "<code-sha256:1>",
         "CodeSize": 264,
         "Description": "",
         "Environment": {
@@ -1578,7 +2047,7 @@
         "Architectures": [
           "x86_64"
         ],
-        "CodeSha256": "code-sha256",
+        "CodeSha256": "<code-sha256:1>",
         "CodeSize": 264,
         "Description": "",
         "Environment": {
@@ -1778,13 +2247,13 @@
     }
   },
   "tests/integration/awslambda/test_lambda_api.py::TestLambdaAlias::test_notfound_and_invalid_routingconfigs": {
-    "recorded-date": "22-09-2022, 12:56:39",
+    "recorded-date": "26-09-2022, 21:23:28",
     "recorded-content": {
       "create_response": {
         "Architectures": [
           "x86_64"
         ],
-        "CodeSha256": "code-sha256",
+        "CodeSha256": "<code-sha256:1>",
         "CodeSize": 264,
         "Description": "",
         "Environment": {
@@ -1821,7 +2290,7 @@
         "Architectures": [
           "x86_64"
         ],
-        "CodeSha256": "code-sha256",
+        "CodeSha256": "<code-sha256:1>",
         "CodeSize": 264,
         "Description": "",
         "Environment": {
@@ -1857,7 +2326,7 @@
         "Architectures": [
           "x86_64"
         ],
-        "CodeSha256": "code-sha256",
+        "CodeSha256": "<code-sha256:1>",
         "CodeSize": 264,
         "Description": "",
         "Environment": {
@@ -1987,7 +2456,7 @@
     }
   },
   "tests/integration/awslambda/test_lambda_api.py::TestLambdaTag::test_create_tag_on_fn_create": {
-    "recorded-date": "22-09-2022, 12:56:57",
+    "recorded-date": "26-09-2022, 21:23:44",
     "recorded-content": {
       "get_function_result": {
         "Code": {
@@ -1998,7 +2467,7 @@
           "Architectures": [
             "x86_64"
           ],
-          "CodeSha256": "code-sha256",
+          "CodeSha256": "<code-sha256:1>",
           "CodeSize": 264,
           "Description": "",
           "Environment": {
@@ -2044,7 +2513,7 @@
     }
   },
   "tests/integration/awslambda/test_lambda_api.py::TestLambdaTag::test_tag_lifecycle": {
-    "recorded-date": "22-09-2022, 12:57:15",
+    "recorded-date": "26-09-2022, 21:24:02",
     "recorded-content": {
       "tag_single_response": {
         "ResponseMetadata": {
@@ -2159,7 +2628,7 @@
     }
   },
   "tests/integration/awslambda/test_lambda_api.py::TestLambdaTag::test_tag_nonexisting_resource": {
-    "recorded-date": "22-09-2022, 12:57:33",
+    "recorded-date": "26-09-2022, 21:24:17",
     "recorded-content": {
       "pre_delete_get_function": {
         "Code": {
@@ -2170,7 +2639,7 @@
           "Architectures": [
             "x86_64"
           ],
-          "CodeSha256": "code-sha256",
+          "CodeSha256": "<code-sha256:1>",
           "CodeSize": 264,
           "Description": "",
           "Environment": {
@@ -2240,7 +2709,7 @@
     }
   },
   "tests/integration/awslambda/test_lambda_api.py::TestLambdaEventInvokeConfig::test_lambda_asynchronous_invocations": {
-    "recorded-date": "22-09-2022, 12:57:38",
+    "recorded-date": "26-09-2022, 21:24:20",
     "recorded-content": {
       "put_function_event_invoke_config": {
         "DestinationConfig": {
@@ -2296,8 +2765,27 @@
       }
     }
   },
+  "tests/integration/awslambda/test_lambda_api.py::TestLambdaReservedConcurrency::test_function_concurrency": {
+    "recorded-date": "26-09-2022, 21:24:36",
+    "recorded-content": {
+      "put_function_concurrency": {
+        "ReservedConcurrentExecutions": 1,
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "get_function_concurrency": {
+        "ReservedConcurrentExecutions": 1,
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
   "tests/integration/awslambda/test_lambda_api.py::TestLambdaPermissions::test_add_lambda_permission_aws": {
-    "recorded-date": "22-09-2022, 12:58:09",
+    "recorded-date": "26-09-2022, 21:24:52",
     "recorded-content": {
       "create_lambda": {
         "CreateEventSourceMappingResponse": null,
@@ -2305,7 +2793,7 @@
           "Architectures": [
             "x86_64"
           ],
-          "CodeSha256": "code-sha256",
+          "CodeSha256": "<code-sha256:1>",
           "CodeSize": 264,
           "Description": "",
           "Environment": {
@@ -2387,7 +2875,7 @@
     }
   },
   "tests/integration/awslambda/test_lambda_api.py::TestLambdaPermissions::test_remove_multi_permissions": {
-    "recorded-date": "22-09-2022, 12:58:26",
+    "recorded-date": "26-09-2022, 21:25:08",
     "recorded-content": {
       "add_permission_1": {
         "Statement": {
@@ -2502,7 +2990,7 @@
     }
   },
   "tests/integration/awslambda/test_lambda_api.py::TestLambdaPermissions::test_create_multiple_lambda_permissions": {
-    "recorded-date": "22-09-2022, 12:58:43",
+    "recorded-date": "26-09-2022, 21:25:24",
     "recorded-content": {
       "add_permission_response_1": {
         "Statement": {
@@ -2568,7 +3056,7 @@
     }
   },
   "tests/integration/awslambda/test_lambda_api.py::TestLambdaUrl::test_url_config_lifecycle": {
-    "recorded-date": "22-09-2022, 12:58:57",
+    "recorded-date": "26-09-2022, 21:25:40",
     "recorded-content": {
       "failed_creation": {
         "Error": {
@@ -2641,7 +3129,7 @@
     }
   },
   "tests/integration/awslambda/test_lambda_api.py::TestLambdaSizeLimits::test_oversized_lambda": {
-    "recorded-date": "22-09-2022, 12:59:46",
+    "recorded-date": "26-09-2022, 21:26:24",
     "recorded-content": {
       "invalid_param_exc": {
         "Error": {
@@ -2658,13 +3146,13 @@
     }
   },
   "tests/integration/awslambda/test_lambda_api.py::TestLambdaSizeLimits::test_large_lambda": {
-    "recorded-date": "22-09-2022, 13:00:42",
+    "recorded-date": "26-09-2022, 21:27:13",
     "recorded-content": {
       "create_function_large_zip": {
         "Architectures": [
           "x86_64"
         ],
-        "CodeSha256": "code-sha256",
+        "CodeSha256": "<code-sha256:1>",
         "CodeSize": 262143118,
         "Description": "",
         "EphemeralStorage": {
@@ -2695,7 +3183,7 @@
     }
   },
   "tests/integration/awslambda/test_lambda_api.py::TestLambdaSizeLimits::test_large_environment_variables_fails": {
-    "recorded-date": "22-09-2022, 13:01:01",
+    "recorded-date": "26-09-2022, 21:27:32",
     "recorded-content": {
       "failed_create_fn_result": {
         "Error": {
@@ -2712,7 +3200,7 @@
     }
   },
   "tests/integration/awslambda/test_lambda_api.py::TestLambdaSizeLimits::test_large_environment_fails_multiple_keys": {
-    "recorded-date": "22-09-2022, 13:01:19",
+    "recorded-date": "26-09-2022, 21:27:49",
     "recorded-content": {
       "failured_create_fn_result_multi_key": {
         "Error": {
@@ -2729,7 +3217,7 @@
     }
   },
   "tests/integration/awslambda/test_lambda_api.py::TestLambdaSizeLimits::test_lambda_envvars_near_limit_succeeds": {
-    "recorded-date": "22-09-2022, 13:01:36",
+    "recorded-date": "26-09-2022, 21:28:05",
     "recorded-content": {
       "successful_create_fn_result": {
         "CreateEventSourceMappingResponse": null,
@@ -2737,7 +3225,7 @@
           "Architectures": [
             "x86_64"
           ],
-          "CodeSha256": "code-sha256",
+          "CodeSha256": "<code-sha256:1>",
           "CodeSize": 264,
           "Description": "",
           "Environment": {
@@ -2774,7 +3262,7 @@
     }
   },
   "tests/integration/awslambda/test_lambda_api.py::TestCodeSigningConfig::test_function_code_signing_config": {
-    "recorded-date": "23-09-2022, 08:22:05",
+    "recorded-date": "26-09-2022, 21:28:21",
     "recorded-content": {
       "create_code_signing_config": {
         "CodeSigningConfig": {
@@ -2857,6 +3345,34 @@
           {
             "AllowedPublishers": {
               "SigningProfileVersionArns": [
+                "arn:aws:signer:us-east-1:000000000000:/signing-profiles/test"
+              ]
+            },
+            "CodeSigningConfigArn": "arn:aws:lambda:<region>:111111111111:code-signing-config:<resource:2>",
+            "CodeSigningConfigId": "<resource:2>",
+            "CodeSigningPolicies": {
+              "UntrustedArtifactOnDeployment": "Enforce"
+            },
+            "Description": "Testing CodeSigning Config",
+            "LastModified": "date"
+          },
+          {
+            "AllowedPublishers": {
+              "SigningProfileVersionArns": [
+                "arn:aws:signer:us-east-1:000000000000:/signing-profiles/test"
+              ]
+            },
+            "CodeSigningConfigArn": "arn:aws:lambda:<region>:111111111111:code-signing-config:<resource:3>",
+            "CodeSigningConfigId": "<resource:3>",
+            "CodeSigningPolicies": {
+              "UntrustedArtifactOnDeployment": "Enforce"
+            },
+            "Description": "Testing CodeSigning Config",
+            "LastModified": "date"
+          },
+          {
+            "AllowedPublishers": {
+              "SigningProfileVersionArns": [
                 "arn:aws:signer:<region>:111111111111:/signing-profiles/test"
               ]
             },
@@ -2897,530 +3413,8 @@
       }
     }
   },
-  "tests/integration/awslambda/test_lambda_api.py::TestLambdaProvisionedConcurrency::test_lambda_provisioned_concurrency_moves_with_alias": {
-    "recorded-date": "31-08-2022, 13:50:01",
-    "recorded-content": {
-      "create-result": {
-        "CreateEventSourceMappingResponse": null,
-        "CreateFunctionResponse": {
-          "CodeSha256": "code-sha256",
-          "CodeSize": 330,
-          "Description": "",
-          "Environment": {
-            "Variables": {}
-          },
-          "EphemeralStorage": {
-            "Size": 512
-          },
-          "FunctionArn": "arn:aws:lambda:<region>:111111111111:function:<function-name:1>",
-          "FunctionName": "<function-name:1>",
-          "Handler": "handler.handler",
-          "LastModified": "date",
-          "MemorySize": 128,
-          "PackageType": "Zip",
-          "ResponseMetadata": {
-            "HTTPHeaders": {},
-            "HTTPStatusCode": 201
-          },
-          "RevisionId": "<uuid:1>",
-          "Role": "arn:aws:iam::111111111111:role/<resource:1>",
-          "Runtime": "python3.8",
-          "State": "Pending",
-          "StateReason": "The function is being created.",
-          "StateReasonCode": "Creating",
-          "Timeout": 2,
-          "TracingConfig": {
-            "Mode": "PassThrough"
-          },
-          "Version": "$LATEST"
-        }
-      },
-      "get-function-configuration": {
-        "CodeSha256": "code-sha256",
-        "CodeSize": 330,
-        "Description": "",
-        "Environment": {
-          "Variables": {}
-        },
-        "EphemeralStorage": {
-          "Size": 512
-        },
-        "FunctionArn": "arn:aws:lambda:<region>:111111111111:function:<function-name:1>:$LATEST",
-        "FunctionName": "<function-name:1>",
-        "Handler": "handler.handler",
-        "LastModified": "date",
-        "LastUpdateStatus": "Successful",
-        "MemorySize": 128,
-        "PackageType": "Zip",
-        "ResponseMetadata": {
-          "HTTPHeaders": {},
-          "HTTPStatusCode": 200
-        },
-        "RevisionId": "<uuid:2>",
-        "Role": "arn:aws:iam::111111111111:role/<resource:1>",
-        "Runtime": "python3.8",
-        "State": "Active",
-        "Timeout": 2,
-        "TracingConfig": {
-          "Mode": "PassThrough"
-        },
-        "Version": "$LATEST"
-      },
-      "publish_version_1": {
-        "CodeSha256": "code-sha256",
-        "CodeSize": 330,
-        "Description": "my-first-version",
-        "Environment": {
-          "Variables": {}
-        },
-        "EphemeralStorage": {
-          "Size": 512
-        },
-        "FunctionArn": "arn:aws:lambda:<region>:111111111111:function:<function-name:1>:1",
-        "FunctionName": "<function-name:1>",
-        "Handler": "handler.handler",
-        "LastModified": "date",
-        "LastUpdateStatus": "Successful",
-        "MemorySize": 128,
-        "PackageType": "Zip",
-        "ResponseMetadata": {
-          "HTTPHeaders": {},
-          "HTTPStatusCode": 201
-        },
-        "RevisionId": "<uuid:3>",
-        "Role": "arn:aws:iam::111111111111:role/<resource:1>",
-        "Runtime": "python3.8",
-        "State": "Active",
-        "Timeout": 2,
-        "TracingConfig": {
-          "Mode": "PassThrough"
-        },
-        "Version": "1"
-      },
-      "get_function_configuration_version_1": {
-        "CodeSha256": "code-sha256",
-        "CodeSize": 330,
-        "Description": "my-first-version",
-        "Environment": {
-          "Variables": {}
-        },
-        "EphemeralStorage": {
-          "Size": 512
-        },
-        "FunctionArn": "arn:aws:lambda:<region>:111111111111:function:<function-name:1>:1",
-        "FunctionName": "<function-name:1>",
-        "Handler": "handler.handler",
-        "LastModified": "date",
-        "LastUpdateStatus": "Successful",
-        "MemorySize": 128,
-        "PackageType": "Zip",
-        "ResponseMetadata": {
-          "HTTPHeaders": {},
-          "HTTPStatusCode": 200
-        },
-        "RevisionId": "<uuid:3>",
-        "Role": "arn:aws:iam::111111111111:role/<resource:1>",
-        "Runtime": "python3.8",
-        "State": "Active",
-        "Timeout": 2,
-        "TracingConfig": {
-          "Mode": "PassThrough"
-        },
-        "Version": "1"
-      },
-      "create_alias": {
-        "AliasArn": "arn:aws:lambda:<region>:111111111111:function:<function-name:1>:<alias-name>",
-        "Description": "",
-        "FunctionVersion": "1",
-        "Name": "<alias-name>",
-        "ResponseMetadata": {
-          "HTTPHeaders": {},
-          "HTTPStatusCode": 201
-        },
-        "RevisionId": "<uuid:4>"
-      },
-      "get_function_before_provisioned": {
-        "Code": {
-          "Location": "<location>",
-          "RepositoryType": "S3"
-        },
-        "Configuration": {
-          "CodeSha256": "code-sha256",
-          "CodeSize": 330,
-          "Description": "my-first-version",
-          "Environment": {
-            "Variables": {}
-          },
-          "EphemeralStorage": {
-            "Size": 512
-          },
-          "FunctionArn": "arn:aws:lambda:<region>:111111111111:function:<function-name:1>:1",
-          "FunctionName": "<function-name:1>",
-          "Handler": "handler.handler",
-          "LastModified": "date",
-          "LastUpdateStatus": "Successful",
-          "MemorySize": 128,
-          "PackageType": "Zip",
-          "RevisionId": "<uuid:3>",
-          "Role": "arn:aws:iam::111111111111:role/<resource:1>",
-          "Runtime": "python3.8",
-          "State": "Active",
-          "Timeout": 2,
-          "TracingConfig": {
-            "Mode": "PassThrough"
-          },
-          "Version": "1"
-        },
-        "ResponseMetadata": {
-          "HTTPHeaders": {},
-          "HTTPStatusCode": 200
-        }
-      },
-      "get_function_after_provisioned": {
-        "Code": {
-          "Location": "<location>",
-          "RepositoryType": "S3"
-        },
-        "Configuration": {
-          "CodeSha256": "code-sha256",
-          "CodeSize": 330,
-          "Description": "my-first-version",
-          "Environment": {
-            "Variables": {}
-          },
-          "EphemeralStorage": {
-            "Size": 512
-          },
-          "FunctionArn": "arn:aws:lambda:<region>:111111111111:function:<function-name:1>:<alias-name>",
-          "FunctionName": "<function-name:1>",
-          "Handler": "handler.handler",
-          "LastModified": "date",
-          "LastUpdateStatus": "Successful",
-          "MemorySize": 128,
-          "PackageType": "Zip",
-          "RevisionId": "<uuid:5>",
-          "Role": "arn:aws:iam::111111111111:role/<resource:1>",
-          "Runtime": "python3.8",
-          "State": "Active",
-          "Timeout": 2,
-          "TracingConfig": {
-            "Mode": "PassThrough"
-          },
-          "Version": "1"
-        },
-        "ResponseMetadata": {
-          "HTTPHeaders": {},
-          "HTTPStatusCode": 200
-        }
-      },
-      "get_function_after_update": {
-        "CodeSha256": "code-sha256",
-        "CodeSize": 330,
-        "Description": "",
-        "Environment": {
-          "Variables": {}
-        },
-        "EphemeralStorage": {
-          "Size": 512
-        },
-        "FunctionArn": "arn:aws:lambda:<region>:111111111111:function:<function-name:1>",
-        "FunctionName": "<function-name:1>",
-        "Handler": "handler.handler",
-        "LastModified": "date",
-        "LastUpdateStatus": "Successful",
-        "MemorySize": 128,
-        "PackageType": "Zip",
-        "ResponseMetadata": {
-          "HTTPHeaders": {},
-          "HTTPStatusCode": 200
-        },
-        "RevisionId": "<uuid:6>",
-        "Role": "arn:aws:iam::111111111111:role/<resource:1>",
-        "Runtime": "python3.8",
-        "State": "Active",
-        "Timeout": 10,
-        "TracingConfig": {
-          "Mode": "PassThrough"
-        },
-        "Version": "$LATEST"
-      },
-      "publish_version_2": {
-        "CodeSha256": "code-sha256",
-        "CodeSize": 330,
-        "Description": "",
-        "Environment": {
-          "Variables": {}
-        },
-        "EphemeralStorage": {
-          "Size": 512
-        },
-        "FunctionArn": "arn:aws:lambda:<region>:111111111111:function:<function-name:1>:2",
-        "FunctionName": "<function-name:1>",
-        "Handler": "handler.handler",
-        "LastModified": "date",
-        "LastUpdateStatus": "Successful",
-        "MemorySize": 128,
-        "PackageType": "Zip",
-        "ResponseMetadata": {
-          "HTTPHeaders": {},
-          "HTTPStatusCode": 201
-        },
-        "RevisionId": "<uuid:7>",
-        "Role": "arn:aws:iam::111111111111:role/<resource:1>",
-        "Runtime": "python3.8",
-        "State": "Active",
-        "Timeout": 10,
-        "TracingConfig": {
-          "Mode": "PassThrough"
-        },
-        "Version": "2"
-      },
-      "update_alias": {
-        "AliasArn": "arn:aws:lambda:<region>:111111111111:function:<function-name:1>:<alias-name>",
-        "Description": "",
-        "FunctionVersion": "2",
-        "Name": "<alias-name>",
-        "ResponseMetadata": {
-          "HTTPHeaders": {},
-          "HTTPStatusCode": 200
-        },
-        "RevisionId": "<uuid:8>"
-      },
-      "get_provisioned_config_after_alias_move": {
-        "AllocatedProvisionedConcurrentExecutions": 1,
-        "AvailableProvisionedConcurrentExecutions": 1,
-        "LastModified": "date",
-        "RequestedProvisionedConcurrentExecutions": 1,
-        "ResponseMetadata": {
-          "HTTPHeaders": {},
-          "HTTPStatusCode": 200
-        },
-        "Status": "IN_PROGRESS"
-      },
-      "provisioned_concurrency_notfound": {
-        "Error": {
-          "Code": "ProvisionedConcurrencyConfigNotFoundException",
-          "Message": "No Provisioned Concurrency Config found for this function"
-        },
-        "ResponseMetadata": {
-          "HTTPHeaders": {},
-          "HTTPStatusCode": 404
-        },
-        "Type": "User",
-        "message": "No Provisioned Concurrency Config found for this function"
-      }
-    }
-  },
-  "tests/integration/awslambda/test_lambda_api.py::TestLambdaReservedConcurrency::test_function_concurrency": {
-    "recorded-date": "31-08-2022, 16:30:59",
-    "recorded-content": {
-      "put_function_concurrency": {
-        "ReservedConcurrentExecutions": 1,
-        "ResponseMetadata": {
-          "HTTPHeaders": {},
-          "HTTPStatusCode": 200
-        }
-      },
-      "get_function_concurrency": {
-        "ReservedConcurrentExecutions": 1,
-        "ResponseMetadata": {
-          "HTTPHeaders": {},
-          "HTTPStatusCode": 200
-        }
-      }
-    }
-  },
-  "tests/integration/awslambda/test_lambda_api.py::TestLambdaFunction::test_ops_with_arn_qualifier_mismatch[delete_function]": {
-    "recorded-date": "22-09-2022, 17:52:46",
-    "recorded-content": {
-      "not_match_exception": {
-        "Error": {
-          "Code": "InvalidParameterValueException",
-          "Message": "The derived qualifier from the function name does not match the specified qualifier."
-        },
-        "Type": "User",
-        "message": "The derived qualifier from the function name does not match the specified qualifier.",
-        "ResponseMetadata": {
-          "HTTPHeaders": {},
-          "HTTPStatusCode": 400
-        }
-      },
-      "match_exception": {
-        "Error": {
-          "Code": "InvalidParameterValueException",
-          "Message": "$LATEST version cannot be deleted without deleting the function."
-        },
-        "Type": "User",
-        "message": "$LATEST version cannot be deleted without deleting the function.",
-        "ResponseMetadata": {
-          "HTTPHeaders": {},
-          "HTTPStatusCode": 400
-        }
-      }
-    }
-  },
-  "tests/integration/awslambda/test_lambda_api.py::TestLambdaFunction::test_ops_with_arn_qualifier_mismatch[get_function]": {
-    "recorded-date": "22-09-2022, 17:52:46",
-    "recorded-content": {
-      "not_match_exception": {
-        "Error": {
-          "Code": "InvalidParameterValueException",
-          "Message": "The derived qualifier from the function name does not match the specified qualifier."
-        },
-        "Type": "User",
-        "message": "The derived qualifier from the function name does not match the specified qualifier.",
-        "ResponseMetadata": {
-          "HTTPHeaders": {},
-          "HTTPStatusCode": 400
-        }
-      },
-      "match_exception": {
-        "Error": {
-          "Code": "ResourceNotFoundException",
-          "Message": "Function not found: arn:aws:lambda:<region>:111111111111:function:some-function:$LATEST"
-        },
-        "Message": "Function not found: arn:aws:lambda:<region>:111111111111:function:some-function:$LATEST",
-        "Type": "User",
-        "ResponseMetadata": {
-          "HTTPHeaders": {},
-          "HTTPStatusCode": 404
-        }
-      }
-    }
-  },
-  "tests/integration/awslambda/test_lambda_api.py::TestLambdaFunction::test_ops_with_arn_qualifier_mismatch[get_function_configuration]": {
-    "recorded-date": "22-09-2022, 17:52:46",
-    "recorded-content": {
-      "not_match_exception": {
-        "Error": {
-          "Code": "InvalidParameterValueException",
-          "Message": "The derived qualifier from the function name does not match the specified qualifier."
-        },
-        "Type": "User",
-        "message": "The derived qualifier from the function name does not match the specified qualifier.",
-        "ResponseMetadata": {
-          "HTTPHeaders": {},
-          "HTTPStatusCode": 400
-        }
-      },
-      "match_exception": {
-        "Error": {
-          "Code": "ResourceNotFoundException",
-          "Message": "Function not found: arn:aws:lambda:<region>:111111111111:function:some-function:$LATEST"
-        },
-        "Message": "Function not found: arn:aws:lambda:<region>:111111111111:function:some-function:$LATEST",
-        "Type": "User",
-        "ResponseMetadata": {
-          "HTTPHeaders": {},
-          "HTTPStatusCode": 404
-        }
-      }
-    }
-  },
-  "tests/integration/awslambda/test_lambda_api.py::TestLambdaFunction::test_ops_on_nonexisting_version[get_function]": {
-    "recorded-date": "22-09-2022, 19:13:51",
-    "recorded-content": {
-      "version_not_found_exception": {
-        "Error": {
-          "Code": "ResourceNotFoundException",
-          "Message": "Function not found: arn:aws:lambda:<region>:111111111111:function:<fn-name>:1221"
-        },
-        "Message": "Function not found: arn:aws:lambda:<region>:111111111111:function:<fn-name>:1221",
-        "Type": "User",
-        "ResponseMetadata": {
-          "HTTPHeaders": {},
-          "HTTPStatusCode": 404
-        }
-      }
-    }
-  },
-  "tests/integration/awslambda/test_lambda_api.py::TestLambdaFunction::test_ops_on_nonexisting_version[get_function_configuration]": {
-    "recorded-date": "22-09-2022, 19:14:06",
-    "recorded-content": {
-      "version_not_found_exception": {
-        "Error": {
-          "Code": "ResourceNotFoundException",
-          "Message": "Function not found: arn:aws:lambda:<region>:111111111111:function:<fn-name>:1221"
-        },
-        "Message": "Function not found: arn:aws:lambda:<region>:111111111111:function:<fn-name>:1221",
-        "Type": "User",
-        "ResponseMetadata": {
-          "HTTPHeaders": {},
-          "HTTPStatusCode": 404
-        }
-      }
-    }
-  },
-  "tests/integration/awslambda/test_lambda_api.py::TestLambdaFunction::test_ops_on_nonexisting_version[get_function_event_invoke_config]": {
-    "recorded-date": "22-09-2022, 19:14:22",
-    "recorded-content": {
-      "version_not_found_exception": {
-        "Error": {
-          "Code": "ResourceNotFoundException",
-          "Message": "The function arn:aws:lambda:<region>:111111111111:function:<fn-name>:1221 doesn't have an EventInvokeConfig"
-        },
-        "Message": "The function arn:aws:lambda:<region>:111111111111:function:<fn-name>:1221 doesn't have an EventInvokeConfig",
-        "Type": "User",
-        "ResponseMetadata": {
-          "HTTPHeaders": {},
-          "HTTPStatusCode": 404
-        }
-      }
-    }
-  },
-  "tests/integration/awslambda/test_lambda_api.py::TestLambdaFunction::test_delete_on_nonexisting_version": {
-    "recorded-date": "22-09-2022, 19:22:03",
-    "recorded-content": {
-      "delete_function_response_non_existent": {
-        "Error": {
-          "Code": "ResourceNotFoundException",
-          "Message": "Function not found: arn:aws:lambda:<region>:111111111111:function:<fn-name>"
-        },
-        "Message": "Function not found: arn:aws:lambda:<region>:111111111111:function:<fn-name>",
-        "Type": "User",
-        "ResponseMetadata": {
-          "HTTPHeaders": {},
-          "HTTPStatusCode": 404
-        }
-      },
-      "delete_function_response_non_existent_with_qualifier": {
-        "Error": {
-          "Code": "ResourceNotFoundException",
-          "Message": "Function not found: arn:aws:lambda:<region>:111111111111:function:<fn-name>"
-        },
-        "Message": "Function not found: arn:aws:lambda:<region>:111111111111:function:<fn-name>",
-        "Type": "User",
-        "ResponseMetadata": {
-          "HTTPHeaders": {},
-          "HTTPStatusCode": 404
-        }
-      }
-    }
-  },
-  "tests/integration/awslambda/test_lambda_api.py::TestLambdaAccountSettings::test_account_settings": {
-    "recorded-date": "22-09-2022, 19:57:59",
-    "recorded-content": {
-      "acc_settings_modded": {
-        "AccountLimit": [
-          "CodeSizeUnzipped",
-          "CodeSizeZipped",
-          "ConcurrentExecutions",
-          "TotalCodeSize",
-          "UnreservedConcurrentExecutions"
-        ],
-        "AccountUsage": [
-          "FunctionCount",
-          "TotalCodeSize"
-        ],
-        "ResponseMetadata": {
-          "HTTPHeaders": {},
-          "HTTPStatusCode": 200
-        }
-      }
-    }
-  },
   "tests/integration/awslambda/test_lambda_api.py::TestCodeSigningConfig::test_code_signing_not_found_excs": {
-    "recorded-date": "23-09-2022, 09:13:35",
+    "recorded-date": "26-09-2022, 21:28:39",
     "recorded-content": {
       "create_code_signing_config": {
         "CodeSigningConfig": {
@@ -3594,6 +3588,28 @@
         "ResponseMetadata": {
           "HTTPHeaders": {},
           "HTTPStatusCode": 404
+        }
+      }
+    }
+  },
+  "tests/integration/awslambda/test_lambda_api.py::TestLambdaAccountSettings::test_account_settings": {
+    "recorded-date": "26-09-2022, 21:28:39",
+    "recorded-content": {
+      "acc_settings_modded": {
+        "AccountLimit": [
+          "CodeSizeUnzipped",
+          "CodeSizeZipped",
+          "ConcurrentExecutions",
+          "TotalCodeSize",
+          "UnreservedConcurrentExecutions"
+        ],
+        "AccountUsage": [
+          "FunctionCount",
+          "TotalCodeSize"
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
         }
       }
     }

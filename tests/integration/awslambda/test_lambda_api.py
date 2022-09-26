@@ -46,9 +46,7 @@ KB = 1024
 @pytest.fixture(autouse=True)
 def fixture_snapshot(snapshot):
     snapshot.add_transformer(snapshot.transform.lambda_api())
-    snapshot.add_transformer(
-        snapshot.transform.key_value("CodeSha256", reference_replacement=False)
-    )
+    snapshot.add_transformer(snapshot.transform.key_value("CodeSha256"))
 
 
 def string_length_bytes(s: str) -> int:
@@ -386,6 +384,16 @@ class TestLambdaVersions:
         get_function_result = lambda_client.get_function(FunctionName=function_name)
         snapshot.match("get_function_result", get_function_result)
 
+        get_function_version_result = lambda_client.get_function(
+            FunctionName=function_name, Qualifier="1"
+        )
+        snapshot.match("get_function_version_result", get_function_version_result)
+
+        get_function_latest_result = lambda_client.get_function(
+            FunctionName=function_name, Qualifier="$LATEST"
+        )
+        snapshot.match("get_function_latest_result", get_function_latest_result)
+
         list_versions_result = lambda_client.list_versions_by_function(FunctionName=function_name)
         snapshot.match("list_versions_result", list_versions_result)
 
@@ -424,23 +432,35 @@ class TestLambdaVersions:
         )
         snapshot.match("first_update_response", first_update_response)
         waiter.wait(FunctionName=function_name)
+        first_update_get_function = lambda_client.get_function(FunctionName=function_name)
+        snapshot.match("first_update_get_function", first_update_get_function)
 
         first_publish_response = lambda_client.publish_version(
             FunctionName=function_name, Description="First version description :)"
         )
         snapshot.match("first_publish_response", first_publish_response)
 
+        first_publish_get_function = lambda_client.get_function(
+            FunctionName=function_name, Qualifier=first_publish_response["Version"]
+        )
+        snapshot.match("first_publish_get_function", first_publish_get_function)
+
         second_update_response = lambda_client.update_function_configuration(
             FunctionName=function_name, Description="Second version :))"
         )
         snapshot.match("second_update_response", second_update_response)
         waiter.wait(FunctionName=function_name)
+        # check if first publish get function changed:
+        first_publish_get_function_after_update = lambda_client.get_function(
+            FunctionName=function_name, Qualifier=first_publish_response["Version"]
+        )
+        snapshot.match(
+            "first_publish_get_function_after_update", first_publish_get_function_after_update
+        )
 
         # Same state published as two different versions.
         # The publish_version api is idempotent, so the second publish_version will *NOT* create a new version because $LATEST hasn't been updated!
-        second_publish_response = lambda_client.publish_version(
-            FunctionName=function_name, Description="Second version description :))"
-        )
+        second_publish_response = lambda_client.publish_version(FunctionName=function_name)
         snapshot.match("second_publish_response", second_publish_response)
         third_publish_response = lambda_client.publish_version(
             FunctionName=function_name, Description="Third version description :)))"
@@ -485,6 +505,41 @@ class TestLambdaVersions:
         # but with the proper rev id, it should work
         publish_result = lambda_client.publish_version(
             FunctionName=function_name, RevisionId=get_fn_response["Configuration"]["RevisionId"]
+        )
+        snapshot.match("publish_result", publish_result)
+
+    @pytest.mark.aws_validated
+    def test_publish_with_wrong_sha256(
+        self, lambda_client, create_lambda_function_aws, lambda_su_role, snapshot
+    ):
+        function_name = f"fn-{short_uid()}"
+        create_response = create_lambda_function_aws(
+            FunctionName=function_name,
+            Handler="index.handler",
+            Code={
+                "ZipFile": create_lambda_archive(
+                    load_file(TEST_LAMBDA_PYTHON_ECHO), get_content=True
+                )
+            },
+            PackageType="Zip",
+            Role=lambda_su_role,
+            Runtime=Runtime.python3_9,
+        )
+        snapshot.match("create_response", create_response)
+
+        get_fn_response = lambda_client.get_function(FunctionName=function_name)
+        snapshot.match("get_fn_response", get_fn_response)
+
+        # publish_versions fails for the wrong revision id
+        with pytest.raises(lambda_client.exceptions.InvalidParameterValueException) as e:
+            lambda_client.publish_version(
+                FunctionName=function_name, CodeSha256="somenonexistentsha256"
+            )
+        snapshot.match("publish_wrong_sha256_exc", e.value.response)
+
+        # but with the proper rev id, it should work
+        publish_result = lambda_client.publish_version(
+            FunctionName=function_name, CodeSha256=get_fn_response["Configuration"]["CodeSha256"]
         )
         snapshot.match("publish_result", publish_result)
 

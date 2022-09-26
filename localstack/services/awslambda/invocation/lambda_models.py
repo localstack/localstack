@@ -240,7 +240,6 @@ class VersionAlias:
 @dataclasses.dataclass(frozen=True)
 class FunctionVersion:
     id: VersionIdentifier
-    qualifier: str
     config: VersionFunctionConfiguration
     provisioned_concurrency_config: Optional[ProvisionedConcurrencyConfiguration] = None
 

@@ -10,6 +10,7 @@ from threading import RLock
 from typing import TYPE_CHECKING, Dict, Optional
 
 from localstack.aws.api.lambda_ import InvocationType, LastUpdateStatus, State
+from localstack.services.awslambda.api_utils import qualifier_is_alias
 from localstack.services.awslambda.invocation.lambda_models import (
     FunctionVersion,
     Invocation,
@@ -18,6 +19,7 @@ from localstack.services.awslambda.invocation.lambda_models import (
     UpdateStatus,
     VersionState,
 )
+from localstack.services.awslambda.invocation.lambda_util import lambda_arn, qualified_lambda_arn
 from localstack.services.awslambda.invocation.models import lambda_stores
 from localstack.services.awslambda.invocation.version_manager import LambdaVersionManager
 from localstack.utils.aws import aws_stack
@@ -104,8 +106,10 @@ class LambdaService:
     # Commands
     def invoke(
         self,
-        function_arn_qualified: str,
-        invoked_arn: str,
+        function_name: str,
+        qualifier: str,
+        region: str,
+        account_id: str,
         invocation_type: InvocationType,
         client_context: Optional[str],
         payload: bytes,
@@ -113,15 +117,30 @@ class LambdaService:
         """
         Invokes a specific version of a lambda
 
-        :param function_arn_qualified: Qualified function arn
-        :param invoked_arn: Function arn, qualified if qualifier is specified, unqualified if not
+        :param function_name: Function name
+        :param qualifier: Function version qualifier
+        :param region: Region of the function
+        :param account_id: Account id of the function
         :param invocation_type: Invocation Type
         :param client_context: Client Context, if applicable
         :param payload: Invocation payload
         :return: A future for the invocation result
         """
+        # Invoked arn (for lambda context) does not have qualifier if not supplied
+        invoked_arn = lambda_arn(
+            function_name=function_name,
+            qualifier=qualifier,
+            account=account_id,
+            region=region,
+        )
+        qualifier = qualifier or "$LATEST"
         # TODO alias routing
-        version_manager = self.get_lambda_version_manager(function_arn_qualified)
+        if qualifier_is_alias(qualifier):
+            raise NotImplementedError("Alias routing not implemented yet")
+
+        # Need the qualified arn to exactly get the target lambda
+        qualified_arn = qualified_lambda_arn(function_name, qualifier, account_id, region)
+        version_manager = self.get_lambda_version_manager(qualified_arn)
         return version_manager.invoke(
             invocation=Invocation(
                 payload=payload,
