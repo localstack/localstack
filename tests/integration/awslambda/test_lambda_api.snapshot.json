@@ -1274,7 +1274,7 @@
     }
   },
   "tests/integration/awslambda/test_lambda_api.py::TestLambdaVersions::test_version_lifecycle": {
-    "recorded-date": "26-09-2022, 21:23:02",
+    "recorded-date": "26-09-2022, 21:53:40",
     "recorded-content": {
       "create_response": {
         "Architectures": [
@@ -1511,6 +1511,37 @@
           },
           "Version": "1"
         },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "first_publish_get_function_config": {
+        "Architectures": [
+          "x86_64"
+        ],
+        "CodeSha256": "<code-sha256:1>",
+        "CodeSize": 264,
+        "Description": "First version description :)",
+        "EphemeralStorage": {
+          "Size": 512
+        },
+        "FunctionArn": "arn:aws:lambda:<region>:111111111111:function:<function-name:1>:1",
+        "FunctionName": "<function-name:1>",
+        "Handler": "index.handler",
+        "LastModified": "date",
+        "LastUpdateStatus": "Successful",
+        "MemorySize": 128,
+        "PackageType": "Zip",
+        "RevisionId": "<uuid:5>",
+        "Role": "arn:aws:iam::111111111111:role/<resource:1>",
+        "Runtime": "python3.9",
+        "State": "Active",
+        "Timeout": 3,
+        "TracingConfig": {
+          "Mode": "PassThrough"
+        },
+        "Version": "1",
         "ResponseMetadata": {
           "HTTPHeaders": {},
           "HTTPStatusCode": 200

@@ -444,6 +444,10 @@ class TestLambdaVersions:
             FunctionName=function_name, Qualifier=first_publish_response["Version"]
         )
         snapshot.match("first_publish_get_function", first_publish_get_function)
+        first_publish_get_function_config = lambda_client.get_function_configuration(
+            FunctionName=function_name, Qualifier=first_publish_response["Version"]
+        )
+        snapshot.match("first_publish_get_function_config", first_publish_get_function_config)
 
         second_update_response = lambda_client.update_function_configuration(
             FunctionName=function_name, Description="Second version :))"
