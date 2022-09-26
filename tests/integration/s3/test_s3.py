@@ -1928,8 +1928,11 @@ class TestS3:
     @pytest.mark.skip_snapshot_verify(
         paths=["$..Delimiter", "$..EncodingType", "$..VersionIdMarker"]
     )
+    @pytest.mark.skip_snapshot_verify(
+        condition=is_old_provider,
+        paths=["$..ContentLanguage", "$..VersionId"],
+    )
     def test_s3_put_object_versioned(self, s3_client, s3_bucket, snapshot):
-        # TODO this??
         snapshot.add_transformer(snapshot.transform.s3_api())
 
         # this object is put before the bucket is versioned, its internal versionId is `null`
