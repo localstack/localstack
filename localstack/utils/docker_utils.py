@@ -1,14 +1,29 @@
 import functools
 import logging
 import platform
+import random
 import re
 from typing import List, Optional
 
 from localstack import config
-from localstack.constants import DEFAULT_VOLUME_DIR
-from localstack.utils.container_utils.container_client import ContainerClient, VolumeInfo
+from localstack.constants import DEFAULT_VOLUME_DIR, DOCKER_IMAGE_NAME
+from localstack.utils.container_utils.container_client import (
+    ContainerClient,
+    PortMappings,
+    VolumeInfo,
+)
+from localstack.utils.net import PortNotAvailableException, PortRange
+from localstack.utils.strings import to_str
 
 LOG = logging.getLogger(__name__)
+
+# Docker image to use when starting up containers for port checks
+PORTS_CHECK_DOCKER_IMAGE = DOCKER_IMAGE_NAME
+
+# port range instance used to reserve Docker container ports
+PORT_START = 1024
+PORT_END = 65536
+reserved_docker_ports = PortRange(PORT_START, PORT_END)
 
 
 def is_docker_sdk_installed() -> bool:
@@ -118,6 +133,63 @@ def get_host_path_for_path_in_docker(path):
             raise ValueError(f"No volume mounted to {DEFAULT_VOLUME_DIR}")
 
     return path
+
+
+def is_port_available_for_containers(port: int) -> bool:
+    """Check whether the given port can be bound by containers and is not currently reserved"""
+    return not is_container_port_reserved(port) and container_port_can_be_bound(port)
+
+
+def container_port_can_be_bound(port: int) -> bool:
+    """Determine whether a port can be bound by Docker containers"""
+    ports = PortMappings()
+    ports.add(port, port)
+    try:
+        result = DOCKER_CLIENT.run_container(
+            PORTS_CHECK_DOCKER_IMAGE, entrypoint="", command=["echo", "test123"], ports=ports
+        )
+    except Exception as e:
+        if "port is already allocated" not in str(e):
+            LOG.warning(
+                "Unexpected error when attempting to determine container port status: %s", e
+            )
+        return False
+    if to_str(result[0]).strip() != "test123":
+        LOG.warning(
+            "Unexpected output when attempting to determine container port status: %s", result[0]
+        )
+    return True
+
+
+def reserve_container_port(port: int, duration: int = None):
+    """Reserve the given container port for a short period of time"""
+    reserved_docker_ports.reserve_port(port, duration=duration)
+
+
+def is_container_port_reserved(port: int) -> bool:
+    """Return whether the given container port is currently reserved"""
+    return reserved_docker_ports.is_port_reserved(port)
+
+
+def reserve_available_container_port(duration: int = None) -> int:
+    """Determine and reserve a port that can then be bound by a Docker container"""
+
+    def _random_port():
+        port = None
+        while not port or reserved_docker_ports.is_port_reserved(port):
+            port = random.randint(PORT_START, PORT_END)
+        return port
+
+    retries = 10
+    for i in range(retries):
+        port = _random_port()
+        if container_port_can_be_bound(port):
+            reserve_container_port(port, duration=duration)
+            return port
+
+    raise PortNotAvailableException(
+        f"Unable to determine available Docker container port after {retries} retries"
+    )
 
 
 DOCKER_CLIENT: ContainerClient = create_docker_client()

@@ -228,9 +228,12 @@ class PortRange:
             list(self._ports_cache.keys()),
         )
 
+    def is_port_reserved(self, port: int) -> bool:
+        return self._ports_cache.get(port) is not None
+
     def _try_reserve_port(self, port: int, duration: int) -> int:
         """Checks if the given port is currently not reserved and can be bound."""
-        if not self._ports_cache.get(port) and port_can_be_bound(port):
+        if not self.is_port_reserved(port) and port_can_be_bound(port):
             # reserve the port for a short period of time
             self._ports_cache[port] = "__reserved__"
             if duration:
