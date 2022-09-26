@@ -253,7 +253,7 @@ ci-pro-smoke-tests:
 	awslocal mediastore list-containers
 	awslocal mwaa list-environments
 	awslocal qldb list-ledgers
-	awslocal rds create-db-cluster --db-cluster-identifier test-cluster --engine aurora-postgresql --database-name test --master-username master --master-user-password secret99 --db-subnet-group-name mysubnetgroup --db-cluster-parameter-group-name mydbclusterparametergroup
+	awslocal rds create-db-cluster --db-cluster-identifier test-cluster --engine aurora-postgresql --database-name test --master-username master --master-user-password secret99 --db-subnet-group-name mysubnetgroup
 	awslocal rds describe-db-instances
 	awslocal s3 mb s3://test-bucket
 	awslocal timestream-write create-database --database-name db1
@@ -264,13 +264,13 @@ lint:              		  ## Run code linter to check code style
 	($(VENV_RUN); python -m pflake8 --show-source)
 
 lint-modified:     		  ## Run code linter on modified files
-	($(VENV_RUN); python -m pflake8 --show-source `git ls-files -m | grep '\.py$$' | xargs` )
+	($(VENV_RUN); python -m pflake8 --show-source `git diff --diff-filter=d --name-only HEAD | grep '\.py$$' | xargs` )
 
 format:            		  ## Run black and isort code formatter
 	($(VENV_RUN); python -m isort localstack tests; python -m black localstack tests )
 
 format-modified:   		  ## Run black and isort code formatter on modified files
-	($(VENV_RUN); python -m isort `git ls-files -m | grep '\.py$$' | xargs`; python -m black `git ls-files -m | grep '\.py$$' | xargs` )
+	($(VENV_RUN); python -m isort `git diff --diff-filter=d --name-only HEAD | grep '\.py$$' | xargs`; python -m black `git diff --diff-filter=d --name-only HEAD | grep '\.py$$' | xargs` )
 
 init-precommit:    		  ## install te pre-commit hook into your local git repository
 	($(VENV_RUN); pre-commit install)

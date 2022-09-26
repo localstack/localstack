@@ -18,7 +18,7 @@ def test_firehose_stack_with_kinesis_as_source(deploy_cfn_template, firehose_cli
 
     stack = deploy_cfn_template(
         template_path=os.path.join(
-            os.path.dirname(__file__), "..", "templates", "firehose_kinesis_as_source.yaml"
+            os.path.dirname(__file__), "../templates/firehose_kinesis_as_source.yaml"
         ),
         parameters={
             "BucketName": bucket_name,

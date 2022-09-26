@@ -13,7 +13,7 @@ import localstack.services.awslambda.lambda_api
 from localstack import config
 from localstack.services.awslambda import lambda_api, lambda_executors
 from localstack.services.awslambda.lambda_api import do_set_function_code, use_docker
-from localstack.services.awslambda.lambda_utils import LAMBDA_RUNTIME_PYTHON36
+from localstack.services.awslambda.lambda_utils import LAMBDA_RUNTIME_PYTHON39
 from localstack.services.generic_proxy import ProxyListener
 from localstack.services.infra import start_proxy
 from localstack.utils import testutil
@@ -353,7 +353,7 @@ class TestLocalExecutors(unittest.TestCase):
             testutil.create_lambda_function(
                 func_name=lambda_name1,
                 zip_file=python3_with_settings1,
-                runtime=LAMBDA_RUNTIME_PYTHON36,
+                runtime=LAMBDA_RUNTIME_PYTHON39,
                 handler="handler1.handler",
             )
 
@@ -361,7 +361,7 @@ class TestLocalExecutors(unittest.TestCase):
             testutil.create_lambda_function(
                 func_name=lambda_name2,
                 zip_file=python3_with_settings2,
-                runtime=LAMBDA_RUNTIME_PYTHON36,
+                runtime=LAMBDA_RUNTIME_PYTHON39,
                 handler="handler2.handler",
             )
 

@@ -27,6 +27,14 @@ def test_select_from_typed_dict():
     result = select_from_typed_dict(typed_dict=MyTypeDict, obj=d)
     assert result == {"key_optional": "key_optional"}
 
+    d = {"key_one": "key_one", "key_optional": None}
+    result = select_from_typed_dict(typed_dict=MyTypeDict, obj=d, filter=True)
+    assert result == {"key_one": "key_one"}
+
+    d = {"key_one": "key_one", "key_optional": {}}
+    result = select_from_typed_dict(typed_dict=MyTypeDict, obj=d, filter=True)
+    assert result == {"key_one": "key_one"}
+
 
 def test_immutable_dict():
     d1 = ImmutableDict({"a": ["b"], "c": 1})

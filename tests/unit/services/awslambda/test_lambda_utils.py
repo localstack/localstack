@@ -1,9 +1,5 @@
+from localstack.aws.api.lambda_ import Runtime
 from localstack.services.awslambda.lambda_utils import (
-    LAMBDA_RUNTIME_DOTNETCORE31,
-    LAMBDA_RUNTIME_GOLANG,
-    LAMBDA_RUNTIME_NODEJS,
-    LAMBDA_RUNTIME_PROVIDED,
-    LAMBDA_RUNTIME_RUBY,
     format_name_to_path,
     get_handler_file_from_name,
 )
@@ -24,21 +20,21 @@ class TestLambdaUtils:
 
     def test_get_handler_file_from_name(self):
         assert ".build/handler.js" == get_handler_file_from_name(
-            ".build/handler.execute", LAMBDA_RUNTIME_NODEJS
+            ".build/handler.execute", Runtime.nodejs16_x
         )
         assert "./.build/handler.execute" == get_handler_file_from_name(
-            "./.build/handler.execute", LAMBDA_RUNTIME_GOLANG
+            "./.build/handler.execute", Runtime.go1_x
         )
         assert "CSharpHandlers.dll" == get_handler_file_from_name(
             "./CSharpHandlers::AwsDotnetCsharp.Handler::CreateProfileAsync",
-            LAMBDA_RUNTIME_DOTNETCORE31,
+            Runtime.dotnetcore3_1,
         )
         assert "test/handler.rb" == get_handler_file_from_name(
-            "test.handler.execute", LAMBDA_RUNTIME_RUBY
+            "test.handler.execute", Runtime.ruby2_7
         )
         assert "test.handler.execute" == get_handler_file_from_name(
-            "test.handler.execute", LAMBDA_RUNTIME_GOLANG
+            "test.handler.execute", Runtime.go1_x
         )
-        assert "main" == get_handler_file_from_name("main", LAMBDA_RUNTIME_GOLANG)
+        assert "main" == get_handler_file_from_name("main", Runtime.go1_x)
         assert "../handler.py" == get_handler_file_from_name("../handler.execute")
-        assert "bootstrap" == get_handler_file_from_name("", LAMBDA_RUNTIME_PROVIDED)
+        assert "bootstrap" == get_handler_file_from_name("", Runtime.provided)

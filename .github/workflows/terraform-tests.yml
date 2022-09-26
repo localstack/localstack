@@ -73,7 +73,7 @@ jobs:
       if: ${{ steps.get-list.outputs.testlist == '' }}
       run: exit 1
 
-    - name: Installing Localstack Dependancies and Start Localstack
+    - name: Installing dependencies and start LocalStack
       run: |
         make install
         make start &

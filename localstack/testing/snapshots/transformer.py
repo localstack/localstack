@@ -61,7 +61,7 @@ def _register_serialized_reference_replacement(
             return replace_val
 
         SNAPSHOT_LOGGER.debug(
-            f"Registering reference replacement for value: '{reference_value}' -> '{actual_replacement}'"
+            f"Registering reference replacement for value: '{reference_value:.200s}' -> '{actual_replacement}'"
         )
         transform_context.register_serialized_replacement(
             _helper(reference_value, actual_replacement)
@@ -148,9 +148,11 @@ class RegexTransformer:
             def replace_val(s):
                 result = re.sub(pattern, repl, s)
                 if result != s:
-                    SNAPSHOT_LOGGER.debug(f"Replacing regex '{pattern.pattern}' with '{repl}'")
+                    SNAPSHOT_LOGGER.debug(
+                        f"Replacing regex '{pattern.pattern:.200s}' with '{repl}'"
+                    )
                 else:
-                    SNAPSHOT_LOGGER.debug(f"No match found for regex '{pattern.pattern}'")
+                    SNAPSHOT_LOGGER.debug(f"No match found for regex '{pattern.pattern:.200s}'")
                 return result
 
             return replace_val
@@ -159,7 +161,7 @@ class RegexTransformer:
             _regex_replacer_helper(compiled_regex, self.replacement)
         )
         SNAPSHOT_LOGGER.debug(
-            f"Registering regex pattern '{compiled_regex.pattern}' in snapshot with '{self.replacement}'"
+            f"Registering regex pattern '{compiled_regex.pattern:.200s}' in snapshot with '{self.replacement}'"
         )
         return input_data
 
@@ -185,7 +187,7 @@ class KeyValueBasedTransformer:
                 else:
                     if isinstance(v, str):
                         SNAPSHOT_LOGGER.debug(
-                            f"Replacing value for key '{k}': Match result '{match_result}' with '{self.replacement}'. (Original value: {str(v)})"
+                            f"Replacing value for key '{k}': Match result '{match_result:.200s}' with '{self.replacement}'. (Original value: {str(v)})"
                         )
                         input_data[k] = v.replace(match_result, self.replacement)
                     else:

@@ -414,6 +414,17 @@ def is_none_or_empty(obj: Union[Optional[str], Optional[list]]) -> bool:
     )
 
 
-def select_from_typed_dict(typed_dict: Type[TypedDict], obj: Dict):
-    """Select a subset of attributes from a dictionary based on the keys of a given `TypedDict`"""
-    return select_attributes(obj, [*typed_dict.__required_keys__, *typed_dict.__optional_keys__])
+def select_from_typed_dict(typed_dict: Type[TypedDict], obj: Dict, filter: bool = False) -> Dict:
+    """
+    Select a subset of attributes from a dictionary based on the keys of a given `TypedDict`.
+    :param typed_dict: the `TypedDict` blueprint
+    :param obj: the object to filter
+    :param filter: if True, remove all keys with an empty (e.g., empty string or dictionary) or `None` value
+    :return: the resulting dictionary (it returns a copy)
+    """
+    selection = select_attributes(
+        obj, [*typed_dict.__required_keys__, *typed_dict.__optional_keys__]
+    )
+    if filter:
+        return {k: v for k, v in selection.items() if v}
+    return selection

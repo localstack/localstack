@@ -5,6 +5,7 @@ import os
 import jinja2
 
 from localstack.testing.aws.cloudformation_utils import load_template_file
+from localstack.utils.aws import aws_stack
 from localstack.utils.common import short_uid
 from localstack.utils.generic.wait_utils import wait_until
 
@@ -237,3 +238,114 @@ def test_event_rule_creation_without_target(cfn_client, deploy_cfn_template):
         cfn_client.describe_stacks(StackName=stack_name)["Stacks"][0]["StackStatus"]
         == "CREATE_COMPLETE"
     )
+
+
+def test_cfn_event_bus_resource(events_client, deploy_cfn_template):
+    def _assert(expected_len):
+        rs = events_client.list_event_buses()
+        event_buses = [eb for eb in rs["EventBuses"] if eb["Name"] == "my-test-bus"]
+        assert len(event_buses) == expected_len
+        rs = events_client.list_connections()
+        connections = [con for con in rs["Connections"] if con["Name"] == "my-test-conn"]
+        assert len(connections) == expected_len
+
+    stack = deploy_cfn_template(
+        template_path=os.path.join(os.path.dirname(__file__), "../templates/template31.yaml")
+    )
+    _assert(1)
+
+    stack.destroy()
+    _assert(0)
+
+
+TEST_TEMPLATE_16 = """
+AWSTemplateFormatVersion: 2010-09-09
+Resources:
+  MyBucket:
+    Type: 'AWS::S3::Bucket'
+    Properties:
+      BucketName: %s
+  ScheduledRule:
+    Type: 'AWS::Events::Rule'
+    Properties:
+      Name: %s
+      ScheduleExpression: rate(10 minutes)
+      State: ENABLED
+      Targets:
+        - Id: TargetBucketV1
+          Arn: !GetAtt "MyBucket.Arn"
+"""
+
+TEST_TEMPLATE_18 = """
+AWSTemplateFormatVersion: 2010-09-09
+Resources:
+  TestStateMachine:
+    Type: "AWS::StepFunctions::StateMachine"
+    Properties:
+      RoleArn: %s
+      DefinitionString:
+        !Sub
+        - |-
+          {
+            "StartAt": "state1",
+            "States": {
+              "state1": {
+                "Type": "Pass",
+                "Result": "Hello World",
+                "End": true
+              }
+            }
+          }
+        - {}
+  ScheduledRule:
+    Type: AWS::Events::Rule
+    Properties:
+      ScheduleExpression: "cron(0/1 * * * ? *)"
+      State: ENABLED
+      Targets:
+        - Id: TestStateMachine
+          Arn: !Ref TestStateMachine
+"""
+
+
+def test_cfn_handle_events_rule(events_client, deploy_cfn_template):
+    bucket_name = f"target-{short_uid()}"
+    rule_prefix = f"s3-rule-{short_uid()}"
+    rule_name = f"{rule_prefix}-{short_uid()}"
+
+    stack = deploy_cfn_template(
+        template=TEST_TEMPLATE_16 % (bucket_name, rule_name),
+    )
+
+    rs = events_client.list_rules(NamePrefix=rule_prefix)
+    assert rule_name in [rule["Name"] for rule in rs["Rules"]]
+
+    target_arn = aws_stack.s3_bucket_arn(bucket_name)  # TODO: !
+    rs = events_client.list_targets_by_rule(Rule=rule_name)
+    assert target_arn in [target["Arn"] for target in rs["Targets"]]
+
+    # clean up
+    stack.destroy()
+    rs = events_client.list_rules(NamePrefix=rule_prefix)
+    assert rule_name not in [rule["Name"] for rule in rs["Rules"]]
+
+
+def test_cfn_handle_events_rule_without_name(events_client, deploy_cfn_template):
+    rs = events_client.list_rules()
+    rule_names = [rule["Name"] for rule in rs["Rules"]]
+
+    stack = deploy_cfn_template(
+        template=TEST_TEMPLATE_18 % aws_stack.role_arn("sfn_role"),  # TODO: !
+    )
+
+    rs = events_client.list_rules()
+    new_rules = [rule for rule in rs["Rules"] if rule["Name"] not in rule_names]
+    assert len(new_rules) == 1
+    rule = new_rules[0]
+
+    assert rule["ScheduleExpression"] == "cron(0/1 * * * ? *)"
+
+    stack.destroy()
+
+    rs = events_client.list_rules()
+    assert rule["Name"] not in [r["Name"] for r in rs["Rules"]]

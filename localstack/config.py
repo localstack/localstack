@@ -395,6 +395,13 @@ USE_SSL = is_env_true("USE_SSL")
 # whether to use the legacy edge proxy or the newer Gateway/HandlerChain framework
 LEGACY_EDGE_PROXY = is_env_true("LEGACY_EDGE_PROXY")
 
+# whether legacy s3 is enabled
+# TODO change when asf becomes default: os.environ.get("PROVIDER_OVERRIDE_S3", "") == 'legacy'
+LEGACY_S3_PROVIDER = os.environ.get("PROVIDER_OVERRIDE_S3", "") != "asf"
+
+# whether to use the legacy installers in LPM or enable the new package-based installers (with versions and targets)
+LEGACY_LPM_INSTALLERS = is_env_not_false("LEGACY_LPM_INSTALLERS")
+
 # Whether to report internal failures as 500 or 501 errors.
 FAIL_FAST = is_env_true("FAIL_FAST")
 

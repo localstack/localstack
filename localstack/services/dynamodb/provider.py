@@ -232,10 +232,12 @@ class SSEUtils:
         if existing_key:
             return existing_key
         kms_client = aws_stack.connect_to_service("kms")
-        key_data = kms_client.create_key(Description="Default key that protects DynamoDB data")
+        key_data = kms_client.create_key(
+            Description="Default key that protects my DynamoDB data when no other key is defined"
+        )
         key_id = key_data["KeyMetadata"]["KeyId"]
 
-        provider.set_key_managed(key_id)
+        provider.set_key_managed(key_id, get_aws_account_id(), aws_stack.get_region())
         MANAGED_KMS_KEYS[aws_stack.get_region()] = key_id
         return key_id
 
@@ -272,6 +274,9 @@ def get_store(context: RequestContext | None = None) -> DynamoDBStore:
     # todo: create an explicit protocol for to retrieve stores for each provider
     _account_id: str = context.account_id if context else get_aws_account_id()
     _region: str = context.region if context else aws_stack.get_region()
+    # special case: AWS NoSQL Workbench sends "localhost" as region - replace with proper region here
+    if _region == "localhost":
+        _region = aws_stack.get_local_region()
     return dynamodb_stores[_account_id][_region]
 
 
@@ -396,7 +401,7 @@ class DynamoDBProvider(DynamodbApi, ServiceLifecycleHook):
         # Check if table exists, to avoid error log output from DynamoDBLocal
         table_name = create_table_input["TableName"]
         if self.table_exists(table_name):
-            raise ResourceInUseException("Cannot create preexisting table")
+            raise ResourceInUseException(f"Table already exists: {table_name}")
         billing_mode = create_table_input.get("BillingMode")
         provisioned_throughput = create_table_input.get("ProvisionedThroughput")
         if billing_mode == BillingMode.PAY_PER_REQUEST and provisioned_throughput is not None:

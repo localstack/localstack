@@ -9,6 +9,7 @@ from localstack.testing.snapshots.transformer import (
     RegexTransformer,
     ResponseMetaDataTransformer,
 )
+from localstack.utils.net import IP_REGEX
 
 PATTERN_UUID = re.compile(
     r"[a-fA-F0-9]{8}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{12}"
@@ -111,6 +112,41 @@ class TransformerUtility:
         ]
 
     @staticmethod
+    def apigateway_api():
+        return [
+            TransformerUtility.key_value("id"),
+            TransformerUtility.key_value("name"),
+        ]
+
+    @staticmethod
+    def apigateway_proxy_event():
+        return [
+            TransformerUtility.key_value("extendedRequestId"),
+            TransformerUtility.key_value("resourceId"),
+            TransformerUtility.key_value("sourceIp"),
+            TransformerUtility.jsonpath("$..headers.X-Amz-Cf-Id", value_replacement="cf-id"),
+            TransformerUtility.jsonpath(
+                "$..headers.CloudFront-Viewer-ASN", value_replacement="cloudfront-asn"
+            ),
+            TransformerUtility.jsonpath(
+                "$..headers.CloudFront-Viewer-Country", value_replacement="cloudfront-country"
+            ),
+            TransformerUtility.jsonpath("$..headers.Via", value_replacement="via"),
+            TransformerUtility.jsonpath("$..headers.X-Amzn-Trace-Id", value_replacement="trace-id"),
+            TransformerUtility.jsonpath(
+                "$..requestContext.requestTime",
+                value_replacement="<request-time>",
+                reference_replacement=False,
+            ),
+            KeyValueBasedTransformer(
+                lambda k, v: str(v) if k == "requestTimeEpoch" else None,
+                "<request-time-epoch>",
+                replace_reference=False,
+            ),
+            TransformerUtility.regex(IP_REGEX.strip("^$"), "<ip>"),
+        ]
+
+    @staticmethod
     def cloudformation_api():
         """
         :return: array with Transformers, for cloudformation api.
@@ -121,6 +157,17 @@ class TransformerUtility:
             TransformerUtility.key_value("ChangeSetName"),
             TransformerUtility.key_value("ChangeSetId"),
             TransformerUtility.key_value("StackName"),
+        ]
+
+    @staticmethod
+    def dynamodb_api():
+        """
+        :return: array with Transformers, for dynamodb api.
+        """
+        return [
+            RegexTransformer(
+                r"([a-zA-Z0-9-_.]*)?test_table_([a-zA-Z0-9-_.]*)?", replacement="<test-table>"
+            ),
         ]
 
     @staticmethod

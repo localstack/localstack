@@ -12,6 +12,7 @@ from typing import Any, Dict, List, Optional, TypedDict, Union
 from flask import Response
 
 from localstack import config
+from localstack.aws.api.lambda_ import Runtime
 from localstack.utils.aws import aws_stack
 from localstack.utils.aws.aws_models import LambdaFunction
 from localstack.utils.aws.aws_responses import flask_error_response_json
@@ -28,29 +29,30 @@ LOG = logging.getLogger(__name__)
 API_PATH_ROOT = "/2015-03-31"
 API_PATH_ROOT_2 = "/2021-10-31"
 
-# Lambda runtime constants
-LAMBDA_RUNTIME_PYTHON36 = "python3.6"
-LAMBDA_RUNTIME_PYTHON37 = "python3.7"
-LAMBDA_RUNTIME_PYTHON38 = "python3.8"
-LAMBDA_RUNTIME_PYTHON39 = "python3.9"
-LAMBDA_RUNTIME_NODEJS = "nodejs"
-LAMBDA_RUNTIME_NODEJS12X = "nodejs12.x"
-LAMBDA_RUNTIME_NODEJS14X = "nodejs14.x"
-LAMBDA_RUNTIME_NODEJS16X = "nodejs16.x"
-LAMBDA_RUNTIME_JAVA8 = "java8"
-LAMBDA_RUNTIME_JAVA8_AL2 = "java8.al2"
-LAMBDA_RUNTIME_JAVA11 = "java11"
-LAMBDA_RUNTIME_DOTNETCORE31 = "dotnetcore3.1"
-LAMBDA_RUNTIME_DOTNET6 = "dotnet6"
-LAMBDA_RUNTIME_GOLANG = "go1.x"
-LAMBDA_RUNTIME_RUBY = "ruby"
-LAMBDA_RUNTIME_RUBY27 = "ruby2.7"
-LAMBDA_RUNTIME_PROVIDED = "provided"
-LAMBDA_RUNTIME_PROVIDED_AL2 = "provided.al2"
+
+# Lambda runtime constants (LEGACY, use values in Runtime class instead)
+LAMBDA_RUNTIME_PYTHON36 = Runtime.python3_6
+LAMBDA_RUNTIME_PYTHON37 = Runtime.python3_7
+LAMBDA_RUNTIME_PYTHON38 = Runtime.python3_8
+LAMBDA_RUNTIME_PYTHON39 = Runtime.python3_9
+LAMBDA_RUNTIME_NODEJS = Runtime.nodejs
+LAMBDA_RUNTIME_NODEJS12X = Runtime.nodejs12_x
+LAMBDA_RUNTIME_NODEJS14X = Runtime.nodejs14_x
+LAMBDA_RUNTIME_NODEJS16X = Runtime.nodejs16_x
+LAMBDA_RUNTIME_JAVA8 = Runtime.java8
+LAMBDA_RUNTIME_JAVA8_AL2 = Runtime.java8_al2
+LAMBDA_RUNTIME_JAVA11 = Runtime.java11
+LAMBDA_RUNTIME_DOTNETCORE31 = Runtime.dotnetcore3_1
+LAMBDA_RUNTIME_DOTNET6 = Runtime.dotnet6
+LAMBDA_RUNTIME_GOLANG = Runtime.go1_x
+LAMBDA_RUNTIME_RUBY27 = Runtime.ruby2_7
+LAMBDA_RUNTIME_PROVIDED = Runtime.provided
+LAMBDA_RUNTIME_PROVIDED_AL2 = Runtime.provided_al2
+
 
 # default handler and runtime
 LAMBDA_DEFAULT_HANDLER = "handler.handler"
-LAMBDA_DEFAULT_RUNTIME = LAMBDA_RUNTIME_PYTHON37
+LAMBDA_DEFAULT_RUNTIME = LAMBDA_RUNTIME_PYTHON37  # FIXME (?)
 LAMBDA_DEFAULT_STARTING_POSITION = "LATEST"
 
 # List of Dotnet Lambda runtime names
@@ -134,13 +136,13 @@ def get_handler_file_from_name(handler_name: str, runtime: str = None):
 
     if runtime.startswith(LAMBDA_RUNTIME_PROVIDED):
         return "bootstrap"
-    if runtime.startswith(LAMBDA_RUNTIME_NODEJS):
+    if runtime.startswith("nodejs"):
         return format_name_to_path(handler_name, ".", ".js")
     if runtime.startswith(LAMBDA_RUNTIME_GOLANG):
         return handler_name
     if runtime.startswith(tuple(DOTNET_LAMBDA_RUNTIMES)):
         return format_name_to_path(handler_name, ":", ".dll")
-    if runtime.startswith(LAMBDA_RUNTIME_RUBY):
+    if runtime.startswith("ruby"):
         return format_name_to_path(handler_name, ".", ".rb")
 
     return format_name_to_path(handler_name, ".", ".py")

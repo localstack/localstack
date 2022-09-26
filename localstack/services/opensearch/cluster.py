@@ -7,10 +7,10 @@ import requests
 
 from localstack import config, constants
 from localstack.aws.api.opensearch import EngineType
-from localstack.services import install
 from localstack.services.generic_proxy import EndpointProxy
 from localstack.services.infra import DEFAULT_BACKEND_HOST
 from localstack.services.opensearch import versions
+from localstack.services.opensearch.packages import elasticsearch_package, opensearch_package
 from localstack.utils.common import (
     ShellCommandThread,
     chmod_r,
@@ -87,11 +87,7 @@ def resolve_directories(version: str, cluster_path: str, data_root: str = None) 
     """
     # where to find cluster binary and the modules
     engine_type, install_version = versions.get_install_type_and_version(version)
-    if engine_type == EngineType.OpenSearch:
-        install_dir = install.get_opensearch_install_dir(install_version)
-    else:
-        # Elasticsearch version
-        install_dir = install.get_elasticsearch_install_dir(install_version)
+    install_dir = opensearch_package.get_installed_dir(version)
 
     modules_dir = os.path.join(install_dir, "modules")
 
@@ -125,14 +121,12 @@ def build_cluster_run_command(cluster_bin: str, settings: CommandSettings) -> Li
 class OpensearchCluster(Server):
     """Manages an OpenSearch cluster which is installed and operated by LocalStack."""
 
-    def __init__(
-        self, port, host="localhost", version: str = None, directories: Directories = None
-    ) -> None:
+    def __init__(self, port: int, arn: str, host: str = "localhost", version: str = None) -> None:
         super().__init__(port, host)
         self._version = version or self.default_version
+        self.arn = arn
 
         self.command_settings = {}
-        self.directories = directories or self._resolve_directories()
 
     @property
     def default_version(self) -> str:
@@ -160,16 +154,19 @@ class OpensearchCluster(Server):
 
     def do_start_thread(self) -> FuncThread:
         self._ensure_installed()
-        self._init_directories()
+        directories = resolve_directories(version=self.version, cluster_path=self.arn)
+        init_directories(directories)
 
-        cmd = self._create_run_command(additional_settings=self.command_settings)
+        cmd = self._create_run_command(
+            directories=directories, additional_settings=self.command_settings
+        )
         cmd = " ".join(cmd)
 
         if is_root() and self.os_user:
             # run the opensearch process as a non-root user (when running in docker)
             cmd = f"su {self.os_user} -c '{cmd}'"
 
-        env_vars = self._create_env_vars()
+        env_vars = self._create_env_vars(directories)
 
         LOG.info("starting %s: %s with env %s", self.bin_name, cmd, env_vars)
         t = ShellCommandThread(
@@ -181,14 +178,8 @@ class OpensearchCluster(Server):
         t.start()
         return t
 
-    def _resolve_directories(self) -> Directories:
-        return resolve_directories(version=self.version, cluster_path=self.version)
-
     def _ensure_installed(self):
-        install.install_opensearch(self.version)
-
-    def _init_directories(self):
-        init_directories(self.directories)
+        opensearch_package.install(self.version)
 
     def _base_settings(self, dirs) -> CommandSettings:
         settings = {
@@ -209,14 +200,12 @@ class OpensearchCluster(Server):
         return settings
 
     def _create_run_command(
-        self, additional_settings: Optional[CommandSettings] = None
+        self, directories: Directories, additional_settings: Optional[CommandSettings] = None
     ) -> List[str]:
         # delete opensearch data that may be cached locally from a previous test run
-        dirs = self.directories
+        bin_path = os.path.join(directories.install, "bin", self.bin_name)
 
-        bin_path = os.path.join(self.directories.install, "bin", self.bin_name)
-
-        settings = self._base_settings(dirs)
+        settings = self._base_settings(directories)
 
         if additional_settings:
             settings.update(additional_settings)
@@ -224,10 +213,10 @@ class OpensearchCluster(Server):
         cmd = build_cluster_run_command(bin_path, settings)
         return cmd
 
-    def _create_env_vars(self) -> Dict:
+    def _create_env_vars(self, directories: Directories) -> Dict:
         return {
             "OPENSEARCH_JAVA_OPTS": os.environ.get("OPENSEARCH_JAVA_OPTS", "-Xms200m -Xmx600m"),
-            "OPENSEARCH_TMPDIR": self.directories.tmp,
+            "OPENSEARCH_TMPDIR": directories.tmp,
         }
 
     def _log_listener(self, line, **_kwargs):
@@ -264,7 +253,7 @@ class EdgeProxiedOpensearchCluster(Server):
     requests to the backend cluster.
     """
 
-    def __init__(self, url: str, version=None, directories: Directories = None) -> None:
+    def __init__(self, url: str, arn: str, version=None) -> None:
         self._url = urlparse(url)
 
         super().__init__(
@@ -272,11 +261,11 @@ class EdgeProxiedOpensearchCluster(Server):
             port=self._url.port,
         )
         self._version = version or self.default_version
+        self.arn = arn
 
         self.cluster = None
         self.cluster_port = None
         self.proxy = None
-        self.directories = directories
 
     @property
     def version(self):
@@ -308,8 +297,8 @@ class EdgeProxiedOpensearchCluster(Server):
         return OpensearchCluster(
             port=self.cluster_port,
             host=DEFAULT_BACKEND_HOST,
+            arn=self.arn,
             version=self.version,
-            directories=self.directories,
         )
 
     def do_run(self):
@@ -347,7 +336,7 @@ class ElasticsearchCluster(OpensearchCluster):
         return constants.OS_USER_OPENSEARCH
 
     def _ensure_installed(self):
-        install.install_elasticsearch(self.version)
+        elasticsearch_package.install(self.version)
 
     def _base_settings(self, dirs) -> CommandSettings:
         settings = {
@@ -366,23 +355,19 @@ class ElasticsearchCluster(OpensearchCluster):
 
         return settings
 
-    def _create_env_vars(self) -> Dict:
+    def _create_env_vars(self, directories: Directories) -> Dict:
         return {
             "ES_JAVA_OPTS": os.environ.get("ES_JAVA_OPTS", "-Xms200m -Xmx600m"),
-            "ES_TMPDIR": self.directories.tmp,
+            "ES_TMPDIR": directories.tmp,
         }
 
 
 class EdgeProxiedElasticsearchCluster(EdgeProxiedOpensearchCluster):
     @property
     def default_version(self):
-        # TODO move to constants
-        return "Elasticsearch_7.10"
+        return constants.ELASTICSEARCH_DEFAULT_VERSION
 
     def _backend_cluster(self) -> OpensearchCluster:
         return ElasticsearchCluster(
-            port=self.cluster_port,
-            host=DEFAULT_BACKEND_HOST,
-            version=self.version,
-            directories=self.directories,
+            port=self.cluster_port, host=DEFAULT_BACKEND_HOST, arn=self.arn, version=self.version
         )

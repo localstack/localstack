@@ -283,6 +283,8 @@ class AcceleratorName(str):
     m60 = "m60"
     radeon_pro_v520 = "radeon-pro-v520"
     vu9p = "vu9p"
+    inferentia = "inferentia"
+    k520 = "k520"
 
 
 class AcceleratorType(str):
@@ -1839,6 +1841,11 @@ class LocalGatewayRouteState(str):
     deleted = "deleted"
 
 
+class LocalGatewayRouteTableMode(str):
+    direct_vpc_routing = "direct-vpc-routing"
+    coip = "coip"
+
+
 class LocalGatewayRouteType(str):
     static = "static"
     propagated = "propagated"
@@ -1864,6 +1871,7 @@ class LocationType(str):
 class LogDestinationType(str):
     cloud_watch_logs = "cloud-watch-logs"
     s3 = "s3"
+    kinesis_data_firehose = "kinesis-data-firehose"
 
 
 class MarketType(str):
@@ -2130,6 +2138,7 @@ class ResourceType(str):
     client_vpn_endpoint = "client-vpn-endpoint"
     customer_gateway = "customer-gateway"
     carrier_gateway = "carrier-gateway"
+    coip_pool = "coip-pool"
     dedicated_host = "dedicated-host"
     dhcp_options = "dhcp-options"
     egress_only_internet_gateway = "egress-only-internet-gateway"
@@ -2193,7 +2202,9 @@ class ResourceType(str):
     volume = "volume"
     vpc = "vpc"
     vpc_endpoint = "vpc-endpoint"
+    vpc_endpoint_connection = "vpc-endpoint-connection"
     vpc_endpoint_service = "vpc-endpoint-service"
+    vpc_endpoint_service_permission = "vpc-endpoint-service-permission"
     vpc_peering_connection = "vpc-peering-connection"
     vpn_connection = "vpn-connection"
     vpn_gateway = "vpn-gateway"
@@ -2201,6 +2212,7 @@ class ResourceType(str):
     capacity_reservation_fleet = "capacity-reservation-fleet"
     traffic_mirror_filter_rule = "traffic-mirror-filter-rule"
     vpc_endpoint_connection_device_type = "vpc-endpoint-connection-device-type"
+    vpn_connection_device_type = "vpn-connection-device-type"
 
 
 class RootDeviceType(str):
@@ -3171,6 +3183,16 @@ class AddPrefixListEntry(TypedDict, total=False):
 AddPrefixListEntries = List[AddPrefixListEntry]
 
 
+class AddedPrincipal(TypedDict, total=False):
+    PrincipalType: Optional[PrincipalType]
+    Principal: Optional[String]
+    ServicePermissionId: Optional[String]
+    ServiceId: Optional[String]
+
+
+AddedPrincipalSet = List[AddedPrincipal]
+
+
 class Address(TypedDict, total=False):
     InstanceId: Optional[String]
     PublicIp: Optional[String]
@@ -3304,6 +3326,9 @@ AllocationIds = List[AllocationId]
 class AllowedPrincipal(TypedDict, total=False):
     PrincipalType: Optional[PrincipalType]
     Principal: Optional[String]
+    ServicePermissionId: Optional[String]
+    Tags: Optional[TagList]
+    ServiceId: Optional[String]
 
 
 AllowedPrincipalSet = List[AllowedPrincipal]
@@ -4548,6 +4573,12 @@ class CoipAddressUsage(TypedDict, total=False):
 CoipAddressUsageSet = List[CoipAddressUsage]
 
 
+class CoipCidr(TypedDict, total=False):
+    Cidr: Optional[String]
+    CoipPoolId: Optional[Ipv4PoolCoipId]
+    LocalGatewayRouteTableId: Optional[String]
+
+
 class CoipPool(TypedDict, total=False):
     PoolId: Optional[Ipv4PoolCoipId]
     PoolCidrs: Optional[ValueStringList]
@@ -4814,6 +4845,26 @@ class CreateClientVpnRouteRequest(ServiceRequest):
 
 class CreateClientVpnRouteResult(TypedDict, total=False):
     Status: Optional[ClientVpnRouteStatus]
+
+
+class CreateCoipCidrRequest(ServiceRequest):
+    Cidr: String
+    CoipPoolId: Ipv4PoolCoipId
+    DryRun: Optional[Boolean]
+
+
+class CreateCoipCidrResult(TypedDict, total=False):
+    CoipCidr: Optional[CoipCidr]
+
+
+class CreateCoipPoolRequest(ServiceRequest):
+    LocalGatewayRouteTableId: LocalGatewayRoutetableId
+    TagSpecifications: Optional[TagSpecificationList]
+    DryRun: Optional[Boolean]
+
+
+class CreateCoipPoolResult(TypedDict, total=False):
+    CoipPool: Optional[CoipPool]
 
 
 class CreateCustomerGatewayRequest(ServiceRequest):
@@ -5237,6 +5288,7 @@ class CreateFlowLogsRequest(ServiceRequest):
     DryRun: Optional[Boolean]
     ClientToken: Optional[String]
     DeliverLogsPermissionArn: Optional[String]
+    DeliverCrossAccountRole: Optional[String]
     LogGroupName: Optional[String]
     ResourceIds: FlowLogResourceIds
     ResourceType: FlowLogsResourceType
@@ -5994,8 +6046,9 @@ class CreateLaunchTemplateVersionResult(TypedDict, total=False):
 class CreateLocalGatewayRouteRequest(ServiceRequest):
     DestinationCidrBlock: String
     LocalGatewayRouteTableId: LocalGatewayRoutetableId
-    LocalGatewayVirtualInterfaceGroupId: LocalGatewayVirtualInterfaceGroupId
+    LocalGatewayVirtualInterfaceGroupId: Optional[LocalGatewayVirtualInterfaceGroupId]
     DryRun: Optional[Boolean]
+    NetworkInterfaceId: Optional[NetworkInterfaceId]
 
 
 class LocalGatewayRoute(TypedDict, total=False):
@@ -6006,10 +6059,67 @@ class LocalGatewayRoute(TypedDict, total=False):
     LocalGatewayRouteTableId: Optional[LocalGatewayRoutetableId]
     LocalGatewayRouteTableArn: Optional[ResourceArn]
     OwnerId: Optional[String]
+    SubnetId: Optional[SubnetId]
+    CoipPoolId: Optional[CoipPoolId]
+    NetworkInterfaceId: Optional[NetworkInterfaceId]
 
 
 class CreateLocalGatewayRouteResult(TypedDict, total=False):
     Route: Optional[LocalGatewayRoute]
+
+
+class CreateLocalGatewayRouteTableRequest(ServiceRequest):
+    LocalGatewayId: LocalGatewayId
+    Mode: Optional[LocalGatewayRouteTableMode]
+    TagSpecifications: Optional[TagSpecificationList]
+    DryRun: Optional[Boolean]
+
+
+class StateReason(TypedDict, total=False):
+    Code: Optional[String]
+    Message: Optional[String]
+
+
+class LocalGatewayRouteTable(TypedDict, total=False):
+    LocalGatewayRouteTableId: Optional[String]
+    LocalGatewayRouteTableArn: Optional[ResourceArn]
+    LocalGatewayId: Optional[LocalGatewayId]
+    OutpostArn: Optional[String]
+    OwnerId: Optional[String]
+    State: Optional[String]
+    Tags: Optional[TagList]
+    Mode: Optional[LocalGatewayRouteTableMode]
+    StateReason: Optional[StateReason]
+
+
+class CreateLocalGatewayRouteTableResult(TypedDict, total=False):
+    LocalGatewayRouteTable: Optional[LocalGatewayRouteTable]
+
+
+class CreateLocalGatewayRouteTableVirtualInterfaceGroupAssociationRequest(ServiceRequest):
+    LocalGatewayRouteTableId: LocalGatewayRoutetableId
+    LocalGatewayVirtualInterfaceGroupId: LocalGatewayVirtualInterfaceGroupId
+    TagSpecifications: Optional[TagSpecificationList]
+    DryRun: Optional[Boolean]
+
+
+class LocalGatewayRouteTableVirtualInterfaceGroupAssociation(TypedDict, total=False):
+    LocalGatewayRouteTableVirtualInterfaceGroupAssociationId: Optional[
+        LocalGatewayRouteTableVirtualInterfaceGroupAssociationId
+    ]
+    LocalGatewayVirtualInterfaceGroupId: Optional[LocalGatewayVirtualInterfaceGroupId]
+    LocalGatewayId: Optional[String]
+    LocalGatewayRouteTableId: Optional[LocalGatewayId]
+    LocalGatewayRouteTableArn: Optional[ResourceArn]
+    OwnerId: Optional[String]
+    State: Optional[String]
+    Tags: Optional[TagList]
+
+
+class CreateLocalGatewayRouteTableVirtualInterfaceGroupAssociationResult(TypedDict, total=False):
+    LocalGatewayRouteTableVirtualInterfaceGroupAssociation: Optional[
+        LocalGatewayRouteTableVirtualInterfaceGroupAssociation
+    ]
 
 
 class CreateLocalGatewayRouteTableVpcAssociationRequest(ServiceRequest):
@@ -7617,6 +7727,25 @@ class DeleteClientVpnRouteResult(TypedDict, total=False):
     Status: Optional[ClientVpnRouteStatus]
 
 
+class DeleteCoipCidrRequest(ServiceRequest):
+    Cidr: String
+    CoipPoolId: Ipv4PoolCoipId
+    DryRun: Optional[Boolean]
+
+
+class DeleteCoipCidrResult(TypedDict, total=False):
+    CoipCidr: Optional[CoipCidr]
+
+
+class DeleteCoipPoolRequest(ServiceRequest):
+    CoipPoolId: Ipv4PoolCoipId
+    DryRun: Optional[Boolean]
+
+
+class DeleteCoipPoolResult(TypedDict, total=False):
+    CoipPool: Optional[CoipPool]
+
+
 class DeleteCustomerGatewayRequest(ServiceRequest):
     CustomerGatewayId: CustomerGatewayId
     DryRun: Optional[Boolean]
@@ -7808,6 +7937,26 @@ class DeleteLocalGatewayRouteRequest(ServiceRequest):
 
 class DeleteLocalGatewayRouteResult(TypedDict, total=False):
     Route: Optional[LocalGatewayRoute]
+
+
+class DeleteLocalGatewayRouteTableRequest(ServiceRequest):
+    LocalGatewayRouteTableId: LocalGatewayRoutetableId
+    DryRun: Optional[Boolean]
+
+
+class DeleteLocalGatewayRouteTableResult(TypedDict, total=False):
+    LocalGatewayRouteTable: Optional[LocalGatewayRouteTable]
+
+
+class DeleteLocalGatewayRouteTableVirtualInterfaceGroupAssociationRequest(ServiceRequest):
+    LocalGatewayRouteTableVirtualInterfaceGroupAssociationId: LocalGatewayRouteTableVirtualInterfaceGroupAssociationId
+    DryRun: Optional[Boolean]
+
+
+class DeleteLocalGatewayRouteTableVirtualInterfaceGroupAssociationResult(TypedDict, total=False):
+    LocalGatewayRouteTableVirtualInterfaceGroupAssociation: Optional[
+        LocalGatewayRouteTableVirtualInterfaceGroupAssociation
+    ]
 
 
 class DeleteLocalGatewayRouteTableVpcAssociationRequest(ServiceRequest):
@@ -8939,6 +9088,7 @@ class FlowLog(TypedDict, total=False):
     CreationTime: Optional[MillisecondDateTime]
     DeliverLogsErrorMessage: Optional[String]
     DeliverLogsPermissionArn: Optional[String]
+    DeliverCrossAccountRole: Optional[String]
     DeliverLogsStatus: Optional[String]
     FlowLogId: Optional[String]
     FlowLogStatus: Optional[String]
@@ -9216,11 +9366,6 @@ class DescribeImagesRequest(ServiceRequest):
     Owners: Optional[OwnerStringList]
     IncludeDeprecated: Optional[Boolean]
     DryRun: Optional[Boolean]
-
-
-class StateReason(TypedDict, total=False):
-    Code: Optional[String]
-    Message: Optional[String]
 
 
 class Image(TypedDict, total=False):
@@ -10107,19 +10252,6 @@ class DescribeLocalGatewayRouteTableVirtualInterfaceGroupAssociationsRequest(Ser
     DryRun: Optional[Boolean]
 
 
-class LocalGatewayRouteTableVirtualInterfaceGroupAssociation(TypedDict, total=False):
-    LocalGatewayRouteTableVirtualInterfaceGroupAssociationId: Optional[
-        LocalGatewayRouteTableVirtualInterfaceGroupAssociationId
-    ]
-    LocalGatewayVirtualInterfaceGroupId: Optional[LocalGatewayVirtualInterfaceGroupId]
-    LocalGatewayId: Optional[String]
-    LocalGatewayRouteTableId: Optional[LocalGatewayId]
-    LocalGatewayRouteTableArn: Optional[ResourceArn]
-    OwnerId: Optional[String]
-    State: Optional[String]
-    Tags: Optional[TagList]
-
-
 LocalGatewayRouteTableVirtualInterfaceGroupAssociationSet = List[
     LocalGatewayRouteTableVirtualInterfaceGroupAssociation
 ]
@@ -10160,16 +10292,6 @@ class DescribeLocalGatewayRouteTablesRequest(ServiceRequest):
     MaxResults: Optional[LocalGatewayMaxResults]
     NextToken: Optional[String]
     DryRun: Optional[Boolean]
-
-
-class LocalGatewayRouteTable(TypedDict, total=False):
-    LocalGatewayRouteTableId: Optional[String]
-    LocalGatewayRouteTableArn: Optional[ResourceArn]
-    LocalGatewayId: Optional[LocalGatewayId]
-    OutpostArn: Optional[String]
-    OwnerId: Optional[String]
-    State: Optional[String]
-    Tags: Optional[TagList]
 
 
 LocalGatewayRouteTableSet = List[LocalGatewayRouteTable]
@@ -12086,6 +12208,8 @@ class VpcEndpointConnection(TypedDict, total=False):
     NetworkLoadBalancerArns: Optional[ValueStringList]
     GatewayLoadBalancerArns: Optional[ValueStringList]
     IpAddressType: Optional[IpAddressType]
+    VpcEndpointConnectionId: Optional[String]
+    Tags: Optional[TagList]
 
 
 VpcEndpointConnectionSet = List[VpcEndpointConnection]
@@ -14224,6 +14348,18 @@ class ModifyLaunchTemplateResult(TypedDict, total=False):
     LaunchTemplate: Optional[LaunchTemplate]
 
 
+class ModifyLocalGatewayRouteRequest(ServiceRequest):
+    DestinationCidrBlock: String
+    LocalGatewayRouteTableId: LocalGatewayRoutetableId
+    LocalGatewayVirtualInterfaceGroupId: Optional[LocalGatewayVirtualInterfaceGroupId]
+    NetworkInterfaceId: Optional[NetworkInterfaceId]
+    DryRun: Optional[Boolean]
+
+
+class ModifyLocalGatewayRouteResult(TypedDict, total=False):
+    Route: Optional[LocalGatewayRoute]
+
+
 class RemovePrefixListEntry(TypedDict, total=False):
     Cidr: String
 
@@ -14560,6 +14696,7 @@ class ModifyVpcEndpointServicePermissionsRequest(ServiceRequest):
 
 
 class ModifyVpcEndpointServicePermissionsResult(TypedDict, total=False):
+    AddedPrincipals: Optional[AddedPrincipalSet]
     ReturnValue: Optional[Boolean]
 
 
@@ -16225,6 +16362,26 @@ class Ec2Api:
     ) -> CreateClientVpnRouteResult:
         raise NotImplementedError
 
+    @handler("CreateCoipCidr")
+    def create_coip_cidr(
+        self,
+        context: RequestContext,
+        cidr: String,
+        coip_pool_id: Ipv4PoolCoipId,
+        dry_run: Boolean = None,
+    ) -> CreateCoipCidrResult:
+        raise NotImplementedError
+
+    @handler("CreateCoipPool")
+    def create_coip_pool(
+        self,
+        context: RequestContext,
+        local_gateway_route_table_id: LocalGatewayRoutetableId,
+        tag_specifications: TagSpecificationList = None,
+        dry_run: Boolean = None,
+    ) -> CreateCoipPoolResult:
+        raise NotImplementedError
+
     @handler("CreateCustomerGateway", expand=False)
     def create_customer_gateway(
         self, context: RequestContext, request: CreateCustomerGatewayRequest
@@ -16283,6 +16440,7 @@ class Ec2Api:
         dry_run: Boolean = None,
         client_token: String = None,
         deliver_logs_permission_arn: String = None,
+        deliver_cross_account_role: String = None,
         log_group_name: String = None,
         traffic_type: TrafficType = None,
         log_destination_type: LogDestinationType = None,
@@ -16446,9 +16604,32 @@ class Ec2Api:
         context: RequestContext,
         destination_cidr_block: String,
         local_gateway_route_table_id: LocalGatewayRoutetableId,
-        local_gateway_virtual_interface_group_id: LocalGatewayVirtualInterfaceGroupId,
+        local_gateway_virtual_interface_group_id: LocalGatewayVirtualInterfaceGroupId = None,
         dry_run: Boolean = None,
+        network_interface_id: NetworkInterfaceId = None,
     ) -> CreateLocalGatewayRouteResult:
+        raise NotImplementedError
+
+    @handler("CreateLocalGatewayRouteTable")
+    def create_local_gateway_route_table(
+        self,
+        context: RequestContext,
+        local_gateway_id: LocalGatewayId,
+        mode: LocalGatewayRouteTableMode = None,
+        tag_specifications: TagSpecificationList = None,
+        dry_run: Boolean = None,
+    ) -> CreateLocalGatewayRouteTableResult:
+        raise NotImplementedError
+
+    @handler("CreateLocalGatewayRouteTableVirtualInterfaceGroupAssociation")
+    def create_local_gateway_route_table_virtual_interface_group_association(
+        self,
+        context: RequestContext,
+        local_gateway_route_table_id: LocalGatewayRoutetableId,
+        local_gateway_virtual_interface_group_id: LocalGatewayVirtualInterfaceGroupId,
+        tag_specifications: TagSpecificationList = None,
+        dry_run: Boolean = None,
+    ) -> CreateLocalGatewayRouteTableVirtualInterfaceGroupAssociationResult:
         raise NotImplementedError
 
     @handler("CreateLocalGatewayRouteTableVpcAssociation")
@@ -17103,6 +17284,22 @@ class Ec2Api:
     ) -> DeleteClientVpnRouteResult:
         raise NotImplementedError
 
+    @handler("DeleteCoipCidr")
+    def delete_coip_cidr(
+        self,
+        context: RequestContext,
+        cidr: String,
+        coip_pool_id: Ipv4PoolCoipId,
+        dry_run: Boolean = None,
+    ) -> DeleteCoipCidrResult:
+        raise NotImplementedError
+
+    @handler("DeleteCoipPool")
+    def delete_coip_pool(
+        self, context: RequestContext, coip_pool_id: Ipv4PoolCoipId, dry_run: Boolean = None
+    ) -> DeleteCoipPoolResult:
+        raise NotImplementedError
+
     @handler("DeleteCustomerGateway")
     def delete_customer_gateway(
         self,
@@ -17229,6 +17426,24 @@ class Ec2Api:
         local_gateway_route_table_id: LocalGatewayRoutetableId,
         dry_run: Boolean = None,
     ) -> DeleteLocalGatewayRouteResult:
+        raise NotImplementedError
+
+    @handler("DeleteLocalGatewayRouteTable")
+    def delete_local_gateway_route_table(
+        self,
+        context: RequestContext,
+        local_gateway_route_table_id: LocalGatewayRoutetableId,
+        dry_run: Boolean = None,
+    ) -> DeleteLocalGatewayRouteTableResult:
+        raise NotImplementedError
+
+    @handler("DeleteLocalGatewayRouteTableVirtualInterfaceGroupAssociation")
+    def delete_local_gateway_route_table_virtual_interface_group_association(
+        self,
+        context: RequestContext,
+        local_gateway_route_table_virtual_interface_group_association_id: LocalGatewayRouteTableVirtualInterfaceGroupAssociationId,
+        dry_run: Boolean = None,
+    ) -> DeleteLocalGatewayRouteTableVirtualInterfaceGroupAssociationResult:
         raise NotImplementedError
 
     @handler("DeleteLocalGatewayRouteTableVpcAssociation")
@@ -20420,6 +20635,18 @@ class Ec2Api:
         launch_template_name: LaunchTemplateName = None,
         default_version: String = None,
     ) -> ModifyLaunchTemplateResult:
+        raise NotImplementedError
+
+    @handler("ModifyLocalGatewayRoute")
+    def modify_local_gateway_route(
+        self,
+        context: RequestContext,
+        destination_cidr_block: String,
+        local_gateway_route_table_id: LocalGatewayRoutetableId,
+        local_gateway_virtual_interface_group_id: LocalGatewayVirtualInterfaceGroupId = None,
+        network_interface_id: NetworkInterfaceId = None,
+        dry_run: Boolean = None,
+    ) -> ModifyLocalGatewayRouteResult:
         raise NotImplementedError
 
     @handler("ModifyManagedPrefixList")

@@ -54,7 +54,7 @@ from localstack.services.generic_proxy import RegionBackend
 from localstack.services.install import INSTALL_DIR_STEPFUNCTIONS, install_go_lambda_runtime
 from localstack.utils.archives import unzip
 from localstack.utils.aws import aws_stack
-from localstack.utils.aws.aws_models import CodeSigningConfig, LambdaFunction
+from localstack.utils.aws.aws_models import CodeSigningConfig, InvalidEnvVars, LambdaFunction
 from localstack.utils.aws.aws_responses import ResourceNotFoundException
 from localstack.utils.aws.aws_stack import extract_region_from_arn
 from localstack.utils.common import get_unzipped_size, is_zip_file
@@ -422,6 +422,7 @@ def run_lambda(
 
     # Ensure that the service provider has been initialized. This is required to ensure all lifecycle hooks
     # (e.g., persistence) have been executed when the run_lambda(..) function gets called (e.g., from API GW).
+    LOG.debug("Running lambda %s", func_arn)
     if not hasattr(run_lambda, "_provider_initialized"):
         aws_stack.connect_to_service("lambda").list_functions()
         run_lambda._provider_initialized = True
@@ -492,14 +493,17 @@ def exec_lambda_code(script, handler_function="handler", lambda_cwd=None, lambda
     #  (e.g., mutating environment variables, and globally loaded modules). Should be redesigned.
 
     def _do_exec_lambda_code():
+        import os as exec_os
+        import sys as exec_sys
+
         if lambda_cwd or lambda_env:
             if lambda_cwd:
-                previous_cwd = os.getcwd()
-                os.chdir(lambda_cwd)
-                sys.path = [lambda_cwd] + sys.path
+                previous_cwd = exec_os.getcwd()
+                exec_os.chdir(lambda_cwd)
+                exec_sys.path = [lambda_cwd] + exec_sys.path
             if lambda_env:
-                previous_env = dict(os.environ)
-                os.environ.update(lambda_env)
+                previous_env = dict(exec_os.environ)
+                exec_os.environ.update(lambda_env)
         # generate lambda file name
         lambda_id = "l_%s" % short_uid()
         lambda_file = LAMBDA_SCRIPT_PATTERN.replace("*", lambda_id)
@@ -508,7 +512,7 @@ def exec_lambda_code(script, handler_function="handler", lambda_cwd=None, lambda
         TMP_FILES.append(lambda_file)
         TMP_FILES.append("%sc" % lambda_file)
         try:
-            pre_sys_modules_keys = set(sys.modules.keys())
+            pre_sys_modules_keys = set(exec_sys.modules.keys())
             # set default env variables required for most Lambda handlers
             env_vars_before = lambda_executors.LambdaExecutorLocal.set_default_env_variables()
             try:
@@ -520,20 +524,20 @@ def exec_lambda_code(script, handler_function="handler", lambda_cwd=None, lambda
                 # (eg settings.py) into the global namespace. subsequent
                 # calls can pick up file from another function, causing
                 # general issues.
-                post_sys_modules_keys = set(sys.modules.keys())
+                post_sys_modules_keys = set(exec_sys.modules.keys())
                 for key in post_sys_modules_keys:
                     if key not in pre_sys_modules_keys:
-                        sys.modules.pop(key)
+                        exec_sys.modules.pop(key)
         except Exception as e:
             LOG.error("Unable to exec: %s %s", script, traceback.format_exc())
             raise e
         finally:
             if lambda_cwd or lambda_env:
                 if lambda_cwd:
-                    os.chdir(previous_cwd)
-                    sys.path.pop(0)
+                    exec_os.chdir(previous_cwd)
+                    exec_sys.path.pop(0)
                 if lambda_env:
-                    os.environ = previous_env
+                    exec_os.environ = previous_env
         return module_vars[handler_function]
 
     lock = EXEC_MUTEX if lambda_cwd or lambda_env else empty_context_manager()
@@ -775,12 +779,18 @@ def do_set_function_code(lambda_function: LambdaFunction):
                 zip_file_content = load_file(main_file, mode="rb")
                 # extract handler
                 handler_function = get_handler_function_from_name(handler_name, runtime=runtime)
-                lambda_handler = exec_lambda_code(
-                    zip_file_content,
-                    handler_function=handler_function,
-                    lambda_cwd=lambda_cwd,
-                    lambda_env=lambda_environment,
-                )
+
+                def exec_local_python(event, context):
+                    inner_handler = exec_lambda_code(
+                        zip_file_content,
+                        handler_function=handler_function,
+                        lambda_cwd=lambda_cwd,
+                        lambda_env=lambda_environment,
+                    )
+                    return inner_handler(event, context)
+
+                lambda_handler = exec_local_python
+
             except Exception as e:
                 raise ClientError("Unable to get handler function from lambda code: %s" % e)
 
@@ -1100,7 +1110,7 @@ def handle_lambda_url_invocation(
         return response
 
     event = event_for_lambda_url(
-        api_id, request.full_path, request.data, dict(request.headers), request.method
+        api_id, request.full_path, request.data, request.headers, request.method
     )
 
     try:
@@ -1202,14 +1212,22 @@ def create_function():
                 409,
                 error_type="ResourceConflictException",
             )
-        region.lambdas[arn] = lambda_function = LambdaFunction(arn)
+        lambda_function = LambdaFunction(arn)
         lambda_function.versions = {VERSION_LATEST: {"RevisionId": str(uuid.uuid4())}}
         lambda_function.vpc_config = data.get("VpcConfig", {})
         lambda_function.last_modified = datetime.utcnow()
         lambda_function.description = data.get("Description", "")
         lambda_function.handler = data.get("Handler")
         lambda_function.runtime = data.get("Runtime")
-        lambda_function.envvars = data.get("Environment", {}).get("Variables", {})
+        try:
+            lambda_function.envvars = data.get("Environment", {}).get("Variables", {})
+        except InvalidEnvVars as e:
+            return error_response(
+                "Lambda was unable to configure your environment variables because the environment variables you have provided exceeded the 4KB limit. "
+                f"String measured: {e}",
+                400,
+                error_type=INVALID_PARAMETER_VALUE_EXCEPTION,
+            )
         lambda_function.tags = data.get("Tags", {})
         lambda_function.timeout = data.get("Timeout", LAMBDA_DEFAULT_TIMEOUT)
         lambda_function.role = data["Role"]
@@ -1227,6 +1245,7 @@ def create_function():
         lambda_function.tracing_config = data.get("TracingConfig", {})
         lambda_function.set_dead_letter_config(data)
         lambda_function.state = "Pending"
+        region.lambdas[arn] = lambda_function
         result = set_function_code(lambda_function)
         if isinstance(result, Response):
             del region.lambdas[arn]

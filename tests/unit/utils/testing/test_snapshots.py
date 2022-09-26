@@ -1,6 +1,7 @@
 import pytest
 
 from localstack.testing.snapshots import SnapshotSession
+from localstack.testing.snapshots.report import _format_json_path
 from localstack.testing.snapshots.transformer import KeyValueBasedTransformer, SortingTransformer
 from localstack.testing.snapshots.transformer_utility import _resource_name_transformer
 
@@ -119,6 +120,25 @@ class TestSnapshotManager:
 
         skip_path_escaped = ["$..aab", "$..b.'a.aa'"]
         sm._assert_all(skip_verification_paths=skip_path_escaped)
+
+
+def test_json_diff_format():
+    path = ["Records", 1]
+    assert _format_json_path(path) == '"$..Records"'
+    path = ["Records", 1, 1, 1]
+    assert _format_json_path(path) == '"$..Records"'
+    path = ["Records", 1, "SomeKey"]
+    assert _format_json_path(path) == '"$..Records..SomeKey"'
+    path = ["Records", 1, 1, "SomeKey"]
+    assert _format_json_path(path) == '"$..Records..SomeKey"'
+    path = ["Records", 1, 1, 0, "SomeKey"]
+    assert _format_json_path(path) == '"$..Records..SomeKey"'
+    path = ["Records", "SomeKey"]
+    assert _format_json_path(path) == '"$..Records.SomeKey"'
+    path = []
+    assert _format_json_path(path) == '"$.."'
+    path = [1, 1, 0, "SomeKey"]
+    assert _format_json_path(path) == '"$..SomeKey"'
 
 
 def test_sorting_transformer():

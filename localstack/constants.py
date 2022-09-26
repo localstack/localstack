@@ -16,6 +16,7 @@ ENV_DEV = "dev"
 # HTTP headers used to forward proxy request URLs
 HEADER_LOCALSTACK_EDGE_URL = "x-localstack-edge"
 HEADER_LOCALSTACK_REQUEST_URL = "x-localstack-request-url"
+# xXx custom localstack authorization header only used in ext
 HEADER_LOCALSTACK_AUTHORIZATION = "x-localstack-authorization"
 HEADER_LOCALSTACK_TARGET = "x-localstack-target"
 HEADER_AMZN_ERROR_TYPE = "X-Amzn-Errortype"
@@ -137,14 +138,9 @@ OPENSEARCH_PLUGIN_LIST = [
 ELASTICMQ_JAR_URL = (
     "https://s3-eu-west-1.amazonaws.com/softwaremill-public/elasticmq-server-1.1.0.jar"
 )
-STS_JAR_URL = (
-    f"{MAVEN_REPO_URL}/com/amazonaws/aws-java-sdk-sts/1.11.14/aws-java-sdk-sts-1.11.14.jar"
-)
 STEPFUNCTIONS_ZIP_URL = "https://s3.amazonaws.com/stepfunctionslocal/StepFunctionsLocal.zip"
 KMS_URL_PATTERN = "https://s3-eu-west-2.amazonaws.com/local-kms/3/local-kms_<arch>.bin"
 
-DYNAMODB_JAR_URL = "https://s3-us-west-2.amazonaws.com/dynamodb-local/dynamodb_local_latest.zip"
-LIBSQLITE_AARCH64_URL = f"{MAVEN_REPO_URL}/io/github/ganadist/sqlite4java/libsqlite4java-osx-aarch64/1.0.392/libsqlite4java-osx-aarch64-1.0.392.dylib"
 
 # API endpoint for analytics events
 API_ENDPOINT = os.environ.get("API_ENDPOINT") or "https://api.localstack.cloud/v1"

@@ -809,23 +809,39 @@ def wait_for_dynamodb_stream_ready(dynamodbstreams_client):
 
 
 @pytest.fixture()
-def kms_create_key(kms_client):
+def kms_create_key(create_boto_client):
     key_ids = []
 
-    def _create_key(**kwargs):
+    def _create_key(region=None, **kwargs):
         if "Description" not in kwargs:
             kwargs["Description"] = f"test description - {short_uid()}"
-        if "KeyUsage" not in kwargs:
-            kwargs["KeyUsage"] = "ENCRYPT_DECRYPT"
-        key_metadata = kms_client.create_key(**kwargs)["KeyMetadata"]
-        key_ids.append(key_metadata["KeyId"])
+        key_metadata = create_boto_client("kms", region).create_key(**kwargs)["KeyMetadata"]
+        key_ids.append((region, key_metadata["KeyId"]))
         return key_metadata
 
     yield _create_key
 
-    for key_id in key_ids:
+    for region, key_id in key_ids:
         try:
-            kms_client.schedule_key_deletion(KeyId=key_id)
+            create_boto_client("kms", region).schedule_key_deletion(KeyId=key_id)
+        except Exception as e:
+            LOG.debug("error cleaning up KMS key %s: %s", key_id, e)
+
+
+@pytest.fixture()
+def kms_replicate_key(create_boto_client):
+    key_ids = []
+
+    def _replicate_key(region_from=None, **kwargs):
+        region_to = kwargs.get("ReplicaRegion")
+        key_ids.append((region_to, kwargs.get("KeyId")))
+        return create_boto_client("kms", region_from).replicate_key(**kwargs)
+
+    yield _replicate_key
+
+    for region_to, key_id in key_ids:
+        try:
+            create_boto_client("kms", region_to).schedule_key_deletion(KeyId=key_id)
         except Exception as e:
             LOG.debug("error cleaning up KMS key %s: %s", key_id, e)
 
@@ -854,6 +870,37 @@ def kms_create_alias(kms_client, kms_create_key):
             kms_client.delete_alias(AliasName=alias)
         except Exception as e:
             LOG.debug("error cleaning up KMS alias %s: %s", alias, e)
+
+
+@pytest.fixture()
+def kms_create_grant(kms_client, kms_create_key):
+    grants = []
+
+    def _create_grant(**kwargs):
+        # Just a random ARN, since KMS in LocalStack currently doesn't validate GranteePrincipal,
+        # but some GranteePrincipal is required to create a grant.
+        GRANTEE_PRINCIPAL_ARN = (
+            "arn:aws:kms:eu-central-1:123456789876:key/198a5a78-52c3-489f-ac70-b06a4d11027a"
+        )
+
+        if "Operations" not in kwargs:
+            kwargs["Operations"] = ["Decrypt", "Encrypt"]
+        if "GranteePrincipal" not in kwargs:
+            kwargs["GranteePrincipal"] = GRANTEE_PRINCIPAL_ARN
+        if "KeyId" not in kwargs:
+            kwargs["KeyId"] = kms_create_key()["KeyId"]
+
+        grant_id = kms_client.create_grant(**kwargs)["GrantId"]
+        grants.append((grant_id, kwargs["KeyId"]))
+        return grant_id, kwargs["KeyId"]
+
+    yield _create_grant
+
+    for grant_id, key_id in grants:
+        try:
+            kms_client.retire_grant(GrantId=grant_id, KeyId=key_id)
+        except Exception as e:
+            LOG.debug("error cleaning up KMS grant %s: %s", grant_id, e)
 
 
 @pytest.fixture
@@ -1214,6 +1261,46 @@ role_policy = """
 
 
 @pytest.fixture
+def create_lambda_function_aws(
+    lambda_client,
+):
+    lambda_arns = []
+
+    def _create_lambda_function(**kwargs):
+        def _create_function():
+            resp = lambda_client.create_function(**kwargs)
+            lambda_arns.append(resp["FunctionArn"])
+
+            def _is_not_pending():
+                try:
+                    result = (
+                        lambda_client.get_function(FunctionName=resp["FunctionName"])[
+                            "Configuration"
+                        ]["State"]
+                        != "Pending"
+                    )
+                    return result
+                except Exception as e:
+                    LOG.error(e)
+                    raise
+
+            wait_until(_is_not_pending)
+            return resp
+
+        # @AWS, takes about 10s until the role/policy is "active", until then it will fail
+        # localstack should normally not require the retries and will just continue here
+        return retry(_create_function, retries=3, sleep=4)
+
+    yield _create_lambda_function
+
+    for arn in lambda_arns:
+        try:
+            lambda_client.delete_function(FunctionName=arn)
+        except Exception:
+            LOG.debug(f"Unable to delete function {arn=} in cleanup")
+
+
+@pytest.fixture
 def create_lambda_function(lambda_client, logs_client, iam_client, wait_until_lambda_ready):
     lambda_arns_and_clients = []
     role_names_policy_arns = []
@@ -1279,7 +1366,7 @@ def create_lambda_function(lambda_client, logs_client, iam_client, wait_until_la
 
 @pytest.fixture
 def check_lambda_logs(logs_client):
-    def _check_logs(func_name: str, expected_lines: List[str] = None):
+    def _check_logs(func_name: str, expected_lines: List[str] = None) -> List[str]:
         if not expected_lines:
             expected_lines = []
         log_events = get_lambda_logs(func_name, logs_client=logs_client)
@@ -1290,6 +1377,7 @@ def check_lambda_logs(logs_client):
                 if any(found):
                     continue
             assert line in log_messages
+        return log_messages
 
     return _check_logs
 

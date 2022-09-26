@@ -101,9 +101,7 @@ class ItemFinder:
                     key_value = put_item["Item"].get(key_name)
                     if not key_value:
                         raise ValidationException(
-                            "An error occurred (ValidationException) when calling the "
-                            "BatchWriteItem operation: The provided key element does not match "
-                            "the schema"
+                            "The provided key element does not match the schema"
                         )
                     search_key[key_name] = key_value
             if not search_key:
