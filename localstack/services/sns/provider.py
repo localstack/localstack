@@ -494,6 +494,8 @@ class SnsProvider(SnsApi, ServiceLifecycleHook):
 
             message_attributes = entry.get("MessageAttributes", {})
             if message_attributes:
+                # if a message contains non-valid message attributes
+                # will fail for the first non-valid message encountered, and raise ParameterValueInvalid
                 validate_message_attributes(message_attributes)
             try:
                 message_to_subscribers(

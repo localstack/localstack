@@ -2358,3 +2358,25 @@ class TestSNSProvider:
                 )
 
             snapshot.match(error_type, e.value.response)
+
+        with pytest.raises(ClientError) as e:
+            sns_client.publish_batch(
+                TopicArn=topic_arn,
+                PublishBatchRequestEntries=[
+                    {
+                        "Id": "1",
+                        "Message": "test-batch",
+                        "MessageAttributes": wrong_message_attributes["missing_string_attr"],
+                    },
+                    {
+                        "Id": "2",
+                        "Message": "test-batch",
+                        "MessageAttributes": wrong_message_attributes["str_attr_binary_value"],
+                    },
+                    {
+                        "Id": "3",
+                        "Message": "valid-batch",
+                    },
+                ],
+            )
+        snapshot.match("batch-exception", e.value.response)
