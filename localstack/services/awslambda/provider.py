@@ -295,7 +295,17 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
         changes = {}
         if description is not None:
             changes["description"] = description
+        # TODO copy environment instead of restarting one, get rid of all the "Pending"s
+
         with function.lock:
+            if function.next_version > 1 and (
+                prev_version := function.versions.get(str(function.next_version - 1))
+            ):
+                if (
+                    prev_version.config.internal_revision
+                    == current_latest_version.config.internal_revision
+                ):
+                    return prev_version
             # TODO check if there was a change since last version
             next_version = str(function.next_version)
             function.next_version += 1
@@ -307,11 +317,23 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
             )
             new_version = dataclasses.replace(
                 current_latest_version,
-                config=dataclasses.replace(current_latest_version.config, **changes),
+                config=dataclasses.replace(
+                    current_latest_version.config,
+                    last_update=UpdateStatus(
+                        status=LastUpdateStatus.InProgress,
+                        code="Creating",
+                        reason="The function is being created.",
+                    ),
+                    state=VersionState(
+                        state=State.Pending,
+                        code=StateReasonCode.Creating,
+                        reason="The function is being created.",
+                    ),
+                    **changes,
+                ),
                 id=new_id,
             )
             function.versions[next_version] = new_version
-        # TODO state active from the start?
         self.lambda_service.create_function_version(new_version)
         return new_version
 
@@ -531,7 +553,9 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
             function_version = self._publish_version(
                 function_name=function_name, region=context.region, account_id=context.account_id
             )
-        return self._map_config_out(function_version)
+        return self._map_config_out(
+            function_version, return_qualified_arn=bool(request.get("Publish"))
+        )
 
     # TODO: does deleting the latest published version affect the next versions number?
     # TODO: what happens when we call this with a qualifier and a fully qualified ARN? (+ conflicts?)
@@ -649,7 +673,6 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
             client_context=client_context,
             payload=payload.read() if payload else None,
         )
-        qualifier = qualifier or "$LATEST"
         try:
             invocation_result = result.result()
         except Exception as e:
@@ -662,7 +685,7 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
         response = InvocationResponse(
             StatusCode=200,
             Payload=invocation_result.payload,
-            ExecutedVersion=qualifier,
+            ExecutedVersion=invocation_result.executed_version,
             # TODO: should be conditional. Might have to get this from the invoke result as well
         )
 

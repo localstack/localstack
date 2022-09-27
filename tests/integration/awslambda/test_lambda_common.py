@@ -64,6 +64,7 @@ class TestLambdaRuntimesCommon:
 
         assert invoke_result["StatusCode"] == 200
         assert json.loads(invoke_result["Payload"].read()) == payload
+        assert not invoke_result.get("FunctionError")
 
         # payload with quotes and other special characters
         payload = {"hello": "'\" some other ''\"\" quotes, a emoji 🥳 and some brackets {[}}[([]))"}
@@ -74,6 +75,7 @@ class TestLambdaRuntimesCommon:
 
         assert invoke_result["StatusCode"] == 200
         assert json.loads(invoke_result["Payload"].read()) == payload
+        assert not invoke_result.get("FunctionError")
 
         # large payload (5MB+)
         payload = {"hello": "obi wan!" * 128 * 1024 * 5}
@@ -84,6 +86,7 @@ class TestLambdaRuntimesCommon:
 
         assert invoke_result["StatusCode"] == 200
         assert json.loads(invoke_result["Payload"].read()) == payload
+        assert not invoke_result.get("FunctionError")
 
     @pytest.mark.multiruntime(scenario="introspection")
     def test_introspection_invoke(self, lambda_client, multiruntime_lambda, snapshot):

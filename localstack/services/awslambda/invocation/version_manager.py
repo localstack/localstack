@@ -335,6 +335,7 @@ class LambdaVersionManager(ServiceEndpoint):
 
         if not invocation_result.logs:
             invocation_result.logs = running_invocation.logs
+        invocation_result.executed_version = self.function_version.id.qualifier
         executor = running_invocation.executor
         running_invocation.invocation.result_future.set_result(invocation_result)
         # mark executor available again

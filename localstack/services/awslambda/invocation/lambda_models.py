@@ -298,15 +298,17 @@ class Function:
 @dataclasses.dataclass
 class InvocationResult:
     invocation_id: str
-    payload: Optional[bytes]
-    logs: Optional[str] = None
+    payload: bytes | None
+    executed_version: str | None = None
+    logs: str | None = None
 
 
 @dataclasses.dataclass
 class InvocationError:
     invocation_id: str
-    payload: Optional[bytes]
-    logs: Optional[str] = None
+    payload: bytes | None
+    executed_version: str | None = None
+    logs: str | None = None
 
 
 @dataclasses.dataclass

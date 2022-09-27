@@ -69,6 +69,7 @@ TEST_LAMBDA_CACHE_NODEJS = os.path.join(THIS_FOLDER, "functions/lambda_cache.js"
 TEST_LAMBDA_CACHE_PYTHON = os.path.join(THIS_FOLDER, "functions/lambda_cache.py")
 TEST_LAMBDA_TIMEOUT_PYTHON = os.path.join(THIS_FOLDER, "functions/lambda_timeout.py")
 TEST_LAMBDA_INTROSPECT_PYTHON = os.path.join(THIS_FOLDER, "functions/lambda_introspect.py")
+TEST_LAMBDA_VERSION = os.path.join(THIS_FOLDER, "functions/lambda_version.py")
 
 TEST_GOLANG_LAMBDA_URL_TEMPLATE = "https://github.com/localstack/awslamba-go-runtime/releases/download/v{version}/example-handler-{os}-{arch}.tar.gz"
 
@@ -763,11 +764,6 @@ class TestLambdaFeatures:
 
         retry(check_logs, retries=15)
 
-    # TODO test versions?
-
-    # TODO general invocation tests, all runtimes except ruby and go, payload with strings, unicode, large payloads etc.
-    # TODO general error tests, all runtimes except ruby and go
-
 
 class TestLambdaConcurrency:
     def test_lambda_concurrency_block(self, snapshot, create_lambda_function, lambda_client):
@@ -832,3 +828,160 @@ class TestLambdaConcurrency:
                 FunctionName=func_name, Qualifier="$LATEST", Payload=json.dumps({"hello": "world"})
             )
         snapshot.match("invoke_latest_second_exc", e.value.response)
+
+
+class TestLambdaVersions:
+    def test_lambda_versions_with_code_changes(
+        self, lambda_client, lambda_su_role, create_lambda_function_aws, snapshot
+    ):
+        waiter = lambda_client.get_waiter("function_updated_v2")
+        function_name = f"fn-{short_uid()}"
+        zip_file_v1 = create_lambda_archive(
+            load_file(TEST_LAMBDA_VERSION) % "version1", get_content=True
+        )
+        create_response = create_lambda_function_aws(
+            FunctionName=function_name,
+            Handler="handler.handler",
+            Code={"ZipFile": zip_file_v1},
+            PackageType="Zip",
+            Role=lambda_su_role,
+            Runtime=Runtime.python3_9,
+            Description="No version :(",
+        )
+        snapshot.match("create_response", create_response)
+        first_publish_response = lambda_client.publish_version(
+            FunctionName=function_name, Description="First version description :)"
+        )
+        snapshot.match("first_publish_response", first_publish_response)
+        zip_file_v2 = create_lambda_archive(
+            load_file(TEST_LAMBDA_VERSION) % "version2", get_content=True
+        )
+        update_lambda_response = lambda_client.update_function_code(
+            FunctionName=function_name, ZipFile=zip_file_v2
+        )
+        snapshot.match("update_lambda_response", update_lambda_response)
+        waiter.wait(FunctionName=function_name)
+        invocation_result_latest = lambda_client.invoke(FunctionName=function_name, Payload=b"{}")
+        snapshot.match("invocation_result_latest", invocation_result_latest)
+        invocation_result_v1 = lambda_client.invoke(
+            FunctionName=function_name, Qualifier=first_publish_response["Version"], Payload=b"{}"
+        )
+        snapshot.match("invocation_result_v1", invocation_result_v1)
+        second_publish_response = lambda_client.publish_version(
+            FunctionName=function_name, Description="Second version description :)"
+        )
+        snapshot.match("second_publish_response", second_publish_response)
+        waiter.wait(FunctionName=function_name, Qualifier=second_publish_response["Version"])
+        invocation_result_v2 = lambda_client.invoke(
+            FunctionName=function_name, Qualifier=second_publish_response["Version"], Payload=b"{}"
+        )
+        snapshot.match("invocation_result_v2", invocation_result_v2)
+        zip_file_v3 = create_lambda_archive(
+            load_file(TEST_LAMBDA_VERSION) % "version3", get_content=True
+        )
+        update_lambda_response_with_publish = lambda_client.update_function_code(
+            FunctionName=function_name, ZipFile=zip_file_v3, Publish=True
+        )
+        snapshot.match("update_lambda_response_with_publish", update_lambda_response_with_publish)
+        waiter.wait(
+            FunctionName=function_name, Qualifier=update_lambda_response_with_publish["Version"]
+        )
+        invocation_result_v3 = lambda_client.invoke(
+            FunctionName=function_name,
+            Qualifier=update_lambda_response_with_publish["Version"],
+            Payload=b"{}",
+        )
+        snapshot.match("invocation_result_v3", invocation_result_v3)
+        invocation_result_latest_end = lambda_client.invoke(
+            FunctionName=function_name, Payload=b"{}"
+        )
+        snapshot.match("invocation_result_latest_end", invocation_result_latest_end)
+
+
+class TestLambdaAliases:
+    def test_lambda_alias_moving(
+        self, lambda_client, lambda_su_role, create_lambda_function_aws, snapshot
+    ):
+        """Check if alias only moves after it is updated"""
+        waiter = lambda_client.get_waiter("function_updated_v2")
+        function_name = f"fn-{short_uid()}"
+        zip_file_v1 = create_lambda_archive(
+            load_file(TEST_LAMBDA_VERSION) % "version1", get_content=True
+        )
+        create_response = create_lambda_function_aws(
+            FunctionName=function_name,
+            Handler="handler.handler",
+            Code={"ZipFile": zip_file_v1},
+            PackageType="Zip",
+            Role=lambda_su_role,
+            Runtime=Runtime.python3_9,
+            Description="No version :(",
+        )
+        snapshot.match("create_response", create_response)
+        first_publish_response = lambda_client.publish_version(
+            FunctionName=function_name, Description="First version description :)"
+        )
+        waiter.wait(FunctionName=function_name, Qualifier=first_publish_response["Version"])
+        # create alias
+        create_alias_response = lambda_client.create_alias(
+            FunctionName=function_name,
+            FunctionVersion=first_publish_response["Version"],
+            Name="alias1",
+        )
+        snapshot.match("create_alias_response", create_alias_response)
+        invocation_result_qualifier_v1 = lambda_client.invoke(
+            FunctionName=function_name, Qualifier=create_alias_response["Name"], Payload=b"{}"
+        )
+        snapshot.match("invocation_result_qualifier_v1", invocation_result_qualifier_v1)
+        invocation_result_qualifier_v1_arn = lambda_client.invoke(
+            FunctionName=create_alias_response["AliasArn"], Payload=b"{}"
+        )
+        snapshot.match("invocation_result_qualifier_v1_arn", invocation_result_qualifier_v1_arn)
+        zip_file_v2 = create_lambda_archive(
+            load_file(TEST_LAMBDA_VERSION) % "version2", get_content=True
+        )
+        # update lambda code
+        update_lambda_response = lambda_client.update_function_code(
+            FunctionName=function_name, ZipFile=zip_file_v2
+        )
+        snapshot.match("update_lambda_response", update_lambda_response)
+        waiter.wait(FunctionName=function_name)
+        # check if alias is still first version
+        invocation_result_qualifier_v1_after_update = lambda_client.invoke(
+            FunctionName=function_name, Qualifier=create_alias_response["Name"], Payload=b"{}"
+        )
+        snapshot.match(
+            "invocation_result_qualifier_v1_after_update",
+            invocation_result_qualifier_v1_after_update,
+        )
+        # publish to 2
+        second_publish_response = lambda_client.publish_version(
+            FunctionName=function_name, Description="Second version description :)"
+        )
+        snapshot.match("second_publish_response", second_publish_response)
+        waiter.wait(FunctionName=function_name, Qualifier=second_publish_response["Version"])
+        # check if invoke still targets 1
+        invocation_result_qualifier_v1_after_publish = lambda_client.invoke(
+            FunctionName=function_name, Qualifier=create_alias_response["Name"], Payload=b"{}"
+        )
+        snapshot.match(
+            "invocation_result_qualifier_v1_after_publish",
+            invocation_result_qualifier_v1_after_publish,
+        )
+        # move alias to 2
+        update_alias_response = lambda_client.update_alias(
+            FunctionName=function_name,
+            Name=create_alias_response["Name"],
+            FunctionVersion=second_publish_response["Version"],
+        )
+        snapshot.match("update_alias_response", update_alias_response)
+        # check if alias moved to 2
+        invocation_result_qualifier_v2 = lambda_client.invoke(
+            FunctionName=function_name, Qualifier=create_alias_response["Name"], Payload=b"{}"
+        )
+        snapshot.match("invocation_result_qualifier_v2", invocation_result_qualifier_v2)
+
+    def test_alias_routingconfig(
+        self, lambda_client, lambda_su_role, create_lambda_function_aws, snapshot
+    ):
+        pass

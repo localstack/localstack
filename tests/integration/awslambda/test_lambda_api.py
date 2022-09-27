@@ -398,6 +398,16 @@ class TestLambdaVersions:
         list_versions_result = lambda_client.list_versions_by_function(FunctionName=function_name)
         snapshot.match("list_versions_result", list_versions_result)
 
+        # rerelease just published function, should not release new version
+        repeated_publish_response = lambda_client.publish_version(
+            FunctionName=function_name, Description="Repeated version description :)"
+        )
+        snapshot.match("repeated_publish_response", repeated_publish_response)
+        list_versions_result_after_publish = lambda_client.list_versions_by_function(
+            FunctionName=function_name
+        )
+        snapshot.match("list_versions_result_after_publish", list_versions_result_after_publish)
+
     @pytest.mark.aws_validated
     def test_version_lifecycle(
         self, lambda_client, create_lambda_function_aws, lambda_su_role, snapshot
