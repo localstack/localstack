@@ -839,10 +839,9 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
             if routing_config_dict := routing_config.get("AdditionalVersionWeights"):
                 new_routing_config = self._create_routing_config_model(routing_config_dict)
             changes |= {"routing_configuration": new_routing_config}
-        if changes:
-            # TODO check what happens if changes are empty
-            alias = dataclasses.replace(alias, **changes)
-            function.aliases[name] = alias
+        # even if no changes are done, we have to update revision id for some reason
+        alias = dataclasses.replace(alias, **changes)
+        function.aliases[name] = alias
         return self._map_alias_out(alias=alias, function=function)
 
     # Event Source Mappings

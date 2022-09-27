@@ -660,6 +660,23 @@ class TestLambdaAlias:
         )  # 4 aliases
         snapshot.match("list_aliases_for_fnname_after_update", list_aliases_for_fnname_after_update)
         assert len(list_aliases_for_fnname_after_update["Aliases"]) == 4
+        # check update without changes
+        update_alias_1_2 = lambda_client.update_alias(
+            FunctionName=function_name,
+            Name="aliasname1_2",
+        )
+        snapshot.match("update_alias_1_2", update_alias_1_2)
+        get_alias_1_2_after_update = lambda_client.get_alias(
+            FunctionName=function_name, Name="aliasname1_2"
+        )
+        snapshot.match("get_alias_1_2_after_update", get_alias_1_2_after_update)
+        list_aliases_for_fnname_after_update_2 = lambda_client.list_aliases(
+            FunctionName=function_name
+        )  # 4 aliases
+        snapshot.match(
+            "list_aliases_for_fnname_after_update_2", list_aliases_for_fnname_after_update_2
+        )
+        assert len(list_aliases_for_fnname_after_update["Aliases"]) == 4
 
         list_aliases_for_version = lambda_client.list_aliases(
             FunctionName=function_name, FunctionVersion="1"

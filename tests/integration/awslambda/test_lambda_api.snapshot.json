@@ -1999,7 +1999,7 @@
     }
   },
   "tests/integration/awslambda/test_lambda_api.py::TestLambdaAlias::test_alias_lifecycle": {
-    "recorded-date": "27-09-2022, 14:38:43",
+    "recorded-date": "27-09-2022, 14:52:22",
     "recorded-content": {
       "create_response": {
         "Architectures": [
@@ -2307,6 +2307,64 @@
           "HTTPStatusCode": 200
         }
       },
+      "update_alias_1_2": {
+        "AliasArn": "arn:aws:lambda:<region>:111111111111:function:<function-name:1>:aliasname1_2",
+        "Description": "custom-alias",
+        "FunctionVersion": "1",
+        "Name": "aliasname1_2",
+        "RevisionId": "<uuid:9>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "get_alias_1_2_after_update": {
+        "AliasArn": "arn:aws:lambda:<region>:111111111111:function:<function-name:1>:aliasname1_2",
+        "Description": "custom-alias",
+        "FunctionVersion": "1",
+        "Name": "aliasname1_2",
+        "RevisionId": "<uuid:9>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "list_aliases_for_fnname_after_update_2": {
+        "Aliases": [
+          {
+            "AliasArn": "arn:aws:lambda:<region>:111111111111:function:<function-name:1>:aliasname1_1",
+            "Description": "custom-alias",
+            "FunctionVersion": "1",
+            "Name": "aliasname1_1",
+            "RevisionId": "<uuid:8>"
+          },
+          {
+            "AliasArn": "arn:aws:lambda:<region>:111111111111:function:<function-name:1>:aliasname1_2",
+            "Description": "custom-alias",
+            "FunctionVersion": "1",
+            "Name": "aliasname1_2",
+            "RevisionId": "<uuid:9>"
+          },
+          {
+            "AliasArn": "arn:aws:lambda:<region>:111111111111:function:<function-name:1>:aliasname1_3",
+            "Description": "",
+            "FunctionVersion": "1",
+            "Name": "aliasname1_3",
+            "RevisionId": "<uuid:6>"
+          },
+          {
+            "AliasArn": "arn:aws:lambda:<region>:111111111111:function:<function-name:1>:aliasname2",
+            "Description": "custom-alias",
+            "FunctionVersion": "2",
+            "Name": "aliasname2",
+            "RevisionId": "<uuid:7>"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
       "list_aliases_for_version": {
         "Aliases": [
           {
@@ -2321,7 +2379,7 @@
             "Description": "custom-alias",
             "FunctionVersion": "1",
             "Name": "aliasname1_2",
-            "RevisionId": "<uuid:5>"
+            "RevisionId": "<uuid:9>"
           },
           {
             "AliasArn": "arn:aws:lambda:<region>:111111111111:function:<function-name:1>:aliasname1_3",
@@ -2349,7 +2407,7 @@
             "Description": "custom-alias",
             "FunctionVersion": "1",
             "Name": "aliasname1_2",
-            "RevisionId": "<uuid:5>"
+            "RevisionId": "<uuid:9>"
           },
           {
             "AliasArn": "arn:aws:lambda:<region>:111111111111:function:<function-name:1>:aliasname1_3",
