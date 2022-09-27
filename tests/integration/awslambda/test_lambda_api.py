@@ -937,6 +937,11 @@ class TestLambdaEventInvokeConfig:
     def test_lambda_eventinvokeconfig_exceptions(
         self, lambda_client, create_lambda_function, snapshot, lambda_su_role
     ):
+        snapshot.add_transformer(
+            SortingTransformer(
+                key="FunctionEventInvokeConfigs", sorting_fn=lambda conf: conf["FunctionArn"]
+            )
+        )
         function_name = f"fn-eventinvoke-{short_uid()}"
         function_name_2 = f"fn-eventinvoke-2-{short_uid()}"
         create_lambda_function(
@@ -1119,7 +1124,8 @@ class TestLambdaEventInvokeConfig:
         paged_response = lambda_client.list_function_event_invoke_configs(
             FunctionName=function_name, MaxItems=2
         )  # 2 out of 3
-        snapshot.match("list_paged", paged_response)
+        assert len(paged_response["FunctionEventInvokeConfigs"]) == 2
+        assert paged_response["NextMarker"]
 
         delete_latest = lambda_client.delete_function_event_invoke_config(
             FunctionName=function_name, Qualifier="$LATEST"

@@ -4057,7 +4057,7 @@
     }
   },
   "tests/integration/awslambda/test_lambda_api.py::TestLambdaEventInvokeConfig::test_lambda_eventinvokeconfig_exceptions": {
-    "recorded-date": "27-09-2022, 08:25:30",
+    "recorded-date": "27-09-2022, 08:31:08",
     "recorded-content": {
       "fn_version_result": {
         "CodeSha256": "<code-sha256:1>",
@@ -4430,15 +4430,6 @@
               "OnFailure": {},
               "OnSuccess": {}
             },
-            "FunctionArn": "arn:aws:lambda:<region>:111111111111:function:<function-name:1>:eventinvokealias",
-            "LastModified": "datetime",
-            "MaximumRetryAttempts": 1
-          },
-          {
-            "DestinationConfig": {
-              "OnFailure": {},
-              "OnSuccess": {}
-            },
             "FunctionArn": "arn:aws:lambda:<region>:111111111111:function:<function-name:1>:$LATEST",
             "LastModified": "datetime",
             "MaximumEventAgeInSeconds": 60,
@@ -4452,15 +4443,7 @@
             "FunctionArn": "arn:aws:lambda:<region>:111111111111:function:<function-name:1>:1",
             "LastModified": "datetime",
             "MaximumRetryAttempts": 1
-          }
-        ],
-        "ResponseMetadata": {
-          "HTTPHeaders": {},
-          "HTTPStatusCode": 200
-        }
-      },
-      "list_paged": {
-        "FunctionEventInvokeConfigs": [
+          },
           {
             "DestinationConfig": {
               "OnFailure": {},
@@ -4469,19 +4452,8 @@
             "FunctionArn": "arn:aws:lambda:<region>:111111111111:function:<function-name:1>:eventinvokealias",
             "LastModified": "datetime",
             "MaximumRetryAttempts": 1
-          },
-          {
-            "DestinationConfig": {
-              "OnFailure": {},
-              "OnSuccess": {}
-            },
-            "FunctionArn": "arn:aws:lambda:<region>:111111111111:function:<function-name:1>:$LATEST",
-            "LastModified": "datetime",
-            "MaximumEventAgeInSeconds": 60,
-            "MaximumRetryAttempts": 0
           }
         ],
-        "NextMarker": "Pm7jT8I4AnJMhvcR/RQVJyvnBC2l4J9JK+BXajG+RELuGk9CSVrG7VpLbg3bPMzjYEF+SL/9ioiQ32FY7bWbkImjSK3VRNzipIJftXwH2feW2llUXLRGW+B/H21wJhr2q4r7RBn0SgWqJmKpZxCl0hDKrPO2igWSR2Jsv+C4wqSnHk9HD4k3yPO6LANyMLrcQB6HFYqfuI9UTPlCLjmY3eqS7Ok0FD9F8wXipsptaFfvPsuRtJBYsl1Zt38ky1bJXM7U5CosDu4KGxRzu/0CDRr2pb0ws6ef8zOlV6Wvj1ofN6nySz58jssl4oPko/t+sppo/MN7vBynR3KU3XnrivFL7ZG3W5NOhoin6l+YQOtpGICS71dVuAzXuFik6zTf+h2vF8OeIFtST70nGUFM3zjkbW0kCTlCLsddYMjloLwAwf9fYgS4Di/wZCezo8yxK7ZSQpvGqgxXE3iLg4heWAwf3ds7ShOzx+S78lw2PtfCcWZOPReUrYlHLOvX+y5j5WGFnrCPoQsmcS+1If4jmw==",
         "ResponseMetadata": {
           "HTTPHeaders": {},
           "HTTPStatusCode": 200
