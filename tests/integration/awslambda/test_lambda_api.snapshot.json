@@ -2893,63 +2893,6 @@
       }
     }
   },
-  "tests/integration/awslambda/test_lambda_api.py::TestLambdaEventInvokeConfig::test_lambda_asynchronous_invocations": {
-    "recorded-date": "26-09-2022, 21:24:20",
-    "recorded-content": {
-      "put_function_event_invoke_config": {
-        "DestinationConfig": {
-          "OnFailure": {
-            "Destination": "arn:aws:sqs:<region>:111111111111:<resource:1>"
-          },
-          "OnSuccess": {
-            "Destination": "arn:aws:sqs:<region>:111111111111:<resource:1>"
-          }
-        },
-        "FunctionArn": "arn:aws:lambda:<region>:111111111111:function:<resource:2>:$LATEST",
-        "LastModified": "datetime",
-        "MaximumEventAgeInSeconds": 123,
-        "MaximumRetryAttempts": 2,
-        "ResponseMetadata": {
-          "HTTPHeaders": {},
-          "HTTPStatusCode": 200
-        }
-      },
-      "put_function_event_invoke_config_overwritemaxeventage": {
-        "DestinationConfig": {
-          "OnFailure": {
-            "Destination": "arn:aws:sqs:<region>:111111111111:<resource:1>"
-          },
-          "OnSuccess": {
-            "Destination": "arn:aws:sqs:<region>:111111111111:<resource:1>"
-          }
-        },
-        "FunctionArn": "arn:aws:lambda:<region>:111111111111:function:<resource:2>:$LATEST",
-        "LastModified": "datetime",
-        "MaximumRetryAttempts": 2,
-        "ResponseMetadata": {
-          "HTTPHeaders": {},
-          "HTTPStatusCode": 200
-        }
-      },
-      "put_function_event_invoke_config_maxattempt1": {
-        "DestinationConfig": {
-          "OnFailure": {
-            "Destination": "arn:aws:sqs:<region>:111111111111:<resource:1>"
-          },
-          "OnSuccess": {
-            "Destination": "arn:aws:sqs:<region>:111111111111:<resource:1>"
-          }
-        },
-        "FunctionArn": "arn:aws:lambda:<region>:111111111111:function:<resource:2>:$LATEST",
-        "LastModified": "datetime",
-        "MaximumRetryAttempts": 1,
-        "ResponseMetadata": {
-          "HTTPHeaders": {},
-          "HTTPStatusCode": 200
-        }
-      }
-    }
-  },
   "tests/integration/awslambda/test_lambda_api.py::TestLambdaReservedConcurrency::test_function_concurrency": {
     "recorded-date": "26-09-2022, 21:24:36",
     "recorded-content": {
@@ -4109,6 +4052,464 @@
         "ResponseMetadata": {
           "HTTPHeaders": {},
           "HTTPStatusCode": 404
+        }
+      }
+    }
+  },
+  "tests/integration/awslambda/test_lambda_api.py::TestLambdaEventInvokeConfig::test_lambda_eventinvokeconfig_exceptions": {
+    "recorded-date": "27-09-2022, 08:25:30",
+    "recorded-content": {
+      "fn_version_result": {
+        "CodeSha256": "<code-sha256:1>",
+        "CodeSize": 264,
+        "Description": "",
+        "Environment": {
+          "Variables": {}
+        },
+        "EphemeralStorage": {
+          "Size": 512
+        },
+        "FunctionArn": "arn:aws:lambda:<region>:111111111111:function:<function-name:1>:1",
+        "FunctionName": "<function-name:1>",
+        "Handler": "handler.handler",
+        "LastModified": "date",
+        "LastUpdateStatus": "Successful",
+        "MemorySize": 128,
+        "PackageType": "Zip",
+        "RevisionId": "<uuid:1>",
+        "Role": "arn:aws:iam::111111111111:role/<resource:2>",
+        "Runtime": "python3.9",
+        "State": "Active",
+        "Timeout": 30,
+        "TracingConfig": {
+          "Mode": "PassThrough"
+        },
+        "Version": "1",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 201
+        }
+      },
+      "fn_alias_result": {
+        "AliasArn": "arn:aws:lambda:<region>:111111111111:function:<function-name:1>:eventinvokealias",
+        "Description": "",
+        "FunctionVersion": "1",
+        "Name": "eventinvokealias",
+        "RevisionId": "<uuid:2>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 201
+        }
+      },
+      "put_functionname_name_notfound": {
+        "Error": {
+          "Code": "ResourceNotFoundException",
+          "Message": "The function doesn't exist."
+        },
+        "Message": "The function doesn't exist.",
+        "Type": "User",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 404
+        }
+      },
+      "put_functionname_arn_notfound": {
+        "Error": {
+          "Code": "ResourceNotFoundException",
+          "Message": "Functions from 'eu-west-1' are not reachable in this region ('<region>')"
+        },
+        "Message": "Functions from 'eu-west-1' are not reachable in this region ('<region>')",
+        "Type": "User",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 404
+        }
+      },
+      "put_functionname_nootherargs": {
+        "Error": {
+          "Code": "InvalidParameterValueException",
+          "Message": "You must specify at least one of error handling or destination setting."
+        },
+        "Type": "User",
+        "message": "You must specify at least one of error handling or destination setting.",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "put_destination_lambda_doesntexist": {
+        "Error": {
+          "Code": "InvalidParameterValueException",
+          "Message": "The provided destination config DestinationConfig(onSuccess=OnSuccess(destination=arn:aws:lambda:eu-west-1:000000001111:function:doesnotexist), onFailure=null) is invalid."
+        },
+        "Type": "User",
+        "message": "The provided destination config DestinationConfig(onSuccess=OnSuccess(destination=arn:aws:lambda:eu-west-1:000000001111:function:doesnotexist), onFailure=null) is invalid.",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "put_destination_recursive": {
+        "Error": {
+          "Code": "InvalidParameterValueException",
+          "Message": "You can't specify the function as a destination for itself."
+        },
+        "Type": "User",
+        "message": "You can't specify the function as a destination for itself.",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "put_destination_other_lambda": {
+        "DestinationConfig": {
+          "OnFailure": {},
+          "OnSuccess": {
+            "Destination": "arn:aws:lambda:<region>:111111111111:function:<resource:4>"
+          }
+        },
+        "FunctionArn": "arn:aws:lambda:<region>:111111111111:function:<function-name:1>:$LATEST",
+        "LastModified": "datetime",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "put_destination_latest": {
+        "DestinationConfig": {
+          "OnFailure": {},
+          "OnSuccess": {}
+        },
+        "FunctionArn": "arn:aws:lambda:<region>:111111111111:function:<function-name:1>:$LATEST",
+        "LastModified": "datetime",
+        "MaximumRetryAttempts": 1,
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "put_destination_latest_explicit_qualifier": {
+        "DestinationConfig": {
+          "OnFailure": {},
+          "OnSuccess": {}
+        },
+        "FunctionArn": "arn:aws:lambda:<region>:111111111111:function:<function-name:1>:$LATEST",
+        "LastModified": "datetime",
+        "MaximumRetryAttempts": 1,
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "put_destination_version": {
+        "DestinationConfig": {
+          "OnFailure": {},
+          "OnSuccess": {}
+        },
+        "FunctionArn": "arn:aws:lambda:<region>:111111111111:function:<function-name:1>:1",
+        "LastModified": "datetime",
+        "MaximumRetryAttempts": 1,
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "put_alias_functionname_qualifier": {
+        "DestinationConfig": {
+          "OnFailure": {},
+          "OnSuccess": {}
+        },
+        "FunctionArn": "arn:aws:lambda:<region>:111111111111:function:<function-name:1>:eventinvokealias",
+        "LastModified": "datetime",
+        "MaximumRetryAttempts": 1,
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "put_alias_doesnotexist": {
+        "Error": {
+          "Code": "ResourceNotFoundException",
+          "Message": "The function doesn't exist."
+        },
+        "Message": "The function doesn't exist.",
+        "Type": "User",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 404
+        }
+      },
+      "put_alias_qualifiedarn": {
+        "DestinationConfig": {
+          "OnFailure": {},
+          "OnSuccess": {}
+        },
+        "FunctionArn": "arn:aws:lambda:<region>:111111111111:function:<function-name:1>:eventinvokealias",
+        "LastModified": "datetime",
+        "MaximumRetryAttempts": 1,
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "put_alias_qualifiedarn_qualifier": {
+        "DestinationConfig": {
+          "OnFailure": {},
+          "OnSuccess": {}
+        },
+        "FunctionArn": "arn:aws:lambda:<region>:111111111111:function:<function-name:1>:eventinvokealias",
+        "LastModified": "datetime",
+        "MaximumRetryAttempts": 1,
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "put_alias_qualifiedarn_qualifierconflict": {
+        "Error": {
+          "Code": "InvalidParameterValueException",
+          "Message": "The derived qualifier from the function name does not match the specified qualifier."
+        },
+        "Type": "User",
+        "message": "The derived qualifier from the function name does not match the specified qualifier.",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "put_alias_shorthand": {
+        "DestinationConfig": {
+          "OnFailure": {},
+          "OnSuccess": {}
+        },
+        "FunctionArn": "arn:aws:lambda:<region>:111111111111:function:<function-name:1>:eventinvokealias",
+        "LastModified": "datetime",
+        "MaximumRetryAttempts": 1,
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "put_alias_shorthand_qualifier": {
+        "DestinationConfig": {
+          "OnFailure": {},
+          "OnSuccess": {}
+        },
+        "FunctionArn": "arn:aws:lambda:<region>:111111111111:function:<function-name:1>:eventinvokealias",
+        "LastModified": "datetime",
+        "MaximumRetryAttempts": 1,
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "put_alias_shorthand_qualifierconflict": {
+        "Error": {
+          "Code": "InvalidParameterValueException",
+          "Message": "The derived qualifier from the function name does not match the specified qualifier."
+        },
+        "Type": "User",
+        "message": "The derived qualifier from the function name does not match the specified qualifier.",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "put_version_shorthand": {
+        "DestinationConfig": {
+          "OnFailure": {},
+          "OnSuccess": {}
+        },
+        "FunctionArn": "arn:aws:lambda:<region>:111111111111:function:<function-name:1>:1",
+        "LastModified": "datetime",
+        "MaximumRetryAttempts": 1,
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "put_pre_overwrite": {
+        "DestinationConfig": {
+          "OnFailure": {},
+          "OnSuccess": {}
+        },
+        "FunctionArn": "arn:aws:lambda:<region>:111111111111:function:<function-name:1>:$LATEST",
+        "LastModified": "datetime",
+        "MaximumEventAgeInSeconds": 60,
+        "MaximumRetryAttempts": 2,
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "put_post_overwrite": {
+        "DestinationConfig": {
+          "OnFailure": {},
+          "OnSuccess": {}
+        },
+        "FunctionArn": "arn:aws:lambda:<region>:111111111111:function:<function-name:1>:$LATEST",
+        "LastModified": "datetime",
+        "MaximumRetryAttempts": 0,
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "second_overwrite_existing_response": {
+        "DestinationConfig": {
+          "OnFailure": {},
+          "OnSuccess": {}
+        },
+        "FunctionArn": "arn:aws:lambda:<region>:111111111111:function:<function-name:1>:$LATEST",
+        "LastModified": "datetime",
+        "MaximumRetryAttempts": 0,
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "get_post_overwrite": {
+        "DestinationConfig": {
+          "OnFailure": {},
+          "OnSuccess": {}
+        },
+        "FunctionArn": "arn:aws:lambda:<region>:111111111111:function:<function-name:1>:$LATEST",
+        "LastModified": "datetime",
+        "MaximumRetryAttempts": 0,
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "pre_update_response": {
+        "DestinationConfig": {
+          "OnFailure": {},
+          "OnSuccess": {}
+        },
+        "FunctionArn": "arn:aws:lambda:<region>:111111111111:function:<function-name:1>:$LATEST",
+        "LastModified": "datetime",
+        "MaximumEventAgeInSeconds": 60,
+        "MaximumRetryAttempts": 2,
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "update_response": {
+        "DestinationConfig": {
+          "OnFailure": {},
+          "OnSuccess": {}
+        },
+        "FunctionArn": "arn:aws:lambda:<region>:111111111111:function:<function-name:1>:$LATEST",
+        "LastModified": "datetime",
+        "MaximumEventAgeInSeconds": 60,
+        "MaximumRetryAttempts": 0,
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "update_response_existing": {
+        "DestinationConfig": {
+          "OnFailure": {},
+          "OnSuccess": {}
+        },
+        "FunctionArn": "arn:aws:lambda:<region>:111111111111:function:<function-name:1>:$LATEST",
+        "LastModified": "datetime",
+        "MaximumEventAgeInSeconds": 60,
+        "MaximumRetryAttempts": 0,
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "list_configs": {
+        "FunctionEventInvokeConfigs": [
+          {
+            "DestinationConfig": {
+              "OnFailure": {},
+              "OnSuccess": {}
+            },
+            "FunctionArn": "arn:aws:lambda:<region>:111111111111:function:<function-name:1>:eventinvokealias",
+            "LastModified": "datetime",
+            "MaximumRetryAttempts": 1
+          },
+          {
+            "DestinationConfig": {
+              "OnFailure": {},
+              "OnSuccess": {}
+            },
+            "FunctionArn": "arn:aws:lambda:<region>:111111111111:function:<function-name:1>:$LATEST",
+            "LastModified": "datetime",
+            "MaximumEventAgeInSeconds": 60,
+            "MaximumRetryAttempts": 0
+          },
+          {
+            "DestinationConfig": {
+              "OnFailure": {},
+              "OnSuccess": {}
+            },
+            "FunctionArn": "arn:aws:lambda:<region>:111111111111:function:<function-name:1>:1",
+            "LastModified": "datetime",
+            "MaximumRetryAttempts": 1
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "list_paged": {
+        "FunctionEventInvokeConfigs": [
+          {
+            "DestinationConfig": {
+              "OnFailure": {},
+              "OnSuccess": {}
+            },
+            "FunctionArn": "arn:aws:lambda:<region>:111111111111:function:<function-name:1>:eventinvokealias",
+            "LastModified": "datetime",
+            "MaximumRetryAttempts": 1
+          },
+          {
+            "DestinationConfig": {
+              "OnFailure": {},
+              "OnSuccess": {}
+            },
+            "FunctionArn": "arn:aws:lambda:<region>:111111111111:function:<function-name:1>:$LATEST",
+            "LastModified": "datetime",
+            "MaximumEventAgeInSeconds": 60,
+            "MaximumRetryAttempts": 0
+          }
+        ],
+        "NextMarker": "Pm7jT8I4AnJMhvcR/RQVJyvnBC2l4J9JK+BXajG+RELuGk9CSVrG7VpLbg3bPMzjYEF+SL/9ioiQ32FY7bWbkImjSK3VRNzipIJftXwH2feW2llUXLRGW+B/H21wJhr2q4r7RBn0SgWqJmKpZxCl0hDKrPO2igWSR2Jsv+C4wqSnHk9HD4k3yPO6LANyMLrcQB6HFYqfuI9UTPlCLjmY3eqS7Ok0FD9F8wXipsptaFfvPsuRtJBYsl1Zt38ky1bJXM7U5CosDu4KGxRzu/0CDRr2pb0ws6ef8zOlV6Wvj1ofN6nySz58jssl4oPko/t+sppo/MN7vBynR3KU3XnrivFL7ZG3W5NOhoin6l+YQOtpGICS71dVuAzXuFik6zTf+h2vF8OeIFtST70nGUFM3zjkbW0kCTlCLsddYMjloLwAwf9fYgS4Di/wZCezo8yxK7ZSQpvGqgxXE3iLg4heWAwf3ds7ShOzx+S78lw2PtfCcWZOPReUrYlHLOvX+y5j5WGFnrCPoQsmcS+1If4jmw==",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "delete_latest": {
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 204
+        }
+      },
+      "delete_version": {
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 204
+        }
+      },
+      "delete_alias": {
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 204
+        }
+      },
+      "list_configs_postdelete": {
+        "FunctionEventInvokeConfigs": [],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
         }
       }
     }
