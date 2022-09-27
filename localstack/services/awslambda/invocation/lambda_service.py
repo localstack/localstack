@@ -3,6 +3,7 @@ import concurrent.futures
 import dataclasses
 import io
 import logging
+import random
 import uuid
 from concurrent.futures import Executor, Future, ThreadPoolExecutor
 from hashlib import sha256
@@ -134,12 +135,26 @@ class LambdaService:
             region=region,
         )
         qualifier = qualifier or "$LATEST"
-        # TODO alias routing
         if qualifier_is_alias(qualifier):
-            raise NotImplementedError("Alias routing not implemented yet")
+            state = lambda_stores[account_id][region]
+            function = state.functions.get(function_name)
+            alias = function.aliases.get(qualifier)
+            if not alias:
+                raise ValueError(
+                    "There is no alias with qualifier %s", qualifier
+                )  # TODO correct exception
+            version_qualifier = alias.function_version
+            if alias.routing_configuration:
+                version, probability = next(
+                    iter(alias.routing_configuration.version_weights.items())
+                )
+                if random.random() < probability:
+                    version_qualifier = version
+        else:
+            version_qualifier = qualifier
 
         # Need the qualified arn to exactly get the target lambda
-        qualified_arn = qualified_lambda_arn(function_name, qualifier, account_id, region)
+        qualified_arn = qualified_lambda_arn(function_name, version_qualifier, account_id, region)
         version_manager = self.get_lambda_version_manager(qualified_arn)
         return version_manager.invoke(
             invocation=Invocation(
