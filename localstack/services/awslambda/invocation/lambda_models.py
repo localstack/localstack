@@ -2,10 +2,11 @@ import abc
 import dataclasses
 import logging
 import threading
-from typing import TYPE_CHECKING, Optional
+from typing import TYPE_CHECKING, Dict, Optional
 
 from botocore.exceptions import ClientError
 
+from localstack.aws.api import CommonServiceException
 from localstack.aws.api.lambda_ import (
     AllowedPublishers,
     Architecture,
@@ -195,14 +196,8 @@ class ProvisionedConcurrencyConfiguration:
 
 
 @dataclasses.dataclass
-class VersionWeight:
-    function_version: int
-    function_weight: float
-
-
-@dataclasses.dataclass
-class AliasRoutingConfiguration:
-    version_weights: list[VersionWeight]
+class AliasRoutingConfig:
+    version_weights: Dict[str, float]
 
 
 @dataclasses.dataclass(frozen=True)
@@ -230,11 +225,12 @@ class VersionIdentifier:
 
 @dataclasses.dataclass(frozen=True)
 class VersionAlias:
-    function_version: int
+    function_version: str
     name: str
-    description: str
-    routing_configuration: Optional[AliasRoutingConfiguration] = None
-    provisioned_concurrency_configuration: Optional[ProvisionedConcurrencyConfiguration] = None
+    description: str | None
+    routing_configuration: AliasRoutingConfig | None = None
+    provisioned_concurrency_configuration: ProvisionedConcurrencyConfiguration | None = None
+    revision_id: str = dataclasses.field(init=False, default_factory=long_uid)
 
 
 @dataclasses.dataclass(frozen=True)
@@ -366,6 +362,11 @@ class Layer:
 @dataclasses.dataclass
 class LayerVersion:
     ...
+
+
+class ValidationException(CommonServiceException):
+    def __init__(self, message: str):
+        super().__init__(code="ValidationException", status_code=400, message=message)
 
 
 # ASYNC

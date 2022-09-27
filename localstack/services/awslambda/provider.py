@@ -83,6 +83,7 @@ from localstack.aws.api.lambda_ import (
 from localstack.services.awslambda import api_utils
 from localstack.services.awslambda.api_utils import get_name_and_qualifier
 from localstack.services.awslambda.invocation.lambda_models import (
+    AliasRoutingConfig,
     CodeSigningConfig,
     Function,
     FunctionResourcePolicy,
@@ -92,6 +93,8 @@ from localstack.services.awslambda.invocation.lambda_models import (
     LambdaEphemeralStorage,
     ResourcePolicy,
     UpdateStatus,
+    ValidationException,
+    VersionAlias,
     VersionFunctionConfiguration,
     VersionIdentifier,
     VersionState,
@@ -132,6 +135,22 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
 
     def on_before_stop(self) -> None:
         self.lambda_service.stop()
+
+    @staticmethod
+    def _get_function(function_name: str, account_id: str, region: str):
+        state = lambda_stores[account_id][region]
+        function = state.functions.get(function_name)
+        if not function:
+            arn = unqualified_lambda_arn(
+                function_name=function_name,
+                account=account_id,
+                region=region,
+            )
+            raise ResourceNotFoundException(
+                f"Function not found: {arn}",
+                Type="User",
+            )
+        return function
 
     @staticmethod
     def _get_function_version(
@@ -237,9 +256,9 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
         function_name: str,
         region: str,
         account_id: str,
-        description: str | None,
-        revision_id: str | None,
-        code_sha256: str | None,
+        description: str | None = None,
+        revision_id: str | None = None,
+        code_sha256: str | None = None,
     ):
         current_latest_version = self._get_function_version(
             function_name=function_name, qualifier="$LATEST", account_id=account_id, region=region
@@ -366,11 +385,12 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
             state.functions[function_name] = fn
         self.lambda_service.create_function_version(version)
 
-        # if publish_version:
-        #     self.lambda_service.create_function_version(version)
-        # TODO: do we now need to return the $LATEST or version 1?
+        if request.get("Publish"):
+            version = self._publish_version(
+                function_name=function_name, region=context.region, account_id=context.account_id
+            )
 
-        return self._map_config_out(version)
+        return self._map_config_out(version, return_qualified_arn=False)
 
     @handler(operation="UpdateFunctionConfiguration", expand=False)
     def update_function_configuration(
@@ -491,6 +511,10 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
         function.versions["$LATEST"] = function_version
 
         self.lambda_service.update_version(new_version=function_version)
+        if request.get("Publish"):
+            function_version = self._publish_version(
+                function_name=function_name, region=context.region, account_id=context.account_id
+            )
         return self._map_config_out(function_version)
 
     # TODO: does deleting the latest published version affect the next versions number?
@@ -662,12 +686,41 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
         self,
         context: RequestContext,
         function_name: NamespacedFunctionName,
-        marker: String = None,
-        max_items: MaxListItems = None,
+        marker: String = None,  # TODO
+        max_items: MaxListItems = None,  # TODO
     ) -> ListVersionsByFunctionResponse:
-        ...
+        function_name = function_name_from_arn(function_name)
+        function = self._get_function(
+            function_name=function_name, region=context.region, account_id=context.account_id
+        )
+        return ListVersionsByFunctionResponse(
+            Versions=[
+                self._map_to_list_response(
+                    self._map_config_out(version=version, return_qualified_arn=True)
+                )
+                for version in function.versions.values()
+            ]
+        )
 
     # Alias
+    def _map_alias_out(self, alias: VersionAlias, function: Function) -> AliasConfiguration:
+        alias_arn = f"{function.latest().id.unqualified_arn()}:{alias.name}"
+        optional_kwargs = {}
+        if alias.routing_configuration:
+            optional_kwargs |= {
+                "RoutingConfig": {
+                    "AdditionalVersionWeights": alias.routing_configuration.version_weights
+                }
+            }
+        return AliasConfiguration(
+            AliasArn=alias_arn,
+            Description=alias.description,
+            FunctionVersion=alias.function_version,
+            Name=alias.name,
+            RevisionId=alias.revision_id,
+            **optional_kwargs,
+        )
+
     def create_alias(
         self,
         context: RequestContext,
@@ -677,27 +730,82 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
         description: Description = None,
         routing_config: AliasRoutingConfiguration = None,
     ) -> AliasConfiguration:
-        ...
+        function_name = function_name_from_arn(function_name)
+        function = self._get_function(
+            function_name=function_name, region=context.region, account_id=context.account_id
+        )
+        # description is always present, if not specified it's an empty string
+        description = description or ""
+        with function.lock:
+            if name in function.aliases:
+                raise ValueError("Already present!")  # TODO proper message
+            routing_configuration = None
+            if routing_config and (
+                routing_config_dict := routing_config.get("AdditionalVersionWeights")
+            ):
+                if len(routing_config_dict) > 1:
+                    raise InvalidParameterValueException(
+                        "Number of items in AdditionalVersionWeights cannot be greater than 1",
+                        Type="User",
+                    )
+                # should be exactly one item here
+                for key, value in routing_config_dict.items():
+                    if value < 0.0 or value >= 1.0:
+                        raise ValidationException(
+                            f"1 validation error detected: Value '{{{key}={value}}}' at 'routingConfig.additionalVersionWeights' failed to satisfy constraint: Map value must satisfy constraint: [Member must have value less than or equal to 1.0, Member must have value greater than or equal to 0.0]"
+                        )
+                routing_configuration = AliasRoutingConfig(version_weights=routing_config_dict)
+
+            alias = VersionAlias(
+                name=name,
+                function_version=function_version,
+                description=description,
+                routing_configuration=routing_configuration,
+            )
+            function.aliases[name] = alias
+        return self._map_alias_out(alias=alias, function=function)
 
     def list_aliases(
         self,
         context: RequestContext,
         function_name: FunctionName,
         function_version: Version = None,
-        marker: String = None,
-        max_items: MaxListItems = None,
+        marker: String = None,  # TODO
+        max_items: MaxListItems = None,  # TODO
     ) -> ListAliasesResponse:
-        ...
+        function_name = function_name_from_arn(function_name)
+        function = self._get_function(
+            function_name=function_name, region=context.region, account_id=context.account_id
+        )
+        return ListAliasesResponse(
+            Aliases=[
+                self._map_alias_out(alias, function)
+                for alias in function.aliases.values()
+                if function_version is None or alias.function_version == function_version
+            ]
+        )
 
     def delete_alias(
         self, context: RequestContext, function_name: FunctionName, name: Alias
     ) -> None:
-        ...
+        function_name = function_name_from_arn(function_name)
+        function = self._get_function(
+            function_name=function_name, region=context.region, account_id=context.account_id
+        )
+        if name not in function.aliases:
+            raise ValueError("Alias not found")  # TODO proper exception
+        function.aliases.pop(name, None)
 
     def get_alias(
         self, context: RequestContext, function_name: FunctionName, name: Alias
     ) -> AliasConfiguration:
-        ...
+        function_name = function_name_from_arn(function_name)
+        function = self._get_function(
+            function_name=function_name, region=context.region, account_id=context.account_id
+        )
+        if not (alias := function.aliases.get(name)):
+            raise ValueError("Alias not found")  # TODO proper exception
+        return self._map_alias_out(alias=alias, function=function)
 
     def update_alias(
         self,

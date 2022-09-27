@@ -547,6 +547,10 @@ class TestLambdaVersions:
         )
         snapshot.match("publish_result", publish_result)
 
+    def test_publish_with_update(self):
+        # TODO
+        pass
+
 
 @pytest.mark.skipif(is_old_provider(), reason="focusing on new provider")
 class TestLambdaAlias:
@@ -578,7 +582,6 @@ class TestLambdaAlias:
             PackageType="Zip",
             Role=lambda_su_role,
             Runtime=Runtime.python3_9,
-            Publish=True,
             Environment={"Variables": {"testenv": "staging"}},
         )
         snapshot.match("create_response", create_response)
@@ -616,6 +619,15 @@ class TestLambdaAlias:
         get_alias_1_2 = lambda_client.get_alias(FunctionName=function_name, Name="aliasname1_2")
         snapshot.match("get_alias_1_2", get_alias_1_2)
 
+        create_alias_1_3 = lambda_client.create_alias(
+            FunctionName=function_name,
+            Name="aliasname1_3",
+            FunctionVersion="1",
+        )
+        snapshot.match("create_alias_1_3", create_alias_1_3)
+        get_alias_1_3 = lambda_client.get_alias(FunctionName=function_name, Name="aliasname1_3")
+        snapshot.match("get_alias_1_3", get_alias_1_3)
+
         create_alias_2 = lambda_client.create_alias(
             FunctionName=function_name,
             Name="aliasname2",
@@ -629,15 +641,15 @@ class TestLambdaAlias:
         # list_aliases can be optionally called with a FunctionVersion to filter only aliases for this version
         list_aliases_for_fnname = lambda_client.list_aliases(
             FunctionName=function_name
-        )  # 3 aliases
+        )  # 4 aliases
         snapshot.match("list_aliases_for_fnname", list_aliases_for_fnname)
-        assert len(list_aliases_for_fnname["Aliases"]) == 3
+        assert len(list_aliases_for_fnname["Aliases"]) == 4
 
         list_aliases_for_version = lambda_client.list_aliases(
             FunctionName=function_name, FunctionVersion="1"
-        )  # 2 aliases
+        )  # 3 aliases
         snapshot.match("list_aliases_for_version", list_aliases_for_version)
-        assert len(list_aliases_for_version["Aliases"]) == 2
+        assert len(list_aliases_for_version["Aliases"]) == 3
 
         delete_alias_response = lambda_client.delete_alias(
             FunctionName=function_name, Name="aliasname1_1"
@@ -646,7 +658,7 @@ class TestLambdaAlias:
 
         list_aliases_for_fnname_afterdelete = lambda_client.list_aliases(
             FunctionName=function_name
-        )  # 2 aliases
+        )  # 3 aliases
         snapshot.match("list_aliases_for_fnname_afterdelete", list_aliases_for_fnname_afterdelete)
 
     def test_notfound_and_invalid_routingconfigs(
