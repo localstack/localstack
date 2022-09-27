@@ -30,7 +30,7 @@ from localstack.testing.snapshots.transformer import SortingTransformer
 from localstack.utils import testutil
 from localstack.utils.aws import aws_stack
 from localstack.utils.files import load_file
-from localstack.utils.strings import short_uid, to_str
+from localstack.utils.strings import long_uid, short_uid, to_str
 from localstack.utils.sync import wait_until
 from localstack.utils.testutil import create_lambda_archive
 from tests.integration.awslambda.test_lambda import (
@@ -1891,3 +1891,94 @@ class TestLambdaAccountSettings:
         acc_settings["AccountLimit"] = sorted(list(acc_settings["AccountLimit"].keys()))
         acc_settings["AccountUsage"] = sorted(list(acc_settings["AccountUsage"].keys()))
         snapshot.match("acc_settings_modded", acc_settings)
+
+
+@pytest.mark.skipif(is_old_provider(), reason="new provider only")
+class TestLambdaEventSourceMappings:
+    def test_event_source_mapping_exceptions(self, lambda_client, snapshot):
+
+        with pytest.raises(lambda_client.exceptions.ResourceNotFoundException) as e:
+            lambda_client.get_event_source_mapping(UUID=long_uid())
+        snapshot.match("get_unknown_uuid", e.value.response)
+
+        with pytest.raises(lambda_client.exceptions.ResourceNotFoundException) as e:
+            lambda_client.delete_event_source_mapping(UUID=long_uid())
+        snapshot.match("delete_unknown_uuid", e.value.response)
+
+        with pytest.raises(lambda_client.exceptions.ResourceNotFoundException) as e:
+            lambda_client.update_event_source_mapping(UUID=long_uid(), Enabled=False)
+        snapshot.match("update_unknown_uuid", e.value.response)
+
+        # note: list doesn't care about the resource filters existing
+        lambda_client.list_event_source_mappings()
+        lambda_client.list_event_source_mappings(FunctionName="doesnotexist")
+        lambda_client.list_event_source_mappings(
+            EventSourceArn="arn:aws:sqs:us-east-1:111111111111:somequeue"
+        )
+
+        with pytest.raises(lambda_client.exceptions.InvalidParameterValueException) as e:
+            lambda_client.create_event_source_mapping(FunctionName="doesnotexist")
+        snapshot.match("create_no_event_source_arn", e.value.response)
+
+        with pytest.raises(lambda_client.exceptions.InvalidParameterValueException) as e:
+            lambda_client.create_event_source_mapping(
+                FunctionName="doesnotexist",
+                EventSourceArn="arn:aws:sqs:us-east-1:111111111111:somequeue",
+            )
+        snapshot.match("create_unknown_params", e.value.response)
+
+    def test_event_source_mapping_lifecycle(
+        self,
+        create_lambda_function,
+        lambda_client,
+        snapshot,
+        sqs_create_queue,
+        sqs_client,
+        cleanups,
+        lambda_su_role,
+    ):
+        function_name = f"lambda_func-{short_uid()}"
+
+        queue_url = sqs_create_queue()
+        queue_arn = sqs_client.get_queue_attributes(
+            QueueUrl=queue_url, AttributeNames=["QueueArn"]
+        )["Attributes"]["QueueArn"]
+
+        create_lambda_function(
+            handler_file=TEST_LAMBDA_PYTHON_ECHO,
+            func_name=function_name,
+            runtime=Runtime.python3_9,
+            role=lambda_su_role,
+        )
+        # "minimal"
+        create_response = lambda_client.create_event_source_mapping(
+            FunctionName=function_name, EventSourceArn=queue_arn
+        )
+        snapshot.match("create_response", create_response)
+        uuid = create_response["UUID"]
+        cleanups.append(lambda: lambda_client.delete_event_source_mapping(UUID=uuid))
+
+        # the stream might not be active immediately(!)
+        def check_esm_active():
+            return lambda_client.get_event_source_mapping(UUID=uuid)["State"] != "Creating"
+
+        assert wait_until(check_esm_active)
+
+        get_response = lambda_client.get_event_source_mapping(UUID=uuid)
+        snapshot.match("get_response", get_response)
+        #
+        delete_response = lambda_client.delete_event_source_mapping(UUID=uuid)
+        snapshot.match("delete_response", delete_response)
+
+        # TODO: continue here after initial CRUD PR
+        # check what happens when we delete the function
+        # check behavior in relation to version/alias
+        # wait until the stream is actually active
+        #
+        # lambda_client.update_event_source_mapping()
+        #
+        # lambda_client.list_event_source_mappings(FunctionName=function_name)
+        # lambda_client.list_event_source_mappings(FunctionName=function_name, EventSourceArn=queue_arn)
+        # lambda_client.list_event_source_mappings(EventSourceArn=queue_arn)
+        #
+        # lambda_client.delete_event_source_mapping(UUID=uuid)

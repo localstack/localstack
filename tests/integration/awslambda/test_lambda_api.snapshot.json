@@ -4485,5 +4485,120 @@
         }
       }
     }
+  },
+  "tests/integration/awslambda/test_lambda_api.py::TestLambdaEventSourceMappings::test_event_source_mapping_exceptions": {
+    "recorded-date": "27-09-2022, 14:02:20",
+    "recorded-content": {
+      "get_unknown_uuid": {
+        "Error": {
+          "Code": "ResourceNotFoundException",
+          "Message": "The resource you requested does not exist."
+        },
+        "Message": "The resource you requested does not exist.",
+        "Type": "User",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 404
+        }
+      },
+      "delete_unknown_uuid": {
+        "Error": {
+          "Code": "ResourceNotFoundException",
+          "Message": "The resource you requested does not exist."
+        },
+        "Message": "The resource you requested does not exist.",
+        "Type": "User",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 404
+        }
+      },
+      "update_unknown_uuid": {
+        "Error": {
+          "Code": "ResourceNotFoundException",
+          "Message": "The resource you requested does not exist."
+        },
+        "Message": "The resource you requested does not exist.",
+        "Type": "User",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 404
+        }
+      },
+      "create_no_event_source_arn": {
+        "Error": {
+          "Code": "InvalidParameterValueException",
+          "Message": "Unrecognized event source."
+        },
+        "Type": "User",
+        "message": "Unrecognized event source.",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "create_unknown_params": {
+        "Error": {
+          "Code": "InvalidParameterValueException",
+          "Message": "Function does not exist"
+        },
+        "Type": "User",
+        "message": "Function does not exist",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/integration/awslambda/test_lambda_api.py::TestLambdaEventSourceMappings::test_event_source_mapping_lifecycle": {
+    "recorded-date": "27-09-2022, 14:03:06",
+    "recorded-content": {
+      "create_response": {
+        "BatchSize": 10,
+        "EventSourceArn": "arn:aws:sqs:<region>:111111111111:<resource:1>",
+        "FunctionArn": "arn:aws:lambda:<region>:111111111111:function:<resource:2>",
+        "FunctionResponseTypes": [],
+        "LastModified": "datetime",
+        "MaximumBatchingWindowInSeconds": 0,
+        "State": "Creating",
+        "StateTransitionReason": "USER_INITIATED",
+        "UUID": "<uuid:1>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 202
+        }
+      },
+      "get_response": {
+        "BatchSize": 10,
+        "EventSourceArn": "arn:aws:sqs:<region>:111111111111:<resource:1>",
+        "FunctionArn": "arn:aws:lambda:<region>:111111111111:function:<resource:2>",
+        "FunctionResponseTypes": [],
+        "LastModified": "datetime",
+        "MaximumBatchingWindowInSeconds": 0,
+        "State": "Enabled",
+        "StateTransitionReason": "USER_INITIATED",
+        "UUID": "<uuid:1>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "delete_response": {
+        "BatchSize": 10,
+        "EventSourceArn": "arn:aws:sqs:<region>:111111111111:<resource:1>",
+        "FunctionArn": "arn:aws:lambda:<region>:111111111111:function:<resource:2>",
+        "FunctionResponseTypes": [],
+        "LastModified": "datetime",
+        "MaximumBatchingWindowInSeconds": 0,
+        "State": "Deleting",
+        "StateTransitionReason": "USER_INITIATED",
+        "UUID": "<uuid:1>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 202
+        }
+      }
+    }
   }
 }
