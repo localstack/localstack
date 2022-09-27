@@ -17,6 +17,7 @@ from localstack.services.awslambda.invocation.lambda_models import (
     InvocationError,
     InvocationLogs,
     InvocationResult,
+    ProvisionedConcurrencyState,
     ServiceEndpoint,
     VersionState,
 )
@@ -120,6 +121,7 @@ class LambdaVersionManager(ServiceEndpoint):
     invocation_thread: Optional[Thread]
     shutdown_event: threading.Event
     state: VersionState | None
+    provisioned_state: ProvisionedConcurrencyState | None
     log_handler: LogHandler
     # TODO not sure about this backlink, maybe a callback is better?
     lambda_service: "LambdaService"

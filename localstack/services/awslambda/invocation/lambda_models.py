@@ -16,6 +16,7 @@ from localstack.aws.api.lambda_ import (
     InvocationType,
     LastUpdateStatus,
     PackageType,
+    ProvisionedConcurrencyStatusEnum,
     Runtime,
     State,
     StateReasonCode,
@@ -32,25 +33,6 @@ if TYPE_CHECKING:
     from mypy_boto3_s3 import S3Client
 
 LOG = logging.getLogger(__name__)
-
-
-# class LambdaNameOrArn(frozen=True):
-#     function_name: str
-#     qualifier: Optional[str] = None
-#
-#     def is_arn(self) -> bool:
-#         return True  # TODO
-#
-#     def get_actual_fn_name(self) -> str:
-#         return ""  # TODO
-
-# @dataclasses.dataclass(frozen=True)
-# class LambdaFunctionArn:
-#     arn: str
-#     account_id: str
-#     region_id: str
-#     function_name: str
-#     qualifier: Optional[str] = None
 
 
 @dataclasses.dataclass(frozen=True)
@@ -193,6 +175,19 @@ class VersionFunctionConfiguration:
 @dataclasses.dataclass
 class ProvisionedConcurrencyConfiguration:
     provisioned_concurrent_executions: int
+    last_modified: str  # date
+
+
+@dataclasses.dataclass
+class ProvisionedConcurrencyState:
+    """transient items"""
+
+    allocated: int = 0
+    available: int = 0
+    status: ProvisionedConcurrencyStatusEnum = dataclasses.field(
+        default=ProvisionedConcurrencyStatusEnum.IN_PROGRESS
+    )
+    status_reason: Optional[str] = None
 
 
 @dataclasses.dataclass
@@ -258,6 +253,25 @@ class FunctionResourcePolicy:
 
 
 @dataclasses.dataclass
+class LambdaDestinationConfig:
+    on_failure: Optional[str] = None
+    on_success: Optional[str] = None
+
+
+@dataclasses.dataclass
+class EventInvokeConfig:
+    function_name: str
+    qualifier: str
+
+    last_modified: Optional[str] = dataclasses.field(compare=False)
+    destination_config: LambdaDestinationConfig = dataclasses.field(
+        default_factory=LambdaDestinationConfig
+    )
+    maximum_retry_attempts: Optional[int] = None
+    maximum_event_age_in_seconds: Optional[int] = None
+
+
+@dataclasses.dataclass
 class Function:
     function_name: str
     code_signing_config_arn: Optional[str] = None
@@ -269,6 +283,9 @@ class Function:
     permissions: dict[str, FunctionResourcePolicy] = dataclasses.field(
         default_factory=dict
     )  # key is $LATEST, version or alias
+    event_invoke_configs: dict[str, EventInvokeConfig] = dataclasses.field(
+        default_factory=dict
+    )  # key is $LATEST(?), version or alias
 
     lock: threading.RLock = dataclasses.field(default_factory=threading.RLock)
     next_version: int = 1
@@ -367,29 +384,3 @@ class LayerVersion:
 class ValidationException(CommonServiceException):
     def __init__(self, message: str):
         super().__init__(code="ValidationException", status_code=400, message=message)
-
-
-# ASYNC
-# @dataclasses.dataclass
-# class OnFailure:
-#     destination: str
-#
-#
-# @dataclasses.dataclass
-# class OnSuccess:
-#     destination: str
-#
-#
-# @dataclasses.dataclass
-# class DestinationConfig:
-#     on_failure: OnFailure
-#     on_success: OnSuccess
-#
-#
-# @dataclasses.dataclass
-# class EventInvokeConfig:
-#     function_name: str
-#     qualifier: str
-#     maximum_retry_attemps: int
-#     maximum_event_age_in_seconds: int
-#     destination_config: DestinationConfig

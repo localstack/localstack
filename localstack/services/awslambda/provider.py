@@ -30,11 +30,13 @@ from localstack.aws.api.lambda_ import (
     CreateFunctionUrlConfigResponse,
     DeleteCodeSigningConfigResponse,
     Description,
+    DestinationConfig,
     EnvironmentResponse,
     EphemeralStorage,
     EventSourceMappingConfiguration,
     FunctionCodeLocation,
     FunctionConfiguration,
+    FunctionEventInvokeConfig,
     FunctionName,
     FunctionUrlAuthType,
     FunctionUrlQualifier,
@@ -44,6 +46,7 @@ from localstack.aws.api.lambda_ import (
     GetFunctionResponse,
     GetFunctionUrlConfigResponse,
     GetPolicyResponse,
+    GetProvisionedConcurrencyConfigResponse,
     InvalidParameterValueException,
     InvocationResponse,
     InvocationType,
@@ -52,19 +55,29 @@ from localstack.aws.api.lambda_ import (
     ListAliasesResponse,
     ListCodeSigningConfigsResponse,
     ListEventSourceMappingsResponse,
+    ListFunctionEventInvokeConfigsResponse,
     ListFunctionsByCodeSigningConfigResponse,
     ListFunctionsResponse,
     ListFunctionUrlConfigsResponse,
+    ListProvisionedConcurrencyConfigsResponse,
     ListVersionsByFunctionResponse,
     LogType,
     MasterRegion,
+    MaxFunctionEventInvokeConfigListItems,
+    MaximumEventAgeInSeconds,
+    MaximumRetryAttempts,
     MaxItems,
     MaxListItems,
+    MaxProvisionedConcurrencyConfigListItems,
     NamespacedFunctionName,
     NamespacedStatementId,
     PackageType,
+    PositiveInteger,
     PreconditionFailedException,
+    ProvisionedConcurrencyConfigListItem,
+    ProvisionedConcurrencyStatusEnum,
     PutFunctionCodeSigningConfigResponse,
+    PutProvisionedConcurrencyConfigResponse,
     Qualifier,
     ResourceConflictException,
     ResourceNotFoundException,
@@ -75,16 +88,18 @@ from localstack.aws.api.lambda_ import (
     TracingConfig,
     TracingMode,
     UpdateCodeSigningConfigResponse,
+    UpdateEventSourceMappingRequest,
     UpdateFunctionCodeRequest,
     UpdateFunctionConfigurationRequest,
     UpdateFunctionUrlConfigResponse,
     Version,
 )
 from localstack.services.awslambda import api_utils
-from localstack.services.awslambda.api_utils import get_name_and_qualifier
+from localstack.services.awslambda.api_utils import FN_ARN_PATTERN, get_name_and_qualifier
 from localstack.services.awslambda.invocation.lambda_models import (
     AliasRoutingConfig,
     CodeSigningConfig,
+    EventInvokeConfig,
     Function,
     FunctionResourcePolicy,
     FunctionUrlConfig,
@@ -106,6 +121,7 @@ from localstack.services.awslambda.invocation.lambda_service import (
     store_s3_bucket_archive,
 )
 from localstack.services.awslambda.invocation.lambda_util import (
+    LAMBDA_DATE_FORMAT,
     format_lambda_date,
     function_name_from_arn,
     generate_lambda_date,
@@ -844,7 +860,9 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
         function.aliases[name] = alias
         return self._map_alias_out(alias=alias, function=function)
 
-    # Event Source Mappings
+    # =======================================
+    # ======= EVENT SOURCE MAPPINGS =========
+    # =======================================
 
     @handler("CreateEventSourceMapping", expand=False)
     def create_event_source_mapping(
@@ -852,26 +870,73 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
         context: RequestContext,
         request: CreateEventSourceMappingRequest,
     ) -> EventSourceMappingConfiguration:
+        if "EventSourceArn" not in request:
+            raise InvalidParameterValueException("Unrecognized event source.", Type="User")
 
-        ...
+        state = lambda_stores[context.account_id][context.region]
+        fn_name = request["FunctionName"]
+        fn = state.functions.get(fn_name)
+        if not fn:
+            raise InvalidParameterValueException("Function does not exist", Type="User")
+
+        new_uuid = long_uid()
+
+        # TODO: create domain models and map accordingly
+        params = request.copy()
+        params.pop("FunctionName")
+        params["State"] = "Enabled"  # TODO: should be set asynchronously
+        # params["State"] = "Creating"
+        params["StateTransitionReason"] = "USER_INITIATED"
+        params["UUID"] = new_uuid
+        params["BatchSize"] = request.get("BatchSize", 10)
+        params["FunctionResponseTypes"] = request.get("FunctionResponseTypes", [])
+        params["MaximumBatchingWindowInSeconds"] = request.get("MaximumBatchingWindowInSeconds", 0)
+        params["LastModified"] = generate_lambda_date()
+        params["FunctionArn"] = unqualified_lambda_arn(
+            request["FunctionName"], context.account_id, context.region
+        )
+
+        esm_config = EventSourceMappingConfiguration(**params)
+        state.event_source_mappings[new_uuid] = esm_config
+        return esm_config
 
     @handler("UpdateEventSourceMapping", expand=False)
     def update_event_source_mapping(
         self,
         context: RequestContext,
-        request: CreateEventSourceMappingRequest,
+        request: UpdateEventSourceMappingRequest,
     ) -> EventSourceMappingConfiguration:
-        ...
+        state = lambda_stores[context.account_id][context.region]
+        uuid = request["UUID"]
+        event_source_mapping = state.event_source_mappings.get(uuid)
+        if not event_source_mapping:
+            raise ResourceNotFoundException(
+                "The resource you requested does not exist.", Type="User"
+            )
+        return EventSourceMappingConfiguration()  # TODO: implement
 
     def delete_event_source_mapping(
         self, context: RequestContext, uuid: String
     ) -> EventSourceMappingConfiguration:
-        ...
+        state = lambda_stores[context.account_id][context.region]
+        event_source_mapping = state.event_source_mappings.get(uuid)
+        if not event_source_mapping:
+            raise ResourceNotFoundException(
+                "The resource you requested does not exist.", Type="User"
+            )
+
+        return state.event_source_mappings.pop(uuid)
 
     def get_event_source_mapping(
         self, context: RequestContext, uuid: String
     ) -> EventSourceMappingConfiguration:
-        ...
+        state = lambda_stores[context.account_id][context.region]
+        event_source_mapping = state.event_source_mappings.get(uuid)
+        if not event_source_mapping:
+            raise ResourceNotFoundException(
+                "The resource you requested does not exist.", Type="User"
+            )
+        return event_source_mapping
 
     def list_event_source_mappings(
         self,
@@ -881,7 +946,14 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
         marker: String = None,
         max_items: MaxListItems = None,
     ) -> ListEventSourceMappingsResponse:
-        ...
+        state = lambda_stores[context.account_id][context.region]
+        esms = PaginatedList(state.event_source_mappings)
+        page, token = esms.get_page(
+            lambda x: x,  # TODO
+            marker,
+            max_items,
+        )
+        return ListEventSourceMappingsResponse(EventSourceMappings=page, NextMarker=token)
 
     # =======================================
     # ============ FUNCTION URLS ============
@@ -915,7 +987,7 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
             )
 
         if qualifier and qualifier != "$LATEST" and qualifier not in fn.aliases:
-            raise ResourceNotFoundException("Where Alias?")
+            raise ResourceNotFoundException("Where Alias?")  # TODO: verify
 
         normalized_qualifier = qualifier or "$LATEST"
 
@@ -1252,9 +1324,11 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
             )
 
         changes = {
-            **({"allowed_publishers": allowed_publishers} if allowed_publishers else {}),
-            **({"policies": code_signing_policies} if code_signing_policies else {}),
-            **({"description": description} if description else {}),
+            **(
+                {"allowed_publishers": allowed_publishers} if allowed_publishers is not None else {}
+            ),
+            **({"policies": code_signing_policies} if code_signing_policies is not None else {}),
+            **({"description": description} if description is not None else {}),
         }
         new_csc = dataclasses.replace(csc, last_modified=generate_lambda_date(), **changes)
         state.code_signing_configs[code_signing_config_arn] = new_csc
@@ -1325,9 +1399,9 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
         cscs = [api_utils.map_csc(csc) for csc in state.code_signing_configs.values()]
         cscs = PaginatedList(cscs)
         page, token = cscs.get_page(
-            lambda csc: csc["CodeSigningConfigId"],
+            lambda csc: csc["CodeSigningConfigId"],  # TODO
             marker,
-            max_items,  # TODO: check what these are ordered by
+            max_items,
         )
         return ListCodeSigningConfigsResponse(CodeSigningConfigs=page, NextMarker=token)
 
@@ -1384,6 +1458,351 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
             ),
         )
 
-    # TODO(s)
-    # Provisioned Concurrency Config
-    # Event Invoke Config
+    # =======================================
+    # ==  Provisioned Concurrency Config   ==
+    # =======================================
+
+    # TODO: test how th is behaves when both alias and referencing version have conflicting configs
+    def put_provisioned_concurrency_config(
+        self,
+        context: RequestContext,
+        function_name: FunctionName,
+        qualifier: Qualifier,
+        provisioned_concurrent_executions: PositiveInteger,
+    ) -> PutProvisionedConcurrencyConfigResponse:
+        function_name, qualifier = get_name_and_qualifier(function_name, qualifier)
+        state = lambda_stores[context.account_id][context.region]
+
+        fn = state.functions.get(function_name)
+        if not fn:
+            raise ResourceNotFoundException("where function?")  # TODO: test
+
+        if not qualifier:
+            raise ServiceException("Why $LATEST")  # TODO: test
+
+        fn_arn = qualified_lambda_arn(function_name, qualifier, context.account_id, context.region)
+        ver_manager = self.lambda_service.get_lambda_version_manager(fn_arn)
+        if ver_manager.provisioned_state:
+            raise ResourceConflictException("double provisioned")
+        # TODO: check if it already exists
+
+        provisioned_config = None
+        if api_utils.qualifier_is_alias(qualifier):
+            fn_alias = fn.aliases.get(qualifier)
+            if not fn_alias:
+                raise ResourceNotFoundException("Where alias?")  # TODO: test
+            provisioned_config = fn_alias.provisioned_concurrency_config
+        elif api_utils.qualifier_is_version(qualifier):
+            fn_version = fn.versions.get(qualifier)
+            if not fn_version:
+                raise ResourceNotFoundException("Where version?")  # TODO: test
+            provisioned_config = fn_version.provisioned_concurrency_config
+
+        if not provisioned_config:
+            raise ResourceNotFoundException("Where provisioned config?")  # TODO: test
+
+        return provisioned_config
+
+    def get_provisioned_concurrency_config(
+        self, context: RequestContext, function_name: FunctionName, qualifier: Qualifier
+    ) -> GetProvisionedConcurrencyConfigResponse:
+        function_name, qualifier = get_name_and_qualifier(function_name, qualifier)
+        state = lambda_stores[context.account_id][context.region]
+
+        fn = state.functions.get(function_name)
+        if not fn:
+            raise ResourceNotFoundException("where function?")  # TODO: test
+
+        if not qualifier:
+            raise ServiceException("Implicit $LATEST")  # TODO: test
+
+        provisioned_config = None
+        if api_utils.qualifier_is_alias(qualifier):
+            fn_alias = fn.aliases.get(qualifier)
+            if not fn_alias:
+                raise ResourceNotFoundException("Where alias?")  # TODO: test
+            provisioned_config = fn_alias.provisioned_concurrency_config
+        elif api_utils.qualifier_is_version(qualifier):
+            fn_version = fn.versions.get(qualifier)
+            if not fn_version:
+                raise ResourceNotFoundException("Where version?")  # TODO: test
+            provisioned_config = fn_version.provisioned_concurrency_config
+
+        if not provisioned_config:
+            raise ResourceNotFoundException("Where provisioned config?")  # TODO: test
+
+        fn_arn = qualified_lambda_arn(function_name, qualifier, context.account_id, context.region)
+        ver_manager = self.lambda_service.get_lambda_version_manager(fn_arn)
+
+        return GetProvisionedConcurrencyConfigResponse(
+            RequestedProvisionedConcurrentExecutions=provisioned_config.provisioned_concurrent_executions,
+            LastModified=provisioned_config.last_modified,
+            AvailableProvisionedConcurrentExecutions=ver_manager.provisioned_state.available,
+            AllocatedProvisionedConcurrentExecutions=ver_manager.provisioned_state.allocated,
+            Status=ver_manager.provisioned_state.status,
+            StatusReason=ver_manager.provisioned_state.status_reason,
+        )
+
+    def list_provisioned_concurrency_configs(
+        self,
+        context: RequestContext,
+        function_name: FunctionName,
+        marker: String = None,
+        max_items: MaxProvisionedConcurrencyConfigListItems = None,
+    ) -> ListProvisionedConcurrencyConfigsResponse:
+
+        provisioned_concurrency_configs = [
+            # TODO
+            ProvisionedConcurrencyConfigListItem(
+                FunctionArn="",
+                RequestedProvisionedConcurrentExecutions=0,
+                AvailableProvisionedConcurrentExecutions=0,
+                AllocatedProvisionedConcurrentExecutions=0,
+                Status=ProvisionedConcurrencyStatusEnum.IN_PROGRESS,
+                StatusReason="?",
+                LastModified=generate_lambda_date(),
+            )
+        ]
+        provisioned_concurrency_configs = PaginatedList(provisioned_concurrency_configs)
+        page, token = provisioned_concurrency_configs.get_page(
+            lambda x: x,
+            marker,
+            max_items,
+        )
+        return ListProvisionedConcurrencyConfigsResponse(
+            ProvisionedConcurrencyConfigs=page, NextMarker=token
+        )
+
+    # TODO: test what happens when alias or function is deleted
+    def delete_provisioned_concurrency_config(
+        self, context: RequestContext, function_name: FunctionName, qualifier: Qualifier
+    ) -> None:
+        function_name, qualifier = get_name_and_qualifier(function_name, qualifier)
+        state = lambda_stores[context.account_id][context.region]
+
+        fn = state.functions.get(function_name)
+        if not fn:
+            raise ResourceNotFoundException("where function?")  # TODO: test
+
+        if not qualifier:
+            raise ServiceException("Why $LATEST")  # TODO: test
+
+        provisioned_config = None
+        if api_utils.qualifier_is_alias(qualifier):
+            fn_alias = fn.aliases.get(qualifier)
+            if not fn_alias:
+                raise ResourceNotFoundException("Where alias?")  # TODO: test
+            provisioned_config = fn_alias.provisioned_concurrency_config
+            fn_alias.provisioned_concurrency_configuration = None
+        elif api_utils.qualifier_is_version(qualifier):
+            fn_version = fn.versions.get(qualifier)
+            if not fn_version:
+                raise ResourceNotFoundException("Where version?")  # TODO: test
+            provisioned_config = fn_version.provisioned_concurrency_config
+
+        if not provisioned_config:
+            raise ResourceNotFoundException("Where provisioned config?")  # TODO: test
+
+    # =======================================
+    # =======  Event Invoke Config   ========
+    # =======================================
+
+    def put_function_event_invoke_config(
+        self,
+        context: RequestContext,
+        function_name: FunctionName,
+        qualifier: Qualifier = None,
+        maximum_retry_attempts: MaximumRetryAttempts = None,
+        maximum_event_age_in_seconds: MaximumEventAgeInSeconds = None,
+        destination_config: DestinationConfig = None,
+    ) -> FunctionEventInvokeConfig:
+        """
+        Destinations can be:
+        * SQS
+        * SNS
+        * Lambda
+        * EventBridge
+
+        Differences between put_ and update_:
+            * put overwrites any existing config
+            * update allows changes only single values while keeping the rest of existing ones
+            * update fails on non-existing configs
+
+        Differences between destination and DLQ
+
+            * "However, a dead-letter queue is part of a function's version-specific configuration, so it is locked in when you publish a version."
+            *  On-failure destinations also support additional targets and include details about the function's response in the invocation record.
+
+        """
+        state = lambda_stores[context.account_id][context.region]
+        function_name, qualifier = get_name_and_qualifier(function_name, qualifier)
+        if ":" in function_name:
+            function_name, second_qualifier = function_name.split(":")
+
+        if (
+            maximum_event_age_in_seconds is None
+            and maximum_retry_attempts is None
+            and destination_config is None
+        ):
+            raise InvalidParameterValueException(
+                "You must specify at least one of error handling or destination setting.",
+                Type="User",
+            )
+
+        # TODO: validate destination config properly
+        if destination_config:
+            success_destination = destination_config.get("OnSuccess", {}).get("Destination")
+            if success_destination:
+                fn_parts = FN_ARN_PATTERN.search(success_destination).groupdict()
+                if fn_parts:
+                    # check if it exists
+                    fn = state.functions.get(fn_parts["function_name"])
+                    if not fn:
+                        raise InvalidParameterValueException(
+                            f"The provided destination config DestinationConfig(onSuccess=OnSuccess(destination={success_destination}), onFailure=null) is invalid."
+                        )  # TODO generalize / make utils
+                    if fn_parts["function_name"] == function_name:
+                        raise InvalidParameterValueException(
+                            "You can't specify the function as a destination for itself.",
+                            Type="User",
+                        )
+
+        fn = state.functions.get(function_name)
+        if not fn:
+            raise ResourceNotFoundException("Where fn?")  # TODO: verify
+
+        if qualifier and not (qualifier in fn.aliases or qualifier in fn.versions):
+            raise ResourceNotFoundException("Where qualifier?")  # TODO: verify
+
+        config = EventInvokeConfig(
+            function_name=function_name,
+            qualifier=qualifier,
+            maximum_event_age_in_seconds=maximum_event_age_in_seconds,
+            maximum_retry_attempts=maximum_retry_attempts,
+            last_modified=generate_lambda_date(),
+        )
+        if destination_config:
+            if "OnFailure" in destination_config:
+                on_failure_destination = destination_config["OnFailure"].get("Destination")
+                if not on_failure_destination:
+                    raise InvalidParameterValueException("?")  # TODO: add test
+                config.destination_config.on_failure = on_failure_destination
+            if "OnSuccess" in destination_config:
+                on_success_destination = destination_config["OnSuccess"].get("Destination")
+                if not on_success_destination:
+                    raise InvalidParameterValueException("?")  # TODO: add test
+                config.destination_config.on_success = on_success_destination
+
+        fn.event_invoke_configs[qualifier] = config
+
+        fn_arn = qualified_lambda_arn(
+            function_name, qualifier or "$LATEST", context.account_id, context.region
+        )
+
+        optional_kwargs = {
+            **(
+                {"MaximumRetryAttempts": config.maximum_retry_attempts}
+                if config.maximum_retry_attempts is not None
+                else {}
+            ),
+            **(
+                {"MaximumEventAgeInSeconds": config.maximum_event_age_in_seconds}
+                if config.maximum_event_age_in_seconds is not None
+                else {}
+            ),
+        }
+        return FunctionEventInvokeConfig(
+            LastModified=datetime.datetime.strptime(config.last_modified, LAMBDA_DATE_FORMAT),
+            FunctionArn=fn_arn,
+            DestinationConfig=destination_config,
+            **optional_kwargs,
+        )
+
+    def get_function_event_invoke_config(
+        self, context: RequestContext, function_name: FunctionName, qualifier: Qualifier = None
+    ) -> FunctionEventInvokeConfig:
+        state = lambda_stores[context.account_id][context.region]
+        function_name, qualifier = get_name_and_qualifier(function_name, qualifier)
+        if ":" in function_name:
+            function_name, second_qualifier = function_name.split(":")
+
+        fn = state.functions.get(function_name)
+        if not fn:
+            raise ResourceNotFoundException("Where fn?")  # TODO: verify
+
+        config = fn.event_invoke_configs.get(qualifier or "$LATEST")
+        if not config:
+            raise ResourceNotFoundException("Where event invoke config?")  # TODO: verify
+
+        return FunctionEventInvokeConfig(
+            LastModified=datetime.datetime.strptime(config.last_modified, LAMBDA_DATE_FORMAT),
+            FunctionArn=qualified_lambda_arn(
+                function_name, qualifier, context.account_id, context.region
+            ),
+            DestinationConfig=config.destination_config,
+            MaximumEventAgeInSeconds=config.maximum_event_age_in_seconds,
+            MaximumRetryAttempts=config.maximum_retry_attempts,
+        )
+
+    def list_function_event_invoke_configs(
+        self,
+        context: RequestContext,
+        function_name: FunctionName,
+        marker: String = None,
+        max_items: MaxFunctionEventInvokeConfigListItems = None,
+    ) -> ListFunctionEventInvokeConfigsResponse:
+        state = lambda_stores[context.account_id][context.region]
+        fn = state.functions.get(function_name)
+        if not fn:
+            raise ResourceNotFoundException("Where Function?")  # TODO: verify
+
+        event_invoke_configs = [
+            # TODO
+            FunctionEventInvokeConfig(
+                LastModified="",
+                FunctionArn="",
+                MaximumEventAgeInSeconds=0,
+                MaximumRetryAttempts=0,
+                DestinationConfig=DestinationConfig(),
+            )
+            for c in fn.event_invoke_configs
+        ]
+
+        event_invoke_configs = PaginatedList(event_invoke_configs)
+        page, token = event_invoke_configs.get_page(
+            lambda x: x,  # TODO
+            marker,
+            max_items,
+        )
+        return ListFunctionEventInvokeConfigsResponse(
+            FunctionEventInvokeConfigs=page, NextMarker=token
+        )
+
+    def delete_function_event_invoke_config(
+        self, context: RequestContext, function_name: FunctionName, qualifier: Qualifier = None
+    ) -> None:
+        function_name, qualifier = get_name_and_qualifier(function_name, qualifier)
+        state = lambda_stores[context.account_id][context.region]
+        fn = state.functions.get(function_name)
+        if not fn:
+            raise ResourceNotFoundException("Where fn?")  # TODO: verify
+
+        resolved_qualifier = qualifier or "$LATEST"
+        config = fn.event_invoke_configs.get(resolved_qualifier)
+        if not config:
+            raise ResourceNotFoundException("Where config?")  # TODO: verify
+
+        del fn.event_invoke_configs[resolved_qualifier]
+
+    def update_function_event_invoke_config(
+        self,
+        context: RequestContext,
+        function_name: FunctionName,
+        qualifier: Qualifier = None,
+        maximum_retry_attempts: MaximumRetryAttempts = None,
+        maximum_event_age_in_seconds: MaximumEventAgeInSeconds = None,
+        destination_config: DestinationConfig = None,
+    ) -> FunctionEventInvokeConfig:
+        # like put but only update single fields via replace
+        # TODO
+        ...
