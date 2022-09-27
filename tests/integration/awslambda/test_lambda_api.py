@@ -644,6 +644,22 @@ class TestLambdaAlias:
         )  # 4 aliases
         snapshot.match("list_aliases_for_fnname", list_aliases_for_fnname)
         assert len(list_aliases_for_fnname["Aliases"]) == 4
+        # update alias 1_1 to remove routing config
+        update_alias_1_1 = lambda_client.update_alias(
+            FunctionName=function_name,
+            Name="aliasname1_1",
+            RoutingConfig={"AdditionalVersionWeights": {}},
+        )
+        snapshot.match("update_alias_1_1", update_alias_1_1)
+        get_alias_1_1_after_update = lambda_client.get_alias(
+            FunctionName=function_name, Name="aliasname1_1"
+        )
+        snapshot.match("get_alias_1_1_after_update", get_alias_1_1_after_update)
+        list_aliases_for_fnname_after_update = lambda_client.list_aliases(
+            FunctionName=function_name
+        )  # 4 aliases
+        snapshot.match("list_aliases_for_fnname_after_update", list_aliases_for_fnname_after_update)
+        assert len(list_aliases_for_fnname_after_update["Aliases"]) == 4
 
         list_aliases_for_version = lambda_client.list_aliases(
             FunctionName=function_name, FunctionVersion="1"

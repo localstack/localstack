@@ -721,6 +721,20 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
             **optional_kwargs,
         )
 
+    def _create_routing_config_model(self, routing_config_dict: dict[str, float]):
+        if len(routing_config_dict) > 1:
+            raise InvalidParameterValueException(
+                "Number of items in AdditionalVersionWeights cannot be greater than 1",
+                Type="User",
+            )
+        # should be exactly one item here
+        for key, value in routing_config_dict.items():
+            if value < 0.0 or value >= 1.0:
+                raise ValidationException(
+                    f"1 validation error detected: Value '{{{key}={value}}}' at 'routingConfig.additionalVersionWeights' failed to satisfy constraint: Map value must satisfy constraint: [Member must have value less than or equal to 1.0, Member must have value greater than or equal to 0.0]"
+                )
+        return AliasRoutingConfig(version_weights=routing_config_dict)
+
     def create_alias(
         self,
         context: RequestContext,
@@ -743,18 +757,7 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
             if routing_config and (
                 routing_config_dict := routing_config.get("AdditionalVersionWeights")
             ):
-                if len(routing_config_dict) > 1:
-                    raise InvalidParameterValueException(
-                        "Number of items in AdditionalVersionWeights cannot be greater than 1",
-                        Type="User",
-                    )
-                # should be exactly one item here
-                for key, value in routing_config_dict.items():
-                    if value < 0.0 or value >= 1.0:
-                        raise ValidationException(
-                            f"1 validation error detected: Value '{{{key}={value}}}' at 'routingConfig.additionalVersionWeights' failed to satisfy constraint: Map value must satisfy constraint: [Member must have value less than or equal to 1.0, Member must have value greater than or equal to 0.0]"
-                        )
-                routing_configuration = AliasRoutingConfig(version_weights=routing_config_dict)
+                routing_configuration = self._create_routing_config_model(routing_config_dict)
 
             alias = VersionAlias(
                 name=name,
@@ -817,7 +820,30 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
         routing_config: AliasRoutingConfiguration = None,
         revision_id: String = None,
     ) -> AliasConfiguration:
-        ...
+        function_name = function_name_from_arn(function_name)
+        function = self._get_function(
+            function_name=function_name, region=context.region, account_id=context.account_id
+        )
+        if not (alias := function.aliases.get(name)):
+            raise ValueError("Alias not found")  # TODO proper exception
+        if revision_id and alias.revision_id != revision_id:
+            raise ValueError("Wrong revision id")  # TODO proper exception
+        changes = {}
+        if function_version is not None:
+            changes |= {"function_version": function_version}
+        if description is not None:
+            changes |= {"description": description}
+        if routing_config is not None:
+            # if it is an empty dict or AdditionalVersionWeights is empty, set routing config to None
+            new_routing_config = None
+            if routing_config_dict := routing_config.get("AdditionalVersionWeights"):
+                new_routing_config = self._create_routing_config_model(routing_config_dict)
+            changes |= {"routing_configuration": new_routing_config}
+        if changes:
+            # TODO check what happens if changes are empty
+            alias = dataclasses.replace(alias, **changes)
+            function.aliases[name] = alias
+        return self._map_alias_out(alias=alias, function=function)
 
     # Event Source Mappings
 
