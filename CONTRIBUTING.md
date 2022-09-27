@@ -10,4 +10,4 @@ For pull requests, please stick to the following guidelines:
 * Fork localstack on your GitHub user account, do your changes there and then create a PR against main localstack repository.
 * Separate unrelated changes into multiple pull requests.
 
-Please note that by contributing any code or documentation to this repository (by raising pull requests, or otherwise) you explicitly agree to the [**Contributor License Agreement**](../contributor_license_agreement/README.md).
+Please note that by contributing any code or documentation to this repository (by raising pull requests, or otherwise) you explicitly agree to the [**Contributor License Agreement**](.github/CLA.md).
