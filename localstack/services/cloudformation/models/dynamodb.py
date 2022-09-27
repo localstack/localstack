@@ -56,6 +56,13 @@ class DynamoDBTable(GenericBaseModel):
     def cloudformation_type():
         return "AWS::DynamoDB::Table"
 
+    def get_cfn_attribute(self, attribute_name):
+        actual_attribute = "LatestStreamArn" if attribute_name == "StreamArn" else attribute_name
+        value = self.props.get("Table", {}).get(actual_attribute)
+        if value:
+            return value
+        return super(DynamoDBTable, self).get_cfn_attribute(attribute_name)
+
     def get_physical_resource_id(self, attribute=None, **kwargs):
         table_name = self.props.get("TableName")
         if attribute in REF_ID_ATTRS:

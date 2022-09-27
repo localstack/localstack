@@ -90,6 +90,17 @@ class GatewayRestAPI(GenericBaseModel):
     def cloudformation_type():
         return "AWS::ApiGateway::RestApi"
 
+    def get_cfn_attribute(self, attribute_name):
+        if attribute_name == "RootResourceId":
+            api_id = self.props.get("id")
+            resources = aws_stack.connect_to_service("apigateway").get_resources(restApiId=api_id)[
+                "items"
+            ]
+            for res in resources:
+                if res["path"] == "/" and not res.get("parentId"):
+                    return res["id"]
+        return super(GatewayRestAPI, self).get_cfn_attribute(attribute_name)
+
     def get_physical_resource_id(self, attribute=None, **kwargs):
         return self.props.get("id")
 
@@ -183,6 +194,9 @@ class GatewayResource(GenericBaseModel):
     @staticmethod
     def cloudformation_type():
         return "AWS::ApiGateway::Resource"
+
+    def get_physical_resource_id(self, attribute=None, **kwargs):
+        return self.props.get("id")
 
     def fetch_state(self, stack_name, resources):
         props = self.props

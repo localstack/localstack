@@ -10,7 +10,7 @@ from moto.ec2.utils import generate_route_id
 
 from localstack import config
 from localstack.aws.accounts import get_aws_account_id
-from localstack.constants import FALSE_STRINGS, S3_STATIC_WEBSITE_HOSTNAME
+from localstack.constants import FALSE_STRINGS
 from localstack.services.cloudformation.deployment_utils import (
     PLACEHOLDER_AWS_NO_VALUE,
     PLACEHOLDER_RESOURCE_NAME,
@@ -303,77 +303,6 @@ def extract_resource_attribute(
         if result is not None:
             return result
         return ""
-    elif resource_type == "Lambda::Function":
-        func_configs = resource_state.get("Configuration") or {}
-        if is_ref_attr_or_arn:
-            func_arn = func_configs.get("FunctionArn")
-            if func_arn:
-                return resolve_refs_recursively(stack, func_arn)
-            func_name = resolve_refs_recursively(stack, func_configs.get("FunctionName"))
-            return aws_stack.lambda_function_arn(func_name)
-        else:
-            return func_configs.get(attribute)
-    elif resource_type == "Lambda::Version":
-        if resource_state.get("Version"):
-            return "%s:%s" % (
-                resource_state.get("FunctionArn"),
-                resource_state.get("Version").split(":")[-1],
-            )
-    elif resource_type == "DynamoDB::Table":
-        actual_attribute = "LatestStreamArn" if attribute == "StreamArn" else attribute
-        value = resource_state.get("Table", {}).get(actual_attribute)
-        if value:
-            return value
-    elif resource_type == "ApiGateway::RestApi":
-        if is_ref_attribute:
-            result = resource_state.get("id")
-            if result:
-                return result
-        if attribute == "RootResourceId":
-            api_id = resource_state["id"]
-            resources = aws_stack.connect_to_service("apigateway").get_resources(restApiId=api_id)[
-                "items"
-            ]
-            for res in resources:
-                if res["path"] == "/" and not res.get("parentId"):
-                    return res["id"]
-    elif resource_type == "ApiGateway::Resource":
-        if is_ref_attribute:
-            return resource_state.get("id")
-    elif resource_type == "ApiGateway::Deployment":
-        if is_ref_attribute:
-            return resource_state.get("id")
-    elif resource_type == "S3::Bucket":
-        if attribute == "WebsiteURL":
-            bucket_name = resource_props.get("BucketName")
-            return f"http://{bucket_name}.{S3_STATIC_WEBSITE_HOSTNAME}"
-        if is_ref_attr_or_arn:
-            bucket_name = resource_props.get("BucketName")
-            bucket_name = resolve_refs_recursively(stack, bucket_name)
-            if attribute == "Arn":
-                return aws_stack.s3_bucket_arn(bucket_name)
-            return bucket_name
-    elif resource_type == "Elasticsearch::Domain":
-        if attribute == "DomainEndpoint":
-            domain_status = resource_state.get("DomainStatus", {})
-            result = domain_status.get("Endpoint")
-            if result:
-                return result
-        if attribute in ["Arn", "DomainArn"]:
-            domain_name = resource_props.get("DomainName") or resource_state.get("DomainName")
-            return aws_stack.es_domain_arn(domain_name)
-    elif resource_type == "StepFunctions::StateMachine":
-        if is_ref_attr_or_arn:
-            return resource_state["stateMachineArn"]
-    elif resource_type == "SNS::Topic":
-        if is_ref_attribute and resource_state.get("TopicArn"):
-            topic_arn = resource_state.get("TopicArn")
-            return resolve_refs_recursively(stack, topic_arn)
-    elif resource_type == "SQS::Queue":
-        if is_ref_attr_or_arn:
-            if attribute == "Arn" and resource_state.get("QueueArn"):
-                return resolve_refs_recursively(stack, resource_state.get("QueueArn"))
-            return aws_stack.get_sqs_queue_url(resource_props.get("QueueName"))
     attribute_lower = first_char_to_lower(attribute)
     result = resource_state.get(attribute) or resource_state.get(attribute_lower)
     if result is None and isinstance(resource, dict):
