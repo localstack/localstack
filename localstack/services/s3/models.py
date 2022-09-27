@@ -28,5 +28,7 @@ class S3Store(BaseStore):
         default=dict
     )
 
+    bucket_versioning_status: Dict[BucketName, bool] = LocalAttribute(default=dict)
+
 
 s3_stores = AccountRegionBundle("s3", S3Store)

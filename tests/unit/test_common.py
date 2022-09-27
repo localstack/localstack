@@ -631,6 +631,15 @@ class TestExternalServicePortsManager:
         time.sleep(1)
         external_service_ports_manager.reserve_port(config.EXTERNAL_SERVICE_PORTS_START)
 
+    def test_check_is_port_reserved(
+        self, external_service_ports_manager: ExternalServicePortsManager
+    ):
+        assert not external_service_ports_manager.is_port_reserved(
+            config.EXTERNAL_SERVICE_PORTS_START
+        )
+        external_service_ports_manager.reserve_port(config.EXTERNAL_SERVICE_PORTS_START)
+        assert external_service_ports_manager.is_port_reserved(config.EXTERNAL_SERVICE_PORTS_START)
+
 
 @pytest.fixture()
 def paginated_list():
