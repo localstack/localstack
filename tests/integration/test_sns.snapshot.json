@@ -2033,7 +2033,7 @@
     }
   },
   "tests/integration/test_sns.py::TestSNSProvider::test_empty_or_wrong_message_attributes": {
-    "recorded-date": "26-09-2022, 21:54:30",
+    "recorded-date": "27-09-2022, 16:22:03",
     "recorded-content": {
       "missing_string_attr": {
         "Error": {
@@ -2083,6 +2083,72 @@
         "Error": {
           "Code": "ParameterValueInvalid",
           "Message": "The message attribute 'attr1' with type 'Binary' must use field 'Binary'.",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "invalid_attr_string_value": {
+        "Error": {
+          "Code": "ParameterValueInvalid",
+          "Message": "The message attribute 'attr1' has an invalid message attribute type, the set of supported type prefixes is Binary, Number, and String.",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "too_long_name": {
+        "Error": {
+          "Code": "ParameterValueInvalid",
+          "Message": "Length of message attribute name must be less than 256 bytes.",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "invalid_name": {
+        "Error": {
+          "Code": "ParameterValueInvalid",
+          "Message": "Invalid non-alphanumeric character '#x5E' was found in the message attribute name. Can only include alphanumeric characters, hyphens, underscores, or dots.",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "invalid_name_2": {
+        "Error": {
+          "Code": "ParameterValueInvalid",
+          "Message": "Invalid message attribute name starting with character '.' was found.",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "invalid_name_3": {
+        "Error": {
+          "Code": "ParameterValueInvalid",
+          "Message": "Invalid message attribute name ending with character '.' was found.",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "invalid_name_4": {
+        "Error": {
+          "Code": "ParameterValueInvalid",
+          "Message": "Message attribute name can not have successive '.' character.",
           "Type": "Sender"
         },
         "ResponseMetadata": {

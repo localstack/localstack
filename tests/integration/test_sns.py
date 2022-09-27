@@ -2347,6 +2347,14 @@ class TestSNSProvider:
             "str_attr_binary_value": {"attr1": {"DataType": "String", "BinaryValue": b"123"}},
             "int_attr_binary_value": {"attr1": {"DataType": "Number", "BinaryValue": b"123"}},
             "binary_attr_string_value": {"attr1": {"DataType": "Binary", "StringValue": "123"}},
+            "invalid_attr_string_value": {
+                "attr1": {"DataType": "InvalidType", "StringValue": "123"}
+            },
+            "too_long_name": {"a" * 257: {"DataType": "String", "StringValue": "123"}},
+            "invalid_name": {"a^*?": {"DataType": "String", "StringValue": "123"}},
+            "invalid_name_2": {".abc": {"DataType": "String", "StringValue": "123"}},
+            "invalid_name_3": {"abc.": {"DataType": "String", "StringValue": "123"}},
+            "invalid_name_4": {"a..bc": {"DataType": "String", "StringValue": "123"}},
         }
 
         for error_type, msg_attrs in wrong_message_attributes.items():
