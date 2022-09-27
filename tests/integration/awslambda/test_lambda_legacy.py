@@ -15,6 +15,7 @@ from localstack.services.awslambda.lambda_api import (
 from localstack.services.awslambda.lambda_utils import LAMBDA_DEFAULT_HANDLER
 from localstack.services.install import GO_RUNTIME_VERSION, download_and_extract
 from localstack.testing.aws.lambda_utils import is_old_provider
+from localstack.testing.pytest.fixtures import skip_if_pro_enabled
 from localstack.utils import testutil
 from localstack.utils.aws import aws_stack
 from localstack.utils.files import load_file
@@ -217,6 +218,7 @@ class TestLambdaLegacyProvider:
             lambda_client.delete_function(FunctionName=func_name)
         assert "ResourceNotFoundException" in str(exc)
 
+    @skip_if_pro_enabled
     def test_update_lambda_with_layers(self, iam_client, lambda_client, create_lambda_function):
         func_name = f"lambda-{short_uid()}"
         create_lambda_function(
