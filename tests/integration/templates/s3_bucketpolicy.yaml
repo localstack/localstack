@@ -1,8 +1,11 @@
+Parameters:
+  BucketName:
+    Type: String
 Resources:
   bucket43879C71:
     Type: AWS::S3::Bucket
     Properties:
-      BucketName: {{ bucket_name }}
+      BucketName: !Ref BucketName
     UpdateReplacePolicy: Retain
     DeletionPolicy: Retain
   {% if include_policy %}

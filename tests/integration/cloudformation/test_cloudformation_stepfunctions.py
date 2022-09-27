@@ -238,7 +238,6 @@ def test_retry_and_catch(deploy_cfn_template, stepfunctions_client, sqs_client):
     execution_result = stepfunctions_client.describe_execution(executionArn=execution_arn)
     assert execution_result["status"] == "SUCCEEDED"
 
-    # fetch the message
     receive_result = sqs_client.receive_message(QueueUrl=queue_url, WaitTimeSeconds=5)
     assert receive_result["Messages"][0]["Body"] == "Fail"
 

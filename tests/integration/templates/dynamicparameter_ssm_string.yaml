@@ -2,7 +2,7 @@ AWSTemplateFormatVersion: '2010-09-09'
 Parameters:
   parameter123:
     Type: AWS::SSM::Parameter::Value<String>
-    Default: {{ parameter_name }}
+    Default: {{parameter_name}}
 Resources:
   topic123:
     Type: AWS::SNS::Topic

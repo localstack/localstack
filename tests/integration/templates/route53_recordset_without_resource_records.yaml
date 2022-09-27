@@ -1,8 +1,14 @@
+Parameters:
+  Name:
+    Type: String
+  HostedZoneId:
+    Type: String
+
 Resources:
   myDNSWithNameRecord:
     Type: AWS::Route53::RecordSet
     Properties:
-      HostedZoneId: {{HostedZoneId}}
-      Name: {{Name}}
+      HostedZoneId: !Ref HostedZoneId
+      Name: !Ref Name
       TTL: 900
       Type: A
