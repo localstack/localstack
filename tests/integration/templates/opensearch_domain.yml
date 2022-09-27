@@ -1,0 +1,11 @@
+Parameters:
+  domainName:
+    Type: String
+    Default: DomainName
+Resources:
+  Domain:
+    Type: AWS::OpenSearchService::Domain
+    Properties:
+      DomainName:
+        Ref: domainName
+      EngineVersion: OpenSearch_1.0
