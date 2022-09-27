@@ -75,7 +75,7 @@ LOG = logging.getLogger(__name__)
 def is_pro_enabled() -> bool:
     """Return whether the Pro extensions are enabled, i.e., restricted modules can be imported"""
     try:
-        import localstack_ext.utils.common
+        import localstack_ext.utils.common  # noqa
 
         return True
     except Exception:
