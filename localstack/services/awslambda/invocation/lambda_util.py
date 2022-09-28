@@ -2,8 +2,6 @@ import datetime
 import re
 from typing import Optional
 
-from localstack.utils.aws import aws_stack
-
 # some regexes to use (not used atm)
 function_arn_regex = re.compile(
     r"arn:(aws[a-zA-Z-]*)?:lambda:[a-z]{2}(-gov)?-[a-z]+-\d{1}:\d{12}:function:[a-zA-Z0-9-_\.]+(:(\$LATEST|[a-zA-Z0-9-_]+))?"
@@ -34,8 +32,8 @@ def function_name_from_arn(arn: str):
 
 
 def unqualified_lambda_arn(function_name: str, account: str, region: str):
-    partition = aws_stack.get_partition(region)
-    return f"arn:{partition}:lambda:{region}:{account}:function:{function_name}"
+    # TODO should get partition here, but current way is too expensive (15-120ms) using aws_stack get_partition
+    return f"arn:aws:lambda:{region}:{account}:function:{function_name}"
 
 
 def qualified_lambda_arn(

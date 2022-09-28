@@ -127,6 +127,7 @@ from localstack.services.awslambda.api_utils import (
     FN_ARN_PATTERN,
     get_function_name,
     get_name_and_qualifier,
+    qualifier_is_version,
 )
 from localstack.services.awslambda.invocation.lambda_models import (
     AliasRoutingConfig,
@@ -703,7 +704,6 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
         payload: IO[Blob] = None,
         qualifier: Qualifier = None,
     ) -> InvocationResponse:
-
         function_name, qualifier = get_name_and_qualifier(function_name, qualifier)
         time_before = time.perf_counter()
         result = self.lambda_service.invoke(
@@ -722,19 +722,16 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
             # TODO map to correct exception
             raise ServiceException() from e
 
-        LOG.debug("Type of result: %s", type(invocation_result))
+        LOG.debug("Lambda invocation duration: %0.2fms", (time.perf_counter() - time_before) * 1000)
 
         response = InvocationResponse(
             StatusCode=200,
             Payload=invocation_result.payload,
             ExecutedVersion=invocation_result.executed_version,
-            # TODO: should be conditional. Might have to get this from the invoke result as well
         )
 
         if isinstance(invocation_result, InvocationError):
             response["FunctionError"] = "Unhandled"
-
-        LOG.debug("Lambda invocation duration: %0.2fms", (time.perf_counter() - time_before) * 1000)
 
         if log_type == LogType.Tail:
             response["LogResult"] = to_str(
@@ -802,7 +799,9 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
             **optional_kwargs,
         )
 
-    def _create_routing_config_model(self, routing_config_dict: dict[str, float]):
+    def _create_routing_config_model(
+        self, routing_config_dict: dict[str, float], function_version: FunctionVersion
+    ):
         if len(routing_config_dict) > 1:
             raise InvalidParameterValueException(
                 "Number of items in AdditionalVersionWeights cannot be greater than 1",
@@ -814,6 +813,28 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
                 raise ValidationException(
                     f"1 validation error detected: Value '{{{key}={value}}}' at 'routingConfig.additionalVersionWeights' failed to satisfy constraint: Map value must satisfy constraint: [Member must have value less than or equal to 1.0, Member must have value greater than or equal to 0.0]"
                 )
+            if key == function_version.id.qualifier:
+                raise InvalidParameterValueException(
+                    f"Invalid function version {function_version.id.qualifier}. Function version {function_version.id.qualifier} is already included in routing configuration.",
+                    Type="User",
+                )
+            # check if version target is latest, then no routing config is allowed
+            if function_version.id.qualifier == "$LATEST":
+                raise InvalidParameterValueException(
+                    "$LATEST is not supported for an alias pointing to more than 1 version"
+                )
+            if not qualifier_is_version(key):
+                raise ValidationException(
+                    f"1 validation error detected: Value '{{{key}={value}}}' at 'routingConfig.additionalVersionWeights' failed to satisfy constraint: Map keys must satisfy constraint: [Member must have length less than or equal to 1024, Member must have length greater than or equal to 1, Member must satisfy regular expression pattern: [0-9]+]"
+                )
+
+            # checking if the version in the config exists
+            self._get_function_version(
+                function_name=function_version.id.function_name,
+                qualifier=key,
+                region=function_version.id.region,
+                account_id=function_version.id.account,
+            )
         return AliasRoutingConfig(version_weights=routing_config_dict)
 
     def create_alias(
@@ -826,19 +847,31 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
         routing_config: AliasRoutingConfiguration = None,
     ) -> AliasConfiguration:
         function_name = function_name_from_arn(function_name)
+        target_version = self._get_function_version(
+            function_name=function_name,
+            qualifier=function_version,
+            region=context.region,
+            account_id=context.account_id,
+        )
         function = self._get_function(
             function_name=function_name, region=context.region, account_id=context.account_id
         )
         # description is always present, if not specified it's an empty string
         description = description or ""
         with function.lock:
-            if name in function.aliases:
-                raise ValueError("Already present!")  # TODO proper message
+            if existing_alias := function.aliases.get(name):
+                raise ResourceConflictException(
+                    f"Alias already exists: {self._map_alias_out(alias=existing_alias, function=function)['AliasArn']}",
+                    Type="User",
+                )
+            # checking if the version exists
             routing_configuration = None
             if routing_config and (
                 routing_config_dict := routing_config.get("AdditionalVersionWeights")
             ):
-                routing_configuration = self._create_routing_config_model(routing_config_dict)
+                routing_configuration = self._create_routing_config_model(
+                    routing_config_dict, target_version
+                )
 
             alias = VersionAlias(
                 name=name,

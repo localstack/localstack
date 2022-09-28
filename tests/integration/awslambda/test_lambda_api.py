@@ -790,7 +790,40 @@ class TestLambdaAlias:
                 FunctionVersion="10",
                 RoutingConfig={"AdditionalVersionWeights": {"2": 0.5}},
             )
+        snapshot.match("target_version_doesnotexist", e.value.response)
+        # function version 10 doesn't exist (routingconfig)
+        with pytest.raises(lambda_client.exceptions.ResourceNotFoundException) as e:
+            lambda_client.create_alias(
+                FunctionName=function_name,
+                Name="custom",
+                FunctionVersion="1",
+                RoutingConfig={"AdditionalVersionWeights": {"10": 0.5}},
+            )
         snapshot.match("routing_config_exc_version_doesnotexist", e.value.response)
+        # function version $LATEST not supported in function version if it points to more than one version
+        with pytest.raises(lambda_client.exceptions.InvalidParameterValueException) as e:
+            lambda_client.create_alias(
+                FunctionName=function_name,
+                Name="custom",
+                FunctionVersion="$LATEST",
+                RoutingConfig={"AdditionalVersionWeights": {"1": 0.5}},
+            )
+        snapshot.match("target_version_exc_version_latest", e.value.response)
+        # function version $LATEST not supported in routing config
+        with pytest.raises(ClientError) as e:
+            lambda_client.create_alias(
+                FunctionName=function_name,
+                Name="custom",
+                FunctionVersion="1",
+                RoutingConfig={"AdditionalVersionWeights": {"$LATEST": 0.5}},
+            )
+        snapshot.match("routing_config_exc_version_latest", e.value.response)
+        create_alias_latest = lambda_client.create_alias(
+            FunctionName=function_name,
+            Name="custom-latest",
+            FunctionVersion="$LATEST",
+        )
+        snapshot.match("create-alias-latest", create_alias_latest)
 
         # function doesn't exist
         with pytest.raises(lambda_client.exceptions.ResourceNotFoundException) as e:
@@ -819,6 +852,15 @@ class TestLambdaAlias:
             RoutingConfig={"AdditionalVersionWeights": {"2": 0.5}},
         )
         snapshot.match("create_alias_response", create_alias_response)
+        # can't create a second alias with the same name
+        with pytest.raises(lambda_client.exceptions.ResourceConflictException) as e:
+            lambda_client.create_alias(
+                FunctionName=function_name,
+                Name="custom",
+                FunctionVersion="1",
+                RoutingConfig={"AdditionalVersionWeights": {"2": 0.5}},
+            )
+        snapshot.match("routing_config_exc_already_exist", e.value.response)
 
 
 @pytest.mark.skipif(is_old_provider(), reason="focusing on new provider")

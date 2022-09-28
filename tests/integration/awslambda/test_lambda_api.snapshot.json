@@ -2521,7 +2521,7 @@
     }
   },
   "tests/integration/awslambda/test_lambda_api.py::TestLambdaAlias::test_notfound_and_invalid_routingconfigs": {
-    "recorded-date": "26-09-2022, 21:23:28",
+    "recorded-date": "28-09-2022, 15:09:48",
     "recorded-content": {
       "create_response": {
         "Architectures": [
@@ -2676,6 +2676,18 @@
           "HTTPStatusCode": 400
         }
       },
+      "target_version_doesnotexist": {
+        "Error": {
+          "Code": "ResourceNotFoundException",
+          "Message": "Function not found: arn:aws:lambda:<region>:111111111111:function:<function-name:1>:10"
+        },
+        "Message": "Function not found: arn:aws:lambda:<region>:111111111111:function:<function-name:1>:10",
+        "Type": "User",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 404
+        }
+      },
       "routing_config_exc_version_doesnotexist": {
         "Error": {
           "Code": "ResourceNotFoundException",
@@ -2686,6 +2698,38 @@
         "ResponseMetadata": {
           "HTTPHeaders": {},
           "HTTPStatusCode": 404
+        }
+      },
+      "target_version_exc_version_latest": {
+        "Error": {
+          "Code": "InvalidParameterValueException",
+          "Message": "$LATEST is not supported for an alias pointing to more than 1 version"
+        },
+        "message": "$LATEST is not supported for an alias pointing to more than 1 version",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "routing_config_exc_version_latest": {
+        "Error": {
+          "Code": "ValidationException",
+          "Message": "1 validation error detected: Value '{$LATEST=0.5}' at 'routingConfig.additionalVersionWeights' failed to satisfy constraint: Map keys must satisfy constraint: [Member must have length less than or equal to 1024, Member must have length greater than or equal to 1, Member must satisfy regular expression pattern: [0-9]+]"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "create-alias-latest": {
+        "AliasArn": "arn:aws:lambda:<region>:111111111111:function:<function-name:1>:custom-latest",
+        "Description": "",
+        "FunctionVersion": "$LATEST",
+        "Name": "custom-latest",
+        "RevisionId": "<uuid:4>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 201
         }
       },
       "routing_config_exc_fn_doesnotexist": {
@@ -2705,7 +2749,7 @@
         "Description": "",
         "FunctionVersion": "1",
         "Name": "custom-empty-routingconfig",
-        "RevisionId": "<uuid:4>",
+        "RevisionId": "<uuid:5>",
         "ResponseMetadata": {
           "HTTPHeaders": {},
           "HTTPStatusCode": 201
@@ -2716,7 +2760,7 @@
         "Description": "",
         "FunctionVersion": "1",
         "Name": "custom",
-        "RevisionId": "<uuid:5>",
+        "RevisionId": "<uuid:6>",
         "RoutingConfig": {
           "AdditionalVersionWeights": {
             "2": 0.5
@@ -2725,6 +2769,18 @@
         "ResponseMetadata": {
           "HTTPHeaders": {},
           "HTTPStatusCode": 201
+        }
+      },
+      "routing_config_exc_already_exist": {
+        "Error": {
+          "Code": "ResourceConflictException",
+          "Message": "Alias already exists: arn:aws:lambda:<region>:111111111111:function:<function-name:1>:custom"
+        },
+        "Type": "User",
+        "message": "Alias already exists: arn:aws:lambda:<region>:111111111111:function:<function-name:1>:custom",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 409
         }
       }
     }

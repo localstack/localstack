@@ -10,7 +10,12 @@ from hashlib import sha256
 from threading import RLock
 from typing import TYPE_CHECKING, Dict, Optional
 
-from localstack.aws.api.lambda_ import InvocationType, LastUpdateStatus, State
+from localstack.aws.api.lambda_ import (
+    InvocationType,
+    LastUpdateStatus,
+    ResourceConflictException,
+    State,
+)
 from localstack.services.awslambda.api_utils import qualifier_is_alias
 from localstack.services.awslambda.invocation.lambda_models import (
     FunctionVersion,
@@ -155,7 +160,17 @@ class LambdaService:
 
         # Need the qualified arn to exactly get the target lambda
         qualified_arn = qualified_lambda_arn(function_name, version_qualifier, account_id, region)
-        version_manager = self.get_lambda_version_manager(qualified_arn)
+        try:
+            version_manager = self.get_lambda_version_manager(qualified_arn)
+        except ValueError:
+            state = lambda_stores[account_id][region]
+            function = state.functions.get(function_name)
+            version = function.versions.get(version_qualifier)
+            state = version and version.config.state.state
+            raise ResourceConflictException(
+                f"The operation cannot be performed at this time. The function is currently in the following state: {state}"
+            )
+
         return version_manager.invoke(
             invocation=Invocation(
                 payload=payload,
