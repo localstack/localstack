@@ -4,9 +4,11 @@ import base64
 import datetime
 import json
 import logging
+import re
 import time
 import traceback
 import uuid
+from string import ascii_letters, digits
 from typing import Dict, List
 
 import botocore.exceptions
@@ -39,6 +41,7 @@ from localstack.aws.api.sns import (
     GetSubscriptionAttributesResponse,
     GetTopicAttributesResponse,
     InvalidParameterException,
+    InvalidParameterValueException,
     LanguageCodeString,
     ListEndpointsByPlatformApplicationResponse,
     ListOriginationNumbersResult,
@@ -122,6 +125,9 @@ SNS_PROTOCOLS = [
 LOG = logging.getLogger(__name__)
 
 GCM_URL = "https://fcm.googleapis.com/fcm/send"
+
+MSG_ATTR_NAME_REGEX = r"^(?!\.)(?!.*\.$)(?!.*\.\.)[a-zA-Z0-9_\-.]+$"
+VALID_MSG_ATTR_NAME_CHARS = set(ascii_letters + digits + "." + "-" + "_")
 
 
 class SNSBackend(RegionBackend):
@@ -492,6 +498,10 @@ class SnsProvider(SnsApi, ServiceLifecycleHook):
             # TODO: implement SNS MessageDeduplicationId and ContentDeduplication checks
 
             message_attributes = entry.get("MessageAttributes", {})
+            if message_attributes:
+                # if a message contains non-valid message attributes
+                # will fail for the first non-valid message encountered, and raise ParameterValueInvalid
+                validate_message_attributes(message_attributes)
             try:
                 message_to_subscribers(
                     message_id,
@@ -696,6 +706,9 @@ class SnsProvider(SnsApi, ServiceLifecycleHook):
             raise InvalidParameterException(
                 "Invalid parameter: MessageGroupId Reason: The request includes MessageGroupId parameter that is not valid for this topic type"
             )
+
+        if message_attributes:
+            validate_message_attributes(message_attributes)
 
         sns_backend = SNSBackend.get()
         # No need to create a topic to send SMS or single push notifications with SNS
@@ -1319,18 +1332,84 @@ def prepare_message_attributes(message_attributes: MessageAttributeMap):
     # todo: Number type is not supported for Lambda subscriptions, passed as String
     #  do conversion here
     for attr_name, attr in message_attributes.items():
-        if attr.get("StringValue", None):
-            val = attr["StringValue"]
-        else:
+        date_type = attr["DataType"]
+        if date_type == "Binary":
             # binary payload in base64 encoded by AWS, UTF-8 for JSON
             # https://docs.aws.amazon.com/sns/latest/api/API_MessageAttributeValue.html
             val = base64.b64encode(attr["BinaryValue"]).decode()
+        else:
+            val = attr.get("StringValue")
 
         attributes[attr_name] = {
-            "Type": attr["DataType"],
+            "Type": date_type,
             "Value": val,
         }
     return attributes
+
+
+def validate_message_attributes(message_attributes: MessageAttributeMap) -> None:
+    """
+    Validate the message attributes, and raises an exception if those do not follow AWS validation
+    See: https://docs.aws.amazon.com/sns/latest/dg/sns-message-attributes.html
+    Regex from: https://stackoverflow.com/questions/40718851/regex-that-does-not-allow-consecutive-dots
+    :param message_attributes: the message attributes map for the message
+    :raises: InvalidParameterValueException
+    :return: None
+    """
+    for attr_name, attr in message_attributes.items():
+        if len(attr_name) > 256:
+            raise InvalidParameterValueException(
+                "Length of message attribute name must be less than 256 bytes."
+            )
+        validate_message_attribute_name(attr_name)
+        # `DataType` is a required field for MessageAttributeValue
+        data_type = attr["DataType"]
+        if data_type not in ("String", "Number", "Binary", "String.Array"):
+            raise InvalidParameterValueException(
+                f"The message attribute '{attr_name}' has an invalid message attribute type, the set of supported type prefixes is Binary, Number, and String."
+            )
+        value_key_data_type = "Binary" if data_type == "Binary" else "String"
+        value_key = f"{value_key_data_type}Value"
+        if value_key not in attr:
+            raise InvalidParameterValueException(
+                f"The message attribute '{attr_name}' with type '{data_type}' must use field '{value_key_data_type}'."
+            )
+        elif not attr[value_key]:
+            raise InvalidParameterValueException(
+                f"The message attribute '{attr_name}' must contain non-empty message attribute value for message attribute type '{data_type}'.",
+            )
+
+
+def validate_message_attribute_name(name: str) -> None:
+    """
+    Validate the message attribute name with the specification of AWS.
+    The message attribute name can contain the following characters: A-Z, a-z, 0-9, underscore(_), hyphen(-), and period (.). The name must not start or end with a period, and it should not have successive periods.
+    :param name: message attribute name
+    :raises InvalidParameterValueException: if the name does not conform to the spec
+    """
+    if not re.match(MSG_ATTR_NAME_REGEX, name):
+        # find the proper exception
+        if name[0] == ".":
+            raise InvalidParameterValueException(
+                "Invalid message attribute name starting with character '.' was found."
+            )
+        elif name[-1] == ".":
+            raise InvalidParameterValueException(
+                "Invalid message attribute name ending with character '.' was found."
+            )
+
+        for idx, char in enumerate(name):
+            if char not in VALID_MSG_ATTR_NAME_CHARS:
+                # change prefix from 0x to #x, without capitalizing the x
+                hex_char = "#x" + hex(ord(char)).upper()[2:]
+                raise InvalidParameterValueException(
+                    f"Invalid non-alphanumeric character '{hex_char}' was found in the message attribute name. Can only include alphanumeric characters, hyphens, underscores, or dots."
+                )
+            # even if we go negative index, it will be covered by starting/ending with dot
+            if char == "." and name[idx - 1] == ".":
+                raise InvalidParameterValueException(
+                    "Message attribute name can not have successive '.' character."
+                )
 
 
 def create_subscribe_url(external_url, topic_arn, subscription_token):

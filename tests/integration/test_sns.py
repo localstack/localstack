@@ -2326,3 +2326,65 @@ class TestSNSProvider:
             sleep_before = 10
 
         retry(validate_content, retries=retries, sleep_before=sleep_before, sleep=sleep)
+
+    @pytest.mark.aws_validated
+    def test_empty_or_wrong_message_attributes(
+        self,
+        sns_client,
+        sns_create_sqs_subscription,
+        sns_create_topic,
+        sqs_create_queue,
+        snapshot,
+    ):
+        topic_arn = sns_create_topic()["TopicArn"]
+        queue_url = sqs_create_queue()
+
+        sns_create_sqs_subscription(topic_arn=topic_arn, queue_url=queue_url)
+
+        wrong_message_attributes = {
+            "missing_string_attr": {"attr1": {"DataType": "String", "StringValue": ""}},
+            "missing_binary_attr": {"attr1": {"DataType": "Binary", "BinaryValue": b""}},
+            "str_attr_binary_value": {"attr1": {"DataType": "String", "BinaryValue": b"123"}},
+            "int_attr_binary_value": {"attr1": {"DataType": "Number", "BinaryValue": b"123"}},
+            "binary_attr_string_value": {"attr1": {"DataType": "Binary", "StringValue": "123"}},
+            "invalid_attr_string_value": {
+                "attr1": {"DataType": "InvalidType", "StringValue": "123"}
+            },
+            "too_long_name": {"a" * 257: {"DataType": "String", "StringValue": "123"}},
+            "invalid_name": {"a^*?": {"DataType": "String", "StringValue": "123"}},
+            "invalid_name_2": {".abc": {"DataType": "String", "StringValue": "123"}},
+            "invalid_name_3": {"abc.": {"DataType": "String", "StringValue": "123"}},
+            "invalid_name_4": {"a..bc": {"DataType": "String", "StringValue": "123"}},
+        }
+
+        for error_type, msg_attrs in wrong_message_attributes.items():
+            with pytest.raises(ClientError) as e:
+                sns_client.publish(
+                    TopicArn=topic_arn,
+                    Message="test message",
+                    MessageAttributes=msg_attrs,
+                )
+
+            snapshot.match(error_type, e.value.response)
+
+        with pytest.raises(ClientError) as e:
+            sns_client.publish_batch(
+                TopicArn=topic_arn,
+                PublishBatchRequestEntries=[
+                    {
+                        "Id": "1",
+                        "Message": "test-batch",
+                        "MessageAttributes": wrong_message_attributes["missing_string_attr"],
+                    },
+                    {
+                        "Id": "2",
+                        "Message": "test-batch",
+                        "MessageAttributes": wrong_message_attributes["str_attr_binary_value"],
+                    },
+                    {
+                        "Id": "3",
+                        "Message": "valid-batch",
+                    },
+                ],
+            )
+        snapshot.match("batch-exception", e.value.response)
