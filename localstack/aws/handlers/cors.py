@@ -23,6 +23,7 @@ from localstack.config import (
 )
 from localstack.http import Response
 
+from ...constants import PATH_USER_REQUEST
 from ..api import RequestContext
 from ..chain import Handler, HandlerChain
 
@@ -108,7 +109,11 @@ def should_enforce_self_managed_service(context: RequestContext) -> bool:
         if not config.DISABLE_CUSTOM_CORS_S3 and service_name == "s3":
             return False
         if not config.DISABLE_CUSTOM_CORS_APIGATEWAY and service_name == "apigateway":
-            return False
+            is_user_request = (
+                PATH_USER_REQUEST in context.request.path or ".execute-api." in context.request.host
+            )
+            if is_user_request:
+                return False
     return True
 
 

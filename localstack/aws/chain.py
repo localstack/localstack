@@ -11,10 +11,33 @@ from .api import RequestContext
 LOG = logging.getLogger(__name__)
 
 Handler = Callable[["HandlerChain", RequestContext, Response], None]
+"""The signature of request or response handler in the handler chain. Receives the HandlerChain, the RequestContext,
+and the Response object to be populated."""
+
 ExceptionHandler = Callable[["HandlerChain", Exception, RequestContext, Response], None]
+"""The signature of an exception handler in the handler chain. Receives the HandlerChain, the exception that was
+raised by the request handler, the RequestContext, and the Response object to be populated."""
 
 
 class HandlerChain:
+    """
+    Implements a variant of the chain-of-responsibility pattern to process an incoming HTTP request. A handler chain
+    consists of request handlers, response handlers, and exception handlers. Each request should have its own
+    HandlerChain instance, since the handler chain holds state for the handling of a request. A chain can be in three
+    states that can be controlled by the handlers.
+
+    * Running - the implicit state where all handlers are executed sequentially
+    * Stopped - a handler has called ``chain.stop()``. This stops the execution of all request handlers, and proceeds
+      immediately to executing the response handlers. Response handlers will be run, even if the chain has been stopped.
+    * Terminated - a handler has called ``chain.terminate()`. This stops the execution of all request handlers, and all
+      response handlers, and returns immediately.
+
+    If an exception occurs during the execution of request handlers, the chain by default stops the chain,
+    then runs each exception handler, and finally runs the response handlers. Exceptions that happen during the
+    execution of response or exception handlers are logged but do not modify the control flow of the chain.
+
+    """
+
     # handlers
     request_handlers: List[Handler]
     response_handlers: List[Handler]
@@ -22,9 +45,12 @@ class HandlerChain:
 
     # behavior configuration
     stop_on_error: bool = True
+    """If set to true, the chain will implicitly stop if an error occurs in a request handler."""
     raise_on_error: bool = False
+    """If set to true, an exception in the request handler will be re-raised by ``handle`` after the exception
+    handlers have been called. """
 
-    # state
+    # internal state
     stopped: bool
     terminated: bool
     error: Optional[Exception]
@@ -49,6 +75,13 @@ class HandlerChain:
         self.context = None
 
     def handle(self, context: RequestContext, response: Response):
+        """
+        Process the given request and populate the given response according to the handler chain control flow
+        described in the ``HandlerChain`` class doc.
+
+        :param context: the incoming request
+        :param response: the response to be populated
+        """
         self.context = context
         self.response = response
 
@@ -185,5 +218,11 @@ class CompositeHandler(Handler):
 
 
 class CompositeResponseHandler(CompositeHandler):
+    """
+    A CompositeHandler that by default does not return on stop, meaning that all handlers in the composite will be
+    executed, even if one of the handlers has called ``chain.stop()``. This mimics how response handlers are executed
+    in the ``HandlerChain``.
+    """
+
     def __init__(self) -> None:
         super().__init__(return_on_stop=False)

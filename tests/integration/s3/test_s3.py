@@ -28,6 +28,7 @@ from pytz import timezone
 from localstack import config, constants
 from localstack.config import LEGACY_S3_PROVIDER
 from localstack.constants import (
+    LOCALHOST_HOSTNAME,
     S3_VIRTUAL_HOSTNAME,
     TEST_AWS_ACCESS_KEY_ID,
     TEST_AWS_SECRET_ACCESS_KEY,
@@ -162,9 +163,12 @@ def create_tmp_folder_lambda():
             LOG.warning(f"could not delete folder {folder}")
 
 
+def _filter_header(param: dict) -> dict:
+    return {k: v for k, v in param.items() if k.startswith("x-amz") or k in ["content-type"]}
+
+
 class TestS3:
     @pytest.mark.aws_validated
-    @pytest.mark.skip_snapshot_verify(paths=["$..EncodingType"])
     def test_region_header_exists(self, s3_client, s3_create_bucket, snapshot):
         snapshot.add_transformer(snapshot.transform.s3_api())
         bucket_name = s3_create_bucket(
@@ -179,9 +183,7 @@ class TestS3:
 
     @pytest.mark.aws_validated
     # TODO list-buckets contains other buckets when running in CI
-    @pytest.mark.skip_snapshot_verify(
-        paths=["$..Marker", "$..Prefix", "$..EncodingType", "$..list-buckets.Buckets"]
-    )
+    @pytest.mark.skip_snapshot_verify(paths=["$..Prefix", "$..list-buckets.Buckets"])
     def test_delete_bucket_with_content(self, s3_client, s3_resource, s3_bucket, snapshot):
 
         snapshot.add_transformer(snapshot.transform.s3_api())
@@ -206,7 +208,9 @@ class TestS3:
         assert bucket_name not in [b["Name"] for b in resp["Buckets"]]
 
     @pytest.mark.aws_validated
-    @pytest.mark.skip_snapshot_verify(paths=["$..VersionId", "$..ContentLanguage"])
+    @pytest.mark.skip_snapshot_verify(
+        condition=is_old_provider, paths=["$..VersionId", "$..ContentLanguage"]
+    )
     def test_put_and_get_object_with_utf8_key(self, s3_client, s3_bucket, snapshot):
         snapshot.add_transformer(snapshot.transform.s3_api())
 
@@ -252,7 +256,9 @@ class TestS3:
         assert metadata_saved == {"test_meta_1": "foo", "__meta_2": "bar"}
 
     @pytest.mark.aws_validated
-    @pytest.mark.skip_snapshot_verify(paths=["$..VersionId", "$..ContentLanguage"])
+    @pytest.mark.skip_snapshot_verify(
+        condition=is_old_provider, paths=["$..VersionId", "$..ContentLanguage"]
+    )
     def test_upload_file_multipart(self, s3_client, s3_bucket, tmpdir, snapshot):
         snapshot.add_transformer(snapshot.transform.s3_api())
         key = "my-key"
@@ -344,7 +350,9 @@ class TestS3:
         snapshot.match("object-attrs", response)
 
     @pytest.mark.aws_validated
-    @pytest.mark.skip_snapshot_verify(paths=["$..VersionId", "$..ContentLanguage"])
+    @pytest.mark.skip_snapshot_verify(
+        condition=is_old_provider, paths=["$..VersionId", "$..ContentLanguage"]
+    )
     def test_put_and_get_object_with_hash_prefix(self, s3_client, s3_bucket, snapshot):
         snapshot.add_transformer(snapshot.transform.s3_api())
         key_name = "#key-with-hash-prefix"
@@ -445,7 +453,10 @@ class TestS3:
         snapshot.match("deleted-object-tags", object_tags)
 
     @pytest.mark.aws_validated
-    @pytest.mark.skip_snapshot_verify(condition=is_old_provider, paths=["$..AcceptRanges"])
+    @pytest.mark.skipif(
+        condition=LEGACY_S3_PROVIDER,
+        reason="see https://github.com/localstack/localstack/issues/6218",
+    )
     def test_head_object_fields(self, s3_client, s3_bucket, snapshot):
         key = "my-key"
         s3_client.put_object(Bucket=s3_bucket, Key=key, Body=b"abcdefgh")
@@ -633,38 +644,152 @@ class TestS3:
         s3_multipart_upload(bucket=bucket_name, key="acl-key2", acl="public-read-write")
         check_permissions("acl-key2")
 
-    @pytest.mark.only_localstack
-    @pytest.mark.parametrize("case_sensitive_headers", [True, False])
-    def test_s3_get_response_case_sensitive_headers(
-        self, s3_client, s3_bucket, case_sensitive_headers
-    ):
-        # Test that RETURN_CASE_SENSITIVE_HEADERS is respected
-        object_key = "key-by-hostname"
-        s3_client.put_object(Bucket=s3_bucket, Key=object_key, Body="something")
-
-        # get object and assert headers
-        case_sensitive_before = http2_server.RETURN_CASE_SENSITIVE_HEADERS
-        try:
-            url = s3_client.generate_presigned_url(
-                "get_object", Params={"Bucket": s3_bucket, "Key": object_key}
-            )
-            http2_server.RETURN_CASE_SENSITIVE_HEADERS = case_sensitive_headers
-            response = requests.get(url, verify=False)
-            # expect that Etag is contained
-            header_names = list(response.headers.keys())
-            expected_etag = "ETag" if case_sensitive_headers else "etag"
-            assert expected_etag in header_names
-        finally:
-            http2_server.RETURN_CASE_SENSITIVE_HEADERS = case_sensitive_before
-
     @pytest.mark.aws_validated
     @pytest.mark.skip_snapshot_verify(
+        condition=is_old_provider, paths=["$..Grants..Grantee.DisplayName", "$..Grants..Grantee.ID"]
+    )
+    def test_s3_bucket_acl(self, s3_client, s3_create_bucket, snapshot):
+        # loosely based on
+        # https://docs.aws.amazon.com/AmazonS3/latest/API/API_PutBucketAcl.html
+        snapshot.add_transformer(
+            [
+                snapshot.transform.key_value("DisplayName"),
+                snapshot.transform.key_value("ID", value_replacement="owner-id"),
+            ]
+        )
+        list_bucket_output = s3_client.list_buckets()
+        owner = list_bucket_output["Owner"]
+
+        bucket_name = s3_create_bucket(ACL="public-read")
+        response = s3_client.get_bucket_acl(Bucket=bucket_name)
+        snapshot.match("get-bucket-acl", response)
+
+        s3_client.put_bucket_acl(Bucket=bucket_name, ACL="private")
+
+        response = s3_client.get_bucket_acl(Bucket=bucket_name)
+        snapshot.match("get-bucket-canned-acl", response)
+
+        s3_client.put_bucket_acl(
+            Bucket=bucket_name, GrantRead='uri="http://acs.amazonaws.com/groups/s3/LogDelivery"'
+        )
+
+        response = s3_client.get_bucket_acl(Bucket=bucket_name)
+        snapshot.match("get-bucket-grant-acl", response)
+
+        # Owner is mandatory, otherwise raise MalformedXML
+        acp = {
+            "Owner": owner,
+            "Grants": [
+                {
+                    "Grantee": {"ID": owner["ID"], "Type": "CanonicalUser"},
+                    "Permission": "FULL_CONTROL",
+                },
+                {
+                    "Grantee": {
+                        "URI": "http://acs.amazonaws.com/groups/s3/LogDelivery",
+                        "Type": "Group",
+                    },
+                    "Permission": "WRITE",
+                },
+            ],
+        }
+        s3_client.put_bucket_acl(Bucket=bucket_name, AccessControlPolicy=acp)
+
+        response = s3_client.get_bucket_acl(Bucket=bucket_name)
+        snapshot.match("get-bucket-acp-acl", response)
+
+    @pytest.mark.aws_validated
+    @pytest.mark.skipif(LEGACY_S3_PROVIDER, reason="Behaviour not implemented in legacy provider")
+    def test_s3_bucket_acl_exceptions(self, s3_client, s3_bucket, snapshot):
+        list_bucket_output = s3_client.list_buckets()
+        owner = list_bucket_output["Owner"]
+
+        with pytest.raises(ClientError) as e:
+            s3_client.put_bucket_acl(Bucket=s3_bucket, ACL="fake-acl")
+
+        snapshot.match("put-bucket-canned-acl", e.value.response)
+
+        with pytest.raises(ClientError) as e:
+            s3_client.put_bucket_acl(
+                Bucket=s3_bucket, GrantWrite='uri="http://acs.amazonaws.com/groups/s3/FakeGroup"'
+            )
+
+        snapshot.match("put-bucket-grant-acl-fake-uri", e.value.response)
+
+        with pytest.raises(ClientError) as e:
+            s3_client.put_bucket_acl(Bucket=s3_bucket, GrantWrite='fakekey="1234"')
+
+        snapshot.match("put-bucket-grant-acl-fake-key", e.value.response)
+
+        with pytest.raises(ClientError) as e:
+            s3_client.put_bucket_acl(Bucket=s3_bucket, GrantWrite='id="wrong-id"')
+
+        snapshot.match("put-bucket-grant-acl-wrong-id", e.value.response)
+
+        acp = {
+            "Grants": [
+                {
+                    "Grantee": {
+                        "URI": "http://acs.amazonaws.com/groups/s3/LogDelivery",
+                        "Type": "Group",
+                    },
+                    "Permission": "WRITE",
+                }
+            ]
+        }
+        with pytest.raises(ClientError) as e:
+            s3_client.put_bucket_acl(Bucket=s3_bucket, AccessControlPolicy=acp)
+        snapshot.match("put-bucket-acp-acl-1", e.value.response)
+
+        # add Owner, but modify the permission
+        acp["Owner"] = owner
+        acp["Grants"][0]["Permission"] = "WRONG-PERMISSION"
+
+        with pytest.raises(ClientError) as e:
+            s3_client.put_bucket_acl(Bucket=s3_bucket, AccessControlPolicy=acp)
+        snapshot.match("put-bucket-acp-acl-2", e.value.response)
+
+        # restore good permission, but put bad format Owner ID
+        acp["Owner"] = {"ID": "wrong-id"}
+        acp["Grants"][0]["Permission"] = "FULL_CONTROL"
+
+        with pytest.raises(ClientError) as e:
+            s3_client.put_bucket_acl(Bucket=s3_bucket, AccessControlPolicy=acp)
+        snapshot.match("put-bucket-acp-acl-3", e.value.response)
+
+        # restore owner, but wrong URI
+        acp["Owner"] = owner
+        acp["Grants"][0]["Grantee"]["URI"] = "http://acs.amazonaws.com/groups/s3/FakeGroup"
+
+        with pytest.raises(ClientError) as e:
+            s3_client.put_bucket_acl(Bucket=s3_bucket, AccessControlPolicy=acp)
+        snapshot.match("put-bucket-acp-acl-4", e.value.response)
+
+        # different type of failing grantee (CanonicalUser/ID)
+        acp["Grants"][0]["Grantee"]["Type"] = "CanonicalUser"
+        acp["Grants"][0]["Grantee"]["ID"] = "wrong-id"
+        acp["Grants"][0]["Grantee"].pop("URI")
+
+        with pytest.raises(ClientError) as e:
+            s3_client.put_bucket_acl(Bucket=s3_bucket, AccessControlPolicy=acp)
+        snapshot.match("put-bucket-acp-acl-5", e.value.response)
+
+        # different type of failing grantee (Wrong type)
+        acp["Grants"][0]["Grantee"]["Type"] = "BadType"
+
+        with pytest.raises(ClientError) as e:
+            s3_client.put_bucket_acl(Bucket=s3_bucket, AccessControlPolicy=acp)
+        snapshot.match("put-bucket-acp-acl-6", e.value.response)
+
+    @pytest.mark.aws_validated
+    @pytest.mark.skip_snapshot_verify(paths=["$..Restore"])
+    @pytest.mark.skip_snapshot_verify(
+        condition=is_old_provider,
         paths=[
             "$..AcceptRanges",
             "$..ContentLanguage",
             "$..VersionId",
-            "$..Restore",
-        ]
+        ],
     )
     def test_s3_object_expiry(self, s3_client, s3_bucket, snapshot):
         # AWS only cleans up S3 expired object once a day usually
@@ -714,10 +839,11 @@ class TestS3:
 
     @pytest.mark.aws_validated
     @pytest.mark.skip_snapshot_verify(
+        condition=is_old_provider,
         paths=[
             "$..ContentLanguage",
             "$..VersionId",
-        ]
+        ],
     )
     def test_upload_file_with_xml_preamble(self, s3_client, s3_create_bucket, snapshot):
         snapshot.add_transformer(snapshot.transform.s3_api())
@@ -735,7 +861,9 @@ class TestS3:
     @pytest.mark.xfail(reason="Get 404 Not Found instead of NoSuchBucket")
     @pytest.mark.skip_snapshot_verify(condition=is_old_provider, paths=["$..Error.BucketName"])
     def test_bucket_availability(self, s3_client, snapshot):
-        bucket_name = "test-bucket-lifecycle"
+        snapshot.add_transformer(snapshot.transform.key_value("BucketName"))
+        # make sure to have a non created bucket, got some AccessDenied against AWS
+        bucket_name = f"test-bucket-lifecycle-{short_uid()}-{short_uid()}"
         with pytest.raises(ClientError) as e:
             s3_client.get_bucket_lifecycle(Bucket=bucket_name)
         snapshot.match("bucket-lifecycle", e.value.response)
@@ -745,7 +873,7 @@ class TestS3:
         snapshot.match("bucket-replication", e.value.response)
 
     @pytest.mark.aws_validated
-    def test_location_path_url(self, s3_client, s3_create_bucket, account_id):
+    def test_location_path_url(self, s3_client, s3_create_bucket, account_id, snapshot):
         region = "us-east-2"
         bucket_name = s3_create_bucket(
             CreateBucketConfiguration={"LocationConstraint": region}, ACL="public-read"
@@ -810,10 +938,11 @@ class TestS3:
 
     @pytest.mark.aws_validated
     @pytest.mark.skip_snapshot_verify(
+        condition=is_old_provider,
         paths=[
             "$..ContentLanguage",
             "$..VersionId",
-        ]
+        ],
     )
     def test_get_object_with_anon_credentials(self, s3_client, s3_create_bucket, snapshot):
         snapshot.add_transformer(snapshot.transform.s3_api())
@@ -837,7 +966,7 @@ class TestS3:
 
     @pytest.mark.aws_validated
     @pytest.mark.skip_snapshot_verify(
-        paths=["$..ContentLanguage", "$..VersionId", "$..AcceptRanges"]
+        condition=is_old_provider, paths=["$..ContentLanguage", "$..VersionId", "$..AcceptRanges"]
     )
     def test_putobject_with_multiple_keys(self, s3_client, s3_create_bucket, snapshot):
         snapshot.add_transformer(snapshot.transform.s3_api())
@@ -856,6 +985,10 @@ class TestS3:
         with pytest.raises(ClientError) as e:
             s3_client.get_bucket_lifecycle_configuration(Bucket=s3_bucket)
         snapshot.match("get-bucket-lifecycle-exc-1", e.value.response)
+
+        resp = s3_client.delete_bucket_lifecycle(Bucket=s3_bucket)
+        snapshot.match("delete-bucket-lifecycle-no-bucket", resp)
+
         lfc = {
             "Rules": [
                 {
@@ -867,7 +1000,9 @@ class TestS3:
             ]
         }
         s3_client.put_bucket_lifecycle_configuration(Bucket=s3_bucket, LifecycleConfiguration=lfc)
-        result = s3_client.get_bucket_lifecycle_configuration(Bucket=s3_bucket)
+        result = retry(
+            s3_client.get_bucket_lifecycle_configuration, retries=3, sleep=1, Bucket=s3_bucket
+        )
         snapshot.match("get-bucket-lifecycle-conf", result)
         s3_client.delete_bucket_lifecycle(Bucket=s3_bucket)
 
@@ -940,15 +1075,16 @@ class TestS3:
 
     @pytest.mark.aws_validated
     @pytest.mark.skip_snapshot_verify(
+        condition=is_old_provider,
         paths=[
             "$..ContentLanguage",
             "$..VersionId",
-            "$..ETag",  # TODO ETag should be the same?
-        ]
+        ],
     )
     def test_range_header_body_length(self, s3_client, s3_bucket, snapshot):
         # Test for https://github.com/localstack/localstack/issues/1952
-
+        # object created is random, ETag will be as well
+        snapshot.add_transformer(snapshot.transform.key_value("ETag"))
         object_key = "sample.bin"
         chunk_size = 1024
 
@@ -1061,7 +1197,9 @@ class TestS3:
         assert result.status_code == 200, (result, result.content)
 
     @pytest.mark.aws_validated
-    @pytest.mark.skip_snapshot_verify(paths=["$..VersionId", "$..ContentLanguage"])
+    @pytest.mark.skip_snapshot_verify(
+        condition=is_old_provider, paths=["$..VersionId", "$..ContentLanguage"]
+    )
     def test_delete_object_tagging(self, s3_client, s3_bucket, snapshot):
         object_key = "test-key-tagging"
         s3_client.put_object(Bucket=s3_bucket, Key=object_key, Body="something")
@@ -1075,7 +1213,7 @@ class TestS3:
         snapshot.match("get-obj-after-tag-deletion", s3_obj)
 
     @pytest.mark.aws_validated
-    @pytest.mark.skip_snapshot_verify(paths=["$..VersionId"])
+    @pytest.mark.skip_snapshot_verify(condition=is_old_provider, paths=["$..VersionId"])
     def test_delete_non_existing_keys(self, s3_client, s3_bucket, snapshot):
         object_key = "test-key-nonexistent"
         s3_client.put_object(Bucket=s3_bucket, Key=object_key, Body="something")
@@ -1114,6 +1252,22 @@ class TestS3:
         assert "Requester" == response["Payer"]
 
     @pytest.mark.aws_validated
+    @pytest.mark.skip_snapshot_verify(condition=is_old_provider, path="$..Error.BucketName")
+    def test_s3_request_payer_exceptions(self, s3_client, s3_bucket, snapshot):
+        with pytest.raises(ClientError) as e:
+            s3_client.put_bucket_request_payment(
+                Bucket=s3_bucket, RequestPaymentConfiguration={"Payer": "Random"}
+            )
+        snapshot.match("wrong-payer-type", e.value.response)
+
+        # TODO: check if no luck or AccessDenied is normal?
+        # with pytest.raises(ClientError) as e:
+        #     s3_client.put_bucket_request_payment(
+        #         Bucket="fake_bucket", RequestPaymentConfiguration={"Payer": "Requester"}
+        #     )
+        # snapshot.match("wrong-bucket-name", e.value.response)
+
+    @pytest.mark.aws_validated
     @pytest.mark.skip_snapshot_verify(
         paths=["$..Error.RequestID", "$..Grants..Grantee.DisplayName"]
     )
@@ -1148,7 +1302,8 @@ class TestS3:
 
     @pytest.mark.aws_validated
     @pytest.mark.skip_snapshot_verify(
-        paths=["$..VersionId", "$..ContentLanguage", "$..Error.RequestID"]
+        condition=is_old_provider,
+        paths=["$..VersionId", "$..ContentLanguage", "$..Error.RequestID"],
     )
     def test_s3_uppercase_key_names(self, s3_client, s3_create_bucket, snapshot):
         # bucket name should be case-sensitive
@@ -1243,7 +1398,10 @@ class TestS3:
             snapshot.match(f"md5-error-{index}", e.value.response)
 
     @pytest.mark.aws_validated
-    @pytest.mark.skip_snapshot_verify(paths=["$..VersionId", "$..ContentLanguage", "$..ETag"])
+    @pytest.mark.skip_snapshot_verify(paths=["$..ETag"])
+    @pytest.mark.skip_snapshot_verify(
+        condition=is_old_provider, paths=["$..VersionId", "$..ContentLanguage"]
+    )
     def test_s3_upload_download_gzip(self, s3_client, s3_bucket, snapshot):
         data = "1234567890 " * 100
 
@@ -1272,7 +1430,7 @@ class TestS3:
         assert downloaded_data == data
 
     @pytest.mark.aws_validated
-    @pytest.mark.skip_snapshot_verify(paths=["$..VersionId"])
+    @pytest.mark.skip_snapshot_verify(condition=is_old_provider, paths=["$..VersionId"])
     def test_multipart_copy_object_etag(self, s3_client, s3_bucket, s3_multipart_upload, snapshot):
         snapshot.add_transformer(
             [
@@ -1296,7 +1454,7 @@ class TestS3:
         assert copy_etag != multipart_etag
 
     @pytest.mark.aws_validated
-    @pytest.mark.skip_snapshot_verify(paths=["$..VersionId"])
+    @pytest.mark.skip_snapshot_verify(condition=is_old_provider, paths=["$..VersionId"])
     def test_set_external_hostname(
         self, s3_client, s3_bucket, s3_multipart_upload, monkeypatch, snapshot
     ):
@@ -1350,7 +1508,7 @@ class TestS3:
         )
         temp_folder = create_tmp_folder_lambda(
             handler_file,
-            run_command="npm i @aws-sdk/client-s3; npm i @aws-sdk/s3-request-presigner",
+            run_command="npm i @aws-sdk/client-s3; npm i @aws-sdk/s3-request-presigner; npm i @aws-sdk/middleware-endpoint",
         )
 
         function_name = f"func-integration-{short_uid()}"
@@ -1401,6 +1559,614 @@ class TestS3:
             e.match("BucketAlreadyOwnedByYou")
             snapshot.match(f"create-bucket-{loc_constraint}", e.value.response)
 
+    @pytest.mark.aws_validated
+    @pytest.mark.xfail(
+        reason="asf provider: routing for region-path style not working; "
+        "both provider: return 200 for other regions (no redirects)"
+    )
+    def test_access_bucket_different_region(self, s3_create_bucket, s3_vhost_client):
+        bucket_name = f"my-bucket-{short_uid()}"
+
+        s3_create_bucket(
+            Bucket=bucket_name,
+            ACL="public-read",
+            CreateBucketConfiguration={"LocationConstraint": "us-west-2"},
+        )
+        s3_vhost_client.list_objects(Bucket=bucket_name)
+        bucket_vhost_url = _bucket_url_vhost(bucket_name, region="us-west-2")
+        response = requests.get(bucket_vhost_url)
+        assert response.status_code == 200
+
+        bucket_url = _bucket_url(bucket_name, region="us-west-2")
+        response = requests.get(bucket_url)
+        assert response.status_code == 200
+
+        bucket_vhost_url = _bucket_url_vhost(bucket_name, region="us-east-2")
+        response = requests.get(bucket_vhost_url)
+        assert response.status_code == 301
+
+        bucket_vhost_url = _bucket_url_vhost(bucket_name, region="us-east-1")
+        response = requests.get(bucket_vhost_url)
+        assert response.status_code == 200
+        assert response.history[0].status_code == 307
+
+    @pytest.mark.skip_snapshot_verify(
+        condition=lambda: LEGACY_S3_PROVIDER, paths=["$..Error.RequestID"]
+    )
+    def test_bucket_does_not_exist(self, s3_client, s3_vhost_client, snapshot):
+        snapshot.add_transformer(snapshot.transform.s3_api())
+        bucket_name = f"bucket-does-not-exist-{short_uid()}"
+
+        with pytest.raises(ClientError) as e:
+            response = s3_client.list_objects(Bucket=bucket_name)
+        e.match("NoSuchBucket")
+        snapshot.match("list_object", e.value.response)
+
+        with pytest.raises(ClientError) as e:
+            response = s3_vhost_client.list_objects(Bucket=bucket_name)
+        e.match("NoSuchBucket")
+        snapshot.match("list_object_vhost", e.value.response)
+
+        bucket_vhost_url = _bucket_url_vhost(bucket_name, region="us-east-1")
+        assert "us-east-1" not in bucket_vhost_url
+
+        response = requests.get(bucket_vhost_url)
+        assert response.status_code == 404
+
+        bucket_url = _bucket_url(bucket_name, region="us-east-1")
+        assert "us-east-1" not in bucket_url
+        response = requests.get(bucket_url)
+        assert response.status_code == 404
+
+        bucket_vhost_url = _bucket_url_vhost(bucket_name, region="us-west-2")
+        assert "us-west-2" in bucket_vhost_url
+        response = requests.get(bucket_vhost_url)
+        assert response.status_code == 404
+
+        bucket_url = _bucket_url(bucket_name, region="us-west-2")
+        assert "us-west-2" in bucket_url
+        response = requests.get(bucket_url)
+        assert response.status_code == 404
+
+    @pytest.mark.aws_validated
+    @pytest.mark.skip_snapshot_verify(
+        condition=lambda: not LEGACY_S3_PROVIDER,
+        paths=["$..x-amz-access-point-alias", "$..x-amz-id-2"],
+    )
+    @pytest.mark.skip_snapshot_verify(
+        condition=lambda: LEGACY_S3_PROVIDER,
+        paths=[
+            "$..x-amz-access-point-alias",
+            "$..x-amz-id-2",
+            "$..create_bucket_location_constraint.Location",
+            "$..content-type",
+            "$..x-amzn-requestid",
+        ],
+    )
+    def test_create_bucket_head_bucket(self, s3_client, snapshot):
+        snapshot.add_transformer(snapshot.transform.s3_api())
+
+        bucket_1 = f"my-bucket-1{short_uid()}"
+        bucket_2 = f"my-bucket-2{short_uid()}"
+
+        snapshot.add_transformers_list(
+            [
+                snapshot.transform.regex(rf"{bucket_1}", "<bucket-name:1>"),
+                snapshot.transform.regex(rf"{bucket_2}", "<bucket-name:2>"),
+                snapshot.transform.key_value("x-amz-id-2", reference_replacement=False),
+                snapshot.transform.key_value("x-amz-request-id", reference_replacement=False),
+                snapshot.transform.regex(r"s3\.amazonaws\.com", "host"),
+                snapshot.transform.regex(r"s3\.localhost\.localstack\.cloud:4566", "host"),
+            ]
+        )
+
+        try:
+            response = s3_client.create_bucket(Bucket=bucket_1)
+            snapshot.match("create_bucket", response)
+
+            response = s3_client.create_bucket(
+                Bucket=bucket_2,
+                CreateBucketConfiguration={"LocationConstraint": "us-west-1"},
+            )
+            snapshot.match("create_bucket_location_constraint", response)
+
+            response = s3_client.head_bucket(Bucket=bucket_1)
+            snapshot.match("head_bucket", response)
+            snapshot.match(
+                "head_bucket_filtered_header",
+                _filter_header(response["ResponseMetadata"]["HTTPHeaders"]),
+            )
+
+            response = s3_client.head_bucket(Bucket=bucket_2)
+            snapshot.match("head_bucket_2", response)
+            snapshot.match(
+                "head_bucket_2_filtered_header",
+                _filter_header(response["ResponseMetadata"]["HTTPHeaders"]),
+            )
+
+            # TODO aws returns 403, LocalStack 404
+            # with pytest.raises(ClientError) as e:
+            #     response = s3_client.head_bucket(Bucket="does-not-exist")
+            # snapshot.match("head_bucket_not_exist", e.value.response)
+        finally:
+            s3_client.delete_bucket(Bucket=bucket_1)
+            s3_client.delete_bucket(Bucket=bucket_2)
+
+    @pytest.mark.aws_validated
+    @pytest.mark.skip_snapshot_verify
+    @pytest.mark.xfail(
+        condition=LEGACY_S3_PROVIDER, reason="virtual-host url for bucket with dots not supported"
+    )
+    def test_bucket_name_with_dots(self, s3_client, s3_create_bucket, snapshot):
+        snapshot.add_transformer(snapshot.transform.s3_api())
+        snapshot.add_transformer(snapshot.transform.key_value("Date", reference_replacement=False))
+        snapshot.add_transformer(snapshot.transform.key_value("date", reference_replacement=False))
+        snapshot.add_transformer(
+            snapshot.transform.key_value("x-amz-id-2", reference_replacement=False)
+        )
+        snapshot.add_transformer(
+            snapshot.transform.key_value("x-amz-request-id", reference_replacement=False)
+        )
+
+        bucket_name = f"my.bucket.name.{short_uid()}"
+
+        s3_create_bucket(Bucket=bucket_name, ACL="public-read")
+        s3_client.put_object(Bucket=bucket_name, Key="my-content", Body="something")
+        response = s3_client.list_objects(Bucket=bucket_name)
+        assert response["Contents"][0]["Key"] == "my-content"
+        assert response["Contents"][0]["ETag"] == '"437b930db84b8079c2dd804a71936b5f"'
+        assert response["Contents"][0]["Size"] == 9
+
+        snapshot.match("list_objects", response)
+        snapshot.match("list_objects_headers", response["ResponseMetadata"]["HTTPHeaders"])
+
+        # will result in a host-name-match if we use https, as the bucket contains dots
+        response_vhost = requests.get(_bucket_url_vhost(bucket_name).replace("https://", "http://"))
+        content_vhost = response_vhost.content.decode("utf-8")
+        assert "<Key>my-content</Key>" in content_vhost
+        # TODO aws contains <ETag>&quot;437b930db84b8079c2dd804a71936b5f&quot;</ETag>
+        # assert '<ETag>"437b930db84b8079c2dd804a71936b5f"</ETag>' in content_vhost
+        assert "<Size>9</Size>" in content_vhost
+
+        snapshot.match("request_vhost_url_content", content_vhost)
+        # TODO headers different; raw response on AWS returns 'ListBucketResult', on LS 'ListObjectsOutput'
+        snapshot.match("request_vhost_headers", dict(response_vhost.headers))
+
+        response_path_style = requests.get(_bucket_url(bucket_name))
+        content_path_style = response_path_style.content.decode("utf-8")
+
+        assert "<Key>my-content</Key>" in content_path_style
+        # TODO aws contains <ETag>&quot;437b930db84b8079c2dd804a71936b5f&quot;</ETag>
+        # assert '<ETag>"437b930db84b8079c2dd804a71936b5f"</ETag>' in content_path_style
+        assert "<Size>9</Size>" in content_path_style
+
+        snapshot.match("request_path_url_content", content_path_style)
+        snapshot.match("request_path_headers", dict(response_path_style.headers))
+        assert content_vhost == content_path_style
+
+    @pytest.mark.aws_validated
+    @pytest.mark.skip_snapshot_verify(paths=["$..Prefix"])
+    @pytest.mark.skip_snapshot_verify(
+        condition=is_old_provider, paths=["$..ContentLanguage", "$..VersionId"]
+    )
+    def test_s3_put_more_than_1000_items(self, s3_client, s3_create_bucket, snapshot):
+        snapshot.add_transformer(snapshot.transform.s3_api())
+        bucket_name = "test" + short_uid()
+        s3_create_bucket(Bucket=bucket_name)
+        for i in range(0, 1010, 1):
+            body = "test-" + str(i)
+            key = "test-key-" + str(i)
+            s3_client.put_object(Bucket=bucket_name, Key=key, Body=body)
+
+        # trying to get the last item of 1010 items added.
+        resp = s3_client.get_object(Bucket=bucket_name, Key="test-key-1009")
+        snapshot.match("get_object-1009", resp)
+
+        # trying to get the first item of 1010 items added.
+        resp = s3_client.get_object(Bucket=bucket_name, Key="test-key-0")
+        snapshot.match("get_object-0", resp)
+
+        # according docs for MaxKeys: the response might contain fewer keys but will never contain more.
+        # AWS returns less during testing
+        resp = s3_client.list_objects(Bucket=bucket_name, MaxKeys=1010)
+        assert 1010 >= len(resp["Contents"])
+
+        resp = s3_client.list_objects(Bucket=bucket_name, Delimiter="/")
+        assert 1000 == len(resp["Contents"])
+        # way too much content, remove it from this match
+        snapshot.add_transformer(
+            snapshot.transform.jsonpath(
+                "$..list-objects.Contents", "<content>", reference_replacement=False
+            )
+        )
+        snapshot.match("list-objects", resp)
+        next_marker = resp["NextMarker"]
+
+        # Second list
+        resp = s3_client.list_objects(Bucket=bucket_name, Marker=next_marker)
+        snapshot.match("list-objects-next_marker", resp)
+        assert 10 == len(resp["Contents"])
+
+    @pytest.mark.aws_validated
+    @pytest.mark.skip_snapshot_verify(paths=["$..Prefix"])
+    def test_s3_list_objects_empty_marker(self, s3_client, s3_create_bucket, snapshot):
+        snapshot.add_transformer(snapshot.transform.s3_api())
+        bucket_name = "test" + short_uid()
+        s3_create_bucket(Bucket=bucket_name)
+        resp = s3_client.list_objects(Bucket=bucket_name, Marker="")
+        snapshot.match("list-objects", resp)
+
+    @pytest.mark.aws_validated
+    @pytest.mark.skip_snapshot_verify(paths=["$..AcceptRanges"])
+    def test_upload_big_file(self, s3_client, s3_create_bucket, snapshot):
+        snapshot.add_transformer(snapshot.transform.s3_api())
+        bucket_name = f"bucket-{short_uid()}"
+        key1 = "test_key1"
+        key2 = "test_key1"
+
+        s3_create_bucket(Bucket=bucket_name)
+
+        body1 = "\x01" * 10000000
+        rs = s3_client.put_object(Bucket=bucket_name, Key=key1, Body=body1)
+        snapshot.match("put_object_key1", rs)
+
+        body2 = "a" * 10000000
+        rs = s3_client.put_object(Bucket=bucket_name, Key=key2, Body=body2)
+        snapshot.match("put_object_key2", rs)
+
+        rs = s3_client.head_object(Bucket=bucket_name, Key=key1)
+        snapshot.match("head_object_key1", rs)
+
+        rs = s3_client.head_object(Bucket=bucket_name, Key=key2)
+        snapshot.match("head_object_key2", rs)
+
+    @pytest.mark.aws_validated
+    @pytest.mark.skip_snapshot_verify(
+        paths=["$..Delimiter", "$..EncodingType", "$..VersionIdMarker"]
+    )
+    def test_get_bucket_versioning_order(self, s3_client, s3_create_bucket, snapshot):
+        snapshot.add_transformer(snapshot.transform.s3_api())
+
+        bucket_name = f"bucket-{short_uid()}"
+        s3_create_bucket(Bucket=bucket_name)
+        rs = s3_client.list_object_versions(Bucket=bucket_name, EncodingType="url")
+        snapshot.match("list_object_versions_before", rs)
+
+        rs = s3_client.put_bucket_versioning(
+            Bucket=bucket_name, VersioningConfiguration={"Status": "Enabled"}
+        )
+        snapshot.match("put_bucket_versioning", rs)
+
+        rs = s3_client.get_bucket_versioning(Bucket=bucket_name)
+        snapshot.match("get_bucket_versioning", rs)
+
+        s3_client.put_object(Bucket=bucket_name, Key="test", Body="body")
+        s3_client.put_object(Bucket=bucket_name, Key="test", Body="body")
+        s3_client.put_object(Bucket=bucket_name, Key="test2", Body="body")
+        rs = s3_client.list_object_versions(
+            Bucket=bucket_name,
+        )
+
+        snapshot.match("list_object_versions", rs)
+
+    @pytest.mark.aws_validated
+    @pytest.mark.skip_snapshot_verify(
+        condition=is_old_provider, paths=["$..ContentLanguage", "$..VersionId"]
+    )
+    def test_etag_on_get_object_call(self, s3_client, s3_create_bucket, snapshot):
+        snapshot.add_transformer(snapshot.transform.s3_api())
+        bucket_name = f"bucket-{short_uid()}"
+        object_key = "my-key"
+        s3_create_bucket(Bucket=bucket_name)
+
+        body = "Lorem ipsum dolor sit amet, ... " * 30
+        rs = s3_client.put_object(Bucket=bucket_name, Key=object_key, Body=body)
+
+        rs = s3_client.get_object(Bucket=bucket_name, Key=object_key)
+        snapshot.match("get_object", rs)
+
+        range_content = 17
+        rs = s3_client.get_object(
+            Bucket=bucket_name,
+            Key=object_key,
+            Range=f"bytes=0-{range_content-1}",
+        )
+        snapshot.match("get_object_range", rs)
+
+    @pytest.mark.aws_validated
+    @pytest.mark.skip_snapshot_verify(
+        paths=["$..Delimiter", "$..EncodingType", "$..VersionIdMarker"]
+    )
+    def test_s3_delete_object_with_version_id(self, s3_client, s3_create_bucket, snapshot):
+        snapshot.add_transformer(snapshot.transform.s3_api())
+        bucket_name = f"bucket-{short_uid()}"
+
+        test_1st_key = "aws/s3/testkey1.txt"
+        test_2nd_key = "aws/s3/testkey2.txt"
+
+        body = "Lorem ipsum dolor sit amet, ... " * 30
+
+        s3_create_bucket(Bucket=bucket_name)
+        s3_client.put_bucket_versioning(
+            Bucket=bucket_name,
+            VersioningConfiguration={"Status": "Enabled"},
+        )
+        rs = s3_client.get_bucket_versioning(Bucket=bucket_name)
+        snapshot.match("get_bucket_versioning", rs)
+
+        # put 2 objects
+        rs = s3_client.put_object(Bucket=bucket_name, Key=test_1st_key, Body=body)
+        s3_client.put_object(Bucket=bucket_name, Key=test_2nd_key, Body=body)
+        version_id = rs["VersionId"]
+
+        # delete 1st object with version
+        rs = s3_client.delete_objects(
+            Bucket=bucket_name,
+            Delete={"Objects": [{"Key": test_1st_key, "VersionId": version_id}]},
+        )
+
+        deleted = rs["Deleted"][0]
+        assert test_1st_key == deleted["Key"]
+        assert version_id == deleted["VersionId"]
+        snapshot.match("delete_objects", rs)
+
+        rs = s3_client.list_object_versions(Bucket=bucket_name)
+        object_versions = [object["VersionId"] for object in rs["Versions"]]
+        snapshot.match("list_object_versions_after_delete", rs)
+
+        assert version_id not in object_versions
+
+        # disable versioning
+        s3_client.put_bucket_versioning(
+            Bucket=bucket_name,
+            VersioningConfiguration={"Status": "Suspended"},
+        )
+        rs = s3_client.get_bucket_versioning(Bucket=bucket_name)
+        snapshot.match("get_bucket_versioning_suspended", rs)
+
+    @pytest.mark.aws_validated
+    @pytest.mark.skip_snapshot_verify(
+        paths=["$..Delimiter", "$..EncodingType", "$..VersionIdMarker"]
+    )
+    @pytest.mark.skip_snapshot_verify(
+        condition=is_old_provider,
+        paths=["$..ContentLanguage", "$..VersionId"],
+    )
+    def test_s3_put_object_versioned(self, s3_client, s3_bucket, snapshot):
+        snapshot.add_transformer(snapshot.transform.s3_api())
+
+        # this object is put before the bucket is versioned, its internal versionId is `null`
+        key = "non-version-bucket-key"
+        put_obj_pre_versioned = s3_client.put_object(
+            Bucket=s3_bucket, Key=key, Body="non-versioned-key"
+        )
+        snapshot.match("put-pre-versioned", put_obj_pre_versioned)
+        get_obj_pre_versioned = s3_client.get_object(Bucket=s3_bucket, Key=key)
+        snapshot.match("get-pre-versioned", get_obj_pre_versioned)
+
+        list_obj_pre_versioned = s3_client.list_object_versions(Bucket=s3_bucket)
+        snapshot.match("list-object-pre-versioned", list_obj_pre_versioned)
+
+        # we activate the bucket versioning then check if the object has a versionId
+        s3_client.put_bucket_versioning(
+            Bucket=s3_bucket,
+            VersioningConfiguration={"Status": "Enabled"},
+        )
+
+        get_obj_non_versioned = s3_client.get_object(Bucket=s3_bucket, Key=key)
+        snapshot.match("get-post-versioned", get_obj_non_versioned)
+
+        # create versioned key, then update it, and check we got the last versionId
+        key_2 = "versioned-bucket-key"
+        put_obj_versioned_1 = s3_client.put_object(
+            Bucket=s3_bucket, Key=key_2, Body="versioned-key"
+        )
+        snapshot.match("put-obj-versioned-1", put_obj_versioned_1)
+        put_obj_versioned_2 = s3_client.put_object(
+            Bucket=s3_bucket, Key=key_2, Body="versioned-key-updated"
+        )
+        snapshot.match("put-obj-versioned-2", put_obj_versioned_2)
+
+        get_obj_versioned = s3_client.get_object(Bucket=s3_bucket, Key=key_2)
+        snapshot.match("get-obj-versioned", get_obj_versioned)
+
+        list_obj_post_versioned = s3_client.list_object_versions(Bucket=s3_bucket)
+        snapshot.match("list-object-versioned", list_obj_post_versioned)
+
+        # disable versioning to check behaviour after getting keys
+        # all keys will now have versionId when getting them, even non-versioned ones
+        s3_client.put_bucket_versioning(
+            Bucket=s3_bucket,
+            VersioningConfiguration={"Status": "Suspended"},
+        )
+        list_obj_post_versioned_disabled = s3_client.list_object_versions(Bucket=s3_bucket)
+        snapshot.match("list-bucket-suspended", list_obj_post_versioned_disabled)
+
+        get_obj_versioned_disabled = s3_client.get_object(Bucket=s3_bucket, Key=key_2)
+        snapshot.match("get-obj-versioned-disabled", get_obj_versioned_disabled)
+
+        get_obj_non_versioned_disabled = s3_client.get_object(Bucket=s3_bucket, Key=key)
+        snapshot.match("get-obj-non-versioned-disabled", get_obj_non_versioned_disabled)
+
+        # won't return the versionId from put
+        key_3 = "non-version-bucket-key-after-disable"
+        put_obj_non_version_post_disable = s3_client.put_object(
+            Bucket=s3_bucket, Key=key_3, Body="non-versioned-key-post"
+        )
+        snapshot.match("put-non-versioned-post-disable", put_obj_non_version_post_disable)
+        # will return the versionId now, when it didn't before setting the BucketVersioning to `Enabled`
+        get_obj_non_version_post_disable = s3_client.get_object(Bucket=s3_bucket, Key=key_3)
+        snapshot.match("get-non-versioned-post-disable", get_obj_non_version_post_disable)
+
+        # manually assert all VersionId, as it's hard to do in snapshots
+        if is_aws_cloud() or not LEGACY_S3_PROVIDER:
+            assert "VersionId" not in get_obj_pre_versioned
+            assert get_obj_non_versioned["VersionId"] == "null"
+            assert list_obj_pre_versioned["Versions"][0]["VersionId"] == "null"
+            assert get_obj_versioned["VersionId"] is not None
+            assert list_obj_post_versioned["Versions"][0]["VersionId"] == "null"
+            assert list_obj_post_versioned["Versions"][1]["VersionId"] is not None
+            assert list_obj_post_versioned["Versions"][2]["VersionId"] is not None
+
+    @pytest.mark.aws_validated
+    @pytest.mark.xfail(reason="ACL behaviour is not implemented, see comments")
+    def test_s3_batch_delete_objects_using_requests_with_acl(
+        self, s3_client, s3_create_bucket, snapshot
+    ):
+        # If an object is created in a public bucket by the owner, it can't be deleted by anonymous clients
+        # https://docs.aws.amazon.com/AmazonS3/latest/userguide/acl-overview.html#specifying-grantee-predefined-groups
+        # only "public" created objects can be deleted by anonymous clients
+        snapshot.add_transformer(snapshot.transform.s3_api())
+        bucket_name = f"bucket-{short_uid()}"
+        object_key_1 = "key-created-by-owner"
+        object_key_2 = "key-created-by-anonymous"
+
+        s3_create_bucket(Bucket=bucket_name, ACL="public-read-write")
+        s3_client.put_object(
+            Bucket=bucket_name, Key=object_key_1, Body="This body document", ACL="public-read-write"
+        )
+        anon = _anon_client("s3")
+        anon.put_object(
+            Bucket=bucket_name,
+            Key=object_key_2,
+            Body="This body document #2",
+            ACL="public-read-write",
+        )
+
+        # TODO delete does currently not work with S3_VIRTUAL_HOSTNAME
+        url = f"{_bucket_url(bucket_name, localstack_host=config.LOCALSTACK_HOSTNAME)}?delete"
+
+        data = f"""
+        <Delete xmlns="http://s3.amazonaws.com/doc/2006-03-01/">
+          <Object>
+            <Key>{object_key_1}</Key>
+          </Object>
+          <Object>
+            <Key>{object_key_2}</Key>
+          </Object>
+        </Delete>
+        """
+
+        md = hashlib.md5(data.encode("utf-8")).digest()
+        contents_md5 = base64.b64encode(md).decode("utf-8")
+        header = {"content-md5": contents_md5, "x-amz-request-payer": "requester"}
+        r = requests.post(url=url, data=data, headers=header)
+
+        assert 200 == r.status_code
+        response = xmltodict.parse(r.content)
+        response["DeleteResult"].pop("@xmlns")
+        assert response["DeleteResult"]["Error"]["Key"] == object_key_1
+        assert response["DeleteResult"]["Error"]["Code"] == "AccessDenied"
+        assert response["DeleteResult"]["Deleted"]["Key"] == object_key_2
+        snapshot.match("multi-delete-with-requests", response)
+
+        response = s3_client.list_objects(Bucket=bucket_name)
+        assert 200 == response["ResponseMetadata"]["HTTPStatusCode"]
+        assert len(response["Contents"]) == 1
+        snapshot.match("list-remaining-objects", response)
+
+    @pytest.mark.aws_validated
+    @pytest.mark.skip_snapshot_verify(
+        paths=[
+            "$..DeleteResult.Deleted..VersionId",
+            "$..Prefix",
+        ]
+    )
+    def test_s3_batch_delete_public_objects_using_requests(
+        self, s3_client, s3_create_bucket, snapshot
+    ):
+        # only "public" created objects can be deleted by anonymous clients
+        # https://docs.aws.amazon.com/AmazonS3/latest/userguide/acl-overview.html#specifying-grantee-predefined-groups
+        snapshot.add_transformer(snapshot.transform.s3_api())
+        bucket_name = f"bucket-{short_uid()}"
+        object_key_1 = "key-created-by-anonymous-1"
+        object_key_2 = "key-created-by-anonymous-2"
+
+        s3_create_bucket(Bucket=bucket_name, ACL="public-read-write")
+        anon = _anon_client("s3")
+        anon.put_object(
+            Bucket=bucket_name, Key=object_key_1, Body="This body document", ACL="public-read-write"
+        )
+        anon.put_object(
+            Bucket=bucket_name,
+            Key=object_key_2,
+            Body="This body document #2",
+            ACL="public-read-write",
+        )
+
+        # TODO delete does currently not work with S3_VIRTUAL_HOSTNAME
+        url = f"{_bucket_url(bucket_name, localstack_host=config.LOCALSTACK_HOSTNAME)}?delete"
+
+        data = f"""
+            <Delete xmlns="http://s3.amazonaws.com/doc/2006-03-01/">
+              <Object>
+                <Key>{object_key_1}</Key>
+              </Object>
+              <Object>
+                <Key>{object_key_2}</Key>
+              </Object>
+            </Delete>
+            """
+
+        md = hashlib.md5(data.encode("utf-8")).digest()
+        contents_md5 = base64.b64encode(md).decode("utf-8")
+        header = {"content-md5": contents_md5, "x-amz-request-payer": "requester"}
+        r = requests.post(url=url, data=data, headers=header)
+
+        assert 200 == r.status_code
+        response = xmltodict.parse(r.content)
+        # TODO: why is that under??
+        if LEGACY_S3_PROVIDER:
+            response["DeleteResult"].pop("@xmlns")
+
+        snapshot.match("multi-delete-with-requests", response)
+
+        response = s3_client.list_objects(Bucket=bucket_name)
+        snapshot.match("list-remaining-objects", response)
+
+    @pytest.mark.aws_validated
+    @pytest.mark.skip_snapshot_verify(
+        paths=[
+            "$..Prefix",
+        ]
+    )
+    @pytest.mark.skip_snapshot_verify(condition=is_old_provider, path="$..Deleted..VersionId")
+    def test_s3_batch_delete_objects(self, s3_client, s3_bucket, snapshot):
+        snapshot.add_transformer(snapshot.transform.s3_api())
+        snapshot.add_transformer(snapshot.transform.key_value("Key"))
+        delete_object = []
+        for _ in range(5):
+            key_name = f"key-batch-delete-{short_uid()}"
+            s3_client.put_object(Bucket=s3_bucket, Key=key_name, Body="This body document")
+            delete_object.append({"Key": key_name})
+
+        response = s3_client.delete_objects(Bucket=s3_bucket, Delete={"Objects": delete_object})
+        snapshot.match("batch-delete", response)
+
+        response = s3_client.list_objects(Bucket=s3_bucket)
+        snapshot.match("list-remaining-objects", response)
+
+    @pytest.mark.aws_validated
+    @pytest.mark.skip_snapshot_verify(condition=is_old_provider, paths=["$..VersionId"])
+    def test_s3_get_object_header_overrides(self, s3_client, s3_bucket, snapshot):
+        # Signed requests may include certain header overrides in the querystring
+        # https://docs.aws.amazon.com/AmazonS3/latest/API/API_GetObject.html
+        object_key = "key-header-overrides"
+        s3_client.put_object(Bucket=s3_bucket, Key=object_key, Body="something")
+
+        expiry_date = "Wed, 21 Oct 2015 07:28:00 GMT"
+        response = s3_client.get_object(
+            Bucket=s3_bucket,
+            Key=object_key,
+            ResponseCacheControl="max-age=74",
+            ResponseContentDisposition='attachment; filename="foo.jpg"',
+            ResponseContentEncoding="identity",
+            ResponseContentLanguage="de-DE",
+            ResponseContentType="image/jpeg",
+            ResponseExpires=expiry_date,
+        )
+        snapshot.match("get-object", response)
+
 
 class TestS3TerraformRawRequests:
     @pytest.mark.only_localstack
@@ -1415,7 +2181,7 @@ class TestS3TerraformRawRequests:
             headers = {h.split(":")[0]: h.partition(":")[2].strip() for h in headers.split("\n")}
             method, path, _ = req.split(" ")
             url = f"{config.get_edge_url()}{path}"
-            result = getattr(requests, method.lower())(url, data=body, headers=headers)
+            result = requests.request(method=method, url=url, data=body, headers=headers)
             assert result.status_code < 400
 
 
@@ -1425,8 +2191,12 @@ class TestS3PresignedUrl:
     """
 
     @pytest.mark.aws_validated
-    @pytest.mark.skip_snapshot_verify(paths=["$..VersionId", "$..ContentLanguage", "$..Expires"])
+    @pytest.mark.skip_snapshot_verify(
+        condition=is_old_provider, paths=["$..VersionId", "$..ContentLanguage", "$..Expires"]
+    )
     def test_put_object(self, s3_client, s3_bucket, snapshot):
+        # big bug here in the old provider: PutObject gets the Expires param from the presigned url??
+        #  when it's supposed to be in the headers?
         snapshot.add_transformer(snapshot.transform.s3_api())
 
         key = "my-key"
@@ -1467,6 +2237,7 @@ class TestS3PresignedUrl:
 
     @pytest.mark.aws_validated
     def test_post_request_expires(self, s3_client, s3_bucket):
+        # TODO: failed against AWS
         # presign a post with a short expiry time
         object_key = "test-presigned-post-key"
 
@@ -1484,6 +2255,9 @@ class TestS3PresignedUrl:
             files={"file": "file content"},
             verify=False,
         )
+
+        # should be AccessDenied instead of expired?
+        # expired Token must be about the identity token??
 
         # FIXME: localstack returns 400 but aws returns 403
         assert response.status_code in [400, 403]
@@ -1725,6 +2499,7 @@ class TestS3PresignedUrl:
             location = f"{_bucket_url_vhost(s3_bucket, aws_stack.get_region())}/key-my-file"
             etag = '"43281e21fce675ac3bcb3524b38ca4ed"'  # TODO check quoting of etag
         else:
+            # TODO: this location is very wrong
             location = "http://localhost/key-my-file"
             etag = "d41d8cd98f00b204e9800998ecf8427f"
         assert json_response["Location"] == location
@@ -1733,69 +2508,8 @@ class TestS3PresignedUrl:
         assert json_response["ETag"] == etag
 
     @pytest.mark.aws_validated
-    @pytest.mark.xfail(reason="Access-Control-Allow-Origin returns Origin value in LS")
-    def test_s3_get_response_headers(self, s3_client, s3_bucket, snapshot):
-        # put object and CORS configuration
-        object_key = "key-by-hostname"
-        s3_client.put_object(Bucket=s3_bucket, Key=object_key, Body="something")
-        s3_client.put_bucket_cors(
-            Bucket=s3_bucket,
-            CORSConfiguration={
-                "CORSRules": [
-                    {
-                        "AllowedMethods": ["GET", "PUT", "POST"],
-                        "AllowedOrigins": ["*"],
-                        "ExposeHeaders": ["ETag", "x-amz-version-id"],
-                    }
-                ]
-            },
-        )
-        bucket_cors_res = s3_client.get_bucket_cors(Bucket=s3_bucket)
-        snapshot.match("bucket-cors-response", bucket_cors_res)
-
-        # get object and assert headers
-        url = s3_client.generate_presigned_url(
-            "get_object", Params={"Bucket": s3_bucket, "Key": object_key}
-        )
-        # need to add Origin headers for S3 to send back the Access-Control-* headers
-        # as CORS is made for browsers
-        response = requests.get(url, verify=False, headers={"Origin": "http://localhost"})
-        assert response.headers["Access-Control-Expose-Headers"] == "ETag, x-amz-version-id"
-        assert response.headers["Access-Control-Allow-Methods"] == "GET, PUT, POST"
-        assert (
-            response.headers["Access-Control-Allow-Origin"] == "*"
-        )  # returns http://localhost in LS
-
-    @pytest.mark.aws_validated
-    @pytest.mark.xfail(reason="Behaviour diverges from AWS, Access-Control-* headers always added")
-    def test_s3_get_response_headers_without_origin(self, s3_client, s3_bucket):
-        # put object and CORS configuration
-        object_key = "key-by-hostname"
-        s3_client.put_object(Bucket=s3_bucket, Key=object_key, Body="something")
-        s3_client.put_bucket_cors(
-            Bucket=s3_bucket,
-            CORSConfiguration={
-                "CORSRules": [
-                    {
-                        "AllowedMethods": ["GET", "PUT", "POST"],
-                        "AllowedOrigins": ["*"],
-                        "ExposeHeaders": ["ETag", "x-amz-version-id"],
-                    }
-                ]
-            },
-        )
-
-        # get object and assert headers
-        url = s3_client.generate_presigned_url(
-            "get_object", Params={"Bucket": s3_bucket, "Key": object_key}
-        )
-        response = requests.get(url, verify=False)
-        assert "Access-Control-Expose-Headers" not in response.headers
-        assert "Access-Control-Allow-Methods" not in response.headers
-        assert "Access-Control-Allow-Origin" not in response.headers
-
-    @pytest.mark.aws_validated
     def test_presigned_url_with_session_token(self, s3_create_bucket_with_client, sts_client):
+        # TODO we might be skipping signature validation here......
         bucket_name = f"bucket-{short_uid()}"
         key_name = "key"
         response = sts_client.get_session_token()
@@ -1882,482 +2596,247 @@ class TestS3PresignedUrl:
         request_response = requests.put(url, verify=False)
         assert request_response.status_code == 200
 
-    @pytest.mark.aws_validated
-    @pytest.mark.xfail(reason="ACL behaviour is not implemented, see comments")
-    def test_s3_batch_delete_objects_using_requests_with_acl(
-        self, s3_client, s3_create_bucket, snapshot
+    @pytest.mark.only_localstack
+    @pytest.mark.parametrize("case_sensitive_headers", [True, False])
+    def test_s3_get_response_case_sensitive_headers(
+        self, s3_client, s3_bucket, case_sensitive_headers
     ):
-        # If an object is created in a public bucket by the owner, it can't be deleted by anonymous clients
-        # https://docs.aws.amazon.com/AmazonS3/latest/userguide/acl-overview.html#specifying-grantee-predefined-groups
-        # only "public" created objects can be deleted by anonymous clients
-        snapshot.add_transformer(snapshot.transform.s3_api())
-        bucket_name = f"bucket-{short_uid()}"
-        object_key_1 = "key-created-by-owner"
-        object_key_2 = "key-created-by-anonymous"
+        # Test that RETURN_CASE_SENSITIVE_HEADERS is respected
+        object_key = "key-by-hostname"
+        s3_client.put_object(Bucket=s3_bucket, Key=object_key, Body="something")
 
-        s3_create_bucket(Bucket=bucket_name, ACL="public-read-write")
-        s3_client.put_object(
-            Bucket=bucket_name, Key=object_key_1, Body="This body document", ACL="public-read-write"
-        )
-        anon = _anon_client("s3")
-        anon.put_object(
-            Bucket=bucket_name,
-            Key=object_key_2,
-            Body="This body document #2",
-            ACL="public-read-write",
-        )
-
-        # TODO delete does currently not work with S3_VIRTUAL_HOSTNAME
-        url = f"{_bucket_url(bucket_name, localstack_host=config.LOCALSTACK_HOSTNAME)}?delete"
-
-        data = f"""
-        <Delete xmlns="http://s3.amazonaws.com/doc/2006-03-01/">
-          <Object>
-            <Key>{object_key_1}</Key>
-          </Object>
-          <Object>
-            <Key>{object_key_2}</Key>
-          </Object>
-        </Delete>
-        """
-
-        md = hashlib.md5(data.encode("utf-8")).digest()
-        contents_md5 = base64.b64encode(md).decode("utf-8")
-        header = {"content-md5": contents_md5, "x-amz-request-payer": "requester"}
-        r = requests.post(url=url, data=data, headers=header)
-
-        assert 200 == r.status_code
-        response = xmltodict.parse(r.content)
-        response["DeleteResult"].pop("@xmlns")
-        assert response["DeleteResult"]["Error"]["Key"] == object_key_1
-        assert response["DeleteResult"]["Error"]["Code"] == "AccessDenied"
-        assert response["DeleteResult"]["Deleted"]["Key"] == object_key_2
-        snapshot.match("multi-delete-with-requests", response)
-
-        response = s3_client.list_objects(Bucket=bucket_name)
-        assert 200 == response["ResponseMetadata"]["HTTPStatusCode"]
-        assert len(response["Contents"]) == 1
-        snapshot.match("list-remaining-objects", response)
-
-    @pytest.mark.aws_validated
-    @pytest.mark.skip_snapshot_verify(
-        paths=[
-            "$..DeleteResult.Deleted..VersionId",
-            "$..Prefix",
-        ]
-    )
-    def test_s3_batch_delete_public_objects_using_requests(
-        self, s3_client, s3_create_bucket, snapshot
-    ):
-        # only "public" created objects can be deleted by anonymous clients
-        # https://docs.aws.amazon.com/AmazonS3/latest/userguide/acl-overview.html#specifying-grantee-predefined-groups
-        snapshot.add_transformer(snapshot.transform.s3_api())
-        bucket_name = f"bucket-{short_uid()}"
-        object_key_1 = "key-created-by-anonymous-1"
-        object_key_2 = "key-created-by-anonymous-2"
-
-        s3_create_bucket(Bucket=bucket_name, ACL="public-read-write")
-        anon = _anon_client("s3")
-        anon.put_object(
-            Bucket=bucket_name, Key=object_key_1, Body="This body document", ACL="public-read-write"
-        )
-        anon.put_object(
-            Bucket=bucket_name,
-            Key=object_key_2,
-            Body="This body document #2",
-            ACL="public-read-write",
-        )
-
-        # TODO delete does currently not work with S3_VIRTUAL_HOSTNAME
-        url = f"{_bucket_url(bucket_name, localstack_host=config.LOCALSTACK_HOSTNAME)}?delete"
-
-        data = f"""
-            <Delete xmlns="http://s3.amazonaws.com/doc/2006-03-01/">
-              <Object>
-                <Key>{object_key_1}</Key>
-              </Object>
-              <Object>
-                <Key>{object_key_2}</Key>
-              </Object>
-            </Delete>
-            """
-
-        md = hashlib.md5(data.encode("utf-8")).digest()
-        contents_md5 = base64.b64encode(md).decode("utf-8")
-        header = {"content-md5": contents_md5, "x-amz-request-payer": "requester"}
-        r = requests.post(url=url, data=data, headers=header)
-
-        assert 200 == r.status_code
-        response = xmltodict.parse(r.content)
-        response["DeleteResult"].pop("@xmlns")
-
-        snapshot.match("multi-delete-with-requests", response)
-
-        response = s3_client.list_objects(Bucket=bucket_name)
-        snapshot.match("list-remaining-objects", response)
-
-    @pytest.mark.aws_validated
-    @pytest.mark.skip_snapshot_verify(
-        paths=[
-            "$..Error.Message",  # TODO AWS does not include dot at the end
-            "$..Error.RequestID",  # AWS has no RequestID here
-            "$..Error.StorageClass",  # Missing in Localstack
-            "$..StorageClass",  # Missing in Localstack
-        ]
-    )
-    def test_s3_get_deep_archive_object_restore(self, s3_client, s3_create_bucket, snapshot):
-        snapshot.add_transformer(snapshot.transform.s3_api())
-
-        bucket_name = f"bucket-{short_uid()}"
-        object_key = f"key-{short_uid()}"
-
-        s3_create_bucket(Bucket=bucket_name)
-
-        # put DEEP_ARCHIVE object
-        s3_client.put_object(
-            Bucket=bucket_name,
-            Key=object_key,
-            Body="body data",
-            StorageClass="DEEP_ARCHIVE",
-        )
-        with pytest.raises(ClientError) as e:
-            s3_client.get_object(Bucket=bucket_name, Key=object_key)
-        e.match("InvalidObjectState")
-
-        snapshot.match("get_object_invalid_state", e.value.response)
-        response = s3_client.restore_object(
-            Bucket=bucket_name,
-            Key=object_key,
-            RestoreRequest={
-                "Days": 30,
-                "GlacierJobParameters": {
-                    "Tier": "Bulk",
-                },
-            },
-        )
-        snapshot.match("restore_object", response)
-
-        # AWS tier is currently configured to retrieve within 48 hours, so we cannot test the get-object here
-        response = s3_client.head_object(Bucket=bucket_name, Key=object_key)
-        if 'ongoing-request="false"' in response.get("Restore", ""):
-            # if the restoring happens in LocalStack (or was fast in AWS) we can retrieve the object
-            response = s3_client.get_object(Bucket=bucket_name, Key=object_key)
-            assert "etag" in response.get("ResponseMetadata").get("HTTPHeaders")
-
-    @pytest.mark.aws_validated
-    @pytest.mark.skip_snapshot_verify(paths=["$..Prefix"])
-    def test_s3_list_objects_empty_marker(self, s3_client, s3_create_bucket, snapshot):
-        snapshot.add_transformer(snapshot.transform.s3_api())
-        bucket_name = "test" + short_uid()
-        s3_create_bucket(Bucket=bucket_name)
-        resp = s3_client.list_objects(Bucket=bucket_name, Marker="")
-        snapshot.match("list-objects", resp)
-
-    @pytest.mark.aws_validated
-    @pytest.mark.skip_snapshot_verify(paths=["$..Prefix", "$..ContentLanguage", "$..VersionId"])
-    def test_s3_put_more_than_1000_items(self, s3_client, s3_create_bucket, snapshot):
-        snapshot.add_transformer(snapshot.transform.s3_api())
-        bucket_name = "test" + short_uid()
-        s3_create_bucket(Bucket=bucket_name)
-        for i in range(0, 1010, 1):
-            body = "test-" + str(i)
-            key = "test-key-" + str(i)
-            s3_client.put_object(Bucket=bucket_name, Key=key, Body=body)
-
-        # trying to get the last item of 1010 items added.
-        resp = s3_client.get_object(Bucket=bucket_name, Key="test-key-1009")
-        snapshot.match("get_object-1009", resp)
-
-        # trying to get the first item of 1010 items added.
-        resp = s3_client.get_object(Bucket=bucket_name, Key="test-key-0")
-        snapshot.match("get_object-0", resp)
-
-        # according docs for MaxKeys: the response might contain fewer keys but will never contain more.
-        # AWS returns less during testing
-        resp = s3_client.list_objects(Bucket=bucket_name, MaxKeys=1010)
-        assert 1010 >= len(resp["Contents"])
-
-        resp = s3_client.list_objects(Bucket=bucket_name, Delimiter="/")
-        assert 1000 == len(resp["Contents"])
-        # way too much content, remove it from this match
-        snapshot.add_transformer(
-            snapshot.transform.jsonpath(
-                "$..list-objects.Contents", "<content>", reference_replacement=False
+        # get object and assert headers
+        case_sensitive_before = http2_server.RETURN_CASE_SENSITIVE_HEADERS
+        try:
+            url = s3_client.generate_presigned_url(
+                "get_object", Params={"Bucket": s3_bucket, "Key": object_key}
             )
-        )
-        snapshot.match("list-objects", resp)
-        next_marker = resp["NextMarker"]
+            http2_server.RETURN_CASE_SENSITIVE_HEADERS = case_sensitive_headers
+            response = requests.get(url, verify=False)
+            # expect that Etag is contained
+            header_names = list(response.headers.keys())
+            expected_etag = "ETag" if case_sensitive_headers else "etag"
+            assert expected_etag in header_names
+        finally:
+            http2_server.RETURN_CASE_SENSITIVE_HEADERS = case_sensitive_before
 
-        # Second list
-        resp = s3_client.list_objects(Bucket=bucket_name, Marker=next_marker)
-        snapshot.match("list-objects-next_marker", resp)
-        assert 10 == len(resp["Contents"])
-
-    @pytest.mark.aws_validated
-    @pytest.mark.skip_snapshot_verify(paths=["$..AcceptRanges"])
-    def test_upload_big_file(self, s3_client, s3_create_bucket, snapshot):
-        snapshot.add_transformer(snapshot.transform.s3_api())
-        bucket_name = f"bucket-{short_uid()}"
-        key1 = "test_key1"
-        key2 = "test_key1"
-
-        s3_create_bucket(Bucket=bucket_name)
-
-        body1 = "\x01" * 10000000
-        rs = s3_client.put_object(Bucket=bucket_name, Key=key1, Body=body1)
-        snapshot.match("put_object_key1", rs)
-
-        body2 = "a" * 10000000
-        rs = s3_client.put_object(Bucket=bucket_name, Key=key2, Body=body2)
-        snapshot.match("put_object_key2", rs)
-
-        rs = s3_client.head_object(Bucket=bucket_name, Key=key1)
-        snapshot.match("head_object_key1", rs)
-
-        rs = s3_client.head_object(Bucket=bucket_name, Key=key2)
-        snapshot.match("head_object_key2", rs)
-
-    @pytest.mark.aws_validated
-    @pytest.mark.skip_snapshot_verify(
-        paths=["$..Delimiter", "$..EncodingType", "$..VersionIdMarker"]
+    @pytest.mark.parametrize(
+        "signature_version, use_virtual_address",
+        [
+            ("s3", False),
+            ("s3", True),
+            ("s3v4", False),
+            ("s3v4", True),
+        ],
     )
-    def test_get_bucket_versioning_order(self, s3_client, s3_create_bucket, snapshot):
-        snapshot.add_transformer(snapshot.transform.s3_api())
-
-        bucket_name = f"bucket-{short_uid()}"
-        s3_create_bucket(Bucket=bucket_name)
-        rs = s3_client.list_object_versions(Bucket=bucket_name, EncodingType="url")
-        snapshot.match("list_object_versions_before", rs)
-
-        rs = s3_client.put_bucket_versioning(
-            Bucket=bucket_name, VersioningConfiguration={"Status": "Enabled"}
-        )
-        snapshot.match("put_bucket_versioning", rs)
-
-        rs = s3_client.get_bucket_versioning(Bucket=bucket_name)
-        snapshot.match("get_bucket_versioning", rs)
-
-        s3_client.put_object(Bucket=bucket_name, Key="test", Body="body")
-        s3_client.put_object(Bucket=bucket_name, Key="test", Body="body")
-        s3_client.put_object(Bucket=bucket_name, Key="test2", Body="body")
-        rs = s3_client.list_object_versions(
-            Bucket=bucket_name,
-        )
-
-        snapshot.match("list_object_versions", rs)
-
     @pytest.mark.aws_validated
-    @pytest.mark.skip_snapshot_verify(paths=["$..ContentLanguage", "$..VersionId"])
-    def test_etag_on_get_object_call(self, s3_client, s3_create_bucket, snapshot):
-        snapshot.add_transformer(snapshot.transform.s3_api())
-        bucket_name = f"bucket-{short_uid()}"
-        object_key = "my-key"
+    def test_presigned_url_signature_authentication_expired(
+        self,
+        s3_client,
+        s3_create_bucket,
+        signature_version,
+        use_virtual_address,
+        monkeypatch,
+    ):
+        monkeypatch.setattr(config, "S3_SKIP_SIGNATURE_VALIDATION", False)
+        bucket_name = f"presign-{short_uid()}"
+
+        s3_endpoint_path_style = _endpoint_url()
+
         s3_create_bucket(Bucket=bucket_name)
+        object_key = "temp.txt"
+        s3_client.put_object(Key=object_key, Bucket=bucket_name, Body="123")
 
-        body = "Lorem ipsum dolor sit amet, ... " * 30
-        rs = s3_client.put_object(Bucket=bucket_name, Key=object_key, Body=body)
+        s3_config = {"addressing_style": "virtual"} if use_virtual_address else {}
+        client = _s3_client_custom_config(
+            Config(signature_version=signature_version, s3=s3_config),
+            endpoint_url=s3_endpoint_path_style,
+        )
 
-        rs = s3_client.get_object(Bucket=bucket_name, Key=object_key)
-        snapshot.match("get_object", rs)
+        url = _generate_presigned_url(client, {"Bucket": bucket_name, "Key": object_key}, expires=1)
+        time.sleep(1)
 
-        range = 17
-        rs = s3_client.get_object(
+        assert 403 == requests.get(url).status_code
+
+    @pytest.mark.parametrize(
+        "signature_version, use_virtual_address",
+        [
+            ("s3", False),
+            ("s3", True),
+            ("s3v4", False),
+            ("s3v4", True),
+        ],
+    )
+    @pytest.mark.aws_validated
+    def test_presigned_url_signature_authentication(
+        self,
+        s3_client,
+        s3_create_bucket,
+        signature_version,
+        use_virtual_address,
+        monkeypatch,
+    ):
+        monkeypatch.setattr(config, "S3_SKIP_SIGNATURE_VALIDATION", False)
+        bucket_name = f"presign-{short_uid()}"
+
+        s3_endpoint_path_style = _endpoint_url()
+        s3_url = _bucket_url_vhost(bucket_name) if use_virtual_address else _bucket_url(bucket_name)
+
+        s3_create_bucket(Bucket=bucket_name)
+        object_key = "temp.txt"
+        s3_client.put_object(Key=object_key, Bucket=bucket_name, Body="123")
+
+        s3_config = {"addressing_style": "virtual"} if use_virtual_address else {}
+        client = _s3_client_custom_config(
+            Config(signature_version=signature_version, s3=s3_config),
+            endpoint_url=s3_endpoint_path_style,
+        )
+
+        expires = 4
+
+        # GET requests
+        simple_params = {"Bucket": bucket_name, "Key": object_key}
+        response = requests.get(_generate_presigned_url(client, simple_params, expires))
+        assert 200 == response.status_code
+        assert response.content == b"123"
+
+        params = {
+            "Bucket": bucket_name,
+            "Key": object_key,
+            "ResponseContentType": "text/plain",
+            "ResponseContentDisposition": "attachment;  filename=test.txt",
+        }
+
+        presigned = _generate_presigned_url(client, params, expires)
+        response = requests.get(_generate_presigned_url(client, params, expires))
+        assert 200 == response.status_code
+        assert response.content == b"123"
+
+        object_data = "this should be found in when you download {}.".format(object_key)
+
+        # invalid requests
+        # TODO check how much sense it makes to make this url "invalid"...
+        assert (
+            403
+            == requests.get(
+                _make_url_invalid(s3_url, object_key, presigned),
+                data=object_data,
+                headers={"Content-Type": "my-fake-content/type"},
+            ).status_code
+        )
+
+        # put object valid
+        assert (
+            200
+            == requests.put(
+                _generate_presigned_url(client, simple_params, expires, client_method="put_object"),
+                data=object_data,
+            ).status_code
+        )
+
+        params = {
+            "Bucket": bucket_name,
+            "Key": object_key,
+            "ContentType": "text/plain",
+        }
+        presigned_put_url = _generate_presigned_url(
+            client, params, expires, client_method="put_object"
+        )
+
+        assert (
+            200
+            == requests.put(
+                presigned_put_url,
+                data=object_data,
+                headers={"Content-Type": "text/plain"},
+            ).status_code
+        )
+
+        # Invalid request
+        response = requests.put(
+            _make_url_invalid(s3_url, object_key, presigned_put_url),
+            data=object_data,
+            headers={"Content-Type": "my-fake-content/type"},
+        )
+        assert 403 == response.status_code
+
+        # DELETE requests
+        presigned_delete_url = _generate_presigned_url(
+            client, simple_params, expires, client_method="delete_object"
+        )
+        response = requests.delete(presigned_delete_url)
+        assert 204 == response.status_code
+
+    @pytest.mark.parametrize(
+        "signature_version, use_virtual_address",
+        [
+            ("s3", False),
+            ("s3", True),
+            ("s3v4", False),
+            ("s3v4", True),
+        ],
+    )
+    @pytest.mark.aws_validated
+    def test_presigned_url_signature_authentication_multi_part(
+        self,
+        s3_client,
+        s3_create_bucket,
+        signature_version,
+        use_virtual_address,
+        monkeypatch,
+    ):
+        monkeypatch.setattr(config, "S3_SKIP_SIGNATURE_VALIDATION", False)
+        # TODO: beware, this test does not test authentication!
+        # it should test if the user is sending wrong signature
+        bucket_name = f"presign-{short_uid()}"
+
+        s3_endpoint_path_style = _endpoint_url()
+
+        s3_create_bucket(Bucket=bucket_name)
+        object_key = "temp.txt"
+
+        s3_config = {"addressing_style": "virtual"} if use_virtual_address else {}
+        client = _s3_client_custom_config(
+            Config(signature_version=signature_version, s3=s3_config),
+            endpoint_url=s3_endpoint_path_style,
+        )
+        upload_id = client.create_multipart_upload(
             Bucket=bucket_name,
             Key=object_key,
-            Range=f"bytes=0-{range-1}",
-        )
-        snapshot.match("get_object_range", rs)
+        )["UploadId"]
 
-    @pytest.mark.aws_validated
-    @pytest.mark.skip_snapshot_verify(
-        paths=["$..Delimiter", "$..EncodingType", "$..VersionIdMarker"]
-    )
-    def test_s3_delete_object_with_version_id(self, s3_client, s3_create_bucket, snapshot):
-        snapshot.add_transformer(snapshot.transform.s3_api())
-        bucket_name = f"bucket-{short_uid()}"
+        data = to_bytes("hello this is a upload test")
+        upload_file_object = BytesIO(data)
 
-        test_1st_key = "aws/s3/testkey1.txt"
-        test_2nd_key = "aws/s3/testkey2.txt"
-
-        body = "Lorem ipsum dolor sit amet, ... " * 30
-
-        s3_create_bucket(Bucket=bucket_name)
-        s3_client.put_bucket_versioning(
-            Bucket=bucket_name,
-            VersioningConfiguration={"Status": "Enabled"},
-        )
-        rs = s3_client.get_bucket_versioning(Bucket=bucket_name)
-        snapshot.match("get_bucket_versioning", rs)
-
-        # put 2 objects
-        rs = s3_client.put_object(Bucket=bucket_name, Key=test_1st_key, Body=body)
-        s3_client.put_object(Bucket=bucket_name, Key=test_2nd_key, Body=body)
-        version_id = rs["VersionId"]
-
-        # delete 1st object with version
-        rs = s3_client.delete_objects(
-            Bucket=bucket_name,
-            Delete={"Objects": [{"Key": test_1st_key, "VersionId": version_id}]},
-        )
-
-        deleted = rs["Deleted"][0]
-        assert test_1st_key == deleted["Key"]
-        assert version_id == deleted["VersionId"]
-        snapshot.match("delete_objects", rs)
-
-        rs = s3_client.list_object_versions(Bucket=bucket_name)
-        object_versions = [object["VersionId"] for object in rs["Versions"]]
-        snapshot.match("list_object_versions_after_delete", rs)
-
-        assert version_id not in object_versions
-
-        # disable versioning
-        s3_client.put_bucket_versioning(
-            Bucket=bucket_name,
-            VersioningConfiguration={"Status": "Suspended"},
-        )
-        rs = s3_client.get_bucket_versioning(Bucket=bucket_name)
-        snapshot.match("get_bucket_versioning_suspended", rs)
-
-    @pytest.mark.aws_validated
-    def test_s3_static_website_index(self, s3_client, s3_create_bucket):
-        bucket_name = f"bucket-{short_uid()}"
-
-        s3_create_bucket(Bucket=bucket_name, ACL="public-read")
-        s3_client.put_object(
-            Bucket=bucket_name,
-            Key="index.html",
-            Body="index",
-            ContentType="text/html",
-            ACL="public-read",
-        )
-
-        s3_client.put_bucket_website(
-            Bucket=bucket_name,
-            WebsiteConfiguration={
-                "IndexDocument": {"Suffix": "index.html"},
+        signed_url = _generate_presigned_url(
+            client,
+            {
+                "Bucket": bucket_name,
+                "Key": object_key,
+                "UploadId": upload_id,
+                "PartNumber": 1,
             },
+            expires=4,
+            client_method="upload_part",
         )
 
-        url = _website_bucket_url(bucket_name)
+        response = requests.put(signed_url, data=upload_file_object)
+        assert response.status_code == 200
+        multipart_upload_parts = [{"ETag": response.headers["ETag"], "PartNumber": 1}]
 
-        response = requests.get(url, verify=False)
+        response = client.complete_multipart_upload(
+            Bucket=bucket_name,
+            Key=object_key,
+            MultipartUpload={"Parts": multipart_upload_parts},
+            UploadId=upload_id,
+        )
+
+        assert 200 == response["ResponseMetadata"]["HTTPStatusCode"]
+
+        simple_params = {"Bucket": bucket_name, "Key": object_key}
+        response = requests.get(_generate_presigned_url(client, simple_params, 4))
         assert 200 == response.status_code
-        assert "index" == response.text
-
-    @pytest.mark.aws_validated
-    def test_s3_static_website_hosting(self, s3_client, s3_create_bucket):
-
-        bucket_name = f"bucket-{short_uid()}"
-
-        s3_create_bucket(Bucket=bucket_name, ACL="public-read")
-        index_obj = s3_client.put_object(
-            Bucket=bucket_name,
-            Key="test/index.html",
-            Body="index",
-            ContentType="text/html",
-            ACL="public-read",
-        )
-        error_obj = s3_client.put_object(
-            Bucket=bucket_name,
-            Key="test/error.html",
-            Body="error",
-            ContentType="text/html",
-            ACL="public-read",
-        )
-        actual_key_obj = s3_client.put_object(
-            Bucket=bucket_name,
-            Key="actual/key.html",
-            Body="key",
-            ContentType="text/html",
-            ACL="public-read",
-        )
-        with_content_type_obj = s3_client.put_object(
-            Bucket=bucket_name,
-            Key="with-content-type/key.js",
-            Body="some js",
-            ContentType="application/javascript; charset=utf-8",
-            ACL="public-read",
-        )
-        s3_client.put_object(
-            Bucket=bucket_name,
-            Key="to-be-redirected.html",
-            WebsiteRedirectLocation="/actual/key.html",
-            ACL="public-read",
-        )
-        s3_client.put_bucket_website(
-            Bucket=bucket_name,
-            WebsiteConfiguration={
-                "IndexDocument": {"Suffix": "index.html"},
-                "ErrorDocument": {"Key": "test/error.html"},
-            },
-        )
-        website_url = _website_bucket_url(bucket_name)
-        # actual key
-        url = f"{website_url}/actual/key.html"
-        response = requests.get(url, verify=False)
-        assert 200 == response.status_code
-        assert "key" == response.text
-        assert "content-type" in response.headers
-        assert "text/html" == response.headers["content-type"]
-        assert "etag" in response.headers
-        assert actual_key_obj["ETag"] in response.headers["etag"]
-
-        # If-None-Match and Etag
-        response = requests.get(
-            url, headers={"If-None-Match": actual_key_obj["ETag"]}, verify=False
-        )
-        assert 304 == response.status_code
-
-        # key with specified content-type
-        url = f"{website_url}/with-content-type/key.js"
-        response = requests.get(url, verify=False)
-        assert 200 == response.status_code
-        assert "some js" == response.text
-        assert "content-type" in response.headers
-        assert "application/javascript; charset=utf-8" == response.headers["content-type"]
-        assert "etag" in response.headers
-        assert with_content_type_obj["ETag"] == response.headers["etag"]
-
-        # index document
-        url = f"{website_url}/test"
-        response = requests.get(url, verify=False)
-        assert 200 == response.status_code
-        assert "index" == response.text
-        assert "content-type" in response.headers
-        assert "text/html" in response.headers["content-type"]
-        assert "etag" in response.headers
-        assert index_obj["ETag"] == response.headers["etag"]
-
-        # root path test
-        url = f"{website_url}/"
-        response = requests.get(url, verify=False)
-        assert 404 == response.status_code
-        assert "error" == response.text
-        assert "content-type" in response.headers
-        assert "text/html" in response.headers["content-type"]
-        assert "etag" in response.headers
-        assert error_obj["ETag"] == response.headers["etag"]
-
-        # error document
-        url = f"{website_url}/something"
-        assert 404 == response.status_code
-        assert "error" == response.text
-        assert "content-type" in response.headers
-        assert "text/html" in response.headers["content-type"]
-        assert "etag" in response.headers
-        assert error_obj["ETag"] == response.headers["etag"]
-
-        # redirect object
-        url = f"{website_url}/to-be-redirected.html"
-        response = requests.get(url, verify=False, allow_redirects=False)
-        assert 301 == response.status_code
-        assert "location" in response.headers
-        assert "actual/key.html" in response.headers["location"]
-
-        response = requests.get(url, verify=False)
-        assert 200 == response.status_code
-        assert actual_key_obj["ETag"] == response.headers["etag"]
+        assert response.content == data
 
 
 class TestS3Cors:
@@ -2553,7 +3032,70 @@ class TestS3Cors:
         assert 200 == response.status_code
         snapshot.match("raw-response-headers-2", dict(response.headers))
 
-    def _get_cors_result_header_snapshot_transformer(self, snapshot):
+    @pytest.mark.aws_validated
+    @pytest.mark.xfail(reason="Access-Control-Allow-Origin returns Origin value in LS")
+    def test_s3_get_response_headers(self, s3_client, s3_bucket, snapshot):
+        # put object and CORS configuration
+        object_key = "key-by-hostname"
+        s3_client.put_object(Bucket=s3_bucket, Key=object_key, Body="something")
+        s3_client.put_bucket_cors(
+            Bucket=s3_bucket,
+            CORSConfiguration={
+                "CORSRules": [
+                    {
+                        "AllowedMethods": ["GET", "PUT", "POST"],
+                        "AllowedOrigins": ["*"],
+                        "ExposeHeaders": ["ETag", "x-amz-version-id"],
+                    }
+                ]
+            },
+        )
+        bucket_cors_res = s3_client.get_bucket_cors(Bucket=s3_bucket)
+        snapshot.match("bucket-cors-response", bucket_cors_res)
+
+        # get object and assert headers
+        url = s3_client.generate_presigned_url(
+            "get_object", Params={"Bucket": s3_bucket, "Key": object_key}
+        )
+        # need to add Origin headers for S3 to send back the Access-Control-* headers
+        # as CORS is made for browsers
+        response = requests.get(url, verify=False, headers={"Origin": "http://localhost"})
+        assert response.headers["Access-Control-Expose-Headers"] == "ETag, x-amz-version-id"
+        assert response.headers["Access-Control-Allow-Methods"] == "GET, PUT, POST"
+        assert (
+            response.headers["Access-Control-Allow-Origin"] == "*"
+        )  # returns http://localhost in LS
+
+    @pytest.mark.aws_validated
+    @pytest.mark.xfail(reason="Behaviour diverges from AWS, Access-Control-* headers always added")
+    def test_s3_get_response_headers_without_origin(self, s3_client, s3_bucket):
+        # put object and CORS configuration
+        object_key = "key-by-hostname"
+        s3_client.put_object(Bucket=s3_bucket, Key=object_key, Body="something")
+        s3_client.put_bucket_cors(
+            Bucket=s3_bucket,
+            CORSConfiguration={
+                "CORSRules": [
+                    {
+                        "AllowedMethods": ["GET", "PUT", "POST"],
+                        "AllowedOrigins": ["*"],
+                        "ExposeHeaders": ["ETag", "x-amz-version-id"],
+                    }
+                ]
+            },
+        )
+
+        # get object and assert headers
+        url = s3_client.generate_presigned_url(
+            "get_object", Params={"Bucket": s3_bucket, "Key": object_key}
+        )
+        response = requests.get(url, verify=False)
+        assert "Access-Control-Expose-Headers" not in response.headers
+        assert "Access-Control-Allow-Methods" not in response.headers
+        assert "Access-Control-Allow-Origin" not in response.headers
+
+    @staticmethod
+    def _get_cors_result_header_snapshot_transformer(snapshot):
         return [
             snapshot.transform.key_value("x-amz-id-2", "<id>", reference_replacement=False),
             snapshot.transform.key_value(
@@ -2563,222 +3105,6 @@ class TestS3Cors:
             snapshot.transform.key_value("Server", "<server>", reference_replacement=False),
             snapshot.transform.key_value("Last-Modified", "<date>", reference_replacement=False),
         ]
-
-    @pytest.mark.parametrize(
-        "signature_version, use_virtual_address",
-        [
-            ("s3", False),
-            ("s3", True),
-            ("s3v4", False),
-            ("s3v4", True),
-        ],
-    )
-    @pytest.mark.aws_validated
-    def test_presigned_url_signature_authentication_multi_part(
-        self,
-        s3_client,
-        s3_create_bucket,
-        signature_version,
-        use_virtual_address,
-        monkeypatch,
-    ):
-        monkeypatch.setattr(config, "S3_SKIP_SIGNATURE_VALIDATION", False)
-        bucket_name = f"presign-{short_uid()}"
-
-        s3_endpoint_path_style = _endpoint_url()
-
-        s3_create_bucket(Bucket=bucket_name)
-        object_key = "temp.txt"
-
-        s3_config = {"addressing_style": "virtual"} if use_virtual_address else {}
-        client = _s3_client_custom_config(
-            Config(signature_version=signature_version, s3=s3_config),
-            endpoint_url=s3_endpoint_path_style,
-        )
-        upload_id = client.create_multipart_upload(
-            Bucket=bucket_name,
-            Key=object_key,
-        )["UploadId"]
-
-        data = to_bytes("hello this is a upload test")
-        upload_file_object = BytesIO(data)
-
-        signed_url = _generate_presigned_url(
-            client,
-            {
-                "Bucket": bucket_name,
-                "Key": object_key,
-                "UploadId": upload_id,
-                "PartNumber": 1,
-            },
-            expires=4,
-            client_method="upload_part",
-        )
-
-        response = requests.put(signed_url, data=upload_file_object)
-        assert response.status_code == 200
-        multipart_upload_parts = [{"ETag": response.headers["ETag"], "PartNumber": 1}]
-
-        response = client.complete_multipart_upload(
-            Bucket=bucket_name,
-            Key=object_key,
-            MultipartUpload={"Parts": multipart_upload_parts},
-            UploadId=upload_id,
-        )
-
-        assert 200 == response["ResponseMetadata"]["HTTPStatusCode"]
-
-        simple_params = {"Bucket": bucket_name, "Key": object_key}
-        response = requests.get(_generate_presigned_url(client, simple_params, 4))
-        assert 200 == response.status_code
-        assert response.content == data
-
-    @pytest.mark.parametrize(
-        "signature_version, use_virtual_address",
-        [
-            ("s3", False),
-            ("s3", True),
-            ("s3v4", False),
-            ("s3v4", True),
-        ],
-    )
-    @pytest.mark.aws_validated
-    def test_presigned_url_signature_authentication_expired(
-        self,
-        s3_client,
-        s3_create_bucket,
-        signature_version,
-        use_virtual_address,
-        monkeypatch,
-    ):
-        monkeypatch.setattr(config, "S3_SKIP_SIGNATURE_VALIDATION", False)
-        bucket_name = f"presign-{short_uid()}"
-
-        s3_endpoint_path_style = _endpoint_url()
-
-        s3_create_bucket(Bucket=bucket_name)
-        object_key = "temp.txt"
-        s3_client.put_object(Key=object_key, Bucket=bucket_name, Body="123")
-
-        s3_config = {"addressing_style": "virtual"} if use_virtual_address else {}
-        client = _s3_client_custom_config(
-            Config(signature_version=signature_version, s3=s3_config),
-            endpoint_url=s3_endpoint_path_style,
-        )
-
-        url = _generate_presigned_url(client, {"Bucket": bucket_name, "Key": object_key}, expires=1)
-        time.sleep(1)
-
-        assert 403 == requests.get(url).status_code
-
-    @pytest.mark.parametrize(
-        "signature_version, use_virtual_address",
-        [
-            ("s3", False),
-            ("s3", True),
-            ("s3v4", False),
-            ("s3v4", True),
-        ],
-    )
-    @pytest.mark.aws_validated
-    def test_presigned_url_signature_authentication(
-        self,
-        s3_client,
-        s3_create_bucket,
-        signature_version,
-        use_virtual_address,
-        monkeypatch,
-    ):
-        monkeypatch.setattr(config, "S3_SKIP_SIGNATURE_VALIDATION", False)
-        bucket_name = f"presign-{short_uid()}"
-
-        s3_endpoint_path_style = _endpoint_url()
-        s3_url = _bucket_url_vhost(bucket_name) if use_virtual_address else _bucket_url(bucket_name)
-
-        s3_create_bucket(Bucket=bucket_name)
-        object_key = "temp.txt"
-        s3_client.put_object(Key=object_key, Bucket=bucket_name, Body="123")
-
-        s3_config = {"addressing_style": "virtual"} if use_virtual_address else {}
-        client = _s3_client_custom_config(
-            Config(signature_version=signature_version, s3=s3_config),
-            endpoint_url=s3_endpoint_path_style,
-        )
-
-        expires = 4
-
-        # GET requests
-        simple_params = {"Bucket": bucket_name, "Key": object_key}
-        response = requests.get(_generate_presigned_url(client, simple_params, expires))
-        assert 200 == response.status_code
-        assert response.content == b"123"
-
-        params = {
-            "Bucket": bucket_name,
-            "Key": object_key,
-            "ResponseContentType": "text/plain",
-            "ResponseContentDisposition": "attachment;  filename=test.txt",
-        }
-
-        presigned = _generate_presigned_url(client, params, expires)
-        response = requests.get(_generate_presigned_url(client, params, expires))
-        assert 200 == response.status_code
-        assert response.content == b"123"
-
-        object_data = "this should be found in when you download {}.".format(object_key)
-
-        # invalid requests
-        # TODO check how much sense it makes to make this url "invalid"...
-        assert (
-            403
-            == requests.get(
-                _make_url_invalid(s3_url, object_key, presigned),
-                data=object_data,
-                headers={"Content-Type": "my-fake-content/type"},
-            ).status_code
-        )
-
-        # put object valid
-        assert (
-            200
-            == requests.put(
-                _generate_presigned_url(client, simple_params, expires, client_method="put_object"),
-                data=object_data,
-            ).status_code
-        )
-
-        params = {
-            "Bucket": bucket_name,
-            "Key": object_key,
-            "ContentType": "text/plain",
-        }
-        presigned_put_url = _generate_presigned_url(
-            client, params, expires, client_method="put_object"
-        )
-
-        assert (
-            200
-            == requests.put(
-                presigned_put_url,
-                data=object_data,
-                headers={"Content-Type": "text/plain"},
-            ).status_code
-        )
-
-        # Invalid request
-        response = requests.put(
-            _make_url_invalid(s3_url, object_key, presigned_put_url),
-            data=object_data,
-            headers={"Content-Type": "my-fake-content/type"},
-        )
-        assert 403 == response.status_code
-
-        # DELETE requests
-        presigned_delete_url = _generate_presigned_url(
-            client, simple_params, expires, client_method="delete_object"
-        )
-        response = requests.delete(presigned_delete_url)
-        assert 204 == response.status_code
 
 
 class TestS3DeepArchive:
@@ -2814,6 +3140,201 @@ class TestS3DeepArchive:
             keys.append(obj.key)
             assert obj.storage_class == "DEEP_ARCHIVE"
 
+    @pytest.mark.aws_validated
+    @pytest.mark.skip_snapshot_verify(
+        condition=is_old_provider,
+        paths=[
+            "$..Error.Message",  # TODO AWS does not include dot at the end
+            "$..Error.RequestID",  # AWS has no RequestID here
+            "$..Error.StorageClass",  # Missing in Localstack
+            "$..StorageClass",  # Missing in Localstack
+        ],
+    )
+    def test_s3_get_deep_archive_object_restore(self, s3_client, s3_create_bucket, snapshot):
+        snapshot.add_transformer(snapshot.transform.s3_api())
+
+        bucket_name = f"bucket-{short_uid()}"
+        object_key = f"key-{short_uid()}"
+
+        s3_create_bucket(Bucket=bucket_name)
+
+        # put DEEP_ARCHIVE object
+        s3_client.put_object(
+            Bucket=bucket_name,
+            Key=object_key,
+            Body="body data",
+            StorageClass="DEEP_ARCHIVE",
+        )
+        with pytest.raises(ClientError) as e:
+            s3_client.get_object(Bucket=bucket_name, Key=object_key)
+        e.match("InvalidObjectState")
+
+        snapshot.match("get_object_invalid_state", e.value.response)
+        response = s3_client.restore_object(
+            Bucket=bucket_name,
+            Key=object_key,
+            RestoreRequest={
+                "Days": 30,
+                "GlacierJobParameters": {
+                    "Tier": "Bulk",
+                },
+            },
+        )
+        snapshot.match("restore_object", response)
+
+        # AWS tier is currently configured to retrieve within 48 hours, so we cannot test the get-object here
+        response = s3_client.head_object(Bucket=bucket_name, Key=object_key)
+        if 'ongoing-request="false"' in response.get("Restore", ""):
+            # if the restoring happens in LocalStack (or was fast in AWS) we can retrieve the object
+            response = s3_client.get_object(Bucket=bucket_name, Key=object_key)
+            assert "etag" in response.get("ResponseMetadata").get("HTTPHeaders")
+
+
+class TestS3StaticWebsiteHosting:
+    """
+    Test to cover StaticWebsiteHosting functionality.
+    """
+
+    @pytest.mark.aws_validated
+    def test_s3_static_website_index(self, s3_client, s3_create_bucket):
+        bucket_name = f"bucket-{short_uid()}"
+
+        s3_create_bucket(Bucket=bucket_name, ACL="public-read")
+        s3_client.put_object(
+            Bucket=bucket_name,
+            Key="index.html",
+            Body="index",
+            ContentType="text/html",
+            ACL="public-read",
+        )
+
+        s3_client.put_bucket_website(
+            Bucket=bucket_name,
+            WebsiteConfiguration={
+                "IndexDocument": {"Suffix": "index.html"},
+            },
+        )
+
+        url = _website_bucket_url(bucket_name)
+
+        response = requests.get(url, verify=False)
+        assert 200 == response.status_code
+        assert "index" == response.text
+
+    @pytest.mark.aws_validated
+    def test_s3_static_website_hosting(self, s3_client, s3_create_bucket):
+
+        bucket_name = f"bucket-{short_uid()}"
+
+        s3_create_bucket(Bucket=bucket_name, ACL="public-read")
+        index_obj = s3_client.put_object(
+            Bucket=bucket_name,
+            Key="test/index.html",
+            Body="index",
+            ContentType="text/html",
+            ACL="public-read",
+        )
+        error_obj = s3_client.put_object(
+            Bucket=bucket_name,
+            Key="test/error.html",
+            Body="error",
+            ContentType="text/html",
+            ACL="public-read",
+        )
+        actual_key_obj = s3_client.put_object(
+            Bucket=bucket_name,
+            Key="actual/key.html",
+            Body="key",
+            ContentType="text/html",
+            ACL="public-read",
+        )
+        with_content_type_obj = s3_client.put_object(
+            Bucket=bucket_name,
+            Key="with-content-type/key.js",
+            Body="some js",
+            ContentType="application/javascript; charset=utf-8",
+            ACL="public-read",
+        )
+        s3_client.put_object(
+            Bucket=bucket_name,
+            Key="to-be-redirected.html",
+            WebsiteRedirectLocation="/actual/key.html",
+            ACL="public-read",
+        )
+        s3_client.put_bucket_website(
+            Bucket=bucket_name,
+            WebsiteConfiguration={
+                "IndexDocument": {"Suffix": "index.html"},
+                "ErrorDocument": {"Key": "test/error.html"},
+            },
+        )
+        website_url = _website_bucket_url(bucket_name)
+        # actual key
+        url = f"{website_url}/actual/key.html"
+        response = requests.get(url, verify=False)
+        assert 200 == response.status_code
+        assert "key" == response.text
+        assert "content-type" in response.headers
+        assert "text/html" == response.headers["content-type"]
+        assert "etag" in response.headers
+        assert actual_key_obj["ETag"] in response.headers["etag"]
+
+        # If-None-Match and Etag
+        response = requests.get(
+            url, headers={"If-None-Match": actual_key_obj["ETag"]}, verify=False
+        )
+        assert 304 == response.status_code
+
+        # key with specified content-type
+        url = f"{website_url}/with-content-type/key.js"
+        response = requests.get(url, verify=False)
+        assert 200 == response.status_code
+        assert "some js" == response.text
+        assert "content-type" in response.headers
+        assert "application/javascript; charset=utf-8" == response.headers["content-type"]
+        assert "etag" in response.headers
+        assert with_content_type_obj["ETag"] == response.headers["etag"]
+
+        # index document
+        url = f"{website_url}/test"
+        response = requests.get(url, verify=False)
+        assert 200 == response.status_code
+        assert "index" == response.text
+        assert "content-type" in response.headers
+        assert "text/html" in response.headers["content-type"]
+        assert "etag" in response.headers
+        assert index_obj["ETag"] == response.headers["etag"]
+
+        # root path test
+        url = f"{website_url}/"
+        response = requests.get(url, verify=False)
+        assert 404 == response.status_code
+        assert "error" == response.text
+        assert "content-type" in response.headers
+        assert "text/html" in response.headers["content-type"]
+        assert "etag" in response.headers
+        assert error_obj["ETag"] == response.headers["etag"]
+
+        # error document
+        url = f"{website_url}/something"
+        assert 404 == response.status_code
+        assert "error" == response.text
+        assert "content-type" in response.headers
+        assert "text/html" in response.headers["content-type"]
+        assert "etag" in response.headers
+        assert error_obj["ETag"] == response.headers["etag"]
+
+        # redirect object
+        url = f"{website_url}/to-be-redirected.html"
+        response = requests.get(url, verify=False, allow_redirects=False)
+        assert 301 == response.status_code
+        assert "location" in response.headers
+        assert "actual/key.html" in response.headers["location"]
+
+        response = requests.get(url, verify=False)
+        assert 200 == response.status_code
+        assert actual_key_obj["ETag"] == response.headers["etag"]
+
 
 def _anon_client(service: str):
     conf = Config(signature_version=UNSIGNED)
@@ -2822,7 +3343,7 @@ def _anon_client(service: str):
     return aws_stack.create_external_boto_client(service, config=conf)
 
 
-def _s3_client_custom_config(conf: Config, endpoint_url: str):
+def _s3_client_custom_config(conf: Config, endpoint_url: str = None):
     if os.environ.get("TEST_TARGET") == "AWS_CLOUD":
         return boto3.client("s3", config=conf, endpoint_url=endpoint_url)
 
@@ -2851,7 +3372,9 @@ def _endpoint_url(region: str = "", localstack_host: str = None) -> str:
             return "https://s3.amazonaws.com"
         else:
             return f"http://s3.{region}.amazonaws.com"
-    return f"{config.get_edge_url(localstack_hostname=localstack_host or S3_VIRTUAL_HOSTNAME)}"
+    if region == "us-east-1":
+        return f"{config.get_edge_url(localstack_hostname=localstack_host or S3_VIRTUAL_HOSTNAME)}"
+    return config.get_edge_url(f"s3.{region}.{LOCALHOST_HOSTNAME}")
 
 
 def _bucket_url(bucket_name: str, region: str = "", localstack_host: str = None) -> str:
@@ -2859,7 +3382,7 @@ def _bucket_url(bucket_name: str, region: str = "", localstack_host: str = None)
 
 
 def _website_bucket_url(bucket_name: str):
-    # TODO depending on region the syntax of the website variy (dot vs dash before region)
+    # TODO depending on region the syntax of the website vary (dot vs dash before region)
     if os.environ.get("TEST_TARGET") == "AWS_CLOUD":
         region = config.DEFAULT_REGION
         return f"http://{bucket_name}.s3-website-{region}.amazonaws.com"
@@ -2874,7 +3397,9 @@ def _bucket_url_vhost(bucket_name: str, region: str = "", localstack_host: str =
             return f"https://{bucket_name}.s3.amazonaws.com"
         else:
             return f"https://{bucket_name}.s3.{region}.amazonaws.com"
-    host = localstack_host or S3_VIRTUAL_HOSTNAME
+    host = localstack_host or (
+        f"s3.{region}.{LOCALHOST_HOSTNAME}" if region != "us-east-1" else S3_VIRTUAL_HOSTNAME
+    )
     s3_edge_url = config.get_edge_url(localstack_hostname=host)
     # TODO might add the region here
     return s3_edge_url.replace(f"://{host}", f"://{bucket_name}.{host}")

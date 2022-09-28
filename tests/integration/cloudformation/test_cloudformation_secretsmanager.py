@@ -1,6 +1,9 @@
 import json
 import re
 
+from localstack.utils.strings import short_uid
+from localstack.utils.sync import wait_until
+
 SECRET_NAME = "/dev/db/pass"
 TEMPLATE_GENERATE_SECRET = (
     """
@@ -25,9 +28,23 @@ Outputs:
 )
 
 
-def test_cfn_secretsmanager_gen_secret(
-    cfn_client, secretsmanager_client, is_stack_created, cleanup_stacks, deploy_cfn_template
-):
+TEST_TEMPLATE_11 = """
+AWSTemplateFormatVersion: 2010-09-09
+Parameters:
+  SecretName:
+    Type: String
+Resources:
+  MySecret:
+    Type: AWS::SecretsManager::Secret
+    Properties:
+      Name: !Ref "SecretName"
+      Tags:
+        - Key: AppName
+          Value: AppA
+"""
+
+
+def test_cfn_secretsmanager_gen_secret(cfn_client, secretsmanager_client, deploy_cfn_template):
     stack = deploy_cfn_template(template=TEMPLATE_GENERATE_SECRET)
 
     secret = secretsmanager_client.describe_secret(SecretId="/dev/db/pass")
@@ -46,3 +63,21 @@ def test_cfn_secretsmanager_gen_secret(
     output_secret_arn = stack.outputs["SecretARN"]
     assert output_secret_arn == secret["ARN"]
     assert re.match(r".*%s-[a-zA-Z0-9]+" % SECRET_NAME, output_secret_arn)
+
+
+def test_cfn_handle_secretsmanager_secret(secretsmanager_client, deploy_cfn_template, cfn_client):
+    secret_name = f"secret-{short_uid()}"
+    stack = deploy_cfn_template(template=TEST_TEMPLATE_11, parameters={"SecretName": secret_name})
+
+    rs = secretsmanager_client.describe_secret(SecretId=secret_name)
+    assert rs["Name"] == secret_name
+    assert "DeletedDate" not in rs
+
+    cfn_client.delete_stack(StackName=stack.stack_name)
+    assert wait_until(
+        lambda: cfn_client.describe_stacks(StackName=stack.stack_id)["Stacks"][0]["StackStatus"]
+        == "DELETE_COMPLETE"
+    )
+
+    rs = secretsmanager_client.describe_secret(SecretId=secret_name)
+    assert "DeletedDate" in rs

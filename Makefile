@@ -253,7 +253,7 @@ ci-pro-smoke-tests:
 	awslocal mediastore list-containers
 	awslocal mwaa list-environments
 	awslocal qldb list-ledgers
-	awslocal rds create-db-cluster --db-cluster-identifier test-cluster --engine aurora-postgresql --database-name test --master-username master --master-user-password secret99 --db-subnet-group-name mysubnetgroup --db-cluster-parameter-group-name mydbclusterparametergroup
+	awslocal rds create-db-cluster --db-cluster-identifier test-cluster --engine aurora-postgresql --database-name test --master-username master --master-user-password secret99 --db-subnet-group-name mysubnetgroup
 	awslocal rds describe-db-instances
 	awslocal s3 mb s3://test-bucket
 	awslocal timestream-write create-database --database-name db1

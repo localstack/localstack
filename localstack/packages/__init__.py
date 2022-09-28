@@ -1,20 +1,26 @@
-from .core import (
+from .api import (
     InstallTarget,
     NoSuchVersionException,
-    OSPackageInstaller,
     Package,
     PackageException,
     PackageInstaller,
     PackageRepository,
     PackagesPlugin,
-    SystemNotSupportedException,
     packages,
+)
+from .core import (
+    DownloadInstaller,
+    GitHubReleaseInstaller,
+    OSPackageInstaller,
+    SystemNotSupportedException,
 )
 
 __all__ = [
     "Package",
     "PackageInstaller",
     "OSPackageInstaller",
+    "GitHubReleaseInstaller",
+    "DownloadInstaller",
     "InstallTarget",
     "PackageException",
     "NoSuchVersionException",

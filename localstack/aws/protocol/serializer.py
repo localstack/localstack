@@ -1350,6 +1350,8 @@ class S3ResponseSerializer(RestXMLResponseSerializer):
     serialization.
     """
 
+    SUPPORTED_MIME_TYPES = [TEXT_XML, APPLICATION_XML]
+
     def _serialize_error(
         self,
         error: ServiceException,
@@ -1370,6 +1372,37 @@ class S3ResponseSerializer(RestXMLResponseSerializer):
         self._add_additional_error_tags(error, root, shape, mime_type)
 
         response.set_response(self._encode_payload(self._node_to_string(root, mime_type)))
+
+    def _prepare_additional_traits_in_response(
+        self, response: HttpResponse, operation_model: OperationModel
+    ):
+        """Adds the request ID to the headers (in contrast to the body - as in the Query protocol)."""
+        response = super()._prepare_additional_traits_in_response(response, operation_model)
+        request_id = gen_amzn_requestid_long()
+        response.headers["x-amz-request-id"] = request_id
+        response.headers[
+            "x-amz-id-2"
+        ] = f"MzRISOwyjmnup{request_id}7/JypPGXLh0OVFGcJaaO3KW/hRAqKOpIEEp"
+        return response
+
+    def _add_error_tags(
+        self, error: ServiceException, error_tag: ETree.Element, mime_type: str
+    ) -> None:
+        code_tag = ETree.SubElement(error_tag, "Code")
+        code_tag.text = error.code
+        message = self._get_error_message(error)
+        if message:
+            self._default_serialize(error_tag, message, None, "Message", mime_type)
+        else:
+            # In S3, if there's no message, create an empty node
+            self._create_empty_node(error_tag, "Message")
+        if error.sender_fault:
+            # The sender fault is either not set or "Sender"
+            self._default_serialize(error_tag, "Sender", None, "Type", mime_type)
+
+    @staticmethod
+    def _create_empty_node(xmlnode: ETree.Element, name: str) -> None:
+        ETree.SubElement(xmlnode, name)
 
 
 class SqsResponseSerializer(QueryResponseSerializer):

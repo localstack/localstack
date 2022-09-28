@@ -184,7 +184,7 @@ def kms():
     from localstack.services.kms.provider import KmsProvider
 
     provider = KmsProvider()
-    return Service("kms", listener=AwsApiListener("kms", MotoFallbackDispatcher(provider)))
+    return Service("kms", listener=AwsApiListener("kms", provider))
 
 
 @aws_provider(api="lambda")

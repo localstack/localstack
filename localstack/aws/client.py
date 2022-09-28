@@ -17,7 +17,8 @@ LOG = logging.getLogger(__name__)
 
 class _ResponseStream(io.RawIOBase):
     """
-    Wraps a Response and makes it available as a readable IO stream.
+    Wraps a Response and makes it available as a readable IO stream. If the response stream is used as an iterable, it
+    will use the underlying response object directly.
 
     Adapted from https://stackoverflow.com/a/20260030/804840
     """
@@ -30,15 +31,25 @@ class _ResponseStream(io.RawIOBase):
     def readable(self):
         return True
 
-    def readinto(self, b):
+    def readinto(self, buffer):
         try:
-            upto = len(b)  # We're supposed to return at most this much
+            upto = len(buffer)  # We're supposed to return at most this much
             chunk = self._buf or next(self.iterator)
+            # FIXME: this is very slow as it copies the entire chunk
             output, self._buf = chunk[:upto], chunk[upto:]
-            b[: len(output)] = output
+            buffer[: len(output)] = output
             return len(output)
         except StopIteration:
             return 0  # indicate EOF
+
+    def close(self) -> None:
+        return self.response.close()
+
+    def __iter__(self):
+        return self.iterator
+
+    def __next__(self):
+        return next(self.iterator)
 
     def __str__(self):
         length = self.response.content_length

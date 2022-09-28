@@ -7,6 +7,7 @@ import requests
 from localstack import constants
 from localstack.utils.common import short_uid
 from localstack.utils.run import to_str
+from localstack.utils.testutil import create_zip_file
 from tests.integration.apigateway_fixtures import api_invoke_url
 
 TEST_TEMPLATE_1 = """
@@ -145,3 +146,103 @@ def test_url_output(apigateway_client, tmp_http_server, deploy_cfn_template):
     assert api_id in api_url
 
     assert f"https://{api_id}.execute-api.{constants.LOCALHOST_HOSTNAME}:4566" in api_url
+
+
+def test_cfn_with_apigateway_resources(deploy_cfn_template, apigateway_client):
+    stack = deploy_cfn_template(
+        template_path=os.path.join(os.path.dirname(__file__), "../templates/template35.yaml")
+    )
+    apis = [
+        api
+        for api in apigateway_client.get_rest_apis()["items"]
+        if api["name"] == "celeste-Gateway-local"
+    ]
+    assert len(apis) == 1
+    api_id = apis[0]["id"]
+
+    resources = [
+        res
+        for res in apigateway_client.get_resources(restApiId=api_id)["items"]
+        if res.get("pathPart") == "account"
+    ]
+
+    assert len(resources) == 1
+
+    # assert request parameter is present in resource method
+    assert resources[0]["resourceMethods"]["POST"]["requestParameters"] == {
+        "method.request.path.account": True
+    }
+    models = [
+        model
+        for model in apigateway_client.get_models(restApiId=api_id)["items"]
+        if stack.stack_name in model["name"]
+    ]
+
+    assert len(models) == 2
+
+    stack.destroy()
+
+    apis = [
+        api
+        for api in apigateway_client.get_rest_apis()["items"]
+        if api["name"] == "celeste-Gateway-local"
+    ]
+    assert not apis
+
+
+# TODO: rework
+def test_cfn_deploy_apigateway_integration(
+    deploy_cfn_template, s3_client, cfn_client, apigateway_client
+):
+    bucket_name = "hofund-local-deployment"
+    key_name = "serverless/hofund/local/1599143878432/authorizer.zip"
+    package_path = os.path.join(os.path.dirname(__file__), "../awslambda/functions/lambda_echo.js")
+
+    s3_client.create_bucket(Bucket=bucket_name, ACL="public-read")
+    s3_client.put_object(
+        Bucket=bucket_name,
+        Key=key_name,
+        Body=create_zip_file(package_path, get_content=True),
+    )
+
+    stack = deploy_cfn_template(
+        template_path=os.path.join(
+            os.path.dirname(__file__), "../templates/apigateway_integration.json"
+        )
+    )
+    stack_resources = cfn_client.list_stack_resources(StackName=stack.stack_name)[
+        "StackResourceSummaries"
+    ]
+    rest_apis = [
+        res for res in stack_resources if res["ResourceType"] == "AWS::ApiGateway::RestApi"
+    ]
+    rs = apigateway_client.get_rest_api(restApiId=rest_apis[0]["PhysicalResourceId"])
+    assert rs["name"] == "ApiGatewayRestApi"
+
+
+def test_cfn_apigateway_rest_api(deploy_cfn_template, apigateway_client):
+    stack = deploy_cfn_template(
+        template_path=os.path.join(os.path.dirname(__file__), "../templates/apigateway.json")
+    )
+
+    rs = apigateway_client.get_rest_apis()
+    apis = [item for item in rs["items"] if item["name"] == "DemoApi_dev"]
+    assert not apis
+
+    stack.destroy()
+
+    stack_2 = deploy_cfn_template(
+        template_path=os.path.join(os.path.dirname(__file__), "../templates/apigateway.json"),
+        parameters={"Create": "True"},
+    )
+    rs = apigateway_client.get_rest_apis()
+    apis = [item for item in rs["items"] if item["name"] == "DemoApi_dev"]
+    assert len(apis) == 1
+
+    rs = apigateway_client.get_models(restApiId=apis[0]["id"])
+    assert len(rs["items"]) == 1
+
+    stack_2.destroy()
+
+    apis = [item for item in rs["items"] if item["name"] == "DemoApi_dev"]
+    assert not apis

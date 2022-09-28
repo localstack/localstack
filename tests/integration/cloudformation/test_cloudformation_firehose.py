@@ -7,7 +7,6 @@ from localstack.utils.sync import retry
 
 
 @pytest.mark.aws_validated
-# TODO: enable validation of Destinations - currently too many discrepancies
 @pytest.mark.skip_snapshot_verify(paths=["$..Destinations"])
 def test_firehose_stack_with_kinesis_as_source(deploy_cfn_template, firehose_client, snapshot):
     snapshot.add_transformer(snapshot.transform.cloudformation_api())
@@ -18,7 +17,7 @@ def test_firehose_stack_with_kinesis_as_source(deploy_cfn_template, firehose_cli
 
     stack = deploy_cfn_template(
         template_path=os.path.join(
-            os.path.dirname(__file__), "..", "templates", "firehose_kinesis_as_source.yaml"
+            os.path.dirname(__file__), "../templates/firehose_kinesis_as_source.yaml"
         ),
         parameters={
             "BucketName": bucket_name,
@@ -33,7 +32,6 @@ def test_firehose_stack_with_kinesis_as_source(deploy_cfn_template, firehose_cli
         status = firehose_client.describe_delivery_stream(DeliveryStreamName=delivery_stream_name)
         assert status["DeliveryStreamDescription"]["DeliveryStreamStatus"] == "ACTIVE"
 
-    # wait until stream becomes available
     retry(_assert_stream_available, sleep=1, retries=15)
 
     response = firehose_client.describe_delivery_stream(DeliveryStreamName=delivery_stream_name)

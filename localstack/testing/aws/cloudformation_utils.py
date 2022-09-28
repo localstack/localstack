@@ -40,7 +40,5 @@ def render_template(template_body: str, **template_vars) -> str:
     return template_body
 
 
-def load_template(tmpl_path: str, **template_vars) -> str:
-    """DEPRECATED"""
-    template = load_template_file(tmpl_path)
-    return render_template(template, **template_vars)
+def load_template_raw(path: str):
+    return load_template_file(path)

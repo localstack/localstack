@@ -1,12 +1,18 @@
+Parameters:
+  EventBusName:
+    Type: String
+  StatementId:
+    Type: String
+
 Resources:
   LsEventBus:
     Type: AWS::Events::EventBus
     Properties:
-      Name: {{ event_bus_name }}
+      Name: !Ref EventBusName
   LsEventPolicy:
     Type: AWS::Events::EventBusPolicy
     Properties:
-      StatementId: {{ statement_id }}
+      StatementId: !Ref StatementId
       Statement:
         Effect: "Allow"
         Principal: "*"

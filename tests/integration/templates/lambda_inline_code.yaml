@@ -1,3 +1,10 @@
+Parameters:
+  FunctionName:
+    Type: String
+  Arch:
+    Type: String
+  ReturnValue:
+    Type: String
 Resources:
   fnServiceRole5D180AFD:
     Type: AWS::IAM::Role
@@ -19,14 +26,14 @@ Resources:
     Type: AWS::Lambda::Function
     Properties:
       Architectures:
-        - {{ arch }}
+        - !Ref Arch
       Code:
-        ZipFile: exports.handler = async (event, context) => {return "{{ lambda_return_value }}"}
+        ZipFile: !Join ["",["exports.handler = async (event, context) => {return '", !Ref ReturnValue,"'}"]]
       Role:
         Fn::GetAtt:
           - fnServiceRole5D180AFD
           - Arn
-      FunctionName: {{ function_name }}
+      FunctionName: !Ref FunctionName
       Handler: index.handler
       Runtime: nodejs14.x
     DependsOn:

@@ -34,7 +34,6 @@ from localstack.utils.files import (
     load_file,
     mkdir,
     new_tmp_file,
-    replace_in_file,
     rm_rf,
     save_file,
 )
@@ -52,14 +51,12 @@ INSTALL_DIR_KCL = "%s/amazon-kinesis-client" % dirs.static_libs
 INSTALL_DIR_STEPFUNCTIONS = "%s/stepfunctions" % dirs.static_libs
 INSTALL_DIR_KMS = "%s/kms" % dirs.static_libs
 INSTALL_DIR_ELASTICMQ = "%s/elasticmq" % dirs.var_libs
-INSTALL_DIR_KINESIS_MOCK = os.path.join(dirs.static_libs, "kinesis-mock")
 INSTALL_PATH_LOCALSTACK_FAT_JAR = "%s/localstack-utils-fat.jar" % dirs.static_libs
 INSTALL_PATH_DDB_JAR = os.path.join(INSTALL_DIR_DDB, "DynamoDBLocal.jar")
 INSTALL_PATH_KCL_JAR = os.path.join(INSTALL_DIR_KCL, "aws-java-sdk-sts.jar")
 INSTALL_PATH_STEPFUNCTIONS_JAR = os.path.join(INSTALL_DIR_STEPFUNCTIONS, "StepFunctionsLocal.jar")
 INSTALL_PATH_KMS_BINARY_PATTERN = os.path.join(INSTALL_DIR_KMS, "local-kms.<arch>.bin")
 INSTALL_PATH_ELASTICMQ_JAR = os.path.join(INSTALL_DIR_ELASTICMQ, "elasticmq-server.jar")
-INSTALL_PATH_KINESALITE_CLI = os.path.join(INSTALL_DIR_NPM, "kinesalite", "cli.js")
 
 URL_LOCALSTACK_FAT_JAR = (
     "{mvn_repo}/cloud/localstack/localstack-utils/{ver}/localstack-utils-{ver}-fat.jar"
@@ -107,14 +104,6 @@ URL_ASPECTJRT = f"{MAVEN_REPO_URL}/org/aspectj/aspectjrt/1.9.7/aspectjrt-1.9.7.j
 URL_ASPECTJWEAVER = f"{MAVEN_REPO_URL}/org/aspectj/aspectjweaver/1.9.7/aspectjweaver-1.9.7.jar"
 JAR_URLS = [URL_ASPECTJRT, URL_ASPECTJWEAVER]
 
-# kinesis-mock version
-KINESIS_MOCK_VERSION = os.environ.get("KINESIS_MOCK_VERSION") or "0.2.5"
-KINESIS_MOCK_RELEASE_URL = (
-    "https://api.github.com/repos/etspaceman/kinesis-mock/releases/tags/" + KINESIS_MOCK_VERSION
-)
-
-# kinesalite version (npm dependency)
-KINESALITE_VERSION = os.environ.get("KINESALITE_VERSION") or "3.3.3"
 
 # debugpy module
 DEBUGPY_MODULE = "debugpy"
@@ -165,100 +154,6 @@ def install_elasticmq():
         if not os.path.exists(tmp_archive):
             download(ELASTICMQ_JAR_URL, tmp_archive)
         shutil.copy(tmp_archive, INSTALL_DIR_ELASTICMQ)
-
-
-def install_kinesis():
-    if config.KINESIS_PROVIDER == "kinesalite":
-        install_kinesalite()
-        return
-    if config.KINESIS_PROVIDER == "kinesis-mock":
-        is_installed, bin_path = get_is_kinesis_mock_installed()
-        if not is_installed:
-            install_kinesis_mock(bin_path)
-        return
-    raise ValueError(f"Unknown Kinesis provider {config.KINESIS_PROVIDER}")
-
-
-def _apply_patches_kinesalite():
-    files = [
-        "%s/kinesalite/validations/decreaseStreamRetentionPeriod.js",
-        "%s/kinesalite/validations/increaseStreamRetentionPeriod.js",
-    ]
-    for file_path in files:
-        file_path = file_path % INSTALL_DIR_NPM
-        replace_in_file("lessThanOrEqual: 168", "lessThanOrEqual: 8760", file_path)
-
-
-def install_kinesalite():
-    if not os.path.exists(INSTALL_PATH_KINESALITE_CLI):
-        log_install_msg("Kinesis")
-        run(["npm", "install", "--prefix", dirs.static_libs, f"kinesalite@{KINESALITE_VERSION}"])
-        _apply_patches_kinesalite()
-
-
-def get_is_kinesis_mock_installed() -> Tuple[bool, str]:
-    """
-    Checks the host system to see if kinesis mock is installed and where.
-    :returns: True if kinesis mock is installed (False otherwise) and the expected installation path
-    """
-    bin_file_path = kinesis_mock_install_path()
-    if os.path.exists(bin_file_path):
-        LOG.debug("kinesis-mock found at %s", bin_file_path)
-        return True, bin_file_path
-    return False, bin_file_path
-
-
-def kinesis_mock_install_path() -> str:
-    machine = platform.machine().lower()
-    system = platform.system().lower()
-    version = platform.version().lower()
-    is_probably_m1 = system == "darwin" and ("arm64" in version or "arm32" in version)
-
-    LOG.debug("getting kinesis-mock for %s %s", system, machine)
-    if config.is_env_true("KINESIS_MOCK_FORCE_JAVA"):
-        # sometimes the static binaries may have problems, and we want to fal back to Java
-        bin_file = "kinesis-mock.jar"
-    elif (machine == "x86_64" or machine == "amd64") and not is_probably_m1:
-        if system == "windows":
-            bin_file = "kinesis-mock-mostly-static.exe"
-        elif system == "linux":
-            bin_file = "kinesis-mock-linux-amd64-static"
-        elif system == "darwin":
-            bin_file = "kinesis-mock-macos-amd64-dynamic"
-        else:
-            bin_file = "kinesis-mock.jar"
-    else:
-        bin_file = "kinesis-mock.jar"
-
-    bin_file_path = os.path.join(INSTALL_DIR_KINESIS_MOCK, bin_file)
-    return bin_file_path
-
-
-def install_kinesis_mock(bin_file_path: str = None):
-    response = requests.get(KINESIS_MOCK_RELEASE_URL)
-    if not response.ok:
-        raise ValueError(
-            f"Could not get list of releases from {KINESIS_MOCK_RELEASE_URL}: {response.text}"
-        )
-
-    bin_file_path = bin_file_path or kinesis_mock_install_path()
-    github_release = response.json()
-    download_url = None
-    bin_file_name = os.path.basename(bin_file_path)
-    for asset in github_release.get("assets", []):
-        # find the correct binary in the release
-        if asset["name"] == bin_file_name:
-            download_url = asset["browser_download_url"]
-            break
-    if download_url is None:
-        raise ValueError(
-            f"Could not find required binary {bin_file_name} in release {KINESIS_MOCK_RELEASE_URL}"
-        )
-
-    mkdir(INSTALL_DIR_KINESIS_MOCK)
-    LOG.info("downloading kinesis-mock binary from %s", download_url)
-    download(download_url, bin_file_path)
-    chmod_r(bin_file_path, 0o777)
 
 
 def install_local_kms():
@@ -495,11 +390,12 @@ def get_terraform_binary() -> str:
 
 def install_component(name):
     from localstack.services.dynamodb.packages import dynamodblocal_package
+    from localstack.services.kinesis.packages import kinesismock_package
 
     installers = {
         "cloudformation": install_cloudformation_libs,
         "dynamodb": dynamodblocal_package.install,
-        "kinesis": install_kinesis,
+        "kinesis": kinesismock_package.install,
         "kms": install_local_kms,
         "lambda": install_lambda_runtime,
         "sqs": install_sqs_provider,
@@ -599,6 +495,7 @@ class CommunityInstallerRepository(InstallerRepository):
     def get_installer(self) -> List[Installer]:
         from localstack.packages.postgres import PostgresqlPackage
         from localstack.services.dynamodb.packages import dynamodblocal_package
+        from localstack.services.kinesis.packages import kinesalite_package, kinesismock_package
         from localstack.services.opensearch.packages import (
             elasticsearch_package,
             opensearch_package,
@@ -612,8 +509,8 @@ class CommunityInstallerRepository(InstallerRepository):
             ("elasticmq", install_elasticmq),
             ("elasticsearch", elasticsearch_package),
             ("opensearch", opensearch_package),
-            ("kinesalite", install_kinesalite),
-            ("kinesis-mock", install_kinesis_mock),
+            ("kinesalite", kinesalite_package),
+            ("kinesis-mock", kinesismock_package),
             ("lambda-java-libs", install_lambda_java_libs),
             ("local-kms", install_local_kms),
             ("postgresql", PostgresqlPackage()),

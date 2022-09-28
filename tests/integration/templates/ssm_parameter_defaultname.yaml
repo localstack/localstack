@@ -1,11 +1,14 @@
 AWSTemplateFormatVersion: 2010-09-09
+Parameters:
+  Input:
+    Type: String
 
 Resources:
   CustomParameter:
     Type: AWS::SSM::Parameter
     Properties:
       Type: String
-      Value: {{ ssm_parameter_value }}
+      Value: !Ref Input
 
 Outputs:
   CustomParameterOutput:

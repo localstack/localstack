@@ -3,12 +3,19 @@ Description: >-
   SAM template for Lambda fn Event-filtering with DynamoDB Streams
 
 Transform: AWS::Serverless-2016-10-31
+Parameters:
+  FunctionName:
+    Type: String
+  TableName:
+    Type: String
+  Filter:
+    Type: String
 
 Resources:
   TriggerFunction:
     Type: AWS::Serverless::Function
     Properties:
-      FunctionName: {{ function_name }}
+      FunctionName: !Ref FunctionName
       InlineCode: exports.handler = async (event, context) => { console.log(JSON.stringify(event))}
       Handler: index.handler
       Runtime: nodejs14.x
@@ -29,12 +36,12 @@ Resources:
             FilterCriteria:
               Filters:
                   # Filter pattern
-                - Pattern: '{{ event_filter }}'
+                - Pattern: !Ref Filter
 
   DynamoDBTable:
     Type: AWS::DynamoDB::Table
     Properties:
-      TableName: {{ table_name }}
+      TableName: !Ref TableName
       AttributeDefinitions:
         - AttributeName: id
           AttributeType: S
