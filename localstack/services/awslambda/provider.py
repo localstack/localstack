@@ -456,6 +456,9 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
             )
             fn.versions["$LATEST"] = version
             state.functions[function_name] = fn
+            if request.get("Tags"):
+                self._store_tags(state, arn.unqualified_arn(), request["Tags"])
+                # TODO: should validation failures here "fail" the function creation? we'd need to move this up then
         self.lambda_service.create_function_version(version)
 
         if request.get("Publish"):
@@ -652,12 +655,16 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
         function_name: NamespacedFunctionName,
         qualifier: Qualifier = None,  # TODO
     ) -> GetFunctionResponse:
+        state = lambda_stores[context.account_id][context.region]
         function_name, qualifier = get_name_and_qualifier(function_name, qualifier)
         version = self._get_function_version(
             function_name=function_name,
             qualifier=qualifier,
             account_id=context.account_id,
             region=context.region,
+        )
+        tags = self._get_tags(
+            state, unqualified_lambda_arn(function_name, context.account_id, context.region)
         )
         # TODO what if no version?
         code = version.config.code
@@ -666,7 +673,7 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
             Code=FunctionCodeLocation(
                 Location=code.generate_presigned_url(), RepositoryType="S3"
             ),  # TODO
-            # Tags={},  # TODO
+            Tags=tags,
             # Concurrency={},  # TODO
         )
 
