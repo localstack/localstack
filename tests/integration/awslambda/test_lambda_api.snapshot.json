@@ -4691,7 +4691,7 @@
     }
   },
   "tests/integration/awslambda/test_lambda_api.py::TestLambdaTags::test_tag_exceptions": {
-    "recorded-date": "28-09-2022, 07:58:28",
+    "recorded-date": "28-09-2022, 08:38:34",
     "recorded-content": {
       "tag_lambda_doesnotexist": {
         "Error": {
@@ -4743,7 +4743,7 @@
     }
   },
   "tests/integration/awslambda/test_lambda_api.py::TestLambdaTags::test_tag_limits": {
-    "recorded-date": "28-09-2022, 08:04:53",
+    "recorded-date": "28-09-2022, 08:38:50",
     "recorded-content": {
       "tag_lambda_too_many_tags": {
         "Error": {
@@ -4827,6 +4827,9 @@
           "RepositoryType": "S3"
         },
         "Configuration": {
+          "Architectures": [
+            "x86_64"
+          ],
           "CodeSha256": "<code-sha256:1>",
           "CodeSize": 264,
           "Description": "",
@@ -4925,7 +4928,7 @@
     }
   },
   "tests/integration/awslambda/test_lambda_api.py::TestLambdaTags::test_tag_lifecycle": {
-    "recorded-date": "28-09-2022, 08:13:30",
+    "recorded-date": "28-09-2022, 08:39:06",
     "recorded-content": {
       "list_tags_response_postfncreate": {
         "Tags": {
@@ -4942,6 +4945,9 @@
           "RepositoryType": "S3"
         },
         "Configuration": {
+          "Architectures": [
+            "x86_64"
+          ],
           "CodeSha256": "<code-sha256:1>",
           "CodeSize": 264,
           "Description": "",
@@ -5001,6 +5007,9 @@
           "RepositoryType": "S3"
         },
         "Configuration": {
+          "Architectures": [
+            "x86_64"
+          ],
           "CodeSha256": "<code-sha256:1>",
           "CodeSize": 264,
           "Description": "",
@@ -5064,6 +5073,9 @@
           "RepositoryType": "S3"
         },
         "Configuration": {
+          "Architectures": [
+            "x86_64"
+          ],
           "CodeSha256": "<code-sha256:1>",
           "CodeSize": 264,
           "Description": "",
@@ -5119,6 +5131,9 @@
           "RepositoryType": "S3"
         },
         "Configuration": {
+          "Architectures": [
+            "x86_64"
+          ],
           "CodeSha256": "<code-sha256:1>",
           "CodeSize": 264,
           "Description": "",
