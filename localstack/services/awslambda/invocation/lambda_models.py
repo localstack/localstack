@@ -2,7 +2,8 @@ import abc
 import dataclasses
 import logging
 import threading
-from typing import TYPE_CHECKING, Dict, Optional
+from datetime import datetime
+from typing import TYPE_CHECKING, Dict, Optional, TypedDict
 
 from botocore.exceptions import ClientError
 
@@ -315,6 +316,13 @@ class InvocationError:
 class InvocationLogs:
     invocation_id: str
     logs: str
+
+
+class Credentials(TypedDict):
+    AccessKeyId: str
+    SecretAccessKey: str
+    SessionToken: str
+    Expiration: datetime
 
 
 class ServiceEndpoint(abc.ABC):

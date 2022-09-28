@@ -8,8 +8,9 @@ from typing import TYPE_CHECKING, Dict, Literal, Optional
 
 from localstack import config
 from localstack.services.awslambda.invocation.executor_endpoint import ServiceEndpoint
-from localstack.services.awslambda.invocation.lambda_models import FunctionVersion
+from localstack.services.awslambda.invocation.lambda_models import Credentials, FunctionVersion
 from localstack.services.awslambda.invocation.runtime_executor import RuntimeExecutor
+from localstack.utils.aws import aws_stack
 from localstack.utils.strings import to_str
 
 if TYPE_CHECKING:
@@ -78,6 +79,7 @@ class RuntimeEnvironment:
         Returns the environment variable set for the runtime container
         :return: Dict of environment variables
         """
+        credentials = self.get_credentials()
         env_vars = {
             # Runtime API specifics
             "LOCALSTACK_RUNTIME_ID": self.id,
@@ -95,10 +97,10 @@ class RuntimeEnvironment:
             "RUNTIME_ROOT": "/var/runtime",  # TODO custom runtimes?
             "AWS_LAMBDA_INITIALIZATION_TYPE": self.initialization_type,
             "TZ": ":UTC",  # TODO does this have to match local system time? format?
-            # Access IDs for role TODO make dependent on role arn
-            "AWS_ACCESS_KEY_ID": "test",
-            "AWS_SECRET_ACCESS_KEY": "test",
-            "AWS_SESSION_TOKEN": "test",
+            # Access IDs for role
+            "AWS_ACCESS_KEY_ID": credentials["AccessKeyId"],
+            "AWS_SECRET_ACCESS_KEY": credentials["SecretAccessKey"],
+            "AWS_SESSION_TOKEN": credentials["SessionToken"],
             # TODO xray
             # LocalStack endpoint specifics
             "LOCALSTACK_HOSTNAME": self.runtime_executor.get_endpoint_from_executor(),
@@ -187,3 +189,12 @@ class RuntimeEnvironment:
             "payload": to_str(invocation_event.invocation.payload),
         }
         self.runtime_executor.invoke(payload=invoke_payload)
+
+    def get_credentials(self) -> Credentials:
+        sts_client = aws_stack.connect_to_service("sts")
+        # TODO we should probably set a maximum alive duration for environments, due to the session expiration
+        return sts_client.assume_role(
+            RoleArn=self.function_version.config.role,
+            RoleSessionName=self.function_version.id.function_name,
+            DurationSeconds=43200,
+        )["Credentials"]

@@ -871,9 +871,15 @@ class TestLambdaConcurrency:
                 results[0]["AWS_LAMBDA_LOG_STREAM_NAME"] != results[1]["AWS_LAMBDA_LOG_STREAM_NAME"]
             ), "Environments identical for both invocations"
             # if we got different environments, those should differ as well
-            assert results[0]["AWS_ACCESS_KEY_ID"] != results[1]["AWS_ACCESS_KEY_ID"]
-            assert results[0]["AWS_SECRET_ACCESS_KEY"] != results[1]["AWS_SECRET_ACCESS_KEY"]
-            assert results[0]["AWS_SESSION_TOKEN"] != results[1]["AWS_SESSION_TOKEN"]
+            assert (
+                results[0]["AWS_ACCESS_KEY_ID"] != results[1]["AWS_ACCESS_KEY_ID"]
+            ), "Access Key IDs have to differ"
+            assert (
+                results[0]["AWS_SECRET_ACCESS_KEY"] != results[1]["AWS_SECRET_ACCESS_KEY"]
+            ), "Secret Access keys have to differ"
+            assert (
+                results[0]["AWS_SESSION_TOKEN"] != results[1]["AWS_SESSION_TOKEN"]
+            ), "Session tokens have to differ"
             # check if the access keys match the same role, and the role matches the one provided
             # since a lot of asserts are based on the structure of the arns, snapshots are not too nice here, so manual
             keys_1 = _transform_to_key_dict(results[0])
