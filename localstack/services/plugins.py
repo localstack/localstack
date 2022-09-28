@@ -293,10 +293,38 @@ class ServiceManager:
         return container.service if container else None
 
     def add_service(self, service: Service) -> bool:
-        state = ServiceState.AVAILABLE if service.is_enabled() else ServiceState.DISABLED
-        self._services[service.name()] = ServiceContainer(service, state)
+        self._mutex.acquire(blocking=True)
 
+        try:
+            state = ServiceState.AVAILABLE if service.is_enabled() else ServiceState.DISABLED
+            self._services[service.name()] = ServiceContainer(service, state)
+        except Exception as ex:
+            LOG.warning(f"Could not add service {service}", ex)
+
+        self._mutex.release()
         return True
+
+    def remove_service(self, service: Service) -> bool:
+        """
+        Attempts to atomically stop and remove a service from the service pool. A service is removed only if it can be
+        stopped successfully.
+        :param service: the service to be removed.
+        :return: true if the service is no longer available in the pool.
+        """
+        self._mutex.acquire(blocking=True)
+
+        try:
+            service_container: Optional[ServiceContainer] = self._services.get(service, None)
+            if service_container is not None:
+                service_container.stop()
+                if service_container.state == ServiceState.STOPPED:
+                    del self._services[service]
+        except Exception as ex:
+            LOG.warning(f"Could not remove service {service}", ex)
+
+        outcome: bool = service in self._services
+        self._mutex.release()
+        return outcome
 
     def list_available(self) -> List[str]:
         return list(self._services.keys())
