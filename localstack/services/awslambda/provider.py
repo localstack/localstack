@@ -11,6 +11,7 @@ from localstack.aws.api import RequestContext, handler
 from localstack.aws.api.lambda_ import (
     AccountLimit,
     AccountUsage,
+    AddLayerVersionPermissionResponse,
     AddPermissionRequest,
     AddPermissionResponse,
     Alias,
@@ -20,9 +21,13 @@ from localstack.aws.api.lambda_ import (
     Architecture,
     Arn,
     Blob,
+    BlobStream,
     CodeSigningConfigArn,
     CodeSigningConfigNotFoundException,
     CodeSigningPolicies,
+    CompatibleArchitectures,
+    CompatibleRuntimes,
+    Concurrency,
     Cors,
     CreateCodeSigningConfigResponse,
     CreateEventSourceMappingRequest,
@@ -34,6 +39,7 @@ from localstack.aws.api.lambda_ import (
     EnvironmentResponse,
     EphemeralStorage,
     EventSourceMappingConfiguration,
+    FunctionArn,
     FunctionCodeLocation,
     FunctionConfiguration,
     FunctionEventInvokeConfig,
@@ -43,15 +49,26 @@ from localstack.aws.api.lambda_ import (
     GetAccountSettingsResponse,
     GetCodeSigningConfigResponse,
     GetFunctionCodeSigningConfigResponse,
+    GetFunctionConcurrencyResponse,
     GetFunctionResponse,
     GetFunctionUrlConfigResponse,
+    GetLayerVersionPolicyResponse,
+    GetLayerVersionResponse,
     GetPolicyResponse,
     GetProvisionedConcurrencyConfigResponse,
     InvalidParameterValueException,
     InvocationResponse,
     InvocationType,
+    InvokeAsyncResponse,
     LambdaApi,
     LastUpdateStatus,
+    LayerName,
+    LayerPermissionAllowedAction,
+    LayerPermissionAllowedPrincipal,
+    LayerVersionArn,
+    LayerVersionContentInput,
+    LayerVersionNumber,
+    LicenseInfo,
     ListAliasesResponse,
     ListCodeSigningConfigsResponse,
     ListEventSourceMappingsResponse,
@@ -59,7 +76,10 @@ from localstack.aws.api.lambda_ import (
     ListFunctionsByCodeSigningConfigResponse,
     ListFunctionsResponse,
     ListFunctionUrlConfigsResponse,
+    ListLayersResponse,
+    ListLayerVersionsResponse,
     ListProvisionedConcurrencyConfigsResponse,
+    ListTagsResponse,
     ListVersionsByFunctionResponse,
     LogType,
     MasterRegion,
@@ -67,24 +87,32 @@ from localstack.aws.api.lambda_ import (
     MaximumEventAgeInSeconds,
     MaximumRetryAttempts,
     MaxItems,
+    MaxLayerListItems,
     MaxListItems,
     MaxProvisionedConcurrencyConfigListItems,
     NamespacedFunctionName,
     NamespacedStatementId,
+    OrganizationId,
     PackageType,
     PositiveInteger,
     PreconditionFailedException,
     ProvisionedConcurrencyConfigListItem,
     ProvisionedConcurrencyStatusEnum,
+    PublishLayerVersionResponse,
     PutFunctionCodeSigningConfigResponse,
     PutProvisionedConcurrencyConfigResponse,
     Qualifier,
+    ReservedConcurrentExecutions,
     ResourceConflictException,
     ResourceNotFoundException,
+    Runtime,
     ServiceException,
     State,
+    StatementId,
     StateReasonCode,
     String,
+    TagKeyList,
+    Tags,
     TracingConfig,
     TracingMode,
     UpdateCodeSigningConfigResponse,
@@ -95,7 +123,11 @@ from localstack.aws.api.lambda_ import (
     Version,
 )
 from localstack.services.awslambda import api_utils
-from localstack.services.awslambda.api_utils import FN_ARN_PATTERN, get_name_and_qualifier
+from localstack.services.awslambda.api_utils import (
+    FN_ARN_PATTERN,
+    get_function_name,
+    get_name_and_qualifier,
+)
 from localstack.services.awslambda.invocation.lambda_models import (
     AliasRoutingConfig,
     CodeSigningConfig,
@@ -129,6 +161,7 @@ from localstack.services.awslambda.invocation.lambda_util import (
     qualified_lambda_arn,
     unqualified_lambda_arn,
 )
+from localstack.services.awslambda.invocation.models import LambdaStore
 from localstack.services.plugins import ServiceLifecycleHook
 from localstack.utils.collections import PaginatedList
 from localstack.utils.strings import get_random_hex, long_uid, short_uid, to_bytes, to_str
@@ -137,6 +170,8 @@ LOG = logging.getLogger(__name__)
 
 LAMBDA_DEFAULT_TIMEOUT = 3
 LAMBDA_DEFAULT_MEMORY_SIZE = 128
+
+LAMBDA_TAG_LIMIT_PER_RESOURCE = 50
 
 
 class LambdaProvider(LambdaApi, ServiceLifecycleHook):
@@ -1829,3 +1864,184 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
         # like put but only update single fields via replace
         # TODO
         ...
+
+    # =======================================
+    # ======  Layer & Layer Versions  =======
+    # =======================================
+
+    def publish_layer_version(
+        self,
+        context: RequestContext,
+        layer_name: LayerName,
+        content: LayerVersionContentInput,
+        description: Description = None,
+        compatible_runtimes: CompatibleRuntimes = None,
+        license_info: LicenseInfo = None,
+        compatible_architectures: CompatibleArchitectures = None,
+    ) -> PublishLayerVersionResponse:
+        ...
+
+    def get_layer_version(
+        self, context: RequestContext, layer_name: LayerName, version_number: LayerVersionNumber
+    ) -> GetLayerVersionResponse:
+        ...
+
+    def get_layer_version_by_arn(
+        self, context: RequestContext, arn: LayerVersionArn
+    ) -> GetLayerVersionResponse:
+        ...
+
+    def list_layers(
+        self,
+        context: RequestContext,
+        compatible_runtime: Runtime = None,
+        marker: String = None,
+        max_items: MaxLayerListItems = None,
+        compatible_architecture: Architecture = None,
+    ) -> ListLayersResponse:
+        ...
+
+    def list_layer_versions(
+        self,
+        context: RequestContext,
+        layer_name: LayerName,
+        compatible_runtime: Runtime = None,
+        marker: String = None,
+        max_items: MaxLayerListItems = None,
+        compatible_architecture: Architecture = None,
+    ) -> ListLayerVersionsResponse:
+        ...
+
+    def delete_layer_version(
+        self, context: RequestContext, layer_name: LayerName, version_number: LayerVersionNumber
+    ) -> None:
+        ...
+
+    def add_layer_version_permission(
+        self,
+        context: RequestContext,
+        layer_name: LayerName,
+        version_number: LayerVersionNumber,
+        statement_id: StatementId,
+        action: LayerPermissionAllowedAction,
+        principal: LayerPermissionAllowedPrincipal,
+        organization_id: OrganizationId = None,
+        revision_id: String = None,
+    ) -> AddLayerVersionPermissionResponse:
+        ...
+
+    def remove_layer_version_permission(
+        self,
+        context: RequestContext,
+        layer_name: LayerName,
+        version_number: LayerVersionNumber,
+        statement_id: StatementId,
+        revision_id: String = None,
+    ) -> None:
+        ...
+
+    def get_layer_version_policy(
+        self, context: RequestContext, layer_name: LayerName, version_number: LayerVersionNumber
+    ) -> GetLayerVersionPolicyResponse:
+        ...
+
+    # =======================================
+    # =======  Function Concurrency  ========
+    # =======================================
+
+    def get_function_concurrency(
+        self, context: RequestContext, function_name: FunctionName
+    ) -> GetFunctionConcurrencyResponse:
+        ...
+
+    def put_function_concurrency(
+        self,
+        context: RequestContext,
+        function_name: FunctionName,
+        reserved_concurrent_executions: ReservedConcurrentExecutions,
+    ) -> Concurrency:
+        ...
+
+    def delete_function_concurrency(
+        self, context: RequestContext, function_name: FunctionName
+    ) -> None:
+        ...
+
+    def invoke_async(
+        self,
+        context: RequestContext,
+        function_name: NamespacedFunctionName,
+        invoke_args: IO[BlobStream],
+    ) -> InvokeAsyncResponse:
+        """LEGACY API endpoint. Even AWS heavily discourages its usage."""
+        ...
+
+    # =======================================
+    # ===============  TAGS   ===============
+    # =======================================
+    # only function ARNs are available for tagging
+
+    def _get_tags(self, store: LambdaStore, resource_arn: str) -> dict[str, str]:
+        return store.TAGS.get(resource_arn, {})
+
+    def _store_tags(self, store: LambdaStore, resource_arn: str, tags: dict[str, str]):
+        stored_tags = store.TAGS.setdefault(resource_arn, {})
+        if len(stored_tags) + len(tags) > LAMBDA_TAG_LIMIT_PER_RESOURCE:
+            raise InvalidParameterValueException(
+                "Number of tags exceeds function tag limit.", Type="User"
+            )
+        stored_tags.update(tags)
+
+    def tag_resource(self, context: RequestContext, resource: FunctionArn, tags: Tags) -> None:
+        if not tags:
+            raise InvalidParameterValueException(
+                "An error occurred and the request cannot be processed.", Type="User"
+            )
+
+        state = lambda_stores[context.account_id][context.region]
+        pattern_match = FN_ARN_PATTERN.search(resource)
+        if not pattern_match:
+            raise ValidationException(
+                "1 validation error detected: Value 'arn:aws:something' at 'resource' failed to satisfy constraint: Member must satisfy regular expression pattern: arn:(aws[a-zA-Z-]*)?:lambda:[a-z]{2}((-gov)|(-iso(b?)))?-[a-z]+-\\d{1}:\\d{12}:function:[a-zA-Z0-9-_]+(:(\\$LATEST|[a-zA-Z0-9-_]+))?"
+            )
+
+        groups = pattern_match.groupdict()
+        fn_name = groups.get("function_name")
+
+        if groups.get("qualifier"):
+            raise InvalidParameterValueException(
+                "Tagging operations are permitted on Lambda functions only. Tags on aliases and versions are not supported. Please specify either a function name or a function ARN.",
+                Type="User",
+            )
+
+        if fn_name not in state.functions:
+            raise ResourceNotFoundException(f"Function not found: {resource}", Type="User")
+
+        self._store_tags(state, resource, tags)
+
+    def list_tags(self, context: RequestContext, resource: FunctionArn) -> ListTagsResponse:
+        state = lambda_stores[context.account_id][context.region]
+
+        if get_function_name(resource) not in state.functions:
+            raise ResourceNotFoundException(f"Function not found: {resource}", Type="User")
+
+        return ListTagsResponse(Tags=self._get_tags(state, resource))
+
+    def untag_resource(
+        self, context: RequestContext, resource: FunctionArn, tag_keys: TagKeyList
+    ) -> None:
+        state = lambda_stores[context.account_id][context.region]
+
+        if not tag_keys:
+            raise ValidationException(
+                "1 validation error detected: Value null at 'tagKeys' failed to satisfy constraint: Member must not be null"
+            )  # should probably be generalized a bit
+
+        if get_function_name(resource) not in state.functions:
+            raise ResourceNotFoundException(f"Function not found: {resource}", Type="User")
+
+        tags = state.TAGS.get(resource)
+        if tags:
+            for key in tag_keys:
+                if key in tags:
+                    tags.pop(key)
