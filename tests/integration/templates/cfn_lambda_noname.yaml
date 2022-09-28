@@ -28,8 +28,3 @@ Resources:
       Runtime: nodejs12.x
     DependsOn:
       - MyFnServiceRoleF3016589
-Outputs:
-  FnNameOutput:
-    Description: Name of generated function
-    Value:
-      Ref: {{ lambda_functional_id }}

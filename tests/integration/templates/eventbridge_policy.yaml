@@ -1,8 +1,12 @@
+Parameters:
+  EventBusName:
+    Type: String
+
 Resources:
   bus707364D1:
     Type: AWS::Events::EventBus
     Properties:
-      Name: {{ event_bus_name }}
+      Name: !Ref EventBusName
   eventPolicy:
     Type: AWS::Events::EventBusPolicy
     Properties:

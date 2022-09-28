@@ -1,12 +1,22 @@
+Parameters:
+  EventBusName:
+    Type: String
+  EventRuleName:
+    Type: String
+  LogGroupName:
+    Type: String
+  PolicyName:
+    Type: String
+
 Resources:
   TestBusF2C65FE8:
     Type: AWS::Events::EventBus
     Properties:
-      Name: {{ event_bus_name }}
+      Name: !Ref EventBusName
   TestLogGroup4EEF7AD4:
     Type: AWS::Logs::LogGroup
     Properties:
-      LogGroupName: {{ log_group_name }}
+      LogGroupName: !Ref LogGroupName
       RetentionInDays: 731
     UpdateReplacePolicy: Delete
     DeletionPolicy: Delete
@@ -18,7 +28,7 @@ Resources:
       EventPattern:
         version:
           - "0"
-      Name: {{ event_rule_name }}
+      Name: !Ref EventRuleName
       State: ENABLED
       Targets:
         - Arn:
@@ -44,4 +54,4 @@ Resources:
                 - TestLogGroup4EEF7AD4
                 - Arn
             - '"}],"Version":"2012-10-17"}'
-      PolicyName: {{ resource_policy_name }}
+      PolicyName: !Ref PolicyName
