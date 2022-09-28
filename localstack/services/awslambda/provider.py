@@ -1955,6 +1955,7 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
     # =======================================
     # =======  Function Concurrency  ========
     # =======================================
+    # (Reserved) function concurrency is scoped to the whole function
 
     def get_function_concurrency(
         self, context: RequestContext, function_name: FunctionName
@@ -1972,15 +1973,6 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
     def delete_function_concurrency(
         self, context: RequestContext, function_name: FunctionName
     ) -> None:
-        ...
-
-    def invoke_async(
-        self,
-        context: RequestContext,
-        function_name: NamespacedFunctionName,
-        invoke_args: IO[BlobStream],
-    ) -> InvokeAsyncResponse:
-        """LEGACY API endpoint. Even AWS heavily discourages its usage."""
         ...
 
     # =======================================
@@ -2052,3 +2044,16 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
             for key in tag_keys:
                 if key in tags:
                     tags.pop(key)
+
+    # =======================================
+    # =======  LEGACY / DEPRECATED   ========
+    # =======================================
+
+    def invoke_async(
+        self,
+        context: RequestContext,
+        function_name: NamespacedFunctionName,
+        invoke_args: IO[BlobStream],
+    ) -> InvokeAsyncResponse:
+        """LEGACY API endpoint. Even AWS heavily discourages its usage."""
+        ...  # TODO

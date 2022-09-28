@@ -1158,11 +1158,74 @@ class TestLambdaEventInvokeConfig:
         # TODO: think about testing FunctionName/Qualifier combinations with other methods than put_
 
 
+# note: these tests are inherently a bit flaky on AWS since it depends on account/region global usage limits/quotas
 class TestLambdaReservedConcurrency:
+    @pytest.mark.aws_validated
+    @pytest.mark.skip_snapshot_verify(condition=is_old_provider)
+    def test_function_concurrency_exceptions(self, lambda_client, create_lambda_function, snapshot):
+        function_name = f"lambda_func-{short_uid()}"
+        create_lambda_function(
+            handler_file=TEST_LAMBDA_PYTHON_ECHO,
+            func_name=function_name,
+            runtime=Runtime.python3_9,
+        )
+        acc_settings = lambda_client.get_account_settings()
+
+        if acc_settings["AccountLimit"]["UnreservedConcurrentExecutions"] <= 100:
+            pytest.skip(
+                "Account limits are too low. You'll need to request a quota increase on AWS for UnreservedConcurrentExecution."
+            )
+
+        reserved_limit = acc_settings["AccountLimit"]["UnreservedConcurrentExecutions"]
+        min_capacity = 100
+
+        # actual needed capacity on AWS is 101+ (!)
+        # new accounts in an organization have by default a quota of 50 though
+        with pytest.raises(lambda_client.exceptions.ResourceNotFoundException) as e:
+            lambda_client.put_function_concurrency(
+                FunctionName="unknown", ReservedConcurrentExecutions=1
+            )
+        snapshot.match("put_concurrency_unknown_fn", e.value.response)
+
+        with pytest.raises(lambda_client.exceptions.ResourceNotFoundException) as e:
+            lambda_client.put_function_concurrency(
+                FunctionName="unknown", ReservedConcurrentExecutions=0
+            )
+        snapshot.match("put_concurrency_unknown_fn_invalid_concurrency", e.value.response)
+
+        with pytest.raises(lambda_client.exceptions.InvalidParameterValueException) as e:
+            lambda_client.put_function_concurrency(
+                FunctionName=function_name,
+                ReservedConcurrentExecutions=reserved_limit - min_capacity + 1,
+            )
+        snapshot.match("put_concurrency_known_fn_concurrency_limit_exceeded", e.value.response)
+
+        # positive references
+        put_0_response = lambda_client.put_function_concurrency(
+            FunctionName=function_name, ReservedConcurrentExecutions=0
+        )  # This kind of "disables" a function since it can never exceed 0.
+        snapshot.match("put_0_response", put_0_response)
+        put_max_response = lambda_client.put_function_concurrency(
+            FunctionName=function_name, ReservedConcurrentExecutions=reserved_limit - (min_capacity)
+        )  # exact limit, might be flaky with concurrent tests
+        snapshot.match("put_max_response", put_max_response)
+        delete_response = lambda_client.delete_function_concurrency(FunctionName=function_name)
+        snapshot.match("delete_response", delete_response)
+        put_1_response = lambda_client.put_function_concurrency(
+            FunctionName=function_name, ReservedConcurrentExecutions=1
+        )
+        snapshot.match("put_1_response", put_1_response)
+
     @pytest.mark.aws_validated
     @pytest.mark.skip_snapshot_verify(condition=is_old_provider)
     def test_function_concurrency(self, lambda_client, create_lambda_function, snapshot):
         """Testing the api of the put function concurrency action"""
+
+        acc_settings = lambda_client.get_account_settings()
+        if acc_settings["AccountLimit"]["UnreservedConcurrentExecutions"] <= 100:
+            pytest.skip(
+                "Account limits are too low. You'll need to request a quota increase on AWS for UnreservedConcurrentExecution."
+            )
 
         function_name = f"lambda_func-{short_uid()}"
         create_lambda_function(
@@ -1170,7 +1233,6 @@ class TestLambdaReservedConcurrency:
             func_name=function_name,
             runtime=Runtime.python3_9,
         )
-        # TODO botocore.errorfactory.InvalidParameterValueException:
         #  An error occurred (InvalidParameterValueException) when calling the PutFunctionConcurrency operation: Specified ReservedConcurrentExecutions for function decreases account's UnreservedConcurrentExecution below its minimum value of [50].
         response = lambda_client.put_function_concurrency(
             FunctionName=function_name, ReservedConcurrentExecutions=1
@@ -1178,7 +1240,11 @@ class TestLambdaReservedConcurrency:
         snapshot.match("put_function_concurrency", response)
         response = lambda_client.get_function_concurrency(FunctionName=function_name)
         snapshot.match("get_function_concurrency", response)
-        lambda_client.delete_function_concurrency(FunctionName=function_name)
+        response = lambda_client.delete_function_concurrency(FunctionName=function_name)
+        snapshot.match("delete_function_concurrency", response)
+
+        response = lambda_client.get_function_concurrency(FunctionName=function_name)
+        snapshot.match("get_function_concurrency_postdelete", response)
 
 
 class TestLambdaProvisionedConcurrency:
