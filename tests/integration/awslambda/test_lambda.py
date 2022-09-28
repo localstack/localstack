@@ -3,6 +3,7 @@ import json
 import logging
 import os
 import re
+from concurrent.futures import ThreadPoolExecutor
 from io import BytesIO
 from typing import Dict, TypeVar
 
@@ -12,6 +13,7 @@ from botocore.response import StreamingBody
 from localstack.aws.api.lambda_ import Runtime
 from localstack.services.awslambda.lambda_api import use_docker
 from localstack.testing.aws.lambda_utils import concurrency_update_done, is_old_provider
+from localstack.testing.aws.util import create_client_with_keys
 from localstack.testing.snapshots.transformer import KeyValueBasedTransformer
 from localstack.testing.snapshots.transformer_utility import PATTERN_UUID
 from localstack.utils import testutil
@@ -68,6 +70,7 @@ TEST_LAMBDA_URL = os.path.join(THIS_FOLDER, "functions/lambda_url.js")
 TEST_LAMBDA_CACHE_NODEJS = os.path.join(THIS_FOLDER, "functions/lambda_cache.js")
 TEST_LAMBDA_CACHE_PYTHON = os.path.join(THIS_FOLDER, "functions/lambda_cache.py")
 TEST_LAMBDA_TIMEOUT_PYTHON = os.path.join(THIS_FOLDER, "functions/lambda_timeout.py")
+TEST_LAMBDA_SLEEP_ENVIRONMENT = os.path.join(THIS_FOLDER, "functions/lambda_sleep_environment.py")
 TEST_LAMBDA_INTROSPECT_PYTHON = os.path.join(THIS_FOLDER, "functions/lambda_introspect.py")
 TEST_LAMBDA_VERSION = os.path.join(THIS_FOLDER, "functions/lambda_version.py")
 
@@ -829,8 +832,74 @@ class TestLambdaConcurrency:
             )
         snapshot.match("invoke_latest_second_exc", e.value.response)
 
+    @pytest.mark.aws_validated
+    def test_lambda_different_iam_keys_environment(
+        self, lambda_client, lambda_su_role, create_lambda_function, snapshot, sts_client
+    ):
+        """
+        In this test we want to check if multiple lambda environments (= instances of hot functions) have
+        different AWS access keys
+        """
+        function_name = f"fn-{short_uid()}"
+        create_result = create_lambda_function(
+            func_name=function_name,
+            handler_file=TEST_LAMBDA_SLEEP_ENVIRONMENT,
+            runtime=Runtime.python3_8,
+            role=lambda_su_role,
+        )
+        snapshot.match("create-result", create_result)
+
+        # invoke two versions in two threads at the same time so environments won't be reused really quick
+        def _invoke_lambda(*args):
+            result = lambda_client.invoke(
+                FunctionName=function_name, Payload=to_bytes(json.dumps({"sleep": 2}))
+            )
+            return json.loads(to_str(result["Payload"].read()))["environment"]
+
+        def _transform_to_key_dict(env: Dict[str, str]):
+            return {
+                "AccessKeyId": env["AWS_ACCESS_KEY_ID"],
+                "SecretAccessKey": env["AWS_SECRET_ACCESS_KEY"],
+                "SessionToken": env["AWS_SESSION_TOKEN"],
+            }
+
+        def _assert_invocations():
+            with ThreadPoolExecutor(2) as executor:
+                results = list(executor.map(_invoke_lambda, range(2)))
+            assert len(results) == 2
+            assert (
+                results[0]["AWS_LAMBDA_LOG_STREAM_NAME"] != results[1]["AWS_LAMBDA_LOG_STREAM_NAME"]
+            ), "Environments identical for both invocations"
+            # if we got different environments, those should differ as well
+            assert results[0]["AWS_ACCESS_KEY_ID"] != results[1]["AWS_ACCESS_KEY_ID"]
+            assert results[0]["AWS_SECRET_ACCESS_KEY"] != results[1]["AWS_SECRET_ACCESS_KEY"]
+            assert results[0]["AWS_SESSION_TOKEN"] != results[1]["AWS_SESSION_TOKEN"]
+            # check if the access keys match the same role, and the role matches the one provided
+            # since a lot of asserts are based on the structure of the arns, snapshots are not too nice here, so manual
+            keys_1 = _transform_to_key_dict(results[0])
+            keys_2 = _transform_to_key_dict(results[1])
+            sts_client_1 = create_client_with_keys("sts", keys=keys_1)
+            sts_client_2 = create_client_with_keys("sts", keys=keys_2)
+            identity_1 = sts_client_1.get_caller_identity()
+            identity_2 = sts_client_2.get_caller_identity()
+            assert identity_1["Arn"] == identity_2["Arn"]
+            role_part = (
+                identity_1["Arn"]
+                .replace("sts", "iam")
+                .replace("assumed-role", "role")
+                .rpartition("/")
+            )
+            assert lambda_su_role == role_part[0]
+            assert function_name == role_part[2]
+            assert identity_1["Account"] == identity_2["Account"]
+            assert identity_1["UserId"] == identity_2["UserId"]
+            assert function_name == identity_1["UserId"].partition(":")[2]
+
+        retry(_assert_invocations)
+
 
 class TestLambdaVersions:
+    @pytest.mark.aws_validated
     def test_lambda_versions_with_code_changes(
         self, lambda_client, lambda_su_role, create_lambda_function_aws, snapshot
     ):
@@ -899,6 +968,7 @@ class TestLambdaVersions:
 
 
 class TestLambdaAliases:
+    @pytest.mark.aws_validated
     def test_lambda_alias_moving(
         self, lambda_client, lambda_su_role, create_lambda_function_aws, snapshot
     ):
@@ -981,6 +1051,7 @@ class TestLambdaAliases:
         )
         snapshot.match("invocation_result_qualifier_v2", invocation_result_qualifier_v2)
 
+    @pytest.mark.aws_validated
     def test_alias_routingconfig(
         self, lambda_client, lambda_su_role, create_lambda_function_aws, snapshot
     ):

@@ -807,7 +807,7 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
                 "Number of items in AdditionalVersionWeights cannot be greater than 1",
                 Type="User",
             )
-        # should be exactly one item here
+        # should be exactly one item here, still iterating, might be supported in the future
         for key, value in routing_config_dict.items():
             if value < 0.0 or value >= 1.0:
                 raise ValidationException(
