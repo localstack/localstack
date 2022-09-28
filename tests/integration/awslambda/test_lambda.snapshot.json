@@ -1444,7 +1444,7 @@
     }
   },
   "tests/integration/awslambda/test_lambda.py::TestLambdaConcurrency::test_lambda_different_iam_keys_environment": {
-    "recorded-date": "28-09-2022, 18:31:05",
+    "recorded-date": "28-09-2022, 21:03:48",
     "recorded-content": {
       "create-result": {
         "CreateEventSourceMappingResponse": null,
@@ -1453,7 +1453,7 @@
             "x86_64"
           ],
           "CodeSha256": "code-sha256",
-          "CodeSize": 281,
+          "CodeSize": 282,
           "Description": "",
           "Environment": {
             "Variables": {}
