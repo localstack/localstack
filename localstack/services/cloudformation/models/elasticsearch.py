@@ -17,11 +17,14 @@ class ElasticsearchDomain(GenericBaseModel):
 
     def get_physical_resource_id(self, attribute=None, **kwargs):
         domain_name = self._domain_name()
-        if attribute in ["Arn", "DomainArn"]:
+        if attribute == "Arn":
             return aws_stack.elasticsearch_domain_arn(domain_name)
         return domain_name
 
     def get_cfn_attribute(self, attribute_name):
+        if attribute_name == "DomainArn":
+            domain_name = self._domain_name()
+            return aws_stack.elasticsearch_domain_arn(domain_name)
         if attribute_name == "DomainEndpoint":
             domain_status = self.props.get("DomainStatus", {})
             result = domain_status.get("Endpoint")
