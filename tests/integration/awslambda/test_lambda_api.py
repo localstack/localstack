@@ -1247,16 +1247,17 @@ class TestLambdaReservedConcurrency:
             FunctionName=function_name, ReservedConcurrentExecutions=0
         )  # This kind of "disables" a function since it can never exceed 0.
         snapshot.match("put_0_response", put_0_response)
-        put_max_response = lambda_client.put_function_concurrency(
-            FunctionName=function_name, ReservedConcurrentExecutions=reserved_limit - (min_capacity)
-        )  # exact limit, might be flaky with concurrent tests
-        snapshot.match("put_max_response", put_max_response)
-        delete_response = lambda_client.delete_function_concurrency(FunctionName=function_name)
-        snapshot.match("delete_response", delete_response)
         put_1_response = lambda_client.put_function_concurrency(
             FunctionName=function_name, ReservedConcurrentExecutions=1
         )
         snapshot.match("put_1_response", put_1_response)
+        delete_response = lambda_client.delete_function_concurrency(FunctionName=function_name)
+        snapshot.match("delete_response", delete_response)
+
+        # maximum limit
+        lambda_client.put_function_concurrency(
+            FunctionName=function_name, ReservedConcurrentExecutions=reserved_limit - (min_capacity)
+        )
 
     @pytest.mark.aws_validated
     @pytest.mark.skip_snapshot_verify(condition=is_old_provider)

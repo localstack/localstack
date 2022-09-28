@@ -5275,7 +5275,7 @@
     }
   },
   "tests/integration/awslambda/test_lambda_api.py::TestLambdaReservedConcurrency::test_function_concurrency_exceptions": {
-    "recorded-date": "28-09-2022, 10:01:23",
+    "recorded-date": "28-09-2022, 10:06:29",
     "recorded-content": {
       "put_concurrency_unknown_fn": {
         "Error": {
@@ -5319,8 +5319,8 @@
           "HTTPStatusCode": 200
         }
       },
-      "put_max_response": {
-        "ReservedConcurrentExecutions": 10,
+      "put_1_response": {
+        "ReservedConcurrentExecutions": 1,
         "ResponseMetadata": {
           "HTTPHeaders": {},
           "HTTPStatusCode": 200
@@ -5330,13 +5330,6 @@
         "ResponseMetadata": {
           "HTTPHeaders": {},
           "HTTPStatusCode": 204
-        }
-      },
-      "put_1_response": {
-        "ReservedConcurrentExecutions": 1,
-        "ResponseMetadata": {
-          "HTTPHeaders": {},
-          "HTTPStatusCode": 200
         }
       }
     }
