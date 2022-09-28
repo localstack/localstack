@@ -440,6 +440,8 @@ class IAMPolicy(GenericBaseModel):
         return IAMPolicy.get_policy_state(self, stack_name, resources, managed_policy=False)
 
     def get_physical_resource_id(self, attribute=None, **kwargs):
+        if attribute == "Arn":
+            return aws_stack.policy_arn(self.props.get("PolicyName"))
         return self.props.get("PolicyName")
 
     @classmethod

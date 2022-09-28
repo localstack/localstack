@@ -979,7 +979,6 @@ def determine_resource_physical_id(resource_id, stack=None, attribute=None):
         return
     resource_type = get_resource_type(resource)
     resource_type = re.sub("^AWS::", "", resource_type)
-    resource_props = resource.get("Properties", {})
 
     # determine result from resource class
     canonical_type = canonical_resource_type(resource_type)
@@ -990,38 +989,6 @@ def determine_resource_physical_id(resource_id, stack=None, attribute=None):
         result = resource_inst.get_physical_resource_id(attribute=attribute)
         if result:
             return result
-
-    # TODO: put logic into resource-specific model classes!
-    if resource_type == "ApiGateway::RestApi":
-        result = resource_props.get("id")
-        if result:
-            return result
-    elif resource_type == "ApiGateway::Stage":
-        return resource_props.get("StageName")
-    elif resource_type == "AppSync::DataSource":
-        return resource_props.get("DataSourceArn")
-    elif resource_type == "StepFunctions::StateMachine":
-        return aws_stack.state_machine_arn(
-            resource_props.get("StateMachineName")
-        )  # returns ARN in AWS
-    elif resource_type == "S3::Bucket":
-        if attribute == "Arn":
-            return aws_stack.s3_bucket_arn(resource_props.get("BucketName"))
-        return resource_props.get("BucketName")  # Note: "Ref" returns bucket name in AWS
-    elif resource_type == "IAM::Policy":
-        if attribute == "Arn":
-            return aws_stack.policy_arn(resource_props.get("PolicyName"))
-        return resource_props.get("PolicyName")
-    elif resource_type == "DynamoDB::Table":
-        table_name = resource_props.get("TableName")
-        if table_name:
-            return table_name
-    elif resource_type == "Logs::LogGroup":
-        return resource_props.get("LogGroupName")
-    elif resource_type == "ApiGateway::Model":
-        model_name = resource_props.get("Name")
-        if model_name:
-            return model_name
 
     res_id = resource.get("PhysicalResourceId")
     if res_id and attribute in [None, "Ref", "PhysicalResourceId"]:
