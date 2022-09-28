@@ -20,8 +20,10 @@ from localstack.aws.api.kms import (
     CreateAliasRequest,
     CreateGrantRequest,
     CreateKeyRequest,
+    DisabledException,
     EncryptionContextType,
     KeyMetadata,
+    KMSInvalidStateException,
     NotFoundException,
     SigningAlgorithmSpec,
     UnsupportedOperationException,
@@ -500,14 +502,44 @@ class KmsStore(BaseStore):
     # maps import tokens to import data
     imports: Dict[str, KeyImportState] = LocalAttribute(default=dict)
 
-    def get_key(self, any_type_of_key_id: str) -> KmsKey:
+    # While in AWS keys have more than Enabled, Disabled and PendingDeletion states, we currently only model these 3
+    # in LocalStack, so this function is limited to them.
+    #
+    # The current default values are based on most of the operations working in AWS with enabled keys, but failing with
+    # disabled and those pending deletion.
+    #
+    # If we decide to use the other states as well, we might want to come up with a better key state validation per
+    # operation. Can consult this page for what states are supported by various operations:
+    # https://docs.aws.amazon.com/kms/latest/developerguide/key-state.html
+    def get_key(
+        self,
+        any_type_of_key_id: str,
+        any_key_state_allowed: bool = False,
+        enabled_key_allowed: bool = True,
+        disabled_key_allowed: bool = False,
+        pending_deletion_key_allowed: bool = False,
+    ) -> KmsKey:
+        if any_key_state_allowed:
+            enabled_key_allowed = True
+            disabled_key_allowed = True
+            pending_deletion_key_allowed = True
+        if not (enabled_key_allowed or disabled_key_allowed or pending_deletion_key_allowed):
+            raise ValueError("A key is requested, but all possible key states are prohibited")
+
         key_id = self.get_key_id_from_any_id(any_type_of_key_id)
         if key_id not in self.keys:
             raise NotFoundException(f"Invalid keyID '{key_id}'")
+        key = self.keys[key_id]
+        if not disabled_key_allowed and key.metadata.get("KeyState") == "Disabled":
+            raise DisabledException(f"{key.metadata.get('Arn')} is disabled.")
+        if not pending_deletion_key_allowed and key.metadata.get("KeyState") == "PendingDeletion":
+            raise KMSInvalidStateException(f"{key.metadata.get('Arn')} is pending deletion.")
+        if not enabled_key_allowed and key.metadata.get("KeyState") == "Enabled":
+            raise KMSInvalidStateException(
+                f"{key.metadata.get('Arn')} is enabled, but the operation doesn't support "
+                f"such a state"
+            )
         return self.keys[key_id]
-
-    def get_canonical_key_id(self, key_id: str):
-        return self.get_key(key_id).metadata["KeyId"]
 
     # TODO account_id and region params here are somewhat redundant, the store is supposed to know them. But at the
     #  moment there is no way to get them from the store itself. Should get rid of these params later.

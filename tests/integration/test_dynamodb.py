@@ -1089,7 +1089,7 @@ class TestDynamoDB:
     def test_transaction_write_canceled(
         self, dynamodb_create_table_with_parameters, dynamodb_client, snapshot
     ):
-        table_name = "table_%s" % short_uid()
+        table_name = f"table_{short_uid()}"
 
         # create table
         dynamodb_create_table_with_parameters(
@@ -1522,6 +1522,14 @@ class TestDynamoDB:
                 RequestItems={table_name: [{"PutRequest": faulty_item}]}
             )
         snapshot.match("ValidationException", ctx.value)
+
+    def test_batch_write_not_existing_table(self, dynamodb_client):
+        with pytest.raises(Exception) as ctx:
+            dynamodb_client.transact_write_items(
+                TransactItems=[{"Put": {"TableName": "non-existing-table", "Item": {}}}]
+            )
+        ctx.match("ResourceNotFoundException")
+        assert "retries" not in str(ctx)
 
     @pytest.mark.only_localstack
     def test_nosql_workbench_localhost_region(self, dynamodb_create_table, dynamodb_client):

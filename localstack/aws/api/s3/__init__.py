@@ -166,6 +166,8 @@ BucketRegion = str
 BucketContentType = str
 IfCondition = str
 RestoreObjectOutputStatusCode = int
+ArgumentName = str
+ArgumentValue = str
 
 
 class AnalyticsS3ExportFileFormat(str):
@@ -633,6 +635,14 @@ class InvalidRange(ServiceException):
     status_code: int = 416
     ActualObjectSize: Optional[ObjectSize]
     RangeRequested: Optional[ContentRange]
+
+
+class InvalidArgument(ServiceException):
+    code: str = "InvalidArgument"
+    sender_fault: bool = False
+    status_code: int = 400
+    ArgumentName: Optional[ArgumentName]
+    ArgumentValue: Optional[ArgumentValue]
 
 
 AbortDate = datetime

@@ -1,6 +1,5 @@
 import pytest
 
-#
 TMPL = """
 Resources:
   blaBE223B94:

@@ -151,6 +151,10 @@ class InitScriptManager:
     def _find_scripts(self) -> Dict[Stage, List[Script]]:
         scripts = {}
 
+        if self.script_root is None:
+            LOG.debug("Unable to discover init scripts as script_root is None")
+            return {}
+
         for stage in Stage:
             scripts[stage] = []
 

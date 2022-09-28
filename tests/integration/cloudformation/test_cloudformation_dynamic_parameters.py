@@ -1,79 +1,35 @@
 import os
 
-import jinja2 as jinja2
 import pytest as pytest
 
-from localstack.testing.aws.cloudformation_utils import load_template_file
 from localstack.utils.common import short_uid
-from localstack.utils.generic.wait_utils import wait_until
-
-
-# TODO: refactor file and remove this compatibility fn
-def load_template_raw(file_name: str):
-    return load_template_file(os.path.join(os.path.dirname(__file__), "../templates", file_name))
 
 
 def test_resolve_ssm(
-    ssm_client,
-    cfn_client,
-    is_change_set_created_and_available,
-    is_stack_created,
-    cleanup_changesets,
-    cleanup_stacks,
     create_parameter,
+    deploy_cfn_template,
 ):
-    stack_name = f"stack-{short_uid()}"
-    change_set_name = f"change-set-{short_uid()}"
     parameter_key = f"param-key-{short_uid()}"
     parameter_value = f"param-value-{short_uid()}"
     create_parameter(Name=parameter_key, Value=parameter_value, Type="String")
-    template_rendered = jinja2.Template(load_template_raw("resolve_ssm.yaml")).render(
-        parameter_key=parameter_key,
+
+    result = deploy_cfn_template(
+        parameters={"DynamicParameter": parameter_key},
+        template_path=os.path.join(os.path.dirname(__file__), "../templates/resolve_ssm.yaml"),
     )
 
-    response = cfn_client.create_change_set(
-        StackName=stack_name,
-        ChangeSetName=change_set_name,
-        TemplateBody=template_rendered,
-        ChangeSetType="CREATE",
-    )
-    change_set_id = response["Id"]
-    stack_id = response["StackId"]
-
-    try:
-        wait_until(is_change_set_created_and_available(change_set_id))
-        cfn_client.execute_change_set(ChangeSetName=change_set_id)
-        wait_until(is_stack_created(stack_id))
-        describe_result = cfn_client.describe_stacks(StackName=stack_id)["Stacks"][0]
-        assert describe_result["StackStatus"] == "CREATE_COMPLETE"
-
-        topic_name = [
-            o["OutputValue"] for o in describe_result["Outputs"] if o["OutputKey"] == "TopicName"
-        ][0]
-        assert topic_name == parameter_value
-
-    finally:
-        cleanup_changesets([change_set_id])
-        cleanup_stacks([stack_id])
+    topic_name = result.outputs["TopicName"]
+    assert topic_name == parameter_value
 
 
-def test_resolve_ssm_withversion(
-    ssm_client,
-    cfn_client,
-    is_change_set_created_and_available,
-    is_stack_created,
-    cleanup_changesets,
-    cleanup_stacks,
-    create_parameter,
-):
-    stack_name = f"stack-{short_uid()}"
-    change_set_name = f"change-set-{short_uid()}"
+def test_resolve_ssm_with_version(ssm_client, cfn_client, create_parameter, deploy_cfn_template):
     parameter_key = f"param-key-{short_uid()}"
     parameter_value_v0 = f"param-value-{short_uid()}"
     parameter_value_v1 = f"param-value-{short_uid()}"
     parameter_value_v2 = f"param-value-{short_uid()}"
 
     create_parameter(Name=parameter_key, Type="String", Value=parameter_value_v0)
+
     v1 = ssm_client.put_parameter(
         Name=parameter_key, Overwrite=True, Type="String", Value=parameter_value_v1
     )
@@ -81,80 +37,30 @@ def test_resolve_ssm_withversion(
         Name=parameter_key, Overwrite=True, Type="String", Value=parameter_value_v2
     )
 
-    template_rendered = jinja2.Template(load_template_raw("resolve_ssm_withversion.yaml")).render(
-        parameter_key=parameter_key, parameter_version=str(v1["Version"])
+    result = deploy_cfn_template(
+        parameters={"DynamicParameter": f"{parameter_key}:{v1['Version']}"},
+        template_path=os.path.join(os.path.dirname(__file__), "../templates/resolve_ssm.yaml"),
     )
 
-    response = cfn_client.create_change_set(
-        StackName=stack_name,
-        ChangeSetName=change_set_name,
-        TemplateBody=template_rendered,
-        ChangeSetType="CREATE",
-    )
-    change_set_id = response["Id"]
-    stack_id = response["StackId"]
-
-    try:
-        wait_until(is_change_set_created_and_available(change_set_id))
-        cfn_client.execute_change_set(ChangeSetName=change_set_id)
-        wait_until(is_stack_created(stack_id))
-        describe_result = cfn_client.describe_stacks(StackName=stack_id)["Stacks"][0]
-        assert describe_result["StackStatus"] == "CREATE_COMPLETE"
-
-        topic_name = [
-            o["OutputValue"] for o in describe_result["Outputs"] if o["OutputKey"] == "TopicName"
-        ][0]
-        assert topic_name == parameter_value_v1
-
-    finally:
-        cleanup_changesets([change_set_id])
-        cleanup_stacks([stack_id])
+    topic_name = result.outputs["TopicName"]
+    assert topic_name == parameter_value_v1
 
 
-def test_resolve_ssm_secure(
-    ssm_client,
-    cfn_client,
-    is_change_set_created_and_available,
-    is_stack_created,
-    cleanup_changesets,
-    cleanup_stacks,
-    create_parameter,
-):
-    stack_name = f"stack-{short_uid()}"
-    change_set_name = f"change-set-{short_uid()}"
+def test_resolve_ssm_secure(create_parameter, cfn_client, deploy_cfn_template):
     parameter_key = f"param-key-{short_uid()}"
     parameter_value = f"param-value-{short_uid()}"
 
     create_parameter(Name=parameter_key, Value=parameter_value, Type="SecureString")
 
-    template_rendered = jinja2.Template(load_template_raw("resolve_ssm_secure.yaml")).render(
-        parameter_key=parameter_key,
+    result = deploy_cfn_template(
+        parameters={"DynamicParameter": f"{parameter_key}"},
+        template_path=os.path.join(
+            os.path.dirname(__file__), "../templates/resolve_ssm_secure.yaml"
+        ),
     )
 
-    response = cfn_client.create_change_set(
-        StackName=stack_name,
-        ChangeSetName=change_set_name,
-        TemplateBody=template_rendered,
-        ChangeSetType="CREATE",
-    )
-    change_set_id = response["Id"]
-    stack_id = response["StackId"]
-
-    try:
-        wait_until(is_change_set_created_and_available(change_set_id))
-        cfn_client.execute_change_set(ChangeSetName=change_set_id)
-        wait_until(is_stack_created(stack_id))
-        describe_result = cfn_client.describe_stacks(StackName=stack_id)["Stacks"][0]
-        assert describe_result["StackStatus"] == "CREATE_COMPLETE"
-
-        topic_name = [
-            o["OutputValue"] for o in describe_result["Outputs"] if o["OutputKey"] == "TopicName"
-        ][0]
-        assert topic_name == parameter_value
-
-    finally:
-        cleanup_changesets([change_set_id])
-        cleanup_stacks([stack_id])
+    topic_name = result.outputs["TopicName"]
+    assert topic_name == parameter_value
 
 
 @pytest.mark.parametrize(
@@ -163,46 +69,19 @@ def test_resolve_ssm_secure(
 def test_resolve_secretsmanager(
     secretsmanager_client,
     cfn_client,
-    is_change_set_created_and_available,
-    is_stack_created,
     create_secret,
-    create_parameter,
-    cleanup_changesets,
-    cleanup_stacks,
+    deploy_cfn_template,
     template_name,
 ):
-    stack_name = f"stack-{short_uid()}"
-    change_set_name = f"change-set-{short_uid()}"
     parameter_key = f"param-key-{short_uid()}"
     parameter_value = f"param-value-{short_uid()}"
 
     create_secret(Name=parameter_key, SecretString=parameter_value)
 
-    template_rendered = jinja2.Template(load_template_raw(template_name)).render(
-        parameter_key=parameter_key,
+    result = deploy_cfn_template(
+        parameters={"DynamicParameter": f"{parameter_key}"},
+        template_path=os.path.join(os.path.dirname(__file__), "../templates/", template_name),
     )
 
-    response = cfn_client.create_change_set(
-        StackName=stack_name,
-        ChangeSetName=change_set_name,
-        TemplateBody=template_rendered,
-        ChangeSetType="CREATE",
-    )
-    change_set_id = response["Id"]
-    stack_id = response["StackId"]
-
-    try:
-        wait_until(is_change_set_created_and_available(change_set_id))
-        cfn_client.execute_change_set(ChangeSetName=change_set_id)
-        wait_until(is_stack_created(stack_id))
-        describe_result = cfn_client.describe_stacks(StackName=stack_id)["Stacks"][0]
-        assert describe_result["StackStatus"] == "CREATE_COMPLETE"
-
-        topic_name = [
-            o["OutputValue"] for o in describe_result["Outputs"] if o["OutputKey"] == "TopicName"
-        ][0]
-        assert topic_name == parameter_value
-
-    finally:
-        cleanup_changesets([change_set_id])
-        cleanup_stacks([stack_id])
+    topic_name = result.outputs["TopicName"]
+    assert topic_name == parameter_value

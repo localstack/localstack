@@ -1400,6 +1400,7 @@ def update_function_configuration(function):
     if data.get("TracingConfig"):
         lambda_details.tracing_config = data["TracingConfig"]
     lambda_details.last_modified = datetime.utcnow()
+    data.pop("Layers", None)
     result = data
     lambda_function = region.lambdas.get(arn)
     result.update(format_func_details(lambda_function))
