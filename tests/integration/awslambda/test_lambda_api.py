@@ -1993,3 +1993,157 @@ class TestLambdaEventSourceMappings:
         # lambda_client.list_event_source_mappings(EventSourceArn=queue_arn)
         #
         # lambda_client.delete_event_source_mapping(UUID=uuid)
+
+
+# class TestLambdaLayerCrud:
+#
+#     def test_lambda_layer_lifecycle(self, lambda_client, create_lambda_function, snapshot):
+#         function_name = f"fn-layer-{short_uid()}"
+#         create_lambda_function(
+#             handler_file=TEST_LAMBDA_PYTHON_ECHO,
+#             func_name=function_name,
+#             runtime=Runtime.python3_9,
+#         )
+#
+#         lambda_client.inv
+#
+#         lambda_client.publish_layer_version(LayerName="???", Content="", Description="my-desc", CompatibleRuntimes=[], LicenseInfo="mine", CompatibleArchitectures=[])
+#
+#         lambda_client.list_layers()
+#         lambda_client.list_layer_versions()
+#         lambda_client.
+#
+
+
+class TestLambdaTags:
+    def test_tag_exceptions(self, lambda_client, create_lambda_function, snapshot, account_id):
+        function_name = f"fn-tag-{short_uid()}"
+        create_lambda_function(
+            handler_file=TEST_LAMBDA_PYTHON_ECHO,
+            func_name=function_name,
+            runtime=Runtime.python3_9,
+        )
+        function_arn = lambda_client.get_function(FunctionName=function_name)["Configuration"][
+            "FunctionArn"
+        ]
+        arn_prefix = f"arn:aws:lambda:{lambda_client.meta.region_name}:{account_id}:function:"
+
+        # ARN valid but lambda function doesn't exist
+        with pytest.raises(lambda_client.exceptions.ResourceNotFoundException) as e:
+            lambda_client.tag_resource(
+                Resource=f"{arn_prefix}doesnotexist", Tags={"key_a": "value_a"}
+            )
+        snapshot.match("tag_lambda_doesnotexist", e.value.response)
+
+        # function exists but the qualifier in the ARN doesn't
+        with pytest.raises(lambda_client.exceptions.InvalidParameterValueException) as e:
+            lambda_client.tag_resource(Resource=f"{function_arn}:v1", Tags={"key_a": "value_a"})
+        snapshot.match("tag_lambda_qualifier_doesnotexist", e.value.response)
+
+        # get tags for resource that never had tags
+        list_tags_response = lambda_client.list_tags(Resource=function_arn)
+        snapshot.match("list_tag_lambda_empty", list_tags_response)
+
+        # delete non-existing tag key
+        untag_nomatch = lambda_client.untag_resource(Resource=function_arn, TagKeys=["somekey"])
+        snapshot.match("untag_nomatch", untag_nomatch)
+
+        # delete non-existing tag key
+        with pytest.raises(lambda_client.exceptions.ClientError) as e:
+            lambda_client.untag_resource(Resource=function_arn, TagKeys=[])
+        snapshot.match("untag_empty_keys", e.value.response)
+
+        # partial delete (one exists, one doesn't)
+        lambda_client.tag_resource(
+            Resource=function_arn, Tags={"a_key": "a_value", "b_key": "b_value"}
+        )
+        lambda_client.untag_resource(Resource=function_arn, TagKeys=["a_key", "c_key"])
+        assert "a_key" not in lambda_client.list_tags(Resource=function_arn)["Tags"]
+        assert "b_key" in lambda_client.list_tags(Resource=function_arn)["Tags"]
+
+    def test_tag_limits(self, lambda_client, create_lambda_function, snapshot):
+        """test the limit of 50 tags per resource"""
+        function_name = f"fn-tag-{short_uid()}"
+        create_lambda_function(
+            handler_file=TEST_LAMBDA_PYTHON_ECHO,
+            func_name=function_name,
+            runtime=Runtime.python3_9,
+        )
+        function_arn = lambda_client.get_function(FunctionName=function_name)["Configuration"][
+            "FunctionArn"
+        ]
+
+        # invalid
+        with pytest.raises(lambda_client.exceptions.InvalidParameterValueException) as e:
+            lambda_client.tag_resource(
+                Resource=function_arn, Tags={f"{k}_key": f"{k}_value" for k in range(51)}
+            )
+        snapshot.match("tag_lambda_too_many_tags", e.value.response)
+
+        # valid
+        tag_response = lambda_client.tag_resource(
+            Resource=function_arn, Tags={f"{k}_key": f"{k}_value" for k in range(50)}
+        )
+        snapshot.match("tag_response", tag_response)
+
+        list_tags_response = lambda_client.list_tags(Resource=function_arn)
+        snapshot.match("list_tags_response", list_tags_response)
+
+        get_fn_response = lambda_client.get_function(FunctionName=function_name)
+        snapshot.match("get_fn_response", get_fn_response)
+
+        # try to add one more :)
+        with pytest.raises(lambda_client.exceptions.InvalidParameterValueException) as e:
+            lambda_client.tag_resource(Resource=function_arn, Tags={"a_key": "a_value"})
+        snapshot.match("tag_lambda_too_many_tags_additional", e.value.response)
+
+    def test_tag_lifecycle(self, lambda_client, create_lambda_function, snapshot):
+        function_name = f"fn-tag-{short_uid()}"
+
+        def snapshot_tags_for_resource(resource_arn: str, snapshot_suffix: str):
+            list_tags_response = lambda_client.list_tags(Resource=resource_arn)
+            snapshot.match(f"list_tags_response_{snapshot_suffix}", list_tags_response)
+            get_fn_response = lambda_client.get_function(FunctionName=resource_arn)
+            snapshot.match(f"get_fn_response_{snapshot_suffix}", get_fn_response)
+
+        create_lambda_function(
+            handler_file=TEST_LAMBDA_PYTHON_ECHO,
+            func_name=function_name,
+            runtime=Runtime.python3_9,
+            Tags={"key_a": "value_a"},
+        )
+        fn_arn = lambda_client.get_function(FunctionName=function_name)["Configuration"][
+            "FunctionArn"
+        ]
+        snapshot_tags_for_resource(fn_arn, "postfncreate")
+
+        tag_resource_response = lambda_client.tag_resource(
+            Resource=fn_arn,
+            Tags={
+                "key_b": "value_b",
+                "key_c": "value_c",
+                "key_d": "value_d",
+                "key_e": "value_e",
+            },
+        )
+        snapshot.match("tag_resource_response", tag_resource_response)
+        snapshot_tags_for_resource(fn_arn, "postaddtags")
+
+        tag_resource_response = lambda_client.tag_resource(
+            Resource=fn_arn,
+            Tags={
+                "key_b": "value_b",
+                "key_c": "value_x",
+            },
+        )
+        snapshot.match("tag_resource_overwrite", tag_resource_response)
+        snapshot_tags_for_resource(fn_arn, "overwrite")
+
+        # remove two tags
+        lambda_client.untag_resource(Resource=fn_arn, TagKeys=["key_c", "key_d"])
+        snapshot_tags_for_resource(fn_arn, "postuntag")
+
+        lambda_client.delete_function(FunctionName=function_name)
+        with pytest.raises(lambda_client.exceptions.ResourceNotFoundException) as e:
+            lambda_client.list_tags(Resource=fn_arn)
+        snapshot.match("list_tags_postdelete", e.value.response)

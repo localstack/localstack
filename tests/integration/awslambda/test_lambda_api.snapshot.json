@@ -4689,5 +4689,484 @@
         }
       }
     }
+  },
+  "tests/integration/awslambda/test_lambda_api.py::TestLambdaTags::test_tag_exceptions": {
+    "recorded-date": "28-09-2022, 07:58:28",
+    "recorded-content": {
+      "tag_lambda_doesnotexist": {
+        "Error": {
+          "Code": "ResourceNotFoundException",
+          "Message": "Function not found: arn:aws:lambda:<region>:111111111111:function:doesnotexist"
+        },
+        "Message": "Function not found: arn:aws:lambda:<region>:111111111111:function:doesnotexist",
+        "Type": "User",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 404
+        }
+      },
+      "tag_lambda_qualifier_doesnotexist": {
+        "Error": {
+          "Code": "InvalidParameterValueException",
+          "Message": "Tagging operations are permitted on Lambda functions only. Tags on aliases and versions are not supported. Please specify either a function name or a function ARN."
+        },
+        "Type": "User",
+        "message": "Tagging operations are permitted on Lambda functions only. Tags on aliases and versions are not supported. Please specify either a function name or a function ARN.",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "list_tag_lambda_empty": {
+        "Tags": {},
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "untag_nomatch": {
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 204
+        }
+      },
+      "untag_empty_keys": {
+        "Error": {
+          "Code": "ValidationException",
+          "Message": "1 validation error detected: Value null at 'tagKeys' failed to satisfy constraint: Member must not be null"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/integration/awslambda/test_lambda_api.py::TestLambdaTags::test_tag_limits": {
+    "recorded-date": "28-09-2022, 08:04:53",
+    "recorded-content": {
+      "tag_lambda_too_many_tags": {
+        "Error": {
+          "Code": "InvalidParameterValueException",
+          "Message": "Number of tags exceeds function tag limit."
+        },
+        "Type": "User",
+        "message": "Number of tags exceeds function tag limit.",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "tag_response": {
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 204
+        }
+      },
+      "list_tags_response": {
+        "Tags": {
+          "0_key": "0_value",
+          "10_key": "10_value",
+          "11_key": "11_value",
+          "12_key": "12_value",
+          "13_key": "13_value",
+          "14_key": "14_value",
+          "15_key": "15_value",
+          "16_key": "16_value",
+          "17_key": "17_value",
+          "18_key": "18_value",
+          "19_key": "19_value",
+          "1_key": "1_value",
+          "20_key": "20_value",
+          "21_key": "21_value",
+          "22_key": "22_value",
+          "23_key": "23_value",
+          "24_key": "24_value",
+          "25_key": "25_value",
+          "26_key": "26_value",
+          "27_key": "27_value",
+          "28_key": "28_value",
+          "29_key": "29_value",
+          "2_key": "2_value",
+          "30_key": "30_value",
+          "31_key": "31_value",
+          "32_key": "32_value",
+          "33_key": "33_value",
+          "34_key": "34_value",
+          "35_key": "35_value",
+          "36_key": "36_value",
+          "37_key": "37_value",
+          "38_key": "38_value",
+          "39_key": "39_value",
+          "3_key": "3_value",
+          "40_key": "40_value",
+          "41_key": "41_value",
+          "42_key": "42_value",
+          "43_key": "43_value",
+          "44_key": "44_value",
+          "45_key": "45_value",
+          "46_key": "46_value",
+          "47_key": "47_value",
+          "48_key": "48_value",
+          "49_key": "49_value",
+          "4_key": "4_value",
+          "5_key": "5_value",
+          "6_key": "6_value",
+          "7_key": "7_value",
+          "8_key": "8_value",
+          "9_key": "9_value"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "get_fn_response": {
+        "Code": {
+          "Location": "<location>",
+          "RepositoryType": "S3"
+        },
+        "Configuration": {
+          "CodeSha256": "<code-sha256:1>",
+          "CodeSize": 264,
+          "Description": "",
+          "Environment": {
+            "Variables": {}
+          },
+          "EphemeralStorage": {
+            "Size": 512
+          },
+          "FunctionArn": "arn:aws:lambda:<region>:111111111111:function:<function-name:1>",
+          "FunctionName": "<function-name:1>",
+          "Handler": "handler.handler",
+          "LastModified": "date",
+          "LastUpdateStatus": "Successful",
+          "MemorySize": 128,
+          "PackageType": "Zip",
+          "RevisionId": "<uuid:1>",
+          "Role": "arn:aws:iam::111111111111:role/<resource:1>",
+          "Runtime": "python3.9",
+          "State": "Active",
+          "Timeout": 30,
+          "TracingConfig": {
+            "Mode": "PassThrough"
+          },
+          "Version": "$LATEST"
+        },
+        "Tags": {
+          "0_key": "0_value",
+          "10_key": "10_value",
+          "11_key": "11_value",
+          "12_key": "12_value",
+          "13_key": "13_value",
+          "14_key": "14_value",
+          "15_key": "15_value",
+          "16_key": "16_value",
+          "17_key": "17_value",
+          "18_key": "18_value",
+          "19_key": "19_value",
+          "1_key": "1_value",
+          "20_key": "20_value",
+          "21_key": "21_value",
+          "22_key": "22_value",
+          "23_key": "23_value",
+          "24_key": "24_value",
+          "25_key": "25_value",
+          "26_key": "26_value",
+          "27_key": "27_value",
+          "28_key": "28_value",
+          "29_key": "29_value",
+          "2_key": "2_value",
+          "30_key": "30_value",
+          "31_key": "31_value",
+          "32_key": "32_value",
+          "33_key": "33_value",
+          "34_key": "34_value",
+          "35_key": "35_value",
+          "36_key": "36_value",
+          "37_key": "37_value",
+          "38_key": "38_value",
+          "39_key": "39_value",
+          "3_key": "3_value",
+          "40_key": "40_value",
+          "41_key": "41_value",
+          "42_key": "42_value",
+          "43_key": "43_value",
+          "44_key": "44_value",
+          "45_key": "45_value",
+          "46_key": "46_value",
+          "47_key": "47_value",
+          "48_key": "48_value",
+          "49_key": "49_value",
+          "4_key": "4_value",
+          "5_key": "5_value",
+          "6_key": "6_value",
+          "7_key": "7_value",
+          "8_key": "8_value",
+          "9_key": "9_value"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "tag_lambda_too_many_tags_additional": {
+        "Error": {
+          "Code": "InvalidParameterValueException",
+          "Message": "Number of tags exceeds function tag limit."
+        },
+        "Type": "User",
+        "message": "Number of tags exceeds function tag limit.",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/integration/awslambda/test_lambda_api.py::TestLambdaTags::test_tag_lifecycle": {
+    "recorded-date": "28-09-2022, 08:13:30",
+    "recorded-content": {
+      "list_tags_response_postfncreate": {
+        "Tags": {
+          "key_a": "value_a"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "get_fn_response_postfncreate": {
+        "Code": {
+          "Location": "<location>",
+          "RepositoryType": "S3"
+        },
+        "Configuration": {
+          "CodeSha256": "<code-sha256:1>",
+          "CodeSize": 264,
+          "Description": "",
+          "Environment": {
+            "Variables": {}
+          },
+          "EphemeralStorage": {
+            "Size": 512
+          },
+          "FunctionArn": "arn:aws:lambda:<region>:111111111111:function:<function-name:1>",
+          "FunctionName": "<function-name:1>",
+          "Handler": "handler.handler",
+          "LastModified": "date",
+          "LastUpdateStatus": "Successful",
+          "MemorySize": 128,
+          "PackageType": "Zip",
+          "RevisionId": "<uuid:1>",
+          "Role": "arn:aws:iam::111111111111:role/<resource:1>",
+          "Runtime": "python3.9",
+          "State": "Active",
+          "Timeout": 30,
+          "TracingConfig": {
+            "Mode": "PassThrough"
+          },
+          "Version": "$LATEST"
+        },
+        "Tags": {
+          "key_a": "value_a"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "tag_resource_response": {
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 204
+        }
+      },
+      "list_tags_response_postaddtags": {
+        "Tags": {
+          "key_a": "value_a",
+          "key_b": "value_b",
+          "key_c": "value_c",
+          "key_d": "value_d",
+          "key_e": "value_e"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "get_fn_response_postaddtags": {
+        "Code": {
+          "Location": "<location>",
+          "RepositoryType": "S3"
+        },
+        "Configuration": {
+          "CodeSha256": "<code-sha256:1>",
+          "CodeSize": 264,
+          "Description": "",
+          "Environment": {
+            "Variables": {}
+          },
+          "EphemeralStorage": {
+            "Size": 512
+          },
+          "FunctionArn": "arn:aws:lambda:<region>:111111111111:function:<function-name:1>",
+          "FunctionName": "<function-name:1>",
+          "Handler": "handler.handler",
+          "LastModified": "date",
+          "LastUpdateStatus": "Successful",
+          "MemorySize": 128,
+          "PackageType": "Zip",
+          "RevisionId": "<uuid:2>",
+          "Role": "arn:aws:iam::111111111111:role/<resource:1>",
+          "Runtime": "python3.9",
+          "State": "Active",
+          "Timeout": 30,
+          "TracingConfig": {
+            "Mode": "PassThrough"
+          },
+          "Version": "$LATEST"
+        },
+        "Tags": {
+          "key_a": "value_a",
+          "key_b": "value_b",
+          "key_c": "value_c",
+          "key_d": "value_d",
+          "key_e": "value_e"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "tag_resource_overwrite": {
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 204
+        }
+      },
+      "list_tags_response_overwrite": {
+        "Tags": {
+          "key_a": "value_a",
+          "key_b": "value_b",
+          "key_c": "value_x",
+          "key_d": "value_d",
+          "key_e": "value_e"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "get_fn_response_overwrite": {
+        "Code": {
+          "Location": "<location>",
+          "RepositoryType": "S3"
+        },
+        "Configuration": {
+          "CodeSha256": "<code-sha256:1>",
+          "CodeSize": 264,
+          "Description": "",
+          "Environment": {
+            "Variables": {}
+          },
+          "EphemeralStorage": {
+            "Size": 512
+          },
+          "FunctionArn": "arn:aws:lambda:<region>:111111111111:function:<function-name:1>",
+          "FunctionName": "<function-name:1>",
+          "Handler": "handler.handler",
+          "LastModified": "date",
+          "LastUpdateStatus": "Successful",
+          "MemorySize": 128,
+          "PackageType": "Zip",
+          "RevisionId": "<uuid:3>",
+          "Role": "arn:aws:iam::111111111111:role/<resource:1>",
+          "Runtime": "python3.9",
+          "State": "Active",
+          "Timeout": 30,
+          "TracingConfig": {
+            "Mode": "PassThrough"
+          },
+          "Version": "$LATEST"
+        },
+        "Tags": {
+          "key_a": "value_a",
+          "key_b": "value_b",
+          "key_c": "value_x",
+          "key_d": "value_d",
+          "key_e": "value_e"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "list_tags_response_postuntag": {
+        "Tags": {
+          "key_a": "value_a",
+          "key_b": "value_b",
+          "key_e": "value_e"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "get_fn_response_postuntag": {
+        "Code": {
+          "Location": "<location>",
+          "RepositoryType": "S3"
+        },
+        "Configuration": {
+          "CodeSha256": "<code-sha256:1>",
+          "CodeSize": 264,
+          "Description": "",
+          "Environment": {
+            "Variables": {}
+          },
+          "EphemeralStorage": {
+            "Size": 512
+          },
+          "FunctionArn": "arn:aws:lambda:<region>:111111111111:function:<function-name:1>",
+          "FunctionName": "<function-name:1>",
+          "Handler": "handler.handler",
+          "LastModified": "date",
+          "LastUpdateStatus": "Successful",
+          "MemorySize": 128,
+          "PackageType": "Zip",
+          "RevisionId": "<uuid:4>",
+          "Role": "arn:aws:iam::111111111111:role/<resource:1>",
+          "Runtime": "python3.9",
+          "State": "Active",
+          "Timeout": 30,
+          "TracingConfig": {
+            "Mode": "PassThrough"
+          },
+          "Version": "$LATEST"
+        },
+        "Tags": {
+          "key_a": "value_a",
+          "key_b": "value_b",
+          "key_e": "value_e"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "list_tags_postdelete": {
+        "Error": {
+          "Code": "ResourceNotFoundException",
+          "Message": "Function not found: arn:aws:lambda:<region>:111111111111:function:<function-name:1>"
+        },
+        "Message": "Function not found: arn:aws:lambda:<region>:111111111111:function:<function-name:1>",
+        "Type": "User",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 404
+        }
+      }
+    }
   }
 }
