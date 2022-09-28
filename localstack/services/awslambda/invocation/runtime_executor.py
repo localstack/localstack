@@ -231,10 +231,11 @@ class RuntimeExecutor:
             file.write(function_version.config.code.get_lambda_archive())
             file.flush()
             unzip(file.name, str(target_code))
+        image_name = get_image_for_runtime(function_version.config.runtime)
+        if image_name not in CONTAINER_CLIENT.get_docker_image_names(strip_latest=False):
+            CONTAINER_CLIENT.pull_image(image_name)
         if config.LAMBDA_PREBUILD_IMAGES:
             prepare_image(target_path, function_version)
-        # TODO wanna check before if we need to pull?
-        CONTAINER_CLIENT.pull_image(get_image_for_runtime(function_version.config.runtime))
         LOG.debug("Version preparation took %0.2fms", (time.perf_counter() - time_before) * 1000)
 
     @staticmethod

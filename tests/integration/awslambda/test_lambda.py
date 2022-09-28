@@ -984,4 +984,49 @@ class TestLambdaAliases:
     def test_alias_routingconfig(
         self, lambda_client, lambda_su_role, create_lambda_function_aws, snapshot
     ):
-        pass
+        waiter = lambda_client.get_waiter("function_updated_v2")
+        function_name = f"fn-{short_uid()}"
+        zip_file_v1 = create_lambda_archive(
+            load_file(TEST_LAMBDA_VERSION) % "version1", get_content=True
+        )
+        create_function_response = create_lambda_function_aws(
+            FunctionName=function_name,
+            Handler="handler.handler",
+            Code={"ZipFile": zip_file_v1},
+            PackageType="Zip",
+            Role=lambda_su_role,
+            Runtime=Runtime.python3_9,
+            Description="First version :)",
+            Publish=True,
+        )
+        waiter.wait(FunctionName=function_name)
+        zip_file_v2 = create_lambda_archive(
+            load_file(TEST_LAMBDA_VERSION) % "version2", get_content=True
+        )
+        # update lambda code
+        lambda_client.update_function_code(FunctionName=function_name, ZipFile=zip_file_v2)
+        waiter.wait(FunctionName=function_name)
+
+        second_publish_response = lambda_client.publish_version(
+            FunctionName=function_name, Description="Second version description :)"
+        )
+        waiter.wait(FunctionName=function_name, Qualifier=second_publish_response["Version"])
+        # create alias
+        create_alias_response = lambda_client.create_alias(
+            FunctionName=function_name,
+            FunctionVersion=create_function_response["Version"],
+            Name="alias1",
+            RoutingConfig={"AdditionalVersionWeights": {second_publish_response["Version"]: 0.5}},
+        )
+        snapshot.match("create_alias_response", create_alias_response)
+        retries = 0
+        max_retries = 20
+        versions_hit = set()
+        while len(versions_hit) < 2 and retries < max_retries:
+            invoke_response = lambda_client.invoke(
+                FunctionName=function_name, Qualifier=create_alias_response["Name"], Payload=b"{}"
+            )
+            payload = json.loads(to_str(invoke_response["Payload"].read()))
+            versions_hit.add(payload["version_from_ctx"])
+            retries += 1
+        assert len(versions_hit) == 2, f"Did not hit both versions after {max_retries} retries"
