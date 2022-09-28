@@ -9,8 +9,7 @@ from localstack.testing.snapshots.transformer import (
     KeyValueBasedTransformer,
     RegexTransformer,
     ResponseMetaDataTransformer,
-    TransformContext,
-    Transformer,
+    SortingTransformer,
 )
 from localstack.utils.net import IP_REGEX
 
@@ -336,44 +335,6 @@ class TransformerUtility:
 
     @staticmethod
     def secretsmanager_api():
-        class NormaliseVersionStages(Transformer):
-            """
-            Normalises Version Stages list in responses so that these are sorted. This is to enable a set comparison of
-            the Version Stages in all responses, as AWS's ordering behaviour is unknown.
-            """
-
-            def _normalise(self, input_data: dict | list) -> dict | list:
-                if isinstance(input_data, dict):
-                    res = dict()
-                    for k, v in input_data.items():
-                        res[k] = (
-                            sorted(v)
-                            if k == "VersionStages" and isinstance(v, list)
-                            else self._normalise(v)
-                        )
-                    return res
-                elif isinstance(input_data, list):
-                    return list(map(self._normalise, input_data))
-                else:
-                    return input_data
-
-            def transform(self, input_data: dict, *, ctx: TransformContext) -> dict:
-                return self._normalise(input_data)
-
-        class NormaliseSecretVersions(Transformer):
-            """
-            Normalises ListSecretVersionIdsResponse responses so that Secret Versions are sorted by date. This is to
-            enable a set comparison of the Secret Versions in the response, as AWS's ordering behaviour is unknown.
-            """
-
-            def transform(self, input_data: dict, *, ctx: TransformContext) -> dict:
-                for k, v in input_data.items():
-                    if k == "Versions" and isinstance(v, list):
-                        input_data[k] = sorted(v, key=lambda e: e.get("CreatedDate"), reverse=True)
-                    elif isinstance(v, dict):
-                        input_data[k] = self.transform(v, ctx=ctx)
-                return input_data
-
         return [
             KeyValueBasedTransformer(
                 lambda k, v: (
@@ -396,8 +357,8 @@ class TransformerUtility:
                 ),
                 "version_uuid",
             ),
-            NormaliseVersionStages(),
-            NormaliseSecretVersions(),
+            SortingTransformer("VersionStages"),
+            SortingTransformer("Versions", lambda e: e.get("CreatedDate")),
         ]
 
     @staticmethod

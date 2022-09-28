@@ -142,7 +142,7 @@ class TestSecretsManager:
         else:
             with pytest.raises(Exception) as resource_not_found:
                 sm_client.get_secret_value(SecretId=secret_arn[:-7])
-            sm_snapshot.match("resource_not_found_dict_1", resource_not_found.value)
+            sm_snapshot.match("resource_not_found_dict_1", resource_not_found.value.response)
 
         put_secret_value_rs_1 = sm_client.put_secret_value(
             SecretId=secret_name, SecretString="new_secret"
@@ -167,11 +167,11 @@ class TestSecretsManager:
     def test_secret_not_found(self, sm_client, sm_snapshot):
         with pytest.raises(Exception) as not_found:
             sm_client.get_secret_value(SecretId=f"s-{short_uid()}")
-        sm_snapshot.match("get_secret_value_not_found_ex", not_found.value)
+        sm_snapshot.match("get_secret_value_not_found_ex", not_found.value.response)
 
         with pytest.raises(Exception) as not_found:
             sm_client.list_secret_version_ids(SecretId=f"s-{short_uid()}")
-        sm_snapshot.match("list_secret_version_ids_not_found_ex", not_found.value)
+        sm_snapshot.match("list_secret_version_ids_not_found_ex", not_found.value.response)
 
     def test_call_lists_secrets_multiple_times(self, sm_client, secret_name):
         sm_client.create_secret(
@@ -534,48 +534,48 @@ class TestSecretsManager:
         # The secret name can contain ASCII letters, numbers, and the following characters: /_+=.@-
         with pytest.raises(Exception) as validation_exception:
             sm_client.create_secret(Name=secret_name, SecretString="MySecretString")
-        sm_snapshot.match("ex_log_1", validation_exception.value)
+        sm_snapshot.match("ex_log_1", validation_exception.value.response)
 
         with pytest.raises(Exception) as validation_exception:
             sm_client.delete_secret(SecretId=secret_name, ForceDeleteWithoutRecovery=True)
-        sm_snapshot.match("ex_log_2", validation_exception.value)
+        sm_snapshot.match("ex_log_2", validation_exception.value.response)
 
         with pytest.raises(Exception) as validation_exception:
             sm_client.describe_secret(SecretId=secret_name)
-        sm_snapshot.match("ex_log_3", validation_exception.value)
+        sm_snapshot.match("ex_log_3", validation_exception.value.response)
 
         with pytest.raises(Exception) as validation_exception:
             sm_client.get_secret_value(SecretId=secret_name)
-        sm_snapshot.match("ex_log_4", validation_exception.value)
+        sm_snapshot.match("ex_log_4", validation_exception.value.response)
 
         with pytest.raises(Exception) as validation_exception:
             sm_client.list_secret_version_ids(SecretId=secret_name, IncludeDeprecated=True)
-        sm_snapshot.match("ex_log_5", validation_exception.value)
+        sm_snapshot.match("ex_log_5", validation_exception.value.response)
 
         with pytest.raises(Exception) as validation_exception:
             sm_client.put_secret_value(SecretId=secret_name, SecretString="MySecretString")
-        sm_snapshot.match("ex_log_6", validation_exception.value)
+        sm_snapshot.match("ex_log_6", validation_exception.value.response)
 
         with pytest.raises(Exception) as validation_exception:
             sm_client.tag_resource(
                 SecretId=secret_name, Tags=[{"Key": "FirstTag", "Value": "SomeValue"}]
             )
-        sm_snapshot.match("ex_log_7", validation_exception.value)
+        sm_snapshot.match("ex_log_7", validation_exception.value.response)
 
         with pytest.raises(Exception) as validation_exception:
             sm_client.untag_resource(SecretId=secret_name, TagKeys=["FirstTag"])
-        sm_snapshot.match("ex_log_8", validation_exception.value)
+        sm_snapshot.match("ex_log_8", validation_exception.value.response)
 
         with pytest.raises(Exception) as validation_exception:
             sm_client.update_secret(SecretId=secret_name, Description="MyNewDescription")
-        sm_snapshot.match("ex_log_9", validation_exception.value)
+        sm_snapshot.match("ex_log_9", validation_exception.value.response)
 
         with pytest.raises(Exception) as validation_exception:
             sm_client.validate_resource_policy(
                 SecretId=secret_name,
                 ResourcePolicy='{\n"Version":"2012-10-17",\n"Statement":[{\n"Effect":"Allow",\n"Principal":{\n"AWS":"arn:aws:iam::123456789012:root"\n},\n"Action":"secretsmanager:GetSecretValue",\n"Resource":"*"\n}]\n}',
             )
-        sm_snapshot.match("ex_log_10", validation_exception.value)
+        sm_snapshot.match("ex_log_10", validation_exception.value.response)
 
     def test_last_accessed_date(self, sm_client, cleanups):
         def last_accessed_scenario_1(fail_if_days_overlap: bool) -> bool:
@@ -1739,7 +1739,7 @@ class TestSecretsManager:
 
         with pytest.raises(Exception) as invalid_req_ex:
             sm_client.create_secret(**create_secret_req)
-        sm_snapshot.match("invalid_req_ex", invalid_req_ex.value)
+        sm_snapshot.match("invalid_req_ex", invalid_req_ex.value.response)
 
     def test_can_recreate_delete_secret(self, sm_client, sm_snapshot, secret_name):
         # NOTE: AWS will behave as staged deletion for a small number of seconds (<10).

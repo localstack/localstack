@@ -9,6 +9,7 @@ from typing import Final, Optional, Union
 from moto.awslambda.models import LambdaFunction
 from moto.iam.policy_validation import IAMPolicyDocumentValidator
 from moto.secretsmanager import utils as secretsmanager_utils
+from moto.secretsmanager.exceptions import SecretNotFoundException as MotoSecretNotFoundException
 from moto.secretsmanager.models import FakeSecret, SecretsManagerBackend
 from moto.secretsmanager.responses import SecretsManagerResponse
 
@@ -92,7 +93,7 @@ class SecretNotFoundException(CommonServiceException):
         super().__init__(
             "ResourceNotFoundException",
             "Secrets Manager can't find the specified secret.",
-            404,
+            400,
             True,
         )
 
@@ -547,7 +548,7 @@ def backend_rotate_secret(
     rotation_days = "AutomaticallyAfterDays"
 
     if not self._is_valid_identifier(secret_id):
-        raise SecretNotFoundException(f"Unable to find secret '{secret_id}'")
+        raise SecretNotFoundException()
 
     if self.secrets[secret_id].is_deleted():
         raise InvalidRequestException(
@@ -649,6 +650,12 @@ def backend_rotate_secret(
         version_stages.remove(AWSPENDING)
 
     return secret.to_short_dict()
+
+
+@patch(MotoSecretNotFoundException.__init__)
+def moto_secret_not_found_exception_init(fn, self):
+    fn(self)
+    self.code = 400
 
 
 def get_arn_binding_key_for(region: str, secret_id: str) -> str:
