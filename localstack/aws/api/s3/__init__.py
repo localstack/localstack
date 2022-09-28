@@ -689,6 +689,13 @@ class AuthorizationQueryParametersError(ServiceException):
     HostId: Optional[HostId]
 
 
+class NoSuchWebsiteConfiguration(ServiceException):
+    code: str = "NoSuchWebsiteConfiguration"
+    sender_fault: bool = False
+    status_code: int = 404
+    BucketName: Optional[BucketName]
+
+
 AbortDate = datetime
 
 
@@ -1042,6 +1049,7 @@ class CopyObjectOutput(TypedDict, total=False):
 
 ObjectLockRetainUntilDate = datetime
 Metadata = Dict[MetadataKey, MetadataValue]
+Expires = datetime
 CopySourceIfUnmodifiedSince = datetime
 CopySourceIfModifiedSince = datetime
 

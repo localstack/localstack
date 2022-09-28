@@ -11,8 +11,10 @@ from localstack.aws.api.s3 import (
     AccessControlPolicy,
     AccountId,
     BucketName,
+    ChecksumAlgorithm,
     CompleteMultipartUploadOutput,
     CompleteMultipartUploadRequest,
+    ContentMD5,
     CopyObjectOutput,
     CopyObjectRequest,
     CreateBucketOutput,
@@ -27,6 +29,7 @@ from localstack.aws.api.s3 import (
     GetBucketLocationOutput,
     GetBucketRequestPaymentOutput,
     GetBucketRequestPaymentRequest,
+    GetBucketWebsiteOutput,
     GetObjectOutput,
     GetObjectRequest,
     HeadObjectOutput,
@@ -38,6 +41,7 @@ from localstack.aws.api.s3 import (
     ListObjectsV2Request,
     NoSuchKey,
     NoSuchLifecycleConfiguration,
+    NoSuchWebsiteConfiguration,
     NotificationConfiguration,
     ObjectKey,
     PutBucketAclRequest,
@@ -53,6 +57,7 @@ from localstack.aws.api.s3 import (
     SkipValidation,
 )
 from localstack.aws.api.s3 import Type as GranteeType
+from localstack.aws.api.s3 import WebsiteConfiguration
 from localstack.aws.handlers import modify_service_response, serve_custom_service_request_handlers
 from localstack.config import get_edge_port_http, get_protocol
 from localstack.constants import LOCALHOST_HOSTNAME
@@ -82,6 +87,7 @@ from localstack.services.s3.utils import (
     is_valid_canonical_id,
     verify_checksum,
 )
+from localstack.services.s3.website_hosting import register_website_hosting_routes
 from localstack.utils.aws import aws_stack
 from localstack.utils.aws.request_context import AWS_REGION_REGEX
 from localstack.utils.patch import patch
@@ -99,12 +105,19 @@ S3_MAX_FILE_SIZE_BYTES = 512 * 1024
 
 class MalformedXML(CommonServiceException):
     def __init__(self, message=None):
+        if not message:
+            message = "The XML you provided was not well-formed or did not validate against our published schema"
         super().__init__("MalformedXML", status_code=400, message=message)
 
 
 class MalformedACLError(CommonServiceException):
     def __init__(self, message=None):
         super().__init__("MalformedACLError", status_code=400, message=message)
+
+
+class InvalidRequest(CommonServiceException):
+    def __init__(self, message=None):
+        super().__init__("InvalidRequest", status_code=400, message=message)
 
 
 def get_full_default_bucket_location(bucket_name):
@@ -124,6 +137,7 @@ class S3Provider(S3Api, ServiceLifecycleHook):
     def on_after_init(self):
         apply_moto_patches()
         self.add_custom_routes()
+        register_website_hosting_routes(router=ROUTER)
         register_custom_handlers()
 
     def __init__(self) -> None:
@@ -356,9 +370,7 @@ class S3Provider(S3Api, ServiceLifecycleHook):
         bucket_name = request["Bucket"]
         payer = request.get("RequestPaymentConfiguration", {}).get("Payer")
         if payer not in ["Requester", "BucketOwner"]:
-            raise MalformedXML(
-                message="The XML you provided was not well-formed or did not validate against our published schema"
-            )
+            raise MalformedXML()
 
         moto_backend = get_moto_s3_backend(context)
         bucket = get_bucket_from_moto(moto_backend, bucket=bucket_name)
@@ -514,6 +526,51 @@ class S3Provider(S3Api, ServiceLifecycleHook):
         # check if the bucket exists
         get_bucket_from_moto(get_moto_s3_backend(context), bucket=bucket)
         return self.get_store().bucket_notification_configs.get(bucket, NotificationConfiguration())
+
+    def get_bucket_website(
+        self, context: RequestContext, bucket: BucketName, expected_bucket_owner: AccountId = None
+    ) -> GetBucketWebsiteOutput:
+        # to check if the bucket exists
+        # TODO: simplify this when we don't use moto
+        moto_backend = get_moto_s3_backend(context)
+        get_bucket_from_moto(moto_backend, bucket)
+
+        if not (website_configuration := self.get_store().bucket_website_configuration.get(bucket)):
+            ex = NoSuchWebsiteConfiguration(
+                "The specified bucket does not have a website configuration"
+            )
+            ex.BucketName = bucket
+            raise ex
+
+        return website_configuration
+
+    def put_bucket_website(
+        self,
+        context: RequestContext,
+        bucket: BucketName,
+        website_configuration: WebsiteConfiguration,
+        content_md5: ContentMD5 = None,
+        checksum_algorithm: ChecksumAlgorithm = None,
+        expected_bucket_owner: AccountId = None,
+    ) -> None:
+        # to check if the bucket exists
+        # TODO: simplify this when we don't use moto
+        moto_backend = get_moto_s3_backend(context)
+        get_bucket_from_moto(moto_backend, bucket)
+
+        validate_website_configuration(website_configuration)
+        store = self.get_store()
+        store.bucket_website_configuration[bucket] = website_configuration
+
+    def delete_bucket_website(
+        self, context: RequestContext, bucket: BucketName, expected_bucket_owner: AccountId = None
+    ) -> None:
+        # to check if the bucket exists
+        # TODO: simplify this when we don't use moto
+        moto_backend = get_moto_s3_backend(context)
+        get_bucket_from_moto(moto_backend, bucket)
+        # does not raise error if the bucket did not have a config, will simply return
+        self.get_store().bucket_website_configuration.pop(bucket, None)
 
     def add_custom_routes(self):
         # virtual-host style: https://bucket-name.s3.region-code.amazonaws.com/key-name
@@ -674,6 +731,86 @@ def validate_acl_acp(acp: AccessControlPolicy) -> None:
         ):
             ex = _create_invalid_argument_exc("Invalid id", "CanonicalUser/ID", grantee_id)
             raise ex
+
+
+def validate_website_configuration(website_config: WebsiteConfiguration) -> None:
+    """
+    Validate the website configuration following AWS docs
+    See https://docs.aws.amazon.com/AmazonS3/latest/API/API_PutBucketWebsite.html
+    :param website_config:
+    :raises
+    :return: None
+    """
+    if redirect_all_req := website_config.get("RedirectAllRequestsTo", {}):
+        if len(website_config) > 1:
+            ex = _create_invalid_argument_exc(
+                message="RedirectAllRequestsTo cannot be provided in conjunction with other Routing Rules.",
+                name="RedirectAllRequestsTo",
+                value="not null",
+            )
+            raise ex
+        if "HostName" not in redirect_all_req:
+            raise MalformedXML()
+
+        if (protocol := redirect_all_req.get("Protocol")) and protocol not in ("http", "https"):
+            raise InvalidRequest(
+                "Invalid protocol, protocol can be http or https. If not defined the protocol will be selected automatically."
+            )
+
+        return
+
+    # required
+    # https://docs.aws.amazon.com/AmazonS3/latest/API/API_IndexDocument.html
+    if not (index_configuration := website_config.get("IndexDocument")):
+        ex = _create_invalid_argument_exc(
+            message="A value for IndexDocument Suffix must be provided if RedirectAllRequestsTo is empty",
+            name="IndexDocument",
+            value="null",
+        )
+        raise ex
+
+    if not (index_suffix := index_configuration.get("Suffix")) or "/" in index_suffix:
+        ex = _create_invalid_argument_exc(
+            message="The IndexDocument Suffix is not well formed",
+            name="IndexDocument",
+            value=index_suffix or None,
+        )
+        raise ex
+
+    if "ErrorDocument" in website_config and not website_config.get("ErrorDocument", {}).get("Key"):
+        raise MalformedXML()
+
+    if "RoutingRules" in website_config:
+        routing_rules = website_config.get("RoutingRules", [])
+        if len(routing_rules) == 0:
+            raise MalformedXML()
+        if len(routing_rules) > 50:
+            raise "Something?"
+        for routing_rule in routing_rules:
+            redirect = routing_rule.get("Redirect", {})
+            # todo: this does not raise an error? check what GetWebsiteConfig returns? empty field?
+            # if not (redirect := routing_rule.get("Redirect")):
+            #     raise "Something"
+
+            if "ReplaceKeyPrefixWith" in redirect and "ReplaceKeyWith" in redirect:
+                raise InvalidRequest(
+                    "You can only define ReplaceKeyPrefix or ReplaceKey but not both."
+                )
+
+            # validating values length, to be confident while using the rules in the router
+            for field_value in redirect.values():
+                if not field_value:
+                    raise MalformedXML()
+
+            if "Condition" in routing_rule and not routing_rule.get("Condition", {}):
+                raise InvalidRequest(
+                    "Condition cannot be empty. To redirect all requests without a condition, the condition element shouldn't be present."
+                )
+
+            if (protocol := redirect.get("Protocol")) and protocol not in ("http", "https"):
+                raise InvalidRequest(
+                    "Invalid protocol, protocol can be http or https. If not defined the protocol will be selected automatically."
+                )
 
 
 def is_object_expired(context: RequestContext, bucket: BucketName, key: ObjectKey) -> bool:
