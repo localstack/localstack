@@ -143,6 +143,9 @@ class GatewayRestAPI(GenericBaseModel):
                     restApiId=result["id"], body=to_bytes(body), parameters=api_params
                 )
 
+            props["id"] = result["id"]
+            return result
+
         return {
             "create": {"function": _create},
             "delete": {
@@ -695,6 +698,9 @@ class GatewayModel(GenericBaseModel):
 
     @staticmethod
     def get_deploy_templates():
+        def _store_id(result, resource_id, resources, resource_type):
+            resources[resource_id]["PhysicalResourceId"] = result["id"]
+
         return {
             "create": {
                 "function": "create_model",
@@ -706,6 +712,7 @@ class GatewayModel(GenericBaseModel):
                 },
                 "types": {"schema": str},
                 "defaults": {"contentType": "application/json"},
+                "result_handler": _store_id,
             }
         }
 

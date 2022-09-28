@@ -6,7 +6,6 @@ import traceback
 from typing import Dict, List, Optional
 
 import botocore
-from moto.ec2.utils import generate_route_id
 
 from localstack import config
 from localstack.aws.accounts import get_aws_account_id
@@ -1012,57 +1011,6 @@ def determine_resource_physical_id(resource_id, stack=None, attribute=None):
     )
 
 
-def update_resource_details(stack, resource_id, details, action=None):
-    resource = stack.resources.get(resource_id, {})
-    if not resource or not details:
-        return
-
-    # TODO: we need to rethink this method - this should be encapsulated in the resource model classes.
-    #   Also, instead of actively updating the PhysicalResourceId attributes below, they should be
-    #   determined and returned by the resource model classes upon request.
-
-    resource_type = resource.get("Type") or ""
-    resource_type = re.sub("^AWS::", "", resource_type)
-    resource_props = resource.get("Properties", {})
-
-    if resource_type == "ApiGateway::RestApi":
-        resource_props["id"] = details["id"]
-
-    if resource_type == "EC2::Instance":
-        if details and isinstance(details, list) and hasattr(details[0], "id"):
-            resource["PhysicalResourceId"] = details[0].id
-        if isinstance(details, dict) and details.get("InstanceId"):
-            resource["PhysicalResourceId"] = details["InstanceId"]
-
-    if resource_type == "EC2::SecurityGroup":
-        resource["PhysicalResourceId"] = details["GroupId"]
-
-    if resource_type == "IAM::InstanceProfile":
-        resource["PhysicalResourceId"] = details["InstanceProfile"]["InstanceProfileName"]
-
-    if resource_type == "StepFunctions::Activity":
-        resource["PhysicalResourceId"] = details["activityArn"]
-
-    if resource_type == "ApiGateway::Model":
-        resource["PhysicalResourceId"] = details["id"]
-
-    if resource_type == "EC2::VPC":
-        resource["PhysicalResourceId"] = details["Vpc"]["VpcId"]
-
-    if resource_type == "EC2::Subnet":
-        resource["PhysicalResourceId"] = details["Subnet"]["SubnetId"]
-
-    if resource_type == "EC2::RouteTable":
-        resource["PhysicalResourceId"] = details["RouteTable"]["RouteTableId"]
-
-    if resource_type == "EC2::Route":
-        resource["PhysicalResourceId"] = generate_route_id(
-            resource_props["RouteTableId"],
-            resource_props.get("DestinationCidrBlock", ""),
-            resource_props.get("DestinationIpv6CidrBlock"),
-        )
-
-
 def add_default_resource_props(
     resource,
     stack_name,
@@ -1247,8 +1195,6 @@ class TemplateDeployer:
 
     def update_resource_details(self, resource_id, result, stack=None, action="CREATE"):
         stack = stack or self.stack
-        # update resource state
-        update_resource_details(stack, resource_id, result, action)
         # update physical resource id
         resource = stack.resources[resource_id]
 

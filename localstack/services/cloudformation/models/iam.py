@@ -570,6 +570,11 @@ class InstanceProfile(GenericBaseModel):
                 if "NoSuchEntity" not in str(e):
                     raise
 
+        def _store_profile_name(result, resource_id, resources, resource_type):
+            resources[resource_id]["PhysicalResourceId"] = result["InstanceProfile"][
+                "InstanceProfileName"
+            ]
+
         return {
             "create": [
                 {
@@ -578,6 +583,7 @@ class InstanceProfile(GenericBaseModel):
                         "InstanceProfileName": "InstanceProfileName",
                         "Path": "Path",
                     },
+                    "result_handler": _store_profile_name,
                 },
                 {"function": _add_roles},
             ],

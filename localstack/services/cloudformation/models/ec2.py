@@ -33,6 +33,9 @@ class EC2RouteTable(GenericBaseModel):
 
     @staticmethod
     def get_deploy_templates():
+        def _store_id(result, resource_id, resources, resource_type):
+            resources[resource_id]["PhysicalResourceId"] = result["RouteTable"]["RouteTableId"]
+
         return {
             "create": {
                 "function": "create_route_table",
@@ -40,6 +43,7 @@ class EC2RouteTable(GenericBaseModel):
                     "VpcId": "VpcId",
                     "TagSpecifications": get_tags_param("route-table"),
                 },
+                "result_handler": _store_id,
             },
             "delete": {
                 "function": "delete_route_table",
@@ -85,10 +89,20 @@ class EC2Route(GenericBaseModel):
 
     @staticmethod
     def get_deploy_templates():
+        def _id(result, resource_id, resources, resource_type):
+            resource_props = resources[resource_id]["Properties"]
+
+            resources[resource_id]["PhysicalResourceId"] = generate_route_id(
+                resource_props["RouteTableId"],
+                resource_props.get("DestinationCidrBlock", ""),
+                resource_props.get("DestinationIpv6CidrBlock"),
+            )
+
         return {
             "create": {
                 "function": "create_route",
                 "parameters": ["DestinationCidrBlock", "DestinationIpv6CidrBlock", "RouteTableId"],
+                "result_handler": _id,
             },
             "delete": {
                 "function": "delete_route",
@@ -246,6 +260,9 @@ class SecurityGroup(GenericBaseModel):
 
     @staticmethod
     def get_deploy_templates():
+        def _store_group_id(result, resource_id, resources, resource_type):
+            resources[resource_id]["PhysicalResourceId"] = result["GroupId"]
+
         return {
             "create": {
                 "function": "create_security_group",
@@ -254,6 +271,7 @@ class SecurityGroup(GenericBaseModel):
                     "VpcId": "VpcId",
                     "Description": "GroupDescription",
                 },
+                "result_handler": _store_group_id,
             },
             "delete": {
                 "function": "delete_security_group",
@@ -316,6 +334,9 @@ class EC2Subnet(GenericBaseModel):
                         PrivateDnsHostnameTypeOnLaunch=dns_options.get("HostnameType"),
                     )
 
+        def _store_id(result, resource_id, resources, resource_type):
+            resources[resource_id]["PhysicalResourceId"] = result["Subnet"]["SubnetId"]
+
         return {
             "create": [
                 {
@@ -330,6 +351,7 @@ class EC2Subnet(GenericBaseModel):
                         {"TagSpecifications": get_tags_param("subnet")},
                         "VpcId",
                     ],
+                    "result_handler": _store_id,
                 },
                 {"function": _post_create},
             ],
@@ -402,6 +424,9 @@ class EC2VPC(GenericBaseModel):
                         )
                     ec2_client.delete_route_table(RouteTableId=rt["RouteTableId"])
 
+        def _store_vpc_id(result, resource_id, resources, resource_type):
+            resources[resource_id]["PhysicalResourceId"] = result["Vpc"]["VpcId"]
+
         return {
             "create": {
                 "function": "create_vpc",
@@ -410,6 +435,7 @@ class EC2VPC(GenericBaseModel):
                     "InstanceTenancy": "InstanceTenancy",
                     "TagSpecifications": get_tags_param("vpc"),
                 },
+                "result_handler": _store_vpc_id,
             },
             "delete": [
                 {"function": _pre_delete},
@@ -520,6 +546,12 @@ class EC2Instance(GenericBaseModel):
 
     @staticmethod
     def get_deploy_templates():
+        def _store_instance_id(result, resource_id, resources, resource_type):
+            if isinstance(result, list) and hasattr(result[0], "id"):
+                resources[resource_id]["PhysicalResourceId"] = result[0].id
+            if isinstance(result, dict) and result.get("InstanceId"):
+                resources[resource_id]["PhysicalResourceId"] = result["InstanceId"]
+
         return {
             "create": {
                 "function": "create_instances",
@@ -530,6 +562,7 @@ class EC2Instance(GenericBaseModel):
                     "ImageId": "ImageId",
                 },
                 "defaults": {"MinCount": 1, "MaxCount": 1},
+                "result_handler": _store_instance_id,
             },
             "delete": {
                 "function": "terminate_instances",
