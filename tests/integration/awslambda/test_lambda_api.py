@@ -2028,6 +2028,11 @@ class TestLambdaTags:
         ]
         arn_prefix = f"arn:aws:lambda:{lambda_client.meta.region_name}:{account_id}:function:"
 
+        # invalid ARN
+        with pytest.raises(lambda_client.exceptions.ClientError) as e:
+            lambda_client.tag_resource(Resource="arn:aws:something", Tags={"key_a": "value_a"})
+        snapshot.match("tag_lambda_invalidarn", e.value.response)
+
         # ARN valid but lambda function doesn't exist
         with pytest.raises(lambda_client.exceptions.ResourceNotFoundException) as e:
             lambda_client.tag_resource(
@@ -2048,10 +2053,15 @@ class TestLambdaTags:
         untag_nomatch = lambda_client.untag_resource(Resource=function_arn, TagKeys=["somekey"])
         snapshot.match("untag_nomatch", untag_nomatch)
 
-        # delete non-existing tag key
+        # delete empty tags
         with pytest.raises(lambda_client.exceptions.ClientError) as e:
             lambda_client.untag_resource(Resource=function_arn, TagKeys=[])
         snapshot.match("untag_empty_keys", e.value.response)
+
+        # add empty tags
+        with pytest.raises(lambda_client.exceptions.ClientError) as e:
+            lambda_client.tag_resource(Resource=function_arn, Tags={})
+        snapshot.match("tag_empty_tags", e.value.response)
 
         # partial delete (one exists, one doesn't)
         lambda_client.tag_resource(

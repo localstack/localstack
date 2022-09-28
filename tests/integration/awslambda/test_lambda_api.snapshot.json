@@ -4691,8 +4691,18 @@
     }
   },
   "tests/integration/awslambda/test_lambda_api.py::TestLambdaTags::test_tag_exceptions": {
-    "recorded-date": "28-09-2022, 08:38:34",
+    "recorded-date": "28-09-2022, 08:55:56",
     "recorded-content": {
+      "tag_lambda_invalidarn": {
+        "Error": {
+          "Code": "ValidationException",
+          "Message": "1 validation error detected: Value 'arn:aws:something' at 'resource' failed to satisfy constraint: Member must satisfy regular expression pattern: arn:(aws[a-zA-Z-]*)?:lambda:[a-z]{2}((-gov)|(-iso(b?)))?-[a-z]+-\\d{1}:\\d{12}:function:[a-zA-Z0-9-_]+(:(\\$LATEST|[a-zA-Z0-9-_]+))?"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
       "tag_lambda_doesnotexist": {
         "Error": {
           "Code": "ResourceNotFoundException",
@@ -4735,6 +4745,18 @@
           "Code": "ValidationException",
           "Message": "1 validation error detected: Value null at 'tagKeys' failed to satisfy constraint: Member must not be null"
         },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "tag_empty_tags": {
+        "Error": {
+          "Code": "InvalidParameterValueException",
+          "Message": "An error occurred and the request cannot be processed."
+        },
+        "Type": "User",
+        "message": "An error occurred and the request cannot be processed.",
         "ResponseMetadata": {
           "HTTPHeaders": {},
           "HTTPStatusCode": 400
