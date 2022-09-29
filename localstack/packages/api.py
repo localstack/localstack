@@ -181,6 +181,7 @@ class Package(abc.ABC):
         """
         self.get_installer(version).install(target)
 
+    @functools.lru_cache()
     def get_installer(self, version: str | None = None) -> PackageInstaller:
         """
         Returns the installer instance for a specific version of the package.
