@@ -13,7 +13,8 @@ from localstack.services.awslambda.lambda_api import (
     use_docker,
 )
 from localstack.services.awslambda.lambda_utils import LAMBDA_DEFAULT_HANDLER
-from localstack.services.install import GO_RUNTIME_VERSION, download_and_extract
+from localstack.services.awslambda.packages import awslambda_go_runtime_package
+from localstack.services.install import download_and_extract
 from localstack.testing.aws.lambda_utils import is_old_provider
 from localstack.testing.pytest.fixtures import skip_if_pro_enabled
 from localstack.utils import testutil
@@ -272,7 +273,7 @@ class TestGolangRuntimes:
 
         # fetch platform-specific example handler
         url = TEST_GOLANG_LAMBDA_URL_TEMPLATE.format(
-            version=GO_RUNTIME_VERSION,
+            version=awslambda_go_runtime_package.default_version,
             os=get_os(),
             arch=get_arch(),
         )
