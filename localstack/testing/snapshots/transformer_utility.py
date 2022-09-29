@@ -1,3 +1,4 @@
+import logging
 import re
 from datetime import datetime
 from typing import Optional, Pattern
@@ -8,8 +9,12 @@ from localstack.testing.snapshots.transformer import (
     KeyValueBasedTransformer,
     RegexTransformer,
     ResponseMetaDataTransformer,
+    SortingTransformer,
 )
 from localstack.utils.net import IP_REGEX
+
+LOG = logging.getLogger(__name__)
+
 
 PATTERN_UUID = re.compile(
     r"[a-fA-F0-9]{8}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{12}"
@@ -326,6 +331,34 @@ class TransformerUtility:
             TransformerUtility.key_value("AlarmName"),
             KeyValueBasedTransformer(_resource_name_transformer, "SubscriptionArn"),
             TransformerUtility.key_value("Region", "region-name-full"),
+        ]
+
+    @staticmethod
+    def secretsmanager_api():
+        return [
+            KeyValueBasedTransformer(
+                lambda k, v: (
+                    k
+                    if (isinstance(k, str) and isinstance(v, list) and re.match(PATTERN_UUID, k))
+                    else None
+                ),
+                "version_uuid",
+            ),
+            KeyValueBasedTransformer(
+                lambda k, v: (
+                    v
+                    if (
+                        isinstance(k, str)
+                        and k == "VersionId"
+                        and isinstance(v, str)
+                        and re.match(PATTERN_UUID, v)
+                    )
+                    else None
+                ),
+                "version_uuid",
+            ),
+            SortingTransformer("VersionStages"),
+            SortingTransformer("Versions", lambda e: e.get("CreatedDate")),
         ]
 
     @staticmethod
