@@ -17,6 +17,6 @@ def awslambda_go_runtime_package() -> Package:
 
 @packages(name="lambda_java_libs")
 def lambda_javalibs_package() -> Package:
-    from localstack.services.awslambda.packages import lambda_java_libs
+    from localstack.services.awslambda.packages import lambda_java_libs_package
 
-    return lambda_java_libs
+    return lambda_java_libs_package

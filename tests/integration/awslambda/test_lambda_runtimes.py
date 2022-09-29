@@ -6,7 +6,8 @@ import pytest
 
 from localstack.aws.api.lambda_ import Runtime
 from localstack.services.awslambda.lambda_api import use_docker
-from localstack.services.install import INSTALL_PATH_LOCALSTACK_FAT_JAR, TEST_LAMBDA_JAVA
+from localstack.services.awslambda.packages import lambda_java_libs_package
+from localstack.services.install import TEST_LAMBDA_JAVA
 from localstack.testing.aws.lambda_utils import is_old_provider
 from localstack.utils import testutil
 from localstack.utils.archives import unzip
@@ -121,7 +122,7 @@ class TestJavaRuntimes:
         zip_jar_path = os.path.join(zip_lib_dir, "test.lambda.jar")
         mkdir(zip_lib_dir)
         cp_r(
-            INSTALL_PATH_LOCALSTACK_FAT_JAR,
+            lambda_java_libs_package.get_installed_dir(),
             os.path.join(zip_lib_dir, "executor.lambda.jar"),
         )
         save_file(zip_jar_path, test_java_jar)

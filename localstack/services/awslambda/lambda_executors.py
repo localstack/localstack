@@ -31,7 +31,10 @@ from localstack.services.awslambda.lambda_utils import (
     rm_docker_container,
     store_lambda_logs,
 )
-from localstack.services.awslambda.packages import awslambda_go_runtime_package, lambda_java_libs
+from localstack.services.awslambda.packages import (
+    awslambda_go_runtime_package,
+    lambda_java_libs_package,
+)
 from localstack.utils.aws import aws_stack
 from localstack.utils.aws.aws_models import LambdaFunction
 from localstack.utils.aws.dead_letter_queue import lambda_error_to_dead_letter_queue
@@ -74,7 +77,7 @@ from localstack.utils.time import timestamp_millis
 
 # constants
 # TODO: direct reference to installed binary, should be handled by the installer, or called here?
-LAMBDA_JAVA_INSTALLER = lambda_java_libs.get_installer()
+LAMBDA_JAVA_INSTALLER = lambda_java_libs_package.get_installer()
 LAMBDA_EXECUTOR_JAR = LAMBDA_JAVA_INSTALLER._get_install_marker_path(
     LAMBDA_JAVA_INSTALLER.get_installed_dir()
 )

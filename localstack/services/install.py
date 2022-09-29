@@ -331,9 +331,9 @@ def install_components(names):
     parallelize(install_component, names)
 
     # TODO: subject to removal, migrated from old code
-    from localstack.services.awslambda.packages import lambda_java_libs
+    from localstack.services.awslambda.packages import lambda_java_libs_package
 
-    lambda_java_libs.install()
+    lambda_java_libs_package.install()
 
 
 def install_all_components():
@@ -421,7 +421,7 @@ class CommunityInstallerRepository(InstallerRepository):
         from localstack.services.awslambda.packages import (
             awslambda_go_runtime_package,
             awslambda_runtime_package,
-            lambda_java_libs,
+            lambda_java_libs_package,
         )
         from localstack.services.dynamodb.packages import dynamodblocal_package
         from localstack.services.kinesis.packages import kinesalite_package, kinesismock_package
@@ -441,7 +441,7 @@ class CommunityInstallerRepository(InstallerRepository):
             ("opensearch", opensearch_package),
             ("kinesalite", kinesalite_package),
             ("kinesis-mock", kinesismock_package),
-            ("lambda-java-libs", lambda_java_libs),
+            ("lambda-java-libs", lambda_java_libs_package),
             ("local-kms", install_local_kms),
             ("postgresql", PostgresqlPackage()),
             ("stepfunctions-local", install_stepfunctions_local),

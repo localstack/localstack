@@ -134,4 +134,4 @@ class AWSLambdaJavaPackageInstaller(PackageInstaller):
 
 awslambda_runtime_package = AWSLambdaRuntimePackage()
 awslambda_go_runtime_package = AWSLambdaGoRuntimePackage()
-lambda_java_libs = AWSLambdaJavaPackage()
+lambda_java_libs_package = AWSLambdaJavaPackage()
