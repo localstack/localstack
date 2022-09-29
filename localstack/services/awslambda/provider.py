@@ -130,6 +130,8 @@ from localstack.services.awslambda.api_utils import (
     qualifier_is_version,
 )
 from localstack.services.awslambda.invocation.lambda_models import (
+    LAMBDA_MINIMUM_UNRESERVED_CONCURRENCY,
+    AccountLimitUsage,
     AliasRoutingConfig,
     CodeSigningConfig,
     EventInvokeConfig,
@@ -1545,9 +1547,14 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
 
         fn_count = 0
         code_size_sum = 0
-        resered_concurrency_sum = 0
+        reserved_concurrency_sum = 0
         for fn in state.functions.values():
-            pass
+            fn_count += 1
+            code_size_sum += (
+                fn.latest().config.code.code_size
+            )  # TODO: might need to check all versions and aliases for this?
+            if fn.reserved_concurrent_executions is not None:
+                reserved_concurrency_sum += fn.reserved_concurrent_executions
         return GetAccountSettingsResponse(
             AccountLimit=AccountLimit(
                 TotalCodeSize=settings.total_code_size,
@@ -1555,7 +1562,7 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
                 CodeSizeUnzipped=settings.code_size_unzipped,
                 ConcurrentExecutions=settings.concurrent_executions,
                 UnreservedConcurrentExecutions=settings.concurrent_executions
-                - resered_concurrency_sum,
+                - reserved_concurrency_sum,
             ),
             AccountUsage=AccountUsage(
                 TotalCodeSize=code_size_sum,
@@ -1997,10 +2004,30 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
     # =======================================
     # (Reserved) function concurrency is scoped to the whole function
 
+    def _get_account_limit_usage(self, store: LambdaStore) -> AccountLimitUsage:
+        fn_count = code_size_sum = reserved_concurrency_sum = 0
+        for fn in store.functions.values():
+            fn_count += 1
+            code_size_sum += (
+                fn.latest().config.code.code_size
+            )  # TODO: might need to aggregate all versions and aliases for this?
+            if fn.reserved_concurrent_executions is not None:
+                reserved_concurrency_sum += fn.reserved_concurrent_executions
+        return AccountLimitUsage(
+            unreserved_concurrent_executions=store.settings.concurrent_executions
+            - reserved_concurrency_sum,
+            total_code_size=code_size_sum,
+            function_count=fn_count,
+        )
+
     def get_function_concurrency(
         self, context: RequestContext, function_name: FunctionName
     ) -> GetFunctionConcurrencyResponse:
-        ...
+        state = lambda_stores[context.account_id][context.region]
+        fn = state.functions.get(function_name)
+        return GetFunctionConcurrencyResponse(
+            ReservedConcurrentExecutions=fn.reserved_concurrent_executions
+        )
 
     def put_function_concurrency(
         self,
@@ -2008,12 +2035,37 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
         function_name: FunctionName,
         reserved_concurrent_executions: ReservedConcurrentExecutions,
     ) -> Concurrency:
-        ...
+        # TODO: normalize function_name
+        state = lambda_stores[context.account_id][context.region]
+        fn = state.functions.get(function_name)
+        if not fn:
+            fn_arn = qualified_lambda_arn(
+                function_name,
+                qualifier="$LATEST",
+                account=context.account_id,
+                region=context.region,
+            )
+            raise ResourceNotFoundException(f"Function not found: {fn_arn}", Type="User")
+
+        usage = self._get_account_limit_usage(state)
+
+        if (
+            usage.unreserved_concurrent_executions - reserved_concurrent_executions
+        ) < LAMBDA_MINIMUM_UNRESERVED_CONCURRENCY:
+            raise InvalidParameterValueException(
+                f"Specified ReservedConcurrentExecutions for function decreases account's UnreservedConcurrentExecution below its minimum value of [{LAMBDA_MINIMUM_UNRESERVED_CONCURRENCY}]."
+            )
+
+        fn.reserved_concurrent_executions = reserved_concurrent_executions
+
+        return Concurrency(ReservedConcurrentExecutions=fn.reserved_concurrent_executions)
 
     def delete_function_concurrency(
         self, context: RequestContext, function_name: FunctionName
     ) -> None:
-        ...
+        state = lambda_stores[context.account_id][context.region]
+        fn = state.functions.get(function_name)
+        fn.reserved_concurrent_executions = None
 
     # =======================================
     # ===============  TAGS   ===============

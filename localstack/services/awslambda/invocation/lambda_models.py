@@ -287,6 +287,7 @@ class Function:
     event_invoke_configs: dict[str, EventInvokeConfig] = dataclasses.field(
         default_factory=dict
     )  # key is $LATEST(?), version or alias
+    reserved_concurrent_executions: Optional[int] = None
 
     lock: threading.RLock = dataclasses.field(default_factory=threading.RLock)
     next_version: int = 1
@@ -403,7 +404,7 @@ LAMBDA_LIMITS_CODE_SIZE_ZIPPED_DEFAULT = 52428800
 LAMBDA_LIMITS_CODE_SIZE_UNZIPPED_DEFAULT = 262144000
 LAMBDA_LIMITS_CONCURRENT_EXECUTIONS_DEFAULT = 150
 
-MINIMUM_UNRESERVED_CONCURRENCY = 100
+LAMBDA_MINIMUM_UNRESERVED_CONCURRENCY = 100
 
 
 @dataclasses.dataclass
@@ -412,3 +413,10 @@ class AccountSettings:
     code_size_zipped: int = LAMBDA_LIMITS_CODE_SIZE_ZIPPED_DEFAULT
     code_size_unzipped: int = LAMBDA_LIMITS_CODE_SIZE_UNZIPPED_DEFAULT
     concurrent_executions: int = LAMBDA_LIMITS_CONCURRENT_EXECUTIONS_DEFAULT
+
+
+@dataclasses.dataclass
+class AccountLimitUsage:
+    unreserved_concurrent_executions: int
+    total_code_size: int
+    function_count: int
