@@ -48,16 +48,12 @@ INSTALL_DIR_KCL = "%s/amazon-kinesis-client" % dirs.static_libs
 INSTALL_DIR_STEPFUNCTIONS = "%s/stepfunctions" % dirs.static_libs
 INSTALL_DIR_KMS = "%s/kms" % dirs.static_libs
 INSTALL_DIR_ELASTICMQ = "%s/elasticmq" % dirs.var_libs
-INSTALL_PATH_LOCALSTACK_FAT_JAR = "%s/localstack-utils-fat.jar" % dirs.static_libs
 INSTALL_PATH_DDB_JAR = os.path.join(INSTALL_DIR_DDB, "DynamoDBLocal.jar")
 INSTALL_PATH_KCL_JAR = os.path.join(INSTALL_DIR_KCL, "aws-java-sdk-sts.jar")
 INSTALL_PATH_STEPFUNCTIONS_JAR = os.path.join(INSTALL_DIR_STEPFUNCTIONS, "StepFunctionsLocal.jar")
 INSTALL_PATH_KMS_BINARY_PATTERN = os.path.join(INSTALL_DIR_KMS, "local-kms.<arch>.bin")
 INSTALL_PATH_ELASTICMQ_JAR = os.path.join(INSTALL_DIR_ELASTICMQ, "elasticmq-server.jar")
 
-URL_LOCALSTACK_FAT_JAR = (
-    "{mvn_repo}/cloud/localstack/localstack-utils/{ver}/localstack-utils-{ver}-fat.jar"
-).format(ver=LOCALSTACK_MAVEN_VERSION, mvn_repo=MAVEN_REPO_URL)
 
 IMAGE_NAME_SFN_LOCAL = "amazon/aws-stepfunctions-local:1.7.9"
 ARTIFACTS_REPO = "https://github.com/localstack/localstack-artifacts"
@@ -272,13 +268,6 @@ def upgrade_jar_file(base_dir: str, file_glob: str, maven_asset: str):
     download(maven_asset_url, target_file)
 
 
-def install_lambda_java_libs():
-    # install LocalStack "fat" JAR file (contains all dependencies)
-    if not os.path.exists(INSTALL_PATH_LOCALSTACK_FAT_JAR):
-        log_install_msg("LocalStack Java libraries", verbatim=True)
-        download(URL_LOCALSTACK_FAT_JAR, INSTALL_PATH_LOCALSTACK_FAT_JAR)
-
-
 def install_lambda_java_testlibs():
     # Download the LocalStack Utils Test jar file from the maven repo
     if not os.path.exists(TEST_LAMBDA_JAVA):
@@ -340,7 +329,11 @@ def install_component(name):
 
 def install_components(names):
     parallelize(install_component, names)
-    install_lambda_java_libs()
+
+    # TODO: subject to removal, migrated from old code
+    from localstack.services.awslambda.packages import lambda_java_libs
+
+    lambda_java_libs.install()
 
 
 def install_all_components():
@@ -428,6 +421,7 @@ class CommunityInstallerRepository(InstallerRepository):
         from localstack.services.awslambda.packages import (
             awslambda_go_runtime_package,
             awslambda_runtime_package,
+            lambda_java_libs,
         )
         from localstack.services.dynamodb.packages import dynamodblocal_package
         from localstack.services.kinesis.packages import kinesalite_package, kinesismock_package
@@ -447,7 +441,7 @@ class CommunityInstallerRepository(InstallerRepository):
             ("opensearch", opensearch_package),
             ("kinesalite", kinesalite_package),
             ("kinesis-mock", kinesismock_package),
-            ("lambda-java-libs", install_lambda_java_libs),
+            ("lambda-java-libs", lambda_java_libs),
             ("local-kms", install_local_kms),
             ("postgresql", PostgresqlPackage()),
             ("stepfunctions-local", install_stepfunctions_local),

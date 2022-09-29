@@ -1,7 +1,7 @@
 import os
 import platform
 import stat
-from typing import List
+from typing import List, Optional
 
 from localstack.packages import InstallTarget, Package, PackageInstaller
 from localstack.packages.api import UnsupportedArchException, UnsupportedOSException
@@ -92,5 +92,46 @@ class AWSLambdaGoRuntimePackageInstaller(PackageInstaller):
         os.chmod(go_lambda_mockserver, st.st_mode | stat.S_IXUSR | stat.S_IXGRP | stat.S_IXOTH)
 
 
+# version of the Maven dependency with Java utility code
+LOCALSTACK_MAVEN_VERSION = "0.2.21"
+MAVEN_REPO_URL = "https://repo1.maven.org/maven2"
+URL_LOCALSTACK_FAT_JAR = (
+    "{mvn_repo}/cloud/localstack/localstack-utils/{ver}/localstack-utils-{ver}-fat.jar"
+)
+
+
+class AWSLambdaJavaPackage(Package):
+    def __init__(self):
+        super().__init__("LambdaJavaLibs", "0.2.21")
+
+    def get_versions(self) -> List[str]:
+        return ["0.2.21"]
+
+    def _get_installer(self, version: str) -> PackageInstaller:
+        return AWSLambdaGoRuntimePackageInstaller("lambda-java-libs", version)
+
+
+class AWSLambdaJavaPackageInstaller(PackageInstaller):
+    def _get_install_marker_path(self, install_dir: str) -> str:
+        return os.path.join(install_dir, "localstack-utils-fat.jar")
+
+    def install(self, target: Optional[InstallTarget] = None) -> None:
+        # TODO: this was installed into static libs per default. Keep or change?
+        if not target:
+            target = InstallTarget.STATIC_LIBS
+        super().install(target)
+
+    def _install(self, target: InstallTarget) -> None:
+        # install LocalStack "fat" JAR file (contains all dependencies)
+        install_destination = self._get_install_marker_path(self._get_install_dir(target))
+        if not os.path.exists(install_destination):
+            log_install_msg("LocalStack Java libraries", verbatim=True)
+            download(
+                URL_LOCALSTACK_FAT_JAR.format(ver=self.version, mvn_repo=MAVEN_REPO_URL),
+                install_destination,
+            )
+
+
 awslambda_runtime_package = AWSLambdaRuntimePackage()
 awslambda_go_runtime_package = AWSLambdaGoRuntimePackage()
+lambda_java_libs = AWSLambdaJavaPackage()
