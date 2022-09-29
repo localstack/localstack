@@ -64,7 +64,7 @@ def get_image_for_runtime(runtime: str) -> str:
 
 def get_runtime_client_path() -> Path:
     # TODO: discuss: Lambda seems to have a lot of code related to copying runtimes. Should this all be moved
-    #   to the installer, or remain here because it is "business logic"?
+    #   to the installer, or remain here because it is "business logic"? Same for GO_runtime code
     installer = awslambda_runtime_package.get_installer()
     return Path(installer._get_install_marker_path(installer.get_installed_dir()))
     # return Path(awslambda_runtime_package.get_installed_dir())
