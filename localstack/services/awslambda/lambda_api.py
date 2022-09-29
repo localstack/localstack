@@ -50,8 +50,9 @@ from localstack.services.awslambda.lambda_utils import (
     get_zip_bytes,
     validate_filters,
 )
+from localstack.services.awslambda.packages import awslambda_go_runtime_package
 from localstack.services.generic_proxy import RegionBackend
-from localstack.services.install import INSTALL_DIR_STEPFUNCTIONS, install_go_lambda_runtime
+from localstack.services.install import INSTALL_DIR_STEPFUNCTIONS
 from localstack.utils.archives import unzip
 from localstack.utils.aws import aws_stack
 from localstack.utils.aws.aws_models import CodeSigningConfig, InvalidEnvVars, LambdaFunction
@@ -819,7 +820,11 @@ def do_set_function_code(lambda_function: LambdaFunction):
             lambda_handler = execute
 
         if runtime.startswith("go1") and not use_docker():
-            install_go_lambda_runtime()
+            # TODO: subject to removal, migrated from old code
+            go_installer = awslambda_go_runtime_package.get_installer()
+            if not go_installer.is_installed():
+                go_installer.install()
+
             ensure_readable(main_file)
 
             def execute_go(event, context):
