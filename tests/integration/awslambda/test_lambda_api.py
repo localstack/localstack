@@ -986,8 +986,18 @@ pytestmark = pytest.mark.skip_snapshot_verify(
 
 
 class TestLambdaEventInvokeConfig:
+    @pytest.mark.skip_snapshot_verify(
+        paths=[
+            "$..LastUpdateStatus",
+            "$..LastUpdateStatusReason",
+            "$..LastUpdateStatusReasonCode",
+            "$..State",
+            "$..StateReason",
+            "$..StateReasonCode",
+        ]
+    )
     def test_lambda_eventinvokeconfig_exceptions(
-        self, lambda_client, create_lambda_function, snapshot, lambda_su_role
+        self, lambda_client, create_lambda_function, snapshot, lambda_su_role, account_id
     ):
         snapshot.add_transformer(
             SortingTransformer(
@@ -1026,7 +1036,11 @@ class TestLambdaEventInvokeConfig:
         snapshot.match("fn_alias_result", fn_alias_result)
         fn_alias = fn_alias_result["Name"]
 
-        fake_arn = "arn:aws:lambda:eu-west-1:000000001111:function:doesnotexist"
+        # FunctionName tests
+
+        fake_arn = (
+            f"arn:aws:lambda:{lambda_client.meta.region_name}:{account_id}:function:doesnotexist"
+        )
 
         with pytest.raises(lambda_client.exceptions.ResourceNotFoundException) as e:
             lambda_client.put_function_event_invoke_config(
@@ -1040,9 +1054,13 @@ class TestLambdaEventInvokeConfig:
             )
         snapshot.match("put_functionname_arn_notfound", e.value.response)
 
+        # Arguments missing
+
         with pytest.raises(lambda_client.exceptions.InvalidParameterValueException) as e:
             lambda_client.put_function_event_invoke_config(FunctionName="doesnotexist")
         snapshot.match("put_functionname_nootherargs", e.value.response)
+
+        # Destination value tests
 
         with pytest.raises(lambda_client.exceptions.InvalidParameterValueException) as e:
             lambda_client.put_function_event_invoke_config(
@@ -1062,7 +1080,35 @@ class TestLambdaEventInvokeConfig:
         )
         snapshot.match("put_destination_other_lambda", response)
 
-        # add to $LATEST
+        with pytest.raises(lambda_client.exceptions.InvalidParameterValueException) as e:
+            lambda_client.put_function_event_invoke_config(
+                FunctionName=function_name,
+                DestinationConfig={
+                    "OnSuccess": {"Destination": fn_arn.replace(":lambda:", ":iam:")}
+                },
+            )
+        snapshot.match("put_destination_invalid_service_arn", e.value.response)
+
+        response = lambda_client.put_function_event_invoke_config(
+            FunctionName=function_name, DestinationConfig={"OnSuccess": {}}
+        )
+        snapshot.match("put_destination_success_no_destination_arn", response)
+
+        response = lambda_client.put_function_event_invoke_config(
+            FunctionName=function_name, DestinationConfig={"OnFailure": {}}
+        )
+        snapshot.match("put_destination_failure_no_destination_arn", response)
+
+        with pytest.raises(lambda_client.exceptions.ClientError) as e:
+            lambda_client.put_function_event_invoke_config(
+                FunctionName=function_name,
+                DestinationConfig={
+                    "OnFailure": {"Destination": fn_arn.replace(":lambda:", ":_-/!lambda:")}
+                },
+            )
+        snapshot.match("put_destination_invalid_arn_pattern", e.value.response)
+
+        # Function Name & Qualifier tests
         response = lambda_client.put_function_event_invoke_config(
             FunctionName=function_name, MaximumRetryAttempts=1
         )
@@ -1072,17 +1118,15 @@ class TestLambdaEventInvokeConfig:
         )
         snapshot.match("put_destination_latest_explicit_qualifier", response)
 
-        # add to version TODO: ARN as function_name here as well
         response = lambda_client.put_function_event_invoke_config(
             FunctionName=function_name, Qualifier=fn_version, MaximumRetryAttempts=1
         )
         snapshot.match("put_destination_version", response)
-
-        # add to alias
         response = lambda_client.put_function_event_invoke_config(
             FunctionName=function_name, Qualifier=fn_alias, MaximumRetryAttempts=1
         )
         snapshot.match("put_alias_functionname_qualifier", response)
+
         with pytest.raises(lambda_client.exceptions.ResourceNotFoundException) as e:
             lambda_client.put_function_event_invoke_config(
                 FunctionName=function_name,
@@ -1129,8 +1173,38 @@ class TestLambdaEventInvokeConfig:
         )
         snapshot.match("put_version_shorthand", response)
 
-        # overwrite existing (=> no conflict)
+        response = lambda_client.put_function_event_invoke_config(
+            FunctionName=f"{function_name}:$LATEST", Qualifier="$LATEST", MaximumRetryAttempts=1
+        )
+        snapshot.match("put_shorthand_qualifier_match", response)
+
+        with pytest.raises(lambda_client.exceptions.InvalidParameterValueException) as e:
+            lambda_client.put_function_event_invoke_config(
+                FunctionName=f"{function_name}:{fn_version}",
+                Qualifier="$LATEST",
+                MaximumRetryAttempts=1,
+            )
+        snapshot.match("put_shorthand_qualifier_mismatch_1", e.value.response)
+
+        with pytest.raises(lambda_client.exceptions.InvalidParameterValueException) as e:
+            lambda_client.put_function_event_invoke_config(
+                FunctionName=f"{function_name}:$LATEST",
+                Qualifier=fn_version,
+                MaximumRetryAttempts=1,
+            )
+        snapshot.match("put_shorthand_qualifier_mismatch_2", e.value.response)
+
+        with pytest.raises(lambda_client.exceptions.InvalidParameterValueException) as e:
+            lambda_client.put_function_event_invoke_config(
+                FunctionName=f"{function_name}:{fn_version}",
+                Qualifier=fn_alias,
+                MaximumRetryAttempts=1,
+            )
+        snapshot.match("put_shorthand_qualifier_mismatch_3", e.value.response)
+
+        # Test overwrite existing values +  differences between put & update
         # first create a config with both values set, then overwrite it with only one value set
+
         first_overwrite_response = lambda_client.put_function_event_invoke_config(
             FunctionName=function_name, MaximumRetryAttempts=2, MaximumEventAgeInSeconds=60
         )
@@ -1170,6 +1244,7 @@ class TestLambdaEventInvokeConfig:
         assert get_postupdate_response["MaximumRetryAttempts"] == 0
         assert get_postupdate_response["MaximumEventAgeInSeconds"] == 60
 
+        # Test delete & listing
         list_response = lambda_client.list_function_event_invoke_configs(FunctionName=function_name)
         snapshot.match("list_configs", list_response)
 
@@ -1196,8 +1271,24 @@ class TestLambdaEventInvokeConfig:
             FunctionName=function_name
         )
         snapshot.match("list_configs_postdelete", list_response_postdelete)
+        assert len(list_response_postdelete["FunctionEventInvokeConfigs"]) == 0
 
-        # TODO: think about testing FunctionName/Qualifier combinations with other methods than put_
+        # more excs
+
+        with pytest.raises(lambda_client.exceptions.ResourceNotFoundException) as e:
+            lambda_client.get_function_event_invoke_config(FunctionName="doesnotexist")
+        snapshot.match("get_function_doesnotexist", e.value.response)
+
+        with pytest.raises(lambda_client.exceptions.ResourceNotFoundException) as e:
+            lambda_client.get_function_event_invoke_config(
+                FunctionName=function_name, Qualifier="doesnotexist"
+            )
+        snapshot.match("get_qualifier_doesnotexist", e.value.response)
+
+        # ARN is valid but the alias doesn't have an event invoke config anymore (see previous delete)
+        with pytest.raises(lambda_client.exceptions.ResourceNotFoundException) as e:
+            lambda_client.get_function_event_invoke_config(FunctionName=fn_alias_result["AliasArn"])
+        snapshot.match("get_eventinvokeconfig_doesnotexist", e.value.response)
 
 
 # note: these tests are inherently a bit flaky on AWS since it depends on account/region global usage limits/quotas

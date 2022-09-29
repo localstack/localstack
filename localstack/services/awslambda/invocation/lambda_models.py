@@ -13,6 +13,7 @@ from localstack.aws.api.lambda_ import (
     Architecture,
     CodeSigningPolicies,
     Cors,
+    DestinationConfig,
     FunctionUrlAuthType,
     InvocationType,
     LastUpdateStatus,
@@ -254,20 +255,12 @@ class FunctionResourcePolicy:
 
 
 @dataclasses.dataclass
-class LambdaDestinationConfig:
-    on_failure: Optional[str] = None
-    on_success: Optional[str] = None
-
-
-@dataclasses.dataclass
 class EventInvokeConfig:
     function_name: str
     qualifier: str
 
     last_modified: Optional[str] = dataclasses.field(compare=False)
-    destination_config: LambdaDestinationConfig = dataclasses.field(
-        default_factory=LambdaDestinationConfig
-    )
+    destination_config: Optional[DestinationConfig] = None
     maximum_retry_attempts: Optional[int] = None
     maximum_event_age_in_seconds: Optional[int] = None
 

@@ -15,6 +15,10 @@ FN_ARN_PATTERN = re.compile(
     r"^arn:aws:lambda:(?P<region_name>[^:]+):(?P<account_id>\d{12}):function:(?P<function_name>[^:]+)(:(?P<qualifier>.*))?$"
 )
 
+DESTINATION_ARN_PATTERN = re.compile(
+    r"^$|arn:(aws[a-zA-Z0-9-]*):([a-zA-Z0-9\-])+:([a-z]{2}(-gov)?-[a-z]+-\d{1})?:(\d{12})?:(.*)"
+)
+
 
 def map_function_url_config(model: FunctionUrlConfig) -> api_spec.FunctionUrlConfig:
     return api_spec.FunctionUrlConfig(

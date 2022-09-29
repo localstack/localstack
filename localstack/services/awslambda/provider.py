@@ -92,6 +92,8 @@ from localstack.aws.api.lambda_ import (
     MaxProvisionedConcurrencyConfigListItems,
     NamespacedFunctionName,
     NamespacedStatementId,
+    OnFailure,
+    OnSuccess,
     OrganizationId,
     PackageType,
     PositiveInteger,
@@ -124,6 +126,7 @@ from localstack.aws.api.lambda_ import (
 )
 from localstack.services.awslambda import api_utils
 from localstack.services.awslambda.api_utils import (
+    DESTINATION_ARN_PATTERN,
     FN_ARN_PATTERN,
     get_function_name,
     get_name_and_qualifier,
@@ -1719,6 +1722,64 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
     # =======  Event Invoke Config   ========
     # =======================================
 
+    # "1 validation error detected: Value 'arn:aws:_-/!lambda:<region>:111111111111:function:<function-name:1>' at 'destinationConfig.onFailure.destination' failed to satisfy constraint: Member must satisfy regular expression pattern: ^$|arn:(aws[a-zA-Z0-9-]*):([a-zA-Z0-9\\-])+:([a-z]{2}((-gov)|(-iso(b?)))?-[a-z]+-\\d{1})?:(\\d{12})?:(.*)"
+    # "1 validation error detected: Value 'arn:aws:_-/!lambda:<region>:111111111111:function:<function-name:1>' at 'destinationConfig.onFailure.destination' failed to satisfy constraint: Member must satisfy regular expression pattern: ^$|arn:(aws[a-zA-Z0-9-]*):([a-zA-Z0-9\\-])+:([a-z]2((-gov)|(-iso(b?)))?-[a-z]+-\\d1)?:(\\d12)?:(.*)" ... (expected → actual)
+
+    def _validate_destination_config(
+        self, store: LambdaStore, function_name: str, destination_config: DestinationConfig
+    ):
+        def _validate_destination_arn(destination_arn) -> bool:
+            if not DESTINATION_ARN_PATTERN.match(destination_arn):
+                # technically we shouldn't handle this in the provider
+                raise ValidationException(
+                    "1 validation error detected: Value '"
+                    + destination_arn
+                    + r"' at 'destinationConfig.onFailure.destination' failed to satisfy constraint: Member must satisfy regular expression pattern: ^$|arn:(aws[a-zA-Z0-9-]*):([a-zA-Z0-9\-])+:([a-z]{2}((-gov)|(-iso(b?)))?-[a-z]+-\d{1})?:(\d{12})?:(.*)"
+                )
+
+            match destination_arn.split(":")[2]:
+                case "lambda":
+                    fn_parts = FN_ARN_PATTERN.search(destination_arn).groupdict()
+                    if fn_parts:
+                        # check if it exists
+                        fn = store.functions.get(fn_parts["function_name"])
+                        if not fn:
+                            raise InvalidParameterValueException(
+                                f"The destination ARN {destination_arn} is invalid.", Type="User"
+                            )
+                        if fn_parts["function_name"] == function_name:
+                            raise InvalidParameterValueException(
+                                "You can't specify the function as a destination for itself.",
+                                Type="User",
+                            )
+                case "sns", "sqs", "events":
+                    pass
+                case _:
+                    return False
+            return True
+
+        validation_err = False
+
+        failure_destination = destination_config.get("OnFailure", {}).get("Destination")
+        if failure_destination:
+            validation_err = validation_err or not _validate_destination_arn(failure_destination)
+
+        success_destination = destination_config.get("OnSuccess", {}).get("Destination")
+        if success_destination:
+            validation_err = validation_err or not _validate_destination_arn(success_destination)
+
+        if validation_err:
+            on_success_part = (
+                f"OnSuccess(destination={success_destination})" if success_destination else "null"
+            )
+            on_failure_part = (
+                f"OnFailure(destination={failure_destination})" if failure_destination else "null"
+            )
+            raise InvalidParameterValueException(
+                f"The provided destination config DestinationConfig(onSuccess={on_success_part}, onFailure={on_failure_part}) is invalid.",
+                Type="User",
+            )
+
     def put_function_event_invoke_config(
         self,
         context: RequestContext,
@@ -1729,11 +1790,11 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
         destination_config: DestinationConfig = None,
     ) -> FunctionEventInvokeConfig:
         """
-        Destinations can be:
-        * SQS
-        * SNS
-        * Lambda
-        * EventBridge
+        Destination ARNs can be:
+        * SQS arn
+        * SNS arn
+        * Lambda arn
+        * EventBridge arn
 
         Differences between put_ and update_:
             * put overwrites any existing config
@@ -1741,16 +1802,10 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
             * update fails on non-existing configs
 
         Differences between destination and DLQ
-
             * "However, a dead-letter queue is part of a function's version-specific configuration, so it is locked in when you publish a version."
-            *  On-failure destinations also support additional targets and include details about the function's response in the invocation record.
+            *  "On-failure destinations also support additional targets and include details about the function's response in the invocation record."
 
         """
-        state = lambda_stores[context.account_id][context.region]
-        function_name, qualifier = get_name_and_qualifier(function_name, qualifier)
-        if ":" in function_name:
-            function_name, second_qualifier = function_name.split(":")
-
         if (
             maximum_event_age_in_seconds is None
             and maximum_retry_attempts is None
@@ -1761,30 +1816,26 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
                 Type="User",
             )
 
-        # TODO: validate destination config properly
-        if destination_config:
-            success_destination = destination_config.get("OnSuccess", {}).get("Destination")
-            if success_destination:
-                fn_parts = FN_ARN_PATTERN.search(success_destination).groupdict()
-                if fn_parts:
-                    # check if it exists
-                    fn = state.functions.get(fn_parts["function_name"])
-                    if not fn:
-                        raise InvalidParameterValueException(
-                            f"The provided destination config DestinationConfig(onSuccess=OnSuccess(destination={success_destination}), onFailure=null) is invalid."
-                        )  # TODO generalize / make utils
-                    if fn_parts["function_name"] == function_name:
-                        raise InvalidParameterValueException(
-                            "You can't specify the function as a destination for itself.",
-                            Type="User",
-                        )
-
+        state = lambda_stores[context.account_id][context.region]
+        function_name, qualifier = get_name_and_qualifier(function_name, qualifier)
         fn = state.functions.get(function_name)
-        if not fn:
-            raise ResourceNotFoundException("Where fn?")  # TODO: verify
+        if not fn or (qualifier and not (qualifier in fn.aliases or qualifier in fn.versions)):
+            raise ResourceNotFoundException("The function doesn't exist.", Type="User")
 
-        if qualifier and not (qualifier in fn.aliases or qualifier in fn.versions):
-            raise ResourceNotFoundException("Where qualifier?")  # TODO: verify
+        qualifier = qualifier or "$LATEST"
+
+        # validate and normalize destination config
+        if destination_config:
+            self._validate_destination_config(state, function_name, destination_config)
+
+        destination_config = DestinationConfig(
+            OnSuccess=OnSuccess(
+                Destination=(destination_config or {}).get("OnSuccess", {}).get("Destination")
+            ),
+            OnFailure=OnFailure(
+                Destination=(destination_config or {}).get("OnFailure", {}).get("Destination")
+            ),
+        )
 
         config = EventInvokeConfig(
             function_name=function_name,
@@ -1792,42 +1843,18 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
             maximum_event_age_in_seconds=maximum_event_age_in_seconds,
             maximum_retry_attempts=maximum_retry_attempts,
             last_modified=generate_lambda_date(),
+            destination_config=destination_config,
         )
-        if destination_config:
-            if "OnFailure" in destination_config:
-                on_failure_destination = destination_config["OnFailure"].get("Destination")
-                if not on_failure_destination:
-                    raise InvalidParameterValueException("?")  # TODO: add test
-                config.destination_config.on_failure = on_failure_destination
-            if "OnSuccess" in destination_config:
-                on_success_destination = destination_config["OnSuccess"].get("Destination")
-                if not on_success_destination:
-                    raise InvalidParameterValueException("?")  # TODO: add test
-                config.destination_config.on_success = on_success_destination
-
         fn.event_invoke_configs[qualifier] = config
 
-        fn_arn = qualified_lambda_arn(
-            function_name, qualifier or "$LATEST", context.account_id, context.region
-        )
-
-        optional_kwargs = {
-            **(
-                {"MaximumRetryAttempts": config.maximum_retry_attempts}
-                if config.maximum_retry_attempts is not None
-                else {}
-            ),
-            **(
-                {"MaximumEventAgeInSeconds": config.maximum_event_age_in_seconds}
-                if config.maximum_event_age_in_seconds is not None
-                else {}
-            ),
-        }
         return FunctionEventInvokeConfig(
             LastModified=datetime.datetime.strptime(config.last_modified, LAMBDA_DATE_FORMAT),
-            FunctionArn=fn_arn,
+            FunctionArn=qualified_lambda_arn(
+                function_name, qualifier or "$LATEST", context.account_id, context.region
+            ),
             DestinationConfig=destination_config,
-            **optional_kwargs,
+            MaximumEventAgeInSeconds=maximum_event_age_in_seconds,
+            MaximumRetryAttempts=maximum_retry_attempts,
         )
 
     def get_function_event_invoke_config(
@@ -1835,16 +1862,25 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
     ) -> FunctionEventInvokeConfig:
         state = lambda_stores[context.account_id][context.region]
         function_name, qualifier = get_name_and_qualifier(function_name, qualifier)
-        if ":" in function_name:
-            function_name, second_qualifier = function_name.split(":")
 
+        qualifier = qualifier or "$LATEST"
         fn = state.functions.get(function_name)
         if not fn:
-            raise ResourceNotFoundException("Where fn?")  # TODO: verify
+            fn_arn = qualified_lambda_arn(
+                function_name, qualifier, context.account_id, context.region
+            )
+            raise ResourceNotFoundException(
+                f"The function {fn_arn} doesn't have an EventInvokeConfig", Type="User"
+            )
 
-        config = fn.event_invoke_configs.get(qualifier or "$LATEST")
+        config = fn.event_invoke_configs.get(qualifier)
         if not config:
-            raise ResourceNotFoundException("Where event invoke config?")  # TODO: verify
+            fn_arn = qualified_lambda_arn(
+                function_name, qualifier, context.account_id, context.region
+            )
+            raise ResourceNotFoundException(
+                f"The function {fn_arn} doesn't have an EventInvokeConfig", Type="User"
+            )
 
         return FunctionEventInvokeConfig(
             LastModified=datetime.datetime.strptime(config.last_modified, LAMBDA_DATE_FORMAT),
@@ -1866,18 +1902,19 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
         state = lambda_stores[context.account_id][context.region]
         fn = state.functions.get(function_name)
         if not fn:
-            raise ResourceNotFoundException("Where Function?")  # TODO: verify
+            raise ResourceNotFoundException("TODO: Where Function?")
 
         event_invoke_configs = [
-            # TODO
             FunctionEventInvokeConfig(
-                LastModified="",
-                FunctionArn="",
-                MaximumEventAgeInSeconds=0,
-                MaximumRetryAttempts=0,
-                DestinationConfig=DestinationConfig(),
+                LastModified=c.last_modified,
+                FunctionArn=qualified_lambda_arn(
+                    function_name, c.qualifier, context.account_id, context.region
+                ),
+                MaximumEventAgeInSeconds=c.maximum_event_age_in_seconds,
+                MaximumRetryAttempts=c.maximum_retry_attempts,
+                DestinationConfig=c.destination_config,
             )
-            for c in fn.event_invoke_configs
+            for c in fn.event_invoke_configs.values()
         ]
 
         event_invoke_configs = PaginatedList(event_invoke_configs)
@@ -1897,12 +1934,12 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
         state = lambda_stores[context.account_id][context.region]
         fn = state.functions.get(function_name)
         if not fn:
-            raise ResourceNotFoundException("Where fn?")  # TODO: verify
+            raise ResourceNotFoundException("TODO: Where fn?")
 
         resolved_qualifier = qualifier or "$LATEST"
         config = fn.event_invoke_configs.get(resolved_qualifier)
         if not config:
-            raise ResourceNotFoundException("Where config?")  # TODO: verify
+            raise ResourceNotFoundException("TODO: Where config?")
 
         del fn.event_invoke_configs[resolved_qualifier]
 
@@ -1916,8 +1953,58 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
         destination_config: DestinationConfig = None,
     ) -> FunctionEventInvokeConfig:
         # like put but only update single fields via replace
-        # TODO
-        ...
+        state = lambda_stores[context.account_id][context.region]
+        function_name, qualifier = get_name_and_qualifier(function_name, qualifier)
+
+        if (
+            maximum_event_age_in_seconds is None
+            and maximum_retry_attempts is None
+            and destination_config is None
+        ):
+            raise InvalidParameterValueException(
+                "You must specify at least one of error handling or destination setting.",
+                Type="User",
+            )
+
+        fn = state.functions.get(function_name)
+        if not fn:
+            raise ResourceNotFoundException("TODO: Where fn?")
+        if qualifier and not (qualifier in fn.aliases or qualifier in fn.versions):
+            raise ResourceNotFoundException("The function doesn't exist.", Type="User")
+
+        qualifier = qualifier or "$LATEST"
+
+        config = fn.event_invoke_configs.get(qualifier)
+        if not config:
+            raise ResourceNotFoundException("TODO: config not found")
+
+        if destination_config:
+            self._validate_destination_config(state, function_name, destination_config)
+
+        optional_kwargs = {
+            k: v
+            for k, v in {
+                "destination_config": destination_config,
+                "maximum_retry_attempts": maximum_retry_attempts,
+                "maximum_event_age_in_seconds": maximum_event_age_in_seconds,
+            }.items()
+            if v is not None
+        }
+
+        new_config = dataclasses.replace(
+            config, last_modified=generate_lambda_date(), **optional_kwargs
+        )
+        fn.event_invoke_configs[qualifier] = new_config
+
+        return FunctionEventInvokeConfig(
+            LastModified=datetime.datetime.strptime(new_config.last_modified, LAMBDA_DATE_FORMAT),
+            FunctionArn=qualified_lambda_arn(
+                function_name, qualifier or "$LATEST", context.account_id, context.region
+            ),
+            DestinationConfig=new_config.destination_config,
+            MaximumEventAgeInSeconds=new_config.maximum_event_age_in_seconds,
+            MaximumRetryAttempts=new_config.maximum_retry_attempts,
+        )
 
     # =======================================
     # ======  Layer & Layer Versions  =======
@@ -2093,7 +2180,8 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
         pattern_match = FN_ARN_PATTERN.search(resource)
         if not pattern_match:
             raise ValidationException(
-                "1 validation error detected: Value 'arn:aws:something' at 'resource' failed to satisfy constraint: Member must satisfy regular expression pattern: arn:(aws[a-zA-Z-]*)?:lambda:[a-z]{2}((-gov)|(-iso(b?)))?-[a-z]+-\\d{1}:\\d{12}:function:[a-zA-Z0-9-_]+(:(\\$LATEST|[a-zA-Z0-9-_]+))?"
+                # TODO
+                rf"1 validation error detected: Value '{resource}' at 'resource' failed to satisfy constraint: Member must satisfy regular expression pattern: arn:(aws[a-zA-Z-]*)?:lambda:[a-z]{2}((-gov)|(-iso(b?)))?-[a-z]+-\\d{1}:\\d{12}:function:[a-zA-Z0-9-_]+(:(\\$LATEST|[a-zA-Z0-9-_]+))?"
             )
 
         groups = pattern_match.groupdict()
