@@ -1,4 +1,5 @@
 import os
+from functools import lru_cache
 from typing import List
 
 from localstack import config
@@ -14,6 +15,7 @@ class KinesisMockPackage(Package):
     def __init__(self, default_version: str = _KINESIS_MOCK_VERSION):
         super().__init__(name="Kinesis Mock", default_version=default_version)
 
+    @lru_cache
     def _get_installer(self, version: str) -> PackageInstaller:
         return KinesisMockPackageInstaller(version)
 
