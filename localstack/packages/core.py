@@ -165,7 +165,6 @@ class DownloadInstaller(PackageInstaller):
     def __init__(self, name: str, version: str):
         super().__init__(name, version)
 
-    @lru_cache()
     def _get_download_url(self) -> str:
         raise NotImplementedError()
 
@@ -202,6 +201,7 @@ class GitHubReleaseInstaller(DownloadInstaller):
             f"https://api.github.com/repos/{github_slug}/releases/tags/{self.version}"
         )
 
+    @lru_cache()
     def _get_download_url(self) -> str:
         response = requests.get(self.github_tag_url)
         if not response.ok:
