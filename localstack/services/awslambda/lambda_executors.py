@@ -73,7 +73,11 @@ from localstack.utils.run import CaptureOutputProcess, FuncThread
 from localstack.utils.time import timestamp_millis
 
 # constants
-LAMBDA_EXECUTOR_JAR = lambda_java_libs.get_installer()._get_installed_marker_path()
+# TODO: direct reference to installed binary, should be handled by the installer, or called here?
+LAMBDA_JAVA_INSTALLER = lambda_java_libs.get_installer()
+LAMBDA_EXECUTOR_JAR = LAMBDA_JAVA_INSTALLER._get_install_marker_path(
+    LAMBDA_JAVA_INSTALLER.get_installed_dir()
+)
 LAMBDA_EXECUTOR_CLASS = "cloud.localstack.LambdaExecutor"
 LAMBDA_HANDLER_ENV_VAR_NAME = "_HANDLER"
 EVENT_FILE_PATTERN = "%s/lambda.event.*.json" % config.dirs.tmp
