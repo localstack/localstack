@@ -144,7 +144,15 @@ def cmd_start(docker: bool, host: bool, no_banner: bool, detached: bool):
         console.rule("LocalStack Runtime Log (press [bold][yellow]CTRL-C[/yellow][/bold] to quit)")
 
     if host:
-        bootstrap.start_infra_locally()
+        try:
+            bootstrap.start_infra_locally()
+        except ImportError:
+            if config.DEBUG:
+                console.print_exception()
+            raise click.ClickException(
+                "It appears you have a light install of localstack which only supports running in docker\n"
+                "If you would like to use --host, please reinstall localstack using `pip install localstack[runtime]`"
+            )
     else:
         if detached:
             bootstrap.start_infra_in_docker_detached(console)
