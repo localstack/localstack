@@ -1535,24 +1535,31 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
     # =========  Account Settings   =========
     # =======================================
 
-    # TODO: add to store
-    # TODO: update these values throughout the provider where applicable
     # CAVE: these settings & usages are *per* region!
     def get_account_settings(
         self,
         context: RequestContext,
     ) -> GetAccountSettingsResponse:
+        state = lambda_stores[context.account_id][context.region]
+        settings = state.settings
+
+        fn_count = 0
+        code_size_sum = 0
+        resered_concurrency_sum = 0
+        for fn in state.functions.values():
+            pass
         return GetAccountSettingsResponse(
             AccountLimit=AccountLimit(
-                TotalCodeSize=0,
-                CodeSizeZipped=0,
-                CodeSizeUnzipped=0,
-                ConcurrentExecutions=0,
-                UnreservedConcurrentExecutions=0,
+                TotalCodeSize=settings.total_code_size,
+                CodeSizeZipped=settings.code_size_zipped,
+                CodeSizeUnzipped=settings.code_size_unzipped,
+                ConcurrentExecutions=settings.concurrent_executions,
+                UnreservedConcurrentExecutions=settings.concurrent_executions
+                - resered_concurrency_sum,
             ),
             AccountUsage=AccountUsage(
-                TotalCodeSize=0,
-                FunctionCount=0,
+                TotalCodeSize=code_size_sum,
+                FunctionCount=fn_count,
             ),
         )
 

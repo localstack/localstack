@@ -394,3 +394,21 @@ class LayerVersion:
 class ValidationException(CommonServiceException):
     def __init__(self, message: str):
         super().__init__(code="ValidationException", status_code=400, message=message)
+
+
+# note: we might at some point want to generalize these limits across all services and fetch them from there
+
+LAMBDA_LIMITS_TOTAL_CODE_SIZE_DEFAULT = 80530636800
+LAMBDA_LIMITS_CODE_SIZE_ZIPPED_DEFAULT = 52428800
+LAMBDA_LIMITS_CODE_SIZE_UNZIPPED_DEFAULT = 262144000
+LAMBDA_LIMITS_CONCURRENT_EXECUTIONS_DEFAULT = 150
+
+MINIMUM_UNRESERVED_CONCURRENCY = 100
+
+
+@dataclasses.dataclass
+class AccountSettings:
+    total_code_size: int = LAMBDA_LIMITS_TOTAL_CODE_SIZE_DEFAULT
+    code_size_zipped: int = LAMBDA_LIMITS_CODE_SIZE_ZIPPED_DEFAULT
+    code_size_unzipped: int = LAMBDA_LIMITS_CODE_SIZE_UNZIPPED_DEFAULT
+    concurrent_executions: int = LAMBDA_LIMITS_CONCURRENT_EXECUTIONS_DEFAULT

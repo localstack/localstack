@@ -1,4 +1,5 @@
 from localstack.services.awslambda.invocation.lambda_models import (
+    AccountSettings,
     CodeSigningConfig,
     EventSourceMapping,
     Function,
@@ -17,6 +18,7 @@ class LambdaStore(BaseStore):
     event_source_mappings: dict[str, EventSourceMapping] = LocalAttribute(default=dict)
     code_signing_configs: dict[str, CodeSigningConfig] = LocalAttribute(default=dict)
     layers: dict[str, Layer] = LocalAttribute(default=dict)
+    settings: AccountSettings = LocalAttribute(default=AccountSettings)
     TAGS: dict[str, dict[str, str]] = CrossRegionAttribute(default=dict)
 
 
