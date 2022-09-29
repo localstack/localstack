@@ -1544,6 +1544,7 @@ class TestDynamoDB:
         table = client.describe_table(TableName=table_name)
         assert table.get("Table")
 
+    @pytest.mark.only_localstack(reason="wait_for_stream_ready of kinesis stream")
     @pytest.mark.skip_snapshot_verify(paths=["$..eventID", "$..SequenceNumber", "$..SizeBytes"])
     def test_data_encoding_consistency(
         self,
@@ -1564,6 +1565,8 @@ class TestDynamoDB:
                 "StreamViewType": "NEW_AND_OLD_IMAGES",
             },
         )
+        stream_name = get_kinesis_stream_name(table_name)
+        wait_for_stream_ready(stream_name)
 
         # put item
         dynamodb_client.put_item(
