@@ -129,7 +129,7 @@ class S3Provider(S3Api, ServiceLifecycleHook):
         # we can provide the s3_event_notification_context, so in case of deletion of keys, we can create it before
         # it happens
         if not s3_notif_ctx:
-            s3_notif_ctx = S3EventNotificationContext(context)
+            s3_notif_ctx = S3EventNotificationContext.from_request_context(context)
         if notification_config := self.get_store().bucket_notification_configs.get(
             s3_notif_ctx.bucket_name
         ):
@@ -308,7 +308,7 @@ class S3Provider(S3Api, ServiceLifecycleHook):
             return call_moto(context)
 
         # create the notification context before deleting the object, to be able to retrieve its properties
-        s3_notification_ctx = S3EventNotificationContext(context)
+        s3_notification_ctx = S3EventNotificationContext.from_request_context(context)
 
         response: DeleteObjectOutput = call_moto(context)
         self._notify(context, s3_notification_ctx)

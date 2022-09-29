@@ -1,6 +1,7 @@
 import json
 import logging
 from concurrent.futures import ThreadPoolExecutor
+from dataclasses import dataclass
 from typing import Dict, List, Optional, Tuple, TypedDict, Union
 from urllib.parse import quote
 
@@ -10,6 +11,8 @@ from moto.s3.models import FakeBucket, FakeKey
 from localstack.aws.api import RequestContext
 from localstack.aws.api.events import PutEventsRequestEntry
 from localstack.aws.api.s3 import (
+    BucketName,
+    BucketRegion,
     Event,
     EventBridgeConfiguration,
     EventList,
@@ -18,6 +21,7 @@ from localstack.aws.api.s3 import (
     NotificationConfiguration,
     NotificationConfigurationFilter,
     NotificationId,
+    ObjectKey,
     QueueArn,
     QueueConfiguration,
     TopicArn,
@@ -72,22 +76,37 @@ class Notification(TypedDict):
     Records: List[EventRecord]
 
 
+@dataclass
 class S3EventNotificationContext:
-    def __init__(self, context: RequestContext):
-        self.event_type = EVENT_OPERATION_MAP.get(context.operation.wire_name, "")
-        self.region = context.region
-        self.bucket_name = context.service_request["Bucket"]
-        self.key_name = context.service_request["Key"]
-        self.xray = context.request.headers.get(HEADER_AMZN_XRAY)
+    event_type: str
+    region: str
+    bucket_name: BucketName
+    key_name: ObjectKey
+    xray: str
+    bucket_location: BucketRegion
+    key_size: int
+    key_etag: str
+    key_version_id: str
 
-        moto_backend = get_moto_s3_backend(context)
-        bucket: FakeBucket = get_bucket_from_moto(moto_backend, bucket=self.bucket_name)
-        key: FakeKey = get_key_from_moto_bucket(moto_bucket=bucket, key=self.key_name)
-        self.bucket_location = bucket.location
-        self.key_size = key.contentsize
-        self.key_etag = key.etag.strip('"')
-        self.key_name = quote(key.name)
-        self.key_version_id = key.version_id if bucket.is_versioned else None  # todo: check this?
+    @classmethod
+    def from_request_context(cls, request_context: RequestContext) -> "S3EventNotificationContext":
+        bucket_name = request_context.service_request["Bucket"]
+        moto_backend = get_moto_s3_backend(request_context)
+        bucket: FakeBucket = get_bucket_from_moto(moto_backend, bucket=bucket_name)
+        key: FakeKey = get_key_from_moto_bucket(
+            moto_bucket=bucket, key=request_context.service_request["Key"]
+        )
+        return cls(
+            event_type=EVENT_OPERATION_MAP.get(request_context.operation.wire_name, ""),
+            region=request_context.region,
+            bucket_name=bucket_name,
+            bucket_location=bucket.location,
+            key_name=quote(key.name),
+            key_etag=key.etag.strip('"'),
+            key_size=key.contentsize,
+            key_version_id=key.version_id if bucket.is_versioned else None,  # todo: check this?
+            xray=request_context.request.headers.get(HEADER_AMZN_XRAY),
+        )
 
 
 def _matching_event(events: EventList, event_name: str) -> bool:
@@ -132,7 +151,7 @@ def _matching_filter(
 
 
 class BaseNotifier:
-    service_name = None
+    service_name: str
 
     def notify(self, ctx: S3EventNotificationContext, config: Dict):
         raise NotImplementedError
