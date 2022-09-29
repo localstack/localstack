@@ -7,7 +7,6 @@ import os
 import platform
 import re
 import shutil
-import stat
 import sys
 import tempfile
 import time
@@ -114,13 +113,6 @@ JAVAC_TARGET_VERSION = "1.8"
 
 # SQS backend implementation provider - either "moto" or "elasticmq"
 SQS_BACKEND_IMPL = os.environ.get("SQS_PROVIDER") or "moto"
-
-# GO Lambda runtime
-GO_RUNTIME_VERSION = "0.4.0"
-GO_RUNTIME_DOWNLOAD_URL_TEMPLATE = "https://github.com/localstack/awslamba-go-runtime/releases/download/v{version}/awslamba-go-runtime-{version}-{os}-{arch}.tar.gz"
-GO_INSTALL_FOLDER = os.path.join(config.dirs.var_libs, "awslamba-go-runtime")
-GO_LAMBDA_RUNTIME = os.path.join(GO_INSTALL_FOLDER, "aws-lambda-mock")
-GO_LAMBDA_MOCKSERVER = os.path.join(GO_INSTALL_FOLDER, "mockserver")
 
 # Terraform (used for tests)
 TERRAFORM_VERSION = "1.1.3"
@@ -313,35 +305,6 @@ def install_lambda_java_testlibs():
         download(TEST_LAMBDA_JAR_URL, TEST_LAMBDA_JAVA)
 
 
-def install_go_lambda_runtime():
-    if os.path.isfile(GO_LAMBDA_RUNTIME):
-        return
-
-    log_install_msg("Installing golang runtime")
-
-    system = platform.system().lower()
-    arch = get_arch()
-
-    if system not in ["linux"]:
-        raise ValueError(f"Unsupported os {system} for awslambda-go-runtime")
-    if arch not in ["amd64", "arm64"]:
-        raise ValueError(f"Unsupported arch {arch} for awslambda-go-runtime")
-
-    url = GO_RUNTIME_DOWNLOAD_URL_TEMPLATE.format(
-        version=GO_RUNTIME_VERSION,
-        os=system,
-        arch=arch,
-    )
-
-    download_and_extract(url, GO_INSTALL_FOLDER)
-
-    st = os.stat(GO_LAMBDA_RUNTIME)
-    os.chmod(GO_LAMBDA_RUNTIME, st.st_mode | stat.S_IXUSR | stat.S_IXGRP | stat.S_IXOTH)
-
-    st = os.stat(GO_LAMBDA_MOCKSERVER)
-    os.chmod(GO_LAMBDA_MOCKSERVER, st.st_mode | stat.S_IXUSR | stat.S_IXGRP | stat.S_IXOTH)
-
-
 def install_cloudformation_libs():
     from localstack.services.cloudformation import deployment_utils
 
@@ -480,7 +443,10 @@ class CommunityInstallerRepository(InstallerRepository):
 
     def get_installer(self) -> List[Installer]:
         from localstack.packages.postgres import PostgresqlPackage
-        from localstack.services.awslambda.packages import awslambda_runtime_package
+        from localstack.services.awslambda.packages import (
+            awslambda_go_runtime_package,
+            awslambda_runtime_package,
+        )
         from localstack.services.dynamodb.packages import dynamodblocal_package
         from localstack.services.kinesis.packages import kinesalite_package, kinesismock_package
         from localstack.services.opensearch.packages import (
@@ -489,7 +455,7 @@ class CommunityInstallerRepository(InstallerRepository):
         )
 
         return [
-            ("awslamba-go-runtime", install_go_lambda_runtime),
+            ("awslambda-go-runtime", awslambda_go_runtime_package),
             ("awslambda-runtime", awslambda_runtime_package),
             ("cloudformation-libs", install_cloudformation_libs),
             ("dynamodb-local", dynamodblocal_package),
