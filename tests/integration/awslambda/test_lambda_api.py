@@ -1273,7 +1273,20 @@ class TestLambdaEventInvokeConfig:
         snapshot.match("list_configs_postdelete", list_response_postdelete)
         assert len(list_response_postdelete["FunctionEventInvokeConfigs"]) == 0
 
+        # already deleted, try to delete again
+        with pytest.raises(lambda_client.exceptions.ResourceNotFoundException) as e:
+            lambda_client.delete_function_event_invoke_config(FunctionName=function_name)
+        snapshot.match("delete_function_not_found", e.value.response)
+
+        with pytest.raises(lambda_client.exceptions.ResourceNotFoundException) as e:
+            lambda_client.delete_function_event_invoke_config(FunctionName="doesnotexist")
+        snapshot.match("delete_function_doesnotexist", e.value.response)
+
         # more excs
+
+        with pytest.raises(lambda_client.exceptions.ResourceNotFoundException) as e:
+            lambda_client.list_function_event_invoke_configs(FunctionName="doesnotexist")
+        snapshot.match("list_function_doesnotexist", e.value.response)
 
         with pytest.raises(lambda_client.exceptions.ResourceNotFoundException) as e:
             lambda_client.get_function_event_invoke_config(FunctionName="doesnotexist")

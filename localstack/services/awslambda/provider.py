@@ -1908,7 +1908,7 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
         state = lambda_stores[context.account_id][context.region]
         fn = state.functions.get(function_name)
         if not fn:
-            raise ResourceNotFoundException("TODO: Where Function?")
+            raise ResourceNotFoundException("The function doesn't exist.", Type="User")
 
         event_invoke_configs = [
             FunctionEventInvokeConfig(
@@ -1925,7 +1925,7 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
 
         event_invoke_configs = PaginatedList(event_invoke_configs)
         page, token = event_invoke_configs.get_page(
-            lambda x: x,  # TODO
+            lambda x: x,
             marker,
             max_items,
         )
@@ -1939,13 +1939,18 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
         function_name, qualifier = get_name_and_qualifier(function_name, qualifier)
         state = lambda_stores[context.account_id][context.region]
         fn = state.functions.get(function_name)
-        if not fn:
-            raise ResourceNotFoundException("TODO: Where fn?")
-
         resolved_qualifier = qualifier or "$LATEST"
+        fn_arn = qualified_lambda_arn(function_name, qualifier, context.account_id, context.region)
+        if not fn:
+            raise ResourceNotFoundException(
+                f"The function {fn_arn} doesn't have an EventInvokeConfig", Type="User"
+            )
+
         config = fn.event_invoke_configs.get(resolved_qualifier)
         if not config:
-            raise ResourceNotFoundException("TODO: Where config?")
+            raise ResourceNotFoundException(
+                f"The function {fn_arn} doesn't have an EventInvokeConfig", Type="User"
+            )
 
         del fn.event_invoke_configs[resolved_qualifier]
 
