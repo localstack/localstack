@@ -14,6 +14,7 @@ from localstack.aws.api.lambda_ import (
     InvocationType,
     LastUpdateStatus,
     ResourceConflictException,
+    ResourceNotFoundException,
     State,
 )
 from localstack.services.awslambda.api_utils import qualifier_is_alias
@@ -116,10 +117,10 @@ class LambdaService:
         qualifier: str,
         region: str,
         account_id: str,
-        invocation_type: InvocationType,
+        invocation_type: InvocationType | None,
         client_context: Optional[str],
-        payload: bytes,
-    ) -> "Future[InvocationResult]":
+        payload: bytes | None,
+    ) -> Future[InvocationResult] | None:
         """
         Invokes a specific version of a lambda
 
@@ -140,14 +141,12 @@ class LambdaService:
             region=region,
         )
         qualifier = qualifier or "$LATEST"
+        state = lambda_stores[account_id][region]
+        function = state.functions.get(function_name)
         if qualifier_is_alias(qualifier):
-            state = lambda_stores[account_id][region]
-            function = state.functions.get(function_name)
             alias = function.aliases.get(qualifier)
             if not alias:
-                raise ValueError(
-                    "There is no alias with qualifier %s", qualifier
-                )  # TODO correct exception
+                raise ResourceNotFoundException(f"Function not found: {invoked_arn}", Type="User")
             version_qualifier = alias.function_version
             if alias.routing_configuration:
                 version, probability = next(
@@ -163,13 +162,18 @@ class LambdaService:
         try:
             version_manager = self.get_lambda_version_manager(qualified_arn)
         except ValueError:
-            state = lambda_stores[account_id][region]
-            function = state.functions.get(function_name)
             version = function.versions.get(version_qualifier)
             state = version and version.config.state.state
             raise ResourceConflictException(
                 f"The operation cannot be performed at this time. The function is currently in the following state: {state}"
             )
+        # empty payloads have to work as well
+        if payload is None:
+            payload = b"{}"
+        if invocation_type is None:
+            invocation_type = "RequestResponse"
+        # TODO payload verification  An error occurred (InvalidRequestContentException) when calling the Invoke operation: Could not parse request body into json: Could not parse payload into json: Unexpected character (''' (code 39)): expected a valid value (JSON String, Number, Array, Object or token 'null', 'true' or 'false')
+        #  at [Source: (byte[])"'test'"; line: 1, column: 2]
 
         return version_manager.invoke(
             invocation=Invocation(

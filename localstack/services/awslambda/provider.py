@@ -710,6 +710,9 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
         qualifier: Qualifier = None,
     ) -> InvocationResponse:
         function_name, qualifier = get_name_and_qualifier(function_name, qualifier)
+        self._get_function(
+            function_name=function_name, account_id=context.account_id, region=context.region
+        )
         time_before = time.perf_counter()
         result = self.lambda_service.invoke(
             function_name=function_name,
@@ -720,6 +723,9 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
             client_context=client_context,
             payload=payload.read() if payload else None,
         )
+        if invocation_type == "Event":
+            # This happens when invocation type is event
+            return InvocationResponse(StatusCode=202)
         try:
             invocation_result = result.result()
         except Exception as e:
@@ -1218,7 +1224,7 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
         fn_name = api_utils.get_function_name(function_name)
         resolved_fn = state.functions.get(fn_name)
         if not resolved_fn:
-            raise ResourceNotFoundException("???")
+            raise ResourceNotFoundException("???")  # TODO
 
         url_configs = [
             api_utils.map_function_url_config(fn_conf)

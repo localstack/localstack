@@ -2731,63 +2731,63 @@
     }
   },
   "tests/integration/awslambda/test_lambda_common.py::TestLambdaRuntimesCommon::test_echo_invoke[python3.7]": {
-    "recorded-date": "15-09-2022, 13:10:11",
+    "recorded-date": "29-09-2022, 17:41:09",
     "recorded-content": {}
   },
   "tests/integration/awslambda/test_lambda_common.py::TestLambdaRuntimesCommon::test_echo_invoke[python3.8]": {
-    "recorded-date": "15-09-2022, 13:10:16",
+    "recorded-date": "29-09-2022, 17:41:15",
     "recorded-content": {}
   },
   "tests/integration/awslambda/test_lambda_common.py::TestLambdaRuntimesCommon::test_echo_invoke[python3.9]": {
-    "recorded-date": "15-09-2022, 13:10:22",
+    "recorded-date": "29-09-2022, 17:41:20",
     "recorded-content": {}
   },
   "tests/integration/awslambda/test_lambda_common.py::TestLambdaRuntimesCommon::test_echo_invoke[nodejs12.x]": {
-    "recorded-date": "15-09-2022, 13:10:26",
+    "recorded-date": "29-09-2022, 17:41:23",
     "recorded-content": {}
   },
   "tests/integration/awslambda/test_lambda_common.py::TestLambdaRuntimesCommon::test_echo_invoke[nodejs14.x]": {
-    "recorded-date": "15-09-2022, 13:10:31",
+    "recorded-date": "29-09-2022, 17:41:29",
     "recorded-content": {}
   },
   "tests/integration/awslambda/test_lambda_common.py::TestLambdaRuntimesCommon::test_echo_invoke[nodejs16.x]": {
-    "recorded-date": "15-09-2022, 13:10:35",
+    "recorded-date": "29-09-2022, 17:41:33",
     "recorded-content": {}
   },
   "tests/integration/awslambda/test_lambda_common.py::TestLambdaRuntimesCommon::test_echo_invoke[ruby2.7]": {
-    "recorded-date": "15-09-2022, 13:10:39",
+    "recorded-date": "29-09-2022, 17:41:39",
     "recorded-content": {}
   },
   "tests/integration/awslambda/test_lambda_common.py::TestLambdaRuntimesCommon::test_echo_invoke[java8]": {
-    "recorded-date": "15-09-2022, 13:10:48",
+    "recorded-date": "29-09-2022, 17:42:05",
     "recorded-content": {}
   },
   "tests/integration/awslambda/test_lambda_common.py::TestLambdaRuntimesCommon::test_echo_invoke[java8.al2]": {
-    "recorded-date": "15-09-2022, 13:10:56",
+    "recorded-date": "29-09-2022, 17:42:13",
     "recorded-content": {}
   },
   "tests/integration/awslambda/test_lambda_common.py::TestLambdaRuntimesCommon::test_echo_invoke[java11]": {
-    "recorded-date": "15-09-2022, 13:11:04",
+    "recorded-date": "29-09-2022, 17:42:21",
     "recorded-content": {}
   },
   "tests/integration/awslambda/test_lambda_common.py::TestLambdaRuntimesCommon::test_echo_invoke[dotnetcore3.1]": {
-    "recorded-date": "15-09-2022, 13:11:08",
+    "recorded-date": "29-09-2022, 17:42:24",
     "recorded-content": {}
   },
   "tests/integration/awslambda/test_lambda_common.py::TestLambdaRuntimesCommon::test_echo_invoke[dotnet6]": {
-    "recorded-date": "15-09-2022, 13:11:12",
+    "recorded-date": "29-09-2022, 17:42:28",
     "recorded-content": {}
   },
   "tests/integration/awslambda/test_lambda_common.py::TestLambdaRuntimesCommon::test_echo_invoke[go1.x]": {
-    "recorded-date": "15-09-2022, 13:11:19",
+    "recorded-date": "29-09-2022, 18:26:46",
     "recorded-content": {}
   },
   "tests/integration/awslambda/test_lambda_common.py::TestLambdaRuntimesCommon::test_echo_invoke[provided]": {
-    "recorded-date": "15-09-2022, 13:11:26",
+    "recorded-date": "29-09-2022, 17:42:41",
     "recorded-content": {}
   },
   "tests/integration/awslambda/test_lambda_common.py::TestLambdaRuntimesCommon::test_echo_invoke[provided.al2]": {
-    "recorded-date": "15-09-2022, 13:11:33",
+    "recorded-date": "29-09-2022, 17:42:48",
     "recorded-content": {}
   }
 }

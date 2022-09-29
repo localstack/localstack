@@ -55,37 +55,46 @@ class TestLambdaRuntimesCommon:
         # provided lambdas take a little longer for large payloads, hence timeout to 5s
         create_function_result = multiruntime_lambda.create_function(MemorySize=1024, Timeout=5)
 
+        def _invoke_with_payload(payload):
+            invoke_result = lambda_client.invoke(
+                FunctionName=create_function_result["FunctionName"],
+                Payload=to_bytes(json.dumps(payload)),
+            )
+
+            assert invoke_result["StatusCode"] == 200
+            assert json.loads(invoke_result["Payload"].read()) == payload
+            assert not invoke_result.get("FunctionError")
+
         # simple payload
         payload = {"hello": "world"}
-        invoke_result = lambda_client.invoke(
-            FunctionName=create_function_result["FunctionName"],
-            Payload=to_bytes(json.dumps(payload)),
-        )
-
-        assert invoke_result["StatusCode"] == 200
-        assert json.loads(invoke_result["Payload"].read()) == payload
-        assert not invoke_result.get("FunctionError")
-
+        _invoke_with_payload(payload)
         # payload with quotes and other special characters
         payload = {"hello": "'\" some other ''\"\" quotes, a emoji 🥳 and some brackets {[}}[([]))"}
-        invoke_result = lambda_client.invoke(
-            FunctionName=create_function_result["FunctionName"],
-            Payload=to_bytes(json.dumps(payload)),
-        )
-
-        assert invoke_result["StatusCode"] == 200
-        assert json.loads(invoke_result["Payload"].read()) == payload
-        assert not invoke_result.get("FunctionError")
+        _invoke_with_payload(payload)
 
         # large payload (5MB+)
         payload = {"hello": "obi wan!" * 128 * 1024 * 5}
-        invoke_result = lambda_client.invoke(
-            FunctionName=create_function_result["FunctionName"],
-            Payload=to_bytes(json.dumps(payload)),
-        )
+        _invoke_with_payload(payload)
 
+        # test non json invocations
+        # boolean value
+        payload = True
+        _invoke_with_payload(payload)
+        payload = False
+        _invoke_with_payload(payload)
+        # None value
+        payload = None
+        _invoke_with_payload(payload)
+        # array value
+        payload = [1, 2]
+        _invoke_with_payload(payload)
+        # number value
+        payload = 1
+        _invoke_with_payload(payload)
+        # no payload at all
+        invoke_result = lambda_client.invoke(FunctionName=create_function_result["FunctionName"])
         assert invoke_result["StatusCode"] == 200
-        assert json.loads(invoke_result["Payload"].read()) == payload
+        assert json.loads(invoke_result["Payload"].read()) == {}
         assert not invoke_result.get("FunctionError")
 
     @pytest.mark.multiruntime(scenario="introspection")

@@ -44,7 +44,7 @@ LOG = logging.getLogger(__name__)
 @dataclasses.dataclass(frozen=True)
 class QueuedInvocation:
     invocation_id: str
-    result_future: "Future[InvocationResult]"
+    result_future: Future[InvocationResult] | None
     retries: int
     invocation: Invocation
 
@@ -280,10 +280,11 @@ class LambdaVersionManager(ServiceEndpoint):
             except Exception as e:
                 queued_invocation.result_future.set_exception(e)
 
-    def invoke(self, *, invocation: Invocation) -> "Future[InvocationResult]":
+    def invoke(self, *, invocation: Invocation) -> Future[InvocationResult] | None:
+        future = Future() if invocation.invocation_type == "RequestResponse" else None
         invocation_storage = QueuedInvocation(
             invocation_id=str(uuid.uuid4()),
-            result_future=Future(),
+            result_future=future,
             retries=1,
             invocation=invocation,
         )
@@ -325,6 +326,13 @@ class LambdaVersionManager(ServiceEndpoint):
                 self.function_arn,
             )
 
+    def process_event_destinations(
+        self, invocation_result: InvocationResult | InvocationError
+    ) -> None:
+        LOG.debug("Got event invocation with id %s", invocation_result.invocation_id)
+        LOG.debug("Event destinations and DLQ are not yet implemented.")
+        # TODO implement (ideally async to not block result)
+
     def invocation_response(
         self, invoke_id: str, invocation_result: Union[InvocationResult, InvocationError]
     ) -> None:
@@ -337,7 +345,11 @@ class LambdaVersionManager(ServiceEndpoint):
             invocation_result.logs = running_invocation.logs
         invocation_result.executed_version = self.function_version.id.qualifier
         executor = running_invocation.executor
-        running_invocation.invocation.result_future.set_result(invocation_result)
+        if running_invocation.invocation.invocation.invocation_type == "RequestResponse":
+            running_invocation.invocation.result_future.set_result(invocation_result)
+        else:
+            self.process_event_destinations(invocation_result=invocation_result)
+
         # mark executor available again
         executor.invocation_done()
         self.available_environments.put(executor)

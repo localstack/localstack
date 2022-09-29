@@ -1056,6 +1056,11 @@ class TestLambdaAliases:
             FunctionName=function_name, Qualifier=create_alias_response["Name"], Payload=b"{}"
         )
         snapshot.match("invocation_result_qualifier_v2", invocation_result_qualifier_v2)
+        with pytest.raises(lambda_client.exceptions.ResourceNotFoundException) as e:
+            lambda_client.invoke(
+                FunctionName=function_name, Qualifier="non-existent-alias", Payload=b"{}"
+            )
+        snapshot.match("invocation_exc_not_existent", e.value.response)
 
     @pytest.mark.aws_validated
     def test_alias_routingconfig(

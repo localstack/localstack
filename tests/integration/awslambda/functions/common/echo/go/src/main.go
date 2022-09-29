@@ -5,7 +5,7 @@ import (
 	"github.com/aws/aws-lambda-go/lambda"
 )
 
-func HandleRequest(ctx context.Context, event map[string]string) (map[string]string, error) {
+func HandleRequest(ctx context.Context, event any) (any, error) {
 	return event, nil
 }
 
