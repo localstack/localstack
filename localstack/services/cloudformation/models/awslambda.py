@@ -178,13 +178,11 @@ class LambdaFunctionVersion(GenericBaseModel):
             }
         }
 
-    def get_cfn_attribute(self, attribute_name):
-        if attribute_name == "Version" and self.props.get("Version"):
-            return "%s:%s" % (
-                self.props.get("FunctionArn"),
-                self.props.get("Version").split(":")[-1],
-            )
-        return super(LambdaFunctionVersion, self).get_cfn_attribute(attribute_name)
+    def get_physical_resource_id(self, attribute=None, **kwargs):
+        return "%s:%s" % (
+            self.props.get("FunctionArn"),
+            self.props.get("Version").split(":")[-1],
+        )
 
 
 class LambdaEventSourceMapping(GenericBaseModel):
