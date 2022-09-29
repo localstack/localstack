@@ -6,7 +6,6 @@ import logging
 import os
 import platform
 import re
-import shutil
 import sys
 import tempfile
 import time
@@ -20,7 +19,6 @@ from localstack import config
 from localstack.config import dirs
 from localstack.constants import (
     DEFAULT_SERVICE_PORTS,
-    ELASTICMQ_JAR_URL,
     KMS_URL_PATTERN,
     LOCALSTACK_MAVEN_VERSION,
     MAVEN_REPO_URL,
@@ -126,23 +124,6 @@ TEST_LAMBDA_JAVA = os.path.join(config.dirs.var_libs, "localstack-utils-tests.ja
 TEST_LAMBDA_JAR_URL = "{url}/cloud/localstack/{name}/{version}/{name}-{version}-tests.jar".format(
     version=LOCALSTACK_MAVEN_VERSION, url=MAVEN_REPO_URL, name="localstack-utils"
 )
-
-
-def install_sqs_provider():
-    if SQS_BACKEND_IMPL == "elasticmq":
-        install_elasticmq()
-
-
-def install_elasticmq():
-    # TODO remove this function if we stop using ElasticMQ entirely
-    if not os.path.exists(INSTALL_PATH_ELASTICMQ_JAR):
-        log_install_msg("ElasticMQ")
-        mkdir(INSTALL_DIR_ELASTICMQ)
-        # download archive
-        tmp_archive = os.path.join(config.dirs.cache, "elasticmq-server.jar")
-        if not os.path.exists(tmp_archive):
-            download(ELASTICMQ_JAR_URL, tmp_archive)
-        shutil.copy(tmp_archive, INSTALL_DIR_ELASTICMQ)
 
 
 def install_local_kms():
@@ -340,6 +321,7 @@ def install_component(name):
     from localstack.services.awslambda.packages import awslambda_runtime_package
     from localstack.services.dynamodb.packages import dynamodblocal_package
     from localstack.services.kinesis.packages import kinesismock_package
+    from localstack.services.sqs.legacy.packages import elasticmq_package
 
     installers = {
         "cloudformation": install_cloudformation_libs,
@@ -347,7 +329,7 @@ def install_component(name):
         "kinesis": kinesismock_package.install,
         "kms": install_local_kms,
         "lambda": awslambda_runtime_package.install,
-        "sqs": install_sqs_provider,
+        "sqs": elasticmq_package.install,
         "stepfunctions": install_stepfunctions_local,
     }
 
@@ -453,13 +435,14 @@ class CommunityInstallerRepository(InstallerRepository):
             elasticsearch_package,
             opensearch_package,
         )
+        from localstack.services.sqs.legacy.packages import elasticmq_package
 
         return [
             ("awslambda-go-runtime", awslambda_go_runtime_package),
             ("awslambda-runtime", awslambda_runtime_package),
             ("cloudformation-libs", install_cloudformation_libs),
             ("dynamodb-local", dynamodblocal_package),
-            ("elasticmq", install_elasticmq),
+            ("elasticmq", elasticmq_package),
             ("elasticsearch", elasticsearch_package),
             ("opensearch", opensearch_package),
             ("kinesalite", kinesalite_package),
