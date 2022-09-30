@@ -175,7 +175,9 @@ class TranscribeProvider(TranscribeApi):
             model_zip_path = str(model_path) + ".zip"
 
             LOG.debug("Downloading language model: %s", model_path.name)
-            download(MODEL_PRE_URL + str(model_path.name) + ".zip", model_zip_path)
+            download(
+                MODEL_PRE_URL + str(model_path.name) + ".zip", model_zip_path, verify_ssl=False
+            )
 
             LOG.debug("Extracting language model: %s", model_path.name)
             with ZipFile(model_zip_path, "r") as model_ref:
