@@ -127,6 +127,7 @@ jobs:
     - name: Remove files that don't contain ERROR entries before uploading logs
       if: ${{ failure() && steps.run-tests.conclusion == 'failure'  }}
       run: |
+        cd terraform-provider-aws/terraformlogs
         grep -r -L "\[ERROR" | xargs -I _ rm _
 
     - name: Archive debug logs
