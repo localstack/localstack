@@ -598,6 +598,8 @@ class DocumentType(str):
     Automation_ChangeTemplate = "Automation.ChangeTemplate"
     ProblemAnalysis = "ProblemAnalysis"
     ProblemAnalysisTemplate = "ProblemAnalysisTemplate"
+    CloudFormation = "CloudFormation"
+    ConformancePackTemplate = "ConformancePackTemplate"
 
 
 class ExecutionMode(str):

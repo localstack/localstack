@@ -44,6 +44,7 @@ JobPriority = int
 JobStatusUpdateReason = str
 KmsKeyArnString = str
 Location = str
+MFA = str
 ManifestPrefixString = str
 MaxLength1024String = str
 MaxResults = int
@@ -112,6 +113,11 @@ class BucketLocationConstraint(str):
     eu_central_1 = "eu-central-1"
 
 
+class BucketVersioningStatus(str):
+    Enabled = "Enabled"
+    Suspended = "Suspended"
+
+
 class ExpirationStatus(str):
     Enabled = "Enabled"
     Disabled = "Disabled"
@@ -161,6 +167,16 @@ class JobStatus(str):
     Preparing = "Preparing"
     Ready = "Ready"
     Suspended = "Suspended"
+
+
+class MFADelete(str):
+    Enabled = "Enabled"
+    Disabled = "Disabled"
+
+
+class MFADeleteStatus(str):
+    Enabled = "Enabled"
+    Disabled = "Disabled"
 
 
 class MultiRegionAccessPointStatus(str):
@@ -1139,6 +1155,16 @@ class GetBucketTaggingResult(TypedDict, total=False):
     TagSet: S3TagSet
 
 
+class GetBucketVersioningRequest(ServiceRequest):
+    AccountId: AccountId
+    Bucket: BucketName
+
+
+class GetBucketVersioningResult(TypedDict, total=False):
+    Status: Optional[BucketVersioningStatus]
+    MFADelete: Optional[MFADeleteStatus]
+
+
 class GetJobTaggingRequest(ServiceRequest):
     AccountId: AccountId
     JobId: JobId
@@ -1442,6 +1468,18 @@ class PutBucketTaggingRequest(ServiceRequest):
     Tagging: Tagging
 
 
+class VersioningConfiguration(TypedDict, total=False):
+    MFADelete: Optional[MFADelete]
+    Status: Optional[BucketVersioningStatus]
+
+
+class PutBucketVersioningRequest(ServiceRequest):
+    AccountId: AccountId
+    Bucket: BucketName
+    MFA: Optional[MFA]
+    VersioningConfiguration: VersioningConfiguration
+
+
 class PutJobTaggingRequest(ServiceRequest):
     AccountId: AccountId
     JobId: JobId
@@ -1741,6 +1779,12 @@ class S3ControlApi:
     ) -> GetBucketTaggingResult:
         raise NotImplementedError
 
+    @handler("GetBucketVersioning")
+    def get_bucket_versioning(
+        self, context: RequestContext, account_id: AccountId, bucket: BucketName
+    ) -> GetBucketVersioningResult:
+        raise NotImplementedError
+
     @handler("GetJobTagging")
     def get_job_tagging(
         self, context: RequestContext, account_id: AccountId, job_id: JobId
@@ -1892,6 +1936,17 @@ class S3ControlApi:
     @handler("PutBucketTagging")
     def put_bucket_tagging(
         self, context: RequestContext, account_id: AccountId, bucket: BucketName, tagging: Tagging
+    ) -> None:
+        raise NotImplementedError
+
+    @handler("PutBucketVersioning")
+    def put_bucket_versioning(
+        self,
+        context: RequestContext,
+        account_id: AccountId,
+        bucket: BucketName,
+        versioning_configuration: VersioningConfiguration,
+        mfa: MFA = None,
     ) -> None:
         raise NotImplementedError
 
