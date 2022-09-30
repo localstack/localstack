@@ -5503,5 +5503,341 @@
         }
       }
     }
+  },
+  "tests/integration/awslambda/test_lambda_api.py::TestLambdaFunction::test_get_function_wrong_region": {
+    "recorded-date": "30-09-2022, 14:22:40",
+    "recorded-content": {
+      "wrong_region_exception": {
+        "Error": {
+          "Code": "ResourceNotFoundException",
+          "Message": "Functions from '<wrong-region>' are not reachable in this region ('<region>')"
+        },
+        "Message": "Functions from '<wrong-region>' are not reachable in this region ('<region>')",
+        "Type": "User",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 404
+        }
+      }
+    }
+  },
+  "tests/integration/awslambda/test_lambda_api.py::TestLambdaFunction::test_get_function_wrong_region[get_function]": {
+    "recorded-date": "30-09-2022, 14:52:09",
+    "recorded-content": {
+      "wrong_region_exception": {
+        "Error": {
+          "Code": "ResourceNotFoundException",
+          "Message": "Functions from '<wrong-region>' are not reachable in this region ('<region>')"
+        },
+        "Message": "Functions from '<wrong-region>' are not reachable in this region ('<region>')",
+        "Type": "User",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 404
+        }
+      }
+    }
+  },
+  "tests/integration/awslambda/test_lambda_api.py::TestLambdaFunction::test_get_function_wrong_region[get_function_configuration]": {
+    "recorded-date": "30-09-2022, 14:52:11",
+    "recorded-content": {
+      "wrong_region_exception": {
+        "Error": {
+          "Code": "ResourceNotFoundException",
+          "Message": "Functions from '<wrong-region>' are not reachable in this region ('<region>')"
+        },
+        "Message": "Functions from '<wrong-region>' are not reachable in this region ('<region>')",
+        "Type": "User",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 404
+        }
+      }
+    }
+  },
+  "tests/integration/awslambda/test_lambda_api.py::TestLambdaFunction::test_get_function_wrong_region[get_function_event_invoke_config]": {
+    "recorded-date": "30-09-2022, 14:52:16",
+    "recorded-content": {
+      "wrong_region_exception": {
+        "Error": {
+          "Code": "ResourceNotFoundException",
+          "Message": "Functions from '<wrong-region>' are not reachable in this region ('<region>')"
+        },
+        "Message": "Functions from '<wrong-region>' are not reachable in this region ('<region>')",
+        "Type": "User",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 404
+        }
+      }
+    }
+  },
+  "tests/integration/awslambda/test_lambda_api.py::TestLambdaFunction::test_get_function_wrong_region[delete_function]": {
+    "recorded-date": "30-09-2022, 14:52:20",
+    "recorded-content": {
+      "wrong_region_exception": {
+        "Error": {
+          "Code": "ResourceNotFoundException",
+          "Message": "Functions from '<wrong-region>' are not reachable in this region ('<region>')"
+        },
+        "Message": "Functions from '<wrong-region>' are not reachable in this region ('<region>')",
+        "Type": "User",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 404
+        }
+      }
+    }
+  },
+  "tests/integration/awslambda/test_lambda_api.py::TestLambdaFunction::test_get_function_wrong_region[invoke]": {
+    "recorded-date": "30-09-2022, 14:52:22",
+    "recorded-content": {
+      "wrong_region_exception": {
+        "Error": {
+          "Code": "ResourceNotFoundException",
+          "Message": "Functions from '<wrong-region>' are not reachable in this region ('<region>')"
+        },
+        "Message": "Functions from '<wrong-region>' are not reachable in this region ('<region>')",
+        "Type": "User",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 404
+        }
+      }
+    }
+  },
+  "tests/integration/awslambda/test_lambda_api.py::TestLambdaFunction::test_get_function_wrong_region[get_function_url_config]": {
+    "recorded-date": "30-09-2022, 14:52:13",
+    "recorded-content": {
+      "wrong_region_exception": {
+        "Error": {
+          "Code": "ResourceNotFoundException",
+          "Message": "Functions from '<wrong-region>' are not reachable in this region ('<region>')"
+        },
+        "Message": "Functions from '<wrong-region>' are not reachable in this region ('<region>')",
+        "Type": "User",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 404
+        }
+      }
+    }
+  },
+  "tests/integration/awslambda/test_lambda_api.py::TestLambdaFunction::test_get_function_wrong_region[get_function_code_signing_config]": {
+    "recorded-date": "30-09-2022, 14:52:14",
+    "recorded-content": {
+      "wrong_region_exception": {
+        "Error": {
+          "Code": "ResourceNotFoundException",
+          "Message": "Functions from '<wrong-region>' are not reachable in this region ('<region>')"
+        },
+        "Message": "Functions from '<wrong-region>' are not reachable in this region ('<region>')",
+        "Type": "User",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 404
+        }
+      }
+    }
+  },
+  "tests/integration/awslambda/test_lambda_api.py::TestLambdaFunction::test_get_function_wrong_region[get_function_concurrency]": {
+    "recorded-date": "30-09-2022, 14:52:18",
+    "recorded-content": {
+      "wrong_region_exception": {
+        "Error": {
+          "Code": "ResourceNotFoundException",
+          "Message": "Functions from '<wrong-region>' are not reachable in this region ('<region>')"
+        },
+        "Message": "Functions from '<wrong-region>' are not reachable in this region ('<region>')",
+        "Type": "User",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 404
+        }
+      }
+    }
+  },
+  "tests/integration/awslambda/test_lambda_api.py::TestLambdaVersions::test_publish_with_update": {
+    "recorded-date": "30-09-2022, 15:16:38",
+    "recorded-content": {
+      "create_response": {
+        "Architectures": [
+          "x86_64"
+        ],
+        "CodeSha256": "<code-sha256:1>",
+        "CodeSize": 264,
+        "Description": "",
+        "EphemeralStorage": {
+          "Size": 512
+        },
+        "FunctionArn": "arn:aws:lambda:<region>:111111111111:function:<function-name:1>",
+        "FunctionName": "<function-name:1>",
+        "Handler": "index.handler",
+        "LastModified": "date",
+        "MemorySize": 128,
+        "PackageType": "Zip",
+        "RevisionId": "<uuid:1>",
+        "Role": "arn:aws:iam::111111111111:role/<resource:1>",
+        "Runtime": "python3.9",
+        "State": "Pending",
+        "StateReason": "The function is being created.",
+        "StateReasonCode": "Creating",
+        "Timeout": 3,
+        "TracingConfig": {
+          "Mode": "PassThrough"
+        },
+        "Version": "$LATEST",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 201
+        }
+      },
+      "get_function_result": {
+        "Code": {
+          "Location": "<location>",
+          "RepositoryType": "S3"
+        },
+        "Configuration": {
+          "Architectures": [
+            "x86_64"
+          ],
+          "CodeSha256": "<code-sha256:1>",
+          "CodeSize": 264,
+          "Description": "",
+          "EphemeralStorage": {
+            "Size": 512
+          },
+          "FunctionArn": "arn:aws:lambda:<region>:111111111111:function:<function-name:1>",
+          "FunctionName": "<function-name:1>",
+          "Handler": "index.handler",
+          "LastModified": "date",
+          "LastUpdateStatus": "Successful",
+          "MemorySize": 128,
+          "PackageType": "Zip",
+          "RevisionId": "<uuid:2>",
+          "Role": "arn:aws:iam::111111111111:role/<resource:1>",
+          "Runtime": "python3.9",
+          "State": "Active",
+          "Timeout": 3,
+          "TracingConfig": {
+            "Mode": "PassThrough"
+          },
+          "Version": "$LATEST"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "update_function_code_result": {
+        "Architectures": [
+          "x86_64"
+        ],
+        "CodeSha256": "<code-sha256:2>",
+        "CodeSize": 311,
+        "Description": "",
+        "EphemeralStorage": {
+          "Size": 512
+        },
+        "FunctionArn": "arn:aws:lambda:<region>:111111111111:function:<function-name:1>:1",
+        "FunctionName": "<function-name:1>",
+        "Handler": "index.handler",
+        "LastModified": "date",
+        "MemorySize": 128,
+        "PackageType": "Zip",
+        "RevisionId": "<uuid:3>",
+        "Role": "arn:aws:iam::111111111111:role/<resource:1>",
+        "Runtime": "python3.9",
+        "State": "Pending",
+        "StateReason": "The function is being created.",
+        "StateReasonCode": "Creating",
+        "Timeout": 3,
+        "TracingConfig": {
+          "Mode": "PassThrough"
+        },
+        "Version": "1",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "get_function_version_result": {
+        "Code": {
+          "Location": "<location>",
+          "RepositoryType": "S3"
+        },
+        "Configuration": {
+          "Architectures": [
+            "x86_64"
+          ],
+          "CodeSha256": "<code-sha256:2>",
+          "CodeSize": 311,
+          "Description": "",
+          "EphemeralStorage": {
+            "Size": 512
+          },
+          "FunctionArn": "arn:aws:lambda:<region>:111111111111:function:<function-name:1>:1",
+          "FunctionName": "<function-name:1>",
+          "Handler": "index.handler",
+          "LastModified": "date",
+          "MemorySize": 128,
+          "PackageType": "Zip",
+          "RevisionId": "<uuid:3>",
+          "Role": "arn:aws:iam::111111111111:role/<resource:1>",
+          "Runtime": "python3.9",
+          "State": "Pending",
+          "StateReason": "The function is being created.",
+          "StateReasonCode": "Creating",
+          "Timeout": 3,
+          "TracingConfig": {
+            "Mode": "PassThrough"
+          },
+          "Version": "1"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "get_function_latest_result": {
+        "Code": {
+          "Location": "<location>",
+          "RepositoryType": "S3"
+        },
+        "Configuration": {
+          "Architectures": [
+            "x86_64"
+          ],
+          "CodeSha256": "<code-sha256:2>",
+          "CodeSize": 311,
+          "Description": "",
+          "EphemeralStorage": {
+            "Size": 512
+          },
+          "FunctionArn": "arn:aws:lambda:<region>:111111111111:function:<function-name:1>:$LATEST",
+          "FunctionName": "<function-name:1>",
+          "Handler": "index.handler",
+          "LastModified": "date",
+          "LastUpdateStatus": "InProgress",
+          "LastUpdateStatusReason": "The function is being created.",
+          "LastUpdateStatusReasonCode": "Creating",
+          "MemorySize": 128,
+          "PackageType": "Zip",
+          "RevisionId": "<uuid:4>",
+          "Role": "arn:aws:iam::111111111111:role/<resource:1>",
+          "Runtime": "python3.9",
+          "State": "Active",
+          "Timeout": 3,
+          "TracingConfig": {
+            "Mode": "PassThrough"
+          },
+          "Version": "$LATEST"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
   }
 }

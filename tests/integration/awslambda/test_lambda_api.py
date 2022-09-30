@@ -61,7 +61,6 @@ def environment_length_bytes(e: dict) -> int:
 
 @pytest.mark.skipif(is_old_provider(), reason="focusing on new provider")
 class TestLambdaFunction:
-    # TODO: maybe need to wait for each update to be active?
     @pytest.mark.aws_validated
     def test_function_lifecycle(
         self, lambda_client, snapshot, create_lambda_function, lambda_su_role
@@ -253,8 +252,40 @@ class TestLambdaFunction:
             method(FunctionName=function_name)
         snapshot.match("not_found_exception", e.value.response)
 
-    # TODO test with arn with included qualifier (version)
-    # TODO test with arn with wrong region (not matching client)
+    @pytest.mark.parametrize(
+        "clientfn",
+        [
+            "get_function",
+            "get_function_configuration",
+            "get_function_url_config",
+            "get_function_code_signing_config",
+            "get_function_event_invoke_config",
+            "get_function_concurrency",
+            "delete_function",
+            "invoke",
+        ],
+    )
+    @pytest.mark.aws_validated
+    def test_get_function_wrong_region(
+        self, lambda_client, create_lambda_function, account_id, snapshot, clientfn
+    ):
+        function_name = f"i-exist-{short_uid()}"
+        snapshot.add_transformer(snapshot.transform.regex(function_name, "<fn-name>"))
+        create_lambda_function(
+            handler_file=TEST_LAMBDA_PYTHON_ECHO,
+            func_name=function_name,
+            runtime=Runtime.python3_9,
+            Description="Initial description",
+        )
+        wrong_region = (
+            "us-east-1" if lambda_client.meta.region_name != "us-east-1" else "eu-central-1"
+        )
+        snapshot.add_transformer(snapshot.transform.regex(wrong_region, "<wrong-region>"))
+        wrong_region_arn = f"arn:aws:lambda:{wrong_region}:{account_id}:function:{function_name}"
+        with pytest.raises(lambda_client.exceptions.ResourceNotFoundException) as e:
+            method = getattr(lambda_client, clientfn)
+            method(FunctionName=wrong_region_arn)
+        snapshot.match("wrong_region_exception", e.value.response)
 
     def test_lambda_code_location_zipfile(
         self, lambda_client, snapshot, create_lambda_function_aws, lambda_su_role
@@ -558,9 +589,44 @@ class TestLambdaVersions:
         )
         snapshot.match("publish_result", publish_result)
 
-    def test_publish_with_update(self):
-        # TODO
-        pass
+    def test_publish_with_update(
+        self, lambda_client, create_lambda_function_aws, lambda_su_role, snapshot
+    ):
+        function_name = f"fn-{short_uid()}"
+
+        create_response = create_lambda_function_aws(
+            FunctionName=function_name,
+            Handler="index.handler",
+            Code={
+                "ZipFile": create_lambda_archive(
+                    load_file(TEST_LAMBDA_PYTHON_ECHO), get_content=True
+                )
+            },
+            PackageType="Zip",
+            Role=lambda_su_role,
+            Runtime=Runtime.python3_9,
+        )
+        snapshot.match("create_response", create_response)
+
+        get_function_result = lambda_client.get_function(FunctionName=function_name)
+        snapshot.match("get_function_result", get_function_result)
+        update_zip_file = create_lambda_archive(
+            load_file(TEST_LAMBDA_PYTHON_VERSION), get_content=True
+        )
+        update_function_code_result = lambda_client.update_function_code(
+            FunctionName=function_name, ZipFile=update_zip_file, Publish=True
+        )
+        snapshot.match("update_function_code_result", update_function_code_result)
+
+        get_function_version_result = lambda_client.get_function(
+            FunctionName=function_name, Qualifier="1"
+        )
+        snapshot.match("get_function_version_result", get_function_version_result)
+
+        get_function_latest_result = lambda_client.get_function(
+            FunctionName=function_name, Qualifier="$LATEST"
+        )
+        snapshot.match("get_function_latest_result", get_function_latest_result)
 
 
 @pytest.mark.skipif(is_old_provider(), reason="focusing on new provider")

@@ -3,7 +3,11 @@ import re
 from typing import Any, Optional
 
 from localstack.aws.api import lambda_ as api_spec
-from localstack.aws.api.lambda_ import FunctionUrlAuthType, InvalidParameterValueException
+from localstack.aws.api.lambda_ import (
+    FunctionUrlAuthType,
+    InvalidParameterValueException,
+    ResourceNotFoundException,
+)
 from localstack.services.awslambda.invocation.lambda_models import (
     CodeSigningConfig,
     FunctionUrlConfig,
@@ -71,26 +75,23 @@ def qualifier_is_alias(qualifier: str) -> bool:
     return bool(ALIAS_REGEX.match(qualifier))
 
 
-def get_function_name(function_arn_or_name: str) -> str:
+def get_function_name(function_arn_or_name: str, region: str) -> str:
     """return name"""
-    pattern_match = FN_ARN_PATTERN.search(function_arn_or_name)
-    if not pattern_match:
-        return function_arn_or_name
-
-    return pattern_match.groupdict().get("function_name")
+    name, _ = get_name_and_qualifier(function_arn_or_name, qualifier=None, region=region)
+    return name
 
 
-def function_name_and_qualifier_from_arn(arn: str) -> tuple[str, str | None]:
+def function_name_qualifier_and_region_from_arn(arn: str) -> tuple[str, str | None, str | None]:
     """
     Takes a full or partial arn, or a name
     :param arn: Given arn (or name)
-    :return: tuple with (name, qualifier). Qualifier is none if missing
+    :return: tuple with (name, qualifier, region). Qualifier and region are none if missing
     """
-    return FUNCTION_NAME_REGEX.match(arn).group("name", "qualifier")
+    return FUNCTION_NAME_REGEX.match(arn).group("name", "qualifier", "region")
 
 
 def get_name_and_qualifier(
-    function_arn_or_name: str, qualifier: str | None
+    function_arn_or_name: str, qualifier: str | None, region: str | None
 ) -> tuple[str, str | None]:
     """
     Takes a full or partial arn, or a name and a qualifier
@@ -100,10 +101,17 @@ def get_name_and_qualifier(
     :param qualifier: A qualifier for the function (or None)
     :return: tuple with (name, qualifier). Qualifier is none if missing
     """
-    function_name, arn_qualifier = function_name_and_qualifier_from_arn(function_arn_or_name)
+    function_name, arn_qualifier, arn_region = function_name_qualifier_and_region_from_arn(
+        function_arn_or_name
+    )
     if qualifier and arn_qualifier and arn_qualifier != qualifier:
         raise InvalidParameterValueException(
             "The derived qualifier from the function name does not match the specified qualifier.",
+            Type="User",
+        )
+    if arn_region and arn_region != region:
+        raise ResourceNotFoundException(
+            f"Functions from '{arn_region}' are not reachable in this region ('{region}')",
             Type="User",
         )
     qualifier = qualifier or arn_qualifier
