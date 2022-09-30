@@ -32,7 +32,7 @@ done
 
 cd terraform-provider-aws
 
-LOGS_DIR = `pwd`/terraformlogs
+LOGS_DIR=`pwd`/terraformlogs
 mkdir -p "${LOGS_DIR}"
 export TF_LOG_PATH_MASK="${LOGS_DIR}/%s.log"
 
