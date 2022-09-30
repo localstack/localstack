@@ -1144,7 +1144,9 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
         fn_name, qualifier = get_name_and_qualifier(function_name, qualifier, context.region)
         resolved_fn = state.functions.get(fn_name)
         if not resolved_fn:
-            raise ResourceNotFoundException("The resource you requested does not exist.")
+            raise ResourceNotFoundException(
+                "The resource you requested does not exist.", Type="User"
+            )
 
         qualifier = qualifier or "$LATEST"
         url_config = resolved_fn.function_url_configs.get(qualifier)
@@ -2124,11 +2126,12 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
     def get_function_concurrency(
         self, context: RequestContext, function_name: FunctionName
     ) -> GetFunctionConcurrencyResponse:
-        state = lambda_stores[context.account_id][context.region]
         function_name = api_utils.get_function_name(
             function_arn_or_name=function_name, region=context.region
         )
-        fn = state.functions.get(function_name)
+        fn = self._get_function(
+            function_name=function_name, region=context.region, account_id=context.account_id
+        )
         return GetFunctionConcurrencyResponse(
             ReservedConcurrentExecutions=fn.reserved_concurrent_executions
         )
@@ -2140,10 +2143,16 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
         reserved_concurrent_executions: ReservedConcurrentExecutions,
     ) -> Concurrency:
         function_name = api_utils.get_function_name(function_name, context.region)
-        fn = self._get_function(
-            function_name=function_name, account_id=context.account_id, region=context.region
-        )
         state = lambda_stores[context.account_id][context.region]
+        fn = state.functions.get(function_name)
+        if not fn:
+            fn_arn = qualified_lambda_arn(
+                function_name,
+                qualifier="$LATEST",
+                account=context.account_id,
+                region=context.region,
+            )
+            raise ResourceNotFoundException(f"Function not found: {fn_arn}", Type="User")
 
         usage = self._get_account_limit_usage(state)
 
@@ -2192,7 +2201,7 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
         if not pattern_match:
             raise ValidationException(
                 # TODO
-                rf"1 validation error detected: Value '{resource}' at 'resource' failed to satisfy constraint: Member must satisfy regular expression pattern: arn:(aws[a-zA-Z-]*)?:lambda:[a-z]{2}((-gov)|(-iso(b?)))?-[a-z]+-\\d{1}:\\d{12}:function:[a-zA-Z0-9-_]+(:(\\$LATEST|[a-zA-Z0-9-_]+))?"
+                rf"1 validation error detected: Value '{resource}' at 'resource' failed to satisfy constraint: Member must satisfy regular expression pattern: arn:(aws[a-zA-Z-]*)?:lambda:[a-z]{{2}}((-gov)|(-iso(b?)))?-[a-z]+-\d{{1}}:\d{{12}}:function:[a-zA-Z0-9-_]+(:(\$LATEST|[a-zA-Z0-9-_]+))?"
             )
 
         groups = pattern_match.groupdict()
