@@ -52,8 +52,8 @@ def test_install_failure_returns_non_zero_exit_code(runner, monkeypatch):
 
 @pytest.mark.skip_offline
 def test_install_with_package(runner):
-    from localstack.services.install import INSTALL_PATH_ELASTICMQ_JAR
+    from localstack.services.sqs.legacy.packages import elasticmq_package
 
     result = runner.invoke(cli, ["install", "elasticmq"])
     assert result.exit_code == 0
-    assert os.path.exists(INSTALL_PATH_ELASTICMQ_JAR)
+    assert os.path.exists(elasticmq_package.get_installed_dir())
