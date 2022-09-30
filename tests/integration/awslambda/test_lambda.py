@@ -220,6 +220,77 @@ class TestLambdaBaseFeatures:
         response = lambda_client.get_function(FunctionName=function_name)
         snapshot.match("get-fn-response", response)
 
+    @pytest.mark.aws_validated
+    def test_lambda_different_iam_keys_environment(
+        self, lambda_client, lambda_su_role, create_lambda_function, snapshot, sts_client
+    ):
+        """
+        In this test we want to check if multiple lambda environments (= instances of hot functions) have
+        different AWS access keys
+        """
+        function_name = f"fn-{short_uid()}"
+        create_result = create_lambda_function(
+            func_name=function_name,
+            handler_file=TEST_LAMBDA_SLEEP_ENVIRONMENT,
+            runtime=Runtime.python3_8,
+            role=lambda_su_role,
+        )
+        snapshot.match("create-result", create_result)
+
+        # invoke two versions in two threads at the same time so environments won't be reused really quick
+        def _invoke_lambda(*args):
+            result = lambda_client.invoke(
+                FunctionName=function_name, Payload=to_bytes(json.dumps({"sleep": 2}))
+            )
+            return json.loads(to_str(result["Payload"].read()))["environment"]
+
+        def _transform_to_key_dict(env: Dict[str, str]):
+            return {
+                "AccessKeyId": env["AWS_ACCESS_KEY_ID"],
+                "SecretAccessKey": env["AWS_SECRET_ACCESS_KEY"],
+                "SessionToken": env["AWS_SESSION_TOKEN"],
+            }
+
+        def _assert_invocations():
+            with ThreadPoolExecutor(2) as executor:
+                results = list(executor.map(_invoke_lambda, range(2)))
+            assert len(results) == 2
+            assert (
+                results[0]["AWS_LAMBDA_LOG_STREAM_NAME"] != results[1]["AWS_LAMBDA_LOG_STREAM_NAME"]
+            ), "Environments identical for both invocations"
+            # if we got different environments, those should differ as well
+            assert (
+                results[0]["AWS_ACCESS_KEY_ID"] != results[1]["AWS_ACCESS_KEY_ID"]
+            ), "Access Key IDs have to differ"
+            assert (
+                results[0]["AWS_SECRET_ACCESS_KEY"] != results[1]["AWS_SECRET_ACCESS_KEY"]
+            ), "Secret Access keys have to differ"
+            assert (
+                results[0]["AWS_SESSION_TOKEN"] != results[1]["AWS_SESSION_TOKEN"]
+            ), "Session tokens have to differ"
+            # check if the access keys match the same role, and the role matches the one provided
+            # since a lot of asserts are based on the structure of the arns, snapshots are not too nice here, so manual
+            keys_1 = _transform_to_key_dict(results[0])
+            keys_2 = _transform_to_key_dict(results[1])
+            sts_client_1 = create_client_with_keys("sts", keys=keys_1)
+            sts_client_2 = create_client_with_keys("sts", keys=keys_2)
+            identity_1 = sts_client_1.get_caller_identity()
+            identity_2 = sts_client_2.get_caller_identity()
+            assert identity_1["Arn"] == identity_2["Arn"]
+            role_part = (
+                identity_1["Arn"]
+                .replace("sts", "iam")
+                .replace("assumed-role", "role")
+                .rpartition("/")
+            )
+            assert lambda_su_role == role_part[0]
+            assert function_name == role_part[2]
+            assert identity_1["Account"] == identity_2["Account"]
+            assert identity_1["UserId"] == identity_2["UserId"]
+            assert function_name == identity_1["UserId"].partition(":")[2]
+
+        retry(_assert_invocations)
+
 
 class TestLambdaBehavior:
     @pytest.mark.skip_snapshot_verify(
@@ -255,6 +326,7 @@ class TestLambdaBehavior:
 
     @pytest.mark.skipif(is_old_provider(), reason="old provider")
     @pytest.mark.aws_validated
+    @pytest.mark.skipif(not is_old_provider(), reason="Not yet implemented")
     def test_lambda_invoke_with_timeout(
         self,
         lambda_client,
@@ -344,7 +416,7 @@ class TestLambdaBehavior:
         wait_until(_assert_log_output, strategy="linear")
 
 
-# features
+@pytest.mark.skipif(not is_old_provider(), reason="Not yet implemented")
 class TestLambdaURL:
     @pytest.mark.skip_snapshot_verify(
         condition=is_old_provider,
@@ -457,62 +529,6 @@ class TestLambdaURL:
 
 
 class TestLambdaFeatures:
-    @pytest.fixture(
-        params=[("python3.9", TEST_LAMBDA_PYTHON_ECHO), ("nodejs16.x", TEST_LAMBDA_NODEJS_ECHO)],
-        ids=["python3.9", "nodejs16.x"],
-    )
-    def invocation_echo_lambda(self, create_lambda_function, request):
-        function_name = f"echo-func-{short_uid()}"
-        runtime, handler = request.param
-        creation_result = create_lambda_function(
-            handler_file=handler,
-            func_name=function_name,
-            runtime=runtime,
-        )
-        return creation_result["CreateFunctionResponse"]["FunctionArn"]
-
-    @pytest.mark.skip_snapshot_verify(
-        condition=is_old_provider,
-        paths=["$..Tags", "$..LogResult", "$..RevisionId", "$..RepositoryType", "$..Layers"],
-    )
-    @pytest.mark.aws_validated
-    def test_basic_invoke(
-        self, lambda_client, create_lambda_function_aws, lambda_su_role, snapshot
-    ):
-        fn_name = f"ls-fn-{short_uid()}"
-        fn_name_2 = f"ls-fn-{short_uid()}"
-
-        with open(os.path.join(os.path.dirname(__file__), "functions/echo.zip"), "rb") as f:
-            response = create_lambda_function_aws(
-                FunctionName=fn_name,
-                Handler="index.handler",
-                Code={"ZipFile": f.read()},
-                PackageType="Zip",
-                Role=lambda_su_role,
-                Runtime=Runtime.python3_9,
-            )
-            snapshot.match("lambda_create_fn", response)
-
-        with open(os.path.join(os.path.dirname(__file__), "functions/echo.zip"), "rb") as f:
-            response = create_lambda_function_aws(
-                FunctionName=fn_name_2,
-                Handler="index.handler",
-                Code={"ZipFile": f.read()},
-                PackageType="Zip",
-                Role=lambda_su_role,
-                Runtime=Runtime.python3_9,
-            )
-            snapshot.match("lambda_create_fn_2", response)
-
-        get_fn_result = lambda_client.get_function(FunctionName=fn_name)
-        snapshot.match("lambda_get_fn", get_fn_result)
-
-        get_fn_result_2 = lambda_client.get_function(FunctionName=fn_name_2)
-        snapshot.match("lambda_get_fn_2", get_fn_result_2)
-
-        invoke_result = lambda_client.invoke(FunctionName=fn_name, Payload=bytes("{}", "utf-8"))
-        snapshot.match("lambda_invoke_result", invoke_result)
-
     @pytest.mark.skip_snapshot_verify(
         condition=is_old_provider, paths=["$..Payload.context.memory_limit_in_mb", "$..logs.logs"]
     )
@@ -578,6 +594,7 @@ class TestLambdaFeatures:
     @pytest.mark.skip_snapshot_verify(
         condition=is_old_provider, paths=["$..LogResult", "$..ExecutedVersion"]
     )
+    @pytest.mark.skipif(not is_old_provider(), reason="Not yet implemented")
     @pytest.mark.aws_validated
     def test_invocation_type_dry_run(self, lambda_client, snapshot, invocation_echo_lambda):
         """Check invocation response for type dryrun"""
@@ -588,35 +605,6 @@ class TestLambdaFeatures:
         snapshot.match("invoke-result", result)
 
         assert 204 == result["StatusCode"]
-
-    @pytest.mark.skip_snapshot_verify(condition=is_old_provider)
-    @pytest.mark.aws_validated
-    # TODO create new one and run it for everything with new lambda, delete this then
-    def test_lambda_environment(self, lambda_client, create_lambda_function, snapshot):
-        """Tests invoking a lambda function with environment variables set on creation"""
-        function_name = f"env-test-function-{short_uid()}"
-        env_vars = {"Hello": "World"}
-        creation_result = create_lambda_function(
-            handler_file=TEST_LAMBDA_ENV,
-            libs=TEST_LAMBDA_LIBS,
-            func_name=function_name,
-            envvars=env_vars,
-            runtime=Runtime.python3_9,
-        )
-        snapshot.match("creation-result", creation_result)
-
-        # invoke function and assert result contains env vars
-        result = lambda_client.invoke(FunctionName=function_name, Payload=b"{}")
-        result = read_streams(result)
-        snapshot.match("invocation-result", result)
-        result_data = result["Payload"]
-        assert 200 == result["StatusCode"]
-        assert json.loads(result_data) == env_vars
-
-        # get function config and assert result contains env vars
-        result = lambda_client.get_function_configuration(FunctionName=function_name)
-        snapshot.match("get-configuration-result", result)
-        assert result["Environment"] == {"Variables": env_vars}
 
     @pytest.mark.skip_snapshot_verify(condition=is_old_provider)
     @pytest.mark.aws_validated
@@ -723,6 +711,7 @@ class TestLambdaFeatures:
         is_old_provider() and not use_docker(),
         reason="Test for docker nodejs runtimes not applicable if run locally",
     )
+    @pytest.mark.skipif(not is_old_provider(), reason="Not yet implemented")
     @pytest.mark.skip_snapshot_verify(condition=is_old_provider)
     @pytest.mark.aws_validated
     def test_lambda_with_context(
@@ -768,6 +757,7 @@ class TestLambdaFeatures:
         retry(check_logs, retries=15)
 
 
+@pytest.mark.skipif(not is_old_provider(), reason="Not yet implemented")
 class TestLambdaConcurrency:
     def test_lambda_concurrency_block(self, snapshot, create_lambda_function, lambda_client):
         """
@@ -831,77 +821,6 @@ class TestLambdaConcurrency:
                 FunctionName=func_name, Qualifier="$LATEST", Payload=json.dumps({"hello": "world"})
             )
         snapshot.match("invoke_latest_second_exc", e.value.response)
-
-    @pytest.mark.aws_validated
-    def test_lambda_different_iam_keys_environment(
-        self, lambda_client, lambda_su_role, create_lambda_function, snapshot, sts_client
-    ):
-        """
-        In this test we want to check if multiple lambda environments (= instances of hot functions) have
-        different AWS access keys
-        """
-        function_name = f"fn-{short_uid()}"
-        create_result = create_lambda_function(
-            func_name=function_name,
-            handler_file=TEST_LAMBDA_SLEEP_ENVIRONMENT,
-            runtime=Runtime.python3_8,
-            role=lambda_su_role,
-        )
-        snapshot.match("create-result", create_result)
-
-        # invoke two versions in two threads at the same time so environments won't be reused really quick
-        def _invoke_lambda(*args):
-            result = lambda_client.invoke(
-                FunctionName=function_name, Payload=to_bytes(json.dumps({"sleep": 2}))
-            )
-            return json.loads(to_str(result["Payload"].read()))["environment"]
-
-        def _transform_to_key_dict(env: Dict[str, str]):
-            return {
-                "AccessKeyId": env["AWS_ACCESS_KEY_ID"],
-                "SecretAccessKey": env["AWS_SECRET_ACCESS_KEY"],
-                "SessionToken": env["AWS_SESSION_TOKEN"],
-            }
-
-        def _assert_invocations():
-            with ThreadPoolExecutor(2) as executor:
-                results = list(executor.map(_invoke_lambda, range(2)))
-            assert len(results) == 2
-            assert (
-                results[0]["AWS_LAMBDA_LOG_STREAM_NAME"] != results[1]["AWS_LAMBDA_LOG_STREAM_NAME"]
-            ), "Environments identical for both invocations"
-            # if we got different environments, those should differ as well
-            assert (
-                results[0]["AWS_ACCESS_KEY_ID"] != results[1]["AWS_ACCESS_KEY_ID"]
-            ), "Access Key IDs have to differ"
-            assert (
-                results[0]["AWS_SECRET_ACCESS_KEY"] != results[1]["AWS_SECRET_ACCESS_KEY"]
-            ), "Secret Access keys have to differ"
-            assert (
-                results[0]["AWS_SESSION_TOKEN"] != results[1]["AWS_SESSION_TOKEN"]
-            ), "Session tokens have to differ"
-            # check if the access keys match the same role, and the role matches the one provided
-            # since a lot of asserts are based on the structure of the arns, snapshots are not too nice here, so manual
-            keys_1 = _transform_to_key_dict(results[0])
-            keys_2 = _transform_to_key_dict(results[1])
-            sts_client_1 = create_client_with_keys("sts", keys=keys_1)
-            sts_client_2 = create_client_with_keys("sts", keys=keys_2)
-            identity_1 = sts_client_1.get_caller_identity()
-            identity_2 = sts_client_2.get_caller_identity()
-            assert identity_1["Arn"] == identity_2["Arn"]
-            role_part = (
-                identity_1["Arn"]
-                .replace("sts", "iam")
-                .replace("assumed-role", "role")
-                .rpartition("/")
-            )
-            assert lambda_su_role == role_part[0]
-            assert function_name == role_part[2]
-            assert identity_1["Account"] == identity_2["Account"]
-            assert identity_1["UserId"] == identity_2["UserId"]
-            assert function_name == identity_1["UserId"].partition(":")[2]
-
-        retry(_assert_invocations)
 
 
 class TestLambdaVersions:

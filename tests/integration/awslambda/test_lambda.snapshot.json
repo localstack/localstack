@@ -1455,7 +1455,7 @@
       }
     }
   },
-  "tests/integration/awslambda/test_lambda.py::TestLambdaConcurrency::test_lambda_different_iam_keys_environment": {
+  "tests/integration/awslambda/test_lambda.py::TestLambdaBaseFeatures::test_lambda_different_iam_keys_environment": {
     "recorded-date": "28-09-2022, 21:03:48",
     "recorded-content": {
       "create-result": {
