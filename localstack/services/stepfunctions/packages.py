@@ -64,6 +64,12 @@ class StepFunctionsLocalePackage(Package):
 
 
 class StepFunctionsLocalePackageInstaller(PackageInstaller):
+    # TODO: check if it makes sense to inherit from DownloadInstaller
+    def get_executable_path(self) -> str | None:
+        install_dir = self.get_installed_dir()
+        if install_dir:
+            return self._get_install_marker_path(install_dir)
+
     def _get_install_marker_path(self, install_dir: str) -> str:
         return os.path.join(install_dir, "StepFunctionsLocal.jar")
 

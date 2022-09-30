@@ -187,10 +187,19 @@ class DownloadInstaller(PackageInstaller):
         download_url = self._get_download_url()
         target_path = self._get_install_marker_path(target_directory)
         download(download_url, target_path)
-        chmod_r(target_path, 0o777)
 
 
-class GitHubReleaseInstaller(DownloadInstaller):
+# TODO: name!
+class PermissionDownloadInstaller(DownloadInstaller):
+    def _get_download_url(self) -> str:
+        raise NotImplementedError()
+
+    def _install(self, target: InstallTarget) -> None:
+        super()._install(target)
+        chmod_r(self.get_executable_path(), 0o777)
+
+
+class GitHubReleaseInstaller(PermissionDownloadInstaller):
     """
     Installer which downloads an asset from a GitHub project's tag.
     """
