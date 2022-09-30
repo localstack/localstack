@@ -495,5 +495,248 @@
         ]
       }
     }
+  },
+  "tests/integration/s3/test_s3_notifications_sqs.py::TestS3NotificationsToSQS::test_notifications_with_filter": {
+    "recorded-date": "22-09-2022, 13:52:49",
+    "recorded-content": {
+      "config": {
+        "QueueConfigurations": [
+          {
+            "Events": [
+              "s3:ObjectCreated:*",
+              "s3:ObjectRemoved:Delete"
+            ],
+            "Filter": {
+              "Key": {
+                "FilterRules": [
+                  {
+                    "Name": "Prefix",
+                    "Value": "testupload/"
+                  },
+                  {
+                    "Name": "Suffix",
+                    "Value": "testfile.txt"
+                  }
+                ]
+              }
+            },
+            "Id": "<config-id:1>",
+            "QueueArn": "arn:aws:sqs:<region>:111111111111:<queue>"
+          },
+          {
+            "Events": [
+              "s3:ObjectTagging:*"
+            ],
+            "Filter": {
+              "Key": {
+                "FilterRules": [
+                  {
+                    "Name": "Prefix",
+                    "Value": "testupload/"
+                  },
+                  {
+                    "Name": "Suffix",
+                    "Value": "testfile.txt"
+                  }
+                ]
+              }
+            },
+            "Id": "id0002",
+            "QueueArn": "arn:aws:sqs:<region>:111111111111:<queue>"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "message": {
+        "awsRegion": "<region>",
+        "eventName": "ObjectCreated:Put",
+        "eventSource": "aws:s3",
+        "eventTime": "date",
+        "eventVersion": "2.1",
+        "requestParameters": {
+          "sourceIPAddress": "<ip-address:1>"
+        },
+        "responseElements": {
+          "x-amz-id-2": "amz-id",
+          "x-amz-request-id": "amz-request-id"
+        },
+        "s3": {
+          "bucket": {
+            "arn": "arn:aws:s3:::<bucket>",
+            "name": "<bucket>",
+            "ownerIdentity": {
+              "principalId": "<principal-id:1>"
+            }
+          },
+          "configurationId": "<config-id:1>",
+          "object": {
+            "eTag": "f527a5c9f427867aeaf091c134949aa0",
+            "key": "testupload/dir1/testfile.txt",
+            "sequencer": "sequencer",
+            "size": 32
+          },
+          "s3SchemaVersion": "1.0"
+        },
+        "userIdentity": {
+          "principalId": "<principal-id:2>"
+        }
+      },
+      "config_empty": {
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "config_updated": {
+        "QueueConfigurations": [
+          {
+            "Events": [
+              "s3:ObjectCreated:*"
+            ],
+            "Id": "id123456",
+            "QueueArn": "arn:aws:sqs:<region>:111111111111:<queue>"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "config_updated_filter": {
+        "QueueConfigurations": [
+          {
+            "Events": [
+              "s3:ObjectCreated:*"
+            ],
+            "Filter": {
+              "Key": {
+                "FilterRules": [
+                  {
+                    "Name": "Prefix",
+                    "Value": "testupload/"
+                  }
+                ]
+              }
+            },
+            "Id": "id123456",
+            "QueueArn": "arn:aws:sqs:<region>:111111111111:<queue>"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/integration/s3/test_s3_notifications_sqs.py::TestS3NotificationsToSQS::test_filter_rules_case_insensitive": {
+    "recorded-date": "22-09-2022, 14:05:55",
+    "recorded-content": {
+      "bucket_notification_configuration": {
+        "QueueConfigurations": [
+          {
+            "Events": [
+              "s3:ObjectCreated:*"
+            ],
+            "Filter": {
+              "Key": {
+                "FilterRules": [
+                  {
+                    "Name": "Prefix",
+                    "Value": "notif-"
+                  },
+                  {
+                    "Name": "Suffix",
+                    "Value": ".txt"
+                  }
+                ]
+              }
+            },
+            "Id": "<id:1>",
+            "QueueArn": "arn:aws:sqs:<region>:111111111111:my-queue-<queue_id>"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/integration/s3/test_s3_notifications_sqs.py::TestS3NotificationsToSQS::test_bucket_notification_with_invalid_filter_rules": {
+    "recorded-date": "22-09-2022, 14:08:25",
+    "recorded-content": {
+      "invalid_filter_name": {
+        "Error": {
+          "ArgumentName": "FilterRule.Name",
+          "ArgumentValue": "INVALID",
+          "Code": "InvalidArgument",
+          "Message": "filter rule name must be either prefix or suffix"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/integration/s3/test_s3_notifications_sqs.py::TestS3NotificationsToSQS::test_invalid_sqs_arn": {
+    "recorded-date": "22-09-2022, 19:40:45",
+    "recorded-content": {
+      "invalid_not_skip": {
+        "Error": {
+          "ArgumentName": "Queue",
+          "ArgumentValue": "invalid-queue",
+          "Code": "InvalidArgument",
+          "Message": "The ARN is not well formed"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "invalid_skip": {
+        "Error": {
+          "ArgumentName": "Queue",
+          "ArgumentValue": "invalid-queue",
+          "Code": "InvalidArgument",
+          "Message": "The ARN is not well formed"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "queue-does-not-exist": {
+        "Error": {
+          "ArgumentName1": "arn:aws:sqs:<region>:111111111111:my-queue",
+          "ArgumentValue1": "The destination queue does not exist",
+          "Code": "InvalidArgument",
+          "Message": "Unable to validate the following destination configurations"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "skip_destination_validation": {
+        "QueueConfigurations": [
+          {
+            "Events": [
+              "s3:ObjectCreated:*"
+            ],
+            "Id": "id123",
+            "QueueArn": "arn:aws:sqs:<region>:111111111111:my-queue"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
   }
 }

@@ -1,14 +1,17 @@
 import json
 import logging
+from io import BytesIO
 from typing import TYPE_CHECKING, Dict, List, Protocol
 
 import pytest
 import requests
 from boto3.s3.transfer import KB, TransferConfig
+from botocore.exceptions import ClientError
 
+from localstack.config import LEGACY_S3_PROVIDER
 from localstack.utils.aws import aws_stack
 from localstack.utils.strings import short_uid
-from localstack.utils.sync import poll_condition
+from localstack.utils.sync import poll_condition, retry
 
 if TYPE_CHECKING:
     from mypy_boto3_s3 import S3Client
@@ -47,14 +50,7 @@ def get_queue_arn(sqs_client, queue_url: str) -> str:
     return response["Attributes"]["QueueArn"]
 
 
-def create_sqs_bucket_notification(
-    s3_client: "S3Client",
-    sqs_client: "SQSClient",
-    bucket_name: str,
-    queue_url: str,
-    events: List["EventType"],
-):
-    """A NotificationFactory."""
+def set_policy_for_queue(sqs_client, queue_url, bucket_name):
     queue_arn = get_queue_arn(sqs_client, queue_url)
     assert queue_arn
     bucket_arn = aws_stack.s3_bucket_arn(bucket_name)
@@ -72,16 +68,22 @@ def create_sqs_bucket_notification(
         ],
     }
     sqs_client.set_queue_attributes(QueueUrl=queue_url, Attributes={"Policy": json.dumps(policy)})
+    return queue_arn
 
+
+def create_sqs_bucket_notification(
+    s3_client: "S3Client",
+    sqs_client: "SQSClient",
+    bucket_name: str,
+    queue_url: str,
+    events: List["EventType"],
+):
+    """A NotificationFactory."""
+    queue_arn = set_policy_for_queue(sqs_client, queue_url, bucket_name)
     s3_client.put_bucket_notification_configuration(
         Bucket=bucket_name,
         NotificationConfiguration=dict(
-            QueueConfigurations=[
-                dict(
-                    QueueArn=queue_arn,
-                    Events=events,
-                )
-            ]
+            QueueConfigurations=[dict(QueueArn=queue_arn, Events=events)]
         ),
     )
 
@@ -146,7 +148,9 @@ def sqs_collect_s3_events(
 
 class TestS3NotificationsToSQS:
     @pytest.mark.aws_validated
-    @pytest.mark.skip_snapshot_verify(paths=["$..s3.object.eTag"])
+    @pytest.mark.skip_snapshot_verify(
+        condition=lambda: LEGACY_S3_PROVIDER, paths=["$..s3.object.eTag"]
+    )
     def test_object_created_put(
         self,
         s3_client,
@@ -196,7 +200,9 @@ class TestS3NotificationsToSQS:
         assert obj1["VersionId"] == events[1]["s3"]["object"]["versionId"]
 
     @pytest.mark.aws_validated
-    @pytest.mark.skip_snapshot_verify(paths=["$..s3.object.eTag", "$..s3.object.versionId"])
+    @pytest.mark.skip_snapshot_verify(
+        condition=lambda: LEGACY_S3_PROVIDER, paths=["$..s3.object.eTag", "$..s3.object.versionId"]
+    )
     def test_object_created_copy(
         self,
         s3_client,
@@ -240,7 +246,8 @@ class TestS3NotificationsToSQS:
 
     @pytest.mark.aws_validated
     @pytest.mark.skip_snapshot_verify(
-        paths=["$..s3.object.eTag", "$..s3.object.versionId", "$..s3.object.size"]
+        condition=lambda: LEGACY_S3_PROVIDER,
+        paths=["$..s3.object.eTag", "$..s3.object.versionId", "$..s3.object.size"],
     )
     def test_object_created_and_object_removed(
         self,
@@ -298,7 +305,9 @@ class TestS3NotificationsToSQS:
         assert events[2]["s3"]["object"]["key"] == src_key
 
     @pytest.mark.aws_validated
-    @pytest.mark.skip_snapshot_verify(paths=["$..s3.object.eTag", "$..s3.object.versionId"])
+    @pytest.mark.skip_snapshot_verify(
+        condition=lambda: LEGACY_S3_PROVIDER, paths=["$..s3.object.eTag", "$..s3.object.versionId"]
+    )
     def test_object_created_complete_multipart_upload(
         self,
         s3_client,
@@ -338,7 +347,9 @@ class TestS3NotificationsToSQS:
         assert events[0]["s3"]["object"]["size"] == file.size()
 
     @pytest.mark.aws_validated
-    @pytest.mark.skip_snapshot_verify(paths=["$..s3.object.eTag", "$..s3.object.versionId"])
+    @pytest.mark.skip_snapshot_verify(
+        condition=lambda: LEGACY_S3_PROVIDER, paths=["$..s3.object.eTag", "$..s3.object.versionId"]
+    )
     def test_key_encoding(
         self,
         s3_client,
@@ -368,7 +379,9 @@ class TestS3NotificationsToSQS:
         assert events[0]["s3"]["object"]["key"] == key_encoded
 
     @pytest.mark.aws_validated
-    @pytest.mark.skip_snapshot_verify(paths=["$..s3.object.eTag", "$..s3.object.versionId"])
+    @pytest.mark.skip_snapshot_verify(
+        condition=lambda: LEGACY_S3_PROVIDER, paths=["$..s3.object.eTag", "$..s3.object.versionId"]
+    )
     def test_object_created_put_with_presigned_url_upload(
         self,
         s3_client,
@@ -399,13 +412,14 @@ class TestS3NotificationsToSQS:
 
     @pytest.mark.aws_validated
     @pytest.mark.skip_snapshot_verify(
+        condition=lambda: LEGACY_S3_PROVIDER,
         paths=[
             "$..s3.object.eTag",
             "$..s3.object.versionId",
             "$..s3.object.size",
             "$..s3.object.sequencer",
             "$..eventVersion",
-        ]
+        ],
     )
     def test_object_tagging_put_event(
         self,
@@ -454,13 +468,14 @@ class TestS3NotificationsToSQS:
 
     @pytest.mark.aws_validated
     @pytest.mark.skip_snapshot_verify(
+        condition=lambda: LEGACY_S3_PROVIDER,
         paths=[
             "$..s3.object.eTag",
             "$..s3.object.versionId",
             "$..s3.object.size",
             "$..s3.object.sequencer",
             "$..eventVersion",
-        ]
+        ],
     )
     def test_object_tagging_delete_event(
         self,
@@ -513,7 +528,9 @@ class TestS3NotificationsToSQS:
         assert events[0]["s3"]["object"]["key"] == dest_key
 
     @pytest.mark.aws_validated
-    @pytest.mark.skip_snapshot_verify(paths=["$..s3.object.eTag", "$..s3.object.versionId"])
+    @pytest.mark.skip_snapshot_verify(
+        condition=lambda: LEGACY_S3_PROVIDER, paths=["$..s3.object.eTag", "$..s3.object.versionId"]
+    )
     def test_xray_header(
         self,
         s3_client,
@@ -553,9 +570,8 @@ class TestS3NotificationsToSQS:
         # put an object where the bucket_name is in the path
         s3_client.put_object(Bucket=bucket_name, Key=key, Body="something")
 
-        messages = []
-
         def get_messages():
+            recv_messages = []
             resp = sqs_client.receive_message(
                 QueueUrl=queue_url,
                 AttributeNames=["AWSTraceHeader"],
@@ -565,11 +581,12 @@ class TestS3NotificationsToSQS:
             for m in resp["Messages"]:
                 if "s3:TestEvent" in m["Body"]:
                     continue
-                messages.append(m)
+                recv_messages.append(m)
 
-            return len(messages)
+            assert len(recv_messages) >= 1
+            return recv_messages
 
-        assert poll_condition(lambda: get_messages() >= 1, timeout=10)
+        messages = retry(get_messages, retries=10)
 
         assert "AWSTraceHeader" in messages[0]["Attributes"]
         assert (
@@ -577,3 +594,267 @@ class TestS3NotificationsToSQS:
             == "Root=1-3152b799-8954dae64eda91bc9a23a7e8;Parent=7fa8c0f79203be72;Sampled=1"
         )
         snapshot.match("receive_messages", {"messages": messages})
+
+    @pytest.mark.aws_validated
+    @pytest.mark.skip_snapshot_verify(
+        condition=lambda: LEGACY_S3_PROVIDER,
+        paths=[
+            "$..QueueConfigurations..Filter",
+            "$..s3.object.eTag",
+            "$..s3.object.versionId",
+        ],
+    )
+    def test_notifications_with_filter(
+        self,
+        s3_client,
+        s3_create_bucket,
+        sqs_client,
+        s3_create_sqs_bucket_notification,
+        sqs_create_queue,
+        snapshot,
+    ):
+        # create test bucket and queue
+        bucket_name = f"notification-bucket-{short_uid()}"
+        s3_create_bucket(Bucket=bucket_name)
+        queue_name = f"queue-{short_uid()}"
+        queue_url = sqs_create_queue(QueueName=queue_name)
+
+        snapshot.add_transformer(snapshot.transform.regex(queue_name, "<queue>"))
+        snapshot.add_transformer(snapshot.transform.regex(bucket_name, "<bucket>"))
+        snapshot.add_transformer(snapshot.transform.s3_notifications_transformer())
+        queue_arn = set_policy_for_queue(sqs_client, queue_url, bucket_name)
+
+        events = ["s3:ObjectCreated:*", "s3:ObjectRemoved:Delete"]
+        filter_rules = {
+            "FilterRules": [
+                {"Name": "Prefix", "Value": "testupload/"},
+                {"Name": "Suffix", "Value": "testfile.txt"},
+            ]
+        }
+        s3_client.put_bucket_notification_configuration(
+            Bucket=bucket_name,
+            NotificationConfiguration={
+                "QueueConfigurations": [
+                    {
+                        "Id": "id0001",
+                        "QueueArn": queue_arn,
+                        "Events": events,
+                        "Filter": {"Key": filter_rules},
+                    },
+                    {
+                        # Add second config to test fix https://github.com/localstack/localstack/issues/450
+                        "Id": "id0002",
+                        "QueueArn": queue_arn,
+                        "Events": ["s3:ObjectTagging:*"],
+                        "Filter": {"Key": filter_rules},
+                    },
+                ]
+            },
+        )
+
+        # retrieve and check notification config
+        config = s3_client.get_bucket_notification_configuration(Bucket=bucket_name)
+        snapshot.match("config", config)
+        assert 2 == len(config["QueueConfigurations"])
+        config = [c for c in config["QueueConfigurations"] if c.get("Events")][0]
+        assert events == config["Events"]
+        assert filter_rules == config["Filter"]["Key"]
+
+        # upload file to S3 (this should NOT trigger a notification)
+        test_key1 = "/testdata"
+        test_data1 = b'{"test": "bucket_notification1"}'
+        s3_client.upload_fileobj(BytesIO(test_data1), bucket_name, test_key1)
+
+        # upload file to S3 (this should trigger a notification)
+        test_key2 = "testupload/dir1/testfile.txt"
+        test_data2 = b'{"test": "bucket_notification2"}'
+        s3_client.upload_fileobj(BytesIO(test_data2), bucket_name, test_key2)
+
+        # receive, assert, and delete message from SQS
+        messages = sqs_collect_s3_events(sqs_client, queue_url, 1)
+        assert len(messages) == 1
+        snapshot.match("message", messages[0])
+        assert messages[0]["s3"]["object"]["key"] == test_key2
+        assert messages[0]["s3"]["bucket"]["name"] == bucket_name
+
+        # delete notification config
+        s3_client.put_bucket_notification_configuration(
+            Bucket=bucket_name, NotificationConfiguration={}
+        )
+        config = s3_client.get_bucket_notification_configuration(Bucket=bucket_name)
+        snapshot.match("config_empty", config)
+        assert not config.get("QueueConfigurations")
+        assert not config.get("TopicConfiguration")
+        # put notification config with single event type
+        event = "s3:ObjectCreated:*"
+        s3_client.put_bucket_notification_configuration(
+            Bucket=bucket_name,
+            NotificationConfiguration={
+                "QueueConfigurations": [
+                    {"Id": "id123456", "QueueArn": queue_arn, "Events": [event]}
+                ]
+            },
+        )
+        config = s3_client.get_bucket_notification_configuration(Bucket=bucket_name)
+        snapshot.match("config_updated", config)
+        config = config["QueueConfigurations"][0]
+        assert [event] == config["Events"]
+
+        # put notification config with single event type
+        event = "s3:ObjectCreated:*"
+        filter_rules = {"FilterRules": [{"Name": "Prefix", "Value": "testupload/"}]}
+        s3_client.put_bucket_notification_configuration(
+            Bucket=bucket_name,
+            NotificationConfiguration={
+                "QueueConfigurations": [
+                    {
+                        "Id": "id123456",
+                        "QueueArn": queue_arn,
+                        "Events": [event],
+                        "Filter": {"Key": filter_rules},
+                    }
+                ]
+            },
+        )
+        config = s3_client.get_bucket_notification_configuration(Bucket=bucket_name)
+        snapshot.match("config_updated_filter", config)
+        config = config["QueueConfigurations"][0]
+        assert [event] == config["Events"]
+        assert filter_rules == config["Filter"]["Key"]
+
+    @pytest.mark.aws_validated
+    def test_filter_rules_case_insensitive(
+        self, s3_client, s3_create_bucket, sqs_create_queue, sqs_client, snapshot
+    ):
+        bucket_name = s3_create_bucket()
+        id = short_uid()
+        queue_url = sqs_create_queue(QueueName=f"my-queue-{id}")
+        queue_attributes = sqs_client.get_queue_attributes(
+            QueueUrl=queue_url, AttributeNames=["QueueArn"]
+        )
+        snapshot.add_transformer(snapshot.transform.key_value("Id", "id"))
+        snapshot.add_transformer(snapshot.transform.regex(id, "<queue_id>"))
+        cfg = {
+            "QueueConfigurations": [
+                {
+                    "QueueArn": queue_attributes["Attributes"]["QueueArn"],
+                    "Events": ["s3:ObjectCreated:*"],
+                    "Filter": {
+                        "Key": {
+                            "FilterRules": [
+                                {
+                                    "Name": "suffix",
+                                    "Value": ".txt",
+                                },  # different casing should be normalized to Suffix/Prefix
+                                {"Name": "PREFIX", "Value": "notif-"},
+                            ]
+                        }
+                    },
+                }
+            ]
+        }
+
+        s3_client.put_bucket_notification_configuration(
+            Bucket=bucket_name, NotificationConfiguration=cfg, SkipDestinationValidation=True
+        )
+        response = s3_client.get_bucket_notification_configuration(Bucket=bucket_name)
+        # verify casing of filter rule names
+
+        rules = response["QueueConfigurations"][0]["Filter"]["Key"]["FilterRules"]
+        valid = ["Prefix", "Suffix"]
+        response["QueueConfigurations"][0]["Filter"]["Key"]["FilterRules"].sort(
+            key=lambda x: x["Name"]
+        )
+        assert rules[0]["Name"] in valid
+        assert rules[1]["Name"] in valid
+        snapshot.match("bucket_notification_configuration", response)
+
+    @pytest.mark.skip_snapshot_verify(
+        condition=lambda: not LEGACY_S3_PROVIDER,
+        paths=["$..Error.ArgumentName", "$..Error.ArgumentValue"],
+    )  # TODO: add to exception for ASF
+    @pytest.mark.skip_snapshot_verify(
+        condition=lambda: LEGACY_S3_PROVIDER,
+        paths=["$..Error.RequestID"],
+    )
+    @pytest.mark.aws_validated
+    def test_bucket_notification_with_invalid_filter_rules(
+        self, s3_create_bucket, sqs_create_queue, sqs_client, s3_client, snapshot
+    ):
+        bucket_name = s3_create_bucket()
+        queue_url = sqs_create_queue()
+        queue_attributes = sqs_client.get_queue_attributes(
+            QueueUrl=queue_url, AttributeNames=["QueueArn"]
+        )
+        cfg = {
+            "QueueConfigurations": [
+                {
+                    "QueueArn": queue_attributes["Attributes"]["QueueArn"],
+                    "Events": ["s3:ObjectCreated:*"],
+                    "Filter": {
+                        "Key": {"FilterRules": [{"Name": "INVALID", "Value": "does not matter"}]}
+                    },
+                }
+            ]
+        }
+        with pytest.raises(ClientError) as e:
+            s3_client.put_bucket_notification_configuration(
+                Bucket=bucket_name, NotificationConfiguration=cfg
+            )
+        snapshot.match("invalid_filter_name", e.value.response)
+
+    @pytest.mark.aws_validated
+    @pytest.mark.skipif(condition=LEGACY_S3_PROVIDER, reason="no validation implemented")
+    @pytest.mark.skip_snapshot_verify(
+        condition=lambda: not LEGACY_S3_PROVIDER,
+        paths=[
+            "$..Error.ArgumentName1",
+            "$..Error.ArgumentValue1",
+            "$..Error.ArgumentName",
+            "$..Error.ArgumentValue",
+        ],
+    )
+    def test_invalid_sqs_arn(self, s3_client, s3_create_bucket, account_id, snapshot):
+        bucket_name = s3_create_bucket()
+        config = {
+            "QueueConfigurations": [
+                {
+                    "Id": "id123",
+                    "Events": ["s3:ObjectCreated:*"],
+                }
+            ]
+        }
+
+        config["QueueConfigurations"][0]["QueueArn"] = "invalid-queue"
+        with pytest.raises(ClientError) as e:
+            s3_client.put_bucket_notification_configuration(
+                Bucket=bucket_name,
+                NotificationConfiguration=config,
+                SkipDestinationValidation=False,
+            )
+        snapshot.match("invalid_not_skip", e.value.response)
+
+        with pytest.raises(ClientError) as e:
+            s3_client.put_bucket_notification_configuration(
+                Bucket=bucket_name,
+                NotificationConfiguration=config,
+                SkipDestinationValidation=True,
+            )
+        snapshot.match("invalid_skip", e.value.response)
+
+        # set valid but not-existing queue
+        config["QueueConfigurations"][0][
+            "QueueArn"
+        ] = f"{aws_stack.sqs_queue_arn('my-queue', account_id=account_id)}"
+        with pytest.raises(ClientError) as e:
+            s3_client.put_bucket_notification_configuration(
+                Bucket=bucket_name,
+                NotificationConfiguration=config,
+            )
+        snapshot.match("queue-does-not-exist", e.value.response)
+
+        s3_client.put_bucket_notification_configuration(
+            Bucket=bucket_name, NotificationConfiguration=config, SkipDestinationValidation=True
+        )
+        config = s3_client.get_bucket_notification_configuration(Bucket=bucket_name)
+        snapshot.match("skip_destination_validation", config)

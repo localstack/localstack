@@ -1,13 +1,9 @@
 import copy
 import logging
 import os
-from typing import Union
 from urllib.parse import SplitResult, quote, urlsplit, urlunsplit
 
-import moto.s3.models as moto_s3_models
 import moto.s3.responses as moto_s3_responses
-from moto.s3 import s3_backends as moto_s3_backends
-from moto.s3.exceptions import MissingBucket
 
 from localstack.aws.accounts import get_aws_account_id
 from localstack.aws.api import CommonServiceException, RequestContext, handler
@@ -15,8 +11,16 @@ from localstack.aws.api.s3 import (
     AccessControlPolicy,
     AccountId,
     BucketName,
+    CompleteMultipartUploadOutput,
+    CompleteMultipartUploadRequest,
+    CopyObjectOutput,
+    CopyObjectRequest,
     CreateBucketOutput,
     CreateBucketRequest,
+    DeleteObjectOutput,
+    DeleteObjectRequest,
+    DeleteObjectTaggingOutput,
+    DeleteObjectTaggingRequest,
     GetBucketAclOutput,
     GetBucketLifecycleConfigurationOutput,
     GetBucketLifecycleOutput,
@@ -27,15 +31,14 @@ from localstack.aws.api.s3 import (
     GetObjectRequest,
     HeadObjectOutput,
     HeadObjectRequest,
-    InvalidArgument,
     InvalidBucketName,
     ListObjectsOutput,
     ListObjectsRequest,
     ListObjectsV2Output,
     ListObjectsV2Request,
-    NoSuchBucket,
     NoSuchKey,
     NoSuchLifecycleConfiguration,
+    NotificationConfiguration,
     ObjectKey,
     PutBucketAclRequest,
     PutBucketLifecycleConfigurationRequest,
@@ -44,7 +47,10 @@ from localstack.aws.api.s3 import (
     PutBucketVersioningRequest,
     PutObjectOutput,
     PutObjectRequest,
+    PutObjectTaggingOutput,
+    PutObjectTaggingRequest,
     S3Api,
+    SkipValidation,
 )
 from localstack.aws.api.s3 import Type as GranteeType
 from localstack.config import get_edge_port_http, get_protocol
@@ -54,12 +60,16 @@ from localstack.http.proxy import forward
 from localstack.services.edge import ROUTER
 from localstack.services.moto import call_moto
 from localstack.services.plugins import ServiceLifecycleHook
-from localstack.services.s3.models import S3Store, s3_stores
+from localstack.services.s3.models import S3Store, get_moto_s3_backend, s3_stores
+from localstack.services.s3.notifications import NotificationDispatcher, S3EventNotificationContext
 from localstack.services.s3.utils import (
     ALLOWED_HEADER_OVERRIDES,
     VALID_ACL_PREDEFINED_GROUPS,
     VALID_GRANTEE_PERMISSIONS,
+    _create_invalid_argument_exc,
+    get_bucket_from_moto,
     get_header_name,
+    get_key_from_moto_bucket,
     is_bucket_name_valid,
     is_canned_acl_valid,
     is_key_expired,
@@ -90,10 +100,6 @@ class MalformedACLError(CommonServiceException):
         super().__init__("MalformedACLError", status_code=400, message=message)
 
 
-def get_moto_s3_backend(context: RequestContext) -> moto_s3_models.S3Backend:
-    return moto_s3_backends[context.account_id]["global"]
-
-
 def get_full_default_bucket_location(bucket_name):
     return f"{get_protocol()}://{bucket_name}.s3.{LOCALHOST_HOSTNAME}:{get_edge_port_http()}/"
 
@@ -111,6 +117,32 @@ class S3Provider(S3Api, ServiceLifecycleHook):
     def on_after_init(self):
         apply_moto_patches()
         self.add_custom_routes()
+
+    def __init__(self) -> None:
+        super().__init__()
+        self._notification_dispatcher = NotificationDispatcher()
+
+    def on_before_stop(self):
+        self._notification_dispatcher.shutdown()
+
+    def _notify(self, context: RequestContext, s3_notif_ctx: S3EventNotificationContext = None):
+        # we can provide the s3_event_notification_context, so in case of deletion of keys, we can create it before
+        # it happens
+        if not s3_notif_ctx:
+            s3_notif_ctx = S3EventNotificationContext.from_request_context(context)
+        if notification_config := self.get_store().bucket_notification_configs.get(
+            s3_notif_ctx.bucket_name
+        ):
+            self._notification_dispatcher.send_notifications(s3_notif_ctx, notification_config)
+
+    def _verify_notification_configuration(
+        self,
+        notification_configuration: NotificationConfiguration,
+        skip_destination_validation: SkipValidation,
+    ):
+        self._notification_dispatcher.verify_configuration(
+            notification_configuration, skip_destination_validation
+        )
 
     @handler("CreateBucket", expand=False)
     def create_bucket(
@@ -251,6 +283,60 @@ class S3Provider(S3Api, ServiceLifecycleHook):
             metadata = {k: v for k, v in key_object.metadata.items() if k != "expires"}
             key_object.set_metadata(metadata, replace=True)
 
+        self._notify(context)
+
+        return response
+
+    @handler("CopyObject", expand=False)
+    def copy_object(
+        self,
+        context: RequestContext,
+        request: CopyObjectRequest,
+    ) -> CopyObjectOutput:
+        response: CopyObjectOutput = call_moto(context)
+        self._notify(context)
+        return response
+
+    @handler("DeleteObject", expand=False)
+    def delete_object(
+        self,
+        context: RequestContext,
+        request: DeleteObjectRequest,
+    ) -> DeleteObjectOutput:
+
+        if request["Bucket"] not in self.get_store().bucket_notification_configs:
+            return call_moto(context)
+
+        # create the notification context before deleting the object, to be able to retrieve its properties
+        s3_notification_ctx = S3EventNotificationContext.from_request_context(context)
+
+        response: DeleteObjectOutput = call_moto(context)
+        self._notify(context, s3_notification_ctx)
+
+        return response
+
+    @handler("CompleteMultipartUpload", expand=False)
+    def complete_multipart_upload(
+        self, context: RequestContext, request: CompleteMultipartUploadRequest
+    ) -> CompleteMultipartUploadOutput:
+        response: CompleteMultipartUploadOutput = call_moto(context)
+        self._notify(context)
+        return response
+
+    @handler("PutObjectTagging", expand=False)
+    def put_object_tagging(
+        self, context: RequestContext, request: PutObjectTaggingRequest
+    ) -> PutObjectTaggingOutput:
+        response: PutObjectTaggingOutput = call_moto(context)
+        self._notify(context)
+        return response
+
+    @handler("DeleteObjectTagging", expand=False)
+    def delete_object_tagging(
+        self, context: RequestContext, request: DeleteObjectTaggingRequest
+    ) -> DeleteObjectTaggingOutput:
+        response: DeleteObjectTaggingOutput = call_moto(context)
+        self._notify(context)
         return response
 
     @handler("PutBucketRequestPayment", expand=False)
@@ -395,6 +481,32 @@ class S3Provider(S3Api, ServiceLifecycleHook):
             store = self.get_store()
             store.bucket_versioning_status[bucket_name] = versioning_status == "Enabled"
 
+    def put_bucket_notification_configuration(
+        self,
+        context: RequestContext,
+        bucket: BucketName,
+        notification_configuration: NotificationConfiguration,
+        expected_bucket_owner: AccountId = None,
+        skip_destination_validation: SkipValidation = None,
+    ) -> None:
+        # TODO implement put_bucket_notification as well? ->  no longer used https://docs.aws.amazon.com/AmazonS3/latest/API/API_PutBucketNotificationConfiguration.html
+        # TODO expected_bucket_owner
+
+        # check if the bucket exists
+        get_bucket_from_moto(get_moto_s3_backend(context), bucket=bucket)
+        self._verify_notification_configuration(
+            notification_configuration, skip_destination_validation
+        )
+        self.get_store().bucket_notification_configs[bucket] = notification_configuration
+
+    def get_bucket_notification_configuration(
+        self, context: RequestContext, bucket: BucketName, expected_bucket_owner: AccountId = None
+    ) -> NotificationConfiguration:
+        # TODO how to verify expected_bucket_owner
+        # check if the bucket exists
+        get_bucket_from_moto(get_moto_s3_backend(context), bucket=bucket)
+        return self.get_store().bucket_notification_configs.get(bucket, NotificationConfiguration())
+
     def add_custom_routes(self):
         # virtual-host style: https://bucket-name.s3.region-code.amazonaws.com/key-name
         # host_pattern_vhost_style = f"{bucket}.s3.<regex('({AWS_REGION_REGEX}\.)?'):region>{LOCALHOST_HOSTNAME}:{get_edge_port_http()}"
@@ -482,15 +594,6 @@ def validate_bucket_name(bucket: BucketName) -> None:
         raise ex
 
 
-def _create_invalid_argument_exc(
-    message: Union[str, None], name: str, value: str
-) -> InvalidArgument:
-    ex = InvalidArgument(message)
-    ex.ArgumentName = name
-    ex.ArgumentValue = value
-    return ex
-
-
 def validate_canned_acl(canned_acl: str) -> None:
     """
     Validate the canned ACL value, or raise an Exception
@@ -563,30 +666,6 @@ def validate_acl_acp(acp: AccessControlPolicy) -> None:
         ):
             ex = _create_invalid_argument_exc("Invalid id", "CanonicalUser/ID", grantee_id)
             raise ex
-
-
-def get_bucket_from_moto(
-    moto_backend: moto_s3_models.S3Backend, bucket: BucketName
-) -> moto_s3_models.FakeBucket:
-    # TODO: check authorization for buckets as well?
-    try:
-        return moto_backend.get_bucket(bucket_name=bucket)
-    except MissingBucket:
-        ex = NoSuchBucket("The specified bucket does not exist")
-        ex.BucketName = bucket
-        raise ex
-
-
-def get_key_from_moto_bucket(
-    moto_bucket: moto_s3_models.FakeBucket, key: ObjectKey
-) -> moto_s3_models.FakeKey:
-    fake_key = moto_bucket.keys.get(key)
-    if not fake_key:
-        ex = NoSuchKey("The specified key does not exist.")
-        ex.Key = key
-        raise ex
-
-    return fake_key
 
 
 def is_object_expired(context: RequestContext, bucket: BucketName, key: ObjectKey) -> bool:

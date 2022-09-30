@@ -1,6 +1,6 @@
 {
   "tests/integration/s3/test_s3_notifications_eventbridge.py::TestS3NotificationsToEventBridge::test_object_created_put": {
-    "recorded-date": "16-08-2022, 11:38:49",
+    "recorded-date": "20-09-2022, 13:06:06",
     "recorded-content": {
       "object_deleted": {
         "account": "111111111111",
@@ -15,7 +15,7 @@
           },
           "reason": "DeleteObject",
           "request-id": "request-id",
-          "requester": "<111111111111:1>",
+          "requester": "<requester>",
           "source-ip-address": "<ip-address:1>",
           "version": "0"
         },
@@ -36,14 +36,14 @@
             "name": "<bucket-name:1>"
           },
           "object": {
-            "etag": "<object-etag:1>",
+            "etag": "8d777f385d3dfec8815d20f7496026dc",
             "key": "<key-name:1>",
             "sequencer": "object-sequencer",
             "size": 4
           },
           "reason": "PutObject",
           "request-id": "request-id",
-          "requester": "<111111111111:1>",
+          "requester": "<requester>",
           "source-ip-address": "<ip-address:1>",
           "version": "0"
         },

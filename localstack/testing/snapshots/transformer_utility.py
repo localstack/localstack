@@ -205,7 +205,8 @@ class TransformerUtility:
         """
         :return: array with Transformers, for s3 api.
         """
-        return [
+
+        s3 = [
             TransformerUtility.key_value("Name", value_replacement="bucket-name"),
             TransformerUtility.key_value("BucketName"),
             TransformerUtility.key_value("VersionId"),
@@ -217,7 +218,14 @@ class TransformerUtility:
             TransformerUtility.jsonpath(
                 jsonpath="$..Owner.ID", value_replacement="<owner-id>", reference_replacement=False
             ),
-            # for s3 notifications:
+        ]
+        # for s3 notifications:
+        s3.extend(TransformerUtility.s3_notifications_transformer())
+        return s3
+
+    @staticmethod
+    def s3_notifications_transformer():
+        return [
             TransformerUtility.jsonpath(
                 "$..responseElements.x-amz-id-2", "amz-id", reference_replacement=False
             ),

@@ -1,10 +1,23 @@
 import datetime
 import re
+from typing import Union
 
+import moto.s3.models as moto_s3_models
+from moto.s3.exceptions import MissingBucket
 from moto.s3.models import FakeKey
 
 from localstack.aws.api import ServiceException
-from localstack.aws.api.s3 import ChecksumAlgorithm, ObjectCannedACL, Permission, PutObjectRequest
+from localstack.aws.api.s3 import (
+    BucketName,
+    ChecksumAlgorithm,
+    InvalidArgument,
+    NoSuchBucket,
+    NoSuchKey,
+    ObjectCannedACL,
+    ObjectKey,
+    Permission,
+    PutObjectRequest,
+)
 from localstack.utils.strings import checksum_crc32, checksum_crc32c, hash_sha1, hash_sha256
 
 checksum_keys = ["ChecksumSHA1", "ChecksumSHA256", "ChecksumCRC32", "ChecksumCRC32C"]
@@ -114,3 +127,36 @@ def is_valid_canonical_id(canonical_id: str) -> bool:
         return len(canonical_id) == 64 and int(canonical_id, 16)
     except ValueError:
         return False
+
+
+def get_bucket_from_moto(
+    moto_backend: moto_s3_models.S3Backend, bucket: BucketName
+) -> moto_s3_models.FakeBucket:
+    # TODO: check authorization for buckets as well?
+    try:
+        return moto_backend.get_bucket(bucket_name=bucket)
+    except MissingBucket:
+        ex = NoSuchBucket("The specified bucket does not exist")
+        ex.BucketName = bucket
+        raise ex
+
+
+def get_key_from_moto_bucket(
+    moto_bucket: moto_s3_models.FakeBucket, key: ObjectKey
+) -> moto_s3_models.FakeKey:
+    fake_key = moto_bucket.keys.get(key)
+    if not fake_key:
+        ex = NoSuchKey("The specified key does not exist.")
+        ex.Key = key
+        raise ex
+
+    return fake_key
+
+
+def _create_invalid_argument_exc(
+    message: Union[str, None], name: str, value: str
+) -> InvalidArgument:
+    ex = InvalidArgument(message)
+    ex.ArgumentName = name
+    ex.ArgumentValue = value
+    return ex
