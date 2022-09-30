@@ -293,38 +293,10 @@ class ServiceManager:
         return container.service if container else None
 
     def add_service(self, service: Service) -> bool:
-        self._mutex.acquire(blocking=True)
+        state = ServiceState.AVAILABLE if service.is_enabled() else ServiceState.DISABLED
+        self._services[service.name()] = ServiceContainer(service, state)
 
-        try:
-            state = ServiceState.AVAILABLE if service.is_enabled() else ServiceState.DISABLED
-            self._services[service.name()] = ServiceContainer(service, state)
-        except Exception as ex:
-            LOG.warning(f"Could not add service {service}", ex)
-
-        self._mutex.release()
         return True
-
-    def remove_service(self, service: Service) -> bool:
-        """
-        Attempts to atomically stop and remove a service from the service pool. A service is removed only if it can be
-        stopped successfully.
-        :param service: the service to be removed.
-        :return: true if the service is no longer available in the pool.
-        """
-        self._mutex.acquire(blocking=True)
-
-        try:
-            service_container: Optional[ServiceContainer] = self._services.get(service, None)
-            if service_container is not None:
-                service_container.stop()
-                if service_container.state == ServiceState.STOPPED:
-                    del self._services[service]
-        except Exception as ex:
-            LOG.warning(f"Could not remove service {service}", ex)
-
-        outcome: bool = service in self._services
-        self._mutex.release()
-        return outcome
 
     def list_available(self) -> List[str]:
         return list(self._services.keys())
@@ -561,6 +533,21 @@ class ServicePluginManager(ServiceManager):
             for service in self.list_available()
             if super(ServicePluginManager, self).get_service_container(service)
         ]
+
+    def list_active_services(self) -> List[str]:
+        """
+        Lists all services that have an initialised provider and are currently running.
+
+        :return: the list of active service names.
+        """
+        active_services: List[str] = []
+        for service in self.list_available():
+            service_container: Optional[ServiceContainer] = super(
+                ServicePluginManager, self
+            ).get_service_container(service)
+            if service_container is not None and service_container.state == ServiceState.RUNNING:
+                active_services.append(service)
+        return active_services
 
     def exists(self, name: str) -> bool:
         return name in self.list_available()
