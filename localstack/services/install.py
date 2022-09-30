@@ -1,7 +1,6 @@
 #!/usr/bin/env python
 import functools
 import glob
-import json
 import logging
 import os
 import platform
@@ -9,10 +8,8 @@ import re
 import sys
 import tempfile
 import time
-from pathlib import Path
 from typing import Callable, Dict, List, Tuple, Union
 
-import requests
 from plugin import Plugin, PluginManager
 
 from localstack import config
@@ -25,15 +22,7 @@ from localstack.constants import (
 )
 from localstack.runtime import hooks
 from localstack.utils.archives import untar, unzip
-from localstack.utils.files import (
-    chmod_r,
-    file_exists_not_empty,
-    load_file,
-    mkdir,
-    new_tmp_file,
-    rm_rf,
-    save_file,
-)
+from localstack.utils.files import chmod_r, load_file, mkdir, new_tmp_file, rm_rf, save_file
 from localstack.utils.http import download
 from localstack.utils.platform import get_arch
 from localstack.utils.run import run
@@ -45,52 +34,14 @@ LOG = logging.getLogger(__name__)
 INSTALL_DIR_NPM = "%s/node_modules" % dirs.static_libs
 INSTALL_DIR_DDB = "%s/dynamodb" % dirs.static_libs
 INSTALL_DIR_KCL = "%s/amazon-kinesis-client" % dirs.static_libs
-INSTALL_DIR_STEPFUNCTIONS = "%s/stepfunctions" % dirs.static_libs
 INSTALL_DIR_KMS = "%s/kms" % dirs.static_libs
 INSTALL_DIR_ELASTICMQ = "%s/elasticmq" % dirs.var_libs
 INSTALL_PATH_DDB_JAR = os.path.join(INSTALL_DIR_DDB, "DynamoDBLocal.jar")
 INSTALL_PATH_KCL_JAR = os.path.join(INSTALL_DIR_KCL, "aws-java-sdk-sts.jar")
-INSTALL_PATH_STEPFUNCTIONS_JAR = os.path.join(INSTALL_DIR_STEPFUNCTIONS, "StepFunctionsLocal.jar")
 INSTALL_PATH_KMS_BINARY_PATTERN = os.path.join(INSTALL_DIR_KMS, "local-kms.<arch>.bin")
 INSTALL_PATH_ELASTICMQ_JAR = os.path.join(INSTALL_DIR_ELASTICMQ, "elasticmq-server.jar")
 
-
-IMAGE_NAME_SFN_LOCAL = "amazon/aws-stepfunctions-local:1.7.9"
 ARTIFACTS_REPO = "https://github.com/localstack/localstack-artifacts"
-SFN_PATCH_URL_PREFIX = (
-    f"{ARTIFACTS_REPO}/raw/ac84739adc87ff4b5553478f6849134bcd259672/stepfunctions-local-patch"
-)
-SFN_PATCH_CLASS1 = "com/amazonaws/stepfunctions/local/runtime/Config.class"
-SFN_PATCH_CLASS2 = (
-    "com/amazonaws/stepfunctions/local/runtime/executors/task/LambdaTaskStateExecutor.class"
-)
-SFN_PATCH_CLASS_STARTER = "cloud/localstack/StepFunctionsStarter.class"
-SFN_PATCH_CLASS_REGION = "cloud/localstack/RegionAspect.class"
-SFN_PATCH_CLASS_ASYNC2SERVICEAPI = "cloud/localstack/Async2ServiceApi.class"
-SFN_PATCH_CLASS_DESCRIBEEXECUTIONPARSED = "cloud/localstack/DescribeExecutionParsed.class"
-SFN_PATCH_FILE_METAINF = "META-INF/aop.xml"
-
-SFN_IMAGE = "amazon/aws-stepfunctions-local"
-SFN_IMAGE_LAYER_DIGEST = "sha256:e7b256bdbc9d58c20436970e8a56bd03581b891a784b00fea7385faff897b777"
-"""
-Digest of the Docker layer which adds the StepFunctionsLocal JAR files to the Docker image.
-This digest pin defines the version of StepFunctionsLocal used in LocalStack.
-
-The Docker image layer digest can be determined by:
-- Use regclient: regctl image manifest amazon/aws-stepfunctions-local:1.7.9 --platform local
-- Inspect the manifest in the Docker registry manually:
-  - Get the auth bearer token (see download code).
-  - Download the manifest (/v2/<image/name>/manifests/<tag>) with the bearer token
-  - Follow any platform link
-  - Extract the layer digest
-Since the JAR files are platform-independent, you can use the layer digest of any platform's image.
-"""
-
-SFN_AWS_SDK_URL_PREFIX = (
-    f"{ARTIFACTS_REPO}/raw/a4adc8f4da9c7ec0d93b50ca5b73dd14df791c0e/stepfunctions-internal-awssdk"
-)
-SFN_AWS_SDK_LAMBDA_ZIP_FILE = f"{SFN_AWS_SDK_URL_PREFIX}/awssdk.zip"
-
 
 # additional JAR libs required for multi-region and persistence (PRO only) support
 URL_ASPECTJRT = f"{MAVEN_REPO_URL}/org/aspectj/aspectjrt/1.9.7/aspectjrt-1.9.7.jar"
@@ -131,83 +82,6 @@ def install_local_kms():
         kms_url = KMS_URL_PATTERN.replace("<arch>", local_arch)
         download(kms_url, binary_path)
         chmod_r(binary_path, 0o777)
-
-
-def install_stepfunctions_local():
-    """
-    The StepFunctionsLocal JAR files are downloaded using the artifacts in DockerHub (because AWS only provides an
-    HTTP link to the most recent version). Installers are executed when building Docker, this means they _cannot_ use
-    the Docker socket. Therefore, this installer downloads a pinned Docker Layer Digest (i.e. only the data for a single
-    Docker build step which adds the JAR files of the desired version to a Docker image) using plain HTTP requests.
-    """
-    if not os.path.exists(INSTALL_PATH_STEPFUNCTIONS_JAR):
-
-        target_path = dirs.static_libs
-
-        # Download layer that contains the necessary jars
-        def download_stepfunctions_jar(image, image_digest, target_path):
-            registry_base = "https://registry-1.docker.io"
-            auth_base = "https://auth.docker.io"
-            auth_service = "registry.docker.io"
-            token_request = requests.get(
-                f"{auth_base}/token?service={auth_service}&scope=repository:{image}:pull"
-            )
-            token = json.loads(token_request.content.decode("utf-8"))["token"]
-            headers = {"Authorization": f"Bearer {token}"}
-            response = requests.get(
-                headers=headers,
-                url=f"{registry_base}/v2/{image}/blobs/{image_digest}",
-            )
-            temp_path = new_tmp_file()
-            with open(temp_path, "wb") as f:
-                f.write(response.content)
-            untar(temp_path, target_path)
-
-        download_stepfunctions_jar(SFN_IMAGE, SFN_IMAGE_LAYER_DIGEST, target_path)
-        mkdir(INSTALL_DIR_STEPFUNCTIONS)
-        path = Path(f"{target_path}/home/stepfunctionslocal")
-        for file in path.glob("*.jar"):
-            file.rename(Path(INSTALL_DIR_STEPFUNCTIONS) / file.name)
-        rm_rf(f"{target_path}/home")
-
-    classes = [
-        SFN_PATCH_CLASS1,
-        SFN_PATCH_CLASS2,
-        SFN_PATCH_CLASS_REGION,
-        SFN_PATCH_CLASS_STARTER,
-        SFN_PATCH_CLASS_ASYNC2SERVICEAPI,
-        SFN_PATCH_CLASS_DESCRIBEEXECUTIONPARSED,
-        SFN_PATCH_FILE_METAINF,
-    ]
-    for patch_class in classes:
-        patch_url = f"{SFN_PATCH_URL_PREFIX}/{patch_class}"
-        add_file_to_jar(patch_class, patch_url, target_jar=INSTALL_PATH_STEPFUNCTIONS_JAR)
-
-    # add additional classpath entries to JAR manifest file
-    classpath = " ".join([os.path.basename(jar) for jar in JAR_URLS])
-    update_jar_manifest(
-        "StepFunctionsLocal.jar",
-        INSTALL_DIR_STEPFUNCTIONS,
-        "Class-Path: . ",
-        f"Class-Path: {classpath} . ",
-    )
-    update_jar_manifest(
-        "StepFunctionsLocal.jar",
-        INSTALL_DIR_STEPFUNCTIONS,
-        re.compile(r"Main-Class: com\.amazonaws.+"),
-        "Main-Class: cloud.localstack.StepFunctionsStarter",
-    )
-
-    # download additional jar libs
-    for jar_url in JAR_URLS:
-        target = os.path.join(INSTALL_DIR_STEPFUNCTIONS, os.path.basename(jar_url))
-        if not file_exists_not_empty(target):
-            download(jar_url, target)
-
-    # download aws-sdk lambda handler
-    target = os.path.join(INSTALL_DIR_STEPFUNCTIONS, "localstack-internal-awssdk", "awssdk.zip")
-    if not file_exists_not_empty(target):
-        download(SFN_AWS_SDK_LAMBDA_ZIP_FILE, target)
 
 
 def add_file_to_jar(class_file, class_url, target_jar, base_dir=None):
@@ -311,6 +185,7 @@ def install_component(name):
     from localstack.services.dynamodb.packages import dynamodblocal_package
     from localstack.services.kinesis.packages import kinesismock_package
     from localstack.services.sqs.legacy.packages import elasticmq_package
+    from localstack.services.stepfunctions.packages import stepfunctions_local_package
 
     installers = {
         "cloudformation": install_cloudformation_libs,
@@ -319,7 +194,7 @@ def install_component(name):
         "kms": install_local_kms,
         "lambda": awslambda_runtime_package.install,
         "sqs": elasticmq_package.install,
-        "stepfunctions": install_stepfunctions_local,
+        "stepfunctions": stepfunctions_local_package.install,
     }
 
     installer = installers.get(name)
