@@ -134,6 +134,6 @@ jobs:
       uses: actions/upload-artifact@v3
       if: ${{ failure() && steps.run-tests.conclusion == 'failure'  }}
       with:
-        name: terraformlogs
+        name: terraformlogs-${{ matrix.service }}
         path: |
           terraform-provider-aws/terraformlogs
