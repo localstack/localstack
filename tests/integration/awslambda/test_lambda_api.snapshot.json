@@ -1,6 +1,6 @@
 {
   "tests/integration/awslambda/test_lambda_api.py::TestLambdaFunction::test_function_lifecycle": {
-    "recorded-date": "26-09-2022, 21:21:23",
+    "recorded-date": "30-09-2022, 15:30:31",
     "recorded-content": {
       "create_response": {
         "CreateEventSourceMappingResponse": null,
@@ -261,7 +261,7 @@
     }
   },
   "tests/integration/awslambda/test_lambda_api.py::TestLambdaFunction::test_redundant_updates": {
-    "recorded-date": "26-09-2022, 21:21:41",
+    "recorded-date": "30-09-2022, 15:30:37",
     "recorded-content": {
       "create_response": {
         "CreateEventSourceMappingResponse": null,
@@ -490,7 +490,7 @@
     }
   },
   "tests/integration/awslambda/test_lambda_api.py::TestLambdaFunction::test_ops_with_arn_qualifier_mismatch[delete_function]": {
-    "recorded-date": "26-09-2022, 21:21:41",
+    "recorded-date": "30-09-2022, 15:30:37",
     "recorded-content": {
       "not_match_exception": {
         "Error": {
@@ -519,7 +519,7 @@
     }
   },
   "tests/integration/awslambda/test_lambda_api.py::TestLambdaFunction::test_ops_with_arn_qualifier_mismatch[get_function]": {
-    "recorded-date": "26-09-2022, 21:21:41",
+    "recorded-date": "30-09-2022, 15:30:38",
     "recorded-content": {
       "not_match_exception": {
         "Error": {
@@ -548,7 +548,7 @@
     }
   },
   "tests/integration/awslambda/test_lambda_api.py::TestLambdaFunction::test_ops_with_arn_qualifier_mismatch[get_function_configuration]": {
-    "recorded-date": "26-09-2022, 21:21:41",
+    "recorded-date": "30-09-2022, 15:30:38",
     "recorded-content": {
       "not_match_exception": {
         "Error": {
@@ -577,7 +577,7 @@
     }
   },
   "tests/integration/awslambda/test_lambda_api.py::TestLambdaFunction::test_ops_on_nonexisting_version[get_function]": {
-    "recorded-date": "26-09-2022, 21:21:57",
+    "recorded-date": "30-09-2022, 15:30:41",
     "recorded-content": {
       "version_not_found_exception": {
         "Error": {
@@ -594,7 +594,7 @@
     }
   },
   "tests/integration/awslambda/test_lambda_api.py::TestLambdaFunction::test_ops_on_nonexisting_version[get_function_configuration]": {
-    "recorded-date": "26-09-2022, 21:22:12",
+    "recorded-date": "30-09-2022, 15:30:43",
     "recorded-content": {
       "version_not_found_exception": {
         "Error": {
@@ -611,7 +611,7 @@
     }
   },
   "tests/integration/awslambda/test_lambda_api.py::TestLambdaFunction::test_ops_on_nonexisting_version[get_function_event_invoke_config]": {
-    "recorded-date": "26-09-2022, 21:22:27",
+    "recorded-date": "30-09-2022, 15:30:46",
     "recorded-content": {
       "version_not_found_exception": {
         "Error": {
@@ -628,7 +628,7 @@
     }
   },
   "tests/integration/awslambda/test_lambda_api.py::TestLambdaFunction::test_delete_on_nonexisting_version": {
-    "recorded-date": "26-09-2022, 21:22:43",
+    "recorded-date": "30-09-2022, 15:30:50",
     "recorded-content": {
       "delete_function_response_non_existent": {
         "Error": {
@@ -657,7 +657,7 @@
     }
   },
   "tests/integration/awslambda/test_lambda_api.py::TestLambdaFunction::test_ops_on_nonexisting_fn[delete_function]": {
-    "recorded-date": "26-09-2022, 21:22:43",
+    "recorded-date": "30-09-2022, 15:30:50",
     "recorded-content": {
       "not_found_exception": {
         "Error": {
@@ -674,7 +674,7 @@
     }
   },
   "tests/integration/awslambda/test_lambda_api.py::TestLambdaFunction::test_ops_on_nonexisting_fn[get_function]": {
-    "recorded-date": "26-09-2022, 21:22:43",
+    "recorded-date": "30-09-2022, 15:30:50",
     "recorded-content": {
       "not_found_exception": {
         "Error": {
@@ -691,7 +691,7 @@
     }
   },
   "tests/integration/awslambda/test_lambda_api.py::TestLambdaFunction::test_ops_on_nonexisting_fn[get_function_configuration]": {
-    "recorded-date": "26-09-2022, 21:22:43",
+    "recorded-date": "30-09-2022, 15:30:50",
     "recorded-content": {
       "not_found_exception": {
         "Error": {
@@ -708,7 +708,7 @@
     }
   },
   "tests/integration/awslambda/test_lambda_api.py::TestLambdaFunction::test_ops_on_nonexisting_fn[get_function_url_config]": {
-    "recorded-date": "26-09-2022, 21:22:44",
+    "recorded-date": "30-09-2022, 15:30:51",
     "recorded-content": {
       "not_found_exception": {
         "Error": {
@@ -725,7 +725,7 @@
     }
   },
   "tests/integration/awslambda/test_lambda_api.py::TestLambdaFunction::test_ops_on_nonexisting_fn[get_function_code_signing_config]": {
-    "recorded-date": "26-09-2022, 21:22:44",
+    "recorded-date": "30-09-2022, 15:30:51",
     "recorded-content": {
       "not_found_exception": {
         "Error": {
@@ -742,7 +742,7 @@
     }
   },
   "tests/integration/awslambda/test_lambda_api.py::TestLambdaFunction::test_ops_on_nonexisting_fn[get_function_event_invoke_config]": {
-    "recorded-date": "26-09-2022, 21:22:44",
+    "recorded-date": "30-09-2022, 15:30:51",
     "recorded-content": {
       "not_found_exception": {
         "Error": {
@@ -759,7 +759,7 @@
     }
   },
   "tests/integration/awslambda/test_lambda_api.py::TestLambdaFunction::test_ops_on_nonexisting_fn[get_function_concurrency]": {
-    "recorded-date": "26-09-2022, 21:22:44",
+    "recorded-date": "30-09-2022, 15:30:51",
     "recorded-content": {
       "not_found_exception": {
         "Error": {
@@ -775,8 +775,144 @@
       }
     }
   },
+  "tests/integration/awslambda/test_lambda_api.py::TestLambdaFunction::test_get_function_wrong_region[get_function]": {
+    "recorded-date": "30-09-2022, 15:30:54",
+    "recorded-content": {
+      "wrong_region_exception": {
+        "Error": {
+          "Code": "ResourceNotFoundException",
+          "Message": "Functions from '<wrong-region>' are not reachable in this region ('<region>')"
+        },
+        "Message": "Functions from '<wrong-region>' are not reachable in this region ('<region>')",
+        "Type": "User",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 404
+        }
+      }
+    }
+  },
+  "tests/integration/awslambda/test_lambda_api.py::TestLambdaFunction::test_get_function_wrong_region[get_function_configuration]": {
+    "recorded-date": "30-09-2022, 15:30:57",
+    "recorded-content": {
+      "wrong_region_exception": {
+        "Error": {
+          "Code": "ResourceNotFoundException",
+          "Message": "Functions from '<wrong-region>' are not reachable in this region ('<region>')"
+        },
+        "Message": "Functions from '<wrong-region>' are not reachable in this region ('<region>')",
+        "Type": "User",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 404
+        }
+      }
+    }
+  },
+  "tests/integration/awslambda/test_lambda_api.py::TestLambdaFunction::test_get_function_wrong_region[get_function_url_config]": {
+    "recorded-date": "30-09-2022, 15:30:59",
+    "recorded-content": {
+      "wrong_region_exception": {
+        "Error": {
+          "Code": "ResourceNotFoundException",
+          "Message": "Functions from '<wrong-region>' are not reachable in this region ('<region>')"
+        },
+        "Message": "Functions from '<wrong-region>' are not reachable in this region ('<region>')",
+        "Type": "User",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 404
+        }
+      }
+    }
+  },
+  "tests/integration/awslambda/test_lambda_api.py::TestLambdaFunction::test_get_function_wrong_region[get_function_code_signing_config]": {
+    "recorded-date": "30-09-2022, 15:31:02",
+    "recorded-content": {
+      "wrong_region_exception": {
+        "Error": {
+          "Code": "ResourceNotFoundException",
+          "Message": "Functions from '<wrong-region>' are not reachable in this region ('<region>')"
+        },
+        "Message": "Functions from '<wrong-region>' are not reachable in this region ('<region>')",
+        "Type": "User",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 404
+        }
+      }
+    }
+  },
+  "tests/integration/awslambda/test_lambda_api.py::TestLambdaFunction::test_get_function_wrong_region[get_function_event_invoke_config]": {
+    "recorded-date": "30-09-2022, 15:31:05",
+    "recorded-content": {
+      "wrong_region_exception": {
+        "Error": {
+          "Code": "ResourceNotFoundException",
+          "Message": "Functions from '<wrong-region>' are not reachable in this region ('<region>')"
+        },
+        "Message": "Functions from '<wrong-region>' are not reachable in this region ('<region>')",
+        "Type": "User",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 404
+        }
+      }
+    }
+  },
+  "tests/integration/awslambda/test_lambda_api.py::TestLambdaFunction::test_get_function_wrong_region[get_function_concurrency]": {
+    "recorded-date": "30-09-2022, 15:31:08",
+    "recorded-content": {
+      "wrong_region_exception": {
+        "Error": {
+          "Code": "ResourceNotFoundException",
+          "Message": "Functions from '<wrong-region>' are not reachable in this region ('<region>')"
+        },
+        "Message": "Functions from '<wrong-region>' are not reachable in this region ('<region>')",
+        "Type": "User",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 404
+        }
+      }
+    }
+  },
+  "tests/integration/awslambda/test_lambda_api.py::TestLambdaFunction::test_get_function_wrong_region[delete_function]": {
+    "recorded-date": "30-09-2022, 15:31:10",
+    "recorded-content": {
+      "wrong_region_exception": {
+        "Error": {
+          "Code": "ResourceNotFoundException",
+          "Message": "Functions from '<wrong-region>' are not reachable in this region ('<region>')"
+        },
+        "Message": "Functions from '<wrong-region>' are not reachable in this region ('<region>')",
+        "Type": "User",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 404
+        }
+      }
+    }
+  },
+  "tests/integration/awslambda/test_lambda_api.py::TestLambdaFunction::test_get_function_wrong_region[invoke]": {
+    "recorded-date": "30-09-2022, 15:31:13",
+    "recorded-content": {
+      "wrong_region_exception": {
+        "Error": {
+          "Code": "ResourceNotFoundException",
+          "Message": "Functions from '<wrong-region>' are not reachable in this region ('<region>')"
+        },
+        "Message": "Functions from '<wrong-region>' are not reachable in this region ('<region>')",
+        "Type": "User",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 404
+        }
+      }
+    }
+  },
   "tests/integration/awslambda/test_lambda_api.py::TestLambdaFunction::test_lambda_code_location_zipfile": {
-    "recorded-date": "26-09-2022, 21:22:46",
+    "recorded-date": "30-09-2022, 15:31:17",
     "recorded-content": {
       "create-response-zip-file": {
         "Architectures": [
@@ -922,7 +1058,7 @@
     }
   },
   "tests/integration/awslambda/test_lambda_api.py::TestLambdaFunction::test_lambda_code_location_s3": {
-    "recorded-date": "26-09-2022, 21:22:50",
+    "recorded-date": "30-09-2022, 15:31:23",
     "recorded-content": {
       "create_response_s3": {
         "Architectures": [
@@ -1068,7 +1204,7 @@
     }
   },
   "tests/integration/awslambda/test_lambda_api.py::TestLambdaVersions::test_publish_version_on_create": {
-    "recorded-date": "27-09-2022, 15:37:13",
+    "recorded-date": "30-09-2022, 15:31:33",
     "recorded-content": {
       "create_response": {
         "Architectures": [
@@ -1363,7 +1499,7 @@
     }
   },
   "tests/integration/awslambda/test_lambda_api.py::TestLambdaVersions::test_version_lifecycle": {
-    "recorded-date": "26-09-2022, 21:53:40",
+    "recorded-date": "30-09-2022, 15:31:40",
     "recorded-content": {
       "create_response": {
         "Architectures": [
@@ -1854,7 +1990,7 @@
     }
   },
   "tests/integration/awslambda/test_lambda_api.py::TestLambdaVersions::test_publish_with_wrong_revisionid": {
-    "recorded-date": "26-09-2022, 21:23:04",
+    "recorded-date": "30-09-2022, 15:31:42",
     "recorded-content": {
       "create_response": {
         "Architectures": [
@@ -1971,7 +2107,7 @@
     }
   },
   "tests/integration/awslambda/test_lambda_api.py::TestLambdaVersions::test_publish_with_wrong_sha256": {
-    "recorded-date": "26-09-2022, 21:23:08",
+    "recorded-date": "30-09-2022, 15:31:45",
     "recorded-content": {
       "create_response": {
         "Architectures": [
@@ -2087,8 +2223,191 @@
       }
     }
   },
+  "tests/integration/awslambda/test_lambda_api.py::TestLambdaVersions::test_publish_with_update": {
+    "recorded-date": "30-09-2022, 15:31:48",
+    "recorded-content": {
+      "create_response": {
+        "Architectures": [
+          "x86_64"
+        ],
+        "CodeSha256": "<code-sha256:1>",
+        "CodeSize": 264,
+        "Description": "",
+        "EphemeralStorage": {
+          "Size": 512
+        },
+        "FunctionArn": "arn:aws:lambda:<region>:111111111111:function:<function-name:1>",
+        "FunctionName": "<function-name:1>",
+        "Handler": "index.handler",
+        "LastModified": "date",
+        "MemorySize": 128,
+        "PackageType": "Zip",
+        "RevisionId": "<uuid:1>",
+        "Role": "arn:aws:iam::111111111111:role/<resource:1>",
+        "Runtime": "python3.9",
+        "State": "Pending",
+        "StateReason": "The function is being created.",
+        "StateReasonCode": "Creating",
+        "Timeout": 3,
+        "TracingConfig": {
+          "Mode": "PassThrough"
+        },
+        "Version": "$LATEST",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 201
+        }
+      },
+      "get_function_result": {
+        "Code": {
+          "Location": "<location>",
+          "RepositoryType": "S3"
+        },
+        "Configuration": {
+          "Architectures": [
+            "x86_64"
+          ],
+          "CodeSha256": "<code-sha256:1>",
+          "CodeSize": 264,
+          "Description": "",
+          "EphemeralStorage": {
+            "Size": 512
+          },
+          "FunctionArn": "arn:aws:lambda:<region>:111111111111:function:<function-name:1>",
+          "FunctionName": "<function-name:1>",
+          "Handler": "index.handler",
+          "LastModified": "date",
+          "LastUpdateStatus": "Successful",
+          "MemorySize": 128,
+          "PackageType": "Zip",
+          "RevisionId": "<uuid:2>",
+          "Role": "arn:aws:iam::111111111111:role/<resource:1>",
+          "Runtime": "python3.9",
+          "State": "Active",
+          "Timeout": 3,
+          "TracingConfig": {
+            "Mode": "PassThrough"
+          },
+          "Version": "$LATEST"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "update_function_code_result": {
+        "Architectures": [
+          "x86_64"
+        ],
+        "CodeSha256": "<code-sha256:2>",
+        "CodeSize": 311,
+        "Description": "",
+        "EphemeralStorage": {
+          "Size": 512
+        },
+        "FunctionArn": "arn:aws:lambda:<region>:111111111111:function:<function-name:1>:1",
+        "FunctionName": "<function-name:1>",
+        "Handler": "index.handler",
+        "LastModified": "date",
+        "MemorySize": 128,
+        "PackageType": "Zip",
+        "RevisionId": "<uuid:3>",
+        "Role": "arn:aws:iam::111111111111:role/<resource:1>",
+        "Runtime": "python3.9",
+        "State": "Pending",
+        "StateReason": "The function is being created.",
+        "StateReasonCode": "Creating",
+        "Timeout": 3,
+        "TracingConfig": {
+          "Mode": "PassThrough"
+        },
+        "Version": "1",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "get_function_version_result": {
+        "Code": {
+          "Location": "<location>",
+          "RepositoryType": "S3"
+        },
+        "Configuration": {
+          "Architectures": [
+            "x86_64"
+          ],
+          "CodeSha256": "<code-sha256:2>",
+          "CodeSize": 311,
+          "Description": "",
+          "EphemeralStorage": {
+            "Size": 512
+          },
+          "FunctionArn": "arn:aws:lambda:<region>:111111111111:function:<function-name:1>:1",
+          "FunctionName": "<function-name:1>",
+          "Handler": "index.handler",
+          "LastModified": "date",
+          "MemorySize": 128,
+          "PackageType": "Zip",
+          "RevisionId": "<uuid:3>",
+          "Role": "arn:aws:iam::111111111111:role/<resource:1>",
+          "Runtime": "python3.9",
+          "State": "Pending",
+          "StateReason": "The function is being created.",
+          "StateReasonCode": "Creating",
+          "Timeout": 3,
+          "TracingConfig": {
+            "Mode": "PassThrough"
+          },
+          "Version": "1"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "get_function_latest_result": {
+        "Code": {
+          "Location": "<location>",
+          "RepositoryType": "S3"
+        },
+        "Configuration": {
+          "Architectures": [
+            "x86_64"
+          ],
+          "CodeSha256": "<code-sha256:2>",
+          "CodeSize": 311,
+          "Description": "",
+          "EphemeralStorage": {
+            "Size": 512
+          },
+          "FunctionArn": "arn:aws:lambda:<region>:111111111111:function:<function-name:1>:$LATEST",
+          "FunctionName": "<function-name:1>",
+          "Handler": "index.handler",
+          "LastModified": "date",
+          "LastUpdateStatus": "InProgress",
+          "LastUpdateStatusReason": "The function is being created.",
+          "LastUpdateStatusReasonCode": "Creating",
+          "MemorySize": 128,
+          "PackageType": "Zip",
+          "RevisionId": "<uuid:4>",
+          "Role": "arn:aws:iam::111111111111:role/<resource:1>",
+          "Runtime": "python3.9",
+          "State": "Active",
+          "Timeout": 3,
+          "TracingConfig": {
+            "Mode": "PassThrough"
+          },
+          "Version": "$LATEST"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
   "tests/integration/awslambda/test_lambda_api.py::TestLambdaAlias::test_alias_lifecycle": {
-    "recorded-date": "27-09-2022, 14:52:22",
+    "recorded-date": "30-09-2022, 15:31:56",
     "recorded-content": {
       "create_response": {
         "Architectures": [
@@ -2521,7 +2840,7 @@
     }
   },
   "tests/integration/awslambda/test_lambda_api.py::TestLambdaAlias::test_notfound_and_invalid_routingconfigs": {
-    "recorded-date": "28-09-2022, 15:09:48",
+    "recorded-date": "30-09-2022, 15:32:09",
     "recorded-content": {
       "create_response": {
         "Architectures": [
@@ -2786,7 +3105,7 @@
     }
   },
   "tests/integration/awslambda/test_lambda_api.py::TestLambdaTag::test_create_tag_on_fn_create": {
-    "recorded-date": "26-09-2022, 21:23:44",
+    "recorded-date": "30-09-2022, 15:32:12",
     "recorded-content": {
       "get_function_result": {
         "Code": {
@@ -2843,7 +3162,7 @@
     }
   },
   "tests/integration/awslambda/test_lambda_api.py::TestLambdaTag::test_tag_lifecycle": {
-    "recorded-date": "26-09-2022, 21:24:02",
+    "recorded-date": "30-09-2022, 15:32:17",
     "recorded-content": {
       "tag_single_response": {
         "ResponseMetadata": {
@@ -2958,7 +3277,7 @@
     }
   },
   "tests/integration/awslambda/test_lambda_api.py::TestLambdaTag::test_tag_nonexisting_resource": {
-    "recorded-date": "26-09-2022, 21:24:17",
+    "recorded-date": "30-09-2022, 15:32:21",
     "recorded-content": {
       "pre_delete_get_function": {
         "Code": {
@@ -3038,1183 +3357,8 @@
       }
     }
   },
-  "tests/integration/awslambda/test_lambda_api.py::TestLambdaReservedConcurrency::test_function_concurrency": {
-    "recorded-date": "28-09-2022, 09:59:51",
-    "recorded-content": {
-      "put_function_concurrency": {
-        "ReservedConcurrentExecutions": 1,
-        "ResponseMetadata": {
-          "HTTPHeaders": {},
-          "HTTPStatusCode": 200
-        }
-      },
-      "get_function_concurrency": {
-        "ReservedConcurrentExecutions": 1,
-        "ResponseMetadata": {
-          "HTTPHeaders": {},
-          "HTTPStatusCode": 200
-        }
-      },
-      "delete_function_concurrency": {
-        "ResponseMetadata": {
-          "HTTPHeaders": {},
-          "HTTPStatusCode": 204
-        }
-      },
-      "get_function_concurrency_postdelete": {
-        "ResponseMetadata": {
-          "HTTPHeaders": {},
-          "HTTPStatusCode": 200
-        }
-      }
-    }
-  },
-  "tests/integration/awslambda/test_lambda_api.py::TestLambdaPermissions::test_add_lambda_permission_aws": {
-    "recorded-date": "26-09-2022, 21:24:52",
-    "recorded-content": {
-      "create_lambda": {
-        "CreateEventSourceMappingResponse": null,
-        "CreateFunctionResponse": {
-          "Architectures": [
-            "x86_64"
-          ],
-          "CodeSha256": "<code-sha256:1>",
-          "CodeSize": 264,
-          "Description": "",
-          "Environment": {
-            "Variables": {}
-          },
-          "EphemeralStorage": {
-            "Size": 512
-          },
-          "FunctionArn": "arn:aws:lambda:<region>:111111111111:function:<function-name:1>",
-          "FunctionName": "<function-name:1>",
-          "Handler": "handler.handler",
-          "LastModified": "date",
-          "MemorySize": 128,
-          "PackageType": "Zip",
-          "RevisionId": "<uuid:1>",
-          "Role": "arn:aws:iam::111111111111:role/<resource:1>",
-          "Runtime": "python3.9",
-          "State": "Pending",
-          "StateReason": "The function is being created.",
-          "StateReasonCode": "Creating",
-          "Timeout": 30,
-          "TracingConfig": {
-            "Mode": "PassThrough"
-          },
-          "Version": "$LATEST",
-          "ResponseMetadata": {
-            "HTTPHeaders": {},
-            "HTTPStatusCode": 201
-          }
-        }
-      },
-      "add_permission": {
-        "Statement": {
-          "Sid": "s3",
-          "Effect": "Allow",
-          "Principal": {
-            "Service": "s3.amazonaws.com"
-          },
-          "Action": "lambda:InvokeFunction",
-          "Resource": "arn:aws:lambda:<region>:111111111111:function:<function-name:1>",
-          "Condition": {
-            "ArnLike": {
-              "AWS:SourceArn": "arn:aws:s3:::<resource:2>"
-            }
-          }
-        },
-        "ResponseMetadata": {
-          "HTTPHeaders": {},
-          "HTTPStatusCode": 201
-        }
-      },
-      "get_policy": {
-        "Policy": {
-          "Version": "2012-10-17",
-          "Id": "default",
-          "Statement": [
-            {
-              "Sid": "s3",
-              "Effect": "Allow",
-              "Principal": {
-                "Service": "s3.amazonaws.com"
-              },
-              "Action": "lambda:InvokeFunction",
-              "Resource": "arn:aws:lambda:<region>:111111111111:function:<function-name:1>",
-              "Condition": {
-                "ArnLike": {
-                  "AWS:SourceArn": "arn:aws:s3:::<resource:2>"
-                }
-              }
-            }
-          ]
-        },
-        "RevisionId": "<uuid:2>",
-        "ResponseMetadata": {
-          "HTTPHeaders": {},
-          "HTTPStatusCode": 200
-        }
-      }
-    }
-  },
-  "tests/integration/awslambda/test_lambda_api.py::TestLambdaPermissions::test_remove_multi_permissions": {
-    "recorded-date": "26-09-2022, 21:25:08",
-    "recorded-content": {
-      "add_permission_1": {
-        "Statement": {
-          "Sid": "s3",
-          "Effect": "Allow",
-          "Principal": {
-            "Service": "s3.amazonaws.com"
-          },
-          "Action": "lambda:InvokeFunction",
-          "Resource": "arn:aws:lambda:<region>:111111111111:function:<resource:1>"
-        },
-        "ResponseMetadata": {
-          "HTTPHeaders": {},
-          "HTTPStatusCode": 201
-        }
-      },
-      "add_permission_2": {
-        "Statement": {
-          "Sid": "sqs",
-          "Effect": "Allow",
-          "Principal": {
-            "Service": "sqs.amazonaws.com"
-          },
-          "Action": "lambda:InvokeFunction",
-          "Resource": "arn:aws:lambda:<region>:111111111111:function:<resource:1>",
-          "Condition": {
-            "ArnLike": {
-              "AWS:SourceArn": "arn:aws:s3:::<resource:2>"
-            }
-          }
-        },
-        "ResponseMetadata": {
-          "HTTPHeaders": {},
-          "HTTPStatusCode": 201
-        }
-      },
-      "policy_after_2_add": {
-        "Policy": {
-          "Version": "2012-10-17",
-          "Id": "default",
-          "Statement": [
-            {
-              "Sid": "s3",
-              "Effect": "Allow",
-              "Principal": {
-                "Service": "s3.amazonaws.com"
-              },
-              "Action": "lambda:InvokeFunction",
-              "Resource": "arn:aws:lambda:<region>:111111111111:function:<resource:1>"
-            },
-            {
-              "Sid": "sqs",
-              "Effect": "Allow",
-              "Principal": {
-                "Service": "sqs.amazonaws.com"
-              },
-              "Action": "lambda:InvokeFunction",
-              "Resource": "arn:aws:lambda:<region>:111111111111:function:<resource:1>",
-              "Condition": {
-                "ArnLike": {
-                  "AWS:SourceArn": "arn:aws:s3:::<resource:2>"
-                }
-              }
-            }
-          ]
-        },
-        "RevisionId": "<uuid:1>",
-        "ResponseMetadata": {
-          "HTTPHeaders": {},
-          "HTTPStatusCode": 200
-        }
-      },
-      "expect_error_remove_permission": {
-        "Error": {
-          "Code": "ResourceNotFoundException",
-          "Message": "Statement non-existent is not found in resource policy."
-        },
-        "Message": "Statement non-existent is not found in resource policy.",
-        "Type": "User",
-        "ResponseMetadata": {
-          "HTTPHeaders": {},
-          "HTTPStatusCode": 404
-        }
-      },
-      "policy_after_removal": {
-        "Id": "default",
-        "Statement": [
-          {
-            "Action": "lambda:InvokeFunction",
-            "Effect": "Allow",
-            "Principal": {
-              "Service": "s3.amazonaws.com"
-            },
-            "Resource": "arn:aws:lambda:<region>:111111111111:function:<resource:1>",
-            "Sid": "s3"
-          }
-        ],
-        "Version": "2012-10-17"
-      },
-      "expect_exception_get_policy": {
-        "Error": {
-          "Code": "ResourceNotFoundException",
-          "Message": "The resource you requested does not exist."
-        },
-        "Message": "The resource you requested does not exist.",
-        "Type": "User",
-        "ResponseMetadata": {
-          "HTTPHeaders": {},
-          "HTTPStatusCode": 404
-        }
-      }
-    }
-  },
-  "tests/integration/awslambda/test_lambda_api.py::TestLambdaPermissions::test_create_multiple_lambda_permissions": {
-    "recorded-date": "26-09-2022, 21:25:24",
-    "recorded-content": {
-      "add_permission_response_1": {
-        "Statement": {
-          "Sid": "logs",
-          "Effect": "Allow",
-          "Principal": {
-            "Service": "logs.amazonaws.com"
-          },
-          "Action": "lambda:InvokeFunction",
-          "Resource": "arn:aws:lambda:<region>:111111111111:function:<resource:1>"
-        },
-        "ResponseMetadata": {
-          "HTTPHeaders": {},
-          "HTTPStatusCode": 201
-        }
-      },
-      "add_permission_response_2": {
-        "Statement": {
-          "Sid": "kinesis",
-          "Effect": "Allow",
-          "Principal": {
-            "Service": "kinesis.amazonaws.com"
-          },
-          "Action": "lambda:InvokeFunction",
-          "Resource": "arn:aws:lambda:<region>:111111111111:function:<resource:1>"
-        },
-        "ResponseMetadata": {
-          "HTTPHeaders": {},
-          "HTTPStatusCode": 201
-        }
-      },
-      "policy_after_2_add": {
-        "Policy": {
-          "Version": "2012-10-17",
-          "Id": "default",
-          "Statement": [
-            {
-              "Sid": "logs",
-              "Effect": "Allow",
-              "Principal": {
-                "Service": "logs.amazonaws.com"
-              },
-              "Action": "lambda:InvokeFunction",
-              "Resource": "arn:aws:lambda:<region>:111111111111:function:<resource:1>"
-            },
-            {
-              "Sid": "kinesis",
-              "Effect": "Allow",
-              "Principal": {
-                "Service": "kinesis.amazonaws.com"
-              },
-              "Action": "lambda:InvokeFunction",
-              "Resource": "arn:aws:lambda:<region>:111111111111:function:<resource:1>"
-            }
-          ]
-        },
-        "RevisionId": "<uuid:1>",
-        "ResponseMetadata": {
-          "HTTPHeaders": {},
-          "HTTPStatusCode": 200
-        }
-      }
-    }
-  },
-  "tests/integration/awslambda/test_lambda_api.py::TestLambdaUrl::test_url_config_lifecycle": {
-    "recorded-date": "26-09-2022, 21:25:40",
-    "recorded-content": {
-      "failed_creation": {
-        "Error": {
-          "Code": "ResourceNotFoundException",
-          "Message": "Function does not exist"
-        },
-        "Message": "Function does not exist",
-        "Type": "User",
-        "ResponseMetadata": {
-          "HTTPHeaders": {},
-          "HTTPStatusCode": 404
-        }
-      },
-      "url_creation": {
-        "AuthType": "NONE",
-        "CreationTime": "date",
-        "FunctionArn": "arn:aws:lambda:<region>:111111111111:function:<resource:1>",
-        "FunctionUrl": "lambda-url",
-        "ResponseMetadata": {
-          "HTTPHeaders": {},
-          "HTTPStatusCode": 201
-        }
-      },
-      "failed_duplication": {
-        "Error": {
-          "Code": "ResourceConflictException",
-          "Message": "Failed to create function url config for [functionArn = arn:aws:lambda:<region>:111111111111:function:<resource:1>]. Error message:  FunctionUrlConfig exists for this Lambda function"
-        },
-        "Type": "User",
-        "message": "Failed to create function url config for [functionArn = arn:aws:lambda:<region>:111111111111:function:<resource:1>]. Error message:  FunctionUrlConfig exists for this Lambda function",
-        "ResponseMetadata": {
-          "HTTPHeaders": {},
-          "HTTPStatusCode": 409
-        }
-      },
-      "get_url_config": {
-        "AuthType": "NONE",
-        "CreationTime": "date",
-        "FunctionArn": "arn:aws:lambda:<region>:111111111111:function:<resource:1>",
-        "FunctionUrl": "lambda-url",
-        "LastModifiedTime": "date",
-        "ResponseMetadata": {
-          "HTTPHeaders": {},
-          "HTTPStatusCode": 200
-        }
-      },
-      "updated_url_config": {
-        "AuthType": "AWS_IAM",
-        "CreationTime": "date",
-        "FunctionArn": "arn:aws:lambda:<region>:111111111111:function:<resource:1>",
-        "FunctionUrl": "lambda-url",
-        "LastModifiedTime": "date",
-        "ResponseMetadata": {
-          "HTTPHeaders": {},
-          "HTTPStatusCode": 200
-        }
-      },
-      "failed_getter": {
-        "Error": {
-          "Code": "ResourceNotFoundException",
-          "Message": "The resource you requested does not exist."
-        },
-        "Message": "The resource you requested does not exist.",
-        "Type": "User",
-        "ResponseMetadata": {
-          "HTTPHeaders": {},
-          "HTTPStatusCode": 404
-        }
-      }
-    }
-  },
-  "tests/integration/awslambda/test_lambda_api.py::TestLambdaSizeLimits::test_oversized_lambda": {
-    "recorded-date": "26-09-2022, 21:26:24",
-    "recorded-content": {
-      "invalid_param_exc": {
-        "Error": {
-          "Code": "InvalidParameterValueException",
-          "Message": "Unzipped size must be smaller than 262144000 bytes"
-        },
-        "Type": "User",
-        "message": "Unzipped size must be smaller than 262144000 bytes",
-        "ResponseMetadata": {
-          "HTTPHeaders": {},
-          "HTTPStatusCode": 400
-        }
-      }
-    }
-  },
-  "tests/integration/awslambda/test_lambda_api.py::TestLambdaSizeLimits::test_large_lambda": {
-    "recorded-date": "26-09-2022, 21:27:13",
-    "recorded-content": {
-      "create_function_large_zip": {
-        "Architectures": [
-          "x86_64"
-        ],
-        "CodeSha256": "<code-sha256:1>",
-        "CodeSize": 262143118,
-        "Description": "",
-        "EphemeralStorage": {
-          "Size": 512
-        },
-        "FunctionArn": "arn:aws:lambda:<region>:111111111111:function:<function-name:1>",
-        "FunctionName": "<function-name:1>",
-        "Handler": "handler.handler",
-        "LastModified": "date",
-        "MemorySize": 128,
-        "PackageType": "Zip",
-        "RevisionId": "<uuid:1>",
-        "Role": "arn:aws:iam::111111111111:role/<resource:1>",
-        "Runtime": "python3.9",
-        "State": "Pending",
-        "StateReason": "The function is being created.",
-        "StateReasonCode": "Creating",
-        "Timeout": 10,
-        "TracingConfig": {
-          "Mode": "PassThrough"
-        },
-        "Version": "$LATEST",
-        "ResponseMetadata": {
-          "HTTPHeaders": {},
-          "HTTPStatusCode": 201
-        }
-      }
-    }
-  },
-  "tests/integration/awslambda/test_lambda_api.py::TestLambdaSizeLimits::test_large_environment_variables_fails": {
-    "recorded-date": "26-09-2022, 21:27:32",
-    "recorded-content": {
-      "failed_create_fn_result": {
-        "Error": {
-          "Code": "InvalidParameterValueException",
-          "Message": "Lambda was unable to configure your environment variables because the environment variables you have provided exceeded the 4KB limit. String measured: {\"LARGE_VAR\":\"xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx\"}"
-        },
-        "Type": "User",
-        "message": "Lambda was unable to configure your environment variables because the environment variables you have provided exceeded the 4KB limit. String measured: {\"LARGE_VAR\":\"xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx\"}",
-        "ResponseMetadata": {
-          "HTTPHeaders": {},
-          "HTTPStatusCode": 400
-        }
-      }
-    }
-  },
-  "tests/integration/awslambda/test_lambda_api.py::TestLambdaSizeLimits::test_large_environment_fails_multiple_keys": {
-    "recorded-date": "26-09-2022, 21:27:49",
-    "recorded-content": {
-      "failured_create_fn_result_multi_key": {
-        "Error": {
-          "Code": "InvalidParameterValueException",
-          "Message": "Lambda was unable to configure your environment variables because the environment variables you have provided exceeded the 4KB limit. String measured: {\"SMALL_VAR\":\"ok\",\"LARGE_VAR\":\"xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx\"}"
-        },
-        "Type": "User",
-        "message": "Lambda was unable to configure your environment variables because the environment variables you have provided exceeded the 4KB limit. String measured: {\"SMALL_VAR\":\"ok\",\"LARGE_VAR\":\"xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx\"}",
-        "ResponseMetadata": {
-          "HTTPHeaders": {},
-          "HTTPStatusCode": 400
-        }
-      }
-    }
-  },
-  "tests/integration/awslambda/test_lambda_api.py::TestLambdaSizeLimits::test_lambda_envvars_near_limit_succeeds": {
-    "recorded-date": "26-09-2022, 21:28:05",
-    "recorded-content": {
-      "successful_create_fn_result": {
-        "CreateEventSourceMappingResponse": null,
-        "CreateFunctionResponse": {
-          "Architectures": [
-            "x86_64"
-          ],
-          "CodeSha256": "<code-sha256:1>",
-          "CodeSize": 264,
-          "Description": "",
-          "Environment": {
-            "Variables": {
-              "LARGE_VAR": "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
-            }
-          },
-          "EphemeralStorage": {
-            "Size": 512
-          },
-          "FunctionArn": "arn:aws:lambda:<region>:111111111111:function:<function-name:1>",
-          "FunctionName": "<function-name:1>",
-          "Handler": "handler.handler",
-          "LastModified": "date",
-          "MemorySize": 128,
-          "PackageType": "Zip",
-          "RevisionId": "<uuid:1>",
-          "Role": "arn:aws:iam::111111111111:role/<resource:1>",
-          "Runtime": "python3.9",
-          "State": "Pending",
-          "StateReason": "The function is being created.",
-          "StateReasonCode": "Creating",
-          "Timeout": 30,
-          "TracingConfig": {
-            "Mode": "PassThrough"
-          },
-          "Version": "$LATEST",
-          "ResponseMetadata": {
-            "HTTPHeaders": {},
-            "HTTPStatusCode": 201
-          }
-        }
-      }
-    }
-  },
-  "tests/integration/awslambda/test_lambda_api.py::TestCodeSigningConfig::test_function_code_signing_config": {
-    "recorded-date": "26-09-2022, 21:28:21",
-    "recorded-content": {
-      "create_code_signing_config": {
-        "CodeSigningConfig": {
-          "AllowedPublishers": {
-            "SigningProfileVersionArns": [
-              "arn:aws:signer:<region>:111111111111:/signing-profiles/test"
-            ]
-          },
-          "CodeSigningConfigArn": "arn:aws:lambda:<region>:111111111111:code-signing-config:<resource:1>",
-          "CodeSigningConfigId": "<resource:1>",
-          "CodeSigningPolicies": {
-            "UntrustedArtifactOnDeployment": "Enforce"
-          },
-          "Description": "Testing CodeSigning Config",
-          "LastModified": "date"
-        },
-        "ResponseMetadata": {
-          "HTTPHeaders": {},
-          "HTTPStatusCode": 201
-        }
-      },
-      "update_code_signing_config": {
-        "CodeSigningConfig": {
-          "AllowedPublishers": {
-            "SigningProfileVersionArns": [
-              "arn:aws:signer:<region>:111111111111:/signing-profiles/test"
-            ]
-          },
-          "CodeSigningConfigArn": "arn:aws:lambda:<region>:111111111111:code-signing-config:<resource:1>",
-          "CodeSigningConfigId": "<resource:1>",
-          "CodeSigningPolicies": {
-            "UntrustedArtifactOnDeployment": "Warn"
-          },
-          "Description": "Testing CodeSigning Config",
-          "LastModified": "date"
-        },
-        "ResponseMetadata": {
-          "HTTPHeaders": {},
-          "HTTPStatusCode": 200
-        }
-      },
-      "get_code_signing_config": {
-        "CodeSigningConfig": {
-          "AllowedPublishers": {
-            "SigningProfileVersionArns": [
-              "arn:aws:signer:<region>:111111111111:/signing-profiles/test"
-            ]
-          },
-          "CodeSigningConfigArn": "arn:aws:lambda:<region>:111111111111:code-signing-config:<resource:1>",
-          "CodeSigningConfigId": "<resource:1>",
-          "CodeSigningPolicies": {
-            "UntrustedArtifactOnDeployment": "Warn"
-          },
-          "Description": "Testing CodeSigning Config",
-          "LastModified": "date"
-        },
-        "ResponseMetadata": {
-          "HTTPHeaders": {},
-          "HTTPStatusCode": 200
-        }
-      },
-      "put_function_code_signing_config": {
-        "CodeSigningConfigArn": "arn:aws:lambda:<region>:111111111111:code-signing-config:<resource:1>",
-        "FunctionName": "<function-name:1>",
-        "ResponseMetadata": {
-          "HTTPHeaders": {},
-          "HTTPStatusCode": 200
-        }
-      },
-      "get_function_code_signing_config": {
-        "CodeSigningConfigArn": "arn:aws:lambda:<region>:111111111111:code-signing-config:<resource:1>",
-        "FunctionName": "<function-name:1>",
-        "ResponseMetadata": {
-          "HTTPHeaders": {},
-          "HTTPStatusCode": 200
-        }
-      },
-      "list_code_signing_configs": {
-        "CodeSigningConfigs": [
-          {
-            "AllowedPublishers": {
-              "SigningProfileVersionArns": [
-                "arn:aws:signer:us-east-1:000000000000:/signing-profiles/test"
-              ]
-            },
-            "CodeSigningConfigArn": "arn:aws:lambda:<region>:111111111111:code-signing-config:<resource:2>",
-            "CodeSigningConfigId": "<resource:2>",
-            "CodeSigningPolicies": {
-              "UntrustedArtifactOnDeployment": "Enforce"
-            },
-            "Description": "Testing CodeSigning Config",
-            "LastModified": "date"
-          },
-          {
-            "AllowedPublishers": {
-              "SigningProfileVersionArns": [
-                "arn:aws:signer:us-east-1:000000000000:/signing-profiles/test"
-              ]
-            },
-            "CodeSigningConfigArn": "arn:aws:lambda:<region>:111111111111:code-signing-config:<resource:3>",
-            "CodeSigningConfigId": "<resource:3>",
-            "CodeSigningPolicies": {
-              "UntrustedArtifactOnDeployment": "Enforce"
-            },
-            "Description": "Testing CodeSigning Config",
-            "LastModified": "date"
-          },
-          {
-            "AllowedPublishers": {
-              "SigningProfileVersionArns": [
-                "arn:aws:signer:<region>:111111111111:/signing-profiles/test"
-              ]
-            },
-            "CodeSigningConfigArn": "arn:aws:lambda:<region>:111111111111:code-signing-config:<resource:1>",
-            "CodeSigningConfigId": "<resource:1>",
-            "CodeSigningPolicies": {
-              "UntrustedArtifactOnDeployment": "Warn"
-            },
-            "Description": "Testing CodeSigning Config",
-            "LastModified": "date"
-          }
-        ],
-        "ResponseMetadata": {
-          "HTTPHeaders": {},
-          "HTTPStatusCode": 200
-        }
-      },
-      "list_functions_by_code_signing_config": {
-        "FunctionArns": [
-          "arn:aws:lambda:<region>:111111111111:function:<function-name:1>"
-        ],
-        "ResponseMetadata": {
-          "HTTPHeaders": {},
-          "HTTPStatusCode": 200
-        }
-      },
-      "delete_function_code_signing_config": {
-        "ResponseMetadata": {
-          "HTTPHeaders": {},
-          "HTTPStatusCode": 204
-        }
-      },
-      "delete_code_signing_config": {
-        "ResponseMetadata": {
-          "HTTPHeaders": {},
-          "HTTPStatusCode": 204
-        }
-      }
-    }
-  },
-  "tests/integration/awslambda/test_lambda_api.py::TestCodeSigningConfig::test_code_signing_not_found_excs": {
-    "recorded-date": "26-09-2022, 21:28:39",
-    "recorded-content": {
-      "create_code_signing_config": {
-        "CodeSigningConfig": {
-          "AllowedPublishers": {
-            "SigningProfileVersionArns": [
-              "arn:aws:signer:<region>:111111111111:/signing-profiles/test"
-            ]
-          },
-          "CodeSigningConfigArn": "arn:aws:lambda:<region>:111111111111:code-signing-config:<resource:1>",
-          "CodeSigningConfigId": "<resource:1>",
-          "CodeSigningPolicies": {
-            "UntrustedArtifactOnDeployment": "Enforce"
-          },
-          "Description": "Testing CodeSigning Config",
-          "LastModified": "date"
-        },
-        "ResponseMetadata": {
-          "HTTPHeaders": {},
-          "HTTPStatusCode": 201
-        }
-      },
-      "delete_csc_notfound": {
-        "Error": {
-          "Code": "ResourceNotFoundException",
-          "Message": "The Lambda code signing configuration <csc_arn_invalid> can not be found."
-        },
-        "Message": "The Lambda code signing configuration <csc_arn_invalid> can not be found.",
-        "ResponseMetadata": {
-          "HTTPHeaders": {},
-          "HTTPStatusCode": 404
-        }
-      },
-      "nothing_to_delete_response": {
-        "ResponseMetadata": {
-          "HTTPHeaders": {},
-          "HTTPStatusCode": 204
-        }
-      },
-      "delete_function_csc_fnnotfound": {
-        "Error": {
-          "Code": "ResourceNotFoundException",
-          "Message": "Function not found: arn:aws:lambda:<region>:111111111111:function:csc-test-doesnotexist"
-        },
-        "Message": "Function not found: arn:aws:lambda:<region>:111111111111:function:csc-test-doesnotexist",
-        "Type": "User",
-        "ResponseMetadata": {
-          "HTTPHeaders": {},
-          "HTTPStatusCode": 404
-        }
-      },
-      "put_function_csc_invalid_fnname": {
-        "Error": {
-          "Code": "ResourceNotFoundException",
-          "Message": "Function not found: arn:aws:lambda:<region>:111111111111:function:csc-test-doesnotexist"
-        },
-        "Message": "Function not found: arn:aws:lambda:<region>:111111111111:function:csc-test-doesnotexist",
-        "Type": "User",
-        "ResponseMetadata": {
-          "HTTPHeaders": {},
-          "HTTPStatusCode": 404
-        }
-      },
-      "put_function_csc_invalid_csc_arn": {
-        "Error": {
-          "Code": "CodeSigningConfigNotFoundException",
-          "Message": "The code signing configuration cannot be found. Check that the provided configuration is not deleted: <csc_arn_invalid>."
-        },
-        "Message": "The code signing configuration cannot be found. Check that the provided configuration is not deleted: <csc_arn_invalid>.",
-        "Type": "User",
-        "ResponseMetadata": {
-          "HTTPHeaders": {},
-          "HTTPStatusCode": 404
-        }
-      },
-      "put_function_csc_invalid_both": {
-        "Error": {
-          "Code": "CodeSigningConfigNotFoundException",
-          "Message": "The code signing configuration cannot be found. Check that the provided configuration is not deleted: <csc_arn_invalid>."
-        },
-        "Message": "The code signing configuration cannot be found. Check that the provided configuration is not deleted: <csc_arn_invalid>.",
-        "Type": "User",
-        "ResponseMetadata": {
-          "HTTPHeaders": {},
-          "HTTPStatusCode": 404
-        }
-      },
-      "update_csc_invalid_csc_arn": {
-        "Error": {
-          "Code": "ResourceNotFoundException",
-          "Message": "The Lambda code signing configuration <csc_arn_invalid> can not be found."
-        },
-        "Message": "The Lambda code signing configuration <csc_arn_invalid> can not be found.",
-        "ResponseMetadata": {
-          "HTTPHeaders": {},
-          "HTTPStatusCode": 404
-        }
-      },
-      "update_csc_noupdates": {
-        "Error": {
-          "Code": "ResourceNotFoundException",
-          "Message": "The Lambda code signing configuration <csc_arn_invalid> can not be found."
-        },
-        "Message": "The Lambda code signing configuration <csc_arn_invalid> can not be found.",
-        "ResponseMetadata": {
-          "HTTPHeaders": {},
-          "HTTPStatusCode": 404
-        }
-      },
-      "update_csc_noupdate_response": {
-        "CodeSigningConfig": {
-          "AllowedPublishers": {
-            "SigningProfileVersionArns": [
-              "arn:aws:signer:<region>:111111111111:/signing-profiles/test"
-            ]
-          },
-          "CodeSigningConfigArn": "arn:aws:lambda:<region>:111111111111:code-signing-config:<resource:1>",
-          "CodeSigningConfigId": "<resource:1>",
-          "CodeSigningPolicies": {
-            "UntrustedArtifactOnDeployment": "Enforce"
-          },
-          "Description": "Testing CodeSigning Config",
-          "LastModified": "date"
-        },
-        "ResponseMetadata": {
-          "HTTPHeaders": {},
-          "HTTPStatusCode": 200
-        }
-      },
-      "get_csc_invalid": {
-        "Error": {
-          "Code": "ResourceNotFoundException",
-          "Message": "The Lambda code signing configuration <csc_arn_invalid> can not be found."
-        },
-        "Message": "The Lambda code signing configuration <csc_arn_invalid> can not be found.",
-        "ResponseMetadata": {
-          "HTTPHeaders": {},
-          "HTTPStatusCode": 404
-        }
-      },
-      "get_function_csc_fnwithoutcsc": {
-        "ResponseMetadata": {
-          "HTTPHeaders": {},
-          "HTTPStatusCode": 200
-        }
-      },
-      "get_function_csc_nonexistingfn": {
-        "Error": {
-          "Code": "ResourceNotFoundException",
-          "Message": "Function not found: arn:aws:lambda:<region>:111111111111:function:csc-test-doesnotexist"
-        },
-        "Message": "Function not found: arn:aws:lambda:<region>:111111111111:function:csc-test-doesnotexist",
-        "Type": "User",
-        "ResponseMetadata": {
-          "HTTPHeaders": {},
-          "HTTPStatusCode": 404
-        }
-      },
-      "list_functions_by_csc_fnwithoutcsc": {
-        "FunctionArns": [],
-        "ResponseMetadata": {
-          "HTTPHeaders": {},
-          "HTTPStatusCode": 200
-        }
-      },
-      "list_functions_by_csc_invalid_cscarn": {
-        "Error": {
-          "Code": "ResourceNotFoundException",
-          "Message": "The Lambda code signing configuration <csc_arn_invalid> can not be found."
-        },
-        "Message": "The Lambda code signing configuration <csc_arn_invalid> can not be found.",
-        "ResponseMetadata": {
-          "HTTPHeaders": {},
-          "HTTPStatusCode": 404
-        }
-      }
-    }
-  },
-  "tests/integration/awslambda/test_lambda_api.py::TestLambdaAccountSettings::test_account_settings": {
-    "recorded-date": "26-09-2022, 21:28:39",
-    "recorded-content": {
-      "acc_settings_modded": {
-        "AccountLimit": [
-          "CodeSizeUnzipped",
-          "CodeSizeZipped",
-          "ConcurrentExecutions",
-          "TotalCodeSize",
-          "UnreservedConcurrentExecutions"
-        ],
-        "AccountUsage": [
-          "FunctionCount",
-          "TotalCodeSize"
-        ],
-        "ResponseMetadata": {
-          "HTTPHeaders": {},
-          "HTTPStatusCode": 200
-        }
-      }
-    }
-  },
-  "tests/integration/awslambda/test_lambda_api.py::TestLambdaProvisionedConcurrency::test_lambda_provisioned_concurrency_moves_with_alias": {
-    "recorded-date": "27-09-2022, 06:55:09",
-    "recorded-content": {
-      "create-result": {
-        "CreateEventSourceMappingResponse": null,
-        "CreateFunctionResponse": {
-          "CodeSha256": "<code-sha256:1>",
-          "CodeSize": 330,
-          "Description": "",
-          "Environment": {
-            "Variables": {}
-          },
-          "EphemeralStorage": {
-            "Size": 512
-          },
-          "FunctionArn": "arn:aws:lambda:<region>:111111111111:function:<function-name:1>",
-          "FunctionName": "<function-name:1>",
-          "Handler": "handler.handler",
-          "LastModified": "date",
-          "MemorySize": 128,
-          "PackageType": "Zip",
-          "RevisionId": "<uuid:1>",
-          "Role": "arn:aws:iam::111111111111:role/<resource:1>",
-          "Runtime": "python3.8",
-          "State": "Pending",
-          "StateReason": "The function is being created.",
-          "StateReasonCode": "Creating",
-          "Timeout": 2,
-          "TracingConfig": {
-            "Mode": "PassThrough"
-          },
-          "Version": "$LATEST",
-          "ResponseMetadata": {
-            "HTTPHeaders": {},
-            "HTTPStatusCode": 201
-          }
-        }
-      },
-      "get-function-configuration": {
-        "CodeSha256": "<code-sha256:1>",
-        "CodeSize": 330,
-        "Description": "",
-        "Environment": {
-          "Variables": {}
-        },
-        "EphemeralStorage": {
-          "Size": 512
-        },
-        "FunctionArn": "arn:aws:lambda:<region>:111111111111:function:<function-name:1>:$LATEST",
-        "FunctionName": "<function-name:1>",
-        "Handler": "handler.handler",
-        "LastModified": "date",
-        "LastUpdateStatus": "Successful",
-        "MemorySize": 128,
-        "PackageType": "Zip",
-        "RevisionId": "<uuid:2>",
-        "Role": "arn:aws:iam::111111111111:role/<resource:1>",
-        "Runtime": "python3.8",
-        "State": "Active",
-        "Timeout": 2,
-        "TracingConfig": {
-          "Mode": "PassThrough"
-        },
-        "Version": "$LATEST",
-        "ResponseMetadata": {
-          "HTTPHeaders": {},
-          "HTTPStatusCode": 200
-        }
-      },
-      "publish_version_1": {
-        "CodeSha256": "<code-sha256:1>",
-        "CodeSize": 330,
-        "Description": "my-first-version",
-        "Environment": {
-          "Variables": {}
-        },
-        "EphemeralStorage": {
-          "Size": 512
-        },
-        "FunctionArn": "arn:aws:lambda:<region>:111111111111:function:<function-name:1>:1",
-        "FunctionName": "<function-name:1>",
-        "Handler": "handler.handler",
-        "LastModified": "date",
-        "LastUpdateStatus": "Successful",
-        "MemorySize": 128,
-        "PackageType": "Zip",
-        "RevisionId": "<uuid:3>",
-        "Role": "arn:aws:iam::111111111111:role/<resource:1>",
-        "Runtime": "python3.8",
-        "State": "Active",
-        "Timeout": 2,
-        "TracingConfig": {
-          "Mode": "PassThrough"
-        },
-        "Version": "1",
-        "ResponseMetadata": {
-          "HTTPHeaders": {},
-          "HTTPStatusCode": 201
-        }
-      },
-      "get_function_configuration_version_1": {
-        "CodeSha256": "<code-sha256:1>",
-        "CodeSize": 330,
-        "Description": "my-first-version",
-        "Environment": {
-          "Variables": {}
-        },
-        "EphemeralStorage": {
-          "Size": 512
-        },
-        "FunctionArn": "arn:aws:lambda:<region>:111111111111:function:<function-name:1>:1",
-        "FunctionName": "<function-name:1>",
-        "Handler": "handler.handler",
-        "LastModified": "date",
-        "LastUpdateStatus": "Successful",
-        "MemorySize": 128,
-        "PackageType": "Zip",
-        "RevisionId": "<uuid:3>",
-        "Role": "arn:aws:iam::111111111111:role/<resource:1>",
-        "Runtime": "python3.8",
-        "State": "Active",
-        "Timeout": 2,
-        "TracingConfig": {
-          "Mode": "PassThrough"
-        },
-        "Version": "1",
-        "ResponseMetadata": {
-          "HTTPHeaders": {},
-          "HTTPStatusCode": 200
-        }
-      },
-      "create_alias": {
-        "AliasArn": "arn:aws:lambda:<region>:111111111111:function:<function-name:1>:<alias-name>",
-        "Description": "",
-        "FunctionVersion": "1",
-        "Name": "<alias-name>",
-        "RevisionId": "<uuid:4>",
-        "ResponseMetadata": {
-          "HTTPHeaders": {},
-          "HTTPStatusCode": 201
-        }
-      },
-      "get_function_before_provisioned": {
-        "Code": {
-          "Location": "<location>",
-          "RepositoryType": "S3"
-        },
-        "Configuration": {
-          "CodeSha256": "<code-sha256:1>",
-          "CodeSize": 330,
-          "Description": "my-first-version",
-          "Environment": {
-            "Variables": {}
-          },
-          "EphemeralStorage": {
-            "Size": 512
-          },
-          "FunctionArn": "arn:aws:lambda:<region>:111111111111:function:<function-name:1>:1",
-          "FunctionName": "<function-name:1>",
-          "Handler": "handler.handler",
-          "LastModified": "date",
-          "LastUpdateStatus": "Successful",
-          "MemorySize": 128,
-          "PackageType": "Zip",
-          "RevisionId": "<uuid:3>",
-          "Role": "arn:aws:iam::111111111111:role/<resource:1>",
-          "Runtime": "python3.8",
-          "State": "Active",
-          "Timeout": 2,
-          "TracingConfig": {
-            "Mode": "PassThrough"
-          },
-          "Version": "1"
-        },
-        "ResponseMetadata": {
-          "HTTPHeaders": {},
-          "HTTPStatusCode": 200
-        }
-      },
-      "get_function_after_provisioned": {
-        "Code": {
-          "Location": "<location>",
-          "RepositoryType": "S3"
-        },
-        "Configuration": {
-          "CodeSha256": "<code-sha256:1>",
-          "CodeSize": 330,
-          "Description": "my-first-version",
-          "Environment": {
-            "Variables": {}
-          },
-          "EphemeralStorage": {
-            "Size": 512
-          },
-          "FunctionArn": "arn:aws:lambda:<region>:111111111111:function:<function-name:1>:<alias-name>",
-          "FunctionName": "<function-name:1>",
-          "Handler": "handler.handler",
-          "LastModified": "date",
-          "LastUpdateStatus": "Successful",
-          "MemorySize": 128,
-          "PackageType": "Zip",
-          "RevisionId": "<uuid:5>",
-          "Role": "arn:aws:iam::111111111111:role/<resource:1>",
-          "Runtime": "python3.8",
-          "State": "Active",
-          "Timeout": 2,
-          "TracingConfig": {
-            "Mode": "PassThrough"
-          },
-          "Version": "1"
-        },
-        "ResponseMetadata": {
-          "HTTPHeaders": {},
-          "HTTPStatusCode": 200
-        }
-      },
-      "get_function_after_update": {
-        "CodeSha256": "<code-sha256:1>",
-        "CodeSize": 330,
-        "Description": "",
-        "Environment": {
-          "Variables": {}
-        },
-        "EphemeralStorage": {
-          "Size": 512
-        },
-        "FunctionArn": "arn:aws:lambda:<region>:111111111111:function:<function-name:1>",
-        "FunctionName": "<function-name:1>",
-        "Handler": "handler.handler",
-        "LastModified": "date",
-        "LastUpdateStatus": "Successful",
-        "MemorySize": 128,
-        "PackageType": "Zip",
-        "RevisionId": "<uuid:6>",
-        "Role": "arn:aws:iam::111111111111:role/<resource:1>",
-        "Runtime": "python3.8",
-        "State": "Active",
-        "Timeout": 10,
-        "TracingConfig": {
-          "Mode": "PassThrough"
-        },
-        "Version": "$LATEST",
-        "ResponseMetadata": {
-          "HTTPHeaders": {},
-          "HTTPStatusCode": 200
-        }
-      },
-      "publish_version_2": {
-        "CodeSha256": "<code-sha256:1>",
-        "CodeSize": 330,
-        "Description": "",
-        "Environment": {
-          "Variables": {}
-        },
-        "EphemeralStorage": {
-          "Size": 512
-        },
-        "FunctionArn": "arn:aws:lambda:<region>:111111111111:function:<function-name:1>:2",
-        "FunctionName": "<function-name:1>",
-        "Handler": "handler.handler",
-        "LastModified": "date",
-        "LastUpdateStatus": "Successful",
-        "MemorySize": 128,
-        "PackageType": "Zip",
-        "RevisionId": "<uuid:7>",
-        "Role": "arn:aws:iam::111111111111:role/<resource:1>",
-        "Runtime": "python3.8",
-        "State": "Active",
-        "Timeout": 10,
-        "TracingConfig": {
-          "Mode": "PassThrough"
-        },
-        "Version": "2",
-        "ResponseMetadata": {
-          "HTTPHeaders": {},
-          "HTTPStatusCode": 201
-        }
-      },
-      "update_alias": {
-        "AliasArn": "arn:aws:lambda:<region>:111111111111:function:<function-name:1>:<alias-name>",
-        "Description": "",
-        "FunctionVersion": "2",
-        "Name": "<alias-name>",
-        "RevisionId": "<uuid:8>",
-        "ResponseMetadata": {
-          "HTTPHeaders": {},
-          "HTTPStatusCode": 200
-        }
-      },
-      "get_provisioned_config_after_alias_move": {
-        "AllocatedProvisionedConcurrentExecutions": 1,
-        "AvailableProvisionedConcurrentExecutions": 1,
-        "LastModified": "date",
-        "RequestedProvisionedConcurrentExecutions": 1,
-        "Status": "IN_PROGRESS",
-        "ResponseMetadata": {
-          "HTTPHeaders": {},
-          "HTTPStatusCode": 200
-        }
-      },
-      "provisioned_concurrency_notfound": {
-        "Error": {
-          "Code": "ProvisionedConcurrencyConfigNotFoundException",
-          "Message": "No Provisioned Concurrency Config found for this function"
-        },
-        "Type": "User",
-        "message": "No Provisioned Concurrency Config found for this function",
-        "ResponseMetadata": {
-          "HTTPHeaders": {},
-          "HTTPStatusCode": 404
-        }
-      }
-    }
-  },
   "tests/integration/awslambda/test_lambda_api.py::TestLambdaEventInvokeConfig::test_lambda_eventinvokeconfig_exceptions": {
-    "recorded-date": "29-09-2022, 20:49:44",
+    "recorded-date": "30-09-2022, 15:32:37",
     "recorded-content": {
       "fn_version_result": {
         "Architectures": [
@@ -4813,8 +3957,901 @@
       }
     }
   },
+  "tests/integration/awslambda/test_lambda_api.py::TestLambdaReservedConcurrency::test_function_concurrency_exceptions": {
+    "recorded-date": "30-09-2022, 15:32:42",
+    "recorded-content": {
+      "put_concurrency_unknown_fn": {
+        "Error": {
+          "Code": "ResourceNotFoundException",
+          "Message": "Function not found: arn:aws:lambda:<region>:111111111111:function:unknown:$LATEST"
+        },
+        "Message": "Function not found: arn:aws:lambda:<region>:111111111111:function:unknown:$LATEST",
+        "Type": "User",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 404
+        }
+      },
+      "put_concurrency_unknown_fn_invalid_concurrency": {
+        "Error": {
+          "Code": "ResourceNotFoundException",
+          "Message": "Function not found: arn:aws:lambda:<region>:111111111111:function:unknown:$LATEST"
+        },
+        "Message": "Function not found: arn:aws:lambda:<region>:111111111111:function:unknown:$LATEST",
+        "Type": "User",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 404
+        }
+      },
+      "put_concurrency_known_fn_concurrency_limit_exceeded": {
+        "Error": {
+          "Code": "InvalidParameterValueException",
+          "Message": "Specified ReservedConcurrentExecutions for function decreases account's UnreservedConcurrentExecution below its minimum value of [100]."
+        },
+        "message": "Specified ReservedConcurrentExecutions for function decreases account's UnreservedConcurrentExecution below its minimum value of [100].",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "put_0_response": {
+        "ReservedConcurrentExecutions": 0,
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "put_1_response": {
+        "ReservedConcurrentExecutions": 1,
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "delete_response": {
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 204
+        }
+      }
+    }
+  },
+  "tests/integration/awslambda/test_lambda_api.py::TestLambdaReservedConcurrency::test_function_concurrency": {
+    "recorded-date": "30-09-2022, 15:32:45",
+    "recorded-content": {
+      "put_function_concurrency": {
+        "ReservedConcurrentExecutions": 1,
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "get_function_concurrency": {
+        "ReservedConcurrentExecutions": 1,
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "delete_function_concurrency": {
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 204
+        }
+      },
+      "get_function_concurrency_postdelete": {
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/integration/awslambda/test_lambda_api.py::TestLambdaPermissions::test_add_lambda_permission_aws": {
+    "recorded-date": "30-09-2022, 15:32:49",
+    "recorded-content": {
+      "create_lambda": {
+        "CreateEventSourceMappingResponse": null,
+        "CreateFunctionResponse": {
+          "Architectures": [
+            "x86_64"
+          ],
+          "CodeSha256": "<code-sha256:1>",
+          "CodeSize": 264,
+          "Description": "",
+          "Environment": {
+            "Variables": {}
+          },
+          "EphemeralStorage": {
+            "Size": 512
+          },
+          "FunctionArn": "arn:aws:lambda:<region>:111111111111:function:<function-name:1>",
+          "FunctionName": "<function-name:1>",
+          "Handler": "handler.handler",
+          "LastModified": "date",
+          "MemorySize": 128,
+          "PackageType": "Zip",
+          "RevisionId": "<uuid:1>",
+          "Role": "arn:aws:iam::111111111111:role/<resource:1>",
+          "Runtime": "python3.9",
+          "State": "Pending",
+          "StateReason": "The function is being created.",
+          "StateReasonCode": "Creating",
+          "Timeout": 30,
+          "TracingConfig": {
+            "Mode": "PassThrough"
+          },
+          "Version": "$LATEST",
+          "ResponseMetadata": {
+            "HTTPHeaders": {},
+            "HTTPStatusCode": 201
+          }
+        }
+      },
+      "add_permission": {
+        "Statement": {
+          "Sid": "s3",
+          "Effect": "Allow",
+          "Principal": {
+            "Service": "s3.amazonaws.com"
+          },
+          "Action": "lambda:InvokeFunction",
+          "Resource": "arn:aws:lambda:<region>:111111111111:function:<function-name:1>",
+          "Condition": {
+            "ArnLike": {
+              "AWS:SourceArn": "arn:aws:s3:::<resource:2>"
+            }
+          }
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 201
+        }
+      },
+      "get_policy": {
+        "Policy": {
+          "Version": "2012-10-17",
+          "Id": "default",
+          "Statement": [
+            {
+              "Sid": "s3",
+              "Effect": "Allow",
+              "Principal": {
+                "Service": "s3.amazonaws.com"
+              },
+              "Action": "lambda:InvokeFunction",
+              "Resource": "arn:aws:lambda:<region>:111111111111:function:<function-name:1>",
+              "Condition": {
+                "ArnLike": {
+                  "AWS:SourceArn": "arn:aws:s3:::<resource:2>"
+                }
+              }
+            }
+          ]
+        },
+        "RevisionId": "<uuid:2>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/integration/awslambda/test_lambda_api.py::TestLambdaPermissions::test_remove_multi_permissions": {
+    "recorded-date": "30-09-2022, 15:32:52",
+    "recorded-content": {
+      "add_permission_1": {
+        "Statement": {
+          "Sid": "s3",
+          "Effect": "Allow",
+          "Principal": {
+            "Service": "s3.amazonaws.com"
+          },
+          "Action": "lambda:InvokeFunction",
+          "Resource": "arn:aws:lambda:<region>:111111111111:function:<resource:1>"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 201
+        }
+      },
+      "add_permission_2": {
+        "Statement": {
+          "Sid": "sqs",
+          "Effect": "Allow",
+          "Principal": {
+            "Service": "sqs.amazonaws.com"
+          },
+          "Action": "lambda:InvokeFunction",
+          "Resource": "arn:aws:lambda:<region>:111111111111:function:<resource:1>",
+          "Condition": {
+            "ArnLike": {
+              "AWS:SourceArn": "arn:aws:s3:::<resource:2>"
+            }
+          }
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 201
+        }
+      },
+      "policy_after_2_add": {
+        "Policy": {
+          "Version": "2012-10-17",
+          "Id": "default",
+          "Statement": [
+            {
+              "Sid": "s3",
+              "Effect": "Allow",
+              "Principal": {
+                "Service": "s3.amazonaws.com"
+              },
+              "Action": "lambda:InvokeFunction",
+              "Resource": "arn:aws:lambda:<region>:111111111111:function:<resource:1>"
+            },
+            {
+              "Sid": "sqs",
+              "Effect": "Allow",
+              "Principal": {
+                "Service": "sqs.amazonaws.com"
+              },
+              "Action": "lambda:InvokeFunction",
+              "Resource": "arn:aws:lambda:<region>:111111111111:function:<resource:1>",
+              "Condition": {
+                "ArnLike": {
+                  "AWS:SourceArn": "arn:aws:s3:::<resource:2>"
+                }
+              }
+            }
+          ]
+        },
+        "RevisionId": "<uuid:1>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "expect_error_remove_permission": {
+        "Error": {
+          "Code": "ResourceNotFoundException",
+          "Message": "Statement non-existent is not found in resource policy."
+        },
+        "Message": "Statement non-existent is not found in resource policy.",
+        "Type": "User",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 404
+        }
+      },
+      "policy_after_removal": {
+        "Id": "default",
+        "Statement": [
+          {
+            "Action": "lambda:InvokeFunction",
+            "Effect": "Allow",
+            "Principal": {
+              "Service": "s3.amazonaws.com"
+            },
+            "Resource": "arn:aws:lambda:<region>:111111111111:function:<resource:1>",
+            "Sid": "s3"
+          }
+        ],
+        "Version": "2012-10-17"
+      },
+      "expect_exception_get_policy": {
+        "Error": {
+          "Code": "ResourceNotFoundException",
+          "Message": "The resource you requested does not exist."
+        },
+        "Message": "The resource you requested does not exist.",
+        "Type": "User",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 404
+        }
+      }
+    }
+  },
+  "tests/integration/awslambda/test_lambda_api.py::TestLambdaPermissions::test_create_multiple_lambda_permissions": {
+    "recorded-date": "30-09-2022, 15:32:56",
+    "recorded-content": {
+      "add_permission_response_1": {
+        "Statement": {
+          "Sid": "logs",
+          "Effect": "Allow",
+          "Principal": {
+            "Service": "logs.amazonaws.com"
+          },
+          "Action": "lambda:InvokeFunction",
+          "Resource": "arn:aws:lambda:<region>:111111111111:function:<resource:1>"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 201
+        }
+      },
+      "add_permission_response_2": {
+        "Statement": {
+          "Sid": "kinesis",
+          "Effect": "Allow",
+          "Principal": {
+            "Service": "kinesis.amazonaws.com"
+          },
+          "Action": "lambda:InvokeFunction",
+          "Resource": "arn:aws:lambda:<region>:111111111111:function:<resource:1>"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 201
+        }
+      },
+      "policy_after_2_add": {
+        "Policy": {
+          "Version": "2012-10-17",
+          "Id": "default",
+          "Statement": [
+            {
+              "Sid": "logs",
+              "Effect": "Allow",
+              "Principal": {
+                "Service": "logs.amazonaws.com"
+              },
+              "Action": "lambda:InvokeFunction",
+              "Resource": "arn:aws:lambda:<region>:111111111111:function:<resource:1>"
+            },
+            {
+              "Sid": "kinesis",
+              "Effect": "Allow",
+              "Principal": {
+                "Service": "kinesis.amazonaws.com"
+              },
+              "Action": "lambda:InvokeFunction",
+              "Resource": "arn:aws:lambda:<region>:111111111111:function:<resource:1>"
+            }
+          ]
+        },
+        "RevisionId": "<uuid:1>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/integration/awslambda/test_lambda_api.py::TestLambdaUrl::test_url_config_lifecycle": {
+    "recorded-date": "30-09-2022, 15:33:00",
+    "recorded-content": {
+      "failed_creation": {
+        "Error": {
+          "Code": "ResourceNotFoundException",
+          "Message": "Function does not exist"
+        },
+        "Message": "Function does not exist",
+        "Type": "User",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 404
+        }
+      },
+      "url_creation": {
+        "AuthType": "NONE",
+        "CreationTime": "date",
+        "FunctionArn": "arn:aws:lambda:<region>:111111111111:function:<resource:1>",
+        "FunctionUrl": "lambda-url",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 201
+        }
+      },
+      "failed_duplication": {
+        "Error": {
+          "Code": "ResourceConflictException",
+          "Message": "Failed to create function url config for [functionArn = arn:aws:lambda:<region>:111111111111:function:<resource:1>]. Error message:  FunctionUrlConfig exists for this Lambda function"
+        },
+        "Type": "User",
+        "message": "Failed to create function url config for [functionArn = arn:aws:lambda:<region>:111111111111:function:<resource:1>]. Error message:  FunctionUrlConfig exists for this Lambda function",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 409
+        }
+      },
+      "get_url_config": {
+        "AuthType": "NONE",
+        "CreationTime": "date",
+        "FunctionArn": "arn:aws:lambda:<region>:111111111111:function:<resource:1>",
+        "FunctionUrl": "lambda-url",
+        "LastModifiedTime": "date",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "updated_url_config": {
+        "AuthType": "AWS_IAM",
+        "CreationTime": "date",
+        "FunctionArn": "arn:aws:lambda:<region>:111111111111:function:<resource:1>",
+        "FunctionUrl": "lambda-url",
+        "LastModifiedTime": "date",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "failed_getter": {
+        "Error": {
+          "Code": "ResourceNotFoundException",
+          "Message": "The resource you requested does not exist."
+        },
+        "Message": "The resource you requested does not exist.",
+        "Type": "User",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 404
+        }
+      }
+    }
+  },
+  "tests/integration/awslambda/test_lambda_api.py::TestLambdaSizeLimits::test_oversized_lambda": {
+    "recorded-date": "30-09-2022, 15:33:49",
+    "recorded-content": {
+      "invalid_param_exc": {
+        "Error": {
+          "Code": "InvalidParameterValueException",
+          "Message": "Unzipped size must be smaller than 262144000 bytes"
+        },
+        "Type": "User",
+        "message": "Unzipped size must be smaller than 262144000 bytes",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/integration/awslambda/test_lambda_api.py::TestLambdaSizeLimits::test_large_lambda": {
+    "recorded-date": "30-09-2022, 15:34:46",
+    "recorded-content": {
+      "create_function_large_zip": {
+        "Architectures": [
+          "x86_64"
+        ],
+        "CodeSha256": "<code-sha256:1>",
+        "CodeSize": 262143118,
+        "Description": "",
+        "EphemeralStorage": {
+          "Size": 512
+        },
+        "FunctionArn": "arn:aws:lambda:<region>:111111111111:function:<function-name:1>",
+        "FunctionName": "<function-name:1>",
+        "Handler": "handler.handler",
+        "LastModified": "date",
+        "MemorySize": 128,
+        "PackageType": "Zip",
+        "RevisionId": "<uuid:1>",
+        "Role": "arn:aws:iam::111111111111:role/<resource:1>",
+        "Runtime": "python3.9",
+        "State": "Pending",
+        "StateReason": "The function is being created.",
+        "StateReasonCode": "Creating",
+        "Timeout": 10,
+        "TracingConfig": {
+          "Mode": "PassThrough"
+        },
+        "Version": "$LATEST",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 201
+        }
+      }
+    }
+  },
+  "tests/integration/awslambda/test_lambda_api.py::TestLambdaSizeLimits::test_large_environment_variables_fails": {
+    "recorded-date": "30-09-2022, 15:35:03",
+    "recorded-content": {
+      "failed_create_fn_result": {
+        "Error": {
+          "Code": "InvalidParameterValueException",
+          "Message": "Lambda was unable to configure your environment variables because the environment variables you have provided exceeded the 4KB limit. String measured: {\"LARGE_VAR\":\"xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx\"}"
+        },
+        "Type": "User",
+        "message": "Lambda was unable to configure your environment variables because the environment variables you have provided exceeded the 4KB limit. String measured: {\"LARGE_VAR\":\"xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx\"}",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/integration/awslambda/test_lambda_api.py::TestLambdaSizeLimits::test_large_environment_fails_multiple_keys": {
+    "recorded-date": "30-09-2022, 15:35:20",
+    "recorded-content": {
+      "failured_create_fn_result_multi_key": {
+        "Error": {
+          "Code": "InvalidParameterValueException",
+          "Message": "Lambda was unable to configure your environment variables because the environment variables you have provided exceeded the 4KB limit. String measured: {\"SMALL_VAR\":\"ok\",\"LARGE_VAR\":\"xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx\"}"
+        },
+        "Type": "User",
+        "message": "Lambda was unable to configure your environment variables because the environment variables you have provided exceeded the 4KB limit. String measured: {\"SMALL_VAR\":\"ok\",\"LARGE_VAR\":\"xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx\"}",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/integration/awslambda/test_lambda_api.py::TestLambdaSizeLimits::test_lambda_envvars_near_limit_succeeds": {
+    "recorded-date": "30-09-2022, 15:35:23",
+    "recorded-content": {
+      "successful_create_fn_result": {
+        "CreateEventSourceMappingResponse": null,
+        "CreateFunctionResponse": {
+          "Architectures": [
+            "x86_64"
+          ],
+          "CodeSha256": "<code-sha256:1>",
+          "CodeSize": 264,
+          "Description": "",
+          "Environment": {
+            "Variables": {
+              "LARGE_VAR": "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+            }
+          },
+          "EphemeralStorage": {
+            "Size": 512
+          },
+          "FunctionArn": "arn:aws:lambda:<region>:111111111111:function:<function-name:1>",
+          "FunctionName": "<function-name:1>",
+          "Handler": "handler.handler",
+          "LastModified": "date",
+          "MemorySize": 128,
+          "PackageType": "Zip",
+          "RevisionId": "<uuid:1>",
+          "Role": "arn:aws:iam::111111111111:role/<resource:1>",
+          "Runtime": "python3.9",
+          "State": "Pending",
+          "StateReason": "The function is being created.",
+          "StateReasonCode": "Creating",
+          "Timeout": 30,
+          "TracingConfig": {
+            "Mode": "PassThrough"
+          },
+          "Version": "$LATEST",
+          "ResponseMetadata": {
+            "HTTPHeaders": {},
+            "HTTPStatusCode": 201
+          }
+        }
+      }
+    }
+  },
+  "tests/integration/awslambda/test_lambda_api.py::TestCodeSigningConfig::test_function_code_signing_config": {
+    "recorded-date": "30-09-2022, 15:35:28",
+    "recorded-content": {
+      "create_code_signing_config": {
+        "CodeSigningConfig": {
+          "AllowedPublishers": {
+            "SigningProfileVersionArns": [
+              "arn:aws:signer:<region>:111111111111:/signing-profiles/test"
+            ]
+          },
+          "CodeSigningConfigArn": "arn:aws:lambda:<region>:111111111111:code-signing-config:<resource:1>",
+          "CodeSigningConfigId": "<resource:1>",
+          "CodeSigningPolicies": {
+            "UntrustedArtifactOnDeployment": "Enforce"
+          },
+          "Description": "Testing CodeSigning Config",
+          "LastModified": "date"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 201
+        }
+      },
+      "update_code_signing_config": {
+        "CodeSigningConfig": {
+          "AllowedPublishers": {
+            "SigningProfileVersionArns": [
+              "arn:aws:signer:<region>:111111111111:/signing-profiles/test"
+            ]
+          },
+          "CodeSigningConfigArn": "arn:aws:lambda:<region>:111111111111:code-signing-config:<resource:1>",
+          "CodeSigningConfigId": "<resource:1>",
+          "CodeSigningPolicies": {
+            "UntrustedArtifactOnDeployment": "Warn"
+          },
+          "Description": "Testing CodeSigning Config",
+          "LastModified": "date"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "get_code_signing_config": {
+        "CodeSigningConfig": {
+          "AllowedPublishers": {
+            "SigningProfileVersionArns": [
+              "arn:aws:signer:<region>:111111111111:/signing-profiles/test"
+            ]
+          },
+          "CodeSigningConfigArn": "arn:aws:lambda:<region>:111111111111:code-signing-config:<resource:1>",
+          "CodeSigningConfigId": "<resource:1>",
+          "CodeSigningPolicies": {
+            "UntrustedArtifactOnDeployment": "Warn"
+          },
+          "Description": "Testing CodeSigning Config",
+          "LastModified": "date"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "put_function_code_signing_config": {
+        "CodeSigningConfigArn": "arn:aws:lambda:<region>:111111111111:code-signing-config:<resource:1>",
+        "FunctionName": "<function-name:1>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "get_function_code_signing_config": {
+        "CodeSigningConfigArn": "arn:aws:lambda:<region>:111111111111:code-signing-config:<resource:1>",
+        "FunctionName": "<function-name:1>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "list_code_signing_configs": {
+        "CodeSigningConfigs": [
+          {
+            "AllowedPublishers": {
+              "SigningProfileVersionArns": [
+                "arn:aws:signer:<region>:111111111111:/signing-profiles/test"
+              ]
+            },
+            "CodeSigningConfigArn": "arn:aws:lambda:<region>:111111111111:code-signing-config:<resource:1>",
+            "CodeSigningConfigId": "<resource:1>",
+            "CodeSigningPolicies": {
+              "UntrustedArtifactOnDeployment": "Warn"
+            },
+            "Description": "Testing CodeSigning Config",
+            "LastModified": "date"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "list_functions_by_code_signing_config": {
+        "FunctionArns": [
+          "arn:aws:lambda:<region>:111111111111:function:<function-name:1>"
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "delete_function_code_signing_config": {
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 204
+        }
+      },
+      "delete_code_signing_config": {
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 204
+        }
+      }
+    }
+  },
+  "tests/integration/awslambda/test_lambda_api.py::TestCodeSigningConfig::test_code_signing_not_found_excs": {
+    "recorded-date": "30-09-2022, 15:35:33",
+    "recorded-content": {
+      "create_code_signing_config": {
+        "CodeSigningConfig": {
+          "AllowedPublishers": {
+            "SigningProfileVersionArns": [
+              "arn:aws:signer:<region>:111111111111:/signing-profiles/test"
+            ]
+          },
+          "CodeSigningConfigArn": "arn:aws:lambda:<region>:111111111111:code-signing-config:<resource:1>",
+          "CodeSigningConfigId": "<resource:1>",
+          "CodeSigningPolicies": {
+            "UntrustedArtifactOnDeployment": "Enforce"
+          },
+          "Description": "Testing CodeSigning Config",
+          "LastModified": "date"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 201
+        }
+      },
+      "delete_csc_notfound": {
+        "Error": {
+          "Code": "ResourceNotFoundException",
+          "Message": "The Lambda code signing configuration <csc_arn_invalid> can not be found."
+        },
+        "Message": "The Lambda code signing configuration <csc_arn_invalid> can not be found.",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 404
+        }
+      },
+      "nothing_to_delete_response": {
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 204
+        }
+      },
+      "delete_function_csc_fnnotfound": {
+        "Error": {
+          "Code": "ResourceNotFoundException",
+          "Message": "Function not found: arn:aws:lambda:<region>:111111111111:function:csc-test-doesnotexist"
+        },
+        "Message": "Function not found: arn:aws:lambda:<region>:111111111111:function:csc-test-doesnotexist",
+        "Type": "User",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 404
+        }
+      },
+      "put_function_csc_invalid_fnname": {
+        "Error": {
+          "Code": "ResourceNotFoundException",
+          "Message": "Function not found: arn:aws:lambda:<region>:111111111111:function:csc-test-doesnotexist"
+        },
+        "Message": "Function not found: arn:aws:lambda:<region>:111111111111:function:csc-test-doesnotexist",
+        "Type": "User",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 404
+        }
+      },
+      "put_function_csc_invalid_csc_arn": {
+        "Error": {
+          "Code": "CodeSigningConfigNotFoundException",
+          "Message": "The code signing configuration cannot be found. Check that the provided configuration is not deleted: <csc_arn_invalid>."
+        },
+        "Message": "The code signing configuration cannot be found. Check that the provided configuration is not deleted: <csc_arn_invalid>.",
+        "Type": "User",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 404
+        }
+      },
+      "put_function_csc_invalid_both": {
+        "Error": {
+          "Code": "CodeSigningConfigNotFoundException",
+          "Message": "The code signing configuration cannot be found. Check that the provided configuration is not deleted: <csc_arn_invalid>."
+        },
+        "Message": "The code signing configuration cannot be found. Check that the provided configuration is not deleted: <csc_arn_invalid>.",
+        "Type": "User",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 404
+        }
+      },
+      "update_csc_invalid_csc_arn": {
+        "Error": {
+          "Code": "ResourceNotFoundException",
+          "Message": "The Lambda code signing configuration <csc_arn_invalid> can not be found."
+        },
+        "Message": "The Lambda code signing configuration <csc_arn_invalid> can not be found.",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 404
+        }
+      },
+      "update_csc_noupdates": {
+        "Error": {
+          "Code": "ResourceNotFoundException",
+          "Message": "The Lambda code signing configuration <csc_arn_invalid> can not be found."
+        },
+        "Message": "The Lambda code signing configuration <csc_arn_invalid> can not be found.",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 404
+        }
+      },
+      "update_csc_noupdate_response": {
+        "CodeSigningConfig": {
+          "AllowedPublishers": {
+            "SigningProfileVersionArns": [
+              "arn:aws:signer:<region>:111111111111:/signing-profiles/test"
+            ]
+          },
+          "CodeSigningConfigArn": "arn:aws:lambda:<region>:111111111111:code-signing-config:<resource:1>",
+          "CodeSigningConfigId": "<resource:1>",
+          "CodeSigningPolicies": {
+            "UntrustedArtifactOnDeployment": "Enforce"
+          },
+          "Description": "Testing CodeSigning Config",
+          "LastModified": "date"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "get_csc_invalid": {
+        "Error": {
+          "Code": "ResourceNotFoundException",
+          "Message": "The Lambda code signing configuration <csc_arn_invalid> can not be found."
+        },
+        "Message": "The Lambda code signing configuration <csc_arn_invalid> can not be found.",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 404
+        }
+      },
+      "get_function_csc_fnwithoutcsc": {
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "get_function_csc_nonexistingfn": {
+        "Error": {
+          "Code": "ResourceNotFoundException",
+          "Message": "Function not found: arn:aws:lambda:<region>:111111111111:function:csc-test-doesnotexist"
+        },
+        "Message": "Function not found: arn:aws:lambda:<region>:111111111111:function:csc-test-doesnotexist",
+        "Type": "User",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 404
+        }
+      },
+      "list_functions_by_csc_fnwithoutcsc": {
+        "FunctionArns": [],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "list_functions_by_csc_invalid_cscarn": {
+        "Error": {
+          "Code": "ResourceNotFoundException",
+          "Message": "The Lambda code signing configuration <csc_arn_invalid> can not be found."
+        },
+        "Message": "The Lambda code signing configuration <csc_arn_invalid> can not be found.",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 404
+        }
+      }
+    }
+  },
+  "tests/integration/awslambda/test_lambda_api.py::TestLambdaAccountSettings::test_account_settings": {
+    "recorded-date": "30-09-2022, 15:35:34",
+    "recorded-content": {
+      "acc_settings_modded": {
+        "AccountLimit": [
+          "CodeSizeUnzipped",
+          "CodeSizeZipped",
+          "ConcurrentExecutions",
+          "TotalCodeSize",
+          "UnreservedConcurrentExecutions"
+        ],
+        "AccountUsage": [
+          "FunctionCount",
+          "TotalCodeSize"
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
   "tests/integration/awslambda/test_lambda_api.py::TestLambdaEventSourceMappings::test_event_source_mapping_exceptions": {
-    "recorded-date": "27-09-2022, 14:02:20",
+    "recorded-date": "30-09-2022, 15:35:37",
     "recorded-content": {
       "get_unknown_uuid": {
         "Error": {
@@ -4879,7 +4916,7 @@
     }
   },
   "tests/integration/awslambda/test_lambda_api.py::TestLambdaEventSourceMappings::test_event_source_mapping_lifecycle": {
-    "recorded-date": "27-09-2022, 14:03:06",
+    "recorded-date": "30-09-2022, 15:36:14",
     "recorded-content": {
       "create_response": {
         "BatchSize": 10,
@@ -4929,7 +4966,7 @@
     }
   },
   "tests/integration/awslambda/test_lambda_api.py::TestLambdaTags::test_tag_exceptions": {
-    "recorded-date": "28-09-2022, 08:55:56",
+    "recorded-date": "30-09-2022, 15:36:19",
     "recorded-content": {
       "tag_lambda_invalidarn": {
         "Error": {
@@ -5003,7 +5040,7 @@
     }
   },
   "tests/integration/awslambda/test_lambda_api.py::TestLambdaTags::test_tag_limits": {
-    "recorded-date": "28-09-2022, 08:38:50",
+    "recorded-date": "30-09-2022, 15:36:23",
     "recorded-content": {
       "tag_lambda_too_many_tags": {
         "Error": {
@@ -5188,7 +5225,7 @@
     }
   },
   "tests/integration/awslambda/test_lambda_api.py::TestLambdaTags::test_tag_lifecycle": {
-    "recorded-date": "28-09-2022, 08:39:06",
+    "recorded-date": "30-09-2022, 15:36:28",
     "recorded-content": {
       "list_tags_response_postfncreate": {
         "Tags": {
@@ -5440,402 +5477,6 @@
         "ResponseMetadata": {
           "HTTPHeaders": {},
           "HTTPStatusCode": 404
-        }
-      }
-    }
-  },
-  "tests/integration/awslambda/test_lambda_api.py::TestLambdaReservedConcurrency::test_function_concurrency_exceptions": {
-    "recorded-date": "28-09-2022, 10:06:29",
-    "recorded-content": {
-      "put_concurrency_unknown_fn": {
-        "Error": {
-          "Code": "ResourceNotFoundException",
-          "Message": "Function not found: arn:aws:lambda:<region>:111111111111:function:unknown:$LATEST"
-        },
-        "Message": "Function not found: arn:aws:lambda:<region>:111111111111:function:unknown:$LATEST",
-        "Type": "User",
-        "ResponseMetadata": {
-          "HTTPHeaders": {},
-          "HTTPStatusCode": 404
-        }
-      },
-      "put_concurrency_unknown_fn_invalid_concurrency": {
-        "Error": {
-          "Code": "ResourceNotFoundException",
-          "Message": "Function not found: arn:aws:lambda:<region>:111111111111:function:unknown:$LATEST"
-        },
-        "Message": "Function not found: arn:aws:lambda:<region>:111111111111:function:unknown:$LATEST",
-        "Type": "User",
-        "ResponseMetadata": {
-          "HTTPHeaders": {},
-          "HTTPStatusCode": 404
-        }
-      },
-      "put_concurrency_known_fn_concurrency_limit_exceeded": {
-        "Error": {
-          "Code": "InvalidParameterValueException",
-          "Message": "Specified ReservedConcurrentExecutions for function decreases account's UnreservedConcurrentExecution below its minimum value of [100]."
-        },
-        "message": "Specified ReservedConcurrentExecutions for function decreases account's UnreservedConcurrentExecution below its minimum value of [100].",
-        "ResponseMetadata": {
-          "HTTPHeaders": {},
-          "HTTPStatusCode": 400
-        }
-      },
-      "put_0_response": {
-        "ReservedConcurrentExecutions": 0,
-        "ResponseMetadata": {
-          "HTTPHeaders": {},
-          "HTTPStatusCode": 200
-        }
-      },
-      "put_1_response": {
-        "ReservedConcurrentExecutions": 1,
-        "ResponseMetadata": {
-          "HTTPHeaders": {},
-          "HTTPStatusCode": 200
-        }
-      },
-      "delete_response": {
-        "ResponseMetadata": {
-          "HTTPHeaders": {},
-          "HTTPStatusCode": 204
-        }
-      }
-    }
-  },
-  "tests/integration/awslambda/test_lambda_api.py::TestLambdaFunction::test_get_function_wrong_region": {
-    "recorded-date": "30-09-2022, 14:22:40",
-    "recorded-content": {
-      "wrong_region_exception": {
-        "Error": {
-          "Code": "ResourceNotFoundException",
-          "Message": "Functions from '<wrong-region>' are not reachable in this region ('<region>')"
-        },
-        "Message": "Functions from '<wrong-region>' are not reachable in this region ('<region>')",
-        "Type": "User",
-        "ResponseMetadata": {
-          "HTTPHeaders": {},
-          "HTTPStatusCode": 404
-        }
-      }
-    }
-  },
-  "tests/integration/awslambda/test_lambda_api.py::TestLambdaFunction::test_get_function_wrong_region[get_function]": {
-    "recorded-date": "30-09-2022, 14:52:09",
-    "recorded-content": {
-      "wrong_region_exception": {
-        "Error": {
-          "Code": "ResourceNotFoundException",
-          "Message": "Functions from '<wrong-region>' are not reachable in this region ('<region>')"
-        },
-        "Message": "Functions from '<wrong-region>' are not reachable in this region ('<region>')",
-        "Type": "User",
-        "ResponseMetadata": {
-          "HTTPHeaders": {},
-          "HTTPStatusCode": 404
-        }
-      }
-    }
-  },
-  "tests/integration/awslambda/test_lambda_api.py::TestLambdaFunction::test_get_function_wrong_region[get_function_configuration]": {
-    "recorded-date": "30-09-2022, 14:52:11",
-    "recorded-content": {
-      "wrong_region_exception": {
-        "Error": {
-          "Code": "ResourceNotFoundException",
-          "Message": "Functions from '<wrong-region>' are not reachable in this region ('<region>')"
-        },
-        "Message": "Functions from '<wrong-region>' are not reachable in this region ('<region>')",
-        "Type": "User",
-        "ResponseMetadata": {
-          "HTTPHeaders": {},
-          "HTTPStatusCode": 404
-        }
-      }
-    }
-  },
-  "tests/integration/awslambda/test_lambda_api.py::TestLambdaFunction::test_get_function_wrong_region[get_function_event_invoke_config]": {
-    "recorded-date": "30-09-2022, 14:52:16",
-    "recorded-content": {
-      "wrong_region_exception": {
-        "Error": {
-          "Code": "ResourceNotFoundException",
-          "Message": "Functions from '<wrong-region>' are not reachable in this region ('<region>')"
-        },
-        "Message": "Functions from '<wrong-region>' are not reachable in this region ('<region>')",
-        "Type": "User",
-        "ResponseMetadata": {
-          "HTTPHeaders": {},
-          "HTTPStatusCode": 404
-        }
-      }
-    }
-  },
-  "tests/integration/awslambda/test_lambda_api.py::TestLambdaFunction::test_get_function_wrong_region[delete_function]": {
-    "recorded-date": "30-09-2022, 14:52:20",
-    "recorded-content": {
-      "wrong_region_exception": {
-        "Error": {
-          "Code": "ResourceNotFoundException",
-          "Message": "Functions from '<wrong-region>' are not reachable in this region ('<region>')"
-        },
-        "Message": "Functions from '<wrong-region>' are not reachable in this region ('<region>')",
-        "Type": "User",
-        "ResponseMetadata": {
-          "HTTPHeaders": {},
-          "HTTPStatusCode": 404
-        }
-      }
-    }
-  },
-  "tests/integration/awslambda/test_lambda_api.py::TestLambdaFunction::test_get_function_wrong_region[invoke]": {
-    "recorded-date": "30-09-2022, 14:52:22",
-    "recorded-content": {
-      "wrong_region_exception": {
-        "Error": {
-          "Code": "ResourceNotFoundException",
-          "Message": "Functions from '<wrong-region>' are not reachable in this region ('<region>')"
-        },
-        "Message": "Functions from '<wrong-region>' are not reachable in this region ('<region>')",
-        "Type": "User",
-        "ResponseMetadata": {
-          "HTTPHeaders": {},
-          "HTTPStatusCode": 404
-        }
-      }
-    }
-  },
-  "tests/integration/awslambda/test_lambda_api.py::TestLambdaFunction::test_get_function_wrong_region[get_function_url_config]": {
-    "recorded-date": "30-09-2022, 14:52:13",
-    "recorded-content": {
-      "wrong_region_exception": {
-        "Error": {
-          "Code": "ResourceNotFoundException",
-          "Message": "Functions from '<wrong-region>' are not reachable in this region ('<region>')"
-        },
-        "Message": "Functions from '<wrong-region>' are not reachable in this region ('<region>')",
-        "Type": "User",
-        "ResponseMetadata": {
-          "HTTPHeaders": {},
-          "HTTPStatusCode": 404
-        }
-      }
-    }
-  },
-  "tests/integration/awslambda/test_lambda_api.py::TestLambdaFunction::test_get_function_wrong_region[get_function_code_signing_config]": {
-    "recorded-date": "30-09-2022, 14:52:14",
-    "recorded-content": {
-      "wrong_region_exception": {
-        "Error": {
-          "Code": "ResourceNotFoundException",
-          "Message": "Functions from '<wrong-region>' are not reachable in this region ('<region>')"
-        },
-        "Message": "Functions from '<wrong-region>' are not reachable in this region ('<region>')",
-        "Type": "User",
-        "ResponseMetadata": {
-          "HTTPHeaders": {},
-          "HTTPStatusCode": 404
-        }
-      }
-    }
-  },
-  "tests/integration/awslambda/test_lambda_api.py::TestLambdaFunction::test_get_function_wrong_region[get_function_concurrency]": {
-    "recorded-date": "30-09-2022, 14:52:18",
-    "recorded-content": {
-      "wrong_region_exception": {
-        "Error": {
-          "Code": "ResourceNotFoundException",
-          "Message": "Functions from '<wrong-region>' are not reachable in this region ('<region>')"
-        },
-        "Message": "Functions from '<wrong-region>' are not reachable in this region ('<region>')",
-        "Type": "User",
-        "ResponseMetadata": {
-          "HTTPHeaders": {},
-          "HTTPStatusCode": 404
-        }
-      }
-    }
-  },
-  "tests/integration/awslambda/test_lambda_api.py::TestLambdaVersions::test_publish_with_update": {
-    "recorded-date": "30-09-2022, 15:16:38",
-    "recorded-content": {
-      "create_response": {
-        "Architectures": [
-          "x86_64"
-        ],
-        "CodeSha256": "<code-sha256:1>",
-        "CodeSize": 264,
-        "Description": "",
-        "EphemeralStorage": {
-          "Size": 512
-        },
-        "FunctionArn": "arn:aws:lambda:<region>:111111111111:function:<function-name:1>",
-        "FunctionName": "<function-name:1>",
-        "Handler": "index.handler",
-        "LastModified": "date",
-        "MemorySize": 128,
-        "PackageType": "Zip",
-        "RevisionId": "<uuid:1>",
-        "Role": "arn:aws:iam::111111111111:role/<resource:1>",
-        "Runtime": "python3.9",
-        "State": "Pending",
-        "StateReason": "The function is being created.",
-        "StateReasonCode": "Creating",
-        "Timeout": 3,
-        "TracingConfig": {
-          "Mode": "PassThrough"
-        },
-        "Version": "$LATEST",
-        "ResponseMetadata": {
-          "HTTPHeaders": {},
-          "HTTPStatusCode": 201
-        }
-      },
-      "get_function_result": {
-        "Code": {
-          "Location": "<location>",
-          "RepositoryType": "S3"
-        },
-        "Configuration": {
-          "Architectures": [
-            "x86_64"
-          ],
-          "CodeSha256": "<code-sha256:1>",
-          "CodeSize": 264,
-          "Description": "",
-          "EphemeralStorage": {
-            "Size": 512
-          },
-          "FunctionArn": "arn:aws:lambda:<region>:111111111111:function:<function-name:1>",
-          "FunctionName": "<function-name:1>",
-          "Handler": "index.handler",
-          "LastModified": "date",
-          "LastUpdateStatus": "Successful",
-          "MemorySize": 128,
-          "PackageType": "Zip",
-          "RevisionId": "<uuid:2>",
-          "Role": "arn:aws:iam::111111111111:role/<resource:1>",
-          "Runtime": "python3.9",
-          "State": "Active",
-          "Timeout": 3,
-          "TracingConfig": {
-            "Mode": "PassThrough"
-          },
-          "Version": "$LATEST"
-        },
-        "ResponseMetadata": {
-          "HTTPHeaders": {},
-          "HTTPStatusCode": 200
-        }
-      },
-      "update_function_code_result": {
-        "Architectures": [
-          "x86_64"
-        ],
-        "CodeSha256": "<code-sha256:2>",
-        "CodeSize": 311,
-        "Description": "",
-        "EphemeralStorage": {
-          "Size": 512
-        },
-        "FunctionArn": "arn:aws:lambda:<region>:111111111111:function:<function-name:1>:1",
-        "FunctionName": "<function-name:1>",
-        "Handler": "index.handler",
-        "LastModified": "date",
-        "MemorySize": 128,
-        "PackageType": "Zip",
-        "RevisionId": "<uuid:3>",
-        "Role": "arn:aws:iam::111111111111:role/<resource:1>",
-        "Runtime": "python3.9",
-        "State": "Pending",
-        "StateReason": "The function is being created.",
-        "StateReasonCode": "Creating",
-        "Timeout": 3,
-        "TracingConfig": {
-          "Mode": "PassThrough"
-        },
-        "Version": "1",
-        "ResponseMetadata": {
-          "HTTPHeaders": {},
-          "HTTPStatusCode": 200
-        }
-      },
-      "get_function_version_result": {
-        "Code": {
-          "Location": "<location>",
-          "RepositoryType": "S3"
-        },
-        "Configuration": {
-          "Architectures": [
-            "x86_64"
-          ],
-          "CodeSha256": "<code-sha256:2>",
-          "CodeSize": 311,
-          "Description": "",
-          "EphemeralStorage": {
-            "Size": 512
-          },
-          "FunctionArn": "arn:aws:lambda:<region>:111111111111:function:<function-name:1>:1",
-          "FunctionName": "<function-name:1>",
-          "Handler": "index.handler",
-          "LastModified": "date",
-          "MemorySize": 128,
-          "PackageType": "Zip",
-          "RevisionId": "<uuid:3>",
-          "Role": "arn:aws:iam::111111111111:role/<resource:1>",
-          "Runtime": "python3.9",
-          "State": "Pending",
-          "StateReason": "The function is being created.",
-          "StateReasonCode": "Creating",
-          "Timeout": 3,
-          "TracingConfig": {
-            "Mode": "PassThrough"
-          },
-          "Version": "1"
-        },
-        "ResponseMetadata": {
-          "HTTPHeaders": {},
-          "HTTPStatusCode": 200
-        }
-      },
-      "get_function_latest_result": {
-        "Code": {
-          "Location": "<location>",
-          "RepositoryType": "S3"
-        },
-        "Configuration": {
-          "Architectures": [
-            "x86_64"
-          ],
-          "CodeSha256": "<code-sha256:2>",
-          "CodeSize": 311,
-          "Description": "",
-          "EphemeralStorage": {
-            "Size": 512
-          },
-          "FunctionArn": "arn:aws:lambda:<region>:111111111111:function:<function-name:1>:$LATEST",
-          "FunctionName": "<function-name:1>",
-          "Handler": "index.handler",
-          "LastModified": "date",
-          "LastUpdateStatus": "InProgress",
-          "LastUpdateStatusReason": "The function is being created.",
-          "LastUpdateStatusReasonCode": "Creating",
-          "MemorySize": 128,
-          "PackageType": "Zip",
-          "RevisionId": "<uuid:4>",
-          "Role": "arn:aws:iam::111111111111:role/<resource:1>",
-          "Runtime": "python3.9",
-          "State": "Active",
-          "Timeout": 3,
-          "TracingConfig": {
-            "Mode": "PassThrough"
-          },
-          "Version": "$LATEST"
-        },
-        "ResponseMetadata": {
-          "HTTPHeaders": {},
-          "HTTPStatusCode": 200
         }
       }
     }
