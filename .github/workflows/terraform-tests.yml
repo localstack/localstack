@@ -123,9 +123,15 @@ jobs:
       run: |
         bash tests/terraform/run.sh ${{ matrix.service }} ${{ steps.get-list.outputs.testlist }}
 
+      # only archive when the run step produced errors
+    - name: Remove files that don't contain ERROR entries before uploading logs
+      if: ${{ failure() && steps.run-tests.conclusion == 'failure'  }}
+      run: |
+        grep -r -L "\[ERROR" | xargs -I _ rm _
+
     - name: Archive debug logs
       uses: actions/upload-artifact@v3
-      if: ${{ failure() && steps.run-tests.conclusion == 'failure'  }} # only archive when the run step produced errors
+      if: ${{ failure() && steps.run-tests.conclusion == 'failure'  }}
       with:
         name: terraformlogs
         path: |
