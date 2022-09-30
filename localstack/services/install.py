@@ -430,6 +430,7 @@ class CommunityInstallerRepository(InstallerRepository):
             opensearch_package,
         )
         from localstack.services.sqs.legacy.packages import elasticmq_package
+        from localstack.services.stepfunctions.packages import stepfunctions_local_package
 
         return [
             ("awslambda-go-runtime", awslambda_go_runtime_package),
@@ -444,7 +445,7 @@ class CommunityInstallerRepository(InstallerRepository):
             ("lambda-java-libs", lambda_java_libs_package),
             ("local-kms", install_local_kms),
             ("postgresql", PostgresqlPackage()),
-            ("stepfunctions-local", install_stepfunctions_local),
+            ("stepfunctions-local", stepfunctions_local_package),
             ("terraform", install_terraform),
         ]
 
