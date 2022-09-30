@@ -312,7 +312,7 @@ def in_docker():
         pass
     with open("/proc/1/cgroup", "rt") as ifh:
         content = ifh.read()
-        if "docker" in content:
+        if "docker" in content or "buildkit" in content:
             return True
         os_hostname = socket.gethostname()
         if os_hostname and os_hostname in content:

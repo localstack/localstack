@@ -76,7 +76,7 @@ from localstack.services.firehose.mappers import (
     convert_s3_update_to_desc,
     convert_source_config_to_desc,
 )
-from localstack.services.generic_proxy import RegionBackend
+from localstack.services.firehose.models import FirehoseStore, firehose_stores
 from localstack.utils.aws import aws_stack
 from localstack.utils.aws.aws_stack import (
     connect_to_resource,
@@ -97,9 +97,7 @@ from localstack.utils.common import (
     truncate,
 )
 from localstack.utils.kinesis import kinesis_connector
-from localstack.utils.kinesis.kinesis_connector import KinesisProcessorThread
 from localstack.utils.run import run_for_max_seconds
-from localstack.utils.tagging import TaggingService
 
 LOG = logging.getLogger(__name__)
 
@@ -116,23 +114,11 @@ def next_sequence_number() -> int:
         return SEQUENCE_NUMBER
 
 
-class FirehoseBackend(RegionBackend):
-    # maps delivery stream names to DeliveryStreamDescription
-    delivery_streams: Dict[str, DeliveryStreamDescription]
-    kinesis_listeners: Dict[str, KinesisProcessorThread]
-    # static tagging service instance
-    TAGS = TaggingService()
-
-    def __init__(self):
-        self.delivery_streams = {}
-        self.kinesis_listeners = {}
-
-
 def _get_description_or_raise_not_found(
     context, delivery_stream_name: str
 ) -> DeliveryStreamDescription:
-    region = FirehoseBackend.get()
-    delivery_stream_description = region.delivery_streams.get(delivery_stream_name)
+    store = FirehoseProvider.get_store()
+    delivery_stream_description = store.delivery_streams.get(delivery_stream_name)
     if not delivery_stream_description:
         raise ResourceNotFoundException(
             f"Firehose {delivery_stream_name} under account {context.account_id} " f"not found."
@@ -141,6 +127,10 @@ def _get_description_or_raise_not_found(
 
 
 class FirehoseProvider(FirehoseApi):
+    @staticmethod
+    def get_store() -> FirehoseStore:
+        return firehose_stores[get_aws_account_id()][aws_stack.get_region()]
+
     def create_delivery_stream(
         self,
         context: RequestContext,
@@ -157,7 +147,7 @@ class FirehoseProvider(FirehoseApi):
         http_endpoint_destination_configuration: HttpEndpointDestinationConfiguration = None,
         tags: TagDeliveryStreamInputTagList = None,
     ) -> CreateDeliveryStreamOutput:
-        region = FirehoseBackend.get()
+        store = self.get_store()
 
         destinations: DestinationDescriptionList = []
         if elasticsearch_destination_configuration:
@@ -223,8 +213,8 @@ class FirehoseProvider(FirehoseApi):
             Destinations=destinations,
             Source=convert_source_config_to_desc(kinesis_stream_source_configuration),
         )
-        FirehoseBackend.TAGS.tag_resource(stream["DeliveryStreamARN"], tags)
-        region.delivery_streams[delivery_stream_name] = stream
+        store.TAGS.tag_resource(stream["DeliveryStreamARN"], tags)
+        store.delivery_streams[delivery_stream_name] = stream
 
         if delivery_stream_type == DeliveryStreamType.KinesisStreamAsSource:
             if not kinesis_stream_source_configuration:
@@ -242,7 +232,7 @@ class FirehoseProvider(FirehoseApi):
                         wait_until_started=True,
                         ddb_lease_table_suffix="-firehose",
                     )
-                    region.kinesis_listeners[delivery_stream_name] = process
+                    store.kinesis_listeners[delivery_stream_name] = process
                     stream["DeliveryStreamStatus"] = DeliveryStreamStatus.ACTIVE
                 except Exception as e:
                     LOG.warning(
@@ -259,13 +249,13 @@ class FirehoseProvider(FirehoseApi):
         delivery_stream_name: DeliveryStreamName,
         allow_force_delete: BooleanObject = None,
     ) -> DeleteDeliveryStreamOutput:
-        region = FirehoseBackend.get()
-        delivery_stream_description = region.delivery_streams.pop(delivery_stream_name, {})
+        store = self.get_store()
+        delivery_stream_description = store.delivery_streams.pop(delivery_stream_name, {})
         if not delivery_stream_description:
             raise ResourceNotFoundException(
                 f"Firehose {delivery_stream_name} under account {context.account_id} " f"not found."
             )
-        kinesis_process = region.kinesis_listeners.pop(delivery_stream_name, None)
+        kinesis_process = store.kinesis_listeners.pop(delivery_stream_name, None)
         if kinesis_process:
             LOG.debug("Stopping kinesis listener for %s", delivery_stream_name)
             kinesis_process.stop()
@@ -291,9 +281,9 @@ class FirehoseProvider(FirehoseApi):
         delivery_stream_type: DeliveryStreamType = None,
         exclusive_start_delivery_stream_name: DeliveryStreamName = None,
     ) -> ListDeliveryStreamsOutput:
-        region = FirehoseBackend.get()
+        store = self.get_store()
         delivery_stream_names = []
-        for name, stream in region.delivery_streams.items():
+        for name, stream in store.delivery_streams.items():
             delivery_stream_names.append(stream["DeliveryStreamName"])
         return ListDeliveryStreamsOutput(
             DeliveryStreamNames=delivery_stream_names, HasMoreDeliveryStreams=False
@@ -325,10 +315,11 @@ class FirehoseProvider(FirehoseApi):
         delivery_stream_name: DeliveryStreamName,
         tags: TagDeliveryStreamInputTagList,
     ) -> TagDeliveryStreamOutput:
+        store = self.get_store()
         delivery_stream_description = _get_description_or_raise_not_found(
             context, delivery_stream_name
         )
-        FirehoseBackend.TAGS.tag_resource(delivery_stream_description["DeliveryStreamARN"], tags)
+        store.TAGS.tag_resource(delivery_stream_description["DeliveryStreamARN"], tags)
         return ListTagsForDeliveryStreamOutput()
 
     def list_tags_for_delivery_stream(
@@ -338,11 +329,12 @@ class FirehoseProvider(FirehoseApi):
         exclusive_start_tag_key: TagKey = None,
         limit: ListTagsForDeliveryStreamInputLimit = None,
     ) -> ListTagsForDeliveryStreamOutput:
+        store = self.get_store()
         delivery_stream_description = _get_description_or_raise_not_found(
             context, delivery_stream_name
         )
         # The tagging service returns a dictionary with the given root name
-        tags = FirehoseBackend.TAGS.list_tags_for_resource(
+        tags = store.TAGS.list_tags_for_resource(
             arn=delivery_stream_description["DeliveryStreamARN"], root_name="root"
         )
         # Extract the actual list of tags for the typed response
@@ -355,11 +347,12 @@ class FirehoseProvider(FirehoseApi):
         delivery_stream_name: DeliveryStreamName,
         tag_keys: TagKeyList,
     ) -> UntagDeliveryStreamOutput:
+        store = self.get_store()
         delivery_stream_description = _get_description_or_raise_not_found(
             context, delivery_stream_name
         )
         # The tagging service returns a dictionary with the given root name
-        FirehoseBackend.TAGS.untag_resource(
+        store.TAGS.untag_resource(
             arn=delivery_stream_description["DeliveryStreamARN"], tag_names=tag_keys
         )
         return UntagDeliveryStreamOutput()
@@ -441,8 +434,8 @@ class FirehoseProvider(FirehoseApi):
     ) -> List[PutRecordBatchResponseEntry]:
         """Put a list of records to the firehose stream - either directly from a PutRecord API call, or
         received from an underlying Kinesis stream (if 'KinesisStreamAsSource' is configured)"""
-        region = FirehoseBackend.get()
-        delivery_stream_description = region.delivery_streams.get(delivery_stream_name)
+        store = self.get_store()
+        delivery_stream_description = store.delivery_streams.get(delivery_stream_name)
         if not delivery_stream_description:
             raise ResourceNotFoundException(
                 f"Firehose {delivery_stream_name} under account {get_aws_account_id()} not found."

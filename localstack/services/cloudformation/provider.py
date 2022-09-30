@@ -4,6 +4,7 @@ import re
 from copy import deepcopy
 from typing import Any, Dict, List, Optional
 
+from localstack.aws.accounts import get_aws_account_id
 from localstack.aws.api import CommonServiceException, RequestContext, handler
 from localstack.aws.api.cloudformation import (
     CallAs,
@@ -63,7 +64,7 @@ from localstack.aws.api.cloudformation import (
     ValidateTemplateInput,
     ValidateTemplateOutput,
 )
-from localstack.services.generic_proxy import RegionBackend
+from localstack.services.cloudformation.stores import CloudFormationStore, cloudformation_stores
 from localstack.utils.aws import aws_stack
 from localstack.utils.cloudformation import template_deployer, template_preparer
 from localstack.utils.cloudformation.template_deployer import NoStackUpdates
@@ -86,6 +87,12 @@ ARN_CHANGESET_REGEX = re.compile(
 ARN_STACK_REGEX = re.compile(
     r"arn:(aws|aws-us-gov|aws-cn):cloudformation:[-a-zA-Z0-9]+:\d{12}:stack/[a-zA-Z][-a-zA-Z0-9]*/[-a-zA-Z0-9:/._+]+"
 )
+
+
+def get_cloudformation_store(account_id: str = None, region: str = None) -> CloudFormationStore:
+    return cloudformation_stores[account_id or get_aws_account_id()][
+        region or aws_stack.get_region()
+    ]
 
 
 class StackSet:
@@ -419,7 +426,7 @@ class Stack:
     @property
     def exports_map(self):
         result = {}
-        for export in CloudFormationRegion.get().exports:
+        for export in get_cloudformation_store().exports:
             result[export["Name"]] = export
         return result
 
@@ -496,40 +503,6 @@ class StackChangeSet(Stack):
         return self.stack.stack_parameters(defaults=defaults)
 
 
-class CloudFormationRegion(RegionBackend):
-    def __init__(self):
-        # maps stack ID to stack details
-        self.stacks: Dict[str, Stack] = {}
-        # maps stack set ID to stack set details
-        self.stack_sets: Dict[str, StackSet] = {}
-
-    @property
-    def exports(self):
-        exports = []
-        output_keys = {}
-        for stack_id, stack in self.stacks.items():
-            for output in stack.outputs_list():
-                export_name = output.get("ExportName")
-                if not export_name:
-                    continue
-                if export_name in output_keys:
-                    # TODO: raise exception on stack creation in case of duplicate exports
-                    LOG.warning(
-                        "Found duplicate export name %s in stacks: %s %s",
-                        export_name,
-                        output_keys[export_name],
-                        stack.stack_id,
-                    )
-                entry = {
-                    "ExportingStackId": stack.stack_id,
-                    "Name": export_name,
-                    "Value": output["OutputValue"],
-                }
-                exports.append(entry)
-                output_keys[export_name] = stack.stack_id
-        return exports
-
-
 def clone_stack_params(stack_params):
     try:
         return clone(stack_params)
@@ -539,14 +512,14 @@ def clone_stack_params(stack_params):
 
 
 def find_stack(stack_name: str) -> Optional[Stack]:
-    state = CloudFormationRegion.get()
+    state = get_cloudformation_store()
     return (
         [s for s in state.stacks.values() if stack_name in [s.stack_name, s.stack_id]] or [None]
     )[0]
 
 
 def find_change_set(cs_name: str, stack_name: Optional[str] = None) -> Optional[StackChangeSet]:
-    state = CloudFormationRegion.get()
+    state = get_cloudformation_store()
     stack = find_stack(stack_name)
     stacks = [stack] if stack else state.stacks.values()
     result = [
@@ -588,7 +561,7 @@ class InternalFailure(CommonServiceException):
 class CloudformationProvider(CloudformationApi):
     @handler("CreateStack", expand=False)
     def create_stack(self, context: RequestContext, request: CreateStackInput) -> CreateStackOutput:
-        state = CloudFormationRegion.get()
+        state = get_cloudformation_store()
         template_deployer.prepare_template_body(request)  # TODO: avoid mutating request directly
         template = template_preparer.parse_template(request["TemplateBody"])
         stack_name = template["StackName"] = request.get("StackName")
@@ -663,7 +636,7 @@ class CloudformationProvider(CloudformationApi):
     def describe_stacks(
         self, context: RequestContext, stack_name: StackName = None, next_token: NextToken = None
     ) -> DescribeStacksOutput:
-        state = CloudFormationRegion.get()
+        state = get_cloudformation_store()
         stack_list = list(state.stacks.values())
         stacks = [
             s.describe_details()
@@ -683,7 +656,7 @@ class CloudformationProvider(CloudformationApi):
         next_token: NextToken = None,
         stack_status_filter: StackStatusFilter = None,
     ) -> ListStacksOutput:
-        state = CloudFormationRegion.get()
+        state = get_cloudformation_store()
 
         stacks = [
             s.describe_details()
@@ -791,7 +764,7 @@ class CloudformationProvider(CloudformationApi):
     def create_stack_set(
         self, context: RequestContext, request: CreateStackSetInput
     ) -> CreateStackSetOutput:
-        state = CloudFormationRegion.get()
+        state = get_cloudformation_store()
         stack_set = StackSet(request)
         stack_set_id = short_uid()
         stack_set.metadata["StackSetId"] = stack_set_id
@@ -803,7 +776,7 @@ class CloudformationProvider(CloudformationApi):
     def describe_stack_set(
         self, context: RequestContext, stack_set_name: StackSetName, call_as: CallAs = None
     ) -> DescribeStackSetOutput:
-        state = CloudFormationRegion.get()
+        state = get_cloudformation_store()
         result = [
             sset.metadata
             for sset in state.stack_sets.values()
@@ -818,7 +791,7 @@ class CloudformationProvider(CloudformationApi):
     def update_stack_set(
         self, context: RequestContext, request: UpdateStackSetInput
     ) -> UpdateStackSetOutput:
-        state = CloudFormationRegion.get()
+        state = get_cloudformation_store()
         set_name = request.get("StackSetName")
         stack_set = [sset for sset in state.stack_sets.values() if sset.stack_set_name == set_name]
         if not stack_set:
@@ -839,7 +812,7 @@ class CloudformationProvider(CloudformationApi):
     def delete_stack_set(
         self, context: RequestContext, stack_set_name: StackSetName, call_as: CallAs = None
     ) -> DeleteStackSetOutput:
-        state = CloudFormationRegion.get()
+        state = get_cloudformation_store()
         stack_set = [
             sset for sset in state.stack_sets.values() if sset.stack_set_name == stack_set_name
         ]
@@ -856,7 +829,7 @@ class CloudformationProvider(CloudformationApi):
     def list_stack_sets(
         self, context: RequestContext, request: ListStackSetsInput
     ) -> ListStackSetsOutput:
-        state = CloudFormationRegion.get()
+        state = get_cloudformation_store()
         result = [sset.metadata for sset in state.stack_sets.values()]
         return ListStackSetsOutput(Summaries=result)
 
@@ -908,7 +881,7 @@ class CloudformationProvider(CloudformationApi):
                 raise ValidationError(
                     f"Stack {stack_name} already exists"
                 )  # stack should not exist yet (TODO: check proper message)
-            state = CloudFormationRegion.get()
+            state = get_cloudformation_store()
             empty_stack_template = dict(template)
             empty_stack_template["Resources"] = {}
             req_params_copy = clone_stack_params(req_params)
@@ -1071,7 +1044,7 @@ class CloudformationProvider(CloudformationApi):
         context: RequestContext,
         request: CreateStackInstancesInput,
     ) -> CreateStackInstancesOutput:
-        state = CloudFormationRegion.get()
+        state = get_cloudformation_store()
 
         set_name = request.get("StackSetName")
         stack_set = [sset for sset in state.stack_sets.values() if sset.stack_set_name == set_name]
@@ -1132,7 +1105,7 @@ class CloudformationProvider(CloudformationApi):
         request: ListStackInstancesInput,
     ) -> ListStackInstancesOutput:
         set_name = request.get("StackSetName")
-        state = CloudFormationRegion.get()
+        state = get_cloudformation_store()
         stack_set = [sset for sset in state.stack_sets.values() if sset.stack_set_name == set_name]
         if not stack_set:
             return not_found_error(f'Stack set named "{set_name}" does not exist')
@@ -1145,14 +1118,14 @@ class CloudformationProvider(CloudformationApi):
     def list_exports(
         self, context: RequestContext, next_token: NextToken = None
     ) -> ListExportsOutput:
-        state = CloudFormationRegion.get()
+        state = get_cloudformation_store()
         return ListExportsOutput(Exports=state.exports)
 
     @handler("ListImports")
     def list_imports(
         self, context: RequestContext, export_name: ExportName, next_token: NextToken = None
     ) -> ListImportsOutput:
-        state = CloudFormationRegion.get()
+        state = get_cloudformation_store()
 
         importing_stack_names = []
         for stack in state.stacks.values():
@@ -1165,7 +1138,7 @@ class CloudformationProvider(CloudformationApi):
     def describe_stack_events(
         self, context: RequestContext, stack_name: StackName = None, next_token: NextToken = None
     ) -> DescribeStackEventsOutput:
-        state = CloudFormationRegion.get()
+        state = get_cloudformation_store()
 
         events = []
         for stack_id, stack in state.stacks.items():
@@ -1231,7 +1204,7 @@ class CloudformationProvider(CloudformationApi):
         operation_id: ClientRequestToken,
         call_as: CallAs = None,
     ) -> DescribeStackSetOperationOutput:
-        state = CloudFormationRegion.get()
+        state = get_cloudformation_store()
 
         set_name = stack_set_name
 

@@ -1,10 +1,17 @@
+import base64
+import itertools
 import re
+import time
 
 from moto.sqs.exceptions import MessageAttributesInvalid
 from moto.sqs.models import TRANSPORT_TYPE_ENCODINGS, Message
 
 from localstack.aws.accounts import get_aws_account_id
+from localstack.aws.api.sqs import ReceiptHandleIsInvalid
+from localstack.utils.aws.aws_stack import parse_arn
 from localstack.utils.common import clone
+from localstack.utils.objects import singleton_factory
+from localstack.utils.strings import long_uid
 from localstack.utils.urls import path_from_url
 
 
@@ -100,3 +107,36 @@ def get_message_attributes_md5(req_data):
     message_attr_hash = moto_message.attribute_md5
 
     return message_attr_hash
+
+
+def decode_receipt_handle(receipt_handle: str) -> str:
+    try:
+        handle = base64.b64decode(receipt_handle).decode("utf-8")
+        _, queue_arn, message_id, last_received = handle.split(" ")
+        parse_arn(queue_arn)  # raises a ValueError if it is not an arn
+        return queue_arn
+    except (IndexError, ValueError):
+        raise ReceiptHandleIsInvalid(
+            f'The input receipt handle "{receipt_handle}" is not a valid receipt handle.'
+        )
+
+
+def encode_receipt_handle(queue_arn, message) -> str:
+    # http://docs.aws.amazon.com/AWSSimpleQueueService/latest/SQSDeveloperGuide/ImportantIdentifiers.html#ImportantIdentifiers-receipt-handles
+    # encode the queue arn in the receipt handle, so we can later check if it belongs to the queue
+    # but also add some randomness s.t. the generated receipt handles look like the ones from AWS
+    handle = f"{long_uid()} {queue_arn} {message.message.get('MessageId')} {message.last_received}"
+    encoded = base64.b64encode(handle.encode("utf-8"))
+    return encoded.decode("utf-8")
+
+
+@singleton_factory
+def global_message_sequence():
+    # creates a 20-digit number used as the start for the global sequence
+    start = int(time.time()) << 33
+    # itertools.count is thread safe over the GIL since its getAndIncrement operation is a single python bytecode op
+    return itertools.count(start)
+
+
+def generate_message_id():
+    return long_uid()
