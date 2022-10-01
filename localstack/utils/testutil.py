@@ -34,6 +34,7 @@ from localstack.utils.collections import ensure_list
 from localstack.utils.files import (
     TMP_FILES,
     chmod_r,
+    cp_r,
     is_empty_dir,
     load_file,
     mkdir,
@@ -42,7 +43,6 @@ from localstack.utils.files import (
 )
 from localstack.utils.net import get_free_tcp_port, is_port_open
 from localstack.utils.platform import is_debian
-from localstack.utils.run import run
 from localstack.utils.strings import short_uid, to_str
 from localstack.utils.sync import poll_condition
 from localstack.utils.threads import FuncThread
@@ -56,20 +56,6 @@ MAX_LAMBDA_ARCHIVE_UPLOAD_SIZE = 50_000_000
 
 def is_local_test_mode():
     return config.is_local_test_mode()
-
-
-def copy_dir(source, target):
-    if is_debian():
-        # Using the native command can be an order of magnitude faster on Travis-CI
-        return run("cp -r %s %s" % (source, target))
-    shutil.copytree(source, target)
-
-
-def rm_dir(dir):
-    if is_debian():
-        # Using the native command can be an order of magnitude faster on Travis-CI
-        return run("rm -r %s" % dir)
-    shutil.rmtree(dir)
 
 
 def create_lambda_archive(
@@ -116,7 +102,7 @@ def create_lambda_archive(
                 for file_path in glob.glob(file_to_copy):
                     name = os.path.join(target_dir, file_path.split(os.path.sep)[-1])
                     if os.path.isdir(file_path):
-                        copy_dir(file_path, name)
+                        cp_r(file_path, name)
                     else:
                         shutil.copyfile(file_path, name)
 
@@ -184,7 +170,7 @@ def create_zip_file(
         return full_zip_file
     with open(full_zip_file, "rb") as file_obj:
         zip_file_content = file_obj.read()
-    rm_dir(tmp_dir)
+    rm_rf(tmp_dir)
     return zip_file_content
 
 
@@ -491,15 +477,6 @@ def map_all_s3_objects(to_json: bool = True, buckets: List[str] = None) -> Dict[
                 # skip non-JSON or binary objects
                 pass
     return result
-
-
-def get_sample_arn(service, resource):
-    return "arn:aws:%s:%s:%s:%s" % (
-        service,
-        aws_stack.get_region(),
-        get_aws_account_id(),
-        resource,
-    )
 
 
 def send_describe_dynamodb_ttl_request(table_name):
