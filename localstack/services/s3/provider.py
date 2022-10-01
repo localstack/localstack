@@ -53,6 +53,7 @@ from localstack.aws.api.s3 import (
     SkipValidation,
 )
 from localstack.aws.api.s3 import Type as GranteeType
+from localstack.aws.handlers import modify_service_response, serve_custom_service_request_handlers
 from localstack.config import get_edge_port_http, get_protocol
 from localstack.constants import LOCALHOST_HOSTNAME
 from localstack.http import Request, Response
@@ -62,8 +63,13 @@ from localstack.services.moto import call_moto
 from localstack.services.plugins import ServiceLifecycleHook
 from localstack.services.s3.models import S3Store, get_moto_s3_backend, s3_stores
 from localstack.services.s3.notifications import NotificationDispatcher, S3EventNotificationContext
+from localstack.services.s3.presigned_url import (
+    s3_presigned_url_request_handler,
+    s3_presigned_url_response_handler,
+)
 from localstack.services.s3.utils import (
     ALLOWED_HEADER_OVERRIDES,
+    S3_VIRTUAL_HOST_FORWARDED_HEADER,
     VALID_ACL_PREDEFINED_GROUPS,
     VALID_GRANTEE_PERMISSIONS,
     _create_invalid_argument_exc,
@@ -78,7 +84,6 @@ from localstack.services.s3.utils import (
 )
 from localstack.utils.aws import aws_stack
 from localstack.utils.aws.request_context import AWS_REGION_REGEX
-from localstack.utils.objects import singleton_factory
 from localstack.utils.patch import patch
 
 LOG = logging.getLogger(__name__)
@@ -88,6 +93,8 @@ os.environ[
 ] = "s3.localhost.localstack.cloud:4566,s3.localhost.localstack.cloud"
 
 MOTO_CANONICAL_USER_ID = "75aa57f09aa0c8caeab4f8c24e99d10f8e7faeebf76c078efc7c6caea54ba06a"
+# max file size for S3 objects kept in memory (500 KB by default)
+S3_MAX_FILE_SIZE_BYTES = 512 * 1024
 
 
 class MalformedXML(CommonServiceException):
@@ -117,6 +124,7 @@ class S3Provider(S3Api, ServiceLifecycleHook):
     def on_after_init(self):
         apply_moto_patches()
         self.add_custom_routes()
+        register_custom_handlers()
 
     def __init__(self) -> None:
         super().__init__()
@@ -477,7 +485,7 @@ class S3Provider(S3Api, ServiceLifecycleHook):
         call_moto(context)
         # set it in the store, so we can keep the state if it was ever enabled
         if versioning_status := request.get("VersioningConfiguration", {}).get("Status"):
-            bucket_name = request.get("Bucket", "")
+            bucket_name = request["Bucket"]
             store = self.get_store()
             store.bucket_versioning_status[bucket_name] = versioning_status == "Enabled"
 
@@ -548,6 +556,7 @@ class S3Provider(S3Api, ServiceLifecycleHook):
         splitted = urlsplit(rewritten_url)
         copied_headers = copy.deepcopy(request.headers)
         copied_headers["Host"] = splitted.netloc
+        copied_headers[S3_VIRTUAL_HOST_FORWARDED_HEADER] = request.headers["host"]
         return forward(
             request, f"{splitted.scheme}://{splitted.netloc}", splitted.path, copied_headers
         )
@@ -577,7 +586,6 @@ class S3Provider(S3Api, ServiceLifecycleHook):
         # TODO region currently ignored
         if region:
             netloc = netloc.replace(f"{region}", "")
-
         return urlunsplit(
             SplitResult(splitted.scheme, netloc, path, splitted.query, splitted.fragment)
         )
@@ -675,10 +683,15 @@ def is_object_expired(context: RequestContext, bucket: BucketName, key: ObjectKe
     return is_key_expired(key_object=key_object)
 
 
-@singleton_factory
 def apply_moto_patches():
     # importing here in case we need InvalidObjectState from `localstack.aws.api.s3`
     from moto.s3.exceptions import InvalidObjectState
+
+    if not os.environ.get("MOTO_S3_DEFAULT_KEY_BUFFER_SIZE"):
+        os.environ["MOTO_S3_DEFAULT_KEY_BUFFER_SIZE"] = str(S3_MAX_FILE_SIZE_BYTES)
+
+    def _capitalize_header_name_from_snake_case(header_name: str) -> str:
+        return "-".join([part.capitalize() for part in header_name.split("-")])
 
     @patch(moto_s3_responses.S3Response.key_response)
     def _fix_key_response(fn, self, *args, **kwargs):
@@ -737,5 +750,6 @@ def apply_moto_patches():
         return res
 
 
-def _capitalize_header_name_from_snake_case(header_name: str) -> str:
-    return "-".join([part.capitalize() for part in header_name.split("-")])
+def register_custom_handlers():
+    serve_custom_service_request_handlers.append(s3_presigned_url_request_handler)
+    modify_service_response.append(S3Provider.service, s3_presigned_url_response_handler)

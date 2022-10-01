@@ -2390,7 +2390,7 @@
     }
   },
   "tests/integration/s3/test_s3.py::TestS3::test_s3_bucket_acl": {
-    "recorded-date": "14-09-2022, 16:07:13",
+    "recorded-date": "20-09-2022, 15:12:21",
     "recorded-content": {
       "get-bucket-acl": {
         "Grants": [
@@ -2880,6 +2880,415 @@
           "HTTPHeaders": {},
           "HTTPStatusCode": 200
         }
+      }
+    }
+  },
+  "tests/integration/s3/test_s3.py::TestS3PresignedUrl::test_put_object_with_md5_and_chunk_signature_bad_headers[s3-True]": {
+    "recorded-date": "22-09-2022, 00:02:59",
+    "recorded-content": {
+      "with-decoded-content-length": {
+        "Error": {
+          "AWSAccessKeyId": "<a-w-s-access-key-id:1>",
+          "Code": "SignatureDoesNotMatch",
+          "HostId": "host-id",
+          "Message": "The request signature we calculated does not match the signature you provided. Check your key and signing method.",
+          "RequestId": "<request-id:1>",
+          "SignatureProvided": "<signature-provided:1>",
+          "StringToSign": "<string-to-sign>",
+          "StringToSignBytes": "<string-to-sign-bytes:1>"
+        }
+      },
+      "without-decoded-content-length": {
+        "Error": {
+          "AWSAccessKeyId": "<a-w-s-access-key-id:1>",
+          "Code": "SignatureDoesNotMatch",
+          "HostId": "host-id",
+          "Message": "The request signature we calculated does not match the signature you provided. Check your key and signing method.",
+          "RequestId": "<request-id:2>",
+          "SignatureProvided": "<signature-provided:1>",
+          "StringToSign": "<string-to-sign>",
+          "StringToSignBytes": "<string-to-sign-bytes:2>"
+        }
+      }
+    }
+  },
+  "tests/integration/s3/test_s3.py::TestS3PresignedUrl::test_put_object_with_md5_and_chunk_signature_bad_headers[s3-False]": {
+    "recorded-date": "22-09-2022, 00:03:00",
+    "recorded-content": {}
+  },
+  "tests/integration/s3/test_s3.py::TestS3PresignedUrl::test_put_object_with_md5_and_chunk_signature_bad_headers[s3v4-True]": {
+    "recorded-date": "22-09-2022, 00:03:01",
+    "recorded-content": {
+      "with-decoded-content-length": {
+        "Error": {
+          "Code": "AccessDenied",
+          "HeadersNotSigned": "x-amz-date, x-amz-decoded-content-length",
+          "HostId": "host-id",
+          "Message": "There were headers present in the request which were not signed",
+          "RequestId": "<request-id:1>"
+        }
+      },
+      "without-decoded-content-length": {
+        "Error": {
+          "Code": "AccessDenied",
+          "HeadersNotSigned": "x-amz-date",
+          "HostId": "host-id",
+          "Message": "There were headers present in the request which were not signed",
+          "RequestId": "<request-id:2>"
+        }
+      }
+    }
+  },
+  "tests/integration/s3/test_s3.py::TestS3PresignedUrl::test_put_object_with_md5_and_chunk_signature_bad_headers[s3v4-False]": {
+    "recorded-date": "22-09-2022, 00:03:02",
+    "recorded-content": {}
+  },
+  "tests/integration/s3/test_s3.py::TestS3PresignedUrl::test_s3_presigned_url_expired[s3]": {
+    "recorded-date": "21-09-2022, 20:18:10",
+    "recorded-content": {
+      "expired-exception": {
+        "Error": {
+          "Code": "AccessDenied",
+          "Expires": "date",
+          "HostId": "host-id",
+          "Message": "Request has expired",
+          "RequestId": "<request-id:1>",
+          "ServerTime": "date"
+        }
+      }
+    }
+  },
+  "tests/integration/s3/test_s3.py::TestS3PresignedUrl::test_s3_presigned_url_expired[s3v4]": {
+    "recorded-date": "21-09-2022, 20:18:17",
+    "recorded-content": {
+      "expired-exception": {
+        "Error": {
+          "Code": "AccessDenied",
+          "Expires": "date",
+          "HostId": "host-id",
+          "Message": "Request has expired",
+          "RequestId": "<request-id:1>",
+          "ServerTime": "date",
+          "X-Amz-Expires": "2"
+        }
+      }
+    }
+  },
+  "tests/integration/s3/test_s3.py::TestS3PresignedUrl::test_presigned_url_signature_authentication_expired[s3-False]": {
+    "recorded-date": "21-09-2022, 20:37:44",
+    "recorded-content": {
+      "expired": {
+        "Error": {
+          "Code": "AccessDenied",
+          "Expires": "date",
+          "HostId": "host-id",
+          "Message": "Request has expired",
+          "RequestId": "<request-id:1>",
+          "ServerTime": "date"
+        }
+      }
+    }
+  },
+  "tests/integration/s3/test_s3.py::TestS3PresignedUrl::test_presigned_url_signature_authentication_expired[s3-True]": {
+    "recorded-date": "21-09-2022, 20:37:53",
+    "recorded-content": {
+      "expired": {
+        "Error": {
+          "Code": "AccessDenied",
+          "Expires": "date",
+          "HostId": "host-id",
+          "Message": "Request has expired",
+          "RequestId": "<request-id:1>",
+          "ServerTime": "date"
+        }
+      }
+    }
+  },
+  "tests/integration/s3/test_s3.py::TestS3PresignedUrl::test_presigned_url_signature_authentication_expired[s3v4-False]": {
+    "recorded-date": "21-09-2022, 20:37:57",
+    "recorded-content": {
+      "expired": {
+        "Error": {
+          "Code": "AccessDenied",
+          "Expires": "date",
+          "HostId": "host-id",
+          "Message": "Request has expired",
+          "RequestId": "<request-id:1>",
+          "ServerTime": "date",
+          "X-Amz-Expires": "1"
+        }
+      }
+    }
+  },
+  "tests/integration/s3/test_s3.py::TestS3PresignedUrl::test_presigned_url_signature_authentication_expired[s3v4-True]": {
+    "recorded-date": "21-09-2022, 20:38:01",
+    "recorded-content": {
+      "expired": {
+        "Error": {
+          "Code": "AccessDenied",
+          "Expires": "date",
+          "HostId": "host-id",
+          "Message": "Request has expired",
+          "RequestId": "<request-id:1>",
+          "ServerTime": "date",
+          "X-Amz-Expires": "1"
+        }
+      }
+    }
+  },
+  "tests/integration/s3/test_s3.py::TestS3PresignedUrl::test_presigned_url_signature_authentication[s3-False]": {
+    "recorded-date": "21-09-2022, 23:43:59",
+    "recorded-content": {
+      "invalid-get-1": {
+        "Error": {
+          "AWSAccessKeyId": "<a-w-s-access-key-id:1>",
+          "Code": "SignatureDoesNotMatch",
+          "HostId": "host-id",
+          "Message": "The request signature we calculated does not match the signature you provided. Check your key and signing method.",
+          "RequestId": "<request-id:1>",
+          "SignatureProvided": "<signature-provided:1>",
+          "StringToSign": "<string-to-sign>",
+          "StringToSignBytes": "<string-to-sign-bytes:1>"
+        }
+      },
+      "invalid-put-1": {
+        "Error": {
+          "AWSAccessKeyId": "<a-w-s-access-key-id:1>",
+          "Code": "SignatureDoesNotMatch",
+          "HostId": "host-id",
+          "Message": "The request signature we calculated does not match the signature you provided. Check your key and signing method.",
+          "RequestId": "<request-id:2>",
+          "SignatureProvided": "<signature-provided:2>",
+          "StringToSign": "<string-to-sign>",
+          "StringToSignBytes": "<string-to-sign-bytes:2>"
+        }
+      }
+    }
+  },
+  "tests/integration/s3/test_s3.py::TestS3PresignedUrl::test_presigned_url_signature_authentication[s3-True]": {
+    "recorded-date": "21-09-2022, 23:44:05",
+    "recorded-content": {
+      "invalid-get-1": {
+        "Error": {
+          "AWSAccessKeyId": "<a-w-s-access-key-id:1>",
+          "Code": "SignatureDoesNotMatch",
+          "HostId": "host-id",
+          "Message": "The request signature we calculated does not match the signature you provided. Check your key and signing method.",
+          "RequestId": "<request-id:1>",
+          "SignatureProvided": "<signature-provided:1>",
+          "StringToSign": "<string-to-sign>",
+          "StringToSignBytes": "<string-to-sign-bytes:1>"
+        }
+      },
+      "invalid-put-1": {
+        "Error": {
+          "AWSAccessKeyId": "<a-w-s-access-key-id:1>",
+          "Code": "SignatureDoesNotMatch",
+          "HostId": "host-id",
+          "Message": "The request signature we calculated does not match the signature you provided. Check your key and signing method.",
+          "RequestId": "<request-id:2>",
+          "SignatureProvided": "<signature-provided:2>",
+          "StringToSign": "<string-to-sign>",
+          "StringToSignBytes": "<string-to-sign-bytes:2>"
+        }
+      }
+    }
+  },
+  "tests/integration/s3/test_s3.py::TestS3PresignedUrl::test_presigned_url_signature_authentication[s3v4-False]": {
+    "recorded-date": "21-09-2022, 23:44:10",
+    "recorded-content": {
+      "invalid-get-1": {
+        "Error": {
+          "AWSAccessKeyId": "<a-w-s-access-key-id:1>",
+          "CanonicalRequest": "<canonical-request>",
+          "CanonicalRequestBytes": "<canonical-request-bytes:1>",
+          "Code": "SignatureDoesNotMatch",
+          "HostId": "host-id",
+          "Message": "The request signature we calculated does not match the signature you provided. Check your key and signing method.",
+          "RequestId": "<request-id:1>",
+          "SignatureProvided": "<signature-provided:1>",
+          "StringToSign": "<string-to-sign>",
+          "StringToSignBytes": "<string-to-sign-bytes:1>"
+        }
+      },
+      "invalid-put-1": {
+        "Error": {
+          "AWSAccessKeyId": "<a-w-s-access-key-id:1>",
+          "CanonicalRequest": "<canonical-request>",
+          "CanonicalRequestBytes": "<canonical-request-bytes:2>",
+          "Code": "SignatureDoesNotMatch",
+          "HostId": "host-id",
+          "Message": "The request signature we calculated does not match the signature you provided. Check your key and signing method.",
+          "RequestId": "<request-id:2>",
+          "SignatureProvided": "<signature-provided:2>",
+          "StringToSign": "<string-to-sign>",
+          "StringToSignBytes": "<string-to-sign-bytes:2>"
+        }
+      }
+    }
+  },
+  "tests/integration/s3/test_s3.py::TestS3PresignedUrl::test_presigned_url_signature_authentication[s3v4-True]": {
+    "recorded-date": "21-09-2022, 23:44:15",
+    "recorded-content": {
+      "invalid-get-1": {
+        "Error": {
+          "AWSAccessKeyId": "<a-w-s-access-key-id:1>",
+          "CanonicalRequest": "<canonical-request>",
+          "CanonicalRequestBytes": "<canonical-request-bytes:1>",
+          "Code": "SignatureDoesNotMatch",
+          "HostId": "host-id",
+          "Message": "The request signature we calculated does not match the signature you provided. Check your key and signing method.",
+          "RequestId": "<request-id:1>",
+          "SignatureProvided": "<signature-provided:1>",
+          "StringToSign": "<string-to-sign>",
+          "StringToSignBytes": "<string-to-sign-bytes:1>"
+        }
+      },
+      "invalid-put-1": {
+        "Error": {
+          "AWSAccessKeyId": "<a-w-s-access-key-id:1>",
+          "CanonicalRequest": "<canonical-request>",
+          "CanonicalRequestBytes": "<canonical-request-bytes:2>",
+          "Code": "SignatureDoesNotMatch",
+          "HostId": "host-id",
+          "Message": "The request signature we calculated does not match the signature you provided. Check your key and signing method.",
+          "RequestId": "<request-id:2>",
+          "SignatureProvided": "<signature-provided:2>",
+          "StringToSign": "<string-to-sign>",
+          "StringToSignBytes": "<string-to-sign-bytes:2>"
+        }
+      }
+    }
+  },
+  "tests/integration/s3/test_s3.py::TestS3PresignedUrl::test_s3_put_presigned_url_missing_sig_param[s3]": {
+    "recorded-date": "22-09-2022, 13:32:19",
+    "recorded-content": {
+      "missing-param-exception": {
+        "Error": {
+          "Code": "AccessDenied",
+          "HostId": "host-id",
+          "Message": "Query-string authentication requires the Signature, Expires and AWSAccessKeyId parameters",
+          "RequestId": "<request-id:1>"
+        },
+        "StatusCode": 403
+      }
+    }
+  },
+  "tests/integration/s3/test_s3.py::TestS3PresignedUrl::test_s3_put_presigned_url_missing_sig_param[s3v4]": {
+    "recorded-date": "22-09-2022, 13:32:22",
+    "recorded-content": {
+      "missing-param-exception": {
+        "Error": {
+          "Code": "AuthorizationQueryParametersError",
+          "HostId": "host-id",
+          "Message": "Query-string authentication version 4 requires the X-Amz-Algorithm, X-Amz-Credential, X-Amz-Signature, X-Amz-Date, X-Amz-SignedHeaders, and X-Amz-Expires parameters.",
+          "RequestId": "<request-id:1>"
+        },
+        "StatusCode": 400
+      }
+    }
+  },
+  "tests/integration/s3/test_s3.py::TestS3PresignedUrl::test_s3_put_presigned_url_with_different_headers[s3]": {
+    "recorded-date": "22-09-2022, 14:02:07",
+    "recorded-content": {
+      "content-type-exception": {
+        "Error": {
+          "AWSAccessKeyId": "<a-w-s-access-key-id:1>",
+          "Code": "SignatureDoesNotMatch",
+          "HostId": "host-id",
+          "Message": "The request signature we calculated does not match the signature you provided. Check your key and signing method.",
+          "RequestId": "<request-id:1>",
+          "SignatureProvided": "<signature-provided:1>",
+          "StringToSign": "<string-to-sign>",
+          "StringToSignBytes": "<string-to-sign-bytes:1>"
+        },
+        "StatusCode": 403
+      },
+      "content-encoding-response": {
+        "StatusCode": 200
+      },
+      "missing-content-encoding-response": {
+        "StatusCode": 200
+      }
+    }
+  },
+  "tests/integration/s3/test_s3.py::TestS3PresignedUrl::test_s3_put_presigned_url_with_different_headers[s3v4]": {
+    "recorded-date": "22-09-2022, 14:02:12",
+    "recorded-content": {
+      "content-type-exception": {
+        "Error": {
+          "AWSAccessKeyId": "<a-w-s-access-key-id:1>",
+          "CanonicalRequest": "<canonical-request>",
+          "CanonicalRequestBytes": "<canonical-request-bytes:1>",
+          "Code": "SignatureDoesNotMatch",
+          "HostId": "host-id",
+          "Message": "The request signature we calculated does not match the signature you provided. Check your key and signing method.",
+          "RequestId": "<request-id:1>",
+          "SignatureProvided": "<signature-provided:1>",
+          "StringToSign": "<string-to-sign>",
+          "StringToSignBytes": "<string-to-sign-bytes:1>"
+        },
+        "StatusCode": 403
+      },
+      "content-encoding-response": {
+        "Error": {
+          "AWSAccessKeyId": "<a-w-s-access-key-id:1>",
+          "CanonicalRequest": "<canonical-request>",
+          "CanonicalRequestBytes": "<canonical-request-bytes:2>",
+          "Code": "SignatureDoesNotMatch",
+          "HostId": "host-id",
+          "Message": "The request signature we calculated does not match the signature you provided. Check your key and signing method.",
+          "RequestId": "<request-id:2>",
+          "SignatureProvided": "<signature-provided:2>",
+          "StringToSign": "<string-to-sign>",
+          "StringToSignBytes": "<string-to-sign-bytes:2>"
+        },
+        "StatusCode": 403
+      },
+      "missing-content-encoding-response": {
+        "Error": {
+          "AWSAccessKeyId": "<a-w-s-access-key-id:1>",
+          "CanonicalRequest": "<canonical-request>",
+          "CanonicalRequestBytes": "<canonical-request-bytes:2>",
+          "Code": "SignatureDoesNotMatch",
+          "HostId": "host-id",
+          "Message": "The request signature we calculated does not match the signature you provided. Check your key and signing method.",
+          "RequestId": "<request-id:3>",
+          "SignatureProvided": "<signature-provided:2>",
+          "StringToSign": "<string-to-sign>",
+          "StringToSignBytes": "<string-to-sign-bytes:2>"
+        },
+        "StatusCode": 403
+      }
+    }
+  },
+  "tests/integration/s3/test_s3.py::TestS3PresignedUrl::test_s3_put_presigned_url_same_header_and_qs_parameter": {
+    "recorded-date": "22-09-2022, 14:28:14",
+    "recorded-content": {
+      "double-header-query-string": {
+        "Error": {
+          "AWSAccessKeyId": "<a-w-s-access-key-id:1>",
+          "CanonicalRequest": "<canonical-request>",
+          "CanonicalRequestBytes": "<canonical-request-bytes:1>",
+          "Code": "SignatureDoesNotMatch",
+          "HostId": "host-id",
+          "Message": "The request signature we calculated does not match the signature you provided. Check your key and signing method.",
+          "RequestId": "<request-id:1>",
+          "SignatureProvided": "<signature-provided:1>",
+          "StringToSign": "<string-to-sign>",
+          "StringToSignBytes": "<string-to-sign-bytes:1>"
+        },
+        "StatusCode": 403
+      },
+      "override-signed-qs": {
+        "Error": {
+          "Code": "AccessDenied",
+          "HeadersNotSigned": "x-amz-expires",
+          "HostId": "host-id",
+          "Message": "There were headers present in the request which were not signed",
+          "RequestId": "<request-id:2>"
+        },
+        "StatusCode": 403
       }
     }
   }
