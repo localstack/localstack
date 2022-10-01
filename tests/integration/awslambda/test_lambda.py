@@ -15,8 +15,10 @@ from localstack.testing.aws.lambda_utils import is_old_provider
 from localstack.testing.snapshots.transformer import KeyValueBasedTransformer
 from localstack.testing.snapshots.transformer_utility import PATTERN_UUID
 from localstack.utils import testutil
-from localstack.utils.common import load_file, retry, safe_requests, short_uid, to_bytes, to_str
-from localstack.utils.generic.wait_utils import wait_until
+from localstack.utils.files import load_file
+from localstack.utils.http import safe_requests
+from localstack.utils.strings import short_uid, to_bytes, to_str
+from localstack.utils.sync import retry, wait_until
 from localstack.utils.testutil import create_lambda_archive
 
 LOG = logging.getLogger(__name__)

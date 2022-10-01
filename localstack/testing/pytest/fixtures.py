@@ -27,12 +27,12 @@ from localstack.utils import testutil
 from localstack.utils.aws import aws_stack
 from localstack.utils.aws.aws_stack import create_dynamodb_table
 from localstack.utils.aws.client import SigningHttpClient
-from localstack.utils.common import ensure_list, poll_condition, retry
-from localstack.utils.common import safe_requests as requests
-from localstack.utils.common import short_uid
+from localstack.utils.collections import ensure_list
 from localstack.utils.functions import run_safe
-from localstack.utils.generic.wait_utils import wait_until
+from localstack.utils.http import safe_requests as requests
 from localstack.utils.net import wait_for_port_open
+from localstack.utils.strings import short_uid
+from localstack.utils.sync import poll_condition, retry, wait_until
 from localstack.utils.testutil import start_http_server
 
 if TYPE_CHECKING:

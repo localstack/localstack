@@ -1,8 +1,8 @@
 import json
 import os
 
-from localstack.utils.common import short_uid
-from localstack.utils.generic.wait_utils import wait_until
+from localstack.utils.strings import short_uid
+from localstack.utils.sync import wait_until
 
 
 def test_events_sqs_sns_lambda(logs_client, events_client, sns_client, deploy_cfn_template):

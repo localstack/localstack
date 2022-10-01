@@ -5,7 +5,7 @@ import urllib.parse
 import pytest
 
 from localstack.constants import PATH_USER_REQUEST
-from localstack.utils.generic.wait_utils import wait_until
+from localstack.utils.sync import wait_until
 
 
 def test_statemachine_definitionsubstitution(stepfunctions_client, s3_client, deploy_cfn_template):
