@@ -532,25 +532,6 @@ def send_dynamodb_request(path, action, request_body):
     return requests.put(url, data=request_body, headers=headers, verify=False)
 
 
-def create_sqs_queue(queue_name):
-    """Utility method to create a new queue via SQS API"""
-
-    client = aws_stack.connect_to_service("sqs")
-
-    # create queue
-    queue_url = client.create_queue(QueueName=queue_name)["QueueUrl"]
-
-    # get the queue arn
-    queue_arn = client.get_queue_attributes(QueueUrl=queue_url, AttributeNames=["QueueArn"],)[
-        "Attributes"
-    ]["QueueArn"]
-
-    return {
-        "QueueUrl": queue_url,
-        "QueueArn": queue_arn,
-    }
-
-
 def get_lambda_log_group_name(function_name):
     return "/aws/lambda/{}".format(function_name)
 
@@ -677,15 +658,6 @@ def proxy_server(proxy_listener, host="127.0.0.1", port=None) -> str:
     ), f"server on port {port} did not start"
     yield url
     thread.stop()
-
-
-def json_response(data, code=200, headers: Dict = None) -> requests.Response:
-    r = requests.Response()
-    r._content = json.dumps(data)
-    r.status_code = code
-    if headers:
-        r.headers.update(headers)
-    return r
 
 
 def list_all_resources(
