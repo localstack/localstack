@@ -13,11 +13,8 @@ from moto.core.exceptions import JsonRESTError
 from requests.models import CaseInsensitiveDict
 from requests.models import Response as RequestsResponse
 
-from localstack.aws.accounts import get_aws_account_id
 from localstack.config import DEFAULT_ENCODING
 from localstack.constants import APPLICATION_JSON, HEADER_CONTENT_TYPE
-from localstack.utils.aws import aws_stack
-from localstack.utils.http import replace_response_content
 from localstack.utils.json import json_safe
 from localstack.utils.strings import short_uid, str_startswith_ignore_case, to_bytes, to_str
 
@@ -327,46 +324,3 @@ class LambdaResponse:
     @property
     def content(self):
         return self._content
-
-
-class MessageConversion:
-    @staticmethod
-    def fix_date_format(response):
-        """Normalize date to format '2019-06-13T18:10:09.1234Z'"""
-        pattern = r"<CreateDate>([^<]+) ([^<+]+)(\+[^<]*)?</CreateDate>"
-        replacement = r"<CreateDate>\1T\2Z</CreateDate>"
-        replace_response_content(response, pattern, replacement)
-
-    @staticmethod
-    def fix_account_id(response):
-        return aws_stack.fix_account_id_in_arns(response, replace=get_aws_account_id())
-
-    @staticmethod
-    def fix_error_codes(method, data, response):
-        regex = r"<Errors>\s*(<Error>(\s|.)*</Error>)\s*</Errors>"
-        if method == "POST" and "Action=CreateRole" in to_str(data) and response.status_code >= 400:
-            content = to_str(response.content)
-            # remove the <Errors> wrapper element, as this breaks AWS Java SDKs (issue #2231)
-            response._content = re.sub(regex, r"\1", content, flags=REGEX_FLAGS)
-
-    @staticmethod
-    def fix_xml_empty_boolean(response, tag_names):
-        for tag_name in tag_names:
-            regex = r"<{tag}>\s*([Nn]one|null)\s*</{tag}>".format(tag=tag_name)
-            replace = r"<{tag}>false</{tag}>".format(tag=tag_name)
-            response._content = re.sub(regex, replace, to_str(response.content), flags=REGEX_FLAGS)
-
-    @staticmethod
-    def booleans_to_lowercase(response, tag_names):
-        for tag_name in tag_names:
-            regex_true = r"<{tag}>\s*True\s*</{tag}>".format(tag=tag_name)
-            replace_true = r"<{tag}>true</{tag}>".format(tag=tag_name)
-            response._content = re.sub(
-                regex_true, replace_true, to_str(response.content), flags=REGEX_FLAGS
-            )
-
-            regex_false = r"<{tag}>\s*False\s*</{tag}>".format(tag=tag_name)
-            replace_false = r"<{tag}>false</{tag}>".format(tag=tag_name)
-            response._content = re.sub(
-                regex_false, replace_false, to_str(response.content), flags=REGEX_FLAGS
-            )
