@@ -21,13 +21,6 @@ def transcribe_snapshot_transformer(snapshot):
     reason="Vosk transcription library has issues running on Circle CI arm64 executors.",
 )
 class TestTranscribe:
-    def is_transcription_done(self, transcribe_client, transcribe_create_job, file_path):
-        job_name = transcribe_create_job(audio_file=file_path)
-        transcription_status = transcribe_client.get_transcription_job(
-            TranscriptionJobName=job_name
-        )
-        return transcription_status["TranscriptionJob"]["TranscriptionJobStatus"] == "COMPLETED"
-
     @pytest.mark.skip_offline
     @pytest.mark.aws_validated
     @pytest.mark.skip_snapshot_verify(
@@ -41,12 +34,18 @@ class TestTranscribe:
         file_path = os.path.join(BASEDIR, "files/en-gb.wav")
         job_name = transcribe_create_job(audio_file=file_path)
         transcribe_client.get_transcription_job(TranscriptionJobName=job_name)
+    
+        def is_transcription_done():
+            transcription_status = transcribe_client.get_transcription_job(
+                TranscriptionJobName=job_name
+            )
+            return transcription_status["TranscriptionJob"]["TranscriptionJobStatus"] == "COMPLETED"
 
         # empirically it takes around
         # <5sec for a vosk transcription
         # ~100sec for an AWS transcription -> adjust timeout accordingly
         assert poll_condition(
-            self.is_transcription_done(transcribe_client, transcribe_create_job, file_path), timeout=100
+            is_transcription_done, timeout=100
         ), f"could not finish transcription job: {job_name} in time"
 
         job = transcribe_client.get_transcription_job(TranscriptionJobName=job_name)
@@ -89,8 +88,14 @@ class TestTranscribe:
             job_name = transcribe_create_job(audio_file=file_path)
             transcribe_client.get_transcription_job(TranscriptionJobName=job_name)
 
+            def is_transcription_done():
+                transcription_status = transcribe_client.get_transcription_job(
+                    TranscriptionJobName=job_name
+                )
+                return transcription_status["TranscriptionJob"]["TranscriptionJobStatus"] == "COMPLETED"
+
             assert poll_condition(
-                self.is_transcription_done(transcribe_client, transcribe_create_job, file_path), timeout=100
+                is_transcription_done, timeout=100
             ), f"could not finish transcription job: {job_name} in time"
 
         # job = transcribe_client.get_transcription_job(TranscriptionJobName=job_name)
