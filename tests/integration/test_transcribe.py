@@ -34,7 +34,7 @@ class TestTranscribe:
         file_path = os.path.join(BASEDIR, "files/en-gb.wav")
         job_name = transcribe_create_job(audio_file=file_path)
         transcribe_client.get_transcription_job(TranscriptionJobName=job_name)
-    
+
         def is_transcription_done():
             transcription_status = transcribe_client.get_transcription_job(
                 TranscriptionJobName=job_name
@@ -92,7 +92,10 @@ class TestTranscribe:
                 transcription_status = transcribe_client.get_transcription_job(
                     TranscriptionJobName=job_name
                 )
-                return transcription_status["TranscriptionJob"]["TranscriptionJobStatus"] == "COMPLETED"
+                return (
+                    transcription_status["TranscriptionJob"]["TranscriptionJobStatus"]
+                    == "COMPLETED"
+                )
 
             assert poll_condition(
                 is_transcription_done, timeout=100
