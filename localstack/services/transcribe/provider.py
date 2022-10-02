@@ -211,16 +211,16 @@ class TranscribeProvider(TranscribeApi):
 
             # Check audio file type and convert to wav
             support_audio_list = ["amr", "flac", "mp3", "mp4", "ogg", "webm"]
-            file_path_without_suffix, file_type = str(file_path).split(".")
+            _, file_type = str(file_path).split(".")
             if file_type != "wav" and file_type in support_audio_list:
                 LOG.debug("Starting to convert audio to wav type: %s", job_name)
 
-                wav_file_path = file_path_without_suffix + ".wav"
+                tmp_wav_file_path = "/tmp/localstack/converted.wav"
                 cmd = "ffmpeg -nostdin -loglevel quiet -y -i {} {}".format(
-                    str(file_path), wav_file_path
+                    str(file_path), tmp_wav_file_path
                 )
-                subprocess.run(cmd.split(" "), stdout=subprocess.PIPE)
-                file_path = wav_file_path
+                subprocess.run(cmd.split(" "), stdout=subprocess.PIPE, check=True)
+                file_path = tmp_wav_file_path
                 LOG.debug("Finishing conversion: %s", job_name)
 
             # Check if file is valid wav
