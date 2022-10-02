@@ -40,6 +40,17 @@ jobs:
     - name: Checkout Localstack
       uses: actions/checkout@v3
 
+    # FIXME: pinned because of https://github.com/hashicorp/terraform-provider-aws/issues/27049
+    - name: Install terraform
+      uses: little-core-labs/install-terraform@v2.0.0
+      with:
+        version: 1.2.9
+
+    - name: Check Terraform version
+      run: |
+        which terraform
+        terraform --version
+
     - name: Checkout Terraform AWS Provider
       uses: actions/checkout@v3
       with:
