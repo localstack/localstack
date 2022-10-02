@@ -138,6 +138,9 @@ RUN apt-get update && apt-get install -y autoconf automake cmake libsasl2-dev \
         g++ gcc libffi-dev libkrb5-dev libssl-dev \
         postgresql-server-dev-11 libpq-dev
 
+# Install ffmpeg to support multiple audio formats
+RUN apt-get install ffmpeg
+
 # Install timescaledb into postgresql
 RUN (cd /tmp && git clone https://github.com/timescale/timescaledb.git) && \
     (cd /tmp/timescaledb && git checkout 2.3.1 && ./bootstrap -DREGRESS_CHECKS=OFF && \

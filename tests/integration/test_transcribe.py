@@ -21,6 +21,13 @@ def transcribe_snapshot_transformer(snapshot):
     reason="Vosk transcription library has issues running on Circle CI arm64 executors.",
 )
 class TestTranscribe:
+    def is_transcription_done(self, transcribe_client, transcribe_create_job, file_path):
+        job_name = transcribe_create_job(audio_file=file_path)
+        transcription_status = transcribe_client.get_transcription_job(
+            TranscriptionJobName=job_name
+        )
+        return transcription_status["TranscriptionJob"]["TranscriptionJobStatus"] == "COMPLETED"
+
     @pytest.mark.skip_offline
     @pytest.mark.aws_validated
     @pytest.mark.skip_snapshot_verify(
@@ -35,17 +42,11 @@ class TestTranscribe:
         job_name = transcribe_create_job(audio_file=file_path)
         transcribe_client.get_transcription_job(TranscriptionJobName=job_name)
 
-        def is_transcription_done():
-            transcription_status = transcribe_client.get_transcription_job(
-                TranscriptionJobName=job_name
-            )
-            return transcription_status["TranscriptionJob"]["TranscriptionJobStatus"] == "COMPLETED"
-
         # empirically it takes around
         # <5sec for a vosk transcription
         # ~100sec for an AWS transcription -> adjust timeout accordingly
         assert poll_condition(
-            is_transcription_done, timeout=100
+            self.is_transcription_done(transcribe_client, transcribe_create_job, file_path), timeout=100
         ), f"could not finish transcription job: {job_name} in time"
 
         job = transcribe_client.get_transcription_job(TranscriptionJobName=job_name)
@@ -59,6 +60,50 @@ class TestTranscribe:
             transcribe_client.get_transcription_job(TranscriptionJobName=job_name)
 
         snapshot.match("GetError", e_info.value.response)
+
+    @pytest.mark.skip_offline
+    @pytest.mark.aws_validated
+    @pytest.mark.skip_snapshot_verify(
+        paths=[
+            "$..TranscriptionJob..MediaSampleRateHertz",
+            "$..TranscriptionJob..Settings",
+            "$..Error..Code",
+        ]
+    )
+    def test_transcribe_support_variable_formats(
+        self, transcribe_client, transcribe_create_job, snapshot
+    ):
+
+        file_list = [
+            "files/en-gb.wav",
+            "files/en-gb.mp3",
+            "files/en-gb.mp4",
+            "files/en-gb.ogg",
+            "files/en-gb.webm",
+            "files/en-gb.flac",
+            "files/en-gb.amr",
+        ]
+        # "amr", "flac", "mp3", "mp4", "ogg", "webm"
+        for file in file_list:
+            file_path = os.path.join(BASEDIR, file)
+            job_name = transcribe_create_job(audio_file=file_path)
+            transcribe_client.get_transcription_job(TranscriptionJobName=job_name)
+
+            assert poll_condition(
+                self.is_transcription_done(transcribe_client, transcribe_create_job, file_path), timeout=100
+            ), f"could not finish transcription job: {job_name} in time"
+
+        # job = transcribe_client.get_transcription_job(TranscriptionJobName=job_name)
+        # snapshot.match("TranscriptionJob", job)
+
+        # # delete the job again
+        # transcribe_client.delete_transcription_job(TranscriptionJobName=job_name)
+
+        # # check if job is gone
+        # with pytest.raises((ClientError, NotFoundException)) as e_info:
+        #     transcribe_client.get_transcription_job(TranscriptionJobName=job_name)
+
+        # snapshot.match("GetError", e_info.value.response)
 
     @pytest.mark.aws_validated
     @pytest.mark.skip_snapshot_verify(
