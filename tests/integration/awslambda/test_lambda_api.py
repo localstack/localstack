@@ -2107,7 +2107,31 @@ class TestLambdaSizeLimits:
         return py_str
 
     @pytest.mark.aws_validated
-    def test_oversized_lambda(self, lambda_client, s3_client, s3_bucket, lambda_su_role, snapshot):
+    def test_oversized_request_create_lambda(self, lambda_client, lambda_su_role, snapshot):
+        function_name = f"test_lambda_{short_uid()}"
+        code_str = self._generate_sized_python_str(TEST_LAMBDA_PYTHON_ECHO, 50 * 1024 * 1024)
+
+        # upload zip file to S3
+        zip_file = testutil.create_lambda_archive(
+            code_str, get_content=True, runtime=Runtime.python3_9
+        )
+
+        # create lambda function
+        with pytest.raises(ClientError) as e:
+            lambda_client.create_function(
+                FunctionName=function_name,
+                Runtime=Runtime.python3_9,
+                Handler="handler.handler",
+                Role=lambda_su_role,
+                Code={"ZipFile": zip_file},
+                Timeout=10,
+            )
+        snapshot.match("invalid_param_exc", e.value.response)
+
+    @pytest.mark.aws_validated
+    def test_oversized_unzipped_lambda(
+        self, lambda_client, s3_client, s3_bucket, lambda_su_role, snapshot
+    ):
         function_name = f"test_lambda_{short_uid()}"
         bucket_key = "test_lambda.zip"
         code_str = self._generate_sized_python_str(

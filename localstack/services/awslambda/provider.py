@@ -133,6 +133,8 @@ from localstack.services.awslambda.api_utils import (
     qualifier_is_version,
 )
 from localstack.services.awslambda.invocation.lambda_models import (
+    LAMBDA_LIMITS_CREATE_FUNCTION_REQUEST_SIZE,
+    LAMBDA_LIMITS_MAX_FUNCTION_ENVVAR_SIZE_BYTES,
     LAMBDA_MINIMUM_UNRESERVED_CONCURRENCY,
     AccountLimitUsage,
     AliasRoutingConfig,
@@ -146,6 +148,7 @@ from localstack.services.awslambda.invocation.lambda_models import (
     LambdaEphemeralStorage,
     ProvisionedConcurrencyConfiguration,
     ProvisionedConcurrencyState,
+    RequestEntityTooLargeException,
     ResourcePolicy,
     UpdateStatus,
     ValidationException,
@@ -380,18 +383,32 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
         self.lambda_service.create_function_version(new_version)
         return new_version
 
+    @staticmethod
+    def _verify_env_variables(env_vars: dict[str, str]):
+        dumped_env_vars = json.dumps(env_vars, separators=(",", ":"))
+        if len(dumped_env_vars.encode("utf-8")) > LAMBDA_LIMITS_MAX_FUNCTION_ENVVAR_SIZE_BYTES:
+            raise InvalidParameterValueException(
+                f"Lambda was unable to configure your environment variables because the environment variables you have provided exceeded the 4KB limit. String measured: {dumped_env_vars}",
+                Type="User",
+            )
+
     @handler(operation="CreateFunction", expand=False)
     def create_function(
         self,
         context: RequestContext,
         request: CreateFunctionRequest,
     ) -> FunctionConfiguration:
-
-        # publish_version = request.get('Publish', False)
+        if context.request.content_length > LAMBDA_LIMITS_CREATE_FUNCTION_REQUEST_SIZE:
+            raise RequestEntityTooLargeException(
+                f"Request must be smaller than {LAMBDA_LIMITS_CREATE_FUNCTION_REQUEST_SIZE} bytes for the CreateFunction operation"
+            )
 
         architectures = request.get("Architectures")
         if architectures and Architecture.arm64 in architectures:
             raise ServiceException("ARM64 is currently not supported by this provider")
+
+        if env_vars := request.get("Environment", {}).get("Variables"):
+            self._verify_env_variables(env_vars)
 
         state = lambda_stores[context.account_id][context.region]
 
@@ -445,7 +462,7 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
                     handler=request["Handler"],
                     package_type=PackageType.Zip,  # TODO
                     reserved_concurrent_executions=0,
-                    environment=request.get("Environment", {}).get("Variables"),
+                    environment=env_vars,
                     architectures=request.get("Architectures") or ["x86_64"],  # TODO
                     tracing_config_mode=TracingMode.PassThrough,  # TODO
                     image_config=None,  # TODO
@@ -518,9 +535,9 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
             replace_kwargs["runtime"] = request["Runtime"]
 
         if "Environment" in request:
-            replace_kwargs["environment"] = {
-                k: v for k, v in request.get("Environment", {}).get("Variables", {}).items()
-            }
+            if env_vars := request.get("Environment", {}).get("Variables", {}):
+                self._verify_env_variables(env_vars)
+            replace_kwargs["environment"] = env_vars
         new_latest_version = dataclasses.replace(
             latest_version,
             config=dataclasses.replace(

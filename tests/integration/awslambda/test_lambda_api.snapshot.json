@@ -6211,5 +6211,20 @@
         }
       }
     }
+  },
+  "tests/integration/awslambda/test_lambda_api.py::TestLambdaSizeLimits::test_oversized_request_create_lambda": {
+    "recorded-date": "03-10-2022, 18:52:49",
+    "recorded-content": {
+      "invalid_param_exc": {
+        "Error": {
+          "Code": "RequestEntityTooLargeException",
+          "Message": "Request must be smaller than 69905067 bytes for the CreateFunction operation"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 413
+        }
+      }
+    }
   }
 }

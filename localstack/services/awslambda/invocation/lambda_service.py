@@ -11,6 +11,7 @@ from threading import RLock
 from typing import TYPE_CHECKING, Dict, Optional
 
 from localstack.aws.api.lambda_ import (
+    InvalidParameterValueException,
     InvocationType,
     LastUpdateStatus,
     ResourceConflictException,
@@ -19,6 +20,7 @@ from localstack.aws.api.lambda_ import (
 )
 from localstack.services.awslambda.api_utils import qualifier_is_alias
 from localstack.services.awslambda.invocation.lambda_models import (
+    LAMBDA_LIMITS_CODE_SIZE_UNZIPPED_DEFAULT,
     FunctionVersion,
     Invocation,
     InvocationResult,
@@ -29,6 +31,7 @@ from localstack.services.awslambda.invocation.lambda_models import (
 from localstack.services.awslambda.invocation.lambda_util import lambda_arn, qualified_lambda_arn
 from localstack.services.awslambda.invocation.models import lambda_stores
 from localstack.services.awslambda.invocation.version_manager import LambdaVersionManager
+from localstack.utils.archives import get_unzipped_size, is_zip_file
 from localstack.utils.aws import aws_stack
 from localstack.utils.strings import to_str
 
@@ -260,7 +263,8 @@ def store_lambda_archive(
     archive_file: bytes, function_name: str, region_name: str, account_id: str
 ) -> S3Code:
     """
-    Stores the given lambda archive in an internal s3 bucket
+    Stores the given lambda archive in an internal s3 bucket.
+    Also checks if zipfile matches the specifications
 
     :param archive_file: Archive file to store
     :param function_name: function name the archive should be stored for
@@ -268,6 +272,16 @@ def store_lambda_archive(
     :param account_id: account id the archive should be stored for
     :return: S3 Code object representing the archive stored in S3
     """
+    # check if zip file
+    if not is_zip_file(archive_file):
+        raise ValueError("Lambda archive gotta be zip")
+    # check unzipped size
+    unzipped_size = get_unzipped_size(zip_file=io.BytesIO(archive_file))
+    if unzipped_size >= LAMBDA_LIMITS_CODE_SIZE_UNZIPPED_DEFAULT:
+        raise InvalidParameterValueException(
+            f"Unzipped size must be smaller than {LAMBDA_LIMITS_CODE_SIZE_UNZIPPED_DEFAULT} bytes",
+            Type="User",
+        )
     # store all buckets in us-east-1 for now
     s3_client: "S3Client" = aws_stack.connect_to_service("s3", region_name="us-east-1")
     bucket_name = f"awslambda-{region_name}-tasks"

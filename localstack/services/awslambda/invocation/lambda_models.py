@@ -391,12 +391,19 @@ class ValidationException(CommonServiceException):
         super().__init__(code="ValidationException", status_code=400, message=message)
 
 
+class RequestEntityTooLargeException(CommonServiceException):
+    def __init__(self, message: str):
+        super().__init__(code="RequestEntityTooLargeException", status_code=413, message=message)
+
+
 # note: we might at some point want to generalize these limits across all services and fetch them from there
 
 LAMBDA_LIMITS_TOTAL_CODE_SIZE_DEFAULT = 80530636800
 LAMBDA_LIMITS_CODE_SIZE_ZIPPED_DEFAULT = 52428800
 LAMBDA_LIMITS_CODE_SIZE_UNZIPPED_DEFAULT = 262144000
 LAMBDA_LIMITS_CONCURRENT_EXECUTIONS_DEFAULT = 150
+LAMBDA_LIMITS_CREATE_FUNCTION_REQUEST_SIZE = 69905067
+LAMBDA_LIMITS_MAX_FUNCTION_ENVVAR_SIZE_BYTES = 4 * 1024
 
 LAMBDA_MINIMUM_UNRESERVED_CONCURRENCY = 100
 
