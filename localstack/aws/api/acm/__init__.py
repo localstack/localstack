@@ -17,6 +17,7 @@ DomainNameString = str
 IdempotencyToken = str
 MaxItems = int
 NextToken = str
+NullableBoolean = bool
 PositiveInteger = int
 PrivateKey = str
 ServiceErrorMessage = str
@@ -139,6 +140,15 @@ class RevocationReason(str):
     REMOVE_FROM_CRL = "REMOVE_FROM_CRL"
     PRIVILEGE_WITHDRAWN = "PRIVILEGE_WITHDRAWN"
     A_A_COMPROMISE = "A_A_COMPROMISE"
+
+
+class SortBy(str):
+    CREATED_AT = "CREATED_AT"
+
+
+class SortOrder(str):
+    ASCENDING = "ASCENDING"
+    DESCENDING = "DESCENDING"
 
 
 class ValidationMethod(str):
@@ -341,11 +351,29 @@ class CertificateDetail(TypedDict, total=False):
 
 
 CertificateStatuses = List[CertificateStatus]
+ExtendedKeyUsageNames = List[ExtendedKeyUsageName]
+KeyUsageNames = List[KeyUsageName]
 
 
 class CertificateSummary(TypedDict, total=False):
     CertificateArn: Optional[Arn]
     DomainName: Optional[DomainNameString]
+    SubjectAlternativeNameSummaries: Optional[DomainList]
+    HasAdditionalSubjectAlternativeNames: Optional[NullableBoolean]
+    Status: Optional[CertificateStatus]
+    Type: Optional[CertificateType]
+    KeyAlgorithm: Optional[KeyAlgorithm]
+    KeyUsages: Optional[KeyUsageNames]
+    ExtendedKeyUsages: Optional[ExtendedKeyUsageNames]
+    InUse: Optional[NullableBoolean]
+    Exported: Optional[NullableBoolean]
+    RenewalEligibility: Optional[RenewalEligibility]
+    NotBefore: Optional[TStamp]
+    NotAfter: Optional[TStamp]
+    CreatedAt: Optional[TStamp]
+    IssuedAt: Optional[TStamp]
+    ImportedAt: Optional[TStamp]
+    RevokedAt: Optional[TStamp]
 
 
 CertificateSummaryList = List[CertificateSummary]
@@ -433,6 +461,8 @@ class ListCertificatesRequest(ServiceRequest):
     Includes: Optional[Filters]
     NextToken: Optional[NextToken]
     MaxItems: Optional[MaxItems]
+    SortBy: Optional[SortBy]
+    SortOrder: Optional[SortOrder]
 
 
 class ListCertificatesResponse(TypedDict, total=False):
@@ -548,6 +578,8 @@ class AcmApi:
         includes: Filters = None,
         next_token: NextToken = None,
         max_items: MaxItems = None,
+        sort_by: SortBy = None,
+        sort_order: SortOrder = None,
     ) -> ListCertificatesResponse:
         raise NotImplementedError
 
