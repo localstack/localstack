@@ -1049,7 +1049,6 @@ class CopyObjectOutput(TypedDict, total=False):
 
 ObjectLockRetainUntilDate = datetime
 Metadata = Dict[MetadataKey, MetadataValue]
-Expires = datetime
 CopySourceIfUnmodifiedSince = datetime
 CopySourceIfModifiedSince = datetime
 

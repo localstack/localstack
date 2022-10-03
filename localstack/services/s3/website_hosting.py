@@ -175,7 +175,6 @@ def _serve_key(request: Request, bucket_name: BucketName, path: str = None) -> R
         )
         return response
 
-    # TODO CHECK IF WEBSITE_REDIRECT_LOCATION is copied (should not by default)
     if key.website_redirect_location:
         headers["Location"] = key.website_redirect_location
         return Response("", status=301, headers=headers)

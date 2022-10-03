@@ -41,7 +41,6 @@ class S3Store(BaseStore):
 
     bucket_versioning_status: Dict[BucketName, bool] = LocalAttribute(default=dict)
 
-    # TODO: validation
     bucket_website_configuration: Dict[BucketName, WebsiteConfiguration] = LocalAttribute(
         default=dict
     )
