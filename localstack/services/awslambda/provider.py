@@ -2291,7 +2291,6 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
         pattern_match = FN_ARN_PATTERN.search(resource)
         if not pattern_match:
             raise ValidationException(
-                # TODO
                 rf"1 validation error detected: Value '{resource}' at 'resource' failed to satisfy constraint: Member must satisfy regular expression pattern: arn:(aws[a-zA-Z-]*)?:lambda:[a-z]{{2}}((-gov)|(-iso(b?)))?-[a-z]+-\d{{1}}:\d{{12}}:function:[a-zA-Z0-9-_]+(:(\$LATEST|[a-zA-Z0-9-_]+))?"
             )
 

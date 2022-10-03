@@ -97,6 +97,32 @@ class TestLambdaRuntimesCommon:
         assert json.loads(invoke_result["Payload"].read()) == {}
         assert not invoke_result.get("FunctionError")
 
+    # skip snapshots of LS specific env variables / xray variables
+    @pytest.mark.skip_snapshot_verify(
+        paths=[
+            "$..environment.AWS_CONTAINER_AUTHORIZATION_TOKEN",
+            "$..environment.AWS_CONTAINER_CREDENTIALS_FULL_URI",
+            "$..environment.AWS_ENDPOINT_URL",
+            "$..environment.AWS_LAMBDA_FUNCTION_TIMEOUT",
+            "$..environment.AWS_XRAY_CONTEXT_MISSING",
+            "$..environment.AWS_XRAY_DAEMON_ADDRESS",
+            "$..environment.EDGE_PORT",
+            "$..environment.HOME",
+            "$..environment.HOSTNAME",
+            "$..environment.LOCALSTACK_HOSTNAME",
+            "$..environment.LOCALSTACK_RUNTIME_ENDPOINT",
+            "$..environment.LOCALSTACK_RUNTIME_ID",
+            "$..environment.RUNTIME_ROOT",
+            "$..environment.TASK_ROOT",
+            "$..environment._AWS_XRAY_DAEMON_ADDRESS",
+            "$..environment._AWS_XRAY_DAEMON_PORT",
+            "$..environment._LAMBDA_TELEMETRY_LOG_FD",  # Only java8, dotnetcore3.1, dotnet6, go1.x
+            "$..environment._X_AMZN_TRACE_ID",
+            "$..environment.AWS_EXECUTION_ENV",  # Only rust runtime
+            "$..environment.LD_LIBRARY_PATH",  # Only rust runtime (additional /var/lang/bin)
+            "$..environment.PATH",  # Only rust runtime (additional /var/lang/bin)
+        ]
+    )
     @pytest.mark.multiruntime(scenario="introspection")
     def test_introspection_invoke(self, lambda_client, multiruntime_lambda, snapshot):
         create_function_result = multiruntime_lambda.create_function(
