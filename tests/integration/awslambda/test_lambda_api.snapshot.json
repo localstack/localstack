@@ -5820,7 +5820,7 @@
     }
   },
   "tests/integration/awslambda/test_lambda_api.py::TestLambdaProvisionedConcurrency::test_provisioned_concurrency_exceptions": {
-    "recorded-date": "03-10-2022, 07:31:44",
+    "recorded-date": "03-10-2022, 08:13:50",
     "recorded-content": {
       "publish_version_result": {
         "Architectures": [
@@ -5989,12 +5989,24 @@
           "HTTPStatusCode": 204
         }
       },
-      "put_provisioned_functionname_doesnotexist": {
+      "put_provisioned_functionname_doesnotexist_alias": {
         "Error": {
           "Code": "ResourceNotFoundException",
           "Message": "Cannot find alias arn: arn:aws:lambda:<region>:111111111111:function:doesnotexist:noalias"
         },
         "Message": "Cannot find alias arn: arn:aws:lambda:<region>:111111111111:function:doesnotexist:noalias",
+        "Type": "User",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 404
+        }
+      },
+      "put_provisioned_functionname_doesnotexist_version": {
+        "Error": {
+          "Code": "ResourceNotFoundException",
+          "Message": "Function not found: arn:aws:lambda:<region>:111111111111:function:doesnotexist:1"
+        },
+        "Message": "Function not found: arn:aws:lambda:<region>:111111111111:function:doesnotexist:1",
         "Type": "User",
         "ResponseMetadata": {
           "HTTPHeaders": {},
@@ -6025,7 +6037,7 @@
           "HTTPStatusCode": 404
         }
       },
-      "put_provisioned_executions0": {
+      "put_provisioned_latest": {
         "Error": {
           "Code": "InvalidParameterValueException",
           "Message": "Provisioned Concurrency Configs cannot be applied to unpublished function versions."
@@ -6035,6 +6047,167 @@
         "ResponseMetadata": {
           "HTTPHeaders": {},
           "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/integration/awslambda/test_lambda_api.py::TestLambdaProvisionedConcurrency::test_lambda_provisioned_lifecycle": {
+    "recorded-date": "03-10-2022, 12:47:02",
+    "recorded-content": {
+      "publish_version_result": {
+        "Architectures": [
+          "x86_64"
+        ],
+        "CodeSha256": "<code-sha256:1>",
+        "CodeSize": 264,
+        "Description": "",
+        "Environment": {
+          "Variables": {}
+        },
+        "EphemeralStorage": {
+          "Size": 512
+        },
+        "FunctionArn": "arn:aws:lambda:<region>:111111111111:function:<function-name:1>:1",
+        "FunctionName": "<function-name:1>",
+        "Handler": "handler.handler",
+        "LastModified": "date",
+        "LastUpdateStatus": "Successful",
+        "MemorySize": 128,
+        "PackageType": "Zip",
+        "RevisionId": "<uuid:1>",
+        "Role": "arn:aws:iam::111111111111:role/<resource:2>",
+        "Runtime": "python3.9",
+        "State": "Active",
+        "Timeout": 30,
+        "TracingConfig": {
+          "Mode": "PassThrough"
+        },
+        "Version": "1",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 201
+        }
+      },
+      "create_alias_result": {
+        "AliasArn": "arn:aws:lambda:<region>:111111111111:function:<function-name:1>:<alias-name>",
+        "Description": "",
+        "FunctionVersion": "1",
+        "Name": "<alias-name>",
+        "RevisionId": "<uuid:2>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 201
+        }
+      },
+      "put_provisioned_on_version": {
+        "AllocatedProvisionedConcurrentExecutions": 0,
+        "AvailableProvisionedConcurrentExecutions": 0,
+        "LastModified": "date",
+        "RequestedProvisionedConcurrentExecutions": 1,
+        "Status": "IN_PROGRESS",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 202
+        }
+      },
+      "put_provisioned_on_alias_versionconflict": {
+        "Error": {
+          "Code": "ResourceConflictException",
+          "Message": "Alias can't be used for Provisioned Concurrency configuration on an already Provisioned version"
+        },
+        "Type": "User",
+        "message": "Alias can't be used for Provisioned Concurrency configuration on an already Provisioned version",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 409
+        }
+      },
+      "get_provisioned_version_predelete": {
+        "AllocatedProvisionedConcurrentExecutions": 0,
+        "AvailableProvisionedConcurrentExecutions": 0,
+        "LastModified": "date",
+        "RequestedProvisionedConcurrentExecutions": 1,
+        "Status": "IN_PROGRESS",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "delete_provisioned_version": {
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 204
+        }
+      },
+      "get_provisioned_version_postdelete": {
+        "Error": {
+          "Code": "ProvisionedConcurrencyConfigNotFoundException",
+          "Message": "No Provisioned Concurrency Config found for this function"
+        },
+        "Type": "User",
+        "message": "No Provisioned Concurrency Config found for this function",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 404
+        }
+      },
+      "put_provisioned_on_alias": {
+        "AllocatedProvisionedConcurrentExecutions": 0,
+        "AvailableProvisionedConcurrentExecutions": 0,
+        "LastModified": "date",
+        "RequestedProvisionedConcurrentExecutions": 1,
+        "Status": "IN_PROGRESS",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 202
+        }
+      },
+      "put_provisioned_on_version_conflict": {
+        "Error": {
+          "Code": "ResourceConflictException",
+          "Message": "Version is pointed by a Provisioned Concurrency alias"
+        },
+        "Type": "User",
+        "message": "Version is pointed by a Provisioned Concurrency alias",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 409
+        }
+      },
+      "get_provisioned_alias": {
+        "AllocatedProvisionedConcurrentExecutions": 0,
+        "AvailableProvisionedConcurrentExecutions": 0,
+        "LastModified": "date",
+        "RequestedProvisionedConcurrentExecutions": 1,
+        "Status": "IN_PROGRESS",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "delete_alias_result": {
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 204
+        }
+      },
+      "get_provisioned_alias_postaliasdelete": {
+        "Error": {
+          "Code": "ResourceNotFoundException",
+          "Message": "Cannot find alias arn: arn:aws:lambda:<region>:111111111111:function:<function-name:1>:<alias-name>"
+        },
+        "Message": "Cannot find alias arn: arn:aws:lambda:<region>:111111111111:function:<function-name:1>:<alias-name>",
+        "Type": "User",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 404
+        }
+      },
+      "list_response_postdeletes": {
+        "ProvisionedConcurrencyConfigs": [],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
         }
       }
     }

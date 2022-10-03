@@ -1488,6 +1488,16 @@ class TestLambdaProvisionedConcurrency:
 
     # TODO: test ARN
     # TODO: test shorthand ARN
+    @pytest.mark.skip_snapshot_verify(
+        paths=[
+            "$..LastUpdateStatus",
+            "$..LastUpdateStatusReason",
+            "$..LastUpdateStatusReasonCode",
+            "$..State",
+            "$..StateReason",
+            "$..StateReasonCode",
+        ]
+    )
     @pytest.mark.aws_validated
     def test_provisioned_concurrency_exceptions(
         self, lambda_client, create_lambda_function, snapshot
@@ -1585,7 +1595,13 @@ class TestLambdaProvisionedConcurrency:
             lambda_client.put_provisioned_concurrency_config(
                 FunctionName="doesnotexist", Qualifier="noalias", ProvisionedConcurrentExecutions=1
             )
-        snapshot.match("put_provisioned_functionname_doesnotexist", e.value.response)
+        snapshot.match("put_provisioned_functionname_doesnotexist_alias", e.value.response)
+
+        with pytest.raises(lambda_client.exceptions.ResourceNotFoundException) as e:
+            lambda_client.put_provisioned_concurrency_config(
+                FunctionName="doesnotexist", Qualifier="1", ProvisionedConcurrentExecutions=1
+            )
+        snapshot.match("put_provisioned_functionname_doesnotexist_version", e.value.response)
 
         # invalid alias
         with pytest.raises(lambda_client.exceptions.ResourceNotFoundException) as e:
@@ -1607,7 +1623,114 @@ class TestLambdaProvisionedConcurrency:
             lambda_client.put_provisioned_concurrency_config(
                 FunctionName=function_name, Qualifier="$LATEST", ProvisionedConcurrentExecutions=1
             )
-        snapshot.match("put_provisioned_executions0", e.value.response)
+        snapshot.match("put_provisioned_latest", e.value.response)
+
+    @pytest.mark.skip_snapshot_verify(
+        paths=[
+            "$..LastUpdateStatus",
+            "$..LastUpdateStatusReason",
+            "$..LastUpdateStatusReasonCode",
+            "$..State",
+            "$..StateReason",
+            "$..StateReasonCode",
+        ]
+    )
+    @pytest.mark.aws_validated
+    def test_lambda_provisioned_lifecycle(self, lambda_client, create_lambda_function, snapshot):
+        function_name = f"lambda_func-{short_uid()}"
+        create_lambda_function(
+            handler_file=TEST_LAMBDA_PYTHON_ECHO,
+            func_name=function_name,
+            runtime=Runtime.python3_9,
+        )
+        publish_version_result = lambda_client.publish_version(FunctionName=function_name)
+        function_version = publish_version_result["Version"]
+        snapshot.match("publish_version_result", publish_version_result)
+
+        lambda_client.get_waiter("function_active_v2").wait(
+            FunctionName=function_name, Qualifier=function_version
+        )
+        lambda_client.get_waiter("function_updated_v2").wait(
+            FunctionName=function_name, Qualifier=function_version
+        )
+
+        alias_name = f"alias-{short_uid()}"
+        snapshot.add_transformer(snapshot.transform.regex(alias_name, "<alias-name>"))
+        create_alias_result = lambda_client.create_alias(
+            FunctionName=function_name, Name=alias_name, FunctionVersion=function_version
+        )
+        snapshot.match("create_alias_result", create_alias_result)
+
+        # some edge cases
+
+        # attempt to set up provisioned concurrency for an alias that is pointing to a version that already has a provisioned concurrency setup
+
+        put_provisioned_on_version = lambda_client.put_provisioned_concurrency_config(
+            FunctionName=function_name,
+            Qualifier=function_version,
+            ProvisionedConcurrentExecutions=1,
+        )
+        snapshot.match("put_provisioned_on_version", put_provisioned_on_version)
+        with pytest.raises(lambda_client.exceptions.ResourceConflictException) as e:
+            lambda_client.put_provisioned_concurrency_config(
+                FunctionName=function_name, Qualifier=alias_name, ProvisionedConcurrentExecutions=1
+            )
+        snapshot.match("put_provisioned_on_alias_versionconflict", e.value.response)
+
+        get_provisioned_version_predelete = lambda_client.get_provisioned_concurrency_config(
+            FunctionName=function_name, Qualifier=function_version
+        )
+        snapshot.match("get_provisioned_version_predelete", get_provisioned_version_predelete)
+
+        delete_provisioned_version = lambda_client.delete_provisioned_concurrency_config(
+            FunctionName=function_name, Qualifier=function_version
+        )
+        snapshot.match("delete_provisioned_version", delete_provisioned_version)
+
+        with pytest.raises(
+            lambda_client.exceptions.ProvisionedConcurrencyConfigNotFoundException
+        ) as e:
+            lambda_client.get_provisioned_concurrency_config(
+                FunctionName=function_name, Qualifier=function_version
+            )
+        snapshot.match("get_provisioned_version_postdelete", e.value.response)
+
+        # now the other way around
+
+        put_provisioned_on_alias = lambda_client.put_provisioned_concurrency_config(
+            FunctionName=function_name, Qualifier=alias_name, ProvisionedConcurrentExecutions=1
+        )
+        snapshot.match("put_provisioned_on_alias", put_provisioned_on_alias)
+        with pytest.raises(lambda_client.exceptions.ResourceConflictException) as e:
+            lambda_client.put_provisioned_concurrency_config(
+                FunctionName=function_name,
+                Qualifier=function_version,
+                ProvisionedConcurrentExecutions=1,
+            )
+        snapshot.match("put_provisioned_on_version_conflict", e.value.response)
+
+        get_provisioned_alias = lambda_client.get_provisioned_concurrency_config(
+            FunctionName=function_name, Qualifier=alias_name
+        )
+        snapshot.match("get_provisioned_alias", get_provisioned_alias)
+
+        # deleting the alias will also delete the provisioned concurrency config that points to it
+        delete_alias_result = lambda_client.delete_alias(
+            FunctionName=function_name, Name=alias_name
+        )
+        snapshot.match("delete_alias_result", delete_alias_result)
+
+        with pytest.raises(lambda_client.exceptions.ResourceNotFoundException) as e:
+            lambda_client.get_provisioned_concurrency_config(
+                FunctionName=function_name, Qualifier=alias_name
+            )
+        snapshot.match("get_provisioned_alias_postaliasdelete", e.value.response)
+
+        list_response_postdeletes = lambda_client.list_provisioned_concurrency_configs(
+            FunctionName=function_name
+        )
+        assert len(list_response_postdeletes["ProvisionedConcurrencyConfigs"]) == 0
+        snapshot.match("list_response_postdeletes", list_response_postdeletes)
 
     # TODO: make this more robust & add snapshot
     @pytest.mark.skip(reason="very slow (only execute when needed)")

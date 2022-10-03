@@ -99,7 +99,7 @@ from localstack.aws.api.lambda_ import (
     PositiveInteger,
     PreconditionFailedException,
     ProvisionedConcurrencyConfigListItem,
-    ProvisionedConcurrencyStatusEnum,
+    ProvisionedConcurrencyConfigNotFoundException,
     PublishLayerVersionResponse,
     PutFunctionCodeSigningConfigResponse,
     PutProvisionedConcurrencyConfigResponse,
@@ -144,6 +144,8 @@ from localstack.services.awslambda.invocation.lambda_models import (
     FunctionVersion,
     InvocationError,
     LambdaEphemeralStorage,
+    ProvisionedConcurrencyConfiguration,
+    ProvisionedConcurrencyState,
     ResourcePolicy,
     UpdateStatus,
     ValidationException,
@@ -927,6 +929,10 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
             raise ValueError("Alias not found")  # TODO proper exception
         function.aliases.pop(name, None)
 
+        # cleanup related resources
+        if name in function.provisioned_concurrency_configs:
+            function.provisioned_concurrency_configs.pop(name)
+
     def get_alias(
         self, context: RequestContext, function_name: FunctionName, name: Alias
     ) -> AliasConfiguration:
@@ -1588,6 +1594,32 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
     # ==  Provisioned Concurrency Config   ==
     # =======================================
 
+    def _get_provisioned_config(
+        self, context: RequestContext, function_name: str, qualifier: str
+    ) -> ProvisionedConcurrencyConfiguration | None:
+        state = lambda_stores[context.account_id][context.region]
+        fn = state.functions.get(function_name)
+        if api_utils.qualifier_is_alias(qualifier):
+            fn_alias = None
+            if fn:
+                fn_alias = fn.aliases.get(qualifier)
+            if fn_alias is None:
+                raise ResourceNotFoundException(
+                    f"Cannot find alias arn: {qualified_lambda_arn(function_name, qualifier, context.account_id, context.region)}",
+                    Type="User",
+                )
+        elif api_utils.qualifier_is_version(qualifier):
+            fn_version = None
+            if fn:
+                fn_version = fn.versions.get(qualifier)
+            if fn_version is None:
+                raise ResourceNotFoundException(
+                    f"Function not found: {qualified_lambda_arn(function_name, qualifier, context.account_id, context.region)}",
+                    Type="User",
+                )
+
+        return fn.provisioned_concurrency_configs.get(qualifier)
+
     # TODO: test how th is behaves when both alias and referencing version have conflicting configs
     def put_provisioned_concurrency_config(
         self,
@@ -1596,68 +1628,98 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
         qualifier: Qualifier,
         provisioned_concurrent_executions: PositiveInteger,
     ) -> PutProvisionedConcurrencyConfigResponse:
+        if qualifier == "$LATEST":
+            raise InvalidParameterValueException(
+                "Provisioned Concurrency Configs cannot be applied to unpublished function versions.",
+                Type="User",
+            )
         function_name, qualifier = get_name_and_qualifier(function_name, qualifier, context.region)
         state = lambda_stores[context.account_id][context.region]
-
         fn = state.functions.get(function_name)
-        if not fn:
-            raise ResourceNotFoundException("where function?")  # TODO: test
 
-        if not qualifier:
-            raise ServiceException("Why $LATEST")  # TODO: test
+        provisioned_config = self._get_provisioned_config(context, function_name, qualifier)
 
+        if provisioned_config:
+            pass  # TODO: test
+
+        provisioned_config = ProvisionedConcurrencyConfiguration(
+            provisioned_concurrent_executions, generate_lambda_date()
+        )
         fn_arn = qualified_lambda_arn(function_name, qualifier, context.account_id, context.region)
-        ver_manager = self.lambda_service.get_lambda_version_manager(fn_arn)
-        if ver_manager.provisioned_state:
-            raise ResourceConflictException("double provisioned")
-        # TODO: check if it already exists
 
-        provisioned_config = None
         if api_utils.qualifier_is_alias(qualifier):
-            fn_alias = fn.aliases.get(qualifier)
-            if not fn_alias:
-                raise ResourceNotFoundException("Where alias?")  # TODO: test
-            provisioned_config = fn_alias.provisioned_concurrency_config
+            alias = fn.aliases.get(qualifier)
+            resolved_version = fn.versions.get(alias.function_version)
+
+            if (
+                resolved_version
+                and fn.provisioned_concurrency_configs.get(alias.function_version) is not None
+            ):
+                raise ResourceConflictException(
+                    "Alias can't be used for Provisioned Concurrency configuration on an already Provisioned version",
+                    Type="User",
+                )
+            fn_arn = resolved_version.id.qualified_arn()
         elif api_utils.qualifier_is_version(qualifier):
             fn_version = fn.versions.get(qualifier)
-            if not fn_version:
-                raise ResourceNotFoundException("Where version?")  # TODO: test
-            provisioned_config = fn_version.provisioned_concurrency_config
 
-        if not provisioned_config:
-            raise ResourceNotFoundException("Where provisioned config?")  # TODO: test
+            # TODO: might be useful other places, utilize
+            pointing_aliases = []
+            for alias in fn.aliases.values():
+                if (
+                    alias.function_version == qualifier
+                    and fn.provisioned_concurrency_configs.get(alias.name) is not None
+                ):
+                    pointing_aliases.append(alias.name)
+            if pointing_aliases:
+                raise ResourceConflictException(
+                    "Version is pointed by a Provisioned Concurrency alias", Type="User"
+                )
 
-        return provisioned_config
+            fn_arn = fn_version.id.qualified_arn()
+
+        manager = self.lambda_service.get_lambda_version_manager(fn_arn)
+
+        fn.provisioned_concurrency_configs[qualifier] = provisioned_config
+        manager.provisioned_state = ProvisionedConcurrencyState()
+
+        return PutProvisionedConcurrencyConfigResponse(
+            RequestedProvisionedConcurrentExecutions=provisioned_config.provisioned_concurrent_executions,
+            AvailableProvisionedConcurrentExecutions=manager.provisioned_state.available,
+            AllocatedProvisionedConcurrentExecutions=manager.provisioned_state.allocated,
+            Status=manager.provisioned_state.status,
+            StatusReason=manager.provisioned_state.status_reason,
+            LastModified=provisioned_config.last_modified,  # TODO: does change with configuration or also with state changes?
+        )
 
     def get_provisioned_concurrency_config(
         self, context: RequestContext, function_name: FunctionName, qualifier: Qualifier
     ) -> GetProvisionedConcurrencyConfigResponse:
+        if qualifier == "$LATEST":
+            raise InvalidParameterValueException(
+                "The function resource provided must be an alias or a published version.",
+                Type="User",
+            )
         function_name, qualifier = get_name_and_qualifier(function_name, qualifier, context.region)
-        state = lambda_stores[context.account_id][context.region]
 
-        fn = state.functions.get(function_name)
-        if not fn:
-            raise ResourceNotFoundException("where function?")  # TODO: test
-
-        if not qualifier:
-            raise ServiceException("Implicit $LATEST")  # TODO: test
-
-        provisioned_config = None
-        if api_utils.qualifier_is_alias(qualifier):
-            fn_alias = fn.aliases.get(qualifier)
-            if not fn_alias:
-                raise ResourceNotFoundException("Where alias?")  # TODO: test
-            provisioned_config = fn_alias.provisioned_concurrency_config
-        elif api_utils.qualifier_is_version(qualifier):
-            fn_version = fn.versions.get(qualifier)
-            if not fn_version:
-                raise ResourceNotFoundException("Where version?")  # TODO: test
-            provisioned_config = fn_version.provisioned_concurrency_config
-
+        provisioned_config = self._get_provisioned_config(context, function_name, qualifier)
         if not provisioned_config:
-            raise ResourceNotFoundException("Where provisioned config?")  # TODO: test
+            raise ProvisionedConcurrencyConfigNotFoundException(
+                "No Provisioned Concurrency Config found for this function", Type="User"
+            )
 
-        fn_arn = qualified_lambda_arn(function_name, qualifier, context.account_id, context.region)
+        if api_utils.qualifier_is_alias(qualifier):
+            state = lambda_stores[context.account_id][context.region]
+            fn = state.functions.get(function_name)
+            alias = fn.aliases.get(qualifier)
+            fn_arn = qualified_lambda_arn(
+                function_name, alias.function_version, context.account_id, context.region
+            )
+        else:
+            fn_arn = qualified_lambda_arn(
+                function_name, qualifier, context.account_id, context.region
+            )
+
         ver_manager = self.lambda_service.get_lambda_version_manager(fn_arn)
 
         return GetProvisionedConcurrencyConfigResponse(
@@ -1676,19 +1738,44 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
         marker: String = None,
         max_items: MaxProvisionedConcurrencyConfigListItems = None,
     ) -> ListProvisionedConcurrencyConfigsResponse:
-
-        provisioned_concurrency_configs = [
-            # TODO
-            ProvisionedConcurrencyConfigListItem(
-                FunctionArn="",
-                RequestedProvisionedConcurrentExecutions=0,
-                AvailableProvisionedConcurrentExecutions=0,
-                AllocatedProvisionedConcurrentExecutions=0,
-                Status=ProvisionedConcurrencyStatusEnum.IN_PROGRESS,
-                StatusReason="?",
-                LastModified=generate_lambda_date(),
+        state = lambda_stores[context.account_id][context.region]
+        fn = state.functions.get(function_name)
+        if fn is None:
+            raise ResourceNotFoundException(
+                f"Function not found: {unqualified_lambda_arn(function_name, context.account_id, context.region)}",
+                Type="User",
             )
-        ]
+
+        configs = []
+        for qualifier, config in fn.provisioned_concurrency_configs.items():
+
+            if api_utils.qualifier_is_alias(qualifier):
+                alias = fn.aliases.get(qualifier)
+                fn_arn = qualified_lambda_arn(
+                    function_name, alias.function_version, context.account_id, context.region
+                )
+            else:
+                fn_arn = qualified_lambda_arn(
+                    function_name, qualifier, context.account_id, context.region
+                )
+
+            manager = self.lambda_service.get_lambda_version_manager(fn_arn)
+
+            configs.append(
+                ProvisionedConcurrencyConfigListItem(
+                    FunctionArn=qualified_lambda_arn(
+                        function_name, qualifier, context.account_id, context.region
+                    ),
+                    RequestedProvisionedConcurrentExecutions=config.provisioned_concurrent_executions,
+                    AvailableProvisionedConcurrentExecutions=manager.provisioned_state.available,
+                    AllocatedProvisionedConcurrentExecutions=manager.provisioned_state.allocated,
+                    Status=manager.provisioned_state.status,
+                    StatusReason=manager.provisioned_state.status_reason,
+                    LastModified=config.last_modified,
+                )
+            )
+
+        provisioned_concurrency_configs = configs
         provisioned_concurrency_configs = PaginatedList(provisioned_concurrency_configs)
         page, token = provisioned_concurrency_configs.get_page(
             lambda x: x,
@@ -1699,35 +1786,22 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
             ProvisionedConcurrencyConfigs=page, NextMarker=token
         )
 
-    # TODO: test what happens when alias or function is deleted
     def delete_provisioned_concurrency_config(
         self, context: RequestContext, function_name: FunctionName, qualifier: Qualifier
     ) -> None:
+        if qualifier == "$LATEST":
+            raise InvalidParameterValueException(
+                "The function resource provided must be an alias or a published version.",
+                Type="User",
+            )
         function_name, qualifier = get_name_and_qualifier(function_name, qualifier, context.region)
         state = lambda_stores[context.account_id][context.region]
-
         fn = state.functions.get(function_name)
-        if not fn:
-            raise ResourceNotFoundException("where function?")  # TODO: test
 
-        if not qualifier:
-            raise ServiceException("Why $LATEST")  # TODO: test
-
-        provisioned_config = None
-        if api_utils.qualifier_is_alias(qualifier):
-            fn_alias = fn.aliases.get(qualifier)
-            if not fn_alias:
-                raise ResourceNotFoundException("Where alias?")  # TODO: test
-            provisioned_config = fn_alias.provisioned_concurrency_config
-            fn_alias.provisioned_concurrency_configuration = None
-        elif api_utils.qualifier_is_version(qualifier):
-            fn_version = fn.versions.get(qualifier)
-            if not fn_version:
-                raise ResourceNotFoundException("Where version?")  # TODO: test
-            provisioned_config = fn_version.provisioned_concurrency_config
-
-        if not provisioned_config:
-            raise ResourceNotFoundException("Where provisioned config?")  # TODO: test
+        provisioned_config = self._get_provisioned_config(context, function_name, qualifier)
+        # delete is idempotent and doesn't actually care about the provisioned concurrency config not existing
+        if provisioned_config:
+            fn.provisioned_concurrency_configs.pop(qualifier)
 
     # =======================================
     # =======  Event Invoke Config   ========

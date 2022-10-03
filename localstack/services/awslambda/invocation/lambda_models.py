@@ -226,7 +226,6 @@ class VersionAlias:
     name: str
     description: str | None
     routing_configuration: AliasRoutingConfig | None = None
-    provisioned_concurrency_configuration: ProvisionedConcurrencyConfiguration | None = None
     revision_id: str = dataclasses.field(init=False, default_factory=long_uid)
 
 
@@ -234,7 +233,6 @@ class VersionAlias:
 class FunctionVersion:
     id: VersionIdentifier
     config: VersionFunctionConfiguration
-    provisioned_concurrency_config: Optional[ProvisionedConcurrencyConfiguration] = None
 
     @property
     def qualified_arn(self) -> str:
@@ -281,6 +279,9 @@ class Function:
         default_factory=dict
     )  # key is $LATEST(?), version or alias
     reserved_concurrent_executions: Optional[int] = None
+    provisioned_concurrency_configs: dict[
+        str, ProvisionedConcurrencyConfiguration
+    ] = dataclasses.field(default_factory=dict)
 
     lock: threading.RLock = dataclasses.field(default_factory=threading.RLock)
     next_version: int = 1
