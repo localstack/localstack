@@ -1315,8 +1315,8 @@ def prepare_message_attributes(message_attributes: MessageAttributeMap):
     # todo: Number type is not supported for Lambda subscriptions, passed as String
     #  do conversion here
     for attr_name, attr in message_attributes.items():
-        date_type = attr["DataType"]
-        if date_type == "Binary":
+        data_type = attr["DataType"]
+        if data_type == "Binary":
             # binary payload in base64 encoded by AWS, UTF-8 for JSON
             # https://docs.aws.amazon.com/sns/latest/api/API_MessageAttributeValue.html
             val = base64.b64encode(attr["BinaryValue"]).decode()
@@ -1324,7 +1324,7 @@ def prepare_message_attributes(message_attributes: MessageAttributeMap):
             val = attr.get("StringValue")
 
         attributes[attr_name] = {
-            "Type": date_type,
+            "Type": data_type,
             "Value": val,
         }
     return attributes
