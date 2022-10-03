@@ -6226,5 +6226,34 @@
         }
       }
     }
+  },
+  "tests/integration/awslambda/test_lambda_api.py::TestLambdaTags::test_tag_versions": {
+    "recorded-date": "03-10-2022, 20:42:55",
+    "recorded-content": {
+      "tag_resource_exception": {
+        "Error": {
+          "Code": "InvalidParameterValueException",
+          "Message": "Tagging operations are permitted on Lambda functions only. Tags on aliases and versions are not supported. Please specify either a function name or a function ARN."
+        },
+        "Type": "User",
+        "message": "Tagging operations are permitted on Lambda functions only. Tags on aliases and versions are not supported. Please specify either a function name or a function ARN.",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "tag_resource_latest_exception": {
+        "Error": {
+          "Code": "InvalidParameterValueException",
+          "Message": "Tagging operations are permitted on Lambda functions only. Tags on aliases and versions are not supported. Please specify either a function name or a function ARN."
+        },
+        "Type": "User",
+        "message": "Tagging operations are permitted on Lambda functions only. Tags on aliases and versions are not supported. Please specify either a function name or a function ARN.",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
   }
 }

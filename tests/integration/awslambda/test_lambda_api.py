@@ -2679,6 +2679,41 @@ class TestLambdaTags:
             lambda_client.tag_resource(Resource=function_arn, Tags={"a_key": "a_value"})
         snapshot.match("tag_lambda_too_many_tags_additional", e.value.response)
 
+    def test_tag_versions(self, lambda_client, create_lambda_function, snapshot):
+        function_name = f"fn-tag-{short_uid()}"
+        create_function_result = create_lambda_function(
+            handler_file=TEST_LAMBDA_PYTHON_ECHO,
+            func_name=function_name,
+            runtime=Runtime.python3_9,
+            Tags={"key_a": "value_a"},
+        )
+        function_arn = create_function_result["CreateFunctionResponse"]["FunctionArn"]
+        publish_version_response = lambda_client.publish_version(FunctionName=function_name)
+        version_arn = publish_version_response["FunctionArn"]
+        with pytest.raises(lambda_client.exceptions.InvalidParameterValueException) as e:
+            lambda_client.tag_resource(
+                Resource=version_arn,
+                Tags={
+                    "key_b": "value_b",
+                    "key_c": "value_c",
+                    "key_d": "value_d",
+                    "key_e": "value_e",
+                },
+            )
+        snapshot.match("tag_resource_exception", e.value.response)
+
+        with pytest.raises(lambda_client.exceptions.InvalidParameterValueException) as e:
+            lambda_client.tag_resource(
+                Resource=f"{function_arn}:$LATEST",
+                Tags={
+                    "key_b": "value_b",
+                    "key_c": "value_c",
+                    "key_d": "value_d",
+                    "key_e": "value_e",
+                },
+            )
+        snapshot.match("tag_resource_latest_exception", e.value.response)
+
     def test_tag_lifecycle(self, lambda_client, create_lambda_function, snapshot):
         function_name = f"fn-tag-{short_uid()}"
 

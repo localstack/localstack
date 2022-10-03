@@ -168,6 +168,7 @@ from localstack.services.awslambda.invocation.lambda_util import (
     format_lambda_date,
     function_name_from_arn,
     generate_lambda_date,
+    is_qualified_lambda_arn,
     lambda_arn,
     qualified_lambda_arn,
     unqualified_lambda_arn,
@@ -2285,6 +2286,11 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
         if not tags:
             raise InvalidParameterValueException(
                 "An error occurred and the request cannot be processed.", Type="User"
+            )
+        if is_qualified_lambda_arn(resource):
+            raise InvalidParameterValueException(
+                "Tagging operations are permitted on Lambda functions only. Tags on aliases and versions are not supported. Please specify either a function name or a function ARN.",
+                Type="User",
             )
 
         state = lambda_stores[context.account_id][context.region]
