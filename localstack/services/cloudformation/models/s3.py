@@ -218,7 +218,7 @@ class S3Bucket(GenericBaseModel):
 
         if attribute_name == "WebsiteURL":
             bucket_name = self.props.get("BucketName")
-            return f"http://{bucket_name}.{S3_STATIC_WEBSITE_HOSTNAME}"
+            return f"https://{bucket_name}.{S3_STATIC_WEBSITE_HOSTNAME}"
 
         return super(S3Bucket, self).get_cfn_attribute(attribute_name)
 
