@@ -1637,6 +1637,7 @@ class InstanceType(str):
     r6a_48xlarge = "r6a.48xlarge"
     r6a_metal = "r6a.metal"
     p4de_24xlarge = "p4de.24xlarge"
+    u_3tb1_56xlarge = "u-3tb1.56xlarge"
 
 
 class InstanceTypeHypervisor(str):
