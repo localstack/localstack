@@ -1486,6 +1486,129 @@ class TestLambdaReservedConcurrency:
 
 class TestLambdaProvisionedConcurrency:
 
+    # TODO: test ARN
+    # TODO: test shorthand ARN
+    @pytest.mark.aws_validated
+    def test_provisioned_concurrency_exceptions(
+        self, lambda_client, create_lambda_function, snapshot
+    ):
+        function_name = f"lambda_func-{short_uid()}"
+        create_lambda_function(
+            handler_file=TEST_LAMBDA_PYTHON_ECHO,
+            func_name=function_name,
+            runtime=Runtime.python3_9,
+        )
+
+        publish_version_result = lambda_client.publish_version(FunctionName=function_name)
+        function_version = publish_version_result["Version"]
+        snapshot.match("publish_version_result", publish_version_result)
+
+        ### GET
+
+        # normal (valid) structure, but function version doesn't have a provisioned config yet
+        with pytest.raises(
+            lambda_client.exceptions.ProvisionedConcurrencyConfigNotFoundException
+        ) as e:
+            lambda_client.get_provisioned_concurrency_config(
+                FunctionName=function_name, Qualifier=function_version
+            )
+        snapshot.match("get_provisioned_config_doesnotexist", e.value.response)
+
+        with pytest.raises(lambda_client.exceptions.ResourceNotFoundException) as e:
+            lambda_client.get_provisioned_concurrency_config(
+                FunctionName="doesnotexist", Qualifier="noalias"
+            )
+        snapshot.match("get_provisioned_functionname_doesnotexist", e.value.response)
+
+        with pytest.raises(lambda_client.exceptions.ResourceNotFoundException) as e:
+            lambda_client.get_provisioned_concurrency_config(
+                FunctionName=function_name, Qualifier="noalias"
+            )
+        snapshot.match("get_provisioned_qualifier_doesnotexist", e.value.response)
+
+        with pytest.raises(lambda_client.exceptions.ResourceNotFoundException) as e:
+            lambda_client.get_provisioned_concurrency_config(
+                FunctionName=function_name, Qualifier="10"
+            )
+        snapshot.match("get_provisioned_version_doesnotexist", e.value.response)
+
+        with pytest.raises(lambda_client.exceptions.InvalidParameterValueException) as e:
+            lambda_client.get_provisioned_concurrency_config(
+                FunctionName=function_name, Qualifier="$LATEST"
+            )
+        snapshot.match("get_provisioned_latest", e.value.response)
+
+        ### LIST
+
+        list_empty = lambda_client.list_provisioned_concurrency_configs(FunctionName=function_name)
+        snapshot.match("list_provisioned_noconfigs", list_empty)
+
+        with pytest.raises(lambda_client.exceptions.ResourceNotFoundException) as e:
+            lambda_client.list_provisioned_concurrency_configs(FunctionName="doesnotexist")
+        snapshot.match("list_provisioned_functionname_doesnotexist", e.value.response)
+
+        ### DELETE
+
+        with pytest.raises(lambda_client.exceptions.ResourceNotFoundException) as e:
+            lambda_client.delete_provisioned_concurrency_config(
+                FunctionName="doesnotexist", Qualifier=function_version
+            )
+        snapshot.match("delete_provisioned_functionname_doesnotexist", e.value.response)
+
+        with pytest.raises(lambda_client.exceptions.ResourceNotFoundException) as e:
+            lambda_client.delete_provisioned_concurrency_config(
+                FunctionName=function_name, Qualifier="noalias"
+            )
+        snapshot.match("delete_provisioned_qualifier_doesnotexist", e.value.response)
+
+        with pytest.raises(lambda_client.exceptions.ResourceNotFoundException) as e:
+            lambda_client.delete_provisioned_concurrency_config(
+                FunctionName=function_name, Qualifier="10"
+            )
+        snapshot.match("delete_provisioned_version_doesnotexist", e.value.response)
+
+        with pytest.raises(lambda_client.exceptions.InvalidParameterValueException) as e:
+            lambda_client.delete_provisioned_concurrency_config(
+                FunctionName=function_name, Qualifier="$LATEST"
+            )
+        snapshot.match("delete_provisioned_latest", e.value.response)
+
+        delete_nonexistent = lambda_client.delete_provisioned_concurrency_config(
+            FunctionName=function_name, Qualifier=function_version
+        )
+        snapshot.match("delete_provisioned_config_doesnotexist", delete_nonexistent)
+
+        ### PUT
+
+        # function does not exist
+        with pytest.raises(lambda_client.exceptions.ResourceNotFoundException) as e:
+            lambda_client.put_provisioned_concurrency_config(
+                FunctionName="doesnotexist", Qualifier="noalias", ProvisionedConcurrentExecutions=1
+            )
+        snapshot.match("put_provisioned_functionname_doesnotexist", e.value.response)
+
+        # invalid alias
+        with pytest.raises(lambda_client.exceptions.ResourceNotFoundException) as e:
+            lambda_client.put_provisioned_concurrency_config(
+                FunctionName=function_name,
+                Qualifier="doesnotexist",
+                ProvisionedConcurrentExecutions=1,
+            )
+        snapshot.match("put_provisioned_qualifier_doesnotexist", e.value.response)
+
+        with pytest.raises(lambda_client.exceptions.ResourceNotFoundException) as e:
+            lambda_client.put_provisioned_concurrency_config(
+                FunctionName=function_name, Qualifier="10", ProvisionedConcurrentExecutions=1
+            )
+        snapshot.match("put_provisioned_version_doesnotexist", e.value.response)
+
+        # set for $LATEST
+        with pytest.raises(lambda_client.exceptions.InvalidParameterValueException) as e:
+            lambda_client.put_provisioned_concurrency_config(
+                FunctionName=function_name, Qualifier="$LATEST", ProvisionedConcurrentExecutions=1
+            )
+        snapshot.match("put_provisioned_executions0", e.value.response)
+
     # TODO: make this more robust & add snapshot
     @pytest.mark.skip(reason="very slow (only execute when needed)")
     @pytest.mark.aws_validated
@@ -1663,7 +1786,6 @@ class TestLambdaProvisionedConcurrency:
         snapshot.match("provisioned_concurrency_notfound", e.value.response)
 
 
-# API only functions (no lambda execution itself, i.e. no invoke)
 @pytest.mark.skip_snapshot_verify(
     condition=is_old_provider,
     paths=["$..RevisionId", "$..Policy.Statement", "$..PolicyName", "$..PolicyArn", "$..Layers"],

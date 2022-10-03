@@ -5818,5 +5818,225 @@
         }
       }
     }
+  },
+  "tests/integration/awslambda/test_lambda_api.py::TestLambdaProvisionedConcurrency::test_provisioned_concurrency_exceptions": {
+    "recorded-date": "03-10-2022, 07:31:44",
+    "recorded-content": {
+      "publish_version_result": {
+        "Architectures": [
+          "x86_64"
+        ],
+        "CodeSha256": "<code-sha256:1>",
+        "CodeSize": 264,
+        "Description": "",
+        "Environment": {
+          "Variables": {}
+        },
+        "EphemeralStorage": {
+          "Size": 512
+        },
+        "FunctionArn": "arn:aws:lambda:<region>:111111111111:function:<function-name:1>:1",
+        "FunctionName": "<function-name:1>",
+        "Handler": "handler.handler",
+        "LastModified": "date",
+        "LastUpdateStatus": "Successful",
+        "MemorySize": 128,
+        "PackageType": "Zip",
+        "RevisionId": "<uuid:1>",
+        "Role": "arn:aws:iam::111111111111:role/<resource:2>",
+        "Runtime": "python3.9",
+        "State": "Active",
+        "Timeout": 30,
+        "TracingConfig": {
+          "Mode": "PassThrough"
+        },
+        "Version": "1",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 201
+        }
+      },
+      "get_provisioned_config_doesnotexist": {
+        "Error": {
+          "Code": "ProvisionedConcurrencyConfigNotFoundException",
+          "Message": "No Provisioned Concurrency Config found for this function"
+        },
+        "Type": "User",
+        "message": "No Provisioned Concurrency Config found for this function",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 404
+        }
+      },
+      "get_provisioned_functionname_doesnotexist": {
+        "Error": {
+          "Code": "ResourceNotFoundException",
+          "Message": "Cannot find alias arn: arn:aws:lambda:<region>:111111111111:function:doesnotexist:noalias"
+        },
+        "Message": "Cannot find alias arn: arn:aws:lambda:<region>:111111111111:function:doesnotexist:noalias",
+        "Type": "User",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 404
+        }
+      },
+      "get_provisioned_qualifier_doesnotexist": {
+        "Error": {
+          "Code": "ResourceNotFoundException",
+          "Message": "Cannot find alias arn: arn:aws:lambda:<region>:111111111111:function:<function-name:1>:noalias"
+        },
+        "Message": "Cannot find alias arn: arn:aws:lambda:<region>:111111111111:function:<function-name:1>:noalias",
+        "Type": "User",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 404
+        }
+      },
+      "get_provisioned_version_doesnotexist": {
+        "Error": {
+          "Code": "ResourceNotFoundException",
+          "Message": "Function not found: arn:aws:lambda:<region>:111111111111:function:<function-name:1>:10"
+        },
+        "Message": "Function not found: arn:aws:lambda:<region>:111111111111:function:<function-name:1>:10",
+        "Type": "User",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 404
+        }
+      },
+      "get_provisioned_latest": {
+        "Error": {
+          "Code": "InvalidParameterValueException",
+          "Message": "The function resource provided must be an alias or a published version."
+        },
+        "Type": "User",
+        "message": "The function resource provided must be an alias or a published version.",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "list_provisioned_noconfigs": {
+        "ProvisionedConcurrencyConfigs": [],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "list_provisioned_functionname_doesnotexist": {
+        "Error": {
+          "Code": "ResourceNotFoundException",
+          "Message": "Function not found: arn:aws:lambda:<region>:111111111111:function:doesnotexist"
+        },
+        "Message": "Function not found: arn:aws:lambda:<region>:111111111111:function:doesnotexist",
+        "Type": "User",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 404
+        }
+      },
+      "delete_provisioned_functionname_doesnotexist": {
+        "Error": {
+          "Code": "ResourceNotFoundException",
+          "Message": "Function not found: arn:aws:lambda:<region>:111111111111:function:doesnotexist:1"
+        },
+        "Message": "Function not found: arn:aws:lambda:<region>:111111111111:function:doesnotexist:1",
+        "Type": "User",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 404
+        }
+      },
+      "delete_provisioned_qualifier_doesnotexist": {
+        "Error": {
+          "Code": "ResourceNotFoundException",
+          "Message": "Cannot find alias arn: arn:aws:lambda:<region>:111111111111:function:<function-name:1>:noalias"
+        },
+        "Message": "Cannot find alias arn: arn:aws:lambda:<region>:111111111111:function:<function-name:1>:noalias",
+        "Type": "User",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 404
+        }
+      },
+      "delete_provisioned_version_doesnotexist": {
+        "Error": {
+          "Code": "ResourceNotFoundException",
+          "Message": "Function not found: arn:aws:lambda:<region>:111111111111:function:<function-name:1>:10"
+        },
+        "Message": "Function not found: arn:aws:lambda:<region>:111111111111:function:<function-name:1>:10",
+        "Type": "User",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 404
+        }
+      },
+      "delete_provisioned_latest": {
+        "Error": {
+          "Code": "InvalidParameterValueException",
+          "Message": "The function resource provided must be an alias or a published version."
+        },
+        "Type": "User",
+        "message": "The function resource provided must be an alias or a published version.",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "delete_provisioned_config_doesnotexist": {
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 204
+        }
+      },
+      "put_provisioned_functionname_doesnotexist": {
+        "Error": {
+          "Code": "ResourceNotFoundException",
+          "Message": "Cannot find alias arn: arn:aws:lambda:<region>:111111111111:function:doesnotexist:noalias"
+        },
+        "Message": "Cannot find alias arn: arn:aws:lambda:<region>:111111111111:function:doesnotexist:noalias",
+        "Type": "User",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 404
+        }
+      },
+      "put_provisioned_qualifier_doesnotexist": {
+        "Error": {
+          "Code": "ResourceNotFoundException",
+          "Message": "Cannot find alias arn: arn:aws:lambda:<region>:111111111111:function:<function-name:1>:doesnotexist"
+        },
+        "Message": "Cannot find alias arn: arn:aws:lambda:<region>:111111111111:function:<function-name:1>:doesnotexist",
+        "Type": "User",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 404
+        }
+      },
+      "put_provisioned_version_doesnotexist": {
+        "Error": {
+          "Code": "ResourceNotFoundException",
+          "Message": "Function not found: arn:aws:lambda:<region>:111111111111:function:<function-name:1>:10"
+        },
+        "Message": "Function not found: arn:aws:lambda:<region>:111111111111:function:<function-name:1>:10",
+        "Type": "User",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 404
+        }
+      },
+      "put_provisioned_executions0": {
+        "Error": {
+          "Code": "InvalidParameterValueException",
+          "Message": "Provisioned Concurrency Configs cannot be applied to unpublished function versions."
+        },
+        "Type": "User",
+        "message": "Provisioned Concurrency Configs cannot be applied to unpublished function versions.",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
   }
 }
