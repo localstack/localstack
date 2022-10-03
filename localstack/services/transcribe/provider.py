@@ -8,6 +8,7 @@ import wave
 from pathlib import Path
 from typing import Tuple
 from zipfile import ZipFile
+import magic
 
 from localstack import config
 from localstack.aws.api import RequestContext, handler
@@ -210,9 +211,9 @@ class TranscribeProvider(TranscribeApi):
             s3_client.download_file(Bucket=bucket, Key=key, Filename=file_path)
 
             # Check audio file type and convert to wav
-            support_audio_list = ["amr", "flac", "mp3", "mp4", "ogg", "webm"]
-            _, file_type = str(file_path).split(".")
-            if file_type != "wav" and file_type in support_audio_list:
+            support_audio_list = ["audio/flac", "audio/mpeg", "video/mp4", "audio/ogg", "video/webm"]
+            file_type = magic.from_file(file_path, mime=True)
+            if file_type != "audio/x-wav" and file_type in support_audio_list:
                 LOG.debug("Starting to convert audio to wav type: %s", job_name)
 
                 tmp_wav_file_path = "/tmp/localstack/converted.wav"

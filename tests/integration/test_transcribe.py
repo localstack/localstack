@@ -80,9 +80,8 @@ class TestTranscribe:
             "files/en-gb.ogg",
             "files/en-gb.webm",
             "files/en-gb.flac",
-            "files/en-gb.amr",
         ]
-        # "amr", "flac", "mp3", "mp4", "ogg", "webm"
+
         for file in file_list:
             file_path = os.path.join(BASEDIR, file)
             job_name = transcribe_create_job(audio_file=file_path)
@@ -100,18 +99,6 @@ class TestTranscribe:
             assert poll_condition(
                 is_transcription_done, timeout=100
             ), f"could not finish transcription job: {job_name} in time"
-
-        # job = transcribe_client.get_transcription_job(TranscriptionJobName=job_name)
-        # snapshot.match("TranscriptionJob", job)
-
-        # # delete the job again
-        # transcribe_client.delete_transcription_job(TranscriptionJobName=job_name)
-
-        # # check if job is gone
-        # with pytest.raises((ClientError, NotFoundException)) as e_info:
-        #     transcribe_client.get_transcription_job(TranscriptionJobName=job_name)
-
-        # snapshot.match("GetError", e_info.value.response)
 
     @pytest.mark.aws_validated
     @pytest.mark.skip_snapshot_verify(
