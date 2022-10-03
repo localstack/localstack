@@ -15,6 +15,7 @@ from urllib.parse import (
 
 import moto.s3.responses as moto_s3_responses
 
+from localstack import config
 from localstack.aws.accounts import get_aws_account_id
 from localstack.aws.api import CommonServiceException, RequestContext, ServiceException, handler
 from localstack.aws.api.s3 import (
@@ -42,6 +43,9 @@ from localstack.aws.api.s3 import (
     GetBucketRequestPaymentOutput,
     GetBucketRequestPaymentRequest,
     GetBucketWebsiteOutput,
+    GetObjectAttributesOutput,
+    GetObjectAttributesParts,
+    GetObjectAttributesRequest,
     GetObjectOutput,
     GetObjectRequest,
     HeadObjectOutput,
@@ -72,7 +76,6 @@ from localstack.aws.api.s3 import (
 from localstack.aws.api.s3 import Type as GranteeType
 from localstack.aws.api.s3 import WebsiteConfiguration
 from localstack.aws.handlers import modify_service_response, serve_custom_service_request_handlers
-from localstack.config import get_edge_port_http, get_protocol
 from localstack.constants import LOCALHOST_HOSTNAME
 from localstack.http import Request, Response
 from localstack.http.proxy import forward
@@ -136,7 +139,9 @@ class InvalidRequest(CommonServiceException):
 
 
 def get_full_default_bucket_location(bucket_name):
-    return f"{get_protocol()}://{bucket_name}.s3.{LOCALHOST_HOSTNAME}:{get_edge_port_http()}/"
+    if config.HOSTNAME_EXTERNAL != config.LOCALHOST:
+        return f"{config.get_protocol()}://{config.HOSTNAME_EXTERNAL}:{config.get_edge_port_http()}/{bucket_name}/"
+    return f"{config.get_protocol()}://{bucket_name}.s3.{LOCALHOST_HOSTNAME}:{config.get_edge_port_http()}/"
 
 
 class S3Provider(S3Api, ServiceLifecycleHook):
@@ -357,6 +362,10 @@ class S3Provider(S3Api, ServiceLifecycleHook):
         self, context: RequestContext, request: CompleteMultipartUploadRequest
     ) -> CompleteMultipartUploadOutput:
         response: CompleteMultipartUploadOutput = call_moto(context)
+        # moto return the Location in AWS `http://{bucket}.s3.amazonaws.com/{key}`
+        response[
+            "Location"
+        ] = f'{get_full_default_bucket_location(request["Bucket"])}{response["Key"]}'
         self._notify(context)
         return response
 
@@ -646,6 +655,38 @@ class S3Provider(S3Api, ServiceLifecycleHook):
         response["Bucket"] = bucket
         response["Key"] = key_name
         response["Location"] = response["LocationHeader"]
+
+        return response
+
+    @handler("GetObjectAttributes", expand=False)
+    def get_object_attributes(
+        self,
+        context: RequestContext,
+        request: GetObjectAttributesRequest,
+    ) -> GetObjectAttributesOutput:
+        bucket_name = request["Bucket"]
+        moto_backend = get_moto_s3_backend(context)
+        bucket = get_bucket_from_moto(moto_backend, bucket_name)
+        key = get_key_from_moto_bucket(moto_bucket=bucket, key=request["Key"])
+
+        object_attrs = request.get("ObjectAttributes", [])
+        response = GetObjectAttributesOutput()
+        # TODO: see Checksum field
+        if "ETag" in object_attrs:
+            response["ETag"] = key.etag.strip('"')
+        if "StorageClass" in object_attrs:
+            response["StorageClass"] = key.storage_class
+        if "ObjectSize" in object_attrs:
+            response["ObjectSize"] = key.size
+
+        response["LastModified"] = key.last_modified
+        if version_id := request.get("VersionId"):
+            response["VersionId"] = version_id
+
+        if key.multipart:
+            response["ObjectParts"] = GetObjectAttributesParts(
+                TotalPartsCount=len(key.multipart.partlist)
+            )
 
         return response
 

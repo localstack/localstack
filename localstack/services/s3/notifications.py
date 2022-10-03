@@ -287,6 +287,7 @@ class SqsNotifier(BaseNotifier):
                 QueueName=arn_data["resource"], QueueOwnerAWSAccountId=arn_data["account"]
             )
         except ClientError:
+            LOG.exception("Could not validate the notification destination %s", arn)
             raise _create_invalid_argument_exc(
                 "Unable to validate the following destination configurations",
                 name=arn,

@@ -385,7 +385,7 @@ def _reverse_inject_signature_hmac_v1_query(context: RequestContext) -> Request:
     for header, value in context.request.headers.items():
         header_low = header.lower()
         if header_low.startswith("x-amz-") or header_low in ["content-type", "date", "content-md5"]:
-            new_headers[header] = value
+            new_headers[header_low] = value
 
     # rebuild the query string
     new_query_string = percent_encode_sequence(new_query_string_dict)
