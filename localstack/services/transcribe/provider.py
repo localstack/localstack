@@ -216,7 +216,7 @@ class TranscribeProvider(TranscribeApi):
             if file_type != "audio/x-wav" and file_type in support_audio_list:
                 LOG.debug("Starting to convert audio to wav type: %s", job_name)
 
-                tmp_wav_file_path = "/tmp/localstack/converted.wav"
+                tmp_wav_file_path = new_tmp_file() + ".wav"
                 cmd = "ffmpeg -nostdin -loglevel quiet -y -i {} {}".format(
                     str(file_path), tmp_wav_file_path
                 )
