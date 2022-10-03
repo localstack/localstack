@@ -1,9 +1,11 @@
+import base64
 import copy
 import datetime
+import json
 import logging
 import re
 import time
-from typing import Dict, Tuple, TypedDict, Union
+from typing import Dict, List, Tuple, TypedDict, Union
 from urllib import parse as urlparse
 
 from botocore.auth import HmacV1QueryAuth, S3SigV4QueryAuth
@@ -12,19 +14,25 @@ from botocore.compat import HTTPHeaders, urlsplit
 from botocore.credentials import Credentials, ReadOnlyCredentials
 from botocore.exceptions import NoCredentialsError
 from botocore.utils import percent_encode_sequence
-from werkzeug.datastructures import Headers
+from werkzeug.datastructures import Headers, ImmutableMultiDict
 
 from localstack import config
 from localstack.aws.api import RequestContext
 from localstack.aws.api.s3 import (
     AccessDenied,
     AuthorizationQueryParametersError,
+    InvalidArgument,
     SignatureDoesNotMatch,
 )
 from localstack.aws.chain import HandlerChain
 from localstack.constants import TEST_AWS_ACCESS_KEY_ID, TEST_AWS_SECRET_ACCESS_KEY
 from localstack.http import Request, Response
-from localstack.services.s3.utils import S3_VIRTUAL_HOST_FORWARDED_HEADER, uses_host_addressing
+from localstack.services.s3.utils import (
+    S3_VIRTUAL_HOST_FORWARDED_HEADER,
+    _create_invalid_argument_exc,
+    capitalize_header_name_from_snake_case,
+    uses_host_addressing,
+)
 from localstack.utils.strings import to_bytes
 
 LOG = logging.getLogger(__name__)
@@ -39,6 +47,19 @@ SIGNATURE_V4_PARAMS = [
     "X-Amz-Expires",
     "X-Amz-SignedHeaders",
     "X-Amz-Signature",
+]
+
+
+SIGNATURE_V2_POST_FIELDS = [
+    "signature",
+    "AWSAccessKeyId",
+]
+
+SIGNATURE_V4_POST_FIELDS = [
+    "x-amz-signature",
+    "x-amz-algorithm",
+    "x-amz-credential",
+    "x-amz-date",
 ]
 
 # headers to blacklist from request_dict.signed_headers
@@ -65,6 +86,10 @@ FAKE_HOST_ID = "9Gjjt1m+cjU4OPvX9O9/8RuvnG41MRb/18Oux2o5H5MY7ISNTlXN+Dz9IG62/ILV
 
 HOST_COMBINATION_REGEX = r"^(.*)(:[\d]{0,6})"
 PORT_REPLACEMENT = [":80", ":443", ":%s" % config.EDGE_PORT, ""]
+
+# STS policy expiration date format
+POLICY_EXPIRATION_FORMAT1 = "%Y-%m-%dT%H:%M:%SZ"
+POLICY_EXPIRATION_FORMAT2 = "%Y-%m-%dT%H:%M:%S.%fZ"
 
 
 class NotValidSigV4Signature(TypedDict):
@@ -404,9 +429,9 @@ def _prepare_request_for_sig_v4_signature(
             if header_low in IGNORED_SIGV4_HEADERS:
                 continue
             if header_low not in signed_headers.lower():
-                not_signed_headers.append(header)
+                not_signed_headers.append(header_low)
         if header_low in signed_headers:
-            signature_headers[header] = value
+            signature_headers[header_low] = value
 
     if not_signed_headers:
         ex: AccessDenied = create_access_denied_headers_not_signed(", ".join(not_signed_headers))
@@ -595,3 +620,101 @@ def _find_valid_signature_through_ports(context: RequestContext) -> FindSigV4Res
 
     # Return the last values returned by the loop, not sure which one we should select
     return None, exception
+
+
+def validate_post_policy(request_form: ImmutableMultiDict) -> None:
+    """
+    Validate the pre-signed POST with its policy contained
+    For now, only validates its expiration
+    SigV2: https://docs.aws.amazon.com/AmazonS3/latest/userguide/HTTPPOSTExamples.html
+    SigV4: https://docs.aws.amazon.com/AmazonS3/latest/API/sigv4-authentication-HTTPPOST.html
+
+    :param request_form: the form data contained in the pre-signed POST request
+    :raises AccessDenied, SignatureDoesNotMatch
+    :return: None
+    """
+    if not request_form.get("key"):
+        ex: InvalidArgument = _create_invalid_argument_exc(
+            message="Bucket POST must contain a field named 'key'.  If it is specified, please check the order of the fields.",
+            name="key",
+            value="",
+            host_id=FAKE_HOST_ID,
+        )
+        raise ex
+
+    if not (policy := request_form.get("policy")):
+        # A POST request needs a policy except if the bucket is publicly writable
+        return
+
+    # TODO: this does validation of fields only for now
+    is_v4 = _is_match_with_signature_fields(request_form, SIGNATURE_V4_POST_FIELDS)
+    is_v2 = _is_match_with_signature_fields(request_form, SIGNATURE_V2_POST_FIELDS)
+    if not is_v2 and not is_v4:
+        ex: AccessDenied = AccessDenied("Access Denied")
+        ex.HostId = FAKE_HOST_ID
+        raise ex
+
+    try:
+        policy_decoded = json.loads(base64.b64decode(policy).decode("utf-8"))
+    except ValueError:
+        # this means the policy has been tampered with
+        signature = request_form.get("signature") if is_v2 else request_form.get("x-amz-signature")
+        ex: SignatureDoesNotMatch = create_signature_does_not_match_sig_v2(
+            request_signature=signature,
+            string_to_sign=policy,
+        )
+        raise ex
+
+    if expiration := policy_decoded.get("expiration"):
+        if is_expired(_parse_policy_expiration_date(expiration)):
+            ex: AccessDenied = AccessDenied("Invalid according to Policy: Policy expired.")
+            ex.HostId = FAKE_HOST_ID
+            raise ex
+
+    # TODO: validate the signature
+    # TODO: validate the request according to the policy
+
+
+def _parse_policy_expiration_date(expiration_string: str) -> datetime.datetime:
+    """
+    Parses the Policy Expiration datetime string
+    :param expiration_string: a policy expiration string, can be of 2 format: `2007-12-01T12:00:00.000Z` or
+    `2007-12-01T12:00:00Z`
+    :return: a datetime object representing the expiration datetime
+    """
+    try:
+        dt = datetime.datetime.strptime(expiration_string, POLICY_EXPIRATION_FORMAT1)
+    except Exception:
+        dt = datetime.datetime.strptime(expiration_string, POLICY_EXPIRATION_FORMAT2)
+
+    # both date formats assume a UTC timezone ('Z' suffix), but it's not parsed as tzinfo into the datetime object
+    dt = dt.replace(tzinfo=datetime.timezone.utc)
+    return dt
+
+
+def _is_match_with_signature_fields(
+    request_form: ImmutableMultiDict, signature_fields: List[str]
+) -> bool:
+    """
+    Checks if the form contains at least one of the required fields passed in `signature_fields`
+    If it contains at least one field, validates it contains all of them or raises InvalidArgument
+    :param request_form: ImmutableMultiDict: the pre-signed POST request form
+    :param signature_fields: the field we want to validate against
+    :raises InvalidArgument
+    :return: False if none of the fields are present, or True if it does
+    """
+    if any(p in request_form for p in signature_fields):
+        for p in signature_fields:
+            if p not in request_form:
+                LOG.info("POST pre-sign missing fields")
+                argument_name = capitalize_header_name_from_snake_case(p) if "-" in p else p
+                ex: InvalidArgument = _create_invalid_argument_exc(
+                    message=f"Bucket POST must contain a field named '{argument_name}'.  If it is specified, please check the order of the fields.",
+                    name=argument_name,
+                    value="",
+                    host_id=FAKE_HOST_ID,
+                )
+                raise ex
+
+        return True
+    return False

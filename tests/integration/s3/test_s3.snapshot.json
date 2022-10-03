@@ -3292,6 +3292,156 @@
       }
     }
   },
+  "tests/integration/s3/test_s3.py::TestS3PresignedUrl::test_post_request_expires": {
+    "recorded-date": "04-10-2022, 17:59:26",
+    "recorded-content": {
+      "exception": {
+        "Error": {
+          "Code": "AccessDenied",
+          "HostId": "host-id",
+          "Message": "Invalid according to Policy: Policy expired.",
+          "RequestId": "<request-id:1>"
+        },
+        "StatusCode": 403
+      }
+    }
+  },
+  "tests/integration/s3/test_s3.py::TestS3PresignedUrl::test_post_request_malformed_policy": {
+    "recorded-date": "04-10-2022, 20:42:19",
+    "recorded-content": {
+      "exception": {
+        "Error": {
+          "AWSAccessKeyId": "<a-w-s-access-key-id:1>",
+          "Code": "SignatureDoesNotMatch",
+          "HostId": "host-id",
+          "Message": "The request signature we calculated does not match the signature you provided. Check your key and signing method.",
+          "RequestId": "<request-id:1>",
+          "SignatureProvided": "<signature-provided:1>",
+          "StringToSign": "<string-to-sign>",
+          "StringToSignBytes": "<string-to-sign-bytes:1>"
+        },
+        "StatusCode": 403
+      }
+    }
+  },
+  "tests/integration/s3/test_s3.py::TestS3PresignedUrl::test_post_request_malformed_policy[s3]": {
+    "recorded-date": "05-10-2022, 18:11:44",
+    "recorded-content": {
+      "exception-policy": {
+        "Error": {
+          "AWSAccessKeyId": "<a-w-s-access-key-id:1>",
+          "Code": "SignatureDoesNotMatch",
+          "HostId": "host-id",
+          "Message": "The request signature we calculated does not match the signature you provided. Check your key and signing method.",
+          "RequestId": "<request-id:1>",
+          "SignatureProvided": "<signature-provided:1>",
+          "StringToSign": "<string-to-sign>",
+          "StringToSignBytes": "<string-to-sign-bytes:1>"
+        },
+        "StatusCode": 403
+      }
+    }
+  },
+  "tests/integration/s3/test_s3.py::TestS3PresignedUrl::test_post_request_malformed_policy[s3v4]": {
+    "recorded-date": "05-10-2022, 18:11:46",
+    "recorded-content": {
+      "exception-policy": {
+        "Error": {
+          "AWSAccessKeyId": "<a-w-s-access-key-id:1>",
+          "Code": "SignatureDoesNotMatch",
+          "HostId": "host-id",
+          "Message": "The request signature we calculated does not match the signature you provided. Check your key and signing method.",
+          "RequestId": "<request-id:1>",
+          "SignatureProvided": "<signature-provided:1>",
+          "StringToSign": "<string-to-sign>",
+          "StringToSignBytes": "<string-to-sign-bytes:1>"
+        },
+        "StatusCode": 403
+      }
+    }
+  },
+  "tests/integration/s3/test_s3.py::TestS3PresignedUrl::test_post_request_missing_signature[s3]": {
+    "recorded-date": "05-10-2022, 18:14:22",
+    "recorded-content": {
+      "exception-missing-signature": {
+        "Error": {
+          "ArgumentName": "Signature",
+          "ArgumentValue": null,
+          "Code": "InvalidArgument",
+          "HostId": "host-id",
+          "Message": "Bucket POST must contain a field named 'Signature'.  If it is specified, please check the order of the fields.",
+          "RequestId": "<request-id:1>"
+        },
+        "StatusCode": 400
+      }
+    }
+  },
+  "tests/integration/s3/test_s3.py::TestS3PresignedUrl::test_post_request_missing_signature[s3v4]": {
+    "recorded-date": "05-10-2022, 18:14:24",
+    "recorded-content": {
+      "exception-missing-signature": {
+        "Error": {
+          "ArgumentName": "X-Amz-Signature",
+          "ArgumentValue": null,
+          "Code": "InvalidArgument",
+          "HostId": "host-id",
+          "Message": "Bucket POST must contain a field named 'X-Amz-Signature'.  If it is specified, please check the order of the fields.",
+          "RequestId": "<request-id:1>"
+        },
+        "StatusCode": 400
+      }
+    }
+  },
+  "tests/integration/s3/test_s3.py::TestS3PresignedUrl::test_post_request_missing_fields[s3]": {
+    "recorded-date": "05-10-2022, 18:29:23",
+    "recorded-content": {
+      "exception-missing-fields": {
+        "Error": {
+          "ArgumentName": "AWSAccessKeyId",
+          "ArgumentValue": null,
+          "Code": "InvalidArgument",
+          "HostId": "host-id",
+          "Message": "Bucket POST must contain a field named 'AWSAccessKeyId'.  If it is specified, please check the order of the fields.",
+          "RequestId": "<request-id:1>"
+        },
+        "StatusCode": 400
+      },
+      "exception-no-sig-related-fields": {
+        "Error": {
+          "Code": "AccessDenied",
+          "HostId": "host-id",
+          "Message": "Access Denied",
+          "RequestId": "<request-id:2>"
+        },
+        "StatusCode": 403
+      }
+    }
+  },
+  "tests/integration/s3/test_s3.py::TestS3PresignedUrl::test_post_request_missing_fields[s3v4]": {
+    "recorded-date": "05-10-2022, 18:29:26",
+    "recorded-content": {
+      "exception-missing-fields": {
+        "Error": {
+          "ArgumentName": "X-Amz-Algorithm",
+          "ArgumentValue": null,
+          "Code": "InvalidArgument",
+          "HostId": "host-id",
+          "Message": "Bucket POST must contain a field named 'X-Amz-Algorithm'.  If it is specified, please check the order of the fields.",
+          "RequestId": "<request-id:1>"
+        },
+        "StatusCode": 400
+      },
+      "exception-no-sig-related-fields": {
+        "Error": {
+          "Code": "AccessDenied",
+          "HostId": "host-id",
+          "Message": "Access Denied",
+          "RequestId": "<request-id:2>"
+        },
+        "StatusCode": 403
+      }
+    }
+  },
   "tests/integration/s3/test_s3.py::TestS3StaticWebsiteHosting::test_validate_website_configuration": {
     "recorded-date": "28-09-2022, 22:44:53",
     "recorded-content": {

@@ -1355,6 +1355,27 @@ class S3ResponseSerializer(RestXMLResponseSerializer):
 
     SUPPORTED_MIME_TYPES = [TEXT_XML, APPLICATION_XML]
 
+    def _serialize_response(
+        self,
+        parameters: dict,
+        response: HttpResponse,
+        shape: Optional[Shape],
+        shape_members: dict,
+        operation_model: OperationModel,
+        mime_type: str,
+    ) -> None:
+        header_params, payload_params = self._partition_members(parameters, shape)
+        self._process_header_members(header_params, response, shape)
+        # "HEAD" responses are basically "GET" responses without the actual body.
+        # Do not process the body payload in this case (setting a body could also manipulate the headers)
+        # If the response is a redirection, the body should be empty as well
+        if operation_model.http.get("method") != "HEAD" and not 300 <= response.status_code < 400:
+            self._serialize_payload(
+                payload_params, response, shape, shape_members, operation_model, mime_type
+            )
+        self._serialize_content_type(response, shape, shape_members, mime_type)
+        self._prepare_additional_traits_in_response(response, operation_model)
+
     def _serialize_error(
         self,
         error: ServiceException,
@@ -1381,11 +1402,9 @@ class S3ResponseSerializer(RestXMLResponseSerializer):
     ):
         """Adds the request ID to the headers (in contrast to the body - as in the Query protocol)."""
         response = super()._prepare_additional_traits_in_response(response, operation_model)
-        request_id = gen_amzn_requestid_long()
-        response.headers["x-amz-request-id"] = request_id
         response.headers[
             "x-amz-id-2"
-        ] = f"MzRISOwyjmnup{request_id}7/JypPGXLh0OVFGcJaaO3KW/hRAqKOpIEEp"
+        ] = f"MzRISOwyjmnup{response.headers['x-amz-request-id']}7/JypPGXLh0OVFGcJaaO3KW/hRAqKOpIEEp"
         return response
 
     def _add_error_tags(

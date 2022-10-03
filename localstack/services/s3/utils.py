@@ -180,9 +180,15 @@ def get_key_from_moto_bucket(
 
 
 def _create_invalid_argument_exc(
-    message: Union[str, None], name: str, value: str
+    message: Union[str, None], name: str, value: str, host_id: str = None
 ) -> InvalidArgument:
     ex = InvalidArgument(message)
     ex.ArgumentName = name
     ex.ArgumentValue = value
+    if host_id:
+        ex.HostId = host_id
     return ex
+
+
+def capitalize_header_name_from_snake_case(header_name: str) -> str:
+    return "-".join([part.capitalize() for part in header_name.split("-")])
