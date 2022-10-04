@@ -51,7 +51,7 @@ RUN apt-get update && \
         apt-get update && \
         apt-get install -y --no-install-recommends \
             # Runtime packages (groff-base is necessary for AWS CLI help)
-            git make openssl tar pixz zip unzip groff-base iputils-ping nss-passwords \
+            git make openssl tar pixz zip unzip groff-base iputils-ping nss-passwords ffmpeg\
             # Postgres
             postgresql postgresql-client postgresql-plpython3 \
             # NodeJS
@@ -137,9 +137,6 @@ ARG TARGETARCH
 RUN apt-get update && apt-get install -y autoconf automake cmake libsasl2-dev \
         g++ gcc libffi-dev libkrb5-dev libssl-dev \
         postgresql-server-dev-11 libpq-dev
-
-# Install ffmpeg to support multiple audio formats
-RUN apt-get install -y ffmpeg
 
 # Install timescaledb into postgresql
 RUN (cd /tmp && git clone https://github.com/timescale/timescaledb.git) && \
