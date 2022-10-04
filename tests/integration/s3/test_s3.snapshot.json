@@ -3291,5 +3291,168 @@
         "StatusCode": 403
       }
     }
+  },
+  "tests/integration/s3/test_s3.py::TestS3StaticWebsiteHosting::test_validate_website_configuration": {
+    "recorded-date": "28-09-2022, 22:44:53",
+    "recorded-content": {
+      "invalid-website-conf-0": {
+        "Error": {
+          "ArgumentName": "IndexDocument",
+          "ArgumentValue": "/index.html",
+          "Code": "InvalidArgument",
+          "Message": "The IndexDocument Suffix is not well formed"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "invalid-website-conf-1": {
+        "Error": {
+          "ArgumentName": "IndexDocument",
+          "ArgumentValue": null,
+          "Code": "InvalidArgument",
+          "Message": "The IndexDocument Suffix is not well formed"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "invalid-website-conf-2": {
+        "Error": {
+          "ArgumentName": "RedirectAllRequestsTo",
+          "ArgumentValue": "not null",
+          "Code": "InvalidArgument",
+          "Message": "RedirectAllRequestsTo cannot be provided in conjunction with other Routing Rules."
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "invalid-website-conf-3": {
+        "Error": {
+          "ArgumentName": "IndexDocument",
+          "ArgumentValue": "null",
+          "Code": "InvalidArgument",
+          "Message": "A value for IndexDocument Suffix must be provided if RedirectAllRequestsTo is empty"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "invalid-website-conf-4": {
+        "Error": {
+          "Code": "InvalidRequest",
+          "Message": "Invalid protocol, protocol can be http or https. If not defined the protocol will be selected automatically."
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "invalid-website-conf-5": {
+        "Error": {
+          "Code": "InvalidRequest",
+          "Message": "You can only define ReplaceKeyPrefix or ReplaceKey but not both."
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "invalid-website-conf-6": {
+        "Error": {
+          "Code": "InvalidRequest",
+          "Message": "Condition cannot be empty. To redirect all requests without a condition, the condition element shouldn't be present."
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "invalid-website-conf-7": {
+        "Error": {
+          "Code": "MalformedXML",
+          "Message": "The XML you provided was not well-formed or did not validate against our published schema"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/integration/s3/test_s3.py::TestS3StaticWebsiteHosting::test_crud_website_configuration": {
+    "recorded-date": "28-09-2022, 23:23:11",
+    "recorded-content": {
+      "get-no-such-website-config": {
+        "Error": {
+          "BucketName": "<bucket-name:1>",
+          "Code": "NoSuchWebsiteConfiguration",
+          "Message": "The specified bucket does not have a website configuration"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 404
+        }
+      },
+      "del-no-such-website-config": {
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 204
+        }
+      },
+      "put-website-config": {
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "get-website-config": {
+        "IndexDocument": {
+          "Suffix": "index.html"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/integration/s3/test_s3.py::TestS3StaticWebsiteHosting::test_website_hosting_http_methods": {
+    "recorded-date": "04-10-2022, 16:11:12",
+    "recorded-content": {
+      "not-allowed-post": {
+        "content": "<html>\n<head><title>405 Method Not Allowed</title></head>\n<body>\n<h1>405 Method Not Allowed</h1>\n<ul>\n<li>Code: MethodNotAllowed</li>\n<li>Message: The specified method is not allowed against this resource.</li>\n<li>Method: POST</li>\n<li>ResourceType: OBJECT</li>\n<li>RequestId: <request-id></li>\n<li>HostId: <host-id></li>\n</ul>\n<hr/>\n</body>\n</html>\n"
+      },
+      "not-allowed-delete": {
+        "content": "<html>\n<head><title>405 Method Not Allowed</title></head>\n<body>\n<h1>405 Method Not Allowed</h1>\n<ul>\n<li>Code: MethodNotAllowed</li>\n<li>Message: The specified method is not allowed against this resource.</li>\n<li>Method: DELETE</li>\n<li>ResourceType: OBJECT</li>\n<li>RequestId: <request-id></li>\n<li>HostId: <host-id></li>\n</ul>\n<hr/>\n</body>\n</html>\n"
+      }
+    }
+  },
+  "tests/integration/s3/test_s3.py::TestS3StaticWebsiteHosting::test_website_hosting_index_lookup": {
+    "recorded-date": "04-10-2022, 16:45:08",
+    "recorded-content": {
+      "404-no-trailing-slash": "<html>\n<head><title>404 Not Found</title></head>\n<body>\n<h1>404 Not Found</h1>\n<ul>\n<li>Code: NoSuchKey</li>\n<li>Message: The specified key does not exist.</li>\n<li>Key: directory-wrong</li>\n<li>RequestId: <request-id></li>\n<li>HostId: <host-id></li>\n</ul>\n<hr/>\n</body>\n</html>\n",
+      "404-with-trailing-slash": "<html>\n<head><title>404 Not Found</title></head>\n<body>\n<h1>404 Not Found</h1>\n<ul>\n<li>Code: NoSuchKey</li>\n<li>Message: The specified key does not exist.</li>\n<li>Key: directory-wrong/index.html</li>\n<li>RequestId: <request-id></li>\n<li>HostId: <host-id></li>\n</ul>\n<hr/>\n</body>\n</html>\n"
+    }
+  },
+  "tests/integration/s3/test_s3.py::TestS3StaticWebsiteHosting::test_website_hosting_404": {
+    "recorded-date": "04-10-2022, 16:51:12",
+    "recorded-content": {
+      "404-no-such-key": "<html>\n<head><title>404 Not Found</title></head>\n<body>\n<h1>404 Not Found</h1>\n<ul>\n<li>Code: NoSuchKey</li>\n<li>Message: The specified key does not exist.</li>\n<li>Key: index.html</li>\n<li>RequestId: <request-id></li>\n<li>HostId: <host-id></li>\n</ul>\n<hr/>\n</body>\n</html>\n",
+      "404-no-such-key-nor-custom": "<html>\n<head><title>404 Not Found</title></head>\n<body>\n<h1>404 Not Found</h1>\n<ul>\n<li>Code: NoSuchKey</li>\n<li>Message: The specified key does not exist.</li>\n<li>Key: index.html</li>\n<li>RequestId: <request-id></li>\n<li>HostId: <host-id></li>\n</ul>\n<h3>An Error Occurred While Attempting to Retrieve a Custom Error Document</h3>\n<ul>\n<li>Code: NoSuchKey</li>\n<li>Message: The specified key does not exist.</li>\n<li>Key: error.html</li>\n</ul>\n<hr/>\n</body>\n</html>\n"
+    }
+  },
+  "tests/integration/s3/test_s3.py::TestS3StaticWebsiteHosting::test_website_hosting_no_such_website": {
+    "recorded-date": "04-10-2022, 16:56:34",
+    "recorded-content": {
+      "no-such-bucket": "<html>\n<head><title>404 Not Found</title></head>\n<body>\n<h1>404 Not Found</h1>\n<ul>\n<li>Code: NoSuchBucket</li>\n<li>Message: The specified bucket does not exist</li>\n<li>BucketName: <bucket-name></li>\n<li>RequestId: <request-id></li>\n<li>HostId: <host-id></li>\n</ul>\n<hr/>\n</body>\n</html>\n",
+      "no-such-website-config": "<html>\n<head><title>404 Not Found</title></head>\n<body>\n<h1>404 Not Found</h1>\n<ul>\n<li>Code: NoSuchWebsiteConfiguration</li>\n<li>Message: The specified bucket does not have a website configuration</li>\n<li>BucketName: <bucket-name></li>\n<li>RequestId: <request-id></li>\n<li>HostId: <host-id></li>\n</ul>\n<hr/>\n</body>\n</html>\n",
+      "no-such-website-config-key": "<html>\n<head><title>404 Not Found</title></head>\n<body>\n<h1>404 Not Found</h1>\n<ul>\n<li>Code: NoSuchWebsiteConfiguration</li>\n<li>Message: The specified bucket does not have a website configuration</li>\n<li>BucketName: <bucket-name></li>\n<li>RequestId: <request-id></li>\n<li>HostId: <host-id></li>\n</ul>\n<hr/>\n</body>\n</html>\n"
+    }
   }
 }
