@@ -646,7 +646,7 @@ def import_api_from_openapi_spec(rest_api: RestAPI, body: Dict, query_params: Di
                 "description",
                 "summary",
                 "$ref",
-            ] and not isinstance(field_schema, dict):
+            ] or not isinstance(field_schema, dict):
                 LOG.warning("Ignoring unsupported field %s in path %s", field, rel_path)
                 continue
 
