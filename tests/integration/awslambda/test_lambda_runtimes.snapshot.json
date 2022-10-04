@@ -110,7 +110,7 @@
     }
   },
   "tests/integration/awslambda/test_lambda_runtimes.py::TestJavaRuntimes::test_java_runtime_with_lib": {
-    "recorded-date": "09-09-2022, 18:11:27",
+    "recorded-date": "04-10-2022, 16:33:51",
     "recorded-content": {
       "create-result-jar-with-lib": {
         "CreateEventSourceMappingResponse": null,
@@ -181,7 +181,7 @@
           "MemorySize": 128,
           "PackageType": "Zip",
           "RevisionId": "<uuid:2>",
-          "Role": "arn:aws:iam::111111111111:role/<resource:2>",
+          "Role": "arn:aws:iam::111111111111:role/<resource:1>",
           "Runtime": "java11",
           "State": "Pending",
           "StateReason": "The function is being created.",
@@ -228,7 +228,7 @@
           "MemorySize": 128,
           "PackageType": "Zip",
           "RevisionId": "<uuid:3>",
-          "Role": "arn:aws:iam::111111111111:role/<resource:3>",
+          "Role": "arn:aws:iam::111111111111:role/<resource:1>",
           "Runtime": "java11",
           "State": "Pending",
           "StateReason": "The function is being created.",
