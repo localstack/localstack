@@ -12,6 +12,7 @@ import io
 import json
 from hashlib import sha256
 from io import BytesIO
+from typing import Callable
 
 import pytest
 import requests
@@ -1854,7 +1855,194 @@ class TestLambdaPermissions:
         snapshot.match("policy_after_2_add", policy_response)
 
 
+# TODO fix version state after publish
+@pytest.mark.skip_snapshot_verify(
+    paths=[
+        "$..LastUpdateStatus",
+        "$..LastUpdateStatusReason",
+        "$..LastUpdateStatusReasonCode",
+        "$..State",
+        "$..StateReason",
+        "$..StateReasonCode",
+    ]
+)
 class TestLambdaUrl:
+    @pytest.mark.aws_validated
+    def test_url_config_exceptions(self, lambda_client, create_lambda_function, snapshot):
+        """
+        note: list order is not defined
+        """
+        snapshot.add_transformer(
+            snapshot.transform.key_value("FunctionUrl", "lambda-url", reference_replacement=False)
+        )
+        snapshot.add_transformer(
+            SortingTransformer("FunctionUrlConfigs", sorting_fn=lambda x: x["FunctionArn"])
+        )
+
+        function_name = f"test-function-{short_uid()}"
+        alias_name = "urlalias"
+
+        create_lambda_function(
+            func_name=function_name,
+            zip_file=testutil.create_zip_file(TEST_LAMBDA_NODEJS, get_content=True),
+            runtime=Runtime.nodejs14_x,
+            handler="lambda_handler.handler",
+        )
+        fn_arn = lambda_client.get_function(FunctionName=function_name)["Configuration"][
+            "FunctionArn"
+        ]
+        fn_version_result = lambda_client.publish_version(FunctionName=function_name)
+        snapshot.match("fn_version_result", fn_version_result)
+        create_alias_result = lambda_client.create_alias(
+            FunctionName=function_name,
+            Name=alias_name,
+            FunctionVersion=fn_version_result["Version"],
+        )
+        snapshot.match("create_alias_result", create_alias_result)
+
+        # function name + qualifier tests
+        fn_arn_doesnotexist = fn_arn.replace(function_name, "doesnotexist")
+
+        def test_name_and_qualifier(method: Callable, snapshot_prefix: str, tests, **kwargs):
+            for t in tests:
+                with pytest.raises(t["exc"]) as e:
+                    method(**t["args"], **kwargs)
+                snapshot.match(f"{snapshot_prefix}_{t['SnapshotName']}", e.value.response)
+
+        tests = [
+            {
+                "args": {"FunctionName": "doesnotexist"},
+                "SnapshotName": "name_doesnotexist",
+                "exc": lambda_client.exceptions.ResourceNotFoundException,
+            },
+            {
+                "args": {"FunctionName": fn_arn_doesnotexist},
+                "SnapshotName": "arn_doesnotexist",
+                "exc": lambda_client.exceptions.ResourceNotFoundException,
+            },
+            {
+                "args": {"FunctionName": "doesnotexist", "Qualifier": "1"},
+                "SnapshotName": "name_doesnotexist_qualifier",
+                "exc": lambda_client.exceptions.ClientError,
+            },
+            {
+                "args": {"FunctionName": function_name, "Qualifier": "1"},
+                "SnapshotName": "qualifier_version",
+                "exc": lambda_client.exceptions.ClientError,
+            },
+            {
+                "args": {"FunctionName": function_name, "Qualifier": "2"},
+                "SnapshotName": "qualifier_version_doesnotexist",
+                "exc": lambda_client.exceptions.ClientError,
+            },
+            {
+                "args": {"FunctionName": function_name, "Qualifier": "v1"},
+                "SnapshotName": "qualifier_alias_doesnotexist",
+                "exc": lambda_client.exceptions.ResourceNotFoundException,
+            },
+        ]
+        config_doesnotexist_tests = [
+            {
+                "args": {"FunctionName": function_name},
+                "SnapshotName": "config_doesnotexist",
+                "exc": lambda_client.exceptions.ResourceNotFoundException,
+            },
+        ]
+
+        test_name_and_qualifier(
+            lambda_client.create_function_url_config,
+            "create_function_url_config",
+            tests,
+            AuthType="NONE",
+        )
+        test_name_and_qualifier(
+            lambda_client.get_function_url_config,
+            "get_function_url_config",
+            tests + config_doesnotexist_tests,
+        )
+        test_name_and_qualifier(
+            lambda_client.delete_function_url_config,
+            "delete_function_url_config",
+            tests + config_doesnotexist_tests,
+        )
+        test_name_and_qualifier(
+            lambda_client.update_function_url_config,
+            "update_function_url_config",
+            tests + config_doesnotexist_tests,
+            AuthType="AWS_IAM",
+        )
+
+    @pytest.mark.aws_validated
+    def test_url_config_list_paging(self, lambda_client, create_lambda_function, snapshot):
+        snapshot.add_transformer(
+            snapshot.transform.key_value("FunctionUrl", "lambda-url", reference_replacement=False)
+        )
+        snapshot.add_transformer(
+            SortingTransformer("FunctionUrlConfigs", sorting_fn=lambda x: x["FunctionArn"])
+        )
+        function_name = f"test-function-{short_uid()}"
+        alias_name = "urlalias"
+
+        create_lambda_function(
+            func_name=function_name,
+            zip_file=testutil.create_zip_file(TEST_LAMBDA_NODEJS, get_content=True),
+            runtime=Runtime.nodejs14_x,
+            handler="lambda_handler.handler",
+        )
+
+        fn_version_result = lambda_client.publish_version(FunctionName=function_name)
+        snapshot.match("fn_version_result", fn_version_result)
+        create_alias_result = lambda_client.create_alias(
+            FunctionName=function_name,
+            Name=alias_name,
+            FunctionVersion=fn_version_result["Version"],
+        )
+        snapshot.match("create_alias_result", create_alias_result)
+
+        with pytest.raises(lambda_client.exceptions.ResourceNotFoundException) as e:
+            lambda_client.list_function_url_configs(FunctionName="doesnotexist")
+        snapshot.match("list_function_notfound", e.value.response)
+
+        list_all_empty = lambda_client.list_function_url_configs(FunctionName=function_name)
+        snapshot.match("list_all_empty", list_all_empty)
+
+        url_config_fn = lambda_client.create_function_url_config(
+            FunctionName=function_name, AuthType="NONE"
+        )
+        snapshot.match("url_config_fn", url_config_fn)
+        url_config_alias = lambda_client.create_function_url_config(
+            FunctionName=function_name, Qualifier=alias_name, AuthType="NONE"
+        )
+        snapshot.match("url_config_alias", url_config_alias)
+
+        list_all = lambda_client.list_function_url_configs(FunctionName=function_name)
+        snapshot.match("list_all", list_all)
+
+        total_configs = [url_config_fn["FunctionUrl"], url_config_alias["FunctionUrl"]]
+
+        list_max_1_item = lambda_client.list_function_url_configs(
+            FunctionName=function_name, MaxItems=1
+        )
+        assert len(list_max_1_item["FunctionUrlConfigs"]) == 1
+        assert list_max_1_item["FunctionUrlConfigs"][0]["FunctionUrl"] in total_configs
+
+        list_max_2_item = lambda_client.list_function_url_configs(
+            FunctionName=function_name, MaxItems=2
+        )
+        assert len(list_max_2_item["FunctionUrlConfigs"]) == 2
+        assert list_max_2_item["FunctionUrlConfigs"][0]["FunctionUrl"] in total_configs
+        assert list_max_2_item["FunctionUrlConfigs"][1]["FunctionUrl"] in total_configs
+
+        list_max_1_item_marker = lambda_client.list_function_url_configs(
+            FunctionName=function_name, MaxItems=1, Marker=list_max_1_item["NextMarker"]
+        )
+        assert len(list_max_1_item_marker["FunctionUrlConfigs"]) == 1
+        assert list_max_1_item_marker["FunctionUrlConfigs"][0]["FunctionUrl"] in total_configs
+        assert (
+            list_max_1_item_marker["FunctionUrlConfigs"][0]["FunctionUrl"]
+            != list_max_1_item["FunctionUrlConfigs"][0]["FunctionUrl"]
+        )
+
     @pytest.mark.aws_validated
     def test_url_config_lifecycle(self, lambda_client, create_lambda_function, snapshot):
         snapshot.add_transformer(
@@ -1862,14 +2050,6 @@ class TestLambdaUrl:
         )
 
         function_name = f"test-function-{short_uid()}"
-
-        with pytest.raises(lambda_client.exceptions.ResourceNotFoundException) as ex:
-            lambda_client.create_function_url_config(
-                FunctionName=function_name,
-                AuthType="NONE",
-            )
-        snapshot.match("failed_creation", ex.value.response)
-
         create_lambda_function(
             func_name=function_name,
             zip_file=testutil.create_zip_file(TEST_LAMBDA_NODEJS, get_content=True),

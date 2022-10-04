@@ -100,6 +100,7 @@ from localstack.aws.api.lambda_ import (
     PreconditionFailedException,
     ProvisionedConcurrencyConfigListItem,
     ProvisionedConcurrencyConfigNotFoundException,
+    ProvisionedConcurrencyStatusEnum,
     PublishLayerVersionResponse,
     PutFunctionCodeSigningConfigResponse,
     PutProvisionedConcurrencyConfigResponse,
@@ -1109,12 +1110,15 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
     ) -> CreateFunctionUrlConfigResponse:
         state = lambda_stores[context.account_id][context.region]
 
-        resolved_fn_name = api_utils.get_function_name(function_name, context.region)
-        fn = state.functions.get(resolved_fn_name)
+        function_name, qualifier = get_name_and_qualifier(function_name, qualifier, context.region)
+        if qualifier and api_utils.qualifier_is_version(qualifier):
+            raise ValidationException(
+                f"1 validation error detected: Value '{qualifier}' at 'qualifier' failed to satisfy constraint: Member must satisfy regular expression pattern: (^\\$LATEST$)|((?!^[0-9]+$)([a-zA-Z0-9-_]+))"
+            )
+        fn = state.functions.get(function_name)
         if fn is None:
             raise ResourceNotFoundException("Function does not exist", Type="User")
 
-        # check if fn already exists
         url_config = fn.function_url_configs.get(qualifier or "$LATEST")
         if url_config:
             raise ResourceConflictException(
@@ -1123,28 +1127,31 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
             )
 
         if qualifier and qualifier != "$LATEST" and qualifier not in fn.aliases:
-            raise ResourceNotFoundException("Where Alias?")  # TODO: verify
+            raise ResourceNotFoundException("Function does not exist", Type="User")
 
         normalized_qualifier = qualifier or "$LATEST"
 
         function_arn = (
-            qualified_lambda_arn(resolved_fn_name, qualifier, context.account_id, context.region)
+            qualified_lambda_arn(function_name, qualifier, context.account_id, context.region)
             if qualifier
-            else unqualified_lambda_arn(resolved_fn_name, context.account_id, context.region)
+            else unqualified_lambda_arn(function_name, context.account_id, context.region)
         )
 
+        # create function URL config
+        url_id = api_utils.generate_random_url_id()
         fn.function_url_configs[normalized_qualifier] = FunctionUrlConfig(
             function_arn=function_arn,
-            function_name=resolved_fn_name,
+            function_name=function_name,
             cors=cors,
-            url_id="something",  # TODO
-            url="something",  # TODO
+            url_id=url_id,
+            url=f"https://{url_id}.lambda-url.{context.region}.on.aws/",
             auth_type=auth_type,
             creation_time=generate_lambda_date(),
             last_modified_time=generate_lambda_date(),
         )
 
         # persist and start URL
+        # TODO: implement URL invoke
         api_url_config = api_utils.map_function_url_config(
             fn.function_url_configs[normalized_qualifier]
         )
@@ -1166,6 +1173,12 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
         state = lambda_stores[context.account_id][context.region]
 
         fn_name, qualifier = get_name_and_qualifier(function_name, qualifier, context.region)
+
+        if qualifier and api_utils.qualifier_is_version(qualifier):
+            raise ValidationException(
+                f"1 validation error detected: Value '{qualifier}' at 'qualifier' failed to satisfy constraint: Member must satisfy regular expression pattern: (^\\$LATEST$)|((?!^[0-9]+$)([a-zA-Z0-9-_]+))"
+            )
+
         resolved_fn = state.functions.get(fn_name)
         if not resolved_fn:
             raise ResourceNotFoundException(
@@ -1191,21 +1204,34 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
     ) -> UpdateFunctionUrlConfigResponse:
         state = lambda_stores[context.account_id][context.region]
 
-        resolved_fn_name = api_utils.get_function_name(function_name, context.region)
-        fn = state.functions.get(resolved_fn_name)
+        function_name, qualifier = get_name_and_qualifier(function_name, qualifier, context.region)
+        if qualifier and api_utils.qualifier_is_version(qualifier):
+            raise ValidationException(
+                f"1 validation error detected: Value '{qualifier}' at 'qualifier' failed to satisfy constraint: Member must satisfy regular expression pattern: (^\\$LATEST$)|((?!^[0-9]+$)([a-zA-Z0-9-_]+))"
+            )
+
+        fn = state.functions.get(function_name)
         if not fn:
-            raise ResourceNotFoundException("Function does not exist")
-            # raise ResourceNotFoundException("Function does not exist", Type="User")
+            raise ResourceNotFoundException("Function does not exist", Type="User")
 
         normalized_qualifier = qualifier or "$LATEST"
+
+        if (
+            api_utils.qualifier_is_alias(normalized_qualifier)
+            and normalized_qualifier not in fn.aliases
+        ):
+            raise ResourceNotFoundException("Function does not exist", Type="User")
+
         url_config = fn.function_url_configs.get(normalized_qualifier)
         if not url_config:
-            raise ResourceNotFoundException("Config does not exist")
+            raise ResourceNotFoundException(
+                "The resource you requested does not exist.", Type="User"
+            )
 
         changes = {
             "last_modified_time": generate_lambda_date(),
-            **({"cors": cors} if cors else {}),
-            **({"auth_type": auth_type} if auth_type else {}),
+            **({"cors": cors} if cors is not None else {}),
+            **({"auth_type": auth_type} if auth_type is not None else {}),
         }
         new_url_config = dataclasses.replace(url_config, **changes)
         fn.function_url_configs[normalized_qualifier] = new_url_config
@@ -1228,17 +1254,24 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
     ) -> None:
         state = lambda_stores[context.account_id][context.region]
 
-        fn_name = api_utils.get_function_name(function_name, context.region)
-        resolved_fn = state.functions.get(fn_name)
+        function_name, qualifier = get_name_and_qualifier(function_name, qualifier, context.region)
+        if qualifier and api_utils.qualifier_is_version(qualifier):
+            raise ValidationException(
+                f"1 validation error detected: Value '{qualifier}' at 'qualifier' failed to satisfy constraint: Member must satisfy regular expression pattern: (^\\$LATEST$)|((?!^[0-9]+$)([a-zA-Z0-9-_]+))"
+            )
+        resolved_fn = state.functions.get(function_name)
         if not resolved_fn:
-            raise ResourceNotFoundException("???")  # TODO: cover with test
+            raise ResourceNotFoundException(
+                "The resource you requested does not exist.", Type="User"
+            )
 
         qualifier = qualifier or "$LATEST"
         url_config = resolved_fn.function_url_configs.get(qualifier)
         if not url_config:
-            raise ResourceNotFoundException("???")  # TODO: cover with test
+            raise ResourceNotFoundException(
+                "The resource you requested does not exist.", Type="User"
+            )
 
-        # TODO: locking
         del resolved_fn.function_url_configs[qualifier]
 
     def list_function_url_configs(
@@ -1253,17 +1286,17 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
         fn_name = api_utils.get_function_name(function_name, context.region)
         resolved_fn = state.functions.get(fn_name)
         if not resolved_fn:
-            raise ResourceNotFoundException("???")  # TODO
+            raise ResourceNotFoundException("Function does not exist", Type="User")
 
         url_configs = [
             api_utils.map_function_url_config(fn_conf)
-            for fn_conf in resolved_fn.function_url_configs
+            for fn_conf in resolved_fn.function_url_configs.values()
         ]
         url_configs = PaginatedList(url_configs)
         page, token = url_configs.get_page(
             lambda url_config: url_config["FunctionArn"],
             marker,
-            max_items,  # TODO: check what these are ordered by
+            max_items,
         )
         url_configs = page
         return ListFunctionUrlConfigsResponse(FunctionUrlConfigs=url_configs, NextMarker=token)
@@ -1638,7 +1671,6 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
 
         return fn.provisioned_concurrency_configs.get(qualifier)
 
-    # TODO: test how th is behaves when both alias and referencing version have conflicting configs
     def put_provisioned_concurrency_config(
         self,
         context: RequestContext,
@@ -1699,14 +1731,18 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
         manager = self.lambda_service.get_lambda_version_manager(fn_arn)
 
         fn.provisioned_concurrency_configs[qualifier] = provisioned_config
-        manager.provisioned_state = ProvisionedConcurrencyState()
+        manager.provisioned_state = ProvisionedConcurrencyState(
+            allocated=provisioned_concurrent_executions,
+            available=provisioned_concurrent_executions,
+            status=ProvisionedConcurrencyStatusEnum.READY,
+        )
 
         return PutProvisionedConcurrencyConfigResponse(
             RequestedProvisionedConcurrentExecutions=provisioned_config.provisioned_concurrent_executions,
-            AvailableProvisionedConcurrentExecutions=manager.provisioned_state.available,
-            AllocatedProvisionedConcurrentExecutions=manager.provisioned_state.allocated,
-            Status=manager.provisioned_state.status,
-            StatusReason=manager.provisioned_state.status_reason,
+            AvailableProvisionedConcurrentExecutions=0,
+            AllocatedProvisionedConcurrentExecutions=0,
+            Status=ProvisionedConcurrencyStatusEnum.IN_PROGRESS,
+            # StatusReason=manager.provisioned_state.status_reason,
             LastModified=provisioned_config.last_modified,  # TODO: does change with configuration or also with state changes?
         )
 

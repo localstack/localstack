@@ -1,5 +1,7 @@
 """ some mostly temporary utils that will be refactored and unified with the other utils soon """
+import random
 import re
+import string
 from typing import Any, Optional
 
 from localstack.aws.api import lambda_ as api_spec
@@ -22,6 +24,8 @@ FN_ARN_PATTERN = re.compile(
 DESTINATION_ARN_PATTERN = re.compile(
     r"^$|arn:(aws[a-zA-Z0-9-]*):([a-zA-Z0-9\-])+:([a-z]{2}(-gov)?-[a-z]+-\d{1})?:(\d{12})?:(.*)"
 )
+
+URL_CHAR_SET = string.ascii_lowercase + string.digits
 
 
 def map_function_url_config(model: FunctionUrlConfig) -> api_spec.FunctionUrlConfig:
@@ -154,3 +158,11 @@ def build_statement(
     #         }
     #     }
     #     statement["Condition"] = auth_condition
+
+
+def generate_random_url_id() -> str:
+    """
+    32 characters [0-9a-z]
+    """
+
+    return "".join([random.choice(URL_CHAR_SET) for _ in range(32)])

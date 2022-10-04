@@ -5895,5 +5895,466 @@
         }
       }
     }
+  },
+  "tests/integration/awslambda/test_lambda_api.py::TestLambdaUrl::test_url_config_list_paging": {
+    "recorded-date": "04-10-2022, 10:28:09",
+    "recorded-content": {
+      "fn_version_result": {
+        "Architectures": [
+          "x86_64"
+        ],
+        "CodeSha256": "<code-sha256:1>",
+        "CodeSize": 382,
+        "Description": "",
+        "Environment": {
+          "Variables": {}
+        },
+        "EphemeralStorage": {
+          "Size": 512
+        },
+        "FunctionArn": "arn:aws:lambda:<region>:111111111111:function:<function-name:1>:1",
+        "FunctionName": "<function-name:1>",
+        "Handler": "lambda_handler.handler",
+        "LastModified": "date",
+        "LastUpdateStatus": "Successful",
+        "MemorySize": 128,
+        "PackageType": "Zip",
+        "RevisionId": "<uuid:1>",
+        "Role": "arn:aws:iam::111111111111:role/<resource:2>",
+        "Runtime": "nodejs14.x",
+        "State": "Active",
+        "Timeout": 30,
+        "TracingConfig": {
+          "Mode": "PassThrough"
+        },
+        "Version": "1",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 201
+        }
+      },
+      "create_alias_result": {
+        "AliasArn": "arn:aws:lambda:<region>:111111111111:function:<function-name:1>:urlalias",
+        "Description": "",
+        "FunctionVersion": "1",
+        "Name": "urlalias",
+        "RevisionId": "<uuid:2>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 201
+        }
+      },
+      "list_function_notfound": {
+        "Error": {
+          "Code": "ResourceNotFoundException",
+          "Message": "Function does not exist"
+        },
+        "Message": "Function does not exist",
+        "Type": "User",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 404
+        }
+      },
+      "list_all_empty": {
+        "FunctionUrlConfigs": [],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "url_config_fn": {
+        "AuthType": "NONE",
+        "CreationTime": "date",
+        "FunctionArn": "arn:aws:lambda:<region>:111111111111:function:<function-name:1>",
+        "FunctionUrl": "lambda-url",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 201
+        }
+      },
+      "url_config_alias": {
+        "AuthType": "NONE",
+        "CreationTime": "date",
+        "FunctionArn": "arn:aws:lambda:<region>:111111111111:function:<function-name:1>:urlalias",
+        "FunctionUrl": "lambda-url",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 201
+        }
+      },
+      "list_all": {
+        "FunctionUrlConfigs": [
+          {
+            "AuthType": "NONE",
+            "CreationTime": "date",
+            "FunctionArn": "arn:aws:lambda:<region>:111111111111:function:<function-name:1>",
+            "FunctionUrl": "lambda-url",
+            "LastModifiedTime": "date"
+          },
+          {
+            "AuthType": "NONE",
+            "CreationTime": "date",
+            "FunctionArn": "arn:aws:lambda:<region>:111111111111:function:<function-name:1>:urlalias",
+            "FunctionUrl": "lambda-url",
+            "LastModifiedTime": "date"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/integration/awslambda/test_lambda_api.py::TestLambdaUrl::test_url_config_exceptions": {
+    "recorded-date": "04-10-2022, 10:09:32",
+    "recorded-content": {
+      "fn_version_result": {
+        "Architectures": [
+          "x86_64"
+        ],
+        "CodeSha256": "<code-sha256:1>",
+        "CodeSize": 382,
+        "Description": "",
+        "Environment": {
+          "Variables": {}
+        },
+        "EphemeralStorage": {
+          "Size": 512
+        },
+        "FunctionArn": "arn:aws:lambda:<region>:111111111111:function:<function-name:1>:1",
+        "FunctionName": "<function-name:1>",
+        "Handler": "lambda_handler.handler",
+        "LastModified": "date",
+        "LastUpdateStatus": "Successful",
+        "MemorySize": 128,
+        "PackageType": "Zip",
+        "RevisionId": "<uuid:1>",
+        "Role": "arn:aws:iam::111111111111:role/<resource:2>",
+        "Runtime": "nodejs14.x",
+        "State": "Active",
+        "Timeout": 30,
+        "TracingConfig": {
+          "Mode": "PassThrough"
+        },
+        "Version": "1",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 201
+        }
+      },
+      "create_alias_result": {
+        "AliasArn": "arn:aws:lambda:<region>:111111111111:function:<function-name:1>:urlalias",
+        "Description": "",
+        "FunctionVersion": "1",
+        "Name": "urlalias",
+        "RevisionId": "<uuid:2>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 201
+        }
+      },
+      "create_function_url_config_name_doesnotexist": {
+        "Error": {
+          "Code": "ResourceNotFoundException",
+          "Message": "Function does not exist"
+        },
+        "Message": "Function does not exist",
+        "Type": "User",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 404
+        }
+      },
+      "create_function_url_config_arn_doesnotexist": {
+        "Error": {
+          "Code": "ResourceNotFoundException",
+          "Message": "Function does not exist"
+        },
+        "Message": "Function does not exist",
+        "Type": "User",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 404
+        }
+      },
+      "create_function_url_config_name_doesnotexist_qualifier": {
+        "Error": {
+          "Code": "ValidationException",
+          "Message": "1 validation error detected: Value '1' at 'qualifier' failed to satisfy constraint: Member must satisfy regular expression pattern: (^\\$LATEST$)|((?!^[0-9]+$)([a-zA-Z0-9-_]+))"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "create_function_url_config_qualifier_version": {
+        "Error": {
+          "Code": "ValidationException",
+          "Message": "1 validation error detected: Value '1' at 'qualifier' failed to satisfy constraint: Member must satisfy regular expression pattern: (^\\$LATEST$)|((?!^[0-9]+$)([a-zA-Z0-9-_]+))"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "create_function_url_config_qualifier_version_doesnotexist": {
+        "Error": {
+          "Code": "ValidationException",
+          "Message": "1 validation error detected: Value '2' at 'qualifier' failed to satisfy constraint: Member must satisfy regular expression pattern: (^\\$LATEST$)|((?!^[0-9]+$)([a-zA-Z0-9-_]+))"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "create_function_url_config_qualifier_alias_doesnotexist": {
+        "Error": {
+          "Code": "ResourceNotFoundException",
+          "Message": "Function does not exist"
+        },
+        "Message": "Function does not exist",
+        "Type": "User",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 404
+        }
+      },
+      "get_function_url_config_name_doesnotexist": {
+        "Error": {
+          "Code": "ResourceNotFoundException",
+          "Message": "The resource you requested does not exist."
+        },
+        "Message": "The resource you requested does not exist.",
+        "Type": "User",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 404
+        }
+      },
+      "get_function_url_config_arn_doesnotexist": {
+        "Error": {
+          "Code": "ResourceNotFoundException",
+          "Message": "The resource you requested does not exist."
+        },
+        "Message": "The resource you requested does not exist.",
+        "Type": "User",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 404
+        }
+      },
+      "get_function_url_config_name_doesnotexist_qualifier": {
+        "Error": {
+          "Code": "ValidationException",
+          "Message": "1 validation error detected: Value '1' at 'qualifier' failed to satisfy constraint: Member must satisfy regular expression pattern: (^\\$LATEST$)|((?!^[0-9]+$)([a-zA-Z0-9-_]+))"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "get_function_url_config_qualifier_version": {
+        "Error": {
+          "Code": "ValidationException",
+          "Message": "1 validation error detected: Value '1' at 'qualifier' failed to satisfy constraint: Member must satisfy regular expression pattern: (^\\$LATEST$)|((?!^[0-9]+$)([a-zA-Z0-9-_]+))"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "get_function_url_config_qualifier_version_doesnotexist": {
+        "Error": {
+          "Code": "ValidationException",
+          "Message": "1 validation error detected: Value '2' at 'qualifier' failed to satisfy constraint: Member must satisfy regular expression pattern: (^\\$LATEST$)|((?!^[0-9]+$)([a-zA-Z0-9-_]+))"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "get_function_url_config_qualifier_alias_doesnotexist": {
+        "Error": {
+          "Code": "ResourceNotFoundException",
+          "Message": "The resource you requested does not exist."
+        },
+        "Message": "The resource you requested does not exist.",
+        "Type": "User",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 404
+        }
+      },
+      "get_function_url_config_config_doesnotexist": {
+        "Error": {
+          "Code": "ResourceNotFoundException",
+          "Message": "The resource you requested does not exist."
+        },
+        "Message": "The resource you requested does not exist.",
+        "Type": "User",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 404
+        }
+      },
+      "delete_function_url_config_name_doesnotexist": {
+        "Error": {
+          "Code": "ResourceNotFoundException",
+          "Message": "The resource you requested does not exist."
+        },
+        "Message": "The resource you requested does not exist.",
+        "Type": "User",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 404
+        }
+      },
+      "delete_function_url_config_arn_doesnotexist": {
+        "Error": {
+          "Code": "ResourceNotFoundException",
+          "Message": "The resource you requested does not exist."
+        },
+        "Message": "The resource you requested does not exist.",
+        "Type": "User",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 404
+        }
+      },
+      "delete_function_url_config_name_doesnotexist_qualifier": {
+        "Error": {
+          "Code": "ValidationException",
+          "Message": "1 validation error detected: Value '1' at 'qualifier' failed to satisfy constraint: Member must satisfy regular expression pattern: (^\\$LATEST$)|((?!^[0-9]+$)([a-zA-Z0-9-_]+))"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "delete_function_url_config_qualifier_version": {
+        "Error": {
+          "Code": "ValidationException",
+          "Message": "1 validation error detected: Value '1' at 'qualifier' failed to satisfy constraint: Member must satisfy regular expression pattern: (^\\$LATEST$)|((?!^[0-9]+$)([a-zA-Z0-9-_]+))"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "delete_function_url_config_qualifier_version_doesnotexist": {
+        "Error": {
+          "Code": "ValidationException",
+          "Message": "1 validation error detected: Value '2' at 'qualifier' failed to satisfy constraint: Member must satisfy regular expression pattern: (^\\$LATEST$)|((?!^[0-9]+$)([a-zA-Z0-9-_]+))"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "delete_function_url_config_qualifier_alias_doesnotexist": {
+        "Error": {
+          "Code": "ResourceNotFoundException",
+          "Message": "The resource you requested does not exist."
+        },
+        "Message": "The resource you requested does not exist.",
+        "Type": "User",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 404
+        }
+      },
+      "delete_function_url_config_config_doesnotexist": {
+        "Error": {
+          "Code": "ResourceNotFoundException",
+          "Message": "The resource you requested does not exist."
+        },
+        "Message": "The resource you requested does not exist.",
+        "Type": "User",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 404
+        }
+      },
+      "update_function_url_config_name_doesnotexist": {
+        "Error": {
+          "Code": "ResourceNotFoundException",
+          "Message": "Function does not exist"
+        },
+        "Message": "Function does not exist",
+        "Type": "User",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 404
+        }
+      },
+      "update_function_url_config_arn_doesnotexist": {
+        "Error": {
+          "Code": "ResourceNotFoundException",
+          "Message": "Function does not exist"
+        },
+        "Message": "Function does not exist",
+        "Type": "User",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 404
+        }
+      },
+      "update_function_url_config_name_doesnotexist_qualifier": {
+        "Error": {
+          "Code": "ValidationException",
+          "Message": "1 validation error detected: Value '1' at 'qualifier' failed to satisfy constraint: Member must satisfy regular expression pattern: (^\\$LATEST$)|((?!^[0-9]+$)([a-zA-Z0-9-_]+))"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "update_function_url_config_qualifier_version": {
+        "Error": {
+          "Code": "ValidationException",
+          "Message": "1 validation error detected: Value '1' at 'qualifier' failed to satisfy constraint: Member must satisfy regular expression pattern: (^\\$LATEST$)|((?!^[0-9]+$)([a-zA-Z0-9-_]+))"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "update_function_url_config_qualifier_version_doesnotexist": {
+        "Error": {
+          "Code": "ValidationException",
+          "Message": "1 validation error detected: Value '2' at 'qualifier' failed to satisfy constraint: Member must satisfy regular expression pattern: (^\\$LATEST$)|((?!^[0-9]+$)([a-zA-Z0-9-_]+))"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "update_function_url_config_qualifier_alias_doesnotexist": {
+        "Error": {
+          "Code": "ResourceNotFoundException",
+          "Message": "Function does not exist"
+        },
+        "Message": "Function does not exist",
+        "Type": "User",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 404
+        }
+      },
+      "update_function_url_config_config_doesnotexist": {
+        "Error": {
+          "Code": "ResourceNotFoundException",
+          "Message": "The resource you requested does not exist."
+        },
+        "Message": "The resource you requested does not exist.",
+        "Type": "User",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 404
+        }
+      }
+    }
   }
 }
