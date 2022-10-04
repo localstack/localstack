@@ -3,7 +3,7 @@ on:
   workflow_dispatch:
   pull_request:
     paths:
-      - ".github/workflows/pro-integration.yml"
+      - ".github/workflows/cli-tests.yml"
       - "localstack/**"
       - "tests/**"
       - "setup.py"
@@ -17,7 +17,7 @@ on:
       - master
   push:
     paths:
-      - ".github/workflows/pro-integration.yml"
+      - ".github/workflows/cli-tests.yml"
       - "localstack/**"
       - "tests/**"
       - "setup.py"
