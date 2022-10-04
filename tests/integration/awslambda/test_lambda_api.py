@@ -1723,6 +1723,45 @@ class TestLambdaProvisionedConcurrency:
 )
 class TestLambdaPermissions:
     @pytest.mark.aws_validated
+    def test_permission_exceptions(
+        self, lambda_client, iam_client, create_lambda_function, account_id, snapshot
+    ):
+        function_name = f"lambda_func-{short_uid()}"
+        create_lambda_function(
+            handler_file=TEST_LAMBDA_PYTHON_ECHO,
+            func_name=function_name,
+            runtime=Runtime.python3_9,
+        )
+
+        with pytest.raises(lambda_client.exceptions.ResourceNotFoundException) as e:
+            lambda_client.get_policy(FunctionName="doesnotexist")
+        snapshot.match("get_policy_fn_doesnotexist", e.value.response)
+
+        with pytest.raises(lambda_client.exceptions.ResourceNotFoundException) as e:
+            lambda_client.add_permission(
+                FunctionName="doesnotexist",
+                Action="lambda:InvokeFunction",
+                StatementId="s3",
+                Principal="s3.amazonaws.com",
+                SourceArn=aws_stack.s3_bucket_arn("test-bucket"),
+            )
+        snapshot.match("add_permission_fn_doesnotexist", e.value.response)
+
+        with pytest.raises(lambda_client.exceptions.ResourceNotFoundException) as e:
+            lambda_client.remove_permission(
+                FunctionName="doesnotexist",
+                StatementId="s3",
+            )
+        snapshot.match("remove_permission_fn_doesnotexist", e.value.response)
+
+        with pytest.raises(lambda_client.exceptions.ResourceNotFoundException) as e:
+            lambda_client.remove_permission(
+                FunctionName=function_name,
+                StatementId="s3",
+            )
+        snapshot.match("remove_permission_policy_doesnotexist", e.value.response)
+
+    @pytest.mark.aws_validated
     def test_add_lambda_permission_aws(
         self, lambda_client, iam_client, create_lambda_function, account_id, snapshot
     ):
@@ -2552,26 +2591,6 @@ class TestLambdaEventSourceMappings:
         # lambda_client.list_event_source_mappings(EventSourceArn=queue_arn)
         #
         # lambda_client.delete_event_source_mapping(UUID=uuid)
-
-
-# class TestLambdaLayerCrud:
-#
-#     def test_lambda_layer_lifecycle(self, lambda_client, create_lambda_function, snapshot):
-#         function_name = f"fn-layer-{short_uid()}"
-#         create_lambda_function(
-#             handler_file=TEST_LAMBDA_PYTHON_ECHO,
-#             func_name=function_name,
-#             runtime=Runtime.python3_9,
-#         )
-#
-#         lambda_client.inv
-#
-#         lambda_client.publish_layer_version(LayerName="???", Content="", Description="my-desc", CompatibleRuntimes=[], LicenseInfo="mine", CompatibleArchitectures=[])
-#
-#         lambda_client.list_layers()
-#         lambda_client.list_layer_versions()
-#         lambda_client.
-#
 
 
 class TestLambdaTags:

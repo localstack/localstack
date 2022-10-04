@@ -1339,27 +1339,29 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
         request: AddPermissionRequest,
     ) -> AddPermissionResponse:
         state = lambda_stores[context.account_id][context.region]
-
-        resolved_fn_name = api_utils.get_function_name(request["FunctionName"], context.region)
-        resolved_fn = state.functions.get(resolved_fn_name)
+        function_name, qualifier = get_name_and_qualifier(
+            request.get("FunctionName"), request.get("Qualifier"), context.region
+        )
+        resolved_fn = state.functions.get(function_name)
 
         if not resolved_fn:
-            raise ResourceNotFoundException("Where Function???")  # TODO: test
+            fn_arn = unqualified_lambda_arn(function_name, context.account_id, context.region)
+            raise ResourceNotFoundException(f"Function not found: {fn_arn}", Type="User")
 
         resolved_qualifier = request.get("Qualifier", "$LATEST")
 
-        resource = unqualified_lambda_arn(resolved_fn_name, context.account_id, context.region)
+        resource = unqualified_lambda_arn(function_name, context.account_id, context.region)
         if api_utils.qualifier_is_alias(resolved_qualifier):
             if resolved_qualifier not in resolved_fn.aliases:
-                raise ResourceNotFoundException("Where Alias???")  # TODO: test
+                raise ResourceNotFoundException("Where Alias???", Type="User")  # TODO: test
             resource = qualified_lambda_arn(
-                resolved_fn_name, resolved_qualifier, context.account_id, context.region
+                function_name, resolved_qualifier, context.account_id, context.region
             )
         elif api_utils.qualifier_is_version(resolved_qualifier):
             if resolved_qualifier not in resolved_fn.versions:
-                raise ResourceNotFoundException("Where Version???")  # TODO: test
+                raise ResourceNotFoundException("Where Version???", Type="User")  # TODO: test
             resource = qualified_lambda_arn(
-                resolved_fn_name, resolved_qualifier, context.account_id, context.region
+                function_name, resolved_qualifier, context.account_id, context.region
             )
         elif resolved_qualifier != "$LATEST":
             raise ResourceNotFoundException("Wrong format for qualifier?")
@@ -1399,15 +1401,19 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
         revision_id: String = None,  # TODO
     ) -> None:
         state = lambda_stores[context.account_id][context.region]
+        function_name, qualifier = get_name_and_qualifier(function_name, qualifier, context.region)
 
         resolved_fn = state.functions.get(function_name)
         if resolved_fn is None:
-            raise ResourceNotFoundException("Where function???")  # TODO: test
+            fn_arn = unqualified_lambda_arn(function_name, context.account_id, context.region)
+            raise ResourceNotFoundException(f"No policy found for: {fn_arn}", Type="User")
 
         resolved_qualifier = qualifier or "$LATEST"
         function_permission = resolved_fn.permissions.get(resolved_qualifier)
         if not function_permission:
-            raise ResourceNotFoundException("Where permission???")  # TODO: test
+            raise ResourceNotFoundException(
+                "No policy is associated with the given resource.", Type="User"
+            )
 
         # try to find statement in policy and delete it
         statement = None
@@ -1433,10 +1439,12 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
         qualifier: Qualifier = None,
     ) -> GetPolicyResponse:
         state = lambda_stores[context.account_id][context.region]
+        function_name, qualifier = get_name_and_qualifier(function_name, qualifier, context.region)
 
         resolved_fn = state.functions.get(function_name)
+        fn_arn = unqualified_lambda_arn(function_name, context.account_id, context.region)
         if resolved_fn is None:
-            raise ResourceNotFoundException("Where function???")  # TODO: test
+            raise ResourceNotFoundException(f"Function not found: {fn_arn}", Type="User")
 
         resolved_qualifier = qualifier or "$LATEST"
         function_permission = resolved_fn.permissions.get(resolved_qualifier)
