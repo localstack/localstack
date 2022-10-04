@@ -797,7 +797,9 @@ class TestLambdaFeatures:
 
 
 @pytest.mark.skipif(not is_old_provider(), reason="Not yet implemented")
+@pytest.mark.skipif(condition=is_old_provider(), reason="not supported")
 class TestLambdaConcurrency:
+    @pytest.mark.aws_validated
     def test_lambda_concurrency_block(self, snapshot, create_lambda_function, lambda_client):
         """
         Tests an edge case where reserved concurrency is equal to the sum of all provisioned concurrencies for a function.
@@ -862,7 +864,6 @@ class TestLambdaConcurrency:
         snapshot.match("invoke_latest_second_exc", e.value.response)
 
     @pytest.mark.skipif(condition=is_aws(), reason="very slow (only execute when needed)")
-    @pytest.mark.skipif(condition=is_old_provider(), reason="not supported")
     @pytest.mark.aws_validated
     def test_lambda_provisioned_concurrency_moves_with_alias(
         self, lambda_client, logs_client, create_lambda_function, snapshot
@@ -983,6 +984,7 @@ class TestLambdaConcurrency:
         snapshot.match("provisioned_concurrency_notfound", e.value.response)
 
 
+@pytest.mark.skipif(condition=is_old_provider(), reason="not supported")
 class TestLambdaVersions:
     @pytest.mark.aws_validated
     def test_lambda_versions_with_code_changes(
@@ -1052,6 +1054,7 @@ class TestLambdaVersions:
         snapshot.match("invocation_result_latest_end", invocation_result_latest_end)
 
 
+@pytest.mark.skipif(condition=is_old_provider(), reason="not supported")
 class TestLambdaAliases:
     @pytest.mark.aws_validated
     def test_lambda_alias_moving(

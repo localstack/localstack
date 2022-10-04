@@ -1069,6 +1069,7 @@ pytestmark = pytest.mark.skip_snapshot_verify(
 )
 
 
+@pytest.mark.skipif(condition=is_old_provider(), reason="not supported")
 class TestLambdaEventInvokeConfig:
     @pytest.mark.skip_snapshot_verify(
         paths=[
@@ -1389,6 +1390,7 @@ class TestLambdaEventInvokeConfig:
 
 
 # note: these tests are inherently a bit flaky on AWS since it depends on account/region global usage limits/quotas
+@pytest.mark.skipif(condition=is_old_provider(), reason="not supported")
 class TestLambdaReservedConcurrency:
     @pytest.mark.aws_validated
     @pytest.mark.skip_snapshot_verify(condition=is_old_provider)
@@ -1478,6 +1480,7 @@ class TestLambdaReservedConcurrency:
         snapshot.match("get_function_concurrency_postdelete", response)
 
 
+@pytest.mark.skipif(condition=is_old_provider(), reason="not supported")
 class TestLambdaProvisionedConcurrency:
 
     # TODO: test ARN
@@ -1722,6 +1725,7 @@ class TestLambdaProvisionedConcurrency:
     paths=["$..RevisionId", "$..Policy.Statement", "$..PolicyName", "$..PolicyArn", "$..Layers"],
 )
 class TestLambdaPermissions:
+    @pytest.mark.skipif(condition=is_old_provider(), reason="not supported")
     @pytest.mark.aws_validated
     def test_permission_exceptions(
         self, lambda_client, iam_client, create_lambda_function, account_id, snapshot
@@ -1906,6 +1910,7 @@ class TestLambdaPermissions:
     ]
 )
 class TestLambdaUrl:
+    @pytest.mark.skipif(condition=is_old_provider(), reason="not supported")
     @pytest.mark.aws_validated
     def test_url_config_exceptions(self, lambda_client, create_lambda_function, snapshot):
         """
@@ -2011,6 +2016,7 @@ class TestLambdaUrl:
             AuthType="AWS_IAM",
         )
 
+    @pytest.mark.skipif(condition=is_old_provider(), reason="not supported")
     @pytest.mark.aws_validated
     def test_url_config_list_paging(self, lambda_client, create_lambda_function, snapshot):
         snapshot.add_transformer(
@@ -2132,6 +2138,7 @@ class TestLambdaSizeLimits:
         py_str += "#" * (size - len(py_str))
         return py_str
 
+    @pytest.mark.skip_snapshot_verify(condition=is_old_provider)
     @pytest.mark.aws_validated
     def test_oversized_request_create_lambda(self, lambda_client, lambda_su_role, snapshot):
         function_name = f"test_lambda_{short_uid()}"
@@ -2593,6 +2600,7 @@ class TestLambdaEventSourceMappings:
         # lambda_client.delete_event_source_mapping(UUID=uuid)
 
 
+@pytest.mark.skipif(condition=is_old_provider(), reason="not correctly supported")
 class TestLambdaTags:
     def test_tag_exceptions(self, lambda_client, create_lambda_function, snapshot, account_id):
         function_name = f"fn-tag-{short_uid()}"
