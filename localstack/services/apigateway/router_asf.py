@@ -10,7 +10,7 @@ from localstack.http import Request, Response, Router
 from localstack.http.dispatcher import Handler
 from localstack.http.request import restore_payload
 from localstack.services.apigateway.context import ApiInvocationContext
-from localstack.services.apigateway.helpers import get_api_region
+from localstack.services.apigateway.helpers import get_api_account_id_and_region
 from localstack.services.apigateway.invocations import invoke_rest_api_from_request
 from localstack.utils.aws.aws_responses import LambdaResponse
 
@@ -128,7 +128,7 @@ class ApigatewayRouter:
         )
 
     def invoke_rest_api(self, request: Request, **url_params: Dict[str, Any]) -> Response:
-        if not get_api_region(url_params["api_id"]):
+        if not get_api_account_id_and_region(url_params["api_id"])[1]:
             return Response(status=404)
         invocation_context = to_invocation_context(request, url_params)
         result = invoke_rest_api_from_request(invocation_context)

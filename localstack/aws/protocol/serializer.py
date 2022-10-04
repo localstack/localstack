@@ -75,6 +75,8 @@ import base64
 import functools
 import json
 import logging
+import random
+import string
 from abc import ABC
 from binascii import crc32
 from datetime import datetime
@@ -89,7 +91,6 @@ from boto.utils import ISO8601
 from botocore.model import ListShape, MapShape, OperationModel, ServiceModel, Shape, StructureShape
 from botocore.serialize import ISO8601_MICRO
 from botocore.utils import calculate_md5, is_json_value_header, parse_to_aware_datetime
-from moto.core.utils import gen_amzn_requestid_long
 from werkzeug.datastructures import Headers, MIMEAccept
 from werkzeug.http import parse_accept_header
 
@@ -107,6 +108,8 @@ from localstack.utils.common import to_bytes, to_str
 from localstack.utils.xml import strip_xmlns
 
 LOG = logging.getLogger(__name__)
+
+REQUEST_ID_CHARACTERS = string.digits + string.ascii_uppercase
 
 
 class ResponseSerializerError(Exception):
@@ -1441,6 +1444,10 @@ class SqsResponseSerializer(QueryResponseSerializer):
             if generated_string is not None
             else None
         )
+
+
+def gen_amzn_requestid_long():
+    return "".join([random.choice(REQUEST_ID_CHARACTERS) for _ in range(0, 52)])
 
 
 def create_serializer(service: ServiceModel) -> ResponseSerializer:

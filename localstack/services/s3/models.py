@@ -1,5 +1,9 @@
 from typing import Dict
 
+import moto.s3.models as moto_s3_models
+from moto.s3 import s3_backends as moto_s3_backends
+
+from localstack.aws.api import RequestContext
 from localstack.aws.api.s3 import (
     BucketLifecycleConfiguration,
     BucketName,
@@ -8,6 +12,10 @@ from localstack.aws.api.s3 import (
     ReplicationConfiguration,
 )
 from localstack.services.stores import AccountRegionBundle, BaseStore, LocalAttribute
+
+
+def get_moto_s3_backend(context: RequestContext) -> moto_s3_models.S3Backend:
+    return moto_s3_backends[context.account_id]["global"]
 
 
 class S3Store(BaseStore):

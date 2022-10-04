@@ -1,12 +1,12 @@
 import logging
 import time
-from collections import defaultdict
 from datetime import datetime
 from random import random
-from typing import Dict, List, Set
+from typing import List
 
 import localstack.services.kinesis.kinesis_starter as starter
 from localstack import config
+from localstack.aws.accounts import get_aws_account_id
 from localstack.aws.api import RequestContext
 from localstack.aws.api.kinesis import (
     Consumer,
@@ -21,7 +21,6 @@ from localstack.aws.api.kinesis import (
     KinesisApi,
     ListStreamConsumersInputLimit,
     ListStreamConsumersOutput,
-    MetricsName,
     MetricsNameList,
     NextToken,
     PartitionKey,
@@ -46,21 +45,13 @@ from localstack.aws.api.kinesis import (
     UpdateShardCountOutput,
 )
 from localstack.constants import LOCALHOST
-from localstack.services.generic_proxy import RegionBackend
+from localstack.services.kinesis.models import KinesisStore, kinesis_stores
 from localstack.services.plugins import ServiceLifecycleHook
 from localstack.utils.aws import aws_stack
 from localstack.utils.time import now_utc
 
 LOG = logging.getLogger(__name__)
 MAX_SUBSCRIPTION_SECONDS = 300
-
-
-class KinesisBackend(RegionBackend):
-    def __init__(self):
-        # list of stream consumer details
-        self.stream_consumers: List[ConsumerDescription] = []
-        # maps stream name to list of enhanced monitoring metrics
-        self.enhanced_metrics: Dict[StreamName, Set[MetricsName]] = defaultdict(set)
 
 
 def find_stream_for_consumer(consumer_arn):
@@ -74,8 +65,8 @@ def find_stream_for_consumer(consumer_arn):
 
 
 def find_consumer(consumer_arn="", consumer_name="", stream_arn=""):
-    stream_consumers = KinesisBackend.get().stream_consumers
-    for consumer in stream_consumers:
+    store = KinesisProvider.get_store()
+    for consumer in store.stream_consumers:
         if consumer_arn and consumer_arn == consumer.get("ConsumerARN"):
             return consumer
         elif consumer_name == consumer.get("ConsumerName") and stream_arn == consumer.get(
@@ -85,6 +76,10 @@ def find_consumer(consumer_arn="", consumer_name="", stream_arn=""):
 
 
 class KinesisProvider(KinesisApi, ServiceLifecycleHook):
+    @staticmethod
+    def get_store() -> KinesisStore:
+        return kinesis_stores[get_aws_account_id()][aws_stack.get_region()]
+
     def on_before_start(self):
         starter.start_kinesis()
         starter.check_kinesis()
@@ -201,7 +196,8 @@ class KinesisProvider(KinesisApi, ServiceLifecycleHook):
             )
             consumer_description = ConsumerDescription(**consumer)
             consumer_description["StreamARN"] = stream_arn
-            KinesisBackend.get().stream_consumers.append(consumer_description)
+            store = self.get_store()
+            store.stream_consumers.append(consumer_description)
             return RegisterStreamConsumerOutput(Consumer=consumer)
 
         # If kinesis-mock is used, we forward the request through the fallback by raising a NotImplementedError
@@ -226,8 +222,8 @@ class KinesisProvider(KinesisApi, ServiceLifecycleHook):
                     )
                 )
 
-            region = KinesisBackend.get()
-            region.stream_consumers = list(filter(consumer_filter, region.stream_consumers))
+            store = self.get_store()
+            store.stream_consumers = list(filter(consumer_filter, store.stream_consumers))
             return None
 
         # If kinesis-mock is used, we forward the request through the fallback by raising a NotImplementedError
@@ -243,9 +239,9 @@ class KinesisProvider(KinesisApi, ServiceLifecycleHook):
     ) -> ListStreamConsumersOutput:
         # TODO remove this method when deleting kinesalite support
         if config.KINESIS_PROVIDER == "kinesalite":
-            stream_consumers = KinesisBackend.get().stream_consumers
+            store = self.get_store()
             consumers: List[Consumer] = []
-            for consumer_description in stream_consumers:
+            for consumer_description in store.stream_consumers:
                 consumer = Consumer(
                     ConsumerARN=consumer_description["ConsumerARN"],
                     ConsumerCreationTimestamp=consumer_description["ConsumerCreationTimestamp"],
@@ -282,7 +278,8 @@ class KinesisProvider(KinesisApi, ServiceLifecycleHook):
     ) -> EnhancedMonitoringOutput:
         # TODO remove this method when deleting kinesalite support
         if config.KINESIS_PROVIDER == "kinesalite":
-            stream_metrics = KinesisBackend.get().enhanced_metrics[stream_name]
+            store = self.get_store()
+            stream_metrics = store.enhanced_metrics[stream_name]
             stream_metrics.update(shard_level_metrics)
             stream_metrics_list = list(stream_metrics)
             return EnhancedMonitoringOutput(
@@ -299,11 +296,11 @@ class KinesisProvider(KinesisApi, ServiceLifecycleHook):
     ) -> EnhancedMonitoringOutput:
         # TODO remove this method when deleting kinesalite support
         if config.KINESIS_PROVIDER == "kinesalite":
-            region = KinesisBackend.get()
-            region.enhanced_metrics[stream_name] = region.enhanced_metrics[stream_name] - set(
+            store = self.get_store()
+            store.enhanced_metrics[stream_name] = store.enhanced_metrics[stream_name] - set(
                 shard_level_metrics
             )
-            stream_metrics_list = list(region.enhanced_metrics[stream_name])
+            stream_metrics_list = list(store.enhanced_metrics[stream_name])
             return EnhancedMonitoringOutput(
                 StreamName=stream_name,
                 CurrentShardLevelMetrics=stream_metrics_list,

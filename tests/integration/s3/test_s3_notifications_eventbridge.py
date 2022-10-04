@@ -2,6 +2,7 @@ import json
 
 import pytest
 
+from localstack.config import LEGACY_S3_PROVIDER
 from localstack.testing.aws.util import is_aws_cloud
 from localstack.utils.strings import short_uid
 from localstack.utils.sync import retry
@@ -9,6 +10,9 @@ from localstack.utils.sync import retry
 
 class TestS3NotificationsToEventBridge:
     @pytest.mark.aws_validated
+    @pytest.mark.skip_snapshot_verify(
+        condition=lambda: LEGACY_S3_PROVIDER, paths=["$..detail.object.etag"]
+    )
     def test_object_created_put(
         self,
         s3_client,
@@ -79,19 +83,17 @@ class TestS3NotificationsToEventBridge:
         snapshot.add_transformer(snapshot.transform.s3_api())
         snapshot.add_transformers_list(
             [
-                snapshot.transform.jsonpath(
-                    "$..account", "111111111111", reference_replacement=False
-                ),
                 snapshot.transform.jsonpath("$..detail.bucket.name", "bucket-name"),
                 snapshot.transform.jsonpath("$..detail.object.key", "key-name"),
-                snapshot.transform.jsonpath("$..detail.object.etag", "object-etag"),
                 snapshot.transform.jsonpath(
                     "$..detail.object.sequencer", "object-sequencer", reference_replacement=False
                 ),
                 snapshot.transform.jsonpath(
                     "$..detail.request-id", "request-id", reference_replacement=False
                 ),
-                snapshot.transform.jsonpath("$..detail.requester", "111111111111"),
+                snapshot.transform.jsonpath(
+                    "$..detail.requester", "<requester>", reference_replacement=False
+                ),
                 snapshot.transform.jsonpath("$..detail.source-ip-address", "ip-address"),
             ]
         )

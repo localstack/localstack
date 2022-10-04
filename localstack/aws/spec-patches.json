@@ -289,6 +289,155 @@
       "value": {
         "type": "string"
       }
+    },
+    {
+      "op": "add",
+      "path": "/shapes/SignatureDoesNotMatch",
+      "value": {
+        "type": "structure",
+        "members": {
+          "AWSAccessKeyId": {
+            "shape": "AWSAccessKeyId"
+          },
+          "CanonicalRequest": {
+            "shape": "CanonicalRequest"
+          },
+          "CanonicalRequestBytes": {
+            "shape": "CanonicalRequestBytes"
+          },
+          "HostId": {
+            "shape": "HostId"
+          },
+          "SignatureProvided": {
+            "shape": "SignatureProvided"
+          },
+          "StringToSign": {
+            "shape": "StringToSign"
+          },
+          "StringToSignBytes": {
+            "shape": "StringToSignBytes"
+          }
+        },
+        "error": {
+          "httpStatusCode": 403
+        },
+        "documentation": "<p>The request signature we calculated does not match the signature you provided. Check your key and signing method.</p>",
+        "exception": true
+      }
+    },
+    {
+      "op": "add",
+      "path": "/shapes/AccessDenied",
+      "value": {
+        "type": "structure",
+        "members": {
+          "Expires": {
+            "shape": "Expires"
+          },
+          "ServerTime": {
+            "shape": "ServerTime"
+          },
+          "X_Amz_Expires": {
+            "shape": "X-Amz-Expires",
+            "locationName":"X-Amz-Expires"
+          },
+          "HostId": {
+            "shape": "HostId"
+          },
+          "HeadersNotSigned": {
+            "shape": "HeadersNotSigned"
+          }
+        },
+        "error": {
+          "httpStatusCode": 403
+        },
+        "documentation": "<p>Request has expired</p>",
+        "exception": true
+      }
+    },
+    {
+      "op": "add",
+      "path": "/shapes/AWSAccessKeyId",
+      "value": {
+        "type": "string"
+      }
+    },
+    {
+      "op": "add",
+      "path": "/shapes/HostId",
+      "value": {
+        "type": "string"
+      }
+    },
+    {
+      "op": "add",
+      "path": "/shapes/HeadersNotSigned",
+      "value": {
+        "type": "string"
+      }
+    },
+    {
+      "op": "add",
+      "path": "/shapes/SignatureProvided",
+      "value": {
+        "type": "string"
+      }
+    },
+    {
+      "op": "add",
+      "path": "/shapes/StringToSign",
+      "value": {
+        "type": "string"
+      }
+    },
+    {
+      "op": "add",
+      "path": "/shapes/StringToSignBytes",
+      "value": {
+        "type": "string"
+      }
+    },
+    {
+      "op": "add",
+      "path": "/shapes/CanonicalRequest",
+      "value": {
+        "type": "string"
+      }
+    },
+    {
+      "op": "add",
+      "path": "/shapes/CanonicalRequestBytes",
+      "value": {
+        "type": "string"
+      }
+    },
+    {
+      "op": "add",
+      "path": "/shapes/ServerTime",
+      "value": {
+        "type": "timestamp"
+      }
+    },
+    {
+      "op": "add",
+      "path": "/shapes/X-Amz-Expires",
+      "value": {
+        "type": "integer"
+      }
+    },
+    {
+      "op": "add",
+      "path": "/shapes/AuthorizationQueryParametersError",
+      "value": {
+        "type": "structure",
+        "members": {
+          "HostId": {
+            "shape": "HostId"
+          }
+        },
+        "documentation": "<p>Query-string authentication version 4 requires the X-Amz-Algorithm, X-Amz-Credential, X-Amz-Signature, X-Amz-Date, X-Amz-SignedHeaders, and X-Amz-Expires parameters.</p>",
+        "exception": true
+      }
     }
   ]
 }

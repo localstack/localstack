@@ -13,7 +13,7 @@ import time
 from io import BytesIO
 from operator import itemgetter
 from typing import TYPE_CHECKING
-from urllib.parse import parse_qs, quote, urlparse
+from urllib.parse import SplitResult, parse_qs, quote, urlencode, urlparse, urlunsplit
 
 import boto3 as boto3
 import pytest
@@ -2351,11 +2351,33 @@ class TestS3PresignedUrl:
         assert response.text == body
 
     @pytest.mark.aws_validated
+    @pytest.mark.parametrize(
+        "signature_version, verify_signature",
+        [
+            ("s3", True),
+            ("s3", False),
+            ("s3v4", True),
+            ("s3v4", False),
+        ],
+    )
+    @pytest.mark.skip_snapshot_verify(condition=is_old_provider)
     def test_put_object_with_md5_and_chunk_signature_bad_headers(
         self,
         s3_client,
         s3_create_bucket,
+        signature_version,
+        verify_signature,
+        monkeypatch,
+        snapshot,
     ):
+        snapshot.add_transformer(self._get_presigned_snapshot_transformers(snapshot))
+        snapshotted = False
+        if is_aws_cloud() and not verify_signature:
+            pytest.skip("Skipping in AWS, no point to check config patch")
+        elif verify_signature:
+            monkeypatch.setattr(config, "S3_SKIP_SIGNATURE_VALIDATION", False)
+            snapshotted = True
+
         bucket_name = f"bucket-{short_uid()}"
         object_key = "test-runtime.properties"
         content_md5 = "pX8KKuGXS1f2VTcuJpqjkw=="
@@ -2371,7 +2393,11 @@ class TestS3PresignedUrl:
         }
 
         s3_create_bucket(Bucket=bucket_name)
-        url = s3_client.generate_presigned_url(
+        presigned_client = _s3_client_custom_config(
+            Config(signature_version=signature_version),
+            endpoint_url=_endpoint_url(),
+        )
+        url = presigned_client.generate_presigned_url(
             "put_object",
             Params={
                 "Bucket": bucket_name,
@@ -2382,13 +2408,28 @@ class TestS3PresignedUrl:
         )
         result = requests.put(url, data="test", headers=headers)
         assert result.status_code == 403
-        assert b"SignatureDoesNotMatch" in result.content
+        if snapshotted:
+            exception = xmltodict.parse(result.content)
+            snapshot.match("with-decoded-content-length", exception)
+
+        # old provider does not raise the right error message
+        if LEGACY_S3_PROVIDER or (signature_version == "s3" and is_aws_cloud()):
+            assert b"SignatureDoesNotMatch" in result.content
+        # we are either using s3v4 with new provider or whichever signature against AWS
+        else:
+            assert b"AccessDenied" in result.content
 
         # check also no X-Amz-Decoded-Content-Length
         headers.pop("X-Amz-Decoded-Content-Length")
         result = requests.put(url, data="test", headers=headers)
         assert result.status_code == 403, (result, result.content)
-        assert b"SignatureDoesNotMatch" in result.content
+        if snapshotted:
+            exception = xmltodict.parse(result.content)
+            snapshot.match("without-decoded-content-length", exception)
+        if LEGACY_S3_PROVIDER or (signature_version == "s3" and is_aws_cloud()):
+            assert b"SignatureDoesNotMatch" in result.content
+        else:
+            assert b"AccessDenied" in result.content
 
     @pytest.mark.aws_validated
     def test_s3_get_response_default_content_type(self, s3_client, s3_bucket):
@@ -2408,15 +2449,27 @@ class TestS3PresignedUrl:
         assert response.headers["content-type"] == "binary/octet-stream"
 
     @pytest.mark.aws_validated
-    def test_s3_presigned_url_expired(self, s3_presigned_client, s3_bucket, monkeypatch):
+    @pytest.mark.parametrize("signature_version", ["s3", "s3v4"])
+    @pytest.mark.skip_snapshot_verify(
+        condition=is_old_provider,
+        path=["$..Error.Expires"],
+    )
+    def test_s3_presigned_url_expired(
+        self, s3_bucket, s3_client, monkeypatch, signature_version, snapshot
+    ):
+        snapshot.add_transformer(self._get_presigned_snapshot_transformers(snapshot))
         if not is_aws_cloud():
             monkeypatch.setattr(config, "S3_SKIP_SIGNATURE_VALIDATION", False)
 
         object_key = "key-expires-in-2"
-        s3_presigned_client.put_object(Bucket=s3_bucket, Key=object_key, Body="something")
+        s3_client.put_object(Bucket=s3_bucket, Key=object_key, Body="something")
 
         # get object and assert headers
-        url = s3_presigned_client.generate_presigned_url(
+        presigned_client = _s3_client_custom_config(
+            Config(signature_version=signature_version),
+            endpoint_url=_endpoint_url(),
+        )
+        url = presigned_client.generate_presigned_url(
             "get_object", Params={"Bucket": s3_bucket, "Key": object_key}, ExpiresIn=2
         )
         # retrieving it before expiry
@@ -2428,10 +2481,13 @@ class TestS3PresignedUrl:
         resp = requests.get(url, verify=False)
         resp_content = to_str(resp.content)
         assert resp.status_code == 403
+        exception = xmltodict.parse(resp.content)
+        snapshot.match("expired-exception", exception)
+
         assert "<Code>AccessDenied</Code>" in resp_content
         assert "<Message>Request has expired</Message>" in resp_content
 
-        url = s3_presigned_client.generate_presigned_url(
+        url = presigned_client.generate_presigned_url(
             "get_object",
             Params={"Bucket": s3_bucket, "Key": object_key},
             ExpiresIn=120,
@@ -2440,6 +2496,207 @@ class TestS3PresignedUrl:
         resp = requests.get(url, verify=False)
         assert resp.status_code == 200
         assert to_str(resp.content) == "something"
+
+    @pytest.mark.aws_validated
+    @pytest.mark.parametrize("signature_version", ["s3", "s3v4"])
+    @pytest.mark.skip_snapshot_verify(
+        condition=is_old_provider,
+        path=["$..Error.Message"],
+    )
+    def test_s3_put_presigned_url_with_different_headers(
+        self, s3_bucket, s3_client, monkeypatch, signature_version, snapshot
+    ):
+        snapshot.add_transformer(self._get_presigned_snapshot_transformers(snapshot))
+        if not is_aws_cloud():
+            monkeypatch.setattr(config, "S3_SKIP_SIGNATURE_VALIDATION", False)
+
+        object_key = "key-double-header-param"
+        s3_client.put_object(Bucket=s3_bucket, Key=object_key, Body="something")
+
+        presigned_client = _s3_client_custom_config(
+            Config(signature_version=signature_version),
+            endpoint_url=_endpoint_url(),
+        )
+        # Content-Type, Content-MD5 and Date are specific headers for SigV2 and are checked
+        # others are not verified in the signature
+        presigned_url = presigned_client.generate_presigned_url(
+            "put_object",
+            Params={
+                "Bucket": s3_bucket,
+                "Key": object_key,
+                "ContentType": "text/plain",
+            },
+            ExpiresIn=10,
+        )
+
+        response = requests.put(
+            presigned_url,
+            data="test_data",
+            headers={"Content-Type": "text/plain"},
+        )
+        assert response.status_code == 200
+
+        response = requests.put(
+            presigned_url,
+            data="test_data",
+            headers={"Content-Type": "text/xml"},
+        )
+        assert response.status_code == 403
+
+        exception = xmltodict.parse(response.content)
+        exception["StatusCode"] = response.status_code
+        snapshot.match("content-type-exception", exception)
+
+        presigned_url = presigned_client.generate_presigned_url(
+            "put_object",
+            Params={
+                "Bucket": s3_bucket,
+                "Key": object_key,
+                "ContentEncoding": "identity",
+            },
+            ExpiresIn=10,
+        )
+
+        response = requests.put(
+            presigned_url,
+            data="test_data",
+            headers={"Content-Encoding": "identity"},
+        )
+        assert response.status_code == 200
+
+        response = requests.put(
+            presigned_url,
+            data="test_data",
+            headers={"Content-Encoding": "gzip"},
+        )
+        exception = xmltodict.parse(response.content) if response.content else {}
+        exception["StatusCode"] = response.status_code
+        snapshot.match("content-encoding-response", exception)
+
+        # try without the headers (included in the query string with sigV2 but not sigV4)
+        response = requests.put(
+            presigned_url,
+            data="test_data",
+            headers={"Content-Encoding": "gzip"},
+        )
+        exception = xmltodict.parse(response.content) if response.content else {}
+        exception["StatusCode"] = response.status_code
+        snapshot.match("missing-content-encoding-response", exception)
+
+    @pytest.mark.aws_validated
+    def test_s3_put_presigned_url_same_header_and_qs_parameter(
+        self, s3_bucket, s3_client, monkeypatch, snapshot
+    ):
+        # this test tries to check if double query/header values trigger InvalidRequest like said in the documentation
+        # spoiler: they do not
+        # https://docs.aws.amazon.com/AmazonS3/latest/API/sigv4-query-string-auth.html#query-string-auth-v4-signing
+        snapshot.add_transformer(self._get_presigned_snapshot_transformers(snapshot))
+        if not is_aws_cloud():
+            monkeypatch.setattr(config, "S3_SKIP_SIGNATURE_VALIDATION", False)
+            if LEGACY_S3_PROVIDER:
+                pytest.xfail(reason="Legacy S3 provider does not implement the right behaviour")
+
+        object_key = "key-double-header-param"
+        s3_client.put_object(Bucket=s3_bucket, Key=object_key, Body="something")
+
+        presigned_client = _s3_client_custom_config(
+            Config(signature_version="s3v4"),
+            endpoint_url=_endpoint_url(),
+        )
+        presigned_url = presigned_client.generate_presigned_url(
+            "put_object",
+            Params={
+                "Bucket": s3_bucket,
+                "Key": object_key,
+                "RequestPayer": "requester",
+            },
+            ExpiresIn=10,
+        )
+        # add the same parameter as a query string parameter as well as header, with different values
+        parsed = urlparse(presigned_url)
+        query_params = parse_qs(parsed.query)
+        # auth params needs to be at the end
+        new_query_params = {"x-amz-request-payer": ["non-valid"]}
+        for k, v in query_params.items():
+            new_query_params[k] = v[0]
+
+        new_query_params = urlencode(new_query_params, quote_via=quote, safe=" ")
+        new_url = urlunsplit(
+            SplitResult(  # noqa
+                parsed.scheme, parsed.netloc, parsed.path, new_query_params, parsed.fragment
+            )
+        )
+        response = requests.put(
+            new_url,
+            data="test_data",
+            headers={"x-amz-request-payer": "requester"},
+        )
+        exception = xmltodict.parse(response.content) if response.content else {}
+        exception["StatusCode"] = response.status_code
+        snapshot.match("double-header-query-string", exception)
+
+        # test overriding a signed query parameter
+        response = requests.put(
+            presigned_url,
+            data="test_data",
+            headers={"x-amz-expires": "5"},
+        )
+        exception = xmltodict.parse(response.content) if response.content else {}
+        exception["StatusCode"] = response.status_code
+        snapshot.match("override-signed-qs", exception)
+
+    @pytest.mark.aws_validated
+    @pytest.mark.parametrize("signature_version", ["s3", "s3v4"])
+    @pytest.mark.skip_snapshot_verify(
+        condition=is_old_provider,
+        paths=[
+            "$..Error.Code",
+            "$..Error.Message",
+            "$..StatusCode",
+        ],
+    )
+    def test_s3_put_presigned_url_missing_sig_param(
+        self, s3_bucket, s3_client, monkeypatch, signature_version, snapshot
+    ):
+        snapshot.add_transformer(self._get_presigned_snapshot_transformers(snapshot))
+        if not is_aws_cloud():
+            monkeypatch.setattr(config, "S3_SKIP_SIGNATURE_VALIDATION", False)
+
+        object_key = "key-missing-param"
+        s3_client.put_object(Bucket=s3_bucket, Key=object_key, Body="something")
+
+        presigned_client = _s3_client_custom_config(
+            Config(signature_version=signature_version),
+            endpoint_url=_endpoint_url(),
+        )
+        url = presigned_client.generate_presigned_url(
+            "get_object", Params={"Bucket": s3_bucket, "Key": object_key}, ExpiresIn=5
+        )
+        parsed = urlparse(url)
+        query_params = parse_qs(parsed.query)
+        # sig v2
+        if "Signature" in query_params:
+            query_params.pop("Expires", None)
+        else:  # sig v4
+            query_params.pop("X-Amz-Date", None)
+        new_query_params = urlencode(
+            {k: v[0] for k, v in query_params.items()}, quote_via=quote, safe=" "
+        )
+
+        invalid_url = urlunsplit(
+            SplitResult(  # noqa
+                parsed.scheme, parsed.netloc, parsed.path, new_query_params, parsed.fragment
+            )
+        )
+
+        resp = requests.get(invalid_url, verify=False)
+        assert resp.status_code in [
+            400,
+            403,
+        ]  # the snapshot will differentiate between sig v2 and sig v4
+        exception = xmltodict.parse(resp.content)
+        exception["StatusCode"] = resp.status_code
+        snapshot.match("missing-param-exception", exception)
 
     @pytest.mark.aws_validated
     def test_s3_get_response_content_type_same_as_upload_and_range(self, s3_client, s3_bucket):
@@ -2471,6 +2728,7 @@ class TestS3PresignedUrl:
     def test_s3_presigned_post_success_action_status_201_response(self, s3_client, s3_bucket):
         # a security policy is required if the bucket is not publicly writable
         # see https://docs.aws.amazon.com/AmazonS3/latest/API/RESTObjectPOST.html#RESTObjectPOST-requests-form-fields
+        # TODO need to create new operation in the specs to handle presigned POST
         body = "something body"
         # get presigned URL
         object_key = "key-${filename}"
@@ -2489,7 +2747,7 @@ class TestS3PresignedUrl:
             verify=False,
         )
         # test
-        assert 201 == response.status_code
+        assert response.status_code == 201
         json_response = xmltodict.parse(response.content)
         assert "PostResponse" in json_response
         json_response = json_response["PostResponse"]
@@ -2535,15 +2793,24 @@ class TestS3PresignedUrl:
         assert response._content == b"test-value"
 
     @pytest.mark.aws_validated
-    def test_s3_get_response_header_overrides(self, s3_client, s3_bucket):
+    @pytest.mark.parametrize("signature_version", ["s3", "s3v4"])
+    def test_s3_get_response_header_overrides(
+        self, s3_client, s3_bucket, signature_version, monkeypatch
+    ):
         # Signed requests may include certain header overrides in the querystring
         # https://docs.aws.amazon.com/AmazonS3/latest/API/RESTObjectGET.html
+        if not is_aws_cloud():
+            monkeypatch.setattr(config, "S3_SKIP_SIGNATURE_VALIDATION", False)
         object_key = "key-header-overrides"
         s3_client.put_object(Bucket=s3_bucket, Key=object_key, Body="something")
 
         # get object and assert headers
         expiry_date = "Wed, 21 Oct 2015 07:28:00 GMT"
-        url = s3_client.generate_presigned_url(
+        presigned_client = _s3_client_custom_config(
+            Config(signature_version=signature_version), endpoint_url=_endpoint_url()
+        )
+
+        url = presigned_client.generate_presigned_url(
             "get_object",
             Params={
                 "Bucket": s3_bucket,
@@ -2557,6 +2824,7 @@ class TestS3PresignedUrl:
             },
         )
         response = requests.get(url, verify=False)
+        assert response.status_code == 200
         headers = response.headers
         assert headers["cache-control"] == "max-age=74"
         assert headers["content-disposition"] == 'attachment; filename="foo.jpg"'
@@ -2569,7 +2837,9 @@ class TestS3PresignedUrl:
         assert headers["expires"] in possible_date_formats
 
     @pytest.mark.aws_validated
-    def test_s3_copy_md5(self, s3_client, s3_bucket, snapshot):
+    def test_s3_copy_md5(self, s3_client, s3_bucket, snapshot, s3_presigned_client, monkeypatch):
+        if not is_aws_cloud() and not LEGACY_S3_PROVIDER:
+            monkeypatch.setattr(config, "S3_SKIP_SIGNATURE_VALIDATION", False)
         src_key = "src"
         s3_client.put_object(Bucket=s3_bucket, Key=src_key, Body="something")
 
@@ -2584,7 +2854,7 @@ class TestS3PresignedUrl:
 
         # Create copy object to try to match s3a setting Content-MD5
         dest_key2 = "dest"
-        url = s3_client.generate_presigned_url(
+        url = s3_presigned_client.generate_presigned_url(
             "copy_object",
             Params={
                 "Bucket": s3_bucket,
@@ -2630,6 +2900,10 @@ class TestS3PresignedUrl:
         ],
     )
     @pytest.mark.aws_validated
+    @pytest.mark.skip_snapshot_verify(
+        condition=is_old_provider,
+        path=["$..Error.Expires"],
+    )
     def test_presigned_url_signature_authentication_expired(
         self,
         s3_client,
@@ -2637,7 +2911,9 @@ class TestS3PresignedUrl:
         signature_version,
         use_virtual_address,
         monkeypatch,
+        snapshot,
     ):
+        snapshot.add_transformer(self._get_presigned_snapshot_transformers(snapshot))
         monkeypatch.setattr(config, "S3_SKIP_SIGNATURE_VALIDATION", False)
         bucket_name = f"presign-{short_uid()}"
 
@@ -2655,8 +2931,10 @@ class TestS3PresignedUrl:
 
         url = _generate_presigned_url(client, {"Bucket": bucket_name, "Key": object_key}, expires=1)
         time.sleep(1)
-
-        assert 403 == requests.get(url).status_code
+        response = requests.get(url)
+        assert response.status_code == 403
+        exception = xmltodict.parse(response.content)
+        snapshot.match("expired", exception)
 
     @pytest.mark.parametrize(
         "signature_version, use_virtual_address",
@@ -2668,6 +2946,10 @@ class TestS3PresignedUrl:
         ],
     )
     @pytest.mark.aws_validated
+    @pytest.mark.skip_snapshot_verify(
+        condition=is_old_provider,
+        path=["$..Error.Expires"],
+    )
     def test_presigned_url_signature_authentication(
         self,
         s3_client,
@@ -2675,7 +2957,9 @@ class TestS3PresignedUrl:
         signature_version,
         use_virtual_address,
         monkeypatch,
+        snapshot,
     ):
+        snapshot.add_transformer(self._get_presigned_snapshot_transformers(snapshot))
         monkeypatch.setattr(config, "S3_SKIP_SIGNATURE_VALIDATION", False)
         bucket_name = f"presign-{short_uid()}"
 
@@ -2692,12 +2976,13 @@ class TestS3PresignedUrl:
             endpoint_url=s3_endpoint_path_style,
         )
 
-        expires = 4
+        expires = 20
 
         # GET requests
         simple_params = {"Bucket": bucket_name, "Key": object_key}
-        response = requests.get(_generate_presigned_url(client, simple_params, expires))
-        assert 200 == response.status_code
+        url = _generate_presigned_url(client, simple_params, expires)
+        response = requests.get(url)
+        assert response.status_code == 200
         assert response.content == b"123"
 
         params = {
@@ -2708,31 +2993,28 @@ class TestS3PresignedUrl:
         }
 
         presigned = _generate_presigned_url(client, params, expires)
-        response = requests.get(_generate_presigned_url(client, params, expires))
-        assert 200 == response.status_code
+        response = requests.get(presigned)
+        assert response.status_code == 200
         assert response.content == b"123"
 
-        object_data = "this should be found in when you download {}.".format(object_key)
+        object_data = f"this should be found in when you download {object_key}."
 
         # invalid requests
-        # TODO check how much sense it makes to make this url "invalid"...
-        assert (
-            403
-            == requests.get(
-                _make_url_invalid(s3_url, object_key, presigned),
-                data=object_data,
-                headers={"Content-Type": "my-fake-content/type"},
-            ).status_code
+        response = requests.get(
+            _make_url_invalid(s3_url, object_key, presigned),
+            data=object_data,
+            headers={"Content-Type": "my-fake-content/type"},
         )
+        assert response.status_code == 403
+        exception = xmltodict.parse(response.content)
+        snapshot.match("invalid-get-1", exception)
 
         # put object valid
-        assert (
-            200
-            == requests.put(
-                _generate_presigned_url(client, simple_params, expires, client_method="put_object"),
-                data=object_data,
-            ).status_code
+        response = requests.put(
+            _generate_presigned_url(client, simple_params, expires, client_method="put_object"),
+            data=object_data,
         )
+        assert response.status_code == 200
 
         params = {
             "Bucket": bucket_name,
@@ -2742,15 +3024,12 @@ class TestS3PresignedUrl:
         presigned_put_url = _generate_presigned_url(
             client, params, expires, client_method="put_object"
         )
-
-        assert (
-            200
-            == requests.put(
-                presigned_put_url,
-                data=object_data,
-                headers={"Content-Type": "text/plain"},
-            ).status_code
+        response = requests.put(
+            presigned_put_url,
+            data=object_data,
+            headers={"Content-Type": "text/plain"},
         )
+        assert response.status_code == 200
 
         # Invalid request
         response = requests.put(
@@ -2758,14 +3037,16 @@ class TestS3PresignedUrl:
             data=object_data,
             headers={"Content-Type": "my-fake-content/type"},
         )
-        assert 403 == response.status_code
+        assert response.status_code == 403
+        exception = xmltodict.parse(response.content)
+        snapshot.match("invalid-put-1", exception)
 
         # DELETE requests
         presigned_delete_url = _generate_presigned_url(
             client, simple_params, expires, client_method="delete_object"
         )
         response = requests.delete(presigned_delete_url)
-        assert 204 == response.status_code
+        assert response.status_code == 204
 
     @pytest.mark.parametrize(
         "signature_version, use_virtual_address",
@@ -2786,7 +3067,6 @@ class TestS3PresignedUrl:
         monkeypatch,
     ):
         monkeypatch.setattr(config, "S3_SKIP_SIGNATURE_VALIDATION", False)
-        # TODO: beware, this test does not test authentication!
         # it should test if the user is sending wrong signature
         bucket_name = f"presign-{short_uid()}"
 
@@ -2831,12 +3111,33 @@ class TestS3PresignedUrl:
             UploadId=upload_id,
         )
 
-        assert 200 == response["ResponseMetadata"]["HTTPStatusCode"]
+        assert response["ResponseMetadata"]["HTTPStatusCode"] == 200
 
         simple_params = {"Bucket": bucket_name, "Key": object_key}
         response = requests.get(_generate_presigned_url(client, simple_params, 4))
-        assert 200 == response.status_code
+        assert response.status_code == 200
         assert response.content == data
+
+    @staticmethod
+    def _get_presigned_snapshot_transformers(snapshot):
+        return [
+            snapshot.transform.key_value("AWSAccessKeyId"),
+            snapshot.transform.key_value("HostId", reference_replacement=False),
+            snapshot.transform.key_value("RequestId"),
+            snapshot.transform.key_value("SignatureProvided"),
+            snapshot.transform.jsonpath(
+                "$..Error.StringToSign",
+                value_replacement="<string-to-sign>",
+                reference_replacement=False,
+            ),
+            snapshot.transform.key_value("StringToSignBytes"),
+            snapshot.transform.jsonpath(
+                "$..Error.CanonicalRequest",
+                value_replacement="<canonical-request>",
+                reference_replacement=False,
+            ),
+            snapshot.transform.key_value("CanonicalRequestBytes"),
+        ]
 
 
 class TestS3Cors:

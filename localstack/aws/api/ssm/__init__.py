@@ -16,6 +16,7 @@ ActivationDescription = str
 ActivationId = str
 AgentErrorCode = str
 AggregatorSchemaOnly = bool
+AlarmName = str
 AllowedPattern = str
 ApplyOnlyAtCronInterval = bool
 ApproveAfterDays = int
@@ -598,11 +599,18 @@ class DocumentType(str):
     Automation_ChangeTemplate = "Automation.ChangeTemplate"
     ProblemAnalysis = "ProblemAnalysis"
     ProblemAnalysisTemplate = "ProblemAnalysisTemplate"
+    CloudFormation = "CloudFormation"
+    ConformancePackTemplate = "ConformancePackTemplate"
 
 
 class ExecutionMode(str):
     Auto = "Auto"
     Interactive = "Interactive"
+
+
+class ExternalAlarmState(str):
+    UNKNOWN = "UNKNOWN"
+    ALARM = "ALARM"
 
 
 class Fault(str):
@@ -1803,6 +1811,26 @@ class AddTagsToResourceResult(TypedDict, total=False):
     pass
 
 
+class Alarm(TypedDict, total=False):
+    Name: AlarmName
+
+
+AlarmList = List[Alarm]
+
+
+class AlarmConfiguration(TypedDict, total=False):
+    IgnorePollAlarmFailure: Optional[Boolean]
+    Alarms: AlarmList
+
+
+class AlarmStateInformation(TypedDict, total=False):
+    Name: AlarmName
+    State: ExternalAlarmState
+
+
+AlarmStateInformationList = List[AlarmStateInformation]
+
+
 class AssociateOpsItemRelatedItemRequest(ServiceRequest):
     OpsItemId: OpsItemId
     AssociationType: OpsItemRelatedItemAssociationType
@@ -1916,6 +1944,8 @@ class AssociationDescription(TypedDict, total=False):
     TargetLocations: Optional[TargetLocations]
     ScheduleOffset: Optional[ScheduleOffset]
     TargetMaps: Optional[TargetMaps]
+    AlarmConfiguration: Optional[AlarmConfiguration]
+    TriggeredAlarms: Optional[AlarmStateInformationList]
 
 
 AssociationDescriptionList = List[AssociationDescription]
@@ -1930,6 +1960,8 @@ class AssociationExecution(TypedDict, total=False):
     CreatedTime: Optional[DateTime]
     LastExecutionDate: Optional[DateTime]
     ResourceCountByStatus: Optional[ResourceCountByStatus]
+    AlarmConfiguration: Optional[AlarmConfiguration]
+    TriggeredAlarms: Optional[AlarmStateInformationList]
 
 
 class AssociationExecutionFilter(TypedDict, total=False):
@@ -2132,6 +2164,8 @@ class AutomationExecution(TypedDict, total=False):
     Target: Optional[String]
     TargetLocations: Optional[TargetLocations]
     ProgressCounters: Optional[ProgressCounters]
+    AlarmConfiguration: Optional[AlarmConfiguration]
+    TriggeredAlarms: Optional[AlarmStateInformationList]
     AutomationSubtype: Optional[AutomationSubtype]
     ScheduledTime: Optional[DateTime]
     Runbooks: Optional[Runbooks]
@@ -2174,6 +2208,8 @@ class AutomationExecutionMetadata(TypedDict, total=False):
     MaxErrors: Optional[MaxErrors]
     Target: Optional[String]
     AutomationType: Optional[AutomationType]
+    AlarmConfiguration: Optional[AlarmConfiguration]
+    TriggeredAlarms: Optional[AlarmStateInformationList]
     AutomationSubtype: Optional[AutomationSubtype]
     ScheduledTime: Optional[DateTime]
     Runbooks: Optional[Runbooks]
@@ -2299,6 +2335,8 @@ class Command(TypedDict, total=False):
     NotificationConfig: Optional[NotificationConfig]
     CloudWatchOutputConfig: Optional[CloudWatchOutputConfig]
     TimeoutSeconds: Optional[TimeoutSeconds]
+    AlarmConfiguration: Optional[AlarmConfiguration]
+    TriggeredAlarms: Optional[AlarmStateInformationList]
 
 
 class CommandFilter(TypedDict, total=False):
@@ -2465,6 +2503,7 @@ class CreateAssociationBatchRequestEntry(TypedDict, total=False):
     TargetLocations: Optional[TargetLocations]
     ScheduleOffset: Optional[ScheduleOffset]
     TargetMaps: Optional[TargetMaps]
+    AlarmConfiguration: Optional[AlarmConfiguration]
 
 
 CreateAssociationBatchRequestEntries = List[CreateAssociationBatchRequestEntry]
@@ -2508,6 +2547,7 @@ class CreateAssociationRequest(ServiceRequest):
     ScheduleOffset: Optional[ScheduleOffset]
     TargetMaps: Optional[TargetMaps]
     Tags: Optional[TagList]
+    AlarmConfiguration: Optional[AlarmConfiguration]
 
 
 class CreateAssociationResult(TypedDict, total=False):
@@ -3390,6 +3430,8 @@ class MaintenanceWindowExecutionTaskIdentity(TypedDict, total=False):
     EndTime: Optional[DateTime]
     TaskArn: Optional[MaintenanceWindowTaskArn]
     TaskType: Optional[MaintenanceWindowTaskType]
+    AlarmConfiguration: Optional[AlarmConfiguration]
+    TriggeredAlarms: Optional[AlarmStateInformationList]
 
 
 MaintenanceWindowExecutionTaskIdentityList = List[MaintenanceWindowExecutionTaskIdentity]
@@ -3512,6 +3554,7 @@ class MaintenanceWindowTask(TypedDict, total=False):
     Name: Optional[MaintenanceWindowName]
     Description: Optional[MaintenanceWindowDescription]
     CutoffBehavior: Optional[MaintenanceWindowTaskCutoffBehavior]
+    AlarmConfiguration: Optional[AlarmConfiguration]
 
 
 MaintenanceWindowTaskList = List[MaintenanceWindowTask]
@@ -4150,6 +4193,8 @@ class GetMaintenanceWindowExecutionTaskResult(TypedDict, total=False):
     StatusDetails: Optional[MaintenanceWindowExecutionStatusDetails]
     StartTime: Optional[DateTime]
     EndTime: Optional[DateTime]
+    AlarmConfiguration: Optional[AlarmConfiguration]
+    TriggeredAlarms: Optional[AlarmStateInformationList]
 
 
 class GetMaintenanceWindowRequest(ServiceRequest):
@@ -4235,6 +4280,7 @@ class GetMaintenanceWindowTaskResult(TypedDict, total=False):
     Name: Optional[MaintenanceWindowName]
     Description: Optional[MaintenanceWindowDescription]
     CutoffBehavior: Optional[MaintenanceWindowTaskCutoffBehavior]
+    AlarmConfiguration: Optional[AlarmConfiguration]
 
 
 class GetOpsItemRequest(ServiceRequest):
@@ -4932,6 +4978,7 @@ class RegisterTaskWithMaintenanceWindowRequest(ServiceRequest):
     Description: Optional[MaintenanceWindowDescription]
     ClientToken: Optional[ClientToken]
     CutoffBehavior: Optional[MaintenanceWindowTaskCutoffBehavior]
+    AlarmConfiguration: Optional[AlarmConfiguration]
 
 
 class RegisterTaskWithMaintenanceWindowResult(TypedDict, total=False):
@@ -4994,6 +5041,7 @@ class SendCommandRequest(ServiceRequest):
     ServiceRoleArn: Optional[ServiceRole]
     NotificationConfig: Optional[NotificationConfig]
     CloudWatchOutputConfig: Optional[CloudWatchOutputConfig]
+    AlarmConfiguration: Optional[AlarmConfiguration]
 
 
 class SendCommandResult(TypedDict, total=False):
@@ -5025,6 +5073,7 @@ class StartAutomationExecutionRequest(ServiceRequest):
     MaxErrors: Optional[MaxErrors]
     TargetLocations: Optional[TargetLocations]
     Tags: Optional[TagList]
+    AlarmConfiguration: Optional[AlarmConfiguration]
 
 
 class StartAutomationExecutionResult(TypedDict, total=False):
@@ -5110,6 +5159,7 @@ class UpdateAssociationRequest(ServiceRequest):
     TargetLocations: Optional[TargetLocations]
     ScheduleOffset: Optional[ScheduleOffset]
     TargetMaps: Optional[TargetMaps]
+    AlarmConfiguration: Optional[AlarmConfiguration]
 
 
 class UpdateAssociationResult(TypedDict, total=False):
@@ -5226,6 +5276,7 @@ class UpdateMaintenanceWindowTaskRequest(ServiceRequest):
     Description: Optional[MaintenanceWindowDescription]
     Replace: Optional[Boolean]
     CutoffBehavior: Optional[MaintenanceWindowTaskCutoffBehavior]
+    AlarmConfiguration: Optional[AlarmConfiguration]
 
 
 class UpdateMaintenanceWindowTaskResult(TypedDict, total=False):
@@ -5243,6 +5294,7 @@ class UpdateMaintenanceWindowTaskResult(TypedDict, total=False):
     Name: Optional[MaintenanceWindowName]
     Description: Optional[MaintenanceWindowDescription]
     CutoffBehavior: Optional[MaintenanceWindowTaskCutoffBehavior]
+    AlarmConfiguration: Optional[AlarmConfiguration]
 
 
 class UpdateManagedInstanceRoleRequest(ServiceRequest):
@@ -5412,6 +5464,7 @@ class SsmApi:
         schedule_offset: ScheduleOffset = None,
         target_maps: TargetMaps = None,
         tags: TagList = None,
+        alarm_configuration: AlarmConfiguration = None,
     ) -> CreateAssociationResult:
         raise NotImplementedError
 
@@ -6448,6 +6501,7 @@ class SsmApi:
         description: MaintenanceWindowDescription = None,
         client_token: ClientToken = None,
         cutoff_behavior: MaintenanceWindowTaskCutoffBehavior = None,
+        alarm_configuration: AlarmConfiguration = None,
     ) -> RegisterTaskWithMaintenanceWindowResult:
         raise NotImplementedError
 
@@ -6504,6 +6558,7 @@ class SsmApi:
         service_role_arn: ServiceRole = None,
         notification_config: NotificationConfig = None,
         cloud_watch_output_config: CloudWatchOutputConfig = None,
+        alarm_configuration: AlarmConfiguration = None,
     ) -> SendCommandResult:
         raise NotImplementedError
 
@@ -6529,6 +6584,7 @@ class SsmApi:
         max_errors: MaxErrors = None,
         target_locations: TargetLocations = None,
         tags: TagList = None,
+        alarm_configuration: AlarmConfiguration = None,
     ) -> StartAutomationExecutionResult:
         raise NotImplementedError
 
@@ -6606,6 +6662,7 @@ class SsmApi:
         target_locations: TargetLocations = None,
         schedule_offset: ScheduleOffset = None,
         target_maps: TargetMaps = None,
+        alarm_configuration: AlarmConfiguration = None,
     ) -> UpdateAssociationResult:
         raise NotImplementedError
 
@@ -6703,6 +6760,7 @@ class SsmApi:
         description: MaintenanceWindowDescription = None,
         replace: Boolean = None,
         cutoff_behavior: MaintenanceWindowTaskCutoffBehavior = None,
+        alarm_configuration: AlarmConfiguration = None,
     ) -> UpdateMaintenanceWindowTaskResult:
         raise NotImplementedError
 

@@ -31,8 +31,8 @@ from localstack.aws.api.events import (
     TagList,
 )
 from localstack.constants import APPLICATION_AMZ_JSON_1_1
+from localstack.services.events.models import EventsStore, events_stores
 from localstack.services.events.scheduler import JobScheduler
-from localstack.services.generic_proxy import RegionBackend
 from localstack.services.moto import call_moto
 from localstack.utils.aws import aws_stack
 from localstack.utils.aws.message_forwarding import send_event_to_target
@@ -54,6 +54,10 @@ class EventsProvider(EventsApi):
     def __init__(self):
         apply_patches()
         JobScheduler.start()
+
+    @staticmethod
+    def get_store() -> EventsStore:
+        return events_stores[get_aws_account_id()][aws_stack.get_region()]
 
     @staticmethod
     def get_scheduled_rule_func(rule_name: RuleName):
@@ -115,7 +119,7 @@ class EventsProvider(EventsApi):
             LOG.debug("Adding new scheduled Events rule with cron schedule %s", cron)
 
             job_id = JobScheduler.instance().add_job(job_func, cron, enabled)
-            rule_scheduled_jobs = EventsBackend.get().rule_scheduled_jobs
+            rule_scheduled_jobs = EventsProvider.get_store().rule_scheduled_jobs
             rule_scheduled_jobs[name] = job_id
 
     def put_rule(
@@ -140,7 +144,7 @@ class EventsProvider(EventsApi):
         event_bus_name: EventBusNameOrArn = None,
         force: Boolean = None,
     ) -> None:
-        rule_scheduled_jobs = EventsBackend.get().rule_scheduled_jobs
+        rule_scheduled_jobs = self.get_store().rule_scheduled_jobs
         job_id = rule_scheduled_jobs.get(name)
         if job_id:
             LOG.debug("Removing scheduled Events: {} | job_id: {}".format(name, job_id))
@@ -150,7 +154,7 @@ class EventsProvider(EventsApi):
     def disable_rule(
         self, context: RequestContext, name: RuleName, event_bus_name: EventBusNameOrArn = None
     ) -> None:
-        rule_scheduled_jobs = EventsBackend.get().rule_scheduled_jobs
+        rule_scheduled_jobs = self.get_store().rule_scheduled_jobs
         job_id = rule_scheduled_jobs.get(name)
         if job_id:
             LOG.debug("Disabling Rule: {} | job_id: {}".format(name, job_id))
@@ -187,14 +191,6 @@ class EventsProvider(EventsApi):
             raise CommonServiceException(message=message, code="ValidationException")
 
         return call_moto(context)
-
-
-class EventsBackend(RegionBackend):
-    # maps rule name to job_id
-    rule_scheduled_jobs: Dict[str, str]
-
-    def __init__(self):
-        self.rule_scheduled_jobs = {}
 
 
 def _get_events_tmp_dir():

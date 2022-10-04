@@ -25,7 +25,7 @@ from localstack.constants import (
     PATH_USER_REQUEST,
 )
 from localstack.services.apigateway.context import ApiInvocationContext
-from localstack.services.generic_proxy import RegionBackend
+from localstack.services.apigateway.models import ApiGatewayStore, apigateway_stores
 from localstack.utils import common
 from localstack.utils.aws import aws_stack
 from localstack.utils.aws.aws_responses import requests_error_response_json, requests_response
@@ -70,41 +70,8 @@ TAG_KEY_CUSTOM_ID = "_custom_id_"
 # TODO: make the CRUD operations in this file generic for the different model types (authorizes, validators, ...)
 
 
-class APIGatewayRegion(RegionBackend):
-    # TODO: introduce a RestAPI class to encapsulate the variables below
-    # maps (API id) -> [authorizers]
-    authorizers: Dict[str, List[Dict]]
-    # maps (API id) -> [validators]
-    validators: Dict[str, List[Dict]]
-    # maps (API id) -> [documentation_parts]
-    documentation_parts: Dict[str, List[Dict]]
-    # maps (API id) -> [gateway_responses]
-    gateway_responses: Dict[str, List[Dict]]
-    # account details
-    account: Dict[str, Any]
-    # maps (domain_name) -> [path_mappings]
-    base_path_mappings: Dict[str, List[Dict]]
-    # maps ID to VPC link details
-    vpc_links: Dict[str, Dict]
-    # maps cert ID to client certificate details
-    client_certificates: Dict[str, Dict]
-    # maps resource ARN to tags
-    TAGS: Dict[str, Dict[str, str]] = {}
-
-    def __init__(self):
-        self.authorizers = {}
-        self.validators = {}
-        self.documentation_parts = {}
-        self.gateway_responses = {}
-        self.account = {
-            "cloudwatchRoleArn": aws_stack.role_arn("api-gw-cw-role"),
-            "throttleSettings": {"burstLimit": 1000, "rateLimit": 500},
-            "features": ["UsagePlans"],
-            "apiKeyVersion": "1",
-        }
-        self.base_path_mappings = {}
-        self.vpc_links = {}
-        self.client_certificates = {}
+def get_apigateway_store(account_id: str = None, region: str = None) -> ApiGatewayStore:
+    return apigateway_stores[account_id or get_aws_account_id()][region or aws_stack.get_region()]
 
 
 class Resolver:
@@ -213,7 +180,7 @@ def get_stage_variables(context: ApiInvocationContext) -> Optional[Dict[str, str
     if not context.stage:
         return {}
 
-    region_name = get_api_region(context.api_id)
+    _, region_name = get_api_account_id_and_region(context.api_id)
     api_gateway_client = aws_stack.connect_to_service("apigateway", region_name=region_name)
     try:
         response = api_gateway_client.get_stage(restApiId=context.api_id, stageName=context.stage)
@@ -245,7 +212,7 @@ def gateway_response_to_response_json(item, api_id):
 
 
 def get_gateway_responses(api_id):
-    region_details = APIGatewayRegion.get()
+    region_details = get_apigateway_store()
     result = region_details.gateway_responses.get(api_id, [])
 
     href = "http://docs.aws.amazon.com/apigateway/latest/developerguide/restapi-gatewayresponse-{rel}.html"
@@ -271,7 +238,7 @@ def get_gateway_responses(api_id):
 
 
 def get_gateway_response(api_id, response_type):
-    region_details = APIGatewayRegion.get()
+    region_details = get_apigateway_store()
     responses = region_details.gateway_responses.get(api_id, [])
     if result := [r for r in responses if r["responseType"] == response_type]:
         return result[0]
@@ -282,7 +249,7 @@ def get_gateway_response(api_id, response_type):
 
 
 def put_gateway_response(api_id, response_type, data):
-    region_details = APIGatewayRegion.get()
+    region_details = get_apigateway_store()
     responses = region_details.gateway_responses.setdefault(api_id, [])
     if existing := ([r for r in responses if r["responseType"] == response_type] or [None])[0]:
         existing.update(data)
@@ -293,7 +260,7 @@ def put_gateway_response(api_id, response_type, data):
 
 
 def delete_gateway_response(api_id, response_type):
-    region_details = APIGatewayRegion.get()
+    region_details = get_apigateway_store()
     responses = region_details.gateway_responses.get(api_id) or []
     region_details.gateway_responses[api_id] = [
         r for r in responses if r["responseType"] != response_type
@@ -302,7 +269,7 @@ def delete_gateway_response(api_id, response_type):
 
 
 def update_gateway_response(api_id, response_type, data):
-    region_details = APIGatewayRegion.get()
+    region_details = get_apigateway_store()
     responses = region_details.gateway_responses.setdefault(api_id, [])
 
     existing = ([r for r in responses if r["responseType"] == response_type] or [None])[0]
@@ -339,7 +306,7 @@ def handle_gateway_responses(method, path, data, headers):
 
 
 def find_api_subentity_by_id(api_id, entity_id, map_name):
-    region_details = APIGatewayRegion.get()
+    region_details = get_apigateway_store()
     auth_list = getattr(region_details, map_name).get(api_id) or []
     return ([a for a in auth_list if a["id"] == entity_id] or [None])[0]
 
@@ -886,7 +853,7 @@ def set_api_id_stage_invocation_path(
         # set current region in request thread local, to ensure aws_stack.get_region() works properly
         # TODO: replace with RequestContextManager
         if getattr(THREAD_LOCAL, "request_context", None) is not None:
-            api_region = get_api_region(api_id)
+            _, api_region = get_api_account_id_and_region(api_id)
             THREAD_LOCAL.request_context.headers[MARKER_APIGW_REQUEST_REGION] = api_region
 
     # set details in invocation context
@@ -896,12 +863,14 @@ def set_api_id_stage_invocation_path(
     return invocation_context
 
 
-def get_api_region(api_id: str) -> Optional[str]:
+def get_api_account_id_and_region(api_id: str) -> Tuple[Optional[str], Optional[str]]:
     """Return the region name for the given REST API ID"""
     for account_id, account in apigateway_backends.items():
         for region_name, region in account.items():
             if api_id in region.apis:
-                return region_name
+                return (account_id, region_name)
+
+    return (None, None)
 
 
 def extract_api_id_from_hostname_in_url(hostname: str) -> str:

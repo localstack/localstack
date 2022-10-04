@@ -18,7 +18,7 @@ from localstack.aws.accounts import get_aws_account_id
 from localstack.aws.api.lambda_ import Runtime
 from localstack.services.awslambda.lambda_utils import LAMBDA_RUNTIME_PYTHON37
 from localstack.services.install import SQS_BACKEND_IMPL
-from localstack.services.sns.provider import SNSBackend
+from localstack.services.sns.provider import SnsProvider
 from localstack.testing.aws.util import is_aws_cloud
 from localstack.utils import testutil
 from localstack.utils.net import wait_for_port_closed, wait_for_port_open
@@ -463,7 +463,7 @@ class TestSNSProvider:
         self, sns_client, sqs_create_queue, sns_create_topic, sns_subscription
     ):
 
-        sns_backend = SNSBackend.get()
+        sns_backend = SnsProvider.get_store()
         topic_arn = sns_create_topic()["TopicArn"]
 
         app_arn = sns_client.create_platform_application(Name="app1", Platform="p1", Attributes={})[
@@ -576,7 +576,7 @@ class TestSNSProvider:
             Protocol="email",
             Endpoint="localstack@yopmail.com",
         )
-        sns_backend = SNSBackend.get()
+        sns_backend = SnsProvider.get_store()
 
         def check_subscription():
             subscription_arn = subscription["SubscriptionArn"]
@@ -1095,7 +1095,7 @@ class TestSNSProvider:
 
         sns_client.publish(Message=message, TopicArn=topic_arn)
 
-        sns_backend = SNSBackend.get()
+        sns_backend = SnsProvider.get_store()
 
         def check_messages():
             sms_messages = sns_backend.sms_messages
@@ -2326,3 +2326,65 @@ class TestSNSProvider:
             sleep_before = 10
 
         retry(validate_content, retries=retries, sleep_before=sleep_before, sleep=sleep)
+
+    @pytest.mark.aws_validated
+    def test_empty_or_wrong_message_attributes(
+        self,
+        sns_client,
+        sns_create_sqs_subscription,
+        sns_create_topic,
+        sqs_create_queue,
+        snapshot,
+    ):
+        topic_arn = sns_create_topic()["TopicArn"]
+        queue_url = sqs_create_queue()
+
+        sns_create_sqs_subscription(topic_arn=topic_arn, queue_url=queue_url)
+
+        wrong_message_attributes = {
+            "missing_string_attr": {"attr1": {"DataType": "String", "StringValue": ""}},
+            "missing_binary_attr": {"attr1": {"DataType": "Binary", "BinaryValue": b""}},
+            "str_attr_binary_value": {"attr1": {"DataType": "String", "BinaryValue": b"123"}},
+            "int_attr_binary_value": {"attr1": {"DataType": "Number", "BinaryValue": b"123"}},
+            "binary_attr_string_value": {"attr1": {"DataType": "Binary", "StringValue": "123"}},
+            "invalid_attr_string_value": {
+                "attr1": {"DataType": "InvalidType", "StringValue": "123"}
+            },
+            "too_long_name": {"a" * 257: {"DataType": "String", "StringValue": "123"}},
+            "invalid_name": {"a^*?": {"DataType": "String", "StringValue": "123"}},
+            "invalid_name_2": {".abc": {"DataType": "String", "StringValue": "123"}},
+            "invalid_name_3": {"abc.": {"DataType": "String", "StringValue": "123"}},
+            "invalid_name_4": {"a..bc": {"DataType": "String", "StringValue": "123"}},
+        }
+
+        for error_type, msg_attrs in wrong_message_attributes.items():
+            with pytest.raises(ClientError) as e:
+                sns_client.publish(
+                    TopicArn=topic_arn,
+                    Message="test message",
+                    MessageAttributes=msg_attrs,
+                )
+
+            snapshot.match(error_type, e.value.response)
+
+        with pytest.raises(ClientError) as e:
+            sns_client.publish_batch(
+                TopicArn=topic_arn,
+                PublishBatchRequestEntries=[
+                    {
+                        "Id": "1",
+                        "Message": "test-batch",
+                        "MessageAttributes": wrong_message_attributes["missing_string_attr"],
+                    },
+                    {
+                        "Id": "2",
+                        "Message": "test-batch",
+                        "MessageAttributes": wrong_message_attributes["str_attr_binary_value"],
+                    },
+                    {
+                        "Id": "3",
+                        "Message": "valid-batch",
+                    },
+                ],
+            )
+        snapshot.match("batch-exception", e.value.response)

@@ -51,6 +51,27 @@ def check_s3(expect_shutdown=False, print_error=False):
         assert out and isinstance(out.get("Buckets"), list)
 
 
+def add_gateway_compatibility_handlers():
+    """
+    This method adds handlers that ensure compatibility between the legacy s3 provider and ASF.
+    """
+
+    def _fix_static_website_request(chain, context, response):
+        """
+        The ASF parser will recognize a request to a website as a normal 'ListBucket' request, but will be routed
+        through ``serve_static_website``, which does not return a `ListObjects` result. This would lead to errors in
+        the service response parser. So this handler unsets the AWS operation for this particular request, so it is not
+        parsed by the service response parser."""
+        if not s3_listener.is_static_website(context.request.headers):
+            return
+        if context.operation.name == "ListObjects":
+            context.operation = None
+
+    from localstack.aws.handlers import modify_service_response
+
+    modify_service_response.append("s3", _fix_static_website_request)
+
+
 def start_s3(port=None, backend_port=None, asynchronous=None, update_listener=None):
     port = port or config.service_port("s3")
     if not backend_port:
@@ -61,6 +82,9 @@ def start_s3(port=None, backend_port=None, asynchronous=None, update_listener=No
         s3_listener.PORT_S3_BACKEND = backend_port
 
     apply_patches()
+
+    if not config.LEGACY_EDGE_PROXY:
+        add_gateway_compatibility_handlers()
 
     return start_moto_server(
         key="s3",

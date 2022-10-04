@@ -1,7 +1,10 @@
 import pytest
 
+import localstack.services.sqs.exceptions
+import localstack.services.sqs.models
 from localstack.aws.api.sqs import Message
 from localstack.services.sqs import provider
+from localstack.services.sqs.constants import DEFAULT_MAXIMUM_MESSAGE_SIZE
 from localstack.services.sqs.utils import get_message_attributes_md5
 from localstack.utils.common import convert_to_printable_chars
 
@@ -44,18 +47,18 @@ def test_handle_string_max_receive_count_in_dead_letter_check():
     # fmt: off
     policy = {"RedrivePolicy": "{\"deadLetterTargetArn\":\"arn:aws:sqs:us-east-1:000000000000:DeadLetterQueue\",\"maxReceiveCount\": \"5\" }"}
     # fmt: on
-    queue = provider.SqsQueue("TestQueue", "us-east-1", "123456789", policy)
-    sqs_message = provider.SqsMessage(Message(), {})
+    queue = localstack.services.sqs.models.SqsQueue("TestQueue", "us-east-1", "123456789", policy)
+    sqs_message = localstack.services.sqs.models.SqsMessage(Message(), {})
     result = provider.SqsProvider()._dead_letter_check(queue, sqs_message, None)
     assert result is False
 
 
 def test_except_check_message_size():
-    message_body = "".join(("a" for _ in range(provider.DEFAULT_MAXIMUM_MESSAGE_SIZE + 1)))
-    with pytest.raises(provider.InvalidParameterValue):
-        provider.check_message_size(message_body, provider.DEFAULT_MAXIMUM_MESSAGE_SIZE)
+    message_body = "".join(("a" for _ in range(DEFAULT_MAXIMUM_MESSAGE_SIZE + 1)))
+    with pytest.raises(localstack.services.sqs.exceptions.InvalidParameterValue):
+        provider.check_message_size(message_body, DEFAULT_MAXIMUM_MESSAGE_SIZE)
 
 
 def test_check_message_size():
     message_body = "a"
-    provider.check_message_size(message_body, provider.DEFAULT_MAXIMUM_MESSAGE_SIZE)
+    provider.check_message_size(message_body, DEFAULT_MAXIMUM_MESSAGE_SIZE)

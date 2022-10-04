@@ -214,20 +214,34 @@ class GenericTransformer:
 
 class SortingTransformer:
     key: str
-    sorting_fn: Callable[[...], Any]
+    sorting_fn: Optional[Callable[[...], Any]]
 
     # TODO: add support for jsonpath
-    def __init__(self, key: str, sorting_fn: Callable[[...], Any]):
+    def __init__(self, key: str, sorting_fn: Optional[Callable[[...], Any]] = None):
         """Sorts a list at `key` with the given `sorting_fn` (argument for `sorted(list, key=sorting_fn)`)"""
         self.key = key
         self.sorting_fn = sorting_fn
 
-    def transform(self, input_data: dict, *, ctx: TransformContext = None) -> dict:
+    def _transform_dict(self, input_data: dict, ctx: TransformContext = None) -> dict:
         for k, v in input_data.items():
             if k == self.key:
                 if not isinstance(v, list):
                     raise ValueError("SortingTransformer should only be applied to lists.")
                 input_data[k] = sorted(v, key=self.sorting_fn)
-            elif isinstance(v, dict):
-                input_data[k] = self.transform(v, ctx=ctx)
+            else:
+                input_data[k] = self._transform(v, ctx=ctx)
         return input_data
+
+    def _transform_list(self, input_data: list, ctx: TransformContext = None) -> list:
+        return list(map(lambda e: self._transform(e, ctx=ctx), input_data))
+
+    def _transform(self, input_data: Any, ctx: TransformContext = None) -> Any:
+        if isinstance(input_data, dict):
+            return self._transform_dict(input_data, ctx=ctx)
+        elif isinstance(input_data, list):
+            return self._transform_list(input_data, ctx=ctx)
+        else:
+            return input_data
+
+    def transform(self, input_data: dict, *, ctx: TransformContext = None) -> dict:
+        return self._transform_dict(input_data, ctx=ctx)
