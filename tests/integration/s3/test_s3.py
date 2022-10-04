@@ -3641,7 +3641,8 @@ class TestS3StaticWebsiteHosting:
         condition=LEGACY_S3_PROVIDER and not is_aws_cloud(),
         reason="Legacy S3 provider does not provide proper website support",
     )
-    def test_website_hosting_no_such_website(self, s3_client, s3_create_bucket):
+    def test_website_hosting_no_such_website(self, s3_client, s3_create_bucket, snapshot):
+        snapshot.add_transformers_list(self._get_static_hosting_transformers(snapshot))
         bucket_name = f"bucket-{short_uid()}"
 
         s3_create_bucket(Bucket=bucket_name, ACL="public-read")
@@ -3649,25 +3650,73 @@ class TestS3StaticWebsiteHosting:
         random_url = _website_bucket_url(f"non-existent-bucket-{short_uid()}")
         response = requests.get(random_url, verify=False)
         assert response.status_code == 404
-        assert "<li>Code: NoSuchBucket</li>" in response.text
+        snapshot.match("no-such-bucket", response.text)
 
         website_url = _website_bucket_url(bucket_name)
         # actual key
         response = requests.get(website_url, verify=False)
         assert response.status_code == 404
-        assert "<li>Code: NoSuchWebsiteConfiguration</li>" in response.text
+        snapshot.match("no-such-website-config", response.text)
 
         url = f"{website_url}/actual/key.html"
         response = requests.get(url)
         assert response.status_code == 404
-        assert "<li>Code: NoSuchWebsiteConfiguration</li>" in response.text
+        snapshot.match("no-such-website-config-key", response.text)
+
+    @pytest.mark.aws_validated
+    @pytest.mark.skipif(
+        condition=LEGACY_S3_PROVIDER and not is_aws_cloud(),
+        reason="Legacy S3 provider does not provide proper website support",
+    )
+    def test_website_hosting_http_methods(self, s3_client, s3_create_bucket, snapshot):
+        snapshot.add_transformers_list(self._get_static_hosting_transformers(snapshot))
+        bucket_name = f"bucket-{short_uid()}"
+
+        s3_create_bucket(Bucket=bucket_name, ACL="public-read")
+        s3_client.put_bucket_website(
+            Bucket=bucket_name,
+            WebsiteConfiguration={
+                "IndexDocument": {"Suffix": "index.html"},
+            },
+        )
+        website_url = _website_bucket_url(bucket_name)
+        req = requests.post(website_url, data="test")
+        assert req.status_code == 405
+        error_response = req.text
+        snapshot.match("not-allowed-post", {"content": error_response})
+
+        req = requests.delete(website_url)
+        assert req.status_code == 405
+        error_response = req.text
+        snapshot.match("not-allowed-delete", {"content": error_response})
+
+        s3_client.put_bucket_website(
+            Bucket=bucket_name,
+            WebsiteConfiguration={
+                "IndexDocument": {"Suffix": "index.html"},
+                "ErrorDocument": {"Key": "error.html"},
+            },
+        )
+        s3_client.put_object(
+            Bucket=bucket_name,
+            Key="error.html",
+            Body="error",
+            ContentType="text/html",
+            ACL="public-read",
+        )
+
+        # documentation states that error code in the range 4XX are redirected to the ErrorDocument
+        # 405 in not concerned by this
+        req = requests.post(website_url, data="test")
+        assert req.status_code == 405
 
     @pytest.mark.aws_validated
     @pytest.mark.skipif(
         condition=LEGACY_S3_PROVIDER and not is_aws_cloud(),
         reason="Legacy S3 provider does not provide proper website redirection",
     )
-    def test_website_hosting_index_lookup(self, s3_client, s3_create_bucket):
+    def test_website_hosting_index_lookup(self, s3_client, s3_create_bucket, snapshot):
+        snapshot.add_transformers_list(self._get_static_hosting_transformers(snapshot))
         bucket_name = f"bucket-{short_uid()}"
 
         s3_create_bucket(Bucket=bucket_name, ACL="public-read")
@@ -3710,18 +3759,19 @@ class TestS3StaticWebsiteHosting:
 
         response = requests.get(f"{website_url}/directory-wrong", verify=False)
         assert response.status_code == 404
-        assert "<li>Key: directory-wrong</li>" in response.text
+        snapshot.match("404-no-trailing-slash", response.text)
 
         response = requests.get(f"{website_url}/directory-wrong/", verify=False)
         assert response.status_code == 404
-        assert "<li>Key: directory-wrong/index.html</li>" in response.text
+        snapshot.match("404-with-trailing-slash", response.text)
 
     @pytest.mark.aws_validated
     @pytest.mark.skipif(
         condition=LEGACY_S3_PROVIDER and not is_aws_cloud(),
         reason="Legacy S3 provider does not provide proper website support",
     )
-    def test_website_hosting_404(self, s3_client, s3_create_bucket):
+    def test_website_hosting_404(self, s3_client, s3_create_bucket, snapshot):
+        snapshot.add_transformers_list(self._get_static_hosting_transformers(snapshot))
         bucket_name = f"bucket-{short_uid()}"
 
         s3_create_bucket(Bucket=bucket_name, ACL="public-read")
@@ -3736,8 +3786,7 @@ class TestS3StaticWebsiteHosting:
 
         response = requests.get(website_url)
         assert response.status_code == 404
-        assert "<li>Code: NoSuchKey</li>" in response.text
-        assert "<li>Key: index.html</li>" in response.text
+        snapshot.match("404-no-such-key", response.text)
 
         s3_client.put_bucket_website(
             Bucket=bucket_name,
@@ -3748,10 +3797,7 @@ class TestS3StaticWebsiteHosting:
         )
         response = requests.get(website_url)
         assert response.status_code == 404
-        assert "<li>Code: NoSuchKey</li>" in response.text
-        assert "<li>Key: index.html</li>" in response.text
-        assert "Custom Error Document</h3>" in response.text
-        assert "<li>Key: error.html</li>" in response.text
+        snapshot.match("404-no-such-key-nor-custom", response.text)
 
         s3_client.put_object(
             Bucket=bucket_name,
@@ -4180,6 +4226,18 @@ class TestS3StaticWebsiteHosting:
 
         response_redirected = requests.get(f"{redirected_bucket_website}/random-key")
         assert response_redirected.status_code == 404
+
+    @staticmethod
+    def _get_static_hosting_transformers(snapshot):
+        return [
+            snapshot.transform.regex(
+                "RequestId: (.*?)</li>", replacement="RequestId: <request-id></li>"
+            ),
+            snapshot.transform.regex("HostId: (.*?)</li>", replacement="HostId: <host-id></li>"),
+            snapshot.transform.regex(
+                "BucketName: (.*?)</li>", replacement="BucketName: <bucket-name></li>"
+            ),
+        ]
 
 
 def _anon_client(service: str):

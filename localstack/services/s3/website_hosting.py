@@ -1,5 +1,7 @@
 import logging
-from typing import Dict, Optional, Union
+import re
+from functools import wraps
+from typing import Callable, Dict, Optional, Union
 from urllib.parse import urlparse
 
 from moto.core.utils import gen_amzn_requestid_long
@@ -30,6 +32,8 @@ STATIC_WEBSITE_HOST_REGEX = (
     '<regex(".*"):bucket_name>.%s<regex("(:[0-9]{2,5})?"):port>' % S3_STATIC_WEBSITE_HOSTNAME
 )
 
+_leading_whitespace_re = re.compile("(^[ \t]*)(?:[ \t\n])", re.MULTILINE)
+
 
 class NoSuchKeyFromErrorDocument(NoSuchKey):
     code: str = "NoSuchKey"
@@ -39,7 +43,7 @@ class NoSuchKeyFromErrorDocument(NoSuchKey):
     ErrorDocumentKey: Optional[ObjectKey]
 
 
-def get_bucket_from_moto(bucket: BucketName) -> FakeBucket:
+def _get_bucket_from_moto(bucket: BucketName) -> FakeBucket:
     # TODO: check authorization for buckets as well? would need to be public-read at least
     # not enforced in the current provider
     try:
@@ -50,22 +54,22 @@ def get_bucket_from_moto(bucket: BucketName) -> FakeBucket:
         raise ex
 
 
-def get_key_from_moto_bucket(moto_bucket: FakeBucket, key: ObjectKey) -> FakeKey:
+def _get_key_from_moto_bucket(moto_bucket: FakeBucket, key: ObjectKey) -> FakeKey:
     return moto_bucket.keys.get(key)
 
 
-def get_store() -> S3Store:
+def _get_store() -> S3Store:
     return s3_stores[get_aws_account_id()][aws_stack.get_region()]
 
 
-def get_bucket_website_configuration(bucket: BucketName) -> WebsiteConfiguration:
+def _get_bucket_website_configuration(bucket: BucketName) -> WebsiteConfiguration:
     """
     Retrieve the website configuration for the given bucket
     :param bucket: the bucket name
     :raises NoSuchWebsiteConfiguration if the bucket does not have a website config
     :return: the WebsiteConfiguration of the bucket
     """
-    website_configuration = get_store().bucket_website_configuration.get(bucket)
+    website_configuration = _get_store().bucket_website_configuration.get(bucket)
     if not website_configuration:
         ex = NoSuchWebsiteConfiguration(
             "The specified bucket does not have a website configuration"
@@ -75,7 +79,7 @@ def get_bucket_website_configuration(bucket: BucketName) -> WebsiteConfiguration
     return website_configuration
 
 
-def website_handler(
+def _website_handler(
     request: Request, bucket_name: str, path: str = None, port: str = None
 ) -> Response:
     """
@@ -87,12 +91,15 @@ def website_handler(
     :param port: /
     :return: Response object
     """
+    if request.method != "GET":
+        return Response(_create_405_error_string(request.method), status=405)
+
     try:
         return _serve_key(request, bucket_name, path)
 
     except (NoSuchBucket, NoSuchWebsiteConfiguration, NoSuchKeyFromErrorDocument, NoSuchKey) as e:
         resource_name = e.Key if hasattr(e, "Key") else e.BucketName
-        response_body = create_404_error_string(
+        response_body = _create_404_error_string(
             code=e.code,
             message=e.message,
             resource_name=resource_name,
@@ -102,7 +109,7 @@ def website_handler(
 
     except Exception:
         LOG.exception("Exception encountered while trying to serve s3-website at %s", request.url)
-        return Response(SERVICE_ERROR_STRING, status=500)
+        return Response(_create_500_error_string(), status=500)
 
 
 def _serve_key(request: Request, bucket_name: BucketName, path: str = None) -> Response:
@@ -117,10 +124,10 @@ def _serve_key(request: Request, bucket_name: BucketName, path: str = None) -> R
     :param path: path of the request, corresponds to the S3 key
     :return: Response object, either the key, a redirection or an error
     """
-    bucket = get_bucket_from_moto(bucket=bucket_name)
+    bucket = _get_bucket_from_moto(bucket=bucket_name)
     headers = {}
 
-    website_config = get_bucket_website_configuration(bucket_name)
+    website_config = _get_bucket_website_configuration(bucket_name)
 
     redirection = website_config.get("RedirectAllRequestsTo")
     if redirection:
@@ -138,9 +145,9 @@ def _serve_key(request: Request, bucket_name: BucketName, path: str = None) -> R
     if (
         key_name
         and routing_rules
-        and (rule := find_matching_rule(routing_rules, key_name=key_name))
+        and (rule := _find_matching_rule(routing_rules, key_name=key_name))
     ):
-        redirect_response = get_redirect_from_routing_rule(request, rule)
+        redirect_response = _get_redirect_from_routing_rule(request, rule)
         return redirect_response
 
     # if the URL ends with a trailing slash, try getting the index first
@@ -151,24 +158,24 @@ def _serve_key(request: Request, bucket_name: BucketName, path: str = None) -> R
         index_key = website_config["IndexDocument"]["Suffix"]
         key_name = f"{key_name}/{index_key}" if key_name else index_key
 
-    key = get_key_from_moto_bucket(bucket, key_name)
+    key = _get_key_from_moto_bucket(bucket, key_name)
     if not key:
         if not is_folder:
             # try appending the index suffix in case we're accessing a "folder" without a trailing slash
             index_key = website_config["IndexDocument"]["Suffix"]
-            key = get_key_from_moto_bucket(bucket, f"{key_name}/{index_key}")
+            key = _get_key_from_moto_bucket(bucket, f"{key_name}/{index_key}")
             if key:
                 return Response("", status=302, headers={"Location": f"/{key_name}/"})
 
         # checks for error code (and prefix) rules, after trying to get the key
         if routing_rules and (
-            rule := find_matching_rule(routing_rules, key_name=key_name, error_code=404)
+            rule := _find_matching_rule(routing_rules, key_name=key_name, error_code=404)
         ):
-            redirect_response = get_redirect_from_routing_rule(request, rule)
+            redirect_response = _get_redirect_from_routing_rule(request, rule)
             return redirect_response
 
         # tries to get the error document, otherwise raises NoSuchKey
-        response = get_error_document(
+        response = _get_error_document(
             website_config=website_config,
             bucket=bucket,
             missing_key=key_name,
@@ -179,14 +186,14 @@ def _serve_key(request: Request, bucket_name: BucketName, path: str = None) -> R
         headers["Location"] = key.website_redirect_location
         return Response("", status=301, headers=headers)
 
-    if check_if_headers(request.headers, key=key):
+    if _check_if_headers(request.headers, key=key):
         return Response("", status=304)
 
-    headers = get_response_headers_from_key(key)
+    headers = _get_response_headers_from_key(key)
     return Response(key.value, headers=headers)
 
 
-def get_response_headers_from_key(key: FakeKey) -> Dict[str, str]:
+def _get_response_headers_from_key(key: FakeKey) -> Dict[str, str]:
     """
     Get some header values from the key
     :param key: the key name
@@ -201,7 +208,7 @@ def get_response_headers_from_key(key: FakeKey) -> Dict[str, str]:
     return response_headers
 
 
-def find_matching_rule(
+def _find_matching_rule(
     routing_rules: RoutingRules, key_name: ObjectKey, error_code: int = None
 ) -> Union[RoutingRule, None]:
     """
@@ -237,7 +244,7 @@ def find_matching_rule(
             return rule
 
 
-def get_redirect_from_routing_rule(request: Request, routing_rule: RoutingRule) -> Response:
+def _get_redirect_from_routing_rule(request: Request, routing_rule: RoutingRule) -> Response:
     """
     Return a redirect Response object created with the different parameters set in the RoutingRule
     :param request: the original Request object received from the router
@@ -263,7 +270,7 @@ def get_redirect_from_routing_rule(request: Request, routing_rule: RoutingRule) 
     )
 
 
-def get_error_document(
+def _get_error_document(
     website_config: WebsiteConfiguration, bucket: FakeBucket, missing_key: ObjectKey
 ) -> Response:
     """
@@ -278,7 +285,7 @@ def get_error_document(
     if error_document := website_config.get("ErrorDocument"):
         # if an error document is configured, try to fetch the key
         error_key = error_document["Key"]
-        key = get_key_from_moto_bucket(bucket, error_key)
+        key = _get_key_from_moto_bucket(bucket, error_key)
         if key:
             # if the key is found, return the key, or if that key has a redirect, return a redirect
             error_body = key.value
@@ -286,7 +293,7 @@ def get_error_document(
                 headers["Location"] = key.website_redirect_location
                 return Response("", status=301, headers=headers)
 
-            headers = get_response_headers_from_key(key)
+            headers = _get_response_headers_from_key(key)
             return Response(error_body, status=404, headers=headers)
         else:
             ex = NoSuchKeyFromErrorDocument("The specified key does not exist.")
@@ -300,7 +307,7 @@ def get_error_document(
         raise ex
 
 
-def check_if_headers(headers: Headers, key: FakeKey) -> bool:
+def _check_if_headers(headers: Headers, key: FakeKey) -> bool:
     # TODO: add other conditions here If-Modified-Since, etc etc
     if "if-none-match" in headers and key.etag and key.etag in headers["if-none-match"]:
         return True
@@ -315,27 +322,37 @@ def register_website_hosting_routes(router: Router[Handler]):
     router.add(
         path="/",
         host=STATIC_WEBSITE_HOST_REGEX,
-        endpoint=website_handler,
-        methods=["GET"],
+        endpoint=_website_handler,
     )
     router.add(
         path="/<path:path>",
         host=STATIC_WEBSITE_HOST_REGEX,
-        endpoint=website_handler,
-        methods=["GET"],
+        endpoint=_website_handler,
     )
 
 
-def create_404_error_string(
+def _remove_leading_whitespace(response: str) -> str:
+    return re.sub(_leading_whitespace_re, "", response)
+
+
+def _flatten_html_response(fn: Callable[[...], str]):
+    @wraps(fn)
+    def wrapper(*args, **kwargs) -> str:
+        r = fn(*args, **kwargs)
+        return _remove_leading_whitespace(r)
+
+    return wrapper
+
+
+@_flatten_html_response
+def _create_404_error_string(
     code: str, message: str, resource_name: str, from_error_document: str = None
 ) -> str:
     # TODO: the nested error could be permission related
     #  permission are not enforced currently
     resource_key = "Key" if "Key" in code else "BucketName"
     return f"""<html>
-    <head>
-        <title>404 Not Found</title>
-    </head>
+    <head><title>404 Not Found</title></head>
     <body>
         <h1>404 Not Found</h1>
         <ul>
@@ -345,32 +362,52 @@ def create_404_error_string(
             <li>RequestId: {gen_amzn_requestid_long()}</li>
             <li>HostId: h6t23Wl2Ndijztq+COn9kvx32omFVRLLtwk36D6+2/CIYSey+Uox6kBxRgcnAASsgnGwctU6zzU=</li>
         </ul>
-        {create_nested_404_error_string(from_error_document)}
+        {_create_nested_404_error_string(from_error_document)}
         <hr/>
     </body>
 </html>
 """
 
 
-def create_nested_404_error_string(error_document_key: str) -> str:
+def _create_nested_404_error_string(error_document_key: str) -> str:
     if not error_document_key:
         return ""
     return f"""<h3>An Error Occurred While Attempting to Retrieve a Custom Error Document</h3>
         <ul>
             <li>Code: NoSuchKey</li>
-            <li>Message: Message: The specified key does not exist.</li>
+            <li>Message: The specified key does not exist.</li>
             <li>Key: {error_document_key}</li>
         </ul>
     """
 
 
-SERVICE_ERROR_STRING = """<html>
-    <head>
-        <title>500 Service Error</title>
-    </head>
+@_flatten_html_response
+def _create_405_error_string(method: str) -> str:
+    return f"""<html>
+    <head><title>405 Method Not Allowed</title></head>
     <body>
-        <h1>500 Service Error</h1>
+        <h1>405 Method Not Allowed</h1>
+        <ul>
+            <li>Code: MethodNotAllowed</li>
+            <li>Message: The specified method is not allowed against this resource.</li>
+            <li>Method: {method.upper()}</li>
+            <li>ResourceType: OBJECT</li>
+            <li>RequestId: {gen_amzn_requestid_long()}</li>
+            <li>HostId: h6t23Wl2Ndijztq+COn9kvx32omFVRLLtwk36D6+2/CIYSey+Uox6kBxRgcnAASsgnGwctU6zzU=</li>
+        </ul>
         <hr/>
     </body>
 </html>
 """
+
+
+@_flatten_html_response
+def _create_500_error_string() -> str:
+    return """<html>
+        <head><title>500 Service Error</title></head>
+        <body>
+            <h1>500 Service Error</h1>
+            <hr/>
+        </body>
+    </html>
+    """
