@@ -1084,3 +1084,6 @@ class TestSQSEventSourceMapping:
             )
         snapshot.match("create_event_source_mapping_exception", expected.value.response)
         expected.match(INVALID_PARAMETER_VALUE_EXCEPTION)
+
+
+# TODO: test integration with lambda logs
