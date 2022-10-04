@@ -61,6 +61,16 @@ def lambda_arn(function_name: str, qualifier: Optional[str], account: str, regio
         return unqualified_lambda_arn(function_name=function_name, account=account, region=region)
 
 
+def is_role_arn(role_arn: str) -> bool:
+    """
+    Returns true if the provided string is a role arn, false otherwise
+
+    :param role_arn: Potential role arn
+    :return: Boolean indicating if input is a role arn
+    """
+    return bool(role_regex.match(role_arn))
+
+
 LAMBDA_DATE_FORMAT = "%Y-%m-%dT%H:%M:%S.%f+0000"
 
 

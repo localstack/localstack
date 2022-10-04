@@ -12,7 +12,7 @@ from localstack.services.awslambda.invocation.executor_endpoint import (
     ExecutorEndpoint,
     ServiceEndpoint,
 )
-from localstack.services.awslambda.invocation.lambda_models import FunctionVersion
+from localstack.services.awslambda.invocation.lambda_models import IMAGE_MAPPING, FunctionVersion
 from localstack.services.awslambda.lambda_utils import (
     get_container_network_for_lambda,
     get_main_endpoint_from_container,
@@ -39,25 +39,6 @@ LAMBDA_DOCKERFILE = """FROM {base_img}
 COPY aws-lambda-rie {rapid_entrypoint}
 COPY code/ /var/task
 """
-
-# To add support for a new runtime, just add it here with the accompanying image postfix
-IMAGE_MAPPING = {
-    "python3.7": "python:3.7",
-    "python3.8": "python:3.8",
-    "python3.9": "python:3.9",
-    "nodejs12.x": "nodejs:12",
-    "nodejs14.x": "nodejs:14",
-    "nodejs16.x": "nodejs:16",
-    "ruby2.7": "ruby:2.7",
-    "java8": "java:8",
-    "java8.al2": "java:8.al2",
-    "java11": "java:11",
-    "dotnetcore3.1": "dotnet:core3.1",
-    "dotnet6": "dotnet:6",
-    "go1.x": "go:1",
-    "provided": "provided:alami",
-    "provided.al2": "provided:al2",
-}
 
 
 def get_path_for_function(function_version: FunctionVersion) -> Path:

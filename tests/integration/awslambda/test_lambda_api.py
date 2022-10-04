@@ -383,6 +383,74 @@ class TestLambdaFunction:
             == get_function_response_updated["Configuration"]["CodeSize"]
         )
 
+    @pytest.mark.aws_validated
+    def test_create_lambda_exceptions(self, lambda_client, lambda_su_role, snapshot):
+        function_name = f"invalid-function-{short_uid()}"
+        zip_file_bytes = create_lambda_archive(load_file(TEST_LAMBDA_PYTHON_ECHO), get_content=True)
+        with pytest.raises(ClientError) as e:
+            lambda_client.create_function(
+                FunctionName=function_name,
+                Handler="index.handler",
+                Code={"ZipFile": zip_file_bytes},
+                PackageType="Zip",
+                Role="r1",
+                Runtime=Runtime.python3_9,
+            )
+        snapshot.match("invalid_role_arn_exc", e.value.response)
+        with pytest.raises(ClientError) as e:
+            lambda_client.create_function(
+                FunctionName=function_name,
+                Handler="index.handler",
+                Code={"ZipFile": zip_file_bytes},
+                PackageType="Zip",
+                Role=lambda_su_role,
+                Runtime="non-existent-runtime",
+            )
+        snapshot.match("invalid_runtime_exc", e.value.response)
+        with pytest.raises(ClientError) as e:
+            lambda_client.create_function(
+                FunctionName=function_name,
+                Handler="index.handler",
+                Code={"ZipFile": zip_file_bytes},
+                PackageType="Zip",
+                Role=lambda_su_role,
+                Runtime="PYTHON3.9",
+            )
+        snapshot.match("uppercase_runtime_exc", e.value.response)
+
+    @pytest.mark.aws_validated
+    def test_update_lambda_exceptions(
+        self, lambda_client, create_lambda_function_aws, lambda_su_role, snapshot
+    ):
+        function_name = f"invalid-function-{short_uid()}"
+        zip_file_bytes = create_lambda_archive(load_file(TEST_LAMBDA_PYTHON_ECHO), get_content=True)
+        create_lambda_function_aws(
+            FunctionName=function_name,
+            Handler="index.handler",
+            Code={"ZipFile": zip_file_bytes},
+            PackageType="Zip",
+            Role=lambda_su_role,
+            Runtime=Runtime.python3_9,
+        )
+        with pytest.raises(ClientError) as e:
+            lambda_client.update_function_configuration(
+                FunctionName=function_name,
+                Role="r1",
+            )
+        snapshot.match("invalid_role_arn_exc", e.value.response)
+        with pytest.raises(ClientError) as e:
+            lambda_client.update_function_configuration(
+                FunctionName=function_name,
+                Runtime="non-existent-runtime",
+            )
+        snapshot.match("invalid_runtime_exc", e.value.response)
+        with pytest.raises(ClientError) as e:
+            lambda_client.update_function_configuration(
+                FunctionName=function_name,
+                Runtime="PYTHON3.9",
+            )
+        snapshot.match("uppercase_runtime_exc", e.value.response)
+
 
 @pytest.mark.skipif(is_old_provider(), reason="focusing on new provider")
 # TODO fix version state after publish

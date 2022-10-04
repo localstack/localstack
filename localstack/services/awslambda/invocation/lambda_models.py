@@ -37,6 +37,26 @@ if TYPE_CHECKING:
 LOG = logging.getLogger(__name__)
 
 
+# To add support for a new runtime, just add it here with the accompanying image postfix
+IMAGE_MAPPING = {
+    "python3.7": "python:3.7",
+    "python3.8": "python:3.8",
+    "python3.9": "python:3.9",
+    "nodejs12.x": "nodejs:12",
+    "nodejs14.x": "nodejs:14",
+    "nodejs16.x": "nodejs:16",
+    "ruby2.7": "ruby:2.7",
+    "java8": "java:8",
+    "java8.al2": "java:8.al2",
+    "java11": "java:11",
+    "dotnetcore3.1": "dotnet:core3.1",
+    "dotnet6": "dotnet:6",
+    "go1.x": "go:1",
+    "provided": "provided:alami",
+    "provided.al2": "provided:al2",
+}
+
+
 @dataclasses.dataclass(frozen=True)
 class VersionState:
     state: State

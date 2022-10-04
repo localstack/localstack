@@ -137,6 +137,7 @@ from localstack.services.awslambda.api_utils import (
     qualifier_is_version,
 )
 from localstack.services.awslambda.invocation.lambda_models import (
+    IMAGE_MAPPING,
     LAMBDA_LIMITS_CREATE_FUNCTION_REQUEST_SIZE,
     LAMBDA_LIMITS_MAX_FUNCTION_ENVVAR_SIZE_BYTES,
     LAMBDA_MINIMUM_UNRESERVED_CONCURRENCY,
@@ -173,6 +174,7 @@ from localstack.services.awslambda.invocation.lambda_util import (
     function_name_from_arn,
     generate_lambda_date,
     is_qualified_lambda_arn,
+    is_role_arn,
     lambda_arn,
     qualified_lambda_arn,
     unqualified_lambda_arn,
@@ -415,6 +417,16 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
         if env_vars := request.get("Environment", {}).get("Variables"):
             self._verify_env_variables(env_vars)
 
+        if not is_role_arn(request.get("Role")):
+            raise ValidationException(
+                "1 validation error detected: Value 'r1' at 'role' failed to satisfy constraint: Member must satisfy regular expression pattern: arn:(aws[a-zA-Z-]*)?:iam::\\d{12}:role/?[a-zA-Z_0-9+=,.@\\-_/]+"
+            )
+        package_type = request.get("PackageType", PackageType.Zip)
+        if package_type == PackageType.Zip and request.get("Runtime") not in IMAGE_MAPPING:
+            raise InvalidParameterValueException(
+                f"Value {request.get('Runtime')} at 'runtime' failed to satisfy constraint: Member must satisfy enum value set: [nodejs12.x, provided, nodejs16.x, nodejs14.x, ruby2.7, java11, dotnet6, go1.x, provided.al2, java8, java8.al2, dotnetcore3.1, python3.7, python3.8, python3.9] or be a valid ARN",
+                Type="User",
+            )
         state = lambda_stores[context.account_id][context.region]
 
         function_name = request["FunctionName"]
@@ -430,7 +442,7 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
             )
             # save function code to s3
             code = None
-            if request.get("PackageType", PackageType.Zip) == PackageType.Zip:
+            if package_type == PackageType.Zip:
                 request_code = request["Code"]
                 # TODO verify if correct combination of code is set
                 if zip_file := request_code.get("ZipFile"):
@@ -525,6 +537,10 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
             )  # TODO: do defaults here apply as well?
 
         if "Role" in request:
+            if not is_role_arn(request["Role"]):
+                raise ValidationException(
+                    "1 validation error detected: Value 'r1' at 'role' failed to satisfy constraint: Member must satisfy regular expression pattern: arn:(aws[a-zA-Z-]*)?:iam::\\d{12}:role/?[a-zA-Z_0-9+=,.@\\-_/]+"
+                )
             replace_kwargs["role"] = request["Role"]
 
         if "Description" in request:
@@ -537,6 +553,11 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
             replace_kwargs["memory_size"] = request["MemorySize"]
 
         if "Runtime" in request:
+            if request["Runtime"] not in IMAGE_MAPPING:
+                raise InvalidParameterValueException(
+                    f"Value {request.get('Runtime')} at 'runtime' failed to satisfy constraint: Member must satisfy enum value set: [nodejs12.x, provided, nodejs16.x, nodejs14.x, ruby2.7, java11, dotnet6, go1.x, provided.al2, java8, java8.al2, dotnetcore3.1, python3.7, python3.8, python3.9] or be a valid ARN",
+                    Type="User",
+                )
             replace_kwargs["runtime"] = request["Runtime"]
 
         if "Environment" in request:
