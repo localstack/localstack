@@ -18,7 +18,7 @@ line_length = 100
 max-line-length = 110
 ignore = 'E203,E266,E501,W503,F403'
 select = 'B,C,E,F,I,W,T4,B9'
-exclude = 'node_modules,.venv*,venv*,dist,build,target,*.egg-info,fixes,localstack/infra,localstack/node_modules,.filesystem'
+exclude = 'node_modules,.venv*,venv*,dist,build,target,*.egg-info,fixes,localstack/infra,localstack/node_modules,.filesystem,.git'
 
 [tool.coverage.run]
 relative_files = true
