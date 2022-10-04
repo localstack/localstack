@@ -153,23 +153,35 @@ def fixture_snapshot(snapshot):
 
 
 # some more common ones that usually don't work in the old provider
-pytestmark = pytest.mark.skip_snapshot_verify(
-    condition=is_old_provider,
-    paths=[
-        "$..Architectures",
-        "$..EphemeralStorage",
-        "$..LastUpdateStatus",
-        "$..MemorySize",
-        "$..State",
-        "$..StateReason",
-        "$..StateReasonCode",
-        "$..VpcConfig",
-        "$..CodeSigningConfig",
-        "$..Environment",  # missing
-        "$..HTTPStatusCode",  # 201 vs 200
-        "$..Layers",
-    ],
-)
+if is_old_provider():
+    pytestmark = pytest.mark.skip_snapshot_verify(
+        paths=[
+            "$..Architectures",
+            "$..EphemeralStorage",
+            "$..LastUpdateStatus",
+            "$..MemorySize",
+            "$..State",
+            "$..StateReason",
+            "$..StateReasonCode",
+            "$..VpcConfig",
+            "$..CodeSigningConfig",
+            "$..Environment",  # missing
+            "$..HTTPStatusCode",  # 201 vs 200
+            "$..Layers",
+        ],
+    )
+else:
+    pytestmark = pytest.mark.skip_snapshot_verify(
+        paths=[
+            "$..State",
+            "$..StateReason",
+            "$..StateReasonCode",
+            "$..CodeSize",
+            "$..LastUpdateStatus",
+            "$..LastUpdateStatusReason",
+            "$..LastUpdateStatusReasonCode",
+        ],
+    )
 
 
 class TestLambdaBaseFeatures:
@@ -226,6 +238,9 @@ class TestLambdaBaseFeatures:
         response = lambda_client.get_function(FunctionName=function_name)
         snapshot.match("get-fn-response", response)
 
+    @pytest.mark.skipif(
+        is_old_provider(), reason="Credential injection not supported in old provider"
+    )
     @pytest.mark.aws_validated
     def test_lambda_different_iam_keys_environment(
         self, lambda_client, lambda_su_role, create_lambda_function, snapshot, sts_client
