@@ -266,7 +266,7 @@ Resources:
 class TestCloudFormation:
     def test_validate_template(self, cfn_client):
         template = template_preparer.template_to_json(
-            load_file(os.path.join(os.path.dirname(__file__), "../templates/valid_template.json"))
+            load_file(os.path.join(os.path.dirname(__file__), "../../templates/valid_template.json"))
         )
         resp = cfn_client.validate_template(TemplateBody=template)
 
@@ -424,7 +424,7 @@ class TestCloudFormation:
         )
         template = json.loads(
             load_file(
-                os.path.join(os.path.dirname(__file__), "../templates/update_lambda_template.json")
+                os.path.join(os.path.dirname(__file__), "../../templates/update_lambda_template.json")
             )
         )
         template["Resources"]["PullMarketsRole"]["Properties"]["RoleName"] = role_name
@@ -495,7 +495,7 @@ class TestCloudFormation:
         environment = f"env-{short_uid()}"
 
         stack = deploy_cfn_template(
-            template_path=os.path.join(os.path.dirname(__file__), "../templates/template23.yaml"),
+            template_path=os.path.join(os.path.dirname(__file__), "../../templates/template23.yaml"),
             parameters={"Environment": environment, "ApiKey": "12345"},
         )
 
@@ -535,7 +535,7 @@ class TestCloudFormation:
         time.sleep(1)  # TODO: ? what is this waiting for
 
         template = load_file(
-            os.path.join(os.path.dirname(__file__), "../templates/template24.yaml")
+            os.path.join(os.path.dirname(__file__), "../../templates/template24.yaml")
         ) % (
             bucket,
             key,
@@ -574,7 +574,7 @@ class TestCloudFormation:
         environment = f"env-{short_uid()}"
 
         stack = deploy_cfn_template(
-            template_path=os.path.join(os.path.dirname(__file__), "../templates/template26.yaml"),
+            template_path=os.path.join(os.path.dirname(__file__), "../../templates/template26.yaml"),
             parameters={"Environment": environment},
         )
 
@@ -612,7 +612,7 @@ class TestCloudFormation:
 
         # deploy stack
         deploy_cfn_template(
-            template_path=os.path.join(os.path.dirname(__file__), "../templates/template28.yaml")
+            template_path=os.path.join(os.path.dirname(__file__), "../../templates/template28.yaml")
         )
         exports = cfn_client.list_exports()["Exports"]
 
@@ -695,7 +695,7 @@ class TestCloudFormation:
         exports_before = cfn_client.list_exports()["Exports"]
 
         stack = deploy_cfn_template(
-            template_path=os.path.join(os.path.dirname(__file__), "../templates/template32.yaml")
+            template_path=os.path.join(os.path.dirname(__file__), "../../templates/template32.yaml")
         )
         stack_name = stack.stack_name
 
@@ -717,7 +717,7 @@ class TestCloudFormation:
         vpcs_before = [vpc["VpcId"] for vpc in resp["Vpcs"]]
 
         stack = deploy_cfn_template(
-            template_path=os.path.join(os.path.dirname(__file__), "../templates/template33.yaml")
+            template_path=os.path.join(os.path.dirname(__file__), "../../templates/template33.yaml")
         )
         resp = ec2_client.describe_vpcs()
         vpcs = [vpc["VpcId"] for vpc in resp["Vpcs"] if vpc["VpcId"] not in vpcs_before]
@@ -758,7 +758,7 @@ class TestCloudFormation:
         lambda_function_name = f"lambda-function-{short_uid()}"
 
         template = json.loads(
-            load_file(os.path.join(os.path.dirname(__file__), "../templates/template7.json"))
+            load_file(os.path.join(os.path.dirname(__file__), "../../templates/template7.json"))
         )
 
         template["Resources"]["LambdaExecutionRole"]["Properties"]["RoleName"] = lambda_role_name

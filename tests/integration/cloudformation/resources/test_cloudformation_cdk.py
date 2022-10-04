@@ -17,12 +17,12 @@ class TestCdkInit:
     def test_cdk_bootstrap(self, deploy_cfn_template, cfn_client, bootstrap_version):
         deploy_cfn_template(
             template_path=os.path.join(
-                os.path.dirname(__file__), f"../templates/cdk_bootstrap_v{bootstrap_version}.yaml"
+                os.path.dirname(__file__), f"../../templates/cdk_bootstrap_v{bootstrap_version}.yaml"
             )
         )
         init_stack_result = deploy_cfn_template(
             template_path=os.path.join(
-                os.path.dirname(__file__), "../templates/cdk_init_template.yaml"
+                os.path.dirname(__file__), "../../templates/cdk_init_template.yaml"
             )
         )
         assert init_stack_result.outputs["BootstrapVersionOutput"] == bootstrap_version
@@ -65,13 +65,13 @@ class TestCdkInit:
     def test_cdk_template(self, s3_client, lambda_client, deploy_cfn_template, s3_create_bucket):
         bucket = f"bucket-{short_uid()}"
         key = f"key-{short_uid()}"
-        path = os.path.join(os.path.dirname(__file__), "../templates/asset")
+        path = os.path.join(os.path.dirname(__file__), "../../templates/asset")
 
         s3_create_bucket(Bucket=bucket)
         s3_client.put_object(Bucket=bucket, Key=key, Body=create_zip_file(path, get_content=True))
 
         template = load_file(
-            os.path.join(os.path.dirname(__file__), "../templates/cdktemplate.json")
+            os.path.join(os.path.dirname(__file__), "../../templates/cdktemplate.json")
         )
 
         stack = deploy_cfn_template(

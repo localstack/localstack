@@ -53,7 +53,7 @@ def test_cfn_apigateway_aws_integration(
 
     deploy_cfn_template(
         template_path=os.path.join(
-            os.path.dirname(__file__), "../templates/apigw-awsintegration-request-parameters.yaml"
+            os.path.dirname(__file__), "../../templates/apigw-awsintegration-request-parameters.yaml"
         ),
         parameters={
             "ApiName": api_name,
@@ -130,7 +130,7 @@ def test_url_output(apigateway_client, tmp_http_server, deploy_cfn_template):
 
     stack = deploy_cfn_template(
         template_path=os.path.join(
-            os.path.dirname(__file__), "../templates/apigateway-url-output.yaml"
+            os.path.dirname(__file__), "../../templates/apigateway-url-output.yaml"
         ),
         template_mapping={
             "api_name": api_name,
@@ -150,7 +150,7 @@ def test_url_output(apigateway_client, tmp_http_server, deploy_cfn_template):
 
 def test_cfn_with_apigateway_resources(deploy_cfn_template, apigateway_client):
     stack = deploy_cfn_template(
-        template_path=os.path.join(os.path.dirname(__file__), "../templates/template35.yaml")
+        template_path=os.path.join(os.path.dirname(__file__), "../../templates/template35.yaml")
     )
     apis = [
         api
@@ -207,7 +207,7 @@ def test_cfn_deploy_apigateway_integration(
 
     stack = deploy_cfn_template(
         template_path=os.path.join(
-            os.path.dirname(__file__), "../templates/apigateway_integration.json"
+            os.path.dirname(__file__), "../../templates/apigateway_integration.json"
         )
     )
     stack_resources = cfn_client.list_stack_resources(StackName=stack.stack_name)[
@@ -222,7 +222,7 @@ def test_cfn_deploy_apigateway_integration(
 
 def test_cfn_apigateway_rest_api(deploy_cfn_template, apigateway_client):
     stack = deploy_cfn_template(
-        template_path=os.path.join(os.path.dirname(__file__), "../templates/apigateway.json")
+        template_path=os.path.join(os.path.dirname(__file__), "../../templates/apigateway.json")
     )
 
     rs = apigateway_client.get_rest_apis()
@@ -232,7 +232,7 @@ def test_cfn_apigateway_rest_api(deploy_cfn_template, apigateway_client):
     stack.destroy()
 
     stack_2 = deploy_cfn_template(
-        template_path=os.path.join(os.path.dirname(__file__), "../templates/apigateway.json"),
+        template_path=os.path.join(os.path.dirname(__file__), "../../templates/apigateway.json"),
         parameters={"Create": "True"},
     )
     rs = apigateway_client.get_rest_apis()

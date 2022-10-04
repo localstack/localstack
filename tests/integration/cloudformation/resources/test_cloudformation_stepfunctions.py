@@ -11,7 +11,7 @@ from localstack.utils.sync import wait_until
 def test_statemachine_definitionsubstitution(stepfunctions_client, s3_client, deploy_cfn_template):
     stack = deploy_cfn_template(
         template_path=os.path.join(
-            os.path.dirname(__file__), "../templates/stepfunctions_statemachine_substitutions.yaml"
+            os.path.dirname(__file__), "../../templates/stepfunctions_statemachine_substitutions.yaml"
         )
     )
 
@@ -42,7 +42,7 @@ def test_nested_statemachine_with_sync2(
     lambda_client, stepfunctions_client, s3_client, deploy_cfn_template
 ):
     stack = deploy_cfn_template(
-        template_path=os.path.join(os.path.dirname(__file__), "../templates/sfn_nested_sync2.json")
+        template_path=os.path.join(os.path.dirname(__file__), "../../templates/sfn_nested_sync2.json")
     )
 
     parent_arn = stack.outputs["ParentStateMachineArnOutput"]
@@ -69,7 +69,7 @@ def test_nested_statemachine_with_sync2(
 
 def test_apigateway_invoke(cfn_client, deploy_cfn_template, stepfunctions_client):
     deploy_result = deploy_cfn_template(
-        template_path=os.path.join(os.path.dirname(__file__), "../templates/sfn_apigateway.yaml")
+        template_path=os.path.join(os.path.dirname(__file__), "../../templates/sfn_apigateway.yaml")
     )
     state_machine_arn = deploy_result.outputs["statemachineOutput"]
 
@@ -93,7 +93,7 @@ def test_apigateway_invoke(cfn_client, deploy_cfn_template, stepfunctions_client
 def test_apigateway_invoke_with_path(cfn_client, deploy_cfn_template, stepfunctions_client):
     deploy_result = deploy_cfn_template(
         template_path=os.path.join(
-            os.path.dirname(__file__), "../templates/sfn_apigateway_two_integrations.yaml"
+            os.path.dirname(__file__), "../../templates/sfn_apigateway_two_integrations.yaml"
         )
     )
     state_machine_arn = deploy_result.outputs["statemachineOutput"]
@@ -118,7 +118,7 @@ def test_apigateway_invoke_with_path(cfn_client, deploy_cfn_template, stepfuncti
 def test_apigateway_invoke_localhost(cfn_client, deploy_cfn_template, stepfunctions_client):
     """tests the same as above but with the "generic" localhost version of invoking the apigateway"""
     deploy_result = deploy_cfn_template(
-        template_path=os.path.join(os.path.dirname(__file__), "../templates/sfn_apigateway.yaml")
+        template_path=os.path.join(os.path.dirname(__file__), "../../templates/sfn_apigateway.yaml")
     )
     state_machine_arn = deploy_result.outputs["statemachineOutput"]
     api_url = deploy_result.outputs["LsApiEndpointA06D37E8"]
@@ -164,7 +164,7 @@ def test_apigateway_invoke_localhost_with_path(
     """tests the same as above but with the "generic" localhost version of invoking the apigateway"""
     deploy_result = deploy_cfn_template(
         template_path=os.path.join(
-            os.path.dirname(__file__), "../templates/sfn_apigateway_two_integrations.yaml"
+            os.path.dirname(__file__), "../../templates/sfn_apigateway_two_integrations.yaml"
         )
     )
     state_machine_arn = deploy_result.outputs["statemachineOutput"]
@@ -218,7 +218,7 @@ def test_retry_and_catch(deploy_cfn_template, stepfunctions_client, sqs_client):
     """
 
     stack = deploy_cfn_template(
-        template_path=os.path.join(os.path.dirname(__file__), "../templates/sfn_retry_catch.yaml")
+        template_path=os.path.join(os.path.dirname(__file__), "../../templates/sfn_retry_catch.yaml")
     )
     queue_url = stack.outputs["queueUrlOutput"]
     statemachine_arn = stack.outputs["smArnOutput"]
@@ -247,7 +247,7 @@ def test_cfn_statemachine_with_dependencies(deploy_cfn_template, stepfunctions_c
 
     stack = deploy_cfn_template(
         template_path=os.path.join(
-            os.path.dirname(__file__), "../templates/statemachine_test.json"
+            os.path.dirname(__file__), "../../templates/statemachine_test.json"
         ),
         max_wait=150,
     )

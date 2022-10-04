@@ -14,7 +14,7 @@ def test_sam_policies(deploy_cfn_template, cfn_client, iam_client, snapshot):
     snapshot.add_transformer(snapshot.transform.iam_api())
     stack = deploy_cfn_template(
         template_path=os.path.join(
-            os.path.dirname(__file__), "../templates/sam_function-policies.yaml"
+            os.path.dirname(__file__), "../../templates/sam_function-policies.yaml"
         )
     )
     role_name = stack.outputs["HelloWorldFunctionIamRoleName"]
@@ -29,7 +29,7 @@ def test_sam_template(lambda_client, deploy_cfn_template):
     # deploy template
     func_name = f"test-{short_uid()}"
     template = (
-        load_file(os.path.join(os.path.dirname(__file__), "../templates/template4.yaml"))
+        load_file(os.path.join(os.path.dirname(__file__), "../../templates/template4.yaml"))
         % func_name
     )
     deploy_cfn_template(template=template)

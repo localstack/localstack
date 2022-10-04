@@ -10,7 +10,7 @@ def test_parameter_defaults(ssm_client, deploy_cfn_template):
 
     stack = deploy_cfn_template(
         template_path=os.path.join(
-            os.path.dirname(__file__), "../templates/ssm_parameter_defaultname.yaml"
+            os.path.dirname(__file__), "../../templates/ssm_parameter_defaultname.yaml"
         ),
         parameters={"Input": ssm_parameter_value},
     )

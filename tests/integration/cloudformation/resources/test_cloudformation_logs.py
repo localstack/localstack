@@ -4,7 +4,7 @@ import os.path
 def test_logstream(logs_client, deploy_cfn_template, snapshot):
     stack = deploy_cfn_template(
         template_path=os.path.join(
-            os.path.dirname(__file__), "../templates/logs_group_and_stream.yaml"
+            os.path.dirname(__file__), "../../templates/logs_group_and_stream.yaml"
         )
     )
     snapshot.add_transformer(snapshot.transform.cloudformation_api())

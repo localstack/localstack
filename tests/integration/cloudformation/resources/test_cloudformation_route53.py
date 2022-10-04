@@ -8,7 +8,7 @@ def test_create_record_set_via_id(route53_hosted_zone, deploy_cfn_template):
     parameters = {"HostedZoneId": hosted_zone_id, "Name": route53_name}
     deploy_cfn_template(
         template_path=os.path.join(
-            os.path.dirname(__file__), "../templates/route53_hostedzoneid_template.yaml"
+            os.path.dirname(__file__), "../../templates/route53_hostedzoneid_template.yaml"
         ),
         parameters=parameters,
     )
@@ -20,7 +20,7 @@ def test_create_record_set_via_name(deploy_cfn_template, route53_hosted_zone):
     parameters = {"HostedZoneName": route53_name, "Name": route53_name}
     deploy_cfn_template(
         template_path=os.path.join(
-            os.path.dirname(__file__), "../templates/route53_hostedzonename_template.yaml"
+            os.path.dirname(__file__), "../../templates/route53_hostedzonename_template.yaml"
         ),
         parameters=parameters,
     )
@@ -34,7 +34,7 @@ def test_create_record_set_without_resource_record(deploy_cfn_template, route53_
     deploy_cfn_template(
         template_path=os.path.join(
             os.path.dirname(__file__),
-            "../templates/route53_recordset_without_resource_records.yaml",
+            "../../templates/route53_recordset_without_resource_records.yaml",
         ),
         parameters=parameters,
     )

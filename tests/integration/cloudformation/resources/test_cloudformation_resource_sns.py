@@ -12,7 +12,7 @@ def test_sns_topic_fifo_with_deduplication(cfn_client, sns_client, deploy_cfn_te
     deploy_cfn_template(
         parameters={"TopicName": topic_name},
         template_path=os.path.join(
-            os.path.dirname(__file__), "../templates/sns_topic_fifo_dedup.yaml"
+            os.path.dirname(__file__), "../../templates/sns_topic_fifo_dedup.yaml"
         ),
     )
 
@@ -46,7 +46,7 @@ def test_sns_subscription(cfn_client, sns_client, deploy_cfn_template):
     stack = deploy_cfn_template(
         parameters={"TopicName": topic_name, "QueueName": queue_name},
         template_path=os.path.join(
-            os.path.dirname(__file__), "../templates/sns_topic_subscription.yaml"
+            os.path.dirname(__file__), "../../templates/sns_topic_subscription.yaml"
         ),
     )
 
@@ -61,7 +61,7 @@ def test_deploy_stack_with_sns_topic(sns_client, deploy_cfn_template):
 
     stack = deploy_cfn_template(
         template_path=os.path.join(
-            os.path.dirname(__file__), "../templates/deploy_template_2.yaml"
+            os.path.dirname(__file__), "../../templates/deploy_template_2.yaml"
         ),
         parameters={"CompanyName": "MyCompany", "MyEmail1": "my@email.com"},
     )

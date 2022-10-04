@@ -10,7 +10,7 @@ def test_deploy_stack_with_dynamodb_table(cfn_client, deploy_cfn_template, dynam
 
     stack = deploy_cfn_template(
         template_path=os.path.join(
-            os.path.dirname(__file__), "../templates/deploy_template_3.yaml"
+            os.path.dirname(__file__), "../../templates/deploy_template_3.yaml"
         ),
         parameters={"tableName": ddb_table_name_prefix, "env": env},
     )
@@ -33,7 +33,7 @@ def test_globalindex_read_write_provisioned_throughput_dynamodb_table(
 ):
     deploy_cfn_template(
         template_path=os.path.join(
-            os.path.dirname(__file__), "../templates/deploy_template_3.yaml"
+            os.path.dirname(__file__), "../../templates/deploy_template_3.yaml"
         ),
         parameters={"tableName": "dynamodb", "env": "test"},
     )

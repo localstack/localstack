@@ -14,7 +14,7 @@ def test_events_sqs_sns_lambda(logs_client, events_client, sns_client, deploy_cf
 
     stack = deploy_cfn_template(
         template_path=os.path.join(
-            os.path.dirname(__file__), "../templates/integration_events_sns_sqs_lambda.yaml"
+            os.path.dirname(__file__), "../../templates/integration_events_sns_sqs_lambda.yaml"
         ),
         parameters={
             "FunctionName": function_name,

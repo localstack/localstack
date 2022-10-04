@@ -6,7 +6,7 @@ import pytest
 def test_vpc_creates_default_sg(deploy_cfn_template, ec2_client):
     result = deploy_cfn_template(
         template_path=os.path.join(
-            os.path.dirname(__file__), "../templates/ec2_vpc_default_sg.yaml"
+            os.path.dirname(__file__), "../../templates/ec2_vpc_default_sg.yaml"
         )
     )
 
@@ -29,7 +29,7 @@ def test_vpc_creates_default_sg(deploy_cfn_template, ec2_client):
 def test_cfn_with_multiple_route_tables(ec2_client, deploy_cfn_template):
 
     result = deploy_cfn_template(
-        template_path=os.path.join(os.path.dirname(__file__), "../templates/template36.yaml"),
+        template_path=os.path.join(os.path.dirname(__file__), "../../templates/template36.yaml"),
         max_wait=180,
     )
     vpc_id = result.outputs["VPC"]
@@ -42,7 +42,7 @@ def test_cfn_with_multiple_route_tables(ec2_client, deploy_cfn_template):
 def test_cfn_with_multiple_route_table_associations(ec2_client, deploy_cfn_template):
     # TODO: stack does not deploy to AWS
     stack = deploy_cfn_template(
-        template_path=os.path.join(os.path.dirname(__file__), "../templates/template37.yaml")
+        template_path=os.path.join(os.path.dirname(__file__), "../../templates/template37.yaml")
     )
     route_table_id = stack.outputs["RouteTable"]
     route_table = ec2_client.describe_route_tables(

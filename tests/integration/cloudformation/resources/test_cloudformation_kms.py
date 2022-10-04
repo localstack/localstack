@@ -5,7 +5,7 @@ from localstack.utils.strings import short_uid
 
 def test_kms_key_disabled(sqs_client, kms_client, deploy_cfn_template):
     stack = deploy_cfn_template(
-        template_path=os.path.join(os.path.dirname(__file__), "../templates/kms_key_disabled.yaml")
+        template_path=os.path.join(os.path.dirname(__file__), "../../templates/kms_key_disabled.yaml")
     )
 
     key_id = stack.outputs["KeyIdOutput"]
@@ -16,7 +16,7 @@ def test_kms_key_disabled(sqs_client, kms_client, deploy_cfn_template):
 
 def test_cfn_with_kms_resources(deploy_cfn_template, kms_client):
     stack = deploy_cfn_template(
-        template_path=os.path.join(os.path.dirname(__file__), "../templates/template34.yaml")
+        template_path=os.path.join(os.path.dirname(__file__), "../../templates/template34.yaml")
     )
 
     alias_name = "alias/sample-5302"
@@ -38,7 +38,7 @@ def test_deploy_stack_with_kms(kms_client, deploy_cfn_template, cfn_client):
 
     stack = deploy_cfn_template(
         template_path=os.path.join(
-            os.path.dirname(__file__), "../templates/cdk_template_with_kms.json"
+            os.path.dirname(__file__), "../../templates/cdk_template_with_kms.json"
         ),
         parameters={"Environment": environment},
     )

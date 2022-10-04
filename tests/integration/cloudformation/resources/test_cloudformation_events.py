@@ -14,7 +14,7 @@ def test_eventbus_policies(cfn_client, events_client, deploy_cfn_template):
 
     stack_response = deploy_cfn_template(
         template_path=os.path.join(
-            os.path.dirname(__file__), "../templates/eventbridge_policy.yaml"
+            os.path.dirname(__file__), "../../templates/eventbridge_policy.yaml"
         ),
         parameters={"EventBusName": event_bus_name},
     )
@@ -39,7 +39,7 @@ def test_eventbus_policies(cfn_client, events_client, deploy_cfn_template):
         is_update=True,
         stack_name=stack_response.stack_name,
         template_path=os.path.join(
-            os.path.dirname(__file__), "../templates/eventbridge_policy_singlepolicy.yaml"
+            os.path.dirname(__file__), "../../templates/eventbridge_policy_singlepolicy.yaml"
         ),
         parameters={"EventBusName": event_bus_name},
     )
@@ -59,7 +59,7 @@ def test_eventbus_policy_statement(
 
     deploy_cfn_template(
         template_path=os.path.join(
-            os.path.dirname(__file__), "../templates/eventbridge_policy_statement.yaml"
+            os.path.dirname(__file__), "../../templates/eventbridge_policy_statement.yaml"
         ),
         parameters={"EventBusName": event_bus_name, "StatementId": statement_id},
     )
@@ -83,7 +83,7 @@ def test_event_rule_to_logs(cfn_client, events_client, logs_client, deploy_cfn_t
     resource_policy_name = f"policy-{short_uid()}"
 
     deploy_cfn_template(
-        template_path=os.path.join(os.path.dirname(__file__), "../templates/events_loggroup.yaml"),
+        template_path=os.path.join(os.path.dirname(__file__), "../../templates/events_loggroup.yaml"),
         parameters={
             "EventRuleName": event_rule_name,
             "LogGroupName": log_group_name,
@@ -128,7 +128,7 @@ def test_event_rule_creation_without_target(cfn_client, events_client, deploy_cf
     event_rule_name = f"event-rule-{short_uid()}"
     deploy_cfn_template(
         template_path=os.path.join(
-            os.path.dirname(__file__), "../templates/events_rule_without_targets.yaml"
+            os.path.dirname(__file__), "../../templates/events_rule_without_targets.yaml"
         ),
         parameters={"EventRuleName": event_rule_name},
     )
@@ -149,7 +149,7 @@ def test_cfn_event_bus_resource(events_client, deploy_cfn_template):
         assert len(connections) == expected_len
 
     stack = deploy_cfn_template(
-        template_path=os.path.join(os.path.dirname(__file__), "../templates/template31.yaml")
+        template_path=os.path.join(os.path.dirname(__file__), "../../templates/template31.yaml")
     )
     _assert(1)
 
