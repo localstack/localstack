@@ -2,10 +2,9 @@
 Adapters and other utilities to use ASF together with the edge proxy.
 """
 import logging
-from typing import Any, Optional
+from typing import Any
 
 from botocore.model import ServiceModel
-from werkzeug.datastructures import Headers
 
 from localstack.aws.accounts import get_account_id_from_access_key_id, set_aws_access_key_id
 from localstack.aws.api import RequestContext
@@ -14,8 +13,6 @@ from localstack.aws.spec import load_service
 from localstack.constants import TEST_AWS_ACCESS_KEY_ID
 from localstack.http import Request, Response
 from localstack.http.adapters import ProxyListenerAdapter
-from localstack.services.generic_proxy import ProxyListener
-from localstack.services.messages import MessagePayload
 from localstack.utils.aws.aws_stack import extract_access_key_id_from_auth_header
 from localstack.utils.aws.request_context import extract_region_from_headers
 
@@ -52,38 +49,3 @@ class AwsApiListener(ProxyListenerAdapter):
         context.region = get_region(request)
         context.account_id = get_account_id_from_request(request)
         return context
-
-
-def _raise_not_implemented_error(*args, **kwargs):
-    raise NotImplementedError
-
-
-class AsfWithFallbackListener(AwsApiListener):
-    """
-    An AwsApiListener that does not return a default error response if a particular method has not been implemented,
-    but instead calls a second ProxyListener. This is useful to migrate service providers to ASF providers.
-    """
-
-    api: str
-    delegate: Any
-    fallback: ProxyListener
-
-    def __init__(self, api: str, delegate: Any, fallback: ProxyListener):
-        super().__init__(api, delegate)
-        self.fallback = fallback
-        self.skeleton.on_not_implemented_error = _raise_not_implemented_error
-
-    def forward_request(self, method, path, data, headers):
-        try:
-            return super().forward_request(method, path, data, headers)
-        except (NotImplementedError):
-            LOG.debug("no ASF handler for %s %s, using fallback listener", method, path)
-            return self.fallback.forward_request(method, path, data, headers)
-
-    def return_response(
-        self, method: str, path: str, data: MessagePayload, headers: Headers, response: Response
-    ) -> Optional[Response]:
-        return self.fallback.return_response(method, path, data, headers, response)
-
-    def get_forward_url(self, method: str, path: str, data, headers):
-        return self.fallback.get_forward_url(method, path, data, headers)

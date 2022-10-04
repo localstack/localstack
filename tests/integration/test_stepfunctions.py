@@ -7,8 +7,10 @@ import pytest
 from localstack.services.events.provider import TEST_EVENTS_CACHE
 from localstack.utils import testutil
 from localstack.utils.aws import aws_stack
-from localstack.utils.common import clone, load_file, retry, short_uid
-from localstack.utils.generic.wait_utils import ShortCircuitWaitException, wait_until
+from localstack.utils.files import load_file
+from localstack.utils.json import clone
+from localstack.utils.strings import short_uid
+from localstack.utils.sync import ShortCircuitWaitException, retry, wait_until
 
 from .awslambda.functions import lambda_environment
 from .awslambda.test_lambda import TEST_LAMBDA_ENV, TEST_LAMBDA_PYTHON_ECHO

@@ -9,9 +9,8 @@ from localstack.testing.aws.cloudformation_utils import (
     render_template,
 )
 from localstack.testing.aws.util import is_aws_cloud
-from localstack.utils.common import short_uid
-from localstack.utils.generic.wait_utils import wait_until
-from localstack.utils.sync import ShortCircuitWaitException, poll_condition
+from localstack.utils.strings import short_uid
+from localstack.utils.sync import ShortCircuitWaitException, poll_condition, wait_until
 
 
 def test_create_change_set_without_parameters(

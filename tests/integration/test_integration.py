@@ -549,17 +549,21 @@ class TestIntegration:
 
 
 @pytest.mark.skip(reason="This test is notoriously flaky in CI environments")  # FIXME
-def test_sqs_batch_lambda_forward(lambda_client, sqs_client, create_lambda_function):
+def test_sqs_batch_lambda_forward(
+    lambda_client, sqs_client, sqs_create_queue, create_lambda_function
+):
 
     lambda_name_queue_batch = "lambda_queue_batch-%s" % short_uid()
 
     # deploy test lambda connected to SQS queue
-    sqs_queue_info = testutil.create_sqs_queue(lambda_name_queue_batch)
-    queue_url = sqs_queue_info["QueueUrl"]
+    queue_url = sqs_create_queue(QueueName=lambda_name_queue_batch)
+    queue_arn = sqs_client.get_queue_attributes(QueueUrl=queue_url, AttributeNames=["QueueArn"])[
+        "QueueArn"
+    ]
     resp = create_lambda_function(
         handler_file=TEST_LAMBDA_PYTHON_ECHO,
         func_name=lambda_name_queue_batch,
-        event_source_arn=sqs_queue_info["QueueArn"],
+        event_source_arn=queue_arn,
         libs=TEST_LAMBDA_LIBS,
     )
 

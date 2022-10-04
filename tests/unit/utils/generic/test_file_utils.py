@@ -1,7 +1,7 @@
 import pytest
 
 from localstack.utils.common import new_tmp_file, save_file
-from localstack.utils.generic.file_utils import parse_config_file
+from localstack.utils.files import parse_config_file
 
 CONFIG_FILE_SECTION = """
 [section{section}]
