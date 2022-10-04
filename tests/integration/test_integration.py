@@ -24,7 +24,6 @@ from localstack.utils.common import (
 )
 from localstack.utils.kinesis import kinesis_connector
 from localstack.utils.sync import poll_condition
-from localstack.utils.testutil import get_lambda_log_events
 
 from .awslambda.functions import lambda_integration
 from .awslambda.test_lambda import (
@@ -535,87 +534,6 @@ class TestIntegration:
 
         # wait for up to 1 min for invocations to get triggered
         retry(check_invocation, retries=14, sleep=5)
-
-
-@pytest.mark.skip(reason="This test is notoriously flaky in CI environments")  # FIXME
-def test_sqs_batch_lambda_forward(
-    lambda_client, sqs_client, sqs_create_queue, create_lambda_function
-):
-
-    lambda_name_queue_batch = "lambda_queue_batch-%s" % short_uid()
-
-    # deploy test lambda connected to SQS queue
-    queue_url = sqs_create_queue(QueueName=lambda_name_queue_batch)
-    queue_arn = sqs_client.get_queue_attributes(QueueUrl=queue_url, AttributeNames=["QueueArn"])[
-        "QueueArn"
-    ]
-    resp = create_lambda_function(
-        handler_file=TEST_LAMBDA_PYTHON_ECHO,
-        func_name=lambda_name_queue_batch,
-        event_source_arn=queue_arn,
-        libs=TEST_LAMBDA_LIBS,
-    )
-
-    event_source_id = resp["CreateEventSourceMappingResponse"]["UUID"]
-    lambda_client.update_event_source_mapping(UUID=event_source_id, BatchSize=5)
-
-    messages_to_send = [
-        {
-            "Id": "message{:02d}".format(i),
-            "MessageBody": "msgBody{:02d}".format(i),
-            "MessageAttributes": {
-                "CustomAttribute": {
-                    "DataType": "String",
-                    "StringValue": "CustomAttributeValue{:02d}".format(i),
-                }
-            },
-        }
-        for i in range(1, 12)
-    ]
-
-    # send 11 messages (which should get split into 3 batches)
-    sqs_client.send_message_batch(QueueUrl=queue_url, Entries=messages_to_send[:10])
-    sqs_client.send_message(
-        QueueUrl=queue_url,
-        MessageBody=messages_to_send[10]["MessageBody"],
-        MessageAttributes=messages_to_send[10]["MessageAttributes"],
-    )
-
-    def wait_for_done():
-        attributes = sqs_client.get_queue_attributes(
-            QueueUrl=queue_url,
-            AttributeNames=[
-                "ApproximateNumberOfMessages",
-                "ApproximateNumberOfMessagesDelayed",
-                "ApproximateNumberOfMessagesNotVisible",
-            ],
-        )["Attributes"]
-        msg_count = int(attributes.get("ApproximateNumberOfMessages"))
-        assert 0 == msg_count, "expecting queue to be empty"
-
-        delayed_count = int(attributes.get("ApproximateNumberOfMessagesDelayed"))
-        if delayed_count != 0:
-            LOGGER.warning("SQS delayed message count (actual/expected): %s/%s", delayed_count, 0)
-
-        not_visible_count = int(attributes.get("ApproximateNumberOfMessagesNotVisible"))
-        if not_visible_count != 0:
-            LOGGER.warning(
-                "SQS messages not visible (actual/expected): %s/%s", not_visible_count, 0
-            )
-
-        assert 0 == delayed_count, "no messages waiting for retry"
-        assert 0 == delayed_count + not_visible_count, "no in flight messages"
-
-    # wait for the queue to drain (max 60s)
-    retry(wait_for_done, retries=12, sleep=5.0)
-
-    def check_lambda_logs():
-        events = get_lambda_log_events(lambda_name_queue_batch, 10)
-        assert 3 == len(events), "expected 3 lambda invocations"
-
-    retry(check_lambda_logs, retries=5, sleep=3)
-
-    sqs_client.delete_queue(QueueUrl=queue_url)
 
 
 def test_kinesis_lambda_forward_chain(
