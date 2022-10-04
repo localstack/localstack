@@ -46,6 +46,9 @@ from localstack.aws.api.lambda_ import (
     FunctionName,
     FunctionUrlAuthType,
     FunctionUrlQualifier,
+)
+from localstack.aws.api.lambda_ import FunctionVersion as FunctionVersionApi
+from localstack.aws.api.lambda_ import (
     GetAccountSettingsResponse,
     GetCodeSigningConfigResponse,
     GetFunctionCodeSigningConfigResponse,
@@ -666,15 +669,26 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
         self,
         context: RequestContext,
         master_region: MasterRegion = None,  # (only relevant for lambda@edge)
-        function_version: FunctionVersion = None,  # TODO
-        marker: String = None,  # TODO
-        max_items: MaxListItems = None,  # TODO
+        function_version: FunctionVersionApi = None,
+        marker: String = None,
+        max_items: MaxListItems = None,
     ) -> ListFunctionsResponse:
         state = lambda_stores[context.account_id][context.region]
-        versions = [f.latest() for f in state.functions.values()]  # TODO: qualifier
-        return ListFunctionsResponse(
-            Functions=[self._map_to_list_response(self._map_config_out(fc)) for fc in versions]
+
+        if function_version == FunctionVersionApi.ALL:
+            # include all versions for all function
+            versions = [v for v in [f.versions for f in state.functions.values()]]
+        else:
+            versions = [f.latest() for f in state.functions.values()]
+
+        versions = [self._map_to_list_response(self._map_config_out(fc)) for fc in versions]
+        versions = PaginatedList(versions)
+        page, token = versions.get_page(
+            lambda version: version.config.function_arn(),
+            marker,
+            max_items,
         )
+        return ListFunctionsResponse(Functions=page, NextMarker=token)
 
     def get_function(
         self,
@@ -799,21 +813,26 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
         self,
         context: RequestContext,
         function_name: NamespacedFunctionName,
-        marker: String = None,  # TODO
-        max_items: MaxListItems = None,  # TODO
+        marker: String = None,
+        max_items: MaxListItems = None,
     ) -> ListVersionsByFunctionResponse:
         function_name = function_name_from_arn(function_name)
         function = self._get_function(
             function_name=function_name, region=context.region, account_id=context.account_id
         )
-        return ListVersionsByFunctionResponse(
-            Versions=[
-                self._map_to_list_response(
-                    self._map_config_out(version=version, return_qualified_arn=True)
-                )
-                for version in function.versions.values()
-            ]
+        versions = [
+            self._map_to_list_response(
+                self._map_config_out(version=version, return_qualified_arn=True)
+            )
+            for version in function.versions.values()
+        ]
+        items = PaginatedList(versions)
+        page, token = items.get_page(
+            lambda item: item,
+            marker,
+            max_items,
         )
+        return ListVersionsByFunctionResponse(Versions=page, NextMarker=token)
 
     # Alias
     def _map_alias_out(self, alias: VersionAlias, function: Function) -> AliasConfiguration:
@@ -922,20 +941,27 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
         context: RequestContext,
         function_name: FunctionName,
         function_version: Version = None,
-        marker: String = None,  # TODO
-        max_items: MaxListItems = None,  # TODO
+        marker: String = None,
+        max_items: MaxListItems = None,
     ) -> ListAliasesResponse:
         function_name = function_name_from_arn(function_name)
         function = self._get_function(
             function_name=function_name, region=context.region, account_id=context.account_id
         )
-        return ListAliasesResponse(
-            Aliases=[
-                self._map_alias_out(alias, function)
-                for alias in function.aliases.values()
-                if function_version is None or alias.function_version == function_version
-            ]
+        aliases = [
+            self._map_alias_out(alias, function)
+            for alias in function.aliases.values()
+            if function_version is None or alias.function_version == function_version
+        ]
+
+        aliases = PaginatedList(aliases)
+        page, token = aliases.get_page(
+            lambda alias: alias.config.function_arn(),
+            marker,
+            max_items,
         )
+
+        return ListAliasesResponse(Aliases=page, NextMarker=token)
 
     def delete_alias(
         self, context: RequestContext, function_name: FunctionName, name: Alias
@@ -1086,7 +1112,7 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
         state = lambda_stores[context.account_id][context.region]
         esms = PaginatedList(state.event_source_mappings)
         page, token = esms.get_page(
-            lambda x: x,  # TODO
+            lambda x: x,
             marker,
             max_items,
         )
@@ -1570,7 +1596,7 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
         cscs = [api_utils.map_csc(csc) for csc in state.code_signing_configs.values()]
         cscs = PaginatedList(cscs)
         page, token = cscs.get_page(
-            lambda csc: csc["CodeSigningConfigId"],  # TODO
+            lambda csc: csc["CodeSigningConfigId"],
             marker,
             max_items,
         )
