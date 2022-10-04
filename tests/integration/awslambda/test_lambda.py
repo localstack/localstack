@@ -12,8 +12,14 @@ from botocore.response import StreamingBody
 
 from localstack.aws.api.lambda_ import Runtime
 from localstack.services.awslambda.lambda_api import use_docker
-from localstack.testing.aws.lambda_utils import concurrency_update_done, is_old_provider
+from localstack.testing.aws.lambda_utils import (
+    concurrency_update_done,
+    get_invoke_init_type,
+    is_old_provider,
+    update_done,
+)
 from localstack.testing.aws.util import create_client_with_keys
+from localstack.testing.pytest.snapshot import is_aws
 from localstack.testing.snapshots.transformer import KeyValueBasedTransformer
 from localstack.testing.snapshots.transformer_utility import PATTERN_UUID
 from localstack.utils import testutil
@@ -821,6 +827,127 @@ class TestLambdaConcurrency:
                 FunctionName=func_name, Qualifier="$LATEST", Payload=json.dumps({"hello": "world"})
             )
         snapshot.match("invoke_latest_second_exc", e.value.response)
+
+    @pytest.mark.skipif(condition=is_aws(), reason="very slow (only execute when needed)")
+    @pytest.mark.skipif(condition=is_old_provider(), reason="not supported")
+    @pytest.mark.aws_validated
+    def test_lambda_provisioned_concurrency_moves_with_alias(
+        self, lambda_client, logs_client, create_lambda_function, snapshot
+    ):
+        """
+        create fn ⇒ publish version ⇒ create alias for version ⇒ put concurrency on alias
+        ⇒ new version with change ⇒ change alias to new version ⇒ concurrency moves with alias? same behavior for calls to alias/version?
+        """
+
+        func_name = f"test_lambda_{short_uid()}"
+        alias_name = f"test_alias_{short_uid()}"
+        snapshot.add_transformer(snapshot.transform.regex(alias_name, "<alias-name>"))
+
+        create_result = create_lambda_function(
+            func_name=func_name,
+            handler_file=TEST_LAMBDA_INTROSPECT_PYTHON,
+            runtime=Runtime.python3_8,
+            client=lambda_client,
+            timeout=2,
+        )
+        snapshot.match("create-result", create_result)
+
+        fn = lambda_client.get_function_configuration(FunctionName=func_name, Qualifier="$LATEST")
+        snapshot.match("get-function-configuration", fn)
+
+        first_ver = lambda_client.publish_version(
+            FunctionName=func_name, RevisionId=fn["RevisionId"], Description="my-first-version"
+        )
+        snapshot.match("publish_version_1", first_ver)
+
+        get_function_configuration = lambda_client.get_function_configuration(
+            FunctionName=func_name, Qualifier=first_ver["Version"]
+        )
+        snapshot.match("get_function_configuration_version_1", get_function_configuration)
+
+        lambda_client.get_waiter("function_updated_v2").wait(
+            FunctionName=func_name, Qualifier=first_ver["Version"]
+        )
+
+        # There's no ProvisionedConcurrencyConfiguration yet
+        assert get_invoke_init_type(lambda_client, func_name, first_ver["Version"]) == "on-demand"
+
+        # Create Alias and add ProvisionedConcurrencyConfiguration to it
+        alias = lambda_client.create_alias(
+            FunctionName=func_name, FunctionVersion=first_ver["Version"], Name=alias_name
+        )
+        snapshot.match("create_alias", alias)
+        get_function_result = lambda_client.get_function(
+            FunctionName=func_name, Qualifier=first_ver["Version"]
+        )
+        snapshot.match("get_function_before_provisioned", get_function_result)
+        lambda_client.put_provisioned_concurrency_config(
+            FunctionName=func_name, Qualifier=alias_name, ProvisionedConcurrentExecutions=1
+        )
+        assert wait_until(concurrency_update_done(lambda_client, func_name, alias_name))
+        get_function_result = lambda_client.get_function(
+            FunctionName=func_name, Qualifier=alias_name
+        )
+        snapshot.match("get_function_after_provisioned", get_function_result)
+
+        # Alias AND Version now both use provisioned-concurrency (!)
+        assert (
+            get_invoke_init_type(lambda_client, func_name, first_ver["Version"])
+            == "provisioned-concurrency"
+        )
+        assert (
+            get_invoke_init_type(lambda_client, func_name, alias_name) == "provisioned-concurrency"
+        )
+
+        # Update lambda configuration and publish new version
+        lambda_client.update_function_configuration(FunctionName=func_name, Timeout=10)
+        assert wait_until(update_done(lambda_client, func_name))
+        lambda_conf = lambda_client.get_function_configuration(FunctionName=func_name)
+        snapshot.match("get_function_after_update", lambda_conf)
+
+        # Move existing alias to the new version
+        new_version = lambda_client.publish_version(
+            FunctionName=func_name, RevisionId=lambda_conf["RevisionId"]
+        )
+        snapshot.match("publish_version_2", new_version)
+        new_alias = lambda_client.update_alias(
+            FunctionName=func_name, FunctionVersion=new_version["Version"], Name=alias_name
+        )
+        snapshot.match("update_alias", new_alias)
+
+        # lambda should now be provisioning new "hot" execution environments for this new alias->version pointer
+        # the old one should be de-provisioned
+        get_provisioned_config_result = lambda_client.get_provisioned_concurrency_config(
+            FunctionName=func_name, Qualifier=alias_name
+        )
+        snapshot.match("get_provisioned_config_after_alias_move", get_provisioned_config_result)
+        assert wait_until(
+            concurrency_update_done(lambda_client, func_name, alias_name),
+            strategy="linear",
+            wait=30,
+            max_retries=20,
+            _max_wait=600,
+        )  # this is SLOW (~6-8 min)
+
+        # concurrency should still only work for the alias now
+        # NOTE: the old version has been de-provisioned and will run 'on-demand' now!
+        assert get_invoke_init_type(lambda_client, func_name, first_ver["Version"]) == "on-demand"
+        assert (
+            get_invoke_init_type(lambda_client, func_name, new_version["Version"])
+            == "provisioned-concurrency"
+        )
+        assert (
+            get_invoke_init_type(lambda_client, func_name, alias_name) == "provisioned-concurrency"
+        )
+
+        # ProvisionedConcurrencyConfig should only be "registered" to the alias, not the referenced version
+        with pytest.raises(
+            lambda_client.exceptions.ProvisionedConcurrencyConfigNotFoundException
+        ) as e:
+            lambda_client.get_provisioned_concurrency_config(
+                FunctionName=func_name, Qualifier=new_version["Version"]
+            )
+        snapshot.match("provisioned_concurrency_notfound", e.value.response)
 
 
 class TestLambdaVersions:
