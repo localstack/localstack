@@ -1,7 +1,5 @@
 import os
 
-import pytest
-
 from localstack.utils.strings import short_uid
 
 
