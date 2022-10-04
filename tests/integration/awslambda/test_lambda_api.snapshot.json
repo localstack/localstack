@@ -6409,5 +6409,22 @@
         }
       }
     }
+  },
+  "tests/integration/awslambda/test_lambda_api.py::TestLambdaSizeLimits::test_oversized_unzipped_lambda": {
+    "recorded-date": "04-10-2022, 12:24:21",
+    "recorded-content": {
+      "invalid_param_exc": {
+        "Error": {
+          "Code": "InvalidParameterValueException",
+          "Message": "Unzipped size must be smaller than 262144000 bytes"
+        },
+        "Type": "User",
+        "message": "Unzipped size must be smaller than 262144000 bytes",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
   }
 }
