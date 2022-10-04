@@ -108,7 +108,7 @@ class AWSLambdaJavaPackage(Package):
         return ["0.2.21"]
 
     def _get_installer(self, version: str) -> PackageInstaller:
-        return AWSLambdaGoRuntimePackageInstaller("lambda-java-libs", version)
+        return AWSLambdaJavaPackageInstaller("lambda-java-libs", version)
 
 
 class AWSLambdaJavaPackageInstaller(PackageInstaller):
