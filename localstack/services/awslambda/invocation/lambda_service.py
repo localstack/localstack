@@ -75,7 +75,9 @@ class LambdaService:
         :param qualified_arn: Qualified arn for the version to stop
         """
         LOG.debug("Stopping version %s", qualified_arn)
-        version_manager = self.lambda_running_versions.pop(qualified_arn)
+        version_manager = self.lambda_running_versions.pop(
+            qualified_arn
+        ) or self.lambda_starting_versions.pop(qualified_arn)
         if not version_manager:
             raise ValueError(f"Unable to find version manager for {qualified_arn}")
         self.task_executor.submit(version_manager.stop)

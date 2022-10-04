@@ -485,10 +485,10 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
                 ),
             )
             fn.versions["$LATEST"] = version
-            state.functions[function_name] = fn
             if request.get("Tags"):
-                self._store_tags(state, arn.unqualified_arn(), request["Tags"])
-                # TODO: should validation failures here "fail" the function creation? we'd need to move this up then
+                self._store_tags(fn, request["Tags"])
+                # TODO: should validation failures here "fail" the function creation like it is now?
+            state.functions[function_name] = fn
         self.lambda_service.create_function_version(version)
 
         if request.get("Publish"):
@@ -696,7 +696,6 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
         function_name: NamespacedFunctionName,
         qualifier: Qualifier = None,  # TODO
     ) -> GetFunctionResponse:
-        state = lambda_stores[context.account_id][context.region]
         function_name, qualifier = get_name_and_qualifier(function_name, qualifier, context.region)
         version = self._get_function_version(
             function_name=function_name,
@@ -704,9 +703,10 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
             account_id=context.account_id,
             region=context.region,
         )
-        tags = self._get_tags(
-            state, unqualified_lambda_arn(function_name, context.account_id, context.region)
+        fn = self._get_function(
+            function_name=function_name, account_id=context.account_id, region=context.region
         )
+        tags = self._get_tags(fn)
         additional_fields = {}
         if tags:
             additional_fields["Tags"] = tags
@@ -2341,16 +2341,27 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
     # =======================================
     # only function ARNs are available for tagging
 
-    def _get_tags(self, store: LambdaStore, resource_arn: str) -> dict[str, str]:
-        return store.TAGS.get(resource_arn, {})
+    def _get_tags(self, function: Function) -> dict[str, str]:
+        return function.tags or {}
 
-    def _store_tags(self, store: LambdaStore, resource_arn: str, tags: dict[str, str]):
-        stored_tags = store.TAGS.setdefault(resource_arn, {})
-        if len(stored_tags) + len(tags) > LAMBDA_TAG_LIMIT_PER_RESOURCE:
+    def _store_tags(self, function: Function, tags: dict[str, str]):
+        if len(tags) > LAMBDA_TAG_LIMIT_PER_RESOURCE:
             raise InvalidParameterValueException(
                 "Number of tags exceeds function tag limit.", Type="User"
             )
-        stored_tags.update(tags)
+        with function.lock:
+            function.tags = tags
+            # dirty hack for changed revision id, should reevaluate model to prevent this:
+            latest_version = function.versions["$LATEST"]
+            function.versions["$LATEST"] = dataclasses.replace(
+                latest_version, config=dataclasses.replace(latest_version.config)
+            )
+
+    def _update_tags(self, function: Function, tags: dict[str, str]):
+        with function.lock:
+            stored_tags = function.tags or {}
+            stored_tags |= tags
+            self._store_tags(function=function, tags=stored_tags)
 
     def tag_resource(self, context: RequestContext, resource: FunctionArn, tags: Tags) -> None:
         if not tags:
@@ -2363,7 +2374,6 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
                 Type="User",
             )
 
-        state = lambda_stores[context.account_id][context.region]
         pattern_match = FN_ARN_PATTERN.search(resource)
         if not pattern_match:
             raise ValidationException(
@@ -2379,37 +2389,40 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
                 Type="User",
             )
 
-        if fn_name not in state.functions:
-            raise ResourceNotFoundException(f"Function not found: {resource}", Type="User")
+        fn = self._get_function(
+            function_name=fn_name, account_id=context.account_id, region=context.region
+        )
 
-        self._store_tags(state, resource, tags)
+        self._update_tags(fn, tags)
 
     def list_tags(self, context: RequestContext, resource: FunctionArn) -> ListTagsResponse:
-        state = lambda_stores[context.account_id][context.region]
+        function_name = get_function_name(resource, context.region)
+        fn = self._get_function(
+            function_name=function_name, account_id=context.account_id, region=context.region
+        )
 
-        if get_function_name(resource, context.region) not in state.functions:
-            raise ResourceNotFoundException(f"Function not found: {resource}", Type="User")
-
-        return ListTagsResponse(Tags=self._get_tags(state, resource))
+        return ListTagsResponse(Tags=self._get_tags(fn))
 
     def untag_resource(
         self, context: RequestContext, resource: FunctionArn, tag_keys: TagKeyList
     ) -> None:
-        state = lambda_stores[context.account_id][context.region]
-
         if not tag_keys:
             raise ValidationException(
                 "1 validation error detected: Value null at 'tagKeys' failed to satisfy constraint: Member must not be null"
             )  # should probably be generalized a bit
 
-        if get_function_name(resource, context.region) not in state.functions:
-            raise ResourceNotFoundException(f"Function not found: {resource}", Type="User")
+        function_name = get_function_name(resource, context.region)
+        fn = self._get_function(
+            function_name=function_name, account_id=context.account_id, region=context.region
+        )
 
-        tags = state.TAGS.get(resource)
+        # copy first, then set explicitly in store tags
+        tags = dict(fn.tags or {})
         if tags:
             for key in tag_keys:
                 if key in tags:
                     tags.pop(key)
+        self._store_tags(function=fn, tags=tags)
 
     # =======================================
     # =======  LEGACY / DEPRECATED   ========

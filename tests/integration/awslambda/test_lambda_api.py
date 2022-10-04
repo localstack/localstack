@@ -2766,6 +2766,10 @@ class TestLambdaTags:
         lambda_client.untag_resource(Resource=fn_arn, TagKeys=["key_c", "key_d"])
         snapshot_tags_for_resource(fn_arn, "postuntag")
 
+        # remove all tags
+        lambda_client.untag_resource(Resource=fn_arn, TagKeys=["key_a", "key_b", "key_e"])
+        snapshot_tags_for_resource(fn_arn, "postuntagall")
+
         lambda_client.delete_function(FunctionName=function_name)
         with pytest.raises(lambda_client.exceptions.ResourceNotFoundException) as e:
             lambda_client.list_tags(Resource=fn_arn)
