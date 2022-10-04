@@ -5,8 +5,6 @@ import pytest
 from localstack.utils.strings import short_uid
 
 
-# Domain deployment in AWS takes too much time
-@pytest.mark.only_localstack
 def test_domain(deploy_cfn_template, opensearch_client, cfn_client):
     name = f"domain-{short_uid()}"
 
