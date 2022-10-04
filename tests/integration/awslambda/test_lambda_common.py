@@ -121,6 +121,8 @@ class TestLambdaRuntimesCommon:
             "$..environment.AWS_EXECUTION_ENV",  # Only rust runtime
             "$..environment.LD_LIBRARY_PATH",  # Only rust runtime (additional /var/lang/bin)
             "$..environment.PATH",  # Only rust runtime (additional /var/lang/bin)
+            "$..CodeSha256",  # can differ between compilation rounds  # TODO make zip creation deterministic
+            "$..CodeSize",  # can differ for compiled runtimes  # TODO make zip creation deterministic
         ]
     )
     @pytest.mark.multiruntime(scenario="introspection")
@@ -156,6 +158,7 @@ class TestLambdaRuntimesCommon:
         snapshot.match("invocation_result_payload_qualified", invocation_result_payload_qualified)
 
     @pytest.mark.multiruntime(scenario="uncaughtexception")
+    @pytest.mark.skip_snapshot_verify(paths=["$..CodeSha256", "$..CodeSize"])
     def test_uncaught_exception_invoke(self, lambda_client, multiruntime_lambda, snapshot):
         create_function_result = multiruntime_lambda.create_function(MemorySize=1024)
         snapshot.match("create_function_result", create_function_result)
