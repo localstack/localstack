@@ -790,7 +790,7 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
         except Exception as e:
             LOG.error("Error while invoking lambda", exc_info=e)
             # TODO map to correct exception
-            raise ServiceException() from e
+            raise ServiceException("Internal error while executing lambda") from e
 
         LOG.debug("Lambda invocation duration: %0.2fms", (time.perf_counter() - time_before) * 1000)
 

@@ -645,6 +645,47 @@ class TestLambdaFeatures:
 
         assert 204 == result["StatusCode"]
 
+    @pytest.mark.skip(reason="Not yet implemented")
+    @pytest.mark.aws_validated
+    def test_invocation_type_event_error(
+        self, lambda_client, create_lambda_function, logs_client, snapshot
+    ):
+        snapshot.add_transformer(snapshot.transform.regex(PATTERN_UUID, "<request-id>"))
+
+        function_name = f"test-function-{short_uid()}"
+        creation_response = create_lambda_function(
+            func_name=function_name,
+            handler_file=TEST_LAMBDA_PYTHON_UNHANDLED_ERROR,
+            runtime="python3.9",
+        )
+        snapshot.match("creation_response", creation_response)
+        invocation_response = lambda_client.invoke(
+            FunctionName=function_name, Payload=b"{}", InvocationType="Event"
+        )
+        snapshot.match("invocation_response", invocation_response)
+
+        # check logs if lambda was executed twice
+        log_group_name = f"/aws/lambda/{function_name}"
+
+        def assert_events():
+            ls_result = logs_client.describe_log_streams(logGroupName=log_group_name)
+            log_stream_name = ls_result["logStreams"][0]["logStreamName"]
+            log_events = logs_client.get_log_events(
+                logGroupName=log_group_name, logStreamName=log_stream_name
+            )["events"]
+
+            assert len([e["message"] for e in log_events if e["message"].startswith("START")]) == 2
+            assert len([e["message"] for e in log_events if e["message"].startswith("REPORT")]) == 2
+            return log_events
+
+        events = retry(assert_events, retries=120, sleep=2)
+        snapshot.match("log_events", events)
+        # check if both request ids are identical, since snapshots currently do not support reference replacement for regexes
+        start_messages = [e["message"] for e in events if e["message"].startswith("START")]
+        uuids = [PATTERN_UUID.search(message).group(0) for message in start_messages]
+        assert len(uuids) == 2
+        assert uuids[0] == uuids[1]
+
     @pytest.mark.skip_snapshot_verify(condition=is_old_provider)
     @pytest.mark.aws_validated
     def test_invocation_with_qualifier(
