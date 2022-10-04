@@ -535,6 +535,20 @@ class TestLambdaURL:
 
 
 class TestLambdaFeatures:
+    @pytest.fixture(
+        params=[("python3.9", TEST_LAMBDA_PYTHON_ECHO), ("nodejs16.x", TEST_LAMBDA_NODEJS_ECHO)],
+        ids=["python3.9", "nodejs16.x"],
+    )
+    def invocation_echo_lambda(self, create_lambda_function, request):
+        function_name = f"echo-func-{short_uid()}"
+        runtime, handler = request.param
+        creation_result = create_lambda_function(
+            handler_file=handler,
+            func_name=function_name,
+            runtime=runtime,
+        )
+        return creation_result["CreateFunctionResponse"]["FunctionArn"]
+
     @pytest.mark.skip_snapshot_verify(
         condition=is_old_provider, paths=["$..Payload.context.memory_limit_in_mb", "$..logs.logs"]
     )

@@ -1930,7 +1930,7 @@
     }
   },
   "tests/integration/awslambda/test_lambda_common.py::TestLambdaRuntimesCommon::test_uncaught_exception_invoke[python3.7]": {
-    "recorded-date": "15-09-2022, 12:22:55",
+    "recorded-date": "04-10-2022, 11:37:05",
     "recorded-content": {
       "create_function_result": {
         "Architectures": [
@@ -1983,7 +1983,7 @@
     }
   },
   "tests/integration/awslambda/test_lambda_common.py::TestLambdaRuntimesCommon::test_uncaught_exception_invoke[python3.8]": {
-    "recorded-date": "15-09-2022, 12:22:56",
+    "recorded-date": "04-10-2022, 11:37:07",
     "recorded-content": {
       "create_function_result": {
         "Architectures": [
@@ -2036,7 +2036,7 @@
     }
   },
   "tests/integration/awslambda/test_lambda_common.py::TestLambdaRuntimesCommon::test_uncaught_exception_invoke[python3.9]": {
-    "recorded-date": "15-09-2022, 12:22:59",
+    "recorded-date": "04-10-2022, 11:37:09",
     "recorded-content": {
       "create_function_result": {
         "Architectures": [
@@ -2090,7 +2090,7 @@
     }
   },
   "tests/integration/awslambda/test_lambda_common.py::TestLambdaRuntimesCommon::test_uncaught_exception_invoke[nodejs12.x]": {
-    "recorded-date": "15-09-2022, 12:23:01",
+    "recorded-date": "04-10-2022, 11:37:10",
     "recorded-content": {
       "create_function_result": {
         "Architectures": [
@@ -2145,7 +2145,7 @@
     }
   },
   "tests/integration/awslambda/test_lambda_common.py::TestLambdaRuntimesCommon::test_uncaught_exception_invoke[nodejs14.x]": {
-    "recorded-date": "15-09-2022, 12:23:03",
+    "recorded-date": "04-10-2022, 11:37:13",
     "recorded-content": {
       "create_function_result": {
         "Architectures": [
@@ -2200,7 +2200,7 @@
     }
   },
   "tests/integration/awslambda/test_lambda_common.py::TestLambdaRuntimesCommon::test_uncaught_exception_invoke[nodejs16.x]": {
-    "recorded-date": "15-09-2022, 12:23:05",
+    "recorded-date": "04-10-2022, 11:37:15",
     "recorded-content": {
       "create_function_result": {
         "Architectures": [
@@ -2255,14 +2255,14 @@
     }
   },
   "tests/integration/awslambda/test_lambda_common.py::TestLambdaRuntimesCommon::test_uncaught_exception_invoke[java8]": {
-    "recorded-date": "15-09-2022, 12:23:37",
+    "recorded-date": "04-10-2022, 11:37:24",
     "recorded-content": {
       "create_function_result": {
         "Architectures": [
           "x86_64"
         ],
-        "CodeSha256": "/x6YZVPttC6HfxO4xBZcCxdEtzeV8IWUBUvXlsvf9Wo=",
-        "CodeSize": 13435743,
+        "CodeSha256": "CDTMgI4RvjJ235R+Xr8bMgz45tM+xZiz0sN+JbC/f1Y=",
+        "CodeSize": 13435745,
         "Description": "",
         "EphemeralStorage": {
           "Size": 512
@@ -2309,14 +2309,14 @@
     }
   },
   "tests/integration/awslambda/test_lambda_common.py::TestLambdaRuntimesCommon::test_uncaught_exception_invoke[java8.al2]": {
-    "recorded-date": "15-09-2022, 12:23:43",
+    "recorded-date": "04-10-2022, 11:37:32",
     "recorded-content": {
       "create_function_result": {
         "Architectures": [
           "x86_64"
         ],
-        "CodeSha256": "/x6YZVPttC6HfxO4xBZcCxdEtzeV8IWUBUvXlsvf9Wo=",
-        "CodeSize": 13435743,
+        "CodeSha256": "CDTMgI4RvjJ235R+Xr8bMgz45tM+xZiz0sN+JbC/f1Y=",
+        "CodeSize": 13435745,
         "Description": "",
         "EphemeralStorage": {
           "Size": 512
@@ -2363,14 +2363,14 @@
     }
   },
   "tests/integration/awslambda/test_lambda_common.py::TestLambdaRuntimesCommon::test_uncaught_exception_invoke[java11]": {
-    "recorded-date": "15-09-2022, 12:23:49",
+    "recorded-date": "04-10-2022, 11:37:38",
     "recorded-content": {
       "create_function_result": {
         "Architectures": [
           "x86_64"
         ],
-        "CodeSha256": "/x6YZVPttC6HfxO4xBZcCxdEtzeV8IWUBUvXlsvf9Wo=",
-        "CodeSize": 13435743,
+        "CodeSha256": "CDTMgI4RvjJ235R+Xr8bMgz45tM+xZiz0sN+JbC/f1Y=",
+        "CodeSize": 13435745,
         "Description": "",
         "EphemeralStorage": {
           "Size": 512
@@ -2417,7 +2417,7 @@
     }
   },
   "tests/integration/awslambda/test_lambda_common.py::TestLambdaRuntimesCommon::test_uncaught_exception_invoke[ruby2.7]": {
-    "recorded-date": "15-09-2022, 12:23:06",
+    "recorded-date": "04-10-2022, 11:37:18",
     "recorded-content": {
       "create_function_result": {
         "Architectures": [
@@ -2470,13 +2470,13 @@
     }
   },
   "tests/integration/awslambda/test_lambda_common.py::TestLambdaRuntimesCommon::test_uncaught_exception_invoke[go1.x]": {
-    "recorded-date": "15-09-2022, 12:24:12",
+    "recorded-date": "04-10-2022, 11:37:46",
     "recorded-content": {
       "create_function_result": {
         "Architectures": [
           "x86_64"
         ],
-        "CodeSha256": "tui3OV2J3NuKRayMff81Y2isyGKtQHP3Dh8ynDYLtW0=",
+        "CodeSha256": "F6gAudoAny/pm+SVAsBDVJR8bRSJriu8BF8T+1fzSh0=",
         "CodeSize": 8995949,
         "Description": "",
         "EphemeralStorage": {
@@ -2520,14 +2520,14 @@
     }
   },
   "tests/integration/awslambda/test_lambda_common.py::TestLambdaRuntimesCommon::test_uncaught_exception_invoke[provided]": {
-    "recorded-date": "15-09-2022, 12:25:22",
+    "recorded-date": "04-10-2022, 11:38:58",
     "recorded-content": {
       "create_function_result": {
         "Architectures": [
           "x86_64"
         ],
-        "CodeSha256": "9G9QZyVmfxnJMlszrbzxNohAlfplGASEejndCTtNs60=",
-        "CodeSize": 6482692,
+        "CodeSha256": "oXaLiDKmc1CMbhSXB8wJ5A+vddZKKsnx9tYoYhFm2M4=",
+        "CodeSize": 6503156,
         "Description": "",
         "EphemeralStorage": {
           "Size": 512
@@ -2558,7 +2558,7 @@
         "ExecutedVersion": "$LATEST",
         "FunctionError": "Unhandled",
         "Payload": {
-          "errorType": "&alloc::boxed::Box<dyn std::error::Error+core::marker::Send+core::marker::Sync>",
+          "errorType": "&alloc::boxed::Box<dyn std::error::Error+core::marker::Sync+core::marker::Send>",
           "errorMessage": "Error: \"some_error_msg\""
         },
         "StatusCode": 200,
@@ -2570,14 +2570,14 @@
     }
   },
   "tests/integration/awslambda/test_lambda_common.py::TestLambdaRuntimesCommon::test_uncaught_exception_invoke[provided.al2]": {
-    "recorded-date": "15-09-2022, 12:25:26",
+    "recorded-date": "04-10-2022, 11:39:01",
     "recorded-content": {
       "create_function_result": {
         "Architectures": [
           "x86_64"
         ],
-        "CodeSha256": "9G9QZyVmfxnJMlszrbzxNohAlfplGASEejndCTtNs60=",
-        "CodeSize": 6482692,
+        "CodeSha256": "oXaLiDKmc1CMbhSXB8wJ5A+vddZKKsnx9tYoYhFm2M4=",
+        "CodeSize": 6503156,
         "Description": "",
         "EphemeralStorage": {
           "Size": 512
@@ -2608,7 +2608,7 @@
         "ExecutedVersion": "$LATEST",
         "FunctionError": "Unhandled",
         "Payload": {
-          "errorType": "&alloc::boxed::Box<dyn std::error::Error+core::marker::Send+core::marker::Sync>",
+          "errorType": "&alloc::boxed::Box<dyn std::error::Error+core::marker::Sync+core::marker::Send>",
           "errorMessage": "Error: \"some_error_msg\""
         },
         "StatusCode": 200,
@@ -2620,13 +2620,13 @@
     }
   },
   "tests/integration/awslambda/test_lambda_common.py::TestLambdaRuntimesCommon::test_uncaught_exception_invoke[dotnet6]": {
-    "recorded-date": "15-09-2022, 12:24:03",
+    "recorded-date": "04-10-2022, 11:37:41",
     "recorded-content": {
       "create_function_result": {
         "Architectures": [
           "x86_64"
         ],
-        "CodeSha256": "Am9SQjRxxZrovjmdnmc8+G/xeVsyT/wCHM9tQ22m1JM=",
+        "CodeSha256": "ENi5aDB91dW3J4RbO9yDRFykfQHZJCCMi6xUsVUOrYg=",
         "CodeSize": 30565,
         "Description": "",
         "EphemeralStorage": {
@@ -2677,13 +2677,13 @@
     }
   },
   "tests/integration/awslambda/test_lambda_common.py::TestLambdaRuntimesCommon::test_uncaught_exception_invoke[dotnetcore3.1]": {
-    "recorded-date": "15-09-2022, 12:23:56",
+    "recorded-date": "04-10-2022, 11:37:39",
     "recorded-content": {
       "create_function_result": {
         "Architectures": [
           "x86_64"
         ],
-        "CodeSha256": "1PkQr1o8ibE6GbUiSMh7IGxcWBCKFa/HR4HOqisXNRo=",
+        "CodeSha256": "pmLwK/4TcyPgoepfAYqAVSfmwpt8451++whmHYpuYaY=",
         "CodeSize": 29294,
         "Description": "",
         "EphemeralStorage": {
