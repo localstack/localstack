@@ -2211,9 +2211,10 @@ class TestS3PresignedUrl:
         snapshot.match("get_object", response)
 
     @pytest.mark.aws_validated
-    # @pytest.mark.xfail(
-    #     condition=LEGACY_S3_PROVIDER, reason="status code in hardcoded in legacy provider"
-    # )
+    @pytest.mark.xfail(
+        condition=not config.LEGACY_EDGE_PROXY and LEGACY_S3_PROVIDER,
+        reason="failing with new HTTP gateway (only in CI)",
+    )
     def test_post_object_with_files(self, s3_client, s3_bucket):
         object_key = "test-presigned-post-key"
 
