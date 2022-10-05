@@ -175,7 +175,7 @@ class LambdaRegion(RegionBackend):
         Return the region backend for the region extracted from the given resource ARN. If resource_arn is
         not an ARN (e.g., a function name instead), the region is extracted from the current request context.
         """
-        region = extract_region_from_arn(resource_arn)
+        region = extract_region_from_arn(resource_arn or "")
         return cls.get(region=region)
 
 
