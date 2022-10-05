@@ -101,7 +101,7 @@ signing_name_path_prefix_rules = {
         "/2021-01-01": "opensearch",
     },
     "sagemaker": {
-        "/endpoints/": "sagemaker-runtime",
+        "/endpoints": "sagemaker-runtime",
         "/human-loops": "sagemaker-a2i-runtime",
     },
 }
