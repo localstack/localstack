@@ -7,15 +7,23 @@ from typing import TYPE_CHECKING, Any, Optional
 
 from localstack.aws.api import lambda_ as api_spec
 from localstack.aws.api.lambda_ import (
+    AliasConfiguration,
+    EnvironmentResponse,
+    EphemeralStorage,
+    FunctionConfiguration,
     FunctionUrlAuthType,
     InvalidParameterValueException,
     ResourceNotFoundException,
+    TracingConfig,
 )
 
 if TYPE_CHECKING:
     from localstack.services.awslambda.invocation.lambda_models import (
         CodeSigningConfig,
+        Function,
         FunctionUrlConfig,
+        FunctionVersion,
+        VersionAlias,
     )
     from localstack.services.awslambda.invocation.models import LambdaStore
 
@@ -31,7 +39,7 @@ DESTINATION_ARN_PATTERN = re.compile(
 
 # Pattern for extracting various attributes from a full or partial ARN or just a function name.
 FUNCTION_NAME_REGEX = re.compile(
-    r"(arn:(aws[a-zA-Z-]*)?:lambda:)?((?P<region>[a-z]{2}(-gov)?-[a-z]+-\d{1}):)?(?P<account>\d{12}:)?(function:)?(?P<name>[a-zA-Z0-9-_\.]+)(:(?P<qualifier>\$LATEST|[a-zA-Z0-9-_]+))?"
+    r"(arn:(aws[a-zA-Z-]*):lambda:)?((?P<region>[a-z]{2}(-gov)?-[a-z]+-\d{1}):)?(?P<account>\d{12}:)?(function:)?(?P<name>[a-zA-Z0-9-_\.]+)(:(?P<qualifier>\$LATEST|[a-zA-Z0-9-_]+))?"
 )  # also length 1-170 incl.
 # Pattern for a lambda function handler
 HANDLER_REGEX = re.compile(r"[^\s]+")
@@ -47,6 +55,11 @@ SIGNING_JOB_ARN_REGEX = re.compile(
 SIGNING_PROFILE_VERSION_ARN_REGEX = re.compile(
     r"arn:(aws[a-zA-Z0-9-]*):([a-zA-Z0-9\-])+:([a-z]{2}(-gov)?-[a-z]+-\d{1})?:(\d{12})?:(.*)"
 )
+# Pattern for a version qualifier
+VERSION_REGEX = re.compile(r"^[0-9]+$")
+# Pattern for an alias qualifier
+ALIAS_REGEX = re.compile(r"(?!^[0-9]+$)([a-zA-Z0-9-_]+)")
+
 
 URL_CHAR_SET = string.ascii_lowercase + string.digits
 # Date format as returned by the lambda service
@@ -90,10 +103,6 @@ def get_config_for_url(store: "LambdaStore", url_id: str) -> "Optional[FunctionU
             if fn_url_config.url_id == url_id:
                 return fn_url_config
     return None
-
-
-VERSION_REGEX = re.compile(r"^[0-9]+$")
-ALIAS_REGEX = re.compile(r"(?!^[0-9]+$)([a-zA-Z0-9-_]+)")
 
 
 def qualifier_is_version(qualifier: str) -> bool:
@@ -277,3 +286,106 @@ def format_lambda_date(date_to_format: datetime.datetime) -> str:
 def generate_lambda_date() -> str:
     """Get the current date as string generated with the lambda date format"""
     return format_lambda_date(datetime.datetime.now())
+
+
+def map_update_status_config(version: "FunctionVersion") -> dict[str, str]:
+    """Map version model to dict output"""
+    result = {}
+    if version.config.last_update:
+        if version.config.last_update.status:
+            result["LastUpdateStatus"] = version.config.last_update.status
+        if version.config.last_update.code:
+            result["LastUpdateStatusReasonCode"] = version.config.last_update.code
+        if version.config.last_update.reason:
+            result["LastUpdateStatusReason"] = version.config.last_update.reason
+    return result
+
+
+def map_state_config(version: "FunctionVersion") -> dict[str, str]:
+    """Map version state to dict output"""
+    result = {}
+    if version_state := version.config.state:
+        if version_state.state:
+            result["State"] = version_state.state
+        if version_state.reason:
+            result["StateReason"] = version_state.reason
+        if version_state.code:
+            result["StateReasonCode"] = version_state.code
+    return result
+
+
+def map_config_out(
+    version: "FunctionVersion", return_qualified_arn: bool = False
+) -> FunctionConfiguration:
+    """map version config to function configuration"""
+
+    # handle optional entries that shouldn't be rendered at all if not present
+    optional_kwargs = {}
+    optional_kwargs |= map_update_status_config(version)
+    optional_kwargs |= map_state_config(version)
+
+    if version.config.architectures:
+        optional_kwargs["Architectures"] = version.config.architectures
+    if version.config.environment is not None:
+        optional_kwargs["Environment"] = EnvironmentResponse(
+            Variables=version.config.environment
+        )  # TODO: Errors key?
+
+    func_conf = FunctionConfiguration(
+        RevisionId=version.config.revision_id,
+        FunctionName=version.id.function_name,
+        FunctionArn=version.id.qualified_arn()
+        if return_qualified_arn
+        else version.id.unqualified_arn(),  # qualifier usually not included
+        LastModified=version.config.last_modified,
+        Version=version.id.qualifier,
+        Description=version.config.description,
+        Role=version.config.role,
+        Timeout=version.config.timeout,
+        Runtime=version.config.runtime,
+        Handler=version.config.handler,
+        CodeSize=version.config.code.code_size,
+        CodeSha256=version.config.code.code_sha256,
+        MemorySize=version.config.memory_size,
+        PackageType=version.config.package_type,
+        TracingConfig=TracingConfig(Mode=version.config.tracing_config_mode),
+        EphemeralStorage=EphemeralStorage(Size=version.config.ephemeral_storage.size),
+        **optional_kwargs,
+    )
+    return func_conf
+
+
+def map_to_list_response(config: FunctionConfiguration) -> FunctionConfiguration:
+    """remove values not usually presented in list operations from function config output"""
+    shallow_copy = config.copy()
+    for k in [
+        "State",
+        "StateReason",
+        "StateReasonCode",
+        "LastUpdateStatus",
+        "LastUpdateStatusReason",
+        "LastUpdateStatusReasonCode",
+    ]:
+        if shallow_copy.get(k):
+            del shallow_copy[k]
+    return shallow_copy
+
+
+def map_alias_out(alias: "VersionAlias", function: "Function") -> AliasConfiguration:
+    """map alias model to alias configuration output"""
+    alias_arn = f"{function.latest().id.unqualified_arn()}:{alias.name}"
+    optional_kwargs = {}
+    if alias.routing_configuration:
+        optional_kwargs |= {
+            "RoutingConfig": {
+                "AdditionalVersionWeights": alias.routing_configuration.version_weights
+            }
+        }
+    return AliasConfiguration(
+        AliasArn=alias_arn,
+        Description=alias.description,
+        FunctionVersion=alias.function_version,
+        Name=alias.name,
+        RevisionId=alias.revision_id,
+        **optional_kwargs,
+    )

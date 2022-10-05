@@ -1013,6 +1013,12 @@ class TestLambdaAlias:
                 RoutingConfig={"AdditionalVersionWeights": {"2": 0.5}},
             )
         snapshot.match("routing_config_exc_already_exist", e.value.response)
+        with pytest.raises(lambda_client.exceptions.ResourceNotFoundException) as e:
+            lambda_client.get_alias(
+                FunctionName=function_name,
+                Name="non-existent",
+            )
+        snapshot.match("alias_does_not_exist_esc", e.value.response)
 
 
 @pytest.mark.skipif(is_old_provider(), reason="focusing on new provider")

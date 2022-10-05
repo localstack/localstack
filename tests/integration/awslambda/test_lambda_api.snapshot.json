@@ -2840,7 +2840,7 @@
     }
   },
   "tests/integration/awslambda/test_lambda_api.py::TestLambdaAlias::test_notfound_and_invalid_routingconfigs": {
-    "recorded-date": "30-09-2022, 15:32:09",
+    "recorded-date": "05-10-2022, 17:03:46",
     "recorded-content": {
       "create_response": {
         "Architectures": [
@@ -3100,6 +3100,18 @@
         "ResponseMetadata": {
           "HTTPHeaders": {},
           "HTTPStatusCode": 409
+        }
+      },
+      "alias_does_not_exist_esc": {
+        "Error": {
+          "Code": "ResourceNotFoundException",
+          "Message": "Cannot find alias arn: arn:aws:lambda:<region>:111111111111:function:<function-name:1>:non-existent"
+        },
+        "Message": "Cannot find alias arn: arn:aws:lambda:<region>:111111111111:function:<function-name:1>:non-existent",
+        "Type": "User",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 404
         }
       }
     }
