@@ -14,12 +14,7 @@ from plugin import Plugin, PluginManager
 
 from localstack import config
 from localstack.config import dirs
-from localstack.constants import (
-    DEFAULT_SERVICE_PORTS,
-    KMS_URL_PATTERN,
-    LOCALSTACK_MAVEN_VERSION,
-    MAVEN_REPO_URL,
-)
+from localstack.constants import DEFAULT_SERVICE_PORTS, LOCALSTACK_MAVEN_VERSION, MAVEN_REPO_URL
 from localstack.runtime import hooks
 from localstack.utils.archives import untar, unzip
 from localstack.utils.files import chmod_r, load_file, mkdir, new_tmp_file, rm_rf, save_file
@@ -34,11 +29,9 @@ LOG = logging.getLogger(__name__)
 INSTALL_DIR_NPM = "%s/node_modules" % dirs.static_libs
 INSTALL_DIR_DDB = "%s/dynamodb" % dirs.static_libs
 INSTALL_DIR_KCL = "%s/amazon-kinesis-client" % dirs.static_libs
-INSTALL_DIR_KMS = "%s/kms" % dirs.static_libs
 INSTALL_DIR_ELASTICMQ = "%s/elasticmq" % dirs.var_libs
 INSTALL_PATH_DDB_JAR = os.path.join(INSTALL_DIR_DDB, "DynamoDBLocal.jar")
 INSTALL_PATH_KCL_JAR = os.path.join(INSTALL_DIR_KCL, "aws-java-sdk-sts.jar")
-INSTALL_PATH_KMS_BINARY_PATTERN = os.path.join(INSTALL_DIR_KMS, "local-kms.<arch>.bin")
 INSTALL_PATH_ELASTICMQ_JAR = os.path.join(INSTALL_DIR_ELASTICMQ, "elasticmq-server.jar")
 
 ARTIFACTS_REPO = "https://github.com/localstack/localstack-artifacts"
@@ -71,17 +64,6 @@ TEST_LAMBDA_JAVA = os.path.join(config.dirs.var_libs, "localstack-utils-tests.ja
 TEST_LAMBDA_JAR_URL = "{url}/cloud/localstack/{name}/{version}/{name}-{version}-tests.jar".format(
     version=LOCALSTACK_MAVEN_VERSION, url=MAVEN_REPO_URL, name="localstack-utils"
 )
-
-
-def install_local_kms():
-    local_arch = f"{platform.system().lower()}-{get_arch()}"
-    binary_path = INSTALL_PATH_KMS_BINARY_PATTERN.replace("<arch>", local_arch)
-    if not os.path.exists(binary_path):
-        log_install_msg("KMS")
-        mkdir(INSTALL_DIR_KMS)
-        kms_url = KMS_URL_PATTERN.replace("<arch>", local_arch)
-        download(kms_url, binary_path)
-        chmod_r(binary_path, 0o777)
 
 
 def add_file_to_jar(class_file, class_url, target_jar, base_dir=None):
@@ -184,6 +166,7 @@ def install_component(name):
     from localstack.services.awslambda.packages import awslambda_runtime_package
     from localstack.services.dynamodb.packages import dynamodblocal_package
     from localstack.services.kinesis.packages import kinesismock_package
+    from localstack.services.kms.packages import kms_local_package
     from localstack.services.sqs.legacy.packages import elasticmq_package
     from localstack.services.stepfunctions.packages import stepfunctions_local_package
 
@@ -191,7 +174,7 @@ def install_component(name):
         "cloudformation": install_cloudformation_libs,
         "dynamodb": dynamodblocal_package.install,
         "kinesis": kinesismock_package.install,
-        "kms": install_local_kms,
+        "kms": kms_local_package.install,
         "lambda": awslambda_runtime_package.install,
         "sqs": elasticmq_package.install,
         "stepfunctions": stepfunctions_local_package.install,
@@ -300,6 +283,7 @@ class CommunityInstallerRepository(InstallerRepository):
         )
         from localstack.services.dynamodb.packages import dynamodblocal_package
         from localstack.services.kinesis.packages import kinesalite_package, kinesismock_package
+        from localstack.services.kms.packages import kms_local_package
         from localstack.services.opensearch.packages import (
             elasticsearch_package,
             opensearch_package,
@@ -318,7 +302,7 @@ class CommunityInstallerRepository(InstallerRepository):
             ("kinesalite", kinesalite_package),
             ("kinesis-mock", kinesismock_package),
             ("lambda-java-libs", lambda_java_libs_package),
-            ("local-kms", install_local_kms),
+            ("local-kms", kms_local_package),
             ("postgresql", PostgresqlPackage()),
             ("stepfunctions-local", stepfunctions_local_package),
             ("terraform", install_terraform),
