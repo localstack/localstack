@@ -4,7 +4,6 @@ from functools import wraps
 from typing import Callable, Dict, Optional, Union
 from urllib.parse import urlparse
 
-from moto.core.utils import gen_amzn_requestid_long
 from moto.s3.exceptions import MissingBucket
 from moto.s3.models import FakeBucket, FakeKey
 from werkzeug.datastructures import Headers
@@ -20,6 +19,7 @@ from localstack.aws.api.s3 import (
     RoutingRules,
     WebsiteConfiguration,
 )
+from localstack.aws.protocol.serializer import gen_amzn_requestid_long
 from localstack.constants import S3_STATIC_WEBSITE_HOSTNAME
 from localstack.http import Request, Response, Router
 from localstack.http.dispatcher import Handler
