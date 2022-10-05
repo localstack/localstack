@@ -107,7 +107,7 @@ from localstack.utils.aws.aws_stack import extract_region_from_arn
 from localstack.utils.aws.dead_letter_queue import sns_error_to_dead_letter_queue
 from localstack.utils.cloudwatch.cloudwatch_util import store_cloudwatch_logs
 from localstack.utils.json import json_safe
-from localstack.utils.objects import not_none_or, singleton_factory
+from localstack.utils.objects import not_none_or
 from localstack.utils.strings import long_uid, md5, short_uid, to_bytes
 from localstack.utils.threads import start_thread
 from localstack.utils.time import timestamp_millis
@@ -1590,7 +1590,6 @@ def unsubscribe_sqs_queue(queue_url):
                 subscriptions.remove(subscriber)
 
 
-@singleton_factory
 def register_sns_api_resource():
     """Register the platform endpointmessages retrospection endpoint as an internal LocalStack endpoint."""
     get_internal_apis().add(
@@ -1629,16 +1628,19 @@ class SNSServicePlatformEndpointMessagesApiResource:
     This is registered as a LocalStack internal HTTP resource.
 
     This endpoint accepts:
+    - GET param `accountId`: selector for AWS account. If not specified, return fallback `000000000000` test ID
     - GET param `region`: selector for AWS `region`. If not specified, return default "us-east-1"
     - GET param `endpointArn`: filter for `endpointArn` resource in SNS
+    - DELETE param `accountId`: selector for AWS account
     - DELETE param `region`: will delete saved messages for `region`
     - DELETE param `endpointArn`: will delete saved messages for `endpointArn`
     """
 
     def on_get(self, request: Request):
+        account_id = request.args.get("accountId", get_aws_account_id())
         region = request.args.get("region", "us-east-1")
         filter_endpoint_arn = request.args.get("endpointArn")
-        store: SnsStore = sns_stores[get_aws_account_id()][region]
+        store: SnsStore = sns_stores[account_id][region]
         if filter_endpoint_arn:
             messages = store.platform_endpoint_messages.get(filter_endpoint_arn, [])
             messages = _format_platform_endpoint_messages(messages)
@@ -1657,9 +1659,10 @@ class SNSServicePlatformEndpointMessagesApiResource:
         }
 
     def on_delete(self, request: Request) -> Response:
+        account_id = request.args.get("accountId", get_aws_account_id())
         region = request.args.get("region", "us-east-1")
         filter_endpoint_arn = request.args.get("endpointArn")
-        store: SnsStore = sns_stores[get_aws_account_id()][region]
+        store: SnsStore = sns_stores[account_id][region]
         if filter_endpoint_arn:
             store.platform_endpoint_messages.pop(filter_endpoint_arn, None)
             return Response("", status=204)
