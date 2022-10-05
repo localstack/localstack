@@ -3,7 +3,7 @@ import datetime
 import random
 import re
 import string
-from typing import Any, Optional
+from typing import TYPE_CHECKING, Any, Optional
 
 from localstack.aws.api import lambda_ as api_spec
 from localstack.aws.api.lambda_ import (
@@ -11,11 +11,13 @@ from localstack.aws.api.lambda_ import (
     InvalidParameterValueException,
     ResourceNotFoundException,
 )
-from localstack.services.awslambda.invocation.lambda_models import (
-    CodeSigningConfig,
-    FunctionUrlConfig,
-)
-from localstack.services.awslambda.invocation.models import LambdaStore
+
+if TYPE_CHECKING:
+    from localstack.services.awslambda.invocation.lambda_models import (
+        CodeSigningConfig,
+        FunctionUrlConfig,
+    )
+    from localstack.services.awslambda.invocation.models import LambdaStore
 
 # Pattern for a full (both with and without qualifier) lambda function ARN
 FULL_FN_ARN_PATTERN = re.compile(
@@ -51,7 +53,7 @@ URL_CHAR_SET = string.ascii_lowercase + string.digits
 LAMBDA_DATE_FORMAT = "%Y-%m-%dT%H:%M:%S.%f+0000"
 
 
-def map_function_url_config(model: FunctionUrlConfig) -> api_spec.FunctionUrlConfig:
+def map_function_url_config(model: "FunctionUrlConfig") -> api_spec.FunctionUrlConfig:
     return api_spec.FunctionUrlConfig(
         FunctionUrl=model.url,
         FunctionArn=model.function_arn,
@@ -62,7 +64,7 @@ def map_function_url_config(model: FunctionUrlConfig) -> api_spec.FunctionUrlCon
     )
 
 
-def map_csc(model: CodeSigningConfig) -> api_spec.CodeSigningConfig:
+def map_csc(model: "CodeSigningConfig") -> api_spec.CodeSigningConfig:
     return api_spec.CodeSigningConfig(
         CodeSigningConfigId=model.csc_id,
         CodeSigningConfigArn=model.arn,
@@ -73,7 +75,7 @@ def map_csc(model: CodeSigningConfig) -> api_spec.CodeSigningConfig:
     )
 
 
-def get_config_for_url(store: LambdaStore, url_id: str) -> Optional[FunctionUrlConfig]:
+def get_config_for_url(store: "LambdaStore", url_id: str) -> "Optional[FunctionUrlConfig]":
     """
     Get a config object when resolving a URL
 
