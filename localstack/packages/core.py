@@ -11,6 +11,7 @@ from localstack import config
 from localstack.utils.platform import in_docker, is_debian, is_redhat
 from localstack.utils.run import run
 
+from ..services.install import extract
 from ..utils.files import chmod_r, mkdir
 from ..utils.http import download
 from .api import InstallTarget, PackageException, PackageInstaller
@@ -189,7 +190,19 @@ class DownloadInstaller(PackageInstaller):
         download(download_url, target_path)
 
 
-# TODO: name!
+# TODO: names!
+class ExtractDownloadInstaller(DownloadInstaller):
+    def _get_download_url(self) -> str:
+        raise NotImplementedError()
+
+    def _install(self, target: InstallTarget) -> None:
+        super()._install(target)
+        target_directory = self._get_install_dir(target)
+        target_path = self._get_install_marker_path(target_directory)
+        extract(target_path, target_directory)
+        chmod_r(self.get_executable_path(), 0o777)
+
+
 class PermissionDownloadInstaller(DownloadInstaller):
     def _get_download_url(self) -> str:
         raise NotImplementedError()

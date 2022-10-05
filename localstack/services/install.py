@@ -3,7 +3,6 @@ import functools
 import glob
 import logging
 import os
-import platform
 import re
 import sys
 import tempfile
@@ -17,9 +16,8 @@ from localstack.config import dirs
 from localstack.constants import DEFAULT_SERVICE_PORTS, LOCALSTACK_MAVEN_VERSION, MAVEN_REPO_URL
 from localstack.runtime import hooks
 from localstack.utils.archives import untar, unzip
-from localstack.utils.files import chmod_r, load_file, mkdir, new_tmp_file, rm_rf, save_file
+from localstack.utils.files import load_file, mkdir, new_tmp_file, rm_rf, save_file
 from localstack.utils.http import download
-from localstack.utils.platform import get_arch
 from localstack.utils.run import run
 from localstack.utils.threads import parallelize
 
@@ -52,12 +50,6 @@ JAVAC_TARGET_VERSION = "1.8"
 # SQS backend implementation provider - either "moto" or "elasticmq"
 SQS_BACKEND_IMPL = os.environ.get("SQS_PROVIDER") or "moto"
 
-# Terraform (used for tests)
-TERRAFORM_VERSION = "1.1.3"
-TERRAFORM_URL_TEMPLATE = (
-    "https://releases.hashicorp.com/terraform/{version}/terraform_{version}_{os}_{arch}.zip"
-)
-TERRAFORM_BIN = os.path.join(dirs.static_libs, f"terraform-{TERRAFORM_VERSION}", "terraform")
 
 # Java Test Jar Download (used for tests)
 TEST_LAMBDA_JAVA = os.path.join(config.dirs.var_libs, "localstack-utils-tests.jar")
@@ -138,30 +130,6 @@ def install_cloudformation_libs():
     deployment_utils.get_cfn_response_mod_file()
 
 
-def install_terraform() -> str:
-    if os.path.isfile(TERRAFORM_BIN):
-        return TERRAFORM_BIN
-
-    log_install_msg(f"Installing terraform {TERRAFORM_VERSION}")
-
-    system = platform.system().lower()
-    arch = get_arch()
-
-    url = TERRAFORM_URL_TEMPLATE.format(version=TERRAFORM_VERSION, os=system, arch=arch)
-
-    download_and_extract(url, os.path.dirname(TERRAFORM_BIN))
-    chmod_r(TERRAFORM_BIN, 0o777)
-
-    return TERRAFORM_BIN
-
-
-def get_terraform_binary() -> str:
-    if not os.path.isfile(TERRAFORM_BIN):
-        install_terraform()
-
-    return TERRAFORM_BIN
-
-
 def install_component(name):
     from localstack.services.awslambda.packages import awslambda_runtime_package
     from localstack.services.cloudformation.packages import cloudformation_package
@@ -227,11 +195,18 @@ def log_install_msg(component, verbatim=False):
     LOG.info("Downloading and installing %s. This may take some time.", component)
 
 
+def extract(source_archive, target):
+    _, ext = os.path.splitext(source_archive)
+    if ext == ".zip":
+        unzip(source_archive, target)
+    elif ext in [".bz2", ".gz", ".tgz"]:
+        untar(source_archive, target)
+    else:
+        raise Exception(f"Unsupported archive format: {ext}")
+
+
 def download_and_extract(archive_url, target_dir, retries=0, sleep=3, tmp_archive=None):
     mkdir(target_dir)
-
-    _, ext = os.path.splitext(tmp_archive or archive_url)
-
     tmp_archive = tmp_archive or new_tmp_file()
     if not os.path.exists(tmp_archive) or os.path.getsize(tmp_archive) <= 0:
         # create temporary placeholder file, to avoid duplicate parallel downloads
@@ -242,13 +217,7 @@ def download_and_extract(archive_url, target_dir, retries=0, sleep=3, tmp_archiv
                 break
             except Exception:
                 time.sleep(sleep)
-
-    if ext == ".zip":
-        unzip(tmp_archive, target_dir)
-    elif ext in [".bz2", ".gz", ".tgz"]:
-        untar(tmp_archive, target_dir)
-    else:
-        raise Exception(f"Unsupported archive format: {ext}")
+    extract(tmp_archive, target_dir)
 
 
 def download_and_extract_with_retry(archive_url, tmp_archive, target_dir):
@@ -277,6 +246,7 @@ class CommunityInstallerRepository(InstallerRepository):
 
     def get_installer(self) -> List[Installer]:
         from localstack.packages.postgres import PostgresqlPackage
+        from localstack.packages.terraform import terraform_package
         from localstack.services.awslambda.packages import (
             awslambda_go_runtime_package,
             awslambda_runtime_package,
@@ -307,7 +277,7 @@ class CommunityInstallerRepository(InstallerRepository):
             ("local-kms", kms_local_package),
             ("postgresql", PostgresqlPackage()),
             ("stepfunctions-local", stepfunctions_local_package),
-            ("terraform", install_terraform),
+            ("terraform", terraform_package),
         ]
 
 
