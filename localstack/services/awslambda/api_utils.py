@@ -1,4 +1,5 @@
-""" some mostly temporary utils that will be refactored and unified with the other utils soon """
+""" Utilities for the new Lambda ASF provider. Do not use in the current provider, as ASF specific exceptions might be thrown """
+import datetime
 import random
 import re
 import string
@@ -14,18 +15,40 @@ from localstack.services.awslambda.invocation.lambda_models import (
     CodeSigningConfig,
     FunctionUrlConfig,
 )
-from localstack.services.awslambda.invocation.lambda_util import FUNCTION_NAME_REGEX
 from localstack.services.awslambda.invocation.models import LambdaStore
 
-FN_ARN_PATTERN = re.compile(
+# Pattern for a full (both with and without qualifier) lambda function ARN
+FULL_FN_ARN_PATTERN = re.compile(
     r"^arn:aws:lambda:(?P<region_name>[^:]+):(?P<account_id>\d{12}):function:(?P<function_name>[^:]+)(:(?P<qualifier>.*))?$"
 )
 
+# Pattern for a valid destination arn
 DESTINATION_ARN_PATTERN = re.compile(
     r"^$|arn:(aws[a-zA-Z0-9-]*):([a-zA-Z0-9\-])+:([a-z]{2}(-gov)?-[a-z]+-\d{1})?:(\d{12})?:(.*)"
 )
 
+# Pattern for extracting various attributes from a full or partial ARN or just a function name.
+FUNCTION_NAME_REGEX = re.compile(
+    r"(arn:(aws[a-zA-Z-]*)?:lambda:)?((?P<region>[a-z]{2}(-gov)?-[a-z]+-\d{1}):)?(?P<account>\d{12}:)?(function:)?(?P<name>[a-zA-Z0-9-_\.]+)(:(?P<qualifier>\$LATEST|[a-zA-Z0-9-_]+))?"
+)  # also length 1-170 incl.
+# Pattern for a lambda function handler
+HANDLER_REGEX = re.compile(r"[^\s]+")
+# Pattern for a valid kms key
+KMS_KEY_ARN_REGEX = re.compile(r"(arn:(aws[a-zA-Z-]*)?:[a-z0-9-.]+:.*)|()")
+# Pattern for a valid IAM role assumed by a lambda function
+ROLE_REGEX = re.compile(r"arn:(aws[a-zA-Z-]*)?:iam::\d{12}:role/?[a-zA-Z_0-9+=,.@\-_/]+")
+# Pattern for a signing job arn
+SIGNING_JOB_ARN_REGEX = re.compile(
+    r"arn:(aws[a-zA-Z0-9-]*):([a-zA-Z0-9\-])+:([a-z]{2}(-gov)?-[a-z]+-\d{1})?:(\d{12})?:(.*)"
+)
+# Pattern for a signing profiler version arn
+SIGNING_PROFILE_VERSION_ARN_REGEX = re.compile(
+    r"arn:(aws[a-zA-Z0-9-]*):([a-zA-Z0-9\-])+:([a-z]{2}(-gov)?-[a-z]+-\d{1})?:(\d{12})?:(.*)"
+)
+
 URL_CHAR_SET = string.ascii_lowercase + string.digits
+# Date format as returned by the lambda service
+LAMBDA_DATE_FORMAT = "%Y-%m-%dT%H:%M:%S.%f+0000"
 
 
 def map_function_url_config(model: FunctionUrlConfig) -> api_spec.FunctionUrlConfig:
@@ -72,15 +95,33 @@ ALIAS_REGEX = re.compile(r"(?!^[0-9]+$)([a-zA-Z0-9-_]+)")
 
 
 def qualifier_is_version(qualifier: str) -> bool:
+    """
+    Checks if a given qualifier represents a version
+
+    :param qualifier: Qualifier to check
+    :return: True if it matches a version, false otherwise
+    """
     return bool(VERSION_REGEX.match(qualifier))
 
 
 def qualifier_is_alias(qualifier: str) -> bool:
+    """
+    Checks if a given qualifier represents an alias
+
+    :param qualifier: Qualifier to check
+    :return: True if it matches an alias, false otherwise
+    """
     return bool(ALIAS_REGEX.match(qualifier))
 
 
 def get_function_name(function_arn_or_name: str, region: str) -> str:
-    """return name"""
+    """
+    Return function name from a given arn. Will check if the region provided matches the region in the arn, if an arn
+
+    :param function_arn_or_name: Function arn or only name
+    :param region: Region of the request
+    :return: function name
+    """
     name, _ = get_name_and_qualifier(function_arn_or_name, qualifier=None, region=region)
     return name
 
@@ -88,6 +129,7 @@ def get_function_name(function_arn_or_name: str, region: str) -> str:
 def function_name_qualifier_and_region_from_arn(arn: str) -> tuple[str, str | None, str | None]:
     """
     Takes a full or partial arn, or a name
+
     :param arn: Given arn (or name)
     :return: tuple with (name, qualifier, region). Qualifier and region are none if missing
     """
@@ -162,7 +204,74 @@ def build_statement(
 
 def generate_random_url_id() -> str:
     """
-    32 characters [0-9a-z]
+    32 characters [0-9a-z] url ID
     """
 
     return "".join([random.choice(URL_CHAR_SET) for _ in range(32)])
+
+
+def unqualified_lambda_arn(function_name: str, account: str, region: str):
+    """
+    Generate a unqualified lambda arn
+
+    :param function_name: Function name (not an arn!)
+    :param account: Account ID
+    :param region: Region
+    :return: Unqualified lambda arn
+    """
+    # TODO should get partition here, but current way is too expensive (15-120ms) using aws_stack get_partition
+    return f"arn:aws:lambda:{region}:{account}:function:{function_name}"
+
+
+def qualified_lambda_arn(
+    function_name: str, qualifier: Optional[str], account: str, region: str
+) -> str:
+    """
+    Generate a qualified lambda arn
+
+    :param function_name: Function name (not an arn!)
+    :param qualifier: qualifier (will be set to $LATEST if not present)
+    :param account: Account ID
+    :param region: Region
+    :return: Qualified lambda arn
+    """
+    qualifier = qualifier or "$LATEST"
+    return f"{unqualified_lambda_arn(function_name=function_name, account=account, region=region)}:{qualifier}"
+
+
+def lambda_arn(function_name: str, qualifier: Optional[str], account: str, region: str) -> str:
+    """
+    Return the lambda arn for the given parameters, with a qualifier if supplied, without otherwise
+
+    :param function_name: Function name
+    :param qualifier: Qualifier. May be left out, then the returning arn does not have one either
+    :param account: Account ID
+    :param region: Region of the Lambda
+    :return: Lambda Arn with or without qualifier
+    """
+    if qualifier:
+        return qualified_lambda_arn(
+            function_name=function_name, qualifier=qualifier, account=account, region=region
+        )
+    else:
+        return unqualified_lambda_arn(function_name=function_name, account=account, region=region)
+
+
+def is_role_arn(role_arn: str) -> bool:
+    """
+    Returns true if the provided string is a role arn, false otherwise
+
+    :param role_arn: Potential role arn
+    :return: Boolean indicating if input is a role arn
+    """
+    return bool(ROLE_REGEX.match(role_arn))
+
+
+def format_lambda_date(date_to_format: datetime.datetime) -> str:
+    """Format a given datetime to a string generated with the lambda date format"""
+    return date_to_format.strftime(LAMBDA_DATE_FORMAT)
+
+
+def generate_lambda_date() -> str:
+    """Get the current date as string generated with the lambda date format"""
+    return format_lambda_date(datetime.datetime.now())

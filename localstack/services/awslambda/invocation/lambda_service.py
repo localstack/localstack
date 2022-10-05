@@ -18,7 +18,11 @@ from localstack.aws.api.lambda_ import (
     ResourceNotFoundException,
     State,
 )
-from localstack.services.awslambda.api_utils import qualifier_is_alias
+from localstack.services.awslambda.api_utils import (
+    lambda_arn,
+    qualified_lambda_arn,
+    qualifier_is_alias,
+)
 from localstack.services.awslambda.invocation.lambda_models import (
     LAMBDA_LIMITS_CODE_SIZE_UNZIPPED_DEFAULT,
     FunctionVersion,
@@ -28,7 +32,6 @@ from localstack.services.awslambda.invocation.lambda_models import (
     UpdateStatus,
     VersionState,
 )
-from localstack.services.awslambda.invocation.lambda_util import lambda_arn, qualified_lambda_arn
 from localstack.services.awslambda.invocation.models import lambda_stores
 from localstack.services.awslambda.invocation.version_manager import LambdaVersionManager
 from localstack.utils.archives import get_unzipped_size, is_zip_file

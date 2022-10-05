@@ -131,10 +131,17 @@ from localstack.aws.api.lambda_ import (
 from localstack.services.awslambda import api_utils
 from localstack.services.awslambda.api_utils import (
     DESTINATION_ARN_PATTERN,
-    FN_ARN_PATTERN,
+    FULL_FN_ARN_PATTERN,
+    LAMBDA_DATE_FORMAT,
+    format_lambda_date,
+    generate_lambda_date,
     get_function_name,
     get_name_and_qualifier,
+    is_role_arn,
+    lambda_arn,
+    qualified_lambda_arn,
     qualifier_is_version,
+    unqualified_lambda_arn,
 )
 from localstack.services.awslambda.invocation.lambda_models import (
     IMAGE_MAPPING,
@@ -167,17 +174,6 @@ from localstack.services.awslambda.invocation.lambda_service import (
     lambda_stores,
     store_lambda_archive,
     store_s3_bucket_archive,
-)
-from localstack.services.awslambda.invocation.lambda_util import (
-    LAMBDA_DATE_FORMAT,
-    format_lambda_date,
-    function_name_from_arn,
-    generate_lambda_date,
-    is_qualified_lambda_arn,
-    is_role_arn,
-    lambda_arn,
-    qualified_lambda_arn,
-    unqualified_lambda_arn,
 )
 from localstack.services.awslambda.invocation.models import LambdaStore
 from localstack.services.plugins import ServiceLifecycleHook
@@ -819,7 +815,7 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
         description: Description = None,
         revision_id: String = None,
     ) -> FunctionConfiguration:
-        function_name = function_name_from_arn(function_name)
+        function_name = get_function_name(function_name, context.region)
         new_version = self._publish_version(
             function_name=function_name,
             description=description,
@@ -837,7 +833,7 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
         marker: String = None,
         max_items: MaxListItems = None,
     ) -> ListVersionsByFunctionResponse:
-        function_name = function_name_from_arn(function_name)
+        function_name = get_function_name(function_name, context.region)
         function = self._get_function(
             function_name=function_name, region=context.region, account_id=context.account_id
         )
@@ -921,7 +917,7 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
         description: Description = None,
         routing_config: AliasRoutingConfiguration = None,
     ) -> AliasConfiguration:
-        function_name = function_name_from_arn(function_name)
+        function_name = get_function_name(function_name, context.region)
         target_version = self._get_function_version(
             function_name=function_name,
             qualifier=function_version,
@@ -965,7 +961,7 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
         marker: String = None,
         max_items: MaxListItems = None,
     ) -> ListAliasesResponse:
-        function_name = function_name_from_arn(function_name)
+        function_name = get_function_name(function_name, context.region)
         function = self._get_function(
             function_name=function_name, region=context.region, account_id=context.account_id
         )
@@ -987,7 +983,7 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
     def delete_alias(
         self, context: RequestContext, function_name: FunctionName, name: Alias
     ) -> None:
-        function_name = function_name_from_arn(function_name)
+        function_name = get_function_name(function_name, context.region)
         function = self._get_function(
             function_name=function_name, region=context.region, account_id=context.account_id
         )
@@ -1002,7 +998,7 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
     def get_alias(
         self, context: RequestContext, function_name: FunctionName, name: Alias
     ) -> AliasConfiguration:
-        function_name = function_name_from_arn(function_name)
+        function_name = get_function_name(function_name, context.region)
         function = self._get_function(
             function_name=function_name, region=context.region, account_id=context.account_id
         )
@@ -1020,7 +1016,7 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
         routing_config: AliasRoutingConfiguration = None,
         revision_id: String = None,
     ) -> AliasConfiguration:
-        function_name = function_name_from_arn(function_name)
+        function_name = get_function_name(function_name, context.region)
         function = self._get_function(
             function_name=function_name, region=context.region, account_id=context.account_id
         )
@@ -1933,7 +1929,7 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
 
             match destination_arn.split(":")[2]:
                 case "lambda":
-                    fn_parts = FN_ARN_PATTERN.search(destination_arn).groupdict()
+                    fn_parts = FULL_FN_ARN_PATTERN.search(destination_arn).groupdict()
                     if fn_parts:
                         # check if it exists
                         fn = store.functions.get(fn_parts["function_name"])
@@ -2389,13 +2385,8 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
             raise InvalidParameterValueException(
                 "An error occurred and the request cannot be processed.", Type="User"
             )
-        if is_qualified_lambda_arn(resource):
-            raise InvalidParameterValueException(
-                "Tagging operations are permitted on Lambda functions only. Tags on aliases and versions are not supported. Please specify either a function name or a function ARN.",
-                Type="User",
-            )
 
-        pattern_match = FN_ARN_PATTERN.search(resource)
+        pattern_match = FULL_FN_ARN_PATTERN.search(resource)
         if not pattern_match:
             raise ValidationException(
                 rf"1 validation error detected: Value '{resource}' at 'resource' failed to satisfy constraint: Member must satisfy regular expression pattern: arn:(aws[a-zA-Z-]*)?:lambda:[a-z]{{2}}((-gov)|(-iso(b?)))?-[a-z]+-\d{{1}}:\d{{12}}:function:[a-zA-Z0-9-_]+(:(\$LATEST|[a-zA-Z0-9-_]+))?"

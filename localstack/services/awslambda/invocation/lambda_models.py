@@ -24,10 +24,7 @@ from localstack.aws.api.lambda_ import (
     StateReasonCode,
     TracingMode,
 )
-from localstack.services.awslambda.invocation.lambda_util import (
-    qualified_lambda_arn,
-    unqualified_lambda_arn,
-)
+from localstack.services.awslambda.api_utils import qualified_lambda_arn, unqualified_lambda_arn
 from localstack.utils.aws import aws_stack
 from localstack.utils.strings import long_uid
 
