@@ -169,6 +169,15 @@ class LambdaRegion(RegionBackend):
         self.event_source_mappings = []
         self.url_configs = {}
 
+    @classmethod
+    def get_for_arn(cls, resource_arn: str) -> "LambdaRegion":
+        """
+        Return the region backend for the region extracted from the given resource ARN. If resource_arn is
+        not an ARN (e.g., a function name instead), the region is extracted from the current request context.
+        """
+        region = extract_region_from_arn(resource_arn or "")
+        return cls.get(region=region)
+
 
 def cleanup():
     region = LambdaRegion.get()
@@ -185,7 +194,7 @@ def func_arn(function_name, remove_qualifier=True):
 
 
 def func_qualifier(function_name, qualifier=None):
-    region = LambdaRegion.get()
+    region = LambdaRegion.get_for_arn(function_name)
     arn = aws_stack.lambda_function_arn(function_name)
     details = region.lambdas.get(arn)
     if not details:
@@ -275,8 +284,8 @@ def add_event_source(data):
 
 
 def update_event_source(uuid_value, data):
-    region = LambdaRegion.get()
     function_name = data.get("FunctionName") or ""
+    region = LambdaRegion.get_for_arn(function_name)
     enabled = data.get("Enabled", True)
     for mapping in region.event_source_mappings:
         if uuid_value == mapping["UUID"]:
@@ -301,7 +310,7 @@ def update_event_source(uuid_value, data):
     return {}
 
 
-def delete_event_source(uuid_value):
+def delete_event_source(uuid_value: str):
     region = LambdaRegion.get()
     for i, m in enumerate(region.event_source_mappings):
         if uuid_value == m["UUID"]:
@@ -360,13 +369,13 @@ def get_event_sources(func_name=None, source_arn=None):
 
 
 def get_function_version(arn, version):
-    region = LambdaRegion.get()
+    region = LambdaRegion.get_for_arn(arn)
     func = region.lambdas.get(arn)
     return format_func_details(func, version=version, always_add_version=True)
 
 
-def publish_new_function_version(arn):
-    region = LambdaRegion.get()
+def publish_new_function_version(arn: str):
+    region = LambdaRegion.get_for_arn(arn)
     lambda_function = region.lambdas.get(arn)
     versions = lambda_function.versions
     max_version_number = lambda_function.max_version()
@@ -386,16 +395,16 @@ def publish_new_function_version(arn):
     return get_function_version(arn, str(max_version_number))
 
 
-def do_list_versions(arn):
-    region = LambdaRegion.get()
+def do_list_versions(arn: str):
+    region = LambdaRegion.get_for_arn(arn)
     versions = [
         get_function_version(arn, version) for version in region.lambdas.get(arn).versions.keys()
     ]
     return sorted(versions, key=lambda k: str(k.get("Version")))
 
 
-def do_update_alias(arn, alias, version, description=None):
-    region = LambdaRegion.get()
+def do_update_alias(arn: str, alias: str, version: str, description=None):
+    region = LambdaRegion.get_for_arn(arn)
     new_alias = {
         "AliasArn": arn + ":" + alias,
         "FunctionVersion": version,
@@ -427,8 +436,7 @@ def run_lambda(
         aws_stack.connect_to_service("lambda").list_functions()
         run_lambda._provider_initialized = True
 
-    region_name = extract_region_from_arn(func_arn)
-    region = LambdaRegion.get(region_name)
+    region = LambdaRegion.get_for_arn(func_arn)
     if suppress_output:
         stdout_ = sys.stdout
         stderr_ = sys.stderr
@@ -439,6 +447,7 @@ def run_lambda(
         func_arn = aws_stack.fix_arn(func_arn)
         lambda_function = region.lambdas.get(func_arn)
         if not lambda_function:
+            region_name = extract_region_from_arn(func_arn)
             LOG.debug("Unable to find details for Lambda %s in region %s", func_arn, region_name)
             result = not_found_error(msg="The resource specified in the request does not exist.")
             return InvocationResult(result)
@@ -583,10 +592,12 @@ def get_java_handler(zip_file_content, main_file, lambda_function=None):
     )
 
 
-def set_archive_code(code: Dict, lambda_name: str, zip_file_content: bytes = None) -> Optional[str]:
-    region = LambdaRegion.get()
+def set_archive_code(
+    code: Dict, lambda_name_or_arn: str, zip_file_content: bytes = None
+) -> Optional[str]:
+    region = LambdaRegion.get_for_arn(lambda_name_or_arn)
     # get metadata
-    lambda_arn = func_arn(lambda_name)
+    lambda_arn = func_arn(lambda_name_or_arn)
     lambda_details = region.lambdas[lambda_arn]
     is_local_mount = code.get("S3Bucket") == config.BUCKET_MARKER_LOCAL
 
@@ -662,12 +673,14 @@ def store_and_get_lambda_code_archive(
     lambda_zip_dir = lambda_function.zip_dir
 
     if code_passed:
-        lambda_zip_dir = lambda_zip_dir or set_archive_code(code_passed, lambda_function.name())
+        lambda_zip_dir = lambda_zip_dir or set_archive_code(code_passed, lambda_function.arn())
         if not zip_file_content and not is_local_mount:
             # Save the zip file to a temporary file that the lambda executors can reference
             zip_file_content = get_zip_bytes(code_passed)
     else:
-        lambda_details = LambdaRegion.get().lambdas[lambda_function.arn()]
+        lambda_details = LambdaRegion.get_for_arn(lambda_function.arn()).lambdas[
+            lambda_function.arn()
+        ]
         lambda_zip_dir = lambda_zip_dir or lambda_details.zip_dir
 
     if not lambda_zip_dir:
@@ -999,8 +1012,8 @@ def not_found_error(ref=None, msg=None):
 
 
 def delete_lambda_function(function_name: str) -> Dict[None, None]:
+    region = LambdaRegion.get_for_arn(function_name)
     arn = func_arn(function_name)
-    region = LambdaRegion.get()
     # Stop/remove any containers that this arn uses.
     LAMBDA_EXECUTOR.cleanup(arn)
 
@@ -1021,7 +1034,7 @@ def delete_lambda_function(function_name: str) -> Dict[None, None]:
     return {}
 
 
-def get_lambda_url_config(api_id, region=None):
+def get_lambda_url_config(api_id: str, region: str = None):
     lambda_backend = LambdaRegion.get(region)
     url_configs = lambda_backend.url_configs.values()
     lambda_url_configs = [config for config in url_configs if config.get("CustomId") == api_id]
@@ -1617,7 +1630,7 @@ def delete_url_config(function):
 def add_permission_policy_statement(
     resource_name, resource_arn, resource_arn_qualified, qualifier=None
 ):
-    region = LambdaRegion.get()
+    region = LambdaRegion.get_for_arn(resource_arn)
     data = json.loads(to_str(request.data))
     iam_client = aws_stack.connect_to_service("iam")
     sid = data.get("StatementId")

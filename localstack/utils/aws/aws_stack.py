@@ -670,8 +670,10 @@ def lambda_function_arn(function_name, account_id=None, region_name=None):
     )
 
 
-def lambda_layer_arn(layer_name, version=None, account_id=None):
-    return lambda_function_or_layer_arn("layer", layer_name, version=None, account_id=account_id)
+def lambda_layer_arn(layer_name, version=None, region_name=None, account_id=None):
+    return lambda_function_or_layer_arn(
+        "layer", layer_name, version=None, account_id=account_id, region_name=region_name
+    )
 
 
 def lambda_function_or_layer_arn(

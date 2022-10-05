@@ -9,7 +9,7 @@ from unittest import mock
 from localstack import config
 from localstack.aws.accounts import get_aws_account_id
 from localstack.services.awslambda import lambda_api, lambda_executors, lambda_utils
-from localstack.services.awslambda.lambda_api import get_lambda_policy_name
+from localstack.services.awslambda.lambda_api import LambdaRegion, get_lambda_policy_name
 from localstack.services.awslambda.lambda_executors import OutputLog
 from localstack.services.awslambda.lambda_utils import API_PATH_ROOT
 from localstack.utils.aws import aws_stack
@@ -1131,6 +1131,27 @@ class TestLambdaEventInvokeConfig(unittest.TestCase):
         self.assertEqual(self.RETRY_ATTEMPTS, response["MaximumRetryAttempts"])
         self.assertEqual(self.EVENT_AGE, response["MaximumEventAgeInSeconds"])
         self.assertEqual(self.DL_QUEUE, response["DestinationConfig"]["OnFailure"]["Destination"])
+
+
+class TestLambdaRegionBackend:
+    def test_get_region_backend_for_arn(self):
+        default_region = aws_stack.get_region()
+
+        def _lookup(resource_id, region):
+            backend = LambdaRegion.get_for_arn(resource_id)
+            assert backend
+            assert backend.name == region
+
+        _lookup("my-func", default_region)
+        _lookup("my-layer", default_region)
+        _lookup("", default_region)
+        _lookup(None, default_region)
+
+        for region in ["us-east-1", "us-east-1", "eu-central-1"]:
+            # check lookup for function ARNs
+            _lookup(aws_stack.lambda_function_arn("myfunc", region_name=region), region)
+            # check lookup for layer ARNs
+            _lookup(aws_stack.lambda_layer_arn("mylayer", region_name=region), region)
 
 
 class TestLambdaUtils:
