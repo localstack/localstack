@@ -2,7 +2,10 @@ import os
 
 import pytest
 
+from localstack.testing.aws.cloudformation_utils import load_template_raw
+from localstack.utils.aws import aws_stack
 from localstack.utils.common import short_uid
+from localstack.utils.sync import wait_until
 
 TEST_TEMPLATE_26_1 = """
 AWSTemplateFormatVersion: 2010-09-09
@@ -63,53 +66,32 @@ def test_stack_imports(deploy_cfn_template, cfn_client, sqs_client):
     assert output == queue_url2
 
 
-
-@pytest.mark.parametrize(
-    ("intrinsic_fn", "parameter_1", "parameter_2", "expected_bucket_created"),
-    [
-        ("Fn::And", "0", "0", False),
-        ("Fn::And", "0", "1", False),
-        ("Fn::And", "1", "0", False),
-        ("Fn::And", "1", "1", True),
-        ("Fn::Or", "0", "0", False),
-        ("Fn::Or", "0", "1", True),
-        ("Fn::Or", "1", "0", True),
-        ("Fn::Or", "1", "1", True),
-    ],
-)
-def test_intrinsic_functions(
-        cfn_client,
-        s3_client,
-        intrinsic_fn,
-        parameter_1,
-        parameter_2,
-        expected_bucket_created,
-        deploy_cfn_template,
-):
-    bucket_name = f"ls-bucket-{short_uid()}"
-
-    deploy_cfn_template(
+def test_create_stack_with_ssm_parameters(cfn_client, ssm_client, sns_client, deploy_cfn_template):
+    parameter_name = f"ls-param-{short_uid()}"
+    parameter_value = f"ls-param-value-{short_uid()}"
+    parameter_logical_id = "parameter123"
+    ssm_client.put_parameter(Name=parameter_name, Value=parameter_value, Type="String")
+    stack = deploy_cfn_template(
         template_path=os.path.join(
-            os.path.dirname(__file__), "../templates/cfn_intrinsic_functions.yaml"
+            os.path.dirname(__file__), "../../templates/dynamicparameter_ssm_string.yaml"
         ),
-        parameters={
-            "Param1": parameter_1,
-            "Param2": parameter_2,
-            "BucketName": bucket_name,
-        },
-        template_mapping={
-            "intrinsic_fn": intrinsic_fn,
-        },
+        template_mapping={"parameter_name": parameter_name},
     )
 
-    buckets = s3_client.list_buckets()
-    bucket_names = [b["Name"] for b in buckets["Buckets"]]
-    assert (bucket_name in bucket_names) == expected_bucket_created
+    stack_description = cfn_client.describe_stacks(StackName=stack.stack_name)["Stacks"][0]
+    assert stack_description is not None
+    assert stack_description["Parameters"][0]["ParameterKey"] == parameter_logical_id
+    assert stack_description["Parameters"][0]["ParameterValue"] == parameter_name
+    assert stack_description["Parameters"][0]["ResolvedValue"] == parameter_value
+
+    topics = sns_client.list_topics()
+    topic_arns = [t["TopicArn"] for t in topics["Topics"]]
+    assert any(parameter_value in t for t in topic_arns)
 
 
 def test_resolve_ssm(
-        create_parameter,
-        deploy_cfn_template,
+    create_parameter,
+    deploy_cfn_template,
 ):
     parameter_key = f"param-key-{short_uid()}"
     parameter_value = f"param-value-{short_uid()}"
@@ -117,7 +99,7 @@ def test_resolve_ssm(
 
     result = deploy_cfn_template(
         parameters={"DynamicParameter": parameter_key},
-        template_path=os.path.join(os.path.dirname(__file__), "../templates/resolve_ssm.yaml"),
+        template_path=os.path.join(os.path.dirname(__file__), "../../templates/resolve_ssm.yaml"),
     )
 
     topic_name = result.outputs["TopicName"]
@@ -141,7 +123,7 @@ def test_resolve_ssm_with_version(ssm_client, cfn_client, create_parameter, depl
 
     result = deploy_cfn_template(
         parameters={"DynamicParameter": f"{parameter_key}:{v1['Version']}"},
-        template_path=os.path.join(os.path.dirname(__file__), "../templates/resolve_ssm.yaml"),
+        template_path=os.path.join(os.path.dirname(__file__), "../../templates/resolve_ssm.yaml"),
     )
 
     topic_name = result.outputs["TopicName"]
@@ -157,7 +139,7 @@ def test_resolve_ssm_secure(create_parameter, cfn_client, deploy_cfn_template):
     result = deploy_cfn_template(
         parameters={"DynamicParameter": f"{parameter_key}"},
         template_path=os.path.join(
-            os.path.dirname(__file__), "../templates/resolve_ssm_secure.yaml"
+            os.path.dirname(__file__), "../../templates/resolve_ssm_secure.yaml"
         ),
     )
 
@@ -169,11 +151,11 @@ def test_resolve_ssm_secure(create_parameter, cfn_client, deploy_cfn_template):
     "template_name", ["resolve_secretsmanager_full.yaml", "resolve_secretsmanager.yaml"]
 )
 def test_resolve_secretsmanager(
-        secretsmanager_client,
-        cfn_client,
-        create_secret,
-        deploy_cfn_template,
-        template_name,
+    secretsmanager_client,
+    cfn_client,
+    create_secret,
+    deploy_cfn_template,
+    template_name,
 ):
     parameter_key = f"param-key-{short_uid()}"
     parameter_value = f"param-value-{short_uid()}"
@@ -182,7 +164,7 @@ def test_resolve_secretsmanager(
 
     result = deploy_cfn_template(
         parameters={"DynamicParameter": f"{parameter_key}"},
-        template_path=os.path.join(os.path.dirname(__file__), "../templates/", template_name),
+        template_path=os.path.join(os.path.dirname(__file__), "../../templates/", template_name),
     )
 
     topic_name = result.outputs["TopicName"]
@@ -192,7 +174,7 @@ def test_resolve_secretsmanager(
 @pytest.mark.xfail(reason="outputs don't behave well in combination with conditions")
 @pytest.mark.aws_validated
 def test_parameter_usepreviousvalue_behavior(cfn_client, deploy_cfn_template, is_stack_updated):
-    template_path = os.path.join(os.path.dirname(__file__), "../templates/cfn_reuse_param.yaml")
+    template_path = os.path.join(os.path.dirname(__file__), "../../templates/cfn_reuse_param.yaml")
 
     # 1. create with overridden default value. Due to the condition this should neither create the optional topic,
     # nor the corresponding output
@@ -230,3 +212,53 @@ def test_parameter_usepreviousvalue_behavior(cfn_client, deploy_cfn_template, is
     stack_describe_response = cfn_client.describe_stacks(StackName=stack.stack_id)["Stacks"][0]
     assert len(stack_describe_response["Outputs"]) == 2
 
+
+@pytest.mark.aws_validated
+def test_import_values_across_stacks(deploy_cfn_template, s3_client):
+    export_name = f"b-{short_uid()}"
+
+    # create stack #1
+    template1 = """
+Parameters:
+  BucketExportName:
+    Type: String
+Resources:
+  Bucket1:
+    Type: AWS::S3::Bucket
+    Properties: {}
+Outputs:
+  BucketName1:
+    Value: !Ref Bucket1
+    Export:
+      Name: !Ref BucketExportName
+    """
+    result = deploy_cfn_template(template=template1, parameters={"BucketExportName": export_name})
+    bucket_name1 = result.outputs.get("BucketName1")
+    assert bucket_name1
+
+    # create stack #2
+    template2 = """
+Parameters:
+  BucketExportName:
+    Type: String
+Resources:
+  Bucket2:
+    Type: AWS::S3::Bucket
+    Properties:
+      Tags:
+        - Key: test
+          Value: !ImportValue
+            'Fn::Sub': '${BucketExportName}'
+Outputs:
+  BucketName2:
+    Value: !Ref Bucket2
+    """
+    result = deploy_cfn_template(template=template2, parameters={"BucketExportName": export_name})
+    bucket_name2 = result.outputs.get("BucketName2")
+    assert bucket_name2
+
+    # assert that correct bucket tags have been created
+    tagging = s3_client.get_bucket_tagging(Bucket=bucket_name2)
+    test_tag = [tag for tag in tagging["TagSet"] if tag["Key"] == "test"]
+    assert test_tag
+    assert test_tag[0]["Value"] == bucket_name1
