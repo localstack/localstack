@@ -438,6 +438,23 @@
         "documentation": "<p>Query-string authentication version 4 requires the X-Amz-Algorithm, X-Amz-Credential, X-Amz-Signature, X-Amz-Date, X-Amz-SignedHeaders, and X-Amz-Expires parameters.</p>",
         "exception": true
       }
+    },
+    {
+      "op": "add",
+      "path": "/shapes/NoSuchWebsiteConfiguration",
+      "value": {
+        "type": "structure",
+        "members": {
+          "BucketName": {
+            "shape": "BucketName"
+          }
+        },
+        "error": {
+          "httpStatusCode": 404
+        },
+        "documentation": "<p>The specified bucket does not have a website configuration</p>",
+        "exception": true
+      }
     }
   ]
 }

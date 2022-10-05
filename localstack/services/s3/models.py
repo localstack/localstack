@@ -1,7 +1,7 @@
 from typing import Dict
 
-import moto.s3.models as moto_s3_models
 from moto.s3 import s3_backends as moto_s3_backends
+from moto.s3.models import S3Backend as MotoS3Backend
 
 from localstack.aws.api import RequestContext
 from localstack.aws.api.s3 import (
@@ -10,12 +10,15 @@ from localstack.aws.api.s3 import (
     CORSConfiguration,
     NotificationConfiguration,
     ReplicationConfiguration,
+    WebsiteConfiguration,
 )
+from localstack.constants import DEFAULT_AWS_ACCOUNT_ID
 from localstack.services.stores import AccountRegionBundle, BaseStore, LocalAttribute
 
 
-def get_moto_s3_backend(context: RequestContext) -> moto_s3_models.S3Backend:
-    return moto_s3_backends[context.account_id]["global"]
+def get_moto_s3_backend(context: RequestContext = None) -> MotoS3Backend:
+    account_id = context.account_id if context else DEFAULT_AWS_ACCOUNT_ID
+    return moto_s3_backends[account_id]["global"]
 
 
 class S3Store(BaseStore):
@@ -37,6 +40,10 @@ class S3Store(BaseStore):
     )
 
     bucket_versioning_status: Dict[BucketName, bool] = LocalAttribute(default=dict)
+
+    bucket_website_configuration: Dict[BucketName, WebsiteConfiguration] = LocalAttribute(
+        default=dict
+    )
 
 
 s3_stores = AccountRegionBundle("s3", S3Store)

@@ -17,7 +17,6 @@ from localstack.utils.common import (
     load_file,
     new_tmp_file,
     retry,
-    run_safe,
     save_file,
     short_uid,
     to_bytes,
@@ -25,7 +24,6 @@ from localstack.utils.common import (
 )
 from localstack.utils.kinesis import kinesis_connector
 from localstack.utils.sync import poll_condition
-from localstack.utils.testutil import get_lambda_log_events
 
 from .awslambda.functions import lambda_integration
 from .awslambda.test_lambda import (
@@ -38,17 +36,10 @@ from .awslambda.test_lambda import (
     TEST_LAMBDA_START_EXECUTION_FILE,
 )
 
-TEST_STREAM_NAME = lambda_integration.KINESIS_STREAM_NAME
 TEST_LAMBDA_SOURCE_STREAM_NAME = "test_source_stream"
-TEST_TABLE_NAME = "test_stream_table"
 TEST_BUCKET_NAME = lambda_integration.TEST_BUCKET_NAME
 TEST_TOPIC_NAME = "test_topic"
 TEST_TAGS = [{"Key": "MyTag", "Value": "Value"}]
-# constants for forward chain K1->L1->K2->L2
-TEST_CHAIN_STREAM1_NAME = "test_chain_stream_1"
-TEST_CHAIN_STREAM2_NAME = "test_chain_stream_2"
-TEST_CHAIN_LAMBDA1_NAME = "test_chain_lambda_1"
-TEST_CHAIN_LAMBDA2_NAME = "test_chain_lambda_2"
 
 PARTITION_KEY = "id"
 
@@ -87,17 +78,20 @@ def scheduled_test_lambda():
 
 @pytest.mark.usefixtures("scheduled_test_lambda")
 class TestIntegration:
-    def test_firehose_s3(self, s3_resource, firehose_client):
+    def test_firehose_s3(
+        self, s3_resource, firehose_client, firehose_create_delivery_stream, s3_create_bucket
+    ):
         stream_name = f"fh-stream-{short_uid()}"
+        bucket_name = s3_create_bucket()
 
         s3_prefix = "/testdata"
         test_data = '{"test": "firehose_data_%s"}' % short_uid()
         # create Firehose stream
-        stream = firehose_client.create_delivery_stream(
+        stream = firehose_create_delivery_stream(
             DeliveryStreamName=stream_name,
             S3DestinationConfiguration={
                 "RoleARN": aws_stack.iam_resource_arn("firehose"),
-                "BucketARN": aws_stack.s3_bucket_arn(TEST_BUCKET_NAME),
+                "BucketARN": aws_stack.s3_bucket_arn(bucket_name),
                 "Prefix": s3_prefix,
             },
             Tags=TEST_TAGS,
@@ -107,7 +101,7 @@ class TestIntegration:
         tags = firehose_client.list_tags_for_delivery_stream(DeliveryStreamName=stream_name)
         assert TEST_TAGS == tags["Tags"]
         # create target S3 bucket
-        s3_resource.create_bucket(Bucket=TEST_BUCKET_NAME)
+        s3_resource.create_bucket(Bucket=bucket_name)
 
         # put records
         firehose_client.put_record(
@@ -117,67 +111,62 @@ class TestIntegration:
         all_objects = testutil.list_all_s3_objects()
         testutil.assert_objects(json.loads(to_str(test_data)), all_objects)
         # check file layout in target bucket
-        all_objects = testutil.map_all_s3_objects(buckets=[TEST_BUCKET_NAME])
+        all_objects = testutil.map_all_s3_objects(buckets=[bucket_name])
         for key in all_objects.keys():
             assert re.match(r".*/\d{4}/\d{2}/\d{2}/\d{2}/.*-\d{4}-\d{2}-\d{2}-\d{2}.*", key)
 
-        # clean up
-        firehose_client.delete_delivery_stream(DeliveryStreamName=stream_name)
-
-    def test_firehose_extended_s3(self):
-        s3_resource = aws_stack.connect_to_resource("s3")
-        firehose = aws_stack.create_external_boto_client("firehose")
+    def test_firehose_extended_s3(
+        self, firehose_client, firehose_create_delivery_stream, s3_create_bucket
+    ):
         stream_name = f"fh-stream-{short_uid()}"
+        bucket_name = s3_create_bucket()
 
         s3_prefix = "/testdata2"
         test_data = '{"test": "firehose_data_%s"}' % short_uid()
         # create Firehose stream
-        stream = firehose.create_delivery_stream(
+        stream = firehose_create_delivery_stream(
             DeliveryStreamName=stream_name,
             ExtendedS3DestinationConfiguration={
                 "RoleARN": aws_stack.iam_resource_arn("firehose"),
-                "BucketARN": aws_stack.s3_bucket_arn(TEST_BUCKET_NAME),
+                "BucketARN": aws_stack.s3_bucket_arn(bucket_name),
                 "Prefix": s3_prefix,
             },
             Tags=TEST_TAGS,
         )
+
         assert stream
-        assert stream_name in firehose.list_delivery_streams()["DeliveryStreamNames"]
-        tags = firehose.list_tags_for_delivery_stream(DeliveryStreamName=stream_name)
+        assert stream_name in firehose_client.list_delivery_streams()["DeliveryStreamNames"]
+        tags = firehose_client.list_tags_for_delivery_stream(DeliveryStreamName=stream_name)
         assert tags["Tags"] == TEST_TAGS
 
-        s3_resource.create_bucket(Bucket=TEST_BUCKET_NAME)
-
         # put records
-        firehose.put_record(DeliveryStreamName=stream_name, Record={"Data": to_bytes(test_data)})
+        firehose_client.put_record(
+            DeliveryStreamName=stream_name, Record={"Data": to_bytes(test_data)}
+        )
         # check records in target bucket
         all_objects = testutil.list_all_s3_objects()
         testutil.assert_objects(json.loads(to_str(test_data)), all_objects)
         # check file layout in target bucket
-        all_objects = testutil.map_all_s3_objects(buckets=[TEST_BUCKET_NAME])
+        all_objects = testutil.map_all_s3_objects(buckets=[bucket_name])
         for key in all_objects.keys():
             assert re.match(r".*/\d{4}/\d{2}/\d{2}/\d{2}/.*-\d{4}-\d{2}-\d{2}-\d{2}.*", key)
 
-        # clean up
-        firehose.delete_delivery_stream(DeliveryStreamName=stream_name)
-
-    def test_firehose_kinesis_to_s3(self):
-        kinesis = aws_stack.create_external_boto_client("kinesis")
-        s3_resource = aws_stack.connect_to_resource("s3")
-        firehose = aws_stack.create_external_boto_client("firehose")
+    def test_firehose_kinesis_to_s3(
+        self, kinesis_client, s3_resource, firehose_client, kinesis_create_stream
+    ):
         stream_name = f"fh-stream-{short_uid()}"
 
-        aws_stack.create_kinesis_stream(TEST_STREAM_NAME, delete=True)
+        kinesis_stream_name = kinesis_create_stream()
 
         s3_prefix = "/testdata"
         test_data = '{"test": "firehose_data_%s"}' % short_uid()
 
         # create Firehose stream
-        stream = firehose.create_delivery_stream(
+        stream = firehose_client.create_delivery_stream(
             DeliveryStreamType="KinesisStreamAsSource",
             KinesisStreamSourceConfiguration={
                 "RoleARN": aws_stack.iam_resource_arn("firehose"),
-                "KinesisStreamARN": aws_stack.kinesis_stream_arn(TEST_STREAM_NAME),
+                "KinesisStreamARN": aws_stack.kinesis_stream_arn(kinesis_stream_name),
             },
             DeliveryStreamName=stream_name,
             S3DestinationConfiguration={
@@ -187,11 +176,11 @@ class TestIntegration:
             },
         )
         assert stream
-        assert stream_name in firehose.list_delivery_streams()["DeliveryStreamNames"]
+        assert stream_name in firehose_client.list_delivery_streams()["DeliveryStreamNames"]
 
         # wait for stream to become ACTIVE
         def _assert_active():
-            stream_info = firehose.describe_delivery_stream(DeliveryStreamName=stream_name)
+            stream_info = firehose_client.describe_delivery_stream(DeliveryStreamName=stream_name)
             assert stream_info["DeliveryStreamDescription"]["DeliveryStreamStatus"] == "ACTIVE"
 
         retry(_assert_active, sleep=1, retries=30)
@@ -200,8 +189,8 @@ class TestIntegration:
         s3_resource.create_bucket(Bucket=TEST_BUCKET_NAME)
 
         # put records
-        kinesis.put_record(
-            Data=to_bytes(test_data), PartitionKey="testId", StreamName=TEST_STREAM_NAME
+        kinesis_client.put_record(
+            Data=to_bytes(test_data), PartitionKey="testId", StreamName=kinesis_stream_name
         )
 
         # check records in target bucket
@@ -212,22 +201,20 @@ class TestIntegration:
         retry(_assert_objects_created, sleep=1, retries=4)
 
         # clean up
-        firehose.delete_delivery_stream(DeliveryStreamName=stream_name)
+        firehose_client.delete_delivery_stream(DeliveryStreamName=stream_name)
 
     def test_lambda_streams_batch_and_transactions(
-        self, dynamodb_client, dynamodbstreams_client, create_lambda_function
+        self,
+        dynamodb_client,
+        dynamodbstreams_client,
+        kinesis_create_stream,
+        dynamodb_create_table,
+        create_lambda_function,
     ):
         ddb_lease_table_suffix = "-kclapp2"
-        table_name = TEST_TABLE_NAME + "lsbat" + ddb_lease_table_suffix
-        stream_name = TEST_STREAM_NAME
+        table_name = short_uid() + "lsbat" + ddb_lease_table_suffix
         lambda_ddb_name = f"lambda-ddb-{short_uid()}"
-
-        LOGGER.info("Creating test streams...")
-        run_safe(
-            lambda: dynamodb_client.delete_table(TableName=stream_name + ddb_lease_table_suffix),
-            print_error=False,
-        )
-        aws_stack.create_kinesis_stream(stream_name, delete=True)
+        stream_name = kinesis_create_stream()
 
         events = []
 
@@ -246,8 +233,8 @@ class TestIntegration:
         LOGGER.info("Kinesis consumer initialized.")
         try:
             # create table with stream forwarding config
-            aws_stack.create_dynamodb_table(
-                table_name,
+            dynamodb_create_table(
+                table_name=table_name,
                 partition_key=PARTITION_KEY,
                 stream_view_type="NEW_AND_OLD_IMAGES",
             )
@@ -268,6 +255,7 @@ class TestIntegration:
                 event_source_arn=ddb_event_source_arn,
                 starting_position="TRIM_HORIZON",
                 delete=True,
+                envvars={"KINESIS_STREAM_NAME": stream_name},
             )
 
             # submit a batch with writes
@@ -548,135 +536,63 @@ class TestIntegration:
         retry(check_invocation, retries=14, sleep=5)
 
 
-@pytest.mark.skip(reason="This test is notoriously flaky in CI environments")  # FIXME
-def test_sqs_batch_lambda_forward(lambda_client, sqs_client, create_lambda_function):
-
-    lambda_name_queue_batch = "lambda_queue_batch-%s" % short_uid()
-
-    # deploy test lambda connected to SQS queue
-    sqs_queue_info = testutil.create_sqs_queue(lambda_name_queue_batch)
-    queue_url = sqs_queue_info["QueueUrl"]
-    resp = create_lambda_function(
-        handler_file=TEST_LAMBDA_PYTHON_ECHO,
-        func_name=lambda_name_queue_batch,
-        event_source_arn=sqs_queue_info["QueueArn"],
-        libs=TEST_LAMBDA_LIBS,
-    )
-
-    event_source_id = resp["CreateEventSourceMappingResponse"]["UUID"]
-    lambda_client.update_event_source_mapping(UUID=event_source_id, BatchSize=5)
-
-    messages_to_send = [
-        {
-            "Id": "message{:02d}".format(i),
-            "MessageBody": "msgBody{:02d}".format(i),
-            "MessageAttributes": {
-                "CustomAttribute": {
-                    "DataType": "String",
-                    "StringValue": "CustomAttributeValue{:02d}".format(i),
-                }
-            },
-        }
-        for i in range(1, 12)
-    ]
-
-    # send 11 messages (which should get split into 3 batches)
-    sqs_client.send_message_batch(QueueUrl=queue_url, Entries=messages_to_send[:10])
-    sqs_client.send_message(
-        QueueUrl=queue_url,
-        MessageBody=messages_to_send[10]["MessageBody"],
-        MessageAttributes=messages_to_send[10]["MessageAttributes"],
-    )
-
-    def wait_for_done():
-        attributes = sqs_client.get_queue_attributes(
-            QueueUrl=queue_url,
-            AttributeNames=[
-                "ApproximateNumberOfMessages",
-                "ApproximateNumberOfMessagesDelayed",
-                "ApproximateNumberOfMessagesNotVisible",
-            ],
-        )["Attributes"]
-        msg_count = int(attributes.get("ApproximateNumberOfMessages"))
-        assert 0 == msg_count, "expecting queue to be empty"
-
-        delayed_count = int(attributes.get("ApproximateNumberOfMessagesDelayed"))
-        if delayed_count != 0:
-            LOGGER.warning("SQS delayed message count (actual/expected): %s/%s", delayed_count, 0)
-
-        not_visible_count = int(attributes.get("ApproximateNumberOfMessagesNotVisible"))
-        if not_visible_count != 0:
-            LOGGER.warning(
-                "SQS messages not visible (actual/expected): %s/%s", not_visible_count, 0
-            )
-
-        assert 0 == delayed_count, "no messages waiting for retry"
-        assert 0 == delayed_count + not_visible_count, "no in flight messages"
-
-    # wait for the queue to drain (max 60s)
-    retry(wait_for_done, retries=12, sleep=5.0)
-
-    def check_lambda_logs():
-        events = get_lambda_log_events(lambda_name_queue_batch, 10)
-        assert 3 == len(events), "expected 3 lambda invocations"
-
-    retry(check_lambda_logs, retries=5, sleep=3)
-
-    sqs_client.delete_queue(QueueUrl=queue_url)
-
-
 def test_kinesis_lambda_forward_chain(
-    kinesis_client, s3_client, lambda_client, create_lambda_function
+    kinesis_client,
+    s3_client,
+    lambda_client,
+    kinesis_create_stream,
+    create_lambda_function,
+    cleanups,
 ):
+    stream1_name = kinesis_create_stream()
+    stream2_name = kinesis_create_stream()
+    lambda1_name = f"function-{short_uid()}"
+    lambda2_name = f"function-{short_uid()}"
+    s3_client.create_bucket(Bucket=TEST_BUCKET_NAME)
 
-    try:
-        aws_stack.create_kinesis_stream(TEST_CHAIN_STREAM1_NAME, delete=True)
-        aws_stack.create_kinesis_stream(TEST_CHAIN_STREAM2_NAME, delete=True)
-        s3_client.create_bucket(Bucket=TEST_BUCKET_NAME)
+    # deploy test lambdas connected to Kinesis streams
+    zip_file = testutil.create_lambda_archive(
+        load_file(TEST_LAMBDA_PYTHON), get_content=True, libs=TEST_LAMBDA_LIBS
+    )
+    lambda_1_resp = create_lambda_function(
+        func_name=lambda1_name,
+        zip_file=zip_file,
+        event_source_arn=get_event_source_arn(stream1_name),
+        starting_position="TRIM_HORIZON",
+    )
+    lambda_1_event_source_uuid = lambda_1_resp["CreateEventSourceMappingResponse"]["UUID"]
+    cleanups.append(
+        lambda: lambda_client.delete_event_source_mapping(UUID=lambda_1_event_source_uuid)
+    )
+    lambda_2_resp = create_lambda_function(
+        func_name=lambda2_name,
+        zip_file=zip_file,
+        event_source_arn=get_event_source_arn(stream2_name),
+        starting_position="TRIM_HORIZON",
+    )
+    lambda_2_event_source_uuid = lambda_2_resp["CreateEventSourceMappingResponse"]["UUID"]
+    cleanups.append(
+        lambda: lambda_client.delete_event_source_mapping(UUID=lambda_2_event_source_uuid)
+    )
 
-        # deploy test lambdas connected to Kinesis streams
-        zip_file = testutil.create_lambda_archive(
-            load_file(TEST_LAMBDA_PYTHON), get_content=True, libs=TEST_LAMBDA_LIBS
-        )
-        lambda_1_resp = create_lambda_function(
-            func_name=TEST_CHAIN_LAMBDA1_NAME,
-            zip_file=zip_file,
-            event_source_arn=get_event_source_arn(TEST_CHAIN_STREAM1_NAME),
-            starting_position="TRIM_HORIZON",
-        )
-        lambda_1_event_source_uuid = lambda_1_resp["CreateEventSourceMappingResponse"]["UUID"]
-        lambda_2_resp = create_lambda_function(
-            func_name=TEST_CHAIN_LAMBDA2_NAME,
-            zip_file=zip_file,
-            event_source_arn=get_event_source_arn(TEST_CHAIN_STREAM2_NAME),
-            starting_position="TRIM_HORIZON",
-        )
-        lambda_2_event_source_uuid = lambda_2_resp["CreateEventSourceMappingResponse"]["UUID"]
+    # publish test record
+    test_data = {"test_data": "forward_chain_data_%s with 'quotes\\\"" % short_uid()}
+    data = clone(test_data)
+    data[lambda_integration.MSG_BODY_MESSAGE_TARGET] = "kinesis:%s" % stream2_name
+    LOGGER.debug("put record")
+    kinesis_client.put_record(
+        Data=to_bytes(json.dumps(data)),
+        PartitionKey="testId",
+        StreamName=stream1_name,
+    )
 
-        # publish test record
-        test_data = {"test_data": "forward_chain_data_%s with 'quotes\\\"" % short_uid()}
-        data = clone(test_data)
-        data[lambda_integration.MSG_BODY_MESSAGE_TARGET] = "kinesis:%s" % TEST_CHAIN_STREAM2_NAME
-        LOGGER.debug("put record")
-        kinesis_client.put_record(
-            Data=to_bytes(json.dumps(data)),
-            PartitionKey="testId",
-            StreamName=TEST_CHAIN_STREAM1_NAME,
-        )
+    def check_results():
+        LOGGER.debug("check results")
+        all_objects = testutil.list_all_s3_objects()
+        testutil.assert_objects(test_data, all_objects)
 
-        def check_results():
-            LOGGER.debug("check results")
-            all_objects = testutil.list_all_s3_objects()
-            testutil.assert_objects(test_data, all_objects)
-
-        # check results
-        retry(check_results, retries=10, sleep=3)
-    finally:
-        # clean up
-        kinesis_client.delete_stream(StreamName=TEST_CHAIN_STREAM1_NAME)
-        kinesis_client.delete_stream(StreamName=TEST_CHAIN_STREAM2_NAME)
-        lambda_client.delete_event_source_mapping(UUID=lambda_1_event_source_uuid)
-        lambda_client.delete_event_source_mapping(UUID=lambda_2_event_source_uuid)
+    # check results
+    retry(check_results, retries=10, sleep=3)
 
 
 parametrize_python_runtimes = pytest.mark.parametrize("runtime", PYTHON_TEST_RUNTIMES)

@@ -3,8 +3,7 @@ import os
 from typing import Literal
 
 from localstack.utils.common import to_str
-from localstack.utils.generic.wait_utils import ShortCircuitWaitException
-from localstack.utils.sync import retry
+from localstack.utils.sync import ShortCircuitWaitException, retry
 from localstack.utils.testutil import get_lambda_log_events
 
 

@@ -11,7 +11,7 @@ from typing import Union
 import boto3.dynamodb.types
 
 TEST_BUCKET_NAME = "test-bucket"
-KINESIS_STREAM_NAME = "test_stream_1"
+KINESIS_STREAM_NAME = os.getenv("KINESIS_STREAM_NAME") or "test_stream_1"
 MSG_BODY_RAISE_ERROR_FLAG = "raise_error"
 MSG_BODY_MESSAGE_TARGET = "message_target"
 MSG_BODY_DELETE_BATCH = "delete_batch_test"

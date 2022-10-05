@@ -3519,12 +3519,11 @@ class TestS3StaticWebsiteHosting:
         url = _website_bucket_url(bucket_name)
 
         response = requests.get(url, verify=False)
-        assert 200 == response.status_code
-        assert "index" == response.text
+        assert response.status_code == 200
+        assert response.text == "index"
 
     @pytest.mark.aws_validated
     def test_s3_static_website_hosting(self, s3_client, s3_create_bucket):
-
         bucket_name = f"bucket-{short_uid()}"
 
         s3_create_bucket(Bucket=bucket_name, ACL="public-read")
@@ -3618,6 +3617,7 @@ class TestS3StaticWebsiteHosting:
 
         # error document
         url = f"{website_url}/something"
+        response = requests.get(url, verify=False)
         assert 404 == response.status_code
         assert "error" == response.text
         assert "content-type" in response.headers
@@ -3633,8 +3633,611 @@ class TestS3StaticWebsiteHosting:
         assert "actual/key.html" in response.headers["location"]
 
         response = requests.get(url, verify=False)
-        assert 200 == response.status_code
-        assert actual_key_obj["ETag"] == response.headers["etag"]
+        assert response.status_code == 200
+        assert response.headers["etag"] == actual_key_obj["ETag"]
+
+    @pytest.mark.aws_validated
+    @pytest.mark.skipif(
+        condition=LEGACY_S3_PROVIDER and not is_aws_cloud(),
+        reason="Legacy S3 provider does not provide proper website support",
+    )
+    def test_website_hosting_no_such_website(self, s3_client, s3_create_bucket, snapshot):
+        snapshot.add_transformers_list(self._get_static_hosting_transformers(snapshot))
+        bucket_name = f"bucket-{short_uid()}"
+
+        s3_create_bucket(Bucket=bucket_name, ACL="public-read")
+
+        random_url = _website_bucket_url(f"non-existent-bucket-{short_uid()}")
+        response = requests.get(random_url, verify=False)
+        assert response.status_code == 404
+        snapshot.match("no-such-bucket", response.text)
+
+        website_url = _website_bucket_url(bucket_name)
+        # actual key
+        response = requests.get(website_url, verify=False)
+        assert response.status_code == 404
+        snapshot.match("no-such-website-config", response.text)
+
+        url = f"{website_url}/actual/key.html"
+        response = requests.get(url)
+        assert response.status_code == 404
+        snapshot.match("no-such-website-config-key", response.text)
+
+    @pytest.mark.aws_validated
+    @pytest.mark.skipif(
+        condition=LEGACY_S3_PROVIDER and not is_aws_cloud(),
+        reason="Legacy S3 provider does not provide proper website support",
+    )
+    def test_website_hosting_http_methods(self, s3_client, s3_create_bucket, snapshot):
+        snapshot.add_transformers_list(self._get_static_hosting_transformers(snapshot))
+        bucket_name = f"bucket-{short_uid()}"
+
+        s3_create_bucket(Bucket=bucket_name, ACL="public-read")
+        s3_client.put_bucket_website(
+            Bucket=bucket_name,
+            WebsiteConfiguration={
+                "IndexDocument": {"Suffix": "index.html"},
+            },
+        )
+        website_url = _website_bucket_url(bucket_name)
+        req = requests.post(website_url, data="test")
+        assert req.status_code == 405
+        error_response = req.text
+        snapshot.match("not-allowed-post", {"content": error_response})
+
+        req = requests.delete(website_url)
+        assert req.status_code == 405
+        error_response = req.text
+        snapshot.match("not-allowed-delete", {"content": error_response})
+
+        s3_client.put_bucket_website(
+            Bucket=bucket_name,
+            WebsiteConfiguration={
+                "IndexDocument": {"Suffix": "index.html"},
+                "ErrorDocument": {"Key": "error.html"},
+            },
+        )
+        s3_client.put_object(
+            Bucket=bucket_name,
+            Key="error.html",
+            Body="error",
+            ContentType="text/html",
+            ACL="public-read",
+        )
+
+        # documentation states that error code in the range 4XX are redirected to the ErrorDocument
+        # 405 in not concerned by this
+        req = requests.post(website_url, data="test")
+        assert req.status_code == 405
+
+    @pytest.mark.aws_validated
+    @pytest.mark.skipif(
+        condition=LEGACY_S3_PROVIDER and not is_aws_cloud(),
+        reason="Legacy S3 provider does not provide proper website redirection",
+    )
+    def test_website_hosting_index_lookup(self, s3_client, s3_create_bucket, snapshot):
+        snapshot.add_transformers_list(self._get_static_hosting_transformers(snapshot))
+        bucket_name = f"bucket-{short_uid()}"
+
+        s3_create_bucket(Bucket=bucket_name, ACL="public-read")
+        s3_client.put_bucket_website(
+            Bucket=bucket_name,
+            WebsiteConfiguration={
+                "IndexDocument": {"Suffix": "index.html"},
+            },
+        )
+
+        s3_client.put_object(
+            Bucket=bucket_name,
+            Key="index.html",
+            Body="index",
+            ContentType="text/html",
+            ACL="public-read",
+        )
+
+        website_url = _website_bucket_url(bucket_name)
+        # actual key
+        response = requests.get(website_url)
+        assert response.status_code == 200
+        assert response.text == "index"
+
+        s3_client.put_object(
+            Bucket=bucket_name,
+            Key="directory/index.html",
+            Body="index",
+            ContentType="text/html",
+            ACL="public-read",
+        )
+
+        response = requests.get(f"{website_url}/directory", allow_redirects=False)
+        assert response.status_code == 302
+        assert response.headers["Location"] == "/directory/"
+
+        response = requests.get(f"{website_url}/directory/", verify=False)
+        assert response.status_code == 200
+        assert response.text == "index"
+
+        response = requests.get(f"{website_url}/directory-wrong", verify=False)
+        assert response.status_code == 404
+        snapshot.match("404-no-trailing-slash", response.text)
+
+        response = requests.get(f"{website_url}/directory-wrong/", verify=False)
+        assert response.status_code == 404
+        snapshot.match("404-with-trailing-slash", response.text)
+
+    @pytest.mark.aws_validated
+    @pytest.mark.skipif(
+        condition=LEGACY_S3_PROVIDER and not is_aws_cloud(),
+        reason="Legacy S3 provider does not provide proper website support",
+    )
+    def test_website_hosting_404(self, s3_client, s3_create_bucket, snapshot):
+        snapshot.add_transformers_list(self._get_static_hosting_transformers(snapshot))
+        bucket_name = f"bucket-{short_uid()}"
+
+        s3_create_bucket(Bucket=bucket_name, ACL="public-read")
+        s3_client.put_bucket_website(
+            Bucket=bucket_name,
+            WebsiteConfiguration={
+                "IndexDocument": {"Suffix": "index.html"},
+            },
+        )
+
+        website_url = _website_bucket_url(bucket_name)
+
+        response = requests.get(website_url)
+        assert response.status_code == 404
+        snapshot.match("404-no-such-key", response.text)
+
+        s3_client.put_bucket_website(
+            Bucket=bucket_name,
+            WebsiteConfiguration={
+                "IndexDocument": {"Suffix": "index.html"},
+                "ErrorDocument": {"Key": "error.html"},
+            },
+        )
+        response = requests.get(website_url)
+        assert response.status_code == 404
+        snapshot.match("404-no-such-key-nor-custom", response.text)
+
+        s3_client.put_object(
+            Bucket=bucket_name,
+            Key="error.html",
+            Body="error",
+            ContentType="text/html",
+            ACL="public-read",
+        )
+
+        response = requests.get(website_url)
+        assert response.status_code == 404
+        assert response.text == "error"
+
+    @pytest.mark.aws_validated
+    def test_object_website_redirect_location(self, s3_client, s3_create_bucket):
+        bucket_name = f"bucket-{short_uid()}"
+
+        s3_create_bucket(Bucket=bucket_name, ACL="public-read")
+        s3_client.put_bucket_website(
+            Bucket=bucket_name,
+            WebsiteConfiguration={
+                "IndexDocument": {"Suffix": "index.html"},
+                "ErrorDocument": {"Key": "error.html"},
+            },
+        )
+
+        s3_client.put_object(
+            Bucket=bucket_name,
+            Key="index.html",
+            WebsiteRedirectLocation="/another/index.html",
+            ACL="public-read",
+        )
+
+        s3_client.put_object(
+            Bucket=bucket_name,
+            Key="error.html",
+            Body="error_redirected",
+            WebsiteRedirectLocation="/another/error.html",
+            ACL="public-read",
+        )
+
+        s3_client.put_object(
+            Bucket=bucket_name,
+            Key="another/error.html",
+            Body="error",
+            ACL="public-read",
+        )
+
+        website_url = _website_bucket_url(bucket_name)
+
+        response = requests.get(website_url)
+        # losing the status code because of the redirection in the error document
+        assert response.status_code == 200
+        assert response.text == "error"
+
+    @pytest.mark.aws_validated
+    @pytest.mark.skipif(
+        condition=LEGACY_S3_PROVIDER and not is_aws_cloud(),
+        reason="Legacy S3 provider does not provide website routing rules",
+    )
+    def test_routing_rules_conditions(self, s3_client, s3_create_bucket):
+        # https://github.com/localstack/localstack/issues/6308
+        bucket_name = f"bucket-{short_uid()}"
+
+        s3_create_bucket(Bucket=bucket_name, ACL="public-read")
+        s3_client.put_bucket_website(
+            Bucket=bucket_name,
+            WebsiteConfiguration={
+                "IndexDocument": {"Suffix": "index.html"},
+                "ErrorDocument": {"Key": "error.html"},
+                "RoutingRules": [
+                    {
+                        "Condition": {
+                            "KeyPrefixEquals": "both-prefixed/",
+                            "HttpErrorCodeReturnedEquals": "404",
+                        },
+                        "Redirect": {"ReplaceKeyWith": "redirected-both.html"},
+                    },
+                    {
+                        "Condition": {"KeyPrefixEquals": "prefixed"},
+                        "Redirect": {"ReplaceKeyWith": "redirected.html"},
+                    },
+                    {
+                        "Condition": {"HttpErrorCodeReturnedEquals": "404"},
+                        "Redirect": {"ReplaceKeyWith": "redirected.html"},
+                    },
+                ],
+            },
+        )
+
+        s3_client.put_object(
+            Bucket=bucket_name,
+            Key="redirected.html",
+            Body="redirected",
+            ACL="public-read",
+        )
+
+        s3_client.put_object(
+            Bucket=bucket_name,
+            Key="prefixed-key-test",
+            Body="prefixed",
+            ACL="public-read",
+        )
+
+        s3_client.put_object(
+            Bucket=bucket_name,
+            Key="redirected-both.html",
+            Body="redirected-both",
+            ACL="public-read",
+        )
+
+        website_url = _website_bucket_url(bucket_name)
+
+        response = requests.get(f"{website_url}/non-existent-key", allow_redirects=False)
+        assert response.status_code == 301
+        assert response.headers["Location"] == f"{website_url}/redirected.html"
+
+        # redirects when the custom ErrorDocument is not found
+        response = requests.get(f"{website_url}/non-existent-key")
+        assert response.status_code == 200
+        assert response.text == "redirected"
+
+        s3_client.put_object(
+            Bucket=bucket_name,
+            Key="error.html",
+            Body="error",
+            ACL="public-read",
+        )
+
+        response = requests.get(f"{website_url}/non-existent-key")
+        assert response.status_code == 200
+        assert response.text == "redirected"
+
+        response = requests.get(f"{website_url}/prefixed-key-test")
+        assert response.status_code == 200
+        assert response.text == "redirected"
+
+        response = requests.get(f"{website_url}/both-prefixed/")
+        assert response.status_code == 200
+        assert response.text == "redirected-both"
+
+    @pytest.mark.aws_validated
+    @pytest.mark.skipif(
+        condition=LEGACY_S3_PROVIDER and not is_aws_cloud(),
+        reason="Legacy S3 provider does not provide website routing rules",
+    )
+    def test_routing_rules_redirects(self, s3_client, s3_create_bucket):
+        bucket_name = f"bucket-{short_uid()}"
+
+        s3_create_bucket(Bucket=bucket_name, ACL="public-read")
+        s3_client.put_bucket_website(
+            Bucket=bucket_name,
+            WebsiteConfiguration={
+                "IndexDocument": {"Suffix": "index.html"},
+                "ErrorDocument": {"Key": "error.html"},
+                "RoutingRules": [
+                    {
+                        "Condition": {
+                            "KeyPrefixEquals": "host/",
+                        },
+                        "Redirect": {"HostName": "random-hostname"},
+                    },
+                    {
+                        "Condition": {
+                            "KeyPrefixEquals": "replace-prefix/",
+                        },
+                        "Redirect": {"ReplaceKeyPrefixWith": "replaced-prefix/"},
+                    },
+                    {
+                        "Condition": {
+                            "KeyPrefixEquals": "protocol/",
+                        },
+                        "Redirect": {"Protocol": "https"},
+                    },
+                    {
+                        "Condition": {
+                            "KeyPrefixEquals": "code/",
+                        },
+                        "Redirect": {"HttpRedirectCode": "307"},
+                    },
+                ],
+            },
+        )
+
+        website_url = _website_bucket_url(bucket_name)
+
+        response = requests.get(f"{website_url}/host/key", allow_redirects=False)
+        assert response.status_code == 301
+        assert response.headers["Location"] == "http://random-hostname/host/key"
+
+        response = requests.get(f"{website_url}/replace-prefix/key", allow_redirects=False)
+        assert response.status_code == 301
+        assert response.headers["Location"] == f"{website_url}/replaced-prefix/key"
+
+        response = requests.get(f"{website_url}/protocol/key", allow_redirects=False)
+        assert response.status_code == 301
+        assert not website_url.startswith("https")
+        assert response.headers["Location"].startswith("https")
+
+        response = requests.get(f"{website_url}/code/key", allow_redirects=False)
+        assert response.status_code == 307
+
+    @pytest.mark.aws_validated
+    @pytest.mark.skipif(
+        condition=LEGACY_S3_PROVIDER,
+        reason="Legacy S3 provider does not provide website routing rules",
+    )
+    def test_routing_rules_order(self, s3_client, s3_create_bucket):
+        bucket_name = f"bucket-{short_uid()}"
+
+        s3_create_bucket(Bucket=bucket_name, ACL="public-read")
+        s3_client.put_bucket_website(
+            Bucket=bucket_name,
+            WebsiteConfiguration={
+                "IndexDocument": {"Suffix": "index.html"},
+                "ErrorDocument": {"Key": "error.html"},
+                "RoutingRules": [
+                    {
+                        "Condition": {
+                            "KeyPrefixEquals": "prefix",
+                        },
+                        "Redirect": {"ReplaceKeyWith": "redirected.html"},
+                    },
+                    {
+                        "Condition": {
+                            "KeyPrefixEquals": "index",
+                        },
+                        "Redirect": {"ReplaceKeyWith": "redirected.html"},
+                    },
+                ],
+            },
+        )
+
+        s3_client.put_object(
+            Bucket=bucket_name,
+            Key="index.html",
+            Body="index",
+            ACL="public-read",
+        )
+
+        s3_client.put_object(
+            Bucket=bucket_name,
+            Key="redirected.html",
+            Body="redirected",
+            ACL="public-read",
+        )
+
+        s3_client.put_object(
+            Bucket=bucket_name,
+            Key="website-redirected.html",
+            Body="website-redirected",
+            ACL="public-read",
+        )
+
+        s3_client.put_object(
+            Bucket=bucket_name,
+            Key="prefixed-key-test",
+            Body="prefixed",
+            ACL="public-read",
+            WebsiteRedirectLocation="/website-redirected.html",
+        )
+
+        website_url = _website_bucket_url(bucket_name)
+        # testing that routing rules have precedence over individual object redirection
+        response = requests.get(f"{website_url}/prefixed-key-test")
+        assert response.status_code == 200
+        assert response.text == "redirected"
+
+        # assert that prefix rules don't apply for root path (internally redirected to index.html)
+        response = requests.get(website_url)
+        assert response.status_code == 200
+        assert response.text == "index"
+
+    @pytest.mark.aws_validated
+    @pytest.mark.skipif(
+        condition=LEGACY_S3_PROVIDER and not is_aws_cloud(),
+        reason="Legacy S3 provider does not provide website configuration validation",
+    )
+    @pytest.mark.skip_snapshot_verify(
+        # todo: serializer issue with empty node, very tricky one...
+        paths=["$.invalid-website-conf-1.Error.ArgumentValue"]
+    )
+    def test_validate_website_configuration(self, s3_client, s3_bucket, snapshot):
+
+        website_configurations = [
+            # can't have slash in the suffix
+            {
+                "IndexDocument": {"Suffix": "/index.html"},
+            },
+            # empty suffix value
+            {
+                "IndexDocument": {"Suffix": ""},
+            },
+            # if RedirectAllRequestsTo is set, cannot have other fields
+            {
+                "RedirectAllRequestsTo": {"HostName": "test"},
+                "IndexDocument": {"Suffix": "/index.html"},
+            },
+            # does not have an IndexDocument field
+            {
+                "ErrorDocument": {"Key": "/index.html"},
+            },
+            # wrong protocol, must be http|https
+            {
+                "IndexDocument": {"Suffix": "index.html"},
+                "RoutingRules": [{"Redirect": {"Protocol": "protocol"}}],
+            },
+            # has both ReplaceKeyPrefixWith and ReplaceKeyWith
+            {
+                "IndexDocument": {"Suffix": "index.html"},
+                "RoutingRules": [
+                    {
+                        "Redirect": {
+                            "ReplaceKeyPrefixWith": "prefix",
+                            "ReplaceKeyWith": "key-name",
+                        }
+                    }
+                ],
+            },
+            # empty Condition field in Routing Rule
+            {
+                "IndexDocument": {"Suffix": "index.html"},
+                "RoutingRules": [
+                    {
+                        "Redirect": {
+                            "ReplaceKeyPrefixWith": "prefix",
+                        },
+                        "Condition": {},
+                    }
+                ],
+            },
+            # empty routing rules
+            {
+                "IndexDocument": {"Suffix": "index.html"},
+                "RoutingRules": [],
+            },
+        ]
+
+        for index, invalid_configuration in enumerate(website_configurations):
+            # not using pytest.raises, to have better debugging value in case of not raising exception
+            # because of the loop, we don't know which configuration has not raised the exception
+            try:
+                s3_client.put_bucket_website(
+                    Bucket=s3_bucket,
+                    WebsiteConfiguration=invalid_configuration,
+                )
+                assert False, f"{invalid_configuration} should have raised an exception"
+            except ClientError as e:
+                snapshot.match(f"invalid-website-conf-{index}", e.response)
+
+    @pytest.mark.aws_validated
+    def test_crud_website_configuration(self, s3_client, s3_bucket, snapshot):
+        snapshot.add_transformer(snapshot.transform.key_value("BucketName"))
+
+        with pytest.raises(ClientError) as e:
+            s3_client.get_bucket_website(Bucket=s3_bucket)
+        snapshot.match("get-no-such-website-config", e.value.response)
+
+        resp = s3_client.delete_bucket_website(Bucket=s3_bucket)
+        snapshot.match("del-no-such-website-config", resp)
+
+        response = s3_client.put_bucket_website(
+            Bucket=s3_bucket,
+            WebsiteConfiguration={"IndexDocument": {"Suffix": "index.html"}},
+        )
+        snapshot.match("put-website-config", response)
+
+        response = s3_client.get_bucket_website(Bucket=s3_bucket)
+        snapshot.match("get-website-config", response)
+
+        s3_client.delete_bucket_website(Bucket=s3_bucket)
+        with pytest.raises(ClientError):
+            s3_client.get_bucket_website(Bucket=s3_bucket)
+
+    @pytest.mark.aws_validated
+    @pytest.mark.skipif(
+        condition=LEGACY_S3_PROVIDER and not is_aws_cloud(),
+        reason="Legacy S3 provider does not provide website redirection",
+    )
+    def test_website_hosting_redirect_all(self, s3_client, s3_create_bucket):
+        bucket_name_redirected = f"bucket-{short_uid()}"
+        bucket_name = f"bucket-{short_uid()}"
+
+        s3_create_bucket(Bucket=bucket_name_redirected, ACL="public-read")
+        bucket_website_url = _website_bucket_url(bucket_name)
+        bucket_website_host = urlparse(bucket_website_url).netloc
+
+        s3_client.put_bucket_website(
+            Bucket=bucket_name_redirected,
+            WebsiteConfiguration={
+                "RedirectAllRequestsTo": {"HostName": bucket_website_host},
+            },
+        )
+
+        s3_create_bucket(Bucket=bucket_name, ACL="public-read")
+        s3_client.put_bucket_website(
+            Bucket=bucket_name,
+            WebsiteConfiguration={
+                "IndexDocument": {"Suffix": "index.html"},
+            },
+        )
+
+        s3_client.put_object(
+            Bucket=bucket_name,
+            Key="index.html",
+            Body="index",
+            ContentType="text/html",
+            ACL="public-read",
+        )
+
+        redirected_bucket_website = _website_bucket_url(bucket_name_redirected)
+
+        response_no_redirect = requests.get(redirected_bucket_website, allow_redirects=False)
+        assert response_no_redirect.status_code == 301
+        assert response_no_redirect.content == b""
+
+        response_redirected = requests.get(redirected_bucket_website)
+        assert response_redirected.status_code == 200
+        assert response_redirected.content == b"index"
+
+        response = requests.get(bucket_website_url)
+        assert response.status_code == 200
+        assert response.content == b"index"
+
+        assert response.content == response_redirected.content
+
+        response_redirected = requests.get(f"{redirected_bucket_website}/random-key")
+        assert response_redirected.status_code == 404
+
+    @staticmethod
+    def _get_static_hosting_transformers(snapshot):
+        return [
+            snapshot.transform.regex(
+                "RequestId: (.*?)</li>", replacement="RequestId: <request-id></li>"
+            ),
+            snapshot.transform.regex("HostId: (.*?)</li>", replacement="HostId: <host-id></li>"),
+            snapshot.transform.regex(
+                "BucketName: (.*?)</li>", replacement="BucketName: <bucket-name></li>"
+            ),
+        ]
 
 
 def _anon_client(service: str):

@@ -40,6 +40,7 @@ def test_cfn_with_multiple_route_tables(ec2_client, deploy_cfn_template):
 
 
 def test_cfn_with_multiple_route_table_associations(ec2_client, deploy_cfn_template):
+    # TODO: stack does not deploy to AWS
     stack = deploy_cfn_template(
         template_path=os.path.join(os.path.dirname(__file__), "../templates/template37.yaml")
     )
@@ -48,8 +49,7 @@ def test_cfn_with_multiple_route_table_associations(ec2_client, deploy_cfn_templ
         Filters=[{"Name": "route-table-id", "Values": [route_table_id]}]
     )["RouteTables"][0]
 
-    # CloudFormation will create more than one route table 2 in template + default
-    assert len(route_table["Associations"]) == 3
+    assert len(route_table["Associations"]) == 2
 
     # assert subnet attributes are present
     vpc_id = stack.outputs["VpcId"]

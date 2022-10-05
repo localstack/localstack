@@ -34,6 +34,7 @@ from localstack.utils.collections import ensure_list
 from localstack.utils.files import (
     TMP_FILES,
     chmod_r,
+    cp_r,
     is_empty_dir,
     load_file,
     mkdir,
@@ -42,7 +43,6 @@ from localstack.utils.files import (
 )
 from localstack.utils.net import get_free_tcp_port, is_port_open
 from localstack.utils.platform import is_debian
-from localstack.utils.run import run
 from localstack.utils.strings import short_uid, to_str
 from localstack.utils.sync import poll_condition
 from localstack.utils.threads import FuncThread
@@ -56,20 +56,6 @@ MAX_LAMBDA_ARCHIVE_UPLOAD_SIZE = 50_000_000
 
 def is_local_test_mode():
     return config.is_local_test_mode()
-
-
-def copy_dir(source, target):
-    if is_debian():
-        # Using the native command can be an order of magnitude faster on Travis-CI
-        return run("cp -r %s %s" % (source, target))
-    shutil.copytree(source, target)
-
-
-def rm_dir(dir):
-    if is_debian():
-        # Using the native command can be an order of magnitude faster on Travis-CI
-        return run("rm -r %s" % dir)
-    shutil.rmtree(dir)
 
 
 def create_lambda_archive(
@@ -116,7 +102,7 @@ def create_lambda_archive(
                 for file_path in glob.glob(file_to_copy):
                     name = os.path.join(target_dir, file_path.split(os.path.sep)[-1])
                     if os.path.isdir(file_path):
-                        copy_dir(file_path, name)
+                        cp_r(file_path, name)
                     else:
                         shutil.copyfile(file_path, name)
 
@@ -184,7 +170,7 @@ def create_zip_file(
         return full_zip_file
     with open(full_zip_file, "rb") as file_obj:
         zip_file_content = file_obj.read()
-    rm_dir(tmp_dir)
+    rm_rf(tmp_dir)
     return zip_file_content
 
 
@@ -493,15 +479,6 @@ def map_all_s3_objects(to_json: bool = True, buckets: List[str] = None) -> Dict[
     return result
 
 
-def get_sample_arn(service, resource):
-    return "arn:aws:%s:%s:%s:%s" % (
-        service,
-        aws_stack.get_region(),
-        get_aws_account_id(),
-        resource,
-    )
-
-
 def send_describe_dynamodb_ttl_request(table_name):
     return send_dynamodb_request("", "DescribeTimeToLive", json.dumps({"TableName": table_name}))
 
@@ -530,25 +507,6 @@ def send_dynamodb_request(path, action, request_body):
     }
     url = f"{config.service_url('dynamodb')}/{path}"
     return requests.put(url, data=request_body, headers=headers, verify=False)
-
-
-def create_sqs_queue(queue_name):
-    """Utility method to create a new queue via SQS API"""
-
-    client = aws_stack.connect_to_service("sqs")
-
-    # create queue
-    queue_url = client.create_queue(QueueName=queue_name)["QueueUrl"]
-
-    # get the queue arn
-    queue_arn = client.get_queue_attributes(QueueUrl=queue_url, AttributeNames=["QueueArn"],)[
-        "Attributes"
-    ]["QueueArn"]
-
-    return {
-        "QueueUrl": queue_url,
-        "QueueArn": queue_arn,
-    }
 
 
 def get_lambda_log_group_name(function_name):
@@ -677,15 +635,6 @@ def proxy_server(proxy_listener, host="127.0.0.1", port=None) -> str:
     ), f"server on port {port} did not start"
     yield url
     thread.stop()
-
-
-def json_response(data, code=200, headers: Dict = None) -> requests.Response:
-    r = requests.Response()
-    r._content = json.dumps(data)
-    r.status_code = code
-    if headers:
-        r.headers.update(headers)
-    return r
 
 
 def list_all_resources(

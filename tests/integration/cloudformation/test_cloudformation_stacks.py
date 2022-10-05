@@ -7,9 +7,8 @@ import yaml
 from localstack.testing.aws.cloudformation_utils import load_template_file, load_template_raw
 from localstack.utils.aws import aws_stack
 from localstack.utils.files import load_file
-from localstack.utils.generic.wait_utils import wait_until
 from localstack.utils.strings import short_uid
-from localstack.utils.sync import retry
+from localstack.utils.sync import retry, wait_until
 
 
 def test_create_stack_with_ssm_parameters(cfn_client, ssm_client, sns_client, deploy_cfn_template):
