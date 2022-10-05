@@ -164,6 +164,7 @@ def get_terraform_binary() -> str:
 
 def install_component(name):
     from localstack.services.awslambda.packages import awslambda_runtime_package
+    from localstack.services.cloudformation.packages import cloudformation_package
     from localstack.services.dynamodb.packages import dynamodblocal_package
     from localstack.services.kinesis.packages import kinesismock_package
     from localstack.services.kms.packages import kms_local_package
@@ -171,7 +172,7 @@ def install_component(name):
     from localstack.services.stepfunctions.packages import stepfunctions_local_package
 
     installers = {
-        "cloudformation": install_cloudformation_libs,
+        "cloudformation": cloudformation_package.install,
         "dynamodb": dynamodblocal_package.install,
         "kinesis": kinesismock_package.install,
         "kms": kms_local_package.install,
@@ -281,6 +282,7 @@ class CommunityInstallerRepository(InstallerRepository):
             awslambda_runtime_package,
             lambda_java_libs_package,
         )
+        from localstack.services.cloudformation.packages import cloudformation_package
         from localstack.services.dynamodb.packages import dynamodblocal_package
         from localstack.services.kinesis.packages import kinesalite_package, kinesismock_package
         from localstack.services.kms.packages import kms_local_package
@@ -294,7 +296,7 @@ class CommunityInstallerRepository(InstallerRepository):
         return [
             ("awslambda-go-runtime", awslambda_go_runtime_package),
             ("awslambda-runtime", awslambda_runtime_package),
-            ("cloudformation-libs", install_cloudformation_libs),
+            ("cloudformation-libs", cloudformation_package),
             ("dynamodb-local", dynamodblocal_package),
             ("elasticmq", elasticmq_package),
             ("elasticsearch", elasticsearch_package),
