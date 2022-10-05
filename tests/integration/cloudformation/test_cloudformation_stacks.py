@@ -5,6 +5,7 @@ import pytest
 import yaml
 
 from localstack.testing.aws.cloudformation_utils import load_template_file
+from localstack.testing.snapshots.transformer import SortingTransformer
 from localstack.utils.files import load_file
 from localstack.utils.strings import short_uid
 
@@ -172,3 +173,13 @@ def test_update_stack_with_same_template(cfn_client, deploy_cfn_template):
     error_message = str(ctx.value)
     assert "UpdateStack" in error_message
     assert "No updates are to be performed." in error_message
+
+
+def test_list_events_after_deployment(cfn_client, deploy_cfn_template, snapshot):
+    snapshot.add_transformer(SortingTransformer("StackEvents", lambda x: x["Timestamp"]))
+    snapshot.add_transformer(snapshot.transform.cloudformation_api())
+    stack = deploy_cfn_template(
+        template_path=os.path.join(os.path.dirname(__file__), "../templates/sns_topic_simple.yaml")
+    )
+    response = cfn_client.describe_stack_events(StackName=stack.stack_name)
+    snapshot.match("events", response)
