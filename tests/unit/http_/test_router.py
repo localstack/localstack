@@ -4,7 +4,7 @@ from typing import List, Tuple
 import pytest
 import requests
 import werkzeug
-from werkzeug.exceptions import NotFound
+from werkzeug.exceptions import MethodNotAllowed, NotFound
 
 from localstack.http import Request, Response, Router
 from localstack.http.router import E, RegexConverter, RequestArguments, route
@@ -220,6 +220,31 @@ class TestRouter:
 
         assert router.dispatch(Request("GET", "/users")).data == b"user"
         assert router.dispatch(Request("GET", "/users/123")).data == b"123"
+
+    def test_add_route_endpoint_with_object_per_method(self):
+        # tests whether there can be multiple rules with different methods to the same URL
+        class MyApi:
+            @route("/my_api", methods=["GET"])
+            def do_get(self, request: Request, _args):
+                # should be inherited
+                return Response(f"{request.path}/do-get")
+
+            @route("/my_api", methods=["POST", "PUT"])
+            def do_post(self, request: Request, _args):
+                # should be inherited
+                return Response(f"{request.path}/do-post-or-put")
+
+        api = MyApi()
+        router = Router()
+        rules = router.add_route_endpoints(api)
+        assert len(rules) == 2
+
+        assert router.dispatch(Request("GET", "/my_api")).data == b"/my_api/do-get"
+        assert router.dispatch(Request("POST", "/my_api")).data == b"/my_api/do-post-or-put"
+        assert router.dispatch(Request("PUT", "/my_api")).data == b"/my_api/do-post-or-put"
+
+        with pytest.raises(MethodNotAllowed):
+            router.dispatch(Request("DELETE", "/my_api"))
 
 
 class TestWsgiIntegration:
