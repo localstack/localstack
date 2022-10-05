@@ -168,8 +168,9 @@ class Router(Generic[E]):
         :return: the rule that was added
         """
         attr: _RuleAttributes = fn.rule_attributes
-
-        return self.add(path=attr.path, endpoint=fn, host=attr.host, **attr.kwargs)
+        return self.add(
+            path=attr.path, endpoint=fn, host=attr.host, methods=attr.methods, **attr.kwargs
+        )
 
     def add_route_endpoints(self, obj: object) -> List[Rule]:
         """
