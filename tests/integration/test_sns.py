@@ -17,7 +17,6 @@ from werkzeug import Response
 from localstack import config
 from localstack.aws.accounts import get_aws_account_id
 from localstack.aws.api.lambda_ import Runtime
-from localstack.constants import INTERNAL_RESOURCE_PATH
 from localstack.services.awslambda.lambda_utils import LAMBDA_RUNTIME_PYTHON37
 from localstack.services.install import SQS_BACKEND_IMPL
 from localstack.services.sns.provider import PLATFORM_ENDPOINT_MSGS_ENDPOINT, SnsProvider
@@ -2491,7 +2490,7 @@ class TestSNSProvider:
 
         retry(check_message, retries=PUBLICATION_RETRIES, sleep=PUBLICATION_TIMEOUT)
 
-        msgs_url = config.get_edge_url() + INTERNAL_RESOURCE_PATH + PLATFORM_ENDPOINT_MSGS_ENDPOINT
+        msgs_url = config.get_edge_url() + PLATFORM_ENDPOINT_MSGS_ENDPOINT
         api_contents = requests.get(msgs_url).json()
         api_platform_endpoints_msgs = api_contents["platform_endpoint_messages"]
 

@@ -96,8 +96,8 @@ from localstack.aws.api.sns import (
     topicName,
 )
 from localstack.config import external_service_url
-from localstack.http import Request, Response
-from localstack.services.internal import get_internal_apis
+from localstack.http import Request, Response, Router, route
+from localstack.services.edge import ROUTER
 from localstack.services.moto import call_moto
 from localstack.services.plugins import ServiceLifecycleHook
 from localstack.services.sns.models import SnsStore, sns_stores
@@ -125,8 +125,7 @@ SNS_PROTOCOLS = [
 ]
 
 # Endpoint to access all the PlatformEndpoint sent Messages
-# (relative to LocalStack internal HTTP resources base endpoint)
-PLATFORM_ENDPOINT_MSGS_ENDPOINT = "/sns/platform-endpoint-messages"
+PLATFORM_ENDPOINT_MSGS_ENDPOINT = "/_aws/sns/platform-endpoint-messages"
 
 # set up logger
 LOG = logging.getLogger(__name__)
@@ -288,7 +287,7 @@ def send_message_to_GCM(app_attributes, endpoint_attributes, message):
 class SnsProvider(SnsApi, ServiceLifecycleHook):
     def on_after_init(self):
         # Allow sent platform endpoint messages to be retrieved from the SNS endpoint
-        register_sns_api_resource()
+        register_sns_api_resource(ROUTER)
 
     @staticmethod
     def get_store() -> SnsStore:
@@ -930,7 +929,6 @@ async def message_to_subscriber(
     subscriptions,
     message_attributes,
 ):
-
     if subscription_arn not in [None, subscriber["SubscriptionArn"]]:
         return
 
@@ -1536,7 +1534,6 @@ def evaluate_filter_policy_conditions(conditions, attribute, message_attributes,
 def store_delivery_log(
     subscriber: dict, success: bool, message: str, message_id: str, delivery: dict = None
 ):
-
     log_group_name = subscriber.get("TopicArn", "").replace("arn:aws:", "").replace(":", "/")
     log_stream_name = long_uid()
     invocation_time = int(time.time() * 1000)
@@ -1590,11 +1587,9 @@ def unsubscribe_sqs_queue(queue_url):
                 subscriptions.remove(subscriber)
 
 
-def register_sns_api_resource():
+def register_sns_api_resource(router: Router):
     """Register the platform endpointmessages retrospection endpoint as an internal LocalStack endpoint."""
-    get_internal_apis().add(
-        PLATFORM_ENDPOINT_MSGS_ENDPOINT, SNSServicePlatformEndpointMessagesApiResource()
-    )
+    router.add_route_endpoints(SNSServicePlatformEndpointMessagesApiResource())
 
 
 def _format_platform_endpoint_messages(sent_messages: List[Dict[str, str]]):
@@ -1636,6 +1631,7 @@ class SNSServicePlatformEndpointMessagesApiResource:
     - DELETE param `endpointArn`: will delete saved messages for `endpointArn`
     """
 
+    @route(PLATFORM_ENDPOINT_MSGS_ENDPOINT, methods=["GET"])
     def on_get(self, request: Request):
         account_id = request.args.get("accountId", get_aws_account_id())
         region = request.args.get("region", "us-east-1")
@@ -1658,6 +1654,7 @@ class SNSServicePlatformEndpointMessagesApiResource:
             "region": region,
         }
 
+    @route(PLATFORM_ENDPOINT_MSGS_ENDPOINT, methods=["DELETE"])
     def on_delete(self, request: Request) -> Response:
         account_id = request.args.get("accountId", get_aws_account_id())
         region = request.args.get("region", "us-east-1")
