@@ -85,8 +85,12 @@ signing_name_path_prefix_rules = {
         "/v2": "sesv2",
         "/v1": "pinpoint-email",
     },
-    "greengrass": {"/greengrass/v2/": "greengrassv2"},
-    "cloudsearch": {"/2013-01-01": "cloudsearchdomain"},
+    "greengrass": {
+        "/greengrass/v2/": "greengrassv2",
+    },
+    "cloudsearch": {
+        "/2013-01-01": "cloudsearchdomain",
+    },
     "s3": {"/v20180820": "s3control"},
     "iot1click": {
         "/projects": "iot1click-projects",
@@ -95,6 +99,10 @@ signing_name_path_prefix_rules = {
     "es": {
         "/2015-01-01": "es",
         "/2021-01-01": "opensearch",
+    },
+    "sagemaker": {
+        "/endpoints": "sagemaker-runtime",
+        "/human-loops": "sagemaker-a2i-runtime",
     },
 }
 
