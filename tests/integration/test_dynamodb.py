@@ -1544,6 +1544,60 @@ class TestDynamoDB:
         table = client.describe_table(TableName=table_name)
         assert table.get("Table")
 
+    @pytest.mark.only_localstack(reason="wait_for_stream_ready of kinesis stream")
+    @pytest.mark.skip_snapshot_verify(paths=["$..eventID", "$..SequenceNumber", "$..SizeBytes"])
+    def test_data_encoding_consistency(
+        self,
+        dynamodbstreams_client,
+        dynamodb_create_table_with_parameters,
+        wait_for_stream_ready,
+        dynamodb_client,
+        snapshot,
+    ):
+        table_name = f"table-{short_uid()}"
+        table = dynamodb_create_table_with_parameters(
+            TableName=table_name,
+            KeySchema=[{"AttributeName": "id", "KeyType": "HASH"}],
+            AttributeDefinitions=[{"AttributeName": "id", "AttributeType": "S"}],
+            ProvisionedThroughput={"ReadCapacityUnits": 5, "WriteCapacityUnits": 5},
+            StreamSpecification={
+                "StreamEnabled": True,
+                "StreamViewType": "NEW_AND_OLD_IMAGES",
+            },
+        )
+        stream_name = get_kinesis_stream_name(table_name)
+        wait_for_stream_ready(stream_name)
+
+        # put item
+        dynamodb_client.put_item(
+            TableName=table_name, Item={"id": {"S": "id1"}, "data": {"B": b"\x90"}}
+        )
+
+        # get item
+        item = dynamodb_client.get_item(TableName=table_name, Key={PARTITION_KEY: {"S": "id1"}})[
+            "Item"
+        ]
+        snapshot.match("GetItem", item)
+
+        # get stream records
+        stream_arn = table["TableDescription"]["LatestStreamArn"]
+
+        result = dynamodbstreams_client.describe_stream(StreamArn=stream_arn)["StreamDescription"]
+
+        response = dynamodbstreams_client.get_shard_iterator(
+            StreamArn=stream_arn,
+            ShardId=result["Shards"][0]["ShardId"],
+            ShardIteratorType="AT_SEQUENCE_NUMBER",
+            SequenceNumber=result["Shards"][0]
+            .get("SequenceNumberRange")
+            .get("StartingSequenceNumber"),
+        )
+        records = dynamodbstreams_client.get_records(ShardIterator=response["ShardIterator"])[
+            "Records"
+        ]
+
+        snapshot.match("GetRecords", records[0]["dynamodb"])
+
 
 def delete_table(name):
     dynamodb_client = aws_stack.create_external_boto_client("dynamodb")

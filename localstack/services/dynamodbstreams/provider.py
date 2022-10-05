@@ -1,6 +1,7 @@
 import copy
-import json
 import logging
+
+import bson
 
 from localstack.aws.api import RequestContext, handler
 from localstack.aws.api.dynamodbstreams import (
@@ -33,7 +34,6 @@ from localstack.services.dynamodbstreams.dynamodbstreams_api import (
 from localstack.services.plugins import ServiceLifecycleHook
 from localstack.utils.aws import aws_stack
 from localstack.utils.collections import select_from_typed_dict
-from localstack.utils.common import to_str
 
 LOG = logging.getLogger(__name__)
 
@@ -103,7 +103,7 @@ class DynamoDBStreamsProvider(DynamodbstreamsApi, ServiceLifecycleHook):
             "NextShardIterator": kinesis_records.get("NextShardIterator"),
         }
         for record in kinesis_records["Records"]:
-            record_data = json.loads(to_str(record["Data"]))
+            record_data = bson.loads(record["Data"])
             record_data["dynamodb"]["SequenceNumber"] = record["SequenceNumber"]
             result["Records"].append(record_data)
         return GetRecordsOutput(**result)
