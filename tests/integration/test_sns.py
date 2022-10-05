@@ -17,10 +17,10 @@ from werkzeug import Response
 from localstack import config
 from localstack.aws.accounts import get_aws_account_id
 from localstack.aws.api.lambda_ import Runtime
-from localstack.services.awslambda.lambda_utils import LAMBDA_RUNTIME_PYTHON37
 from localstack.constants import INTERNAL_RESOURCE_PATH
+from localstack.services.awslambda.lambda_utils import LAMBDA_RUNTIME_PYTHON37
 from localstack.services.install import SQS_BACKEND_IMPL
-from localstack.services.sns.provider import SnsProvider, PLATFORM_ENDPOINT_MSGS_ENDPOINT
+from localstack.services.sns.provider import PLATFORM_ENDPOINT_MSGS_ENDPOINT, SnsProvider
 from localstack.testing.aws.util import is_aws_cloud
 from localstack.utils import testutil
 from localstack.utils.net import wait_for_port_closed, wait_for_port_open
@@ -2506,6 +2506,11 @@ class TestSNSProvider:
             api_platform_endpoints_msgs[endpoint_arn][0]["MessageAttributes"] == message_attributes
         )
 
+        # Ensure you can select the region
+        msg_with_region = requests.get(msgs_url, params={"region": "eu-west-1"}).json()
+        assert len(msg_with_region["platform_endpoint_messages"]) == 0
+        assert msg_with_region["region"] == "eu-west-1"
+
         # Ensure messages can be filtered by EndpointArn
         api_contents_with_endpoint = requests.get(
             msgs_url, params={"endpointArn": endpoint_arn}
@@ -2515,10 +2520,20 @@ class TestSNSProvider:
         assert len(msgs_with_endpoint[endpoint_arn]) == 1
         assert api_contents_with_endpoint["region"] == "us-east-1"
 
-        # Ensure you can select the region
-        msg_with_region = requests.get(msgs_url, params={"region": "eu-west-1"}).json()
-        assert len(msg_with_region["platform_endpoint_messages"]) == 0
-        assert msg_with_region["region"] == "eu-west-1"
+        # Ensure you can reset the saved messages by EndpointArn
+        delete_res = requests.delete(msgs_url, params={"endpointArn": endpoint_arn})
+        assert delete_res.status_code == 204
+        api_contents_with_endpoint = requests.get(
+            msgs_url, params={"endpointArn": endpoint_arn}
+        ).json()
+        msgs_with_endpoint = api_contents_with_endpoint["platform_endpoint_messages"]
+        assert len(msgs_with_endpoint[endpoint_arn]) == 0
+
+        # Ensure you can reset the saved messages by region
+        delete_res = requests.delete(msgs_url, params={"region": "us-east-1"})
+        assert delete_res.status_code == 204
+        msg_with_region = requests.get(msgs_url, params={"region": "us-east-1"}).json()
+        assert not msg_with_region["platform_endpoint_messages"]
 
     @pytest.mark.only_localstack
     @pytest.mark.xfail(reason="Behaviour not yet implemented")

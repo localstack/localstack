@@ -17,7 +17,7 @@ from flask import Response as FlaskResponse
 from moto.sns import sns_backends
 from moto.sns.exceptions import DuplicateSnsEndpointError
 from moto.sns.models import MAXIMUM_MESSAGE_LENGTH
-from requests.models import Response
+from requests.models import Response as RequestsResponse
 
 from localstack import config
 from localstack.aws.accounts import get_aws_account_id
@@ -96,7 +96,7 @@ from localstack.aws.api.sns import (
     topicName,
 )
 from localstack.config import external_service_url
-from localstack.services.generic_proxy import RegionBackend
+from localstack.http import Request, Response
 from localstack.services.internal import get_internal_apis
 from localstack.services.moto import call_moto
 from localstack.services.plugins import ServiceLifecycleHook
@@ -1045,7 +1045,7 @@ async def message_to_subscriber(
                 store_delivery_log(subscriber, True, message, message_id, delivery)
 
             # TODO: Check if it can be removed
-            if isinstance(response, Response):
+            if isinstance(response, RequestsResponse):
                 response.raise_for_status()
             elif isinstance(response, FlaskResponse):
                 if response.status_code >= 400:
@@ -1630,15 +1630,17 @@ class SNSServicePlatformEndpointMessagesApiResource:
 
     This endpoint accepts:
     - GET param `region`: selector for AWS `region`. If not specified, return default "us-east-1"
-    - GET param `topicArn`: filter for `topicArn` resource in SNS
+    - GET param `endpointArn`: filter for `endpointArn` resource in SNS
+    - DELETE param `region`: will delete saved messages for `region`
+    - DELETE param `endpointArn`: will delete saved messages for `endpointArn`
     """
 
-    def on_get(self, request):
+    def on_get(self, request: Request):
         region = request.args.get("region", "us-east-1")
         filter_endpoint_arn = request.args.get("endpointArn")
-        backend = SNSBackend.get(region=region)
+        store: SnsStore = sns_stores[get_aws_account_id()][region]
         if filter_endpoint_arn:
-            messages = backend.platform_endpoint_messages.get(filter_endpoint_arn, [])
+            messages = store.platform_endpoint_messages.get(filter_endpoint_arn, [])
             messages = _format_platform_endpoint_messages(messages)
             return {
                 "platform_endpoint_messages": {filter_endpoint_arn: messages},
@@ -1647,9 +1649,20 @@ class SNSServicePlatformEndpointMessagesApiResource:
 
         platform_endpoint_messages = {
             endpoint_arn: _format_platform_endpoint_messages(messages)
-            for endpoint_arn, messages in backend.platform_endpoint_messages.items()
+            for endpoint_arn, messages in store.platform_endpoint_messages.items()
         }
         return {
             "platform_endpoint_messages": platform_endpoint_messages,
             "region": region,
         }
+
+    def on_delete(self, request: Request) -> Response:
+        region = request.args.get("region", "us-east-1")
+        filter_endpoint_arn = request.args.get("endpointArn")
+        store: SnsStore = sns_stores[get_aws_account_id()][region]
+        if filter_endpoint_arn:
+            store.platform_endpoint_messages.pop(filter_endpoint_arn, None)
+            return Response("", status=204)
+
+        store.platform_endpoint_messages = {}
+        return Response("", status=204)
