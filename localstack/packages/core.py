@@ -11,7 +11,7 @@ from localstack import config
 from localstack.utils.platform import in_docker, is_debian, is_redhat
 from localstack.utils.run import run
 
-from ..services.install import extract
+from ..services.install import download_and_extract
 from ..utils.files import chmod_r, mkdir
 from ..utils.http import download
 from .api import InstallTarget, PackageException, PackageInstaller
@@ -191,16 +191,29 @@ class DownloadInstaller(PackageInstaller):
 
 
 # TODO: names!
-class ExtractDownloadInstaller(DownloadInstaller):
+class ExtractDownloadInstaller(PackageInstaller, ABC):
     def _get_download_url(self) -> str:
         raise NotImplementedError()
 
     def _install(self, target: InstallTarget) -> None:
-        super()._install(target)
+
         target_directory = self._get_install_dir(target)
-        target_path = self._get_install_marker_path(target_directory)
-        extract(target_path, target_directory)
+        mkdir(target_directory)
+        download_url = self._get_download_url()
+        archive_name = os.path.basename(download_url)
+        download_and_extract(
+            download_url, target_directory, tmp_archive=os.path.join("/tmp", archive_name)
+        )
         chmod_r(self.get_executable_path(), 0o777)
+
+    # TODO: potentially restructure this with in regards to DownloadInstaller to introduce a common base
+    def get_executable_path(self) -> str | None:
+        """
+        :return: the path to the downloaded binary or None if it's not yet downloaded / installed.
+        """
+        install_dir = self.get_installed_dir()
+        if install_dir:
+            return self._get_install_marker_path(install_dir)
 
 
 class PermissionDownloadInstaller(DownloadInstaller):

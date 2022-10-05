@@ -207,6 +207,8 @@ def extract(source_archive, target):
 
 def download_and_extract(archive_url, target_dir, retries=0, sleep=3, tmp_archive=None):
     mkdir(target_dir)
+
+    _, ext = os.path.splitext(tmp_archive or archive_url)
     tmp_archive = tmp_archive or new_tmp_file()
     if not os.path.exists(tmp_archive) or os.path.getsize(tmp_archive) <= 0:
         # create temporary placeholder file, to avoid duplicate parallel downloads
@@ -217,7 +219,12 @@ def download_and_extract(archive_url, target_dir, retries=0, sleep=3, tmp_archiv
                 break
             except Exception:
                 time.sleep(sleep)
-    extract(tmp_archive, target_dir)
+    if ext == ".zip":
+        unzip(tmp_archive, target_dir)
+    elif ext in [".bz2", ".gz", ".tgz"]:
+        untar(tmp_archive, target_dir)
+    else:
+        raise Exception(f"Unsupported archive format: {ext}")
 
 
 def download_and_extract_with_retry(archive_url, tmp_archive, target_dir):

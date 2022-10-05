@@ -1,3 +1,4 @@
+import os
 import platform
 from typing import List
 
@@ -23,6 +24,9 @@ class TerraformPackage(Package):
 
 
 class TerraformPackageInstaller(ExtractDownloadInstaller):
+    def _get_install_marker_path(self, install_dir: str) -> str:
+        return os.path.join(install_dir, "terraform")
+
     def _get_download_url(self) -> str:
         system = platform.system().lower()
         arch = get_arch()
