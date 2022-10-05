@@ -83,7 +83,9 @@ def test_event_rule_to_logs(cfn_client, events_client, logs_client, deploy_cfn_t
     resource_policy_name = f"policy-{short_uid()}"
 
     deploy_cfn_template(
-        template_path=os.path.join(os.path.dirname(__file__), "../../templates/events_loggroup.yaml"),
+        template_path=os.path.join(
+            os.path.dirname(__file__), "../../templates/events_loggroup.yaml"
+        ),
         parameters={
             "EventRuleName": event_rule_name,
             "LogGroupName": log_group_name,

@@ -266,7 +266,9 @@ Resources:
 class TestCloudFormation:
     def test_validate_template(self, cfn_client):
         template = template_preparer.template_to_json(
-            load_file(os.path.join(os.path.dirname(__file__), "../../templates/valid_template.json"))
+            load_file(
+                os.path.join(os.path.dirname(__file__), "../../templates/valid_template.json")
+            )
         )
         resp = cfn_client.validate_template(TemplateBody=template)
 
@@ -424,7 +426,9 @@ class TestCloudFormation:
         )
         template = json.loads(
             load_file(
-                os.path.join(os.path.dirname(__file__), "../../templates/update_lambda_template.json")
+                os.path.join(
+                    os.path.dirname(__file__), "../../templates/update_lambda_template.json"
+                )
             )
         )
         template["Resources"]["PullMarketsRole"]["Properties"]["RoleName"] = role_name
@@ -495,7 +499,9 @@ class TestCloudFormation:
         environment = f"env-{short_uid()}"
 
         stack = deploy_cfn_template(
-            template_path=os.path.join(os.path.dirname(__file__), "../../templates/template23.yaml"),
+            template_path=os.path.join(
+                os.path.dirname(__file__), "../../templates/template23.yaml"
+            ),
             parameters={"Environment": environment, "ApiKey": "12345"},
         )
 
@@ -574,7 +580,9 @@ class TestCloudFormation:
         environment = f"env-{short_uid()}"
 
         stack = deploy_cfn_template(
-            template_path=os.path.join(os.path.dirname(__file__), "../../templates/template26.yaml"),
+            template_path=os.path.join(
+                os.path.dirname(__file__), "../../templates/template26.yaml"
+            ),
             parameters={"Environment": environment},
         )
 

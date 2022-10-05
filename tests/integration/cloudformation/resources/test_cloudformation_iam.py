@@ -10,7 +10,9 @@ from localstack.utils.common import short_uid
 def test_delete_role_detaches_role_policy(cfn_client, iam_client, deploy_cfn_template):
     role_name = f"LsRole{short_uid()}"
     stack = deploy_cfn_template(
-        template_path=os.path.join(os.path.dirname(__file__), "../../templates/iam_role_policy.yaml"),
+        template_path=os.path.join(
+            os.path.dirname(__file__), "../../templates/iam_role_policy.yaml"
+        ),
         parameters={"RoleName": role_name},
     )
     attached_policies = iam_client.list_attached_role_policies(RoleName=role_name)[
@@ -21,7 +23,9 @@ def test_delete_role_detaches_role_policy(cfn_client, iam_client, deploy_cfn_tem
     deploy_cfn_template(
         is_update=True,
         stack_name=stack.stack_name,
-        template_path=os.path.join(os.path.dirname(__file__), "../../templates/iam_role_policy.yaml"),
+        template_path=os.path.join(
+            os.path.dirname(__file__), "../../templates/iam_role_policy.yaml"
+        ),
         parameters={"RoleName": f"role-{short_uid()}"},
     )
 
@@ -114,7 +118,9 @@ def test_iam_user_access_key(deploy_cfn_template, iam_client, snapshot):
 
     user_name = f"user-{short_uid()}"
     stack = deploy_cfn_template(
-        template_path=os.path.join(os.path.dirname(__file__), "../../templates/iam_access_key.yaml"),
+        template_path=os.path.join(
+            os.path.dirname(__file__), "../../templates/iam_access_key.yaml"
+        ),
         parameters={"UserName": user_name},
     )
 
