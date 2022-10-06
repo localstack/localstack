@@ -1,5 +1,9 @@
 {
+<<<<<<< HEAD:tests/integration/cloudformation/resources/test_kinesis.snapshot.json
   "tests/integration/cloudformation/resources/test_kinesis.py::test_stream_creation": {
+=======
+  "tests/integration/cloudformation/resources/test_cloudformation_kinesis.py::test_stream_creation": {
+>>>>>>> 9131371d (fix errors):tests/integration/cloudformation/resources/test_cloudformation_kinesis.snapshot.json
     "recorded-date": "12-09-2022, 14:11:29",
     "recorded-content": {
       "stack_output": {
