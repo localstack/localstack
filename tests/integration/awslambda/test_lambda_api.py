@@ -501,8 +501,13 @@ class TestLambdaFunction:
         list_paginator = lambda_client.get_paginator("list_functions")
         # ALL means it should also return all published versions for the functions
         test_fn = [function_name_1, function_name_2]
-        list_all = list_paginator.paginate(FunctionVersion="ALL").build_full_result()
-        list_default = list_paginator.paginate().build_full_result()
+        list_all = list_paginator.paginate(
+            FunctionVersion="ALL",
+            PaginationConfig={
+                "PageSize": 1,
+            },
+        ).build_full_result()
+        list_default = list_paginator.paginate(PaginationConfig={"PageSize": 1}).build_full_result()
 
         # we can't filter on the API level, so we'll just need to remove all entries that don't belong here manually before snapshotting
         list_all["Functions"] = [f for f in list_all["Functions"] if f["FunctionName"] in test_fn]
@@ -867,9 +872,10 @@ class TestLambdaAlias:
         snapshot.match("get_alias_2", get_alias_2)
 
         # list_aliases can be optionally called with a FunctionVersion to filter only aliases for this version
-        list_aliases_for_fnname = lambda_client.list_aliases(
-            FunctionName=function_name
-        )  # 4 aliases
+        list_alias_paginator = lambda_client.get_paginator("list_aliases")
+        list_aliases_for_fnname = list_alias_paginator.paginate(
+            FunctionName=function_name, PaginationConfig={"PageSize": 1}
+        ).build_full_result()  # 4 aliases
         snapshot.match("list_aliases_for_fnname", list_aliases_for_fnname)
         assert len(list_aliases_for_fnname["Aliases"]) == 4
         # update alias 1_1 to remove routing config

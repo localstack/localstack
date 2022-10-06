@@ -623,7 +623,7 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
         ]
         versions = PaginatedList(versions)
         page, token = versions.get_page(
-            lambda version: version.config.function_arn(),
+            lambda version: version["FunctionArn"],
             marker,
             max_items,
         )
@@ -884,7 +884,7 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
 
         aliases = PaginatedList(aliases)
         page, token = aliases.get_page(
-            lambda alias: alias.config.function_arn(),
+            lambda alias: alias["AliasArn"],
             marker,
             max_items,
         )

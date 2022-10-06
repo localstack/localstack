@@ -2407,7 +2407,7 @@
     }
   },
   "tests/integration/awslambda/test_lambda_api.py::TestLambdaAlias::test_alias_lifecycle": {
-    "recorded-date": "30-09-2022, 15:31:56",
+    "recorded-date": "06-10-2022, 16:06:44",
     "recorded-content": {
       "create_response": {
         "Architectures": [
@@ -2651,11 +2651,7 @@
             "Name": "aliasname2",
             "RevisionId": "<uuid:7>"
           }
-        ],
-        "ResponseMetadata": {
-          "HTTPHeaders": {},
-          "HTTPStatusCode": 200
-        }
+        ]
       },
       "update_alias_1_1": {
         "AliasArn": "arn:aws:lambda:<region>:111111111111:function:<function-name:1>:aliasname1_1",
