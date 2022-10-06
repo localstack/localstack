@@ -173,12 +173,10 @@ LAMBDA_TAG_LIMIT_PER_RESOURCE = 50
 
 class LambdaProvider(LambdaApi, ServiceLifecycleHook):
     lambda_service: LambdaService
-    lock: threading.RLock
     create_fn_lock: threading.RLock
 
     def __init__(self) -> None:
         self.lambda_service = LambdaService()
-        self.lock = threading.RLock()
         self.create_fn_lock = threading.RLock()
 
     def on_before_stop(self) -> None:
