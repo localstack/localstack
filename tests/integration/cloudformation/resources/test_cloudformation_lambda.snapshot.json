@@ -1,5 +1,5 @@
 {
-  "tests/integration/cloudformation/test_cloudformation_lambda.py::test_cfn_function_url": {
+  "tests/integration/cloudformation/resources/test_cloudformation_lambda.py::test_cfn_function_url": {
     "recorded-date": "26-08-2022, 16:45:07",
     "recorded-content": {
       "url_resource": {

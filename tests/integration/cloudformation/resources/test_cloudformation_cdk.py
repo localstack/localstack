@@ -38,7 +38,7 @@ class TestCdkInit:
     ):
         """Test that simulates a sequence of commands executed by CDK when running 'cdk bootstrap' twice"""
 
-        base_folder = os.path.join(os.path.dirname(os.path.realpath(__file__)), "..")
+        base_folder = os.path.join(os.path.dirname(os.path.realpath(__file__)), "../..")
         requests_file = os.path.join(base_folder, "files", "cdk-bootstrap-requests.json")
         operations = json.loads(load_file(requests_file))
 

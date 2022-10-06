@@ -41,14 +41,14 @@ def test_nested_stack_output_refs(cfn_client, deploy_cfn_template, s3_client, s3
     key = f"test-key-{short_uid()}"
     s3_client.upload_file(
         os.path.join(
-            os.path.dirname(__file__), "../../templates/nested-stack-output-refs.nested.yaml"
+            os.path.dirname(__file__), "../templates/nested-stack-output-refs.nested.yaml"
         ),
         Bucket=bucket_name,
         Key=key,
     )
     result = deploy_cfn_template(
         template_path=os.path.join(
-            os.path.dirname(__file__), "../../templates/nested-stack-output-refs.yaml"
+            os.path.dirname(__file__), "../templates/nested-stack-output-refs.yaml"
         ),
         template_mapping={
             "s3_bucket_url": f"/{bucket_name}/{key}",

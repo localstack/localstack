@@ -25,7 +25,7 @@ def test_sns_topic_fifo_with_deduplication(cfn_client, sns_client, deploy_cfn_te
 def test_sns_topic_fifo_without_suffix_fails(cfn_client, sns_client, deploy_cfn_template):
     stack_name = f"stack-{short_uid()}"
     topic_name = f"topic-{short_uid()}"
-    path = os.path.join(os.path.dirname(__file__), "../templates", "sns_topic_fifo_dedup.yaml")
+    path = os.path.join(os.path.dirname(__file__), "../../templates", "sns_topic_fifo_dedup.yaml")
 
     with pytest.raises(Exception) as ex:
         deploy_cfn_template(
