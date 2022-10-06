@@ -10,6 +10,7 @@ import multiprocessing as mp
 import os
 import sys
 import threading
+import traceback
 
 import pytest
 
@@ -97,6 +98,7 @@ def pytest_unconfigure(config):
             "file_name": frame.f_code.co_filename,
             "function_name": frame.f_code.co_name,
             "line_no": frame.f_code.co_firstlineno,
+            "frame_traceback": traceback.format_stack(frame),
             "thread_name": thread.name,
             "thread_target": thread._target,
             "thread_target_file": inspect.getfile(thread._target) if thread._target else None,
