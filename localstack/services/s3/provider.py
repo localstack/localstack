@@ -1,7 +1,7 @@
 import copy
 import logging
 import os
-from typing import IO
+from typing import IO, Dict
 from urllib.parse import (
     SplitResult,
     parse_qs,
@@ -48,6 +48,8 @@ from localstack.aws.api.s3 import (
     GetObjectAttributesRequest,
     GetObjectOutput,
     GetObjectRequest,
+    GetObjectTaggingOutput,
+    GetObjectTaggingRequest,
     HeadObjectOutput,
     HeadObjectRequest,
     InvalidBucketName,
@@ -367,6 +369,18 @@ class S3Provider(S3Api, ServiceLifecycleHook):
             "Location"
         ] = f'{get_full_default_bucket_location(request["Bucket"])}{response["Key"]}'
         self._notify(context)
+        return response
+
+    @handler("GetObjectTagging", expand=False)
+    def get_object_tagging(
+        self, context: RequestContext, request: GetObjectTaggingRequest
+    ) -> GetObjectTaggingOutput:
+        response: GetObjectTaggingRequest = call_moto(context)
+        if (
+            "VersionId" in response
+            and request["Bucket"] not in self.get_store().bucket_versioning_status
+        ):
+            response.pop("VersionId")
         return response
 
     @handler("PutObjectTagging", expand=False)
@@ -1031,6 +1045,18 @@ def apply_moto_patches():
             "<ID>bcaf1ffd86f41161ca5fb16fd081034f</ID>", f"<ID>{MOTO_CANONICAL_USER_ID}</ID>"
         )
         return res
+
+    @patch(moto_s3_responses.S3Response._tagging_from_xml)
+    def _fix_tagging_from_xml(fn, *args, **kwargs) -> Dict[str, str]:
+        """
+        Moto tries to parse the TagSet and then iterate of it, not checking if it returned something
+        Potential to be an easy upstream fix
+        """
+        try:
+            tags: Dict[str, str] = fn(*args, **kwargs)
+        except TypeError:
+            tags = {}
+        return tags
 
 
 def register_custom_handlers():
