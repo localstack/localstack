@@ -6523,7 +6523,7 @@
     }
   },
   "tests/integration/awslambda/test_lambda_api.py::TestLambdaFunction::test_create_lambda_exceptions": {
-    "recorded-date": "04-10-2022, 18:25:30",
+    "recorded-date": "06-10-2022, 14:07:27",
     "recorded-content": {
       "invalid_role_arn_exc": {
         "Error": {
@@ -6554,6 +6554,18 @@
         },
         "Type": "User",
         "message": "Value PYTHON3.9 at 'runtime' failed to satisfy constraint: Member must satisfy enum value set: [nodejs12.x, provided, nodejs16.x, nodejs14.x, ruby2.7, java11, dotnet6, go1.x, provided.al2, java8, java8.al2, dotnetcore3.1, python3.7, python3.8, python3.9] or be a valid ARN",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "invalid_zip_exc": {
+        "Error": {
+          "Code": "InvalidParameterValueException",
+          "Message": "Could not unzip uploaded file. Please check your file, then try to upload again."
+        },
+        "Type": "User",
+        "message": "Could not unzip uploaded file. Please check your file, then try to upload again.",
         "ResponseMetadata": {
           "HTTPHeaders": {},
           "HTTPStatusCode": 400

@@ -387,6 +387,7 @@ class TestLambdaFunction:
     def test_create_lambda_exceptions(self, lambda_client, lambda_su_role, snapshot):
         function_name = f"invalid-function-{short_uid()}"
         zip_file_bytes = create_lambda_archive(load_file(TEST_LAMBDA_PYTHON_ECHO), get_content=True)
+        # test invalid role arn
         with pytest.raises(ClientError) as e:
             lambda_client.create_function(
                 FunctionName=function_name,
@@ -397,6 +398,7 @@ class TestLambdaFunction:
                 Runtime=Runtime.python3_9,
             )
         snapshot.match("invalid_role_arn_exc", e.value.response)
+        # test invalid runtimes
         with pytest.raises(ClientError) as e:
             lambda_client.create_function(
                 FunctionName=function_name,
@@ -417,6 +419,18 @@ class TestLambdaFunction:
                 Runtime="PYTHON3.9",
             )
         snapshot.match("uppercase_runtime_exc", e.value.response)
+
+        # test what happens with an invalid zip file
+        with pytest.raises(ClientError) as e:
+            lambda_client.create_function(
+                FunctionName=function_name,
+                Handler="index.handler",
+                Code={"ZipFile": b"this is not a zipfile, just a random string"},
+                PackageType="Zip",
+                Role=lambda_su_role,
+                Runtime="python3.9",
+            )
+        snapshot.match("invalid_zip_exc", e.value.response)
 
     @pytest.mark.aws_validated
     def test_update_lambda_exceptions(

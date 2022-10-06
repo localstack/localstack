@@ -279,7 +279,10 @@ def store_lambda_archive(
     """
     # check if zip file
     if not is_zip_file(archive_file):
-        raise ValueError("Lambda archive gotta be zip")
+        raise InvalidParameterValueException(
+            "Could not unzip uploaded file. Please check your file, then try to upload again.",
+            Type="User",
+        )
     # check unzipped size
     unzipped_size = get_unzipped_size(zip_file=io.BytesIO(archive_file))
     if unzipped_size >= LAMBDA_LIMITS_CODE_SIZE_UNZIPPED_DEFAULT:
