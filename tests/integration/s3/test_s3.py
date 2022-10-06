@@ -465,10 +465,14 @@ class TestS3:
         snapshot.match("head-object", response)
 
     @pytest.mark.aws_validated
-    @pytest.mark.xfail(reason="see https://github.com/localstack/localstack/issues/6553")
+    @pytest.mark.xfail(
+        condition=LEGACY_S3_PROVIDER,
+        reason="see https://github.com/localstack/localstack/issues/6553",
+    )
     def test_get_object_after_deleted_in_versioned_bucket(
         self, s3_client, s3_bucket, s3_resource, snapshot
     ):
+        snapshot.add_transformer(snapshot.transform.key_value("VersionId"))
         bucket = s3_resource.Bucket(s3_bucket)
         bucket.Versioning().enable()
 
@@ -858,7 +862,9 @@ class TestS3:
         snapshot.match("get_object", response)
 
     @pytest.mark.aws_validated
-    @pytest.mark.xfail(reason="Get 404 Not Found instead of NoSuchBucket")
+    @pytest.mark.xfail(
+        condition=LEGACY_S3_PROVIDER, reason="Get 404 Not Found instead of NoSuchBucket"
+    )
     @pytest.mark.skip_snapshot_verify(condition=is_old_provider, paths=["$..Error.BucketName"])
     def test_bucket_availability(self, s3_client, snapshot):
         snapshot.add_transformer(snapshot.transform.key_value("BucketName"))
@@ -1386,6 +1392,7 @@ class TestS3:
     @pytest.mark.xfail(reason="Error format is wrong and missing keys")
     def test_s3_invalid_content_md5(self, s3_client, s3_bucket, snapshot):
         # put object with invalid content MD5
+        # TODO: implement ContentMD5 in ASF
         hashes = ["__invalid__", "000", "not base64 encoded checksum", "MTIz"]
         for index, md5hash in enumerate(hashes):
             with pytest.raises(ClientError) as e:

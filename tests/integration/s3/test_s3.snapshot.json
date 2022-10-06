@@ -456,7 +456,7 @@
     }
   },
   "tests/integration/s3/test_s3.py::TestS3::test_get_object_after_deleted_in_versioned_bucket": {
-    "recorded-date": "21-09-2022, 13:35:18",
+    "recorded-date": "06-10-2022, 22:35:23",
     "recorded-content": {
       "get-object": {
         "AcceptRanges": "bytes",
@@ -466,7 +466,7 @@
         "ETag": "\"e8dc4081b13434b45189a720b77b6818\"",
         "LastModified": "datetime",
         "Metadata": {},
-        "VersionId": "tJEw7LZJ5OQQyUBbur6az2mmK7NnO1sy",
+        "VersionId": "<version-id:1>",
         "ResponseMetadata": {
           "HTTPHeaders": {},
           "HTTPStatusCode": 200
