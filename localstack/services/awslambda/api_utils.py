@@ -205,21 +205,13 @@ def build_statement(
 
     return statement
 
-    # if auth_type:
-    #     auth_condition = {
-    #         "StringEquals": {
-    #             "lambda:FunctionUrlAuthType": auth_type
-    #         }
-    #     }
-    #     statement["Condition"] = auth_condition
-
 
 def generate_random_url_id() -> str:
     """
     32 characters [0-9a-z] url ID
     """
 
-    return "".join([random.choice(URL_CHAR_SET) for _ in range(32)])
+    return "".join(random.choices(URL_CHAR_SET, k=32))
 
 
 def unqualified_lambda_arn(function_name: str, account: str, region: str):
@@ -325,8 +317,8 @@ def map_config_out(
     # handle optional entries that shouldn't be rendered at all if not present
     optional_kwargs = {}
     if return_update_status:
-        optional_kwargs |= map_update_status_config(version)
-    optional_kwargs |= map_state_config(version)
+        optional_kwargs.update(map_update_status_config(version))
+    optional_kwargs.update(map_state_config(version))
 
     if version.config.architectures:
         optional_kwargs["Architectures"] = version.config.architectures

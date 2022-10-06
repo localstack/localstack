@@ -2121,16 +2121,19 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
             )
 
         fn = state.functions.get(function_name)
-        if not fn:
-            raise ResourceNotFoundException("TODO: Where fn?")
-        if qualifier and not (qualifier in fn.aliases or qualifier in fn.versions):
+        if not fn or (qualifier and not (qualifier in fn.aliases or qualifier in fn.versions)):
             raise ResourceNotFoundException("The function doesn't exist.", Type="User")
 
         qualifier = qualifier or "$LATEST"
 
         config = fn.event_invoke_configs.get(qualifier)
         if not config:
-            raise ResourceNotFoundException("TODO: config not found")
+            fn_arn = api_utils.qualified_lambda_arn(
+                function_name, qualifier, context.account_id, context.region
+            )
+            raise ResourceNotFoundException(
+                f"The function {fn_arn} doesn't have an EventInvokeConfig", Type="User"
+            )
 
         if destination_config:
             self._validate_destination_config(state, function_name, destination_config)
@@ -2408,4 +2411,4 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
         invoke_args: IO[BlobStream],
     ) -> InvokeAsyncResponse:
         """LEGACY API endpoint. Even AWS heavily discourages its usage."""
-        ...  # TODO
+        pass  # TODO

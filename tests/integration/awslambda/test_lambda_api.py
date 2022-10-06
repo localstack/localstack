@@ -1508,10 +1508,32 @@ class TestLambdaEventInvokeConfig:
             )
         snapshot.match("get_qualifier_doesnotexist", e.value.response)
 
+        with pytest.raises(lambda_client.exceptions.ResourceNotFoundException) as e:
+            lambda_client.update_function_event_invoke_config(
+                FunctionName="doesnotexist", MaximumRetryAttempts=0
+            )
+        snapshot.match("update_eventinvokeconfig_function_doesnotexist", e.value.response)
+
         # ARN is valid but the alias doesn't have an event invoke config anymore (see previous delete)
         with pytest.raises(lambda_client.exceptions.ResourceNotFoundException) as e:
             lambda_client.get_function_event_invoke_config(FunctionName=fn_alias_result["AliasArn"])
         snapshot.match("get_eventinvokeconfig_doesnotexist", e.value.response)
+
+        with pytest.raises(lambda_client.exceptions.ResourceNotFoundException) as e:
+            lambda_client.update_function_event_invoke_config(
+                FunctionName=fn_alias_result["AliasArn"], MaximumRetryAttempts=0
+            )
+        snapshot.match(
+            "update_eventinvokeconfig_config_doesnotexist_with_qualifier", e.value.response
+        )
+
+        with pytest.raises(lambda_client.exceptions.ResourceNotFoundException) as e:
+            lambda_client.update_function_event_invoke_config(
+                FunctionName=fn_arn, MaximumRetryAttempts=0
+            )
+        snapshot.match(
+            "update_eventinvokeconfig_config_doesnotexist_without_qualifier", e.value.response
+        )
 
 
 # note: these tests are inherently a bit flaky on AWS since it depends on account/region global usage limits/quotas

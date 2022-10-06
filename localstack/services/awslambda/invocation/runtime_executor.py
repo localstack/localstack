@@ -210,6 +210,7 @@ class RuntimeExecutor:
         target_code = get_code_path_for_function(function_version)
         target_code.mkdir(parents=True, exist_ok=True)
         with NamedTemporaryFile() as file:
+            # TODO use streaming to avoid heavy memory impact of loading zip file, e.g. via s3.download_file
             file.write(function_version.config.code.get_lambda_archive())
             file.flush()
             unzip(file.name, str(target_code))

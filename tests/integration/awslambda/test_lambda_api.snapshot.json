@@ -3370,7 +3370,7 @@
     }
   },
   "tests/integration/awslambda/test_lambda_api.py::TestLambdaEventInvokeConfig::test_lambda_eventinvokeconfig_exceptions": {
-    "recorded-date": "30-09-2022, 15:32:37",
+    "recorded-date": "06-10-2022, 14:00:13",
     "recorded-content": {
       "fn_version_result": {
         "Architectures": [
@@ -3955,12 +3955,48 @@
           "HTTPStatusCode": 404
         }
       },
+      "update_eventinvokeconfig_function_doesnotexist": {
+        "Error": {
+          "Code": "ResourceNotFoundException",
+          "Message": "The function doesn't exist."
+        },
+        "Message": "The function doesn't exist.",
+        "Type": "User",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 404
+        }
+      },
       "get_eventinvokeconfig_doesnotexist": {
         "Error": {
           "Code": "ResourceNotFoundException",
           "Message": "The function arn:aws:lambda:<region>:111111111111:function:<function-name:1>:eventinvokealias doesn't have an EventInvokeConfig"
         },
         "Message": "The function arn:aws:lambda:<region>:111111111111:function:<function-name:1>:eventinvokealias doesn't have an EventInvokeConfig",
+        "Type": "User",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 404
+        }
+      },
+      "update_eventinvokeconfig_config_doesnotexist_with_qualifier": {
+        "Error": {
+          "Code": "ResourceNotFoundException",
+          "Message": "The function arn:aws:lambda:<region>:111111111111:function:<function-name:1>:eventinvokealias doesn't have an EventInvokeConfig"
+        },
+        "Message": "The function arn:aws:lambda:<region>:111111111111:function:<function-name:1>:eventinvokealias doesn't have an EventInvokeConfig",
+        "Type": "User",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 404
+        }
+      },
+      "update_eventinvokeconfig_config_doesnotexist_without_qualifier": {
+        "Error": {
+          "Code": "ResourceNotFoundException",
+          "Message": "The function arn:aws:lambda:<region>:111111111111:function:<function-name:1>:$LATEST doesn't have an EventInvokeConfig"
+        },
+        "Message": "The function arn:aws:lambda:<region>:111111111111:function:<function-name:1>:$LATEST doesn't have an EventInvokeConfig",
         "Type": "User",
         "ResponseMetadata": {
           "HTTPHeaders": {},
