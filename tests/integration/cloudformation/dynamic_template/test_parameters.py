@@ -214,7 +214,7 @@ def test_parameter_usepreviousvalue_behavior(cfn_client, deploy_cfn_template, is
 
 
 @pytest.mark.aws_validated
-def test_import_values_across_stacks(deploy_cfn_template, s3_client):
+def test_import_values_across_stacks(deploy_cfn_template, s3_client, cfn_client):
     export_name = f"b-{short_uid()}"
 
     # create stack #1
@@ -262,3 +262,5 @@ Outputs:
     test_tag = [tag for tag in tagging["TagSet"] if tag["Key"] == "test"]
     assert test_tag
     assert test_tag[0]["Value"] == bucket_name1
+
+    # TODO add assert for list-import
