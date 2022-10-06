@@ -12,6 +12,7 @@ import sys
 import threading
 import traceback
 
+import psutil
 import pytest
 
 from localstack import config
@@ -107,6 +108,13 @@ def pytest_unconfigure(config):
         if frame
     ]
     print(f"Thread actions: {info_tuples}")
+    current_process = psutil.Process()
+    children = current_process.children(recursive=True)
+    process_information_list = [
+        {"cmdline": child.cmdline(), "pid": child.pid, "status": child.status()}
+        for child in children
+    ]
+    print(f"Subprocesses: {process_information_list}")
 
 
 def _start_monitor():
