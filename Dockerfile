@@ -291,7 +291,7 @@ RUN TARGETARCH_SYNONYM=$([[ "$TARGETARCH" == "amd64" ]] && echo "x86_64" || echo
         rm -rf $ES_BASE_DIR/modules/ingest-geoip)
 
 # install ffmpeg package to support multiple audio formats transcription
-RUN apt-get install -y ffmpeg
+RUN apt-get update && apt-get install -y ffmpeg
 
 FROM unmarked-${IMAGE_TYPE}
 ARG IMAGE_TYPE
