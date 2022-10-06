@@ -370,7 +370,6 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
             version = FunctionVersion(
                 id=arn,
                 config=VersionFunctionConfiguration(
-                    function_arn=arn.qualified_arn(),
                     last_modified=api_utils.format_lambda_date(datetime.datetime.now()),
                     description=request.get("Description", ""),
                     role=request["Role"],

@@ -161,7 +161,6 @@ class FunctionUrlConfig:
 class VersionFunctionConfiguration:
     # fields
     # name: str
-    function_arn: str  # TODO:?
     description: str
     role: str
     timeout: int
