@@ -169,11 +169,18 @@ class S3Provider(S3Api, ServiceLifecycleHook):
     def on_before_stop(self):
         self._notification_dispatcher.shutdown()
 
-    def _notify(self, context: RequestContext, s3_notif_ctx: S3EventNotificationContext = None):
+    def _notify(
+        self,
+        context: RequestContext,
+        s3_notif_ctx: S3EventNotificationContext = None,
+        key_name: ObjectKey = None,
+    ):
         # we can provide the s3_event_notification_context, so in case of deletion of keys, we can create it before
         # it happens
         if not s3_notif_ctx:
-            s3_notif_ctx = S3EventNotificationContext.from_request_context(context)
+            s3_notif_ctx = S3EventNotificationContext.from_request_context(
+                context, key_name=key_name
+            )
         if notification_config := self.get_store().bucket_notification_configs.get(
             s3_notif_ctx.bucket_name
         ):
@@ -375,7 +382,7 @@ class S3Provider(S3Api, ServiceLifecycleHook):
     def get_object_tagging(
         self, context: RequestContext, request: GetObjectTaggingRequest
     ) -> GetObjectTaggingOutput:
-        response: GetObjectTaggingRequest = call_moto(context)
+        response: GetObjectTaggingOutput = call_moto(context)
         if (
             "VersionId" in response
             and request["Bucket"] not in self.get_store().bucket_versioning_status
@@ -662,6 +669,7 @@ class S3Provider(S3Api, ServiceLifecycleHook):
         if bucket in self.get_store().bucket_versioning_status:
             response["VersionId"] = key.version_id
 
+        self._notify(context, key_name=key_name)
         if context.request.form.get("success_action_status") != "201":
             return response
 

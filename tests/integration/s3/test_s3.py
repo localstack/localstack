@@ -518,7 +518,10 @@ class TestS3:
         assert policy == json.loads(response["Policy"])
 
     @pytest.mark.aws_validated
-    @pytest.mark.xfail(reason="see https://github.com/localstack/localstack/issues/5769")
+    @pytest.mark.xfail(
+        condition=LEGACY_S3_PROVIDER,
+        reason="see https://github.com/localstack/localstack/issues/5769",
+    )
     def test_put_object_tagging_empty_list(self, s3_client, s3_bucket, snapshot):
         key = "my-key"
         s3_client.put_object(Bucket=s3_bucket, Key=key, Body=b"abcdefgh")
