@@ -652,6 +652,7 @@ class InvalidArgument(ServiceException):
     status_code: int = 400
     ArgumentName: Optional[ArgumentName]
     ArgumentValue: Optional[ArgumentValue]
+    HostId: Optional[HostId]
 
 
 class SignatureDoesNotMatch(ServiceException):
@@ -3011,6 +3012,34 @@ class DeleteResult(TypedDict, total=False):
     Errors: Optional[Errors]
 
 
+class PostObjectRequest(ServiceRequest):
+    Body: Optional[IO[Body]]
+    Bucket: BucketName
+
+
+class PostResponse(TypedDict, total=False):
+    StatusCode: Optional[GetObjectResponseStatusCode]
+    Location: Optional[Location]
+    LocationHeader: Optional[Location]
+    Bucket: Optional[BucketName]
+    Key: Optional[ObjectKey]
+    Expiration: Optional[Expiration]
+    ETag: Optional[ETag]
+    ETagHeader: Optional[ETag]
+    ChecksumCRC32: Optional[ChecksumCRC32]
+    ChecksumCRC32C: Optional[ChecksumCRC32C]
+    ChecksumSHA1: Optional[ChecksumSHA1]
+    ChecksumSHA256: Optional[ChecksumSHA256]
+    ServerSideEncryption: Optional[ServerSideEncryption]
+    VersionId: Optional[ObjectVersionId]
+    SSECustomerAlgorithm: Optional[SSECustomerAlgorithm]
+    SSECustomerKeyMD5: Optional[SSECustomerKeyMD5]
+    SSEKMSKeyId: Optional[SSEKMSKeyId]
+    SSEKMSEncryptionContext: Optional[SSEKMSEncryptionContext]
+    BucketKeyEnabled: Optional[BucketKeyEnabled]
+    RequestCharged: Optional[RequestCharged]
+
+
 class S3Api:
 
     service = "s3"
@@ -4201,4 +4230,10 @@ class S3Api:
         version_id: ObjectVersionId = None,
         bucket_key_enabled: BucketKeyEnabled = None,
     ) -> None:
+        raise NotImplementedError
+
+    @handler("PostObject")
+    def post_object(
+        self, context: RequestContext, bucket: BucketName, body: IO[Body] = None
+    ) -> PostResponse:
         raise NotImplementedError

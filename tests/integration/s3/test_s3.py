@@ -2212,7 +2212,8 @@ class TestS3PresignedUrl:
 
     @pytest.mark.aws_validated
     @pytest.mark.xfail(
-        condition=not config.LEGACY_EDGE_PROXY, reason="failing with new HTTP gateway (only in CI)"
+        condition=not config.LEGACY_EDGE_PROXY and LEGACY_S3_PROVIDER,
+        reason="failing with new HTTP gateway (only in CI)",
     )
     def test_post_object_with_files(self, s3_client, s3_bucket):
         object_key = "test-presigned-post-key"
@@ -2220,7 +2221,10 @@ class TestS3PresignedUrl:
         body = b"something body"
 
         presigned_request = s3_client.generate_presigned_post(
-            Bucket=s3_bucket, Key=object_key, ExpiresIn=60
+            Bucket=s3_bucket,
+            Key=object_key,
+            ExpiresIn=60,
+            Conditions=[{"bucket": s3_bucket}],
         )
         # put object
         response = requests.post(
@@ -2229,15 +2233,17 @@ class TestS3PresignedUrl:
             files={"file": body},
             verify=False,
         )
-
         assert response.status_code == 204
+
         # get object and compare results
         downloaded_object = s3_client.get_object(Bucket=s3_bucket, Key=object_key)
         assert downloaded_object["Body"].read() == body
 
     @pytest.mark.aws_validated
-    def test_post_request_expires(self, s3_client, s3_bucket):
-        # TODO: failed against AWS
+    # old provider does not raise the right exception
+    @pytest.mark.skip_snapshot_verify(condition=is_old_provider)
+    def test_post_request_expires(self, s3_client, s3_bucket, snapshot):
+        snapshot.add_transformer(self._get_presigned_snapshot_transformers(snapshot))
         # presign a post with a short expiry time
         object_key = "test-presigned-post-key"
 
@@ -2256,12 +2262,145 @@ class TestS3PresignedUrl:
             verify=False,
         )
 
-        # should be AccessDenied instead of expired?
-        # expired Token must be about the identity token??
-
-        # FIXME: localstack returns 400 but aws returns 403
+        exception = xmltodict.parse(response.content)
+        exception["StatusCode"] = response.status_code
+        snapshot.match("exception", exception)
         assert response.status_code in [400, 403]
-        assert "ExpiredToken" in response.text
+
+    @pytest.mark.aws_validated
+    @pytest.mark.xfail(
+        condition=LEGACY_S3_PROVIDER, reason="Policy is not validated in legacy provider"
+    )
+    @pytest.mark.parametrize(
+        "signature_version",
+        ["s3", "s3v4"],
+    )
+    def test_post_request_malformed_policy(self, s3_client, s3_bucket, snapshot, signature_version):
+        snapshot.add_transformer(self._get_presigned_snapshot_transformers(snapshot))
+        object_key = "test-presigned-malformed-policy"
+
+        presigned_client = _s3_client_custom_config(
+            Config(signature_version=signature_version),
+            endpoint_url=_endpoint_url(),
+        )
+
+        presigned_request = presigned_client.generate_presigned_post(
+            Bucket=s3_bucket, Key=object_key, ExpiresIn=60
+        )
+
+        # modify the base64 string to be wrong
+        original_policy = presigned_request["fields"]["policy"]
+        presigned_request["fields"]["policy"] = original_policy[:-2]
+
+        response = requests.post(
+            presigned_request["url"],
+            data=presigned_request["fields"],
+            files={"file": "file content"},
+            verify=False,
+        )
+        # the policy has been modified, so the signature does not correspond
+        exception = xmltodict.parse(response.content)
+        exception["StatusCode"] = response.status_code
+        snapshot.match("exception-policy", exception)
+        # assert fields that snapshot cannot match
+        signature_field = "signature" if signature_version == "s3" else "x-amz-signature"
+        assert (
+            exception["Error"]["SignatureProvided"] == presigned_request["fields"][signature_field]
+        )
+        assert exception["Error"]["StringToSign"] == presigned_request["fields"]["policy"]
+
+    @pytest.mark.aws_validated
+    @pytest.mark.xfail(
+        condition=LEGACY_S3_PROVIDER, reason="Signature is not validated in legacy provider"
+    )
+    @pytest.mark.parametrize(
+        "signature_version",
+        ["s3", "s3v4"],
+    )
+    def test_post_request_missing_signature(
+        self, s3_client, s3_bucket, snapshot, signature_version
+    ):
+        snapshot.add_transformer(self._get_presigned_snapshot_transformers(snapshot))
+        object_key = "test-presigned-missing-signature"
+
+        presigned_client = _s3_client_custom_config(
+            Config(signature_version=signature_version),
+            endpoint_url=_endpoint_url(),
+        )
+
+        presigned_request = presigned_client.generate_presigned_post(
+            Bucket=s3_bucket, Key=object_key, ExpiresIn=60
+        )
+
+        # remove the signature field
+        signature_field = "signature" if signature_version == "s3" else "x-amz-signature"
+        presigned_request["fields"].pop(signature_field)
+
+        response = requests.post(
+            presigned_request["url"],
+            data=presigned_request["fields"],
+            files={"file": "file content"},
+            verify=False,
+        )
+
+        # AWS seems to detected what kind of signature is missing from the policy fields
+        exception = xmltodict.parse(response.content)
+        exception["StatusCode"] = response.status_code
+        snapshot.match("exception-missing-signature", exception)
+
+    @pytest.mark.aws_validated
+    @pytest.mark.xfail(
+        condition=LEGACY_S3_PROVIDER, reason="Policy is not validated in legacy provider"
+    )
+    @pytest.mark.parametrize(
+        "signature_version",
+        ["s3", "s3v4"],
+    )
+    def test_post_request_missing_fields(self, s3_client, s3_bucket, snapshot, signature_version):
+        snapshot.add_transformer(self._get_presigned_snapshot_transformers(snapshot))
+        object_key = "test-presigned-missing-fields"
+
+        presigned_client = _s3_client_custom_config(
+            Config(signature_version=signature_version),
+            endpoint_url=_endpoint_url(),
+        )
+
+        presigned_request = presigned_client.generate_presigned_post(
+            Bucket=s3_bucket, Key=object_key, ExpiresIn=60
+        )
+
+        # remove some signature related fields
+        if signature_version == "s3":
+            presigned_request["fields"].pop("AWSAccessKeyId")
+        else:
+            presigned_request["fields"].pop("x-amz-algorithm")
+            presigned_request["fields"].pop("x-amz-credential")
+
+        response = requests.post(
+            presigned_request["url"],
+            data=presigned_request["fields"],
+            files={"file": "file content"},
+            verify=False,
+        )
+
+        exception = xmltodict.parse(response.content)
+        exception["StatusCode"] = response.status_code
+        snapshot.match("exception-missing-fields", exception)
+
+        # pop everything else to see what exception comes back
+        presigned_request["fields"] = {
+            k: v for k, v in presigned_request["fields"].items() if k in ("key", "policy")
+        }
+        response = requests.post(
+            presigned_request["url"],
+            data=presigned_request["fields"],
+            files={"file": "file content"},
+            verify=False,
+        )
+
+        exception = xmltodict.parse(response.content)
+        exception["StatusCode"] = response.status_code
+        snapshot.match("exception-no-sig-related-fields", exception)
 
     @pytest.mark.aws_validated
     def test_delete_has_empty_content_length_header(self, s3_client, s3_bucket):
@@ -2413,7 +2552,7 @@ class TestS3PresignedUrl:
             snapshot.match("with-decoded-content-length", exception)
 
         # old provider does not raise the right error message
-        if LEGACY_S3_PROVIDER or (signature_version == "s3" and is_aws_cloud()):
+        if LEGACY_S3_PROVIDER or signature_version == "s3":
             assert b"SignatureDoesNotMatch" in result.content
         # we are either using s3v4 with new provider or whichever signature against AWS
         else:
@@ -2426,7 +2565,7 @@ class TestS3PresignedUrl:
         if snapshotted:
             exception = xmltodict.parse(result.content)
             snapshot.match("without-decoded-content-length", exception)
-        if LEGACY_S3_PROVIDER or (signature_version == "s3" and is_aws_cloud()):
+        if LEGACY_S3_PROVIDER or signature_version == "s3":
             assert b"SignatureDoesNotMatch" in result.content
         else:
             assert b"AccessDenied" in result.content
@@ -2728,7 +2867,6 @@ class TestS3PresignedUrl:
     def test_s3_presigned_post_success_action_status_201_response(self, s3_client, s3_bucket):
         # a security policy is required if the bucket is not publicly writable
         # see https://docs.aws.amazon.com/AmazonS3/latest/API/RESTObjectPOST.html#RESTObjectPOST-requests-form-fields
-        # TODO need to create new operation in the specs to handle presigned POST
         body = "something body"
         # get presigned URL
         object_key = "key-${filename}"
@@ -2746,28 +2884,87 @@ class TestS3PresignedUrl:
             files=files,
             verify=False,
         )
-        # test
+
         assert response.status_code == 201
         json_response = xmltodict.parse(response.content)
         assert "PostResponse" in json_response
         json_response = json_response["PostResponse"]
-        # fixme 201 response is hardcoded
-        # see localstack.services.s3.s3_listener.ProxyListenerS3.get_201_response
-        if is_aws_cloud():
-            location = f"{_bucket_url_vhost(s3_bucket, aws_stack.get_region())}/key-my-file"
-            etag = '"43281e21fce675ac3bcb3524b38ca4ed"'  # TODO check quoting of etag
-        else:
-            # TODO: this location is very wrong
+
+        if LEGACY_S3_PROVIDER and not is_aws_cloud():
+            # legacy provider is does not manage PostResponse adequately
             location = "http://localhost/key-my-file"
             etag = "d41d8cd98f00b204e9800998ecf8427f"
+        else:
+            location = f"{_bucket_url_vhost(s3_bucket, aws_stack.get_region())}/key-my-file"
+            etag = '"43281e21fce675ac3bcb3524b38ca4ed"'
+            assert response.headers["ETag"] == etag
+            assert response.headers["Location"] == location
+
         assert json_response["Location"] == location
         assert json_response["Bucket"] == s3_bucket
         assert json_response["Key"] == "key-my-file"
         assert json_response["ETag"] == etag
 
     @pytest.mark.aws_validated
+    @pytest.mark.xfail(condition=LEGACY_S3_PROVIDER, reason="not supported in legacy provider")
+    def test_s3_presigned_post_success_action_redirect(self, s3_client, s3_bucket):
+        # a security policy is required if the bucket is not publicly writable
+        # see https://docs.aws.amazon.com/AmazonS3/latest/API/RESTObjectPOST.html#RESTObjectPOST-requests-form-fields
+        body = "something body"
+        # get presigned URL
+        object_key = "key-test"
+        redirect_location = "http://localhost.test/random"
+        presigned_request = s3_client.generate_presigned_post(
+            Bucket=s3_bucket,
+            Key=object_key,
+            Fields={"success_action_redirect": redirect_location},
+            Conditions=[
+                {"bucket": s3_bucket},
+                ["eq", "$success_action_redirect", redirect_location],
+            ],
+            ExpiresIn=60,
+        )
+        files = {"file": ("my-file", body)}
+        response = requests.post(
+            presigned_request["url"],
+            data=presigned_request["fields"],
+            files=files,
+            verify=False,
+            allow_redirects=False,
+        )
+
+        assert response.status_code == 303
+        assert not response.text
+        location = urlparse(response.headers["Location"])
+        location_qs = parse_qs(location.query)
+        assert location_qs["key"][0] == object_key
+        assert location_qs["bucket"][0] == s3_bucket
+        assert location_qs["etag"][0] == '"43281e21fce675ac3bcb3524b38ca4ed"'
+
+        # If S3 cannot interpret the URL, it acts as if the field is not present.
+        wrong_redirect = "/wrong/redirect/relative"
+        presigned_request = s3_client.generate_presigned_post(
+            Bucket=s3_bucket,
+            Key=object_key,
+            Fields={"success_action_redirect": wrong_redirect},
+            Conditions=[
+                {"bucket": s3_bucket},
+                ["eq", "$success_action_redirect", wrong_redirect],
+            ],
+            ExpiresIn=60,
+        )
+        response = requests.post(
+            presigned_request["url"],
+            data=presigned_request["fields"],
+            files=files,
+            verify=False,
+            allow_redirects=False,
+        )
+        assert response.status_code == 204
+
+    @pytest.mark.aws_validated
     def test_presigned_url_with_session_token(self, s3_create_bucket_with_client, sts_client):
-        # TODO we might be skipping signature validation here......
+        # TODO we might be skipping signature validation here...
         bucket_name = f"bucket-{short_uid()}"
         key_name = "key"
         response = sts_client.get_session_token()
