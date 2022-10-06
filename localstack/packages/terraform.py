@@ -2,8 +2,9 @@ import os
 import platform
 from typing import List
 
-from localstack.packages import Package, PackageInstaller
+from localstack.packages import InstallTarget, Package, PackageInstaller
 from localstack.packages.core import ExtractDownloadInstaller
+from localstack.utils.files import chmod_r
 from localstack.utils.platform import get_arch
 
 TERRAFORM_VERSION = "1.1.3"
@@ -31,6 +32,11 @@ class TerraformPackageInstaller(ExtractDownloadInstaller):
         system = platform.system().lower()
         arch = get_arch()
         return TERRAFORM_URL_TEMPLATE.format(version=TERRAFORM_VERSION, os=system, arch=arch)
+
+    def _install(self, target: InstallTarget) -> None:
+        super()._install(target)
+        # TODO: separate class? decorator pattern?
+        chmod_r(self.get_executable_path(), 0o777)
 
 
 terraform_package = TerraformPackage()

@@ -204,7 +204,6 @@ class ExtractDownloadInstaller(PackageInstaller, ABC):
         download_and_extract(
             download_url, target_directory, tmp_archive=os.path.join("/tmp", archive_name)
         )
-        chmod_r(self.get_executable_path(), 0o777)
 
     # TODO: potentially restructure this with in regards to DownloadInstaller to introduce a common base
     def get_executable_path(self) -> str | None:
