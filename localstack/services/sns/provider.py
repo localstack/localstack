@@ -9,7 +9,7 @@ import time
 import traceback
 import uuid
 from string import ascii_letters, digits
-from typing import Dict
+from typing import Dict, List
 
 import botocore.exceptions
 import requests as requests
@@ -17,7 +17,7 @@ from flask import Response as FlaskResponse
 from moto.sns import sns_backends
 from moto.sns.exceptions import DuplicateSnsEndpointError
 from moto.sns.models import MAXIMUM_MESSAGE_LENGTH
-from requests.models import Response
+from requests.models import Response as RequestsResponse
 
 from localstack import config
 from localstack.aws.accounts import get_aws_account_id
@@ -96,6 +96,8 @@ from localstack.aws.api.sns import (
     topicName,
 )
 from localstack.config import external_service_url
+from localstack.http import Request, Response, Router, route
+from localstack.services.edge import ROUTER
 from localstack.services.moto import call_moto
 from localstack.services.plugins import ServiceLifecycleHook
 from localstack.services.sns.models import SnsStore, sns_stores
@@ -121,6 +123,9 @@ SNS_PROTOCOLS = [
     "lambda",
     "firehose",
 ]
+
+# Endpoint to access all the PlatformEndpoint sent Messages
+PLATFORM_ENDPOINT_MSGS_ENDPOINT = "/_aws/sns/platform-endpoint-messages"
 
 # set up logger
 LOG = logging.getLogger(__name__)
@@ -148,6 +153,8 @@ def publish_message(
         platform_app, endpoint_attributes = get_attributes_for_application_endpoint(target_arn)
         message_structure = req_data.get("MessageStructure", [None])[0]
         LOG.debug("Publishing message to Endpoint: %s | Message: %s", target_arn, message)
+        # TODO: should probably store the delivery logs
+        # https://docs.aws.amazon.com/sns/latest/dg/sns-msg-status.html
 
         start_thread(
             lambda _: message_to_endpoint(
@@ -278,6 +285,10 @@ def send_message_to_GCM(app_attributes, endpoint_attributes, message):
 
 
 class SnsProvider(SnsApi, ServiceLifecycleHook):
+    def on_after_init(self):
+        # Allow sent platform endpoint messages to be retrieved from the SNS endpoint
+        register_sns_api_resource(ROUTER)
+
     @staticmethod
     def get_store() -> SnsStore:
         return sns_stores[get_aws_account_id()][aws_stack.get_region()]
@@ -559,6 +570,11 @@ class SnsProvider(SnsApi, ServiceLifecycleHook):
     def create_platform_application(
         self, context: RequestContext, name: String, platform: String, attributes: MapStringToString
     ) -> CreatePlatformApplicationResponse:
+        # TODO: validate platform
+        # see https://docs.aws.amazon.com/cli/latest/reference/sns/create-platform-application.html
+        # list of possible values: ADM, Baidu, APNS, APNS_SANDBOX, GCM, MPNS, WNS
+        # each platform has a specific way to handle credentials
+        # this can also be used for dispatching message to the right platform
         moto_response = call_moto(context)
         return CreatePlatformApplicationResponse(**moto_response)
 
@@ -570,12 +586,15 @@ class SnsProvider(SnsApi, ServiceLifecycleHook):
         custom_user_data: String = None,
         attributes: MapStringToString = None,
     ) -> CreateEndpointResponse:
+        # TODO: support mobile app events
+        # see https://docs.aws.amazon.com/sns/latest/dg/application-event-notifications.html
         result = None
         try:
             result = call_moto(context)
         except DuplicateSnsEndpointError:
             # TODO: this was unclear in the old provider, check against aws and moto
-            for e in self.platform_endpoints.values():
+            moto_sns_backend = sns_backends[context.account_id][context.region]
+            for e in moto_sns_backend.platform_endpoints.values():
                 if e.token == token:
                     if custom_user_data and custom_user_data != e.custom_user_data:
                         # TODO: check error against aws
@@ -910,7 +929,6 @@ async def message_to_subscriber(
     subscriptions,
     message_attributes,
 ):
-
     if subscription_arn not in [None, subscriber["SubscriptionArn"]]:
         return
 
@@ -1025,7 +1043,7 @@ async def message_to_subscriber(
                 store_delivery_log(subscriber, True, message, message_id, delivery)
 
             # TODO: Check if it can be removed
-            if isinstance(response, Response):
+            if isinstance(response, RequestsResponse):
                 response.raise_for_status()
             elif isinstance(response, FlaskResponse):
                 if response.status_code >= 400:
@@ -1098,7 +1116,16 @@ async def message_to_subscriber(
     elif subscriber["Protocol"] == "application":
         try:
             sns_client = aws_stack.connect_to_service("sns")
-            sns_client.publish(TargetArn=subscriber["Endpoint"], Message=message)
+            publish_kwargs = {
+                "TargetArn": subscriber["Endpoint"],
+                "Message": message,
+                "MessageAttributes": message_attributes,
+            }
+            # only valid value for MessageStructure is json, we cannot set it to nothing
+            if (msg_structure := req_data.get("MessageStructure")) and msg_structure[0] == "json":
+                publish_kwargs["MessageStructure"] = "json"
+
+            sns_client.publish(**publish_kwargs)
             store_delivery_log(subscriber, True, message, message_id)
         except Exception as exc:
             LOG.warning(
@@ -1507,7 +1534,6 @@ def evaluate_filter_policy_conditions(conditions, attribute, message_attributes,
 def store_delivery_log(
     subscriber: dict, success: bool, message: str, message_id: str, delivery: dict = None
 ):
-
     log_group_name = subscriber.get("TopicArn", "").replace("arn:aws:", "").replace(":", "/")
     log_stream_name = long_uid()
     invocation_time = int(time.time() * 1000)
@@ -1559,3 +1585,84 @@ def unsubscribe_sqs_queue(queue_url):
             sub_url = subscriber.get("sqs_queue_url") or subscriber["Endpoint"]
             if queue_url == sub_url:
                 subscriptions.remove(subscriber)
+
+
+def register_sns_api_resource(router: Router):
+    """Register the platform endpointmessages retrospection endpoint as an internal LocalStack endpoint."""
+    router.add_route_endpoints(SNSServicePlatformEndpointMessagesApiResource())
+
+
+def _format_platform_endpoint_messages(sent_messages: List[Dict[str, str]]):
+    """
+    This method format the messages to be more readable and undo the format change that was needed for Moto
+    Should be removed once we refactor SNS.
+    """
+    validated_keys = [
+        "TargetArn",
+        "Message",
+        "Message",
+        "MessageAttributes",
+        "MessageStructure",
+        "Subject",
+    ]
+    formatted_messages = []
+    for sent_message in sent_messages:
+        msg = {
+            key: value[0] if isinstance(value, list) else value
+            for key, value in sent_message.items()
+            if key in validated_keys
+        }
+        formatted_messages.append(msg)
+
+    return formatted_messages
+
+
+class SNSServicePlatformEndpointMessagesApiResource:
+    """Provides a REST API for retrospective access to platform endpoint messages sent via SNS.
+
+    This is registered as a LocalStack internal HTTP resource.
+
+    This endpoint accepts:
+    - GET param `accountId`: selector for AWS account. If not specified, return fallback `000000000000` test ID
+    - GET param `region`: selector for AWS `region`. If not specified, return default "us-east-1"
+    - GET param `endpointArn`: filter for `endpointArn` resource in SNS
+    - DELETE param `accountId`: selector for AWS account
+    - DELETE param `region`: will delete saved messages for `region`
+    - DELETE param `endpointArn`: will delete saved messages for `endpointArn`
+    """
+
+    @route(PLATFORM_ENDPOINT_MSGS_ENDPOINT, methods=["GET"])
+    def on_get(self, request: Request):
+        account_id = request.args.get("accountId", get_aws_account_id())
+        region = request.args.get("region", "us-east-1")
+        filter_endpoint_arn = request.args.get("endpointArn")
+        store: SnsStore = sns_stores[account_id][region]
+        if filter_endpoint_arn:
+            messages = store.platform_endpoint_messages.get(filter_endpoint_arn, [])
+            messages = _format_platform_endpoint_messages(messages)
+            return {
+                "platform_endpoint_messages": {filter_endpoint_arn: messages},
+                "region": region,
+            }
+
+        platform_endpoint_messages = {
+            endpoint_arn: _format_platform_endpoint_messages(messages)
+            for endpoint_arn, messages in store.platform_endpoint_messages.items()
+        }
+        return {
+            "platform_endpoint_messages": platform_endpoint_messages,
+            "region": region,
+        }
+
+    @route(PLATFORM_ENDPOINT_MSGS_ENDPOINT, methods=["DELETE"])
+    def on_delete(self, request: Request) -> Response:
+        account_id = request.args.get("accountId", get_aws_account_id())
+        region = request.args.get("region", "us-east-1")
+        filter_endpoint_arn = request.args.get("endpointArn")
+        store: SnsStore = sns_stores[account_id][region]
+        if filter_endpoint_arn:
+            store.platform_endpoint_messages.pop(filter_endpoint_arn, None)
+            return Response("", status=204)
+
+        store.platform_endpoint_messages = {}
+        return Response("", status=204)
