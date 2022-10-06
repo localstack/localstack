@@ -175,6 +175,7 @@ def test_update_stack_with_same_template(cfn_client, deploy_cfn_template):
     assert "No updates are to be performed." in error_message
 
 
+@pytest.mark.skip_snapshot_verify(paths=["$..StackEvents"])
 def test_list_events_after_deployment(cfn_client, deploy_cfn_template, snapshot):
     snapshot.add_transformer(SortingTransformer("StackEvents", lambda x: x["Timestamp"]))
     snapshot.add_transformer(snapshot.transform.cloudformation_api())
