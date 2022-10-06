@@ -601,8 +601,9 @@ class S3Provider(S3Api, ServiceLifecycleHook):
         try:
             response: PostResponse = call_moto(context=context)
         except ServiceException as e:
-            if e.code == "303":
-                response = PostResponse(StatusCode=303)
+            if e.status_code == 303:
+                # the parser did not succeed in parsing the moto respond, we start constructing the response ourselves
+                response = PostResponse(StatusCode=e.status_code)
             else:
                 raise e
 
