@@ -321,7 +321,8 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
 
         if not api_utils.is_role_arn(request.get("Role")):
             raise ValidationException(
-                "1 validation error detected: Value 'r1' at 'role' failed to satisfy constraint: Member must satisfy regular expression pattern: arn:(aws[a-zA-Z-]*)?:iam::\\d{12}:role/?[a-zA-Z_0-9+=,.@\\-_/]+"
+                f"1 validation error detected: Value '{request.get('Role')}'"
+                + " at 'role' failed to satisfy constraint: Member must satisfy regular expression pattern: arn:(aws[a-zA-Z-]*)?:iam::\\d{12}:role/?[a-zA-Z_0-9+=,.@\\-_/]+"
             )
         package_type = request.get("PackageType", PackageType.Zip)
         if package_type == PackageType.Zip and request.get("Runtime") not in IMAGE_MAPPING:
@@ -410,7 +411,9 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
                 function_name=function_name, region=context.region, account_id=context.account_id
             )
 
-        return api_utils.map_config_out(version, return_qualified_arn=False)
+        return api_utils.map_config_out(
+            version, return_qualified_arn=False, return_update_status=False
+        )
 
     @handler(operation="UpdateFunctionConfiguration", expand=False)
     def update_function_configuration(
@@ -441,7 +444,8 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
         if "Role" in request:
             if not api_utils.is_role_arn(request["Role"]):
                 raise ValidationException(
-                    "1 validation error detected: Value 'r1' at 'role' failed to satisfy constraint: Member must satisfy regular expression pattern: arn:(aws[a-zA-Z-]*)?:iam::\\d{12}:role/?[a-zA-Z_0-9+=,.@\\-_/]+"
+                    f"1 validation error detected: Value '{request.get('Role')}'"
+                    + " at 'role' failed to satisfy constraint: Member must satisfy regular expression pattern: arn:(aws[a-zA-Z-]*)?:iam::\\d{12}:role/?[a-zA-Z_0-9+=,.@\\-_/]+"
                 )
             replace_kwargs["role"] = request["Role"]
 
@@ -600,13 +604,26 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
     ) -> ListFunctionsResponse:
         state = lambda_stores[context.account_id][context.region]
 
+        if function_version and function_version != FunctionVersionApi.ALL:
+            raise ValidationException(
+                f"1 validation error detected: Value '{function_version}'"
+                + " at 'functionVersion' failed to satisfy constraint: Member must satisfy enum value set: [ALL]"
+            )
+
         if function_version == FunctionVersionApi.ALL:
             # include all versions for all function
-            versions = [v for v in [f.versions for f in state.functions.values()]]
+            versions = [v for f in state.functions.values() for v in f.versions.values()]
+            return_qualified_arn = True
         else:
             versions = [f.latest() for f in state.functions.values()]
+            return_qualified_arn = False
 
-        versions = [api_utils.map_to_list_response(api_utils.map_config_out(fc)) for fc in versions]
+        versions = [
+            api_utils.map_to_list_response(
+                api_utils.map_config_out(fc, return_qualified_arn=return_qualified_arn)
+            )
+            for fc in versions
+        ]
         versions = PaginatedList(versions)
         page, token = versions.get_page(
             lambda version: version.config.function_arn(),
@@ -1035,7 +1052,7 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
         )
         return ListEventSourceMappingsResponse(EventSourceMappings=page, NextMarker=token)
 
-    # =======================================asss
+    # =======================================
     # ============ FUNCTION URLS ============
     # =======================================
 

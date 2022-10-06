@@ -451,6 +451,57 @@ class TestLambdaFunction:
             )
         snapshot.match("uppercase_runtime_exc", e.value.response)
 
+    @pytest.mark.skip_snapshot_verify(
+        paths=[
+            "$..CodeSha256",  # TODO
+        ]
+    )
+    @pytest.mark.aws_validated
+    def test_list_functions(self, lambda_client, create_lambda_function, lambda_su_role, snapshot):
+        snapshot.add_transformer(SortingTransformer("Functions", lambda x: x["FunctionArn"]))
+
+        function_name_1 = f"list-fn-1-{short_uid()}"
+        function_name_2 = f"list-fn-2-{short_uid()}"
+        # create lambda + version
+        create_response = create_lambda_function(
+            handler_file=TEST_LAMBDA_PYTHON_ECHO,
+            func_name=function_name_1,
+            runtime=Runtime.python3_9,
+            role=lambda_su_role,
+            Publish=True,
+        )
+        snapshot.match("create_response_1", create_response)
+
+        create_response = create_lambda_function(
+            handler_file=TEST_LAMBDA_PYTHON_ECHO,
+            func_name=function_name_2,
+            runtime=Runtime.python3_9,
+            role=lambda_su_role,
+        )
+        snapshot.match("create_response_2", create_response)
+
+        with pytest.raises(lambda_client.exceptions.ClientError) as e:
+            lambda_client.list_functions(FunctionVersion="invalid")
+        snapshot.match("list_functions_invalid_functionversion", e.value.response)
+
+        list_paginator = lambda_client.get_paginator("list_functions")
+        # ALL means it should also return all published versions for the functions
+        test_fn = [function_name_1, function_name_2]
+        list_all = list_paginator.paginate(FunctionVersion="ALL").build_full_result()
+        list_default = list_paginator.paginate().build_full_result()
+
+        # we can't filter on the API level, so we'll just need to remove all entries that don't belong here manually before snapshotting
+        list_all["Functions"] = [f for f in list_all["Functions"] if f["FunctionName"] in test_fn]
+        list_default["Functions"] = [
+            f for f in list_default["Functions"] if f["FunctionName"] in test_fn
+        ]
+
+        assert len(list_all["Functions"]) == 3  # $LATEST + Version "1" for fn1 & $LATEST for fn2
+        assert len(list_default["Functions"]) == 2  # $LATEST for fn1 and fn2
+
+        snapshot.match("list_all", list_all)
+        snapshot.match("list_default", list_default)
+
 
 @pytest.mark.skipif(is_old_provider(), reason="focusing on new provider")
 # TODO fix version state after publish

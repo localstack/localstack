@@ -148,7 +148,7 @@ def function_name_qualifier_and_region_from_arn(arn: str) -> tuple[str, str | No
 
 
 def get_name_and_qualifier(
-    function_arn_or_name: str, qualifier: str | None, region: str | None
+    function_arn_or_name: str, qualifier: str | None, region: str
 ) -> tuple[str, str | None]:
     """
     Takes a full or partial arn, or a name and a qualifier
@@ -156,6 +156,7 @@ def get_name_and_qualifier(
 
     :param function_arn_or_name: Given arn (or name)
     :param qualifier: A qualifier for the function (or None)
+    :param region: The region the function lives in
     :return: tuple with (name, qualifier). Qualifier is none if missing
     """
     function_name, arn_qualifier, arn_region = function_name_qualifier_and_region_from_arn(
@@ -315,13 +316,16 @@ def map_state_config(version: "FunctionVersion") -> dict[str, str]:
 
 
 def map_config_out(
-    version: "FunctionVersion", return_qualified_arn: bool = False
+    version: "FunctionVersion",
+    return_qualified_arn: bool = False,
+    return_update_status: bool = True,
 ) -> FunctionConfiguration:
     """map version config to function configuration"""
 
     # handle optional entries that shouldn't be rendered at all if not present
     optional_kwargs = {}
-    optional_kwargs |= map_update_status_config(version)
+    if return_update_status:
+        optional_kwargs |= map_update_status_config(version)
     optional_kwargs |= map_state_config(version)
 
     if version.config.architectures:
@@ -366,8 +370,7 @@ def map_to_list_response(config: FunctionConfiguration) -> FunctionConfiguration
         "LastUpdateStatusReason",
         "LastUpdateStatusReasonCode",
     ]:
-        if shallow_copy.get(k):
-            del shallow_copy[k]
+        shallow_copy.pop(k, None)
     return shallow_copy
 
 

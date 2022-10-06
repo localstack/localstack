@@ -313,7 +313,7 @@ def store_s3_bucket_archive(
     account_id: str,
 ) -> S3Code:
     """
-    Takes the lambda archive stored in the given bucket and stores it in an internal s4 bucket
+    Takes the lambda archive stored in the given bucket and stores it in an internal s3 bucket
 
     :param archive_bucket: Bucket the archive is stored in
     :param archive_key: Key the archive is stored under

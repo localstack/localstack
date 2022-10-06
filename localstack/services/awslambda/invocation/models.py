@@ -9,10 +9,19 @@ from localstack.services.stores import AccountRegionBundle, BaseStore, LocalAttr
 
 
 class LambdaStore(BaseStore):
+    # maps function names to the respective Function
     functions: dict[str, Function] = LocalAttribute(default=dict)
+
+    # maps EventSourceMapping ARNs to the respective EventSourceMapping
     event_source_mappings: dict[str, EventSourceMapping] = LocalAttribute(default=dict)
+
+    # maps CodeSigningConfig ARNs to the respective CodeSigningConfig
     code_signing_configs: dict[str, CodeSigningConfig] = LocalAttribute(default=dict)
+
+    # maps Layer ARNs to the respective Layer
     layers: dict[str, Layer] = LocalAttribute(default=dict)
+
+    # region-specific account settings/limits
     settings: AccountSettings = LocalAttribute(default=AccountSettings)
 
 
