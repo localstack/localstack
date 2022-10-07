@@ -65,6 +65,10 @@ DOTNET_LAMBDA_RUNTIMES = [
 DOCKER_MAIN_CONTAINER_IP = None
 LAMBDA_CONTAINER_NETWORK = None
 
+FUNCTION_NAME_REGEX = re.compile(
+    r"(arn:(aws[a-zA-Z-]*)?:lambda:)?((?P<region>[a-z]{2}(-gov)?-[a-z]+-\d{1}):)?(?P<account>\d{12}:)?(function:)?(?P<name>[a-zA-Z0-9-_\.]+)(:(?P<qualifier>\$LATEST|[a-zA-Z0-9-_]+))?"
+)  # also length 1-170 incl.
+
 
 class ClientError(Exception):
     def __init__(self, msg, code=400):
@@ -431,3 +435,8 @@ def get_lambda_event_filters_for_arn(lambda_arn: str, event_arn: str) -> List[Di
     ]
 
     return event_filter_criterias
+
+
+def function_name_from_arn(arn: str):
+    """Extract a function name from a arn/function name"""
+    return FUNCTION_NAME_REGEX.match(arn).group("name")

@@ -5,63 +5,35 @@ import threading
 import uuid
 from concurrent.futures import Future
 from datetime import datetime
-from enum import Enum, auto
 from queue import Queue
 from threading import Thread
-from typing import Dict, List, Optional, Union
+from typing import TYPE_CHECKING, Dict, List, Optional, Union
 
+from localstack import config
+from localstack.aws.api.lambda_ import State, StateReasonCode
 from localstack.services.awslambda.invocation.lambda_models import (
     FunctionVersion,
     Invocation,
     InvocationError,
     InvocationLogs,
     InvocationResult,
+    ProvisionedConcurrencyState,
     ServiceEndpoint,
+    VersionState,
 )
 from localstack.services.awslambda.invocation.runtime_environment import (
     InvalidStatusException,
     RuntimeEnvironment,
     RuntimeStatus,
 )
-from localstack.services.awslambda.invocation.runtime_executor import (
-    cleanup_version,
-    prepare_version,
-)
+from localstack.services.awslambda.invocation.runtime_executor import RuntimeExecutor
 from localstack.utils.cloudwatch.cloudwatch_util import store_cloudwatch_logs
+from localstack.utils.strings import truncate
+
+if TYPE_CHECKING:
+    from localstack.services.awslambda.invocation.lambda_service import LambdaService
 
 LOG = logging.getLogger(__name__)
-
-
-class ValueNameEnum(Enum):
-    def __str__(self):
-        return str(self.name)
-
-
-class State(ValueNameEnum):
-    Pending = auto()
-    Active = auto()
-    Inactive = auto()
-    Failed = auto()
-
-
-class StateReasonCode(ValueNameEnum):
-    Idle = auto()
-    Creating = auto()
-    Restoring = auto()
-    InsufficientRolePermissions = auto()
-    InvalidConfiguration = auto()
-    InternalError = auto()
-    InvalidSecurityGroup = auto()
-    ImageDeleted = auto()
-    ImageAccessDenied = auto()
-    InvalidImage = auto()
-
-
-@dataclasses.dataclass(frozen=True)
-class VersionState:
-    state: State
-    code: Optional[StateReasonCode] = None
-    reason: Optional[str] = None
 
 
 # InvocationResultFuture = Future[InvocationResult]
@@ -72,7 +44,7 @@ class VersionState:
 @dataclasses.dataclass(frozen=True)
 class QueuedInvocation:
     invocation_id: str
-    result_future: "Future[InvocationResult]"
+    result_future: Future[InvocationResult] | None
     retries: int
     invocation: Invocation
 
@@ -148,16 +120,21 @@ class LambdaVersionManager(ServiceEndpoint):
     provisioned_concurrent_executions: int
     invocation_thread: Optional[Thread]
     shutdown_event: threading.Event
-    state: VersionState
+    state: VersionState | None
+    provisioned_state: ProvisionedConcurrencyState | None
     log_handler: LogHandler
+    # TODO not sure about this backlink, maybe a callback is better?
+    lambda_service: "LambdaService"
 
     def __init__(
         self,
         function_arn: str,
         function_version: FunctionVersion,
+        lambda_service: "LambdaService",
     ):
         self.function_arn = function_arn
         self.function_version = function_version
+        self.lambda_service = lambda_service
         self.running_invocations = {}
         self.available_environments = queue.LifoQueue()
         self.all_environments = {}
@@ -165,9 +142,7 @@ class LambdaVersionManager(ServiceEndpoint):
         self.provisioned_concurrent_executions = 0
         self.invocation_thread = None
         self.shutdown_event = threading.Event()
-        self.state = VersionState(
-            state=State.Pending, code=StateReasonCode.Creating, reason="Function starting up"
-        )
+        self.state = None
         self.log_handler = LogHandler()
 
     def start(self) -> None:
@@ -176,10 +151,12 @@ class LambdaVersionManager(ServiceEndpoint):
             invocation_thread.start()
             self.invocation_thread = invocation_thread
             self.log_handler.start_subscriber()
-            prepare_version(self.function_version)
+            RuntimeExecutor.prepare_version(self.function_version)
 
             self.state = VersionState(state=State.Active)
-            LOG.debug(f"Lambda '{self.function_arn}' changed to active")
+            LOG.debug(
+                f"Lambda '{self.function_arn}' (id {self.function_version.config.internal_revision}) changed to active"
+            )
         except Exception as e:
             self.state = VersionState(
                 state=State.Failed,
@@ -188,6 +165,10 @@ class LambdaVersionManager(ServiceEndpoint):
             )
             LOG.debug(
                 f"Lambda '{self.function_arn}' changed to failed. Reason: %s", e, exc_info=True
+            )
+        finally:
+            self.lambda_service.update_version_state(
+                function_version=self.function_version, new_state=self.state
             )
 
     def stop(self) -> None:
@@ -207,7 +188,7 @@ class LambdaVersionManager(ServiceEndpoint):
         for environment in list(self.all_environments.values()):
             self.stop_environment(environment)
         self.log_handler.stop()
-        cleanup_version(self.function_version)
+        RuntimeExecutor.cleanup_version(self.function_version)
 
     def update_provisioned_concurrency_config(self, provisioned_concurrent_executions: int) -> None:
         self.provisioned_concurrent_executions = provisioned_concurrent_executions
@@ -299,10 +280,11 @@ class LambdaVersionManager(ServiceEndpoint):
             except Exception as e:
                 queued_invocation.result_future.set_exception(e)
 
-    def invoke(self, *, invocation: Invocation) -> "Future[InvocationResult]":
+    def invoke(self, *, invocation: Invocation) -> Future[InvocationResult] | None:
+        future = Future() if invocation.invocation_type == "RequestResponse" else None
         invocation_storage = QueuedInvocation(
             invocation_id=str(uuid.uuid4()),
-            result_future=Future(),
+            result_future=future,
             retries=1,
             invocation=invocation,
         )
@@ -344,6 +326,13 @@ class LambdaVersionManager(ServiceEndpoint):
                 self.function_arn,
             )
 
+    def process_event_destinations(
+        self, invocation_result: InvocationResult | InvocationError
+    ) -> None:
+        LOG.debug("Got event invocation with id %s", invocation_result.invocation_id)
+        LOG.debug("Event destinations and DLQ are not yet implemented.")
+        # TODO implement (ideally async to not block result)
+
     def invocation_response(
         self, invoke_id: str, invocation_result: Union[InvocationResult, InvocationError]
     ) -> None:
@@ -354,8 +343,13 @@ class LambdaVersionManager(ServiceEndpoint):
 
         if not invocation_result.logs:
             invocation_result.logs = running_invocation.logs
+        invocation_result.executed_version = self.function_version.id.qualifier
         executor = running_invocation.executor
-        running_invocation.invocation.result_future.set_result(invocation_result)
+        if running_invocation.invocation.invocation.invocation_type == "RequestResponse":
+            running_invocation.invocation.result_future.set_result(invocation_result)
+        else:
+            self.process_event_destinations(invocation_result=invocation_result)
+
         # mark executor available again
         executor.invocation_done()
         self.available_environments.put(executor)
@@ -373,7 +367,7 @@ class LambdaVersionManager(ServiceEndpoint):
     def invocation_logs(self, invoke_id: str, invocation_logs: InvocationLogs) -> None:
         LOG.debug("Got logs for invocation '%s'", invoke_id)
         for log_line in invocation_logs.logs.splitlines():
-            LOG.debug("> %s", log_line)
+            LOG.debug("> %s", truncate(log_line, config.LAMBDA_TRUNCATE_STDOUT))
         running_invocation = self.running_invocations.get(invoke_id, None)
         if running_invocation is None:
             raise Exception(f"Cannot map invocation result {invoke_id} to invocation")

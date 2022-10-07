@@ -178,6 +178,12 @@ class LambdaFunctionVersion(GenericBaseModel):
             }
         }
 
+    def get_physical_resource_id(self, attribute=None, **kwargs):
+        return "%s:%s" % (
+            self.props.get("FunctionArn"),
+            self.props.get("Version").split(":")[-1],
+        )
+
 
 class LambdaEventSourceMapping(GenericBaseModel):
     @staticmethod

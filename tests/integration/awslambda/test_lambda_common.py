@@ -55,36 +55,76 @@ class TestLambdaRuntimesCommon:
         # provided lambdas take a little longer for large payloads, hence timeout to 5s
         create_function_result = multiruntime_lambda.create_function(MemorySize=1024, Timeout=5)
 
+        def _invoke_with_payload(payload):
+            invoke_result = lambda_client.invoke(
+                FunctionName=create_function_result["FunctionName"],
+                Payload=to_bytes(json.dumps(payload)),
+            )
+
+            assert invoke_result["StatusCode"] == 200
+            assert json.loads(invoke_result["Payload"].read()) == payload
+            assert not invoke_result.get("FunctionError")
+
         # simple payload
         payload = {"hello": "world"}
-        invoke_result = lambda_client.invoke(
-            FunctionName=create_function_result["FunctionName"],
-            Payload=to_bytes(json.dumps(payload)),
-        )
-
-        assert invoke_result["StatusCode"] == 200
-        assert json.loads(invoke_result["Payload"].read()) == payload
-
+        _invoke_with_payload(payload)
         # payload with quotes and other special characters
         payload = {"hello": "'\" some other ''\"\" quotes, a emoji 🥳 and some brackets {[}}[([]))"}
-        invoke_result = lambda_client.invoke(
-            FunctionName=create_function_result["FunctionName"],
-            Payload=to_bytes(json.dumps(payload)),
-        )
-
-        assert invoke_result["StatusCode"] == 200
-        assert json.loads(invoke_result["Payload"].read()) == payload
+        _invoke_with_payload(payload)
 
         # large payload (5MB+)
         payload = {"hello": "obi wan!" * 128 * 1024 * 5}
-        invoke_result = lambda_client.invoke(
-            FunctionName=create_function_result["FunctionName"],
-            Payload=to_bytes(json.dumps(payload)),
-        )
+        _invoke_with_payload(payload)
 
+        # test non json invocations
+        # boolean value
+        payload = True
+        _invoke_with_payload(payload)
+        payload = False
+        _invoke_with_payload(payload)
+        # None value
+        payload = None
+        _invoke_with_payload(payload)
+        # array value
+        payload = [1, 2]
+        _invoke_with_payload(payload)
+        # number value
+        payload = 1
+        _invoke_with_payload(payload)
+        # no payload at all
+        invoke_result = lambda_client.invoke(FunctionName=create_function_result["FunctionName"])
         assert invoke_result["StatusCode"] == 200
-        assert json.loads(invoke_result["Payload"].read()) == payload
+        assert json.loads(invoke_result["Payload"].read()) == {}
+        assert not invoke_result.get("FunctionError")
 
+    # skip snapshots of LS specific env variables / xray variables
+    @pytest.mark.skip_snapshot_verify(
+        paths=[
+            "$..environment.AWS_CONTAINER_AUTHORIZATION_TOKEN",
+            "$..environment.AWS_CONTAINER_CREDENTIALS_FULL_URI",
+            "$..environment.AWS_ENDPOINT_URL",
+            "$..environment.AWS_LAMBDA_FUNCTION_TIMEOUT",
+            "$..environment.AWS_XRAY_CONTEXT_MISSING",
+            "$..environment.AWS_XRAY_DAEMON_ADDRESS",
+            "$..environment.EDGE_PORT",
+            "$..environment.HOME",
+            "$..environment.HOSTNAME",
+            "$..environment.LOCALSTACK_HOSTNAME",
+            "$..environment.LOCALSTACK_RUNTIME_ENDPOINT",
+            "$..environment.LOCALSTACK_RUNTIME_ID",
+            "$..environment.RUNTIME_ROOT",
+            "$..environment.TASK_ROOT",
+            "$..environment._AWS_XRAY_DAEMON_ADDRESS",
+            "$..environment._AWS_XRAY_DAEMON_PORT",
+            "$..environment._LAMBDA_TELEMETRY_LOG_FD",  # Only java8, dotnetcore3.1, dotnet6, go1.x
+            "$..environment._X_AMZN_TRACE_ID",
+            "$..environment.AWS_EXECUTION_ENV",  # Only rust runtime
+            "$..environment.LD_LIBRARY_PATH",  # Only rust runtime (additional /var/lang/bin)
+            "$..environment.PATH",  # Only rust runtime (additional /var/lang/bin)
+            "$..CodeSha256",  # can differ between compilation rounds  # TODO make zip creation deterministic
+            "$..CodeSize",  # can differ for compiled runtimes  # TODO make zip creation deterministic
+        ]
+    )
     @pytest.mark.multiruntime(scenario="introspection")
     def test_introspection_invoke(self, lambda_client, multiruntime_lambda, snapshot):
         create_function_result = multiruntime_lambda.create_function(
@@ -106,7 +146,19 @@ class TestLambdaRuntimesCommon:
         assert "packages" in invocation_result_payload
         snapshot.match("invocation_result_payload", invocation_result_payload)
 
+        # Check again with a qualified arn as function name
+        invoke_result_qualified = lambda_client.invoke(
+            FunctionName=f"{create_function_result['FunctionArn']}:$LATEST",
+            Payload=b'{"simple": "payload"}',
+        )
+
+        assert invoke_result["StatusCode"] == 200
+        invocation_result_payload_qualified = to_str(invoke_result_qualified["Payload"].read())
+        invocation_result_payload_qualified = json.loads(invocation_result_payload_qualified)
+        snapshot.match("invocation_result_payload_qualified", invocation_result_payload_qualified)
+
     @pytest.mark.multiruntime(scenario="uncaughtexception")
+    @pytest.mark.skip_snapshot_verify(paths=["$..CodeSha256", "$..CodeSize"])
     def test_uncaught_exception_invoke(self, lambda_client, multiruntime_lambda, snapshot):
         create_function_result = multiruntime_lambda.create_function(MemorySize=1024)
         snapshot.match("create_function_result", create_function_result)

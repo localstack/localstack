@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 import json
+import logging
 import queue
 import random
 import time
@@ -18,7 +19,7 @@ from localstack.aws.accounts import get_aws_account_id
 from localstack.aws.api.lambda_ import Runtime
 from localstack.services.awslambda.lambda_utils import LAMBDA_RUNTIME_PYTHON37
 from localstack.services.install import SQS_BACKEND_IMPL
-from localstack.services.sns.provider import SnsProvider
+from localstack.services.sns.provider import PLATFORM_ENDPOINT_MSGS_ENDPOINT, SnsProvider
 from localstack.testing.aws.util import is_aws_cloud
 from localstack.utils import testutil
 from localstack.utils.net import wait_for_port_closed, wait_for_port_open
@@ -29,6 +30,8 @@ from localstack.utils.testutil import check_expected_lambda_log_events_length
 from .awslambda.functions import lambda_integration
 from .awslambda.test_lambda import TEST_LAMBDA_LIBS, TEST_LAMBDA_PYTHON, TEST_LAMBDA_PYTHON_ECHO
 
+LOG = logging.getLogger(__name__)
+
 PUBLICATION_TIMEOUT = 0.500
 PUBLICATION_RETRIES = 4
 
@@ -36,6 +39,39 @@ PUBLICATION_RETRIES = 4
 @pytest.fixture(autouse=True)
 def sns_snapshot_transformer(snapshot):
     snapshot.add_transformer(snapshot.transform.sns_api())
+
+
+@pytest.fixture
+def sns_create_platform_application(sns_client):
+    platform_applications = []
+
+    def factory(**kwargs):
+        if "Name" not in kwargs:
+            kwargs["Name"] = f"platform-app-{short_uid()}"
+        response = sns_client.create_platform_application(**kwargs)
+        platform_applications.append(response["PlatformApplicationArn"])
+        return response
+
+    yield factory
+
+    for platform_application in platform_applications:
+        endpoints = sns_client.list_endpoints_by_platform_application(
+            PlatformApplicationArn=platform_application
+        )
+        for endpoint in endpoints["Endpoints"]:
+            try:
+                sns_client.delete_endpoint(EndpointArn=endpoint["EndpointArn"])
+            except Exception as e:
+                LOG.debug(
+                    "Error cleaning up platform endpoint '%s' for platform app '%s': %s",
+                    endpoint["EndpointArn"],
+                    platform_application,
+                    e,
+                )
+        try:
+            sns_client.delete_platform_application(PlatformApplicationArn=platform_application)
+        except Exception as e:
+            LOG.debug("Error cleaning up platform application '%s': %s", platform_application, e)
 
 
 class TestSNSSubscription:
@@ -460,13 +496,13 @@ class TestSNSProvider:
 
     @pytest.mark.only_localstack
     def test_subscribe_platform_endpoint(
-        self, sns_client, sqs_create_queue, sns_create_topic, sns_subscription
+        self, sns_client, sns_create_topic, sns_subscription, sns_create_platform_application
     ):
 
         sns_backend = SnsProvider.get_store()
         topic_arn = sns_create_topic()["TopicArn"]
 
-        app_arn = sns_client.create_platform_application(Name="app1", Platform="p1", Attributes={})[
+        app_arn = sns_create_platform_application(Name="app1", Platform="p1", Attributes={})[
             "PlatformApplicationArn"
         ]
         platform_arn = sns_client.create_platform_endpoint(
@@ -475,7 +511,7 @@ class TestSNSProvider:
 
         # create subscription with filter policy
         filter_policy = {"attr1": [{"numeric": [">", 0, "<=", 100]}]}
-        subscription = sns_subscription(
+        sns_subscription(
             TopicArn=topic_arn,
             Protocol="application",
             Endpoint=platform_arn,
@@ -494,11 +530,6 @@ class TestSNSProvider:
             assert len(sns_backend.platform_endpoint_messages[platform_arn]) > 0
 
         retry(check_message, retries=PUBLICATION_RETRIES, sleep=PUBLICATION_TIMEOUT)
-
-        # clean up
-        sns_client.unsubscribe(SubscriptionArn=subscription["SubscriptionArn"])
-        sns_client.delete_endpoint(EndpointArn=platform_arn)
-        sns_client.delete_platform_application(PlatformApplicationArn=app_arn)
 
     @pytest.mark.aws_validated
     def test_unknown_topic_publish(self, sns_client, sns_create_topic, snapshot):
@@ -958,8 +989,10 @@ class TestSNSProvider:
     @pytest.mark.skip(
         reason="Idempotency not supported in Moto backend. See bug https://github.com/spulec/moto/issues/2333"
     )
-    def test_create_platform_endpoint_check_idempotency(self, sns_client):
-        response = sns_client.create_platform_application(
+    def test_create_platform_endpoint_check_idempotency(
+        self, sns_client, sns_create_platform_application
+    ):
+        response = sns_create_platform_application(
             Name=f"test-{short_uid()}",
             Platform="GCM",
             Attributes={"PlatformCredential": "123"},
@@ -979,10 +1012,6 @@ class TestSNSProvider:
         # Assert endpointarn is returned in every call create platform call
         for i in range(len(responses)):
             assert "EndpointArn" in responses[i]
-        endpoint_arn = responses[0]["EndpointArn"]
-        # clean up
-        sns_client.delete_endpoint(EndpointArn=endpoint_arn)
-        sns_client.delete_platform_application(PlatformApplicationArn=platform_arn)
 
     @pytest.mark.aws_validated
     def test_publish_by_path_parameters(
@@ -2104,11 +2133,11 @@ class TestSNSProvider:
         assert e.value.response["ResponseMetadata"]["HTTPStatusCode"] == 400
 
     @pytest.mark.only_localstack  # needs real credentials for GCM/FCM
-    def test_publish_to_gcm(self, sns_client):
+    def test_publish_to_gcm(self, sns_client, sns_create_platform_application):
         key = "mock_server_key"
         token = "mock_token"
 
-        platform_app_arn = sns_client.create_platform_application(
+        platform_app_arn = sns_create_platform_application(
             Name="firebase", Platform="GCM", Attributes={"PlatformCredential": key}
         )["PlatformApplicationArn"]
 
@@ -2127,9 +2156,6 @@ class TestSNSProvider:
             )
 
         assert ex.value.response["Error"]["Code"] == "InvalidParameter"
-
-        sns_client.delete_endpoint(EndpointArn=endpoint_arn)
-        sns_client.delete_platform_application(PlatformApplicationArn=platform_app_arn)
 
     @pytest.mark.aws_validated
     @pytest.mark.skip_snapshot_verify(
@@ -2388,3 +2414,178 @@ class TestSNSProvider:
                 ],
             )
         snapshot.match("batch-exception", e.value.response)
+
+    @pytest.mark.only_localstack
+    def test_publish_to_platform_endpoint_can_retrospect(
+        self, sns_client, sns_create_topic, sns_subscription, sns_create_platform_application
+    ):
+        sns_backend = SnsProvider.get_store()
+        # clean up the saved messages
+        sns_backend_endpoint_arns = list(sns_backend.platform_endpoint_messages.keys())
+        for saved_endpoint_arn in sns_backend_endpoint_arns:
+            sns_backend.platform_endpoint_messages.pop(saved_endpoint_arn, None)
+
+        topic_arn = sns_create_topic()["TopicArn"]
+        application_platform_name = f"app-platform-{short_uid()}"
+
+        app_arn = sns_create_platform_application(
+            Name=application_platform_name, Platform="p1", Attributes={}
+        )["PlatformApplicationArn"]
+
+        endpoint_arn = sns_client.create_platform_endpoint(
+            PlatformApplicationArn=app_arn, Token=short_uid()
+        )["EndpointArn"]
+
+        endpoint_arn_2 = sns_client.create_platform_endpoint(
+            PlatformApplicationArn=app_arn, Token=short_uid()
+        )["EndpointArn"]
+
+        sns_subscription(
+            TopicArn=topic_arn,
+            Protocol="application",
+            Endpoint=endpoint_arn,
+        )
+
+        # example message from
+        # https://docs.aws.amazon.com/sns/latest/dg/sns-send-custom-platform-specific-payloads-mobile-devices.html
+        message = json.dumps({"APNS_PLATFORM": json.dumps({"aps": {"content-available": 1}})})
+        message_for_topic = json.dumps(
+            {
+                "default": "This is the default message which must be present when publishing a message to a topic.",
+                "APNS_PLATFORM": json.dumps({"aps": {"content-available": 1}}),
+            },
+        )
+        message_attributes = {
+            "AWS.SNS.MOBILE.APNS.TOPIC": {
+                "DataType": "String",
+                "StringValue": "com.amazon.mobile.messaging.myapp",
+            },
+            "AWS.SNS.MOBILE.APNS.PUSH_TYPE": {
+                "DataType": "String",
+                "StringValue": "background",
+            },
+            "AWS.SNS.MOBILE.APNS.PRIORITY": {
+                "DataType": "String",
+                "StringValue": "5",
+            },
+        }
+        # publish to a topic which has a platform subscribed to it
+        sns_client.publish(
+            TopicArn=topic_arn,
+            Message=message_for_topic,
+            MessageAttributes=message_attributes,
+            MessageStructure="json",
+        )
+        # publish directly to the platform endpoint
+        sns_client.publish(
+            TargetArn=endpoint_arn_2,
+            Message=message,
+            MessageAttributes=message_attributes,
+            MessageStructure="json",
+        )
+
+        # assert that message has been received
+        def check_message():
+            assert len(sns_backend.platform_endpoint_messages[endpoint_arn]) > 0
+
+        retry(check_message, retries=PUBLICATION_RETRIES, sleep=PUBLICATION_TIMEOUT)
+
+        msgs_url = config.get_edge_url() + PLATFORM_ENDPOINT_MSGS_ENDPOINT
+        api_contents = requests.get(msgs_url).json()
+        api_platform_endpoints_msgs = api_contents["platform_endpoint_messages"]
+
+        assert len(api_platform_endpoints_msgs) == 2
+        assert len(api_platform_endpoints_msgs[endpoint_arn]) == 1
+        assert len(api_platform_endpoints_msgs[endpoint_arn_2]) == 1
+        assert api_contents["region"] == "us-east-1"
+        # TODO: current implementation does not dispatch depending on platform type, we will have the message
+        # for all platforms
+        assert api_platform_endpoints_msgs[endpoint_arn][0]["Message"] == message_for_topic
+        assert (
+            api_platform_endpoints_msgs[endpoint_arn][0]["MessageAttributes"] == message_attributes
+        )
+
+        # Ensure you can select the region
+        msg_with_region = requests.get(msgs_url, params={"region": "eu-west-1"}).json()
+        assert len(msg_with_region["platform_endpoint_messages"]) == 0
+        assert msg_with_region["region"] == "eu-west-1"
+
+        # Ensure messages can be filtered by EndpointArn
+        api_contents_with_endpoint = requests.get(
+            msgs_url, params={"endpointArn": endpoint_arn}
+        ).json()
+        msgs_with_endpoint = api_contents_with_endpoint["platform_endpoint_messages"]
+        assert len(msgs_with_endpoint) == 1
+        assert len(msgs_with_endpoint[endpoint_arn]) == 1
+        assert api_contents_with_endpoint["region"] == "us-east-1"
+
+        # Ensure you can reset the saved messages by EndpointArn
+        delete_res = requests.delete(msgs_url, params={"endpointArn": endpoint_arn})
+        assert delete_res.status_code == 204
+        api_contents_with_endpoint = requests.get(
+            msgs_url, params={"endpointArn": endpoint_arn}
+        ).json()
+        msgs_with_endpoint = api_contents_with_endpoint["platform_endpoint_messages"]
+        assert len(msgs_with_endpoint[endpoint_arn]) == 0
+
+        # Ensure you can reset the saved messages by region
+        delete_res = requests.delete(msgs_url, params={"region": "us-east-1"})
+        assert delete_res.status_code == 204
+        msg_with_region = requests.get(msgs_url, params={"region": "us-east-1"}).json()
+        assert not msg_with_region["platform_endpoint_messages"]
+
+    @pytest.mark.only_localstack
+    @pytest.mark.xfail(reason="Behaviour not yet implemented")
+    def test_publish_to_platform_endpoint_is_dispatched(
+        self, sns_client, sns_create_topic, sns_subscription, sns_create_platform_application
+    ):
+        topic_arn = sns_create_topic()["TopicArn"]
+        endpoints_arn = {}
+        for platform_type in ["APNS", "GCM"]:
+            application_platform_name = f"app-platform-{platform_type}-{short_uid()}"
+
+            # Create an Apple platform application
+            app_arn = sns_create_platform_application(
+                Name=application_platform_name, Platform=platform_type, Attributes={}
+            )["PlatformApplicationArn"]
+
+            endpoint_arn = sns_client.create_platform_endpoint(
+                PlatformApplicationArn=app_arn, Token=short_uid()
+            )["EndpointArn"]
+
+            # store the endpoint for checking results
+            endpoints_arn[platform_type] = endpoint_arn
+
+            # subscribe this endpoint to a topic
+            sns_subscription(
+                TopicArn=topic_arn,
+                Protocol="application",
+                Endpoint=endpoint_arn,
+            )
+
+        # now we have two platform endpoints subscribed to the same topic
+        message = {
+            "default": "This is the default message which must be present when publishing a message to a topic.",
+            "APNS": '{"aps":{"alert": "Check out these awesome deals!","url":"www.amazon.com"} }',
+            "GCM": '{"data":{"message":"Check out these awesome deals!","url":"www.amazon.com"}}',
+        }
+
+        # publish to the topic
+        sns_client.publish(
+            TopicArn=topic_arn,
+            Message=json.dumps(message),
+            MessageStructure="json",
+        )
+
+        sns_backend = SnsProvider.get_store()
+        platform_endpoint_msgs = sns_backend.platform_endpoint_messages
+
+        # assert that message has been received
+        def check_message():
+            assert len(platform_endpoint_msgs[endpoint_arn]) > 0
+
+        retry(check_message, retries=PUBLICATION_RETRIES, sleep=PUBLICATION_TIMEOUT)
+
+        # each endpoint should only receive the message that was directed to them
+        assert platform_endpoint_msgs[endpoints_arn["GCM"]][0]["Message"][0] == message["GCM"]
+        assert platform_endpoint_msgs[endpoints_arn["APNS"]][0]["Message"][0] == message["APNS"]

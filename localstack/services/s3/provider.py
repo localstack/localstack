@@ -1,15 +1,26 @@
 import copy
 import logging
 import os
-from urllib.parse import SplitResult, quote, urlsplit, urlunsplit
+from typing import IO
+from urllib.parse import (
+    SplitResult,
+    parse_qs,
+    quote,
+    urlencode,
+    urlparse,
+    urlsplit,
+    urlunparse,
+    urlunsplit,
+)
 
 import moto.s3.responses as moto_s3_responses
 
 from localstack.aws.accounts import get_aws_account_id
-from localstack.aws.api import CommonServiceException, RequestContext, handler
+from localstack.aws.api import CommonServiceException, RequestContext, ServiceException, handler
 from localstack.aws.api.s3 import (
     AccessControlPolicy,
     AccountId,
+    Body,
     BucketName,
     ChecksumAlgorithm,
     CompleteMultipartUploadOutput,
@@ -23,6 +34,7 @@ from localstack.aws.api.s3 import (
     DeleteObjectRequest,
     DeleteObjectTaggingOutput,
     DeleteObjectTaggingRequest,
+    ETag,
     GetBucketAclOutput,
     GetBucketLifecycleConfigurationOutput,
     GetBucketLifecycleOutput,
@@ -44,6 +56,7 @@ from localstack.aws.api.s3 import (
     NoSuchWebsiteConfiguration,
     NotificationConfiguration,
     ObjectKey,
+    PostResponse,
     PutBucketAclRequest,
     PutBucketLifecycleConfigurationRequest,
     PutBucketLifecycleRequest,
@@ -71,6 +84,7 @@ from localstack.services.s3.notifications import NotificationDispatcher, S3Event
 from localstack.services.s3.presigned_url import (
     s3_presigned_url_request_handler,
     s3_presigned_url_response_handler,
+    validate_post_policy,
 )
 from localstack.services.s3.utils import (
     ALLOWED_HEADER_OVERRIDES,
@@ -78,6 +92,7 @@ from localstack.services.s3.utils import (
     VALID_ACL_PREDEFINED_GROUPS,
     VALID_GRANTEE_PERMISSIONS,
     _create_invalid_argument_exc,
+    capitalize_header_name_from_snake_case,
     get_bucket_from_moto,
     get_header_name,
     get_key_from_moto_bucket,
@@ -572,6 +587,68 @@ class S3Provider(S3Api, ServiceLifecycleHook):
         # does not raise error if the bucket did not have a config, will simply return
         self.get_store().bucket_website_configuration.pop(bucket, None)
 
+    def post_object(
+        self, context: RequestContext, bucket: BucketName, body: IO[Body] = None
+    ) -> PostResponse:
+        # see https://docs.aws.amazon.com/AmazonS3/latest/API/RESTObjectPOST.html
+        # TODO: signature validation is not implemented for pre-signed POST
+        # policy validation is not implemented either, except expiration and mandatory fields
+        validate_post_policy(context.request.form)
+
+        # Botocore has trouble parsing responses with status code in the 3XX range, it interprets them as exception
+        # it then raises a nonsense one with a wrong code
+        # We have to create and populate the response manually if that happens
+        try:
+            response: PostResponse = call_moto(context=context)
+        except ServiceException as e:
+            if e.status_code == 303:
+                # the parser did not succeed in parsing the moto respond, we start constructing the response ourselves
+                response = PostResponse(StatusCode=e.status_code)
+            else:
+                raise e
+
+        key_name = context.request.form.get("key")
+        if "${filename}" in key_name:
+            key_name = key_name.replace("${filename}", context.request.files["file"].filename)
+
+        moto_backend = get_moto_s3_backend(context)
+        key = get_key_from_moto_bucket(
+            get_bucket_from_moto(moto_backend, bucket=bucket), key=key_name
+        )
+        # hacky way to set the etag in the headers as well: two locations for one value
+        response["ETagHeader"] = key.etag
+
+        if response["StatusCode"] == 303:
+            # we need to create the redirect, as the parser could not return the moto-calculated one
+            try:
+                redirect = _create_redirect_for_post_request(
+                    base_redirect=context.request.form["success_action_redirect"],
+                    bucket=bucket,
+                    key=key_name,
+                    etag=key.etag,
+                )
+                response["LocationHeader"] = redirect
+            except ValueError:
+                # If S3 cannot interpret the URL, it acts as if the field is not present.
+                response["StatusCode"] = 204
+
+        response["LocationHeader"] = response.get(
+            "LocationHeader", f"{get_full_default_bucket_location(bucket)}{key_name}"
+        )
+
+        if bucket in self.get_store().bucket_versioning_status:
+            response["VersionId"] = key.version_id
+
+        if context.request.form.get("success_action_status") != "201":
+            return response
+
+        response["ETag"] = key.etag
+        response["Bucket"] = bucket
+        response["Key"] = key_name
+        response["Location"] = response["LocationHeader"]
+
+        return response
+
     def add_custom_routes(self):
         # virtual-host style: https://bucket-name.s3.region-code.amazonaws.com/key-name
         # host_pattern_vhost_style = f"{bucket}.s3.<regex('({AWS_REGION_REGEX}\.)?'):region>{LOCALHOST_HOSTNAME}:{get_edge_port_http()}"
@@ -820,15 +897,43 @@ def is_object_expired(context: RequestContext, bucket: BucketName, key: ObjectKe
     return is_key_expired(key_object=key_object)
 
 
+def _create_redirect_for_post_request(
+    base_redirect: str, bucket: BucketName, key: ObjectKey, etag: ETag
+):
+    """
+    POST requests can redirect if successful. It will take the URL provided and append query string parameters
+    (key, bucket and ETag). It needs to be a full URL.
+    :param base_redirect: the URL provided for redirection
+    :param bucket: bucket name
+    :param key: key name
+    :param etag: key ETag
+    :return: the URL provided with the new appended query string parameters
+    """
+    parts = urlparse(base_redirect)
+    if not parts.netloc:
+        raise ValueError("The provided URL is not valid")
+    queryargs = parse_qs(parts.query)
+    queryargs["key"] = [key]
+    queryargs["bucket"] = [bucket]
+    queryargs["etag"] = [etag]
+    redirect_queryargs = urlencode(queryargs, doseq=True)
+    newparts = (
+        parts.scheme,
+        parts.netloc,
+        parts.path,
+        parts.params,
+        redirect_queryargs,
+        parts.fragment,
+    )
+    return urlunparse(newparts)
+
+
 def apply_moto_patches():
     # importing here in case we need InvalidObjectState from `localstack.aws.api.s3`
     from moto.s3.exceptions import InvalidObjectState
 
     if not os.environ.get("MOTO_S3_DEFAULT_KEY_BUFFER_SIZE"):
         os.environ["MOTO_S3_DEFAULT_KEY_BUFFER_SIZE"] = str(S3_MAX_FILE_SIZE_BYTES)
-
-    def _capitalize_header_name_from_snake_case(header_name: str) -> str:
-        return "-".join([part.capitalize() for part in header_name.split("-")])
 
     @patch(moto_s3_responses.S3Response.key_response)
     def _fix_key_response(fn, self, *args, **kwargs):
@@ -842,7 +947,7 @@ def apply_moto_patches():
             "content-encoding",
         ]:
             if header_value := resp_headers.pop(low_case_header, None):
-                header_name = _capitalize_header_name_from_snake_case(low_case_header)
+                header_name = capitalize_header_name_from_snake_case(low_case_header)
                 resp_headers[header_name] = header_value
 
         return status_code, resp_headers, key_value

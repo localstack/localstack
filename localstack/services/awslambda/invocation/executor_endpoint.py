@@ -53,7 +53,6 @@ class ExecutorEndpoint(Server):
             methods=["POST"],
         )
         def invocation_error(req_id: str) -> ResponseReturnValue:
-            LOG.debug("Got invocation error for %s", req_id)
             result = InvocationError(req_id, request.data)
             self.service_endpoint.invocation_error(invoke_id=req_id, invocation_error=result)
             return Response(status=HTTPStatus.ACCEPTED)

@@ -28,10 +28,14 @@ class SFNActivity(GenericBaseModel):
 
     @staticmethod
     def get_deploy_templates():
+        def _store_arn(result, resource_id, resources, resource_type):
+            resources[resource_id]["PhysicalResourceId"] = result["activityArn"]
+
         return {
             "create": {
                 "function": "create_activity",
                 "parameters": {"name": ["Name", PLACEHOLDER_RESOURCE_NAME], "tags": "Tags"},
+                "result_handler": _store_arn,
             },
             "delete": {
                 "function": "delete_activity",

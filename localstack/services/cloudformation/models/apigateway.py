@@ -90,6 +90,17 @@ class GatewayRestAPI(GenericBaseModel):
     def cloudformation_type():
         return "AWS::ApiGateway::RestApi"
 
+    def get_cfn_attribute(self, attribute_name):
+        if attribute_name == "RootResourceId":
+            api_id = self.props.get("id")
+            resources = aws_stack.connect_to_service("apigateway").get_resources(restApiId=api_id)[
+                "items"
+            ]
+            for res in resources:
+                if res["path"] == "/" and not res.get("parentId"):
+                    return res["id"]
+        return super(GatewayRestAPI, self).get_cfn_attribute(attribute_name)
+
     def get_physical_resource_id(self, attribute=None, **kwargs):
         return self.props.get("id")
 
@@ -131,6 +142,9 @@ class GatewayRestAPI(GenericBaseModel):
                 client.put_rest_api(
                     restApiId=result["id"], body=to_bytes(body), parameters=api_params
                 )
+
+            props["id"] = result["id"]
+            return result
 
         return {
             "create": {"function": _create},
@@ -183,6 +197,9 @@ class GatewayResource(GenericBaseModel):
     @staticmethod
     def cloudformation_type():
         return "AWS::ApiGateway::Resource"
+
+    def get_physical_resource_id(self, attribute=None, **kwargs):
+        return self.props.get("id")
 
     def fetch_state(self, stack_name, resources):
         props = self.props
@@ -419,7 +436,7 @@ class GatewayStage(GenericBaseModel):
         return result
 
     def get_physical_resource_id(self, attribute=None, **kwargs):
-        return self.props.get("id")
+        return self.props.get("StageName")
 
     @staticmethod
     def get_deploy_templates():
@@ -653,6 +670,9 @@ class GatewayModel(GenericBaseModel):
     def cloudformation_type():
         return "AWS::ApiGateway::Model"
 
+    def get_physical_resource_id(self, attribute=None, **kwargs):
+        return self.props.get("Name")
+
     def fetch_state(self, stack_name, resources):
         client = aws_stack.connect_to_service("apigateway")
         api_id = self.resolve_refs_recursively(stack_name, self.props["RestApiId"], resources)
@@ -678,6 +698,9 @@ class GatewayModel(GenericBaseModel):
 
     @staticmethod
     def get_deploy_templates():
+        def _store_id(result, resource_id, resources, resource_type):
+            resources[resource_id]["PhysicalResourceId"] = result["id"]
+
         return {
             "create": {
                 "function": "create_model",
@@ -689,6 +712,7 @@ class GatewayModel(GenericBaseModel):
                 },
                 "types": {"schema": str},
                 "defaults": {"contentType": "application/json"},
+                "result_handler": _store_id,
             }
         }
 

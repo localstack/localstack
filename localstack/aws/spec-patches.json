@@ -267,6 +267,9 @@
           },
           "ArgumentValue": {
             "shape": "ArgumentValue"
+          },
+          "HostId": {
+            "shape": "HostId"
           }
         },
         "error": {
@@ -437,6 +440,163 @@
         },
         "documentation": "<p>Query-string authentication version 4 requires the X-Amz-Algorithm, X-Amz-Credential, X-Amz-Signature, X-Amz-Date, X-Amz-SignedHeaders, and X-Amz-Expires parameters.</p>",
         "exception": true
+      }
+    },
+    {
+      "op": "add",
+      "path": "/operations/PostObject",
+      "value": {
+        "name":"PostObject",
+        "http":{
+          "method":"POST",
+          "requestUri":"/{Bucket}"
+        },
+        "input":{"shape":"PostObjectRequest"},
+        "output":{"shape":"PostResponse"},
+        "documentationUrl":"http://docs.aws.amazon.com/AmazonS3/latest/API/RESTObjectPOST.html",
+        "documentation":"<p>The POST operation adds an object to a specified bucket by using HTML forms. POST is an alternate form of PUT that enables browser-based uploads as a way of putting objects in buckets. Parameters that are passed to PUT through HTTP Headers are instead passed as form fields to POST in the multipart/form-data encoded message body. To add an object to a bucket, you must have WRITE access on the bucket. Amazon S3 never stores partial objects. If you receive a successful response, you can be confident that the entire object was stored.<p>"
+      }
+    },
+    {
+      "op": "add",
+      "path": "/shapes/PostObjectRequest",
+      "value": {
+        "type":"structure",
+        "required":[
+          "Bucket"
+        ],
+        "members":{
+          "Body":{
+            "shape":"Body",
+            "documentation":"<p>Object data.</p>",
+            "streaming":true
+          },
+          "Bucket":{
+            "shape":"BucketName",
+            "documentation":"<p>The bucket name to which the PUT action was initiated. </p> <p>When using this action with an access point, you must direct requests to the access point hostname. The access point hostname takes the form <i>AccessPointName</i>-<i>AccountId</i>.s3-accesspoint.<i>Region</i>.amazonaws.com. When using this action with an access point through the Amazon Web Services SDKs, you provide the access point ARN in place of the bucket name. For more information about access point ARNs, see <a href=\"https://docs.aws.amazon.com/AmazonS3/latest/userguide/using-access-points.html\">Using access points</a> in the <i>Amazon S3 User Guide</i>.</p> <p>When using this action with Amazon S3 on Outposts, you must direct requests to the S3 on Outposts hostname. The S3 on Outposts hostname takes the form <code> <i>AccessPointName</i>-<i>AccountId</i>.<i>outpostID</i>.s3-outposts.<i>Region</i>.amazonaws.com</code>. When using this action with S3 on Outposts through the Amazon Web Services SDKs, you provide the Outposts bucket ARN in place of the bucket name. For more information about S3 on Outposts ARNs, see <a href=\"https://docs.aws.amazon.com/AmazonS3/latest/userguide/S3onOutposts.html\">Using Amazon S3 on Outposts</a> in the <i>Amazon S3 User Guide</i>.</p>",
+            "location":"uri",
+            "locationName":"Bucket"
+          }
+        },
+        "payload":"Body"
+      }
+    },
+    {
+      "op": "add",
+      "path": "/shapes/PostResponse",
+      "value": {
+        "type":"structure",
+        "members":{
+          "StatusCode": {
+            "shape": "GetObjectResponseStatusCode",
+            "location": "statusCode"
+          },
+          "Location":{
+            "shape":"Location",
+            "documentation":"<p>The URI that identifies the newly created object.</p>"
+          },
+          "LocationHeader":{
+            "shape":"Location",
+            "documentation":"<p>The URI that identifies the newly created object.</p>",
+            "location": "header",
+            "locationName": "Location"
+          },
+          "Bucket":{
+            "shape":"BucketName",
+            "documentation":"<p>The name of the bucket that contains the newly created object. Does not return the access point ARN or access point alias if used.</p> <p>When using this action with an access point, you must direct requests to the access point hostname. The access point hostname takes the form <i>AccessPointName</i>-<i>AccountId</i>.s3-accesspoint.<i>Region</i>.amazonaws.com. When using this action with an access point through the Amazon Web Services SDKs, you provide the access point ARN in place of the bucket name. For more information about access point ARNs, see <a href=\"https://docs.aws.amazon.com/AmazonS3/latest/userguide/using-access-points.html\">Using access points</a> in the <i>Amazon S3 User Guide</i>.</p> <p>When using this action with Amazon S3 on Outposts, you must direct requests to the S3 on Outposts hostname. The S3 on Outposts hostname takes the form <code> <i>AccessPointName</i>-<i>AccountId</i>.<i>outpostID</i>.s3-outposts.<i>Region</i>.amazonaws.com</code>. When using this action with S3 on Outposts through the Amazon Web Services SDKs, you provide the Outposts bucket ARN in place of the bucket name. For more information about S3 on Outposts ARNs, see <a href=\"https://docs.aws.amazon.com/AmazonS3/latest/userguide/S3onOutposts.html\">Using Amazon S3 on Outposts</a> in the <i>Amazon S3 User Guide</i>.</p>"
+          },
+          "Key":{
+            "shape":"ObjectKey",
+            "documentation":"<p>The object key of the newly created object.</p>"
+          },
+          "Expiration": {
+            "shape": "Expiration",
+            "documentation": "<p>If the expiration is configured for the object (see <a href=\"https://docs.aws.amazon.com/AmazonS3/latest/API/API_PutBucketLifecycleConfiguration.html\">PutBucketLifecycleConfiguration</a>), the response includes this header. It includes the <code>expiry-date</code> and <code>rule-id</code> key-value pairs that provide information about object expiration. The value of the <code>rule-id</code> is URL-encoded.</p>",
+            "location": "header",
+            "locationName": "x-amz-expiration"
+          },
+          "ETag":{
+            "shape":"ETag",
+            "documentation":"<p>Entity tag that identifies the newly created object's data. Objects with different object data will have different entity tags. The entity tag is an opaque string. The entity tag may or may not be an MD5 digest of the object data. If the entity tag is not an MD5 digest of the object data, it will contain one or more nonhexadecimal characters and/or will consist of less than 32 or more than 32 hexadecimal digits. For more information about how the entity tag is calculated, see <a href=\"https://docs.aws.amazon.com/AmazonS3/latest/userguide/checking-object-integrity.html\">Checking object integrity</a> in the <i>Amazon S3 User Guide</i>.</p>"
+          },
+          "ETagHeader":{
+            "shape":"ETag",
+            "documentation":"<p>Entity tag that identifies the newly created object's data. Objects with different object data will have different entity tags. The entity tag is an opaque string. The entity tag may or may not be an MD5 digest of the object data. If the entity tag is not an MD5 digest of the object data, it will contain one or more nonhexadecimal characters and/or will consist of less than 32 or more than 32 hexadecimal digits. For more information about how the entity tag is calculated, see <a href=\"https://docs.aws.amazon.com/AmazonS3/latest/userguide/checking-object-integrity.html\">Checking object integrity</a> in the <i>Amazon S3 User Guide</i>.</p>",
+            "location": "header",
+            "locationName": "ETag"
+          },
+          "ChecksumCRC32": {
+            "shape": "ChecksumCRC32",
+            "documentation": "<p>The base64-encoded, 32-bit CRC32 checksum of the object. This will only be present if it was uploaded with the object. With multipart uploads, this may not be a checksum value of the object. For more information about how checksums are calculated with multipart uploads, see <a href=\"https://docs.aws.amazon.com/AmazonS3/latest/userguide/checking-object-integrity.html#large-object-checksums\"> Checking object integrity</a> in the <i>Amazon S3 User Guide</i>.</p>",
+            "location": "header",
+            "locationName": "x-amz-checksum-crc32"
+          },
+          "ChecksumCRC32C": {
+            "shape": "ChecksumCRC32C",
+            "documentation": "<p>The base64-encoded, 32-bit CRC32C checksum of the object. This will only be present if it was uploaded with the object. With multipart uploads, this may not be a checksum value of the object. For more information about how checksums are calculated with multipart uploads, see <a href=\"https://docs.aws.amazon.com/AmazonS3/latest/userguide/checking-object-integrity.html#large-object-checksums\"> Checking object integrity</a> in the <i>Amazon S3 User Guide</i>.</p>",
+            "location": "header",
+            "locationName": "x-amz-checksum-crc32c"
+          },
+          "ChecksumSHA1": {
+            "shape": "ChecksumSHA1",
+            "documentation": "<p>The base64-encoded, 160-bit SHA-1 digest of the object. This will only be present if it was uploaded with the object. With multipart uploads, this may not be a checksum value of the object. For more information about how checksums are calculated with multipart uploads, see <a href=\"https://docs.aws.amazon.com/AmazonS3/latest/userguide/checking-object-integrity.html#large-object-checksums\"> Checking object integrity</a> in the <i>Amazon S3 User Guide</i>.</p>",
+            "location": "header",
+            "locationName": "x-amz-checksum-sha1"
+          },
+          "ChecksumSHA256": {
+            "shape": "ChecksumSHA256",
+            "documentation": "<p>The base64-encoded, 256-bit SHA-256 digest of the object. This will only be present if it was uploaded with the object. With multipart uploads, this may not be a checksum value of the object. For more information about how checksums are calculated with multipart uploads, see <a href=\"https://docs.aws.amazon.com/AmazonS3/latest/userguide/checking-object-integrity.html#large-object-checksums\"> Checking object integrity</a> in the <i>Amazon S3 User Guide</i>.</p>",
+            "location": "header",
+            "locationName": "x-amz-checksum-sha256"
+          },
+          "ServerSideEncryption": {
+            "shape": "ServerSideEncryption",
+            "documentation": "<p>If you specified server-side encryption either with an Amazon Web Services KMS key or Amazon S3-managed encryption key in your PUT request, the response includes this header. It confirms the encryption algorithm that Amazon S3 used to encrypt the object.</p>",
+            "location": "header",
+            "locationName": "x-amz-server-side-encryption"
+          },
+          "VersionId": {
+            "shape": "ObjectVersionId",
+            "documentation": "<p>Version of the object.</p>",
+            "location": "header",
+            "locationName": "x-amz-version-id"
+          },
+          "SSECustomerAlgorithm": {
+            "shape": "SSECustomerAlgorithm",
+            "documentation": "<p>If server-side encryption with a customer-provided encryption key was requested, the response will include this header confirming the encryption algorithm used.</p>",
+            "location": "header",
+            "locationName": "x-amz-server-side-encryption-customer-algorithm"
+          },
+          "SSECustomerKeyMD5": {
+            "shape": "SSECustomerKeyMD5",
+            "documentation": "<p>If server-side encryption with a customer-provided encryption key was requested, the response will include this header to provide round-trip message integrity verification of the customer-provided encryption key.</p>",
+            "location": "header",
+            "locationName": "x-amz-server-side-encryption-customer-key-MD5"
+          },
+          "SSEKMSKeyId": {
+            "shape": "SSEKMSKeyId",
+            "documentation": "<p>If <code>x-amz-server-side-encryption</code> is present and has the value of <code>aws:kms</code>, this header specifies the ID of the Amazon Web Services Key Management Service (Amazon Web Services KMS) symmetric customer managed key that was used for the object. </p>",
+            "location": "header",
+            "locationName": "x-amz-server-side-encryption-aws-kms-key-id"
+          },
+          "SSEKMSEncryptionContext": {
+            "shape": "SSEKMSEncryptionContext",
+            "documentation": "<p>If present, specifies the Amazon Web Services KMS Encryption Context to use for object encryption. The value of this header is a base64-encoded UTF-8 string holding JSON with the encryption context key-value pairs.</p>",
+            "location": "header",
+            "locationName": "x-amz-server-side-encryption-context"
+          },
+          "BucketKeyEnabled": {
+            "shape": "BucketKeyEnabled",
+            "documentation": "<p>Indicates whether the uploaded object uses an S3 Bucket Key for server-side encryption with Amazon Web Services KMS (SSE-KMS).</p>",
+            "location": "header",
+            "locationName": "x-amz-server-side-encryption-bucket-key-enabled"
+          },
+          "RequestCharged": {
+            "shape": "RequestCharged",
+            "location": "header",
+            "locationName": "x-amz-request-charged"
+          }
+        }
       }
     },
     {
