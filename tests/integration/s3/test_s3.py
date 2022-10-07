@@ -384,6 +384,9 @@ class TestS3:
         snapshot.match("object-attrs-multiparts-2-parts", response)
 
     @pytest.mark.aws_validated
+    @pytest.mark.skip_snapshot_verify(
+        condition=is_old_provider, paths=["$..VersionId", "$..Error.RequestID"]
+    )
     def test_multipart_and_list_parts(self, s3_client, s3_bucket, s3_multipart_upload, snapshot):
         snapshot.add_transformer(
             [
