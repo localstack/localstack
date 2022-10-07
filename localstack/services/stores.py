@@ -38,7 +38,7 @@ from localstack.utils.aws.aws_stack import get_valid_regions_for_service
 
 LOCAL_ATTR_PREFIX = "attr_"
 
-BaseStoreType = TypeVar("BaseStoreType", bound="BaseStore")
+BaseStoreType = TypeVar("BaseStoreType")
 
 
 #

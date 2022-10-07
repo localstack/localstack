@@ -31,7 +31,6 @@ from localstack.services.awslambda import lambda_executors
 from localstack.services.awslambda.event_source_listeners.event_source_listener import (
     EventSourceListener,
 )
-from localstack.services.awslambda.invocation.lambda_util import function_name_from_arn
 from localstack.services.awslambda.lambda_executors import InvocationResult, LambdaContext
 from localstack.services.awslambda.lambda_utils import (
     API_PATH_ROOT,
@@ -43,6 +42,7 @@ from localstack.services.awslambda.lambda_utils import (
     ClientError,
     error_response,
     event_source_arn_matches,
+    function_name_from_arn,
     get_executor_mode,
     get_handler_file_from_name,
     get_lambda_extraction_dir,

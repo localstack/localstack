@@ -1,17 +1,18 @@
+import json
 import logging
-import re
 import shutil
+import tempfile
 import time
 from pathlib import Path
 from tempfile import NamedTemporaryFile
-from typing import Dict, Literal, Optional, Tuple
+from typing import Dict, Literal, Optional
 
 from localstack import config
 from localstack.services.awslambda.invocation.executor_endpoint import (
     ExecutorEndpoint,
     ServiceEndpoint,
 )
-from localstack.services.awslambda.invocation.lambda_models import FunctionVersion
+from localstack.services.awslambda.invocation.lambda_models import IMAGE_MAPPING, FunctionVersion
 from localstack.services.awslambda.lambda_utils import (
     get_container_network_for_lambda,
     get_main_endpoint_from_container,
@@ -21,6 +22,7 @@ from localstack.utils.archives import unzip
 from localstack.utils.container_utils.container_client import ContainerConfiguration
 from localstack.utils.docker_utils import DOCKER_CLIENT as CONTAINER_CLIENT
 from localstack.utils.net import get_free_tcp_port
+from localstack.utils.strings import truncate
 
 LOG = logging.getLogger(__name__)
 
@@ -39,23 +41,9 @@ COPY code/ /var/task
 """
 
 
-# TODO provided runtimes
-# TODO a tad hacky, might cause problems in the future.. just use mapping?
-def get_runtime_split(runtime: str) -> Tuple[str, str]:
-    match = re.match(RUNTIME_REGEX, runtime)
-    if match:
-        runtime, version = match.group("runtime"), match.group("version")
-        # sad exception for .net
-        if runtime == "dotnetcore":
-            runtime = "dotnet"
-            version = f"core{version}"
-        return runtime, version
-    raise ValueError(f"Unknown/unsupported runtime '{runtime}'")
-
-
 def get_path_for_function(function_version: FunctionVersion) -> Path:
     return Path(
-        f"{config.dirs.tmp}/lambda/{function_version.id.qualified_arn().replace(':', '_').replace('$', '_')}/"
+        f"{tempfile.gettempdir()}/lambda/{function_version.id.qualified_arn().replace(':', '_').replace('$', '_')}_{function_version.config.internal_revision}/"
     )
 
 
@@ -68,8 +56,10 @@ def get_image_name_for_function(function_version: FunctionVersion) -> str:
 
 
 def get_image_for_runtime(runtime: str) -> str:
-    runtime, version = get_runtime_split(runtime)
-    return f"{IMAGE_PREFIX}{runtime}:{version}"
+    postfix = IMAGE_MAPPING.get(runtime)
+    if not postfix:
+        raise ValueError(f"Unsupported runtime {runtime}!")
+    return f"{IMAGE_PREFIX}{postfix}"
 
 
 def get_runtime_client_path() -> Path:
@@ -110,38 +100,6 @@ def prepare_image(target_path: Path, function_version: FunctionVersion) -> None:
                 function_version.qualified_arn,
                 e,
             )
-
-
-def prepare_version(function_version: FunctionVersion) -> None:
-    if not function_version.code.zip_file:
-        raise NotImplementedError("Images without zipfile are currently not supported")
-    time_before = time.perf_counter()
-    target_path = get_path_for_function(function_version)
-    target_path.mkdir(parents=True, exist_ok=True)
-    # write code to disk
-    target_code = get_code_path_for_function(function_version)
-    with NamedTemporaryFile() as file:
-        file.write(function_version.code.zip_file)
-        file.flush()
-        unzip(file.name, str(target_code))
-    if config.LAMBDA_PREBUILD_IMAGES:
-        prepare_image(target_path, function_version)
-    LOG.debug("Version preparation took %0.2fms", (time.perf_counter() - time_before) * 1000)
-
-
-def cleanup_version(function_version: FunctionVersion) -> None:
-    function_path = get_path_for_function(function_version)
-    try:
-        shutil.rmtree(function_path)
-    except OSError as e:
-        LOG.debug(
-            "Could not cleanup function %s due to error %s while deleting file %s",
-            function_version.qualified_arn,
-            e.strerror,
-            e.filename,
-        )
-    if config.LAMBDA_PREBUILD_IMAGES:
-        CONTAINER_CLIENT.remove_image(get_image_name_for_function(function_version))
 
 
 class LambdaRuntimeException(Exception):
@@ -203,7 +161,7 @@ class RuntimeExecutor:
                 self.id, str(get_runtime_client_path()), RAPID_ENTRYPOINT
             )
             CONTAINER_CLIENT.copy_into_container(
-                self.id, f"{str(get_code_path_for_function(self.function_version))}/", "/var/task/"
+                self.id, f"{str(get_code_path_for_function(self.function_version))}/.", "/var/task"
             )
 
         CONTAINER_CLIENT.start_container(self.id)
@@ -236,5 +194,44 @@ class RuntimeExecutor:
         return get_container_network_for_lambda()
 
     def invoke(self, payload: Dict[str, str]):
-        LOG.debug("Sending invoke-payload '%s' to executor '%s'", payload, self.id)
+        LOG.debug(
+            "Sending invoke-payload '%s' to executor '%s'",
+            truncate(json.dumps(payload), config.LAMBDA_TRUNCATE_STDOUT),
+            self.id,
+        )
         self.executor_endpoint.invoke(payload)
+
+    @staticmethod
+    def prepare_version(function_version: FunctionVersion) -> None:
+        time_before = time.perf_counter()
+        target_path = get_path_for_function(function_version)
+        target_path.mkdir(parents=True, exist_ok=True)
+        # write code to disk
+        target_code = get_code_path_for_function(function_version)
+        target_code.mkdir(parents=True, exist_ok=True)
+        with NamedTemporaryFile() as file:
+            # TODO use streaming to avoid heavy memory impact of loading zip file, e.g. via s3.download_file
+            file.write(function_version.config.code.get_lambda_archive())
+            file.flush()
+            unzip(file.name, str(target_code))
+        image_name = get_image_for_runtime(function_version.config.runtime)
+        if image_name not in CONTAINER_CLIENT.get_docker_image_names(strip_latest=False):
+            CONTAINER_CLIENT.pull_image(image_name)
+        if config.LAMBDA_PREBUILD_IMAGES:
+            prepare_image(target_path, function_version)
+        LOG.debug("Version preparation took %0.2fms", (time.perf_counter() - time_before) * 1000)
+
+    @staticmethod
+    def cleanup_version(function_version: FunctionVersion) -> None:
+        function_path = get_path_for_function(function_version)
+        try:
+            shutil.rmtree(function_path)
+        except OSError as e:
+            LOG.debug(
+                "Could not cleanup function %s due to error %s while deleting file %s",
+                function_version.qualified_arn,
+                e.strerror,
+                e.filename,
+            )
+        if config.LAMBDA_PREBUILD_IMAGES:
+            CONTAINER_CLIENT.remove_image(get_image_name_for_function(function_version))

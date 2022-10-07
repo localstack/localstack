@@ -1,25 +1,45 @@
 import base64
 import concurrent.futures
-import hashlib
+import dataclasses
+import io
 import logging
+import random
+import uuid
 from concurrent.futures import Executor, Future, ThreadPoolExecutor
+from hashlib import sha256
 from threading import RLock
-from typing import Dict, List, Optional
+from typing import TYPE_CHECKING, Dict, Optional
 
+from localstack.aws.api.lambda_ import (
+    InvalidParameterValueException,
+    InvocationType,
+    LastUpdateStatus,
+    ResourceConflictException,
+    ResourceNotFoundException,
+    State,
+)
+from localstack.services.awslambda.api_utils import (
+    lambda_arn,
+    qualified_lambda_arn,
+    qualifier_is_alias,
+)
 from localstack.services.awslambda.invocation.lambda_models import (
-    Code,
-    Function,
-    FunctionConfigurationMeta,
+    LAMBDA_LIMITS_CODE_SIZE_UNZIPPED_DEFAULT,
     FunctionVersion,
     Invocation,
     InvocationResult,
+    S3Code,
     UpdateStatus,
-    VersionFunctionConfiguration,
-    VersionIdentifier,
+    VersionState,
 )
+from localstack.services.awslambda.invocation.models import lambda_stores
 from localstack.services.awslambda.invocation.version_manager import LambdaVersionManager
-from localstack.services.generic_proxy import RegionBackend
-from localstack.utils.tagging import TaggingService
+from localstack.utils.archives import get_unzipped_size, is_zip_file
+from localstack.utils.aws import aws_stack
+from localstack.utils.strings import to_str
+
+if TYPE_CHECKING:
+    from mypy_boto3_s3 import S3Client
 
 LOG = logging.getLogger(__name__)
 
@@ -27,33 +47,30 @@ LAMBDA_DEFAULT_TIMEOUT_SECONDS = 3
 LAMBDA_DEFAULT_MEMORY_SIZE = 128
 
 
-class LambdaServiceBackend(RegionBackend):
-    # name => Function; Account/region are implicit through the Backend
-    functions: Dict[str, Function] = {}
-    # static tagging service instance
-    TAGS = TaggingService()
-
-
 class LambdaService:
     # mapping from qualified ARN to version manager
-    lambda_version_managers: Dict[str, LambdaVersionManager]
+    lambda_running_versions: Dict[str, LambdaVersionManager]
+    lambda_starting_versions: Dict[str, LambdaVersionManager]
     lambda_version_manager_lock: RLock
-    create_fn_lock: RLock
     task_executor: Executor
 
     def __init__(self) -> None:
-        self.lambda_version_managers = {}
+        self.lambda_running_versions = {}
+        self.lambda_starting_versions = {}
         self.lambda_version_manager_lock = RLock()
-        self.create_fn_lock = RLock()
         self.task_executor = ThreadPoolExecutor()
 
     def stop(self) -> None:
+        """
+        Stop the whole lambda service
+        """
         shutdown_futures = []
-        for version_manager in self.lambda_version_managers.values():
+        for version_manager in self.lambda_running_versions.values():
+            shutdown_futures.append(self.task_executor.submit(version_manager.stop))
+        for version_manager in self.lambda_starting_versions.values():
             shutdown_futures.append(self.task_executor.submit(version_manager.stop))
         concurrent.futures.wait(shutdown_futures, timeout=5)
-        self.task_executor.shutdown()
-        # self.task_executor.shutdown(cancel_futures=True)  # TODO: python 3.9+
+        self.task_executor.shutdown(cancel_futures=True)
 
     def stop_version(self, qualified_arn: str) -> None:
         """
@@ -61,7 +78,9 @@ class LambdaService:
         :param qualified_arn: Qualified arn for the version to stop
         """
         LOG.debug("Stopping version %s", qualified_arn)
-        version_manager = self.lambda_version_managers.pop(qualified_arn)
+        version_manager = self.lambda_running_versions.pop(
+            qualified_arn
+        ) or self.lambda_starting_versions.pop(qualified_arn)
         if not version_manager:
             raise ValueError(f"Unable to find version manager for {qualified_arn}")
         self.task_executor.submit(version_manager.stop)
@@ -72,95 +91,246 @@ class LambdaService:
         :param function_arn: qualified arn for the lambda version
         :return: LambdaVersionManager for the arn
         """
-        version_manager = self.lambda_version_managers.get(function_arn)
+        version_manager = self.lambda_running_versions.get(function_arn)
         if not version_manager:
             raise ValueError(f"Could not find version '{function_arn}'. Is it created?")
 
         return version_manager
 
-    def create_function(
-        self,
-        account_id: str,
-        region_name: str,
-        function_name: str,
-        function_config: VersionFunctionConfiguration,
-        code: Code,
-    ) -> FunctionVersion:
-        state = LambdaServiceBackend.get(region_name)
-        fn = Function(function_name=function_name)
-
-        with self.create_fn_lock:
-            arn = VersionIdentifier(function_name, "$LATEST", region_name, account_id)
-            zip_file_content = code.zip_file
-            code_sha_256 = base64.standard_b64encode(
-                hashlib.sha256(zip_file_content).digest()
-            ).decode("utf-8")
-            version = FunctionVersion(
-                id=arn,
-                qualifier="$LATEST",
-                code=code,
-                config_meta=FunctionConfigurationMeta(
-                    function_arn=arn.qualified_arn(),
-                    revision_id="?",
-                    code_size=len(code.zip_file),
-                    coda_sha256=code_sha_256,
-                    last_modified="asdf",
-                    last_update=UpdateStatus(status="Successful"),
-                ),
-                config=function_config,
-            )
-            fn.versions["$LATEST"] = version
-            state.functions[function_name] = fn
-
-        self.create_function_version(version)
-        return version
-
-    # TODO: is this sync?
-    def delete_function(self, region_name: str, function_name: str):
-        state = LambdaServiceBackend.get(region_name)
-        function = state.functions.pop(function_name)
-        for version in function.versions.values():
-            self.stop_version(qualified_arn=version.id.qualified_arn())
-
-    def delete_version(self, region_name: str, function_name: str, version_qualifier: str):
-        state = LambdaServiceBackend.get(region_name)
-        version = state.functions[function_name].versions[version_qualifier]
-        self.stop_version(qualified_arn=version.id.qualified_arn())
-
-    def get_function_version(
-        self, region_name: str, function_name: str, qualifier: Optional[str] = "$LATEST"
-    ) -> FunctionVersion:
-        state = LambdaServiceBackend.get(region_name)
-        return state.functions[function_name].versions[qualifier]
-
-    def list_function_versions(self, region_name: str) -> List[FunctionVersion]:
-        state = LambdaServiceBackend.get(region_name)
-        return [f.latest() for f in state.functions.values()]  # TODO: qualifier
-
     def create_function_version(self, function_version: FunctionVersion) -> None:
+        """
+        Creates a new function version (manager), and puts it in the startup dict
+
+        :param function_version: Function Version to create
+        """
         with self.lambda_version_manager_lock:
             qualified_arn = function_version.id.qualified_arn()
-            version_manager = self.lambda_version_managers.get(qualified_arn)
+            version_manager = self.lambda_starting_versions.get(qualified_arn)
             if version_manager:
-                raise Exception("Version '%s' already created", qualified_arn)
+                raise Exception(
+                    "Version '%s' already starting up and in state %s",
+                    qualified_arn,
+                    version_manager.state,
+                )
             version_manager = LambdaVersionManager(
-                function_arn=qualified_arn,
-                function_version=function_version,
+                function_arn=qualified_arn, function_version=function_version, lambda_service=self
             )
-            self.lambda_version_managers[qualified_arn] = version_manager
-            self.task_executor.submit(version_manager.start)
+            self.lambda_starting_versions[qualified_arn] = version_manager
+        self.task_executor.submit(version_manager.start)
 
     # Commands
     def invoke(
         self,
-        function_arn_qualified: str,
-        invocation_type: str,
+        function_name: str,
+        qualifier: str,
+        region: str,
+        account_id: str,
+        invocation_type: InvocationType | None,
         client_context: Optional[str],
-        payload: bytes,
-    ) -> "Future[InvocationResult]":
-        version_manager = self.get_lambda_version_manager(function_arn_qualified)
+        payload: bytes | None,
+    ) -> Future[InvocationResult] | None:
+        """
+        Invokes a specific version of a lambda
+
+        :param function_name: Function name
+        :param qualifier: Function version qualifier
+        :param region: Region of the function
+        :param account_id: Account id of the function
+        :param invocation_type: Invocation Type
+        :param client_context: Client Context, if applicable
+        :param payload: Invocation payload
+        :return: A future for the invocation result
+        """
+        # Invoked arn (for lambda context) does not have qualifier if not supplied
+        invoked_arn = lambda_arn(
+            function_name=function_name,
+            qualifier=qualifier,
+            account=account_id,
+            region=region,
+        )
+        qualifier = qualifier or "$LATEST"
+        state = lambda_stores[account_id][region]
+        function = state.functions.get(function_name)
+        if qualifier_is_alias(qualifier):
+            alias = function.aliases.get(qualifier)
+            if not alias:
+                raise ResourceNotFoundException(f"Function not found: {invoked_arn}", Type="User")
+            version_qualifier = alias.function_version
+            if alias.routing_configuration:
+                version, probability = next(
+                    iter(alias.routing_configuration.version_weights.items())
+                )
+                if random.random() < probability:
+                    version_qualifier = version
+        else:
+            version_qualifier = qualifier
+
+        # Need the qualified arn to exactly get the target lambda
+        qualified_arn = qualified_lambda_arn(function_name, version_qualifier, account_id, region)
+        try:
+            version_manager = self.get_lambda_version_manager(qualified_arn)
+        except ValueError:
+            version = function.versions.get(version_qualifier)
+            state = version and version.config.state.state
+            raise ResourceConflictException(
+                f"The operation cannot be performed at this time. The function is currently in the following state: {state}"
+            )
+        # empty payloads have to work as well
+        if payload is None:
+            payload = b"{}"
+        if invocation_type is None:
+            invocation_type = "RequestResponse"
+        # TODO payload verification  An error occurred (InvalidRequestContentException) when calling the Invoke operation: Could not parse request body into json: Could not parse payload into json: Unexpected character (''' (code 39)): expected a valid value (JSON String, Number, Array, Object or token 'null', 'true' or 'false')
+        #  at [Source: (byte[])"'test'"; line: 1, column: 2]
+
         return version_manager.invoke(
             invocation=Invocation(
-                payload=payload, client_context=client_context, invocation_type=invocation_type
+                payload=payload,
+                invoked_arn=invoked_arn,
+                client_context=client_context,
+                invocation_type=invocation_type,
             )
         )
+
+    def update_version(self, new_version: FunctionVersion) -> None:
+        """
+        Updates a given version. Will perform a rollover, so the old version will be active until the new one is ready
+        to be invoked
+
+        :param new_version: New version (with the same qualifier as an older one)
+        """
+        if new_version.qualified_arn not in self.lambda_running_versions:
+            raise ValueError(
+                f"Version {new_version.qualified_arn} cannot be updated if an old one is not running"
+            )
+
+        return self.create_function_version(function_version=new_version)
+
+    def update_version_state(
+        self, function_version: FunctionVersion, new_state: VersionState
+    ) -> None:
+        """
+        Update the version state for the given function version.
+
+        This will perform a rollover to the given function if the new state is active and there is a previously
+        running version registered. The old version will be shutdown and its code deleted.
+
+        If the new state is failed, it will abort the update and mark it as failed.
+        If an older version is still running, it will keep running.
+
+        :param function_version: Version reporting the state
+        :param new_state: New state
+        """
+        function_arn = function_version.qualified_arn
+        with self.lambda_version_manager_lock:
+            new_version = self.lambda_starting_versions.pop(function_arn)
+            if not new_version:
+                raise ValueError(
+                    f"Version {function_arn} reporting state {new_state.state} does exist in the starting versions."
+                )
+            if new_state.state == State.Active:
+                old_version = self.lambda_running_versions.get(function_arn, None)
+                self.lambda_running_versions[function_arn] = new_version
+                if old_version:
+                    # if there is an old version, we assume it is an update, and stop the old one
+                    self.task_executor.submit(old_version.stop)
+                update_status = UpdateStatus(status=LastUpdateStatus.Successful)
+            elif new_state.state == State.Failed:
+                update_status = UpdateStatus(status=LastUpdateStatus.Failed)
+                self.task_executor.submit(new_version.stop)
+            else:
+                # TODO what to do if state pending or inactive is supported?
+                self.task_executor.submit(new_version.stop)
+                LOG.error(
+                    "State %s for version %s should not have been reported. New version will be stopped.",
+                    new_state,
+                    function_arn,
+                )
+                return
+
+        # TODO is it necessary to get the version again? Should be locked for modification anyway
+        state = lambda_stores[function_version.id.account][function_version.id.region]
+        current_version = state.functions[function_version.id.function_name].versions[
+            function_version.id.qualifier
+        ]
+        new_version = dataclasses.replace(
+            current_version,
+            config=dataclasses.replace(
+                current_version.config, state=new_state, last_update=update_status
+            ),
+        )
+        state.functions[function_version.id.function_name].versions[
+            function_version.id.qualifier
+        ] = new_version
+
+
+def store_lambda_archive(
+    archive_file: bytes, function_name: str, region_name: str, account_id: str
+) -> S3Code:
+    """
+    Stores the given lambda archive in an internal s3 bucket.
+    Also checks if zipfile matches the specifications
+
+    :param archive_file: Archive file to store
+    :param function_name: function name the archive should be stored for
+    :param region_name: region name the archive should be stored for
+    :param account_id: account id the archive should be stored for
+    :return: S3 Code object representing the archive stored in S3
+    """
+    # check if zip file
+    if not is_zip_file(archive_file):
+        raise InvalidParameterValueException(
+            "Could not unzip uploaded file. Please check your file, then try to upload again.",
+            Type="User",
+        )
+    # check unzipped size
+    unzipped_size = get_unzipped_size(zip_file=io.BytesIO(archive_file))
+    if unzipped_size >= LAMBDA_LIMITS_CODE_SIZE_UNZIPPED_DEFAULT:
+        raise InvalidParameterValueException(
+            f"Unzipped size must be smaller than {LAMBDA_LIMITS_CODE_SIZE_UNZIPPED_DEFAULT} bytes",
+            Type="User",
+        )
+    # store all buckets in us-east-1 for now
+    s3_client: "S3Client" = aws_stack.connect_to_service("s3", region_name="us-east-1")
+    bucket_name = f"awslambda-{region_name}-tasks"
+    # s3 create bucket is idempotent
+    s3_client.create_bucket(Bucket=bucket_name)
+    key = f"snapshots/{account_id}/{function_name}-{uuid.uuid4()}"
+    s3_client.upload_fileobj(Fileobj=io.BytesIO(archive_file), Bucket=bucket_name, Key=key)
+    code_sha256 = to_str(base64.b64encode(sha256(archive_file).digest()))
+    return S3Code(
+        s3_bucket=bucket_name,
+        s3_key=key,
+        s3_object_version=None,
+        code_sha256=code_sha256,
+        code_size=len(archive_file),
+    )
+
+
+def store_s3_bucket_archive(
+    archive_bucket: str,
+    archive_key: str,
+    archive_version: Optional[str],
+    function_name: str,
+    region_name: str,
+    account_id: str,
+) -> S3Code:
+    """
+    Takes the lambda archive stored in the given bucket and stores it in an internal s3 bucket
+
+    :param archive_bucket: Bucket the archive is stored in
+    :param archive_key: Key the archive is stored under
+    :param archive_version: Version of the archive object in the bucket
+    :param function_name: function name the archive should be stored for
+    :param region_name: region name the archive should be stored for
+    :param account_id: account id the archive should be stored for
+    :return: S3 Code object representing the archive stored in S3
+    """
+    s3_client: "S3Client" = aws_stack.connect_to_service("s3")
+    kwargs = {"VersionId": archive_version} if archive_version else {}
+    archive_file = s3_client.get_object(Bucket=archive_bucket, Key=archive_key, **kwargs)[
+        "Body"
+    ].read()
+    return store_lambda_archive(
+        archive_file, function_name=function_name, region_name=region_name, account_id=account_id
+    )

@@ -4,7 +4,7 @@ import os
 import tarfile
 import zipfile
 from subprocess import Popen
-from typing import Optional, Union
+from typing import IO, Optional, Union
 
 try:
     from typing import Literal
@@ -25,9 +25,9 @@ def is_zip_file(content):
     return zipfile.is_zipfile(stream)
 
 
-def get_unzipped_size(path: str):
+def get_unzipped_size(zip_file: Union[str, IO[bytes]]):
     """Returns the size of the unzipped file."""
-    with zipfile.ZipFile(path, "r") as zip_ref:
+    with zipfile.ZipFile(zip_file, "r") as zip_ref:
         return sum(f.file_size for f in zip_ref.infolist())
 
 

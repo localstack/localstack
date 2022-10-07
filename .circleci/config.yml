@@ -148,10 +148,10 @@ jobs:
           name: Test ASF Lambda provider
           environment:
             PROVIDER_OVERRIDE_LAMBDA: "asf"
-            TEST_PATH: "tests/integration/awslambda/test_lambda_api.py"
+            TEST_PATH: "tests/integration/awslambda/test_lambda.py tests/integration/awslambda/test_lambda_api.py tests/integration/awslambda/test_lambda_common.py"
             PYTEST_ARGS: "--reruns 3 --junitxml=target/reports/lambda_asf.xml -o junit_suite_name='lambda_asf'"
             COVERAGE_ARGS: "-p"
-          command: make test-coverage || true
+          command: make test-coverage
       - run:
           name: Store coverage results
           command: mv .coverage.* target/coverage/

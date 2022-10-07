@@ -8,8 +8,9 @@ from typing import TYPE_CHECKING, Dict, Literal, Optional
 
 from localstack import config
 from localstack.services.awslambda.invocation.executor_endpoint import ServiceEndpoint
-from localstack.services.awslambda.invocation.lambda_models import FunctionVersion
+from localstack.services.awslambda.invocation.lambda_models import Credentials, FunctionVersion
 from localstack.services.awslambda.invocation.runtime_executor import RuntimeExecutor
+from localstack.utils.aws import aws_stack
 from localstack.utils.strings import to_str
 
 if TYPE_CHECKING:
@@ -71,13 +72,14 @@ class RuntimeEnvironment:
         return f"/aws/lambda/{self.function_version.id.function_name}"
 
     def get_log_stream_name(self) -> str:
-        return f"{date.today():%Y/%m/%d}/[{self.function_version.qualifier}]{self.id}"
+        return f"{date.today():%Y/%m/%d}/[{self.function_version.id.qualifier}]{self.id}"
 
     def get_environment_variables(self) -> Dict[str, str]:
         """
         Returns the environment variable set for the runtime container
         :return: Dict of environment variables
         """
+        credentials = self.get_credentials()
         env_vars = {
             # Runtime API specifics
             "LOCALSTACK_RUNTIME_ID": self.id,
@@ -85,20 +87,20 @@ class RuntimeEnvironment:
             # General Lambda Environment Variables
             "AWS_LAMBDA_LOG_GROUP_NAME": self.get_log_group_name(),
             "AWS_LAMBDA_LOG_STREAM_NAME": self.get_log_stream_name(),
-            "AWS_LAMBDA_FUNCTION_NAME": self.function_version.qualified_arn,  # TODO use name instead of arn
+            "AWS_LAMBDA_FUNCTION_NAME": self.function_version.id.function_name,
             "AWS_LAMBDA_FUNCTION_TIMEOUT": self.function_version.config.timeout,
             "AWS_LAMBDA_FUNCTION_MEMORY_SIZE": self.function_version.config.memory_size,  # TODO use correct memory size
-            "AWS_LAMBDA_FUNCTION_VERSION": self.function_version.qualifier,  # TODO use name instead of arn
-            "AWS_DEFAULT_REGION": self.function_version.qualified_arn,  # TODO use region instead of arn
-            "AWS_REGION": self.function_version.qualified_arn,  # TODO use region instead of arn
+            "AWS_LAMBDA_FUNCTION_VERSION": self.function_version.id.qualifier,
+            "AWS_DEFAULT_REGION": self.function_version.id.region,
+            "AWS_REGION": self.function_version.id.region,
             "TASK_ROOT": "/var/task",  # TODO custom runtimes?
             "RUNTIME_ROOT": "/var/runtime",  # TODO custom runtimes?
             "AWS_LAMBDA_INITIALIZATION_TYPE": self.initialization_type,
             "TZ": ":UTC",  # TODO does this have to match local system time? format?
-            # Access IDs for role TODO make dependent on role arn
-            "AWS_ACCESS_KEY_ID": "test",
-            "AWS_SECRET_ACCESS_KEY": "test",
-            "AWS_SESSION_TOKEN": "test",
+            # Access IDs for role
+            "AWS_ACCESS_KEY_ID": credentials["AccessKeyId"],
+            "AWS_SECRET_ACCESS_KEY": credentials["SecretAccessKey"],
+            "AWS_SESSION_TOKEN": credentials["SessionToken"],
             # TODO xray
             # LocalStack endpoint specifics
             "LOCALSTACK_HOSTNAME": self.runtime_executor.get_endpoint_from_executor(),
@@ -109,7 +111,8 @@ class RuntimeEnvironment:
             env_vars["_HANDLER"] = self.function_version.config.handler
         if self.function_version.config.runtime:
             env_vars["AWS_EXECUTION_ENV"] = f"Aws_Lambda_{self.function_version.config.runtime}"
-        env_vars.update(self.function_version.config.environment)
+        if self.function_version.config.environment:
+            env_vars.update(self.function_version.config.environment)
         return env_vars
 
     # Lifecycle methods
@@ -182,6 +185,16 @@ class RuntimeEnvironment:
             self.status = RuntimeStatus.RUNNING
         invoke_payload = {
             "invoke-id": invocation_event.invocation_id,
+            "invoked-function-arn": invocation_event.invocation.invoked_arn,
             "payload": to_str(invocation_event.invocation.payload),
         }
         self.runtime_executor.invoke(payload=invoke_payload)
+
+    def get_credentials(self) -> Credentials:
+        sts_client = aws_stack.connect_to_service("sts")
+        # TODO we should probably set a maximum alive duration for environments, due to the session expiration
+        return sts_client.assume_role(
+            RoleArn=self.function_version.config.role,
+            RoleSessionName=self.function_version.id.function_name,
+            DurationSeconds=43200,
+        )["Credentials"]
