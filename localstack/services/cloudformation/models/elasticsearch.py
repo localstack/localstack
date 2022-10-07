@@ -21,6 +21,17 @@ class ElasticsearchDomain(GenericBaseModel):
             return aws_stack.elasticsearch_domain_arn(domain_name)
         return domain_name
 
+    def get_cfn_attribute(self, attribute_name):
+        if attribute_name == "DomainArn":
+            domain_name = self._domain_name()
+            return aws_stack.elasticsearch_domain_arn(domain_name)
+        if attribute_name == "DomainEndpoint":
+            domain_status = self.props.get("DomainStatus", {})
+            result = domain_status.get("Endpoint")
+            if result:
+                return result
+        return super(ElasticsearchDomain, self).get_cfn_attribute(attribute_name)
+
     def fetch_state(self, stack_name, resources):
         domain_name = self._domain_name()
         domain_name = self.resolve_refs_recursively(stack_name, domain_name, resources)
