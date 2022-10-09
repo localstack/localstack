@@ -165,3 +165,62 @@ class TestSES:
         api_contents = {msg["Id"]: msg for msg in api_contents["messages"]}
         assert message_id in api_contents
         assert api_contents[message_id] == contents
+
+    def test_clone_receipt_rule_set(self, ses_client):
+        # Test that rule set is cloned properly
+
+        original_rule_set_name = "RuleSetToClone"
+        rule_set_name = "RuleSetToCreate"
+        rule_names = ["MyRule1", "MyRule2"]
+
+        # Create mock rule set called RuleSetToClone
+        ses_client.create_receipt_rule_set(RuleSetName=original_rule_set_name)
+        ses_client.create_receipt_rule(
+            After="",
+            Rule={
+                "Actions": [
+                    {
+                        "S3Action": {
+                            "BucketName": "MyBucket",
+                            "ObjectKeyPrefix": "email",
+                        },
+                    },
+                ],
+                "Enabled": True,
+                "Name": rule_names[0],
+                "ScanEnabled": True,
+                "TlsPolicy": "Optional",
+            },
+            RuleSetName=original_rule_set_name,
+        )
+        ses_client.create_receipt_rule(
+            After="",
+            Rule={
+                "Actions": [
+                    {
+                        "S3Action": {
+                            "BucketName": "MyBucket",
+                            "ObjectKeyPrefix": "template",
+                        },
+                    },
+                ],
+                "Enabled": True,
+                "Name": rule_names[1],
+                "ScanEnabled": True,
+                "TlsPolicy": "Optional",
+            },
+            RuleSetName=original_rule_set_name,
+        )
+
+        # Clone RuleSetToClone into RuleSetToCreate
+        ses_client.clone_receipt_rule_set(
+            RuleSetName=rule_set_name, OriginalRuleSetName=original_rule_set_name
+        )
+
+        original_rule_set = ses_client.describe_receipt_rule_set(RuleSetName=original_rule_set_name)
+        rule_set = ses_client.describe_receipt_rule_set(RuleSetName=rule_set_name)
+
+        assert original_rule_set["Metadata"]["Name"] == original_rule_set_name
+        assert rule_set["Metadata"]["Name"] == rule_set_name
+        assert original_rule_set["Rules"] == rule_set["Rules"]
+        assert [x["Name"] for x in rule_set["Rules"]] == rule_names
