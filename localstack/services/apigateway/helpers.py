@@ -551,6 +551,11 @@ def import_api_from_openapi_spec(rest_api: RestAPI, body: Dict, query_params: Di
     """Import an API from an OpenAPI spec document"""
 
     resolved_schema = resolve_references(body)
+
+    # TODO:
+    # 1. validate the "mode" property of the spec document, "merge" or "overwrite"
+    # 2. validate the document type, "swagger" or "openapi"
+
     # XXX for some reason this makes cf tests fail that's why is commented.
     # test_cfn_handle_serverless_api_resource
     # rest_api.name = resolved_schema.get("info", {}).get("title")
@@ -616,7 +621,7 @@ def import_api_from_openapi_spec(rest_api: RestAPI, body: Dict, query_params: Di
         ]:
             return existing[0]
 
-        # construct relative path (without base path), then add method resources for this path
+        # construct relative path (without base path), then add field resources for this path
         rel_path = abs_path.removeprefix(base_path)
         return add_path_methods(rel_path, parts, parent_id=parent_id)
 
@@ -634,13 +639,23 @@ def import_api_from_openapi_spec(rest_api: RestAPI, body: Dict, query_params: Di
 
         paths_dict = resolved_schema["paths"]
         method_paths = paths_dict.get(rel_path, {})
-        for method, method_schema in method_paths.items():
-            method = method.upper()
+        for field, field_schema in method_paths.items():
+            if field in [
+                "parameters",
+                "servers",
+                "description",
+                "summary",
+                "$ref",
+            ] or not isinstance(field_schema, dict):
+                LOG.warning("Ignoring unsupported field %s in path %s", field, rel_path)
+                continue
 
-            method_integration = method_schema.get("x-amazon-apigateway-integration", {})
-            method_resource = create_method_resource(resource, method, method_schema)
+            field = field.upper()
+
+            method_integration = field_schema.get("x-amazon-apigateway-integration", {})
+            method_resource = create_method_resource(resource, field, field_schema)
             method_resource["requestParameters"] = method_integration.get("requestParameters")
-            responses = method_schema.get("responses", {})
+            responses = field_schema.get("responses", {})
             for status_code in responses:
                 response_model = None
                 if model_schema := responses.get(status_code, {}).get("schema", {}):
@@ -658,7 +673,7 @@ def import_api_from_openapi_spec(rest_api: RestAPI, body: Dict, query_params: Di
                 )
 
             integration = Integration(
-                http_method=method,
+                http_method=field,
                 uri=method_integration.get("uri"),
                 integration_type=method_integration.get("type"),
                 passthrough_behavior=method_integration.get("passthroughBehavior"),
@@ -675,7 +690,7 @@ def import_api_from_openapi_spec(rest_api: RestAPI, body: Dict, query_params: Di
                 .get("responseTemplates", None),
                 content_handling=None,
             )
-            resource.resource_methods[method]["methodIntegration"] = integration
+            resource.resource_methods[field]["methodIntegration"] = integration
 
         rest_api.resources[child_id] = resource
         return resource
