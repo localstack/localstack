@@ -11,6 +11,25 @@ from localstack.utils.strings import short_uid
 from localstack.utils.sync import retry, wait_until
 
 
+class TestCloudformationStackApi:
+
+    @pytest.mark.aws_validated
+    def test_cloudformation_stack_delete(self, cfn_client, deploy_cfn_template, ):
+        template_path = os.path.join(os.path.dirname(__file__), "../templates/eventbridge_policy.yaml")
+        event_bus_name = f"bus-{short_uid()}"
+        stack = deploy_cfn_template(
+            template_path=template_path,
+            parameters={"EventBusName": event_bus_name},
+        )
+
+        delete_response = cfn_client.delete_stack(StackName=stack.stack_id)
+        waiter = cfn_client.get_waiter("stack_delete_complete")
+        waiter.wait(StackName=stack.stack_name)
+
+        describe_response = cfn_client.describe_stacks(StackName=stack.stack_id)
+        assert describe_response['Stacks'][0]['StackStatus'] == "DELETE_COMPLETE"
+
+
 def test_create_stack_with_ssm_parameters(cfn_client, ssm_client, sns_client, deploy_cfn_template):
     parameter_name = f"ls-param-{short_uid()}"
     parameter_value = f"ls-param-value-{short_uid()}"
