@@ -1,9 +1,12 @@
 import abc
 import dataclasses
 import logging
+import shutil
+import tempfile
 import threading
 from datetime import datetime
-from typing import TYPE_CHECKING, Dict, Optional, TypedDict
+from pathlib import Path
+from typing import IO, TYPE_CHECKING, Dict, Optional, TypedDict
 
 from botocore.exceptions import ClientError
 
@@ -25,6 +28,7 @@ from localstack.aws.api.lambda_ import (
     TracingMode,
 )
 from localstack.services.awslambda.api_utils import qualified_lambda_arn, unqualified_lambda_arn
+from localstack.utils.archives import unzip
 from localstack.utils.aws import aws_stack
 from localstack.utils.strings import long_uid
 
@@ -71,6 +75,7 @@ class Invocation:
 
 @dataclasses.dataclass(frozen=True)
 class S3Code:
+    id: str
     s3_bucket: str
     s3_key: str
     s3_object_version: str | None
@@ -78,18 +83,73 @@ class S3Code:
     code_size: int
 
     def get_lambda_archive(self) -> bytes:
+        """Get the lambda archive"""
         s3_client: "S3Client" = aws_stack.connect_to_service("s3", region_name="us-east-1")
         kwargs = {"VersionId": self.s3_object_version} if self.s3_object_version else {}
         return s3_client.get_object(Bucket=self.s3_bucket, Key=self.s3_key, **kwargs)["Body"].read()
 
+    def _download_archive_to_file(self, target_file: IO) -> None:
+        """
+        Download the code archive into a given file
+
+        :param target_file: File the code archive should be downloaded into (IO object)
+        """
+        s3_client: "S3Client" = aws_stack.connect_to_service("s3", region_name="us-east-1")
+        extra_args = {"VersionId": self.s3_object_version} if self.s3_object_version else {}
+        s3_client.download_fileobj(
+            Bucket=self.s3_bucket, Key=self.s3_key, Fileobj=target_file, ExtraArgs=extra_args
+        )
+        target_file.flush()
+
     def generate_presigned_url(self) -> str:
+        """
+        Generates a presigned url pointing to the code archive
+        """
         s3_client: "S3Client" = aws_stack.connect_to_service("s3", region_name="us-east-1")
         params = {"Bucket": self.s3_bucket, "Key": self.s3_key}
         if self.s3_object_version:
             params["VersionId"] = self.s3_object_version
         return s3_client.generate_presigned_url("get_object", Params=params)
 
+    def get_unzipped_code_location(self) -> Path:
+        """
+        Get the location of the unzipped archive on disk
+        """
+        return Path(f"{tempfile.gettempdir()}/lambda/{self.s3_bucket}/{self.id}/code")
+
+    def prepare_for_execution(self) -> None:
+        """
+        Unzips the code archive to the proper destination on disk, if not already present
+        """
+        target_path = self.get_unzipped_code_location()
+        if target_path.exists():
+            return
+        target_path.mkdir(parents=True, exist_ok=True)
+        with tempfile.NamedTemporaryFile() as file:
+            self._download_archive_to_file(file)
+            unzip(file.name, str(target_path))
+
+    def destroy_cached(self) -> None:
+        """
+        Destroys the code object on disk, if it was saved on disk before
+        """
+        # delete parent folder to delete the whole code location
+        code_path = self.get_unzipped_code_location().parent
+        try:
+            shutil.rmtree(code_path)
+        except OSError as e:
+            LOG.debug(
+                "Could not cleanup function code path %s due to error %s while deleting file %s",
+                code_path,
+                e.strerror,
+                e.filename,
+            )
+
     def destroy(self) -> None:
+        """
+        Deletes the code object from S3 and the unzipped version from disk
+        """
+        self.destroy_cached()
         s3_client: "S3Client" = aws_stack.connect_to_service("s3", region_name="us-east-1")
         kwargs = {"VersionId": self.s3_object_version} if self.s3_object_version else {}
         try:

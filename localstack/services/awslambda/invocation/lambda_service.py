@@ -295,10 +295,12 @@ def store_lambda_archive(
     bucket_name = f"awslambda-{region_name}-tasks"
     # s3 create bucket is idempotent
     s3_client.create_bucket(Bucket=bucket_name)
-    key = f"snapshots/{account_id}/{function_name}-{uuid.uuid4()}"
+    code_id = f"{function_name}-{uuid.uuid4()}"
+    key = f"snapshots/{account_id}/{id}"
     s3_client.upload_fileobj(Fileobj=io.BytesIO(archive_file), Bucket=bucket_name, Key=key)
     code_sha256 = to_str(base64.b64encode(sha256(archive_file).digest()))
     return S3Code(
+        id=code_id,
         s3_bucket=bucket_name,
         s3_key=key,
         s3_object_version=None,
