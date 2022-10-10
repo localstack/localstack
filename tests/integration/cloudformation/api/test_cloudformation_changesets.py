@@ -19,7 +19,7 @@ def test_create_change_set_without_parameters(
     stack_name = f"stack-{short_uid()}"
     change_set_name = f"change-set-{short_uid()}"
 
-    template_path = os.path.join(os.path.dirname(__file__), "../templates/sns_topic_simple.yaml")
+    template_path = os.path.join(os.path.dirname(__file__), "../../templates/sns_topic_simple.yaml")
     response = cfn_client.create_change_set(
         StackName=stack_name,
         ChangeSetName=change_set_name,
@@ -80,7 +80,7 @@ def test_create_change_set_update_without_parameters(
     change_set_name = f"change-set-{short_uid()}"
     change_set_name2 = f"change-set-{short_uid()}"
 
-    template_path = os.path.join(os.path.dirname(__file__), "../templates/sns_topic_simple.yaml")
+    template_path = os.path.join(os.path.dirname(__file__), "../../templates/sns_topic_simple.yaml")
 
     response = cfn_client.create_change_set(
         StackName=stack_name,
@@ -147,7 +147,7 @@ def test_create_change_set_create_existing(
     stack_name = f"stack-{short_uid()}"
     change_set_name = f"change-set-{short_uid()}"
 
-    template_path = os.path.join(os.path.dirname(__file__), "../templates/sns_topic_simple.yaml")
+    template_path = os.path.join(os.path.dirname(__file__), "../../templates/sns_topic_simple.yaml")
     response = cfn_client.create_change_set(
         StackName=stack_name,
         ChangeSetName=change_set_name,
@@ -179,7 +179,7 @@ def test_create_change_set_create_existing(
 def test_create_change_set_update_nonexisting(cfn_client):
     stack_name = f"stack-{short_uid()}"
     change_set_name = f"change-set-{short_uid()}"
-    template_path = os.path.join(os.path.dirname(__file__), "../templates/sns_topic_simple.yaml")
+    template_path = os.path.join(os.path.dirname(__file__), "../../templates/sns_topic_simple.yaml")
 
     with pytest.raises(Exception) as ex:
         response = cfn_client.create_change_set(
@@ -206,7 +206,7 @@ def test_create_change_set_import(cfn_client):
 def test_create_change_set_invalid_params(cfn_client):
     stack_name = f"stack-{short_uid()}"
     change_set_name = f"change-set-{short_uid()}"
-    template_path = os.path.join(os.path.dirname(__file__), "../templates/sns_topic_simple.yaml")
+    template_path = os.path.join(os.path.dirname(__file__), "../../templates/sns_topic_simple.yaml")
     with pytest.raises(ClientError) as ex:
         cfn_client.create_change_set(
             StackName=stack_name,
@@ -221,7 +221,7 @@ def test_create_change_set_invalid_params(cfn_client):
 def test_create_change_set_missing_stackname(cfn_client):
     """in this case boto doesn't even let us send the request"""
     change_set_name = f"change-set-{short_uid()}"
-    template_path = os.path.join(os.path.dirname(__file__), "../templates/sns_topic_simple.yaml")
+    template_path = os.path.join(os.path.dirname(__file__), "../../templates/sns_topic_simple.yaml")
     with pytest.raises(Exception):
         cfn_client.create_change_set(
             StackName="",
@@ -251,7 +251,7 @@ def test_create_change_set_with_ssm_parameter(
 
     ssm_client.put_parameter(Name=parameter_name, Value=parameter_value, Type="String")
     template_path = os.path.join(
-        os.path.dirname(__file__), "../templates/dynamicparameter_ssm_string.yaml"
+        os.path.dirname(__file__), "../../templates/dynamicparameter_ssm_string.yaml"
     )
     template_rendered = render_template(
         load_template_raw(template_path), parameter_name=parameter_name
@@ -333,7 +333,7 @@ def test_execute_change_set(
 
     stack_name = f"stack-{short_uid()}"
     change_set_name = f"change-set-{short_uid()}"
-    template_path = os.path.join(os.path.dirname(__file__), "../templates/sns_topic_simple.yaml")
+    template_path = os.path.join(os.path.dirname(__file__), "../../templates/sns_topic_simple.yaml")
     template_body = load_template_raw(template_path)
 
     response = cfn_client.create_change_set(
@@ -403,7 +403,7 @@ def test_delete_change_set_exception(cfn_client, snapshot):
 def test_create_and_then_remove_non_supported_resource_change_set(deploy_cfn_template):
     # first deploy cfn with a CodeArtifact resource that is not actually supported
     template_path = os.path.join(
-        os.path.dirname(__file__), "../templates/code_artifact_template.yaml"
+        os.path.dirname(__file__), "../../templates/code_artifact_template.yaml"
     )
     template_body = load_template_raw(template_path)
     stack = deploy_cfn_template(
@@ -413,7 +413,7 @@ def test_create_and_then_remove_non_supported_resource_change_set(deploy_cfn_tem
 
     # removal of CodeArtifact should not throw exception
     template_path = os.path.join(
-        os.path.dirname(__file__), "../templates/code_artifact_remove_template.yaml"
+        os.path.dirname(__file__), "../../templates/code_artifact_remove_template.yaml"
     )
     template_body = load_template_raw(template_path)
     deploy_cfn_template(
@@ -427,7 +427,9 @@ def test_create_and_then_remove_non_supported_resource_change_set(deploy_cfn_tem
 def test_create_and_then_remove_supported_resource_change_set(deploy_cfn_template, s3_client):
     first_bucket_name = f"test-bucket-1-{short_uid()}"
     second_bucket_name = f"test-bucket-2-{short_uid()}"
-    template_path = os.path.join(os.path.dirname(__file__), "../templates/for_removal_setup.yaml")
+    template_path = os.path.join(
+        os.path.dirname(__file__), "../../templates/for_removal_setup.yaml"
+    )
     template_body = load_template_raw(template_path)
 
     stack = deploy_cfn_template(
@@ -443,7 +445,9 @@ def test_create_and_then_remove_supported_resource_change_set(deploy_cfn_templat
     assert first_bucket_name in bucket_names
     assert second_bucket_name in bucket_names
 
-    template_path = os.path.join(os.path.dirname(__file__), "../templates/for_removal_remove.yaml")
+    template_path = os.path.join(
+        os.path.dirname(__file__), "../../templates/for_removal_remove.yaml"
+    )
     template_body = load_template_raw(template_path)
     deploy_cfn_template(
         is_update=True,
@@ -479,7 +483,7 @@ def test_empty_changeset(cfn_client, snapshot, cleanups):
     change_set_name_nochange = f"change-set-nochange-{short_uid()}"
     cleanups.append(lambda: cfn_client.delete_stack(StackName=stack_name))
 
-    template_path = os.path.join(os.path.dirname(__file__), "../templates/cdkmetadata.yaml")
+    template_path = os.path.join(os.path.dirname(__file__), "../../templates/cdkmetadata.yaml")
     template = load_template_file(template_path)
 
     # 1. create change set and execute
@@ -554,7 +558,7 @@ def test_deleted_changeset(cfn_client, snapshot, cleanups):
 
     snapshot.add_transformer(snapshot.transform.regex(stack_name, "<stack-name>"))
 
-    template_path = os.path.join(os.path.dirname(__file__), "../templates/cdkmetadata.yaml")
+    template_path = os.path.join(os.path.dirname(__file__), "../../templates/cdkmetadata.yaml")
     template = load_template_file(template_path)
 
     # 1. create change set

@@ -13,7 +13,7 @@ from localstack.utils.strings import short_uid
 @pytest.mark.aws_validated
 def test_stack_time_attributes(cfn_client, is_stack_updated, deploy_cfn_template):
     api_name = f"test_{short_uid()}"
-    template_path = os.path.join(os.path.dirname(__file__), "../templates/simple_api.yaml")
+    template_path = os.path.join(os.path.dirname(__file__), "../../templates/simple_api.yaml")
 
     deployed = deploy_cfn_template(
         template_path=template_path,
@@ -96,7 +96,7 @@ def test_stack_update_resources(
     snapshot.add_transformer(snapshot.transform.key_value("PhysicalResourceId"))
 
     api_name = f"test_{short_uid()}"
-    template_path = os.path.join(os.path.dirname(__file__), "../templates/simple_api.yaml")
+    template_path = os.path.join(os.path.dirname(__file__), "../../templates/simple_api.yaml")
 
     # create stack
     deployed = deploy_cfn_template(template_path=template_path, parameters={"ApiName": api_name})
@@ -126,7 +126,9 @@ def test_stack_update_resources(
 
 
 def test_list_stack_resources_for_removed_resource(cfn_client, deploy_cfn_template):
-    template_path = os.path.join(os.path.dirname(__file__), "../templates/eventbridge_policy.yaml")
+    template_path = os.path.join(
+        os.path.dirname(__file__), "../../templates/eventbridge_policy.yaml"
+    )
     event_bus_name = f"bus-{short_uid()}"
     stack = deploy_cfn_template(
         template_path=template_path,
@@ -163,7 +165,7 @@ def test_list_stack_resources_for_removed_resource(cfn_client, deploy_cfn_templa
 
 
 def test_update_stack_with_same_template(cfn_client, deploy_cfn_template):
-    template = load_file(os.path.join(os.path.dirname(__file__), "../templates/fifo_queue.json"))
+    template = load_file(os.path.join(os.path.dirname(__file__), "../../templates/fifo_queue.json"))
     stack = deploy_cfn_template(template=template)
 
     with pytest.raises(Exception) as ctx:  # TODO: capture proper exception
@@ -180,7 +182,9 @@ def test_list_events_after_deployment(cfn_client, deploy_cfn_template, snapshot)
     snapshot.add_transformer(SortingTransformer("StackEvents", lambda x: x["Timestamp"]))
     snapshot.add_transformer(snapshot.transform.cloudformation_api())
     stack = deploy_cfn_template(
-        template_path=os.path.join(os.path.dirname(__file__), "../templates/sns_topic_simple.yaml")
+        template_path=os.path.join(
+            os.path.dirname(__file__), "../../templates/sns_topic_simple.yaml"
+        )
     )
     response = cfn_client.describe_stack_events(StackName=stack.stack_name)
     snapshot.match("events", response)
