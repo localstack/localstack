@@ -27,6 +27,31 @@ E = TypeVar("E")
 RequestArguments = Mapping[str, Any]
 
 
+class RegexConverter(BaseConverter):
+    """
+    A converter that can be used to inject a regex as parameter, e.g., ``path=/<regex('[a-z]+'):my_var>``.
+    """
+
+    def __init__(self, map: "Map", *args: Any, **kwargs: Any) -> None:
+        super().__init__(map, *args, **kwargs)
+        self.regex = args[0]
+
+
+class PortConverter(BaseConverter):
+    """
+    Useful to optionally match ports for host patterns, like ``localstack.localhost.cloud<port:port>``. Notice how you
+    don't need to specify the colon. The regex matches it if the port is there, and will remove the colon if matched.
+    The converter converts the port to an int, or returns None if there's no port in the input string.
+    """
+
+    regex = r"(:[0-9]{1,5})?"
+
+    def to_python(self, value: str) -> Any:
+        if value:
+            return int(value[1:])
+        return None
+
+
 class Dispatcher(Protocol[E]):
     """
     A Dispatcher is called when a URL route matches a request. The dispatcher is responsible for appropriately
@@ -120,12 +145,22 @@ class Router(Generic[E]):
     logic via the ``Dispatcher`` Protocol.
     """
 
+    default_converters: Dict[str, Type[BaseConverter]] = {
+        "regex": RegexConverter,
+        "port": PortConverter,
+    }
+
     url_map: Map
     dispatcher: Dispatcher[E]
 
     def __init__(
         self, dispatcher: Dispatcher[E] = None, converters: Mapping[str, Type[BaseConverter]] = None
     ):
+        if converters is None:
+            converters = dict(self.default_converters)
+        else:
+            converters = {**self.default_converters, **converters}
+
         self.url_map = Map(
             host_matching=True, strict_slashes=False, converters=converters, redirect_defaults=False
         )
@@ -259,9 +294,3 @@ class Router(Generic[E]):
             return fn
 
         return wrapper
-
-
-class RegexConverter(BaseConverter):
-    def __init__(self, map: "Map", *args: Any, **kwargs: Any) -> None:
-        super().__init__(map, *args, **kwargs)
-        self.regex = args[0]
