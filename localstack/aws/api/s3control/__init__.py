@@ -196,10 +196,15 @@ class NetworkOrigin(str):
 class ObjectLambdaAllowedFeature(str):
     GetObject_Range = "GetObject-Range"
     GetObject_PartNumber = "GetObject-PartNumber"
+    HeadObject_Range = "HeadObject-Range"
+    HeadObject_PartNumber = "HeadObject-PartNumber"
 
 
 class ObjectLambdaTransformationConfigurationAction(str):
     GetObject = "GetObject"
+    HeadObject = "HeadObject"
+    ListObjects = "ListObjects"
+    ListObjectsV2 = "ListObjectsV2"
 
 
 class OperationName(str):
