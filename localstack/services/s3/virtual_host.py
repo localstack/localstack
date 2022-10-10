@@ -6,6 +6,7 @@ from localstack.constants import LOCALHOST_HOSTNAME
 from localstack.http import Request, Response, Router
 from localstack.http.dispatcher import Handler
 from localstack.http.proxy import Proxy
+from localstack.services.s3.utils import S3_VIRTUAL_HOST_FORWARDED_HEADER
 from localstack.utils.aws.request_context import AWS_REGION_REGEX
 
 LOG = logging.getLogger(__name__)
@@ -41,6 +42,7 @@ class S3VirtualHostProxyHandler:
         forward_to_url = urlsplit(rewritten_url)
         copied_headers = copy.copy(request.headers)
         copied_headers["Host"] = forward_to_url.netloc
+        copied_headers[S3_VIRTUAL_HOST_FORWARDED_HEADER] = request.headers["host"]
         self.proxy.forward_base_url = f"{forward_to_url.scheme}://{forward_to_url.netloc}"
         forwarded = self.proxy.forward(
             request=request, forward_path=forward_to_url.path, headers=copied_headers
