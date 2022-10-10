@@ -5,7 +5,7 @@ import threading
 from collections import defaultdict
 from concurrent.futures import ThreadPoolExecutor
 from enum import Enum
-from typing import Callable, Dict, List, Optional, Tuple
+from typing import Callable, Dict, List, Optional, Set, Tuple
 
 from plugin import Plugin, PluginLifecycleListener, PluginManager, PluginSpec
 from readerwriterlock import rwlock
@@ -522,6 +522,24 @@ class ServicePluginManager(ServiceManager):
             if self.get_active_provider(service) in providers
         ]
 
+    def _get_loaded_service_containers(
+        self, services: Optional[List[str]] = None
+    ) -> List[ServiceContainer]:
+        """
+        Returns all the available service containers.
+        :param services: the list of services to restrict the search to. If empty or NULL then service containers for
+                         all available services are queried.
+        :return: a list of all the available service containers.
+        """
+        service_containers: List[ServiceContainer] = []
+        for service in services or self.list_available():
+            service_container: Optional[ServiceContainer] = super(
+                ServicePluginManager, self
+            ).get_service_container(service)
+            if service_container is not None:
+                service_containers.append(service_container)
+        return service_containers
+
     def list_loaded_services(self) -> List[str]:
         """
         Lists all the services which have a provider that has been initialized
@@ -529,9 +547,8 @@ class ServicePluginManager(ServiceManager):
         :return: a list of service names
         """
         return [
-            service
-            for service in self.list_available()
-            if super(ServicePluginManager, self).get_service_container(service)
+            service_container.service.name()
+            for service_container in self._get_loaded_service_containers()
         ]
 
     def list_active_services(self) -> List[str]:
@@ -540,14 +557,11 @@ class ServicePluginManager(ServiceManager):
 
         :return: the list of active service names.
         """
-        active_services: List[str] = []
-        for service in self.list_available():
-            service_container: Optional[ServiceContainer] = super(
-                ServicePluginManager, self
-            ).get_service_container(service)
-            if service_container is not None and service_container.state == ServiceState.RUNNING:
-                active_services.append(service)
-        return active_services
+        return [
+            service_container.service.name()
+            for service_container in self._get_loaded_service_containers()
+            if service_container.state == ServiceState.RUNNING
+        ]
 
     def exists(self, name: str) -> bool:
         return name in self.list_available()
@@ -655,6 +669,17 @@ class ServicePluginManager(ServiceManager):
                 apis.append(api)
         return apis
 
+    def _stop_services(self, service_containers: List[ServiceContainer]) -> None:
+        """
+        Atomically attempts to stop all given 'ServiceState.STARTING' and 'ServiceState.RUNNING' services.
+        :param service_containers: the list of service containers to be stopped.
+        """
+        target_service_states: Set[ServiceState] = {ServiceState.STARTING, ServiceState.RUNNING}
+        with self._mutex:
+            for service_container in service_containers:
+                if service_container.state in target_service_states:
+                    service_container.stop()
+
     def stop_services(self, services: List[str] = None):
         """
         Stops services for this service manager, if they are currently active.
@@ -662,18 +687,18 @@ class ServicePluginManager(ServiceManager):
 
         :param services: Service names to stop. If not provided, all services for this manager will be stopped.
         """
-        for service_name in services:
-            if self.get_state(service_name) in [ServiceState.STARTING, ServiceState.RUNNING]:
-                service_container = self.get_service_container(service_name)
-                service_container.stop()
+        target_service_containers: List[ServiceContainer] = self._get_loaded_service_containers(
+            services=services
+        )
+        self._stop_services(target_service_containers)
 
     def stop_all_services(self) -> None:
         """
         Stops all services for this service manager, if they are currently active.
         Will not stop services not already started or in and error state.
         """
-        services = self.list_available()
-        self.stop_services(services)
+        target_service_containers: List[ServiceContainer] = self._get_loaded_service_containers()
+        self._stop_services(target_service_containers)
 
 
 # map of service plugins, mapping from service name to plugin details
