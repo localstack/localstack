@@ -15,7 +15,7 @@ jobs:
     steps:
       - uses: actions/checkout@v3
       - id: set-matrix
-        run: echo "::set-output name=matrix::$(python tests/terraform/get-tf-services.py --names)"
+        run: echo "::set-output name=matrix::$(python tests/terraform/get-tf-partitions.py)"
     outputs:
       matrix: ${{ steps.set-matrix.outputs.matrix }}
 
@@ -24,9 +24,8 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        service: ${{ fromJson(needs.prepare_list.outputs.matrix) }}
-        os: [ubuntu-latest]
-    runs-on: ${{ matrix.os }}
+        include: ${{ fromJson(needs.prepare_list.outputs.matrix) }}
+    runs-on: ubuntu-latest
     env:
       DNS_ADDRESS: 0
       AWS_DEFAULT_REGION: us-east-2
@@ -79,7 +78,7 @@ jobs:
 
     - name: Get list of tests for this service
       id: get-list
-      run: echo "::set-output name=testlist::$(python tests/terraform/get-tf-tests.py ${{ matrix.service }})"
+      run: echo "::set-output name=testlist::$(python tests/terraform/get-tf-tests.py ${{ matrix.service }} ${{ matrix.partition }})"
 
     - name: Check Test Lists
       if: ${{ steps.get-list.outputs.testlist == '' }}
