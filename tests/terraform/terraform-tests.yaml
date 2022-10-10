@@ -91,7 +91,7 @@ route53resolver:
     - TestAccRoute53ResolverQueryLogConfig_disappears
     - TestAccRoute53ResolverQueryLogConfig_tags
     - TestValidResolverName
-s3:
+s3_1:
     - TestAccS3BucketVersioning_basic
     - TestAccS3BucketVersioning_disappears
     - TestAccS3BucketVersioning_disappears_bucket
@@ -204,6 +204,7 @@ s3:
     - TestAccS3BucketObject_ignoreTags
     - TestAccS3BucketServerSideEncryptionConfiguration_ApplySEEByDefault_AES256
     - TestAccS3BucketServerSideEncryptionConfiguration_ApplySSEByDefault_KMS
+s3_2:
     - TestAccS3BucketServerSideEncryptionConfiguration_ApplySSEByDefault_UpdateSSEAlgorithm
     - TestAccS3BucketServerSideEncryptionConfiguration_ApplySSEByDefault_KMSWithMasterKeyARN
     - TestAccS3BucketServerSideEncryptionConfiguration_ApplySSEByDefault_KMSWithMasterKeyID
