@@ -1103,9 +1103,9 @@ class TemplateDeployer:
             # TODO: cache condition value in resource details on deployment and use cached value here
             if evaluate_resource_condition(self, resource):
                 delete_resource(self, resource_id)
-                self.stack.set_resource_status(resource_id, "DELETE_COMPLETE")
+                self.stack.set_resource_status(resource_id, "DELETE_COMPLETED")
         # update status
-        self.stack.set_stack_status("DELETE_COMPLETE")
+        self.stack.set_stack_status("DELETE_COMPLETED")
         self.stack.set_time_attribute("DeletionTime")
 
     # ----------------------------
