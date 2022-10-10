@@ -62,6 +62,8 @@ from tests.integration.apigateway_fixtures import (
     create_rest_resource_method,
     delete_rest_api,
     get_rest_api,
+    get_rest_api_resources,
+    put_rest_api,
     update_rest_api_deployment,
 )
 
@@ -2046,6 +2048,62 @@ class TestAPIGateway:
 
         apigw_client.create_deployment(restApiId=api_id, stageName="staging")
         return api_id
+
+    @pytest.mark.parametrize("base_path_type", ["ignore", "prepend", "split"])
+    def test_import_rest_apis(
+        self, base_path_type, apigateway_client, create_rest_apigw, import_apigw
+    ):
+        rest_api_name = f"restapi-{short_uid()}"
+        rest_api_id, _, _ = create_rest_apigw(name=rest_api_name)
+
+        spec_file = load_file(TEST_SWAGGER_FILE_JSON)
+        api_params = {"basepath": base_path_type}
+        rest_api_id, _ = put_rest_api(
+            apigateway_client,
+            restApiId=rest_api_id,
+            body=spec_file,
+            mode="overwrite",
+            parameters=api_params,
+        )
+
+        resources = get_rest_api_resources(apigateway_client, restApiId=rest_api_id)
+        for rv in resources:
+            for method in rv.get("resourceMethods", {}).values():
+                assert method.get("authorizationType") == "request"
+                assert method.get("authorizerId") is not None
+
+        spec_file = load_file(TEST_SWAGGER_FILE_YAML)
+        rest_api_id, _ = put_rest_api(
+            apigateway_client,
+            restApiId=rest_api_id,
+            body=spec_file,
+            mode="overwrite",
+            parameters=api_params,
+        )
+
+        rs = get_rest_api_resources(apigateway_client, restApiId=rest_api_id)
+        expected_resources = 2 if base_path_type == "ignore" else 3
+        assert len(rs) == expected_resources
+
+        abs_path = "/test" if base_path_type == "ignore" else "/base/test"
+        resource = [res for res in rs if res["path"] == abs_path][0]
+        assert "GET" in resource["resourceMethods"]
+        assert "requestParameters" in resource["resourceMethods"]["GET"]
+        assert {"integration.request.header.X-Amz-Invocation-Type": "'Event'"} == resource[
+            "resourceMethods"
+        ]["GET"]["requestParameters"]
+
+        url = path_based_url(api_id=rest_api_id, stage_name="dev", path=abs_path)
+        response = requests.get(url)
+        assert 200 == response.status_code
+
+        spec_file = load_file(TEST_IMPORT_REST_API_FILE)
+        rest_api_id, _, _ = import_apigw(body=spec_file, parameters=api_params)
+        resources = get_rest_api_resources(apigateway_client, restApiId=rest_api_id)
+        paths = [res["path"] for res in resources]
+        assert "/" in paths
+        assert "/pets" in paths
+        assert "/pets/{petId}" in paths
 
 
 def test_import_swagger_api(apigateway_client):
