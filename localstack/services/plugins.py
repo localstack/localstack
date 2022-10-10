@@ -328,6 +328,7 @@ class ServiceManager:
         that it could be transitioned into a running state, then invoking this function will attempt that transition,
         e.g., by starting the service if it is available.
         """
+        LOG.warning(f"REQUIRING: {name}")
         container = self.get_service_container(name)
 
         if not container:
@@ -662,10 +663,12 @@ class ServicePluginManager(ServiceManager):
 
         :param services: Service names to stop. If not provided, all services for this manager will be stopped.
         """
+        LOG.warning(f"STOPPING: {services}")
         for service_name in services:
             if self.get_state(service_name) in [ServiceState.STARTING, ServiceState.RUNNING]:
                 service_container = self.get_service_container(service_name)
                 service_container.stop()
+        LOG.warning(f"DONE STOPPING: {services}")
 
     def stop_all_services(self) -> None:
         """
