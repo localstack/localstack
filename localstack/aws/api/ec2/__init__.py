@@ -954,6 +954,7 @@ class ImageAttributeName(str):
     tpmSupport = "tpmSupport"
     uefiData = "uefiData"
     lastLaunchedTime = "lastLaunchedTime"
+    imdsSupport = "imdsSupport"
 
 
 class ImageState(str):
@@ -970,6 +971,10 @@ class ImageTypeValues(str):
     machine = "machine"
     kernel = "kernel"
     ramdisk = "ramdisk"
+
+
+class ImdsSupportValues(str):
+    v2_0 = "v2.0"
 
 
 class InstanceAttributeName(str):
@@ -2671,6 +2676,7 @@ class VolumeType(str):
 class VpcAttributeName(str):
     enableDnsSupport = "enableDnsSupport"
     enableDnsHostnames = "enableDnsHostnames"
+    enableNetworkAddressUsageMetrics = "enableNetworkAddressUsageMetrics"
 
 
 class VpcCidrBlockStateCode(str):
@@ -9479,6 +9485,7 @@ class Image(TypedDict, total=False):
     BootMode: Optional[BootModeValues]
     TpmSupport: Optional[TpmSupportValues]
     DeprecationTime: Optional[String]
+    ImdsSupport: Optional[ImdsSupportValues]
 
 
 ImageList = List[Image]
@@ -12166,6 +12173,7 @@ class DescribeVpcAttributeResult(TypedDict, total=False):
     VpcId: Optional[String]
     EnableDnsHostnames: Optional[AttributeBooleanValue]
     EnableDnsSupport: Optional[AttributeBooleanValue]
+    EnableNetworkAddressUsageMetrics: Optional[AttributeBooleanValue]
 
 
 VpcClassicLinkIdList = List[VpcId]
@@ -13678,6 +13686,7 @@ class ImageAttribute(TypedDict, total=False):
     TpmSupport: Optional[AttributeValue]
     UefiData: Optional[AttributeValue]
     LastLaunchedTime: Optional[AttributeValue]
+    ImdsSupport: Optional[AttributeValue]
 
 
 class UserBucket(TypedDict, total=False):
@@ -14650,6 +14659,7 @@ class ModifyVpcAttributeRequest(ServiceRequest):
     EnableDnsHostnames: Optional[AttributeBooleanValue]
     EnableDnsSupport: Optional[AttributeBooleanValue]
     VpcId: VpcId
+    EnableNetworkAddressUsageMetrics: Optional[AttributeBooleanValue]
 
 
 class ModifyVpcEndpointConnectionNotificationRequest(ServiceRequest):
@@ -14986,6 +14996,7 @@ class RegisterImageRequest(ServiceRequest):
     BootMode: Optional[BootModeValues]
     TpmSupport: Optional[TpmSupportValues]
     UefiData: Optional[StringType]
+    ImdsSupport: Optional[ImdsSupportValues]
 
 
 class RegisterImageResult(TypedDict, total=False):
@@ -20891,6 +20902,7 @@ class Ec2Api:
         vpc_id: VpcId,
         enable_dns_hostnames: AttributeBooleanValue = None,
         enable_dns_support: AttributeBooleanValue = None,
+        enable_network_address_usage_metrics: AttributeBooleanValue = None,
     ) -> None:
         raise NotImplementedError
 
@@ -21151,6 +21163,7 @@ class Ec2Api:
         boot_mode: BootModeValues = None,
         tpm_support: TpmSupportValues = None,
         uefi_data: StringType = None,
+        imds_support: ImdsSupportValues = None,
     ) -> RegisterImageResult:
         raise NotImplementedError
 
