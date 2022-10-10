@@ -88,6 +88,11 @@ class VelocityUtilApiGateway(VelocityUtil):
         return unquote_plus(s)
 
     def escapeJavaScript(self, s):
+        """
+        Escapes a string that will turn any regular single quotes (') into escaped ones (\').
+        JSON dumps will escape the single quotes.
+        https://docs.aws.amazon.com/apigateway/latest/developerguide/api-gateway-mapping-template-reference.html
+        """
         try:
             return json.dumps(json.loads(s))
         except Exception:
@@ -95,8 +100,6 @@ class VelocityUtilApiGateway(VelocityUtil):
                 s = bool(s)
             elif s not in [True, False] and is_number(s):
                 s = to_number(s)
-            elif isinstance(s, str):
-                return s
         return json.dumps(s)
 
 

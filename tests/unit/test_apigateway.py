@@ -231,7 +231,7 @@ def test_render_template_values():
     for string, expected in escape_tests:
         escaped = util.escapeJavaScript(string)
         assert escaped == expected
-        # we should be able to json.loads in all of the cases!
+        # we should be able to json.loads in all the cases!
         json.loads(escaped)
 
 
