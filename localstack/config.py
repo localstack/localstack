@@ -462,9 +462,6 @@ DEBUG_ANALYTICS = is_env_true("DEBUG_ANALYTICS")
 # whether to eagerly start services
 EAGER_SERVICE_LOADING = is_env_true("EAGER_SERVICE_LOADING")
 
-# whether to enable multi-accounts
-MULTI_ACCOUNTS = is_env_true("MULTI_ACCOUNTS")
-
 # Whether to skip downloading additional infrastructure components (e.g., custom Elasticsearch versions)
 SKIP_INFRA_DOWNLOADS = os.environ.get("SKIP_INFRA_DOWNLOADS", "").strip()
 
@@ -764,7 +761,6 @@ CONFIG_ENV_VARS = [
     "LOG_LICENSE_ISSUES",
     "LS_LOG",
     "MAIN_CONTAINER_NAME",
-    "MULTI_ACCOUNTS",
     "OPENSEARCH_ENDPOINT_STRATEGY",
     "OUTBOUND_HTTP_PROXY",
     "OUTBOUND_HTTPS_PROXY",
