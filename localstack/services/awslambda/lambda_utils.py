@@ -378,7 +378,11 @@ def filter_stream_record(filter_rule: Dict[str, any], record: Dict[str, any]) ->
         else:
             # special case 'exists'
             if isinstance(value, list) and len(value) > 0:
-                append_record = not value[0].get("exists", True)
+                if isinstance(value[0], dict):
+                    append_record = not value[0].get("exists", True)
+                elif value[0] is None:
+                    # support null filter
+                    append_record = True
 
         filter_results.append(append_record)
     return all(filter_results)
