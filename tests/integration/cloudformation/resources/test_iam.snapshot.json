@@ -1,5 +1,5 @@
 {
-  "tests/integration/cloudformation/resources/test_cloudformation_iam.py::test_iam_username_defaultname": {
+  "tests/integration/cloudformation/resources/test_iam.py::test_iam_username_defaultname": {
     "recorded-date": "31-05-2022, 11:29:45",
     "recorded-content": {
       "get_iam_user": {
@@ -17,7 +17,7 @@
       }
     }
   },
-  "tests/integration/cloudformation/resources/test_cloudformation_iam.py::test_managed_policy_with_empty_resource": {
+  "tests/integration/cloudformation/resources/test_iam.py::test_managed_policy_with_empty_resource": {
     "recorded-date": "05-09-2022, 10:01:53",
     "recorded-content": {
       "outputs": {
@@ -47,7 +47,7 @@
       }
     }
   },
-  "tests/integration/cloudformation/resources/test_cloudformation_iam.py::test_iam_user_access_key": {
+  "tests/integration/cloudformation/resources/test_iam.py::test_iam_user_access_key": {
     "recorded-date": "30-08-2022, 13:42:39",
     "recorded-content": {
       "key_outputs": {

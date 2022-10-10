@@ -1,5 +1,5 @@
 {
-  "tests/integration/cloudformation/resources/test_cloudformation_kinesis.py::test_stream_creation": {
+  "tests/integration/cloudformation/resources/test_kinesis.py::test_stream_creation": {
     "recorded-date": "12-09-2022, 14:11:29",
     "recorded-content": {
       "stack_output": {

@@ -1,5 +1,5 @@
 {
-  "tests/integration/cloudformation/resources/test_cloudformation_sam.py::test_sam_policies": {
+  "tests/integration/cloudformation/resources/test_sam.py::test_sam_policies": {
     "recorded-date": "02-06-2022, 13:13:20",
     "recorded-content": {
       "list_attached_role_policies": {
