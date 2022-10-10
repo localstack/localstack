@@ -1,9 +1,5 @@
 {
-<<<<<<< HEAD:tests/integration/cloudformation/resources/test_logs.snapshot.json
   "tests/integration/cloudformation/resources/test_logs.py::test_logstream": {
-=======
-  "tests/integration/cloudformation/resources/test_cloudformation_logs.py::test_logstream": {
->>>>>>> 9131371d (fix errors):tests/integration/cloudformation/resources/test_cloudformation_logs.snapshot.json
     "recorded-date": "29-07-2022, 13:22:53",
     "recorded-content": {
       "outputs": {

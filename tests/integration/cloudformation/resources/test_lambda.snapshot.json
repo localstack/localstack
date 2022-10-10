@@ -1,9 +1,5 @@
 {
-<<<<<<< HEAD:tests/integration/cloudformation/resources/test_lambda.snapshot.json
   "tests/integration/cloudformation/resources/test_lambda.py::test_cfn_function_url": {
-=======
-  "tests/integration/cloudformation/resources/test_cloudformation_lambda.py::test_cfn_function_url": {
->>>>>>> 9131371d (fix errors):tests/integration/cloudformation/resources/test_cloudformation_lambda.snapshot.json
     "recorded-date": "26-08-2022, 16:45:07",
     "recorded-content": {
       "url_resource": {

@@ -1,9 +1,5 @@
 {
-<<<<<<<< HEAD:tests/integration/cloudformation/api/test_changesets.snapshot.json
   "tests/integration/cloudformation/api/test_changesets.py::test_create_change_set_update_without_parameters": {
-========
-  "tests/integration/cloudformation/api/test_cloudformation_changesets.py::test_create_change_set_update_without_parameters": {
->>>>>>>> aa286d5f (reorganize engine tests and api):tests/integration/cloudformation/api/test_cloudformation_changesets.snapshot.json
     "recorded-date": "31-05-2022, 09:32:02",
     "recorded-content": {
       "create_change_set": {
@@ -77,11 +73,7 @@
       }
     }
   },
-<<<<<<<< HEAD:tests/integration/cloudformation/api/test_changesets.snapshot.json
   "tests/integration/cloudformation/api/test_changesets.py::test_empty_changeset": {
-========
-  "tests/integration/cloudformation/api/test_cloudformation_changesets.py::test_empty_changeset": {
->>>>>>>> aa286d5f (reorganize engine tests and api):tests/integration/cloudformation/api/test_cloudformation_changesets.snapshot.json
     "recorded-date": "10-08-2022, 10:52:55",
     "recorded-content": {
       "first_changeset": {
@@ -159,11 +151,7 @@
       "error_execute_failed": "An error occurred (InvalidChangeSetStatus) when calling the ExecuteChangeSet operation: ChangeSet [arn:aws:cloudformation:<region>:111111111111:changeSet/<resource:3>] cannot be executed in its current status of [FAILED]"
     }
   },
-<<<<<<<< HEAD:tests/integration/cloudformation/api/test_changesets.snapshot.json
   "tests/integration/cloudformation/api/test_changesets.py::test_deleted_changeset": {
-========
-  "tests/integration/cloudformation/api/test_cloudformation_changesets.py::test_deleted_changeset": {
->>>>>>>> aa286d5f (reorganize engine tests and api):tests/integration/cloudformation/api/test_cloudformation_changesets.snapshot.json
     "recorded-date": "11-08-2022, 11:11:47",
     "recorded-content": {
       "create": {
@@ -177,21 +165,13 @@
       "postdelete_changeset_notfound": "An error occurred (ChangeSetNotFound) when calling the DescribeChangeSet operation: ChangeSet [arn:aws:cloudformation:<region>:111111111111:changeSet/<resource:1>] does not exist"
     }
   },
-<<<<<<<< HEAD:tests/integration/cloudformation/api/test_changesets.snapshot.json
   "tests/integration/cloudformation/api/test_changesets.py::test_describe_change_set_nonexisting": {
-========
-  "tests/integration/cloudformation/api/test_cloudformation_changesets.py::test_describe_change_set_nonexisting": {
->>>>>>>> aa286d5f (reorganize engine tests and api):tests/integration/cloudformation/api/test_cloudformation_changesets.snapshot.json
     "recorded-date": "11-08-2022, 13:22:01",
     "recorded-content": {
       "exception": "An error occurred (ValidationError) when calling the DescribeChangeSet operation: Stack [somestack] does not exist"
     }
   },
-<<<<<<<< HEAD:tests/integration/cloudformation/api/test_changesets.snapshot.json
   "tests/integration/cloudformation/api/test_changesets.py::test_delete_change_set_exception": {
-========
-  "tests/integration/cloudformation/api/test_cloudformation_changesets.py::test_delete_change_set_exception": {
->>>>>>>> aa286d5f (reorganize engine tests and api):tests/integration/cloudformation/api/test_cloudformation_changesets.snapshot.json
     "recorded-date": "11-08-2022, 14:07:38",
     "recorded-content": {
       "e1": "<ExceptionInfo ClientError('An error occurred (ValidationError) when calling the DeleteChangeSet operation: Stack [nostack] does not exist') tblen=3>",
