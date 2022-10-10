@@ -385,7 +385,7 @@ def _reverse_inject_signature_hmac_v1_query(context: RequestContext) -> Request:
     for header, value in context.request.headers.items():
         header_low = header.lower()
         if header_low.startswith("x-amz-") or header_low in ["content-type", "date", "content-md5"]:
-            new_headers[header] = value
+            new_headers[header_low] = value
 
     # rebuild the query string
     new_query_string = percent_encode_sequence(new_query_string_dict)
@@ -707,7 +707,12 @@ def _is_match_with_signature_fields(
         for p in signature_fields:
             if p not in request_form:
                 LOG.info("POST pre-sign missing fields")
-                argument_name = capitalize_header_name_from_snake_case(p) if "-" in p else p
+                # .capitalize() does not work here, because of AWSAccessKeyId casing
+                argument_name = (
+                    capitalize_header_name_from_snake_case(p)
+                    if "-" in p
+                    else f"{p[0].upper()}{p[1:]}"
+                )
                 ex: InvalidArgument = _create_invalid_argument_exc(
                     message=f"Bucket POST must contain a field named '{argument_name}'.  If it is specified, please check the order of the fields.",
                     name=argument_name,

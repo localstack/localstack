@@ -108,29 +108,42 @@ def s3_create_bucket_with_client(s3_resource):
 
 @pytest.fixture
 def s3_multipart_upload(s3_client):
-    def perform_multipart_upload(bucket, key, data=None, zipped=False, acl=None):
+    def perform_multipart_upload(bucket, key, data=None, zipped=False, acl=None, parts: int = 1):
+        # beware, the last part can be under 5 MiB, but previous parts needs to be between 5MiB and 5GiB
         kwargs = {"ACL": acl} if acl else {}
         multipart_upload_dict = s3_client.create_multipart_upload(Bucket=bucket, Key=key, **kwargs)
         upload_id = multipart_upload_dict["UploadId"]
-
-        # Write contents to memory rather than a file.
         data = data or (5 * short_uid())
-        data = to_bytes(data)
-        upload_file_object = BytesIO(data)
-        if zipped:
-            upload_file_object = BytesIO()
-            with gzip.GzipFile(fileobj=upload_file_object, mode="w") as filestream:
-                filestream.write(data)
+        multipart_upload_parts = []
+        for part in range(parts):
+            # Write contents to memory rather than a file.
+            part_number = part + 1
 
-        response = s3_client.upload_part(
-            Bucket=bucket,
-            Key=key,
-            Body=upload_file_object,
-            PartNumber=1,
-            UploadId=upload_id,
-        )
+            part_data = data or (5 * short_uid())
+            if part_number < parts and ((len_data := len(part_data)) < 5_242_880):
+                # data must be at least 5MiB
+                multiple = 5_242_880 // len_data
+                part_data = part_data * (multiple + 1)
 
-        multipart_upload_parts = [{"ETag": response["ETag"], "PartNumber": 1}]
+            part_data = to_bytes(part_data)
+            upload_file_object = BytesIO(part_data)
+            if zipped:
+                upload_file_object = BytesIO()
+                with gzip.GzipFile(fileobj=upload_file_object, mode="w") as filestream:
+                    filestream.write(part_data)
+
+            response = s3_client.upload_part(
+                Bucket=bucket,
+                Key=key,
+                Body=upload_file_object,
+                PartNumber=part_number,
+                UploadId=upload_id,
+            )
+
+            multipart_upload_parts.append({"ETag": response["ETag"], "PartNumber": part_number})
+            # multiple parts won't work with zip, stop at one
+            if zipped:
+                break
 
         return s3_client.complete_multipart_upload(
             Bucket=bucket,
@@ -337,17 +350,92 @@ class TestS3:
 
     @pytest.mark.aws_validated
     @pytest.mark.xfail(
-        reason="currently not implemented in moto, see https://github.com/localstack/localstack/issues/6217"
+        condition=LEGACY_S3_PROVIDER,
+        reason="currently not implemented in moto, see https://github.com/localstack/localstack/issues/6217",
     )
-    # TODO: see also XML issue in https://github.com/localstack/localstack/issues/6422
-    def test_get_object_attributes(self, s3_client, s3_bucket, snapshot):
+    # parser issue in https://github.com/localstack/localstack/issues/6422 because moto returns wrong response
+    # TODO test versioned KEY
+    def test_get_object_attributes(self, s3_client, s3_bucket, snapshot, s3_multipart_upload):
         s3_client.put_object(Bucket=s3_bucket, Key="data.txt", Body=b"69\n420\n")
         response = s3_client.get_object_attributes(
             Bucket=s3_bucket,
             Key="data.txt",
-            ObjectAttributes=["StorageClass", "ETag", "ObjectSize"],
+            ObjectAttributes=["StorageClass", "ETag", "ObjectSize", "ObjectParts"],
         )
         snapshot.match("object-attrs", response)
+
+        multipart_key = "test-get-obj-attrs-multipart"
+        s3_multipart_upload(bucket=s3_bucket, key=multipart_key, data="upload-part-1" * 5)
+        response = s3_client.get_object_attributes(
+            Bucket=s3_bucket,
+            Key=multipart_key,
+            ObjectAttributes=["StorageClass", "ETag", "ObjectSize", "ObjectParts"],
+        )
+        snapshot.match("object-attrs-multiparts-1-part", response)
+
+        multipart_key = "test-get-obj-attrs-multipart-2"
+        s3_multipart_upload(bucket=s3_bucket, key=multipart_key, data="upload-part-1" * 5, parts=2)
+        response = s3_client.get_object_attributes(
+            Bucket=s3_bucket,
+            Key=multipart_key,
+            ObjectAttributes=["StorageClass", "ETag", "ObjectSize", "ObjectParts"],
+            MaxParts=3,
+        )
+        snapshot.match("object-attrs-multiparts-2-parts", response)
+
+    @pytest.mark.aws_validated
+    @pytest.mark.skip_snapshot_verify(
+        condition=is_old_provider, paths=["$..VersionId", "$..Error.RequestID"]
+    )
+    def test_multipart_and_list_parts(self, s3_client, s3_bucket, s3_multipart_upload, snapshot):
+        snapshot.add_transformer(
+            [
+                snapshot.transform.key_value("Bucket", reference_replacement=False),
+                snapshot.transform.key_value("DisplayName", reference_replacement=False),
+                snapshot.transform.key_value("UploadId"),
+                snapshot.transform.key_value("Location"),
+                snapshot.transform.key_value(
+                    "ID", value_replacement="owner-id", reference_replacement=False
+                ),
+            ]
+        )
+
+        key_name = "test-list-parts"
+        response = s3_client.create_multipart_upload(Bucket=s3_bucket, Key=key_name)
+        snapshot.match("create-multipart", response)
+        upload_id = response["UploadId"]
+
+        list_part = s3_client.list_parts(Bucket=s3_bucket, Key=key_name, UploadId=upload_id)
+        snapshot.match("list-part-after-created", list_part)
+
+        # Write contents to memory rather than a file.
+        data = "upload-part-1" * 5
+        data = to_bytes(data)
+        upload_file_object = BytesIO(data)
+
+        response = s3_client.upload_part(
+            Bucket=s3_bucket,
+            Key=key_name,
+            Body=upload_file_object,
+            PartNumber=1,
+            UploadId=upload_id,
+        )
+        snapshot.match("upload-part", response)
+        list_part = s3_client.list_parts(Bucket=s3_bucket, Key=key_name, UploadId=upload_id)
+        snapshot.match("list-part-after-upload", list_part)
+
+        multipart_upload_parts = [{"ETag": response["ETag"], "PartNumber": 1}]
+
+        response = s3_client.complete_multipart_upload(
+            Bucket=s3_bucket,
+            Key=key_name,
+            MultipartUpload={"Parts": multipart_upload_parts},
+            UploadId=upload_id,
+        )
+        snapshot.match("complete-multipart", response)
+        with pytest.raises(ClientError) as e:
+            s3_client.list_parts(Bucket=s3_bucket, Key=key_name, UploadId=upload_id)
+        snapshot.match("list-part-after-complete-exc", e.value.response)
 
     @pytest.mark.aws_validated
     @pytest.mark.skip_snapshot_verify(
@@ -433,7 +521,10 @@ class TestS3:
         assert policy == json.loads(response["Policy"])
 
     @pytest.mark.aws_validated
-    @pytest.mark.xfail(reason="see https://github.com/localstack/localstack/issues/5769")
+    @pytest.mark.xfail(
+        condition=LEGACY_S3_PROVIDER,
+        reason="see https://github.com/localstack/localstack/issues/5769",
+    )
     def test_put_object_tagging_empty_list(self, s3_client, s3_bucket, snapshot):
         key = "my-key"
         s3_client.put_object(Bucket=s3_bucket, Key=key, Body=b"abcdefgh")
@@ -465,10 +556,14 @@ class TestS3:
         snapshot.match("head-object", response)
 
     @pytest.mark.aws_validated
-    @pytest.mark.xfail(reason="see https://github.com/localstack/localstack/issues/6553")
+    @pytest.mark.xfail(
+        condition=LEGACY_S3_PROVIDER,
+        reason="see https://github.com/localstack/localstack/issues/6553",
+    )
     def test_get_object_after_deleted_in_versioned_bucket(
         self, s3_client, s3_bucket, s3_resource, snapshot
     ):
+        snapshot.add_transformer(snapshot.transform.key_value("VersionId"))
         bucket = s3_resource.Bucket(s3_bucket)
         bucket.Versioning().enable()
 
@@ -858,7 +953,9 @@ class TestS3:
         snapshot.match("get_object", response)
 
     @pytest.mark.aws_validated
-    @pytest.mark.xfail(reason="Get 404 Not Found instead of NoSuchBucket")
+    @pytest.mark.xfail(
+        condition=LEGACY_S3_PROVIDER, reason="Get 404 Not Found instead of NoSuchBucket"
+    )
     @pytest.mark.skip_snapshot_verify(condition=is_old_provider, paths=["$..Error.BucketName"])
     def test_bucket_availability(self, s3_client, snapshot):
         snapshot.add_transformer(snapshot.transform.key_value("BucketName"))
@@ -1386,6 +1483,7 @@ class TestS3:
     @pytest.mark.xfail(reason="Error format is wrong and missing keys")
     def test_s3_invalid_content_md5(self, s3_client, s3_bucket, snapshot):
         # put object with invalid content MD5
+        # TODO: implement ContentMD5 in ASF
         hashes = ["__invalid__", "000", "not base64 encoded checksum", "MTIz"]
         for index, md5hash in enumerate(hashes):
             with pytest.raises(ClientError) as e:
@@ -2422,8 +2520,8 @@ class TestS3PresignedUrl:
             if encoding:
                 headers["Accept-Encoding"] = encoding
             response = requests.delete(url, headers=headers, verify=False)
+            assert not response.content
             assert response.status_code == 204
-            assert not response.text
             # AWS does not send a content-length header at all, legacy localstack sends a 0 length header
             assert response.headers.get("content-length") in [
                 "0",
@@ -2673,6 +2771,7 @@ class TestS3PresignedUrl:
             data="test_data",
             headers={"Content-Type": "text/plain"},
         )
+        assert not response.content
         assert response.status_code == 200
 
         response = requests.put(
@@ -2701,6 +2800,7 @@ class TestS3PresignedUrl:
             data="test_data",
             headers={"Content-Encoding": "identity"},
         )
+        assert not response.content
         assert response.status_code == 200
 
         response = requests.put(
@@ -3211,6 +3311,8 @@ class TestS3PresignedUrl:
             _generate_presigned_url(client, simple_params, expires, client_method="put_object"),
             data=object_data,
         )
+        # body should be empty, and it will show us the exception if it's not
+        assert not response.content
         assert response.status_code == 200
 
         params = {
@@ -3226,6 +3328,7 @@ class TestS3PresignedUrl:
             data=object_data,
             headers={"Content-Type": "text/plain"},
         )
+        assert not response.content
         assert response.status_code == 200
 
         # Invalid request
