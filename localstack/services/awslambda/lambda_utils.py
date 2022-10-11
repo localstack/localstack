@@ -12,7 +12,9 @@ from typing import Any, Dict, List, Optional, TypedDict, Union
 from flask import Response
 
 from localstack import config
+from localstack.aws.accounts import get_aws_account_id
 from localstack.aws.api.lambda_ import Runtime
+from localstack.services.awslambda.models import LambdaStore, lambda_stores
 from localstack.utils.aws import aws_stack
 from localstack.utils.aws.aws_models import LambdaFunction
 from localstack.utils.aws.aws_responses import flask_error_response_json
@@ -421,10 +423,8 @@ def validate_filters(filter: FilterCriteria) -> bool:
 
 def get_lambda_event_filters_for_arn(lambda_arn: str, event_arn: str) -> List[Dict]:
     # late import to avoid circular import
-    from localstack.services.awslambda.lambda_api import LambdaRegion
-
     region_name = lambda_arn.split(":")[3]
-    region = LambdaRegion.get(region_name)
+    region = get_lambda_store(region=region_name)
 
     event_filter_criterias = [
         event_source_mapping.get("FilterCriteria")
@@ -440,3 +440,10 @@ def get_lambda_event_filters_for_arn(lambda_arn: str, event_arn: str) -> List[Di
 def function_name_from_arn(arn: str):
     """Extract a function name from a arn/function name"""
     return FUNCTION_NAME_REGEX.match(arn).group("name")
+
+
+def get_lambda_store(account_id: str = None, region: str = None) -> LambdaStore:
+    account_id = account_id or get_aws_account_id()
+    region = region or aws_stack.get_region()
+
+    return lambda_stores[account_id][region]

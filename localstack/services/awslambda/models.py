@@ -17,5 +17,8 @@ class LambdaStore(BaseStore):
     # map ARN strings to url configs
     url_configs: Dict[str, Dict] = LocalAttribute(default=dict)
 
+    # maps Lambda ARNs to layers ARNs configured for that Lambda
+    layers: Dict[str, str] = LocalAttribute(default=dict)
+
 
 lambda_stores = AccountRegionBundle("lambda", LambdaStore)

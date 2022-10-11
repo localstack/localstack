@@ -154,11 +154,11 @@ from localstack.services.awslambda.invocation.lambda_models import (
 )
 from localstack.services.awslambda.invocation.lambda_service import (
     LambdaService,
-    lambda_stores,
     store_lambda_archive,
     store_s3_bucket_archive,
 )
 from localstack.services.awslambda.invocation.models import LambdaStore
+from localstack.services.awslambda.lambda_utils import get_lambda_store
 from localstack.services.plugins import ServiceLifecycleHook
 from localstack.utils.collections import PaginatedList
 from localstack.utils.strings import get_random_hex, long_uid, short_uid, to_bytes, to_str
@@ -184,7 +184,7 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
 
     @staticmethod
     def _get_function(function_name: str, account_id: str, region: str):
-        state = lambda_stores[account_id][region]
+        state = get_lambda_store(account_id, region)
         function = state.functions.get(function_name)
         if not function:
             arn = api_utils.unqualified_lambda_arn(
@@ -202,7 +202,7 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
     def _get_function_version(
         function_name: str, qualifier: str | None, account_id: str, region: str
     ):
-        state = lambda_stores[account_id][region]
+        state = get_lambda_store(account_id, region)
         function = state.functions.get(function_name)
         qualifier_or_latest = qualifier or "$LATEST"
         version = function and function.versions.get(qualifier_or_latest)
@@ -243,7 +243,7 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
                 f"CodeSHA256 ({code_sha256}) is different from current CodeSHA256 in $LATEST ({current_hash}). Please try again with the CodeSHA256 in $LATEST.",
                 Type="User",
             )
-        state = lambda_stores[account_id][region]
+        state = get_lambda_store(account_id, region)
         function = state.functions.get(function_name)
         changes = {}
         if description is not None:
@@ -328,7 +328,7 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
                 f"Value {request.get('Runtime')} at 'runtime' failed to satisfy constraint: Member must satisfy enum value set: [nodejs12.x, provided, nodejs16.x, nodejs14.x, ruby2.7, java11, dotnet6, go1.x, provided.al2, java8, java8.al2, dotnetcore3.1, python3.7, python3.8, python3.9] or be a valid ARN",
                 Type="User",
             )
-        state = lambda_stores[context.account_id][context.region]
+        state = get_lambda_store(context.account_id, context.region)
 
         function_name = request["FunctionName"]
         with self.create_fn_lock:
@@ -418,7 +418,7 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
     ) -> FunctionConfiguration:
         """updates the $LATEST version of the function"""
         function_name = request.get("FunctionName")  # TODO: can this be an ARN too?
-        state = lambda_stores[context.account_id][context.region]
+        state = get_lambda_store(context.account_id, context.region)
 
         if function_name not in state.functions:
             raise ResourceNotFoundException(
@@ -496,7 +496,7 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
         #     self.lambda_service.create_function_version()
 
         function_name = request.get("FunctionName")
-        state = lambda_stores[context.account_id][context.region]
+        state = get_lambda_store(context.account_id, context.region)
         if function_name not in state.functions:
             raise ResourceNotFoundException(
                 f"Function not found: {api_utils.unqualified_lambda_arn(function_name=function_name, region=context.region, account=context.account_id)}",
@@ -561,7 +561,7 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
         function_name: FunctionName,
         qualifier: Qualifier = None,
     ) -> None:
-        state = lambda_stores[context.account_id][context.region]
+        state = get_lambda_store(context.account_id, context.region)
         function_name, qualifier = api_utils.get_name_and_qualifier(
             function_name, qualifier, context.region
         )
@@ -599,7 +599,7 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
         marker: String = None,
         max_items: MaxListItems = None,
     ) -> ListFunctionsResponse:
-        state = lambda_stores[context.account_id][context.region]
+        state = get_lambda_store(context.account_id, context.region)
 
         if function_version and function_version != FunctionVersionApi.ALL:
             raise ValidationException(
@@ -967,7 +967,7 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
         if "EventSourceArn" not in request:
             raise InvalidParameterValueException("Unrecognized event source.", Type="User")
 
-        state = lambda_stores[context.account_id][context.region]
+        state = get_lambda_store(context.account_id, context.region)
         fn_name = request["FunctionName"]
         fn = state.functions.get(fn_name)
         if not fn:
@@ -1000,7 +1000,7 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
         context: RequestContext,
         request: UpdateEventSourceMappingRequest,
     ) -> EventSourceMappingConfiguration:
-        state = lambda_stores[context.account_id][context.region]
+        state = get_lambda_store(context.account_id, context.region)
         uuid = request["UUID"]
         event_source_mapping = state.event_source_mappings.get(uuid)
         if not event_source_mapping:
@@ -1012,7 +1012,7 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
     def delete_event_source_mapping(
         self, context: RequestContext, uuid: String
     ) -> EventSourceMappingConfiguration:
-        state = lambda_stores[context.account_id][context.region]
+        state = get_lambda_store(context.account_id, context.region)
         event_source_mapping = state.event_source_mappings.get(uuid)
         if not event_source_mapping:
             raise ResourceNotFoundException(
@@ -1024,7 +1024,7 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
     def get_event_source_mapping(
         self, context: RequestContext, uuid: String
     ) -> EventSourceMappingConfiguration:
-        state = lambda_stores[context.account_id][context.region]
+        state = get_lambda_store(context.account_id, context.region)
         event_source_mapping = state.event_source_mappings.get(uuid)
         if not event_source_mapping:
             raise ResourceNotFoundException(
@@ -1040,7 +1040,7 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
         marker: String = None,
         max_items: MaxListItems = None,
     ) -> ListEventSourceMappingsResponse:
-        state = lambda_stores[context.account_id][context.region]
+        state = get_lambda_store(context.account_id, context.region)
         esms = PaginatedList(state.event_source_mappings)
         page, token = esms.get_page(
             lambda x: x,
@@ -1065,7 +1065,7 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
         qualifier: FunctionUrlQualifier = None,
         cors: Cors = None,
     ) -> CreateFunctionUrlConfigResponse:
-        state = lambda_stores[context.account_id][context.region]
+        state = get_lambda_store(context.account_id, context.region)
 
         function_name, qualifier = api_utils.get_name_and_qualifier(
             function_name, qualifier, context.region
@@ -1131,7 +1131,7 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
         function_name: FunctionName,
         qualifier: FunctionUrlQualifier = None,
     ) -> GetFunctionUrlConfigResponse:
-        state = lambda_stores[context.account_id][context.region]
+        state = get_lambda_store(context.account_id, context.region)
 
         fn_name, qualifier = api_utils.get_name_and_qualifier(
             function_name, qualifier, context.region
@@ -1165,7 +1165,7 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
         auth_type: FunctionUrlAuthType = None,
         cors: Cors = None,
     ) -> UpdateFunctionUrlConfigResponse:
-        state = lambda_stores[context.account_id][context.region]
+        state = get_lambda_store(context.account_id, context.region)
 
         function_name, qualifier = api_utils.get_name_and_qualifier(
             function_name, qualifier, context.region
@@ -1217,7 +1217,7 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
         function_name: FunctionName,
         qualifier: FunctionUrlQualifier = None,
     ) -> None:
-        state = lambda_stores[context.account_id][context.region]
+        state = get_lambda_store(context.account_id, context.region)
 
         function_name, qualifier = api_utils.get_name_and_qualifier(
             function_name, qualifier, context.region
@@ -1248,7 +1248,7 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
         marker: String = None,
         max_items: MaxItems = None,
     ) -> ListFunctionUrlConfigsResponse:
-        state = lambda_stores[context.account_id][context.region]
+        state = get_lambda_store(context.account_id, context.region)
 
         fn_name = api_utils.get_function_name(function_name, context.region)
         resolved_fn = state.functions.get(fn_name)
@@ -1279,7 +1279,7 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
         context: RequestContext,
         request: AddPermissionRequest,
     ) -> AddPermissionResponse:
-        state = lambda_stores[context.account_id][context.region]
+        state = get_lambda_store(context.account_id, context.region)
         function_name, qualifier = api_utils.get_name_and_qualifier(
             request.get("FunctionName"), request.get("Qualifier"), context.region
         )
@@ -1345,7 +1345,7 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
         qualifier: Qualifier = None,
         revision_id: String = None,  # TODO
     ) -> None:
-        state = lambda_stores[context.account_id][context.region]
+        state = get_lambda_store(context.account_id, context.region)
         function_name, qualifier = api_utils.get_name_and_qualifier(
             function_name, qualifier, context.region
         )
@@ -1387,7 +1387,7 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
         function_name: NamespacedFunctionName,
         qualifier: Qualifier = None,
     ) -> GetPolicyResponse:
-        state = lambda_stores[context.account_id][context.region]
+        state = get_lambda_store(context.account_id, context.region)
         function_name, qualifier = api_utils.get_name_and_qualifier(
             function_name, qualifier, context.region
         )
@@ -1421,7 +1421,7 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
         code_signing_policies: CodeSigningPolicies = None,
     ) -> CreateCodeSigningConfigResponse:
 
-        state = lambda_stores[context.account_id][context.region]
+        state = get_lambda_store(context.account_id, context.region)
         # TODO: can there be duplicates?
         csc_id = f"csc-{get_random_hex(17)}"  # e.g. 'csc-077c33b4c19e26036'
         csc_arn = (
@@ -1444,7 +1444,7 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
         code_signing_config_arn: CodeSigningConfigArn,
         function_name: FunctionName,
     ) -> PutFunctionCodeSigningConfigResponse:
-        state = lambda_stores[context.account_id][context.region]
+        state = get_lambda_store(context.account_id, context.region)
         function_name = api_utils.get_function_name(function_name, context.region)
 
         csc = state.code_signing_configs.get(code_signing_config_arn)
@@ -1472,7 +1472,7 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
         allowed_publishers: AllowedPublishers = None,
         code_signing_policies: CodeSigningPolicies = None,
     ) -> UpdateCodeSigningConfigResponse:
-        state = lambda_stores[context.account_id][context.region]
+        state = get_lambda_store(context.account_id, context.region)
         csc = state.code_signing_configs.get(code_signing_config_arn)
         if not csc:
             raise ResourceNotFoundException(
@@ -1496,7 +1496,7 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
     def get_code_signing_config(
         self, context: RequestContext, code_signing_config_arn: CodeSigningConfigArn
     ) -> GetCodeSigningConfigResponse:
-        state = lambda_stores[context.account_id][context.region]
+        state = get_lambda_store(context.account_id, context.region)
         csc = state.code_signing_configs.get(code_signing_config_arn)
         if not csc:
             raise ResourceNotFoundException(
@@ -1508,7 +1508,7 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
     def get_function_code_signing_config(
         self, context: RequestContext, function_name: FunctionName
     ) -> GetFunctionCodeSigningConfigResponse:
-        state = lambda_stores[context.account_id][context.region]
+        state = get_lambda_store(context.account_id, context.region)
         function_name = api_utils.get_function_name(function_name, context.region)
         fn = state.functions.get(function_name)
         fn_arn = api_utils.unqualified_lambda_arn(function_name, context.account_id, context.region)
@@ -1525,7 +1525,7 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
     def delete_function_code_signing_config(
         self, context: RequestContext, function_name: FunctionName
     ) -> None:
-        state = lambda_stores[context.account_id][context.region]
+        state = get_lambda_store(context.account_id, context.region)
         function_name = api_utils.get_function_name(function_name, context.region)
         fn = state.functions.get(function_name)
         fn_arn = api_utils.unqualified_lambda_arn(function_name, context.account_id, context.region)
@@ -1537,7 +1537,7 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
     def delete_code_signing_config(
         self, context: RequestContext, code_signing_config_arn: CodeSigningConfigArn
     ) -> DeleteCodeSigningConfigResponse:
-        state = lambda_stores[context.account_id][context.region]
+        state = get_lambda_store(context.account_id, context.region)
 
         csc = state.code_signing_configs.get(code_signing_config_arn)
         if not csc:
@@ -1552,7 +1552,7 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
     def list_code_signing_configs(
         self, context: RequestContext, marker: String = None, max_items: MaxListItems = None
     ) -> ListCodeSigningConfigsResponse:
-        state = lambda_stores[context.account_id][context.region]
+        state = get_lambda_store(context.account_id, context.region)
 
         cscs = [api_utils.map_csc(csc) for csc in state.code_signing_configs.values()]
         cscs = PaginatedList(cscs)
@@ -1570,7 +1570,7 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
         marker: String = None,
         max_items: MaxListItems = None,
     ) -> ListFunctionsByCodeSigningConfigResponse:
-        state = lambda_stores[context.account_id][context.region]
+        state = get_lambda_store(context.account_id, context.region)
 
         if code_signing_config_arn not in state.code_signing_configs:
             raise ResourceNotFoundException(
@@ -1600,7 +1600,7 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
         self,
         context: RequestContext,
     ) -> GetAccountSettingsResponse:
-        state = lambda_stores[context.account_id][context.region]
+        state = get_lambda_store(context.account_id, context.region)
         settings = state.settings
 
         fn_count = 0
@@ -1635,7 +1635,7 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
     def _get_provisioned_config(
         self, context: RequestContext, function_name: str, qualifier: str
     ) -> ProvisionedConcurrencyConfiguration | None:
-        state = lambda_stores[context.account_id][context.region]
+        state = get_lambda_store(context.account_id, context.region)
         fn = state.functions.get(function_name)
         if api_utils.qualifier_is_alias(qualifier):
             fn_alias = None
@@ -1673,7 +1673,7 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
         function_name, qualifier = api_utils.get_name_and_qualifier(
             function_name, qualifier, context.region
         )
-        state = lambda_stores[context.account_id][context.region]
+        state = get_lambda_store(context.account_id, context.region)
         fn = state.functions.get(function_name)
 
         provisioned_config = self._get_provisioned_config(context, function_name, qualifier)
@@ -1756,7 +1756,7 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
             )
 
         if api_utils.qualifier_is_alias(qualifier):
-            state = lambda_stores[context.account_id][context.region]
+            state = get_lambda_store(context.account_id, context.region)
             fn = state.functions.get(function_name)
             alias = fn.aliases.get(qualifier)
             fn_arn = api_utils.qualified_lambda_arn(
@@ -1785,7 +1785,7 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
         marker: String = None,
         max_items: MaxProvisionedConcurrencyConfigListItems = None,
     ) -> ListProvisionedConcurrencyConfigsResponse:
-        state = lambda_stores[context.account_id][context.region]
+        state = get_lambda_store(context.account_id, context.region)
         fn = state.functions.get(function_name)
         if fn is None:
             raise ResourceNotFoundException(
@@ -1844,7 +1844,7 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
         function_name, qualifier = api_utils.get_name_and_qualifier(
             function_name, qualifier, context.region
         )
-        state = lambda_stores[context.account_id][context.region]
+        state = get_lambda_store(context.account_id, context.region)
         fn = state.functions.get(function_name)
 
         provisioned_config = self._get_provisioned_config(context, function_name, qualifier)
@@ -1950,7 +1950,7 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
                 Type="User",
             )
 
-        state = lambda_stores[context.account_id][context.region]
+        state = get_lambda_store(context.account_id, context.region)
         function_name, qualifier = api_utils.get_name_and_qualifier(
             function_name, qualifier, context.region
         )
@@ -1998,7 +1998,7 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
     def get_function_event_invoke_config(
         self, context: RequestContext, function_name: FunctionName, qualifier: Qualifier = None
     ) -> FunctionEventInvokeConfig:
-        state = lambda_stores[context.account_id][context.region]
+        state = get_lambda_store(context.account_id, context.region)
         function_name, qualifier = api_utils.get_name_and_qualifier(
             function_name, qualifier, context.region
         )
@@ -2041,7 +2041,7 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
         marker: String = None,
         max_items: MaxFunctionEventInvokeConfigListItems = None,
     ) -> ListFunctionEventInvokeConfigsResponse:
-        state = lambda_stores[context.account_id][context.region]
+        state = get_lambda_store(context.account_id, context.region)
         fn = state.functions.get(function_name)
         if not fn:
             raise ResourceNotFoundException("The function doesn't exist.", Type="User")
@@ -2075,7 +2075,7 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
         function_name, qualifier = api_utils.get_name_and_qualifier(
             function_name, qualifier, context.region
         )
-        state = lambda_stores[context.account_id][context.region]
+        state = get_lambda_store(context.account_id, context.region)
         fn = state.functions.get(function_name)
         resolved_qualifier = qualifier or "$LATEST"
         fn_arn = api_utils.qualified_lambda_arn(
@@ -2104,7 +2104,7 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
         destination_config: DestinationConfig = None,
     ) -> FunctionEventInvokeConfig:
         # like put but only update single fields via replace
-        state = lambda_stores[context.account_id][context.region]
+        state = get_lambda_store(context.account_id, context.region)
         function_name, qualifier = api_utils.get_name_and_qualifier(
             function_name, qualifier, context.region
         )
@@ -2285,7 +2285,7 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
         reserved_concurrent_executions: ReservedConcurrentExecutions,
     ) -> Concurrency:
         function_name = api_utils.get_function_name(function_name, context.region)
-        state = lambda_stores[context.account_id][context.region]
+        state = get_lambda_store(context.account_id, context.region)
         fn = state.functions.get(function_name)
         if not fn:
             fn_arn = api_utils.qualified_lambda_arn(
@@ -2312,7 +2312,7 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
     def delete_function_concurrency(
         self, context: RequestContext, function_name: FunctionName
     ) -> None:
-        state = lambda_stores[context.account_id][context.region]
+        state = get_lambda_store(context.account_id, context.region)
         fn = state.functions.get(function_name)
         fn.reserved_concurrent_executions = None
 
