@@ -32,7 +32,7 @@ def test_firehose_stack_with_kinesis_as_source(deploy_cfn_template, firehose_cli
         status = firehose_client.describe_delivery_stream(DeliveryStreamName=delivery_stream_name)
         assert status["DeliveryStreamDescription"]["DeliveryStreamStatus"] == "ACTIVE"
 
-    retry(_assert_stream_available, sleep=1, retries=15)
+    retry(_assert_stream_available, sleep=2, retries=15)
 
     response = firehose_client.describe_delivery_stream(DeliveryStreamName=delivery_stream_name)
     assert delivery_stream_name == response["DeliveryStreamDescription"]["DeliveryStreamName"]

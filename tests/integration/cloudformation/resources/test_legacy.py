@@ -422,7 +422,7 @@ class TestCloudFormation:
         role_name = f"role-{short_uid()}"
         function_name = f"func-{short_uid()}"
         package_path = os.path.join(
-            os.path.dirname(__file__), "../awslambda/functions/lambda_echo.js"
+            os.path.dirname(__file__), "../../awslambda/functions/lambda_echo.js"
         )
         template = json.loads(
             load_file(
@@ -531,7 +531,7 @@ class TestCloudFormation:
         key = f"key-{short_uid()}"
 
         package_path = os.path.join(
-            os.path.dirname(__file__), "../awslambda/functions/lambda_echo.js"
+            os.path.dirname(__file__), "../../awslambda/functions/lambda_echo.js"
         )
 
         s3_create_bucket(Bucket=bucket, ACL="public-read")
