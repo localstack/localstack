@@ -93,7 +93,9 @@ def start_thread(method, *args, **kwargs) -> FuncThread:  # TODO: find all usage
     """Start the given method in a background thread, and add the thread to the TMP_THREADS shutdown hook"""
     _shutdown_hook = kwargs.pop("_shutdown_hook", True)
     if not kwargs.get("name"):
-        LOG.debug("start_thread called without providing a custom name") # technically we should add a new level here for *internal* warnings
+        LOG.debug(
+            "start_thread called without providing a custom name"
+        )  # technically we should add a new level here for *internal* warnings
     kwargs.setdefault("name", method.__name__)
     thread = FuncThread(method, *args, **kwargs)
     thread.start()

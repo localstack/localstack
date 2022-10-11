@@ -1,6 +1,6 @@
 import os
-import threading
 import pathlib
+import threading
 from typing import Callable, Optional
 
 from .platform import is_windows
