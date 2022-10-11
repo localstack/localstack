@@ -13,6 +13,7 @@ from localstack.aws.api.ses import (
     Address,
     AddressList,
     AmazonResourceName,
+    CloneReceiptRuleSetResponse,
     ConfigurationSetName,
     DeleteTemplateResponse,
     Destination,
@@ -27,6 +28,7 @@ from localstack.aws.api.ses import (
     MessageTagList,
     NextToken,
     RawMessage,
+    ReceiptRuleSetName,
     SendEmailResponse,
     SendRawEmailResponse,
     SendTemplatedEmailResponse,
@@ -291,3 +293,20 @@ class SesProvider(SesApi, ServiceLifecycleHook):
         )
 
         return SendRawEmailResponse(MessageId=message.id)
+
+    @handler("CloneReceiptRuleSet")
+    def clone_receipt_rule_set(
+        self,
+        context: RequestContext,
+        rule_set_name: ReceiptRuleSetName,
+        original_rule_set_name: ReceiptRuleSetName,
+    ) -> CloneReceiptRuleSetResponse:
+        backend = get_ses_backend(context)
+
+        backend.create_receipt_rule_set(rule_set_name)
+        original_rule_set = backend.describe_receipt_rule_set(original_rule_set_name)
+
+        for rule in original_rule_set:
+            backend.create_receipt_rule(rule_set_name, rule)
+
+        return CloneReceiptRuleSetResponse()
