@@ -1,5 +1,6 @@
 import os
 import threading
+import pathlib
 from typing import Callable, Optional
 
 from .platform import is_windows
@@ -64,11 +65,13 @@ class FileListener:
         if not os.path.isfile(self.file_path):
             raise FileNotFoundError
 
+        file_name = pathlib.Path(self.file_path).name
+
         return ShellCommandThread(
             cmd=["tail", "-f", self.file_path],
             quiet=False,
             log_listener=_log_listener,
-            name="file-listener-tail",
+            name=f"file-listener-tail-{file_name}",
         )
 
     def _create_tailer_thread(self) -> FuncThread:
