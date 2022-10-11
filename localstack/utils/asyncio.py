@@ -51,7 +51,7 @@ class AsyncThread(FuncThread):
     def __init__(self, async_func_gen=None, loop=None):
         """Pass a function that receives an event loop instance and a shutdown event,
         and returns an async function."""
-        FuncThread.__init__(self, self.run_func, None)
+        FuncThread.__init__(self, self.run_func, None, name="asyncio-thread")
         self.async_func_gen = async_func_gen
         self.loop = loop
         self.shutdown_event = None

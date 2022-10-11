@@ -162,6 +162,7 @@ def do_run(
             env_vars=env_vars,
             auto_restart=auto_restart,
             strip_color=strip_color,
+            name="todo_dorun",
         )
         t.start()
         TMP_THREADS.append(t)
@@ -271,7 +272,7 @@ def start_local_api(name, port, api, method, asynchronous=False, listener=None):
         port = get_free_tcp_port()
         PROXY_LISTENERS[api] = (api, port, listener)
     if asynchronous:
-        thread = start_thread(method, port, quiet=True)
+        thread = start_thread(method, port, quiet=True, name=f"aws-api-{api}")
         return thread
     else:
         method(port)

@@ -163,7 +163,8 @@ def publish_message(
                 message_structure,
                 endpoint_attributes,
                 platform_app,
-            )
+            ),
+            name="sns-message_to_endpoint",
         )
         return message_id
 
@@ -179,7 +180,8 @@ def publish_message(
             subscription_arn,
             skip_checks,
             message_attributes,
-        )
+        ),
+        name="sns-message_to_subscribers",
     )
 
     return message_id

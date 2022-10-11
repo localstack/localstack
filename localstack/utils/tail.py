@@ -65,7 +65,10 @@ class FileListener:
             raise FileNotFoundError
 
         return ShellCommandThread(
-            cmd=["tail", "-f", self.file_path], quiet=False, log_listener=_log_listener
+            cmd=["tail", "-f", self.file_path],
+            quiet=False,
+            log_listener=_log_listener,
+            name="file-listener-tail",
         )
 
     def _create_tailer_thread(self) -> FuncThread:
@@ -84,4 +87,4 @@ class FileListener:
             finally:
                 tailer.close()
 
-        return FuncThread(func=_run_follow, on_stop=lambda *_: tailer.close())
+        return FuncThread(func=_run_follow, on_stop=lambda *_: tailer.close(), name="lambda-tailer")
