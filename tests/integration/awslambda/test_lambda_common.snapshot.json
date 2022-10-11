@@ -1,6 +1,6 @@
 {
   "tests/integration/awslambda/test_lambda_common.py::TestLambdaRuntimesCommon::test_introspection_invoke[nodejs12.x]": {
-    "recorded-date": "23-09-2022, 13:01:33",
+    "recorded-date": "11-10-2022, 22:19:21",
     "recorded-content": {
       "create_function_result": {
         "Architectures": [
@@ -130,7 +130,7 @@
     }
   },
   "tests/integration/awslambda/test_lambda_common.py::TestLambdaRuntimesCommon::test_introspection_invoke[nodejs14.x]": {
-    "recorded-date": "23-09-2022, 13:01:35",
+    "recorded-date": "11-10-2022, 22:19:23",
     "recorded-content": {
       "create_function_result": {
         "Architectures": [
@@ -260,7 +260,7 @@
     }
   },
   "tests/integration/awslambda/test_lambda_common.py::TestLambdaRuntimesCommon::test_introspection_invoke[nodejs16.x]": {
-    "recorded-date": "23-09-2022, 13:01:37",
+    "recorded-date": "11-10-2022, 22:19:26",
     "recorded-content": {
       "create_function_result": {
         "Architectures": [
@@ -390,7 +390,7 @@
     }
   },
   "tests/integration/awslambda/test_lambda_common.py::TestLambdaRuntimesCommon::test_introspection_invoke[python3.7]": {
-    "recorded-date": "23-09-2022, 13:01:27",
+    "recorded-date": "11-10-2022, 22:19:12",
     "recorded-content": {
       "create_function_result": {
         "Architectures": [
@@ -514,7 +514,7 @@
     }
   },
   "tests/integration/awslambda/test_lambda_common.py::TestLambdaRuntimesCommon::test_introspection_invoke[python3.8]": {
-    "recorded-date": "23-09-2022, 13:01:30",
+    "recorded-date": "11-10-2022, 22:19:15",
     "recorded-content": {
       "create_function_result": {
         "Architectures": [
@@ -644,7 +644,7 @@
     }
   },
   "tests/integration/awslambda/test_lambda_common.py::TestLambdaRuntimesCommon::test_introspection_invoke[python3.9]": {
-    "recorded-date": "23-09-2022, 13:01:31",
+    "recorded-date": "11-10-2022, 22:19:18",
     "recorded-content": {
       "create_function_result": {
         "Architectures": [
@@ -774,7 +774,7 @@
     }
   },
   "tests/integration/awslambda/test_lambda_common.py::TestLambdaRuntimesCommon::test_introspection_invoke[ruby2.7]": {
-    "recorded-date": "23-09-2022, 13:01:39",
+    "recorded-date": "11-10-2022, 22:19:29",
     "recorded-content": {
       "create_function_result": {
         "Architectures": [
@@ -908,13 +908,13 @@
     }
   },
   "tests/integration/awslambda/test_lambda_common.py::TestLambdaRuntimesCommon::test_introspection_invoke[java8]": {
-    "recorded-date": "23-09-2022, 13:02:25",
+    "recorded-date": "11-10-2022, 22:19:55",
     "recorded-content": {
       "create_function_result": {
         "Architectures": [
           "x86_64"
         ],
-        "CodeSha256": "E+sIJnOtFFV/fm4lu0bnQw3OR4rLWU2OUv/DPuNlWr0=",
+        "CodeSha256": "eVn60S7b09aYSVdmCtubfLRgSaVdfZRpoVMWPWnbwCo=",
         "CodeSize": 13436679,
         "Description": "",
         "Environment": {
@@ -1038,13 +1038,13 @@
     }
   },
   "tests/integration/awslambda/test_lambda_common.py::TestLambdaRuntimesCommon::test_introspection_invoke[java8.al2]": {
-    "recorded-date": "23-09-2022, 13:02:32",
+    "recorded-date": "11-10-2022, 22:20:08",
     "recorded-content": {
       "create_function_result": {
         "Architectures": [
           "x86_64"
         ],
-        "CodeSha256": "E+sIJnOtFFV/fm4lu0bnQw3OR4rLWU2OUv/DPuNlWr0=",
+        "CodeSha256": "eVn60S7b09aYSVdmCtubfLRgSaVdfZRpoVMWPWnbwCo=",
         "CodeSize": 13436679,
         "Description": "",
         "Environment": {
@@ -1166,13 +1166,13 @@
     }
   },
   "tests/integration/awslambda/test_lambda_common.py::TestLambdaRuntimesCommon::test_introspection_invoke[java11]": {
-    "recorded-date": "23-09-2022, 13:02:39",
+    "recorded-date": "11-10-2022, 22:20:18",
     "recorded-content": {
       "create_function_result": {
         "Architectures": [
           "x86_64"
         ],
-        "CodeSha256": "E+sIJnOtFFV/fm4lu0bnQw3OR4rLWU2OUv/DPuNlWr0=",
+        "CodeSha256": "eVn60S7b09aYSVdmCtubfLRgSaVdfZRpoVMWPWnbwCo=",
         "CodeSize": 13436679,
         "Description": "",
         "Environment": {
@@ -1294,14 +1294,14 @@
     }
   },
   "tests/integration/awslambda/test_lambda_common.py::TestLambdaRuntimesCommon::test_introspection_invoke[go1.x]": {
-    "recorded-date": "23-09-2022, 13:05:39",
+    "recorded-date": "11-10-2022, 22:20:57",
     "recorded-content": {
       "create_function_result": {
         "Architectures": [
           "x86_64"
         ],
-        "CodeSha256": "PIwdHHLwNfUpzARan3OTxyqzUdaw+n89bO4d86Ea5wQ=",
-        "CodeSize": 9004315,
+        "CodeSha256": "ElaqZ3vc40BIziwnNowuXMWrN3+4NPjLwMCCv1zfykg=",
+        "CodeSize": 8989841,
         "Description": "",
         "Environment": {
           "Variables": {
@@ -1426,13 +1426,13 @@
     }
   },
   "tests/integration/awslambda/test_lambda_common.py::TestLambdaRuntimesCommon::test_introspection_invoke[dotnet6]": {
-    "recorded-date": "23-09-2022, 13:04:52",
+    "recorded-date": "11-10-2022, 22:20:39",
     "recorded-content": {
       "create_function_result": {
         "Architectures": [
           "x86_64"
         ],
-        "CodeSha256": "qnRjlzrybpb4Dg3g3YzdUwevTupGoRbD0AjkRzsYEGw=",
+        "CodeSha256": "EN2qdeZgTKkfpE37f/UE/xEjmT67XROIiGLW4Ubaxbs=",
         "CodeSize": 31715,
         "Description": "",
         "Environment": {
@@ -1560,13 +1560,13 @@
     }
   },
   "tests/integration/awslambda/test_lambda_common.py::TestLambdaRuntimesCommon::test_introspection_invoke[dotnetcore3.1]": {
-    "recorded-date": "23-09-2022, 13:03:42",
+    "recorded-date": "11-10-2022, 22:20:28",
     "recorded-content": {
       "create_function_result": {
         "Architectures": [
           "x86_64"
         ],
-        "CodeSha256": "NLRw49r7A6ag/fppfYfMdSb0p+sXUV+0GSQ7Ic0D/F4=",
+        "CodeSha256": "dk2zuRfKIAOV3aZPdSvxUKi0pn+l99PNfPZmqHQKgks=",
         "CodeSize": 30454,
         "Description": "",
         "Environment": {
@@ -1686,14 +1686,14 @@
     }
   },
   "tests/integration/awslambda/test_lambda_common.py::TestLambdaRuntimesCommon::test_introspection_invoke[provided]": {
-    "recorded-date": "23-09-2022, 13:07:33",
+    "recorded-date": "11-10-2022, 22:22:27",
     "recorded-content": {
       "create_function_result": {
         "Architectures": [
           "x86_64"
         ],
-        "CodeSha256": "hRp/dQvO/dv9KRTmfhpYMRdAPIdyw8ch2Kgjlv1N3AA=",
-        "CodeSize": 6511132,
+        "CodeSha256": "Y7ZV7rCjWc7PuVjQhLnuakSFU0AKpeZ51/mOfjGtqw0=",
+        "CodeSize": 1877684,
         "Description": "",
         "Environment": {
           "Variables": {
@@ -1808,14 +1808,14 @@
     }
   },
   "tests/integration/awslambda/test_lambda_common.py::TestLambdaRuntimesCommon::test_introspection_invoke[provided.al2]": {
-    "recorded-date": "23-09-2022, 13:07:37",
+    "recorded-date": "11-10-2022, 22:22:31",
     "recorded-content": {
       "create_function_result": {
         "Architectures": [
           "x86_64"
         ],
-        "CodeSha256": "hRp/dQvO/dv9KRTmfhpYMRdAPIdyw8ch2Kgjlv1N3AA=",
-        "CodeSize": 6511132,
+        "CodeSha256": "Y7ZV7rCjWc7PuVjQhLnuakSFU0AKpeZ51/mOfjGtqw0=",
+        "CodeSize": 1877684,
         "Description": "",
         "Environment": {
           "Variables": {
@@ -1930,7 +1930,7 @@
     }
   },
   "tests/integration/awslambda/test_lambda_common.py::TestLambdaRuntimesCommon::test_uncaught_exception_invoke[python3.7]": {
-    "recorded-date": "04-10-2022, 11:37:05",
+    "recorded-date": "11-10-2022, 22:22:36",
     "recorded-content": {
       "create_function_result": {
         "Architectures": [
@@ -1983,7 +1983,7 @@
     }
   },
   "tests/integration/awslambda/test_lambda_common.py::TestLambdaRuntimesCommon::test_uncaught_exception_invoke[python3.8]": {
-    "recorded-date": "04-10-2022, 11:37:07",
+    "recorded-date": "11-10-2022, 22:22:39",
     "recorded-content": {
       "create_function_result": {
         "Architectures": [
@@ -2036,7 +2036,7 @@
     }
   },
   "tests/integration/awslambda/test_lambda_common.py::TestLambdaRuntimesCommon::test_uncaught_exception_invoke[python3.9]": {
-    "recorded-date": "04-10-2022, 11:37:09",
+    "recorded-date": "11-10-2022, 22:22:41",
     "recorded-content": {
       "create_function_result": {
         "Architectures": [
@@ -2090,7 +2090,7 @@
     }
   },
   "tests/integration/awslambda/test_lambda_common.py::TestLambdaRuntimesCommon::test_uncaught_exception_invoke[nodejs12.x]": {
-    "recorded-date": "04-10-2022, 11:37:10",
+    "recorded-date": "11-10-2022, 22:22:43",
     "recorded-content": {
       "create_function_result": {
         "Architectures": [
@@ -2145,7 +2145,7 @@
     }
   },
   "tests/integration/awslambda/test_lambda_common.py::TestLambdaRuntimesCommon::test_uncaught_exception_invoke[nodejs14.x]": {
-    "recorded-date": "04-10-2022, 11:37:13",
+    "recorded-date": "11-10-2022, 22:22:46",
     "recorded-content": {
       "create_function_result": {
         "Architectures": [
@@ -2200,7 +2200,7 @@
     }
   },
   "tests/integration/awslambda/test_lambda_common.py::TestLambdaRuntimesCommon::test_uncaught_exception_invoke[nodejs16.x]": {
-    "recorded-date": "04-10-2022, 11:37:15",
+    "recorded-date": "11-10-2022, 22:22:48",
     "recorded-content": {
       "create_function_result": {
         "Architectures": [
@@ -2255,13 +2255,13 @@
     }
   },
   "tests/integration/awslambda/test_lambda_common.py::TestLambdaRuntimesCommon::test_uncaught_exception_invoke[java8]": {
-    "recorded-date": "04-10-2022, 11:37:24",
+    "recorded-date": "11-10-2022, 22:23:18",
     "recorded-content": {
       "create_function_result": {
         "Architectures": [
           "x86_64"
         ],
-        "CodeSha256": "CDTMgI4RvjJ235R+Xr8bMgz45tM+xZiz0sN+JbC/f1Y=",
+        "CodeSha256": "9G7gTXxil7XroabIU5ZOQMKPpVDTJlKEVCsEhjGK8X0=",
         "CodeSize": 13435745,
         "Description": "",
         "EphemeralStorage": {
@@ -2309,13 +2309,13 @@
     }
   },
   "tests/integration/awslambda/test_lambda_common.py::TestLambdaRuntimesCommon::test_uncaught_exception_invoke[java8.al2]": {
-    "recorded-date": "04-10-2022, 11:37:32",
+    "recorded-date": "11-10-2022, 22:23:28",
     "recorded-content": {
       "create_function_result": {
         "Architectures": [
           "x86_64"
         ],
-        "CodeSha256": "CDTMgI4RvjJ235R+Xr8bMgz45tM+xZiz0sN+JbC/f1Y=",
+        "CodeSha256": "9G7gTXxil7XroabIU5ZOQMKPpVDTJlKEVCsEhjGK8X0=",
         "CodeSize": 13435745,
         "Description": "",
         "EphemeralStorage": {
@@ -2363,13 +2363,13 @@
     }
   },
   "tests/integration/awslambda/test_lambda_common.py::TestLambdaRuntimesCommon::test_uncaught_exception_invoke[java11]": {
-    "recorded-date": "04-10-2022, 11:37:38",
+    "recorded-date": "11-10-2022, 22:23:39",
     "recorded-content": {
       "create_function_result": {
         "Architectures": [
           "x86_64"
         ],
-        "CodeSha256": "CDTMgI4RvjJ235R+Xr8bMgz45tM+xZiz0sN+JbC/f1Y=",
+        "CodeSha256": "9G7gTXxil7XroabIU5ZOQMKPpVDTJlKEVCsEhjGK8X0=",
         "CodeSize": 13435745,
         "Description": "",
         "EphemeralStorage": {
@@ -2417,7 +2417,7 @@
     }
   },
   "tests/integration/awslambda/test_lambda_common.py::TestLambdaRuntimesCommon::test_uncaught_exception_invoke[ruby2.7]": {
-    "recorded-date": "04-10-2022, 11:37:18",
+    "recorded-date": "11-10-2022, 22:22:50",
     "recorded-content": {
       "create_function_result": {
         "Architectures": [
@@ -2470,14 +2470,14 @@
     }
   },
   "tests/integration/awslambda/test_lambda_common.py::TestLambdaRuntimesCommon::test_uncaught_exception_invoke[go1.x]": {
-    "recorded-date": "04-10-2022, 11:37:46",
+    "recorded-date": "11-10-2022, 22:24:17",
     "recorded-content": {
       "create_function_result": {
         "Architectures": [
           "x86_64"
         ],
-        "CodeSha256": "F6gAudoAny/pm+SVAsBDVJR8bRSJriu8BF8T+1fzSh0=",
-        "CodeSize": 8995949,
+        "CodeSha256": "SCDyyKP0IKATEQD0LxqsAgguOGEwDlDUReehN6Q04jo=",
+        "CodeSize": 8985707,
         "Description": "",
         "EphemeralStorage": {
           "Size": 512
@@ -2520,14 +2520,14 @@
     }
   },
   "tests/integration/awslambda/test_lambda_common.py::TestLambdaRuntimesCommon::test_uncaught_exception_invoke[provided]": {
-    "recorded-date": "04-10-2022, 11:38:58",
+    "recorded-date": "11-10-2022, 22:25:25",
     "recorded-content": {
       "create_function_result": {
         "Architectures": [
           "x86_64"
         ],
-        "CodeSha256": "oXaLiDKmc1CMbhSXB8wJ5A+vddZKKsnx9tYoYhFm2M4=",
-        "CodeSize": 6503156,
+        "CodeSha256": "xXa38Z7WlUt+krqrOM+f9lrEn9J6mbv34BighGH4ZhY=",
+        "CodeSize": 1875574,
         "Description": "",
         "EphemeralStorage": {
           "Size": 512
@@ -2570,14 +2570,14 @@
     }
   },
   "tests/integration/awslambda/test_lambda_common.py::TestLambdaRuntimesCommon::test_uncaught_exception_invoke[provided.al2]": {
-    "recorded-date": "04-10-2022, 11:39:01",
+    "recorded-date": "11-10-2022, 22:25:29",
     "recorded-content": {
       "create_function_result": {
         "Architectures": [
           "x86_64"
         ],
-        "CodeSha256": "oXaLiDKmc1CMbhSXB8wJ5A+vddZKKsnx9tYoYhFm2M4=",
-        "CodeSize": 6503156,
+        "CodeSha256": "xXa38Z7WlUt+krqrOM+f9lrEn9J6mbv34BighGH4ZhY=",
+        "CodeSize": 1875574,
         "Description": "",
         "EphemeralStorage": {
           "Size": 512
@@ -2620,14 +2620,14 @@
     }
   },
   "tests/integration/awslambda/test_lambda_common.py::TestLambdaRuntimesCommon::test_uncaught_exception_invoke[dotnet6]": {
-    "recorded-date": "04-10-2022, 11:37:41",
+    "recorded-date": "11-10-2022, 22:24:00",
     "recorded-content": {
       "create_function_result": {
         "Architectures": [
           "x86_64"
         ],
-        "CodeSha256": "ENi5aDB91dW3J4RbO9yDRFykfQHZJCCMi6xUsVUOrYg=",
-        "CodeSize": 30565,
+        "CodeSha256": "SRo/CNHtnjkN6EflAqg029GSsLIRRmtwsjCskIu9Ncs=",
+        "CodeSize": 30573,
         "Description": "",
         "EphemeralStorage": {
           "Size": 512
@@ -2677,14 +2677,14 @@
     }
   },
   "tests/integration/awslambda/test_lambda_common.py::TestLambdaRuntimesCommon::test_uncaught_exception_invoke[dotnetcore3.1]": {
-    "recorded-date": "04-10-2022, 11:37:39",
+    "recorded-date": "11-10-2022, 22:23:49",
     "recorded-content": {
       "create_function_result": {
         "Architectures": [
           "x86_64"
         ],
-        "CodeSha256": "pmLwK/4TcyPgoepfAYqAVSfmwpt8451++whmHYpuYaY=",
-        "CodeSize": 29294,
+        "CodeSha256": "o9MV1/KnGpxyzwAx8gRhiXsChrGsEni72ZZJKJhP6lw=",
+        "CodeSize": 29293,
         "Description": "",
         "EphemeralStorage": {
           "Size": 512
@@ -2731,63 +2731,63 @@
     }
   },
   "tests/integration/awslambda/test_lambda_common.py::TestLambdaRuntimesCommon::test_echo_invoke[python3.7]": {
-    "recorded-date": "29-09-2022, 17:41:09",
+    "recorded-date": "11-10-2022, 22:15:58",
     "recorded-content": {}
   },
   "tests/integration/awslambda/test_lambda_common.py::TestLambdaRuntimesCommon::test_echo_invoke[python3.8]": {
-    "recorded-date": "29-09-2022, 17:41:15",
+    "recorded-date": "11-10-2022, 22:16:08",
     "recorded-content": {}
   },
   "tests/integration/awslambda/test_lambda_common.py::TestLambdaRuntimesCommon::test_echo_invoke[python3.9]": {
-    "recorded-date": "29-09-2022, 17:41:20",
+    "recorded-date": "11-10-2022, 22:16:18",
     "recorded-content": {}
   },
   "tests/integration/awslambda/test_lambda_common.py::TestLambdaRuntimesCommon::test_echo_invoke[nodejs12.x]": {
-    "recorded-date": "29-09-2022, 17:41:23",
+    "recorded-date": "11-10-2022, 22:16:26",
     "recorded-content": {}
   },
   "tests/integration/awslambda/test_lambda_common.py::TestLambdaRuntimesCommon::test_echo_invoke[nodejs14.x]": {
-    "recorded-date": "29-09-2022, 17:41:29",
+    "recorded-date": "11-10-2022, 22:16:33",
     "recorded-content": {}
   },
   "tests/integration/awslambda/test_lambda_common.py::TestLambdaRuntimesCommon::test_echo_invoke[nodejs16.x]": {
-    "recorded-date": "29-09-2022, 17:41:33",
+    "recorded-date": "11-10-2022, 22:16:39",
     "recorded-content": {}
   },
   "tests/integration/awslambda/test_lambda_common.py::TestLambdaRuntimesCommon::test_echo_invoke[ruby2.7]": {
-    "recorded-date": "29-09-2022, 17:41:39",
+    "recorded-date": "11-10-2022, 22:16:46",
     "recorded-content": {}
   },
   "tests/integration/awslambda/test_lambda_common.py::TestLambdaRuntimesCommon::test_echo_invoke[java8]": {
-    "recorded-date": "29-09-2022, 17:42:05",
+    "recorded-date": "11-10-2022, 22:17:21",
     "recorded-content": {}
   },
   "tests/integration/awslambda/test_lambda_common.py::TestLambdaRuntimesCommon::test_echo_invoke[java8.al2]": {
-    "recorded-date": "29-09-2022, 17:42:13",
+    "recorded-date": "11-10-2022, 22:17:37",
     "recorded-content": {}
   },
   "tests/integration/awslambda/test_lambda_common.py::TestLambdaRuntimesCommon::test_echo_invoke[java11]": {
-    "recorded-date": "29-09-2022, 17:42:21",
+    "recorded-date": "11-10-2022, 22:17:53",
     "recorded-content": {}
   },
   "tests/integration/awslambda/test_lambda_common.py::TestLambdaRuntimesCommon::test_echo_invoke[dotnetcore3.1]": {
-    "recorded-date": "29-09-2022, 17:42:24",
+    "recorded-date": "11-10-2022, 22:18:08",
     "recorded-content": {}
   },
   "tests/integration/awslambda/test_lambda_common.py::TestLambdaRuntimesCommon::test_echo_invoke[dotnet6]": {
-    "recorded-date": "29-09-2022, 17:42:28",
+    "recorded-date": "11-10-2022, 22:18:23",
     "recorded-content": {}
   },
   "tests/integration/awslambda/test_lambda_common.py::TestLambdaRuntimesCommon::test_echo_invoke[go1.x]": {
-    "recorded-date": "29-09-2022, 18:26:46",
+    "recorded-date": "11-10-2022, 22:18:46",
     "recorded-content": {}
   },
   "tests/integration/awslambda/test_lambda_common.py::TestLambdaRuntimesCommon::test_echo_invoke[provided]": {
-    "recorded-date": "29-09-2022, 17:42:41",
+    "recorded-date": "11-10-2022, 22:18:56",
     "recorded-content": {}
   },
   "tests/integration/awslambda/test_lambda_common.py::TestLambdaRuntimesCommon::test_echo_invoke[provided.al2]": {
-    "recorded-date": "29-09-2022, 17:42:48",
+    "recorded-date": "11-10-2022, 22:19:06",
     "recorded-content": {}
   }
 }
