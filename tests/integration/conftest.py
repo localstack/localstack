@@ -4,15 +4,11 @@ See: https://docs.pytest.org/en/6.2.x/fixture.html#conftest-py-sharing-fixtures-
 
 It is thread/process safe to run with pytest-parallel, however not for pytest-xdist.
 """
-import inspect
 import logging
 import multiprocessing as mp
 import os
-import sys
 import threading
-import traceback
 
-import psutil
 import pytest
 
 from localstack import config
@@ -88,33 +84,6 @@ def pytest_unconfigure(config):
     # wait for localstack to stop. We do not want to exit immediately, otherwise new threads during shutdown will fail
     if not localstack_stopped.wait(timeout=10):
         logger.warning("LocalStack did not exit in time!")
-    print(
-        f"Still running threads after pytest unconfigure: {threading.enumerate()}, Count: {threading.active_count()}"
-    )
-    thread_frames = [
-        (sys._current_frames().get(thread.ident), thread) for thread in threading.enumerate()
-    ]
-    info_tuples = [
-        {
-            "file_name": frame.f_code.co_filename,
-            "function_name": frame.f_code.co_name,
-            "line_no": frame.f_code.co_firstlineno,
-            "frame_traceback": traceback.format_stack(frame),
-            "thread_name": thread.name,
-            "thread_target": thread._target,
-            "thread_target_file": inspect.getfile(thread._target) if thread._target else None,
-        }
-        for frame, thread in thread_frames
-        if frame
-    ]
-    print(f"Thread actions: {info_tuples}")
-    current_process = psutil.Process()
-    children = current_process.children(recursive=True)
-    process_information_list = [
-        {"cmdline": child.cmdline(), "pid": child.pid, "status": child.status()}
-        for child in children
-    ]
-    print(f"Subprocesses: {process_information_list}")
 
 
 def _start_monitor():
