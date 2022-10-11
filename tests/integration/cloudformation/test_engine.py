@@ -1,5 +1,4 @@
 import base64
-import json
 import os
 
 import pytest
@@ -150,29 +149,14 @@ class TestIntrinsicFunctions:
         bucket_names = [b["Name"] for b in buckets["Buckets"]]
         assert (bucket_name in bucket_names) == expected_bucket_created
 
-    def test_base64_sub_and_getatt_functions(self, cfn_client, deploy_cfn_template):
-        template = {
-            "Parameters": {"OriginalString": {"Type": "String"}},
-            "Resources": {
-                "SsmParameter": {
-                    "Type": "AWS::SSM::Parameter",
-                    "Properties": {
-                        "Name": "EncodedString",
-                        "Type": "String",
-                        "Value": {
-                            "Fn::Base64": {
-                                "Fn::Sub": ["${value}", {"value": {"Ref": "OriginalString"}}]
-                            }
-                        },
-                    },
-                }
-            },
-            "Outputs": {"Encoded": {"Value": {"Fn::GetAtt": ["SsmParameter", "Value"]}}},
-        }
-
+    @pytest.mark.aws_validated
+    def test_base64_sub_and_getatt_functions(self, deploy_cfn_template):
+        template_path = os.path.join(
+            os.path.dirname(__file__), "../templates/functions_getatt_sub_base64.yml"
+        )
         original_string = f"string-{short_uid()}"
         deployed = deploy_cfn_template(
-            template=json.dumps(template), parameters={"OriginalString": original_string}
+            template_path=template_path, parameters={"OriginalString": original_string}
         )
 
         converted_string = base64.b64encode(bytes(original_string, "utf-8")).decode("utf-8")
