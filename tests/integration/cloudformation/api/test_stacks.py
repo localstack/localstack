@@ -63,7 +63,7 @@ def test_get_template(cfn_client, deploy_cfn_template, snapshot, fileformat):
 
     stack = deploy_cfn_template(
         template_path=os.path.join(
-            os.path.dirname(__file__), f"../templates/sns_topic_template.{fileformat}"
+            os.path.dirname(__file__), f"../../templates/sns_topic_template.{fileformat}"
         )
     )
     topic_name = stack.outputs["TopicName"]
