@@ -3,7 +3,7 @@ import os
 import threading
 from abc import ABC
 from functools import lru_cache
-from typing import Callable, Dict, List
+from typing import Callable, List
 
 import requests
 
@@ -203,13 +203,13 @@ class GitHubReleaseInstaller(DownloadInstaller):
 
     @lru_cache()
     def _get_download_url(self) -> str:
+        asset_name = self._get_github_asset_name()
         response = requests.get(self.github_tag_url)
         if not response.ok:
             raise PackageException(
                 f"Could not get list of releases from {self.github_tag_url}: {response.text}"
             )
         github_release = response.json()
-        asset_name = self._get_github_asset_name(github_release)
         download_url = None
         for asset in github_release.get("assets", []):
             # find the correct binary in the release
@@ -222,11 +222,16 @@ class GitHubReleaseInstaller(DownloadInstaller):
             )
         return download_url
 
-    def _get_github_asset_name(self, github_release: Dict) -> str:
+    def _get_install_marker_path(self, install_dir: str) -> str:
+        # Use the GitHub asset name instead of the download URL (since the download URL needs to be fetched online).
+        return os.path.join(install_dir, self._get_github_asset_name())
+
+    def _get_github_asset_name(self) -> str:
         """
         Determines the name of the asset to download.
+        The asset name must be determinable without having any online data (because it is used in offline scenarios to
+        determine if the package is already installed).
 
-        :param github_release: GitHub Release JSON data
         :return: name of the asset to download from the GitHub project's tag / version
         """
         raise NotImplementedError()
