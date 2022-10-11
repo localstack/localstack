@@ -139,6 +139,8 @@ class PublisherBuffer(EventHandler):
         finally:
             self._stopped.set()
             flush_scheduler.stop()
+            if config.DEBUG_ANALYTICS:
+                LOG.debug("Exit analytics publisher")
 
     def _do_flush(self):
         queue = self._queue

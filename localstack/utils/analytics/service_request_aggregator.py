@@ -1,4 +1,3 @@
-import atexit
 import datetime
 import logging
 import threading
@@ -6,6 +5,7 @@ from collections import Counter
 from typing import Dict, List, NamedTuple, Optional
 
 from localstack import config
+from localstack.runtime.shutdown import SHUTDOWN_HANDLERS
 from localstack.utils import analytics
 from localstack.utils.scheduler import Scheduler
 
@@ -59,7 +59,7 @@ class ServiceRequestAggregator:
             )
             _flush_scheduler_thread.start()
 
-            atexit.register(self.shutdown)
+            SHUTDOWN_HANDLERS.register(self.shutdown)
 
     def shutdown(self):
         with self._mutex:
@@ -71,7 +71,7 @@ class ServiceRequestAggregator:
 
             self._flush()
             self._flush_scheduler.close()
-            atexit.unregister(self.shutdown)
+            SHUTDOWN_HANDLERS.unregister(self.shutdown)
 
     def add_request(self, request_info: ServiceRequestInfo):
         """

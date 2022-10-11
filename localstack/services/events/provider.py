@@ -34,6 +34,7 @@ from localstack.constants import APPLICATION_AMZ_JSON_1_1
 from localstack.services.events.models import EventsStore, events_stores
 from localstack.services.events.scheduler import JobScheduler
 from localstack.services.moto import call_moto
+from localstack.services.plugins import ServiceLifecycleHook
 from localstack.utils.aws import aws_stack
 from localstack.utils.aws.message_forwarding import send_event_to_target
 from localstack.utils.common import TMP_FILES, mkdir, save_file, truncate
@@ -50,10 +51,15 @@ CONTENT_BASE_FILTER_KEYWORDS = ["prefix", "anything-but", "numeric", "cidr", "ex
 CONNECTION_NAME_PATTERN = re.compile("^[\\.\\-_A-Za-z0-9]+$")
 
 
-class EventsProvider(EventsApi):
+class EventsProvider(EventsApi, ServiceLifecycleHook):
     def __init__(self):
         apply_patches()
+
+    def on_before_start(self):
         JobScheduler.start()
+
+    def on_before_stop(self):
+        JobScheduler.shutdown()
 
     @staticmethod
     def get_store() -> EventsStore:

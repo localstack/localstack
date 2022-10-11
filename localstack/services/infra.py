@@ -281,13 +281,13 @@ def stop_infra():
     if events.infra_stopping.is_set():
         return
 
-    # run plugin hooks for infra shutdown
-    hooks.on_infra_shutdown.run()
+    analytics.log.event("infra_stop")
 
     # also used to signal shutdown for edge proxy so that any further requests will be rejected
     events.infra_stopping.set()
 
-    analytics.log.event("infra_stop")
+    # run plugin hooks for infra shutdown
+    hooks.on_infra_shutdown.run()
 
     try:
         generic_proxy.QUIET = True  # TODO: this doesn't seem to be doing anything
