@@ -1,17 +1,7 @@
-import copy
 import logging
 import os
 from typing import IO, Dict
-from urllib.parse import (
-    SplitResult,
-    parse_qs,
-    quote,
-    urlencode,
-    urlparse,
-    urlsplit,
-    urlunparse,
-    urlunsplit,
-)
+from urllib.parse import parse_qs, quote, urlencode, urlparse, urlunparse
 
 import moto.s3.responses as moto_s3_responses
 
@@ -79,8 +69,6 @@ from localstack.aws.api.s3 import Type as GranteeType
 from localstack.aws.api.s3 import WebsiteConfiguration
 from localstack.aws.handlers import modify_service_response, serve_custom_service_request_handlers
 from localstack.constants import LOCALHOST_HOSTNAME
-from localstack.http import Request, Response
-from localstack.http.proxy import forward
 from localstack.services.edge import ROUTER
 from localstack.services.moto import call_moto
 from localstack.services.plugins import ServiceLifecycleHook
@@ -93,7 +81,6 @@ from localstack.services.s3.presigned_url import (
 )
 from localstack.services.s3.utils import (
     ALLOWED_HEADER_OVERRIDES,
-    S3_VIRTUAL_HOST_FORWARDED_HEADER,
     VALID_ACL_PREDEFINED_GROUPS,
     VALID_GRANTEE_PERMISSIONS,
     _create_invalid_argument_exc,
@@ -107,9 +94,9 @@ from localstack.services.s3.utils import (
     is_valid_canonical_id,
     verify_checksum,
 )
+from localstack.services.s3.virtual_host import register_virtual_host_routes
 from localstack.services.s3.website_hosting import register_website_hosting_routes
 from localstack.utils.aws import aws_stack
-from localstack.utils.aws.request_context import AWS_REGION_REGEX
 from localstack.utils.patch import patch
 
 LOG = logging.getLogger(__name__)
@@ -158,7 +145,7 @@ class S3Provider(S3Api, ServiceLifecycleHook):
 
     def on_after_init(self):
         apply_moto_patches()
-        self.add_custom_routes()
+        register_virtual_host_routes(router=ROUTER)
         register_website_hosting_routes(router=ROUTER)
         register_custom_handlers()
 
@@ -711,81 +698,6 @@ class S3Provider(S3Api, ServiceLifecycleHook):
             )
 
         return response
-
-    def add_custom_routes(self):
-        # virtual-host style: https://bucket-name.s3.region-code.amazonaws.com/key-name
-        # host_pattern_vhost_style = f"{bucket}.s3.<regex('({AWS_REGION_REGEX}\.)?'):region>{LOCALHOST_HOSTNAME}:{get_edge_port_http()}"
-        host_pattern_vhost_style = f"<regex('.*'):bucket>.s3.<regex('({AWS_REGION_REGEX}\\.)?'):region>{LOCALHOST_HOSTNAME}<regex('(?::\\d+)?'):port>"
-        ROUTER.add(
-            "/<path:path>",
-            host=host_pattern_vhost_style,
-            endpoint=self.serve_bucket,
-        )
-        ROUTER.add(
-            "/",
-            host=host_pattern_vhost_style,
-            endpoint=self.serve_bucket,
-            defaults={"path": "/"},
-        )
-
-        # regions for path-style need to be parsed correctly
-        host_pattern_vhost_style = f"s3.<regex('({AWS_REGION_REGEX}\\.)'):region>{LOCALHOST_HOSTNAME}<regex('(?::\\d+)?'):port>"
-        ROUTER.add(
-            "/<regex('.+'):bucket>/<path:path>",
-            host=host_pattern_vhost_style,
-            endpoint=self.serve_bucket,
-        )
-        ROUTER.add(
-            "/<regex('.+'):bucket>",
-            host=host_pattern_vhost_style,
-            endpoint=self.serve_bucket,
-            defaults={"path": "/"},
-        )
-
-    def serve_bucket(
-        self, request: Request, bucket: str, path: str, region: str, port: str
-    ) -> Response:
-        # TODO region pattern currently not working -> removing it from url
-        rewritten_url = self.rewrite_url(request.url, bucket, region)
-
-        LOG.debug(f"Rewritten original host url: {request.url} to path-style url: {rewritten_url}")
-
-        splitted = urlsplit(rewritten_url)
-        copied_headers = copy.deepcopy(request.headers)
-        copied_headers["Host"] = splitted.netloc
-        copied_headers[S3_VIRTUAL_HOST_FORWARDED_HEADER] = request.headers["host"]
-        return forward(
-            request, f"{splitted.scheme}://{splitted.netloc}", splitted.path, copied_headers
-        )
-
-    def rewrite_url(self, url: str, bucket: str, region: str) -> str:
-        """
-        Rewrites the url so that it can be forwarded to moto. Used for vhost-style and for any url that contains the region.
-
-        For vhost style: removes the bucket-name from the host-name and adds it as path
-        E.g. http://my-bucket.s3.localhost.localstack.cloud:4566 -> http://s3.localhost.localstack.cloud:4566/my-bucket
-
-        If the region is contained in the host-name we remove it (for now) as moto cannot handle the region correctly
-
-        :param url: the original url
-        :param bucket: the bucket name
-        :param region: the region name
-        :return: re-written url as string
-        """
-        splitted = urlsplit(url)
-        if splitted.netloc.startswith(f"{bucket}."):
-            netloc = splitted.netloc.replace(f"{bucket}.", "")
-            path = f"{bucket}{splitted.path}"
-        else:
-            # we already have a path-style addressing, only need to remove the region
-            netloc = splitted.netloc
-            path = splitted.path
-        # TODO region currently ignored
-        if region:
-            netloc = netloc.replace(f"{region}", "")
-        return urlunsplit(
-            SplitResult(splitted.scheme, netloc, path, splitted.query, splitted.fragment)
-        )
 
 
 def validate_bucket_name(bucket: BucketName) -> None:

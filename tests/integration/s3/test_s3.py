@@ -2265,6 +2265,24 @@ class TestS3:
         )
         snapshot.match("get-object", response)
 
+    @pytest.mark.only_localstack
+    @pytest.mark.skipif(condition=LEGACY_S3_PROVIDER, reason="Testing new ASF handler behaviour")
+    def test_virtual_host_proxying_headers(self, s3_client, s3_bucket):
+        # forwarding requests from virtual host to path addressed will double add server specific headers
+        # (date and server). Verify that those are not double added after a fix to the proxy
+        key = "test-double-headers"
+        s3_client.put_object(Bucket=s3_bucket, Key=key, Body="test-headers", ACL="public-read")
+
+        key_url = f"{_bucket_url(bucket_name=s3_bucket)}/{key}"
+        response = requests.get(key_url)
+        assert response.headers["server"]
+
+        key_url = f"{_bucket_url_vhost(bucket_name=s3_bucket)}/{key}"
+        proxied_response = requests.get(key_url)
+        assert proxied_response.headers["server"] == response.headers["server"]
+        assert len(proxied_response.headers["server"].split(",")) == 1
+        assert len(proxied_response.headers["date"].split(",")) == 2  # coma in the date
+
 
 class TestS3TerraformRawRequests:
     @pytest.mark.only_localstack
