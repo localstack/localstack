@@ -371,11 +371,20 @@ class ASGIAdapter:
     ):
         env = self.to_wsgi_environment(scope, receive)
 
-        response = WsgiStartResponse(send, self.event_loop)
+        try:
+            response = WsgiStartResponse(send, self.event_loop)
 
-        iterable = await self.event_loop.run_in_executor(
-            self.executor, self.wsgi_app, env, response
-        )
+            iterable = await self.event_loop.run_in_executor(
+                self.executor, self.wsgi_app, env, response
+            )
+        except Exception as e:
+            LOG.error(
+                "Error while trying to schedule execution: %s with environment %s",
+                e,
+                env,
+                exc_info=LOG.isEnabledFor(logging.DEBUG),
+            )
+            raise
 
         try:
             if iterable:
