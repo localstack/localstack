@@ -2,10 +2,14 @@
 set -euo pipefail
 
 export TF_ACC=1
+export TF_LOG=DEBUG
+export TF_LOG_CORE=DEBUG
+export TF_LOG_PROVIDER=DEBUG
+
 export AWS_ALTERNATE_ACCESS_KEY_ID=test
 export AWS_ALTERNATE_SECRET_ACCESS_KEY=test
 export AWS_ALTERNATE_REGION=us-east-2
-export AWS_DEFAULT_REGION=us-east-1
+export AWS_DEFAULT_REGION=eu-west-1
 export AWS_ACCESS_KEY_ID=test
 export AWS_SECRET_ACCESS_KEY=test
 
@@ -27,6 +31,10 @@ for service in "${PARALLELISM_MAPPING[@]}" ; do
 done
 
 cd terraform-provider-aws
+
+LOGS_DIR=`pwd`/terraformlogs
+mkdir -p "${LOGS_DIR}"
+export TF_LOG_PATH_MASK="${LOGS_DIR}/%s.log"
 
 if [ $# == 2 ]; then
     echo "Service: $1 | Test: $2"
