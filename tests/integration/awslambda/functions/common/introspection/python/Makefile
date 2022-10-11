@@ -2,7 +2,7 @@
 build:
 	mkdir build; \
 	python -m venv ./build/.venv; \
-	source ./build/.venv/bin/activate; \
+	. ./build/.venv/bin/activate; \
 	cp -r ./src/* build/; \
 	pip install --target ./build -r ./build/requirements.txt; \
 	deactivate; \
