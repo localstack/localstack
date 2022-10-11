@@ -121,6 +121,7 @@ class TestLambdaRuntimesCommon:
             "$..environment.AWS_EXECUTION_ENV",  # Only rust runtime
             "$..environment.LD_LIBRARY_PATH",  # Only rust runtime (additional /var/lang/bin)
             "$..environment.PATH",  # Only rust runtime (additional /var/lang/bin)
+            "$..CodeSha256",  # works locally but unfortunately still produces a different hash in CI
         ]
     )
     @pytest.mark.multiruntime(scenario="introspection")
@@ -155,6 +156,11 @@ class TestLambdaRuntimesCommon:
         invocation_result_payload_qualified = json.loads(invocation_result_payload_qualified)
         snapshot.match("invocation_result_payload_qualified", invocation_result_payload_qualified)
 
+    @pytest.mark.skip_snapshot_verify(
+        paths=[
+            "$..CodeSha256",  # works locally but unfortunately still produces a different hash in CI
+        ]
+    )
     @pytest.mark.multiruntime(scenario="uncaughtexception")
     def test_uncaught_exception_invoke(self, lambda_client, multiruntime_lambda, snapshot):
         create_function_result = multiruntime_lambda.create_function(MemorySize=1024)
