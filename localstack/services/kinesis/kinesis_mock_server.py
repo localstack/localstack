@@ -47,6 +47,7 @@ class KinesisMockServer(Server):
             env_vars=env_vars,
             log_listener=self._log_listener,
             auto_restart=True,
+            name="kinesis-mock",
         )
         TMP_THREADS.append(t)
         t.start()

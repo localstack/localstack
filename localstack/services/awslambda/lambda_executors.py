@@ -489,7 +489,7 @@ class LambdaExecutor:
             LOG.debug(
                 "Lambda executed in Event (asynchronous) mode, no response will be returned to caller"
             )
-            FuncThread(do_execute).start()
+            FuncThread(do_execute, name="lambda-execute-async").start()
             return InvocationResult(None, log_output="Lambda executed asynchronously.")
 
         return do_execute()

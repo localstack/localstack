@@ -1126,5 +1126,5 @@ def serve_flask_app(app, port, host=None, cors=True, asynchronous=False):
         return app
 
     if asynchronous:
-        return start_thread(_run)
+        return start_thread(_run, name="flaskapp")
     return _run()
