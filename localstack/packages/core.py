@@ -221,6 +221,16 @@ class ArchiveDownloadAndExtractInstaller(ExecutableInstaller):
         """
         return None
 
+    def get_executable_path(self) -> str | None:
+        subdir = self._get_archive_subdir()
+        if subdir is None:
+            return super().get_executable_path()
+        else:
+            install_dir = self.get_installed_dir()
+            if install_dir:
+                install_dir = install_dir[: -len(subdir)]
+                return self._get_install_marker_path(install_dir)
+
     def _install(self, target: InstallTarget) -> None:
         target_directory = self._get_install_dir(target)
         mkdir(target_directory)
