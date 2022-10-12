@@ -35,10 +35,8 @@ class TerraformPackageInstaller(ArchiveDownloadAndExtractInstaller):
 
     def _install(self, target: InstallTarget) -> None:
         super()._install(target)
-        # TODO: separate class? decorator pattern?
         chmod_r(self.get_executable_path(), 0o777)
 
 
 terraform_package = TerraformPackage()
-# TODO: solve this cleanly, violates inheritance rules right now (accessing member not part of the top level interface)
 TERRAFORM_BIN = terraform_package.get_installer().get_executable_path()

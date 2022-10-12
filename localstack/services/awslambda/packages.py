@@ -1,9 +1,9 @@
 import os
 import platform
 import stat
-from typing import List, Optional
+from typing import List
 
-from localstack.packages import InstallTarget, Package, PackageInstaller
+from localstack.packages import DownloadInstaller, InstallTarget, Package, PackageInstaller
 from localstack.packages.api import UnsupportedArchException, UnsupportedOSException
 from localstack.services.install import download_and_extract, log_install_msg
 from localstack.utils.http import download
@@ -111,25 +111,9 @@ class AWSLambdaJavaPackage(Package):
         return AWSLambdaJavaPackageInstaller("lambda-java-libs", version)
 
 
-class AWSLambdaJavaPackageInstaller(PackageInstaller):
-    def _get_install_marker_path(self, install_dir: str) -> str:
-        return os.path.join(install_dir, "localstack-utils-fat.jar")
-
-    def install(self, target: Optional[InstallTarget] = None) -> None:
-        # TODO: this was installed into static libs per default. Keep or change?
-        if not target:
-            target = InstallTarget.STATIC_LIBS
-        super().install(target)
-
-    def _install(self, target: InstallTarget) -> None:
-        # install LocalStack "fat" JAR file (contains all dependencies)
-        install_destination = self._get_install_marker_path(self._get_install_dir(target))
-        if not os.path.exists(install_destination):
-            log_install_msg("LocalStack Java libraries", verbatim=True)
-            download(
-                URL_LOCALSTACK_FAT_JAR.format(ver=self.version, mvn_repo=MAVEN_REPO_URL),
-                install_destination,
-            )
+class AWSLambdaJavaPackageInstaller(DownloadInstaller):
+    def _get_download_url(self) -> str:
+        return URL_LOCALSTACK_FAT_JAR.format(ver=self.version, mvn_repo=MAVEN_REPO_URL)
 
 
 awslambda_runtime_package = AWSLambdaRuntimePackage()

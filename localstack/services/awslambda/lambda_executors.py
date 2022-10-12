@@ -1541,10 +1541,7 @@ class LambdaExecutorLocal(LambdaExecutor):
         save_file(event_file, json.dumps(json_safe(event)))
         TMP_FILES.append(event_file)
 
-        # TODO: direct reference to installed binary, should be handled by the installer, or called here?
-        lambda_executor_jar = LAMBDA_JAVA_INSTALLER._get_install_marker_path(
-            LAMBDA_JAVA_INSTALLER.get_installed_dir()
-        )
+        lambda_executor_jar = LAMBDA_JAVA_INSTALLER.get_executable_path()
         classpath = "%s:%s:%s" % (
             main_file,
             Util.get_java_classpath(lambda_function.cwd),
