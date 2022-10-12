@@ -285,6 +285,18 @@ class TestSecretsManager:
         assert len(random_password["RandomPassword"]) == 120
         assert all(c not in "xyzDje@?!." for c in random_password["RandomPassword"])
 
+    def test_replicate_secret_to_region_first_time(self, sm_client, secret_id, region):
+        [arn, replication_status] = sm_client.replicate_secret_to_regions(
+            SecretId=secret_id,
+            AddReplicaRegions=['us-east-1', 'us-west-1'])
+
+        assert arn != ""
+        for rep_st in replication_status:
+            assert rep_st.Status != "Failed"
+
+    def test_replicate_secret_to_region_updating_secret(self):
+        pass
+
     def test_resource_policy(self, sm_client, secret_name):
         sm_client.create_secret(
             Name=secret_name,
