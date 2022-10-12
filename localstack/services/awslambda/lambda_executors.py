@@ -1443,7 +1443,7 @@ class LambdaExecutorLocal(LambdaExecutor):
         start_time = now(millis=True)
         process.start()
         try:
-            process_result: LocalExecutorResult = process_queue.get(timeout=20)
+            process_result: LocalExecutorResult = process_queue.get(timeout=lambda_function.timeout or 20)
         except queue.Empty:
             process_result = LocalExecutorResult(
                 "",
