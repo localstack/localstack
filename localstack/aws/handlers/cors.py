@@ -117,50 +117,17 @@ def should_enforce_self_managed_service(context: RequestContext) -> bool:
     return True
 
 
-class CorsEnforcer(Handler):
-    """
-    Handler which enforces Cross-Origin-Resource-Sharing (CORS) rules.
-    This handler needs to be at the top of the handler chain to ensure that these security rules are enforced before any
-    commands are executed.
-    """
-
+class CorsPreflightHandler(Handler):
     def __call__(self, chain: HandlerChain, context: RequestContext, response: Response) -> None:
+        # we need a way for services handling CORS internally to process OPTIONS requests
+        # this will happen before CORS, so we should not arrive here for S3, we will be able to skip this check
+        # and get the service name parser above
         if not should_enforce_self_managed_service(context):
             return
-        if not config.DISABLE_CORS_CHECKS and not self.is_cors_origin_allowed(
-            context.request.headers
-        ):
-            LOG.info(
-                "Blocked CORS request from forbidden origin %s",
-                context.request.headers.get("origin") or context.request.headers.get("referer"),
-            )
-            response.status_code = 403
-            chain.terminate()
-        elif context.request.method == "OPTIONS" and not config.DISABLE_PREFLIGHT_PROCESSING:
-            # we want to return immediately here, but we do not want to omit our response chain for cors headers
-            response.status_code = 204
-            chain.stop()
-
-    @staticmethod
-    def is_cors_origin_allowed(headers: Headers) -> bool:
-        """Returns true if origin is allowed to perform cors requests, false otherwise."""
-        origin = headers.get("origin")
-        referer = headers.get("referer")
-        if origin:
-            return CorsEnforcer._is_in_allowed_origins(ALLOWED_CORS_ORIGINS, origin)
-        elif referer:
-            referer_uri = "{uri.scheme}://{uri.netloc}".format(uri=urlparse(referer))
-            return CorsEnforcer._is_in_allowed_origins(ALLOWED_CORS_ORIGINS, referer_uri)
-        # If both headers are not set, let it through (awscli etc. do not send these headers)
-        return True
-
-    @staticmethod
-    def _is_in_allowed_origins(allowed_origins: List[str], origin: str) -> bool:
-        """Returns true if the `origin` is in the `allowed_origins`."""
-        for allowed_origin in allowed_origins:
-            if allowed_origin == "*" or origin == allowed_origin:
-                return True
-        return False
+        if not config.DISABLE_CORS_CHECKS:
+            if context.request.method == "OPTIONS" and not config.DISABLE_PREFLIGHT_PROCESSING:
+                response.status_code = 204
+                chain.stop()
 
 
 class CorsResponseEnricher(Handler):
@@ -177,7 +144,14 @@ class CorsResponseEnricher(Handler):
 
         # use DISABLE_CORS_HEADERS to disable returning CORS headers entirely (more restrictive security setting)
         # also don't add CORS response headers if the service manages the CORS handling
-        if config.DISABLE_CORS_HEADERS or not should_enforce_self_managed_service(context):
+        # don't add CORS response headers if the request is not allowed, this will cause the browser to not go
+        # through with the request
+        # TODO: we could add specific rules
+        if (
+            config.DISABLE_CORS_HEADERS
+            or not should_enforce_self_managed_service(context)
+            or not self.is_cors_origin_allowed(headers)
+        ):
             return
 
         request_headers = context.request.headers
@@ -200,3 +174,24 @@ class CorsResponseEnricher(Handler):
             and ACL_ALLOW_PRIVATE_NETWORK not in headers
         ):
             headers[ACL_ALLOW_PRIVATE_NETWORK] = "true"
+
+    @staticmethod
+    def is_cors_origin_allowed(headers: Headers) -> bool:
+        """Returns true if origin is allowed to perform cors requests, false otherwise."""
+        origin = headers.get("origin")
+        referer = headers.get("referer")
+        if origin:
+            return CorsResponseEnricher._is_in_allowed_origins(ALLOWED_CORS_ORIGINS, origin)
+        elif referer:
+            referer_uri = "{uri.scheme}://{uri.netloc}".format(uri=urlparse(referer))
+            return CorsResponseEnricher._is_in_allowed_origins(ALLOWED_CORS_ORIGINS, referer_uri)
+        # If both headers are not set, let it through (awscli etc. do not send these headers)
+        return True
+
+    @staticmethod
+    def _is_in_allowed_origins(allowed_origins: List[str], origin: str) -> bool:
+        """Returns true if the `origin` is in the `allowed_origins`."""
+        for allowed_origin in allowed_origins:
+            if allowed_origin == "*" or origin == allowed_origin:
+                return True
+        return False
