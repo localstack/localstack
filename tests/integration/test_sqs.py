@@ -1302,7 +1302,7 @@ class TestSqsProvider:
 
     @pytest.mark.aws_validated
     def test_delete_message_batch_invalid_msg_id(self, sqs_create_queue, sqs_client, snapshot):
-        self._add_error_details_transformer(snapshot)
+        self._add_error_detail_transformer(snapshot)
 
         queue_name = f"queue-{short_uid()}"
         queue_url = sqs_create_queue(QueueName=queue_name)
@@ -2629,8 +2629,8 @@ class TestSqsProvider:
 
     # TODO: test message attributes and message system attributes
 
-    def _add_error_details_transformer(self, snapshot):
-        """Adds a transformer to ignore {"Error": {"Details": None, ...}} entries in snapshot error responses"""
+    def _add_error_detail_transformer(self, snapshot):
+        """Adds a transformer to ignore {"Error": {"Detail": None, ...}} entries in snapshot error responses"""
 
         def _remove_error_details(snapshot_content: Dict, *args) -> Dict:
             for response in snapshot_content.values():
