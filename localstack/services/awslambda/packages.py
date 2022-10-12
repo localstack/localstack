@@ -5,7 +5,8 @@ from typing import List
 
 from localstack.packages import DownloadInstaller, InstallTarget, Package, PackageInstaller
 from localstack.packages.api import UnsupportedArchException, UnsupportedOSException
-from localstack.services.install import download_and_extract, log_install_msg
+from localstack.packages.core import ArchiveDownloadAndExtractInstaller
+from localstack.services.install import log_install_msg
 from localstack.utils.http import download
 from localstack.utils.platform import get_arch
 
@@ -58,14 +59,8 @@ class AWSLambdaGoRuntimePackage(Package):
         return AWSLambdaGoRuntimePackageInstaller(name="awslamba-go-runtime", version=version)
 
 
-class AWSLambdaGoRuntimePackageInstaller(PackageInstaller):
-    def _get_install_marker_path(self, install_dir: str) -> str:
-        return os.path.join(install_dir, "aws-lambda-mock")
-
-    def _install(self, target: InstallTarget) -> None:
-
-        log_install_msg("Installing golang runtime")
-
+class AWSLambdaGoRuntimePackageInstaller(ArchiveDownloadAndExtractInstaller):
+    def _get_download_url(self) -> str:
         system = platform.system().lower()
         arch = get_arch()
 
@@ -74,16 +69,20 @@ class AWSLambdaGoRuntimePackageInstaller(PackageInstaller):
         if arch not in ["amd64", "arm64"]:
             raise UnsupportedArchException(f"Unsupported arch {arch} for awslambda-go-runtime")
 
-        url = GO_RUNTIME_DOWNLOAD_URL_TEMPLATE.format(
+        return GO_RUNTIME_DOWNLOAD_URL_TEMPLATE.format(
             version=GO_RUNTIME_VERSION,
             os=system,
             arch=arch,
         )
 
+    def _get_install_marker_path(self, install_dir: str) -> str:
+        return os.path.join(install_dir, "aws-lambda-mock")
+
+    def _install(self, target: InstallTarget) -> None:
+        super()._install(target)
+
         install_dir = self._get_install_dir(target)
         install_location = self._get_install_marker_path(install_dir)
-        download_and_extract(url, install_dir)
-
         st = os.stat(install_location)
         os.chmod(install_location, st.st_mode | stat.S_IXUSR | stat.S_IXGRP | stat.S_IXOTH)
 

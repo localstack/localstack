@@ -64,8 +64,7 @@ def get_image_for_runtime(runtime: str) -> str:
 
 def get_runtime_client_path() -> Path:
     installer = awslambda_runtime_package.get_installer()
-    return Path(installer._get_install_marker_path(installer.get_installed_dir()))
-    # return Path(awslambda_runtime_package.get_installed_dir())
+    return Path(installer.get_executable_path())
 
 
 def prepare_image(target_path: Path, function_version: FunctionVersion) -> None:

@@ -122,7 +122,7 @@ class TestJavaRuntimes:
         zip_jar_path = os.path.join(zip_lib_dir, "test.lambda.jar")
         mkdir(zip_lib_dir)
         installer = lambda_java_libs_package.get_installer()
-        java_lib_dir = installer._get_install_marker_path(installer.get_installed_dir())
+        java_lib_dir = installer.get_executable_path()
         cp_r(
             java_lib_dir,
             os.path.join(zip_lib_dir, "executor.lambda.jar"),

@@ -1595,9 +1595,8 @@ class LambdaExecutorLocal(LambdaExecutor):
             lambda_function.envvars["AWS_LAMBDA_EVENT_BODY"] = json.dumps(json_safe(event))
         else:
             LOG.warning("Unable to get function details for local execution of Golang Lambda")
-        # TODO: should this remain here or get moved to the installer? Same in runetime_executor.py
         go_installer = awslambda_go_runtime_package.get_installer()
-        cmd = go_installer._get_install_marker_path(go_installer.get_installed_dir())
+        cmd = go_installer.get_executable_path()
         LOG.debug("Running Golang Lambda with runtime: %s", cmd)
         result = self._execute_in_custom_runtime(cmd, lambda_function=lambda_function)
         return result
