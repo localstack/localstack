@@ -3,6 +3,7 @@ import os
 import re
 import time
 from threading import Timer
+from typing import Dict
 
 import pytest
 import requests
@@ -13,6 +14,7 @@ from localstack.aws.accounts import get_aws_account_id
 from localstack.aws.api.lambda_ import Runtime
 from localstack.services.sqs.constants import DEFAULT_MAXIMUM_MESSAGE_SIZE
 from localstack.services.sqs.models import sqs_stores
+from localstack.testing.snapshots.transformer import GenericTransformer
 from localstack.utils.aws import aws_stack
 from localstack.utils.common import poll_condition, retry, short_uid, to_str
 
@@ -1297,6 +1299,21 @@ class TestSqsProvider:
             QueueUrl=queue_url, MaxNumberOfMessages=message_count
         )
         assert "Messages" not in confirmation.keys()
+
+    @pytest.mark.aws_validated
+    def test_delete_message_batch_invalid_msg_id(self, sqs_create_queue, sqs_client, snapshot):
+        self._add_error_details_transformer(snapshot)
+
+        queue_name = f"queue-{short_uid()}"
+        queue_url = sqs_create_queue(QueueName=queue_name)
+
+        invalid_ids = ["", "testLongId" * 10, "invalid:id"]
+
+        for idx, invalid_id in enumerate(invalid_ids):
+            delete_entries = [{"Id": invalid_id, "ReceiptHandle": "testHandle1"}]
+            with pytest.raises(ClientError) as e:
+                sqs_client.delete_message_batch(QueueUrl=queue_url, Entries=delete_entries)
+            snapshot.match(f"error_response_{idx}", e.value.response)
 
     @pytest.mark.aws_validated
     def test_create_and_send_to_fifo_queue(self, sqs_client, sqs_create_queue):
@@ -2611,6 +2628,16 @@ class TestSqsProvider:
         sqs_client.delete_message(QueueUrl=sqs_queue, ReceiptHandle=handle)
 
     # TODO: test message attributes and message system attributes
+
+    def _add_error_details_transformer(self, snapshot):
+        """Adds a transformer to ignore {"Error": {"Details": None, ...}} entries in snapshot error responses"""
+
+        def _remove_error_details(snapshot_content: Dict, *args) -> Dict:
+            for response in snapshot_content.values():
+                response.get("Error", {}).pop("Detail", None)
+            return snapshot_content
+
+        snapshot.add_transformer(GenericTransformer(_remove_error_details))
 
 
 def get_region():

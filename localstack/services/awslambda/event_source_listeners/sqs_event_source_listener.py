@@ -163,7 +163,7 @@ class SQSEventSourceListener(EventSourceListener):
 
             else:
                 entries = [
-                    {"Id": r["receiptHandle"], "ReceiptHandle": r["receiptHandle"]} for r in records
+                    {"Id": r["messageId"], "ReceiptHandle": r["receiptHandle"]} for r in records
                 ]
 
             try:

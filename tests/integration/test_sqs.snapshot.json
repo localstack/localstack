@@ -525,5 +525,43 @@
         ]
       }
     }
+  },
+  "tests/integration/test_sqs.py::TestSqsProvider::test_delete_message_batch_invalid_msg_id": {
+    "recorded-date": "12-10-2022, 15:31:11",
+    "recorded-content": {
+      "error_response_0": {
+        "Error": {
+          "Code": "AWS.SimpleQueueService.InvalidBatchEntryId",
+          "Message": "A batch entry id can only contain alphanumeric characters, hyphens and underscores. It can be at most 80 letters long.",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "error_response_1": {
+        "Error": {
+          "Code": "AWS.SimpleQueueService.InvalidBatchEntryId",
+          "Message": "A batch entry id can only contain alphanumeric characters, hyphens and underscores. It can be at most 80 letters long.",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "error_response_2": {
+        "Error": {
+          "Code": "AWS.SimpleQueueService.InvalidBatchEntryId",
+          "Message": "A batch entry id can only contain alphanumeric characters, hyphens and underscores. It can be at most 80 letters long.",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
   }
 }
