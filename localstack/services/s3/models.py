@@ -13,7 +13,7 @@ from localstack.aws.api.s3 import (
     WebsiteConfiguration,
 )
 from localstack.constants import DEFAULT_AWS_ACCOUNT_ID
-from localstack.services.stores import AccountRegionBundle, BaseStore, LocalAttribute
+from localstack.services.stores import AccountRegionBundle, BaseStore, CrossRegionAttribute
 
 
 def get_moto_s3_backend(context: RequestContext = None) -> MotoS3Backend:
@@ -23,25 +23,27 @@ def get_moto_s3_backend(context: RequestContext = None) -> MotoS3Backend:
 
 class S3Store(BaseStore):
     # maps bucket name to bucket's list of notification configurations
-    bucket_notification_configs: Dict[BucketName, NotificationConfiguration] = LocalAttribute(
+    bucket_notification_configs: Dict[BucketName, NotificationConfiguration] = CrossRegionAttribute(
         default=dict
     )
 
     # maps bucket name to bucket's CORS settings
-    bucket_cors: Dict[BucketName, CORSConfiguration] = LocalAttribute(default=dict)
+    bucket_cors: Dict[BucketName, CORSConfiguration] = CrossRegionAttribute(default=dict)
 
     # maps bucket name to bucket's replication settings
-    bucket_replication: Dict[BucketName, ReplicationConfiguration] = LocalAttribute(default=dict)
-
-    # maps bucket name to bucket's lifecycle configuration
-    # TODO: need to check "globality" of parameters / redirect
-    bucket_lifecycle_configuration: Dict[BucketName, BucketLifecycleConfiguration] = LocalAttribute(
+    bucket_replication: Dict[BucketName, ReplicationConfiguration] = CrossRegionAttribute(
         default=dict
     )
 
-    bucket_versioning_status: Dict[BucketName, bool] = LocalAttribute(default=dict)
+    # maps bucket name to bucket's lifecycle configuration
+    # TODO: need to check "globality" of parameters / redirect
+    bucket_lifecycle_configuration: Dict[
+        BucketName, BucketLifecycleConfiguration
+    ] = CrossRegionAttribute(default=dict)
 
-    bucket_website_configuration: Dict[BucketName, WebsiteConfiguration] = LocalAttribute(
+    bucket_versioning_status: Dict[BucketName, bool] = CrossRegionAttribute(default=dict)
+
+    bucket_website_configuration: Dict[BucketName, WebsiteConfiguration] = CrossRegionAttribute(
         default=dict
     )
 

@@ -27,7 +27,7 @@ class KinesisMockPackageInstaller(GitHubReleaseInstaller):
     def __init__(self, version: str):
         super().__init__("kinesis-mock", version, "etspaceman/kinesis-mock")
 
-    def _get_github_asset_name(self, _):
+    def _get_github_asset_name(self):
         arch = get_arch()
         operating_system = get_os()
         if config.is_env_true("KINESIS_MOCK_FORCE_JAVA"):

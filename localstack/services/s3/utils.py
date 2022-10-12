@@ -4,7 +4,7 @@ from typing import Dict, Union
 
 import moto.s3.models as moto_s3_models
 from moto.s3.exceptions import MissingBucket
-from moto.s3.models import FakeKey
+from moto.s3.models import FakeDeleteMarker, FakeKey
 
 from localstack.aws.api import ServiceException
 from localstack.aws.api.s3 import (
@@ -111,8 +111,8 @@ def verify_checksum(checksum_algorithm: str, data: bytes, request: Dict):
         )
 
 
-def is_key_expired(key_object: FakeKey) -> bool:
-    if not key_object or not key_object._expiry:
+def is_key_expired(key_object: Union[FakeKey, FakeDeleteMarker]) -> bool:
+    if not key_object or isinstance(key_object, FakeDeleteMarker) or not key_object._expiry:
         return False
     return key_object._expiry <= datetime.datetime.now(key_object._expiry.tzinfo)
 

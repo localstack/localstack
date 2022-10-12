@@ -365,7 +365,8 @@ class TestCloudFormation:
         s3_client = create_boto_client("s3", region_name=region)
         bucket_name = f"target-{short_uid()}"
         queue_name = f"queue-{short_uid()}"
-        queue_arn = aws_stack.sqs_queue_arn(queue_name, region_name=s3_client.meta.region_name)
+        # the queue is always created in us-east-1
+        queue_arn = aws_stack.sqs_queue_arn(queue_name)
         if create_bucket_first:
             s3_client.create_bucket(
                 Bucket=bucket_name,

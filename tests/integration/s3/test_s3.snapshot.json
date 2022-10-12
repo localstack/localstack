@@ -322,12 +322,38 @@
     }
   },
   "tests/integration/s3/test_s3.py::TestS3::test_get_object_attributes": {
-    "recorded-date": "21-09-2022, 13:35:02",
+    "recorded-date": "06-10-2022, 19:45:18",
     "recorded-content": {
       "object-attrs": {
         "ETag": "e92499db864217242396e8ef766079a9",
         "LastModified": "datetime",
         "ObjectSize": 7,
+        "StorageClass": "STANDARD",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "object-attrs-multiparts-1-part": {
+        "ETag": "e747540af6911dbc890f8d3e0b48549b-1",
+        "LastModified": "datetime",
+        "ObjectParts": {
+          "TotalPartsCount": 1
+        },
+        "ObjectSize": 65,
+        "StorageClass": "STANDARD",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "object-attrs-multiparts-2-parts": {
+        "ETag": "5389a7fb9c7e4b97c90255e2ee5e57f7-2",
+        "LastModified": "datetime",
+        "ObjectParts": {
+          "TotalPartsCount": 2
+        },
+        "ObjectSize": 5242965,
         "StorageClass": "STANDARD",
         "ResponseMetadata": {
           "HTTPHeaders": {},
@@ -456,7 +482,7 @@
     }
   },
   "tests/integration/s3/test_s3.py::TestS3::test_get_object_after_deleted_in_versioned_bucket": {
-    "recorded-date": "21-09-2022, 13:35:18",
+    "recorded-date": "06-10-2022, 22:35:23",
     "recorded-content": {
       "get-object": {
         "AcceptRanges": "bytes",
@@ -466,7 +492,7 @@
         "ETag": "\"e8dc4081b13434b45189a720b77b6818\"",
         "LastModified": "datetime",
         "Metadata": {},
-        "VersionId": "tJEw7LZJ5OQQyUBbur6az2mmK7NnO1sy",
+        "VersionId": "<version-id:1>",
         "ResponseMetadata": {
           "HTTPHeaders": {},
           "HTTPStatusCode": 200
@@ -3603,6 +3629,100 @@
       "no-such-bucket": "<html>\n<head><title>404 Not Found</title></head>\n<body>\n<h1>404 Not Found</h1>\n<ul>\n<li>Code: NoSuchBucket</li>\n<li>Message: The specified bucket does not exist</li>\n<li>BucketName: <bucket-name></li>\n<li>RequestId: <request-id></li>\n<li>HostId: <host-id></li>\n</ul>\n<hr/>\n</body>\n</html>\n",
       "no-such-website-config": "<html>\n<head><title>404 Not Found</title></head>\n<body>\n<h1>404 Not Found</h1>\n<ul>\n<li>Code: NoSuchWebsiteConfiguration</li>\n<li>Message: The specified bucket does not have a website configuration</li>\n<li>BucketName: <bucket-name></li>\n<li>RequestId: <request-id></li>\n<li>HostId: <host-id></li>\n</ul>\n<hr/>\n</body>\n</html>\n",
       "no-such-website-config-key": "<html>\n<head><title>404 Not Found</title></head>\n<body>\n<h1>404 Not Found</h1>\n<ul>\n<li>Code: NoSuchWebsiteConfiguration</li>\n<li>Message: The specified bucket does not have a website configuration</li>\n<li>BucketName: <bucket-name></li>\n<li>RequestId: <request-id></li>\n<li>HostId: <host-id></li>\n</ul>\n<hr/>\n</body>\n</html>\n"
+    }
+  },
+  "tests/integration/s3/test_s3.py::TestS3::test_multipart_and_list_parts": {
+    "recorded-date": "06-10-2022, 18:49:24",
+    "recorded-content": {
+      "create-multipart": {
+        "Bucket": "bucket",
+        "Key": "test-list-parts",
+        "UploadId": "<upload-id:1>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "list-part-after-created": {
+        "Bucket": "bucket",
+        "Initiator": {
+          "DisplayName": "display-name",
+          "ID": "owner-id"
+        },
+        "IsTruncated": false,
+        "Key": "test-list-parts",
+        "MaxParts": 1000,
+        "NextPartNumberMarker": 0,
+        "Owner": {
+          "DisplayName": "display-name",
+          "ID": "owner-id"
+        },
+        "PartNumberMarker": 0,
+        "StorageClass": "STANDARD",
+        "UploadId": "<upload-id:1>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "upload-part": {
+        "ETag": "\"3237c18681adb6a9d843c733ce249480\"",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "list-part-after-upload": {
+        "Bucket": "bucket",
+        "Initiator": {
+          "DisplayName": "display-name",
+          "ID": "owner-id"
+        },
+        "IsTruncated": false,
+        "Key": "test-list-parts",
+        "MaxParts": 1000,
+        "NextPartNumberMarker": 1,
+        "Owner": {
+          "DisplayName": "display-name",
+          "ID": "owner-id"
+        },
+        "PartNumberMarker": 0,
+        "Parts": [
+          {
+            "ETag": "\"3237c18681adb6a9d843c733ce249480\"",
+            "LastModified": "datetime",
+            "PartNumber": 1,
+            "Size": 65
+          }
+        ],
+        "StorageClass": "STANDARD",
+        "UploadId": "<upload-id:1>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "complete-multipart": {
+        "Bucket": "bucket",
+        "ETag": "\"e747540af6911dbc890f8d3e0b48549b-1\"",
+        "Key": "test-list-parts",
+        "Location": "<location:1>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "list-part-after-complete-exc": {
+        "Error": {
+          "Code": "NoSuchUpload",
+          "Message": "The specified upload does not exist. The upload ID may be invalid, or the upload may have been aborted or completed.",
+          "UploadId": "<upload-id:1>"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 404
+        }
+      }
     }
   }
 }

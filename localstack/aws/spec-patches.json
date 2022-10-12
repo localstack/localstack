@@ -615,6 +615,13 @@
         "documentation": "<p>The specified bucket does not have a website configuration</p>",
         "exception": true
       }
+    },
+    {
+      "op": "add",
+      "path": "/shapes/NoSuchUpload/members/UploadId",
+      "value": {
+        "shape": "MultipartUploadId"
+      }
     }
   ]
 }
