@@ -201,7 +201,11 @@ class DockerRuntimeExecutor(RuntimeExecutor):
             CONTAINER_CLIENT.pull_image(image_name)
         if config.LAMBDA_PREBUILD_IMAGES:
             prepare_image(target_path, function_version)
-        LOG.debug("Version preparation took %0.2fms", (time.perf_counter() - time_before) * 1000)
+        LOG.debug(
+            "Version preparation of version %s took %0.2fms",
+            function_version.qualified_arn,
+            (time.perf_counter() - time_before) * 1000,
+            )
 
     @classmethod
     def cleanup_version(cls, function_version: FunctionVersion) -> None:

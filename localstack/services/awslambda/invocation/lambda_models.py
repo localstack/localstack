@@ -81,6 +81,7 @@ class S3Code:
     s3_object_version: str | None
     code_sha256: str
     code_size: int
+    _disk_lock: threading.RLock = dataclasses.field(default_factory=threading.RLock)
 
     def get_lambda_archive(self) -> bytes:
         """Get the lambda archive"""
@@ -122,12 +123,14 @@ class S3Code:
         Unzips the code archive to the proper destination on disk, if not already present
         """
         target_path = self.get_unzipped_code_location()
-        if target_path.exists():
-            return
-        target_path.mkdir(parents=True, exist_ok=True)
-        with tempfile.NamedTemporaryFile() as file:
-            self._download_archive_to_file(file)
-            unzip(file.name, str(target_path))
+        with self._disk_lock:
+            if target_path.exists():
+                return
+            LOG.debug("Saving code %s to disk", self.id)
+            target_path.mkdir(parents=True, exist_ok=True)
+            with tempfile.NamedTemporaryFile() as file:
+                self._download_archive_to_file(file)
+                unzip(file.name, str(target_path))
 
     def destroy_cached(self) -> None:
         """
