@@ -739,8 +739,11 @@ def get_target_resource_details(invocation_context: ApiInvocationContext) -> Tup
     )
 
     try:
+        # we use the path extracted from the url and not the invocation path, because the latter
+        # might contain trailing slashes that should not be used for matching the resource
+        path = f"{invocation_context.path}" if invocation_context.path.startswith("/") else f"/{invocation_context.path}"
         extracted_path, resource = get_resource_for_path(
-            path=invocation_context.invocation_path, path_map=path_map
+            path=path, path_map=path_map
         )
         invocation_context.resource = resource
         return extracted_path, resource

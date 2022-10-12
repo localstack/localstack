@@ -83,7 +83,13 @@ class ApiInvocationContext:
 
     @property
     def invocation_path(self) -> str:
-        return self.path if self.path.startswith("/") else f"/{self.path}"
+        # invocation path differs from url_params["path"] because it includes a leading slash and
+        # trailing slash if the request.path includes a trailing slash, e.g.: /my/path/? or
+        # /my/path? are valid invocation paths for the same resource path /my/path
+        invocation_path = self.path
+        if self.request.path.endswith("/"):
+            invocation_path = f"{invocation_path}/"
+        return invocation_path if self.path.startswith("/") else f"/{invocation_path}"
 
     @property
     def path_with_query_string(self) -> str:
