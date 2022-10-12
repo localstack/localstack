@@ -20,5 +20,8 @@ class LambdaStore(BaseStore):
     # maps Lambda ARNs to layers ARNs configured for that Lambda
     layers: Dict[str, str] = LocalAttribute(default=dict)
 
+    # maps function names to Function resources
+    functions = LocalAttribute(default=dict)
+
 
 lambda_stores = AccountRegionBundle("lambda", LambdaStore)

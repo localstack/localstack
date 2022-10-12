@@ -1140,7 +1140,7 @@ class TestLambdaStore:
         def _lookup(resource_id, region):
             store = get_store_for_arn(resource_id)
             assert store
-            assert store._region == region
+            assert store._region_name == region
 
         _lookup("my-func", default_region)
         _lookup("my-layer", default_region)
