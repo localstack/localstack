@@ -46,12 +46,15 @@ class ServiceLoader(Handler):
         service_operation: Optional[ServiceOperation] = context.service_operation
         request_router = self.service_request_router
 
-        with self.service_locks[context.service.service_name]:
-            # Ensure at this point that the Service is loaded and
-            # set to ServiceState.RUNNING if not in an erroneous state.
-            service_plugin: Service = self.service_manager.require(service_name)
+        # Ensure the Service is loaded and set to ServiceState.RUNNING if not in an erroneous state.
+        service_plugin: Service = self.service_manager.require(service_name)
 
-            # Continue adding service skelethon and handlers to the router if these are missing.
+        # Continue adding service skelethon and handlers to the router if these are missing.
+        if service_operation in request_router.handlers:
+            return
+
+        with self.service_locks[context.service.service_name]:
+            # try again to avoid race conditions
             if service_operation in request_router.handlers:
                 return
             if isinstance(service_plugin, Service):
