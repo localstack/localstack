@@ -141,7 +141,8 @@ class CorsPreflightHandler(Handler):
             return
 
         if context.request.method == "OPTIONS" and not config.DISABLE_PREFLIGHT_PROCESSING:
-            response.status_code = 204
+            # preflight should use 200, no chance for breaking in the future
+            response.status_code = 200
             chain.stop()
 
 
@@ -178,6 +179,7 @@ class CorsResponseEnricher(Handler):
             )
         if ACL_METHODS not in headers:
             headers[ACL_METHODS] = ",".join(CORS_ALLOWED_METHODS)
+        # TODO: we should actually check if there's more headers than we want here to reject the request
         if ACL_ALLOW_HEADERS not in headers:
             requested_headers = headers.get(ACL_REQUEST_HEADERS, "")
             requested_headers = re.split(r"[,\s]+", requested_headers) + CORS_ALLOWED_HEADERS
