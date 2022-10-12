@@ -5,6 +5,7 @@ import glob
 import json
 import logging
 import os
+import queue
 import re
 import shlex
 import subprocess
@@ -1441,8 +1442,39 @@ class LambdaExecutorLocal(LambdaExecutor):
         process = Process(target=do_execute, args=(process_queue,))
         start_time = now(millis=True)
         process.start()
-        process_result: LocalExecutorResult = process_queue.get()
-        process.join()
+        try:
+            process_result: LocalExecutorResult = process_queue.get(
+                timeout=lambda_function.timeout or 20
+            )
+        except queue.Empty:
+            process_result = LocalExecutorResult(
+                "",
+                "",
+                "TimeoutError",
+                {
+                    "errorType": "TimeoutError",
+                    "errorMessage": "Function execution timed out",
+                    "stackTrace": [],
+                },
+            )
+        process.join(timeout=5)
+        if process.exitcode is None:
+            LOG.debug("Lambda process pid %s did not exit, trying SIGTERM", process.pid)
+            # process did not join after 5s
+            process.terminate()
+            process.join(timeout=2)
+            if process.exitcode is None:
+                # process not reacting to SIGTERM, let's kill it.
+                LOG.debug(
+                    "Lambda process pid %s did not exit on SIGTERM, trying SIGKILL", process.pid
+                )
+                process.kill()
+                process.join(timeout=1)
+                LOG.debug(
+                    "Lambda process %s exited after SIGKILL with exit code %s",
+                    process.pid,
+                    process.exitcode,
+                )
 
         result = process_result.result
 
@@ -1484,6 +1516,7 @@ class LambdaExecutorLocal(LambdaExecutor):
 
         # construct final invocation result
         invocation_result = InvocationResult(result, log_output=log_output)
+        LOG.info('Successfully executed lambda "%s"', lambda_function.arn())
         # run plugins post-processing logic
         invocation_result = self.process_result_via_plugins(inv_context, invocation_result)
         return invocation_result
