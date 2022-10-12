@@ -70,7 +70,6 @@ def start_stepfunctions(asynchronous=True, persistence_path: Optional[str] = Non
     # TODO: introduce Server abstraction for StepFunctions process
     global PROCESS_THREAD
     backend_port = config.LOCAL_PORT_STEPFUNCTIONS
-    # TODO: this should be solved via Plugin discovery, remove once confirmed
     stepfunctions_local_package.install()
     cmd = get_command(backend_port)
     log_startup_message("StepFunctions")

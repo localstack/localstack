@@ -64,7 +64,6 @@ class StepFunctionsLocalePackage(Package):
 
 
 class StepFunctionsLocalePackageInstaller(PackageInstaller):
-    # TODO: check if it makes sense to inherit from DownloadInstaller
     def get_executable_path(self) -> str | None:
         install_dir = self.get_installed_dir()
         if install_dir:

@@ -12,7 +12,6 @@ from localstack.utils.platform import get_arch
 
 LAMBDA_RUNTIME_INIT_URL = "https://github.com/localstack/lambda-runtime-init/releases/download/{version}/aws-lambda-rie-{arch}"
 
-# TODO: talk with Alex, move this really to constants?
 LAMBDA_RUNTIME_DEFAULT_VERSION = "v0.1.4-pre"
 
 # GO Lambda runtime

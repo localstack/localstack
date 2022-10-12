@@ -20,7 +20,6 @@ class KMSLocalPackage(Package):
 
 
 class KMSLocalPackageInstaller(PermissionDownloadInstaller):
-    # TODO: this used to be in static libs, fix or remove this
     @staticmethod
     def _get_local_arch():
         return f"{platform.system().lower()}-{get_arch()}"
