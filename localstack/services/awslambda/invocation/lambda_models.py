@@ -36,21 +36,21 @@ LOG = logging.getLogger(__name__)
 
 # To add support for a new runtime, just add it here with the accompanying image postfix
 IMAGE_MAPPING = {
-    "python3.7": "python:3.7",
-    "python3.8": "python:3.8",
-    "python3.9": "python:3.9",
-    "nodejs12.x": "nodejs:12",
-    "nodejs14.x": "nodejs:14",
-    "nodejs16.x": "nodejs:16",
-    "ruby2.7": "ruby:2.7",
-    "java8": "java:8",
-    "java8.al2": "java:8.al2",
-    "java11": "java:11",
-    "dotnetcore3.1": "dotnet:core3.1",
-    "dotnet6": "dotnet:6",
-    "go1.x": "go:1",
-    "provided": "provided:alami",
-    "provided.al2": "provided:al2",
+    "python3.7": "python:3.7@sha256:be668898a538d5258e006e1920f86f31cab8000dfa68b3be78d5ef67ad15a417",
+    "python3.8": "python:3.8@sha256:b3402a5f5e9535ba4787a1fd6b0ee39738dee18bdff861a0589571ba74122d35",
+    "python3.9": "python:3.9@sha256:5b3585b121e6fb9707abb52c1f99cbab51939fee0769752ab6c641f20f479cf6",
+    "nodejs12.x": "nodejs:12@sha256:16431b8d5eb26e80b37a80297ad67f70478c045339395bbd32f45091275ebb50",
+    "nodejs14.x": "nodejs:14@sha256:49163474ad6aa0028c21b39a111bf56ad41a63514c7ed82560048a81a38768ee",
+    "nodejs16.x": "nodejs:16@sha256:eef6f811663a8888bb32fcd43e3b2dadbcc1a249eed92b50c5d3ddd9c7937326",
+    "ruby2.7": "ruby:2.7@sha256:7959af1381eede0984dccd526b264cc071088c90b35e21bab41ac9a1bc680d08",
+    "java8": "java:8@sha256:38d6ac020eedd32b80f5421ed81c979cb1290f4f5b5a3349659c6fd26965bfad",
+    "java8.al2": "java:8.al2@sha256:78bf037be151c628f8b984e13dc39905d3a06af3385400dced40793c4315b8eb",
+    "java11": "java:11@sha256:041883130bb9e9c3ef3abb7c3aabde7b3e00ea7612a4d56419357447be6f5418",
+    "dotnetcore3.1": "dotnet:core3.1@sha256:2cbcc59fe28f7f523674c3a62f1cfd3f522c2ac30da9da2b50789f7f51e1a38b",
+    "dotnet6": "dotnet:6@sha256:b83e2db700979654befb1516e9242bf55fef999aed58b6368169f6414ce4804a",
+    "go1.x": "go:1@sha256:de9d915ed2b93b8bd96490927c65d88a98b3aa2a21248d97b398a1a1d1614a6c",
+    "provided": "provided:alami@sha256:3c00defa5bebd696c572ba48274c711ac9720f7f783cc30d52ba2f9f9309aeca",
+    "provided.al2": "provided:al2@sha256:da60c549923523e27e618501c1ae434dc8246a4a98688405186426cc363a4c11",
 }
 
 
