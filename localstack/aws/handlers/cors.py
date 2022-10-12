@@ -171,7 +171,7 @@ class CorsResponseEnricher(Handler):
         if (
             config.DISABLE_CORS_HEADERS
             or not should_enforce_self_managed_service(context)
-            or not self.is_cors_origin_allowed(headers)
+            or not is_origin_allowed(headers)
         ):
             return
 
