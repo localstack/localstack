@@ -130,9 +130,13 @@ class GatewayRestAPI(GenericBaseModel):
             resource = resources[resource_id]
             props = resource["Properties"]
 
+            tags = {tag["Key"]: tag["Value"] for tag in props.get("Tags", [])}
+
             # TODO: add missing attributes
             result = client.create_rest_api(
-                name=props["Name"], description=props.get("Description", "")
+                name=props["Name"],
+                description=props.get("Description", ""),
+                tags=tags,
             )
             body = props.get("Body")
             if body:
