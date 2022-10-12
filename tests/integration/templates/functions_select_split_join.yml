@@ -20,6 +20,7 @@ Resources:
       Name: NewFormat
       Type: String
       Value: !Join ["_", !Split [ ";", !Ref MultipleValues]]
+
 Outputs:
   Result:
     Value:

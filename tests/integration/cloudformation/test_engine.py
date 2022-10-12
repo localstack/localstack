@@ -1,4 +1,5 @@
 import base64
+import json
 import os
 
 import pytest
@@ -175,10 +176,33 @@ class TestIntrinsicFunctions:
             parameters={"MultipleValues": f"{first_value};{second_value}"},
         )
 
-        assert first_value == deployed.outputs["Result"]
-
         # TODO support join operation
         # assert f"{first_value}_{second_value}" == deployed.outputs["SecondResult"]
+
+        assert first_value == deployed.outputs["Result"]
+
+    @pytest.mark.aws_validated
+    @pytest.mark.skip(reason="not working properly")
+    def test_json_and_find_in_map_functions(self, deploy_cfn_template):
+        template_path = os.path.join(
+            os.path.dirname(__file__), "../templates/function_to_json_string.yml"
+        )
+
+        first_value = f"string-{short_uid()}"
+        second_value = f"string-{short_uid()}"
+        deployed = deploy_cfn_template(
+            template_path=template_path,
+            parameters={
+                "Value1": first_value,
+                "Value2": second_value,
+            },
+        )
+
+        json_result = json.loads(deployed.outputs["Result"])
+
+        assert json_result["key1"] == first_value
+        assert json_result["key2"] == second_value
+        assert "value1" == deployed.outputs["Result2"]
 
 
 class TestImports:
