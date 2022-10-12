@@ -27,18 +27,6 @@ class NoSuchVersionException(PackageException):
     pass
 
 
-class UnsupportedOSException(PackageException):
-    """Exception indicating that the requested package does not exist for the used operating system"""
-
-    pass
-
-
-class UnsupportedArchException(PackageException):
-    """Exception indicating that the requested package does not exist for the used architecture"""
-
-    pass
-
-
 class InstallTarget(Enum):
     """
     Different installation targets.

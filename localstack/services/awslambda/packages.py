@@ -4,8 +4,7 @@ import stat
 from typing import List
 
 from localstack.packages import DownloadInstaller, InstallTarget, Package, PackageInstaller
-from localstack.packages.api import UnsupportedArchException, UnsupportedOSException
-from localstack.packages.core import ArchiveDownloadAndExtractInstaller
+from localstack.packages.core import ArchiveDownloadAndExtractInstaller, SystemNotSupportedException
 from localstack.utils.platform import get_arch
 
 LAMBDA_RUNTIME_INIT_URL = "https://github.com/localstack/lambda-runtime-init/releases/download/{version}/aws-lambda-rie-{arch}"
@@ -58,9 +57,9 @@ class AWSLambdaGoRuntimePackageInstaller(ArchiveDownloadAndExtractInstaller):
         arch = get_arch()
 
         if system not in ["linux"]:
-            raise UnsupportedOSException(f"Unsupported os {system} for awslambda-go-runtime")
+            raise SystemNotSupportedException(f"Unsupported os {system} for awslambda-go-runtime")
         if arch not in ["amd64", "arm64"]:
-            raise UnsupportedArchException(f"Unsupported arch {arch} for awslambda-go-runtime")
+            raise SystemNotSupportedException(f"Unsupported arch {arch} for awslambda-go-runtime")
 
         return GO_RUNTIME_DOWNLOAD_URL_TEMPLATE.format(
             version=GO_RUNTIME_VERSION,

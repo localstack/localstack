@@ -819,9 +819,7 @@ def do_set_function_code(lambda_function: LambdaFunction):
             lambda_handler = execute
 
         if runtime.startswith("go1") and not use_docker():
-            go_installer = awslambda_go_runtime_package.get_installer()
-            if not go_installer.is_installed():
-                go_installer.install()
+            awslambda_go_runtime_package.install()
 
             ensure_readable(main_file)
 

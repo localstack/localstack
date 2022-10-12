@@ -39,4 +39,3 @@ class TerraformPackageInstaller(ArchiveDownloadAndExtractInstaller):
 
 
 terraform_package = TerraformPackage()
-TERRAFORM_BIN = terraform_package.get_installer().get_executable_path()

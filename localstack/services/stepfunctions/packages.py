@@ -7,6 +7,7 @@ from typing import List
 import requests
 
 from localstack.packages import InstallTarget, Package, PackageInstaller
+from localstack.packages.core import ExecutableInstaller
 from localstack.services.install import (
     ARTIFACTS_REPO,
     JAR_URLS,
@@ -52,7 +53,7 @@ Since the JAR files are platform-independent, you can use the layer digest of an
 """
 
 
-class StepFunctionsLocalePackage(Package):
+class StepFunctionsLocalPackage(Package):
     def __init__(self):
         super().__init__("StepFunctionsLocal", "1.7.9")
 
@@ -60,20 +61,14 @@ class StepFunctionsLocalePackage(Package):
         return ["1.7.9"]
 
     def _get_installer(self, version: str) -> PackageInstaller:
-        return StepFunctionsLocalePackageInstaller("stepfunctions-local", version)
+        return StepFunctionsLocalPackageInstaller("stepfunctions-local", version)
 
 
-class StepFunctionsLocalePackageInstaller(PackageInstaller):
-    def get_executable_path(self) -> str | None:
-        install_dir = self.get_installed_dir()
-        if install_dir:
-            return self._get_install_marker_path(install_dir)
-
+class StepFunctionsLocalPackageInstaller(ExecutableInstaller):
     def _get_install_marker_path(self, install_dir: str) -> str:
         return os.path.join(install_dir, "StepFunctionsLocal.jar")
 
     def _install(self, target: InstallTarget) -> None:
-
         """
         The StepFunctionsLocal JAR files are downloaded using the artifacts in DockerHub (because AWS only provides an
         HTTP link to the most recent version). Installers are executed when building Docker, this means they _cannot_ use
@@ -83,8 +78,6 @@ class StepFunctionsLocalePackageInstaller(PackageInstaller):
         install_dir = self._get_install_dir(target)
         install_destination = self._get_install_marker_path(install_dir)
         if not os.path.exists(install_destination):
-
-            # target_path = dirs.static_libs
 
             # Download layer that contains the necessary jars
             def download_stepfunctions_jar(image, image_digest, target_path):
@@ -152,4 +145,4 @@ class StepFunctionsLocalePackageInstaller(PackageInstaller):
             download(SFN_AWS_SDK_LAMBDA_ZIP_FILE, target)
 
 
-stepfunctions_local_package = StepFunctionsLocalePackage()
+stepfunctions_local_package = StepFunctionsLocalPackage()

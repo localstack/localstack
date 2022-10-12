@@ -241,10 +241,7 @@ class ArchiveDownloadAndExtractInstaller(ExecutableInstaller):
         )
 
 
-class PermissionDownloadInstaller(DownloadInstaller):
-    def _get_download_url(self) -> str:
-        raise NotImplementedError()
-
+class PermissionDownloadInstaller(DownloadInstaller, ABC):
     def _install(self, target: InstallTarget) -> None:
         super()._install(target)
         chmod_r(self.get_executable_path(), 0o777)
