@@ -162,6 +162,24 @@ class TestIntrinsicFunctions:
         converted_string = base64.b64encode(bytes(original_string, "utf-8")).decode("utf-8")
         assert converted_string == deployed.outputs["Encoded"]
 
+    @pytest.mark.aws_validated
+    def test_split_and_join_functions(self, deploy_cfn_template):
+        template_path = os.path.join(
+            os.path.dirname(__file__), "../templates/functions_select_split_join.yml"
+        )
+
+        first_value = f"string-{short_uid()}"
+        second_value = f"string-{short_uid()}"
+        deployed = deploy_cfn_template(
+            template_path=template_path,
+            parameters={"MultipleValues": f"{first_value};{second_value}"},
+        )
+
+        assert first_value == deployed.outputs["Result"]
+
+        # TODO support join operation
+        # assert f"{first_value}_{second_value}" == deployed.outputs["SecondResult"]
+
 
 class TestImports:
     @pytest.mark.skip(reason="flaky due to issues in parameter handling and re-resolving")
