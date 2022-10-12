@@ -72,7 +72,7 @@ def prepare_image(target_path: Path, function_version: FunctionVersion) -> None:
         raise NotImplementedError("Custom images are currently not supported")
     src_init = get_runtime_client_path()
     # copy init file
-    target_init = target_path / "aws-lambda-rie"
+    target_init = awslambda_runtime_package.get_installer().get_executable_path()
     shutil.copy(src_init, target_init)
     target_init.chmod(0o755)
     # copy code

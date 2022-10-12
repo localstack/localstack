@@ -6,8 +6,6 @@ from typing import List
 from localstack.packages import DownloadInstaller, InstallTarget, Package, PackageInstaller
 from localstack.packages.api import UnsupportedArchException, UnsupportedOSException
 from localstack.packages.core import ArchiveDownloadAndExtractInstaller
-from localstack.services.install import log_install_msg
-from localstack.utils.http import download
 from localstack.utils.platform import get_arch
 
 LAMBDA_RUNTIME_INIT_URL = "https://github.com/localstack/lambda-runtime-init/releases/download/{version}/aws-lambda-rie-{arch}"
@@ -30,19 +28,15 @@ class AWSLambdaRuntimePackage(Package):
         return AWSLambdaRuntimePackageInstaller(name="awslambda-runtime", version=version)
 
 
-class AWSLambdaRuntimePackageInstaller(PackageInstaller):
-    def _get_install_marker_path(self, install_dir: str) -> str:
-        return os.path.join(install_dir, "aws-lambda-rie")
-
-    def _install(self, target: InstallTarget) -> None:
-        install_location = self._get_install_marker_path(self._get_install_dir(target))
-        if os.path.isfile(install_location):
-            return
-        log_install_msg("Installing lambda runtime")
+class AWSLambdaRuntimePackageInstaller(DownloadInstaller):
+    def _get_download_url(self) -> str:
         arch = get_arch()
         arch = "x86_64" if arch == "amd64" else arch
-        download_url = LAMBDA_RUNTIME_INIT_URL.format(version=self.version, arch=arch)
-        download(download_url, install_location)
+        return LAMBDA_RUNTIME_INIT_URL.format(version=self.version, arch=arch)
+
+    def _install(self, target: InstallTarget) -> None:
+        super()._install(target)
+        install_location = self.get_executable_path()
         st = os.stat(install_location)
         os.chmod(install_location, mode=st.st_mode | stat.S_IXUSR | stat.S_IXGRP | stat.S_IXOTH)
 
