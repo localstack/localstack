@@ -127,7 +127,12 @@ class CsrfEnforcerHandler(Handler):
         # docs: Whether to disable all CSRF (server-side) mitigations.
         # OPTIONS requests should go through for better debugging, no security issue
         if context.request.method != "OPTIONS" and not config.DISABLE_CORS_CHECKS:
-            if not is_origin_allowed(context.request.headers):
+            headers = context.request.headers
+            if not is_origin_allowed(headers):
+                LOG.info(
+                    "Blocked request from forbidden origin %s (CSRF mitigation)",
+                    headers.get("origin") or headers.get("referer"),
+                )
                 response.status_code = 403
                 chain.terminate()
 
