@@ -195,8 +195,14 @@ class ExtractDownloadInstaller(PackageInstaller, ABC):
     def _get_download_url(self) -> str:
         raise NotImplementedError()
 
-    def _install(self, target: InstallTarget) -> None:
+    def _get_archive_subdir(self) -> str | None:
+        """
+        :return: name of the subdirectory contained in the archive or none if the package content is at the root level
+                of the archive
+        """
+        return None
 
+    def _install(self, target: InstallTarget) -> None:
         target_directory = self._get_install_dir(target)
         mkdir(target_directory)
         download_url = self._get_download_url()
@@ -210,9 +216,20 @@ class ExtractDownloadInstaller(PackageInstaller, ABC):
         """
         :return: the path to the downloaded binary or None if it's not yet downloaded / installed.
         """
-        install_dir = self.get_installed_dir()
+        install_dir = super().get_installed_dir()
         if install_dir:
             return self._get_install_marker_path(install_dir)
+
+    def get_installed_dir(self) -> str | None:
+        installed_dir = super().get_installed_dir()
+        subdir = self._get_archive_subdir()
+
+        # If the specific installer defines a subdirectory, we return the subdirectory.
+        # f.e. /var/lib/localstack/lib/amazon-mq/5.16.5/apache-activemq-5.16.5/
+        if installed_dir and subdir:
+            return os.path.join(installed_dir, subdir)
+
+        return installed_dir
 
 
 class PermissionDownloadInstaller(DownloadInstaller):
