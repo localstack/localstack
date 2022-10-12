@@ -1,4 +1,3 @@
-import os
 import platform
 from typing import List
 
@@ -20,17 +19,8 @@ class KMSLocalPackage(Package):
 
 
 class KMSLocalPackageInstaller(PermissionDownloadInstaller):
-    @staticmethod
-    def _get_local_arch():
-        return f"{platform.system().lower()}-{get_arch()}"
-
     def _get_download_url(self) -> str:
-        return KMS_URL_PATTERN.replace("<arch>", KMSLocalPackageInstaller._get_local_arch())
-
-    def _get_install_marker_path(self, install_dir: str) -> str:
-        return os.path.join(
-            install_dir, f"{self.name}.{KMSLocalPackageInstaller._get_local_arch()}.bin"
-        )
+        return KMS_URL_PATTERN.replace("<arch>", f"{platform.system().lower()}-{get_arch()}")
 
 
 kms_local_package = KMSLocalPackage()
