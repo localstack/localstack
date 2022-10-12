@@ -3,7 +3,7 @@ import platform
 from typing import List
 
 from localstack.packages import InstallTarget, Package, PackageInstaller
-from localstack.packages.core import ExtractDownloadInstaller
+from localstack.packages.core import ArchiveDownloadAndExtractInstaller
 from localstack.utils.files import chmod_r
 from localstack.utils.platform import get_arch
 
@@ -24,7 +24,7 @@ class TerraformPackage(Package):
         return TerraformPackageInstaller("terraform", version)
 
 
-class TerraformPackageInstaller(ExtractDownloadInstaller):
+class TerraformPackageInstaller(ArchiveDownloadAndExtractInstaller):
     def _get_install_marker_path(self, install_dir: str) -> str:
         return os.path.join(install_dir, "terraform")
 
