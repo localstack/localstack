@@ -225,16 +225,6 @@ def log_install_msg(component, verbatim=False):
     LOG.info("Downloading and installing %s. This may take some time.", component)
 
 
-def extract(source_archive, target):
-    _, ext = os.path.splitext(source_archive)
-    if ext == ".zip":
-        unzip(source_archive, target)
-    elif ext in [".bz2", ".gz", ".tgz"]:
-        untar(source_archive, target)
-    else:
-        raise Exception(f"Unsupported archive format: {ext}")
-
-
 def download_and_extract(archive_url, target_dir, retries=0, sleep=3, tmp_archive=None):
     mkdir(target_dir)
 
