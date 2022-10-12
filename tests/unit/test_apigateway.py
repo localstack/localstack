@@ -215,24 +215,23 @@ def test_render_template_values():
     assert decoded == "x=a b"
 
     escape_tests = (
-        ("it's", '"it\'s"'),
-        ("0010", "10"),
+        ("", "{}"),
+        ("it's", "it's"),
+        ("0010", "0010"),
         ("true", "true"),
-        ("True", '"True"'),
+        ("True", "True"),
         ("1.021", "1.021"),
-        ("'''", "\"'''\""),
-        ('""', '""'),
-        ('"""', '"\\"\\"\\""'),
-        ('{"foo": 123}', '{"foo": 123}'),
-        ('{"foo"": 123}', '"{\\"foo\\"\\": 123}"'),
-        (1, "1"),
-        (True, "true"),
+        ("'''", "'''"),
+        ('""', '\\"\\"'),
+        ('"""', '\\"\\"\\"'),
+        ('{"foo": 123}', '{\\"foo\\": 123}'),
+        ('{"foo"": 123}', '{\\"foo\\"\\": 123}'),
+        (1, 1),
+        (True, True),
     )
-    for string, expected in escape_tests:
-        escaped = util.escapeJavaScript(string)
+    for input, expected in escape_tests:
+        escaped = util.escapeJavaScript(input)
         assert escaped == expected
-        # we should be able to json.loads in all the cases!
-        json.loads(escaped)
 
 
 class TestJSONPatch(unittest.TestCase):

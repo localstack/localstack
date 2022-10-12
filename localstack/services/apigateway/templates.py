@@ -11,7 +11,7 @@ from localstack.services.apigateway.context import ApiInvocationContext
 from localstack.services.apigateway.helpers import body_as_string
 from localstack.utils.aws.templating import VelocityUtil, VtlTemplate
 from localstack.utils.json import extract_jsonpath, json_safe
-from localstack.utils.numbers import is_number, to_number
+from localstack.utils.numbers import is_number
 from localstack.utils.strings import to_str
 
 LOG = logging.getLogger(__name__)
@@ -93,14 +93,12 @@ class VelocityUtilApiGateway(VelocityUtil):
         JSON dumps will escape the single quotes.
         https://docs.aws.amazon.com/apigateway/latest/developerguide/api-gateway-mapping-template-reference.html
         """
-        try:
-            return json.dumps(json.loads(s))
-        except Exception:
-            if str(s).strip() in {"true", "false"}:
-                s = bool(s)
-            elif s not in [True, False] and is_number(s):
-                s = to_number(s)
-        return json.dumps(s)
+        # empty string escapes to empty object
+        if isinstance(s, str) and len(s.strip()) == 0:
+            return "{}"
+        if is_number(s):
+            return s
+        return json.dumps(s)[1:-1]
 
 
 class VelocityInput:

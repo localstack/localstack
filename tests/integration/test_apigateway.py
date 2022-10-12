@@ -1549,7 +1549,7 @@ class TestAPIGateway:
                 "requestTemplates": {
                     "application/json": """
                     #set($data = $util.escapeJavaScript($input.json('$')))
-                    {"input": $data, "stateMachineArn": "%s"}
+                    {"input": "$data", "stateMachineArn": "%s"}
                     """
                     % sm_arn
                 }
