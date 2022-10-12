@@ -1,5 +1,15 @@
 on:
   workflow_dispatch:
+    inputs:
+      terraform-ref:
+        default: master
+        required: false
+        type: string
+        description: git ref of the hashicorp/terraform-provider-aws to check out
+      localstack-ref:
+        required: false
+        type: string
+        description: git ref of the localstack/localstack to check out
   push:
     branches:
       - master
@@ -15,7 +25,7 @@ jobs:
     steps:
       - uses: actions/checkout@v3
       - id: set-matrix
-        run: echo "::set-output name=matrix::$(python tests/terraform/get-tf-services.py --names)"
+        run: echo "::set-output name=matrix::$(python tests/terraform/get-tf-partitions.py)"
     outputs:
       matrix: ${{ steps.set-matrix.outputs.matrix }}
 
@@ -24,9 +34,8 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        service: ${{ fromJson(needs.prepare_list.outputs.matrix) }}
-        os: [ubuntu-latest]
-    runs-on: ${{ matrix.os }}
+        include: ${{ fromJson(needs.prepare_list.outputs.matrix) }}
+    runs-on: ubuntu-latest
     env:
       DNS_ADDRESS: 0
       AWS_DEFAULT_REGION: us-east-2
@@ -39,6 +48,8 @@ jobs:
 
     - name: Checkout Localstack
       uses: actions/checkout@v3
+      with:
+        ref: ${{ github.event.inputs.localstack-ref || github.ref }}
 
     # FIXME: pinned because of https://github.com/hashicorp/terraform-provider-aws/issues/27049
     - name: Install terraform
@@ -56,6 +67,7 @@ jobs:
       uses: actions/checkout@v3
       with:
         repository: hashicorp/terraform-provider-aws
+        ref: ${{ github.event.inputs.terraform-ref || 'v4.31.0' }}
         path: './terraform-provider-aws'
 
     - name: Set up Python 3.10.5
@@ -79,7 +91,7 @@ jobs:
 
     - name: Get list of tests for this service
       id: get-list
-      run: echo "::set-output name=testlist::$(python tests/terraform/get-tf-tests.py ${{ matrix.service }})"
+      run: echo "::set-output name=testlist::$(python tests/terraform/get-tf-tests.py ${{ matrix.service }} ${{ matrix.partition }})"
 
     - name: Check Test Lists
       if: ${{ steps.get-list.outputs.testlist == '' }}
@@ -104,7 +116,23 @@ jobs:
         key: ${{ runner.os }}-go-${{ hashFiles('**/terraform-provider-aws/go.sum') }}
 
     - name: Run Test Cases
+      id: run-tests
       env:
         CI: true
       run: |
         bash tests/terraform/run.sh ${{ matrix.service }} ${{ steps.get-list.outputs.testlist }}
+
+      # only archive when the run step produced errors
+    - name: Remove files that don't contain ERROR entries before uploading logs
+      if: ${{ failure() && steps.run-tests.conclusion == 'failure'  }}
+      run: |
+        cd terraform-provider-aws/terraformlogs
+        grep -r -L "\[ERROR" | xargs -I _ rm _
+
+    - name: Archive debug logs
+      uses: actions/upload-artifact@v3
+      if: ${{ failure() && steps.run-tests.conclusion == 'failure'  }}
+      with:
+        name: terraformlogs-${{ matrix.service }}
+        path: |
+          terraform-provider-aws/terraformlogs

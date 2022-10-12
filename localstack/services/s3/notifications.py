@@ -45,6 +45,7 @@ EVENT_OPERATION_MAP = {
     "PutObject": Event.s3_ObjectCreated_Put,
     "CopyObject": Event.s3_ObjectCreated_Copy,
     "CompleteMultipartUpload": Event.s3_ObjectCreated_CompleteMultipartUpload,
+    "PostObject": Event.s3_ObjectCreated_Post,
     "PutObjectTagging": Event.s3_ObjectTagging_Put,
     "DeleteObjectTagging": Event.s3_ObjectTagging_Delete,
     "DeleteObject": Event.s3_ObjectRemoved_Delete,
@@ -89,12 +90,22 @@ class S3EventNotificationContext:
     key_version_id: str
 
     @classmethod
-    def from_request_context(cls, request_context: RequestContext) -> "S3EventNotificationContext":
+    def from_request_context(
+        cls, request_context: RequestContext, key_name: str = None
+    ) -> "S3EventNotificationContext":
+        """
+        Create an S3EventNotificationContext from a RequestContext.
+        The key is not always present in the request context depending on the event type. In that case, we can use
+        a provided one.
+        :param request_context: RequestContext
+        :param key_name: Optional, in case it's not provided in the RequestContext
+        :return: S3EventNotificationContext
+        """
         bucket_name = request_context.service_request["Bucket"]
         moto_backend = get_moto_s3_backend(request_context)
         bucket: FakeBucket = get_bucket_from_moto(moto_backend, bucket=bucket_name)
         key: FakeKey = get_key_from_moto_bucket(
-            moto_bucket=bucket, key=request_context.service_request["Key"]
+            moto_bucket=bucket, key=key_name or request_context.service_request["Key"]
         )
         return cls(
             event_type=EVENT_OPERATION_MAP.get(request_context.operation.wire_name, ""),
@@ -287,6 +298,7 @@ class SqsNotifier(BaseNotifier):
                 QueueName=arn_data["resource"], QueueOwnerAWSAccountId=arn_data["account"]
             )
         except ClientError:
+            LOG.exception("Could not validate the notification destination %s", arn)
             raise _create_invalid_argument_exc(
                 "Unable to validate the following destination configurations",
                 name=arn,

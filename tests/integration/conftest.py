@@ -4,7 +4,6 @@ See: https://docs.pytest.org/en/6.2.x/fixture.html#conftest-py-sharing-fixtures-
 
 It is thread/process safe to run with pytest-parallel, however not for pytest-xdist.
 """
-
 import logging
 import multiprocessing as mp
 import os

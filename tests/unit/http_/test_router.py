@@ -7,7 +7,7 @@ import werkzeug
 from werkzeug.exceptions import MethodNotAllowed, NotFound
 
 from localstack.http import Request, Response, Router
-from localstack.http.router import E, RegexConverter, RequestArguments, route
+from localstack.http.router import E, RequestArguments, route
 from localstack.utils.common import get_free_tcp_port
 
 
@@ -112,7 +112,6 @@ class TestRouter:
 
     def test_regex_path_dispatcher(self):
         router = Router()
-        router.url_map.converters["regex"] = RegexConverter
         rgx = r"([^.]+)endpoint(.*)"
         regex = f"/<regex('{rgx}'):dist>/"
         router.add(path=regex, endpoint=noop)
@@ -122,7 +121,6 @@ class TestRouter:
 
     def test_regex_host_dispatcher(self):
         router = Router()
-        router.url_map.converters["regex"] = RegexConverter
         rgx = r"\.cloudfront.(net|localhost\.localstack\.cloud)"
         router.add(path="/", endpoint=noop, host=f"<dist_id><regex('{rgx}'):host>:<port>")
         assert router.dispatch(
@@ -136,6 +134,45 @@ class TestRouter:
                 Request(
                     method="GET",
                     headers={"Host": "ad91f538.cloudfront.amazon.aws.com:5446"},
+                )
+            )
+
+    def test_port_host_dispatcher(self):
+        collector = RequestCollector()
+        router = Router(dispatcher=collector)
+        router.add(path="/", endpoint=noop, host="localhost.localstack.cloud<port:port>")
+        # matches with the port!
+        assert router.dispatch(
+            Request(
+                method="GET",
+                headers={"Host": "localhost.localstack.cloud:4566"},
+            )
+        )
+        assert collector.requests.pop()[2] == {"port": 4566}
+        # matches without the port!
+        assert router.dispatch(
+            Request(
+                method="GET",
+                headers={"Host": "localhost.localstack.cloud"},
+            )
+        )
+        assert collector.requests.pop()[2] == {"port": None}
+
+        # invalid port
+        with pytest.raises(NotFound):
+            router.dispatch(
+                Request(
+                    method="GET",
+                    headers={"Host": "localhost.localstack.cloud:544a6"},
+                )
+            )
+
+        # does not match the host
+        with pytest.raises(NotFound):
+            router.dispatch(
+                Request(
+                    method="GET",
+                    headers={"Host": "localstack.cloud:5446"},
                 )
             )
 

@@ -1,20 +1,11 @@
-import copy
 import logging
 import os
-from typing import IO
-from urllib.parse import (
-    SplitResult,
-    parse_qs,
-    quote,
-    urlencode,
-    urlparse,
-    urlsplit,
-    urlunparse,
-    urlunsplit,
-)
+from typing import IO, Dict
+from urllib.parse import parse_qs, quote, urlencode, urlparse, urlunparse
 
 import moto.s3.responses as moto_s3_responses
 
+from localstack import config
 from localstack.aws.accounts import get_aws_account_id
 from localstack.aws.api import CommonServiceException, RequestContext, ServiceException, handler
 from localstack.aws.api.s3 import (
@@ -42,8 +33,13 @@ from localstack.aws.api.s3 import (
     GetBucketRequestPaymentOutput,
     GetBucketRequestPaymentRequest,
     GetBucketWebsiteOutput,
+    GetObjectAttributesOutput,
+    GetObjectAttributesParts,
+    GetObjectAttributesRequest,
     GetObjectOutput,
     GetObjectRequest,
+    GetObjectTaggingOutput,
+    GetObjectTaggingRequest,
     HeadObjectOutput,
     HeadObjectRequest,
     InvalidBucketName,
@@ -72,10 +68,7 @@ from localstack.aws.api.s3 import (
 from localstack.aws.api.s3 import Type as GranteeType
 from localstack.aws.api.s3 import WebsiteConfiguration
 from localstack.aws.handlers import modify_service_response, serve_custom_service_request_handlers
-from localstack.config import get_edge_port_http, get_protocol
 from localstack.constants import LOCALHOST_HOSTNAME
-from localstack.http import Request, Response
-from localstack.http.proxy import forward
 from localstack.services.edge import ROUTER
 from localstack.services.moto import call_moto
 from localstack.services.plugins import ServiceLifecycleHook
@@ -88,7 +81,6 @@ from localstack.services.s3.presigned_url import (
 )
 from localstack.services.s3.utils import (
     ALLOWED_HEADER_OVERRIDES,
-    S3_VIRTUAL_HOST_FORWARDED_HEADER,
     VALID_ACL_PREDEFINED_GROUPS,
     VALID_GRANTEE_PERMISSIONS,
     _create_invalid_argument_exc,
@@ -102,9 +94,9 @@ from localstack.services.s3.utils import (
     is_valid_canonical_id,
     verify_checksum,
 )
+from localstack.services.s3.virtual_host import register_virtual_host_routes
 from localstack.services.s3.website_hosting import register_website_hosting_routes
 from localstack.utils.aws import aws_stack
-from localstack.utils.aws.request_context import AWS_REGION_REGEX
 from localstack.utils.patch import patch
 
 LOG = logging.getLogger(__name__)
@@ -136,7 +128,9 @@ class InvalidRequest(CommonServiceException):
 
 
 def get_full_default_bucket_location(bucket_name):
-    return f"{get_protocol()}://{bucket_name}.s3.{LOCALHOST_HOSTNAME}:{get_edge_port_http()}/"
+    if config.HOSTNAME_EXTERNAL != config.LOCALHOST:
+        return f"{config.get_protocol()}://{config.HOSTNAME_EXTERNAL}:{config.get_edge_port_http()}/{bucket_name}/"
+    return f"{config.get_protocol()}://{bucket_name}.s3.{LOCALHOST_HOSTNAME}:{config.get_edge_port_http()}/"
 
 
 class S3Provider(S3Api, ServiceLifecycleHook):
@@ -151,7 +145,7 @@ class S3Provider(S3Api, ServiceLifecycleHook):
 
     def on_after_init(self):
         apply_moto_patches()
-        self.add_custom_routes()
+        register_virtual_host_routes(router=ROUTER)
         register_website_hosting_routes(router=ROUTER)
         register_custom_handlers()
 
@@ -162,11 +156,18 @@ class S3Provider(S3Api, ServiceLifecycleHook):
     def on_before_stop(self):
         self._notification_dispatcher.shutdown()
 
-    def _notify(self, context: RequestContext, s3_notif_ctx: S3EventNotificationContext = None):
+    def _notify(
+        self,
+        context: RequestContext,
+        s3_notif_ctx: S3EventNotificationContext = None,
+        key_name: ObjectKey = None,
+    ):
         # we can provide the s3_event_notification_context, so in case of deletion of keys, we can create it before
         # it happens
         if not s3_notif_ctx:
-            s3_notif_ctx = S3EventNotificationContext.from_request_context(context)
+            s3_notif_ctx = S3EventNotificationContext.from_request_context(
+                context, key_name=key_name
+            )
         if notification_config := self.get_store().bucket_notification_configs.get(
             s3_notif_ctx.bucket_name
         ):
@@ -357,7 +358,23 @@ class S3Provider(S3Api, ServiceLifecycleHook):
         self, context: RequestContext, request: CompleteMultipartUploadRequest
     ) -> CompleteMultipartUploadOutput:
         response: CompleteMultipartUploadOutput = call_moto(context)
+        # moto return the Location in AWS `http://{bucket}.s3.amazonaws.com/{key}`
+        response[
+            "Location"
+        ] = f'{get_full_default_bucket_location(request["Bucket"])}{response["Key"]}'
         self._notify(context)
+        return response
+
+    @handler("GetObjectTagging", expand=False)
+    def get_object_tagging(
+        self, context: RequestContext, request: GetObjectTaggingRequest
+    ) -> GetObjectTaggingOutput:
+        response: GetObjectTaggingOutput = call_moto(context)
+        if (
+            "VersionId" in response
+            and request["Bucket"] not in self.get_store().bucket_versioning_status
+        ):
+            response.pop("VersionId")
         return response
 
     @handler("PutObjectTagging", expand=False)
@@ -639,6 +656,7 @@ class S3Provider(S3Api, ServiceLifecycleHook):
         if bucket in self.get_store().bucket_versioning_status:
             response["VersionId"] = key.version_id
 
+        self._notify(context, key_name=key_name)
         if context.request.form.get("success_action_status") != "201":
             return response
 
@@ -649,80 +667,37 @@ class S3Provider(S3Api, ServiceLifecycleHook):
 
         return response
 
-    def add_custom_routes(self):
-        # virtual-host style: https://bucket-name.s3.region-code.amazonaws.com/key-name
-        # host_pattern_vhost_style = f"{bucket}.s3.<regex('({AWS_REGION_REGEX}\.)?'):region>{LOCALHOST_HOSTNAME}:{get_edge_port_http()}"
-        host_pattern_vhost_style = f"<regex('.*'):bucket>.s3.<regex('({AWS_REGION_REGEX}\\.)?'):region>{LOCALHOST_HOSTNAME}<regex('(?::\\d+)?'):port>"
-        ROUTER.add(
-            "/<path:path>",
-            host=host_pattern_vhost_style,
-            endpoint=self.serve_bucket,
-        )
-        ROUTER.add(
-            "/",
-            host=host_pattern_vhost_style,
-            endpoint=self.serve_bucket,
-            defaults={"path": "/"},
-        )
+    @handler("GetObjectAttributes", expand=False)
+    def get_object_attributes(
+        self,
+        context: RequestContext,
+        request: GetObjectAttributesRequest,
+    ) -> GetObjectAttributesOutput:
+        bucket_name = request["Bucket"]
+        moto_backend = get_moto_s3_backend(context)
+        bucket = get_bucket_from_moto(moto_backend, bucket_name)
+        key = get_key_from_moto_bucket(moto_bucket=bucket, key=request["Key"])
 
-        # regions for path-style need to be parsed correctly
-        host_pattern_vhost_style = f"s3.<regex('({AWS_REGION_REGEX}\\.)'):region>{LOCALHOST_HOSTNAME}<regex('(?::\\d+)?'):port>"
-        ROUTER.add(
-            "/<regex('.+'):bucket>/<path:path>",
-            host=host_pattern_vhost_style,
-            endpoint=self.serve_bucket,
-        )
-        ROUTER.add(
-            "/<regex('.+'):bucket>",
-            host=host_pattern_vhost_style,
-            endpoint=self.serve_bucket,
-            defaults={"path": "/"},
-        )
+        object_attrs = request.get("ObjectAttributes", [])
+        response = GetObjectAttributesOutput()
+        # TODO: see Checksum field
+        if "ETag" in object_attrs:
+            response["ETag"] = key.etag.strip('"')
+        if "StorageClass" in object_attrs:
+            response["StorageClass"] = key.storage_class
+        if "ObjectSize" in object_attrs:
+            response["ObjectSize"] = key.size
 
-    def serve_bucket(
-        self, request: Request, bucket: str, path: str, region: str, port: str
-    ) -> Response:
-        # TODO region pattern currently not working -> removing it from url
-        rewritten_url = self.rewrite_url(request.url, bucket, region)
+        response["LastModified"] = key.last_modified
+        if version_id := request.get("VersionId"):
+            response["VersionId"] = version_id
 
-        LOG.debug(f"Rewritten original host url: {request.url} to path-style url: {rewritten_url}")
+        if key.multipart:
+            response["ObjectParts"] = GetObjectAttributesParts(
+                TotalPartsCount=len(key.multipart.partlist)
+            )
 
-        splitted = urlsplit(rewritten_url)
-        copied_headers = copy.deepcopy(request.headers)
-        copied_headers["Host"] = splitted.netloc
-        copied_headers[S3_VIRTUAL_HOST_FORWARDED_HEADER] = request.headers["host"]
-        return forward(
-            request, f"{splitted.scheme}://{splitted.netloc}", splitted.path, copied_headers
-        )
-
-    def rewrite_url(self, url: str, bucket: str, region: str) -> str:
-        """
-        Rewrites the url so that it can be forwarded to moto. Used for vhost-style and for any url that contains the region.
-
-        For vhost style: removes the bucket-name from the host-name and adds it as path
-        E.g. http://my-bucket.s3.localhost.localstack.cloud:4566 -> http://s3.localhost.localstack.cloud:4566/my-bucket
-
-        If the region is contained in the host-name we remove it (for now) as moto cannot handle the region correctly
-
-        :param url: the original url
-        :param bucket: the bucket name
-        :param region: the region name
-        :return: re-written url as string
-        """
-        splitted = urlsplit(url)
-        if splitted.netloc.startswith(f"{bucket}."):
-            netloc = splitted.netloc.replace(f"{bucket}.", "")
-            path = f"{bucket}{splitted.path}"
-        else:
-            # we already have a path-style addressing, only need to remove the region
-            netloc = splitted.netloc
-            path = splitted.path
-        # TODO region currently ignored
-        if region:
-            netloc = netloc.replace(f"{region}", "")
-        return urlunsplit(
-            SplitResult(splitted.scheme, netloc, path, splitted.query, splitted.fragment)
-        )
+        return response
 
 
 def validate_bucket_name(bucket: BucketName) -> None:
@@ -990,6 +965,18 @@ def apply_moto_patches():
             "<ID>bcaf1ffd86f41161ca5fb16fd081034f</ID>", f"<ID>{MOTO_CANONICAL_USER_ID}</ID>"
         )
         return res
+
+    @patch(moto_s3_responses.S3Response._tagging_from_xml)
+    def _fix_tagging_from_xml(fn, *args, **kwargs) -> Dict[str, str]:
+        """
+        Moto tries to parse the TagSet and then iterate of it, not checking if it returned something
+        Potential to be an easy upstream fix
+        """
+        try:
+            tags: Dict[str, str] = fn(*args, **kwargs)
+        except TypeError:
+            tags = {}
+        return tags
 
 
 def register_custom_handlers():

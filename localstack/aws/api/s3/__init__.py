@@ -600,6 +600,7 @@ class NoSuchUpload(ServiceException):
     code: str = "NoSuchUpload"
     sender_fault: bool = False
     status_code: int = 400
+    UploadId: Optional[MultipartUploadId]
 
 
 class ObjectAlreadyInActiveTierError(ServiceException):
