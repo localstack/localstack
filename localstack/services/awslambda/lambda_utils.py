@@ -458,6 +458,6 @@ def get_awslambda_store_for_arn(resource_arn: str) -> AwsLambdaStore:
     Return the store for the region extracted from the given resource ARN.
     """
     return get_awslambda_store(
-        account_id=extract_account_id_from_arn(resource_arn),
-        region=extract_region_from_arn(resource_arn),
+        account_id=extract_account_id_from_arn(resource_arn or ""),
+        region=extract_region_from_arn(resource_arn or ""),
     )
