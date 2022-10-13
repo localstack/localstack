@@ -849,11 +849,6 @@ def validate_website_configuration(website_config: WebsiteConfiguration) -> None
                     "You can only define ReplaceKeyPrefix or ReplaceKey but not both."
                 )
 
-            # validating values length, to be confident while using the rules in the router
-            for field_value in redirect.values():
-                if not field_value:
-                    raise MalformedXML()
-
             if "Condition" in routing_rule and not routing_rule.get("Condition", {}):
                 raise InvalidRequest(
                     "Condition cannot be empty. To redirect all requests without a condition, the condition element shouldn't be present."

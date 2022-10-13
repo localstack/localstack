@@ -4323,6 +4323,79 @@ class TestS3StaticWebsiteHosting:
         condition=LEGACY_S3_PROVIDER,
         reason="Legacy S3 provider does not provide website routing rules",
     )
+    def test_routing_rules_empty_replace_prefix(self, s3_client, s3_create_bucket):
+        bucket_name = f"bucket-{short_uid()}"
+
+        s3_create_bucket(Bucket=bucket_name, ACL="public-read")
+        s3_client.put_object(
+            Bucket=bucket_name,
+            Key="index.html",
+            Body="index",
+            ACL="public-read",
+        )
+        s3_client.put_object(
+            Bucket=bucket_name,
+            Key="test.html",
+            Body="test",
+            ACL="public-read",
+        )
+        s3_client.put_object(
+            Bucket=bucket_name,
+            Key="error.html",
+            Body="error",
+            ACL="public-read",
+        )
+        s3_client.put_object(
+            Bucket=bucket_name,
+            Key="mydocs/test.html",
+            Body="mydocs",
+            ACL="public-read",
+        )
+
+        # change configuration
+        s3_client.put_bucket_website(
+            Bucket=bucket_name,
+            WebsiteConfiguration={
+                "IndexDocument": {"Suffix": "index.html"},
+                "ErrorDocument": {"Key": "error.html"},
+                "RoutingRules": [
+                    {
+                        "Condition": {"KeyPrefixEquals": "docs/"},
+                        "Redirect": {"ReplaceKeyPrefixWith": ""},
+                    },
+                    {
+                        "Condition": {"KeyPrefixEquals": "another/path/"},
+                        "Redirect": {"ReplaceKeyPrefixWith": ""},
+                    },
+                ],
+            },
+        )
+
+        website_url = _website_bucket_url(bucket_name)
+
+        # testing that routing rule redirect correctly (by removing the defined prefix)
+        response = requests.get(f"{website_url}/docs/test.html")
+        assert response.status_code == 200
+        assert response.text == "test"
+
+        response = requests.get(f"{website_url}/another/path/test.html")
+        assert response.status_code == 200
+        assert response.text == "test"
+
+        response = requests.get(f"{website_url}/docs/mydocs/test.html")
+        assert response.status_code == 200
+        assert response.text == "mydocs"
+
+        # no routing rule defined -> should result in error
+        response = requests.get(f"{website_url}/docs2/test.html")
+        assert response.status_code == 404
+        assert response.text == "error"
+
+    @pytest.mark.aws_validated
+    @pytest.mark.skipif(
+        condition=LEGACY_S3_PROVIDER,
+        reason="Legacy S3 provider does not provide website routing rules",
+    )
     def test_routing_rules_order(self, s3_client, s3_create_bucket):
         bucket_name = f"bucket-{short_uid()}"
 

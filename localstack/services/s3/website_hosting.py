@@ -260,10 +260,9 @@ def _get_redirect_from_routing_rule(request: Request, routing_rule: RoutingRule)
         redirect_to = redirect_to.replace(parsed_url.scheme, protocol)
     if redirect_to_key := redirect.get("ReplaceKeyWith"):
         redirect_to = redirect_to.replace(parsed_url.path, f"/{redirect_to_key}")
-    elif new_key_prefix := redirect.get("ReplaceKeyPrefixWith"):
-        # TODO test if KeyPrefixEquals is not supplied???
-        matched_prefix = routing_rule["Condition"].get("KeyPrefixEquals")
-        redirect_to = redirect_to.replace(matched_prefix, new_key_prefix)
+    elif "ReplaceKeyPrefixWith" in redirect:  # the value might be empty and it's a valid config
+        matched_prefix = routing_rule["Condition"].get("KeyPrefixEquals", "")
+        redirect_to = redirect_to.replace(matched_prefix, redirect.get("ReplaceKeyPrefixWith"), 1)
 
     return Response(
         "", headers={"Location": redirect_to}, status=redirect.get("HttpRedirectCode", 301)
