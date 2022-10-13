@@ -96,6 +96,8 @@ class VelocityUtilApiGateway(VelocityUtil):
         # empty string escapes to empty object
         if isinstance(s, str) and len(s.strip()) == 0:
             return "{}"
+        # if isinstance(s, bool):
+        #     return json.dumps(s)
         if is_number(s):
             return s
         return json.dumps(s)[1:-1]

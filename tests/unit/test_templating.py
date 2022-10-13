@@ -26,20 +26,18 @@ APIGW_TEMPLATE_TRANSFORM_KINESIS = """{
 
 # template used to construct JSON via #define method
 APIGW_TEMPLATE_CONSTRUCT_JSON = """
-#set( $body = $input.json("$") )
-
 #define( $loop $map )
 {
     #foreach($key in $map.keySet())
         #set( $k = $util.escapeJavaScript($key) )
-        #set( $v = $util.escapeJavaScript($map.get($key)).replaceAll("\\\\'", "'") )
-        $k: $v
+        #set( $v = $util.escapeJavaScript($map.get($key)))
+        "$k": "$v"
         #if( $foreach.hasNext ) , #end
     #end
 }
 #end
 {
-    "p0": true,
+    "p0": "true",
     "p1": $loop($input.path('$.p1')),
     "p2": $loop($input.path('$.p2'))
 }
@@ -147,11 +145,11 @@ class TestMessageTransformationBasic:
 class TestMessageTransformationApiGateway:
     def test_construct_json_using_define(self):
         template = APIGW_TEMPLATE_CONSTRUCT_JSON
-        data = {"p1": {"test": 123}, "p2": {"foo": "bar", "foo2": False}}
+        data = {"p1": {"test": "123"}, "p2": {"foo": "bar", "foo2": "false" }}
         variables = {"input": {"body": data}}
         result = ApiGatewayVtlTemplate().render_vtl(template, variables).strip()
         result = json.loads(result)
-        assert result == {"p0": True, **data}
+        assert result == {"p0": "true", **data}
 
     def test_array_size(self):
         template = "#set($list = $input.path('$.records')) $list.size()"

@@ -184,6 +184,4 @@ def dict_put_all(self, values):
 
 airspeed.__additional_methods__[dict]["put"] = dict_put
 airspeed.__additional_methods__[dict]["putAll"] = dict_put_all
-
-
 # END of patches for airspeed

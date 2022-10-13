@@ -283,7 +283,7 @@ class TestApplyTemplate(unittest.TestCase):
 
         rendered_request = RequestTemplates().render(api_context=api_context)
 
-        self.assertEqual('"foobar"', rendered_request)
+        self.assertEqual('\\"foobar\\"', rendered_request)
 
     def test_apply_template_no_json_payload(self):
 
