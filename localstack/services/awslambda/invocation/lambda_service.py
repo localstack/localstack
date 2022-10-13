@@ -118,6 +118,27 @@ class LambdaService:
             self.lambda_starting_versions[qualified_arn] = version_manager
         self.task_executor.submit(version_manager.start)
 
+    def publish_version(self, function_version: FunctionVersion):
+        """
+        Synchronously create a function version (manager)
+        Should only be called on publishing new versions, which basically clone an existing one
+        :param function_version: Function Version to create
+        """
+        with self.lambda_version_manager_lock:
+            qualified_arn = function_version.id.qualified_arn()
+            version_manager = self.lambda_starting_versions.get(qualified_arn)
+            if version_manager:
+                raise Exception(
+                    "Version '%s' already starting up and in state %s",
+                    qualified_arn,
+                    version_manager.state,
+                )
+            version_manager = LambdaVersionManager(
+                function_arn=qualified_arn, function_version=function_version, lambda_service=self
+            )
+            self.lambda_starting_versions[qualified_arn] = version_manager
+        version_manager.start()
+
     # Commands
     def invoke(
         self,

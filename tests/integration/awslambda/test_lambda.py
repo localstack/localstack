@@ -172,15 +172,7 @@ if is_old_provider():
     )
 else:
     pytestmark = pytest.mark.skip_snapshot_verify(
-        paths=[
-            "$..State",
-            "$..StateReason",
-            "$..StateReasonCode",
-            "$..CodeSize",
-            "$..LastUpdateStatus",
-            "$..LastUpdateStatusReason",
-            "$..LastUpdateStatusReasonCode",
-        ],
+        paths=["$..CodeSize"],
     )
 
 
