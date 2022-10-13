@@ -1301,19 +1301,21 @@ class TestSqsProvider:
         assert "Messages" not in confirmation.keys()
 
     @pytest.mark.aws_validated
-    def test_delete_message_batch_invalid_msg_id(self, sqs_create_queue, sqs_client, snapshot):
+    @pytest.mark.parametrize(
+        argnames="invalid_message_id", argvalues=["", "testLongId" * 10, "invalid:id"]
+    )
+    def test_delete_message_batch_invalid_msg_id(
+        self, invalid_message_id, sqs_create_queue, sqs_client, snapshot
+    ):
         self._add_error_detail_transformer(snapshot)
 
         queue_name = f"queue-{short_uid()}"
         queue_url = sqs_create_queue(QueueName=queue_name)
 
-        invalid_ids = ["", "testLongId" * 10, "invalid:id"]
-
-        for idx, invalid_id in enumerate(invalid_ids):
-            delete_entries = [{"Id": invalid_id, "ReceiptHandle": "testHandle1"}]
-            with pytest.raises(ClientError) as e:
-                sqs_client.delete_message_batch(QueueUrl=queue_url, Entries=delete_entries)
-            snapshot.match(f"error_response_{idx}", e.value.response)
+        delete_entries = [{"Id": invalid_message_id, "ReceiptHandle": "testHandle1"}]
+        with pytest.raises(ClientError) as e:
+            sqs_client.delete_message_batch(QueueUrl=queue_url, Entries=delete_entries)
+        snapshot.match("error_response", e.value.response)
 
     @pytest.mark.aws_validated
     def test_create_and_send_to_fifo_queue(self, sqs_client, sqs_create_queue):
