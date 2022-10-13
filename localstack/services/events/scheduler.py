@@ -1,5 +1,5 @@
 import logging
-import time
+import threading
 
 from crontab import CronTab
 
@@ -29,7 +29,7 @@ class Job:
         return delay_secs is not None and delay_secs < 60
 
     def do_run(self):
-        FuncThread(self.job_func).start()
+        FuncThread(self.job_func, name="events-job-run").start()
 
 
 class JobScheduler:
@@ -40,6 +40,7 @@ class JobScheduler:
         # TODO: introduce RLock for mutating jobs list
         self.jobs = []
         self.thread = None
+        self._stop_event = threading.Event()
 
     def add_job(self, job_func, schedule, enabled=True):
         job = Job(job_func, schedule, enabled=enabled)
@@ -61,7 +62,7 @@ class JobScheduler:
                 i += 1
 
     def loop(self, *args):
-        while True:
+        while not self._stop_event.is_set():
             try:
                 for job in list(self.jobs):
                     job.run()
@@ -69,10 +70,10 @@ class JobScheduler:
                 pass
             # This is a simple heuristic to cause the loop to run apprx every minute
             # TODO: we should keep track of jobs execution times, to avoid duplicate executions
-            time.sleep(59.9)
+            self._stop_event.wait(timeout=59.9)
 
     def start_loop(self):
-        self.thread = FuncThread(self.loop)
+        self.thread = FuncThread(self.loop, name="events-jobscheduler-loop")
         self.thread.start()
 
     @classmethod
@@ -87,3 +88,10 @@ class JobScheduler:
         if not instance.thread:
             instance.start_loop()
         return instance
+
+    @classmethod
+    def shutdown(cls):
+        instance = cls.instance()
+        if not instance.thread:
+            return
+        instance._stop_event.set()

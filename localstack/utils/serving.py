@@ -171,7 +171,7 @@ class Server(abc.ABC):
             finally:
                 self._stopped.set()
 
-        return start_thread(_run)
+        return start_thread(_run, name=f"server-{self.__class__.__name__}")
 
     def do_run(self):
         """

@@ -135,7 +135,12 @@ class KinesisProcessorThread(ShellCommandThread):
         env = aws_stack.get_environment()
         quiet = aws_stack.is_local_env(env)
         ShellCommandThread.__init__(
-            self, cmd, outfile=params["log_file"], env_vars=env_vars, quiet=quiet
+            self,
+            cmd,
+            outfile=params["log_file"],
+            env_vars=env_vars,
+            quiet=quiet,
+            name="kinesis-processor",
         )
 
     @staticmethod
@@ -147,7 +152,7 @@ class KinesisProcessorThread(ShellCommandThread):
 
 class OutputReaderThread(FuncThread):
     def __init__(self, params):
-        FuncThread.__init__(self, self.start_reading, params)
+        FuncThread.__init__(self, self.start_reading, params, name="kinesis-output-reader")
         self.buffer = []
         self.params = params
         # number of lines that make up a single log entry

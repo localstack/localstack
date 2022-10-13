@@ -174,6 +174,7 @@ class OpensearchCluster(Server):
             env_vars=env_vars,
             strip_color=True,
             log_listener=self._log_listener,
+            name="opensearch-cluster",
         )
         t.start()
         return t

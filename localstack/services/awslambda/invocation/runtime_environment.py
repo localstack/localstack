@@ -158,7 +158,7 @@ class RuntimeEnvironment:
             self.status = RuntimeStatus.READY
 
     def timed_out(self) -> None:
-        LOG.debug(
+        LOG.warning(
             "Executor %s for function %s timed out during startup",
             self.id,
             self.function_version.qualified_arn,

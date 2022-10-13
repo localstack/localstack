@@ -109,7 +109,7 @@ def run(
                         if o:
                             os.write(sys.stdout.fileno(), o)
 
-            FuncThread(pipe_streams).start()
+            FuncThread(pipe_streams, name="pipe-streams").start()
 
         return process
     except subprocess.CalledProcessError as e:
@@ -213,6 +213,7 @@ class ShellCommandThread(FuncThread):
         log_listener: Callable = None,
         stop_listener: Callable = None,
         strip_color: bool = False,
+        name: Optional[str] = None,
     ):
         params = params if params is not None else {}
         env_vars = env_vars if env_vars is not None else {}
@@ -229,7 +230,9 @@ class ShellCommandThread(FuncThread):
         self.stop_listener = stop_listener
         self.strip_color = strip_color
         self.started = threading.Event()
-        FuncThread.__init__(self, self.run_cmd, params, quiet=quiet)
+        FuncThread.__init__(
+            self, self.run_cmd, params, quiet=quiet, name=(name or "shell-cmd-thread")
+        )
 
     def run_cmd(self, params):
         while True:

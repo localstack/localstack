@@ -492,7 +492,9 @@ def run_process_as_sudo(component, port, asynchronous=False, env_vars=None):
         run(shell_cmd, outfile=subprocess.PIPE, print_error=False, env_vars=env_vars)
 
     LOG.debug("Running command as sudo: %s", shell_cmd)
-    result = start_thread(run_command, quiet=True) if asynchronous else run_command()
+    result = (
+        start_thread(run_command, quiet=True, name="sudo-edge") if asynchronous else run_command()
+    )
     return result
 
 

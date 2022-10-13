@@ -13,7 +13,7 @@ LOG = logging.getLogger(__name__)
 
 class EventFileReaderThread(FuncThread):
     def __init__(self, events_file, callback, ready_mutex=None, fh_d_stream=None):
-        FuncThread.__init__(self, self.retrieve_loop, None)
+        FuncThread.__init__(self, self.retrieve_loop, None, name="kinesis-event-file-reader")
         self.events_file = events_file
         self.callback = callback
         self.ready_mutex = ready_mutex
@@ -28,7 +28,9 @@ class EventFileReaderThread(FuncThread):
         while self.running:
             try:
                 conn, client_addr = sock.accept()
-                thread = FuncThread(self.handle_connection, conn)
+                thread = FuncThread(
+                    self.handle_connection, conn, name="kinesis-event-file-reader-connectionhandler"
+                )
                 thread.start()
             except Exception as e:
                 LOG.error("Error dispatching client request: %s %s", e, traceback.format_exc())

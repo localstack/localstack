@@ -38,7 +38,9 @@ class SQSEventSourceListener(EventSourceListener):
             return
 
         LOG.debug("Starting SQS message polling thread for Lambda API")
-        self.SQS_LISTENER_THREAD["_thread_"] = thread = FuncThread(self._listener_loop)
+        self.SQS_LISTENER_THREAD["_thread_"] = thread = FuncThread(
+            self._listener_loop, name="sqs-event-source-listener"
+        )
         thread.start()
 
     def get_matching_event_sources(self) -> List[Dict]:

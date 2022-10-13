@@ -72,6 +72,7 @@ class ElasticMQSerer(Server):
             strip_color=True,
             log_listener=self._log_listener,
             auto_restart=True,
+            name="elasticmq-server",
         )
         TMP_THREADS.append(t)
         t.start()
