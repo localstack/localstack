@@ -239,6 +239,7 @@ class TestS3:
     def test_resource_object_with_slashes_in_key(self, s3_resource, s3_bucket):
         s3_resource.Object(s3_bucket, "/foo").put(Body="foobar")
         s3_resource.Object(s3_bucket, "bar").put(Body="barfoo")
+        s3_resource.Object(s3_bucket, "/bar/foo/").put(Body="test")
 
         with pytest.raises(ClientError) as e:
             s3_resource.Object(s3_bucket, "foo").get()
@@ -252,6 +253,8 @@ class TestS3:
         assert response["Body"].read() == b"foobar"
         response = s3_resource.Object(s3_bucket, "bar").get()
         assert response["Body"].read() == b"barfoo"
+        response = s3_resource.Object(s3_bucket, "/bar/foo/").get()
+        assert response["Body"].read() == b"test"
 
     @pytest.mark.aws_validated
     def test_metadata_header_character_decoding(self, s3_client, s3_bucket, snapshot):

@@ -248,7 +248,17 @@ class RequestParser(abc.ABC):
             elif location == "uri":
                 uri_param_name = shape.serialization.get("name")
                 if uri_param_name in uri_params:
-                    payload = uri_params[uri_param_name]
+                    # FIXME special case for s3 object-names (=key): trailing '/' are valid and need to be preserved
+                    #       however, the url-matcher removes it from the key
+                    #       we check the request.url to verify the name
+                    if (
+                        self.service.service_name == "s3"
+                        and uri_param_name == "Key"
+                        and request.url.split("?")[0].endswith(f"{uri_params[uri_param_name]}/")
+                    ):
+                        payload = uri_params[uri_param_name] + "/"
+                    else:
+                        payload = uri_params[uri_param_name]
             else:
                 raise UnknownParserError("Unknown shape location '%s'." % location)
         else:
