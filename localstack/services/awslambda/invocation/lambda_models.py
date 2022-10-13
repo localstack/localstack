@@ -83,12 +83,6 @@ class S3Code:
     code_size: int
     _disk_lock: threading.RLock = dataclasses.field(default_factory=threading.RLock)
 
-    def get_lambda_archive(self) -> bytes:
-        """Get the lambda archive"""
-        s3_client: "S3Client" = aws_stack.connect_to_service("s3", region_name="us-east-1")
-        kwargs = {"VersionId": self.s3_object_version} if self.s3_object_version else {}
-        return s3_client.get_object(Bucket=self.s3_bucket, Key=self.s3_key, **kwargs)["Body"].read()
-
     def _download_archive_to_file(self, target_file: IO) -> None:
         """
         Download the code archive into a given file

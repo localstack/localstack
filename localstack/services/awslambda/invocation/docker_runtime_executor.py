@@ -38,6 +38,8 @@ COPY aws-lambda-rie {rapid_entrypoint}
 COPY code/ /var/task
 """
 
+PULLED_IMAGES: set[str] = set()
+
 
 def get_image_name_for_function(function_version: FunctionVersion) -> str:
     return f"localstack/lambda-{function_version.id.qualified_arn().replace(':', '_').replace('$', '_').lower()}"
@@ -197,15 +199,16 @@ class DockerRuntimeExecutor(RuntimeExecutor):
         function_version.config.code.prepare_for_execution()
         target_path = function_version.config.code.get_unzipped_code_location()
         image_name = get_image_for_runtime(function_version.config.runtime)
-        if image_name not in CONTAINER_CLIENT.get_docker_image_names(strip_latest=False):
+        if image_name not in PULLED_IMAGES:
             CONTAINER_CLIENT.pull_image(image_name)
+            PULLED_IMAGES.add(image_name)
         if config.LAMBDA_PREBUILD_IMAGES:
             prepare_image(target_path, function_version)
         LOG.debug(
             "Version preparation of version %s took %0.2fms",
             function_version.qualified_arn,
             (time.perf_counter() - time_before) * 1000,
-            )
+        )
 
     @classmethod
     def cleanup_version(cls, function_version: FunctionVersion) -> None:
