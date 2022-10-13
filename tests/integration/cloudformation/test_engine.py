@@ -164,7 +164,7 @@ class TestIntrinsicFunctions:
         assert converted_string == deployed.outputs["Encoded"]
 
     @pytest.mark.aws_validated
-    def test_split_and_join_functions(self, deploy_cfn_template):
+    def test_split_length_and_join_functions(self, deploy_cfn_template):
         template_path = os.path.join(
             os.path.dirname(__file__), "../templates/functions_select_split_join.yml"
         )
@@ -176,10 +176,10 @@ class TestIntrinsicFunctions:
             parameters={"MultipleValues": f"{first_value};{second_value}"},
         )
 
+        assert first_value == deployed.outputs["SplitResult"]
         # TODO support join operation
-        # assert f"{first_value}_{second_value}" == deployed.outputs["SecondResult"]
-
-        assert first_value == deployed.outputs["Result"]
+        # assert f"{first_value}_{second_value}" == deployed.outputs["JoinResult"]
+        # assert 2 == deployed.outputs["LengthResult"]
 
     @pytest.mark.aws_validated
     @pytest.mark.skip(reason="functions not currently supported")

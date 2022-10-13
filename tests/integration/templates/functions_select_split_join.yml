@@ -2,11 +2,12 @@ Parameters:
   MultipleValues:
     Type: String
 
+Transform: "AWS::LanguageExtensions"
+
 Resources:
   SplitTest:
     Type: AWS::SSM::Parameter
     Properties:
-      Name: SelectedString
       Type: String
       Value: !Select
         - 0
@@ -17,18 +18,20 @@ Resources:
   JoinTest:
     Type: AWS::SSM::Parameter
     Properties:
-      Name: NewFormat
       Type: String
       Value: !Join ["_", !Split [ ";", !Ref MultipleValues]]
 
 Outputs:
-  Result:
+  SplitResult:
     Value:
       Fn::GetAtt:
         - SplitTest
         - Value
-  SecondResult:
+  JoinResult:
     Value:
       Fn::GetAtt:
         - JoinTest
         - Value
+  LengthResult:
+    Value:
+      Fn::Length: !Split [ ";", !Ref MultipleValues]
