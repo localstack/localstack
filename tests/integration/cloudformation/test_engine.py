@@ -182,7 +182,7 @@ class TestIntrinsicFunctions:
         assert first_value == deployed.outputs["Result"]
 
     @pytest.mark.aws_validated
-    @pytest.mark.skip(reason="not working properly")
+    @pytest.mark.skip(reason="functions not currently supported")
     def test_json_and_find_in_map_functions(self, deploy_cfn_template):
         template_path = os.path.join(
             os.path.dirname(__file__), "../templates/function_to_json_string.yml"
