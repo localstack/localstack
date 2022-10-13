@@ -25,6 +25,7 @@ from localstack.services.awslambda.api_utils import (
 )
 from localstack.services.awslambda.invocation.lambda_models import (
     LAMBDA_LIMITS_CODE_SIZE_UNZIPPED_DEFAULT,
+    Function,
     FunctionVersion,
     Invocation,
     InvocationResult,
@@ -283,6 +284,18 @@ class LambdaService:
         state.functions[function_version.id.function_name].versions[
             function_version.id.qualifier
         ] = new_version
+
+
+def is_code_used(code: S3Code, function: Function) -> bool:
+    """
+    Check if given code is still used in some version of the function
+
+    :param code: Code object
+    :param function: function to check
+    :return:
+    """
+    with function.lock:
+        return any(code == version.config.code for version in function.versions.values())
 
 
 def store_lambda_archive(
