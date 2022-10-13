@@ -9,9 +9,13 @@ from unittest import mock
 from localstack import config
 from localstack.aws.accounts import get_aws_account_id
 from localstack.services.awslambda import lambda_api, lambda_executors, lambda_utils
-from localstack.services.awslambda.lambda_api import get_lambda_policy_name, get_store_for_arn
+from localstack.services.awslambda.lambda_api import get_lambda_policy_name
 from localstack.services.awslambda.lambda_executors import OutputLog
-from localstack.services.awslambda.lambda_utils import API_PATH_ROOT, get_lambda_store
+from localstack.services.awslambda.lambda_utils import (
+    API_PATH_ROOT,
+    get_awslambda_store_for_arn,
+    get_lambda_store,
+)
 from localstack.utils.aws import aws_stack
 from localstack.utils.aws.aws_models import LambdaFunction
 from localstack.utils.common import isoformat_milliseconds, mkdir, new_tmp_dir, save_file
@@ -1134,11 +1138,11 @@ class TestLambdaEventInvokeConfig(unittest.TestCase):
 
 
 class TestLambdaStore:
-    def test_get_lambda_store_for_arn(self):
+    def test_get_awslambda_store_for_arn(self):
         default_region = aws_stack.get_region()
 
         def _lookup(resource_id, region):
-            store = get_store_for_arn(resource_id)
+            store = get_awslambda_store_for_arn(resource_id)
             assert store
             assert store._region_name == region
 

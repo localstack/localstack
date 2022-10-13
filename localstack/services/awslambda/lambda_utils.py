@@ -14,10 +14,11 @@ from flask import Response
 from localstack import config
 from localstack.aws.accounts import get_aws_account_id
 from localstack.aws.api.lambda_ import Runtime
-from localstack.services.awslambda.models import LambdaStore, lambda_stores
+from localstack.services.awslambda.lambda_models import AwsLambdaStore, awslambda_stores
 from localstack.utils.aws import aws_stack
 from localstack.utils.aws.aws_models import LambdaFunction
 from localstack.utils.aws.aws_responses import flask_error_response_json
+from localstack.utils.aws.aws_stack import extract_account_id_from_arn, extract_region_from_arn
 from localstack.utils.container_networking import (
     get_endpoint_for_network,
     get_main_container_network,
@@ -424,7 +425,7 @@ def validate_filters(filter: FilterCriteria) -> bool:
 def get_lambda_event_filters_for_arn(lambda_arn: str, event_arn: str) -> List[Dict]:
     # late import to avoid circular import
     region_name = lambda_arn.split(":")[3]
-    region = get_lambda_store(region=region_name)
+    region = get_awslambda_store(region=region_name)
 
     event_filter_criterias = [
         event_source_mapping.get("FilterCriteria")
@@ -442,8 +443,21 @@ def function_name_from_arn(arn: str):
     return FUNCTION_NAME_REGEX.match(arn).group("name")
 
 
-def get_lambda_store(account_id: str = None, region: str = None) -> LambdaStore:
+def get_awslambda_store(
+    account_id: Optional[str] = None, region: Optional[str] = None
+) -> AwsLambdaStore:
+    """Get the legacy Lambda store."""
     account_id = account_id or get_aws_account_id()
     region = region or aws_stack.get_region()
 
-    return lambda_stores[account_id][region]
+    return awslambda_stores[account_id][region]
+
+
+def get_awslambda_store_for_arn(resource_arn: str) -> AwsLambdaStore:
+    """
+    Return the store for the region extracted from the given resource ARN.
+    """
+    return get_awslambda_store(
+        account_id=extract_account_id_from_arn(resource_arn),
+        region=extract_region_from_arn(resource_arn),
+    )
