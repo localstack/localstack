@@ -90,7 +90,8 @@ from localstack.utils.patch import patch
 
 
 class Route53ResolverProvider(Route53ResolverApi):
-    def get_store(self, account_id: str, region: str) -> Route53ResolverStore:
+    @staticmethod
+    def get_store(account_id: str, region: str) -> Route53ResolverStore:
         return route53resolver_stores[account_id][region]
 
     def create_firewall_rule_group(
@@ -686,7 +687,7 @@ def Route53ResolverBackend_matched_arn(fn, self, resource_arn):
     """Given ARN, raise exception if there is no corresponding resource."""
     account_id = extract_account_id_from_arn(resource_arn)
     region_name = extract_region_from_arn(resource_arn)
-    store = self.get_store(account_id, region_name)
+    store = Route53ResolverProvider.get_store(account_id, region_name)
 
     for firewall_rule_group in store.firewall_rule_groups.values():
         if firewall_rule_group.get("Arn") == resource_arn:
