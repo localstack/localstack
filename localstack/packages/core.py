@@ -11,6 +11,7 @@ from localstack import config
 from localstack.utils.platform import in_docker, is_debian, is_redhat
 from localstack.utils.run import run
 
+from ..services.install import download_and_extract
 from ..utils.files import chmod_r, mkdir
 from ..utils.http import download
 from .api import InstallTarget, PackageException, PackageInstaller
@@ -161,7 +162,21 @@ class OSPackageInstaller(PackageInstaller, ABC):
         run(["dnf", "clean", "all"])
 
 
-class DownloadInstaller(PackageInstaller):
+class ExecutableInstaller(PackageInstaller, ABC):
+    """
+    This installer simply adds a clean interface for accessing a downloaded executable directly
+    """
+
+    def get_executable_path(self) -> str | None:
+        """
+        :return: the path to the downloaded binary or None if it's not yet downloaded / installed.
+        """
+        install_dir = self.get_installed_dir()
+        if install_dir:
+            return self._get_install_marker_path(install_dir)
+
+
+class DownloadInstaller(ExecutableInstaller):
     def __init__(self, name: str, version: str):
         super().__init__(name, version)
 
@@ -173,24 +188,66 @@ class DownloadInstaller(PackageInstaller):
         binary_name = os.path.basename(url)
         return os.path.join(install_dir, binary_name)
 
-    def get_executable_path(self) -> str | None:
-        """
-        :return: the path to the downloaded binary or None if it's not yet downloaded / installed.
-        """
-        install_dir = self.get_installed_dir()
-        if install_dir:
-            return self._get_install_marker_path(install_dir)
-
     def _install(self, target: InstallTarget) -> None:
         target_directory = self._get_install_dir(target)
         mkdir(target_directory)
         download_url = self._get_download_url()
         target_path = self._get_install_marker_path(target_directory)
         download(download_url, target_path)
-        chmod_r(target_path, 0o777)
 
 
-class GitHubReleaseInstaller(DownloadInstaller):
+class ArchiveDownloadAndExtractInstaller(ExecutableInstaller):
+    def _get_install_marker_path(self, install_dir: str) -> str:
+        raise NotImplementedError()
+
+    def _get_download_url(self) -> str:
+        raise NotImplementedError()
+
+    def get_installed_dir(self) -> str | None:
+        installed_dir = super().get_installed_dir()
+        subdir = self._get_archive_subdir()
+
+        # If the specific installer defines a subdirectory, we return the subdirectory.
+        # f.e. /var/lib/localstack/lib/amazon-mq/5.16.5/apache-activemq-5.16.5/
+        if installed_dir and subdir:
+            return os.path.join(installed_dir, subdir)
+
+        return installed_dir
+
+    def _get_archive_subdir(self) -> str | None:
+        """
+        :return: name of the subdirectory contained in the archive or none if the package content is at the root level
+                of the archive
+        """
+        return None
+
+    def get_executable_path(self) -> str | None:
+        subdir = self._get_archive_subdir()
+        if subdir is None:
+            return super().get_executable_path()
+        else:
+            install_dir = self.get_installed_dir()
+            if install_dir:
+                install_dir = install_dir[: -len(subdir)]
+                return self._get_install_marker_path(install_dir)
+
+    def _install(self, target: InstallTarget) -> None:
+        target_directory = self._get_install_dir(target)
+        mkdir(target_directory)
+        download_url = self._get_download_url()
+        archive_name = os.path.basename(download_url)
+        download_and_extract(
+            download_url, target_directory, tmp_archive=os.path.join("/tmp", archive_name)
+        )
+
+
+class PermissionDownloadInstaller(DownloadInstaller, ABC):
+    def _install(self, target: InstallTarget) -> None:
+        super()._install(target)
+        chmod_r(self.get_executable_path(), 0o777)
+
+
+class GitHubReleaseInstaller(PermissionDownloadInstaller):
     """
     Installer which downloads an asset from a GitHub project's tag.
     """

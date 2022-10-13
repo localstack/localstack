@@ -1,44 +1,23 @@
 #!/usr/bin/env python
 import functools
 import glob
-import json
 import logging
 import os
-import platform
 import re
-import shutil
-import stat
 import sys
 import tempfile
 import time
-from pathlib import Path
 from typing import Callable, Dict, List, Tuple, Union
 
-import requests
 from plugin import Plugin, PluginManager
 
 from localstack import config
 from localstack.config import dirs
-from localstack.constants import (
-    DEFAULT_SERVICE_PORTS,
-    ELASTICMQ_JAR_URL,
-    KMS_URL_PATTERN,
-    LOCALSTACK_MAVEN_VERSION,
-    MAVEN_REPO_URL,
-)
+from localstack.constants import DEFAULT_SERVICE_PORTS, LOCALSTACK_MAVEN_VERSION, MAVEN_REPO_URL
 from localstack.runtime import hooks
 from localstack.utils.archives import untar, unzip
-from localstack.utils.files import (
-    chmod_r,
-    file_exists_not_empty,
-    load_file,
-    mkdir,
-    new_tmp_file,
-    rm_rf,
-    save_file,
-)
+from localstack.utils.files import load_file, mkdir, new_tmp_file, rm_rf, save_file
 from localstack.utils.http import download
-from localstack.utils.platform import get_arch
 from localstack.utils.run import run
 from localstack.utils.threads import parallelize
 
@@ -48,56 +27,12 @@ LOG = logging.getLogger(__name__)
 INSTALL_DIR_NPM = "%s/node_modules" % dirs.static_libs
 INSTALL_DIR_DDB = "%s/dynamodb" % dirs.static_libs
 INSTALL_DIR_KCL = "%s/amazon-kinesis-client" % dirs.static_libs
-INSTALL_DIR_STEPFUNCTIONS = "%s/stepfunctions" % dirs.static_libs
-INSTALL_DIR_KMS = "%s/kms" % dirs.static_libs
 INSTALL_DIR_ELASTICMQ = "%s/elasticmq" % dirs.var_libs
-INSTALL_PATH_LOCALSTACK_FAT_JAR = "%s/localstack-utils-fat.jar" % dirs.static_libs
 INSTALL_PATH_DDB_JAR = os.path.join(INSTALL_DIR_DDB, "DynamoDBLocal.jar")
 INSTALL_PATH_KCL_JAR = os.path.join(INSTALL_DIR_KCL, "aws-java-sdk-sts.jar")
-INSTALL_PATH_STEPFUNCTIONS_JAR = os.path.join(INSTALL_DIR_STEPFUNCTIONS, "StepFunctionsLocal.jar")
-INSTALL_PATH_KMS_BINARY_PATTERN = os.path.join(INSTALL_DIR_KMS, "local-kms.<arch>.bin")
 INSTALL_PATH_ELASTICMQ_JAR = os.path.join(INSTALL_DIR_ELASTICMQ, "elasticmq-server.jar")
 
-URL_LOCALSTACK_FAT_JAR = (
-    "{mvn_repo}/cloud/localstack/localstack-utils/{ver}/localstack-utils-{ver}-fat.jar"
-).format(ver=LOCALSTACK_MAVEN_VERSION, mvn_repo=MAVEN_REPO_URL)
-
-IMAGE_NAME_SFN_LOCAL = "amazon/aws-stepfunctions-local:1.7.9"
 ARTIFACTS_REPO = "https://github.com/localstack/localstack-artifacts"
-SFN_PATCH_URL_PREFIX = (
-    f"{ARTIFACTS_REPO}/raw/ac84739adc87ff4b5553478f6849134bcd259672/stepfunctions-local-patch"
-)
-SFN_PATCH_CLASS1 = "com/amazonaws/stepfunctions/local/runtime/Config.class"
-SFN_PATCH_CLASS2 = (
-    "com/amazonaws/stepfunctions/local/runtime/executors/task/LambdaTaskStateExecutor.class"
-)
-SFN_PATCH_CLASS_STARTER = "cloud/localstack/StepFunctionsStarter.class"
-SFN_PATCH_CLASS_REGION = "cloud/localstack/RegionAspect.class"
-SFN_PATCH_CLASS_ASYNC2SERVICEAPI = "cloud/localstack/Async2ServiceApi.class"
-SFN_PATCH_CLASS_DESCRIBEEXECUTIONPARSED = "cloud/localstack/DescribeExecutionParsed.class"
-SFN_PATCH_FILE_METAINF = "META-INF/aop.xml"
-
-SFN_IMAGE = "amazon/aws-stepfunctions-local"
-SFN_IMAGE_LAYER_DIGEST = "sha256:e7b256bdbc9d58c20436970e8a56bd03581b891a784b00fea7385faff897b777"
-"""
-Digest of the Docker layer which adds the StepFunctionsLocal JAR files to the Docker image.
-This digest pin defines the version of StepFunctionsLocal used in LocalStack.
-
-The Docker image layer digest can be determined by:
-- Use regclient: regctl image manifest amazon/aws-stepfunctions-local:1.7.9 --platform local
-- Inspect the manifest in the Docker registry manually:
-  - Get the auth bearer token (see download code).
-  - Download the manifest (/v2/<image/name>/manifests/<tag>) with the bearer token
-  - Follow any platform link
-  - Extract the layer digest
-Since the JAR files are platform-independent, you can use the layer digest of any platform's image.
-"""
-
-SFN_AWS_SDK_URL_PREFIX = (
-    f"{ARTIFACTS_REPO}/raw/a4adc8f4da9c7ec0d93b50ca5b73dd14df791c0e/stepfunctions-internal-awssdk"
-)
-SFN_AWS_SDK_LAMBDA_ZIP_FILE = f"{SFN_AWS_SDK_URL_PREFIX}/awssdk.zip"
-
 
 # additional JAR libs required for multi-region and persistence (PRO only) support
 URL_ASPECTJRT = f"{MAVEN_REPO_URL}/org/aspectj/aspectjrt/1.9.7/aspectjrt-1.9.7.jar"
@@ -115,19 +50,6 @@ JAVAC_TARGET_VERSION = "1.8"
 # SQS backend implementation provider - either "moto" or "elasticmq"
 SQS_BACKEND_IMPL = os.environ.get("SQS_PROVIDER") or "moto"
 
-# GO Lambda runtime
-GO_RUNTIME_VERSION = "0.4.0"
-GO_RUNTIME_DOWNLOAD_URL_TEMPLATE = "https://github.com/localstack/awslamba-go-runtime/releases/download/v{version}/awslamba-go-runtime-{version}-{os}-{arch}.tar.gz"
-GO_INSTALL_FOLDER = os.path.join(config.dirs.var_libs, "awslamba-go-runtime")
-GO_LAMBDA_RUNTIME = os.path.join(GO_INSTALL_FOLDER, "aws-lambda-mock")
-GO_LAMBDA_MOCKSERVER = os.path.join(GO_INSTALL_FOLDER, "mockserver")
-
-# Terraform (used for tests)
-TERRAFORM_VERSION = "1.1.3"
-TERRAFORM_URL_TEMPLATE = (
-    "https://releases.hashicorp.com/terraform/{version}/terraform_{version}_{os}_{arch}.zip"
-)
-TERRAFORM_BIN = os.path.join(dirs.static_libs, f"terraform-{TERRAFORM_VERSION}", "terraform")
 
 # Java Test Jar Download (used for tests)
 TEST_LAMBDA_JAVA = os.path.join(config.dirs.var_libs, "localstack-utils-tests.jar")
@@ -135,113 +57,35 @@ TEST_LAMBDA_JAR_URL = "{url}/cloud/localstack/{name}/{version}/{name}-{version}-
     version=LOCALSTACK_MAVEN_VERSION, url=MAVEN_REPO_URL, name="localstack-utils"
 )
 
-LAMBDA_RUNTIME_INIT_URL = "https://github.com/localstack/lambda-runtime-init/releases/download/v0.1.4-pre/aws-lambda-rie-{arch}"
-LAMBDA_RUNTIME_INIT_PATH = os.path.join(config.dirs.static_libs, "aws-lambda-rie")
+# BEGIN OF SECTION
+
+# remove this whole section once its absence doesn't cause any problems anymore
+INSTALL_DIR_STEPFUNCTIONS = "%s/stepfunctions" % dirs.static_libs
+INSTALL_PATH_STEPFUNCTIONS_JAR = os.path.join(INSTALL_DIR_STEPFUNCTIONS, "StepFunctionsLocal.jar")
+IMAGE_NAME_SFN_LOCAL = "amazon/aws-stepfunctions-local:1.7.9"
+SFN_PATCH_URL_PREFIX = (
+    f"{ARTIFACTS_REPO}/raw/ac84739adc87ff4b5553478f6849134bcd259672/stepfunctions-local-patch"
+)
+SFN_PATCH_CLASS1 = "com/amazonaws/stepfunctions/local/runtime/Config.class"
+SFN_PATCH_CLASS2 = (
+    "com/amazonaws/stepfunctions/local/runtime/executors/task/LambdaTaskStateExecutor.class"
+)
+SFN_PATCH_CLASS_STARTER = "cloud/localstack/StepFunctionsStarter.class"
+SFN_PATCH_CLASS_REGION = "cloud/localstack/RegionAspect.class"
+SFN_PATCH_CLASS_ASYNC2SERVICEAPI = "cloud/localstack/Async2ServiceApi.class"
+SFN_PATCH_CLASS_DESCRIBEEXECUTIONPARSED = "cloud/localstack/DescribeExecutionParsed.class"
+SFN_PATCH_FILE_METAINF = "META-INF/aop.xml"
+
+SFN_IMAGE = "amazon/aws-stepfunctions-local"
+SFN_IMAGE_LAYER_DIGEST = "sha256:e7b256bdbc9d58c20436970e8a56bd03581b891a784b00fea7385faff897b777"
+
+SFN_AWS_SDK_URL_PREFIX = (
+    f"{ARTIFACTS_REPO}/raw/a4adc8f4da9c7ec0d93b50ca5b73dd14df791c0e/stepfunctions-internal-awssdk"
+)
+SFN_AWS_SDK_LAMBDA_ZIP_FILE = f"{SFN_AWS_SDK_URL_PREFIX}/awssdk.zip"
 
 
-def install_sqs_provider():
-    if SQS_BACKEND_IMPL == "elasticmq":
-        install_elasticmq()
-
-
-def install_elasticmq():
-    # TODO remove this function if we stop using ElasticMQ entirely
-    if not os.path.exists(INSTALL_PATH_ELASTICMQ_JAR):
-        log_install_msg("ElasticMQ")
-        mkdir(INSTALL_DIR_ELASTICMQ)
-        # download archive
-        tmp_archive = os.path.join(config.dirs.cache, "elasticmq-server.jar")
-        if not os.path.exists(tmp_archive):
-            download(ELASTICMQ_JAR_URL, tmp_archive)
-        shutil.copy(tmp_archive, INSTALL_DIR_ELASTICMQ)
-
-
-def install_local_kms():
-    local_arch = f"{platform.system().lower()}-{get_arch()}"
-    binary_path = INSTALL_PATH_KMS_BINARY_PATTERN.replace("<arch>", local_arch)
-    if not os.path.exists(binary_path):
-        log_install_msg("KMS")
-        mkdir(INSTALL_DIR_KMS)
-        kms_url = KMS_URL_PATTERN.replace("<arch>", local_arch)
-        download(kms_url, binary_path)
-        chmod_r(binary_path, 0o777)
-
-
-def install_stepfunctions_local():
-    """
-    The StepFunctionsLocal JAR files are downloaded using the artifacts in DockerHub (because AWS only provides an
-    HTTP link to the most recent version). Installers are executed when building Docker, this means they _cannot_ use
-    the Docker socket. Therefore, this installer downloads a pinned Docker Layer Digest (i.e. only the data for a single
-    Docker build step which adds the JAR files of the desired version to a Docker image) using plain HTTP requests.
-    """
-    if not os.path.exists(INSTALL_PATH_STEPFUNCTIONS_JAR):
-
-        target_path = dirs.static_libs
-
-        # Download layer that contains the necessary jars
-        def download_stepfunctions_jar(image, image_digest, target_path):
-            registry_base = "https://registry-1.docker.io"
-            auth_base = "https://auth.docker.io"
-            auth_service = "registry.docker.io"
-            token_request = requests.get(
-                f"{auth_base}/token?service={auth_service}&scope=repository:{image}:pull"
-            )
-            token = json.loads(token_request.content.decode("utf-8"))["token"]
-            headers = {"Authorization": f"Bearer {token}"}
-            response = requests.get(
-                headers=headers,
-                url=f"{registry_base}/v2/{image}/blobs/{image_digest}",
-            )
-            temp_path = new_tmp_file()
-            with open(temp_path, "wb") as f:
-                f.write(response.content)
-            untar(temp_path, target_path)
-
-        download_stepfunctions_jar(SFN_IMAGE, SFN_IMAGE_LAYER_DIGEST, target_path)
-        mkdir(INSTALL_DIR_STEPFUNCTIONS)
-        path = Path(f"{target_path}/home/stepfunctionslocal")
-        for file in path.glob("*.jar"):
-            file.rename(Path(INSTALL_DIR_STEPFUNCTIONS) / file.name)
-        rm_rf(f"{target_path}/home")
-
-    classes = [
-        SFN_PATCH_CLASS1,
-        SFN_PATCH_CLASS2,
-        SFN_PATCH_CLASS_REGION,
-        SFN_PATCH_CLASS_STARTER,
-        SFN_PATCH_CLASS_ASYNC2SERVICEAPI,
-        SFN_PATCH_CLASS_DESCRIBEEXECUTIONPARSED,
-        SFN_PATCH_FILE_METAINF,
-    ]
-    for patch_class in classes:
-        patch_url = f"{SFN_PATCH_URL_PREFIX}/{patch_class}"
-        add_file_to_jar(patch_class, patch_url, target_jar=INSTALL_PATH_STEPFUNCTIONS_JAR)
-
-    # add additional classpath entries to JAR manifest file
-    classpath = " ".join([os.path.basename(jar) for jar in JAR_URLS])
-    update_jar_manifest(
-        "StepFunctionsLocal.jar",
-        INSTALL_DIR_STEPFUNCTIONS,
-        "Class-Path: . ",
-        f"Class-Path: {classpath} . ",
-    )
-    update_jar_manifest(
-        "StepFunctionsLocal.jar",
-        INSTALL_DIR_STEPFUNCTIONS,
-        re.compile(r"Main-Class: com\.amazonaws.+"),
-        "Main-Class: cloud.localstack.StepFunctionsStarter",
-    )
-
-    # download additional jar libs
-    for jar_url in JAR_URLS:
-        target = os.path.join(INSTALL_DIR_STEPFUNCTIONS, os.path.basename(jar_url))
-        if not file_exists_not_empty(target):
-            download(jar_url, target)
-
-    # download aws-sdk lambda handler
-    target = os.path.join(INSTALL_DIR_STEPFUNCTIONS, "localstack-internal-awssdk", "awssdk.zip")
-    if not file_exists_not_empty(target):
-        download(SFN_AWS_SDK_LAMBDA_ZIP_FILE, target)
+# END OF SECTION
 
 
 def add_file_to_jar(class_file, class_url, target_jar, base_dir=None):
@@ -302,59 +146,11 @@ def upgrade_jar_file(base_dir: str, file_glob: str, maven_asset: str):
     download(maven_asset_url, target_file)
 
 
-def install_lambda_java_libs():
-    # install LocalStack "fat" JAR file (contains all dependencies)
-    if not os.path.exists(INSTALL_PATH_LOCALSTACK_FAT_JAR):
-        log_install_msg("LocalStack Java libraries", verbatim=True)
-        download(URL_LOCALSTACK_FAT_JAR, INSTALL_PATH_LOCALSTACK_FAT_JAR)
-
-
 def install_lambda_java_testlibs():
     # Download the LocalStack Utils Test jar file from the maven repo
     if not os.path.exists(TEST_LAMBDA_JAVA):
         mkdir(os.path.dirname(TEST_LAMBDA_JAVA))
         download(TEST_LAMBDA_JAR_URL, TEST_LAMBDA_JAVA)
-
-
-def install_go_lambda_runtime():
-    if os.path.isfile(GO_LAMBDA_RUNTIME):
-        return
-
-    log_install_msg("Installing golang runtime")
-
-    system = platform.system().lower()
-    arch = get_arch()
-
-    if system not in ["linux"]:
-        raise ValueError(f"Unsupported os {system} for awslambda-go-runtime")
-    if arch not in ["amd64", "arm64"]:
-        raise ValueError(f"Unsupported arch {arch} for awslambda-go-runtime")
-
-    url = GO_RUNTIME_DOWNLOAD_URL_TEMPLATE.format(
-        version=GO_RUNTIME_VERSION,
-        os=system,
-        arch=arch,
-    )
-
-    download_and_extract(url, GO_INSTALL_FOLDER)
-
-    st = os.stat(GO_LAMBDA_RUNTIME)
-    os.chmod(GO_LAMBDA_RUNTIME, st.st_mode | stat.S_IXUSR | stat.S_IXGRP | stat.S_IXOTH)
-
-    st = os.stat(GO_LAMBDA_MOCKSERVER)
-    os.chmod(GO_LAMBDA_MOCKSERVER, st.st_mode | stat.S_IXUSR | stat.S_IXGRP | stat.S_IXOTH)
-
-
-def install_lambda_runtime():
-    if os.path.isfile(LAMBDA_RUNTIME_INIT_PATH):
-        return
-    log_install_msg("Installing lambda runtime")
-    arch = get_arch()
-    arch = "x86_64" if arch == "amd64" else arch
-    download_url = LAMBDA_RUNTIME_INIT_URL.format(arch=arch)
-    download(download_url, LAMBDA_RUNTIME_INIT_PATH)
-    st = os.stat(LAMBDA_RUNTIME_INIT_PATH)
-    os.chmod(LAMBDA_RUNTIME_INIT_PATH, mode=st.st_mode | stat.S_IXUSR | stat.S_IXGRP | stat.S_IXOTH)
 
 
 def install_cloudformation_libs():
@@ -364,42 +160,23 @@ def install_cloudformation_libs():
     deployment_utils.get_cfn_response_mod_file()
 
 
-def install_terraform() -> str:
-    if os.path.isfile(TERRAFORM_BIN):
-        return TERRAFORM_BIN
-
-    log_install_msg(f"Installing terraform {TERRAFORM_VERSION}")
-
-    system = platform.system().lower()
-    arch = get_arch()
-
-    url = TERRAFORM_URL_TEMPLATE.format(version=TERRAFORM_VERSION, os=system, arch=arch)
-
-    download_and_extract(url, os.path.dirname(TERRAFORM_BIN))
-    chmod_r(TERRAFORM_BIN, 0o777)
-
-    return TERRAFORM_BIN
-
-
-def get_terraform_binary() -> str:
-    if not os.path.isfile(TERRAFORM_BIN):
-        install_terraform()
-
-    return TERRAFORM_BIN
-
-
 def install_component(name):
+    from localstack.services.awslambda.packages import awslambda_runtime_package
+    from localstack.services.cloudformation.packages import cloudformation_package
     from localstack.services.dynamodb.packages import dynamodblocal_package
     from localstack.services.kinesis.packages import kinesismock_package
+    from localstack.services.kms.packages import kms_local_package
+    from localstack.services.sqs.legacy.packages import elasticmq_package
+    from localstack.services.stepfunctions.packages import stepfunctions_local_package
 
     installers = {
-        "cloudformation": install_cloudformation_libs,
+        "cloudformation": cloudformation_package.install,
         "dynamodb": dynamodblocal_package.install,
         "kinesis": kinesismock_package.install,
-        "kms": install_local_kms,
-        "lambda": install_lambda_runtime,
-        "sqs": install_sqs_provider,
-        "stepfunctions": install_stepfunctions_local,
+        "kms": kms_local_package.install,
+        "lambda": awslambda_runtime_package.install,
+        "sqs": elasticmq_package.install,
+        "stepfunctions": stepfunctions_local_package.install,
     }
 
     installer = installers.get(name)
@@ -409,7 +186,11 @@ def install_component(name):
 
 def install_components(names):
     parallelize(install_component, names)
-    install_lambda_java_libs()
+
+    # TODO: subject to removal, migrated from old code
+    from localstack.services.awslambda.packages import lambda_java_libs_package
+
+    lambda_java_libs_package.install()
 
 
 def install_all_components():
@@ -448,7 +229,6 @@ def download_and_extract(archive_url, target_dir, retries=0, sleep=3, tmp_archiv
     mkdir(target_dir)
 
     _, ext = os.path.splitext(tmp_archive or archive_url)
-
     tmp_archive = tmp_archive or new_tmp_file()
     if not os.path.exists(tmp_archive) or os.path.getsize(tmp_archive) <= 0:
         # create temporary placeholder file, to avoid duplicate parallel downloads
@@ -459,7 +239,6 @@ def download_and_extract(archive_url, target_dir, retries=0, sleep=3, tmp_archiv
                 break
             except Exception:
                 time.sleep(sleep)
-
     if ext == ".zip":
         unzip(tmp_archive, target_dir)
     elif ext in [".bz2", ".gz", ".tgz"]:
@@ -494,28 +273,38 @@ class CommunityInstallerRepository(InstallerRepository):
 
     def get_installer(self) -> List[Installer]:
         from localstack.packages.postgres import PostgresqlPackage
+        from localstack.packages.terraform import terraform_package
+        from localstack.services.awslambda.packages import (
+            awslambda_go_runtime_package,
+            awslambda_runtime_package,
+            lambda_java_libs_package,
+        )
+        from localstack.services.cloudformation.packages import cloudformation_package
         from localstack.services.dynamodb.packages import dynamodblocal_package
         from localstack.services.kinesis.packages import kinesalite_package, kinesismock_package
+        from localstack.services.kms.packages import kms_local_package
         from localstack.services.opensearch.packages import (
             elasticsearch_package,
             opensearch_package,
         )
+        from localstack.services.sqs.legacy.packages import elasticmq_package
+        from localstack.services.stepfunctions.packages import stepfunctions_local_package
 
         return [
-            ("awslamba-go-runtime", install_go_lambda_runtime),
-            ("awslambda-runtime", install_lambda_runtime),
-            ("cloudformation-libs", install_cloudformation_libs),
+            ("awslambda-go-runtime", awslambda_go_runtime_package),
+            ("awslambda-runtime", awslambda_runtime_package),
+            ("cloudformation-libs", cloudformation_package),
             ("dynamodb-local", dynamodblocal_package),
-            ("elasticmq", install_elasticmq),
+            ("elasticmq", elasticmq_package),
             ("elasticsearch", elasticsearch_package),
             ("opensearch", opensearch_package),
             ("kinesalite", kinesalite_package),
             ("kinesis-mock", kinesismock_package),
-            ("lambda-java-libs", install_lambda_java_libs),
-            ("local-kms", install_local_kms),
+            ("lambda-java-libs", lambda_java_libs_package),
+            ("local-kms", kms_local_package),
             ("postgresql", PostgresqlPackage()),
-            ("stepfunctions-local", install_stepfunctions_local),
-            ("terraform", install_terraform),
+            ("stepfunctions-local", stepfunctions_local_package),
+            ("terraform", terraform_package),
         ]
 
 

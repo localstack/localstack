@@ -50,8 +50,8 @@ from localstack.services.awslambda.lambda_utils import (
     get_zip_bytes,
     validate_filters,
 )
+from localstack.services.awslambda.packages import awslambda_go_runtime_package
 from localstack.services.generic_proxy import RegionBackend
-from localstack.services.install import INSTALL_DIR_STEPFUNCTIONS, install_go_lambda_runtime
 from localstack.utils.archives import unzip
 from localstack.utils.aws import aws_stack
 from localstack.utils.aws.aws_models import CodeSigningConfig, InvalidEnvVars, LambdaFunction
@@ -819,7 +819,8 @@ def do_set_function_code(lambda_function: LambdaFunction):
             lambda_handler = execute
 
         if runtime.startswith("go1") and not use_docker():
-            install_go_lambda_runtime()
+            awslambda_go_runtime_package.install()
+
             ensure_readable(main_file)
 
             def execute_go(event, context):
@@ -1833,8 +1834,14 @@ def invoke_function(function):
     # remove this block when AWS updates the stepfunctions image to support aws-sdk invocations
     if not_found and "localstack-internal-awssdk" in arn:
         # init aws-sdk stepfunctions handler
+        from localstack.services.stepfunctions.packages import stepfunctions_local_package
+
         code = load_file(
-            os.path.join(INSTALL_DIR_STEPFUNCTIONS, "localstack-internal-awssdk", "awssdk.zip"),
+            os.path.join(
+                stepfunctions_local_package.get_installed_dir(),
+                "localstack-internal-awssdk",
+                "awssdk.zip",
+            ),
             mode="rb",
         )
         lambda_client = aws_stack.connect_to_service("lambda")

@@ -31,7 +31,10 @@ from localstack.services.awslambda.lambda_utils import (
     rm_docker_container,
     store_lambda_logs,
 )
-from localstack.services.install import GO_LAMBDA_RUNTIME, INSTALL_PATH_LOCALSTACK_FAT_JAR
+from localstack.services.awslambda.packages import (
+    awslambda_go_runtime_package,
+    lambda_java_libs_package,
+)
 from localstack.utils.aws import aws_stack
 from localstack.utils.aws.aws_models import LambdaFunction
 from localstack.utils.aws.dead_letter_queue import lambda_error_to_dead_letter_queue
@@ -73,7 +76,7 @@ from localstack.utils.run import CaptureOutputProcess, FuncThread
 from localstack.utils.time import timestamp_millis
 
 # constants
-LAMBDA_EXECUTOR_JAR = INSTALL_PATH_LOCALSTACK_FAT_JAR
+LAMBDA_JAVA_INSTALLER = lambda_java_libs_package.get_installer()
 LAMBDA_EXECUTOR_CLASS = "cloud.localstack.LambdaExecutor"
 LAMBDA_HANDLER_ENV_VAR_NAME = "_HANDLER"
 EVENT_FILE_PATTERN = "%s/lambda.event.*.json" % config.dirs.tmp
@@ -1538,10 +1541,11 @@ class LambdaExecutorLocal(LambdaExecutor):
         save_file(event_file, json.dumps(json_safe(event)))
         TMP_FILES.append(event_file)
 
+        lambda_executor_jar = LAMBDA_JAVA_INSTALLER.get_executable_path()
         classpath = "%s:%s:%s" % (
             main_file,
             Util.get_java_classpath(lambda_function.cwd),
-            LAMBDA_EXECUTOR_JAR,
+            lambda_executor_jar,
         )
         cmd = "java %s -cp %s %s %s" % (
             java_opts,
@@ -1591,8 +1595,8 @@ class LambdaExecutorLocal(LambdaExecutor):
             lambda_function.envvars["AWS_LAMBDA_EVENT_BODY"] = json.dumps(json_safe(event))
         else:
             LOG.warning("Unable to get function details for local execution of Golang Lambda")
-
-        cmd = GO_LAMBDA_RUNTIME
+        go_installer = awslambda_go_runtime_package.get_installer()
+        cmd = go_installer.get_executable_path()
         LOG.debug("Running Golang Lambda with runtime: %s", cmd)
         result = self._execute_in_custom_runtime(cmd, lambda_function=lambda_function)
         return result
