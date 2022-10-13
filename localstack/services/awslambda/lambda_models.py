@@ -18,5 +18,8 @@ class AwsLambdaStore(BaseStore):
     # map ARN strings to url configs
     url_configs: Dict[str, Dict] = LocalAttribute(default=dict)
 
+    # maps Lambda ARNs to layers ARNs configured for that Lambda (pro)
+    layers: Dict[str, str] = LocalAttribute(default=dict)
+
 
 awslambda_stores = AccountRegionBundle[AwsLambdaStore]("lambda", AwsLambdaStore)
