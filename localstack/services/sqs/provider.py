@@ -34,6 +34,7 @@ from localstack.aws.api.sqs import (
     GetQueueUrlResult,
     Integer,
     InvalidAttributeName,
+    InvalidBatchEntryId,
     InvalidMessageContents,
     ListDeadLetterSourceQueuesResult,
     ListQueuesResult,
@@ -725,6 +726,7 @@ class SqsProvider(SqsApi, ServiceLifecycleHook):
     ) -> DeleteMessageBatchResult:
         queue = self._resolve_queue(context, queue_url=queue_url)
         self._assert_batch(entries)
+        self._assert_valid_message_ids(entries)
 
         successful = []
         failed = []
@@ -893,6 +895,15 @@ class SqsProvider(SqsApi, ServiceLifecycleHook):
             error = f"Batch requests cannot be longer than {max_message_size} bytes."
             error += f" You have sent {batch_message_size} bytes."
             raise BatchRequestTooLong(error)
+
+    def _assert_valid_message_ids(self, batch: List):
+        batch_id_regex = r"^[\w-]{1,80}$"
+        for message in batch:
+            if not re.match(batch_id_regex, message.get("Id", "")):
+                raise InvalidBatchEntryId(
+                    "A batch entry id can only contain alphanumeric characters, "
+                    "hyphens and underscores. It can be at most 80 letters long."
+                )
 
 
 # Method from moto's attribute_md5 of moto/sqs/models.py, separated from the Message Object

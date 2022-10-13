@@ -156,14 +156,14 @@ class SQSEventSourceListener(EventSourceListener):
                     return
 
                 entries = [
-                    {"Id": r["receiptHandle"], "ReceiptHandle": r["receiptHandle"]}
+                    {"Id": r["messageId"], "ReceiptHandle": r["receiptHandle"]}
                     for r in records
                     if r["messageId"] in messages_to_delete
                 ]
 
             else:
                 entries = [
-                    {"Id": r["receiptHandle"], "ReceiptHandle": r["receiptHandle"]} for r in records
+                    {"Id": r["messageId"], "ReceiptHandle": r["receiptHandle"]} for r in records
                 ]
 
             try:
