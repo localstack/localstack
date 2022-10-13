@@ -217,6 +217,22 @@ class TestIntrinsicFunctions:
 
         assert deployed.outputs["Address"] == "10.0.0.0/24"
 
+    @pytest.mark.aws_validated
+    @pytest.mark.skip(reason="function not currently supported")
+    def test_get_azs_function(self, deploy_cfn_template):
+        template_path = os.path.join(
+            os.path.dirname(__file__), "../templates/functions_get_azs.yml"
+        )
+        region = "us-east-1"  # TODO parametrize
+
+        deployed = deploy_cfn_template(
+            template_path=template_path,
+            parameters={"Region": region},
+        )
+
+        zone = "us-east-1a"  # TODO parametrize
+        assert zone in deployed.outputs["Zones"]
+
 
 class TestImports:
     @pytest.mark.skip(reason="flaky due to issues in parameter handling and re-resolving")
