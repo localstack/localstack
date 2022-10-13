@@ -1,19 +1,23 @@
 Parameters:
-  OriginalString:
+  IpBlock:
     Type: String
+  Count:
+    Type: Number
+  CidrBits:
+    Type: Number
+  Select:
+    Type: Number
 Resources:
   SsmParameter:
     Type: AWS::SSM::Parameter
     Properties:
       Type: String
       Value:
-        Fn::Base64:
-          Fn::Sub:
-            - "${value}"
-            - value:
-                Ref: OriginalString
+        Fn::Select:
+          - !Ref Select
+          - !Cidr [!Ref IpBlock, !Ref Count, !Ref CidrBits]
 Outputs:
-  Encoded:
+  Address:
     Value:
       Fn::GetAtt:
         - SsmParameter

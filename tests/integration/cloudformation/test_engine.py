@@ -204,6 +204,19 @@ class TestIntrinsicFunctions:
         assert json_result["key2"] == second_value
         assert "value1" == deployed.outputs["Result2"]
 
+    @pytest.mark.aws_validated
+    @pytest.mark.skip(reason="function not currently supported")
+    def test_cidr_function(self, deploy_cfn_template):
+        template_path = os.path.join(os.path.dirname(__file__), "../templates/functions_cidr.yml")
+
+        # TODO parametrize parameters and result
+        deployed = deploy_cfn_template(
+            template_path=template_path,
+            parameters={"IpBlock": "10.0.0.0/16", "Count": "1", "CidrBits": "8", "Select": "0"},
+        )
+
+        assert deployed.outputs["Address"] == "10.0.0.0/24"
+
 
 class TestImports:
     @pytest.mark.skip(reason="flaky due to issues in parameter handling and re-resolving")
