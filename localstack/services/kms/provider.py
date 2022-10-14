@@ -509,6 +509,7 @@ class KmsProvider(KmsApi, ServiceLifecycleHook):
         result.pop("Plaintext")
         return GenerateDataKeyWithoutPlaintextResponse(**result)
 
+    # Currently LocalStack only calculates SHA256 digests no matter what the signing algorithm is.
     @handler("Sign", expand=False)
     def sign(self, context: RequestContext, request: SignRequest) -> SignResponse:
         key = self._get_key(context, request.get("KeyId"))
@@ -518,7 +519,7 @@ class KmsProvider(KmsApi, ServiceLifecycleHook):
         #  https://docs.aws.amazon.com/kms/latest/developerguide/asymmetric-key-specs.html#key-spec-ecc
 
         signing_algorithm = request.get("SigningAlgorithm")
-        signature = key.sign(request.get("Message"), signing_algorithm)
+        signature = key.sign(request.get("Message"), request.get("MessageType"), signing_algorithm)
 
         result = {
             "KeyId": key.metadata["KeyId"],
@@ -527,6 +528,7 @@ class KmsProvider(KmsApi, ServiceLifecycleHook):
         }
         return SignResponse(**result)
 
+    # Currently LocalStack only calculates SHA256 digests no matter what the signing algorithm is.
     @handler("Verify", expand=False)
     def verify(self, context: RequestContext, request: VerifyRequest) -> VerifyResponse:
         key = self._get_key(context, request.get("KeyId"))
@@ -534,7 +536,10 @@ class KmsProvider(KmsApi, ServiceLifecycleHook):
 
         signing_algorithm = request.get("SigningAlgorithm")
         is_signature_valid = key.verify(
-            request.get("Message"), signing_algorithm, request.get("Signature")
+            request.get("Message"),
+            request.get("MessageType"),
+            signing_algorithm,
+            request.get("Signature"),
         )
 
         result = {
