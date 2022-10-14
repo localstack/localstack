@@ -8,6 +8,7 @@ from moto.s3.models import FakeDeleteMarker, FakeKey
 
 from localstack.aws.api import ServiceException
 from localstack.aws.api.s3 import (
+    BucketCannedACL,
     BucketName,
     ChecksumAlgorithm,
     InvalidArgument,
@@ -40,7 +41,9 @@ S3_VIRTUAL_HOSTNAME_REGEX = (  # path based refs have at least valid bucket expr
 
 S3_VIRTUAL_HOST_FORWARDED_HEADER = "x-s3-vhost-forwarded-for"
 
-VALID_CANNED_ACLS = {
+VALID_CANNED_ACLS_BUCKET = {
+    # https://docs.aws.amazon.com/AmazonS3/latest/userguide/acl-overview.html#canned-acl
+    # bucket-owner-read + bucket-owner-full-control are allowed, but ignored for buckets
     ObjectCannedACL.private,
     ObjectCannedACL.authenticated_read,
     ObjectCannedACL.aws_exec_read,
@@ -48,6 +51,7 @@ VALID_CANNED_ACLS = {
     ObjectCannedACL.bucket_owner_read,
     ObjectCannedACL.public_read,
     ObjectCannedACL.public_read_write,
+    BucketCannedACL.log_delivery_write,
 }
 
 VALID_ACL_PREDEFINED_GROUPS = {
@@ -124,8 +128,8 @@ def is_bucket_name_valid(bucket_name: str) -> bool:
     return True if re.match(BUCKET_NAME_REGEX, bucket_name) else False
 
 
-def is_canned_acl_valid(canned_acl: str) -> bool:
-    return canned_acl in VALID_CANNED_ACLS
+def is_canned_acl_bucket_valid(canned_acl: str) -> bool:
+    return canned_acl in VALID_CANNED_ACLS_BUCKET
 
 
 def get_header_name(capitalized_field: str) -> str:

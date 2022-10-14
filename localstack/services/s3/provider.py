@@ -100,7 +100,7 @@ from localstack.services.s3.utils import (
     get_header_name,
     get_key_from_moto_bucket,
     is_bucket_name_valid,
-    is_canned_acl_valid,
+    is_canned_acl_bucket_valid,
     is_key_expired,
     is_valid_canonical_id,
     verify_checksum,
@@ -604,9 +604,7 @@ class S3Provider(S3Api, ServiceLifecycleHook):
         context: RequestContext,
         request: PutBucketAclRequest,
     ) -> None:
-        if (canned_acl := request.get("ACL")) and not is_canned_acl_valid(canned_acl):
-            ex = _create_invalid_argument_exc(None, name="x-amz-acl", value=canned_acl)
-            raise ex
+        validate_bucket_canned_acl(request.get("ACL"))
 
         grant_keys = [
             "GrantFullControl",
@@ -815,11 +813,11 @@ def validate_bucket_name(bucket: BucketName) -> None:
         raise ex
 
 
-def validate_canned_acl(canned_acl: str) -> None:
+def validate_bucket_canned_acl(canned_acl: str) -> None:
     """
     Validate the canned ACL value, or raise an Exception
     """
-    if not is_canned_acl_valid(canned_acl):
+    if canned_acl and not is_canned_acl_bucket_valid(canned_acl):
         ex = _create_invalid_argument_exc(None, "x-amz-acl", canned_acl)
         raise ex
 

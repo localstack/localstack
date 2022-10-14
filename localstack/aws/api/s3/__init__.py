@@ -198,6 +198,7 @@ class BucketCannedACL(str):
     public_read = "public-read"
     public_read_write = "public-read-write"
     authenticated_read = "authenticated-read"
+    log_delivery_write = "log-delivery-write"
 
 
 class BucketLocationConstraint(str):
