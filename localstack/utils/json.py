@@ -1,3 +1,4 @@
+import base64
 import decimal
 import json
 import logging
@@ -5,6 +6,8 @@ import os
 from datetime import date, datetime
 from json import JSONDecodeError
 from typing import Any, Union
+
+from localstack.config import DEFAULT_ENCODING
 
 from .numbers import is_number
 from .strings import to_str
@@ -47,7 +50,7 @@ class BytesEncoder(json.JSONEncoder):
 
     def default(self, obj):
         if isinstance(obj, bytes):
-            return to_str(obj, errors="replace")
+            return base64.b64encode(obj).strip().decode(DEFAULT_ENCODING)
         return super().default(obj)
 
 

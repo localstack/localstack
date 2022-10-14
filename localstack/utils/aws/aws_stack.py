@@ -40,6 +40,7 @@ from localstack.utils.aws.aws_models import KinesisStream
 from localstack.utils.collections import pick_attributes
 from localstack.utils.functions import run_safe
 from localstack.utils.http import make_http_request
+from localstack.utils.json import BytesEncoder
 from localstack.utils.strings import get_random_hex, is_string, is_string_or_bytes, to_str
 from localstack.utils.sync import poll_condition, retry
 
@@ -915,7 +916,7 @@ def dynamodb_get_item_raw(request):
     new_item = make_http_request(
         url=config.service_url("dynamodb"),
         method="POST",
-        data=json.dumps(request),
+        data=json.dumps(request, cls=BytesEncoder),
         headers=headers,
     )
     new_item = new_item.text
