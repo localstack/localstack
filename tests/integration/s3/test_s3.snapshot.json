@@ -3724,5 +3724,65 @@
         }
       }
     }
+  },
+  "tests/integration/s3/test_s3.py::TestS3::test_put_and_get_object_with_content_language_disposition": {
+    "recorded-date": "14-10-2022, 17:59:39",
+    "recorded-content": {
+      "put-object": {
+        "ETag": "\"e99a18c428cb38d5f260853678922e03\"",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "put-object-headers": {
+        "HTTPHeaders": {
+          "content-length": "0",
+          "date": "date",
+          "etag": "\"e99a18c428cb38d5f260853678922e03\"",
+          "server": "server",
+          "x-amz-id-2": "id-2",
+          "x-amz-request-id": "request-id"
+        },
+        "HTTPStatusCode": 200,
+        "HostId": "host-id",
+        "RequestId": "request-id",
+        "RetryAttempts": 0
+      },
+      "get-object": {
+        "AcceptRanges": "bytes",
+        "Body": "",
+        "ContentDisposition": "attachment; filename=\"foo.jpg\"",
+        "ContentLanguage": "de",
+        "ContentLength": 6,
+        "ContentType": "binary/octet-stream",
+        "ETag": "\"e99a18c428cb38d5f260853678922e03\"",
+        "LastModified": "datetime",
+        "Metadata": {},
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "get-object-headers": {
+        "HTTPHeaders": {
+          "accept-ranges": "bytes",
+          "content-disposition": "attachment; filename=\"foo.jpg\"",
+          "content-language": "de",
+          "content-length": "6",
+          "content-type": "binary/octet-stream",
+          "date": "date",
+          "etag": "\"e99a18c428cb38d5f260853678922e03\"",
+          "last-modified": "last-modified",
+          "server": "server",
+          "x-amz-id-2": "id-2",
+          "x-amz-request-id": "request-id"
+        },
+        "HTTPStatusCode": 200,
+        "HostId": "host-id",
+        "RequestId": "request-id",
+        "RetryAttempts": 0
+      }
+    }
   }
 }

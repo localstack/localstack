@@ -236,6 +236,68 @@ class TestS3:
         assert response["Body"].read() == b"abc123"
 
     @pytest.mark.aws_validated
+    @pytest.mark.xfail(
+        condition=not LEGACY_S3_PROVIDER,
+        reason="content-length and type is wrong",  # TODO
+    )
+    @pytest.mark.skip_snapshot_verify(
+        condition=is_asf_provider, paths=["$..HTTPHeaders.connection"]
+    )  # for ASF we currently always set 'close'
+    @pytest.mark.skip_snapshot_verify(
+        condition=is_old_provider,
+        paths=[
+            "$..HTTPHeaders.access-control-allow-origin",
+            "$..HTTPHeaders.connection",
+            "$..HTTPHeaders.content-md5",
+            "$..HTTPHeaders.x-amz-version-id",
+            "$..HTTPHeaders.x-amzn-requestid",
+            "$..HostId",
+            "$..VersionId",
+            "$..HTTPHeaders.content-type",
+            "$..HTTPHeaders.last-modified",
+            "$..HTTPHeaders.location",
+        ],
+    )
+    def test_put_and_get_object_with_content_language_disposition(
+        self, s3_client, s3_bucket, snapshot
+    ):
+        snapshot.add_transformer(snapshot.transform.s3_api())
+        header_transformer = [
+            snapshot.transform.jsonpath("$..HTTPHeaders.date", "date", reference_replacement=False),
+            snapshot.transform.jsonpath(
+                "$..HTTPHeaders.last-modified", "last-modified", reference_replacement=False
+            ),
+            snapshot.transform.jsonpath(
+                "$..HTTPHeaders.server", "server", reference_replacement=False
+            ),
+            snapshot.transform.jsonpath(
+                "$..HTTPHeaders.x-amz-id-2", "id-2", reference_replacement=False
+            ),
+            snapshot.transform.jsonpath(
+                "$..HTTPHeaders.x-amz-request-id", "request-id", reference_replacement=False
+            ),
+            snapshot.transform.key_value("HostId", reference_replacement=False),
+            snapshot.transform.key_value("RequestId", reference_replacement=False),
+        ]
+        snapshot.add_transformer(header_transformer)
+
+        response = s3_client.put_object(
+            Bucket=s3_bucket,
+            Key="test",
+            Body=b"abc123",
+            ContentLanguage="de",
+            ContentDisposition='attachment; filename="foo.jpg"',
+        )
+        assert response["ResponseMetadata"]["HTTPStatusCode"] == 200
+        snapshot.match("put-object", response)
+        snapshot.match("put-object-headers", response["ResponseMetadata"])
+
+        response = s3_client.get_object(Bucket=s3_bucket, Key="test")
+        snapshot.match("get-object", response)
+        snapshot.match("get-object-headers", response["ResponseMetadata"])
+        assert response["Body"].read() == b"abc123"
+
+    @pytest.mark.aws_validated
     def test_resource_object_with_slashes_in_key(self, s3_resource, s3_bucket):
         s3_resource.Object(s3_bucket, "/foo").put(Body="foobar")
         s3_resource.Object(s3_bucket, "bar").put(Body="barfoo")
