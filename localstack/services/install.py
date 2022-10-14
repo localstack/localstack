@@ -272,7 +272,6 @@ class CommunityInstallerRepository(InstallerRepository):
     name = "community"
 
     def get_installer(self) -> List[Installer]:
-        from localstack.packages.postgres import PostgresqlPackage
         from localstack.packages.terraform import terraform_package
         from localstack.services.awslambda.packages import (
             awslambda_go_runtime_package,
@@ -302,7 +301,6 @@ class CommunityInstallerRepository(InstallerRepository):
             ("kinesis-mock", kinesismock_package),
             ("lambda-java-libs", lambda_java_libs_package),
             ("local-kms", kms_local_package),
-            ("postgresql", PostgresqlPackage()),
             ("stepfunctions-local", stepfunctions_local_package),
             ("terraform", terraform_package),
         ]
