@@ -407,6 +407,14 @@
       "created_at": "2022-10-09T15:33:10Z",
       "repoId": 71948498,
       "pullRequestNo": 6992
+    },
+    {
+      "name": "arthurvanduynhoven",
+      "id": 1252431,
+      "comment_id": 1279037519,
+      "created_at": "2022-10-14T13:50:01Z",
+      "repoId": 71948498,
+      "pullRequestNo": 7025
     }
   ]
 }
