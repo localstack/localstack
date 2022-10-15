@@ -95,8 +95,9 @@ class ApigatewayRouter:
         if not get_api_account_id_and_region(url_params["api_id"])[1]:
             return Response(status=404)
         invocation_context = to_invocation_context(request, url_params)
-        _, region_name = get_api_account_id_and_region(url_params.get("api_id"))
+        account_id, region_name = get_api_account_id_and_region(url_params.get("api_id"))
         invocation_context.region_name = region_name
+        invocation_context.account_id = account_id
 
         result = invoke_rest_api_from_request(invocation_context)
         if result is not None:

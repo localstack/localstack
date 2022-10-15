@@ -77,15 +77,14 @@ class ApiInvocationContext:
 
     @property
     def resource_path(self) -> str:
-        """The resource path of the ApiGateway.V1 (e.g., "/my/path/{id}") or
-        invocation_path for ApiGatewayVersion.V2"""
+        """The resource path of the ApiGateway.V1 (e.g., "/my/path/{id}")"""
         return self.resource.get("path")
 
     @property
     def invocation_path(self) -> str:
         # invocation path differs from url_params["path"] because it includes a leading slash and
-        # trailing slash if the request.path includes a trailing slash, e.g.: /my/path/? or
-        # /my/path? are valid invocation paths for the same resource path /my/path
+        # trailing slash, if the request.path includes a trailing slash,e.g.: /my/path/? or
+        # /my/path?. Both examples are valid invocation paths for the same resource path /my/path
         invocation_path = self.path
         if self.request.path.endswith("/"):
             invocation_path = f"{invocation_path}/"
