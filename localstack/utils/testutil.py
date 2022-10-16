@@ -173,7 +173,6 @@ def create_zip_file(
     rm_rf(tmp_dir)
     return zip_file_content
 
-
 def create_lambda_function(
     func_name,
     zip_file=None,
