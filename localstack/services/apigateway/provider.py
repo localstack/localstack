@@ -90,7 +90,7 @@ class ApigatewayApiListener(AwsApiListener):
         if data := parse_json_or_yaml(to_str(invocation_context.data or b"")):
             orig_data = data
             if path_with_query_string := orig_data.get("pathWithQueryString", None):
-                invocation_context.path_with_query_string = path_with_query_string
+                invocation_context._path_with_query_string = path_with_query_string
             invocation_context.data = data.get("body")
             invocation_context.headers = orig_data.get("headers", {})
         result = invoke_rest_api_from_request(invocation_context)
