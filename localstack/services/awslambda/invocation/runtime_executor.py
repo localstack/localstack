@@ -13,6 +13,10 @@ from localstack.services.awslambda.invocation.executor_endpoint import (
     ServiceEndpoint,
 )
 from localstack.services.awslambda.invocation.lambda_models import IMAGE_MAPPING, FunctionVersion
+from localstack.services.awslambda.invocation.runtime_executor_plugin import (
+    RuntimeExecutor,
+    RuntimeExecutorPlugin,
+)
 from localstack.services.awslambda.lambda_utils import (
     get_container_network_for_lambda,
     get_main_endpoint_from_container,
@@ -108,17 +112,23 @@ class LambdaRuntimeException(Exception):
         super().__init__(message)
 
 
-class RuntimeExecutor:
-    id: str
-    function_version: FunctionVersion
+class DockerRuntimeExecutorPlugin(RuntimeExecutorPlugin):
+    name = "docker"
+
+    def load(self, *args, **kwargs):
+        return DockerRuntimeExecutor
+
+
+class DockerRuntimeExecutor(RuntimeExecutor):
     ip: Optional[str]
     executor_endpoint: Optional[ExecutorEndpoint]
 
     def __init__(
         self, id: str, function_version: FunctionVersion, service_endpoint: ServiceEndpoint
     ) -> None:
-        self.id = id
-        self.function_version = function_version
+        super(DockerRuntimeExecutor, self).__init__(
+            id=id, function_version=function_version, service_endpoint=service_endpoint
+        )
         self.ip = None
         self.executor_endpoint = self._build_executor_endpoint(service_endpoint)
 
@@ -146,9 +156,9 @@ class RuntimeExecutor:
         )
         return executor_endpoint
 
-    def start(self, env_vars: Dict[str, str]) -> None:
+    def start(self, env_vars: dict[str, str]) -> None:
         self.executor_endpoint.start()
-        network = self.get_network_for_executor()
+        network = self._get_network_for_executor()
         container_config = ContainerConfiguration(
             image_name=self.get_image(),
             name=self.id,
@@ -191,7 +201,7 @@ class RuntimeExecutor:
     def get_endpoint_from_executor(self) -> str:
         return get_main_endpoint_from_container()
 
-    def get_network_for_executor(self) -> str:
+    def _get_network_for_executor(self) -> str:
         return get_container_network_for_lambda()
 
     def invoke(self, payload: Dict[str, str]):
