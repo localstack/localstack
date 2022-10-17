@@ -113,7 +113,7 @@ def start_ssl_proxy(
 
     if not asynchronous:
         return _run()
-    proxy = FuncThread(_run)
+    proxy = FuncThread(_run, name="ssl-proxy")
     TMP_THREADS.append(proxy)
     proxy.start()
     return proxy

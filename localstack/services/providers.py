@@ -373,6 +373,7 @@ def events():
     return Service(
         "events",
         listener=AwsApiListener("events", MotoFallbackDispatcher(provider)),
+        lifecycle_hook=provider,
     )
 
 

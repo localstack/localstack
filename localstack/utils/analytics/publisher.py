@@ -121,7 +121,7 @@ class PublisherBuffer(EventHandler):
             self.checked_flush()
 
     def run(self, *_):
-        flush_scheduler = start_thread(self._run_flush_schedule)
+        flush_scheduler = start_thread(self._run_flush_schedule, name="analytics-publishbuffer")
 
         try:
             while True:
@@ -139,6 +139,8 @@ class PublisherBuffer(EventHandler):
         finally:
             self._stopped.set()
             flush_scheduler.stop()
+            if config.DEBUG_ANALYTICS:
+                LOG.debug("Exit analytics publisher")
 
     def _do_flush(self):
         queue = self._queue
@@ -256,7 +258,7 @@ class GlobalAnalyticsBus(PublisherBuffer):
         finally:
             self._startup_complete = True
 
-        start_thread(self.run)
+        start_thread(self.run, name="global-analytics-bus")
 
         def _do_close():
             self.close_sync(timeout=2)

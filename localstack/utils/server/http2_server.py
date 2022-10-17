@@ -283,7 +283,7 @@ def run_server(
 
     class ProxyThread(FuncThread):
         def __init__(self):
-            FuncThread.__init__(self, self.run_proxy, None)
+            FuncThread.__init__(self, self.run_proxy, None, name="proxy-thread")
             self.shutdown_event = None
             self.loop = None
 

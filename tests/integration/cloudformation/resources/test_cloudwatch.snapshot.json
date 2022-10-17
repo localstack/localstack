@@ -1,0 +1,11 @@
+{
+  "tests/integration/cloudformation/resources/test_cloudwatch.py::test_alarm_creation": {
+    "recorded-date": "25-08-2022, 14:20:57",
+    "recorded-content": {
+      "alarm_outputs": {
+        "AlarmArnFromAtt": "arn:aws:cloudwatch:<region>:111111111111:alarm:<resource:1>",
+        "AlarmName": "<resource:1>"
+      }
+    }
+  }
+}

@@ -38,7 +38,9 @@ class SQSEventSourceListener(EventSourceListener):
             return
 
         LOG.debug("Starting SQS message polling thread for Lambda API")
-        self.SQS_LISTENER_THREAD["_thread_"] = thread = FuncThread(self._listener_loop)
+        self.SQS_LISTENER_THREAD["_thread_"] = thread = FuncThread(
+            self._listener_loop, name="sqs-event-source-listener"
+        )
         thread.start()
 
     def get_matching_event_sources(self) -> List[Dict]:
@@ -154,14 +156,14 @@ class SQSEventSourceListener(EventSourceListener):
                     return
 
                 entries = [
-                    {"Id": r["receiptHandle"], "ReceiptHandle": r["receiptHandle"]}
+                    {"Id": r["messageId"], "ReceiptHandle": r["receiptHandle"]}
                     for r in records
                     if r["messageId"] in messages_to_delete
                 ]
 
             else:
                 entries = [
-                    {"Id": r["receiptHandle"], "ReceiptHandle": r["receiptHandle"]} for r in records
+                    {"Id": r["messageId"], "ReceiptHandle": r["receiptHandle"]} for r in records
                 ]
 
             try:

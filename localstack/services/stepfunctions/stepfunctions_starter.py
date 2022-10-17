@@ -3,8 +3,8 @@ from typing import Optional
 
 from localstack import config
 from localstack.aws.accounts import get_aws_account_id
-from localstack.services import install
 from localstack.services.infra import do_run, log_startup_message
+from localstack.services.stepfunctions.packages import stepfunctions_local_package
 from localstack.utils.aws import aws_stack
 from localstack.utils.common import wait_for_port_open
 from localstack.utils.sync import retry
@@ -20,6 +20,7 @@ PROCESS_THREAD = None
 
 # TODO: pass env more explicitly
 def get_command(backend_port):
+    install_dir_stepfunctions = stepfunctions_local_package.get_installed_dir()
     cmd = (
         "cd %s; PORT=%s java "
         "-javaagent:aspectjweaver-1.9.7.jar "
@@ -27,7 +28,7 @@ def get_command(backend_port):
         "-Dcom.amazonaws.sdk.disableCertChecking -Xmx%s "
         "-jar StepFunctionsLocal.jar --aws-account %s"
     ) % (
-        install.INSTALL_DIR_STEPFUNCTIONS,
+        install_dir_stepfunctions,
         backend_port,
         MAX_HEAP_SIZE,
         get_aws_account_id(),
@@ -69,7 +70,7 @@ def start_stepfunctions(asynchronous=True, persistence_path: Optional[str] = Non
     # TODO: introduce Server abstraction for StepFunctions process
     global PROCESS_THREAD
     backend_port = config.LOCAL_PORT_STEPFUNCTIONS
-    install.install_stepfunctions_local()
+    stepfunctions_local_package.install()
     cmd = get_command(backend_port)
     log_startup_message("StepFunctions")
     # TODO: change ports in stepfunctions.jar, then update here
