@@ -629,7 +629,7 @@ LAMBDA_DOCKER_FLAGS = os.environ.get("LAMBDA_DOCKER_FLAGS", "").strip()
 LAMBDA_PREBUILD_IMAGES = is_env_true("LAMBDA_PREBUILD_IMAGES")
 
 # get the lambda runtime executor name
-LAMBDA_RUNTIME_EXECUTOR = os.environ.get("LAMBDA_DOCKER_FLAGS", "").strip()
+LAMBDA_RUNTIME_EXECUTOR = os.environ.get("LAMBDA_RUNTIME_EXECUTOR", "").strip()
 
 # default container registry for lambda execution images
 LAMBDA_CONTAINER_REGISTRY = (
