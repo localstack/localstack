@@ -39,6 +39,7 @@ from localstack.services.awslambda.lambda_utils import (
 )
 from localstack.testing.aws.util import is_aws_cloud
 from localstack.testing.pytest.fixtures import _client
+from localstack.testing.snapshots.transformer_utility import TransformerUtility
 from localstack.utils import testutil
 from localstack.utils.aws import aws_stack
 from localstack.utils.collections import is_sub_dict
@@ -61,6 +62,21 @@ if TYPE_CHECKING:
     from mypy_boto3_s3 import S3Client
 
 LOG = logging.getLogger(__name__)
+
+# transformer list to transform headers, that will be validated for some specific s3-tests
+HEADER_TRANSFORMER = [
+    TransformerUtility.jsonpath("$..HTTPHeaders.date", "date", reference_replacement=False),
+    TransformerUtility.jsonpath(
+        "$..HTTPHeaders.last-modified", "last-modified", reference_replacement=False
+    ),
+    TransformerUtility.jsonpath("$..HTTPHeaders.server", "server", reference_replacement=False),
+    TransformerUtility.jsonpath("$..HTTPHeaders.x-amz-id-2", "id-2", reference_replacement=False),
+    TransformerUtility.jsonpath(
+        "$..HTTPHeaders.x-amz-request-id", "request-id", reference_replacement=False
+    ),
+    TransformerUtility.key_value("HostId", reference_replacement=False),
+    TransformerUtility.key_value("RequestId", reference_replacement=False),
+]
 
 
 def is_old_provider():
@@ -182,6 +198,44 @@ def _filter_header(param: dict) -> dict:
 
 class TestS3:
     @pytest.mark.aws_validated
+    @pytest.mark.skip_snapshot_verify(
+        condition=is_old_provider, paths=["$..VersionId", "$..ContentLanguage"]
+    )
+    def test_copy_object_kms(self, s3_client, s3_bucket, kms_create_key, snapshot):
+        snapshot.add_transformer(snapshot.transform.s3_api())
+        # because of the kms-key, the etag will be different on AWS
+        # FIXME there is currently no server side encryption is place and thus the etag is the same for the copied objects in LS
+        snapshot.add_transformer(
+            snapshot.transform.jsonpath(
+                "$..CopyObjectResult.ETag", "copy-etag", reference_replacement=False
+            )
+        )
+        snapshot.add_transformer(
+            snapshot.transform.jsonpath(
+                "$..get-copied-object.ETag", "etag", reference_replacement=False
+            )
+        )
+        snapshot.add_transformer(snapshot.transform.key_value("SSEKMSKeyId", "key-id"))
+        key_id = kms_create_key()["KeyId"]
+        body = "hello world"
+        s3_client.put_object(Bucket=s3_bucket, Key="mykey", Body=body)
+
+        response = s3_client.get_object(Bucket=s3_bucket, Key="mykey")
+        snapshot.match("get-object", response)
+        response = s3_client.copy_object(
+            Bucket=s3_bucket,
+            CopySource=f"{s3_bucket}/mykey",
+            Key="copiedkey",
+            BucketKeyEnabled=True,
+            SSEKMSKeyId=key_id,
+            ServerSideEncryption="aws:kms",
+        )
+        snapshot.match("copy-object", response)
+
+        response = s3_client.get_object(Bucket=s3_bucket, Key="copiedkey")
+        snapshot.match("get-copied-object", response)
+
+    @pytest.mark.aws_validated
     def test_region_header_exists(self, s3_client, s3_create_bucket, snapshot):
         snapshot.add_transformer(snapshot.transform.s3_api())
         bucket_name = s3_create_bucket(
@@ -262,24 +316,7 @@ class TestS3:
         self, s3_client, s3_bucket, snapshot
     ):
         snapshot.add_transformer(snapshot.transform.s3_api())
-        header_transformer = [
-            snapshot.transform.jsonpath("$..HTTPHeaders.date", "date", reference_replacement=False),
-            snapshot.transform.jsonpath(
-                "$..HTTPHeaders.last-modified", "last-modified", reference_replacement=False
-            ),
-            snapshot.transform.jsonpath(
-                "$..HTTPHeaders.server", "server", reference_replacement=False
-            ),
-            snapshot.transform.jsonpath(
-                "$..HTTPHeaders.x-amz-id-2", "id-2", reference_replacement=False
-            ),
-            snapshot.transform.jsonpath(
-                "$..HTTPHeaders.x-amz-request-id", "request-id", reference_replacement=False
-            ),
-            snapshot.transform.key_value("HostId", reference_replacement=False),
-            snapshot.transform.key_value("RequestId", reference_replacement=False),
-        ]
-        snapshot.add_transformer(header_transformer)
+        snapshot.add_transformer(HEADER_TRANSFORMER)
 
         response = s3_client.put_object(
             Bucket=s3_bucket,
@@ -617,7 +654,6 @@ class TestS3:
         key = "my-key"
         s3_client.put_object(Bucket=s3_bucket, Key=key, Body=b"abcdefgh")
         response = s3_client.head_object(Bucket=s3_bucket, Key=key)
-
         snapshot.match("head-object", response)
 
     @pytest.mark.aws_validated

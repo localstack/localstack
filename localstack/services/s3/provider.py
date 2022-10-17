@@ -907,7 +907,7 @@ def apply_moto_patches():
 
     @patch(moto_s3_responses.S3Response.key_response)
     def _fix_key_response(fn, self, *args, **kwargs):
-        """Change casing of Last-Modified headers to be picked by the parser"""
+        """Change casing of Last-Modified and other headers to be picked by the parser"""
         status_code, resp_headers, key_value = fn(self, *args, **kwargs)
         for low_case_header in [
             "last-modified",
@@ -921,6 +921,12 @@ def apply_moto_patches():
             if header_value := resp_headers.pop(low_case_header, None):
                 header_name = capitalize_header_name_from_snake_case(low_case_header)
                 resp_headers[header_name] = header_value
+
+        # The header indicating 'bucket-key-enabled' is set as python boolean, resulting in camelcase-value.
+        # The parser expects it to be lowercase string, however, to be parsed correctly.
+        bucket_key_enabled = "x-amz-server-side-encryption-bucket-key-enabled"
+        if val := resp_headers.get(bucket_key_enabled, ""):
+            resp_headers[bucket_key_enabled] = str(val).lower()
 
         return status_code, resp_headers, key_value
 

@@ -3784,5 +3784,52 @@
         "RetryAttempts": 0
       }
     }
+  },
+  "tests/integration/s3/test_s3.py::TestS3::test_copy_object_kms": {
+    "recorded-date": "17-10-2022, 14:27:01",
+    "recorded-content": {
+      "get-object": {
+        "AcceptRanges": "bytes",
+        "Body": "hello world",
+        "ContentLength": 11,
+        "ContentType": "binary/octet-stream",
+        "ETag": "\"5eb63bbbe01eeed093cb22bb8f5acdc3\"",
+        "LastModified": "datetime",
+        "Metadata": {},
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "copy-object": {
+        "BucketKeyEnabled": true,
+        "CopyObjectResult": {
+          "ETag": "copy-etag",
+          "LastModified": "datetime"
+        },
+        "SSEKMSKeyId": "<key-id:1>",
+        "ServerSideEncryption": "aws:kms",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "get-copied-object": {
+        "AcceptRanges": "bytes",
+        "Body": "hello world",
+        "BucketKeyEnabled": true,
+        "ContentLength": 11,
+        "ContentType": "binary/octet-stream",
+        "ETag": "etag",
+        "LastModified": "datetime",
+        "Metadata": {},
+        "SSEKMSKeyId": "<key-id:1>",
+        "ServerSideEncryption": "aws:kms",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
   }
 }
