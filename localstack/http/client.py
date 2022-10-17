@@ -43,11 +43,16 @@ class SimpleRequestsClient(HttpClient):
             data=restore_payload(request),
         )
 
-        return Response(
+        final_response = Response(
             response=response.content,
             status=response.status_code,
             headers=Headers(dict(response.headers)),
         )
+        if request.method == "HEAD":
+            # for head we have to keep the original content-length, but it will be re-calcualated when creating
+            # the final_response object
+            final_response.content_length = response.headers.get("Content-Length", 0)
+        return final_response
 
 
 def make_request(request: Request) -> Response:
