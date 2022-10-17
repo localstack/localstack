@@ -1011,7 +1011,7 @@ def delete_lambda_function(function_name: str) -> Dict[None, None]:
 
 
 def get_lambda_url_config(api_id: str, region: str = None):
-    store = get_awslambda_store()
+    store = get_awslambda_store(region=region)
     url_configs = store.url_configs.values()
     lambda_url_configs = [config for config in url_configs if config.get("CustomId") == api_id]
     return lambda_url_configs[0]
