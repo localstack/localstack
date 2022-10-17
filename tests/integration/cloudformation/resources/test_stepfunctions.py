@@ -11,12 +11,8 @@ from localstack.utils.sync import wait_until
 def test_statemachine_definitionsubstitution(stepfunctions_client, s3_client, deploy_cfn_template):
     stack = deploy_cfn_template(
         template_path=os.path.join(
-<<<<<<<< HEAD:tests/integration/cloudformation/resources/test_stepfunctions.py
             os.path.dirname(__file__),
             "../../templates/stepfunctions_statemachine_substitutions.yaml",
-========
-            os.path.dirname(__file__), "../../templates/stepfunctions_statemachine_substitutions.yaml"
->>>>>>>> 0d575db1 (first commit):tests/integration/cloudformation/resources/test_cloudformation_stepfunctions.py
         )
     )
 
@@ -47,13 +43,9 @@ def test_nested_statemachine_with_sync2(
     lambda_client, stepfunctions_client, s3_client, deploy_cfn_template
 ):
     stack = deploy_cfn_template(
-<<<<<<<< HEAD:tests/integration/cloudformation/resources/test_stepfunctions.py
         template_path=os.path.join(
             os.path.dirname(__file__), "../../templates/sfn_nested_sync2.json"
         )
-========
-        template_path=os.path.join(os.path.dirname(__file__), "../../templates/sfn_nested_sync2.json")
->>>>>>>> 0d575db1 (first commit):tests/integration/cloudformation/resources/test_cloudformation_stepfunctions.py
     )
 
     parent_arn = stack.outputs["ParentStateMachineArnOutput"]
@@ -229,13 +221,9 @@ def test_retry_and_catch(deploy_cfn_template, stepfunctions_client, sqs_client):
     """
 
     stack = deploy_cfn_template(
-<<<<<<<< HEAD:tests/integration/cloudformation/resources/test_stepfunctions.py
         template_path=os.path.join(
             os.path.dirname(__file__), "../../templates/sfn_retry_catch.yaml"
         )
-========
-        template_path=os.path.join(os.path.dirname(__file__), "../../templates/sfn_retry_catch.yaml")
->>>>>>>> 0d575db1 (first commit):tests/integration/cloudformation/resources/test_cloudformation_stepfunctions.py
     )
     queue_url = stack.outputs["queueUrlOutput"]
     statemachine_arn = stack.outputs["smArnOutput"]

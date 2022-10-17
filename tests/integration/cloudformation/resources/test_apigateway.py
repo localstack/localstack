@@ -53,12 +53,8 @@ def test_cfn_apigateway_aws_integration(
 
     deploy_cfn_template(
         template_path=os.path.join(
-<<<<<<<< HEAD:tests/integration/cloudformation/resources/test_apigateway.py
             os.path.dirname(__file__),
             "../../templates/apigw-awsintegration-request-parameters.yaml",
-========
-            os.path.dirname(__file__), "../../templates/apigw-awsintegration-request-parameters.yaml"
->>>>>>>> 0d575db1 (first commit):tests/integration/cloudformation/resources/test_cloudformation_apigateway.py
         ),
         parameters={
             "ApiName": api_name,

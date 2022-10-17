@@ -12,13 +12,9 @@ def test_bucketpolicy(
 ):
     bucket_name = f"ls-bucket-{short_uid()}"
     deploy_result = deploy_cfn_template(
-<<<<<<<< HEAD:tests/integration/cloudformation/resources/test_s3.py
         template_path=os.path.join(
             os.path.dirname(__file__), "../../templates/s3_bucketpolicy.yaml"
         ),
-========
-        template_path=os.path.join(os.path.dirname(__file__), "../../templates/s3_bucketpolicy.yaml"),
->>>>>>>> 0d575db1 (first commit):tests/integration/cloudformation/resources/test_cloudformation_s3.py
         parameters={"BucketName": bucket_name},
         template_mapping={"include_policy": True},
     )
@@ -29,13 +25,9 @@ def test_bucketpolicy(
         is_update=True,
         stack_name=deploy_result.stack_id,
         parameters={"BucketName": bucket_name},
-<<<<<<<< HEAD:tests/integration/cloudformation/resources/test_s3.py
         template_path=os.path.join(
             os.path.dirname(__file__), "../../templates/s3_bucketpolicy.yaml"
         ),
-========
-        template_path=os.path.join(os.path.dirname(__file__), "../../templates/s3_bucketpolicy.yaml"),
->>>>>>>> 0d575db1 (first commit):tests/integration/cloudformation/resources/test_cloudformation_s3.py
         template_mapping={"include_policy": False},
     )
     with pytest.raises(Exception) as err:

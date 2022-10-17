@@ -266,13 +266,9 @@ Resources:
 class TestCloudFormation:
     def test_validate_template(self, cfn_client):
         template = template_preparer.template_to_json(
-<<<<<<<< HEAD:tests/integration/cloudformation/resources/test_legacy.py
             load_file(
                 os.path.join(os.path.dirname(__file__), "../../templates/valid_template.json")
             )
-========
-            load_file(os.path.join(os.path.dirname(__file__), "../../templates/valid_template.json"))
->>>>>>>> 0d575db1 (first commit):tests/integration/cloudformation/resources/test_cloudformation_legacy.py
         )
         resp = cfn_client.validate_template(TemplateBody=template)
 
@@ -430,13 +426,9 @@ class TestCloudFormation:
         )
         template = json.loads(
             load_file(
-<<<<<<<< HEAD:tests/integration/cloudformation/resources/test_legacy.py
                 os.path.join(
                     os.path.dirname(__file__), "../../templates/update_lambda_template.json"
                 )
-========
-                os.path.join(os.path.dirname(__file__), "../../templates/update_lambda_template.json")
->>>>>>>> 0d575db1 (first commit):tests/integration/cloudformation/resources/test_cloudformation_legacy.py
             )
         )
         template["Resources"]["PullMarketsRole"]["Properties"]["RoleName"] = role_name
@@ -507,13 +499,9 @@ class TestCloudFormation:
         environment = f"env-{short_uid()}"
 
         stack = deploy_cfn_template(
-<<<<<<<< HEAD:tests/integration/cloudformation/resources/test_legacy.py
             template_path=os.path.join(
                 os.path.dirname(__file__), "../../templates/template23.yaml"
             ),
-========
-            template_path=os.path.join(os.path.dirname(__file__), "../../templates/template23.yaml"),
->>>>>>>> 0d575db1 (first commit):tests/integration/cloudformation/resources/test_cloudformation_legacy.py
             parameters={"Environment": environment, "ApiKey": "12345"},
         )
 
@@ -592,13 +580,9 @@ class TestCloudFormation:
         environment = f"env-{short_uid()}"
 
         stack = deploy_cfn_template(
-<<<<<<<< HEAD:tests/integration/cloudformation/resources/test_legacy.py
             template_path=os.path.join(
                 os.path.dirname(__file__), "../../templates/template26.yaml"
             ),
-========
-            template_path=os.path.join(os.path.dirname(__file__), "../../templates/template26.yaml"),
->>>>>>>> 0d575db1 (first commit):tests/integration/cloudformation/resources/test_cloudformation_legacy.py
             parameters={"Environment": environment},
         )
 

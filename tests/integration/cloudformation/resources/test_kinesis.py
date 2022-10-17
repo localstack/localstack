@@ -49,13 +49,9 @@ def test_stream_creation(kinesis_client, cfn_client, deploy_cfn_template, snapsh
 
 def test_default_parameters_kinesis(deploy_cfn_template, kinesis_client):
     stack = deploy_cfn_template(
-<<<<<<<< HEAD:tests/integration/cloudformation/resources/test_kinesis.py
         template_path=os.path.join(
             os.path.dirname(__file__), "../../templates/kinesis_default.yaml"
         )
-========
-        template_path=os.path.join(os.path.dirname(__file__), "../../templates/kinesis_default.yaml")
->>>>>>>> 0d575db1 (first commit):tests/integration/cloudformation/resources/test_cloudformation_kinesis.py
     )
 
     stream_response = kinesis_client.list_streams(ExclusiveStartStreamName=stack.stack_name)

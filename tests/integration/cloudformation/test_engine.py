@@ -120,7 +120,7 @@ class TestIntrinsicFunctions:
             ("Fn::Or", "1", "1", True),
         ],
     )
-    def test_condition_intrinsic_functions(
+    def test_and_or_functions(
         self,
         cfn_client,
         s3_client,
@@ -173,12 +173,18 @@ class TestIntrinsicFunctions:
         second_value = f"string-{short_uid()}"
         deployed = deploy_cfn_template(
             template_path=template_path,
-            parameters={"MultipleValues": f"{first_value};{second_value}"},
+            parameters={
+                "MultipleValues": f"{first_value};{second_value}",
+                "Value1": first_value,
+                "Value2": second_value,
+            },
         )
 
         assert first_value == deployed.outputs["SplitResult"]
-        # TODO support join operation
-        # assert f"{first_value}_{second_value}" == deployed.outputs["JoinResult"]
+        assert f"{first_value}_{second_value}" == deployed.outputs["JoinResult"]
+
+        # TODO support join+split and length operations
+        # assert f"{first_value}_{second_value}" == deployed.outputs["SplitJoin"]
         # assert 2 == deployed.outputs["LengthResult"]
 
     @pytest.mark.aws_validated

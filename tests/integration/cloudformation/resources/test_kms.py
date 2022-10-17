@@ -5,13 +5,9 @@ from localstack.utils.strings import short_uid
 
 def test_kms_key_disabled(sqs_client, kms_client, deploy_cfn_template):
     stack = deploy_cfn_template(
-<<<<<<<< HEAD:tests/integration/cloudformation/resources/test_kms.py
         template_path=os.path.join(
             os.path.dirname(__file__), "../../templates/kms_key_disabled.yaml"
         )
-========
-        template_path=os.path.join(os.path.dirname(__file__), "../../templates/kms_key_disabled.yaml")
->>>>>>>> 0d575db1 (first commit):tests/integration/cloudformation/resources/test_cloudformation_kms.py
     )
 
     key_id = stack.outputs["KeyIdOutput"]
