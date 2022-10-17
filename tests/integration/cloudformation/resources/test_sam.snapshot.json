@@ -1,0 +1,24 @@
+{
+  "tests/integration/cloudformation/resources/test_sam.py::test_sam_policies": {
+    "recorded-date": "02-06-2022, 13:13:20",
+    "recorded-content": {
+      "list_attached_role_policies": {
+        "AttachedPolicies": [
+          {
+            "PolicyName": "AWSLambdaBasicExecutionRole",
+            "PolicyArn": "arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole"
+          },
+          {
+            "PolicyName": "AmazonSNSFullAccess",
+            "PolicyArn": "arn:aws:iam::aws:policy/AmazonSNSFullAccess"
+          }
+        ],
+        "IsTruncated": false,
+        "ResponseMetadata": {
+          "HTTPStatusCode": 200,
+          "HTTPHeaders": {}
+        }
+      }
+    }
+  }
+}

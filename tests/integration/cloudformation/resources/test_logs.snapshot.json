@@ -1,0 +1,19 @@
+{
+  "tests/integration/cloudformation/resources/test_logs.py::test_logstream": {
+    "recorded-date": "29-07-2022, 13:22:53",
+    "recorded-content": {
+      "outputs": {
+        "LogStreamNameOutput": "<resource:1>",
+        "LogGroupNameOutput": "<log-group-name-output:1>"
+      },
+      "describe_log_streams": [
+        {
+          "logStreamName": "<resource:1>",
+          "creationTime": "timestamp",
+          "arn": "arn:aws:logs:<region>:111111111111:log-group:<log-group-name-output:1>:log-stream:<resource:1>",
+          "storedBytes": 0
+        }
+      ]
+    }
+  }
+}
