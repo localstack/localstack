@@ -38,7 +38,6 @@ class RuntimeExecutor(ABC):
         Start the runtime executor with the given environment variables
 
         :param env_vars:
-        :return:
         """
         pass
 
@@ -78,7 +77,7 @@ class RuntimeExecutor(ABC):
 
     @staticmethod
     @abstractmethod
-    def prepare_version(function_version) -> None:
+    def prepare_version(function_version: FunctionVersion) -> None:
         """
         Prepare a given function version to be executed.
         Includes all the preparation work necessary for execution, short of starting anything
@@ -89,7 +88,7 @@ class RuntimeExecutor(ABC):
 
     @staticmethod
     @abstractmethod
-    def cleanup_version(function_version):
+    def cleanup_version(function_version: FunctionVersion):
         """
         Cleanup the version preparation for the given version.
         Should cleanup preparation steps taken by prepare_version
