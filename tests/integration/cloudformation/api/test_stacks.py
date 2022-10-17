@@ -197,3 +197,10 @@ class TestStacksApi:
         )
         response = cfn_client.describe_stack_events(StackName=stack.stack_name)
         snapshot.match("events", response)
+
+    def test_failure_options(self, deploy_cfn_template, cfn_client):
+        deploy_cfn_template(
+            template_path=os.path.join(
+                os.path.dirname(__file__), "../../templates/sns_topic_simple.yaml"
+            )
+        )
