@@ -105,6 +105,9 @@ EXECUTOR_PLUGIN_MANAGER: PluginManager[Type[RuntimeExecutor]] = PluginManager(
 def get_runtime_executor() -> Type[RuntimeExecutor]:
     plugin_name = config.LAMBDA_RUNTIME_EXECUTOR or "docker"
     if not EXECUTOR_PLUGIN_MANAGER.exists(plugin_name):
-        LOG.warning('Invalid specified plugin name %s. Falling back to "docker" runtime executor')
+        LOG.warning(
+            'Invalid specified plugin name %s. Falling back to "docker" runtime executor',
+            plugin_name,
+        )
         plugin_name = "docker"
     return EXECUTOR_PLUGIN_MANAGER.load(plugin_name).load()
