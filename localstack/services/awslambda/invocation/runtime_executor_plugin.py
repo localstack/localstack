@@ -1,10 +1,14 @@
+import logging
 from abc import ABC, abstractmethod
 from typing import Type
 
 from plugin import Plugin, PluginManager
 
+from localstack import config
 from localstack.aws.api.lambda_ import FunctionVersion
 from localstack.services.awslambda.invocation.lambda_models import ServiceEndpoint
+
+LOG = logging.getLogger(__name__)
 
 
 class RuntimeExecutorPlugin(Plugin):
@@ -100,4 +104,8 @@ EXECUTOR_PLUGIN_MANAGER: PluginManager[Type[RuntimeExecutor]] = PluginManager(
 
 
 def get_runtime_executor() -> Type[RuntimeExecutor]:
-    return EXECUTOR_PLUGIN_MANAGER.load("docker").load()
+    plugin_name = config.LAMBDA_RUNTIME_EXECUTOR or "docker"
+    if not EXECUTOR_PLUGIN_MANAGER.exists(plugin_name):
+        LOG.warning('Invalid specified plugin name %s. Falling back to "docker" runtime executor')
+        plugin_name = "docker"
+    return EXECUTOR_PLUGIN_MANAGER.load(plugin_name).load()
