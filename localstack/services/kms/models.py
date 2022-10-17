@@ -7,6 +7,7 @@ import struct
 import uuid
 from collections import namedtuple
 from dataclasses import dataclass
+from hashlib import sha256
 from typing import Dict, List
 
 from cryptography.exceptions import InvalidSignature
@@ -23,7 +24,9 @@ from localstack.aws.api.kms import (
     DisabledException,
     EncryptionContextType,
     KeyMetadata,
+    KMSInvalidSignatureException,
     KMSInvalidStateException,
+    MessageType,
     NotFoundException,
     SigningAlgorithmSpec,
     UnsupportedOperationException,
@@ -223,19 +226,33 @@ class KmsKey:
     def decrypt(self, ciphertext: Ciphertext) -> bytes:
         return decrypt(self.crypto_key.key_material, ciphertext.ciphertext, ciphertext.iv)
 
-    def sign(self, data: bytes, signing_algorithm: SigningAlgorithmSpec) -> bytes:
+    def _get_digest(self, data: bytes) -> bytes:
+        return sha256(data).digest()
+
+    def sign(
+        self, data: bytes, message_type: MessageType, signing_algorithm: SigningAlgorithmSpec
+    ) -> bytes:
         kwargs = self._construct_sign_verify_kwargs(signing_algorithm)
+        if message_type != MessageType.DIGEST:
+            data = self._get_digest(data)
         return self.crypto_key.key.sign(data=data, **kwargs)
 
     def verify(
-        self, data: bytes, signing_algorithm: SigningAlgorithmSpec, signature: bytes
+        self,
+        data: bytes,
+        message_type: MessageType,
+        signing_algorithm: SigningAlgorithmSpec,
+        signature: bytes,
     ) -> bool:
+        kwargs = self._construct_sign_verify_kwargs(signing_algorithm)
+        if message_type != MessageType.DIGEST:
+            data = self._get_digest(data)
         try:
-            kwargs = self._construct_sign_verify_kwargs(signing_algorithm)
             self.crypto_key.key.public_key().verify(signature=signature, data=data, **kwargs)
             return True
         except InvalidSignature:
-            return False
+            # AWS itself raises this exception without any additional message.
+            raise KMSInvalidSignatureException()
 
     def _construct_sign_verify_kwargs(self, signing_algorithm: SigningAlgorithmSpec) -> Dict:
         kwargs = {}

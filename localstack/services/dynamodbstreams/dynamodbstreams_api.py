@@ -1,9 +1,10 @@
+import contextlib
 import logging
 import threading
 import time
 from typing import Dict
 
-import bson
+from bson.json_util import dumps
 
 from localstack.aws.accounts import get_aws_account_id
 from localstack.aws.api.dynamodbstreams import StreamStatus, StreamViewType
@@ -67,13 +68,12 @@ def forward_events(records: Dict) -> None:
     kinesis = aws_stack.connect_to_service("kinesis")
     for record in records:
         table_arn = record.pop("eventSourceARN", "")
-        stream = get_stream_for_table(table_arn)
-        if stream:
+        if stream := get_stream_for_table(table_arn):
             table_name = table_name_from_stream_arn(stream["StreamArn"])
             stream_name = get_kinesis_stream_name(table_name)
             kinesis.put_record(
                 StreamName=stream_name,
-                Data=bson.dumps(record),
+                Data=dumps(record),
                 PartitionKey="TODO",
             )
 
@@ -81,15 +81,12 @@ def forward_events(records: Dict) -> None:
 def delete_streams(table_arn: str) -> None:
     store = get_dynamodbstreams_store()
     table_name = table_name_from_table_arn(table_arn)
-    stream = store.ddb_streams.pop(table_name, None)
-    if stream:
+    if store.ddb_streams.pop(table_name, None):
         stream_name = get_kinesis_stream_name(table_name)
-        try:
+        with contextlib.suppress(Exception):
             aws_stack.connect_to_service("kinesis").delete_stream(StreamName=stream_name)
             # sleep a bit, as stream deletion can take some time ...
             time.sleep(1)
-        except Exception:
-            pass  # ignore "stream not found" errors
 
 
 def get_kinesis_stream_name(table_name: str) -> str:
