@@ -75,6 +75,26 @@ class Invocation:
 
 @dataclasses.dataclass(frozen=True)
 class S3Code:
+    """
+    Objects representing a code archive stored in an internal S3 bucket.
+
+    S3 Store:
+      Code archives represented by this method are stored in a bucket awslambda-{region_name}-tasks,
+      (e.g. awslambda-us-east-1-tasks)
+
+      A call to destroy() of this class will delete the code object from both the S3 store and the local cache
+
+      This class will then provide different properties / methods to be operated on the stored code,
+      like the ability to create presigned-urls
+    Unzipped Cache:
+      After a call to prepare_for_execution, an unzipped version of the represented code will be stored on disk,
+      ready to mount/copy.
+
+      It will be present at the location returned by get_unzipped_code_location, namely /tmp/lambda/{bucket_name}/{id}
+
+      The cache on disk will be deleted after a call to destroy_cached (or destroy)
+    """
+
     id: str
     s3_bucket: str
     s3_key: str

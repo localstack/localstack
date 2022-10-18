@@ -127,7 +127,11 @@ class LambdaService:
     def publish_version(self, function_version: FunctionVersion):
         """
         Synchronously create a function version (manager)
-        Should only be called on publishing new versions, which basically clone an existing one
+        Should only be called on publishing new versions, which basically clone an existing one.
+        The published version should already be contained in the lambda state.
+        After successful completion of this method, the lambda version stored will be modified to be active, with a new revision id.
+        It will then be active for execution, and should be retrieved again from the store before returning the data over the API.
+
         :param function_version: Function Version to create
         """
         with self.lambda_version_manager_lock:
@@ -301,7 +305,7 @@ def is_code_used(code: S3Code, function: Function) -> bool:
 
     :param code: Code object
     :param function: function to check
-    :return:
+    :return: bool whether code is used in another version of the function
     """
     with function.lock:
         return any(code == version.config.code for version in function.versions.values())

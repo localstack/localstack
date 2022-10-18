@@ -230,6 +230,23 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
         revision_id: str | None = None,
         code_sha256: str | None = None,
     ) -> tuple[FunctionVersion, bool]:
+        """
+        Release a new version to the model if all restrictions are met.
+        Restrictions:
+          - CodeSha256, if provided, must equal the current latest version code hash
+          - RevisionId, if provided, must equal the current latest version revision id
+          - Some changes have been done to the latest version since last publish
+        Will return a tuple of the version, and whether the version was published (True) or the latest available version was taken (False).
+        This can happen if the latest version has not been changed since the last version publish, in this case the last version will be returned.
+
+        :param function_name: Function name to be published
+        :param region: Region of the function
+        :param account_id: Account of the function
+        :param description: new description of the version (will be the description of the function if missing)
+        :param revision_id: Revision id, function will raise error if it does not match latest revision id
+        :param code_sha256: Code sha256, function will raise error if it does not match latest code hash
+        :return: Tuple of (published version, whether version was released or last released version returned, since nothing changed)
+        """
         current_latest_version = self._get_function_version(
             function_name=function_name, qualifier="$LATEST", account_id=account_id, region=region
         )
