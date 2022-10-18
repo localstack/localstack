@@ -459,8 +459,8 @@ def apply_patches():
 
     # Add missing managed polices
     @patch(IAMBackend.__init__)
-    def add_attributes(__init__, self, region_name, account_id):
-        __init__(self, region_name, account_id)
+    def add_attributes(__init__, self, region_name, account_id, aws_policies=None):
+        __init__(self, region_name, account_id, aws_policies=aws_policies)
         self.aws_managed_policies.extend(
             [
                 AWSManagedPolicy.from_data(name, self.account_id, d)
