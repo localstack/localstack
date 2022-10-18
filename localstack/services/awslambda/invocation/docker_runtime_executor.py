@@ -212,7 +212,5 @@ class DockerRuntimeExecutor(RuntimeExecutor):
 
     @classmethod
     def cleanup_version(cls, function_version: FunctionVersion) -> None:
-        # TODO cleanup code if it does not exist anymore
-        LOG.debug("Currently not cleaning up disk code...")
         if config.LAMBDA_PREBUILD_IMAGES:
             CONTAINER_CLIENT.remove_image(get_image_name_for_function(function_version))

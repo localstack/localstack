@@ -154,6 +154,7 @@ from localstack.services.awslambda.invocation.lambda_models import (
 )
 from localstack.services.awslambda.invocation.lambda_service import (
     LambdaService,
+    destroy_code_if_not_used,
     lambda_stores,
     store_lambda_archive,
     store_s3_bucket_archive,
@@ -646,6 +647,7 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
             version = function.versions.pop(qualifier, None)
             if version:
                 self.lambda_service.stop_version(version.qualified_arn())
+                destroy_code_if_not_used(code=version.config.code, function=function)
         else:
             # delete the whole function
             function = state.functions.pop(function_name)

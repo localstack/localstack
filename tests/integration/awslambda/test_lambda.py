@@ -1093,6 +1093,18 @@ class TestLambdaVersions:
             FunctionName=function_name, Qualifier=first_publish_response["Version"], Payload=b"{}"
         )
         snapshot.match("invocation_result_v1_end", invocation_result_v1)
+        zip_file_v4 = create_lambda_archive(
+            load_file(TEST_LAMBDA_VERSION) % "version4", get_content=True
+        )
+        lambda_client.update_function_code(FunctionName=function_name, ZipFile=zip_file_v4)
+        waiter.wait(FunctionName=function_name)
+        lambda_client.invoke(FunctionName=function_name, Payload=b"{}")
+        zip_file_v5 = create_lambda_archive(
+            load_file(TEST_LAMBDA_VERSION) % "version5", get_content=True
+        )
+        lambda_client.update_function_code(FunctionName=function_name, ZipFile=zip_file_v5)
+        waiter.wait(FunctionName=function_name)
+        lambda_client.invoke(FunctionName=function_name, Payload=b"{}")
 
 
 @pytest.mark.skipif(condition=is_old_provider(), reason="not supported")

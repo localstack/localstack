@@ -132,6 +132,8 @@ class S3Code:
         """
         # delete parent folder to delete the whole code location
         code_path = self.get_unzipped_code_location().parent
+        if not code_path.exists():
+            return
         try:
             shutil.rmtree(code_path)
         except OSError as e:
@@ -146,6 +148,7 @@ class S3Code:
         """
         Deletes the code object from S3 and the unzipped version from disk
         """
+        LOG.debug("Final code destruction for %s", self.id)
         self.destroy_cached()
         s3_client: "S3Client" = aws_stack.connect_to_service("s3", region_name="us-east-1")
         kwargs = {"VersionId": self.s3_object_version} if self.s3_object_version else {}
