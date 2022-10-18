@@ -200,9 +200,11 @@ class TestStacksApi:
         snapshot.match("events", response)
 
     @pytest.mark.aws_validated
+    @pytest.mark.skip(reason="disable rollback not supported")
     @pytest.mark.parametrize("rollback_disabled, length_expected", [(False, 0), (True, 1)])
-    def test_failure_options_for_creation(self, cfn_client, rollback_disabled, length_expected):
-
+    def test_failure_options_for_stack_creation(
+        self, cfn_client, rollback_disabled, length_expected
+    ):
         template_with_error = open(
             os.path.join(os.path.dirname(__file__), "../../templates/multiple_bucket.yaml"), "r"
         ).read()
@@ -221,13 +223,11 @@ class TestStacksApi:
             ],
         )
 
-        def _await_stack():
-            return (
-                "PROGRESS"
-                not in cfn_client.describe_stacks(StackName=stack_name)["Stacks"][0]["StackStatus"]
-            )
-
-        assert wait_until(_await_stack, wait=10, strategy="exponential")
+        assert wait_until(
+            lambda _: stack_process_is_finished(cfn_client, stack_name),
+            wait=10,
+            strategy="exponential",
+        )
 
         resources = cfn_client.describe_stack_resources(StackName=stack_name)["StackResources"]
         created_resources = [
@@ -236,3 +236,60 @@ class TestStacksApi:
         assert len(created_resources) == length_expected
 
         cfn_client.delete_stack(StackName=stack_name)
+
+    @pytest.mark.aws_validated
+    # @pytest.mark.skip(reason="disable rollback not enabled")
+    @pytest.mark.parametrize("rollback_disabled, length_expected", [(False, 2), (True, 1)])
+    def test_failure_options_for_stack_update(self, cfn_client, rollback_disabled, length_expected):
+        stack_name = f"stack-{short_uid()}"
+        bucket_1_name = f"bucket-{short_uid()}"
+        bucket_2_name = f"bucket_{short_uid()}"
+
+        cfn_client.create_stack(
+            StackName=stack_name,
+            TemplateBody=open(
+                os.path.join(os.path.dirname(__file__), "../../templates/multiple_parameters.yaml"),
+                "r",
+            ).read(),
+            DisableRollback=rollback_disabled,
+            Parameters=[
+                {"ParameterKey": "Name1", "ParameterValue": bucket_1_name},
+                {"ParameterKey": "Name2", "ParameterValue": bucket_2_name},
+            ],
+        )
+
+        assert wait_until(
+            lambda _: stack_process_is_finished(cfn_client, stack_name),
+            wait=30,
+            strategy="exponential",
+        )
+
+        cfn_client.update_stack(
+            StackName=stack_name,
+            TemplateBody=open(
+                os.path.join(os.path.dirname(__file__), "../../templates/multiple_parameters.yaml"),
+                "r",
+            ).read(),
+            DisableRollback=rollback_disabled,
+            Parameters=[
+                {"ParameterKey": "Name1", "ParameterValue": bucket_1_name},
+                {"ParameterKey": "Name2", "ParameterValue": f"!@#${short_uid()}"},
+            ],
+        )
+
+        assert wait_until(lambda _: stack_process_is_finished(cfn_client, stack_name))
+
+        resources = cfn_client.describe_stack_resources(StackName=stack_name)["StackResources"]
+        created_resources = [
+            resource for resource in resources if "CREATE_COMPLETE" in resource["ResourceStatus"]
+        ]
+        assert len(created_resources) == length_expected
+
+        cfn_client.delete_stack(StackName=stack_name)
+
+
+def stack_process_is_finished(cfn_client, stack_name):
+    return (
+        "PROGRESS"
+        not in cfn_client.describe_stacks(StackName=stack_name)["Stacks"][0]["StackStatus"]
+    )
