@@ -183,7 +183,7 @@ docker-run-tests:		  ## Initializes the test environment and runs the tests in a
 	# Remove argparse and dataclasses to fix https://github.com/pytest-dev/pytest/issues/5594
 	# Note: running "install-test-only" below, to avoid pulling in [runtime] extras from transitive dependencies
 	docker run --rm --name test-dep-build --entrypoint="" -t -d $(IMAGE_NAME_FULL) bash
-	docker exec test-dep-build bash -c "make install-test-only && make init-testlibs"
+	docker exec test-dep-build bash -c "make install-test-only && make init-testlibs && chmod -R 777 /var/lib/localstack && chmod -R 777 /opt/code/localstack"
 	docker commit --change='ENTRYPOINT ["docker-entrypoint.sh"]' test-dep-build localstack/test-image:latest
 	docker stop test-dep-build
 	docker run --user=1234 -e LOCALSTACK_INTERNAL_TEST_COLLECT_METRIC=1 --entrypoint= -v `pwd`/tests/:/opt/code/localstack/tests/ -v `pwd`/target/:/opt/code/localstack/target/ \
