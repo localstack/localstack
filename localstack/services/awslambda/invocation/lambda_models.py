@@ -80,17 +80,18 @@ class S3Code:
 
     S3 Store:
       Code archives represented by this method are stored in a bucket awslambda-{region_name}-tasks,
-      (e.g. awslambda-us-east-1-tasks)
-
-      A call to destroy() of this class will delete the code object from both the S3 store and the local cache
+      (e.g. awslambda-us-east-1-tasks), when correctly created using create_lambda_archive.
 
       This class will then provide different properties / methods to be operated on the stored code,
-      like the ability to create presigned-urls
+      like the ability to create presigned-urls, checking the code hash etc.
+
+      A call to destroy() of this class will delete the code object from both the S3 store and the local cache
     Unzipped Cache:
       After a call to prepare_for_execution, an unzipped version of the represented code will be stored on disk,
       ready to mount/copy.
 
-      It will be present at the location returned by get_unzipped_code_location, namely /tmp/lambda/{bucket_name}/{id}
+      It will be present at the location returned by get_unzipped_code_location,
+      namely /tmp/lambda/{bucket_name}/{id}/code
 
       The cache on disk will be deleted after a call to destroy_cached (or destroy)
     """
