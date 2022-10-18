@@ -2,17 +2,14 @@ import logging
 from abc import ABC, abstractmethod
 from typing import Type
 
-from plugin import Plugin, PluginManager
+from plugin import PluginManager
 
 from localstack import config
 from localstack.aws.api.lambda_ import FunctionVersion
 from localstack.services.awslambda.invocation.lambda_models import ServiceEndpoint
+from localstack.services.awslambda.invocation.plugins import RuntimeExecutorPlugin
 
 LOG = logging.getLogger(__name__)
-
-
-class RuntimeExecutorPlugin(Plugin):
-    namespace = "localstack.lambda.runtime_executor"
 
 
 class RuntimeExecutor(ABC):

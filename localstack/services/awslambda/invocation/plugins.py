@@ -1,4 +1,8 @@
-from localstack.services.awslambda.invocation.runtime_executor import RuntimeExecutorPlugin
+from plugin import Plugin
+
+
+class RuntimeExecutorPlugin(Plugin):
+    namespace = "localstack.lambda.runtime_executor"
 
 
 class DockerRuntimeExecutorPlugin(RuntimeExecutorPlugin):
