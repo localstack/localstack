@@ -8,7 +8,7 @@ from typing import Dict, List, Optional
 import botocore
 
 from localstack import config
-from localstack.aws.accounts import get_aws_account_id
+from localstack.aws.accounts import get_aws_account_id, set_aws_access_key_id
 from localstack.constants import FALSE_STRINGS
 from localstack.services.cloudformation.deployment_utils import (
     PLACEHOLDER_AWS_NO_VALUE,
@@ -1416,6 +1416,8 @@ class TemplateDeployer:
 
         def _run(*args):
             try:
+                account_id = stack.stack_id.split(":")[4]
+                set_aws_access_key_id(account_id)
                 self.do_apply_changes_in_loop(changes, stack)
                 status = f"{action}_COMPLETE"
             except Exception as e:

@@ -337,6 +337,8 @@ def connect_to_service(
 
         if access_key_id is not None:
             kwargs["aws_access_key_id"] = access_key_id
+            if "aws_secret_access_key" not in kwargs:
+                kwargs["aws_secret_access_key"] = "test"
 
         new_client = boto_factory(
             service_name,

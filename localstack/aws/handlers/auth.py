@@ -27,7 +27,6 @@ class MissingAuthHeaderInjector(Handler):
             headers["Authorization"] = aws_stack.mock_aws_request_headers(api)["Authorization"]
 
 
-# TODO: doesn't seem to work
 class AccountIdEnricher(Handler):
     """
     A handler that sets the AWS account of the request in the RequestContext.
@@ -42,7 +41,7 @@ class AccountIdEnricher(Handler):
         # Save the request access key ID in the current thread local storage
         set_aws_access_key_id(access_key_id)
 
-        # NO!
+        # NO! this overwrites with 0000000000 (default id) een though the access_key_id is explicitly set
         # if account_id_from_header := context.request.headers.get(HEADER_LOCALSTACK_ACCOUNT_ID):
         #     context.account_id = account_id_from_header
         # else:
