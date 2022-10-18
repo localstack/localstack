@@ -75,9 +75,9 @@ class RuntimeExecutor(ABC):
         """
         pass
 
-    @staticmethod
+    @classmethod
     @abstractmethod
-    def prepare_version(function_version: FunctionVersion) -> None:
+    def prepare_version(cls, function_version: FunctionVersion) -> None:
         """
         Prepare a given function version to be executed.
         Includes all the preparation work necessary for execution, short of starting anything
@@ -86,9 +86,9 @@ class RuntimeExecutor(ABC):
         """
         pass
 
-    @staticmethod
+    @classmethod
     @abstractmethod
-    def cleanup_version(function_version: FunctionVersion):
+    def cleanup_version(cls, function_version: FunctionVersion):
         """
         Cleanup the version preparation for the given version.
         Should cleanup preparation steps taken by prepare_version

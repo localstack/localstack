@@ -202,8 +202,8 @@ class DockerRuntimeExecutor(RuntimeExecutor):
         )
         self.executor_endpoint.invoke(payload)
 
-    @staticmethod
-    def prepare_version(function_version: FunctionVersion) -> None:
+    @classmethod
+    def prepare_version(cls, function_version: FunctionVersion) -> None:
         time_before = time.perf_counter()
         target_path = get_path_for_function(function_version)
         target_path.mkdir(parents=True, exist_ok=True)
@@ -222,8 +222,8 @@ class DockerRuntimeExecutor(RuntimeExecutor):
             prepare_image(target_path, function_version)
         LOG.debug("Version preparation took %0.2fms", (time.perf_counter() - time_before) * 1000)
 
-    @staticmethod
-    def cleanup_version(function_version: FunctionVersion) -> None:
+    @classmethod
+    def cleanup_version(cls, function_version: FunctionVersion) -> None:
         function_path = get_path_for_function(function_version)
         try:
             shutil.rmtree(function_path)
