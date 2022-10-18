@@ -67,7 +67,7 @@ class RuntimeExecutor(ABC):
         """
         Gets the callback url of our executor endpoint
 
-        :return: IP address or hostname
+        :return: Base url of the callback, e.g. "http://123.123.123.123:4566/_localstack_lambda/ID1234" without trailing slash
         """
         pass
 
