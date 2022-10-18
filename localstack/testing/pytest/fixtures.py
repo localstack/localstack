@@ -105,7 +105,9 @@ def _client(service, region_name=None, *, additional_config=None):
     if os.environ.get("TEST_TARGET") == "AWS_CLOUD":
         return boto3.client(service, region_name=region_name, config=config)
 
-    return aws_stack.create_external_boto_client(service, config=config, region_name=region_name)
+    return aws_stack.create_external_boto_client(
+        service, config=config, region_name=region_name, aws_access_key_id="000000000001"
+    )
 
 
 def _resource(service):
