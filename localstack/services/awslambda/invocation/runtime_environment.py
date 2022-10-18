@@ -9,8 +9,10 @@ from typing import TYPE_CHECKING, Dict, Literal, Optional
 from localstack import config
 from localstack.services.awslambda.invocation.executor_endpoint import ServiceEndpoint
 from localstack.services.awslambda.invocation.lambda_models import Credentials, FunctionVersion
-from localstack.services.awslambda.invocation.runtime_executor import RuntimeExecutor
-from localstack.services.awslambda.invocation.runtime_executor_plugin import get_runtime_executor
+from localstack.services.awslambda.invocation.runtime_executor import (
+    RuntimeExecutor,
+    get_runtime_executor,
+)
 from localstack.utils.aws import aws_stack
 from localstack.utils.strings import to_str
 

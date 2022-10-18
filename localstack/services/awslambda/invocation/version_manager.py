@@ -26,7 +26,7 @@ from localstack.services.awslambda.invocation.runtime_environment import (
     RuntimeEnvironment,
     RuntimeStatus,
 )
-from localstack.services.awslambda.invocation.runtime_executor_plugin import get_runtime_executor
+from localstack.services.awslambda.invocation.runtime_executor import get_runtime_executor
 from localstack.utils.cloudwatch.cloudwatch_util import store_cloudwatch_logs
 from localstack.utils.strings import truncate
 
