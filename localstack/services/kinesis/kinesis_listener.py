@@ -10,7 +10,8 @@ from requests.models import Response
 
 from localstack import config
 from localstack.constants import APPLICATION_CBOR, APPLICATION_JSON, HEADER_AMZN_ERROR_TYPE
-from localstack.services.generic_proxy import ProxyListener, RegionBackend
+from localstack.services.generic_proxy import ProxyListener
+from localstack.services.kinesis.provider import KinesisProvider
 from localstack.utils.aws import aws_stack
 from localstack.utils.aws.aws_responses import convert_to_binary_event_payload
 from localstack.utils.common import clone, json_safe, now_utc, to_bytes, to_str
@@ -23,14 +24,6 @@ ACTION_PUT_RECORD = "%s.PutRecord" % ACTION_PREFIX
 ACTION_PUT_RECORDS = "%s.PutRecords" % ACTION_PREFIX
 ACTION_LIST_STREAMS = "%s.ListStreams" % ACTION_PREFIX
 MAX_SUBSCRIPTION_SECONDS = 300
-
-
-class KinesisBackend(RegionBackend):
-    def __init__(self):
-        # list of stream consumer details
-        self.stream_consumers = []
-        # maps stream name to list of enhanced monitoring metrics
-        self.enhanced_metrics = {}
 
 
 class ProxyListenerKinesis(ProxyListener):
@@ -54,6 +47,8 @@ class ProxyListenerKinesis(ProxyListener):
         return True
 
     def forward_request_kinesalite(self, method, path, data, headers, action, encoding_type):
+        store = KinesisProvider.get_store()
+
         if action == "RegisterStreamConsumer" and config.KINESIS_PROVIDER == "kinesalite":
             stream_arn = data.get("StreamARN", "").strip('" ')
             cons_arn = data.get("ConsumerARN", "").strip('" ')
@@ -69,8 +64,7 @@ class ProxyListenerKinesis(ProxyListener):
             consumer["ConsumerARN"] = "%s/consumer/%s" % (stream_arn, cons_name)
             consumer["ConsumerCreationTimestamp"] = now_utc()
             consumer = json_safe(consumer)
-            stream_consumers = KinesisBackend.get().stream_consumers
-            stream_consumers.append(consumer)
+            store.stream_consumers.append(consumer)
 
             result = {"Consumer": consumer}
 
@@ -86,17 +80,13 @@ class ProxyListenerKinesis(ProxyListener):
                     c.get("StreamARN") == stream_arn and c.get("ConsumerName") == cons_name
                 )
 
-            region = KinesisBackend.get()
-            region.stream_consumers = [
-                c for c in region.stream_consumers if not consumer_matches(c)
-            ]
+            store.stream_consumers = [c for c in store.stream_consumers if not consumer_matches(c)]
             return {}
 
         elif action == "ListStreamConsumers" and config.KINESIS_PROVIDER == "kinesalite":
-            stream_consumers = KinesisBackend.get().stream_consumers
             stream_arn = data.get("StreamARN", "").strip('" ')
             result = {
-                "Consumers": [c for c in stream_consumers if c.get("StreamARN") == stream_arn]
+                "Consumers": [c for c in store.stream_consumers if c.get("StreamARN") == stream_arn]
             }
             return encoded_response(result, encoding_type)
 
@@ -131,7 +121,7 @@ class ProxyListenerKinesis(ProxyListener):
         elif action == "EnableEnhancedMonitoring" and config.KINESIS_PROVIDER == "kinesalite":
             stream_name = data.get("StreamName", "").strip('" ')
             metrics = data.get("ShardLevelMetrics", [])
-            enhanced_metrics = KinesisBackend.get().enhanced_metrics
+            enhanced_metrics = store.enhanced_metrics
             stream_metrics = enhanced_metrics[stream_name] = enhanced_metrics.get(stream_name) or []
             stream_metrics += [m for m in metrics if m not in stream_metrics]
             return {}
@@ -139,7 +129,7 @@ class ProxyListenerKinesis(ProxyListener):
         elif action == "DisableEnhancedMonitoring" and config.KINESIS_PROVIDER == "kinesalite":
             stream_name = data.get("StreamName", "").strip('" ')
             metrics = data.get("ShardLevelMetrics", [])
-            enhanced_metrics = KinesisBackend.get().enhanced_metrics
+            enhanced_metrics = store.enhanced_metrics
             stream_metrics = enhanced_metrics.get(stream_name) or []
             enhanced_metrics[stream_name] = [m for m in stream_metrics if m not in metrics]
             return {}
@@ -340,8 +330,8 @@ def subscribe_to_shard(data, headers):
 
 
 def find_consumer(consumer_arn="", consumer_name="", stream_arn=""):
-    stream_consumers = KinesisBackend.get().stream_consumers
-    for consumer in stream_consumers:
+    store = KinesisProvider.get_store()
+    for consumer in store.stream_consumers:
         if consumer_arn and consumer_arn == consumer.get("ConsumerARN"):
             return consumer
         elif consumer_name == consumer.get("ConsumerName") and stream_arn == consumer.get(
