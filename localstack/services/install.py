@@ -161,6 +161,7 @@ def install_cloudformation_libs():
 
 
 def install_component(name):
+    from localstack.packages import InstallTarget
     from localstack.services.awslambda.packages import awslambda_runtime_package
     from localstack.services.cloudformation.packages import cloudformation_package
     from localstack.services.dynamodb.packages import dynamodblocal_package
@@ -181,16 +182,18 @@ def install_component(name):
 
     installer = installers.get(name)
     if installer:
-        installer()
+        # since these installers are called at build-time, they should be installed to STATIC_LIBS
+        installer(target=InstallTarget.STATIC_LIBS)
 
 
 def install_components(names):
     parallelize(install_component, names)
 
-    # TODO: subject to removal, migrated from old code
+    # TODO remove these installers here (the default services should be defined using an LPM call in the Dockerfile)
+    from localstack.packages import InstallTarget
     from localstack.services.awslambda.packages import lambda_java_libs_package
 
-    lambda_java_libs_package.install()
+    lambda_java_libs_package.install(target=InstallTarget.STATIC_LIBS)
 
 
 def install_all_components():
