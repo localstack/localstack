@@ -917,6 +917,7 @@ def apply_moto_patches():
             "content-encoding",
             "content-language",
             "content-disposition",
+            "cache-control",
         ]:
             if header_value := resp_headers.pop(low_case_header, None):
                 header_name = capitalize_header_name_from_snake_case(low_case_header)
