@@ -267,7 +267,8 @@ EXPOSE 4566 4510-4559 5678
 
 HEALTHCHECK --interval=10s --start-period=15s --retries=5 --timeout=5s CMD ./bin/localstack status services --format=json
 
-RUN chmod -R 777 /var/lib/localstack
+RUN chmod -R 777 /var/lib/localstack && \
+    chmod -R /opt/code/localstack
 
 # default volume directory
 VOLUME /var/lib/localstack
