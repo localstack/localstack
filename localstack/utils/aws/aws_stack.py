@@ -301,13 +301,13 @@ def connect_to_service(
     cache_key = "/".join([str(k) for k in key_elements])
 
     # check cache first (most calls will be served from cache)
-    if cache and cache_key in BOTO_CLIENTS_CACHE:
-        return BOTO_CLIENTS_CACHE[cache_key]
+    # if cache and cache_key in BOTO_CLIENTS_CACHE:
+    #     return BOTO_CLIENTS_CACHE[cache_key]
 
     with BOTO_CLIENT_CREATE_LOCK:
         # check cache again within lock context to avoid race conditions
-        if cache and cache_key in BOTO_CLIENTS_CACHE:
-            return BOTO_CLIENTS_CACHE[cache_key]
+        # if cache and cache_key in BOTO_CLIENTS_CACHE:
+        #     return BOTO_CLIENTS_CACHE[cache_key]
 
         # determine endpoint_url if it is not set explicitly
         if not endpoint_url:
@@ -332,6 +332,11 @@ def connect_to_service(
         # To, prevent error "Connection pool is full, discarding connection ...",
         # set the environment variable MAX_POOL_CONNECTIONS. Default is 150.
         boto_config.max_pool_connections = MAX_POOL_CONNECTIONS
+        access_key_id = get_aws_access_key_id()
+        LOG.warning(f"CONTEXT ACCESS KEY ID: {access_key_id}")
+
+        if access_key_id is not None:
+            kwargs["access_key_id"] = access_key_id
 
         new_client = boto_factory(
             service_name,
