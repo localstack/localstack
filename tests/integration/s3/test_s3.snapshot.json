@@ -3833,5 +3833,62 @@
         }
       }
     }
+  },
+  "tests/integration/s3/test_s3.py::TestS3::test_replication_config": {
+    "recorded-date": "18-10-2022, 14:49:15",
+    "recorded-content": {
+      "expected_error_no_replication_set": {
+        "Error": {
+          "BucketName": "<bucket-name:1>",
+          "Code": "ReplicationConfigurationNotFoundError",
+          "Message": "The replication configuration was not found"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 404
+        }
+      },
+      "expected_error_versioning_not_enabled": {
+        "Error": {
+          "Code": "InvalidRequest",
+          "Message": "Versioning must be 'Enabled' on the bucket to apply a replication configuration"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "put-bucket-replication": {
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "get-bucket-replication": {
+        "ReplicationConfiguration": {
+          "Role": "role",
+          "Rules": [
+            {
+              "DeleteMarkerReplication": {
+                "Status": "Disabled"
+              },
+              "Destination": {
+                "Bucket": "dest-bucket"
+              },
+              "Filter": {
+                "Prefix": "Tax"
+              },
+              "ID": "id",
+              "Priority": 1,
+              "Status": "Enabled"
+            }
+          ]
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
   }
 }

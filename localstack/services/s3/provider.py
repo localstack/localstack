@@ -30,6 +30,7 @@ from localstack.aws.api.s3 import (
     GetBucketLifecycleConfigurationOutput,
     GetBucketLifecycleOutput,
     GetBucketLocationOutput,
+    GetBucketReplicationOutput,
     GetBucketRequestPaymentOutput,
     GetBucketRequestPaymentRequest,
     GetBucketWebsiteOutput,
@@ -62,6 +63,8 @@ from localstack.aws.api.s3 import (
     PutObjectRequest,
     PutObjectTaggingOutput,
     PutObjectTaggingRequest,
+    ReplicationConfiguration,
+    ReplicationConfigurationNotFoundError,
     S3Api,
     SkipValidation,
 )
@@ -418,6 +421,23 @@ class S3Provider(S3Api, ServiceLifecycleHook):
         moto_backend = get_moto_s3_backend(context)
         bucket = get_bucket_from_moto(moto_backend, bucket=bucket_name)
         return GetBucketRequestPaymentOutput(Payer=bucket.payer)
+
+    def get_bucket_replication(
+        self, context: RequestContext, bucket: BucketName, expected_bucket_owner: AccountId = None
+    ) -> GetBucketReplicationOutput:
+        moto_backend = get_moto_s3_backend(context)
+        bucket = get_bucket_from_moto(moto_backend, bucket=bucket)
+        replication = getattr(bucket, "replication", None)
+        if not replication:
+            ex = ReplicationConfigurationNotFoundError(
+                "The replication configuration was not found"
+            )
+            ex.BucketName = bucket
+            raise ex
+        replication_config = ReplicationConfiguration(
+            Role=replication.get("Role", ""), Rules=replication.get("Rule", [])
+        )
+        return GetBucketReplicationOutput(ReplicationConfiguration=replication_config)
 
     def get_bucket_lifecycle(
         self, context: RequestContext, bucket: BucketName, expected_bucket_owner: AccountId = None

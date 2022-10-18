@@ -78,6 +78,30 @@ HEADER_TRANSFORMER = [
     TransformerUtility.key_value("RequestId", reference_replacement=False),
 ]
 
+S3_ASSUME_ROLE_POLICY = {
+    "Version": "2012-10-17",
+    "Statement": [
+        {
+            "Effect": "Allow",
+            "Principal": {"Service": "s3.amazonaws.com"},
+            "Action": "sts:AssumeRole",
+        }
+    ],
+}
+
+S3_POLICY = {
+    "Version": "2012-10-17",
+    "Statement": [
+        {
+            "Effect": "Allow",
+            "Action": [
+                "s3:*",
+            ],
+            "Resource": "*",
+        }
+    ],
+}
+
 
 def is_old_provider():
     return LEGACY_S3_PROVIDER
@@ -197,6 +221,84 @@ def _filter_header(param: dict) -> dict:
 
 
 class TestS3:
+    @pytest.mark.aws_validated
+    @pytest.mark.xfail(
+        condition=LEGACY_S3_PROVIDER,
+        reason="exceptions not raised",
+    )
+    def test_replication_config(
+        self, s3_client, s3_create_bucket, create_iam_role_with_policy, snapshot
+    ):
+        snapshot.add_transformer(snapshot.transform.s3_api())
+        snapshot.add_transformer(
+            snapshot.transform.jsonpath(
+                "$..ReplicationConfiguration.Role", "role", reference_replacement=False
+            )
+        )
+        snapshot.add_transformer(
+            snapshot.transform.jsonpath(
+                "$..Destination.Bucket", "dest-bucket", reference_replacement=False
+            )
+        )
+        snapshot.add_transformer(
+            snapshot.transform.key_value("ID", "id", reference_replacement=False)
+        )
+        bucket_src = f"src-{short_uid()}"
+        bucket_dst = f"dst-{short_uid()}"
+        role_name = f"replication_role_{short_uid()}"
+        policy_name = f"replication_policy_{short_uid()}"
+
+        role_arn = create_iam_role_with_policy(
+            RoleName=role_name,
+            PolicyName=policy_name,
+            RoleDefinition=S3_ASSUME_ROLE_POLICY,
+            PolicyDefinition=S3_POLICY,
+        )
+        s3_create_bucket(Bucket=bucket_src)
+
+        s3_create_bucket(
+            Bucket=bucket_dst, CreateBucketConfiguration={"LocationConstraint": "us-west-2"}
+        )
+        s3_client.put_bucket_versioning(
+            Bucket=bucket_dst, VersioningConfiguration={"Status": "Enabled"}
+        )
+
+        # expect error if versioning is disabled
+        with pytest.raises(ClientError) as e:
+            s3_client.get_bucket_replication(Bucket=bucket_src)
+        snapshot.match("expected_error_no_replication_set", e.value.response)
+
+        replication_config = {
+            "Role": role_arn,
+            "Rules": [
+                {
+                    "Status": "Enabled",
+                    "Priority": 1,
+                    "DeleteMarkerReplication": {"Status": "Disabled"},
+                    "Filter": {"Prefix": "Tax"},
+                    "Destination": {"Bucket": f"arn:aws:s3:::{bucket_dst}"},
+                }
+            ],
+        }
+        with pytest.raises(ClientError) as e:
+            s3_client.put_bucket_replication(
+                ReplicationConfiguration=replication_config, Bucket=bucket_src
+            )
+        snapshot.match("expected_error_versioning_not_enabled", e.value.response)
+
+        # enable versioning
+        s3_client.put_bucket_versioning(
+            Bucket=bucket_src, VersioningConfiguration={"Status": "Enabled"}
+        )
+
+        response = s3_client.put_bucket_replication(
+            ReplicationConfiguration=replication_config, Bucket=bucket_src
+        )
+        snapshot.match("put-bucket-replication", response)
+
+        response = s3_client.get_bucket_replication(Bucket=bucket_src)
+        snapshot.match("get-bucket-replication", response)
+
     @pytest.mark.aws_validated
     @pytest.mark.skip_snapshot_verify(
         condition=is_old_provider, paths=["$..VersionId", "$..ContentLanguage"]

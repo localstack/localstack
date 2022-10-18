@@ -698,6 +698,13 @@ class NoSuchWebsiteConfiguration(ServiceException):
     BucketName: Optional[BucketName]
 
 
+class ReplicationConfigurationNotFoundError(ServiceException):
+    code: str = "ReplicationConfigurationNotFoundError"
+    sender_fault: bool = False
+    status_code: int = 404
+    BucketName: Optional[BucketName]
+
+
 AbortDate = datetime
 
 

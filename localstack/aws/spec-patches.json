@@ -622,6 +622,23 @@
       "value": {
         "shape": "MultipartUploadId"
       }
+    },
+    {
+      "op": "add",
+      "path": "/shapes/ReplicationConfigurationNotFoundError",
+      "value": {
+        "type": "structure",
+        "members": {
+          "BucketName": {
+            "shape": "BucketName"
+          }
+        },
+        "error": {
+          "httpStatusCode": 404
+        },
+        "documentation": "<p>The replication configuration was not found.</p>",
+        "exception": true
+      }
     }
   ]
 }
