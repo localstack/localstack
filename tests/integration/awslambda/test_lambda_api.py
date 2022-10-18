@@ -572,8 +572,6 @@ class TestLambdaVersions:
         snapshot.match("list_versions_result_after_publish", list_versions_result_after_publish)
 
     @pytest.mark.aws_validated
-    # TODO fix revision ids changed due to state changes after publish
-    @pytest.mark.skip_snapshot_verify(paths=["$..RevisionId"])
     def test_version_lifecycle(
         self, lambda_client, create_lambda_function_aws, lambda_su_role, snapshot
     ):
@@ -2013,7 +2011,6 @@ class TestLambdaPermissions:
         snapshot.match("policy_after_2_add", policy_response)
 
 
-# TODO fix version state after publish
 class TestLambdaUrl:
     @pytest.mark.skipif(condition=is_old_provider(), reason="not supported")
     @pytest.mark.aws_validated
