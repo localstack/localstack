@@ -26,7 +26,7 @@ from localstack.services.awslambda.invocation.runtime_environment import (
     RuntimeEnvironment,
     RuntimeStatus,
 )
-from localstack.services.awslambda.invocation.runtime_executor import RuntimeExecutor
+from localstack.services.awslambda.invocation.runtime_executor import get_runtime_executor
 from localstack.utils.cloudwatch.cloudwatch_util import store_cloudwatch_logs
 from localstack.utils.strings import truncate
 
@@ -151,7 +151,7 @@ class LambdaVersionManager(ServiceEndpoint):
             invocation_thread.start()
             self.invocation_thread = invocation_thread
             self.log_handler.start_subscriber()
-            RuntimeExecutor.prepare_version(self.function_version)
+            get_runtime_executor().prepare_version(self.function_version)
 
             self.state = VersionState(state=State.Active)
             LOG.debug(
@@ -188,7 +188,7 @@ class LambdaVersionManager(ServiceEndpoint):
         for environment in list(self.all_environments.values()):
             self.stop_environment(environment)
         self.log_handler.stop()
-        RuntimeExecutor.cleanup_version(self.function_version)
+        get_runtime_executor().cleanup_version(self.function_version)
 
     def update_provisioned_concurrency_config(self, provisioned_concurrent_executions: int) -> None:
         self.provisioned_concurrent_executions = provisioned_concurrent_executions

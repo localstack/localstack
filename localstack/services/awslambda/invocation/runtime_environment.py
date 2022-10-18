@@ -9,7 +9,10 @@ from typing import TYPE_CHECKING, Dict, Literal, Optional
 from localstack import config
 from localstack.services.awslambda.invocation.executor_endpoint import ServiceEndpoint
 from localstack.services.awslambda.invocation.lambda_models import Credentials, FunctionVersion
-from localstack.services.awslambda.invocation.runtime_executor import RuntimeExecutor
+from localstack.services.awslambda.invocation.runtime_executor import (
+    RuntimeExecutor,
+    get_runtime_executor,
+)
 from localstack.utils.aws import aws_stack
 from localstack.utils.strings import to_str
 
@@ -62,7 +65,7 @@ class RuntimeEnvironment:
         self.status_lock = RLock()
         self.function_version = function_version
         self.initialization_type = initialization_type
-        self.runtime_executor = RuntimeExecutor(
+        self.runtime_executor = get_runtime_executor()(
             self.id, function_version, service_endpoint=service_endpoint
         )
         self.last_returned = datetime.min
