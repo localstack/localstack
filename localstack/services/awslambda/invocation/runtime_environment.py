@@ -86,7 +86,7 @@ class RuntimeEnvironment:
         env_vars = {
             # Runtime API specifics
             "LOCALSTACK_RUNTIME_ID": self.id,
-            "LOCALSTACK_RUNTIME_ENDPOINT": f"http://{self.runtime_executor.get_endpoint_from_executor()}:{self.runtime_executor.executor_endpoint.port}",
+            "LOCALSTACK_RUNTIME_ENDPOINT": self.runtime_executor.get_runtime_endpoint(),
             # General Lambda Environment Variables
             "AWS_LAMBDA_LOG_GROUP_NAME": self.get_log_group_name(),
             "AWS_LAMBDA_LOG_STREAM_NAME": self.get_log_stream_name(),

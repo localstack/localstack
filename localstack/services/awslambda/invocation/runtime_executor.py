@@ -63,6 +63,15 @@ class RuntimeExecutor(ABC):
         pass
 
     @abstractmethod
+    def get_runtime_endpoint(self) -> str:
+        """
+        Gets the callback url of our executor endpoint
+
+        :return: IP address or hostname
+        """
+        pass
+
+    @abstractmethod
     def invoke(self, payload: dict[str, str]) -> None:
         """
         Send an invocation to the execution environment
