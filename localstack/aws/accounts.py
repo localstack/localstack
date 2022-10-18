@@ -42,7 +42,15 @@ def get_moto_default_account_id() -> str:
     return moto.core.DEFAULT_ACCOUNT_ID
 
 
-account_id_resolver = get_default_account_id
+def get_properly_resolved_account_id() -> str:
+    access_key_id = get_aws_access_key_id()
+    if access_key_id is not None:
+        return get_account_id_from_access_key_id(access_key_id)
+    else:
+        return get_default_account_id()
+
+
+account_id_resolver = get_properly_resolved_account_id
 
 #
 # Utils

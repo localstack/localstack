@@ -336,7 +336,7 @@ def connect_to_service(
         LOG.warning(f"CONTEXT ACCESS KEY ID: {access_key_id}")
 
         if access_key_id is not None:
-            kwargs["access_key_id"] = access_key_id
+            kwargs["aws_access_key_id"] = access_key_id
 
         new_client = boto_factory(
             service_name,

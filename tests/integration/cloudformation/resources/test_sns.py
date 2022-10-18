@@ -29,7 +29,10 @@ def test_sns_topic_fifo_without_suffix_fails(cfn_client, sns_client, deploy_cfn_
 
     with pytest.raises(Exception) as ex:
         deploy_cfn_template(
-            stack_name=stack_name, template_path=path, parameters={"TopicName": topic_name}
+            stack_name=stack_name,
+            template_path=path,
+            parameters={"TopicName": topic_name},
+            max_wait=10,
         )
     assert ex.typename == "AssertionError"
 

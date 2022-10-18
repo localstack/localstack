@@ -152,18 +152,20 @@ def get_resource_name(resource):
     return name
 
 
-def get_client(resource: dict, func_config: dict):
+def get_client(resource: dict, func_config: dict, deployer: "TemplateDeployer"):
+    account_id = deployer.stack.stack_id.split(":")[4]
     resource_type = get_resource_type(resource)
     service = get_service_name(resource)
     resource_config = get_deployment_config(resource_type)
+    kwargs = {"aws_access_key_id": account_id, "aws_secret_access_key": "test"}
     if resource_config is None:
         raise Exception(
             "CloudFormation deployment for resource type %s not yet implemented" % resource_type
         )
     try:
         if func_config.get("boto_client") == "resource":
-            return aws_stack.connect_to_resource(service)
-        return aws_stack.connect_to_service(service)
+            return aws_stack.connect_to_resource(service, **kwargs)
+        return aws_stack.connect_to_service(service, **kwargs)
     except Exception as e:
         LOG.warning('Unable to get client for "%s" API, skipping deployment: %s', service, e)
         return None
@@ -777,7 +779,7 @@ def prepare_template_body(req_data):
     return template_preparer.prepare_template_body(req_data)
 
 
-def deploy_resource(stack, resource_id):
+def deploy_resource(stack: "TemplateDeployer", resource_id):
     result = execute_resource_action(resource_id, stack, ACTION_CREATE)
     return result
 
@@ -786,7 +788,7 @@ def delete_resource(stack, resource_id):
     return execute_resource_action(resource_id, stack, ACTION_DELETE)
 
 
-def execute_resource_action(resource_id: str, stack, action_name: str):
+def execute_resource_action(resource_id: str, stack: "TemplateDeployer", action_name: str):
     stack_name = stack.stack_name
     resources = stack.resources
 
@@ -820,7 +822,7 @@ def execute_resource_action(resource_id: str, stack, action_name: str):
             results.append(result)
             executed = True
 
-        if not executed and get_client(resource, func):
+        if not executed and get_client(resource, func, stack):
             result = configure_resource_via_sdk(
                 stack,
                 resource_id,
@@ -838,7 +840,13 @@ def execute_resource_action(resource_id: str, stack, action_name: str):
     return (results or [None])[0]
 
 
-def configure_resource_via_sdk(stack, resource_id, resource_type, func_details, action_name):
+def configure_resource_via_sdk(
+    stack: "TemplateDeployer",
+    resource_id: str,
+    resource_type: str,
+    func_details: dict,
+    action_name: str,
+):
     resources = stack.resources
     stack_name = stack.stack_name
 
@@ -848,7 +856,7 @@ def configure_resource_via_sdk(stack, resource_id, resource_type, func_details, 
         if action_name == "create":
             func_details["boto_client"] = "resource"
 
-    client = get_client(resource, func_details)
+    client = get_client(resource, func_details, stack)
     function = getattr(client, func_details["function"])
     params = func_details.get("parameters") or lambda_get_params()
     defaults = func_details.get("defaults", {})
