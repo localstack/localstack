@@ -1,10 +1,6 @@
-import os
 from typing import List
 
 from localstack.packages import InstallTarget, Package, PackageInstaller
-
-# debugpy module
-DEBUGPY_MODULE = "debugpy"
 
 
 class DebugPyPackage(Package):
@@ -19,28 +15,31 @@ class DebugPyPackage(Package):
 
 
 class DebugPyPackageInstaller(PackageInstaller):
-    def _get_install_dir(self, target: InstallTarget) -> str:
-        import inspect
-        from pathlib import Path
+    # TODO: migrate this to the upcoming pip installer
 
-        import localstack
+    def is_installed(self) -> bool:
+        try:
+            import debugpy
 
-        # get the "root" LocalStack directory. We go two levels up from /localstack/localstack/__init__.py
-        ls_path = Path(inspect.getfile(localstack)).parent.parent
-        # TODO: make this python version independent
-        lib_path = os.path.join(ls_path, ".venv/lib/python3.10/site-packages/debugpy")
-        return lib_path
+            assert debugpy
+            return True
+        except ModuleNotFoundError:
+            return False
 
     def _get_install_marker_path(self, install_dir: str) -> str:
+        # TODO: This method currently does not provide the actual install_marker.
+        #  Since we overwrote is_installed(), this installer does not install anything under
+        #  var/static libs, and we also don't need an executable, we don't need it to operate the installer.
+        #  fix with migration to pip installer
         return install_dir
 
     def _install(self, target: InstallTarget) -> None:
         import pip
 
         if hasattr(pip, "main"):
-            pip.main(["install", DEBUGPY_MODULE])
+            pip.main(["install", "debugpy"])
         else:
-            pip._internal.main(["install", DEBUGPY_MODULE])
+            pip._internal.main(["install", "debugpy"])
 
 
 debugpy_package = DebugPyPackage()
