@@ -172,15 +172,7 @@ if is_old_provider():
     )
 else:
     pytestmark = pytest.mark.skip_snapshot_verify(
-        paths=[
-            "$..State",
-            "$..StateReason",
-            "$..StateReasonCode",
-            "$..CodeSize",
-            "$..LastUpdateStatus",
-            "$..LastUpdateStatusReason",
-            "$..LastUpdateStatusReasonCode",
-        ],
+        paths=["$..CodeSize"],
     )
 
 
@@ -1093,6 +1085,14 @@ class TestLambdaVersions:
             FunctionName=function_name, Payload=b"{}"
         )
         snapshot.match("invocation_result_latest_end", invocation_result_latest_end)
+        invocation_result_v2 = lambda_client.invoke(
+            FunctionName=function_name, Qualifier=second_publish_response["Version"], Payload=b"{}"
+        )
+        snapshot.match("invocation_result_v2_end", invocation_result_v2)
+        invocation_result_v1 = lambda_client.invoke(
+            FunctionName=function_name, Qualifier=first_publish_response["Version"], Payload=b"{}"
+        )
+        snapshot.match("invocation_result_v1_end", invocation_result_v1)
 
 
 @pytest.mark.skipif(condition=is_old_provider(), reason="not supported")

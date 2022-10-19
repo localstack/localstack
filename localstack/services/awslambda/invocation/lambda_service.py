@@ -25,6 +25,7 @@ from localstack.services.awslambda.api_utils import (
 )
 from localstack.services.awslambda.invocation.lambda_models import (
     LAMBDA_LIMITS_CODE_SIZE_UNZIPPED_DEFAULT,
+    Function,
     FunctionVersion,
     Invocation,
     InvocationResult,
@@ -69,6 +70,11 @@ class LambdaService:
             shutdown_futures.append(self.task_executor.submit(version_manager.stop))
         for version_manager in self.lambda_starting_versions.values():
             shutdown_futures.append(self.task_executor.submit(version_manager.stop))
+            shutdown_futures.append(
+                self.task_executor.submit(
+                    version_manager.function_version.config.code.destroy_cached
+                )
+            )
         concurrent.futures.wait(shutdown_futures, timeout=5)
         self.task_executor.shutdown(cancel_futures=True)
 
@@ -117,6 +123,31 @@ class LambdaService:
             )
             self.lambda_starting_versions[qualified_arn] = version_manager
         self.task_executor.submit(version_manager.start)
+
+    def publish_version(self, function_version: FunctionVersion):
+        """
+        Synchronously create a function version (manager)
+        Should only be called on publishing new versions, which basically clone an existing one.
+        The new version needs to be added to the lambda store before invoking this.
+        After successful completion of this method, the lambda version stored will be modified to be active, with a new revision id.
+        It will then be active for execution, and should be retrieved again from the store before returning the data over the API.
+
+        :param function_version: Function Version to create
+        """
+        with self.lambda_version_manager_lock:
+            qualified_arn = function_version.id.qualified_arn()
+            version_manager = self.lambda_starting_versions.get(qualified_arn)
+            if version_manager:
+                raise Exception(
+                    "Version '%s' already starting up and in state %s",
+                    qualified_arn,
+                    version_manager.state,
+                )
+            version_manager = LambdaVersionManager(
+                function_arn=qualified_arn, function_version=function_version, lambda_service=self
+            )
+            self.lambda_starting_versions[qualified_arn] = version_manager
+        version_manager.start()
 
     # Commands
     def invoke(
@@ -222,6 +253,7 @@ class LambdaService:
         :param new_state: New state
         """
         function_arn = function_version.qualified_arn
+        old_version = None
         with self.lambda_version_manager_lock:
             new_version = self.lambda_starting_versions.pop(function_arn)
             if not new_version:
@@ -231,9 +263,6 @@ class LambdaService:
             if new_state.state == State.Active:
                 old_version = self.lambda_running_versions.get(function_arn, None)
                 self.lambda_running_versions[function_arn] = new_version
-                if old_version:
-                    # if there is an old version, we assume it is an update, and stop the old one
-                    self.task_executor.submit(old_version.stop)
                 update_status = UpdateStatus(status=LastUpdateStatus.Successful)
             elif new_state.state == State.Failed:
                 update_status = UpdateStatus(status=LastUpdateStatus.Failed)
@@ -250,9 +279,8 @@ class LambdaService:
 
         # TODO is it necessary to get the version again? Should be locked for modification anyway
         state = lambda_stores[function_version.id.account][function_version.id.region]
-        current_version = state.functions[function_version.id.function_name].versions[
-            function_version.id.qualifier
-        ]
+        function = state.functions[function_version.id.function_name]
+        current_version = function.versions[function_version.id.qualifier]
         new_version = dataclasses.replace(
             current_version,
             config=dataclasses.replace(
@@ -262,6 +290,38 @@ class LambdaService:
         state.functions[function_version.id.function_name].versions[
             function_version.id.qualifier
         ] = new_version
+
+        if old_version:
+            # if there is an old version, we assume it is an update, and stop the old one
+            self.task_executor.submit(old_version.stop)
+            self.task_executor.submit(
+                destroy_code_if_not_used, old_version.function_version.config.code, function
+            )
+
+
+def is_code_used(code: S3Code, function: Function) -> bool:
+    """
+    Check if given code is still used in some version of the function
+
+    :param code: Code object
+    :param function: function to check
+    :return: bool whether code is used in another version of the function
+    """
+    with function.lock:
+        return any(code == version.config.code for version in function.versions.values())
+
+
+def destroy_code_if_not_used(code: S3Code, function: Function) -> None:
+    """
+    Destroy the given code if it is not used in some version of the function
+    Do nothing otherwise
+
+    :param code: Code object
+    :param function: Function the code belongs too
+    """
+    with function.lock:
+        if not is_code_used(code, function):
+            code.destroy()
 
 
 def store_lambda_archive(
@@ -295,10 +355,12 @@ def store_lambda_archive(
     bucket_name = f"awslambda-{region_name}-tasks"
     # s3 create bucket is idempotent
     s3_client.create_bucket(Bucket=bucket_name)
-    key = f"snapshots/{account_id}/{function_name}-{uuid.uuid4()}"
+    code_id = f"{function_name}-{uuid.uuid4()}"
+    key = f"snapshots/{account_id}/{id}"
     s3_client.upload_fileobj(Fileobj=io.BytesIO(archive_file), Bucket=bucket_name, Key=key)
     code_sha256 = to_str(base64.b64encode(sha256(archive_file).digest()))
     return S3Code(
+        id=code_id,
         s3_bucket=bucket_name,
         s3_key=key,
         s3_object_version=None,

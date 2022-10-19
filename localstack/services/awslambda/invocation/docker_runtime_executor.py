@@ -1,10 +1,8 @@
 import json
 import logging
 import shutil
-import tempfile
 import time
 from pathlib import Path
-from tempfile import NamedTemporaryFile
 from typing import Dict, Literal, Optional
 
 from localstack import config
@@ -19,7 +17,6 @@ from localstack.services.awslambda.lambda_utils import (
     get_main_endpoint_from_container,
 )
 from localstack.services.awslambda.packages import awslambda_runtime_package
-from localstack.utils.archives import unzip
 from localstack.utils.container_utils.container_client import ContainerConfiguration
 from localstack.utils.docker_utils import DOCKER_CLIENT as CONTAINER_CLIENT
 from localstack.utils.net import get_free_tcp_port
@@ -41,15 +38,7 @@ COPY aws-lambda-rie {rapid_entrypoint}
 COPY code/ /var/task
 """
 
-
-def get_path_for_function(function_version: FunctionVersion) -> Path:
-    return Path(
-        f"{tempfile.gettempdir()}/lambda/{function_version.id.qualified_arn().replace(':', '_').replace('$', '_')}_{function_version.config.internal_revision}/"
-    )
-
-
-def get_code_path_for_function(function_version: FunctionVersion) -> Path:
-    return get_path_for_function(function_version) / "code"
+PULLED_IMAGES: set[str] = set()
 
 
 def get_image_name_for_function(function_version: FunctionVersion) -> str:
@@ -162,7 +151,9 @@ class DockerRuntimeExecutor(RuntimeExecutor):
                 self.id, str(get_runtime_client_path()), RAPID_ENTRYPOINT
             )
             CONTAINER_CLIENT.copy_into_container(
-                self.id, f"{str(get_code_path_for_function(self.function_version))}/.", "/var/task"
+                self.id,
+                f"{str(self.function_version.config.code.get_unzipped_code_location())}/.",
+                "/var/task",
             )
 
         CONTAINER_CLIENT.start_container(self.id)
@@ -205,34 +196,21 @@ class DockerRuntimeExecutor(RuntimeExecutor):
     @classmethod
     def prepare_version(cls, function_version: FunctionVersion) -> None:
         time_before = time.perf_counter()
-        target_path = get_path_for_function(function_version)
-        target_path.mkdir(parents=True, exist_ok=True)
-        # write code to disk
-        target_code = get_code_path_for_function(function_version)
-        target_code.mkdir(parents=True, exist_ok=True)
-        with NamedTemporaryFile() as file:
-            # TODO use streaming to avoid heavy memory impact of loading zip file, e.g. via s3.download_file
-            file.write(function_version.config.code.get_lambda_archive())
-            file.flush()
-            unzip(file.name, str(target_code))
+        function_version.config.code.prepare_for_execution()
+        target_path = function_version.config.code.get_unzipped_code_location()
         image_name = get_image_for_runtime(function_version.config.runtime)
-        if image_name not in CONTAINER_CLIENT.get_docker_image_names(strip_latest=False):
+        if image_name not in PULLED_IMAGES:
             CONTAINER_CLIENT.pull_image(image_name)
+            PULLED_IMAGES.add(image_name)
         if config.LAMBDA_PREBUILD_IMAGES:
             prepare_image(target_path, function_version)
-        LOG.debug("Version preparation took %0.2fms", (time.perf_counter() - time_before) * 1000)
+        LOG.debug(
+            "Version preparation of version %s took %0.2fms",
+            function_version.qualified_arn,
+            (time.perf_counter() - time_before) * 1000,
+        )
 
     @classmethod
     def cleanup_version(cls, function_version: FunctionVersion) -> None:
-        function_path = get_path_for_function(function_version)
-        try:
-            shutil.rmtree(function_path)
-        except OSError as e:
-            LOG.debug(
-                "Could not cleanup function %s due to error %s while deleting file %s",
-                function_version.qualified_arn,
-                e.strerror,
-                e.filename,
-            )
         if config.LAMBDA_PREBUILD_IMAGES:
             CONTAINER_CLIENT.remove_image(get_image_name_for_function(function_version))

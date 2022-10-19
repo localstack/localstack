@@ -1006,7 +1006,7 @@
     }
   },
   "tests/integration/awslambda/test_lambda.py::TestLambdaVersions::test_lambda_versions_with_code_changes": {
-    "recorded-date": "27-09-2022, 19:30:07",
+    "recorded-date": "12-10-2022, 17:48:20",
     "recorded-content": {
       "create_response": {
         "Architectures": [
@@ -1225,6 +1225,32 @@
           "version_id": "version3",
           "invoked_arn": "arn:aws:lambda:<region>:111111111111:function:<function-name:1>",
           "version_from_ctx": "$LATEST"
+        },
+        "StatusCode": 200,
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "invocation_result_v2_end": {
+        "ExecutedVersion": "2",
+        "Payload": {
+          "version_id": "version2",
+          "invoked_arn": "arn:aws:lambda:<region>:111111111111:function:<function-name:1>:2",
+          "version_from_ctx": "2"
+        },
+        "StatusCode": 200,
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "invocation_result_v1_end": {
+        "ExecutedVersion": "1",
+        "Payload": {
+          "version_id": "version1",
+          "invoked_arn": "arn:aws:lambda:<region>:111111111111:function:<function-name:1>:1",
+          "version_from_ctx": "1"
         },
         "StatusCode": 200,
         "ResponseMetadata": {

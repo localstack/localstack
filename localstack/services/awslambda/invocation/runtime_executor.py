@@ -5,8 +5,7 @@ from typing import Type
 from plugin import PluginManager
 
 from localstack import config
-from localstack.aws.api.lambda_ import FunctionVersion
-from localstack.services.awslambda.invocation.lambda_models import ServiceEndpoint
+from localstack.services.awslambda.invocation.lambda_models import FunctionVersion, ServiceEndpoint
 from localstack.services.awslambda.invocation.plugins import RuntimeExecutorPlugin
 
 LOG = logging.getLogger(__name__)

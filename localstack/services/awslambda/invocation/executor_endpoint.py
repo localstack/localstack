@@ -40,6 +40,7 @@ class ExecutorEndpoint(Server):
         self.container_address = container_address
 
     def _create_endpoint(self) -> Flask:
+        # TODO move to router configuration (maybe service specific endpoint?)
         executor_endpoint = Flask(f"executor_endpoint_{self.port}")
 
         @executor_endpoint.route("/invocations/<req_id>/response", methods=["POST"])
