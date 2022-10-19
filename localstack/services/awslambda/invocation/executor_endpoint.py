@@ -3,63 +3,60 @@ from http import HTTPStatus
 from typing import Dict, Optional
 
 import requests
-from flask import Flask, Response, request
-from flask.typing import ResponseReturnValue
+from werkzeug import Request
+from werkzeug.routing import Rule
 
+from localstack.http import Response, Router
 from localstack.services.awslambda.invocation.lambda_models import (
     InvocationError,
     InvocationLogs,
     InvocationResult,
     ServiceEndpoint,
 )
-from localstack.utils.serving import Server
+from localstack.services.edge import ROUTER
 
 LOG = logging.getLogger(__name__)
 INVOCATION_PORT = 9563
 
+NAMESPACE = "/_localstack_lambda"
+
 
 class InvokeSendError(Exception):
-    def __init__(self, invocation_id: str, payload: Optional[bytes]):
-        message = f"Error while trying to send invocation to RAPID for id {invocation_id}. Response: {payload}"
+    def __init__(self, message):
         super().__init__(message)
 
 
-class ExecutorEndpoint(Server):
+class ExecutorEndpoint:
     service_endpoint: ServiceEndpoint
-    port: Optional[str]
+    container_address: str
+    rules: list[Rule]
+    endpoint_id: str
+    router: Router
 
     def __init__(
         self,
-        port: int,
+        endpoint_id: str,
         service_endpoint: ServiceEndpoint,
-        host: str = "0.0.0.0",
         container_address: Optional[str] = None,
     ) -> None:
-        super().__init__(port, host)
         self.service_endpoint = service_endpoint
         self.container_address = container_address
+        self.rules = []
+        self.endpoint_id = endpoint_id
+        self.router = ROUTER
 
-    def _create_endpoint(self) -> Flask:
-        # TODO move to router configuration (maybe service specific endpoint?)
-        executor_endpoint = Flask(f"executor_endpoint_{self.port}")
-
-        @executor_endpoint.route("/invocations/<req_id>/response", methods=["POST"])
-        def invocation_response(req_id: str) -> ResponseReturnValue:
+    def _create_endpoint(self, router: Router) -> list[Rule]:
+        def invocation_response(request: Request, req_id: str) -> Response:
             result = InvocationResult(req_id, request.data)
             self.service_endpoint.invocation_result(invoke_id=req_id, invocation_result=result)
             return Response(status=HTTPStatus.ACCEPTED)
 
-        @executor_endpoint.route(
-            "/invocations/<req_id>/error",
-            methods=["POST"],
-        )
-        def invocation_error(req_id: str) -> ResponseReturnValue:
+        def invocation_error(request: Request, req_id: str) -> Response:
             result = InvocationError(req_id, request.data)
             self.service_endpoint.invocation_error(invoke_id=req_id, invocation_error=result)
             return Response(status=HTTPStatus.ACCEPTED)
 
-        @executor_endpoint.route("/invocations/<invoke_id>/logs", methods=["POST"])
-        def invocation_logs(invoke_id: str) -> ResponseReturnValue:
+        def invocation_logs(request: Request, invoke_id: str) -> Response:
             logs = request.json
             if isinstance(logs, Dict):
                 logs["invocation_id"] = invoke_id
@@ -72,26 +69,51 @@ class ExecutorEndpoint(Server):
                 # TODO handle error in some way?
             return Response(status=HTTPStatus.ACCEPTED)
 
-        @executor_endpoint.route("/status/<executor_id>/ready", methods=["POST"])
-        def status_ready(executor_id: str) -> ResponseReturnValue:
+        def status_ready(request: Request, executor_id: str) -> Response:
             self.service_endpoint.status_ready(executor_id=executor_id)
             return Response(status=HTTPStatus.ACCEPTED)
 
-        @executor_endpoint.route("/status/<executor_id>/error", methods=["POST"])
-        def status_error(executor_id: str) -> ResponseReturnValue:
+        def status_error(request: Request, executor_id: str) -> Response:
             self.service_endpoint.status_error(executor_id=executor_id)
             return Response(status=HTTPStatus.ACCEPTED)
 
-        return executor_endpoint
+        return [
+            router.add(
+                f"{self.get_endpoint_prefix()}/invocations/<req_id>/response",
+                endpoint=invocation_response,
+                methods=["POST"],
+            ),
+            router.add(
+                f"{self.get_endpoint_prefix()}/invocations/<req_id>/error",
+                endpoint=invocation_error,
+                methods=["POST"],
+            ),
+            router.add(
+                f"{self.get_endpoint_prefix()}/invocations/<invoke_id>/logs",
+                endpoint=invocation_logs,
+                methods=["POST"],
+            ),
+            router.add(
+                f"{self.get_endpoint_prefix()}/status/<executor_id>/ready",
+                endpoint=status_ready,
+                methods=["POST"],
+            ),
+            router.add(
+                f"{self.get_endpoint_prefix()}/status/<executor_id>/error",
+                endpoint=status_error,
+                methods=["POST"],
+            ),
+        ]
 
-    def do_run(self) -> None:
-        endpoint = self._create_endpoint()
-        LOG.debug("Running executor endpoint API on %s:%s", self.host, self.port)
-        endpoint.run(self.host, self.port)
+    def get_endpoint_prefix(self):
+        return f"{NAMESPACE}/{self.endpoint_id}"
 
-    def do_shutdown(self) -> None:
-        if self._thread:
-            self._thread.stop()
+    def start(self) -> None:
+        self.rules = self._create_endpoint(self.router)
+
+    def shutdown(self) -> None:
+        for rule in self.rules:
+            self.router.remove_rule(rule)
 
     def invoke(self, payload: Dict[str, str]) -> None:
         if not self.container_address:

@@ -19,7 +19,6 @@ from localstack.services.awslambda.lambda_utils import (
 from localstack.services.awslambda.packages import awslambda_runtime_package
 from localstack.utils.container_utils.container_client import ContainerConfiguration
 from localstack.utils.docker_utils import DOCKER_CLIENT as CONTAINER_CLIENT
-from localstack.utils.net import get_free_tcp_port
 from localstack.utils.strings import truncate
 
 LOG = logging.getLogger(__name__)
@@ -121,13 +120,12 @@ class DockerRuntimeExecutor(RuntimeExecutor):
         )
 
     def _build_executor_endpoint(self, service_endpoint: ServiceEndpoint) -> ExecutorEndpoint:
-        port = get_free_tcp_port()
         LOG.debug(
             "Creating service endpoint for function %s executor %s",
             self.function_version.qualified_arn,
             self.id,
         )
-        executor_endpoint = ExecutorEndpoint(port, service_endpoint=service_endpoint)
+        executor_endpoint = ExecutorEndpoint(self.id, service_endpoint=service_endpoint)
         LOG.debug(
             "Finished creating service endpoint for function %s executor %s",
             self.function_version.qualified_arn,
@@ -214,3 +212,6 @@ class DockerRuntimeExecutor(RuntimeExecutor):
     def cleanup_version(cls, function_version: FunctionVersion) -> None:
         if config.LAMBDA_PREBUILD_IMAGES:
             CONTAINER_CLIENT.remove_image(get_image_name_for_function(function_version))
+
+    def get_runtime_endpoint(self) -> str:
+        return f"http://{self.get_endpoint_from_executor()}:{config.EDGE_PORT}{self.executor_endpoint.get_endpoint_prefix()}"

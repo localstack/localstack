@@ -63,6 +63,15 @@ class RuntimeExecutor(ABC):
         pass
 
     @abstractmethod
+    def get_runtime_endpoint(self) -> str:
+        """
+        Gets the callback url of our executor endpoint
+
+        :return: Base url of the callback, e.g. "http://123.123.123.123:4566/_localstack_lambda/ID1234" without trailing slash
+        """
+        pass
+
+    @abstractmethod
     def invoke(self, payload: dict[str, str]) -> None:
         """
         Send an invocation to the execution environment
