@@ -100,9 +100,6 @@ LOG = logging.getLogger(__name__)
 # maximum time a pre-allocated container can sit idle before getting killed
 MAX_CONTAINER_IDLE_TIME_MS = 600 * 1000
 
-# SQS event source name
-EVENT_SOURCE_SQS = "aws:sqs"
-
 # maps lambda arns to concurrency locks
 LAMBDA_CONCURRENCY_LOCK = {}
 

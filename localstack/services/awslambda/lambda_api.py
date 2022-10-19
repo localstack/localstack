@@ -17,7 +17,7 @@ from datetime import datetime
 from io import StringIO
 from json import JSONDecodeError
 from random import random
-from typing import Any, Dict, Optional, Tuple
+from typing import Any, Callable, Dict, List, Optional, Tuple
 from urllib.parse import urlparse
 
 from flask import Flask, Response, jsonify, request
@@ -68,7 +68,7 @@ from localstack.utils.http import parse_chunked_data, safe_requests
 from localstack.utils.json import json_safe
 from localstack.utils.patch import patch
 from localstack.utils.run import run, run_for_max_seconds
-from localstack.utils.strings import first_char_to_lower, long_uid, md5, short_uid, to_bytes, to_str
+from localstack.utils.strings import long_uid, md5, short_uid, to_bytes, to_str
 from localstack.utils.sync import synchronized
 from localstack.utils.time import (
     TIMESTAMP_FORMAT_MICROS,
@@ -294,6 +294,21 @@ def delete_event_source(uuid_value: str):
     return {}
 
 
+def get_lambda_event_filters_for_arn(lambda_arn: str, event_arn: str) -> List[Dict]:
+    region_name = lambda_arn.split(":")[3]
+    region = get_awslambda_store(region=region_name)
+
+    event_filter_criterias = [
+        event_source_mapping.get("FilterCriteria")
+        for event_source_mapping in region.event_source_mappings
+        if event_source_mapping.get("FunctionArn") == lambda_arn
+        and event_source_mapping.get("EventSourceArn") == event_arn
+        and event_source_mapping.get("FilterCriteria") is not None
+    ]
+
+    return event_filter_criterias
+
+
 @synchronized(lock=EXEC_MUTEX)
 def use_docker():
     global DO_USE_DOCKER
@@ -314,17 +329,6 @@ def use_docker():
     return DO_USE_DOCKER
 
 
-def message_attributes_to_lower(message_attrs):
-    """Convert message attribute details (first characters) to lower case (e.g., stringValue, dataType)."""
-    message_attrs = message_attrs or {}
-    for _, attr in message_attrs.items():
-        if not isinstance(attr, dict):
-            continue
-        for key, value in dict(attr).items():
-            attr[first_char_to_lower(key)] = attr.pop(key)
-    return message_attrs
-
-
 def process_lambda_url_invocation(lambda_url_config: dict, event: dict):
     inv_result = run_lambda(
         func_arn=lambda_url_config["FunctionArn"],
@@ -334,7 +338,7 @@ def process_lambda_url_invocation(lambda_url_config: dict, event: dict):
     return inv_result.result
 
 
-def get_event_sources(func_name=None, source_arn=None):
+def get_event_sources(func_name=None, source_arn=None) -> list:
     result = []
     for store in awslambda_stores[get_aws_account_id()].values():
         for m in store.event_source_mappings:
@@ -393,13 +397,13 @@ def do_update_alias(arn: str, alias: str, version: str, description=None):
 
 
 def run_lambda(
-    func_arn,
+    func_arn: str,
     event,
     context=None,
-    version=None,
-    suppress_output=False,
-    asynchronous=False,
-    callback=None,
+    version: Optional[str] = None,
+    suppress_output: bool = False,
+    asynchronous: bool = False,
+    callback: Optional[Callable] = None,
     lock_discriminator: str = None,
 ) -> InvocationResult:
     if context is None:

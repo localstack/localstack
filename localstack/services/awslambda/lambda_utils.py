@@ -7,13 +7,13 @@ import tempfile
 import time
 from functools import lru_cache
 from io import BytesIO
-from typing import Any, Dict, List, Optional, TypedDict, Union
+from typing import Any, Dict, List, Optional, Union
 
 from flask import Response
 
 from localstack import config
 from localstack.aws.accounts import get_aws_account_id
-from localstack.aws.api.lambda_ import Runtime
+from localstack.aws.api.lambda_ import FilterCriteria, Runtime
 from localstack.services.awslambda.lambda_models import AwsLambdaStore, awslambda_stores
 from localstack.utils.aws import aws_stack
 from localstack.utils.aws.aws_models import LambdaFunction
@@ -24,7 +24,7 @@ from localstack.utils.container_networking import (
     get_main_container_network,
 )
 from localstack.utils.docker_utils import DOCKER_CLIENT
-from localstack.utils.strings import short_uid
+from localstack.utils.strings import first_char_to_lower, short_uid
 
 LOG = logging.getLogger(__name__)
 
@@ -298,10 +298,6 @@ def generate_lambda_arn(
         return f"arn:aws:lambda:{region}:{account_id}:function:{fn_name}"
 
 
-class FilterCriteria(TypedDict):
-    Filters: List[Dict[str, any]]
-
-
 def parse_and_apply_numeric_filter(
     record_value: Dict, numeric_filter: List[Union[str, int]]
 ) -> bool:
@@ -422,22 +418,6 @@ def validate_filters(filter: FilterCriteria) -> bool:
     return True
 
 
-def get_lambda_event_filters_for_arn(lambda_arn: str, event_arn: str) -> List[Dict]:
-    # late import to avoid circular import
-    region_name = lambda_arn.split(":")[3]
-    region = get_awslambda_store(region=region_name)
-
-    event_filter_criterias = [
-        event_source_mapping.get("FilterCriteria")
-        for event_source_mapping in region.event_source_mappings
-        if event_source_mapping.get("FunctionArn") == lambda_arn
-        and event_source_mapping.get("EventSourceArn") == event_arn
-        and event_source_mapping.get("FilterCriteria") is not None
-    ]
-
-    return event_filter_criterias
-
-
 def function_name_from_arn(arn: str):
     """Extract a function name from a arn/function name"""
     return FUNCTION_NAME_REGEX.match(arn).group("name")
@@ -461,3 +441,14 @@ def get_awslambda_store_for_arn(resource_arn: str) -> AwsLambdaStore:
         account_id=extract_account_id_from_arn(resource_arn or ""),
         region=extract_region_from_arn(resource_arn or ""),
     )
+
+
+def message_attributes_to_lower(message_attrs):
+    """Convert message attribute details (first characters) to lower case (e.g., stringValue, dataType)."""
+    message_attrs = message_attrs or {}
+    for _, attr in message_attrs.items():
+        if not isinstance(attr, dict):
+            continue
+        for key, value in dict(attr).items():
+            attr[first_char_to_lower(key)] = attr.pop(key)
+    return message_attrs

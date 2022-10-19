@@ -23,7 +23,7 @@ def sns_error_to_dead_letter_queue(sns_subscriber: dict, message: str, error, ms
 def lambda_error_to_dead_letter_queue(func_details: LambdaFunction, event: Dict, error):
     dlq_arn = (func_details.dead_letter_config or {}).get("TargetArn")
     source_arn = func_details.id
-    return _send_to_dead_letter_queue(source_arn, dlq_arn, event, error)
+    _send_to_dead_letter_queue(source_arn, dlq_arn, event, error)
 
 
 def _send_to_dead_letter_queue(source_arn: str, dlq_arn: str, event: Dict, error):

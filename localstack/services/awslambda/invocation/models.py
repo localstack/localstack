@@ -12,7 +12,7 @@ class LambdaStore(BaseStore):
     # maps function names to the respective Function
     functions: dict[str, Function] = LocalAttribute(default=dict)
 
-    # maps EventSourceMapping ARNs to the respective EventSourceMapping
+    # maps EventSourceMapping UUIDs to the respective EventSourceMapping
     event_source_mappings: dict[str, EventSourceMapping] = LocalAttribute(default=dict)
 
     # maps CodeSigningConfig ARNs to the respective CodeSigningConfig

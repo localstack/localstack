@@ -265,8 +265,10 @@ class VersionFunctionConfiguration:
     last_update: Optional[UpdateStatus] = None
     revision_id: str = dataclasses.field(init=False, default_factory=long_uid)
     layers: list[str] = dataclasses.field(default_factory=list)
+
+    dead_letter_arn: Optional[str] = None
+
     # kms_key_arn: str
-    # dead_letter_config: DeadLetterConfig
     # file_system_configs: FileSystemConfig
     # vpc_config: VpcConfig
 

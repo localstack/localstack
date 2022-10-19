@@ -6,15 +6,16 @@ from typing import Dict, List, Optional, Tuple
 
 from localstack import config
 from localstack.services.awslambda import lambda_executors
+from localstack.services.awslambda.event_source_listeners.adapters import (
+    EventSourceAdapter,
+    EventSourceLegacyAdapter,
+)
 from localstack.services.awslambda.event_source_listeners.event_source_listener import (
     EventSourceListener,
 )
 from localstack.services.awslambda.lambda_api import run_lambda
 from localstack.services.awslambda.lambda_executors import InvocationResult
-from localstack.services.awslambda.lambda_utils import (
-    filter_stream_records,
-    get_lambda_event_filters_for_arn,
-)
+from localstack.services.awslambda.lambda_utils import filter_stream_records
 from localstack.utils.aws.aws_stack import extract_region_from_arn
 from localstack.utils.aws.message_forwarding import send_event_to_target
 from localstack.utils.common import long_uid, timestamp_millis
@@ -44,6 +45,7 @@ class StreamEventSourceListener(EventSourceListener):
     ] = {}  # Threads for listening to stream shards and forwarding data to mapped Lambdas
     _POLL_INTERVAL_SEC: float = 1
     _FAILURE_PAYLOAD_DETAILS_FIELD_NAME = ""  # To be defined by inheriting classes
+    _invoke_adapter: EventSourceAdapter
 
     @staticmethod
     def source_type() -> Optional[str]:
@@ -113,7 +115,7 @@ class StreamEventSourceListener(EventSourceListener):
         """
         raise NotImplementedError
 
-    def start(self):
+    def start(self, invoke_adapter: Optional[EventSourceAdapter] = None):
         """
         Spawn coordinator thread for listening to relevant new/removed event source mappings
         """
@@ -122,6 +124,7 @@ class StreamEventSourceListener(EventSourceListener):
             return
 
         LOG.debug(f"Starting {self.source_type()} event source listener coordinator thread")
+        self._invoke_adapter = invoke_adapter or EventSourceLegacyAdapter()
         counter += 1
         self._COORDINATOR_THREAD = FuncThread(
             self._monitor_stream_event_sources, name=f"stream-listener-{counter}"
@@ -155,6 +158,17 @@ class StreamEventSourceListener(EventSourceListener):
                 return False, status_code
             return True, status_code
         return False, 500
+
+    def _get_lambda_event_filters_for_arn(self, function_arn: str, queue_arn: str):
+        result = []
+        sources = self._invoke_adapter.get_event_sources(queue_arn)
+        filtered_sources = [s for s in sources if s["FunctionArn"] == function_arn]
+
+        for fs in filtered_sources:
+            fc = fs.get("FilterCriteria")
+            if fc:
+                result.append(fc)
+        return result
 
     def _listen_to_shard_and_invoke_lambda(self, params: Dict):
         """
@@ -195,7 +209,9 @@ class StreamEventSourceListener(EventSourceListener):
                 ShardIterator=shard_iterator, Limit=batch_size
             )
             records = records_response.get("Records")
-            event_filter_criterias = get_lambda_event_filters_for_arn(function_arn, stream_arn)
+            event_filter_criterias = self._get_lambda_event_filters_for_arn(
+                function_arn, stream_arn
+            )
             if len(event_filter_criterias) > 0:
                 records = filter_stream_records(records, event_filter_criterias)
 
