@@ -28,6 +28,7 @@ from localstack.services.awslambda.invocation.runtime_environment import (
     RuntimeStatus,
 )
 from localstack.services.awslambda.invocation.runtime_executor import get_runtime_executor
+from localstack.services.awslambda.lambda_executors import InvocationException
 from localstack.utils.aws import dead_letter_queue
 from localstack.utils.cloudwatch.cloudwatch_util import store_cloudwatch_logs
 from localstack.utils.strings import to_str, truncate
@@ -329,7 +330,7 @@ class LambdaVersionManager(ServiceEndpoint):
             )
 
     def process_event_destinations(
-        self, invocation_result: InvocationResult | InvocationError
+        self, invocation_result: InvocationResult | InvocationError, original_payload: bytes
     ) -> None:
         LOG.debug("Got event invocation with id %s", invocation_result.invocation_id)
 
@@ -341,8 +342,8 @@ class LambdaVersionManager(ServiceEndpoint):
             dead_letter_queue._send_to_dead_letter_queue(
                 source_arn=self.function_arn,
                 dlq_arn=self.function_version.config.dead_letter_arn,
-                event=json.loads(to_str(invocation_result.payload)),
-                error="failed",  # TODO
+                event=json.loads(to_str(original_payload)),
+                error=InvocationException(message="hi", result=to_str(invocation_result.payload)),
             )
 
         # 2. Handle actual destination setup
@@ -364,7 +365,10 @@ class LambdaVersionManager(ServiceEndpoint):
         if running_invocation.invocation.invocation.invocation_type == "RequestResponse":
             running_invocation.invocation.result_future.set_result(invocation_result)
         else:
-            self.process_event_destinations(invocation_result=invocation_result)
+            self.process_event_destinations(
+                invocation_result=invocation_result,
+                original_payload=running_invocation.invocation.invocation.payload,
+            )
 
         # mark executor available again
         executor.invocation_done()

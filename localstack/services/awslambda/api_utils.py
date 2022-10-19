@@ -8,6 +8,7 @@ from typing import TYPE_CHECKING, Any, Optional
 from localstack.aws.api import lambda_ as api_spec
 from localstack.aws.api.lambda_ import (
     AliasConfiguration,
+    DeadLetterConfig,
     EnvironmentResponse,
     EphemeralStorage,
     FunctionConfiguration,
@@ -322,6 +323,12 @@ def map_config_out(
 
     if version.config.architectures:
         optional_kwargs["Architectures"] = version.config.architectures
+
+    if version.config.dead_letter_arn:
+        optional_kwargs["DeadLetterConfig"] = DeadLetterConfig(
+            TargetArn=version.config.dead_letter_arn
+        )
+
     if version.config.environment is not None:
         optional_kwargs["Environment"] = EnvironmentResponse(
             Variables=version.config.environment

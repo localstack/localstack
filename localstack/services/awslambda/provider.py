@@ -474,6 +474,7 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
                     ephemeral_storage=LambdaEphemeralStorage(
                         size=request.get("EphemeralStorage", {}).get("Size", 512)
                     ),
+                    dead_letter_arn=request.get("DeadLetterConfig", {}).get("TargetArn"),
                     state=VersionState(
                         state=State.Pending,
                         code=StateReasonCode.Creating,
@@ -539,6 +540,9 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
 
         if "MemorySize" in request:
             replace_kwargs["memory_size"] = request["MemorySize"]
+
+        if "DeadLetterConfig" in request:
+            replace_kwargs["dead_letter_arn"] = request.get("DeadLetterConfig", {}).get("TargetArn")
 
         if "Runtime" in request:
             if request["Runtime"] not in IMAGE_MAPPING:
