@@ -37,7 +37,7 @@ class SimpleRequestsClient(HttpClient):
         """
         response = requests.request(
             method=request.method,
-            url=request.url,
+            url=request.base_url,
             params=request.args,
             headers=request.headers,
             data=restore_payload(request),

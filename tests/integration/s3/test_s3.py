@@ -301,7 +301,8 @@ class TestS3:
 
     @pytest.mark.aws_validated
     @pytest.mark.skip_snapshot_verify(
-        condition=is_old_provider, paths=["$..VersionId", "$..ContentLanguage"]
+        condition=is_old_provider,
+        paths=["$..VersionId", "$..ContentLanguage", "$..BucketKeyEnabled"],
     )
     def test_copy_object_kms(self, s3_client, s3_bucket, kms_create_key, snapshot):
         snapshot.add_transformer(snapshot.transform.s3_api())
@@ -1514,13 +1515,31 @@ class TestS3:
         snapshot.match("get-obj-after-tag-deletion", s3_obj)
 
     @pytest.mark.aws_validated
+    @pytest.mark.skipif(condition=LEGACY_S3_PROVIDER, reason="Not implemented in old provider")
+    def test_delete_non_existing_keys_quiet(self, s3_client, s3_bucket, snapshot):
+        object_key = "test-key-nonexistent"
+        s3_client.put_object(Bucket=s3_bucket, Key=object_key, Body="something")
+        response = s3_client.delete_objects(
+            Bucket=s3_bucket,
+            Delete={
+                "Objects": [{"Key": object_key}, {"Key": "dummy1"}, {"Key": "dummy2"}],
+                "Quiet": True,
+            },
+        )
+        snapshot.match("deleted-resp", response)
+        assert "Deleted" not in response
+        assert "Errors" not in response
+
+    @pytest.mark.aws_validated
     @pytest.mark.skip_snapshot_verify(condition=is_old_provider, paths=["$..VersionId"])
     def test_delete_non_existing_keys(self, s3_client, s3_bucket, snapshot):
         object_key = "test-key-nonexistent"
         s3_client.put_object(Bucket=s3_bucket, Key=object_key, Body="something")
         response = s3_client.delete_objects(
             Bucket=s3_bucket,
-            Delete={"Objects": [{"Key": object_key}, {"Key": "dummy1"}, {"Key": "dummy2"}]},
+            Delete={
+                "Objects": [{"Key": object_key}, {"Key": "dummy1"}, {"Key": "dummy2"}],
+            },
         )
         response["Deleted"].sort(key=itemgetter("Key"))
         snapshot.match("deleted-resp", response)

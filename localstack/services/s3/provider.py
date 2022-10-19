@@ -1,6 +1,6 @@
 import logging
 import os
-from typing import IO, Dict
+from typing import IO, Dict, List
 from urllib.parse import parse_qs, quote, urlencode, urlparse, urlunparse
 
 import moto.s3.responses as moto_s3_responses
@@ -9,10 +9,12 @@ from localstack import config
 from localstack.aws.accounts import get_aws_account_id
 from localstack.aws.api import CommonServiceException, RequestContext, ServiceException, handler
 from localstack.aws.api.s3 import (
+    MFA,
     AccessControlPolicy,
     AccountId,
     Body,
     BucketName,
+    BypassGovernanceRetention,
     ChecksumAlgorithm,
     CompleteMultipartUploadOutput,
     CompleteMultipartUploadRequest,
@@ -21,10 +23,12 @@ from localstack.aws.api.s3 import (
     CopyObjectRequest,
     CreateBucketOutput,
     CreateBucketRequest,
+    Delete,
     DeleteObjectOutput,
     DeleteObjectRequest,
     DeleteObjectTaggingOutput,
     DeleteObjectTaggingRequest,
+    DeleteResult,
     ETag,
     GetBucketAclOutput,
     GetBucketLifecycleConfigurationOutput,
@@ -52,6 +56,7 @@ from localstack.aws.api.s3 import (
     NoSuchLifecycleConfiguration,
     NoSuchWebsiteConfiguration,
     NotificationConfiguration,
+    ObjectIdentifier,
     ObjectKey,
     PostResponse,
     PutBucketAclRequest,
@@ -65,6 +70,7 @@ from localstack.aws.api.s3 import (
     PutObjectTaggingRequest,
     ReplicationConfiguration,
     ReplicationConfigurationNotFoundError,
+    RequestPayer,
     S3Api,
     SkipValidation,
 )
@@ -100,6 +106,7 @@ from localstack.services.s3.utils import (
 from localstack.services.s3.virtual_host import register_virtual_host_routes
 from localstack.services.s3.website_hosting import register_website_hosting_routes
 from localstack.utils.aws import aws_stack
+from localstack.utils.collections import get_safe
 from localstack.utils.patch import patch
 
 LOG = logging.getLogger(__name__)
@@ -355,6 +362,41 @@ class S3Provider(S3Api, ServiceLifecycleHook):
         self._notify(context, s3_notification_ctx)
 
         return response
+
+    def delete_objects(
+        self,
+        context: RequestContext,
+        bucket: BucketName,
+        delete: Delete,
+        mfa: MFA = None,
+        request_payer: RequestPayer = None,
+        bypass_governance_retention: BypassGovernanceRetention = None,
+        expected_bucket_owner: AccountId = None,
+        checksum_algorithm: ChecksumAlgorithm = None,
+    ) -> DeleteResult:
+        objects: List[ObjectIdentifier] = delete.get("Objects")
+        deleted_objects = {}
+        quiet = delete.get("Quiet", False)
+        for object in objects:
+            key = object["Key"]
+            # create the notification context before deleting the object, to be able to retrieve its properties
+            s3_notification_ctx = S3EventNotificationContext.from_request_context(
+                context, key_name=key, allow_non_existing_key=True
+            )
+
+            deleted_objects[key] = s3_notification_ctx
+        result: DeleteResult = call_moto(context)
+        for deleted in result.get("Deleted"):
+            if deleted_objects.get(deleted["Key"]):
+                self._notify(context, deleted_objects.get(deleted["Key"]))
+
+        if not quiet:
+            return result
+
+        #  In quiet mode the response includes only keys where the delete action encountered an error.
+        #  For a successful deletion, the action does not return any information about the delete in the response body.
+        result.pop("Deleted", "")
+        return result
 
     @handler("CompleteMultipartUpload", expand=False)
     def complete_multipart_upload(
@@ -1001,6 +1043,19 @@ def apply_moto_patches():
         except TypeError:
             tags = {}
         return tags
+
+    @patch(moto_s3_responses.S3Response.is_delete_keys)
+    def s3_response_is_delete_keys(fn, self, request, path, bucket_name):
+        if self.subdomain_based_buckets(request):
+            # Temporary fix until moto supports x-id and DeleteObjects (#3931)
+            query = self._get_querystring(request.url)
+            is_delete_keys_v3 = (
+                query and ("delete" in query) and get_safe(query, "$.x-id.0") == "DeleteObjects"
+            )
+            return is_delete_keys_v3 or moto_s3_responses.is_delete_keys(request, path)
+        else:
+            path = path.rstrip("=")
+            return fn(self, request, path, bucket_name)
 
 
 def register_custom_handlers():

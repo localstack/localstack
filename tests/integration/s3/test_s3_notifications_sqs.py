@@ -304,6 +304,49 @@ class TestS3NotificationsToSQS:
         assert events[2]["s3"]["bucket"]["name"] == bucket_name
         assert events[2]["s3"]["object"]["key"] == src_key
 
+    @pytest.mark.skipif(condition=LEGACY_S3_PROVIDER, reason="Not implemented in old provider")
+    @pytest.mark.aws_validated
+    def test_delete_objects(
+        self,
+        s3_client,
+        sqs_client,
+        s3_create_bucket,
+        sqs_create_queue,
+        s3_create_sqs_bucket_notification,
+        snapshot,
+    ):
+        snapshot.add_transformer(snapshot.transform.sqs_api())
+        snapshot.add_transformer(snapshot.transform.s3_api())
+        snapshot.add_transformer(snapshot.transform.jsonpath("$..s3.object.key", "object-key"))
+
+        # setup fixture
+        bucket_name = s3_create_bucket()
+        queue_url = sqs_create_queue()
+        s3_create_sqs_bucket_notification(bucket_name, queue_url, ["s3:ObjectRemoved:*"])
+
+        key = "key-%s" % short_uid()
+
+        s3_client.put_object(Bucket=bucket_name, Key=key, Body="something")
+
+        # event3 = DeleteObject
+        s3_client.delete_objects(
+            Bucket=bucket_name,
+            Delete={
+                "Objects": [{"Key": key}, {"Key": "dummy1"}, {"Key": "dummy2"}],
+                "Quiet": True,
+            },
+        )
+
+        # delete_objects behaves like it deletes non-existing objects as well -> also events are triggered
+        events = sqs_collect_s3_events(sqs_client, queue_url, 3)
+        assert len(events) == 3, f"unexpected number of events in {events}"
+        events.sort(key=lambda x: x["s3"]["object"]["key"])
+
+        snapshot.match("receive_messages", {"messages": events})
+        assert events[2]["eventName"] == "ObjectRemoved:Delete"
+        assert events[2]["s3"]["bucket"]["name"] == bucket_name
+        assert events[2]["s3"]["object"]["key"] == key
+
     @pytest.mark.aws_validated
     @pytest.mark.skip_snapshot_verify(
         condition=lambda: LEGACY_S3_PROVIDER, paths=["$..s3.object.eTag", "$..s3.object.versionId"]
