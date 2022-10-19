@@ -227,7 +227,6 @@ class SQSEventSourceListener(EventSourceListener):
 
         # all messages were filtered out
         if not len(records) > 0:
-            # return True
             return
 
         event = {"Records": records}
