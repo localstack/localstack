@@ -100,8 +100,7 @@ def extract_account_id_from_access_key_id(access_key_id: str) -> str:
 
 def get_account_id_from_access_key_id(access_key_id: str) -> str:
     """Return the Account ID associated the Access Key ID."""
-    # This utility ignores IAM mappings.
-    # For now, we assume the client sends Account ID in Access Key ID field.
+    # For now, we assume the client sends Account ID or an IAM Access Key ID in Access Key ID field.
 
     if re.match(r"\d{12}", access_key_id):
         return access_key_id
