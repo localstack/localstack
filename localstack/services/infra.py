@@ -440,7 +440,9 @@ def start_infra(asynchronous=False, apis=None):
 
 def do_start_infra(asynchronous, apis, is_in_docker):
     if config.DEVELOP:
-        install.install_debugpy_and_dependencies()
+        from localstack.packages.debugpy import debugpy_package
+
+        debugpy_package.install()
         import debugpy
 
         LOG.info("Starting debug server at: %s:%s", constants.BIND_HOST, config.DEVELOP_PORT)

@@ -39,11 +39,6 @@ URL_ASPECTJRT = f"{MAVEN_REPO_URL}/org/aspectj/aspectjrt/1.9.7/aspectjrt-1.9.7.j
 URL_ASPECTJWEAVER = f"{MAVEN_REPO_URL}/org/aspectj/aspectjweaver/1.9.7/aspectjweaver-1.9.7.jar"
 JAR_URLS = [URL_ASPECTJRT, URL_ASPECTJWEAVER]
 
-
-# debugpy module
-DEBUGPY_MODULE = "debugpy"
-DEBUGPY_DEPENDENCIES = ["gcc", "python3-dev", "musl-dev"]
-
 # Target version for javac, to ensure compatibility with earlier JREs
 JAVAC_TARGET_VERSION = "1.8"
 
@@ -200,22 +195,6 @@ def install_all_components():
     # install dependencies - make sure that install_components(..) is called before hooks.install below!
     install_components(DEFAULT_SERVICE_PORTS.keys())
     hooks.install.run()
-
-
-def install_debugpy_and_dependencies():
-    try:
-        import debugpy
-
-        assert debugpy
-        logging.debug("Debugpy module already Installed")
-    except ModuleNotFoundError:
-        logging.debug("Installing Debugpy module")
-        import pip
-
-        if hasattr(pip, "main"):
-            pip.main(["install", DEBUGPY_MODULE])
-        else:
-            pip._internal.main(["install", DEBUGPY_MODULE])
 
 
 # -----------------
