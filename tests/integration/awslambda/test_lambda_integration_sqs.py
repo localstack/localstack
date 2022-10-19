@@ -777,7 +777,6 @@ def test_report_batch_item_failures_empty_json_batch_succeeds(
 
 
 @pytest.mark.skip_snapshot_verify(
-    condition=is_old_provider,
     paths=[
         # create event source mapping attributes
         "$..FunctionResponseTypes",
