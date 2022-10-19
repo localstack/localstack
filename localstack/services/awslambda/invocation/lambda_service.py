@@ -128,7 +128,7 @@ class LambdaService:
         """
         Synchronously create a function version (manager)
         Should only be called on publishing new versions, which basically clone an existing one.
-        The published version should already be contained in the lambda state.
+        The new version needs to be added to the lambda store before invoking this.
         After successful completion of this method, the lambda version stored will be modified to be active, with a new revision id.
         It will then be active for execution, and should be retrieved again from the store before returning the data over the API.
 
