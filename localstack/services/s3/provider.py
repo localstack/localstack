@@ -52,12 +52,14 @@ from localstack.aws.api.s3 import (
     ListObjectsRequest,
     ListObjectsV2Output,
     ListObjectsV2Request,
+    NoSuchBucket,
     NoSuchKey,
     NoSuchLifecycleConfiguration,
     NoSuchWebsiteConfiguration,
     NotificationConfiguration,
     ObjectIdentifier,
     ObjectKey,
+    ObjectLockToken,
     PostResponse,
     PutBucketAclRequest,
     PutBucketLifecycleConfigurationRequest,
@@ -106,8 +108,10 @@ from localstack.services.s3.utils import (
 from localstack.services.s3.virtual_host import register_virtual_host_routes
 from localstack.services.s3.website_hosting import register_website_hosting_routes
 from localstack.utils.aws import aws_stack
+from localstack.utils.aws.aws_stack import s3_bucket_name
 from localstack.utils.collections import get_safe
 from localstack.utils.patch import patch
+from localstack.utils.strings import short_uid
 
 LOG = logging.getLogger(__name__)
 
@@ -464,22 +468,60 @@ class S3Provider(S3Api, ServiceLifecycleHook):
         bucket = get_bucket_from_moto(moto_backend, bucket=bucket_name)
         return GetBucketRequestPaymentOutput(Payer=bucket.payer)
 
+    def put_bucket_replication(
+        self,
+        context: RequestContext,
+        bucket: BucketName,
+        replication_configuration: ReplicationConfiguration,
+        content_md5: ContentMD5 = None,
+        checksum_algorithm: ChecksumAlgorithm = None,
+        token: ObjectLockToken = None,
+        expected_bucket_owner: AccountId = None,
+    ) -> None:
+        moto_backend = get_moto_s3_backend(context)
+        moto_bucket = get_bucket_from_moto(moto_backend, bucket=bucket)
+        if not moto_bucket.is_versioned:
+            raise InvalidRequest(
+                "Versioning must be 'Enabled' on the bucket to apply a replication configuration"
+            )
+
+        for rule in replication_configuration.get("Rules", {}):
+            if "ID" not in rule:
+                rule["ID"] = short_uid()
+
+        store = self.get_store()
+        for rule in replication_configuration.get("Rules", []):
+            dst = rule.get("Destination", {}).get("Bucket")
+            dst_bucket_name = s3_bucket_name(dst)
+            dst_bucket = None
+            try:
+                dst_bucket = get_bucket_from_moto(moto_backend, bucket=dst_bucket_name)
+            except NoSuchBucket:
+                # according to AWS testing it returns in this case the same exception as if versioning was disabled
+                pass
+            if not dst_bucket or not dst_bucket.is_versioned:
+                raise InvalidRequest("Destination bucket must have versioning enabled.")
+
+        # TODO more validation on input
+        store.bucket_replication[bucket] = replication_configuration
+
     def get_bucket_replication(
         self, context: RequestContext, bucket: BucketName, expected_bucket_owner: AccountId = None
     ) -> GetBucketReplicationOutput:
+        # test if bucket exists in moto
         moto_backend = get_moto_s3_backend(context)
-        bucket = get_bucket_from_moto(moto_backend, bucket=bucket)
-        replication = getattr(bucket, "replication", None)
+        get_bucket_from_moto(moto_backend, bucket=bucket)
+
+        store = self.get_store()
+        replication = store.bucket_replication.get(bucket, None)
         if not replication:
             ex = ReplicationConfigurationNotFoundError(
                 "The replication configuration was not found"
             )
             ex.BucketName = bucket
             raise ex
-        replication_config = ReplicationConfiguration(
-            Role=replication.get("Role", ""), Rules=replication.get("Rule", [])
-        )
-        return GetBucketReplicationOutput(ReplicationConfiguration=replication_config)
+
+        return GetBucketReplicationOutput(ReplicationConfiguration=replication)
 
     def get_bucket_lifecycle(
         self, context: RequestContext, bucket: BucketName, expected_bucket_owner: AccountId = None
@@ -1046,6 +1088,10 @@ def apply_moto_patches():
 
     @patch(moto_s3_responses.S3Response.is_delete_keys)
     def s3_response_is_delete_keys(fn, self, request, path, bucket_name):
+        """
+        Old provider had a fix for a ticket, concerning 'x-id' - there is no documentation on AWS about this, but it is probably still valid
+        Additional fix for testing if this is a "delete_objects" request, by removing trailing "=" from the path
+        """
         if self.subdomain_based_buckets(request):
             # Temporary fix until moto supports x-id and DeleteObjects (#3931)
             query = self._get_querystring(request.url)

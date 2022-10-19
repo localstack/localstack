@@ -226,6 +226,90 @@ class TestS3:
         condition=LEGACY_S3_PROVIDER,
         reason="exceptions not raised",
     )
+    def test_replication_config_without_filter(
+        self, s3_client, s3_create_bucket, create_iam_role_with_policy, snapshot
+    ):
+        snapshot.add_transformer(snapshot.transform.s3_api())
+        snapshot.add_transformer(
+            snapshot.transform.jsonpath(
+                "$..ReplicationConfiguration.Role", "role", reference_replacement=False
+            )
+        )
+        snapshot.add_transformer(
+            snapshot.transform.jsonpath(
+                "$..Destination.Bucket", "dest-bucket", reference_replacement=False
+            )
+        )
+        bucket_src = f"src-{short_uid()}"
+        bucket_dst = f"dst-{short_uid()}"
+        role_name = f"replication_role_{short_uid()}"
+        policy_name = f"replication_policy_{short_uid()}"
+
+        role_arn = create_iam_role_with_policy(
+            RoleName=role_name,
+            PolicyName=policy_name,
+            RoleDefinition=S3_ASSUME_ROLE_POLICY,
+            PolicyDefinition=S3_POLICY,
+        )
+        s3_create_bucket(Bucket=bucket_src)
+        # enable versioning on src
+        s3_client.put_bucket_versioning(
+            Bucket=bucket_src, VersioningConfiguration={"Status": "Enabled"}
+        )
+
+        s3_create_bucket(Bucket=bucket_dst)
+
+        replication_config = {
+            "Role": role_arn,
+            "Rules": [
+                {
+                    "ID": "rtc",
+                    "Priority": 0,
+                    "Filter": {},
+                    "Status": "Disabled",
+                    "Destination": {
+                        "Bucket": "arn:aws:s3:::does-not-exist",
+                        "StorageClass": "STANDARD",
+                        "ReplicationTime": {"Status": "Enabled", "Time": {"Minutes": 15}},
+                        "Metrics": {"Status": "Enabled", "EventThreshold": {"Minutes": 15}},
+                    },
+                    "DeleteMarkerReplication": {"Status": "Disabled"},
+                }
+            ],
+        }
+        with pytest.raises(ClientError) as e:
+            s3_client.put_bucket_replication(
+                ReplicationConfiguration=replication_config, Bucket=bucket_src
+            )
+        snapshot.match("expected_error_dest_does_not_exist", e.value.response)
+
+        # set correct destination
+        replication_config["Rules"][0]["Destination"]["Bucket"] = f"arn:aws:s3:::{bucket_dst}"
+
+        with pytest.raises(ClientError) as e:
+            s3_client.put_bucket_replication(
+                ReplicationConfiguration=replication_config, Bucket=bucket_src
+            )
+        snapshot.match("expected_error_dest_versioning_disabled", e.value.response)
+
+        # enable versioning on destination bucket
+        s3_client.put_bucket_versioning(
+            Bucket=bucket_dst, VersioningConfiguration={"Status": "Enabled"}
+        )
+
+        response = s3_client.put_bucket_replication(
+            ReplicationConfiguration=replication_config, Bucket=bucket_src
+        )
+        snapshot.match("put-bucket-replication", response)
+
+        response = s3_client.get_bucket_replication(Bucket=bucket_src)
+        snapshot.match("get-bucket-replication", response)
+
+    @pytest.mark.aws_validated
+    @pytest.mark.xfail(
+        condition=LEGACY_S3_PROVIDER,
+        reason="exceptions not raised",
+    )
     def test_replication_config(
         self, s3_client, s3_create_bucket, create_iam_role_with_policy, snapshot
     ):
@@ -263,7 +347,7 @@ class TestS3:
             Bucket=bucket_dst, VersioningConfiguration={"Status": "Enabled"}
         )
 
-        # expect error if versioning is disabled
+        # expect error if versioning is disabled on src-bucket
         with pytest.raises(ClientError) as e:
             s3_client.get_bucket_replication(Bucket=bucket_src)
         snapshot.match("expected_error_no_replication_set", e.value.response)

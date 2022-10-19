@@ -3901,5 +3901,72 @@
         }
       }
     }
+  },
+  "tests/integration/s3/test_s3.py::TestS3::test_replication_config_without_filter": {
+    "recorded-date": "19-10-2022, 15:32:31",
+    "recorded-content": {
+      "expected_error_dest_does_not_exist": {
+        "Error": {
+          "Code": "InvalidRequest",
+          "Message": "Destination bucket must have versioning enabled."
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "expected_error_dest_versioning_disabled": {
+        "Error": {
+          "Code": "InvalidRequest",
+          "Message": "Destination bucket must have versioning enabled."
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "put-bucket-replication": {
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "get-bucket-replication": {
+        "ReplicationConfiguration": {
+          "Role": "role",
+          "Rules": [
+            {
+              "DeleteMarkerReplication": {
+                "Status": "Disabled"
+              },
+              "Destination": {
+                "Bucket": "dest-bucket",
+                "Metrics": {
+                  "EventThreshold": {
+                    "Minutes": 15
+                  },
+                  "Status": "Enabled"
+                },
+                "ReplicationTime": {
+                  "Status": "Enabled",
+                  "Time": {
+                    "Minutes": 15
+                  }
+                },
+                "StorageClass": "STANDARD"
+              },
+              "Filter": {},
+              "ID": "rtc",
+              "Priority": 0,
+              "Status": "Disabled"
+            }
+          ]
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
   }
 }
