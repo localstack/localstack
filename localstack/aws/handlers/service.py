@@ -3,7 +3,7 @@ import logging
 import traceback
 from collections import defaultdict
 from functools import lru_cache
-from typing import Any, Dict, Optional, Union
+from typing import Dict
 
 from botocore.model import OperationModel, ServiceModel
 
@@ -17,7 +17,8 @@ from ..client import parse_response, parse_service_exception
 from ..protocol.parser import RequestParser, create_parser
 from ..protocol.serializer import create_serializer
 from ..protocol.service_router import determine_aws_service_name
-from ..skeleton import Skeleton, create_skeleton
+from ..provider import ServiceProvider
+from ..skeleton import Skeleton
 from ..spec import load_service
 
 LOG = logging.getLogger(__name__)
@@ -127,11 +128,8 @@ class ServiceRequestRouter(Handler):
 
         self.handlers[key] = handler
 
-    def add_provider(self, provider: Any, service: Optional[Union[str, ServiceModel]] = None):
-        if not service:
-            service = provider.service
-
-        self.add_skeleton(create_skeleton(service, provider))
+    def add_provider(self, provider: ServiceProvider):
+        self.add_skeleton(provider.skeleton)
 
     def add_skeleton(self, skeleton: Skeleton):
         """

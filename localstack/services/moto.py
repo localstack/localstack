@@ -26,7 +26,8 @@ from localstack.aws.forwarder import (
     create_aws_request_context,
     dispatch_to_backend,
 )
-from localstack.aws.skeleton import DispatchTable
+from localstack.aws.provider import ServiceApi, ServiceProvider
+from localstack.aws.skeleton import DispatchTable, Skeleton, create_skeleton
 from localstack.constants import DEFAULT_AWS_ACCOUNT_ID
 from localstack.http import Response
 
@@ -93,6 +94,22 @@ def MotoFallbackDispatcher(provider: object) -> DispatchTable:
     :return: a modified DispatchTable
     """
     return ForwardingFallbackDispatcher(provider, _proxy_moto)
+
+
+def MotoFallbackSkeleton(provider: ServiceApi) -> Skeleton:
+    """
+    Creates a special Skeleton that falls back to call_moto if the underlying provider raises a NotImplementedError for
+    the invoked operation.
+
+    :param provider: the ASF provider
+    :return: a modified Skeleton
+    """
+    return create_skeleton(provider.service, MotoFallbackDispatcher(provider))
+
+
+class MotoFallbackServiceProvider(ServiceProvider):
+    def _create_skeleton(self, provider) -> MotoFallbackSkeleton:
+        return MotoFallbackSkeleton(provider)
 
 
 def dispatch_to_moto(context: RequestContext) -> Response:

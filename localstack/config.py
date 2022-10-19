@@ -85,6 +85,9 @@ class Directories:
         self.init = init
         self.logs = logs
 
+    def __getattribute__(self, item):
+        return super(Directories, self).__getattribute__(item)
+
     @staticmethod
     def defaults() -> "Directories":
         """Returns Localstack directory paths based on the localstack filesystem hierarchy."""

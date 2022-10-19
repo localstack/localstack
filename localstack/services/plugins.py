@@ -12,6 +12,7 @@ from readerwriterlock import rwlock
 from werkzeug import Request
 
 from localstack import config
+from localstack.aws import provider
 from localstack.config import ServiceProviderConfig
 from localstack.utils.bootstrap import get_enabled_apis, log_duration
 from localstack.utils.functions import call_safe
@@ -119,18 +120,7 @@ class ServiceStateException(ServiceException):
     pass
 
 
-class ServiceLifecycleHook:
-    def on_after_init(self):
-        pass
-
-    def on_before_start(self):
-        pass
-
-    def on_before_stop(self):
-        pass
-
-    def on_exception(self):
-        pass
+ServiceLifecycleHook = provider.ServiceLifecycleHook
 
 
 class BackendStateLifecycle(abc.ABC):
@@ -215,6 +205,23 @@ class Service:
 
     def is_enabled(self):
         return True
+
+
+class ServiceProviderAdapter(Service):
+    # this is a hack to adapt the new system to the old one until we can completely get rid of it
+
+    service_provider: provider.ServiceProvider
+
+    def __init__(self, service_provider: provider.ServiceProvider):
+        self.service_provider = service_provider
+
+        from localstack.aws.proxy import AwsApiListener
+
+        super(ServiceProviderAdapter, self).__init__(
+            name=service_provider.service,
+            listener=AwsApiListener(service_provider.service, service_provider.skeleton),
+            lifecycle_hook=service_provider.service_lifecycle_hook,
+        )
 
 
 class ServiceState(Enum):
@@ -391,7 +398,13 @@ class ServicePlugin(Plugin):
         raise NotImplementedError
 
     def load(self):
-        self.service = self.create_service()
+        service = self.create_service()
+
+        if isinstance(service, provider.ServiceProvider):
+            self.service = ServiceProviderAdapter(service)
+        else:
+            self.service = service
+
         return self.service
 
 

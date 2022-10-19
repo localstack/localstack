@@ -4,7 +4,7 @@ import threading
 from typing import Optional
 
 from localstack.http import Response
-from localstack.services.plugins import Service, ServiceManager
+from localstack.services.plugins import Service, ServiceManager, ServiceProviderAdapter
 from localstack.utils.sync import SynchronizedDefaultDict
 
 from ..api import RequestContext
@@ -57,7 +57,10 @@ class ServiceLoader(Handler):
             # try again to avoid race conditions
             if service_operation in request_router.handlers:
                 return
-            if isinstance(service_plugin, Service):
+
+            if isinstance(service_plugin, ServiceProviderAdapter):
+                request_router.add_provider(service_plugin.service_provider)
+            elif isinstance(service_plugin, Service):
                 if type(service_plugin.listener) == AwsApiListener:
                     request_router.add_skeleton(service_plugin.listener.skeleton)
                 else:

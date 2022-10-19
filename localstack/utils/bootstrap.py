@@ -528,7 +528,7 @@ def prepare_docker_start():
 
     os.environ[ENV_SCRIPT_STARTING_DOCKER] = "1"
 
-    # make sure temp folder exists
+    # only needed for legacy mode since we mount the entire directory
     mkdir(config.dirs.tmp)
     try:
         chmod_r(config.dirs.tmp, 0o777)

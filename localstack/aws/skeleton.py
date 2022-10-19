@@ -26,7 +26,10 @@ def create_skeleton(service: Union[str, ServiceModel], delegate: Any):
     if isinstance(service, str):
         service = load_service(service)
 
-    return Skeleton(service, create_dispatch_table(delegate))
+    if not isinstance(delegate, dict):
+        delegate = create_dispatch_table(delegate)
+
+    return Skeleton(service, delegate)
 
 
 class HandlerAttributes(NamedTuple):

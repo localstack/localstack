@@ -1,7 +1,8 @@
 from localstack import config
 from localstack.aws.forwarder import HttpFallbackDispatcher
+from localstack.aws.provider import ServiceProvider
 from localstack.aws.proxy import AwsApiListener
-from localstack.services.moto import MotoFallbackDispatcher
+from localstack.services.moto import MotoFallbackDispatcher, MotoFallbackServiceProvider
 from localstack.services.plugins import Service, aws_provider
 
 
@@ -101,51 +102,36 @@ def dynamodbstreams():
 @aws_provider()
 def ec2():
     from localstack.services.ec2.provider import Ec2Provider
-    from localstack.services.moto import MotoFallbackDispatcher
 
-    provider = Ec2Provider()
-    return Service(
-        "ec2",
-        listener=AwsApiListener("ec2", MotoFallbackDispatcher(provider)),
-    )
+    return MotoFallbackServiceProvider(Ec2Provider())
 
 
 @aws_provider()
 def es():
-    from localstack.aws.proxy import AwsApiListener
     from localstack.services.es.provider import EsProvider
 
-    provider = EsProvider()
-    return Service("es", listener=AwsApiListener("es", provider))
+    return ServiceProvider(EsProvider())
 
 
 @aws_provider()
 def firehose():
-    from localstack.aws.proxy import AwsApiListener
     from localstack.services.firehose.provider import FirehoseProvider
 
-    provider = FirehoseProvider()
-    return Service("firehose", listener=AwsApiListener("firehose", provider))
+    return ServiceProvider(FirehoseProvider())
 
 
 @aws_provider()
 def iam():
     from localstack.services.iam.provider import IamProvider
-    from localstack.services.moto import MotoFallbackDispatcher
 
-    provider = IamProvider()
-    return Service(
-        "iam",
-        listener=AwsApiListener("iam", MotoFallbackDispatcher(provider)),
-    )
+    return MotoFallbackServiceProvider(IamProvider())
 
 
 @aws_provider()
 def sts():
     from localstack.services.sts.provider import StsProvider
 
-    provider = StsProvider()
-    return Service("sts", listener=AwsApiListener("sts", MotoFallbackDispatcher(provider)))
+    return MotoFallbackServiceProvider(StsProvider())
 
 
 @aws_provider(api="kinesis", name="legacy")
@@ -328,16 +314,13 @@ def sns():
 
 @aws_provider()
 def sqs():
-    from localstack.aws.proxy import AwsApiListener
     from localstack.services import edge
     from localstack.services.sqs import query_api
     from localstack.services.sqs.provider import SqsProvider
 
     query_api.register(edge.ROUTER)
 
-    provider = SqsProvider()
-
-    return Service("sqs", listener=AwsApiListener("sqs", provider), lifecycle_hook=provider)
+    return ServiceProvider(SqsProvider())
 
 
 @aws_provider(api="sqs", name="legacy")
