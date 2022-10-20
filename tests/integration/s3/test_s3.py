@@ -16,6 +16,7 @@ from typing import TYPE_CHECKING
 from urllib.parse import SplitResult, parse_qs, quote, urlencode, urlparse, urlunsplit
 
 import boto3 as boto3
+import botocore as botocore
 import pytest
 import requests
 import xmltodict
@@ -109,6 +110,11 @@ def is_old_provider():
 
 def is_asf_provider():
     return not LEGACY_S3_PROVIDER
+
+
+@pytest.fixture(scope="function")
+def patch_s3_skip_signature_validation_false(monkeypatch):
+    monkeypatch.setattr(config, "S3_SKIP_SIGNATURE_VALIDATION", False)
 
 
 @pytest.fixture(scope="class")
@@ -2617,6 +2623,63 @@ class TestS3PresignedUrl:
     These tests pertain to S3's presigned URL feature.
     """
 
+    # # Note: This test may have side effects (via `s3_client.meta.events.register(..)`) and
+    # # may not be suitable for parallel execution
+    @pytest.mark.aws_validated
+    def test_presign_with_additional_query_params(
+        self, s3_client, s3_bucket, patch_s3_skip_signature_validation_false
+    ):
+        """related to issue: https://github.com/localstack/localstack/issues/4133"""
+
+        def add_query_param(request, **kwargs):
+            request.url += "?requestedBy=abcDEF123"
+
+        s3_client.put_object(Body="test-value", Bucket=s3_bucket, Key="test")
+        s3_presigned_client = _s3_client_custom_config(
+            Config(signature_version="s3v4"),
+            endpoint_url=_endpoint_url(),
+        )
+        s3_presigned_client.meta.events.register("before-sign.s3.GetObject", add_query_param)
+        try:
+            presign_url = s3_presigned_client.generate_presigned_url(
+                ClientMethod="get_object",
+                Params={"Bucket": s3_bucket, "Key": "test"},
+                ExpiresIn=86400,
+            )
+            assert "requestedBy=abcDEF123" in presign_url
+            response = requests.get(presign_url)
+            assert b"test-value" == response._content
+        finally:
+            s3_presigned_client.meta.events.unregister("before-sign.s3.GetObject", add_query_param)
+
+    @pytest.mark.only_localstack
+    def test_presign_check_signature_validation_for_port_permutation(
+        self, s3_client, s3_bucket, patch_s3_skip_signature_validation_false
+    ):
+        port1 = 443
+        port2 = config.EDGE_PORT
+        _endpoint_url()
+        endpoint = (
+            f"http://{config.LOCALSTACK_HOSTNAME}:{port1}"  # .replace(f":{port2}", f":{port1}")
+        )
+        s3_presign = _s3_client_custom_config(
+            Config(signature_version="s3v4"),
+            endpoint_url=endpoint,
+        )
+
+        s3_client.put_object(Body="test-value", Bucket=s3_bucket, Key="test")
+
+        presign_url = s3_presign.generate_presigned_url(
+            ClientMethod="get_object",
+            Params={"Bucket": s3_bucket, "Key": "test"},
+            ExpiresIn=86400,
+        )
+        assert f":{port1}" in presign_url
+        presign_url = presign_url.replace(f":{port1}", f":{port2}")
+
+        response = requests.get(presign_url)
+        assert b"test-value" == response._content
+
     @pytest.mark.aws_validated
     @pytest.mark.skip_snapshot_verify(
         condition=is_old_provider, paths=["$..VersionId", "$..ContentLanguage", "$..Expires"]
@@ -2694,6 +2757,36 @@ class TestS3PresignedUrl:
         snapshot.match("exception", exception)
         assert response.status_code in [400, 403]
 
+    @pytest.mark.only_localstack
+    @pytest.mark.skipif(
+        condition=LEGACY_S3_PROVIDER,
+        reason="Legacy S3 provider does not skip the signature validation",
+    )
+    def test_get_request_expires_ignored_if_validation_disabled(
+        self, s3_client, s3_bucket, monkeypatch, patch_s3_skip_signature_validation_false
+    ):
+        s3_client.put_object(Body="test-value", Bucket=s3_bucket, Key="test")
+
+        presigned_request = s3_client.generate_presigned_url(
+            ClientMethod="get_object",
+            Params={"Bucket": s3_bucket, "Key": "test"},
+            ExpiresIn=2,
+        )
+        # sleep so it expires
+        time.sleep(3)
+
+        # attempt to use the presigned request
+        response = requests.get(presigned_request)
+        # response should not be successful as it is expired -> signature will not match
+        "SignatureDoesNotMatch" in str(response.content)
+        assert response.status_code in [400, 403]
+
+        # set skip signature validation to True -> the request should now work
+        monkeypatch.setattr(config, "S3_SKIP_SIGNATURE_VALIDATION", True)
+        response = requests.get(presigned_request)
+        assert response.status_code == 200
+        assert b"test-value" == response.content
+
     @pytest.mark.aws_validated
     @pytest.mark.xfail(
         condition=LEGACY_S3_PROVIDER, reason="Policy is not validated in legacy provider"
@@ -2702,7 +2795,14 @@ class TestS3PresignedUrl:
         "signature_version",
         ["s3", "s3v4"],
     )
-    def test_post_request_malformed_policy(self, s3_client, s3_bucket, snapshot, signature_version):
+    def test_post_request_malformed_policy(
+        self,
+        s3_client,
+        s3_bucket,
+        snapshot,
+        signature_version,
+        patch_s3_skip_signature_validation_false,
+    ):
         snapshot.add_transformer(self._get_presigned_snapshot_transformers(snapshot))
         object_key = "test-presigned-malformed-policy"
 
@@ -2745,7 +2845,12 @@ class TestS3PresignedUrl:
         ["s3", "s3v4"],
     )
     def test_post_request_missing_signature(
-        self, s3_client, s3_bucket, snapshot, signature_version
+        self,
+        s3_client,
+        s3_bucket,
+        snapshot,
+        signature_version,
+        patch_s3_skip_signature_validation_false,
     ):
         snapshot.add_transformer(self._get_presigned_snapshot_transformers(snapshot))
         object_key = "test-presigned-missing-signature"
@@ -2783,7 +2888,14 @@ class TestS3PresignedUrl:
         "signature_version",
         ["s3", "s3v4"],
     )
-    def test_post_request_missing_fields(self, s3_client, s3_bucket, snapshot, signature_version):
+    def test_post_request_missing_fields(
+        self,
+        s3_client,
+        s3_bucket,
+        snapshot,
+        signature_version,
+        patch_s3_skip_signature_validation_false,
+    ):
         snapshot.add_transformer(self._get_presigned_snapshot_transformers(snapshot))
         object_key = "test-presigned-missing-fields"
 
@@ -2936,13 +3048,14 @@ class TestS3PresignedUrl:
         monkeypatch,
         snapshot,
     ):
+
         snapshot.add_transformer(self._get_presigned_snapshot_transformers(snapshot))
         snapshotted = False
-        if is_aws_cloud() and not verify_signature:
-            pytest.skip("Skipping in AWS, no point to check config patch")
-        elif verify_signature:
+        if verify_signature:
             monkeypatch.setattr(config, "S3_SKIP_SIGNATURE_VALIDATION", False)
             snapshotted = True
+        else:
+            monkeypatch.setattr(config, "S3_SKIP_SIGNATURE_VALIDATION", True)
 
         bucket_name = f"bucket-{short_uid()}"
         object_key = "test-runtime.properties"
@@ -3021,11 +3134,14 @@ class TestS3PresignedUrl:
         path=["$..Error.Expires"],
     )
     def test_s3_presigned_url_expired(
-        self, s3_bucket, s3_client, monkeypatch, signature_version, snapshot
+        self,
+        s3_bucket,
+        s3_client,
+        signature_version,
+        snapshot,
+        patch_s3_skip_signature_validation_false,
     ):
         snapshot.add_transformer(self._get_presigned_snapshot_transformers(snapshot))
-        if not is_aws_cloud():
-            monkeypatch.setattr(config, "S3_SKIP_SIGNATURE_VALIDATION", False)
 
         object_key = "key-expires-in-2"
         s3_client.put_object(Bucket=s3_bucket, Key=object_key, Body="something")
@@ -3070,11 +3186,14 @@ class TestS3PresignedUrl:
         path=["$..Error.Message"],
     )
     def test_s3_put_presigned_url_with_different_headers(
-        self, s3_bucket, s3_client, monkeypatch, signature_version, snapshot
+        self,
+        s3_bucket,
+        s3_client,
+        signature_version,
+        snapshot,
+        patch_s3_skip_signature_validation_false,
     ):
         snapshot.add_transformer(self._get_presigned_snapshot_transformers(snapshot))
-        if not is_aws_cloud():
-            monkeypatch.setattr(config, "S3_SKIP_SIGNATURE_VALIDATION", False)
 
         object_key = "key-double-header-param"
         s3_client.put_object(Bucket=s3_bucket, Key=object_key, Body="something")
@@ -3153,14 +3272,13 @@ class TestS3PresignedUrl:
 
     @pytest.mark.aws_validated
     def test_s3_put_presigned_url_same_header_and_qs_parameter(
-        self, s3_bucket, s3_client, monkeypatch, snapshot
+        self, s3_bucket, s3_client, snapshot, patch_s3_skip_signature_validation_false
     ):
         # this test tries to check if double query/header values trigger InvalidRequest like said in the documentation
         # spoiler: they do not
         # https://docs.aws.amazon.com/AmazonS3/latest/API/sigv4-query-string-auth.html#query-string-auth-v4-signing
         snapshot.add_transformer(self._get_presigned_snapshot_transformers(snapshot))
         if not is_aws_cloud():
-            monkeypatch.setattr(config, "S3_SKIP_SIGNATURE_VALIDATION", False)
             if LEGACY_S3_PROVIDER:
                 pytest.xfail(reason="Legacy S3 provider does not implement the right behaviour")
 
@@ -3224,11 +3342,14 @@ class TestS3PresignedUrl:
         ],
     )
     def test_s3_put_presigned_url_missing_sig_param(
-        self, s3_bucket, s3_client, monkeypatch, signature_version, snapshot
+        self,
+        s3_bucket,
+        s3_client,
+        signature_version,
+        snapshot,
+        patch_s3_skip_signature_validation_false,
     ):
         snapshot.add_transformer(self._get_presigned_snapshot_transformers(snapshot))
-        if not is_aws_cloud():
-            monkeypatch.setattr(config, "S3_SKIP_SIGNATURE_VALIDATION", False)
 
         object_key = "key-missing-param"
         s3_client.put_object(Bucket=s3_bucket, Key=object_key, Body="something")
@@ -3392,10 +3513,13 @@ class TestS3PresignedUrl:
         assert response.status_code == 204
 
     @pytest.mark.aws_validated
-    def test_presigned_url_with_session_token(self, s3_create_bucket_with_client, sts_client):
-        # TODO we might be skipping signature validation here...
+    def test_presigned_url_with_session_token(
+        self, s3_create_bucket_with_client, patch_s3_skip_signature_validation_false
+    ):
         bucket_name = f"bucket-{short_uid()}"
         key_name = "key"
+        sts_client = _sts_client_custom()
+
         response = sts_client.get_session_token()
 
         client = boto3.client(
@@ -3403,7 +3527,7 @@ class TestS3PresignedUrl:
             config=Config(signature_version="s3v4"),
             endpoint_url=None
             if os.environ.get("TEST_TARGET") == "AWS_CLOUD"
-            else "http://127.0.0.1:4566",
+            else f"http://{config.LOCALSTACK_HOSTNAME}:4566",
             aws_access_key_id=response["Credentials"]["AccessKeyId"],
             aws_secret_access_key=response["Credentials"]["SecretAccessKey"],
             aws_session_token=response["Credentials"]["SessionToken"],
@@ -3421,12 +3545,10 @@ class TestS3PresignedUrl:
     @pytest.mark.aws_validated
     @pytest.mark.parametrize("signature_version", ["s3", "s3v4"])
     def test_s3_get_response_header_overrides(
-        self, s3_client, s3_bucket, signature_version, monkeypatch
+        self, s3_client, s3_bucket, signature_version, patch_s3_skip_signature_validation_false
     ):
         # Signed requests may include certain header overrides in the querystring
         # https://docs.aws.amazon.com/AmazonS3/latest/API/RESTObjectGET.html
-        if not is_aws_cloud():
-            monkeypatch.setattr(config, "S3_SKIP_SIGNATURE_VALIDATION", False)
         object_key = "key-header-overrides"
         s3_client.put_object(Bucket=s3_bucket, Key=object_key, Body="something")
 
@@ -3536,11 +3658,10 @@ class TestS3PresignedUrl:
         s3_create_bucket,
         signature_version,
         use_virtual_address,
-        monkeypatch,
         snapshot,
+        patch_s3_skip_signature_validation_false,
     ):
         snapshot.add_transformer(self._get_presigned_snapshot_transformers(snapshot))
-        monkeypatch.setattr(config, "S3_SKIP_SIGNATURE_VALIDATION", False)
         bucket_name = f"presign-{short_uid()}"
 
         s3_endpoint_path_style = _endpoint_url()
@@ -3582,11 +3703,10 @@ class TestS3PresignedUrl:
         s3_create_bucket,
         signature_version,
         use_virtual_address,
-        monkeypatch,
         snapshot,
+        patch_s3_skip_signature_validation_false,
     ):
         snapshot.add_transformer(self._get_presigned_snapshot_transformers(snapshot))
-        monkeypatch.setattr(config, "S3_SKIP_SIGNATURE_VALIDATION", False)
         bucket_name = f"presign-{short_uid()}"
 
         s3_endpoint_path_style = _endpoint_url()
@@ -3693,9 +3813,8 @@ class TestS3PresignedUrl:
         s3_create_bucket,
         signature_version,
         use_virtual_address,
-        monkeypatch,
+        patch_s3_skip_signature_validation_false,
     ):
-        monkeypatch.setattr(config, "S3_SKIP_SIGNATURE_VALIDATION", False)
         # it should test if the user is sending wrong signature
         bucket_name = f"presign-{short_uid()}"
 
@@ -4947,6 +5066,20 @@ def _anon_client(service: str):
     if os.environ.get("TEST_TARGET") == "AWS_CLOUD":
         return boto3.client(service, config=conf, region_name=None)
     return aws_stack.create_external_boto_client(service, config=conf)
+
+
+def _sts_client_custom():
+    conf = botocore.config.Config()
+    if os.environ.get("TEST_TARGET") == "AWS_CLOUD":
+        return boto3.client("sts", config=conf)
+
+    return boto3.client(
+        "sts",
+        endpoint_url=f"http://{config.LOCALSTACK_HOSTNAME}:4566",
+        config=conf,
+        aws_access_key_id=TEST_AWS_ACCESS_KEY_ID,
+        aws_secret_access_key=TEST_AWS_SECRET_ACCESS_KEY,
+    )
 
 
 def _s3_client_custom_config(conf: Config, endpoint_url: str = None):
