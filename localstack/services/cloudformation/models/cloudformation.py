@@ -32,7 +32,7 @@ class CloudFormationStack(GenericBaseModel):
                 )
             output_key = parts[1]
             candidates = [
-                o["OutputValue"] for o in self.props["Outputs"] if o["OutputKey"] == output_key
+                o.get("OutputValue") for o in self.props["Outputs"] if o["OutputKey"] == output_key
             ]
             if len(candidates) == 1:
                 return candidates[0]

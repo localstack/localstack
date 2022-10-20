@@ -265,32 +265,9 @@ def extract_resource_attribute(
     if not resource and stack.resources:
         resource = stack.resources[resource_id]
 
-    if not resource_state:
-        resource_state = retrieve_resource_details(resource_id, {}, stack=stack)
-        if not resource_state:
-            raise DependencyNotYetSatisfied(
-                resource_ids=resource_id,
-                message='Unable to fetch details for resource "%s" (attribute "%s")'
-                % (resource_id, attribute),
-            )
-
-    if isinstance(resource_state, GenericBaseModel):
-        if hasattr(resource_state, "get_cfn_attribute"):
-            try:
-                return resource_state.get_cfn_attribute(attribute)
-            except Exception:
-                pass
-        raise Exception(
-            'Unable to extract attribute "%s" from "%s" model class %s'
-            % (attribute, resource_type, type(resource_state))
-        )
-
-    # extract resource specific attributes
-    # TODO: remove the code below - move into resource model classes!
-
-    resource_props = resource.get("Properties", {})
     if resource_type == "Parameter":
         result = None
+        resource_props = resource.get("Properties", {})
         param_value = resource_props.get(
             "Value",
             resource.get("Value", resource_props.get("Properties", {}).get("Value")),
@@ -302,23 +279,32 @@ def extract_resource_attribute(
         if result is not None:
             return result
         return ""
-    attribute_lower = first_char_to_lower(attribute)
-    result = resource_state.get(attribute) or resource_state.get(attribute_lower)
-    if result is None and isinstance(resource, dict):
-        result = resource_props.get(attribute) or resource_props.get(attribute_lower)
-        if result is None:
-            result = get_attr_from_model_instance(
-                resource,
-                attribute,
-                resource_type=resource_type,
-                resource_id=resource_id,
+
+    instance = resource_state if isinstance(resource_state, GenericBaseModel) else None
+    if not instance:
+        resource_state = retrieve_resource_details(resource_id, resource_state or {}, stack=stack)
+        if not resource_state:
+            raise DependencyNotYetSatisfied(
+                resource_ids=resource_id,
+                message='Unable to fetch details for resource "%s" (attribute "%s")'
+                % (resource_id, attribute),
             )
-    if is_ref_attribute:
-        for attr in ["Id", "PhysicalResourceId", "Ref"]:
-            if result is None:
-                for obj in [resource_state, resource]:
-                    result = result or obj.get(attr)
-    return result
+        instance = get_resource_model_instance(resource_id, stack=stack)
+
+    attribute_value = None
+    if is_ref_attr_or_arn:
+        attribute_value = instance.get_physical_resource_id(attribute)
+    else:
+        attribute_value = instance.get_cfn_attribute(attribute)
+
+    if not attribute_value:
+        raise Exception(
+            'Unable to extract attribute "%s" from "%s" model class %s'
+            % (attribute, resource_type, type(resource_state))
+        )
+
+    return attribute_value
+
 
 
 def canonical_resource_type(resource_type):
