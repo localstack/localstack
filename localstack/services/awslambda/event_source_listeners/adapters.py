@@ -4,7 +4,7 @@ from abc import ABC
 from concurrent.futures import Future
 
 from localstack.aws.api.lambda_ import InvocationType
-from localstack.services.awslambda import api_utils, lambda_api
+from localstack.services.awslambda import api_utils
 from localstack.services.awslambda.invocation.lambda_models import InvocationError, InvocationResult
 from localstack.services.awslambda.invocation.lambda_service import LambdaService
 from localstack.services.awslambda.invocation.models import lambda_stores
@@ -32,7 +32,9 @@ class EventSourceLegacyAdapter(EventSourceAdapter):
         pass
 
     def invoke(self, function_arn, context, payload, invocation_type, callback):
-        lambda_api.run_lambda(
+        from localstack.services.awslambda.lambda_api import run_lambda
+
+        run_lambda(
             func_arn=function_arn,
             event=payload,
             context=context,
@@ -41,7 +43,9 @@ class EventSourceLegacyAdapter(EventSourceAdapter):
         )
 
     def get_event_sources(self, source_arn: str) -> list:
-        return lambda_api.get_event_sources(source_arn=source_arn)
+        from localstack.services.awslambda.lambda_api import get_event_sources
+
+        return get_event_sources(source_arn=source_arn)
 
 
 class EventSourceAsfAdapter(EventSourceAdapter):
