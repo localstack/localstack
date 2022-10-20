@@ -2,7 +2,6 @@
 import base64
 import binascii
 import logging
-import re
 import threading
 from typing import Optional
 
@@ -102,12 +101,9 @@ def get_account_id_from_access_key_id(access_key_id: str) -> str:
     """Return the Account ID associated the Access Key ID."""
     # For now, we assume the client sends Account ID or an IAM Access Key ID in Access Key ID field.
 
-    if re.match(r"\d{12}", access_key_id):
-        return access_key_id
-    else:
-        if len(access_key_id) >= 20 and (
-            access_key_id.startswith("ASIA") or access_key_id.startswith("AKIA")
-        ):
-            return extract_account_id_from_access_key_id(access_key_id)
-        else:
-            return get_default_account_id()
+    if len(access_key_id) >= 20 and (
+        access_key_id.startswith("ASIA") or access_key_id.startswith("AKIA")
+    ):
+        return extract_account_id_from_access_key_id(access_key_id)
+
+    return get_aws_account_id()
