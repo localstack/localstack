@@ -29,7 +29,7 @@ from tests.integration.awslambda.test_lambda import (
     THIS_FOLDER,
     read_streams,
 )
-from tests.packages.lambda_java_test_libs import lambda_java_test_libs_package
+from tests.packages.lambda_java_testlibs import lambda_java_testlibs_package
 
 parametrize_python_runtimes = pytest.mark.parametrize("runtime", PYTHON_TEST_RUNTIMES)
 parametrize_node_runtimes = pytest.mark.parametrize("runtime", NODE_TEST_RUNTIMES)
@@ -106,9 +106,9 @@ class TestNodeJSRuntimes:
 class TestJavaRuntimes:
     @pytest.fixture(scope="class")
     def test_java_jar(self) -> bytes:
-        lambda_java_test_libs_package.install()
+        lambda_java_testlibs_package.install()
         java_file = load_file(
-            lambda_java_test_libs_package.get_installer().get_executable_path(), mode="rb"
+            lambda_java_testlibs_package.get_installer().get_executable_path(), mode="rb"
         )
         return java_file
 
