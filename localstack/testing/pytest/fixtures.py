@@ -88,7 +88,9 @@ skip_if_pro_enabled = pytest.mark.skipif(
 )
 
 
-def _client(service, region_name=None, *, additional_config=None):
+def _client(
+    service: str, region_name: str = None, aws_access_key_id: str = None, *, additional_config=None
+):
     config = botocore.config.Config()
 
     # can't set the timeouts to 0 like in the AWS CLI because the underlying http client requires values > 0
@@ -105,7 +107,9 @@ def _client(service, region_name=None, *, additional_config=None):
     if os.environ.get("TEST_TARGET") == "AWS_CLOUD":
         return boto3.client(service, region_name=region_name, config=config)
 
-    return aws_stack.create_external_boto_client(service, config=config, region_name=region_name)
+    return aws_stack.create_external_boto_client(
+        service, config=config, region_name=region_name, aws_access_key_id=aws_access_key_id
+    )
 
 
 def _resource(service):
