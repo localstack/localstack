@@ -41,7 +41,9 @@ ADD bin/supervisord.conf /etc/supervisord.conf
 # Create the venv
 RUN python3 -m venv .venv
 # Install python packages
-RUN source .venv/bin/activate && python3 -m pip install supervisor awscli awscli-local 'localstack[runtime]>=0.14.0' 'localstack-ext[runtime]>=0.14.0' --upgrade --no-cache-dir
+RUN source .venv/bin/activate && python3 -m pip install supervisor awscli awscli-local --upgrade --no-cache-dir
+# Install localstack dev packages
+RUN source .venv/bin/activate && python3 -m pip install 'localstack[full]>=1.2.0' 'localstack-ext[full]>=1.2.0' --pre --upgrade --no-cache-dir
 # Install the basic libraries
 RUN source .venv/bin/activate && python3 -m localstack.services.install libs
 
