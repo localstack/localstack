@@ -2,6 +2,7 @@ import abc
 import functools
 import logging
 import os
+import threading
 from enum import Enum
 from inspect import getmodule
 from typing import Callable, Dict, List, Optional
@@ -59,6 +60,7 @@ class PackageInstaller(abc.ABC):
         """
         self.name = name
         self.version = version
+        self.lock = threading.RLock()
 
     def install(self, target: Optional[InstallTarget] = None) -> None:
         """
@@ -71,14 +73,15 @@ class PackageInstaller(abc.ABC):
         try:
             if not target:
                 target = InstallTarget.VAR_LIBS
-            if not self.is_installed():
-                LOG.debug("Starting installation of %s...", self.name)
-                self._prepare_installation(target)
-                self._install(target)
-                self._post_process(target)
-                LOG.debug("Installation of %s finished.", self.name)
-            else:
-                LOG.debug("Installation of %s skipped (already installed).", self.name)
+            with self.lock:
+                if not self.is_installed():
+                    LOG.debug("Starting installation of %s...", self.name)
+                    self._prepare_installation(target)
+                    self._install(target)
+                    self._post_process(target)
+                    LOG.debug("Installation of %s finished.", self.name)
+                else:
+                    LOG.debug("Installation of %s skipped (already installed).", self.name)
         except PackageException as e:
             raise e
         except Exception as e:
