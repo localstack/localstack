@@ -28,7 +28,7 @@ from localstack.utils.collections import merge_recursive
 from localstack.utils.functions import prevent_stack_overflow, run_safe
 from localstack.utils.json import clone_safe, json_safe
 from localstack.utils.objects import get_all_subclasses, recurse_object
-from localstack.utils.strings import first_char_to_lower, is_string, to_bytes, to_str
+from localstack.utils.strings import is_string, to_bytes, to_str
 from localstack.utils.threads import start_worker_thread
 
 from localstack.services.cloudformation.models import *  # noqa: F401, isort:skip
@@ -304,7 +304,6 @@ def extract_resource_attribute(
         )
 
     return attribute_value
-
 
 
 def canonical_resource_type(resource_type):
