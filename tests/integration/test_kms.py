@@ -240,10 +240,9 @@ class TestKMS:
         )
         assert decrypted["Plaintext"] == result["PrivateKeyPlaintext"]
 
+    @pytest.mark.parametrize("number_of_bytes", [12, 44, 91, 1, 1024])
     @pytest.mark.aws_validated
-    def test_generate_random(self, kms_client):
-        number_of_bytes = 32
-
+    def test_generate_random(self, kms_client, number_of_bytes):
         result = kms_client.generate_random(NumberOfBytes=number_of_bytes)
 
         plain_text = result.get("Plaintext")
