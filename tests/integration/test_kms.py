@@ -1,4 +1,3 @@
-import base64
 import json
 from datetime import datetime
 from random import getrandbits
@@ -248,7 +247,7 @@ class TestKMS:
         plain_text = result.get("Plaintext")
         assert plain_text
         assert isinstance(plain_text, bytes)
-        assert len(base64.b64decode(plain_text)) == number_of_bytes
+        assert len(plain_text) == number_of_bytes
 
     @pytest.mark.parametrize(
         "number_of_bytes,error_type",
