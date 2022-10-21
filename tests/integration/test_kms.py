@@ -250,6 +250,14 @@ class TestKMS:
         assert isinstance(plain_text, bytes)
         assert len(base64.b64decode(plain_text)) == number_of_bytes
 
+    @pytest.mark.parametrize(
+        "number_of_bytes,error_type",
+        [(0, botocore.exceptions.ParamValidationError), (1025, botocore.exceptions.ClientError)],
+    )
+    def test_generate_random_invalid_number_of_bytes(self, kms_client, number_of_bytes, error_type):
+        with pytest.raises(error_type):
+            kms_client.generate_random(NumberOfBytes=number_of_bytes)
+
     @pytest.mark.aws_validated
     def test_generate_data_key(self, kms_client, kms_key):
         key_id = kms_key["KeyId"]
