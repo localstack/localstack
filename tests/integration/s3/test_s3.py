@@ -1281,7 +1281,7 @@ class TestS3:
         assert re.match(r"^<\?xml [^>]+>\n<.*", content, flags=re.MULTILINE)
 
     @pytest.mark.aws_validated
-    @pytest.mark.skip_snapshot_verify(paths=["$..Error.RequestID"])
+    @pytest.mark.skip_snapshot_verify(condition=is_old_provider, paths=["$..Error.RequestID"])
     def test_different_location_constraint(
         self,
         s3_client,
@@ -2442,7 +2442,6 @@ class TestS3:
             ACL="public-read-write",
         )
 
-        # TODO delete does currently not work with S3_VIRTUAL_HOSTNAME
         url = f"{_bucket_url(bucket_name, localstack_host=config.LOCALSTACK_HOSTNAME)}?delete"
 
         data = f"""
@@ -2463,7 +2462,7 @@ class TestS3:
 
         assert 200 == r.status_code
         response = xmltodict.parse(r.content)
-        response["DeleteResult"].pop("@xmlns")
+        response["DeleteResult"].pop("@xmlns", None)
         assert response["DeleteResult"]["Error"]["Key"] == object_key_1
         assert response["DeleteResult"]["Error"]["Code"] == "AccessDenied"
         assert response["DeleteResult"]["Deleted"]["Key"] == object_key_2
