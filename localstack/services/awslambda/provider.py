@@ -1058,10 +1058,21 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
             raise InvalidParameterValueException("Unrecognized event source.", Type="User")
 
         state = lambda_stores[context.account_id][context.region]
-        fn_name = request["FunctionName"]
-        fn = state.functions.get(fn_name)
+        function_name = request["FunctionName"]
+
+        if api_utils.FULL_FN_ARN_PATTERN.match(function_name):
+            fn_arn = function_name
+            function_name = api_utils.get_function_name(function_name, context.region)
+        else:
+            fn_arn = api_utils.unqualified_lambda_arn(
+                function_name, context.account_id, context.region
+            )
+
+        fn = state.functions.get(function_name)
         if not fn:
             raise InvalidParameterValueException("Function does not exist", Type="User")
+
+        # TODO: check if alias/version exists
 
         new_uuid = long_uid()
 
@@ -1074,9 +1085,8 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
         params["FunctionResponseTypes"] = request.get("FunctionResponseTypes", [])
         params["MaximumBatchingWindowInSeconds"] = request.get("MaximumBatchingWindowInSeconds", 0)
         params["LastModified"] = api_utils.generate_lambda_date()
-        params["FunctionArn"] = api_utils.unqualified_lambda_arn(
-            request["FunctionName"], context.account_id, context.region
-        )
+
+        params["FunctionArn"] = fn_arn
 
         batch_size = api_utils.validate_and_set_batch_size(
             request["EventSourceArn"], request.get("BatchSize")
@@ -1164,7 +1174,7 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
         max_items: MaxListItems = None,
     ) -> ListEventSourceMappingsResponse:
         state = lambda_stores[context.account_id][context.region]
-        esms = PaginatedList(state.event_source_mappings)
+        esms = PaginatedList(state.event_source_mappings.values())
         page, token = esms.get_page(
             lambda x: x,
             marker,
