@@ -188,6 +188,10 @@ class Package(abc.ABC):
     def get_installer(self, version: str | None = None) -> PackageInstaller:
         """
         Returns the installer instance for a specific version of the package.
+
+        It is important that this be LRU cached. Installers have a mutex lock to prevent races, and it is necessary
+        that this method returns the same installer instance for a given version.
+
         :param version: version of the package to install. If None, the default version of the package will be used.
         :return: PackageInstaller instance for the given version.
         :raises NoSuchVersionException: If the given version is not supported.
