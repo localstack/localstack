@@ -253,6 +253,7 @@ class TestKMS:
         "number_of_bytes,error_type",
         [(0, botocore.exceptions.ParamValidationError), (1025, botocore.exceptions.ClientError)],
     )
+    @pytest.mark.aws_validated
     def test_generate_random_invalid_number_of_bytes(self, kms_client, number_of_bytes, error_type):
         with pytest.raises(error_type):
             kms_client.generate_random(NumberOfBytes=number_of_bytes)

@@ -474,12 +474,15 @@ class KmsProvider(KmsApi, ServiceLifecycleHook):
         self, context: RequestContext, request: GenerateRandomRequest
     ) -> GenerateRandomResponse:
         number_of_bytes = request.get("NumberOfBytes")
-        if number_of_bytes and not 1 <= number_of_bytes <= 1024:
+        if not number_of_bytes:
+            raise ValidationException("NumberOfBytes is required.")
+        if number_of_bytes > 1024:
             raise ValidationException(
                 f"1 validation error detected: Value '{number_of_bytes}' at 'numberOfBytes' failed "
                 "to satisfy constraint: Member must have value less than or "
                 "equal to 1024"
             )
+
         byte_string = os.urandom(number_of_bytes)
 
         return GenerateRandomResponse(Plaintext=byte_string)
