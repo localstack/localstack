@@ -10,7 +10,7 @@ Resources:
     Properties:
       TemplateURL: !Ref ChildStackURL
       Parameters:
-        BucketName: !Ref BucketName
+        NameForBucketToCreate: !Ref BucketName
 
   
   parameter:

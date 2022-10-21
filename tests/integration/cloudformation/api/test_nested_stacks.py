@@ -93,7 +93,7 @@ def test_nested_with_nested_stack(cfn_client, deploy_cfn_template, s3_client, s3
         urls.append(f"https://{bucket_name}.s3.{domain}/{nested_stack}")
 
     outputs = deploy_cfn_template(
-        max_wait=120,
+        max_wait=120 if is_aws_cloud() else None,
         template_path=os.path.join(
             os.path.dirname(__file__), "../../templates/nested_grand_parent.yml"
         ),

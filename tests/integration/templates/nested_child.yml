@@ -1,12 +1,13 @@
 Parameters:
-  BucketName:
+  NameForBucketToCreate:
     Type: String
 
 Resources:
   Bucket:
     Type: AWS::S3::Bucket
     Properties:
-      BucketName: !Ref BucketName
+      BucketName: !Ref NameForBucketToCreate
+#      BucketName: "asrsdfasfd"
   
 Outputs:
   BucketArn:

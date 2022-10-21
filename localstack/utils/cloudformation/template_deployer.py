@@ -290,6 +290,7 @@ def extract_resource_attribute(
                 % (resource_id, attribute),
             )
         instance = get_resource_model_instance(resource_id, stack=stack)
+        instance.fetch_and_update_state()
 
     attribute_value = None
     if is_ref_attr_or_arn:
