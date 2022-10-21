@@ -1,5 +1,7 @@
 import os
 
+import pytest
+
 from localstack.utils.strings import short_uid
 
 
@@ -51,3 +53,22 @@ def test_globalindex_read_write_provisioned_throughput_dynamodb_table(
         test_write_capacity = index_provisioned["WriteCapacityUnits"]
         assert isinstance(test_read_capacity, int)
         assert isinstance(test_write_capacity, int)
+
+
+@pytest.mark.skip_snapshot_verify(
+    paths=[
+        "$..Table.ProvisionedThroughput.LastDecreaseDateTime",
+        "$..Table.ProvisionedThroughput.LastIncreaseDateTime",
+    ]
+)
+def test_default_name_for_table(deploy_cfn_template, dynamodb_client, snapshot):
+    snapshot.add_transformer(snapshot.transform.dynamodb_api())
+    snapshot.add_transformer(snapshot.transform.key_value("TableName", "table-name"))
+    stack = deploy_cfn_template(
+        template_path=os.path.join(
+            os.path.dirname(__file__), "../../templates/dynamodb_table_defaults.yml"
+        ),
+    )
+
+    response = dynamodb_client.describe_table(TableName=stack.outputs["TableName"])
+    snapshot.match("table_description", response)
