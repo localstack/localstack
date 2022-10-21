@@ -16,7 +16,6 @@ from typing import TYPE_CHECKING
 from urllib.parse import SplitResult, parse_qs, quote, urlencode, urlparse, urlunsplit
 
 import boto3 as boto3
-import botocore as botocore
 import pytest
 import requests
 import xmltodict
@@ -2658,7 +2657,6 @@ class TestS3PresignedUrl:
     ):
         port1 = 443
         port2 = config.EDGE_PORT
-        _endpoint_url()
         endpoint = (
             f"http://{config.LOCALSTACK_HOSTNAME}:{port1}"  # .replace(f":{port2}", f":{port1}")
         )
@@ -3514,20 +3512,21 @@ class TestS3PresignedUrl:
 
     @pytest.mark.aws_validated
     def test_presigned_url_with_session_token(
-        self, s3_create_bucket_with_client, patch_s3_skip_signature_validation_false
+        self, sts_client, s3_create_bucket_with_client, patch_s3_skip_signature_validation_false
     ):
         bucket_name = f"bucket-{short_uid()}"
         key_name = "key"
-        sts_client = _sts_client_custom()
-
         response = sts_client.get_session_token()
+        if not is_aws_cloud():
+            # moto does not respect credentials passed, and will always set hard coded values from a template here
+            # until this can be used, we are hardcoding the AccessKeyId and SecretAccessKey
+            response["Credentials"]["AccessKeyId"] = "test"
+            response["Credentials"]["SecretAccessKey"] = "test"
 
         client = boto3.client(
             "s3",
             config=Config(signature_version="s3v4"),
-            endpoint_url=None
-            if os.environ.get("TEST_TARGET") == "AWS_CLOUD"
-            else f"http://{config.LOCALSTACK_HOSTNAME}:4566",
+            endpoint_url=_endpoint_url(),
             aws_access_key_id=response["Credentials"]["AccessKeyId"],
             aws_secret_access_key=response["Credentials"]["SecretAccessKey"],
             aws_session_token=response["Credentials"]["SessionToken"],
@@ -5066,20 +5065,6 @@ def _anon_client(service: str):
     if os.environ.get("TEST_TARGET") == "AWS_CLOUD":
         return boto3.client(service, config=conf, region_name=None)
     return aws_stack.create_external_boto_client(service, config=conf)
-
-
-def _sts_client_custom():
-    conf = botocore.config.Config()
-    if os.environ.get("TEST_TARGET") == "AWS_CLOUD":
-        return boto3.client("sts", config=conf)
-
-    return boto3.client(
-        "sts",
-        endpoint_url=f"http://{config.LOCALSTACK_HOSTNAME}:4566",
-        config=conf,
-        aws_access_key_id=TEST_AWS_ACCESS_KEY_ID,
-        aws_secret_access_key=TEST_AWS_SECRET_ACCESS_KEY,
-    )
 
 
 def _s3_client_custom_config(conf: Config, endpoint_url: str = None):
