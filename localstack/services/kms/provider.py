@@ -1,6 +1,8 @@
+import base64
 import copy
 import datetime
 import logging
+import os
 from typing import Dict
 
 from cryptography.hazmat.primitives import hashes
@@ -472,7 +474,12 @@ class KmsProvider(KmsApi, ServiceLifecycleHook):
     def generate_random(
         self, context: RequestContext, request: GenerateRandomRequest
     ) -> GenerateRandomResponse:
-        return GenerateRandomResponse(Plaintext=b"+Q2hxK6OBuU6K6ZIIBucFMCW2NJkhiSWDySSQyWp9zA=")
+        number_of_bytes = request.get("NumberOfBytes")
+
+        byte_string = os.urandom(number_of_bytes)
+        response_entropy = base64.b64encode(byte_string)
+
+        return GenerateRandomResponse(Plaintext=response_entropy)
 
     @handler("GenerateDataKeyPairWithoutPlaintext", expand=False)
     def generate_data_key_pair_without_plaintext(

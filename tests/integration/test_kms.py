@@ -1,3 +1,4 @@
+import base64
 import json
 from datetime import datetime
 from random import getrandbits
@@ -241,8 +242,14 @@ class TestKMS:
 
     @pytest.mark.aws_validated
     def test_generate_random(self, kms_client):
-        result = kms_client.generate_random()
-        assert result.get("Plaintext")
+        number_of_bytes = 32
+
+        result = kms_client.generate_random(NumberOfBytes=number_of_bytes)
+
+        plain_text = result.get("Plaintext")
+        assert plain_text
+        assert isinstance(plain_text, bytes)
+        assert len(base64.b64decode(plain_text)) == number_of_bytes
 
     @pytest.mark.aws_validated
     def test_generate_data_key(self, kms_client, kms_key):
