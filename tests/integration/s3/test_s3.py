@@ -1602,11 +1602,11 @@ class TestS3:
     ):
         snapshot.add_transformer(snapshot.transform.s3_api())
         handler_file = os.path.join(
-            os.path.dirname(__file__), "../awslambda", "functions", "lambda_s3_integration.js"
+            os.path.dirname(__file__), "../awslambda/functions/lambda_s3_integration.js"
         )
         temp_folder = create_tmp_folder_lambda(
             handler_file,
-            run_command="npm i @aws-sdk/client-s3; npm i @aws-sdk/s3-request-presigner; npm i @aws-sdk/middleware-endpoint",
+            run_command="npm i @aws-sdk/util-endpoints @aws-sdk/client-s3 @aws-sdk/s3-request-presigner @aws-sdk/middleware-endpoint",
         )
 
         function_name = f"func-integration-{short_uid()}"

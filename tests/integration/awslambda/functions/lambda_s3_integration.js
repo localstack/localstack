@@ -15,15 +15,8 @@ exports.handler = async (event, context, callback) => {
             accessKeyId: 'test',
         };
 
-        const ENDPOINT = {
-            path: '',
-            hostname: 's3.localhost.localstack.cloud:4566',
-            protocol: 'http',
-        };
-
-
         s3 = new S3Client({
-            endpoint: ENDPOINT,
+            endpoint: "http://s3.localhost.localstack.cloud:4566",
             region: 'us-east-1',
             credentials: CREDENTIALS,
         });
