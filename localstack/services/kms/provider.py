@@ -477,9 +477,9 @@ class KmsProvider(KmsApi, ServiceLifecycleHook):
         number_of_bytes = request.get("NumberOfBytes")
 
         byte_string = os.urandom(number_of_bytes)
-        response_entropy = base64.b64encode(byte_string)
+        plaintext = base64.b64encode(byte_string)
 
-        return GenerateRandomResponse(Plaintext=response_entropy)
+        return GenerateRandomResponse(Plaintext=plaintext)
 
     @handler("GenerateDataKeyPairWithoutPlaintext", expand=False)
     def generate_data_key_pair_without_plaintext(
