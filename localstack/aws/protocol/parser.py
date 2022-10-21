@@ -248,17 +248,7 @@ class RequestParser(abc.ABC):
             elif location == "uri":
                 uri_param_name = shape.serialization.get("name")
                 if uri_param_name in uri_params:
-                    # FIXME special case for s3 object-names (=key): trailing '/' are valid and need to be preserved
-                    #       however, the url-matcher removes it from the key
-                    #       we check the request.url to verify the name
-                    if (
-                        self.service.service_name == "s3"
-                        and uri_param_name == "Key"
-                        and request.url.split("?")[0].endswith(f"{uri_params[uri_param_name]}/")
-                    ):
-                        payload = uri_params[uri_param_name] + "/"
-                    else:
-                        payload = uri_params[uri_param_name]
+                    payload = uri_params[uri_param_name]
             else:
                 raise UnknownParserError("Unknown shape location '%s'." % location)
         else:
@@ -1061,6 +1051,25 @@ class S3RequestParser(RestXMLRequestParser):
         """Handle virtual-host-addressing for S3."""
         with self.VirtualHostRewriter(request):
             return super().parse(request)
+
+    def _parse_shape(
+        self, request: HttpRequest, shape: Shape, node: Any, uri_params: Mapping[str, Any] = None
+    ) -> Any:
+        """
+        Special handling of parsing the shape for s3 object-names (=key):
+        trailing '/' are valid and need to be preserved, however, the url-matcher removes it from the key
+        we check the request.url to verify the name
+        """
+        if (
+            shape is not None
+            and uri_params is not None
+            and shape.serialization.get("location") == "uri"
+            and shape.serialization.get("name") == "Key"
+            and request.base_url.endswith(f"{uri_params['Key']}/")
+        ):
+            uri_params = dict(uri_params)
+            uri_params["Key"] = uri_params["Key"] + "/"
+        return super()._parse_shape(request, shape, node, uri_params)
 
 
 class SQSRequestParser(QueryRequestParser):
