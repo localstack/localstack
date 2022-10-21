@@ -156,6 +156,10 @@ class S3Provider(S3Api, ServiceLifecycleHook):
         store = self.get_store()
         store.bucket_lifecycle_configuration.pop(bucket, None)
         store.bucket_versioning_status.pop(bucket, None)
+        store.bucket_cors.pop(bucket, None)
+        store.bucket_notification_configs.pop(bucket, None)
+        store.bucket_replication.pop(bucket, None)
+        store.bucket_website_configuration.pop(bucket, None)
 
     def on_after_init(self):
         apply_moto_patches()
