@@ -841,7 +841,13 @@ def kms_create_key(create_boto_client):
         try:
             create_boto_client("kms", region).schedule_key_deletion(KeyId=key_id)
         except Exception as e:
-            LOG.debug("error cleaning up KMS key %s: %s", key_id, e)
+            exception_message = str(e)
+            # Some tests schedule their keys for deletion themselves.
+            if (
+                "KMSInvalidStateException" not in exception_message
+                or "is pending deletion" not in exception_message
+            ):
+                LOG.debug("error cleaning up KMS key %s: %s", key_id, e)
 
 
 @pytest.fixture()
