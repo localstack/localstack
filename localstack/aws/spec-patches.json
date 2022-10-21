@@ -622,6 +622,29 @@
       "value": {
         "shape": "MultipartUploadId"
       }
+    },
+    {
+      "op": "add",
+      "path": "/shapes/ReplicationConfigurationNotFoundError",
+      "value": {
+        "type": "structure",
+        "members": {
+          "BucketName": {
+            "shape": "BucketName"
+          }
+        },
+        "error": {
+          "httpStatusCode": 404
+        },
+        "documentation": "<p>The replication configuration was not found.</p>",
+        "exception": true
+      }
+    },
+    {
+        "op": "add",
+        "path": "/shapes/BucketCannedACL/enum/4",
+        "value": "log-delivery-write",
+        "documentation": "<p>Not included in the specs, but valid value according to the docs: https://docs.aws.amazon.com/AmazonS3/latest/userguide/acl-overview.html#canned-acl</p>"
     }
   ]
 }

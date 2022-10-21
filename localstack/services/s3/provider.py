@@ -1,6 +1,6 @@
 import logging
 import os
-from typing import IO, Dict
+from typing import IO, Dict, List
 from urllib.parse import parse_qs, quote, urlencode, urlparse, urlunparse
 
 import moto.s3.responses as moto_s3_responses
@@ -9,10 +9,12 @@ from localstack import config
 from localstack.aws.accounts import get_aws_account_id
 from localstack.aws.api import CommonServiceException, RequestContext, ServiceException, handler
 from localstack.aws.api.s3 import (
+    MFA,
     AccessControlPolicy,
     AccountId,
     Body,
     BucketName,
+    BypassGovernanceRetention,
     ChecksumAlgorithm,
     CompleteMultipartUploadOutput,
     CompleteMultipartUploadRequest,
@@ -21,15 +23,18 @@ from localstack.aws.api.s3 import (
     CopyObjectRequest,
     CreateBucketOutput,
     CreateBucketRequest,
+    Delete,
     DeleteObjectOutput,
     DeleteObjectRequest,
     DeleteObjectTaggingOutput,
     DeleteObjectTaggingRequest,
+    DeleteResult,
     ETag,
     GetBucketAclOutput,
     GetBucketLifecycleConfigurationOutput,
     GetBucketLifecycleOutput,
     GetBucketLocationOutput,
+    GetBucketReplicationOutput,
     GetBucketRequestPaymentOutput,
     GetBucketRequestPaymentRequest,
     GetBucketWebsiteOutput,
@@ -47,11 +52,14 @@ from localstack.aws.api.s3 import (
     ListObjectsRequest,
     ListObjectsV2Output,
     ListObjectsV2Request,
+    NoSuchBucket,
     NoSuchKey,
     NoSuchLifecycleConfiguration,
     NoSuchWebsiteConfiguration,
     NotificationConfiguration,
+    ObjectIdentifier,
     ObjectKey,
+    ObjectLockToken,
     PostResponse,
     PutBucketAclRequest,
     PutBucketLifecycleConfigurationRequest,
@@ -62,6 +70,9 @@ from localstack.aws.api.s3 import (
     PutObjectRequest,
     PutObjectTaggingOutput,
     PutObjectTaggingRequest,
+    ReplicationConfiguration,
+    ReplicationConfigurationNotFoundError,
+    RequestPayer,
     S3Api,
     SkipValidation,
 )
@@ -89,7 +100,7 @@ from localstack.services.s3.utils import (
     get_header_name,
     get_key_from_moto_bucket,
     is_bucket_name_valid,
-    is_canned_acl_valid,
+    is_canned_acl_bucket_valid,
     is_key_expired,
     is_valid_canonical_id,
     verify_checksum,
@@ -97,7 +108,10 @@ from localstack.services.s3.utils import (
 from localstack.services.s3.virtual_host import register_virtual_host_routes
 from localstack.services.s3.website_hosting import register_website_hosting_routes
 from localstack.utils.aws import aws_stack
+from localstack.utils.aws.aws_stack import s3_bucket_name
+from localstack.utils.collections import get_safe
 from localstack.utils.patch import patch
+from localstack.utils.strings import short_uid
 
 LOG = logging.getLogger(__name__)
 
@@ -353,6 +367,41 @@ class S3Provider(S3Api, ServiceLifecycleHook):
 
         return response
 
+    def delete_objects(
+        self,
+        context: RequestContext,
+        bucket: BucketName,
+        delete: Delete,
+        mfa: MFA = None,
+        request_payer: RequestPayer = None,
+        bypass_governance_retention: BypassGovernanceRetention = None,
+        expected_bucket_owner: AccountId = None,
+        checksum_algorithm: ChecksumAlgorithm = None,
+    ) -> DeleteResult:
+        objects: List[ObjectIdentifier] = delete.get("Objects")
+        deleted_objects = {}
+        quiet = delete.get("Quiet", False)
+        for object in objects:
+            key = object["Key"]
+            # create the notification context before deleting the object, to be able to retrieve its properties
+            s3_notification_ctx = S3EventNotificationContext.from_request_context(
+                context, key_name=key, allow_non_existing_key=True
+            )
+
+            deleted_objects[key] = s3_notification_ctx
+        result: DeleteResult = call_moto(context)
+        for deleted in result.get("Deleted"):
+            if deleted_objects.get(deleted["Key"]):
+                self._notify(context, deleted_objects.get(deleted["Key"]))
+
+        if not quiet:
+            return result
+
+        #  In quiet mode the response includes only keys where the delete action encountered an error.
+        #  For a successful deletion, the action does not return any information about the delete in the response body.
+        result.pop("Deleted", "")
+        return result
+
     @handler("CompleteMultipartUpload", expand=False)
     def complete_multipart_upload(
         self, context: RequestContext, request: CompleteMultipartUploadRequest
@@ -418,6 +467,61 @@ class S3Provider(S3Api, ServiceLifecycleHook):
         moto_backend = get_moto_s3_backend(context)
         bucket = get_bucket_from_moto(moto_backend, bucket=bucket_name)
         return GetBucketRequestPaymentOutput(Payer=bucket.payer)
+
+    def put_bucket_replication(
+        self,
+        context: RequestContext,
+        bucket: BucketName,
+        replication_configuration: ReplicationConfiguration,
+        content_md5: ContentMD5 = None,
+        checksum_algorithm: ChecksumAlgorithm = None,
+        token: ObjectLockToken = None,
+        expected_bucket_owner: AccountId = None,
+    ) -> None:
+        moto_backend = get_moto_s3_backend(context)
+        moto_bucket = get_bucket_from_moto(moto_backend, bucket=bucket)
+        if not moto_bucket.is_versioned:
+            raise InvalidRequest(
+                "Versioning must be 'Enabled' on the bucket to apply a replication configuration"
+            )
+
+        for rule in replication_configuration.get("Rules", {}):
+            if "ID" not in rule:
+                rule["ID"] = short_uid()
+
+        store = self.get_store()
+        for rule in replication_configuration.get("Rules", []):
+            dst = rule.get("Destination", {}).get("Bucket")
+            dst_bucket_name = s3_bucket_name(dst)
+            dst_bucket = None
+            try:
+                dst_bucket = get_bucket_from_moto(moto_backend, bucket=dst_bucket_name)
+            except NoSuchBucket:
+                # according to AWS testing it returns in this case the same exception as if versioning was disabled
+                pass
+            if not dst_bucket or not dst_bucket.is_versioned:
+                raise InvalidRequest("Destination bucket must have versioning enabled.")
+
+        # TODO more validation on input
+        store.bucket_replication[bucket] = replication_configuration
+
+    def get_bucket_replication(
+        self, context: RequestContext, bucket: BucketName, expected_bucket_owner: AccountId = None
+    ) -> GetBucketReplicationOutput:
+        # test if bucket exists in moto
+        moto_backend = get_moto_s3_backend(context)
+        get_bucket_from_moto(moto_backend, bucket=bucket)
+
+        store = self.get_store()
+        replication = store.bucket_replication.get(bucket, None)
+        if not replication:
+            ex = ReplicationConfigurationNotFoundError(
+                "The replication configuration was not found"
+            )
+            ex.BucketName = bucket
+            raise ex
+
+        return GetBucketReplicationOutput(ReplicationConfiguration=replication)
 
     def get_bucket_lifecycle(
         self, context: RequestContext, bucket: BucketName, expected_bucket_owner: AccountId = None
@@ -500,9 +604,7 @@ class S3Provider(S3Api, ServiceLifecycleHook):
         context: RequestContext,
         request: PutBucketAclRequest,
     ) -> None:
-        if (canned_acl := request.get("ACL")) and not is_canned_acl_valid(canned_acl):
-            ex = _create_invalid_argument_exc(None, name="x-amz-acl", value=canned_acl)
-            raise ex
+        validate_bucket_canned_acl(request.get("ACL"))
 
         grant_keys = [
             "GrantFullControl",
@@ -711,11 +813,11 @@ def validate_bucket_name(bucket: BucketName) -> None:
         raise ex
 
 
-def validate_canned_acl(canned_acl: str) -> None:
+def validate_bucket_canned_acl(canned_acl: str) -> None:
     """
     Validate the canned ACL value, or raise an Exception
     """
-    if not is_canned_acl_valid(canned_acl):
+    if canned_acl and not is_canned_acl_bucket_valid(canned_acl):
         ex = _create_invalid_argument_exc(None, "x-amz-acl", canned_acl)
         raise ex
 
@@ -849,11 +951,6 @@ def validate_website_configuration(website_config: WebsiteConfiguration) -> None
                     "You can only define ReplaceKeyPrefix or ReplaceKey but not both."
                 )
 
-            # validating values length, to be confident while using the rules in the router
-            for field_value in redirect.values():
-                if not field_value:
-                    raise MalformedXML()
-
             if "Condition" in routing_rule and not routing_rule.get("Condition", {}):
                 raise InvalidRequest(
                     "Condition cannot be empty. To redirect all requests without a condition, the condition element shouldn't be present."
@@ -912,7 +1009,7 @@ def apply_moto_patches():
 
     @patch(moto_s3_responses.S3Response.key_response)
     def _fix_key_response(fn, self, *args, **kwargs):
-        """Change casing of Last-Modified headers to be picked by the parser"""
+        """Change casing of Last-Modified and other headers to be picked by the parser"""
         status_code, resp_headers, key_value = fn(self, *args, **kwargs)
         for low_case_header in [
             "last-modified",
@@ -920,10 +1017,19 @@ def apply_moto_patches():
             "content-length",
             "content-range",
             "content-encoding",
+            "content-language",
+            "content-disposition",
+            "cache-control",
         ]:
             if header_value := resp_headers.pop(low_case_header, None):
                 header_name = capitalize_header_name_from_snake_case(low_case_header)
                 resp_headers[header_name] = header_value
+
+        # The header indicating 'bucket-key-enabled' is set as python boolean, resulting in camelcase-value.
+        # The parser expects it to be lowercase string, however, to be parsed correctly.
+        bucket_key_enabled = "x-amz-server-side-encryption-bucket-key-enabled"
+        if val := resp_headers.get(bucket_key_enabled, ""):
+            resp_headers[bucket_key_enabled] = str(val).lower()
 
         return status_code, resp_headers, key_value
 
@@ -977,6 +1083,23 @@ def apply_moto_patches():
         except TypeError:
             tags = {}
         return tags
+
+    @patch(moto_s3_responses.S3Response.is_delete_keys)
+    def s3_response_is_delete_keys(fn, self, request, path, bucket_name):
+        """
+        Old provider had a fix for a ticket, concerning 'x-id' - there is no documentation on AWS about this, but it is probably still valid
+        Additional fix for testing if this is a "delete_objects" request, by removing trailing "=" from the path
+        """
+        if self.subdomain_based_buckets(request):
+            # Temporary fix until moto supports x-id and DeleteObjects (#3931)
+            query = self._get_querystring(request.url)
+            is_delete_keys_v3 = (
+                query and ("delete" in query) and get_safe(query, "$.x-id.0") == "DeleteObjects"
+            )
+            return is_delete_keys_v3 or moto_s3_responses.is_delete_keys(request, path)
+        else:
+            path = path.rstrip("=")
+            return fn(self, request, path, bucket_name)
 
 
 def register_custom_handlers():

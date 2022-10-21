@@ -557,10 +557,11 @@ class TestS3UtilsAsf:
             ("bucket-owner-full-control", True),
             ("not-a-canned-one", False),
             ("aws--exec-read", False),
+            ("log-delivery-write", True),
         ]
 
         for canned_acl, expected_result in canned_acls:
-            assert s3_utils_asf.is_canned_acl_valid(canned_acl) == expected_result
+            assert s3_utils_asf.is_canned_acl_bucket_valid(canned_acl) == expected_result
 
     def test_s3_bucket_name(self):
         bucket_names = [

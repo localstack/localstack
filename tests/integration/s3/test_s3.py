@@ -39,6 +39,7 @@ from localstack.services.awslambda.lambda_utils import (
 )
 from localstack.testing.aws.util import is_aws_cloud
 from localstack.testing.pytest.fixtures import _client
+from localstack.testing.snapshots.transformer_utility import TransformerUtility
 from localstack.utils import testutil
 from localstack.utils.aws import aws_stack
 from localstack.utils.collections import is_sub_dict
@@ -61,6 +62,45 @@ if TYPE_CHECKING:
     from mypy_boto3_s3 import S3Client
 
 LOG = logging.getLogger(__name__)
+
+# transformer list to transform headers, that will be validated for some specific s3-tests
+HEADER_TRANSFORMER = [
+    TransformerUtility.jsonpath("$..HTTPHeaders.date", "date", reference_replacement=False),
+    TransformerUtility.jsonpath(
+        "$..HTTPHeaders.last-modified", "last-modified", reference_replacement=False
+    ),
+    TransformerUtility.jsonpath("$..HTTPHeaders.server", "server", reference_replacement=False),
+    TransformerUtility.jsonpath("$..HTTPHeaders.x-amz-id-2", "id-2", reference_replacement=False),
+    TransformerUtility.jsonpath(
+        "$..HTTPHeaders.x-amz-request-id", "request-id", reference_replacement=False
+    ),
+    TransformerUtility.key_value("HostId", reference_replacement=False),
+    TransformerUtility.key_value("RequestId", reference_replacement=False),
+]
+
+S3_ASSUME_ROLE_POLICY = {
+    "Version": "2012-10-17",
+    "Statement": [
+        {
+            "Effect": "Allow",
+            "Principal": {"Service": "s3.amazonaws.com"},
+            "Action": "sts:AssumeRole",
+        }
+    ],
+}
+
+S3_POLICY = {
+    "Version": "2012-10-17",
+    "Statement": [
+        {
+            "Effect": "Allow",
+            "Action": [
+                "s3:*",
+            ],
+            "Resource": "*",
+        }
+    ],
+}
 
 
 def is_old_provider():
@@ -182,6 +222,207 @@ def _filter_header(param: dict) -> dict:
 
 class TestS3:
     @pytest.mark.aws_validated
+    @pytest.mark.xfail(
+        condition=LEGACY_S3_PROVIDER,
+        reason="exceptions not raised",
+    )
+    def test_replication_config_without_filter(
+        self, s3_client, s3_create_bucket, create_iam_role_with_policy, snapshot
+    ):
+        snapshot.add_transformer(snapshot.transform.s3_api())
+        snapshot.add_transformer(
+            snapshot.transform.jsonpath(
+                "$..ReplicationConfiguration.Role", "role", reference_replacement=False
+            )
+        )
+        snapshot.add_transformer(
+            snapshot.transform.jsonpath(
+                "$..Destination.Bucket", "dest-bucket", reference_replacement=False
+            )
+        )
+        bucket_src = f"src-{short_uid()}"
+        bucket_dst = f"dst-{short_uid()}"
+        role_name = f"replication_role_{short_uid()}"
+        policy_name = f"replication_policy_{short_uid()}"
+
+        role_arn = create_iam_role_with_policy(
+            RoleName=role_name,
+            PolicyName=policy_name,
+            RoleDefinition=S3_ASSUME_ROLE_POLICY,
+            PolicyDefinition=S3_POLICY,
+        )
+        s3_create_bucket(Bucket=bucket_src)
+        # enable versioning on src
+        s3_client.put_bucket_versioning(
+            Bucket=bucket_src, VersioningConfiguration={"Status": "Enabled"}
+        )
+
+        s3_create_bucket(Bucket=bucket_dst)
+
+        replication_config = {
+            "Role": role_arn,
+            "Rules": [
+                {
+                    "ID": "rtc",
+                    "Priority": 0,
+                    "Filter": {},
+                    "Status": "Disabled",
+                    "Destination": {
+                        "Bucket": "arn:aws:s3:::does-not-exist",
+                        "StorageClass": "STANDARD",
+                        "ReplicationTime": {"Status": "Enabled", "Time": {"Minutes": 15}},
+                        "Metrics": {"Status": "Enabled", "EventThreshold": {"Minutes": 15}},
+                    },
+                    "DeleteMarkerReplication": {"Status": "Disabled"},
+                }
+            ],
+        }
+        with pytest.raises(ClientError) as e:
+            s3_client.put_bucket_replication(
+                ReplicationConfiguration=replication_config, Bucket=bucket_src
+            )
+        snapshot.match("expected_error_dest_does_not_exist", e.value.response)
+
+        # set correct destination
+        replication_config["Rules"][0]["Destination"]["Bucket"] = f"arn:aws:s3:::{bucket_dst}"
+
+        with pytest.raises(ClientError) as e:
+            s3_client.put_bucket_replication(
+                ReplicationConfiguration=replication_config, Bucket=bucket_src
+            )
+        snapshot.match("expected_error_dest_versioning_disabled", e.value.response)
+
+        # enable versioning on destination bucket
+        s3_client.put_bucket_versioning(
+            Bucket=bucket_dst, VersioningConfiguration={"Status": "Enabled"}
+        )
+
+        response = s3_client.put_bucket_replication(
+            ReplicationConfiguration=replication_config, Bucket=bucket_src
+        )
+        snapshot.match("put-bucket-replication", response)
+
+        response = s3_client.get_bucket_replication(Bucket=bucket_src)
+        snapshot.match("get-bucket-replication", response)
+
+    @pytest.mark.aws_validated
+    @pytest.mark.xfail(
+        condition=LEGACY_S3_PROVIDER,
+        reason="exceptions not raised",
+    )
+    def test_replication_config(
+        self, s3_client, s3_create_bucket, create_iam_role_with_policy, snapshot
+    ):
+        snapshot.add_transformer(snapshot.transform.s3_api())
+        snapshot.add_transformer(
+            snapshot.transform.jsonpath(
+                "$..ReplicationConfiguration.Role", "role", reference_replacement=False
+            )
+        )
+        snapshot.add_transformer(
+            snapshot.transform.jsonpath(
+                "$..Destination.Bucket", "dest-bucket", reference_replacement=False
+            )
+        )
+        snapshot.add_transformer(
+            snapshot.transform.key_value("ID", "id", reference_replacement=False)
+        )
+        bucket_src = f"src-{short_uid()}"
+        bucket_dst = f"dst-{short_uid()}"
+        role_name = f"replication_role_{short_uid()}"
+        policy_name = f"replication_policy_{short_uid()}"
+
+        role_arn = create_iam_role_with_policy(
+            RoleName=role_name,
+            PolicyName=policy_name,
+            RoleDefinition=S3_ASSUME_ROLE_POLICY,
+            PolicyDefinition=S3_POLICY,
+        )
+        s3_create_bucket(Bucket=bucket_src)
+
+        s3_create_bucket(
+            Bucket=bucket_dst, CreateBucketConfiguration={"LocationConstraint": "us-west-2"}
+        )
+        s3_client.put_bucket_versioning(
+            Bucket=bucket_dst, VersioningConfiguration={"Status": "Enabled"}
+        )
+
+        # expect error if versioning is disabled on src-bucket
+        with pytest.raises(ClientError) as e:
+            s3_client.get_bucket_replication(Bucket=bucket_src)
+        snapshot.match("expected_error_no_replication_set", e.value.response)
+
+        replication_config = {
+            "Role": role_arn,
+            "Rules": [
+                {
+                    "Status": "Enabled",
+                    "Priority": 1,
+                    "DeleteMarkerReplication": {"Status": "Disabled"},
+                    "Filter": {"Prefix": "Tax"},
+                    "Destination": {"Bucket": f"arn:aws:s3:::{bucket_dst}"},
+                }
+            ],
+        }
+        with pytest.raises(ClientError) as e:
+            s3_client.put_bucket_replication(
+                ReplicationConfiguration=replication_config, Bucket=bucket_src
+            )
+        snapshot.match("expected_error_versioning_not_enabled", e.value.response)
+
+        # enable versioning
+        s3_client.put_bucket_versioning(
+            Bucket=bucket_src, VersioningConfiguration={"Status": "Enabled"}
+        )
+
+        response = s3_client.put_bucket_replication(
+            ReplicationConfiguration=replication_config, Bucket=bucket_src
+        )
+        snapshot.match("put-bucket-replication", response)
+
+        response = s3_client.get_bucket_replication(Bucket=bucket_src)
+        snapshot.match("get-bucket-replication", response)
+
+    @pytest.mark.aws_validated
+    @pytest.mark.skip_snapshot_verify(
+        condition=is_old_provider,
+        paths=["$..VersionId", "$..ContentLanguage", "$..BucketKeyEnabled"],
+    )
+    def test_copy_object_kms(self, s3_client, s3_bucket, kms_create_key, snapshot):
+        snapshot.add_transformer(snapshot.transform.s3_api())
+        # because of the kms-key, the etag will be different on AWS
+        # FIXME there is currently no server side encryption is place and thus the etag is the same for the copied objects in LS
+        snapshot.add_transformer(
+            snapshot.transform.jsonpath(
+                "$..CopyObjectResult.ETag", "copy-etag", reference_replacement=False
+            )
+        )
+        snapshot.add_transformer(
+            snapshot.transform.jsonpath(
+                "$..get-copied-object.ETag", "etag", reference_replacement=False
+            )
+        )
+        snapshot.add_transformer(snapshot.transform.key_value("SSEKMSKeyId", "key-id"))
+        key_id = kms_create_key()["KeyId"]
+        body = "hello world"
+        s3_client.put_object(Bucket=s3_bucket, Key="mykey", Body=body)
+
+        response = s3_client.get_object(Bucket=s3_bucket, Key="mykey")
+        snapshot.match("get-object", response)
+        response = s3_client.copy_object(
+            Bucket=s3_bucket,
+            CopySource=f"{s3_bucket}/mykey",
+            Key="copiedkey",
+            BucketKeyEnabled=True,
+            SSEKMSKeyId=key_id,
+            ServerSideEncryption="aws:kms",
+        )
+        snapshot.match("copy-object", response)
+
+        response = s3_client.get_object(Bucket=s3_bucket, Key="copiedkey")
+        snapshot.match("get-copied-object", response)
+
+    @pytest.mark.aws_validated
     def test_region_header_exists(self, s3_client, s3_create_bucket, snapshot):
         snapshot.add_transformer(snapshot.transform.s3_api())
         bucket_name = s3_create_bucket(
@@ -236,9 +477,56 @@ class TestS3:
         assert response["Body"].read() == b"abc123"
 
     @pytest.mark.aws_validated
+    @pytest.mark.xfail(
+        condition=not LEGACY_S3_PROVIDER,
+        reason="content-length and type is wrong",  # TODO
+    )
+    @pytest.mark.skip_snapshot_verify(
+        condition=is_asf_provider, paths=["$..HTTPHeaders.connection"]
+    )  # for ASF we currently always set 'close'
+    @pytest.mark.skip_snapshot_verify(
+        condition=is_old_provider,
+        paths=[
+            "$..HTTPHeaders.access-control-allow-origin",
+            "$..HTTPHeaders.connection",
+            "$..HTTPHeaders.content-md5",
+            "$..HTTPHeaders.x-amz-version-id",
+            "$..HTTPHeaders.x-amzn-requestid",
+            "$..HostId",
+            "$..VersionId",
+            "$..HTTPHeaders.content-type",
+            "$..HTTPHeaders.last-modified",
+            "$..HTTPHeaders.location",
+        ],
+    )
+    def test_put_and_get_object_with_content_language_disposition(
+        self, s3_client, s3_bucket, snapshot
+    ):
+        snapshot.add_transformer(snapshot.transform.s3_api())
+        snapshot.add_transformer(HEADER_TRANSFORMER)
+
+        response = s3_client.put_object(
+            Bucket=s3_bucket,
+            Key="test",
+            Body=b"abc123",
+            ContentLanguage="de",
+            ContentDisposition='attachment; filename="foo.jpg"',
+            CacheControl="no-cache",
+        )
+        assert response["ResponseMetadata"]["HTTPStatusCode"] == 200
+        snapshot.match("put-object", response)
+        snapshot.match("put-object-headers", response["ResponseMetadata"])
+
+        response = s3_client.get_object(Bucket=s3_bucket, Key="test")
+        snapshot.match("get-object", response)
+        snapshot.match("get-object-headers", response["ResponseMetadata"])
+        assert response["Body"].read() == b"abc123"
+
+    @pytest.mark.aws_validated
     def test_resource_object_with_slashes_in_key(self, s3_resource, s3_bucket):
         s3_resource.Object(s3_bucket, "/foo").put(Body="foobar")
         s3_resource.Object(s3_bucket, "bar").put(Body="barfoo")
+        s3_resource.Object(s3_bucket, "/bar/foo/").put(Body="test")
 
         with pytest.raises(ClientError) as e:
             s3_resource.Object(s3_bucket, "foo").get()
@@ -252,6 +540,8 @@ class TestS3:
         assert response["Body"].read() == b"foobar"
         response = s3_resource.Object(s3_bucket, "bar").get()
         assert response["Body"].read() == b"barfoo"
+        response = s3_resource.Object(s3_bucket, "/bar/foo/").get()
+        assert response["Body"].read() == b"test"
 
     @pytest.mark.aws_validated
     def test_metadata_header_character_decoding(self, s3_client, s3_bucket, snapshot):
@@ -552,7 +842,6 @@ class TestS3:
         key = "my-key"
         s3_client.put_object(Bucket=s3_bucket, Key=key, Body=b"abcdefgh")
         response = s3_client.head_object(Bucket=s3_bucket, Key=key)
-
         snapshot.match("head-object", response)
 
     @pytest.mark.aws_validated
@@ -1310,13 +1599,31 @@ class TestS3:
         snapshot.match("get-obj-after-tag-deletion", s3_obj)
 
     @pytest.mark.aws_validated
+    @pytest.mark.skipif(condition=LEGACY_S3_PROVIDER, reason="Not implemented in old provider")
+    def test_delete_non_existing_keys_quiet(self, s3_client, s3_bucket, snapshot):
+        object_key = "test-key-nonexistent"
+        s3_client.put_object(Bucket=s3_bucket, Key=object_key, Body="something")
+        response = s3_client.delete_objects(
+            Bucket=s3_bucket,
+            Delete={
+                "Objects": [{"Key": object_key}, {"Key": "dummy1"}, {"Key": "dummy2"}],
+                "Quiet": True,
+            },
+        )
+        snapshot.match("deleted-resp", response)
+        assert "Deleted" not in response
+        assert "Errors" not in response
+
+    @pytest.mark.aws_validated
     @pytest.mark.skip_snapshot_verify(condition=is_old_provider, paths=["$..VersionId"])
     def test_delete_non_existing_keys(self, s3_client, s3_bucket, snapshot):
         object_key = "test-key-nonexistent"
         s3_client.put_object(Bucket=s3_bucket, Key=object_key, Body="something")
         response = s3_client.delete_objects(
             Bucket=s3_bucket,
-            Delete={"Objects": [{"Key": object_key}, {"Key": "dummy1"}, {"Key": "dummy2"}]},
+            Delete={
+                "Objects": [{"Key": object_key}, {"Key": "dummy1"}, {"Key": "dummy2"}],
+            },
         )
         response["Deleted"].sort(key=itemgetter("Key"))
         snapshot.match("deleted-resp", response)
@@ -4317,6 +4624,79 @@ class TestS3StaticWebsiteHosting:
 
         response = requests.get(f"{website_url}/code/key", allow_redirects=False)
         assert response.status_code == 307
+
+    @pytest.mark.aws_validated
+    @pytest.mark.skipif(
+        condition=LEGACY_S3_PROVIDER,
+        reason="Legacy S3 provider does not provide website routing rules",
+    )
+    def test_routing_rules_empty_replace_prefix(self, s3_client, s3_create_bucket):
+        bucket_name = f"bucket-{short_uid()}"
+
+        s3_create_bucket(Bucket=bucket_name, ACL="public-read")
+        s3_client.put_object(
+            Bucket=bucket_name,
+            Key="index.html",
+            Body="index",
+            ACL="public-read",
+        )
+        s3_client.put_object(
+            Bucket=bucket_name,
+            Key="test.html",
+            Body="test",
+            ACL="public-read",
+        )
+        s3_client.put_object(
+            Bucket=bucket_name,
+            Key="error.html",
+            Body="error",
+            ACL="public-read",
+        )
+        s3_client.put_object(
+            Bucket=bucket_name,
+            Key="mydocs/test.html",
+            Body="mydocs",
+            ACL="public-read",
+        )
+
+        # change configuration
+        s3_client.put_bucket_website(
+            Bucket=bucket_name,
+            WebsiteConfiguration={
+                "IndexDocument": {"Suffix": "index.html"},
+                "ErrorDocument": {"Key": "error.html"},
+                "RoutingRules": [
+                    {
+                        "Condition": {"KeyPrefixEquals": "docs/"},
+                        "Redirect": {"ReplaceKeyPrefixWith": ""},
+                    },
+                    {
+                        "Condition": {"KeyPrefixEquals": "another/path/"},
+                        "Redirect": {"ReplaceKeyPrefixWith": ""},
+                    },
+                ],
+            },
+        )
+
+        website_url = _website_bucket_url(bucket_name)
+
+        # testing that routing rule redirect correctly (by removing the defined prefix)
+        response = requests.get(f"{website_url}/docs/test.html")
+        assert response.status_code == 200
+        assert response.text == "test"
+
+        response = requests.get(f"{website_url}/another/path/test.html")
+        assert response.status_code == 200
+        assert response.text == "test"
+
+        response = requests.get(f"{website_url}/docs/mydocs/test.html")
+        assert response.status_code == 200
+        assert response.text == "mydocs"
+
+        # no routing rule defined -> should result in error
+        response = requests.get(f"{website_url}/docs2/test.html")
+        assert response.status_code == 404
+        assert response.text == "error"
 
     @pytest.mark.aws_validated
     @pytest.mark.skipif(

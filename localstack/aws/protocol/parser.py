@@ -1052,6 +1052,25 @@ class S3RequestParser(RestXMLRequestParser):
         with self.VirtualHostRewriter(request):
             return super().parse(request)
 
+    def _parse_shape(
+        self, request: HttpRequest, shape: Shape, node: Any, uri_params: Mapping[str, Any] = None
+    ) -> Any:
+        """
+        Special handling of parsing the shape for s3 object-names (=key):
+        trailing '/' are valid and need to be preserved, however, the url-matcher removes it from the key
+        we check the request.url to verify the name
+        """
+        if (
+            shape is not None
+            and uri_params is not None
+            and shape.serialization.get("location") == "uri"
+            and shape.serialization.get("name") == "Key"
+            and request.base_url.endswith(f"{uri_params['Key']}/")
+        ):
+            uri_params = dict(uri_params)
+            uri_params["Key"] = uri_params["Key"] + "/"
+        return super()._parse_shape(request, shape, node, uri_params)
+
 
 class SQSRequestParser(QueryRequestParser):
     def _get_serialized_name(self, shape: Shape, default_name: str, node: dict) -> str:

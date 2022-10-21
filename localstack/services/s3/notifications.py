@@ -18,6 +18,7 @@ from localstack.aws.api.s3 import (
     EventList,
     LambdaFunctionArn,
     LambdaFunctionConfiguration,
+    NoSuchKey,
     NotificationConfiguration,
     NotificationConfigurationFilter,
     NotificationId,
@@ -49,6 +50,7 @@ EVENT_OPERATION_MAP = {
     "PutObjectTagging": Event.s3_ObjectTagging_Put,
     "DeleteObjectTagging": Event.s3_ObjectTagging_Delete,
     "DeleteObject": Event.s3_ObjectRemoved_Delete,
+    "DeleteObjects": Event.s3_ObjectRemoved_Delete,
 }
 
 HEADER_AMZN_XRAY = "X-Amzn-Trace-Id"
@@ -91,7 +93,7 @@ class S3EventNotificationContext:
 
     @classmethod
     def from_request_context(
-        cls, request_context: RequestContext, key_name: str = None
+        cls, request_context: RequestContext, key_name: str = None, allow_non_existing_key=False
     ) -> "S3EventNotificationContext":
         """
         Create an S3EventNotificationContext from a RequestContext.
@@ -99,14 +101,21 @@ class S3EventNotificationContext:
         a provided one.
         :param request_context: RequestContext
         :param key_name: Optional, in case it's not provided in the RequestContext
+        :param allow_non_existing_key: Optional, indicates that a dummy Key should be created, if it does not exist (required for delete_objects)
         :return: S3EventNotificationContext
         """
         bucket_name = request_context.service_request["Bucket"]
         moto_backend = get_moto_s3_backend(request_context)
         bucket: FakeBucket = get_bucket_from_moto(moto_backend, bucket=bucket_name)
-        key: FakeKey = get_key_from_moto_bucket(
-            moto_bucket=bucket, key=key_name or request_context.service_request["Key"]
-        )
+        try:
+            key: FakeKey = get_key_from_moto_bucket(
+                moto_bucket=bucket, key=key_name or request_context.service_request["Key"]
+            )
+        except NoSuchKey as ex:
+            if allow_non_existing_key:
+                key: FakeKey = FakeKey(key_name, "")
+            else:
+                raise ex
         return cls(
             event_type=EVENT_OPERATION_MAP.get(request_context.operation.wire_name, ""),
             region=request_context.region,
