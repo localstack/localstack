@@ -92,13 +92,13 @@ POLICY_EXPIRATION_FORMAT1 = "%Y-%m-%dT%H:%M:%SZ"
 POLICY_EXPIRATION_FORMAT2 = "%Y-%m-%dT%H:%M:%S.%fZ"
 
 
-class NotValidSigV4Signature(TypedDict):
+class NotValidSigV4SignatureContext(TypedDict):
     signature_provided: str
     string_to_sign: str
     canonical_request: str
 
 
-FindSigV4Result = Tuple[Union[str, None], Union[NotValidSigV4Signature, None]]
+FindSigV4Result = Tuple[Union[str, None], Union[NotValidSigV4SignatureContext, None]]
 
 
 class HmacV1QueryAuthValidation(HmacV1QueryAuth):
@@ -186,7 +186,7 @@ def create_signature_does_not_match_sig_v2(
     ex = SignatureDoesNotMatch(
         "The request signature we calculated does not match the signature you provided. Check your key and signing method."
     )
-    ex.AWSAccessKeyId = TEST_AWS_ACCESS_KEY_ID
+    ex.AWSAccessKeyId = TEST_AWS_ACCESS_KEY_ID  # todo maybe return access key used for the request
     ex.HostId = FAKE_HOST_ID
     ex.SignatureProvided = request_signature
     ex.StringToSign = string_to_sign
@@ -195,7 +195,7 @@ def create_signature_does_not_match_sig_v2(
 
 
 def create_signature_does_not_match_sig_v4(
-    not_valid_sig_v4: NotValidSigV4Signature,
+    not_valid_sig_v4: NotValidSigV4SignatureContext,
 ) -> SignatureDoesNotMatch:
     ex = create_signature_does_not_match_sig_v2(
         request_signature=not_valid_sig_v4["signature_provided"],
@@ -298,157 +298,6 @@ def is_valid_sig_v4(query_args: set) -> bool:
     return False
 
 
-def _get_aws_request_headers(werkzeug_headers: Headers) -> HTTPHeaders:
-    """
-    Converts Werkzeug headers into HTTPHeaders() needed to form an AWSRequest
-    :param werkzeug_headers: Werkzeug request headers
-    :return: headers in HTTPHeaders format
-    """
-    # Werkzeug Headers can have multiple values for the same key
-    # HTTPHeaders will append automatically the values when we set it to the same key multiple times
-    # see https://docs.python.org/3/library/http.client.html#httpmessage-objects
-    # see https://docs.python.org/3/library/email.compat32-message.html#email.message.Message.__setitem__
-    headers = HTTPHeaders()
-    for key, value in werkzeug_headers.items():
-        headers[key] = value
-
-    return headers
-
-
-def _create_new_request(request: Request, headers: Dict[str, str], query_string: str) -> Request:
-    """
-    Create a new request from an existent one, with new headers and query string
-    It is easier to create a new one as the existing request has a lot of cached properties based on query_string
-    :param request: the incoming pre-signed request
-    :param headers: new headers used for signature calculation
-    :param query_string: new query string for signature calculation
-    :return: a new Request with passed headers and query_string
-    """
-    return Request(
-        method=request.method,
-        headers=headers,
-        path=request.path,
-        query_string=query_string,
-        body=request.data,
-        scheme=request.scheme,
-        root_path=request.root_path,
-        server=request.server,
-        remote_addr=request.remote_addr,
-    )
-
-
-def _create_aws_request(
-    context: RequestContext, request_url: str, headers: Dict[str, str]
-) -> AWSRequest:
-    """
-    Create a new AWSRequest based on the request_url and new headers
-    :param context: RequestContext
-    :param request_url: the request_url used for the calculation
-    :param headers: headers used for calculation
-    :return: AWSRequest needed for S3SigV4QueryAuth signer
-    """
-    request_dict = {
-        "method": context.request.method,
-        "url": request_url,
-        "body": b"",
-        "headers": headers,
-        "context": {
-            "is_presign_request": True,
-            "use_global_endpoint": True,
-            "signing": {"bucket": context.service_request.get("Bucket")},
-        },
-    }
-    return create_request_object(request_dict)
-
-
-def _reverse_inject_signature_hmac_v1_query(context: RequestContext) -> Request:
-    """
-    Reverses what does HmacV1QueryAuth._inject_signature while injecting the signature in the request.
-    Transforms the query string parameters in headers to recalculate the signature
-    see botocore.auth.HmacV1QueryAuth._inject_signature
-    :param context:
-    :return:
-    """
-
-    new_headers = {}
-    new_query_string_dict = {}
-
-    for header, value in context.request.args.items():
-        header_low = header.lower()
-        if header_low not in HmacV1QueryAuthValidation.post_signature_headers:
-            new_headers[header] = value
-        elif header_low in HmacV1QueryAuthValidation.QSAOfInterest_low:
-            new_query_string_dict[header] = value
-
-    # there should not be any headers here. If there are, it means they have been added by the client
-    # We should verify them, they will fail the signature except if they were part of the original request
-    for header, value in context.request.headers.items():
-        header_low = header.lower()
-        if header_low.startswith("x-amz-") or header_low in ["content-type", "date", "content-md5"]:
-            new_headers[header_low] = value
-
-    # rebuild the query string
-    new_query_string = percent_encode_sequence(new_query_string_dict)
-
-    # easier to recreate the request, we would have to delete every cached property otherwise
-    reversed_request = _create_new_request(
-        request=context.request,
-        headers=new_headers,
-        query_string=new_query_string,
-    )
-
-    return reversed_request
-
-
-def _prepare_request_for_sig_v4_signature(
-    context: RequestContext, request_netloc: str
-) -> AWSRequest:
-    """
-    Prepare the request and reverse what S3SigV4QueryAuth does to allow signature calculation of the request
-    see botocore.auth.SigV4QueryAuth
-    :param context: RequestContext
-    :return: Request
-    """
-    request_headers = copy.copy(context.request.headers)
-    # set automatically by the handler chain, we don't want that
-    request_headers.pop("Authorization", None)
-    signed_headers = context.request.args.get("X-Amz-SignedHeaders")
-
-    signature_headers = {}
-    if uses_host_addressing(request_headers):
-        request_headers["Host"] = request_headers.pop(S3_VIRTUAL_HOST_FORWARDED_HEADER, "")
-        splitted_path = context.request.path.split("/", maxsplit=2)
-        path = f"/{splitted_path[-1]}"
-    else:
-        path = context.request.path
-
-    not_signed_headers = []
-    for header, value in request_headers.items():
-        header_low = header.lower()
-        if header_low.startswith("x-amz-"):
-            if header_low in IGNORED_SIGV4_HEADERS:
-                continue
-            if header_low not in signed_headers.lower():
-                not_signed_headers.append(header_low)
-        if header_low in signed_headers:
-            signature_headers[header_low] = value
-
-    if not_signed_headers:
-        ex: AccessDenied = create_access_denied_headers_not_signed(", ".join(not_signed_headers))
-        raise ex
-
-    new_query_string_dict = {
-        arg: value for arg, value in context.request.args.items() if arg != "X-Amz-Signature"
-    }
-    new_query_string = percent_encode_sequence(new_query_string_dict)
-    # need to set path + query string as url for aws_request
-    request_url = f"{context.request.scheme}://{request_netloc}{path}?{new_query_string}"
-
-    aws_request = _create_aws_request(context, request_url=request_url, headers=signature_headers)
-
-    return aws_request
-
-
 def validate_presigned_url_s3(context: RequestContext) -> None:
     """
     Validate the presigned URL signed with SigV2.
@@ -502,60 +351,82 @@ def validate_presigned_url_s3(context: RequestContext) -> None:
             raise ex
 
 
-def _validate_headers_for_moto(headers: Headers) -> None:
+def _get_aws_request_headers(werkzeug_headers: Headers) -> HTTPHeaders:
     """
-    The headers can contain values that do not have the right type, and it will throw Exception when passed to Moto
-    Validate them before it get passed
-    :param headers: request headers
+    Converts Werkzeug headers into HTTPHeaders() needed to form an AWSRequest
+    :param werkzeug_headers: Werkzeug request headers
+    :return: headers in HTTPHeaders format
     """
-    if headers.get("x-amz-content-sha256", None) == "STREAMING-AWS4-HMAC-SHA256-PAYLOAD":
-        # this is sign that this is a SigV4 request, with payload encoded
-        # we do not support payload encoding yet
-        # moto parses it to an int, it would raise a 500
-        content_length = headers.get("x-amz-decoded-content-length")
-        if not content_length:
-            raise SignatureDoesNotMatch('"X-Amz-Decoded-Content-Length" header is missing')
-        try:
-            int(content_length)
-        except ValueError:
-            raise SignatureDoesNotMatch('Wrong "X-Amz-Decoded-Content-Length" header')
+    # Werkzeug Headers can have multiple values for the same key
+    # HTTPHeaders will append automatically the values when we set it to the same key multiple times
+    # see https://docs.python.org/3/library/http.client.html#httpmessage-objects
+    # see https://docs.python.org/3/library/email.compat32-message.html#email.message.Message.__setitem__
+    headers = HTTPHeaders()
+    for key, value in werkzeug_headers.items():
+        headers[key] = value
+
+    return headers
 
 
-def _get_signature_of_presigned_request_s3v4(
-    context: RequestContext, request_netloc: str
-) -> FindSigV4Result:
+def _reverse_inject_signature_hmac_v1_query(context: RequestContext) -> Request:
     """
-    Returns the signature of the request
-    :param context: RequestContext
-    :param request_netloc: the host of the original request
+    Reverses what does HmacV1QueryAuth._inject_signature while injecting the signature in the request.
+    Transforms the query string parameters in headers to recalculate the signature
+    see botocore.auth.HmacV1QueryAuth._inject_signature
+    :param context:
     :return:
     """
-    # if both x-amz* header and query param, InvalidRequest, conflicting -> test it
-    query_parameters = context.request.args
 
-    credentials = ReadOnlyCredentials(
-        TEST_AWS_ACCESS_KEY_ID,
-        TEST_AWS_SECRET_ACCESS_KEY,
-        query_parameters.get("X-Amz-Security-Token", None),
+    new_headers = {}
+    new_query_string_dict = {}
+
+    for header, value in context.request.args.items():
+        header_low = header.lower()
+        if header_low not in HmacV1QueryAuthValidation.post_signature_headers:
+            new_headers[header] = value
+        elif header_low in HmacV1QueryAuthValidation.QSAOfInterest_low:
+            new_query_string_dict[header] = value
+
+    # there should not be any headers here. If there are, it means they have been added by the client
+    # We should verify them, they will fail the signature except if they were part of the original request
+    for header, value in context.request.headers.items():
+        header_low = header.lower()
+        if header_low.startswith("x-amz-") or header_low in ["content-type", "date", "content-md5"]:
+            new_headers[header_low] = value
+
+    # rebuild the query string
+    new_query_string = percent_encode_sequence(new_query_string_dict)
+
+    # easier to recreate the request, we would have to delete every cached property otherwise
+    reversed_request = _create_new_request(
+        request=context.request,
+        headers=new_headers,
+        query_string=new_query_string,
     )
-    region = query_parameters["X-Amz-Credential"].split("/")[2]
-    expires = int(query_parameters["X-Amz-Expires"])
-    signer = S3SigV4QueryAuthValidation(credentials, "s3", region, expires=expires)
 
-    aws_request = _prepare_request_for_sig_v4_signature(context, request_netloc=request_netloc)
+    return reversed_request
 
-    signature, string_to_sign, canonical_request = signer.add_auth(  # noqa
-        aws_request, query_parameters["X-Amz-Date"]
+
+def _create_new_request(request: Request, headers: Dict[str, str], query_string: str) -> Request:
+    """
+    Create a new request from an existent one, with new headers and query string
+    It is easier to create a new one as the existing request has a lot of cached properties based on query_string
+    :param request: the incoming pre-signed request
+    :param headers: new headers used for signature calculation
+    :param query_string: new query string for signature calculation
+    :return: a new Request with passed headers and query_string
+    """
+    return Request(
+        method=request.method,
+        headers=headers,
+        path=request.path,
+        query_string=query_string,
+        body=request.data,
+        scheme=request.scheme,
+        root_path=request.root_path,
+        server=request.server,
+        remote_addr=request.remote_addr,
     )
-    request_sig = query_parameters["X-Amz-Signature"]
-    if signature == request_sig:
-        return signature, None
-    else:
-        return None, NotValidSigV4Signature(
-            signature_provided=request_sig,
-            string_to_sign=string_to_sign,
-            canonical_request=canonical_request,
-        )
 
 
 def validate_presigned_url_s3v4(context: RequestContext) -> None:
@@ -579,7 +450,7 @@ def validate_presigned_url_s3v4(context: RequestContext) -> None:
     # TODO: should maybe try/except here -> create auth params validation before checking signature, above!!
     x_amz_date = datetime.datetime.strptime(query_parameters["X-Amz-Date"], "%Y%m%dT%H%M%SZ")
     x_amz_expires = int(query_parameters["X-Amz-Expires"])
-    x_amz_expires_dt = datetime.timedelta(seconds=int(query_parameters["X-Amz-Expires"]))
+    x_amz_expires_dt = datetime.timedelta(seconds=x_amz_expires)
     expiration_time = x_amz_date + x_amz_expires_dt
     expiration_time = expiration_time.replace(tzinfo=datetime.timezone.utc)
 
@@ -597,29 +468,189 @@ def validate_presigned_url_s3v4(context: RequestContext) -> None:
 
 def _find_valid_signature_through_ports(context: RequestContext) -> FindSigV4Result:
     """
-    Iterate through ports to find a valid signature
+    Tries to validate the signature of the received request. If it fails, it will iterate through known LocalStack
+    ports to try to find a match (the host is used for the calculation).
+    If it fails to find a valid match, it will return NotValidSigV4Signature context data
     :param context:
-    :return: signature of the request if valid
+    :return: FindSigV4Result: contains a tuple with the signature if found, or NotValidSigV4Signature context
     """
-    exception = None
-    for port in PORT_REPLACEMENT:
-        url = context.request.url
-        if uses_host_addressing(context.request.headers):
-            netloc = context.request.headers.get(S3_VIRTUAL_HOST_FORWARDED_HEADER)
-        else:
-            netloc = urlparse.urlparse(url).netloc
-        match = re.match(HOST_COMBINATION_REGEX, netloc)
-        if match and match.group(2):
-            request_netloc = netloc.replace(f"{match.group(2)}", str(port))
-        else:
-            request_netloc = f"{netloc}:{port}"
+    request_sig = context.request.args["X-Amz-Signature"]
 
-        signature, exception = _get_signature_of_presigned_request_s3v4(context, request_netloc)
-        if signature:
+    sigv4_context = S3SigV4SignatureContext(context=context)
+    # get the port of the request
+    match = re.match(HOST_COMBINATION_REGEX, sigv4_context.host)
+    request_port = match.group(2) if match else None
+
+    # get the signature from the request
+    signature, canonical_request, string_to_sign = sigv4_context.get_signature_data()
+    if signature == request_sig:
+        return signature, None
+
+    # if the signature does not match, save the data for the exception
+    exception_context = NotValidSigV4SignatureContext(
+        signature_provided=request_sig,
+        string_to_sign=string_to_sign,
+        canonical_request=canonical_request,
+    )
+
+    # we try to iterate through possible ports, to match the signature
+    for port in PORT_REPLACEMENT:
+        if request_port:
+            # the request has already been tested before the loop, skip
+            if request_port == port:
+                continue
+            sigv4_context.update_host_port(port, request_port)
+
+        else:
+            sigv4_context.update_host_port(port)
+
+        # we ignore the additional data because we want the exception raised to match the original request
+        signature, _, _ = sigv4_context.get_signature_data()
+        if signature == request_sig:
             return signature, None
 
-    # Return the last values returned by the loop, not sure which one we should select
-    return None, exception
+    # Return the exception data from the original request after trying to loop through ports
+    return None, exception_context
+
+
+class S3SigV4SignatureContext:
+    def __init__(self, context: RequestContext):
+        self.request = context.request
+        self._query_parameters = context.request.args
+        self._headers = context.request.headers
+        self._bucket = context.service_request.get("Bucket")
+        self._request_method = context.request.method
+
+        credentials = ReadOnlyCredentials(
+            TEST_AWS_ACCESS_KEY_ID,
+            TEST_AWS_SECRET_ACCESS_KEY,
+            self._query_parameters.get("X-Amz-Security-Token", None),
+        )
+        region = self._query_parameters["X-Amz-Credential"].split("/")[2]
+        expires = int(self._query_parameters["X-Amz-Expires"])
+        self.signature_date = self._query_parameters["X-Amz-Date"]
+
+        self.signer = S3SigV4QueryAuthValidation(credentials, "s3", region, expires=expires)
+        sig_headers, qs = self._get_signed_headers_and_filtered_query_string()
+        self.signed_headers = sig_headers
+        self.request_query_string = qs
+
+        if uses_host_addressing(self._headers):
+            netloc = self._headers.get(S3_VIRTUAL_HOST_FORWARDED_HEADER)
+            self.host = netloc
+            self._original_host = netloc
+            # the request comes from the Virtual Host router, we need to remove the bucket from the path
+            splitted_path = self.request.path.split("/", maxsplit=2)
+            self.path = f"/{splitted_path[-1]}"
+
+        else:
+            netloc = urlparse.urlparse(self.request.url).netloc
+            self.host = netloc
+            self._original_host = netloc
+            self.path = context.request.path
+
+        self._set_aws_request(self.request_url)
+
+    def update_host_port(self, new_host_port: str, original_host_port: str = None):
+        """
+        Update the host port of the context with the provided one, format `:{port}`
+        :param new_host_port:
+        :param original_host_port:
+        :return:
+        """
+        if new_host_port:
+            updated_netloc = self._original_host.replace(original_host_port, new_host_port)
+        else:
+            updated_netloc = f"{self._original_host}{new_host_port}"
+        self.host = updated_netloc
+        self.signed_headers["host"] = updated_netloc
+        self._set_aws_request(request_url=self.request_url)
+
+    @property
+    def request_url(self) -> str:
+        return f"{self.request.scheme}://{self.host}{self.path}?{self.request_query_string}"
+
+    def get_signature_data(self) -> Tuple[str, str, str]:
+        """
+        Uses the signer to return the signature and the data used to calculate it
+        :return: signature, canonical_request and string_to_sign
+        """
+        return self.signer.add_auth(self.aws_request, self.signature_date)  # noqa
+
+    def _get_signed_headers_and_filtered_query_string(self) -> Tuple[Dict[str, str], str]:
+        """
+        Transforms the original headers and query parameters to the headers and query string used to sign the
+        original request.
+        Allows us to recreate the original request.
+        :raises AccessDenied if the request contains headers that were not in X-Amz-SignedHeaders and started with x-amz
+        :return: the headers used to sign the request and the query string without X-Amz-Signature
+        """
+        headers = copy.copy(self._headers)
+        # set automatically by the handler chain, we don't want that
+        headers.pop("Authorization", None)
+        signed_headers = self._query_parameters.get("X-Amz-SignedHeaders")
+
+        signature_headers = {}
+        not_signed_headers = []
+        for header, value in headers.items():
+            header_low = header.lower()
+            if header_low.startswith("x-amz-"):
+                if header_low in IGNORED_SIGV4_HEADERS:
+                    continue
+                if header_low not in signed_headers.lower():
+                    not_signed_headers.append(header_low)
+            if header_low in signed_headers:
+                signature_headers[header_low] = value
+
+        if not_signed_headers:
+            ex: AccessDenied = create_access_denied_headers_not_signed(
+                ", ".join(not_signed_headers)
+            )
+            raise ex
+
+        new_query_args = {
+            arg: value for arg, value in self._query_parameters.items() if arg != "X-Amz-Signature"
+        }
+        new_query_string = percent_encode_sequence(new_query_args)
+        return signature_headers, new_query_string
+
+    def _set_aws_request(self, request_url: str) -> None:
+        """
+        Creates and sets the AWSRequest needed for S3SigV4QueryAuth signer
+        :param request_url: the request_url used for the calculation
+        :return:
+        """
+        request_dict = {
+            "method": self._request_method,
+            "url": request_url,
+            "body": b"",
+            "headers": self.signed_headers,
+            "context": {
+                "is_presign_request": True,
+                "use_global_endpoint": True,
+                "signing": {"bucket": self._bucket},
+            },
+        }
+        self.aws_request: AWSRequest = create_request_object(request_dict)
+
+
+def _validate_headers_for_moto(headers: Headers) -> None:
+    """
+    The headers can contain values that do not have the right type, and it will throw Exception when passed to Moto
+    Validate them before it get passed
+    :param headers: request headers
+    """
+    if headers.get("x-amz-content-sha256", None) == "STREAMING-AWS4-HMAC-SHA256-PAYLOAD":
+        # this is sign that this is a SigV4 request, with payload encoded
+        # we do not support payload encoding yet
+        # moto parses it to an int, it would raise a 500
+        content_length = headers.get("x-amz-decoded-content-length")
+        if not content_length:
+            raise SignatureDoesNotMatch('"X-Amz-Decoded-Content-Length" header is missing')
+        try:
+            int(content_length)
+        except ValueError:
+            raise SignatureDoesNotMatch('Wrong "X-Amz-Decoded-Content-Length" header')
 
 
 def validate_post_policy(request_form: ImmutableMultiDict) -> None:
