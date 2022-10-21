@@ -49,16 +49,13 @@ install-test-only: venv
 install-dev: venv         ## Install developer requirements into venv
 	$(VENV_RUN); $(PIP_CMD) install $(PIP_OPTS) -e ".[cli,runtime,test,dev]"
 
-install: install-dev entrypoints init-testlibs  ## Install full dependencies into venv, and download third-party services
+install: install-dev entrypoints  ## Install full dependencies into venv
 
 entrypoints:              ## Run setup.py develop to build entry points
 	$(VENV_RUN); python setup.py plugins egg_info
 
 init:                     ## Initialize the infrastructure, make sure all libs are downloaded
 	$(VENV_RUN); python -m localstack.services.install libs
-
-init-testlibs:
-	$(VENV_RUN); python -m localstack.services.install testlibs
 
 dist: entrypoints        ## Build source and built (wheel) distributions of the current version
 	$(VENV_RUN); pip install --upgrade twine; python setup.py sdist bdist_wheel
@@ -184,7 +181,7 @@ docker-run-tests:		  ## Initializes the test environment and runs the tests in a
 	# Note: running "install-test-only" below, to avoid pulling in [runtime] extras from transitive dependencies
 	docker run -e LOCALSTACK_INTERNAL_TEST_COLLECT_METRIC=1 --entrypoint= -v `pwd`/tests/:/opt/code/localstack/tests/ -v `pwd`/target/:/opt/code/localstack/target/ \
 		$(IMAGE_NAME_FULL) \
-	    bash -c "make install-test-only && make init-testlibs && pip uninstall -y argparse dataclasses && DEBUG=$(DEBUG) LAMBDA_EXECUTOR=local PYTEST_LOGLEVEL=debug PYTEST_ARGS='$(PYTEST_ARGS)' COVERAGE_FILE='$(COVERAGE_FILE)' TEST_PATH='$(TEST_PATH)' make test-coverage"
+	    bash -c "make install-test-only && pip uninstall -y argparse dataclasses && DEBUG=$(DEBUG) LAMBDA_EXECUTOR=local PYTEST_LOGLEVEL=debug PYTEST_ARGS='$(PYTEST_ARGS)' COVERAGE_FILE='$(COVERAGE_FILE)' TEST_PATH='$(TEST_PATH)' make test-coverage"
 
 docker-run:        		  ## Run Docker image locally
 	($(VENV_RUN); bin/localstack start)
@@ -294,4 +291,4 @@ clean-dist:				  ## Clean up python distribution directories
 	rm -rf dist/ build/
 	rm -rf *.egg-info
 
-.PHONY: usage venv freeze install-basic install-runtime install-test install-dev install entrypoints init init-testlibs dist publish coveralls start docker-save-image docker-save-image-light docker-build docker-build-light docker-build-multi-platform docker-push-master docker-push-master-all docker-create-push-manifests docker-create-push-manifests-light docker-run-tests docker-run docker-mount-run docker-build-lambdas docker-cp-coverage test test-coverage test-docker test-docker-mount test-docker-mount-code ci-pro-smoke-tests lint lint-modified format format-modified init-precommit clean clean-dist vagrant-start vagrant-stop infra
+.PHONY: usage venv freeze install-basic install-runtime install-test install-dev install entrypoints init dist publish coveralls start docker-save-image docker-save-image-light docker-build docker-build-light docker-build-multi-platform docker-push-master docker-push-master-all docker-create-push-manifests docker-create-push-manifests-light docker-run-tests docker-run docker-mount-run docker-build-lambdas docker-cp-coverage test test-coverage test-docker test-docker-mount test-docker-mount-code ci-pro-smoke-tests lint lint-modified format format-modified init-precommit clean clean-dist vagrant-start vagrant-stop infra
