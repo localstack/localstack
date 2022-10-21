@@ -1,8 +1,8 @@
 name: smoke-tests-against-redhat
 on:
-  push:
-    branches:
-      - master
+  schedule:
+    - cron: '0 7 * * 1'  # every Monday morning
+  workflow_dispatch:
 
 permissions:
   contents: read

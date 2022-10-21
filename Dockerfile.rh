@@ -12,36 +12,40 @@ RUN dnf install -y cyrus-sasl-devel gcc gcc-c++ git iputils make npm openssl-dev
   && rm -rf /var/cache/yum
 
 RUN dnf install -y bzip2-devel sqlite-devel libffi-devel \
-  && curl https://www.python.org/ftp/python/3.10.4/Python-3.10.4.tgz -o Python-3.10.4.tgz \
-  && tar xzf Python-3.10.4.tgz \
-  && cd Python-3.10.4 \
+  && curl https://www.python.org/ftp/python/3.10.8/Python-3.10.8.tgz -o Python-3.10.8.tgz \
+  && tar xzf Python-3.10.8.tgz \
+  && cd Python-3.10.8 \
   && ./configure \
   && make -j $(nproc) \
   && make install \
   && cd .. \
-  && rm -rf Python-3.10.4 \
-  && rm Python-3.10.4.tgz \
+  && rm -rf Python-3.10.8 \
+  && rm Python-3.10.8.tgz \
   && dnf remove -y bzip2-devel sqlite-devel libffi-devel \
   && dnf clean all \
   && rm -rf /var/cache/yum
 
-RUN python3 -m pip install -U setuptools pip wheel
+RUN python3 -m pip install -U setuptools pip wheel supervisor
 
 # Create a localstack user
 RUN useradd -ms /bin/bash localstack
 
-# Install python packages
-RUN python3 -m pip install supervisor awscli awscli-local 'localstack[runtime]>=0.14.0' 'localstack-ext[runtime]>=0.14.0' --upgrade --no-cache-dir
-# Install the basic libraries
-RUN python3 -m localstack.services.install libs
-
 # install entrypoint script
 ADD bin/docker-entrypoint.sh /usr/local/bin/
-# add the script to start LocalStack and add the supervisor.d config
-RUN mkdir -p /opt/code/localstack/bin/
+# add the script to start LocalStack, the supervisor.d config, and the tmp dir marker
+RUN mkdir -p /opt/code/localstack/bin/ && mkdir -p /tmp/localstack && touch /tmp/localstack/.marker
 WORKDIR /opt/code/localstack/
 ADD bin/localstack /opt/code/localstack/bin/
 ADD bin/supervisord.conf /etc/supervisord.conf
+
+# Create the venv
+RUN python3 -m venv .venv
+# Install python packages
+RUN source .venv/bin/activate && python3 -m pip install supervisor awscli awscli-local --upgrade --no-cache-dir
+# Install localstack dev packages
+RUN source .venv/bin/activate && python3 -m pip install 'localstack[full]>=1.2.0' 'localstack-ext[full]>=1.2.0' --pre --upgrade --no-cache-dir
+# Install the basic libraries
+RUN source .venv/bin/activate && python3 -m localstack.services.install libs
 
 # Set default settings
 ENV USER=localstack
