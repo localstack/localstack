@@ -100,9 +100,6 @@ jobs:
             docker pull -q lambci/lambda:java8.al2
             docker pull -q lambci/lambda:java11
       - run:
-          name: Initialize Test Libraries
-          command: make init-testlibs
-      - run:
           name: Test Docker client
           environment:
             TEST_PATH: "tests/integration/docker_utils"
