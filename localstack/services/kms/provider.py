@@ -38,6 +38,8 @@ from localstack.aws.api.kms import (
     GenerateDataKeyResponse,
     GenerateDataKeyWithoutPlaintextRequest,
     GenerateDataKeyWithoutPlaintextResponse,
+    GenerateRandomRequest,
+    GenerateRandomResponse,
     GetKeyPolicyRequest,
     GetKeyPolicyResponse,
     GetKeyRotationStatusRequest,
@@ -465,6 +467,12 @@ class KmsProvider(KmsApi, ServiceLifecycleHook):
             request.get("KeyId"), request.get("KeyPairSpec"), context
         )
         return GenerateDataKeyPairResponse(**result)
+
+    @handler("GenerateRandom", expand=False)
+    def generate_random(
+        self, context: RequestContext, request: GenerateRandomRequest
+    ) -> GenerateRandomResponse:
+        return GenerateRandomResponse(Plaintext=b"+Q2hxK6OBuU6K6ZIIBucFMCW2NJkhiSWDySSQyWp9zA=")
 
     @handler("GenerateDataKeyPairWithoutPlaintext", expand=False)
     def generate_data_key_pair_without_plaintext(

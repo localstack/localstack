@@ -240,6 +240,11 @@ class TestKMS:
         assert decrypted["Plaintext"] == result["PrivateKeyPlaintext"]
 
     @pytest.mark.aws_validated
+    def test_generate_random(self, kms_client):
+        result = kms_client.generate_random()
+        assert result.get("Plaintext")
+
+    @pytest.mark.aws_validated
     def test_generate_data_key(self, kms_client, kms_key):
         key_id = kms_key["KeyId"]
         # LocalStack currently doesn't act on KeySpec or on NumberOfBytes params, but one of them has to be set.
