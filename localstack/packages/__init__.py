@@ -4,7 +4,6 @@ from .api import (
     Package,
     PackageException,
     PackageInstaller,
-    PackageRepository,
     PackagesPlugin,
     packages,
 )
@@ -19,7 +18,6 @@ __all__ = [
     "PackageException",
     "NoSuchVersionException",
     "SystemNotSupportedException",
-    "PackageRepository",
     "PackagesPlugin",
     "packages",
 ]

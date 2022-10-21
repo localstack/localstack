@@ -3,6 +3,7 @@ import functools
 import logging
 import os
 import threading
+from collections import defaultdict
 from enum import Enum
 from inspect import getmodule
 from typing import Callable, Dict, List, Optional
@@ -222,47 +223,25 @@ class Package(abc.ABC):
         return self.name
 
 
-class PackageRepository(PluginManager):
-    """
-    PackageRepository is a plugin manager for PackagesPlugin instances.
-    It discovers all plugins in the namespace "localstack.packages" and provides convenience functions to
-    list the packages for each service.
-    """
-
-    # TODO couple the packages plugins to service providers instead of services
-    #  - maybe integrate these into the ServicePluginManager
-
-    def __init__(self):
-        super().__init__(namespace=PLUGIN_NAMESPACE)
-
-    def get_service_packages(self) -> Dict[str, List[Package]]:
-        result = {}
-        self.load_all()
-        container_names = self.list_names()
-        for container_name in container_names:
-            container = self.get_container(container_name)
-            service = container.plugin.service
-            _packages: List[Package] = container.plugin.get_packages()
-            result[service] = _packages
-        return result
-
-
 class PackagesPlugin(Plugin):
     """
     Plugin implementation for Package plugins.
-    A package plugin bundles a specific service with a set of packages which are used by the service.
+    A package plugin bundles a specific api with a set of packages which are used by the api.
     """
 
-    service: str
+    api: str
+    name: str
 
     def __init__(
         self,
-        service: str,
+        api: str,
+        name: str,
         get_packages: Callable[[], Package | List[Package]],
         should_load: Callable[[], bool] = None,
     ) -> None:
         super().__init__()
-        self.service = service
+        self.api = api
+        self.name = name
         self._get_packages = get_packages
         self._should_load = should_load
 
@@ -279,25 +258,62 @@ class PackagesPlugin(Plugin):
         return _packages if isinstance(_packages, list) else [_packages]
 
 
-def packages(
-    service: Optional[str] = None,
-    name: Optional[str] = "default",
-    should_load: Callable[[], bool] = None,
-):
+class PackagesPluginManager:
+    def __init__(self):
+        self.package_plugin_manager: PluginManager[PackagesPlugin] = PluginManager(PLUGIN_NAMESPACE)
+        self._package_plugin_specs = None
+        self._mutex = threading.RLock()
+
+    @functools.lru_cache()
+    def get_packages(self) -> Dict[str, Dict[str, List[Package]]]:
+        packages: Dict[str, Dict[str, List[Package]]] = defaultdict(dict)
+
+        for plugin in self.package_plugin_manager.load_all():
+            packages[plugin.api][plugin.name] = plugin.get_packages()
+
+        return packages
+
+    def _resolve_package_plugin_specs(self) -> Dict[str, List[str]]:
+        result = defaultdict(list)
+
+        for spec in self.package_plugin_manager.list_plugin_specs():
+            api, provider = spec.name.split(
+                ":"
+            )  # TODO: error handling, faulty plugins could break the runtime
+            result[api].append(provider)
+
+        return result
+
+    @property
+    def package_plugin_specs(self) -> Dict[str, List[str]]:
+        """
+        Returns all provider names within the service plugin namespace and parses their name according to the convention,
+        that is "<api>:<provider>". The result is a dictionary that maps api => List[str (name of a provider)].
+        """
+        if self._package_plugin_specs is not None:
+            return self._package_plugin_specs
+
+        with self._mutex:
+            if self._package_plugin_specs is None:
+                self._package_plugin_specs = self._resolve_package_plugin_specs()
+            return self._package_plugin_specs
+
+
+def packages(api: str = None, name="default", should_load: Optional[Callable[[], bool]] = None):
     """
     Decorator for marking methods that create Package instances as a PackagePlugin.
     Methods marked with this decorator are discoverable as a PluginSpec within the namespace "localstack.packages",
-    with the name "<service>:<name>". If service is not explicitly specified, then the parent module name is used as
+    with the name "<api>:<name>". If api is not explicitly specified, then the parent module name is used as
     service name.
     """
 
     def wrapper(fn):
-        _service = service or getmodule(fn).__name__.split(".")[-2]
+        _api = api or getmodule(fn).__name__.split(".")[-2]
 
         @functools.wraps(fn)
         def factory() -> PackagesPlugin:
-            return PackagesPlugin(service=_service, get_packages=fn, should_load=should_load)
+            return PackagesPlugin(api=_api, name=name, get_packages=fn, should_load=should_load)
 
-        return PluginSpec(PLUGIN_NAMESPACE, f"{_service}:{name}", factory=factory)
+        return PluginSpec(PLUGIN_NAMESPACE, f"{_api}:{name}", factory=factory)
 
     return wrapper

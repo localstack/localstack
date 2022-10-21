@@ -19,10 +19,13 @@ class ElasticMQPackage(Package):
         return ["1.1.0"]
 
     def _get_installer(self, version: str) -> PackageInstaller:
-        return ElasticMQPackageInstaller("elasticmq", version)
+        return ElasticMQPackageInstaller()
 
 
 class ElasticMQPackageInstaller(PackageInstaller):
+    def __init__(self):
+        super().__init__("elasticmq", "1.1.0")
+
     def _get_install_marker_path(self, install_dir: str) -> str:
         return os.path.join(install_dir, "elasticmq-server.jar")
 

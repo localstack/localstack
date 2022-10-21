@@ -1,14 +1,16 @@
-import itertools
+from collections import defaultdict
 from multiprocessing.pool import Pool
-from typing import Callable, Dict, List
+from typing import Dict, List
 
 import click
 from click import ClickException
 from rich.console import Console
 
 from localstack import config
-from localstack.packages import InstallTarget, Package, PackageRepository
+from localstack.packages import InstallTarget, Package
+from localstack.packages.api import PackagesPluginManager
 from localstack.services.install import InstallerManager
+from localstack.services.plugins import SERVICE_PLUGINS
 from localstack.utils.bootstrap import setup_logging
 
 console = Console()
@@ -41,11 +43,7 @@ def _do_install(pkg, version=None, target=None):
     console.print(f"installing... [bold]{pkg}[/bold]")
     try:
         package_installer = InstallerManager().get_installers()[pkg]
-        if isinstance(package_installer, Package):
-            package_installer.install(version=version, target=target)
-        else:
-            # Old installers are just callables
-            package_installer()
+        package_installer.install(version=version, target=target)
         console.print(f"[green]installed[/green] [bold]{pkg}[/bold]")
     except Exception as e:
         console.print(f"[red]error[/red] installing {pkg}: {e}")
@@ -76,7 +74,7 @@ def install(package, parallel, version=None, target=None):
     Install one or more packages.
     """
     console.print(f"resolving packages: {package}")
-    installers: Dict[str, Callable] = InstallerManager().get_installers()
+    installers: Dict[str, Package] = InstallerManager().get_installers()
     config.dirs.mkdirs()
 
     for pkg in package:
@@ -100,18 +98,40 @@ def install(package, parallel, version=None, target=None):
         raise ClickException("one or more package installations failed.")
 
 
+def _get_available_packages() -> Dict[str, Dict[str, List[Package]]]:
+    # get all AWS provider specs
+
+    aws_provider_specs = dict(sorted(SERVICE_PLUGINS.api_provider_specs.items()))
+
+    # get all package plugin specs
+    packages_plugin_manager = PackagesPluginManager()
+    package_plugin_specs = packages_plugin_manager.package_plugin_specs
+
+    package_plugins = packages_plugin_manager.get_packages()
+    available_packages = defaultdict(dict)
+    for api, names in aws_provider_specs.items():
+        for name in sorted(names):
+            # check if the plugin is available
+            if api not in package_plugin_specs or name not in package_plugin_specs[api]:
+                continue
+            if api in package_plugins and name in package_plugins[api]:
+                available_packages[api][name] = package_plugins[api][name]
+    return available_packages
+
+
 def list_service_packages():
-    package_repo = PackageRepository()
-    service_packages = package_repo.get_service_packages()
-    for service, packages in service_packages.items():
-        console.print(f"[green]{service}[/green]:")
-        for package in packages:
-            console.print(f"  - {package.name}", highlight=False)
-            for version in package.get_versions():
-                if version == package.default_version:
-                    console.print(f"    -  [bold]{version} (default)[/bold]", highlight=False)
-                else:
-                    console.print(f"    -  {version}", highlight=False)
+    available_packages = _get_available_packages()
+    for api, name_packages in available_packages.items():
+        console.print(f"[green]{api}[/green]:")
+        for name, packages in name_packages.items():
+            for package in packages:
+                scope = "community" if name == "default" else name
+                console.print(f"  - {package.name} ({scope})", highlight=False)
+                for version in package.get_versions():
+                    if version == package.default_version:
+                        console.print(f"    -  [bold]{version} (default)[/bold]", highlight=False)
+                    else:
+                        console.print(f"    -  {version}", highlight=False)
 
 
 @click.argument("services", nargs=-1, required=True)
@@ -130,11 +150,27 @@ def list_service_packages():
     help="target of the installation",
 )
 def install_service_packages(services: List[str], parallel: int, target: str):
+    pass
+    """
+    available_packages = _get_available_packages()
+    service_provider_config = ServiceProviderConfig("pro")
+    service_provider_config.load_from_environment()
+    aws_provider_specs = dict(sorted(SERVICE_PLUGINS.api_provider_specs.items()))
+    packages_plugin_manager = PackagesPluginManager()
+    package_plugin_specs = packages_plugin_manager.package_plugin_specs
+    package_plugins = packages_plugin_manager.get_packages()
+    for api, names in aws_provider_specs.items():
+        for name in sorted(names):
+            # check if the plugin is available
+            if api not in package_plugin_specs or name not in package_plugin_specs[api]:
+                continue
+            if api in package_plugins and name in package_plugins[api]:
+                service_provider_config.set_provider_if_not_exists()
+    service_provider_config = config.SERVICE_PROVIDER_CONFIG
+    service_provider_config.
     packages = []
-    package_repo = PackageRepository()
-    service_packages = package_repo.get_service_packages()
     for service in services:
-        packages += service_packages.get(service, [])
+        packages += available_packages.get(service, [])
 
     if not packages:
         console.print(f"[red]error[/red] installing packages for {services}: No packages found.")
@@ -150,6 +186,7 @@ def install_service_packages(services: List[str], parallel: int, target: str):
         pool.starmap(
             _do_install_package, zip(packages, itertools.repeat(None), itertools.repeat(target))
         )
+    """
 
 
 if not config.LEGACY_LPM_INSTALLERS:

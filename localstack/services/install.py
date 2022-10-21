@@ -14,6 +14,7 @@ from plugin import Plugin, PluginManager
 from localstack import config
 from localstack.config import dirs
 from localstack.constants import DEFAULT_SERVICE_PORTS, MAVEN_REPO_URL
+from localstack.packages import Package, PackagesPlugin
 from localstack.runtime import hooks
 from localstack.utils.archives import untar, unzip
 from localstack.utils.files import load_file, mkdir, new_tmp_file, rm_rf, save_file
@@ -233,14 +234,34 @@ class InstallerRepository(Plugin):
     # TODO the installer repositories should be migrated (downwards compatible) to use the packages / package installers
     namespace = "localstack.installer"
 
-    def get_installer(self) -> List[Installer]:
+    def get_installer(self) -> List[Tuple[str, Package]]:
         raise NotImplementedError
+
+
+class DynamicPackageRepository(InstallerRepository):
+    name = "packages"
+
+    def __init__(self):
+        self.plugin_manager: PluginManager[PackagesPlugin] = PluginManager(
+            namespace="localstack.packages"
+        )
+
+    def get_installer(self) -> List[Tuple[str, Package]]:
+        result = []
+
+        i = 0
+        for package_plugin in self.plugin_manager.load_all():
+            for package in package_plugin.get_packages():
+                i += 1
+                result.append((package_plugin.name + "_" + package.name, package))
+
+        return result
 
 
 class CommunityInstallerRepository(InstallerRepository):
     name = "community"
 
-    def get_installer(self) -> List[Installer]:
+    def get_installer(self) -> List[Tuple[str, Package]]:
         from localstack.packages.terraform import terraform_package
         from localstack.services.awslambda.packages import (
             awslambda_go_runtime_package,
@@ -282,8 +303,8 @@ class InstallerManager:
         )
 
     @functools.lru_cache()
-    def get_installers(self) -> Dict[str, Callable]:
-        installer: List[Installer] = []
+    def get_installers(self) -> Dict[str, Package]:
+        installer: List[Tuple[str, Package]] = []
 
         for repo in self.repositories.load_all():
             installer.extend(repo.get_installer())
