@@ -87,6 +87,7 @@ from werkzeug.exceptions import BadRequest, NotFound
 
 from localstack.aws.api import HttpRequest
 from localstack.aws.protocol.op_router import RestServiceOperationRouter
+from localstack.config import LEGACY_S3_PROVIDER
 
 
 def _text_content(func):
@@ -1048,8 +1049,11 @@ class S3RequestParser(RestXMLRequestParser):
 
     @_handle_exceptions
     def parse(self, request: HttpRequest) -> Tuple[OperationModel, Any]:
-        """Handle virtual-host-addressing for S3."""
-        with self.VirtualHostRewriter(request):
+        if LEGACY_S3_PROVIDER:
+            """Handle virtual-host-addressing for S3."""
+            with self.VirtualHostRewriter(request):
+                return super().parse(request)
+        else:
             return super().parse(request)
 
     def _parse_shape(
