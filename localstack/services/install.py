@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-import functools
 import glob
 import logging
 import os
@@ -7,14 +6,11 @@ import re
 import sys
 import tempfile
 import time
-from typing import Callable, Dict, List, Tuple, Union
-
-from plugin import Plugin, PluginManager
+from typing import Union
 
 from localstack import config
 from localstack.config import dirs
 from localstack.constants import DEFAULT_SERVICE_PORTS, MAVEN_REPO_URL
-from localstack.packages import Package, PackagesPlugin
 from localstack.runtime import hooks
 from localstack.utils.archives import untar, unzip
 from localstack.utils.files import load_file, mkdir, new_tmp_file, rm_rf, save_file
@@ -225,99 +221,6 @@ def download_and_extract_with_retry(archive_url, tmp_archive, target_dir):
         LOG.info("Unable to extract file, re-downloading ZIP archive %s: %s", tmp_archive, e)
         rm_rf(tmp_archive)
         download_and_extract(archive_url, target_dir, tmp_archive=tmp_archive)
-
-
-Installer = Tuple[str, Callable]
-
-
-class InstallerRepository(Plugin):
-    # TODO the installer repositories should be migrated (downwards compatible) to use the packages / package installers
-    namespace = "localstack.installer"
-
-    def get_installer(self) -> List[Tuple[str, Package]]:
-        raise NotImplementedError
-
-
-class DynamicPackageRepository(InstallerRepository):
-    name = "packages"
-
-    def __init__(self):
-        self.plugin_manager: PluginManager[PackagesPlugin] = PluginManager(
-            namespace="localstack.packages"
-        )
-
-    def get_installer(self) -> List[Tuple[str, Package]]:
-        result = []
-
-        i = 0
-        for package_plugin in self.plugin_manager.load_all():
-            for package in package_plugin.get_packages():
-                i += 1
-                result.append((package_plugin.name + "_" + package.name, package))
-
-        return result
-
-
-class CommunityInstallerRepository(InstallerRepository):
-    name = "community"
-
-    def get_installer(self) -> List[Tuple[str, Package]]:
-        from localstack.packages.terraform import terraform_package
-        from localstack.services.awslambda.packages import (
-            awslambda_go_runtime_package,
-            awslambda_runtime_package,
-            lambda_java_libs_package,
-        )
-        from localstack.services.cloudformation.packages import cloudformation_package
-        from localstack.services.dynamodb.packages import dynamodblocal_package
-        from localstack.services.kinesis.packages import kinesalite_package, kinesismock_package
-        from localstack.services.kms.packages import kms_local_package
-        from localstack.services.opensearch.packages import (
-            elasticsearch_package,
-            opensearch_package,
-        )
-        from localstack.services.sqs.legacy.packages import elasticmq_package
-        from localstack.services.stepfunctions.packages import stepfunctions_local_package
-
-        return [
-            ("awslambda-go-runtime", awslambda_go_runtime_package),
-            ("awslambda-runtime", awslambda_runtime_package),
-            ("cloudformation-libs", cloudformation_package),
-            ("dynamodb-local", dynamodblocal_package),
-            ("elasticmq", elasticmq_package),
-            ("elasticsearch", elasticsearch_package),
-            ("opensearch", opensearch_package),
-            ("kinesalite", kinesalite_package),
-            ("kinesis-mock", kinesismock_package),
-            ("lambda-java-libs", lambda_java_libs_package),
-            ("local-kms", kms_local_package),
-            ("stepfunctions-local", stepfunctions_local_package),
-            ("terraform", terraform_package),
-        ]
-
-
-class InstallerManager:
-    def __init__(self):
-        self.repositories: PluginManager[InstallerRepository] = PluginManager(
-            InstallerRepository.namespace
-        )
-
-    @functools.lru_cache()
-    def get_installers(self) -> Dict[str, Package]:
-        installer: List[Tuple[str, Package]] = []
-
-        for repo in self.repositories.load_all():
-            installer.extend(repo.get_installer())
-
-        return dict(installer)
-
-    def install(self, package: str, *args, **kwargs):
-        installer = self.get_installers().get(package)
-
-        if not installer:
-            raise ValueError("no installer for package %s" % package)
-
-        return installer(*args, **kwargs)
 
 
 def main():

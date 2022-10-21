@@ -5,7 +5,7 @@ from .api import (
     PackageException,
     PackageInstaller,
     PackagesPlugin,
-    packages,
+    package,
 )
 from .core import DownloadInstaller, GitHubReleaseInstaller, SystemNotSupportedException
 
@@ -19,5 +19,5 @@ __all__ = [
     "NoSuchVersionException",
     "SystemNotSupportedException",
     "PackagesPlugin",
-    "packages",
+    "package",
 ]

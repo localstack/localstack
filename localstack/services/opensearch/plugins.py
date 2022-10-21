@@ -1,7 +1,7 @@
-from localstack.packages import Package, packages
+from localstack.packages import Package, package
 
 
-@packages()
+@package(name="opensearch")
 def opensearch_package() -> Package:
     from localstack.services.opensearch.packages import opensearch_package
 

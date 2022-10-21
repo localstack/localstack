@@ -1,23 +1,15 @@
-from localstack import config
-from localstack.packages import Package, packages
+from localstack.packages import Package, package
 
 
-def _common_package() -> Package:
-    if config.KINESIS_PROVIDER == "kinesalite":
-        from localstack.services.kinesis.packages import kinesalite_package
+@package(name="kinesalite")
+def kinesalite_package() -> Package:
+    from localstack.services.kinesis.packages import kinesalite_package
 
-        return kinesalite_package
-    else:
-        from localstack.services.kinesis.packages import kinesismock_package
-
-        return kinesismock_package
+    return kinesalite_package
 
 
-@packages()
-def kinesis_package() -> Package:
-    return _common_package()
+@package(name="kinesis-mock")
+def kinesismock_package() -> Package:
+    from localstack.services.kinesis.packages import kinesismock_package
 
-
-@packages(name="legacy")
-def kinesis_package_legacy() -> Package:
-    return _common_package()
+    return kinesismock_package

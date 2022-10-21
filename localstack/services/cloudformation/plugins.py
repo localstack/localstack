@@ -1,8 +1,8 @@
-from localstack.packages import packages
+from localstack.packages import Package, package
 
 
-@packages()
-def cloudformation_package():
+@package(name="cloudformation-libs")
+def cloudformation_package() -> Package:
     from localstack.services.cloudformation.packages import cloudformation_package
 
     return cloudformation_package
