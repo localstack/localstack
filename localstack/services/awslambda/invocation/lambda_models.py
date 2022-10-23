@@ -117,11 +117,13 @@ class S3Code:
         )
         target_file.flush()
 
-    def generate_presigned_url(self) -> str:
+    def generate_presigned_url(self, endpoint_url: str | None = None) -> str:
         """
         Generates a presigned url pointing to the code archive
         """
-        s3_client: "S3Client" = aws_stack.connect_to_service("s3", region_name="us-east-1")
+        s3_client: "S3Client" = aws_stack.connect_to_service(
+            "s3", region_name="us-east-1", endpoint_url=endpoint_url
+        )
         params = {"Bucket": self.s3_bucket, "Key": self.s3_key}
         if self.s3_object_version:
             params["VersionId"] = self.s3_object_version
