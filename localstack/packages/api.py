@@ -195,7 +195,7 @@ class Package(abc.ABC):
         :raises NoSuchVersionException: If the given version is not supported.
         """
         if not version:
-            version = self.default_version
+            return self.get_installer(self.default_version)
         if version not in self.get_versions():
             raise NoSuchVersionException()
         return self._get_installer(version)

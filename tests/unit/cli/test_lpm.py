@@ -31,6 +31,16 @@ def test_install_with_non_existing_package_fails(runner):
 
 
 @pytest.mark.skip_offline
+def test_install_with_non_existing_version_fails(runner):
+    result = runner.invoke(cli, ["install", "elasticmq", "--version", "non-existing-version"])
+    assert result.exit_code == 1
+    assert (
+        "unable to locate installer for package elasticmq and version non-existing-version"
+        in result.output
+    )
+
+
+@pytest.mark.skip_offline
 def test_install_failure_returns_non_zero_exit_code(runner, monkeypatch):
     class FailingPackage(Package):
         def __init__(self):

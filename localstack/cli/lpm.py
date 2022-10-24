@@ -47,7 +47,7 @@ def _do_install_package(package: Package, version: str = None, target: InstallTa
         raise e
 
 
-def _load_packages(packages: List[str]) -> List[Package]:
+def _load_packages(packages: List[str], version: Optional[str] = None) -> List[Package]:
     """
     Collects the Package instances for the given list of package names (without scope).
     :param packages: List of package names (without the scope) which should be collected
@@ -68,7 +68,13 @@ def _load_packages(packages: List[str]) -> List[Package]:
         if not plugin_specs:
             raise ClickException(f"unable to locate installer for package {pkg}")
         for plugin_spec in plugin_specs:
-            package_instances.append(plugin_manager.load(plugin_spec.name).get_package())
+            package = plugin_manager.load(plugin_spec.name).get_package()
+            package_instances.append(package)
+            if version and version not in package.get_versions():
+                raise ClickException(
+                    f"unable to locate installer for package {pkg} and version {version}"
+                )
+
     return package_instances
 
 
@@ -110,10 +116,12 @@ def install(
     config.dirs.mkdirs()
 
     # collect installers and install in parallel:
-    package_instances = _load_packages(package)
+    package_instances = _load_packages(package, version)
     try:
         if target:
             target = InstallTarget[str.upper(target)]
+        else:
+            target = InstallTarget.STATIC_LIBS
         for package_instance in package_instances:
             _do_install_package(package_instance, version, target)
     except Exception:
@@ -122,6 +130,7 @@ def install(
 
 @cli.command(name="list")
 @click.option(
+    "-v",
     "--verbose",
     is_flag=True,
     default=False,
@@ -138,9 +147,9 @@ def list_packages(verbose: bool):
         if verbose:
             for version in package_instance.get_versions():
                 if version == package_instance.default_version:
-                    console.print(f"    -  [bold]{version} (default)[/bold]", highlight=False)
+                    console.print(f"  - [bold]{version} (default)[/bold]", highlight=False)
                 else:
-                    console.print(f"    -  {version}", highlight=False)
+                    console.print(f"  - {version}", highlight=False)
 
 
 if __name__ == "__main__":
