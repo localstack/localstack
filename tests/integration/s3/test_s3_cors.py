@@ -7,6 +7,7 @@ from botocore.exceptions import ClientError
 
 from localstack import config
 from localstack.aws.handlers.cors import ALLOWED_CORS_ORIGINS
+from localstack.config import LEGACY_S3_PROVIDER
 from localstack.constants import LOCALHOST_HOSTNAME, S3_VIRTUAL_HOSTNAME
 from localstack.utils.strings import short_uid
 
@@ -63,6 +64,7 @@ def match_headers(snapshot, snapshot_headers):
     return _match
 
 
+@pytest.mark.skipif(condition=LEGACY_S3_PROVIDER, reason="Tests are for new ASF provider")
 class TestS3Cors:
     @pytest.mark.aws_validated
     def test_cors_http_options_no_config(self, s3_client, s3_bucket, snapshot):
