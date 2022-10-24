@@ -317,3 +317,7 @@ def package(
         return PluginSpec(PLUGIN_NAMESPACE, f"{_name}/{scope}", factory=factory)
 
     return wrapper
+
+
+# TODO remove (only used for migrating to new #package decorator)
+packages = package

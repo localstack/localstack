@@ -6,7 +6,9 @@ import re
 import sys
 import tempfile
 import time
-from typing import Union
+from typing import Callable, List, Tuple, Union
+
+from plugin import Plugin
 
 from localstack import config
 from localstack.config import dirs
@@ -214,6 +216,19 @@ def download_and_extract_with_retry(archive_url, tmp_archive, target_dir):
         LOG.info("Unable to extract file, re-downloading ZIP archive %s: %s", tmp_archive, e)
         rm_rf(tmp_archive)
         download_and_extract(archive_url, target_dir, tmp_archive=tmp_archive)
+
+
+# TODO remove (only used for migrating to new #package plugin system)
+
+Installer = Tuple[str, Callable]
+
+
+class InstallerRepository(Plugin):
+    # TODO the installer repositories should be migrated (downwards compatible) to use the packages / package installers
+    namespace = "localstack.installer"
+
+    def get_installer(self) -> List[Installer]:
+        raise NotImplementedError
 
 
 def main():
