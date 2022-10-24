@@ -1,9 +1,12 @@
 import os.path
+from typing import List
 
 import pytest
 from click.testing import CliRunner
 
-from localstack.cli.lpm import cli, console
+from localstack.cli.lpm import _load_packages, cli, console
+from localstack.packages import InstallTarget, Package, PackageException, PackageInstaller
+from localstack.utils.patch import patch
 
 
 @pytest.fixture
@@ -29,15 +32,61 @@ def test_install_with_non_existing_package_fails(runner):
 
 @pytest.mark.skip_offline
 def test_install_failure_returns_non_zero_exit_code(runner, monkeypatch):
-    # TODO Migrate to new structure
-    pass
+    class FailingPackage(Package):
+        def __init__(self):
+            super().__init__("Failing Installer", "latest")
+
+        def get_versions(self) -> List[str]:
+            return ["latest"]
+
+        def _get_installer(self, version: str) -> PackageInstaller:
+            return FailingInstaller()
+
+    class FailingInstaller(PackageInstaller):
+        def __init__(self):
+            super().__init__("failing-installer", "latest")
+
+        def _get_install_marker_path(self, install_dir: str) -> str:
+            # Return a non-existing path to force calling the installer
+            return "/non-existing"
+
+        def _install(self, target: InstallTarget) -> None:
+            raise PackageException("Failing!")
+
+    class SuccessfulPackage(Package):
+        def __init__(self):
+            super().__init__("Successful Installer", "latest")
+
+        def get_versions(self) -> List[str]:
+            return ["latest"]
+
+        def _get_installer(self, version: str) -> PackageInstaller:
+            return SuccessfulInstaller()
+
+    class SuccessfulInstaller(PackageInstaller):
+        def __init__(self):
+            super().__init__("successful-installer", "latest")
+
+        def _get_install_marker_path(self, install_dir: str) -> str:
+            # Return a non-existing path to force calling the installer
+            return "/non-existing"
+
+        def _install(self, target: InstallTarget) -> None:
+            pass
+
+    @patch(target=_load_packages)
+    def patched_load_packages(self) -> List[Package]:
+        return [FailingPackage(), SuccessfulPackage()]
+
+    result = runner.invoke(cli, ["install", "successful-installer", "failing-installer"])
+    assert result.exit_code == 1
+    assert "one or more package installations failed." in result.output
 
 
 @pytest.mark.skip_offline
 def test_install_with_package(runner):
     from localstack.services.sqs.legacy.packages import elasticmq_package
 
-    # TODO The scope is now mandatory
     result = runner.invoke(cli, ["install", "elasticmq"])
     assert result.exit_code == 0
     assert os.path.exists(elasticmq_package.get_installed_dir())

@@ -1,3 +1,4 @@
+from collections import defaultdict
 from typing import List, Optional
 
 import click
@@ -46,6 +47,31 @@ def _do_install_package(package: Package, version: str = None, target: InstallTa
         raise e
 
 
+def _load_packages(packages: List[str]) -> List[Package]:
+    """
+    Collects the Package instances for the given list of package names (without scope).
+    :param packages: List of package names (without the scope) which should be collected
+    :return: List of Package instances for the given package names
+    :raises: ClickException if a package could not be found
+    """
+    plugin_manager: PluginManager[PackagesPlugin] = PluginManager(namespace=PLUGIN_NAMESPACE)
+
+    # Plugin names are unique, but there could be multiple packages with the same name in different scopes
+    plugin_specs_per_name = defaultdict(list)
+    for plugin_spec in plugin_manager.list_plugin_specs():
+        (package_name, _, _) = plugin_spec.name.rpartition("/")
+        plugin_specs_per_name[package_name].append(plugin_spec)
+
+    package_instances: List[Package] = []
+    for pkg in packages:
+        plugin_specs = plugin_specs_per_name.get(pkg)
+        if not plugin_specs:
+            raise ClickException(f"unable to locate installer for package {pkg}")
+        for plugin_spec in plugin_specs:
+            package_instances.append(plugin_manager.load(plugin_spec.name).get_package())
+    return package_instances
+
+
 @cli.command()
 @click.argument("package", nargs=-1, required=True)
 @click.option(
@@ -79,26 +105,15 @@ def install(
     Install one or more packages.
     """
     console.print(f"resolving packages: {package}")
-
-    plugin_manager: PluginManager[PackagesPlugin] = PluginManager(namespace=PLUGIN_NAMESPACE)
-    plugin_specs = {
-        plugin_spec.name: plugin_spec for plugin_spec in plugin_manager.list_plugin_specs()
-    }
-    config.dirs.mkdirs()
-    package_instances: List[Package] = []
-    for pkg in package:
-        if pkg not in plugin_specs:
-            raise ClickException(f"unable to locate installer for package {pkg}")
-        package_instances.append(plugin_manager.load(pkg).get_package())
-
     if parallel > 1:
         console.print(f"install {parallel} packages in parallel:")
+    config.dirs.mkdirs()
 
     # collect installers and install in parallel:
     try:
         if target:
             target = InstallTarget[str.upper(target)]
-        for package_instance in package_instances:
+        for package_instance in _load_packages(package):
             _do_install_package(package_instance, version, target)
     except Exception:
         raise ClickException("one or more package installations failed.")
