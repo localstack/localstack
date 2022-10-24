@@ -308,9 +308,6 @@ class TestSecretsManager:
         self._wait_created_is_listed(sm_client, secret_id=secret_name)
         describe_secret_res = sm_snapshot.describe_secret(SecretId=secret_name)
 
-        assert isinstance(describe_secret_res.Replication_Status, list)
-        assert describe_secret_res.Replication_Status[0].Status == "InSync"
-
         for replication_status in describe_secret_res.Replication_Status:
             assert replication_status.Status != "Failed"
         # cleanup
@@ -337,9 +334,6 @@ class TestSecretsManager:
         # wait for the replication to complete
         self._wait_created_is_listed(sm_client, secret_id=secret_name)
         describe_secret_res = sm_snapshot.describe_secret(SecretId=secret_name)
-
-        assert isinstance(describe_secret_res.Replication_Status, list)
-        assert describe_secret_res.Replication_Status[0].Status == "InSync"
 
         for replication_status in describe_secret_res.Replication_Status:
             assert replication_status.Status != "Failed"
