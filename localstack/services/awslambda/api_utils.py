@@ -8,6 +8,7 @@ from typing import TYPE_CHECKING, Any, Optional
 from localstack.aws.api import lambda_ as api_spec
 from localstack.aws.api.lambda_ import (
     AliasConfiguration,
+    DeadLetterConfig,
     EnvironmentResponse,
     EphemeralStorage,
     FunctionConfiguration,
@@ -322,6 +323,12 @@ def map_config_out(
 
     if version.config.architectures:
         optional_kwargs["Architectures"] = version.config.architectures
+
+    if version.config.dead_letter_arn:
+        optional_kwargs["DeadLetterConfig"] = DeadLetterConfig(
+            TargetArn=version.config.dead_letter_arn
+        )
+
     if version.config.environment is not None:
         optional_kwargs["Environment"] = EnvironmentResponse(
             Variables=version.config.environment
@@ -384,3 +391,31 @@ def map_alias_out(alias: "VersionAlias", function: "Function") -> AliasConfigura
         RevisionId=alias.revision_id,
         **optional_kwargs,
     )
+
+
+def validate_and_set_batch_size(event_source_arn: str, batch_size: Optional[int] = None) -> int:
+    min_batch_size = 1
+
+    BATCH_SIZE_RANGES = {
+        "kafka": (100, 10_000),
+        "kinesis": (100, 10_000),
+        "dynamodb": (100, 1_000),
+        "sqs-fifo": (10, 10),
+        "sqs": (10, 10_000),
+        "mq": (100, 10_000),
+    }
+    svc = event_source_arn.split(":")[2]  # arn:<parition>:<svc>:<region>:...
+    if svc == "sqs" and "fifo" in event_source_arn:
+        svc = "sqs-fifo"
+    svc_range = BATCH_SIZE_RANGES.get(svc)
+
+    if svc_range:
+        default_batch_size, max_batch_size = svc_range
+
+        if batch_size is None:
+            batch_size = default_batch_size
+
+        if batch_size < min_batch_size or batch_size > max_batch_size:
+            raise InvalidParameterValueException("out of bounds todo", Type="User")  # TODO: test
+
+    return batch_size

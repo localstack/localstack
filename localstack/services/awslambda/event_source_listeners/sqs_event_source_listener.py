@@ -1,21 +1,20 @@
 import json
 import logging
 import time
-from typing import Dict, List
+from typing import Dict, List, Optional
 
-from localstack.services.awslambda import lambda_executors
+from localstack.aws.api.lambda_ import InvocationType
+from localstack.services.awslambda.event_source_listeners.adapters import (
+    EventSourceAdapter,
+    EventSourceLegacyAdapter,
+)
 from localstack.services.awslambda.event_source_listeners.event_source_listener import (
     EventSourceListener,
-)
-from localstack.services.awslambda.lambda_api import (
-    get_event_sources,
-    message_attributes_to_lower,
-    run_lambda,
 )
 from localstack.services.awslambda.lambda_executors import InvocationResult
 from localstack.services.awslambda.lambda_utils import (
     filter_stream_records,
-    get_lambda_event_filters_for_arn,
+    message_attributes_to_lower,
 )
 from localstack.utils.aws import aws_stack
 from localstack.utils.aws.aws_stack import extract_region_from_arn
@@ -29,11 +28,15 @@ class SQSEventSourceListener(EventSourceListener):
     SQS_LISTENER_THREAD: Dict = {}
     SQS_POLL_INTERVAL_SEC: float = 1
 
+    _invoke_adapter: EventSourceAdapter
+
     @staticmethod
     def source_type():
         return "sqs"
 
-    def start(self):
+    def start(self, invoke_adapter: Optional[EventSourceAdapter] = None):
+        self._invoke_adapter = invoke_adapter or EventSourceLegacyAdapter()
+
         if self.SQS_LISTENER_THREAD:
             return
 
@@ -44,7 +47,7 @@ class SQSEventSourceListener(EventSourceListener):
         thread.start()
 
     def get_matching_event_sources(self) -> List[Dict]:
-        return get_event_sources(source_arn=r".*:sqs:.*")
+        return self._invoke_adapter.get_event_sources(source_arn=r".*:sqs:.*")
 
     def _listener_loop(self, *args):
         while True:
@@ -82,12 +85,12 @@ class SQSEventSourceListener(EventSourceListener):
                             # TODO: remove event source if queue does no longer exist?
                             LOG.debug("Unable to poll SQS messages for queue %s: %s", queue_arn, e)
 
-            except Exception:
-                pass
+            except Exception as e:
+                LOG.debug(e)
             finally:
                 time.sleep(self.SQS_POLL_INTERVAL_SEC)
 
-    def _process_messages_for_event_source(self, source, messages) -> bool:
+    def _process_messages_for_event_source(self, source, messages) -> None:
         lambda_arn = source["FunctionArn"]
         queue_arn = source["EventSourceArn"]
         # https://docs.aws.amazon.com/lambda/latest/dg/with-sqs.html#services-sqs-batchfailurereporting
@@ -97,7 +100,7 @@ class SQSEventSourceListener(EventSourceListener):
         region_name = extract_region_from_arn(queue_arn)
         queue_url = aws_stack.sqs_queue_url_for_arn(queue_arn)
         LOG.debug("Sending event from event source %s to Lambda %s", queue_arn, lambda_arn)
-        res = self._send_event_to_lambda(
+        self._send_event_to_lambda(
             queue_arn,
             queue_url,
             lambda_arn,
@@ -105,11 +108,21 @@ class SQSEventSourceListener(EventSourceListener):
             region=region_name,
             report_partial_failures=report_partial_failures,
         )
-        return res
+
+    def _get_lambda_event_filters_for_arn(self, function_arn: str, queue_arn: str):
+        result = []
+        sources = self._invoke_adapter.get_event_sources(queue_arn)
+        filtered_sources = [s for s in sources if s["FunctionArn"] == function_arn]
+
+        for fs in filtered_sources:
+            fc = fs.get("FilterCriteria")
+            if fc:
+                result.append(fc)
+        return result
 
     def _send_event_to_lambda(
         self, queue_arn, queue_url, lambda_arn, messages, region, report_partial_failures=False
-    ) -> bool:
+    ) -> None:
         records = []
 
         def delete_messages(result: InvocationResult, func_arn, event, error=None, **kwargs):
@@ -181,7 +194,7 @@ class SQSEventSourceListener(EventSourceListener):
                 "receiptHandle": msg.get("ReceiptHandle"),
                 "md5OfBody": msg.get("MD5OfBody") or msg.get("MD5OfMessageBody"),
                 "eventSourceARN": queue_arn,
-                "eventSource": lambda_executors.EVENT_SOURCE_SQS,
+                "eventSource": "aws:sqs",
                 "awsRegion": region,
                 "messageId": msg["MessageId"],
                 "attributes": msg.get("Attributes", {}),
@@ -193,7 +206,7 @@ class SQSEventSourceListener(EventSourceListener):
 
             records.append(record)
 
-        event_filter_criterias = get_lambda_event_filters_for_arn(lambda_arn, queue_arn)
+        event_filter_criterias = self._get_lambda_event_filters_for_arn(lambda_arn, queue_arn)
         if len(event_filter_criterias) > 0:
             # convert to json for filtering
             for record in records:
@@ -214,22 +227,17 @@ class SQSEventSourceListener(EventSourceListener):
 
         # all messages were filtered out
         if not len(records) > 0:
-            return True
+            return
 
         event = {"Records": records}
 
-        res = run_lambda(
-            func_arn=lambda_arn,
-            event=event,
+        self._invoke_adapter.invoke(
+            function_arn=lambda_arn,
             context={},
-            asynchronous=True,
+            payload=event,
+            invocation_type=InvocationType.RequestResponse,
             callback=delete_messages,
         )
-        if isinstance(res, InvocationResult):
-            status_code = getattr(res.result, "status_code", 0)
-            if status_code >= 400:
-                return False
-        return True
 
 
 def parse_batch_item_failures(result: InvocationResult, valid_message_ids: List[str]) -> List[str]:

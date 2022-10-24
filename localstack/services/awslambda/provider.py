@@ -126,6 +126,9 @@ from localstack.aws.api.lambda_ import (
     Version,
 )
 from localstack.services.awslambda import api_utils
+from localstack.services.awslambda.event_source_listeners.event_source_listener import (
+    EventSourceListener,
+)
 from localstack.services.awslambda.invocation.lambda_models import (
     IMAGE_MAPPING,
     LAMBDA_LIMITS_CREATE_FUNCTION_REQUEST_SIZE,
@@ -160,6 +163,7 @@ from localstack.services.awslambda.invocation.lambda_service import (
     store_s3_bucket_archive,
 )
 from localstack.services.awslambda.invocation.models import LambdaStore
+from localstack.services.awslambda.lambda_utils import validate_filters
 from localstack.services.plugins import ServiceLifecycleHook
 from localstack.utils.collections import PaginatedList
 from localstack.utils.strings import get_random_hex, long_uid, short_uid, to_bytes, to_str
@@ -470,6 +474,7 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
                     ephemeral_storage=LambdaEphemeralStorage(
                         size=request.get("EphemeralStorage", {}).get("Size", 512)
                     ),
+                    dead_letter_arn=request.get("DeadLetterConfig", {}).get("TargetArn"),
                     state=VersionState(
                         state=State.Pending,
                         code=StateReasonCode.Creating,
@@ -535,6 +540,9 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
 
         if "MemorySize" in request:
             replace_kwargs["memory_size"] = request["MemorySize"]
+
+        if "DeadLetterConfig" in request:
+            replace_kwargs["dead_letter_arn"] = request.get("DeadLetterConfig", {}).get("TargetArn")
 
         if "Runtime" in request:
             if request["Runtime"] not in IMAGE_MAPPING:
@@ -1060,11 +1068,9 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
         # TODO: create domain models and map accordingly
         params = request.copy()
         params.pop("FunctionName")
-        params["State"] = "Enabled"  # TODO: should be set asynchronously
-        # params["State"] = "Creating"
+        params["State"] = "Enabled"
         params["StateTransitionReason"] = "USER_INITIATED"
         params["UUID"] = new_uuid
-        params["BatchSize"] = request.get("BatchSize", 10)
         params["FunctionResponseTypes"] = request.get("FunctionResponseTypes", [])
         params["MaximumBatchingWindowInSeconds"] = request.get("MaximumBatchingWindowInSeconds", 0)
         params["LastModified"] = api_utils.generate_lambda_date()
@@ -1072,9 +1078,33 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
             request["FunctionName"], context.account_id, context.region
         )
 
+        batch_size = api_utils.validate_and_set_batch_size(
+            request["EventSourceArn"], request.get("BatchSize")
+        )
+
+        if batch_size > 10 and request.get("MaximumBatchingWindowInSeconds", 0) == 0:
+            raise InvalidParameterValueException(
+                "Maximum batch window in seconds must be greater than 0 if maximum batch size is greater than 10",
+                Type="User",
+            )
+
+        params["BatchSize"] = batch_size
+
         esm_config = EventSourceMappingConfiguration(**params)
+        filter_criteria = esm_config.get("FilterCriteria")
+        if filter_criteria:
+            # validate for valid json
+            if not validate_filters(filter_criteria):
+                raise InvalidParameterValueException(
+                    "Invalid filter pattern definition.", Type="User"
+                )  # TODO: verify
+
         state.event_source_mappings[new_uuid] = esm_config
-        return esm_config
+
+        # TODO: evaluate after temp migration
+        EventSourceListener.start_listeners_for_asf(request, self.lambda_service)
+
+        return {**esm_config, "State": "Creating"}  # TODO: should be set asynchronously
 
     @handler("UpdateEventSourceMapping", expand=False)
     def update_event_source_mapping(
@@ -1085,6 +1115,17 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
         state = lambda_stores[context.account_id][context.region]
         uuid = request["UUID"]
         event_source_mapping = state.event_source_mappings.get(uuid)
+
+        if request.get("BatchSize"):
+            batch_size = api_utils.validate_and_set_batch_size(
+                event_source_mapping["EventSourceArn"], request["BatchSize"]
+            )
+            if batch_size > 10 and request.get("MaximumBatchingWindowInSeconds", 0) == 0:
+                raise InvalidParameterValueException(
+                    "Maximum batch window in seconds must be greater than 0 if maximum batch size is greater than 10",
+                    Type="User",
+                )
+
         if not event_source_mapping:
             raise ResourceNotFoundException(
                 "The resource you requested does not exist.", Type="User"
