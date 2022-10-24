@@ -422,14 +422,88 @@ class TestSecretsManager:
         )
         sm_snapshot.match("delete_secret_res2", delete_secret_res2)
 
-    def test_create_secret_secret_name_already_exists_as_replica_from_region_force_overwrite(self):
+
+    replication_test_data = [
+            ("us-east-1", "us-east-2", "us-west-1", "us-east-2", "from us-east-1."),
+            ("us-east-1", "us-east-2", "us-west-1", "us-east-1", "to other region(s).")
+            ]
+
+    @pytest.mark.paramterize("region_1,replication_region_1,region_2,replication_region_2,suffix", replication_test_data, ids=["from", "to"])
+    def test_create_secret_secret_name_already_exists_in_replica_regions_force_overwrite(self, sm_client, sm_snapshot, region_1, replication_region_1, region_2, replication_region_2, suffix):
         """
-        Create secret in region1 replicated to region2.
+        1.4 Create secret in region1 replicated to region2.
         Then, create secret in region 3 replicated to region2.
-        Then, fetch secret details from region3, replication status in region2 must be `Failed`
-        and StatusMessage: "Replication failed: Can't overwrite secret myts0 that is currently replicated from us-east-1."
+        Then, fetch secret details from region3, ReplicationStatus.Status in
+        region2 must be `Failed` and
+        StatusMessage: "Replication failed: Can't overwrite secret myts0 that is currently replicated to other region(s)."
+        1.5 Create secret in region1 replicated to region2.
+        Then, create secret in region 3 replicated to region1.
+        Then, fetch secret details from region3, ReplicationStatus.Status in
+        region1 must be `Failed` and
+        StatusMessage: "Replication failed: Can't overwrite secret myts0 that is currently replicated from us-east-1."
         """
-        pass
+        secret_name = f"{short_uid()}"
+        create_secret_replicated1 = sm_client.create_secret(
+            Name=secret_name,
+            SecretString=secret_name,
+            Region=region_1,
+            AddReplicaRegions=[{"Region": replication_region_1}]
+        )
+        sm_snapshot.add_transformers_list(
+            sm_snapshot.transform.secretsmanager_secret_id_arn(create_secret_replicated1, 0)
+        )
+        sm_snapshot.match("create_secret_replicated", create_secret_replicated1)
+        # wait for the replication to complete
+        self._wait_created_is_listed(sm_client, secret_id=secret_name)
+        describe_secret_res1 = sm_snapshot.describe_secret(SecretId=secret_name, Region=region_1)
+
+        for replication_status in describe_secret_res1.Replication_Status:
+            if replication_status.Region == region_2:
+                assert replication_status.Status != "Failed"
+
+        create_secret_replicated2 = sm_client.create_secret(
+            Name=secret_name,
+            SecretString=secret_name,
+            Region=region_2,
+            AddReplicaRegions=[{"Region":replication_region_2}]
+        )
+        sm_snapshot.match("create_secret_replicated", create_secret_replicated2)
+
+        # wait for the replication to complete
+        self._wait_created_is_listed(sm_client, secret_id=secret_name)
+        describe_secret_res2 = sm_snapshot.describe_secret(SecretId=secret_name, Region=region_2)
+
+        expected_message = f"Replication failed: Can't overwrite secret {secret_name} that is currently replicated {suffix}"
+        # must check `us-east-1` Status == Failed
+        for replication_status in describe_secret_res2.Replication_Status:
+            if replication_status.Region == replication_region_2:
+                assert replication_status.Status == "Failed"
+                assert replication_status.StatusMessage == expected_message
+
+        # cleanup
+        remove_regions_res1 = sm_client.remove_regions_from_replication(
+                SecretId=secret_name,
+                Region=region_1,
+                RemoveReplicaRegion=replication_region_1)
+        sm_snapshot.match("remove_regions_res1", remove_regions_res1)
+
+        delete_secret_res1 = sm_client.delete_secret(
+            SecretId=secret_name, ForceDeleteWithoutRecovery=True,
+            Region=region_1
+        )
+        sm_snapshot.match("delete_secret_res1", delete_secret_res1)
+
+        remove_regions_res2 = sm_client.remove_regions_from_replication(
+                SecretId=secret_name,
+                Region=region_2,
+                RemoveReplicaRegion=replication_region_2)
+        sm_snapshot.match("remove_regions_res2", remove_regions_res2)
+        delete_secret_res2 = sm_client.delete_secret(
+            SecretId=secret_name, ForceDeleteWithoutRecovery=True,
+            Region=region_2
+        )
+        sm_snapshot.match("delete_secret_res2", delete_secret_res2)
+
 
     def test_add_replication_secret_name_exists_only_in_region(self):
         """
