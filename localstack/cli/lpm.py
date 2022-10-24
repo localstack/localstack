@@ -110,10 +110,11 @@ def install(
     config.dirs.mkdirs()
 
     # collect installers and install in parallel:
+    package_instances = _load_packages(package)
     try:
         if target:
             target = InstallTarget[str.upper(target)]
-        for package_instance in _load_packages(package):
+        for package_instance in package_instances:
             _do_install_package(package_instance, version, target)
     except Exception:
         raise ClickException("one or more package installations failed.")

@@ -6,7 +6,7 @@ from click.testing import CliRunner
 
 from localstack.cli.lpm import _load_packages, cli, console
 from localstack.packages import InstallTarget, Package, PackageException, PackageInstaller
-from localstack.utils.patch import patch
+from localstack.utils.patch import Patch
 
 
 @pytest.fixture
@@ -74,13 +74,13 @@ def test_install_failure_returns_non_zero_exit_code(runner, monkeypatch):
         def _install(self, target: InstallTarget) -> None:
             pass
 
-    @patch(target=_load_packages)
-    def patched_load_packages(self) -> List[Package]:
+    def patched_load_packages(_) -> List[Package]:
         return [FailingPackage(), SuccessfulPackage()]
 
-    result = runner.invoke(cli, ["install", "successful-installer", "failing-installer"])
-    assert result.exit_code == 1
-    assert "one or more package installations failed." in result.output
+    with Patch.function(target=_load_packages, fn=patched_load_packages):
+        result = runner.invoke(cli, ["install", "successful-installer", "failing-installer"])
+        assert result.exit_code == 1
+        assert "one or more package installations failed." in result.output
 
 
 @pytest.mark.skip_offline
