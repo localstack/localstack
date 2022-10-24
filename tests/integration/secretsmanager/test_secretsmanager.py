@@ -354,11 +354,12 @@ class TestSecretsManager:
         sm_snapshot.match("delete_secret_res", delete_secret_res)
 
 
-    def test_create_secret_secret_name_already_exists_in_replica_regions(self, sm_client, sm_snapshot):
+    def test_create_secret_secret_name_already_exists_as_replica_to_regions_force_overwrite(self, sm_client, sm_snapshot):
         """
-        Creates secret in region1 replicated to region2, then creates the same secret
-        in region 3 replicated to region2. Then, fetch details from region3, replication
-        status in region2 must show `Failure`
+        Create secret in region1 replicated to region2.
+        Then, create secret in region 3 replicated to region2.
+        Then, fetch secret details from region3, replication status in region2 must be `Failed`
+        and StatusMessage: "Replication failed: Can't overwrite secret myts0 that is currently replicated to other region(s)."
         """
         secret_name = f"{short_uid()}"
         create_secret_replicated1 = sm_client.create_secret(
@@ -420,10 +421,27 @@ class TestSecretsManager:
         )
         sm_snapshot.match("delete_secret_res2", delete_secret_res2)
 
-
-
-    def test_replicate_secret_to_region_updating_secret(self):
+    def test_create_secret_secret_name_already_exists_as_replica_from_region_force_overwrite(self):
+        """
+        Create secret in region1 replicated to region2.
+        Then, create secret in region 3 replicated to region2.
+        Then, fetch secret details from region3, replication status in region2 must be `Failed`
+        and StatusMessage: "Replication failed: Can't overwrite secret myts0 that is currently replicated from us-east-1."
+        """
         pass
+
+    def test_add_replication_secret_name_exists_only_in_region(self):
+        pass
+
+    def test_add_replication_secret_name_exists_in_replica_regions(self):
+        pass
+
+    def test_add_replication_secret_name_exists_as_replica_to_regions_force_overwrite(self):
+        pass
+
+    def test_add_replication_secret_name_exists_as_replica_from_region_force_overwrite(self):
+        pass
+
 
     def test_resource_policy(self, sm_client, secret_name):
         sm_client.create_secret(
