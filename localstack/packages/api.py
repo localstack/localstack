@@ -220,6 +220,46 @@ class Package(abc.ABC):
         return self.name
 
 
+class MultiPackageInstaller(PackageInstaller):
+    """
+    PackageInstaller implementation which composes of multiple package installers.
+    """
+
+    def __init__(self, name: str, version: str, package_installer: List[PackageInstaller]):
+        """
+        :param name: of the (multi-)package installer
+        :param version: of this (multi-)package installer
+        :param package_installer: List of installers this multi-package installer consists of
+        """
+        super().__init__(name=name, version=version)
+
+        assert isinstance(package_installer, list)
+        assert len(package_installer) > 0
+        self.package_installer = package_installer
+
+    def install(self, target: Optional[InstallTarget] = None) -> None:
+        """
+        Installs the different packages this installer is composed of.
+
+        :param target: which defines where to install the packages.
+        :return: None
+        """
+        for package_installer in self.package_installer:
+            package_installer.install(target)
+
+    def _install(self, target: InstallTarget) -> None:
+        # This package installer actually only calls other installers, we pass here
+        pass
+
+    def _get_install_dir(self, target: InstallTarget) -> str:
+        # By default, use the install-dir of the first package
+        return self.package_installer[0]._get_install_dir(target)
+
+    def _get_install_marker_path(self, install_dir: str) -> str:
+        # By default, use the install-marker-path of the first package
+        return self.package_installer[0]._get_install_marker_path(install_dir)
+
+
 PLUGIN_NAMESPACE = "localstack.packages"
 
 
