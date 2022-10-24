@@ -290,10 +290,35 @@ class TestSecretsManager:
         assert len(random_password["RandomPassword"]) == 120
         assert all(c not in "xyzDje@?!." for c in random_password["RandomPassword"])
 
-    def test_replicate_secret_to_region_first_time(self, sm_client, secret_id, region):
-        [arn, replication_status] = sm_client.replicate_secret_to_regions(
-            SecretId=secret_id,
-            AddReplicaRegions=['us-east-1', 'us-west-1'])
+    def test_create_secret_new_name_in_region(self, sm_client, sm_snapshot):
+        """
+        The new secret should be created and replicated without problems
+        """
+        secret_name = f"{short_uid()}"
+        create_secret_replicated = sm_client.create_secret(
+            Name=secret_name,
+            SecretString=secret_name,
+            AddReplicaRegions=[{"Region":"us-east-1"}]
+        )
+        sm_snapshot.add_transformers_list(
+            sm_snapshot.transform.secretsmanager_secret_id_arn(create_secret_replicated, 0)
+        )
+        sm_snapshot.match("create_secret_replicated", create_secret_replicated)
+        # wait for the replication to complete
+        self._wait_created_is_listed(sm_client, secret_id=secret_name)
+        describe_secret_res = sm_snapshot.describe_secret(SecretId=secret_name)
+
+        assert isinstance(describe_secret_res.Replication_Status, list)
+        assert describe_secret_res.Replication_Status[0].Status == "InSync"
+
+        for replication_status in describe_secret_res.Replication_Status:
+            assert replication_status.Status != "Failed"
+        # cleanup
+        delete_secret_res = sm_client.delete_secret(
+            SecretId=secret_name, ForceDeleteWithoutRecovery=True
+        )
+        sm_snapshot.match("delete_secret_res", delete_secret_res)
+
 
         assert arn != ""
         for rep_st in replication_status:
