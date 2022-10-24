@@ -13,7 +13,7 @@ from plugin import Plugin, PluginManager
 
 from localstack import config
 from localstack.config import dirs
-from localstack.constants import DEFAULT_SERVICE_PORTS, LOCALSTACK_MAVEN_VERSION, MAVEN_REPO_URL
+from localstack.constants import DEFAULT_SERVICE_PORTS, MAVEN_REPO_URL
 from localstack.runtime import hooks
 from localstack.utils.archives import untar, unzip
 from localstack.utils.files import load_file, mkdir, new_tmp_file, rm_rf, save_file
@@ -45,12 +45,6 @@ JAVAC_TARGET_VERSION = "1.8"
 # SQS backend implementation provider - either "moto" or "elasticmq"
 SQS_BACKEND_IMPL = os.environ.get("SQS_PROVIDER") or "moto"
 
-
-# Java Test Jar Download (used for tests)
-TEST_LAMBDA_JAVA = os.path.join(config.dirs.var_libs, "localstack-utils-tests.jar")
-TEST_LAMBDA_JAR_URL = "{url}/cloud/localstack/{name}/{version}/{name}-{version}-tests.jar".format(
-    version=LOCALSTACK_MAVEN_VERSION, url=MAVEN_REPO_URL, name="localstack-utils"
-)
 
 # BEGIN OF SECTION
 
@@ -139,13 +133,6 @@ def upgrade_jar_file(base_dir: str, file_glob: str, maven_asset: str):
     for match in matches:
         os.remove(match)
     download(maven_asset_url, target_file)
-
-
-def install_lambda_java_testlibs():
-    # Download the LocalStack Utils Test jar file from the maven repo
-    if not os.path.exists(TEST_LAMBDA_JAVA):
-        mkdir(os.path.dirname(TEST_LAMBDA_JAVA))
-        download(TEST_LAMBDA_JAR_URL, TEST_LAMBDA_JAVA)
 
 
 def install_cloudformation_libs():
@@ -325,9 +312,6 @@ def main():
             logging.basicConfig(level=logging.INFO)
             logging.getLogger("requests").setLevel(logging.WARNING)
             install_all_components()
-        if sys.argv[1] in ("libs", "testlibs"):
-            # Install additional libraries for testing
-            install_lambda_java_testlibs()
         print("Done.")
 
 

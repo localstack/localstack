@@ -1,13 +1,15 @@
 import json
 import os
 import shutil
+from typing import List
 
 import pytest
 
 from localstack.aws.api.lambda_ import Runtime
+from localstack.constants import LOCALSTACK_MAVEN_VERSION, MAVEN_REPO_URL
+from localstack.packages import DownloadInstaller, Package, PackageInstaller
 from localstack.services.awslambda.lambda_api import use_docker
 from localstack.services.awslambda.packages import lambda_java_libs_package
-from localstack.services.install import TEST_LAMBDA_JAVA
 from localstack.testing.aws.lambda_utils import is_old_provider
 from localstack.utils import testutil
 from localstack.utils.archives import unzip
@@ -30,6 +32,33 @@ from tests.integration.awslambda.test_lambda import (
     THIS_FOLDER,
     read_streams,
 )
+
+# Java Test Jar Download (used for tests)
+TEST_LAMBDA_JAR_URL_TEMPLATE = "{url}/cloud/localstack/{name}/{version}/{name}-{version}-tests.jar"
+
+
+class LambdaJavaTestlibsPackage(Package):
+    def __init__(self):
+        super().__init__("JavaLambdaTestlibs", LOCALSTACK_MAVEN_VERSION)
+
+    def get_versions(self) -> List[str]:
+        return [LOCALSTACK_MAVEN_VERSION]
+
+    def _get_installer(self, version: str) -> PackageInstaller:
+        return LambdaJavaTestlibsPackageInstaller(version)
+
+
+class LambdaJavaTestlibsPackageInstaller(DownloadInstaller):
+    def __init__(self, version):
+        super().__init__("lambda-java-testlibs", version)
+
+    def _get_download_url(self) -> str:
+        return TEST_LAMBDA_JAR_URL_TEMPLATE.format(
+            version=self.version, url=MAVEN_REPO_URL, name="localstack-utils"
+        )
+
+
+lambda_java_testlibs_package = LambdaJavaTestlibsPackage()
 
 parametrize_python_runtimes = pytest.mark.parametrize("runtime", PYTHON_TEST_RUNTIMES)
 parametrize_node_runtimes = pytest.mark.parametrize("runtime", NODE_TEST_RUNTIMES)
@@ -106,13 +135,10 @@ class TestNodeJSRuntimes:
 class TestJavaRuntimes:
     @pytest.fixture(scope="class")
     def test_java_jar(self) -> bytes:
-        # The TEST_LAMBDA_JAVA jar file is downloaded with `make init-testlibs`.
-        java_file = load_file(TEST_LAMBDA_JAVA, mode="rb")
-        if not java_file:
-            raise Exception(
-                f"Test dependency {TEST_LAMBDA_JAVA} not found."
-                "Please make sure to run 'make init-testlibs' to ensure the file is available."
-            )
+        lambda_java_testlibs_package.install()
+        java_file = load_file(
+            lambda_java_testlibs_package.get_installer().get_executable_path(), mode="rb"
+        )
         return java_file
 
     @pytest.fixture(scope="class")
