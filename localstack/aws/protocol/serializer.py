@@ -1353,7 +1353,7 @@ class S3ResponseSerializer(RestXMLResponseSerializer):
     serialization.
     """
 
-    SUPPORTED_MIME_TYPES = [TEXT_XML, APPLICATION_XML]
+    SUPPORTED_MIME_TYPES = [APPLICATION_XML, TEXT_XML]
 
     def _serialize_response(
         self,

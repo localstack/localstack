@@ -1,8 +1,9 @@
-from typing import Dict
+from typing import Dict, Set
 
 from moto.s3 import s3_backends as moto_s3_backends
 from moto.s3.models import S3Backend as MotoS3Backend
 
+from localstack import config
 from localstack.aws.api import RequestContext
 from localstack.aws.api.s3 import (
     BucketLifecycleConfiguration,
@@ -27,7 +28,7 @@ class S3Store(BaseStore):
         default=dict
     )
 
-    # maps bucket name to bucket's CORS settings
+    # maps bucket name to bucket's CORS settings, used as index
     bucket_cors: Dict[BucketName, CORSConfiguration] = CrossRegionAttribute(default=dict)
 
     # maps bucket name to bucket's replication settings
@@ -48,4 +49,40 @@ class S3Store(BaseStore):
     )
 
 
-s3_stores = AccountRegionBundle("s3", S3Store)
+class BucketCorsIndex:
+    def __init__(self):
+        self._cors_index_cache = None
+        self._bucket_index_cache = None
+
+    @property
+    def cors(self) -> Dict[str, CORSConfiguration]:
+        if self._cors_index_cache is None:
+            self._cors_index_cache = self._build_cors_index()
+        return self._cors_index_cache
+
+    @property
+    def buckets(self) -> Set[str]:
+        if self._bucket_index_cache is None:
+            self._bucket_index_cache = self._build_bucket_index()
+        return self._bucket_index_cache
+
+    def invalidate(self):
+        self._cors_index_cache = None
+        self._bucket_index_cache = None
+
+    @staticmethod
+    def _build_cors_index() -> Dict[BucketName, CORSConfiguration]:
+        result = {}
+        for account_id, regions in s3_stores.items():
+            result.update(regions[config.DEFAULT_REGION].bucket_cors)
+        return result
+
+    @staticmethod
+    def _build_bucket_index() -> Set[BucketName]:
+        result = set()
+        for account_id, regions in moto_s3_backends.items():
+            result.update(regions["global"].buckets.keys())
+        return result
+
+
+s3_stores = AccountRegionBundle[S3Store]("s3", S3Store)

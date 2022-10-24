@@ -2245,33 +2245,6 @@
       }
     }
   },
-  "tests/integration/s3/test_s3.py::TestS3PresignedUrl::test_s3_get_response_headers": {
-    "recorded-date": "21-09-2022, 13:44:26",
-    "recorded-content": {
-      "bucket-cors-response": {
-        "CORSRules": [
-          {
-            "AllowedMethods": [
-              "GET",
-              "PUT",
-              "POST"
-            ],
-            "AllowedOrigins": [
-              "*"
-            ],
-            "ExposeHeaders": [
-              "ETag",
-              "x-amz-version-id"
-            ]
-          }
-        ],
-        "ResponseMetadata": {
-          "HTTPHeaders": {},
-          "HTTPStatusCode": 200
-        }
-      }
-    }
-  },
   "tests/integration/s3/test_s3.py::TestS3PresignedUrl::test_s3_copy_md5": {
     "recorded-date": "21-09-2022, 13:44:37",
     "recorded-content": {
@@ -3721,6 +3694,33 @@
         "ResponseMetadata": {
           "HTTPHeaders": {},
           "HTTPStatusCode": 404
+        }
+      }
+    }
+  },
+  "tests/integration/s3/test_s3.py::TestS3Cors::test_s3_get_response_headers": {
+    "recorded-date": "24-10-2022, 15:57:19",
+    "recorded-content": {
+      "bucket-cors-response": {
+        "CORSRules": [
+          {
+            "AllowedMethods": [
+              "GET",
+              "PUT",
+              "POST"
+            ],
+            "AllowedOrigins": [
+              "*"
+            ],
+            "ExposeHeaders": [
+              "ETag",
+              "x-amz-version-id"
+            ]
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
         }
       }
     }
