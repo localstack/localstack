@@ -64,5 +64,9 @@
         "x-amzn-trace-id": "x-amzn-trace-id"
       }
     }
+  },
+  "tests/integration/cloudformation/resources/test_lambda.py::test_lambda_alias": {
+    "recorded-date": "24-10-2022, 13:32:47",
+    "recorded-content": {}
   }
 }

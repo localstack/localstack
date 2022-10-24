@@ -139,3 +139,21 @@ def test_cfn_function_url(deploy_cfn_template, cfn_client, lambda_client, snapsh
 
     lowered_headers = {k.lower(): v for k, v in response.headers.items()}
     snapshot.match("response_headers", lowered_headers)
+
+
+def test_lambda_alias(deploy_cfn_template, lambda_client, snapshot):
+    snapshot.add_transformer(snapshot.transform.cloudformation_api())
+    snapshot.add_transformer(snapshot.transform.lambda_api())
+
+    lambda_name = f"function{short_uid()}"
+    alias_name = f"alias{short_uid()}"
+
+    deploy_cfn_template(
+        template_path=os.path.join(
+            os.path.dirname(__file__), "../../templates/cfn_lambda_alias.yml"
+        ),
+        parameters={"FunctionName": lambda_name, "AliasName": alias_name},
+    )
+
+    alias = lambda_client.get_alias(FunctionName=lambda_name, Name=alias_name)
+    snapshot.match("Alias", alias)

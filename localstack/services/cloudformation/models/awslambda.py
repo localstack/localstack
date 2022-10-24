@@ -367,3 +367,32 @@ class LambdaUrl(GenericBaseModel):
                 "parameters": {"FunctionName": "TargetFunctionArn", "Qualifier": "Qualifier"},
             },
         }
+
+
+class LambdaAlias(GenericBaseModel):
+    @staticmethod
+    def cloudformation_type():
+        return "AWS::Lambda::Alias"
+
+    def fetch_state(self, stack_name, resources):
+        client = aws_stack.connect_to_service("lambda")
+        props = self.props
+        result = client.get_alias(FunctionName=props.get("FunctionName"), Name=props.get("Name"))
+        return result
+
+    def get_physical_resource_id(self, attribute=None, **kwargs):
+        props = self.props
+        return props.get("Name")
+
+    @staticmethod
+    def get_deploy_templates():
+        return {
+            "create": {"function": "create_alias"},
+            "delete": {
+                "function": "delete_alias",
+                "parameters": {
+                    "FunctionName": "FunctionName",
+                    "Name": "Name",
+                },
+            },
+        }
