@@ -292,7 +292,7 @@ class TestSecretsManager:
 
     def test_create_secret_new_name_in_region(self, sm_client, sm_snapshot):
         """
-        The new secret should be created and replicated without problems
+        1.1 The new secret should be created and replicated without problems
         """
         secret_name = f"{short_uid()}"
         create_secret_replicated = sm_client.create_secret(
@@ -319,7 +319,7 @@ class TestSecretsManager:
 
     def test_create_secret_secret_name_already_exists(self, sm_client, sm_snapshot):
         """
-        Should raise an exception the secret already exists
+        1.2 Should raise an exception the secret already exists
         """
         secret_name = f"{short_uid()}"
         create_secret_replicated = sm_client.create_secret(
@@ -354,12 +354,13 @@ class TestSecretsManager:
         sm_snapshot.match("delete_secret_res", delete_secret_res)
 
 
-    def test_create_secret_secret_name_already_exists_as_replica_to_regions_force_overwrite(self, sm_client, sm_snapshot):
+    def test_create_secret_secret_name_already_exists_in_replica(self, sm_client, sm_snapshot):
         """
-        Create secret in region1 replicated to region2.
+        1.3 Create secret in region1 replicated to region2.
         Then, create secret in region 3 replicated to region2.
-        Then, fetch secret details from region3, replication status in region2 must be `Failed`
-        and StatusMessage: "Replication failed: Can't overwrite secret myts0 that is currently replicated to other region(s)."
+        Then, fetch secret details from region3, ReplicationStatus.Status for
+        region2 must be `Failed` and
+        "StatusMessage": "Replication failed: Secret name myts0 already exists in region us-east-2."
         """
         secret_name = f"{short_uid()}"
         create_secret_replicated1 = sm_client.create_secret(
@@ -431,6 +432,9 @@ class TestSecretsManager:
         pass
 
     def test_add_replication_secret_name_exists_only_in_region(self):
+        """
+        2.2 The secret exists only in region, replication must succeed
+        """
         pass
 
     def test_add_replication_secret_name_exists_in_replica_regions(self):
