@@ -168,3 +168,29 @@ def test_lambda_alias(deploy_cfn_template, cfn_client, lambda_client, snapshot):
 
     alias = lambda_client.get_alias(FunctionName=lambda_name, Name=alias_name)
     snapshot.match("Alias", alias)
+
+
+def test_lambda_code_signing_config(
+    deploy_cfn_template, cfn_client, lambda_client, snapshot, account_id
+):
+    snapshot.add_transformer(snapshot.transform.cloudformation_api())
+    snapshot.add_transformer(snapshot.transform.lambda_api())
+    snapshot.add_transformer(SortingTransformer("StackResources", lambda x: x["LogicalResourceId"]))
+
+    signer_arn = (
+        f"arn:aws:signer:{lambda_client.meta.region_name}:{account_id}:/signing-profiles/test"
+    )
+
+    stack = deploy_cfn_template(
+        template_path=os.path.join(
+            os.path.dirname(__file__), "../../templates/cfn_lambda_code_signing_config.yml"
+        ),
+        parameters={"SignerArn": signer_arn},
+    )
+
+    description = cfn_client.describe_stack_resources(StackName=stack.stack_name)
+    snapshot.match("stack_resource_descriptions", description)
+
+    snapshot.match(
+        "config", lambda_client.get_code_signing_config(CodeSigningConfigArn=stack.outputs["Arn"])
+    )

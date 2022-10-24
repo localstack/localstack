@@ -396,3 +396,37 @@ class LambdaAlias(GenericBaseModel):
                 },
             },
         }
+
+
+class LambdaCodeSigningConfig(GenericBaseModel):
+    @staticmethod
+    def cloudformation_type():
+        return "AWS::Lambda::CodeSigningConfig"
+
+    def fetch_state(self, stack_name, resources):
+        client = aws_stack.connect_to_service("lambda")
+        props = self.props
+        result = client.get_function_code_signing_config(
+            FunctionName=props.get("FunctionName"), Name=props.get("Name")
+        )
+        return result
+
+    def get_physical_resource_id(self, attribute=None, **kwargs):
+        props = self.props
+        return props.get("Name")
+
+    @staticmethod
+    def get_deploy_templates():
+        def _store_arn():
+            pass
+
+        return {
+            "create": {"function": "put_function_code_signing_config", "callback": _store_arn},
+            "delete": {
+                "function": "delete_alias",
+                "parameters": {
+                    "FunctionName": "FunctionName",
+                    "Name": "Name",
+                },
+            },
+        }
