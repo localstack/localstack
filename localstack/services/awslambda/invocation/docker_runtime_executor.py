@@ -11,7 +11,10 @@ from localstack.services.awslambda.invocation.executor_endpoint import (
     ServiceEndpoint,
 )
 from localstack.services.awslambda.invocation.lambda_models import IMAGE_MAPPING, FunctionVersion
-from localstack.services.awslambda.invocation.runtime_executor import RuntimeExecutor
+from localstack.services.awslambda.invocation.runtime_executor import (
+    LambdaRuntimeException,
+    RuntimeExecutor,
+)
 from localstack.services.awslambda.lambda_utils import (
     get_container_network_for_lambda,
     get_main_endpoint_from_container,
@@ -90,11 +93,6 @@ def prepare_image(target_path: Path, function_version: FunctionVersion) -> None:
                 function_version.qualified_arn,
                 e,
             )
-
-
-class LambdaRuntimeException(Exception):
-    def __init__(self, message: str):
-        super().__init__(message)
 
 
 class DockerRuntimeExecutor(RuntimeExecutor):
