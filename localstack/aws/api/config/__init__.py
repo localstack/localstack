@@ -419,6 +419,28 @@ class ResourceType(str):
     AWS_EC2_TransitGatewayAttachment = "AWS::EC2::TransitGatewayAttachment"
     AWS_EC2_TransitGatewayRouteTable = "AWS::EC2::TransitGatewayRouteTable"
     AWS_DMS_Certificate = "AWS::DMS::Certificate"
+    AWS_AppConfig_Application = "AWS::AppConfig::Application"
+    AWS_AppSync_GraphQLApi = "AWS::AppSync::GraphQLApi"
+    AWS_DataSync_LocationSMB = "AWS::DataSync::LocationSMB"
+    AWS_DataSync_LocationFSxLustre = "AWS::DataSync::LocationFSxLustre"
+    AWS_DataSync_LocationS3 = "AWS::DataSync::LocationS3"
+    AWS_DataSync_LocationEFS = "AWS::DataSync::LocationEFS"
+    AWS_DataSync_Task = "AWS::DataSync::Task"
+    AWS_DataSync_LocationNFS = "AWS::DataSync::LocationNFS"
+    AWS_EC2_NetworkInsightsAccessScopeAnalysis = "AWS::EC2::NetworkInsightsAccessScopeAnalysis"
+    AWS_EKS_FargateProfile = "AWS::EKS::FargateProfile"
+    AWS_Glue_Job = "AWS::Glue::Job"
+    AWS_GuardDuty_ThreatIntelSet = "AWS::GuardDuty::ThreatIntelSet"
+    AWS_GuardDuty_IPSet = "AWS::GuardDuty::IPSet"
+    AWS_SageMaker_Workteam = "AWS::SageMaker::Workteam"
+    AWS_SageMaker_NotebookInstanceLifecycleConfig = (
+        "AWS::SageMaker::NotebookInstanceLifecycleConfig"
+    )
+    AWS_ServiceDiscovery_Service = "AWS::ServiceDiscovery::Service"
+    AWS_ServiceDiscovery_PublicDnsNamespace = "AWS::ServiceDiscovery::PublicDnsNamespace"
+    AWS_SES_ContactList = "AWS::SES::ContactList"
+    AWS_SES_ConfigurationSet = "AWS::SES::ConfigurationSet"
+    AWS_Route53_HostedZone = "AWS::Route53::HostedZone"
 
 
 class ResourceValueType(str):

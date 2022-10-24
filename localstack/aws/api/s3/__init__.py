@@ -210,6 +210,7 @@ class BucketLocationConstraint(str):
     ap_south_1 = "ap-south-1"
     ap_southeast_1 = "ap-southeast-1"
     ap_southeast_2 = "ap-southeast-2"
+    ap_southeast_3 = "ap-southeast-3"
     ca_central_1 = "ca-central-1"
     cn_north_1 = "cn-north-1"
     cn_northwest_1 = "cn-northwest-1"
