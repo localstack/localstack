@@ -66,7 +66,75 @@
     }
   },
   "tests/integration/cloudformation/resources/test_lambda.py::test_lambda_alias": {
-    "recorded-date": "24-10-2022, 13:32:47",
-    "recorded-content": {}
+    "recorded-date": "24-10-2022, 13:56:16",
+    "recorded-content": {
+      "stack_resource_descriptions": {
+        "StackResources": [
+          {
+            "DriftInformation": {
+              "StackResourceDriftStatus": "NOT_CHECKED"
+            },
+            "LogicalResourceId": "FunctionAlias",
+            "PhysicalResourceId": "arn:aws:lambda:us-east-<function-version:1>:111111111111:function:<resource:<function-version:1>>",
+            "ResourceStatus": "CREATE_COMPLETE",
+            "ResourceType": "AWS::Lambda::Alias",
+            "StackId": "arn:aws:cloudformation:us-east-<function-version:1>:111111111111:stack/<stack-name:<function-version:1>>/<resource:2>",
+            "StackName": "<stack-name:<function-version:1>>",
+            "Timestamp": "timestamp"
+          },
+          {
+            "DriftInformation": {
+              "StackResourceDriftStatus": "NOT_CHECKED"
+            },
+            "LogicalResourceId": "LambdaFunction",
+            "PhysicalResourceId": "function<function-version:1>bcc6<function-version:1>b<function-version:1>",
+            "ResourceStatus": "CREATE_COMPLETE",
+            "ResourceType": "AWS::Lambda::Function",
+            "StackId": "arn:aws:cloudformation:us-east-<function-version:1>:111111111111:stack/<stack-name:<function-version:1>>/<resource:2>",
+            "StackName": "<stack-name:<function-version:1>>",
+            "Timestamp": "timestamp"
+          },
+          {
+            "DriftInformation": {
+              "StackResourceDriftStatus": "NOT_CHECKED"
+            },
+            "LogicalResourceId": "MyFnServiceRole",
+            "PhysicalResourceId": "<stack-name:<function-version:1>>-MyFnServiceRole-<function-version:1>GEC5XBJ744VU",
+            "ResourceStatus": "CREATE_COMPLETE",
+            "ResourceType": "AWS::IAM::Role",
+            "StackId": "arn:aws:cloudformation:us-east-<function-version:1>:111111111111:stack/<stack-name:<function-version:1>>/<resource:2>",
+            "StackName": "<stack-name:<function-version:1>>",
+            "Timestamp": "timestamp"
+          },
+          {
+            "DriftInformation": {
+              "StackResourceDriftStatus": "NOT_CHECKED"
+            },
+            "LogicalResourceId": "Version",
+            "PhysicalResourceId": "arn:aws:lambda:us-east-<function-version:1>:111111111111:function:<resource:3>",
+            "ResourceStatus": "CREATE_COMPLETE",
+            "ResourceType": "AWS::Lambda::Version",
+            "StackId": "arn:aws:cloudformation:us-east-<function-version:1>:111111111111:stack/<stack-name:<function-version:1>>/<resource:2>",
+            "StackName": "<stack-name:<function-version:1>>",
+            "Timestamp": "timestamp"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "Alias": {
+        "AliasArn": "arn:aws:lambda:us-east-<function-version:1>:111111111111:function:<resource:<function-version:1>>",
+        "Description": "",
+        "FunctionVersion": "<function-version:1>",
+        "Name": "<alias-name:<function-version:1>>",
+        "RevisionId": "7d<function-version:1>7dc20-fbee-4669-ac<function-version:1>f-ab5ea87bc8<function-version:1>0",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
   }
 }

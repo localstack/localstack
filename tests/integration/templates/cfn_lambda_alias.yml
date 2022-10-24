@@ -27,6 +27,7 @@ Resources:
   LambdaFunction:
     Type: AWS::Lambda::Function
     Properties:
+      FunctionName: !Ref FunctionName
       Code:
         ZipFile: exports.handler = function(event) =>  { console.log(event); };
       Role:

@@ -3,6 +3,7 @@ import os
 
 import pytest
 
+from localstack.testing.snapshots.transformer import SortingTransformer
 from localstack.utils.common import short_uid, to_str
 from localstack.utils.http import safe_requests
 from localstack.utils.sync import retry
@@ -141,19 +142,29 @@ def test_cfn_function_url(deploy_cfn_template, cfn_client, lambda_client, snapsh
     snapshot.match("response_headers", lowered_headers)
 
 
-def test_lambda_alias(deploy_cfn_template, lambda_client, snapshot):
+@pytest.mark.skip_snapshot_verify(
+    paths=["$..StackResources..PhysicalResourceId", "$..StackResources..StackId"]
+)
+def test_lambda_alias(deploy_cfn_template, cfn_client, lambda_client, snapshot):
     snapshot.add_transformer(snapshot.transform.cloudformation_api())
     snapshot.add_transformer(snapshot.transform.lambda_api())
+    snapshot.add_transformer(snapshot.transform.key_value("AliasArn", "alias-arn"))
+    snapshot.add_transformer(snapshot.transform.key_value("Name", "alias-name"))
+    snapshot.add_transformer(snapshot.transform.key_value("FunctionVersion", "function-version"))
+    snapshot.add_transformer(SortingTransformer("StackResources", lambda x: x["LogicalResourceId"]))
 
     lambda_name = f"function{short_uid()}"
     alias_name = f"alias{short_uid()}"
 
-    deploy_cfn_template(
+    stack = deploy_cfn_template(
         template_path=os.path.join(
             os.path.dirname(__file__), "../../templates/cfn_lambda_alias.yml"
         ),
         parameters={"FunctionName": lambda_name, "AliasName": alias_name},
     )
+
+    description = cfn_client.describe_stack_resources(StackName=stack.stack_name)
+    snapshot.match("stack_resource_descriptions", description)
 
     alias = lambda_client.get_alias(FunctionName=lambda_name, Name=alias_name)
     snapshot.match("Alias", alias)
