@@ -1,19 +1,11 @@
 import builtins
 import json
-import os
 import re
 from copy import deepcopy
 from typing import Callable
 
-from localstack.config import dirs
 from localstack.utils import common
 from localstack.utils.common import select_attributes, short_uid
-
-# URL to "cfn-response" module which is required in some CF Lambdas. The purpose of cfn-response is to make it easier
-# to write "inline" code for custom resources. TODO: consider copying code into our repo instead of downloading it
-CFN_RESPONSE_MODULE_URL = (
-    "https://raw.githubusercontent.com/LukeMizuhashi/cfn-response/master/index.js"
-)
 
 # placeholders
 PLACEHOLDER_RESOURCE_NAME = "__resource_name__"
@@ -119,13 +111,6 @@ def param_json_to_str(name):
         return result
 
     return _convert
-
-
-def get_cfn_response_mod_file():
-    cfn_response_tmp_file = os.path.join(dirs.static_libs, "lambda.cfn-response.js")
-    if not os.path.exists(cfn_response_tmp_file):
-        common.download(CFN_RESPONSE_MODULE_URL, cfn_response_tmp_file)
-    return cfn_response_tmp_file
 
 
 def lambda_select_params(*selected):

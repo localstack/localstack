@@ -132,13 +132,6 @@ def upgrade_jar_file(base_dir: str, file_glob: str, maven_asset: str):
     download(maven_asset_url, target_file)
 
 
-def install_cloudformation_libs():
-    from localstack.services.cloudformation import deployment_utils
-
-    # trigger download of CF module file
-    deployment_utils.get_cfn_response_mod_file()
-
-
 def install_component(name):
     from localstack.packages import InstallTarget
     from localstack.services.awslambda.packages import awslambda_runtime_package
