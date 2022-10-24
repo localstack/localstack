@@ -360,6 +360,73 @@ class TestSecretsManager:
         sm_snapshot.match("delete_secret_res", delete_secret_res)
 
 
+    def test_create_secret_secret_name_already_exists_in_replica_regions(self, sm_client, sm_snapshot):
+        """
+        Creates secret in region1 replicated to region2, then creates the same secret
+        in region 3 replicated to region2. Then, fetch details from region3, replication
+        status in region2 must show `Failure`
+        """
+        secret_name = f"{short_uid()}"
+        create_secret_replicated1 = sm_client.create_secret(
+            Name=secret_name,
+            SecretString=secret_name,
+            Region="us-east-1",
+            AddReplicaRegions=[{"Region":"us-east-2"}]
+        )
+        sm_snapshot.add_transformers_list(
+            sm_snapshot.transform.secretsmanager_secret_id_arn(create_secret_replicated1, 0)
+        )
+        sm_snapshot.match("create_secret_replicated", create_secret_replicated1)
+        # wait for the replication to complete
+        self._wait_created_is_listed(sm_client, secret_id=secret_name)
+        describe_secret_res1 = sm_snapshot.describe_secret(SecretId=secret_name, Region="us-east-1")
+
+        for replication_status in describe_secret_res1.Replication_Status:
+            if replication_status.Region == "us-east-2":
+                assert replication_status.Status != "Failed"
+
+        create_secret_replicated2 = sm_client.create_secret(
+            Name=secret_name,
+            SecretString=secret_name,
+            Region="us-west-1",
+            AddReplicaRegions=[{"Region":"us-east-2"}]
+        )
+        sm_snapshot.match("create_secret_replicated", create_secret_replicated2)
+
+        # wait for the replication to complete
+        self._wait_created_is_listed(sm_client, secret_id=secret_name)
+        describe_secret_res2 = sm_snapshot.describe_secret(SecretId=secret_name, Region="us-west-1")
+
+        # must check `us-east-1` Status == Failed
+        for replication_status in describe_secret_res2.Replication_Status:
+            if replication_status.Region == "us-east-2":
+                assert replication_status.Status == "Failed"
+
+        # cleanup
+        remove_regions_res1 = sm_client.remove_regions_from_replication(
+                SecretId=secret_name,
+                Region="us-east-1",
+                RemoveReplicaRegion="us-east-2")
+        sm_snapshot.match("remove_regions_res1", remove_regions_res1)
+
+        delete_secret_res1 = sm_client.delete_secret(
+            SecretId=secret_name, ForceDeleteWithoutRecovery=True,
+            Region="us-east-1"
+        )
+        sm_snapshot.match("delete_secret_res1", delete_secret_res1)
+
+        remove_regions_res2 = sm_client.remove_regions_from_replication(
+                SecretId=secret_name,
+                Region="us-west-1",
+                RemoveReplicaRegion="us-east-2")
+        sm_snapshot.match("remove_regions_res2", remove_regions_res2)
+        delete_secret_res2 = sm_client.delete_secret(
+            SecretId=secret_name, ForceDeleteWithoutRecovery=True,
+            Region="us-west-1"
+        )
+        sm_snapshot.match("delete_secret_res2", delete_secret_res2)
+
+
 
     def test_replicate_secret_to_region_updating_secret(self):
         pass
