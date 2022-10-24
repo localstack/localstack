@@ -173,6 +173,11 @@ class TestSecretsManager:
             sm_client.list_secret_version_ids(SecretId=f"s-{short_uid()}")
         sm_snapshot.match("list_secret_version_ids_not_found_ex", not_found.value.response)
 
+        with pytest.raises(Exception) as not_found:
+            sm_client.replicate_secret_to_regions(SecretId=f"s-{short_uid()}",
+                                                  AddReplicaRegions=[{'Region':'us-east-2'}])
+        sm_snapshot.match("resource_not_found_ex", not_found.value.response)
+
     def test_call_lists_secrets_multiple_times(self, sm_client, secret_name):
         sm_client.create_secret(
             Name=secret_name,
