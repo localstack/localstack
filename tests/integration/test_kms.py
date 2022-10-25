@@ -254,9 +254,21 @@ class TestKMS:
     @pytest.mark.parametrize(
         "number_of_bytes,error_type,error_message",
         [
-            (None, botocore.exceptions.ClientError, "NumberOfBytes is required."),
-            (0, botocore.exceptions.ClientError, "1 validation error detected"),
-            (1025, botocore.exceptions.ClientError, "1 validation error detected"),
+            (
+                None,
+                botocore.exceptions.ClientError,
+                "NumberOfBytes is required.",
+            ),
+            (
+                0,
+                botocore.exceptions.ClientError,
+                "Member must have value greater than or equal to 1",
+            ),
+            (
+                1025,
+                botocore.exceptions.ClientError,
+                "Member must have value less than or equal to 1024",
+            ),
         ],
     )
     @pytest.mark.aws_validated
