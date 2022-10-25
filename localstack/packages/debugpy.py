@@ -1,6 +1,7 @@
 from typing import List
 
 from localstack.packages import InstallTarget, Package, PackageInstaller
+from localstack.utils.run import run
 
 
 class DebugPyPackage(Package):
@@ -34,12 +35,8 @@ class DebugPyPackageInstaller(PackageInstaller):
         return install_dir
 
     def _install(self, target: InstallTarget) -> None:
-        import pip
-
-        if hasattr(pip, "main"):
-            pip.main(["install", "debugpy"])
-        else:
-            pip._internal.main(["install", "debugpy"])
+        cmd = "pip install debugpy"
+        run(cmd)
 
 
 debugpy_package = DebugPyPackage()
