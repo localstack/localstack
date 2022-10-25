@@ -3895,6 +3895,10 @@ class TestS3PresignedUrl:
         ]
 
 
+@pytest.mark.skipif(
+    condition=is_asf_provider(),
+    reason="ASF provider is tested in test_s3_cors.py, this will be deprecated",
+)
 class TestS3Cors:
     @pytest.mark.aws_validated
     # TODO x-amzn-requestid should be 'x-amz-request-id'
@@ -4090,7 +4094,6 @@ class TestS3Cors:
 
     @pytest.mark.aws_validated
     @pytest.mark.xfail(
-        condition=LEGACY_S3_PROVIDER,
         reason="Access-Control-Allow-Origin returns Origin value in LS",
     )
     def test_s3_get_response_headers(self, s3_client, s3_bucket, snapshot):
@@ -4127,7 +4130,6 @@ class TestS3Cors:
 
     @pytest.mark.aws_validated
     @pytest.mark.xfail(
-        condition=LEGACY_S3_PROVIDER,
         reason="Behaviour diverges from AWS, Access-Control-* headers always added",
     )
     def test_s3_get_response_headers_without_origin(self, s3_client, s3_bucket):

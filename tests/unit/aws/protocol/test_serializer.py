@@ -1698,7 +1698,7 @@ def test_restjson_streaming_payload(payload):
     "service,accept_header,content_type_header,expected_mime_type",
     [
         # Test default S3
-        ("s3", None, None, "text/xml"),
+        ("s3", None, None, "application/xml"),
         # Test default STS
         ("sts", None, None, "text/xml"),
         # Test STS for "any" Accept header

@@ -100,6 +100,7 @@ class S3CorsHandler(Handler):
             ] = f"MzRISOwyjmnup{request_id}7/JypPGXLh0OVFGcJaaO3KW/hRAqKOpIEEp"
 
             response.set_response(b"")
+            response.headers.pop("Content-Type", None)
             chain.stop()
 
         # check the presence of the Origin header. If not there, it means the request is not concerned about CORS

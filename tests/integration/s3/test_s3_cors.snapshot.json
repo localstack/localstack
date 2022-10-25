@@ -449,7 +449,7 @@
     }
   },
   "tests/integration/s3/test_s3_cors.py::TestS3Cors::test_put_cors": {
-    "recorded-date": "24-10-2022, 14:24:23",
+    "recorded-date": "25-10-2022, 11:17:15",
     "recorded-content": {
       "put-cors": {
         "ResponseMetadata": {
@@ -470,9 +470,9 @@
               "HEAD"
             ],
             "AllowedOrigins": [
-              "test.com",
-              "app.test.com",
-              "test.com:80"
+              "https://test.com",
+              "https://app.test.com",
+              "http://test.com:80"
             ],
             "MaxAgeSeconds": 3000
           }

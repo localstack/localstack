@@ -618,10 +618,9 @@ class S3Provider(S3Api, ServiceLifecycleHook):
     def get_bucket_cors(
         self, context: RequestContext, bucket: BucketName, expected_bucket_owner: AccountId = None
     ) -> GetBucketCorsOutput:
-        response = call_moto(context)
-        self.get_store().bucket_cors.get(bucket)
-        # TODO: see here what to do
-        return response
+        call_moto(context)
+        cors_rules = self.get_store().bucket_cors.get(bucket)
+        return GetBucketCorsOutput(CORSRules=cors_rules["CORSRules"])
 
     def delete_bucket_cors(
         self, context: RequestContext, bucket: BucketName, expected_bucket_owner: AccountId = None
