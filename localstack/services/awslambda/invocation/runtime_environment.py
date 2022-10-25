@@ -127,7 +127,11 @@ class RuntimeEnvironment:
             if self.status != RuntimeStatus.INACTIVE:
                 raise InvalidStatusException("Runtime Handler can only be started when inactive")
             self.status = RuntimeStatus.STARTING
-            self.runtime_executor.start(self.get_environment_variables())
+            try:
+                self.runtime_executor.start(self.get_environment_variables())
+            except Exception:
+                self.errored()
+                raise
             self.startup_timer = Timer(STARTUP_TIMEOUT_SEC, self.timed_out)
             self.startup_timer.start()
 
