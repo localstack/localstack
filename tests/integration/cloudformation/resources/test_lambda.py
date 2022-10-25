@@ -147,25 +147,33 @@ def test_cfn_function_url(deploy_cfn_template, cfn_client, lambda_client, snapsh
 @pytest.mark.skip_snapshot_verify(
     paths=["$..StackResources..PhysicalResourceId", "$..StackResources..StackId"]
 )
+@pytest.mark.aws_validated
 def test_lambda_alias(deploy_cfn_template, cfn_client, lambda_client, snapshot):
     snapshot.add_transformer(snapshot.transform.cloudformation_api())
     snapshot.add_transformer(snapshot.transform.lambda_api())
     snapshot.add_transformer(SortingTransformer("StackResources", lambda x: x["LogicalResourceId"]))
 
-    lambda_name = f"function{short_uid()}"
+    function_name = f"function{short_uid()}"
     alias_name = f"alias{short_uid()}"
+    snapshot.add_transformer(snapshot.transform.regex(alias_name, "<alias-name>"))
+    snapshot.add_transformer(snapshot.transform.regex(function_name, "<function-name>"))
 
     stack = deploy_cfn_template(
         template_path=os.path.join(
             os.path.dirname(__file__), "../../templates/cfn_lambda_alias.yml"
         ),
-        parameters={"FunctionName": lambda_name, "AliasName": alias_name},
+        parameters={"FunctionName": function_name, "AliasName": alias_name},
+    )
+
+    role_arn = lambda_client.get_function(FunctionName=function_name)["Configuration"]["Role"]
+    snapshot.add_transformer(
+        snapshot.transform.regex(role_arn.partition("role/")[-1], "<role-name>"), priority=-1
     )
 
     description = cfn_client.describe_stack_resources(StackName=stack.stack_name)
     snapshot.match("stack_resource_descriptions", description)
 
-    alias = lambda_client.get_alias(FunctionName=lambda_name, Name=alias_name)
+    alias = lambda_client.get_alias(FunctionName=function_name, Name=alias_name)
     snapshot.match("Alias", alias)
 
 
