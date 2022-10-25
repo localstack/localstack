@@ -154,7 +154,7 @@ class ApiInvocationContext:
     def cookies(self):
         if cookies := self.headers.get("cookie") or "":
             return list(cookies.split(";"))
-        return []
+        return None
 
     @property
     def is_data_base64_encoded(self):
