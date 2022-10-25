@@ -182,6 +182,7 @@ class LambdaFunctionVersion(GenericBaseModel):
         }
 
     def get_physical_resource_id(self, attribute=None, **kwargs):
+        # TODO: broken, this produces ...:$LATEST:$LATEST in some cases
         return "%s:%s" % (
             self.props.get("FunctionArn"),
             self.props.get("Version").split(":")[-1],
@@ -382,7 +383,7 @@ class LambdaAlias(GenericBaseModel):
 
     def get_physical_resource_id(self, attribute=None, **kwargs):
         props = self.props
-        return props.get("Name")
+        return props.get("Name")  # TODO: should be the ARN
 
     @staticmethod
     def get_deploy_templates():
