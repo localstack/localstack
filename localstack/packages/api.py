@@ -248,6 +248,10 @@ class MultiPackageInstaller(PackageInstaller):
         for package_installer in self.package_installer:
             package_installer.install(target=target)
 
+    def get_installed_dir(self) -> str | None:
+        # By default, use the installed-dir of the first package
+        return self.package_installer[0].get_installed_dir()
+
     def _install(self, target: InstallTarget) -> None:
         # This package installer actually only calls other installers, we pass here
         pass
