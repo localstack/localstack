@@ -246,7 +246,7 @@ class MultiPackageInstaller(PackageInstaller):
         :return: None
         """
         for package_installer in self.package_installer:
-            package_installer.install(target)
+            package_installer.install(target=target)
 
     def _install(self, target: InstallTarget) -> None:
         # This package installer actually only calls other installers, we pass here

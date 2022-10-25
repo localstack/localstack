@@ -1,3 +1,6 @@
+import itertools
+import logging
+from multiprocessing import Pool
 from typing import List, Optional
 
 import click
@@ -8,6 +11,9 @@ from localstack import config
 from localstack.packages import InstallTarget, Package
 from localstack.packages.api import NoSuchPackageException, PackagesPluginManager
 from localstack.utils.bootstrap import setup_logging
+
+LOG = logging.getLogger(__name__)
+
 
 console = Console()
 
@@ -93,11 +99,16 @@ def install(
 
         config.dirs.mkdirs()
 
-        for package_instance in package_instances:
-            _do_install_package(package_instance, version, target)
+        with Pool(processes=parallel) as pool:
+            pool.starmap(
+                _do_install_package,
+                zip(package_instances, itertools.repeat(version), itertools.repeat(target)),
+            )
     except NoSuchPackageException as e:
+        LOG.debug(str(e), exc_info=e)
         raise ClickException(str(e))
-    except Exception:
+    except Exception as e:
+        LOG.debug("one or more package installations failed.", exc_info=e)
         raise ClickException("one or more package installations failed.")
 
 
