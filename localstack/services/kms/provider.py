@@ -481,7 +481,6 @@ class KmsProvider(KmsApi, ServiceLifecycleHook):
                 f"1 validation error detected: Value '{number_of_bytes}' at 'numberOfBytes' failed "
                 "to satisfy constraint: Member must have value less than or equal to 1024"
             )
-
         if number_of_bytes < 1:
             raise ValidationException(
                 f"1 validation error detected: Value '{number_of_bytes}' at 'numberOfBytes' failed "

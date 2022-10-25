@@ -246,41 +246,30 @@ class TestKMS:
         result = kms_client.generate_random(NumberOfBytes=number_of_bytes)
 
         plain_text = result.get("Plaintext")
+
         assert plain_text
         assert isinstance(plain_text, bytes)
         assert len(plain_text) == number_of_bytes
         snapshot.match("result_length", len(plain_text))
 
     @pytest.mark.parametrize(
-        "number_of_bytes,error_type,error_message",
+        "number_of_bytes,error_type",
         [
-            (
-                None,
-                botocore.exceptions.ClientError,
-                "NumberOfBytes is required.",
-            ),
-            (
-                0,
-                botocore.exceptions.ClientError,
-                "Member must have value greater than or equal to 1",
-            ),
-            (
-                1025,
-                botocore.exceptions.ClientError,
-                "Member must have value less than or equal to 1024",
-            ),
+            (None, botocore.exceptions.ClientError),
+            (0, botocore.exceptions.ClientError),
+            (1025, botocore.exceptions.ClientError),
         ],
     )
     @pytest.mark.aws_validated
     def test_generate_random_invalid_number_of_bytes(
-        self, create_boto_client, snapshot, number_of_bytes, error_type, error_message
+        self, create_boto_client, snapshot, number_of_bytes, error_type
     ):
         kms_client = create_boto_client("kms", additional_config=Config(parameter_validation=False))
+
         with pytest.raises(error_type) as exinfo:
             kms_client.generate_random(NumberOfBytes=number_of_bytes)
 
-        assert error_message in str(exinfo.value)
-        snapshot.match("error_message", str(exinfo.value))
+        snapshot.match("generate-random-exc", exinfo.value.response)
 
     @pytest.mark.aws_validated
     def test_generate_data_key(self, kms_client, kms_key):
