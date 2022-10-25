@@ -6,7 +6,7 @@ import pytest
 from localstack.testing.snapshots.transformer import SortingTransformer
 from localstack.utils.common import short_uid, to_str
 from localstack.utils.http import safe_requests
-from localstack.utils.sync import retry
+from localstack.utils.sync import retry, wait_until
 from localstack.utils.testutil import get_lambda_log_events
 
 
@@ -194,3 +194,129 @@ def test_lambda_code_signing_config(
     snapshot.match(
         "config", lambda_client.get_code_signing_config(CodeSigningConfigArn=stack.outputs["Arn"])
     )
+
+
+class TestCfnLambdaSources:
+    def test_cfn_lambda_permissions(
+        self,
+        deploy_cfn_template,
+        lambda_client,
+        cfn_client,
+        sns_client,
+        logs_client,
+        iam_client,
+        snapshot,
+    ):
+        """
+        * Lambda Function
+        * Lambda Permission
+        * SNS Topic
+        """
+
+        snapshot.add_transformer(snapshot.transform.cloudformation_api())
+        snapshot.add_transformer(snapshot.transform.lambda_api())
+        snapshot.add_transformer(snapshot.transform.sns_api())
+        snapshot.add_transformer(
+            SortingTransformer("StackResources", lambda sr: sr["LogicalResourceId"])
+        )
+
+        deployment = deploy_cfn_template(
+            template_path=os.path.join(
+                os.path.dirname(__file__), "../../templates/cfn_lambda_sns_permissions.yaml"
+            ),
+            max_wait=240,
+        )
+
+        # verify by checking APIs
+
+        stack_resources = cfn_client.describe_stack_resources(StackName=deployment.stack_id)
+        snapshot.match("stack_resources", stack_resources)
+
+        fn_name = deployment.outputs["FunctionName"]
+        # topic_name = deployment.outputs["TopicName"]
+        topic_arn = deployment.outputs["TopicArn"]
+
+        get_function_result = lambda_client.get_function(FunctionName=fn_name)
+        get_topic_attributes_result = sns_client.get_topic_attributes(TopicArn=topic_arn)
+        get_policy_result = lambda_client.get_policy(FunctionName=fn_name)
+        snapshot.match("get_function_result", get_function_result)
+        snapshot.match("get_topic_attributes_result", get_topic_attributes_result)
+        snapshot.match("get_policy_result", get_policy_result)
+
+        # check that lambda is invoked
+
+        msg = f"msg-verification-{short_uid()}"
+        sns_client.publish(Message=msg, TopicArn=topic_arn)
+
+        def wait_logs():
+            log_events = logs_client.filter_log_events(logGroupName=f"/aws/lambda/{fn_name}")[
+                "events"
+            ]
+            return any([msg in e["message"] for e in log_events])
+
+        assert wait_until(wait_logs)
+
+    def test_cfn_lambda_sqs_source(
+        self, deploy_cfn_template, lambda_client, sqs_client, logs_client, iam_client, snapshot
+    ):
+        """
+        TODO: role + policy (!)
+        """
+        deployment = deploy_cfn_template(
+            template_path=os.path.join(
+                os.path.dirname(__file__), "../../templates/cfn_lambda_sqs_source.yaml"
+            ),
+            max_wait=240,
+        )
+
+        fn_name = deployment.outputs["FunctionName"]
+        queue_url = deployment.outputs["QueueUrl"]
+        esm_id = deployment.outputs["ESMId"]
+
+        get_function_result = lambda_client.get_function(FunctionName=fn_name)
+        get_esm_result = lambda_client.get_event_source_mapping(UUID=esm_id)
+        get_queue_atts_result = sqs_client.get_queue_attributes(
+            QueueUrl=queue_url, AttributeNames=["All"]
+        )
+
+        role_arn = get_function_result["Configuration"]["Role"]
+        role_name = role_arn.partition("role/")[-1]
+        get_role_result = iam_client.get_role(RoleName=role_name)
+        list_attached_role_policies_result = iam_client.list_attached_role_policies(
+            RoleName=role_name
+        )
+        list_inline_role_policies_result = iam_client.list_role_policies(RoleName=role_name)
+
+        policies = []
+        for rp in list_inline_role_policies_result["PolicyNames"]:
+            get_rp_result = iam_client.get_role_policy(RoleName=role_name, PolicyName=rp)
+            policies.append(get_rp_result)
+
+        snapshot.match("role_policies", {"policies": policies})
+
+        # TODO: lookup policies
+        snapshot.match("get_function_result", get_function_result)
+        snapshot.match("get_esm_result", get_esm_result)
+        snapshot.match("get_queue_atts_result", get_queue_atts_result)
+        snapshot.match("get_role_result", get_role_result)
+        snapshot.match("list_attached_role_policies_result", list_attached_role_policies_result)
+        snapshot.match("list_inline_role_policies_result", list_inline_role_policies_result)
+
+        def wait_esm_active():
+            try:
+                return lambda_client.get_event_source_mapping(UUID=esm_id)["State"] == "Enabled"
+            except Exception as e:
+                print(e)
+
+        assert wait_until(wait_esm_active)
+
+        msg = f"msg-verification-{short_uid()}"
+        sqs_client.send_message(QueueUrl=queue_url, MessageBody=msg)
+
+        def wait_logs():
+            log_events = logs_client.filter_log_events(logGroupName=f"/aws/lambda/{fn_name}")[
+                "events"
+            ]
+            return any([msg in e["message"] for e in log_events])
+
+        assert wait_until(wait_logs)
