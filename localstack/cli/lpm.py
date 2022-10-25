@@ -1,14 +1,12 @@
-from collections import defaultdict
 from typing import List, Optional
 
 import click
 from click import ClickException
-from plugin import PluginManager
 from rich.console import Console
 
 from localstack import config
 from localstack.packages import InstallTarget, Package
-from localstack.packages.api import PLUGIN_NAMESPACE, PackagesPlugin
+from localstack.packages.api import NoSuchPackageException, PackagesPluginManager
 from localstack.utils.bootstrap import setup_logging
 
 console = Console()
@@ -47,37 +45,6 @@ def _do_install_package(package: Package, version: str = None, target: InstallTa
         raise e
 
 
-def _load_packages(packages: List[str], version: Optional[str] = None) -> List[Package]:
-    """
-    Collects the Package instances for the given list of package names (without scope).
-    :param packages: List of package names (without the scope) which should be collected
-    :return: List of Package instances for the given package names
-    :raises: ClickException if a package could not be found
-    """
-    plugin_manager: PluginManager[PackagesPlugin] = PluginManager(namespace=PLUGIN_NAMESPACE)
-
-    # Plugin names are unique, but there could be multiple packages with the same name in different scopes
-    plugin_specs_per_name = defaultdict(list)
-    for plugin_spec in plugin_manager.list_plugin_specs():
-        (package_name, _, _) = plugin_spec.name.rpartition("/")
-        plugin_specs_per_name[package_name].append(plugin_spec)
-
-    package_instances: List[Package] = []
-    for pkg in packages:
-        plugin_specs = plugin_specs_per_name.get(pkg)
-        if not plugin_specs:
-            raise ClickException(f"unable to locate installer for package {pkg}")
-        for plugin_spec in plugin_specs:
-            package = plugin_manager.load(plugin_spec.name).get_package()
-            package_instances.append(package)
-            if version and version not in package.get_versions():
-                raise ClickException(
-                    f"unable to locate installer for package {pkg} and version {version}"
-                )
-
-    return package_instances
-
-
 @cli.command()
 @click.argument("package", nargs=-1, required=True)
 @click.option(
@@ -107,23 +74,29 @@ def install(
     version: Optional[str] = None,
     target: Optional[str] = None,
 ):
-    """
-    Install one or more packages.
-    """
-    console.print(f"resolving packages: {package}")
-    if parallel > 1:
-        console.print(f"install {parallel} packages in parallel:")
-    config.dirs.mkdirs()
-
-    # collect installers and install in parallel:
-    package_instances = _load_packages(package, version)
+    """Install one or more packages."""
     try:
         if target:
             target = InstallTarget[str.upper(target)]
         else:
+            # LPM is meant to be used at build-time, the default target is static_libs
             target = InstallTarget.STATIC_LIBS
+
+        # collect installers and install in parallel:
+        console.print(f"resolving packages: {package}")
+        package_manager = PackagesPluginManager()
+        package_manager.load_all()
+        package_instances = package_manager.get_packages(package, version)
+
+        if parallel > 1:
+            console.print(f"install {parallel} packages in parallel:")
+
+        config.dirs.mkdirs()
+
         for package_instance in package_instances:
             _do_install_package(package_instance, version, target)
+    except NoSuchPackageException as e:
+        raise ClickException(str(e))
     except Exception:
         raise ClickException("one or more package installations failed.")
 
@@ -139,9 +112,9 @@ def install(
 )
 def list_packages(verbose: bool):
     """List available packages of all repositories"""
-    plugin_manager: PluginManager[PackagesPlugin] = PluginManager(namespace=PLUGIN_NAMESPACE)
-    plugins = plugin_manager.load_all()
-    packages = sorted([(plugin.name, plugin.scope, plugin.get_package()) for plugin in plugins])
+    package_manager = PackagesPluginManager()
+    package_manager.load_all()
+    packages = package_manager.get_all_packages()
     for package_name, package_scope, package_instance in packages:
         console.print(f"[green]{package_name}[/green]/{package_scope}")
         if verbose:

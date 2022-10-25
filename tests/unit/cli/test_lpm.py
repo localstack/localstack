@@ -4,8 +4,9 @@ from typing import List
 import pytest
 from click.testing import CliRunner
 
-from localstack.cli.lpm import _load_packages, cli, console
+from localstack.cli.lpm import cli, console
 from localstack.packages import InstallTarget, Package, PackageException, PackageInstaller
+from localstack.packages.api import PackagesPluginManager
 from localstack.utils.patch import Patch
 
 
@@ -84,10 +85,10 @@ def test_install_failure_returns_non_zero_exit_code(runner, monkeypatch):
         def _install(self, target: InstallTarget) -> None:
             pass
 
-    def patched_load_packages(_) -> List[Package]:
+    def patched_get_packages(*_) -> List[Package]:
         return [FailingPackage(), SuccessfulPackage()]
 
-    with Patch.function(target=_load_packages, fn=patched_load_packages):
+    with Patch.function(target=PackagesPluginManager.get_packages, fn=patched_get_packages):
         result = runner.invoke(cli, ["install", "successful-installer", "failing-installer"])
         assert result.exit_code == 1
         assert "one or more package installations failed." in result.output

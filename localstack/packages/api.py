@@ -3,11 +3,12 @@ import functools
 import logging
 import os
 import threading
+from collections import defaultdict
 from enum import Enum
 from inspect import getmodule
-from typing import Callable, List, Optional
+from typing import Callable, List, Optional, Tuple
 
-from plugin import Plugin, PluginSpec
+from plugin import Plugin, PluginManager, PluginSpec
 
 from localstack import config
 
@@ -295,6 +296,51 @@ class PackagesPlugin(Plugin):
         :return: returns the package instance of this package plugin
         """
         return self._get_package()
+
+
+class NoSuchPackageException(PackageException):
+    """Exception raised by the PackagesPluginManager to indicate that a package / version is not available."""
+
+    pass
+
+
+class PackagesPluginManager(PluginManager[PackagesPlugin]):
+    """PluginManager which simplifies the loading / access of PackagesPlugins and their exposed package instances."""
+
+    def __init__(self):
+        super().__init__(PLUGIN_NAMESPACE)
+
+    def get_all_packages(self) -> List[Tuple[str, str, Package]]:
+        return sorted(
+            [(plugin.name, plugin.scope, plugin.get_package()) for plugin in self.load_all()]
+        )
+
+    def get_packages(
+        self, package_names: List[str], version: Optional[str] = None
+    ) -> List[Package]:
+        # Plugin names are unique, but there could be multiple packages with the same name in different scopes
+        plugin_specs_per_name = defaultdict(list)
+        # Plugin names have the format "<package-name>/<scope>", build a dict of specs per package name for the lookup
+        for plugin_spec in self.list_plugin_specs():
+            (package_name, _, _) = plugin_spec.name.rpartition("/")
+            plugin_specs_per_name[package_name].append(plugin_spec)
+
+        package_instances: List[Package] = []
+        for package_name in package_names:
+            plugin_specs = plugin_specs_per_name.get(package_name)
+            if not plugin_specs:
+                raise NoSuchPackageException(
+                    f"unable to locate installer for package {package_name}"
+                )
+            for plugin_spec in plugin_specs:
+                package_instance = self.load(plugin_spec.name).get_package()
+                package_instances.append(package_instance)
+                if version and version not in package_instance.get_versions():
+                    raise NoSuchPackageException(
+                        f"unable to locate installer for package {package_name} and version {version}"
+                    )
+
+        return package_instances
 
 
 def package(
