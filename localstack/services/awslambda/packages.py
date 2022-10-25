@@ -21,7 +21,7 @@ class AWSLambdaRuntimePackage(Package):
         super().__init__(name="AwsLambda", default_version=default_version)
 
     def get_versions(self) -> List[str]:
-        return ["0.1.5-pre", "v0.1.4-pre", "v0.1.1-pre", "v0.1-pre"]
+        return ["v0.1.5-pre", "v0.1.4-pre", "v0.1.1-pre", "v0.1-pre"]
 
     def _get_installer(self, version: str) -> PackageInstaller:
         return AWSLambdaRuntimePackageInstaller(name="awslambda-runtime", version=version)
