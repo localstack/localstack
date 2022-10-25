@@ -146,9 +146,9 @@ def test_cfn_function_url(deploy_cfn_template, cfn_client, lambda_client, snapsh
     snapshot.match("response_headers", lowered_headers)
 
 
-@pytest.mark.skip_snapshot_verify(
-    paths=["$..StackResources..PhysicalResourceId", "$..StackResources..StackId"]
-)
+# @pytest.mark.skip_snapshot_verify(
+#     paths=["$..StackResources..PhysicalResourceId", "$..StackResources..StackId"]
+# )
 @pytest.mark.aws_validated
 def test_lambda_alias(deploy_cfn_template, cfn_client, lambda_client, snapshot):
     snapshot.add_transformer(snapshot.transform.cloudformation_api())
@@ -179,6 +179,7 @@ def test_lambda_alias(deploy_cfn_template, cfn_client, lambda_client, snapshot):
     snapshot.match("Alias", alias)
 
 
+@pytest.mark.skip(reason="not implemented")
 @pytest.mark.aws_validated
 def test_lambda_code_signing_config(
     deploy_cfn_template, cfn_client, lambda_client, snapshot, account_id
