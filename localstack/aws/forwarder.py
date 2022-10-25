@@ -166,7 +166,7 @@ def create_aws_request_context(
     }
     # The endpoint URL is mandatory here, set a dummy if not given
     if not endpoint_url:
-        endpoint_url = "http://example.com"
+        endpoint_url = "http://dummy-endpoint.com/"
     request_dict = client._convert_to_request_dict(
         parameters, operation, endpoint_url, context=request_context
     )

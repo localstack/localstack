@@ -165,7 +165,7 @@ def test_service_router_works_for_every_service(
     }
     request_args = _create_dummy_request_args(operation)
     request_dict = client._convert_to_request_dict(
-        request_args, operation, "http://dummy-endpoint", request_context
+        request_args, operation, "http://dummy-endpoint.com/", request_context
     )
     request_object = create_request_object(request_dict)
     client._request_signer.sign(operation.name, request_object)
