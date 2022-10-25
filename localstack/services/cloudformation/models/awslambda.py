@@ -406,28 +406,37 @@ class LambdaCodeSigningConfig(GenericBaseModel):
 
     def fetch_state(self, stack_name, resources):
         client = aws_stack.connect_to_service("lambda")
-        props = self.props
-        result = client.get_function_code_signing_config(
-            FunctionName=props.get("FunctionName"), Name=props.get("Name")
-        )
+        result = client.get_code_signing_config(CodeSigningConfigArn=self.physical_resource_id)[
+            "CodeSigningConfig"
+        ]
         return result
 
     def get_physical_resource_id(self, attribute=None, **kwargs):
-        props = self.props
-        return props.get("Name")
+        return self.physical_resource_id
 
-    @staticmethod
-    def get_deploy_templates():
-        def _store_arn():
-            pass
+    def get_cfn_attribute(self, attribute_name):
+        if attribute_name == "CodeSigningConfigId":
+            return self.props()["CodeSigningConfigId"]
+
+        return self.physical_resource_id
+
+    @classmethod
+    def get_deploy_templates(cls):
+        def _store_arn(result, resource_id, resources, resource_type):
+            resources[resource_id]["PhysicalResourceId"] = result["CodeSigningConfig"][
+                "CodeSigningConfigArn"
+            ]
+
+        def _arn(params, resources, resource_id, **kwargs):
+            resource = cls(resources[resource_id])
+            return resource.physical_resource_id or resource.get_physical_resource_id()
 
         return {
-            "create": {"function": "put_function_code_signing_config", "callback": _store_arn},
+            "create": {"function": "create_code_signing_config", "result_handler": _store_arn},
             "delete": {
-                "function": "delete_alias",
+                "function": "delete_code_signing_config",
                 "parameters": {
-                    "FunctionName": "FunctionName",
-                    "Name": "Name",
+                    "CodeSigningConfigArn": _arn,
                 },
             },
         }

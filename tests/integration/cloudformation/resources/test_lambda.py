@@ -179,7 +179,6 @@ def test_lambda_alias(deploy_cfn_template, cfn_client, lambda_client, snapshot):
     snapshot.match("Alias", alias)
 
 
-@pytest.mark.skip(reason="not implemented")
 @pytest.mark.aws_validated
 def test_lambda_code_signing_config(
     deploy_cfn_template, cfn_client, lambda_client, snapshot, account_id
