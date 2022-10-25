@@ -179,6 +179,7 @@ def test_lambda_alias(deploy_cfn_template, cfn_client, lambda_client, snapshot):
 
 
 @pytest.mark.aws_validated
+@pytest.mark.skip_snapshot_verify(paths=["$..DestinationConfig"])
 def test_lambda_code_signing_config(
     deploy_cfn_template, cfn_client, lambda_client, snapshot, account_id
 ):
@@ -203,6 +204,25 @@ def test_lambda_code_signing_config(
     snapshot.match(
         "config", lambda_client.get_code_signing_config(CodeSigningConfigArn=stack.outputs["Arn"])
     )
+
+
+def test_event_invoke_config(deploy_cfn_template, lambda_client, snapshot):
+    snapshot.add_transformer(snapshot.transform.cloudformation_api())
+    snapshot.add_transformer(snapshot.transform.lambda_api())
+
+    stack = deploy_cfn_template(
+        template_path=os.path.join(
+            os.path.dirname(__file__), "../../templates/cfn_lambda_event_invoke_config.yml"
+        ),
+        max_wait=180,
+    )
+
+    event_invoke_config = lambda_client.get_function_event_invoke_config(
+        FunctionName=stack.outputs["FunctionName"],
+        Qualifier=stack.outputs["FunctionQualifier"],
+    )
+
+    snapshot.match("event_invoke_config", event_invoke_config)
 
 
 class TestCfnLambdaIntegrations:

@@ -606,5 +606,24 @@
         }
       }
     }
+  },
+  "tests/integration/cloudformation/resources/test_lambda.py::test_event_invoke_config": {
+    "recorded-date": "25-10-2022, 11:28:22",
+    "recorded-content": {
+      "event_invoke_config": {
+        "DestinationConfig": {
+          "OnFailure": {},
+          "OnSuccess": {}
+        },
+        "FunctionArn": "arn:aws:lambda:<region>:111111111111:function:<resource:1>",
+        "LastModified": "datetime",
+        "MaximumEventAgeInSeconds": 300,
+        "MaximumRetryAttempts": 1,
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
   }
 }
