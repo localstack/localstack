@@ -404,6 +404,9 @@ class LambdaCodeSigningConfig(GenericBaseModel):
         return "AWS::Lambda::CodeSigningConfig"
 
     def fetch_state(self, stack_name, resources):
+        if not self.physical_resource_id:
+            return None
+
         client = aws_stack.connect_to_service("lambda")
         result = client.get_code_signing_config(CodeSigningConfigArn=self.physical_resource_id)[
             "CodeSigningConfig"
