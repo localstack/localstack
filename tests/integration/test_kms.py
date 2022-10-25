@@ -252,24 +252,17 @@ class TestKMS:
         assert len(plain_text) == number_of_bytes
         snapshot.match("result_length", len(plain_text))
 
-    @pytest.mark.parametrize(
-        "number_of_bytes,error_type",
-        [
-            (None, botocore.exceptions.ClientError),
-            (0, botocore.exceptions.ClientError),
-            (1025, botocore.exceptions.ClientError),
-        ],
-    )
+    @pytest.mark.parametrize("number_of_bytes", [None, 0, 1025])
     @pytest.mark.aws_validated
     def test_generate_random_invalid_number_of_bytes(
-        self, create_boto_client, snapshot, number_of_bytes, error_type
+        self, create_boto_client, snapshot, number_of_bytes
     ):
         kms_client = create_boto_client("kms", additional_config=Config(parameter_validation=False))
 
-        with pytest.raises(error_type) as exinfo:
+        with pytest.raises(botocore.exceptions.ClientError) as e:
             kms_client.generate_random(NumberOfBytes=number_of_bytes)
 
-        snapshot.match("generate-random-exc", exinfo.value.response)
+        snapshot.match("generate-random-exc", e.value.response)
 
     @pytest.mark.aws_validated
     def test_generate_data_key(self, kms_client, kms_key):

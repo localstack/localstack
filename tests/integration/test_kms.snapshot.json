@@ -1,6 +1,6 @@
 {
-  "tests/integration/test_kms.py::TestKMS::test_generate_random_invalid_number_of_bytes[None-ClientError]": {
-    "recorded-date": "25-10-2022, 18:50:50",
+  "tests/integration/test_kms.py::TestKMS::test_generate_random_invalid_number_of_bytes[None]": {
+    "recorded-date": "25-10-2022, 19:27:14",
     "recorded-content": {
       "generate-random-exc": {
         "Error": {
@@ -14,8 +14,8 @@
       }
     }
   },
-  "tests/integration/test_kms.py::TestKMS::test_generate_random_invalid_number_of_bytes[0-ClientError]": {
-    "recorded-date": "25-10-2022, 18:50:50",
+  "tests/integration/test_kms.py::TestKMS::test_generate_random_invalid_number_of_bytes[0]": {
+    "recorded-date": "25-10-2022, 19:27:14",
     "recorded-content": {
       "generate-random-exc": {
         "Error": {
@@ -29,8 +29,8 @@
       }
     }
   },
-  "tests/integration/test_kms.py::TestKMS::test_generate_random_invalid_number_of_bytes[1025-ClientError]": {
-    "recorded-date": "25-10-2022, 18:50:51",
+  "tests/integration/test_kms.py::TestKMS::test_generate_random_invalid_number_of_bytes[1025]": {
+    "recorded-date": "25-10-2022, 19:27:14",
     "recorded-content": {
       "generate-random-exc": {
         "Error": {
@@ -45,31 +45,31 @@
     }
   },
   "tests/integration/test_kms.py::TestKMS::test_generate_random[12]": {
-    "recorded-date": "25-10-2022, 18:52:48",
+    "recorded-date": "25-10-2022, 19:27:20",
     "recorded-content": {
       "result_length": 12
     }
   },
   "tests/integration/test_kms.py::TestKMS::test_generate_random[44]": {
-    "recorded-date": "25-10-2022, 18:52:48",
+    "recorded-date": "25-10-2022, 19:27:20",
     "recorded-content": {
       "result_length": 44
     }
   },
   "tests/integration/test_kms.py::TestKMS::test_generate_random[91]": {
-    "recorded-date": "25-10-2022, 18:52:48",
+    "recorded-date": "25-10-2022, 19:27:21",
     "recorded-content": {
       "result_length": 91
     }
   },
   "tests/integration/test_kms.py::TestKMS::test_generate_random[1]": {
-    "recorded-date": "25-10-2022, 18:52:48",
+    "recorded-date": "25-10-2022, 19:27:21",
     "recorded-content": {
       "result_length": 1
     }
   },
   "tests/integration/test_kms.py::TestKMS::test_generate_random[1024]": {
-    "recorded-date": "25-10-2022, 18:52:48",
+    "recorded-date": "25-10-2022, 19:27:21",
     "recorded-content": {
       "result_length": 1024
     }
