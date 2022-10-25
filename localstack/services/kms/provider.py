@@ -474,9 +474,9 @@ class KmsProvider(KmsApi, ServiceLifecycleHook):
         self, context: RequestContext, request: GenerateRandomRequest
     ) -> GenerateRandomResponse:
         number_of_bytes = request.get("NumberOfBytes")
-        if not number_of_bytes:
+        if number_of_bytes is None:
             raise ValidationException("NumberOfBytes is required.")
-        if number_of_bytes > 1024:
+        if number_of_bytes < 1 or number_of_bytes > 1024:
             raise ValidationException(
                 f"1 validation error detected: Value '{number_of_bytes}' at 'numberOfBytes' failed "
                 "to satisfy constraint: Member must have value less than or "
