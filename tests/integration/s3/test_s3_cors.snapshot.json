@@ -608,5 +608,28 @@
         "StatusCode": 200
       }
     }
+  },
+  "tests/integration/s3/test_s3_cors.py::TestS3Cors::test_put_cors_empty_origin": {
+    "recorded-date": "25-10-2022, 11:57:55",
+    "recorded-content": {
+      "get-cors-empty": {
+        "CORSRules": [
+          {
+            "AllowedMethods": [
+              "GET",
+              "PUT",
+              "HEAD"
+            ],
+            "AllowedOrigins": [
+              ""
+            ]
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
   }
 }

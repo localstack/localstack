@@ -588,6 +588,24 @@ class TestS3Cors:
 
         snapshot.match("put-cors-exc", e.value.response)
 
+    @pytest.mark.aws_validated
+    def test_put_cors_empty_origin(self, s3_client, s3_bucket, snapshot):
+        # derived from TestAccS3Bucket_Security_corsEmptyOrigin TF test
+        bucket_cors_config = {
+            "CORSRules": [
+                {
+                    "AllowedOrigins": [""],
+                    "AllowedMethods": ["GET", "PUT", "HEAD"],
+                }
+            ]
+        }
+        s3_client.put_bucket_cors(Bucket=s3_bucket, CORSConfiguration=bucket_cors_config)
+
+        response = s3_client.get_bucket_cors(Bucket=s3_bucket)
+
+        snapshot.match("get-cors-empty", response)
+
+    @pytest.mark.aws_validated
     def test_delete_cors(self, s3_client, s3_bucket, snapshot):
         snapshot.add_transformer(snapshot.transform.key_value("BucketName"))
         response = s3_client.delete_bucket_cors(Bucket=s3_bucket)

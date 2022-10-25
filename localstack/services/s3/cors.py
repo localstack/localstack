@@ -17,7 +17,6 @@ from localstack.constants import S3_VIRTUAL_HOSTNAME
 from localstack.http import Request, Response
 from localstack.services.s3.models import BucketCorsIndex
 from localstack.services.s3.utils import S3_VIRTUAL_HOSTNAME_REGEX
-from localstack.utils.bootstrap import log_duration
 
 _s3_virtual_host_regex = re.compile(S3_VIRTUAL_HOSTNAME_REGEX)
 FAKE_HOST_ID = "9Gjjt1m+cjU4OPvX9O9/8RuvnG41MRb/18Oux2o5H5MY7ISNTlXN+Dz9IG62/ILVxhAGI0qyPfg="
@@ -65,7 +64,6 @@ class S3CorsHandler(Handler):
 
         return True, bucket_name
 
-    @log_duration(min_ms=0)
     def handle_cors(self, chain: HandlerChain, context: RequestContext, response: Response):
         """
         Handle CORS for S3 requests. S3 CORS rules can be configured.

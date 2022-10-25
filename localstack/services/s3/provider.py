@@ -1129,6 +1129,17 @@ def apply_moto_patches():
             tags = {}
         return tags
 
+    @patch(moto_s3_responses.S3Response._cors_from_body)
+    def _fix_parsing_cors_rules(fn, *args, **kwargs) -> List[Dict]:
+        """
+        Fix parsing of CORS Rules from moto, you can set empty origin in AWS. Replace None by an empty string
+        """
+        cors_rules = fn(*args, **kwargs)
+        for rule in cors_rules:
+            if rule["AllowedOrigin"] is None:
+                rule["AllowedOrigin"] = ""
+        return cors_rules
+
     @patch(moto_s3_responses.S3Response.is_delete_keys)
     def s3_response_is_delete_keys(fn, self, request, path, bucket_name):
         """
