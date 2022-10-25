@@ -381,14 +381,13 @@ class LambdaAlias(GenericBaseModel):
         result = client.get_alias(FunctionName=props.get("FunctionName"), Name=props.get("Name"))
         return result
 
-    def get_physical_resource_id(self, attribute=None, **kwargs):
-        props = self.props
-        return props.get("Name")  # TODO: should be the ARN
-
     @staticmethod
     def get_deploy_templates():
+        def _store_arn(result, resource_id, resources, resource_type):
+            resources[resource_id]["PhysicalResourceId"] = result["AliasArn"]
+
         return {
-            "create": {"function": "create_alias"},
+            "create": {"function": "create_alias", "result_handler": _store_arn},
             "delete": {
                 "function": "delete_alias",
                 "parameters": {
