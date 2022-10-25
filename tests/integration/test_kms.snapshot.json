@@ -1,0 +1,50 @@
+{
+  "tests/integration/test_kms.py::TestKMS::test_generate_random_invalid_number_of_bytes[None-ClientError-NumberOfBytes is required.]": {
+    "recorded-date": "25-10-2022, 10:24:07",
+    "recorded-content": {
+      "error_message": "An error occurred (ValidationException) when calling the GenerateRandom operation: NumberOfBytes is required."
+    }
+  },
+  "tests/integration/test_kms.py::TestKMS::test_generate_random_invalid_number_of_bytes[0-ClientError-1 validation error detected]": {
+    "recorded-date": "25-10-2022, 10:24:07",
+    "recorded-content": {
+      "error_message": "An error occurred (ValidationException) when calling the GenerateRandom operation: 1 validation error detected: Value '0' at 'numberOfBytes' failed to satisfy constraint: Member must have value greater than or equal to 1"
+    }
+  },
+  "tests/integration/test_kms.py::TestKMS::test_generate_random_invalid_number_of_bytes[1025-ClientError-1 validation error detected]": {
+    "recorded-date": "25-10-2022, 10:24:08",
+    "recorded-content": {
+      "error_message": "An error occurred (ValidationException) when calling the GenerateRandom operation: 1 validation error detected: Value '1025' at 'numberOfBytes' failed to satisfy constraint: Member must have value less than or equal to 1024"
+    }
+  },
+  "tests/integration/test_kms.py::TestKMS::test_generate_random[12]": {
+    "recorded-date": "25-10-2022, 10:31:15",
+    "recorded-content": {
+      "result_length": 12
+    }
+  },
+  "tests/integration/test_kms.py::TestKMS::test_generate_random[44]": {
+    "recorded-date": "25-10-2022, 10:31:15",
+    "recorded-content": {
+      "result_length": 44
+    }
+  },
+  "tests/integration/test_kms.py::TestKMS::test_generate_random[91]": {
+    "recorded-date": "25-10-2022, 10:31:15",
+    "recorded-content": {
+      "result_length": 91
+    }
+  },
+  "tests/integration/test_kms.py::TestKMS::test_generate_random[1]": {
+    "recorded-date": "25-10-2022, 10:31:15",
+    "recorded-content": {
+      "result_length": 1
+    }
+  },
+  "tests/integration/test_kms.py::TestKMS::test_generate_random[1024]": {
+    "recorded-date": "25-10-2022, 10:31:15",
+    "recorded-content": {
+      "result_length": 1024
+    }
+  }
+}
