@@ -1,7 +1,7 @@
 import base64
 import json
 from enum import Enum
-from typing import Any, Dict, Optional, Union
+from typing import Any, Dict, Optional, Union, List
 
 from responses import Response
 
@@ -151,7 +151,7 @@ class ApiInvocationContext:
         """Whether this is an API Gateway v1 request"""
         return self.apigw_version == ApiGatewayVersion.V1
 
-    def cookies(self):
+    def cookies(self) -> Optional[List[str]]:
         if cookies := self.headers.get("cookie") or "":
             return list(cookies.split(";"))
         return None
