@@ -18,6 +18,7 @@ Resources:
   Function76856677:
     Type: AWS::Lambda::Function
     Properties:
+      Description: "function to test lambda function url"
       Code:
         ZipFile: |
           def handler(event, context):
@@ -28,6 +29,10 @@ Resources:
           - Arn
       Handler: index.handler
       Runtime: python3.9
+      Environment:
+        Variables:
+          ENDPOINT_URL: aws.amazon.com
+
     DependsOn:
       - FunctionServiceRole675BB04A
   FunctioninvokefunctionurlA70D8F37:

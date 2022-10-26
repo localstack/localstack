@@ -293,3 +293,23 @@ def stack_process_is_finished(cfn_client, stack_name):
         "PROGRESS"
         not in cfn_client.describe_stacks(StackName=stack_name)["Stacks"][0]["StackStatus"]
     )
+
+
+def test_drift_detection_on_lambda(deploy_cfn_template, cfn_client, lambda_client, snapshot):
+    snapshot.add_transformer(snapshot.transform.cloudformation_api())
+    stack = deploy_cfn_template(
+        template_path=os.path.join(os.path.dirname(__file__), "../../templates/lambda_url.yaml")
+    )
+
+    lambda_client.update_function_configuration(
+        FunctionName=stack.outputs["LambdaName"],
+        Runtime="python3.8",
+        Description="different description",
+        Environment={"Variables": {"ENDPOINT_URL": "localhost.localstack.cloud"}},
+    )
+
+    drift_detection = cfn_client.detect_stack_resource_drift(
+        StackName=stack.stack_name, LogicalResourceId="Function76856677"
+    )
+
+    snapshot.match("drift_detection", drift_detection)
