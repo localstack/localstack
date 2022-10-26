@@ -12,6 +12,8 @@ from localstack.constants import (
     TEST_AWS_ACCESS_KEY_ID,
 )
 
+LOG = logging.getLogger(__name__)
+
 # Thread local storage for keeping current request & account related info
 REQUEST_CTX_TLS = threading.local()
 
@@ -39,10 +41,11 @@ def get_aws_account_id() -> str:
     try:
         return REQUEST_CTX_TLS.account_id
     except AttributeError:
-        _trace_log(
-            "No Account ID in thread-local storage for thread %s"
-            % threading.current_thread().ident,
-        )
+        if LS_LOG and LS_LOG == LS_LOG_TRACE_INTERNAL:
+            LOG.debug(
+                "No Account ID in thread-local storage for thread %s",
+                threading.current_thread().ident,
+            )
         return DEFAULT_AWS_ACCOUNT_ID
 
 
@@ -57,24 +60,19 @@ def get_moto_default_account_id() -> str:
 def get_account_id_from_access_key_id(access_key_id: str) -> str:
     """Return the Account ID associated the Access Key ID."""
 
+    # If AWS_ACCES_KEY_ID has a 12-digit integer value, use it as the account ID
     if re.match(r"\d{12}", access_key_id):
-        # If AWS_ACCES_KEY_ID has a 12-digit integer value, use it as the account ID
         return access_key_id
 
-    elif len(access_key_id) >= 20 and (
-        access_key_id.startswith("ASIA") or access_key_id.startswith("AKIA")
-    ):
+    elif len(access_key_id) >= 20:
         # If AWS_ACCESS_KEY_ID has production AWS credentials, ignore them
-        _trace_log("Ignoring potential production AWS credentials in AWS_ACCESS_KEY_ID")
+        if access_key_id.startswith("ASIA") or access_key_id.startswith("AKIA"):
+            LOG.warning(
+                "Ignoring production AWS credentials provided to LocalStack. Falling back to default account ID."
+            )
+
+        elif access_key_id.startswith("LSIA") or access_key_id.startswith("LKIA"):
+            # TODO Add IAM mapping logic here
+            pass
 
     return DEFAULT_AWS_ACCOUNT_ID
-
-
-#
-# Utils
-#
-
-
-def _trace_log(message: str) -> None:
-    if LS_LOG and LS_LOG == LS_LOG_TRACE_INTERNAL:
-        logging.debug(message)
