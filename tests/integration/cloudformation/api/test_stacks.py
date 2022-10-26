@@ -319,7 +319,7 @@ def test_drift_detection_on_lambda(deploy_cfn_template, cfn_client, lambda_clien
 
 
 @pytest.mark.aws_validate
-@pytest.mark.skip(reason="Implement validation before creation stack")
+@pytest.mark.skip(reason="Not Implemented")
 def test_linting_error_during_creation(cfn_client):
     stack_name = f"stack-{short_uid()}"
     bad_template = {"Resources": "", "Outputs": ""}
