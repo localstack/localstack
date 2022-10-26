@@ -331,3 +331,9 @@ def test_linting_error_during_creation(cfn_client):
 
     assert error_response["Error"]["Code"] == "ValidationError"
     assert "Template format error" in error_response["Error"]["Message"]
+
+
+# def test_notifications(deploy_cfn_template, cfn_client, sns_create_topic, snapshot):
+#     stack_name = f"stack-{short_uid()}"
+#     topic_arn=sns_create_topic()["TopicArn"]
+#     cfn_client.create_stack(StackName=stack_name, NotificationsArM)
