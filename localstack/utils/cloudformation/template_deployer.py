@@ -236,15 +236,16 @@ def check_not_found_exception(e, resource_type, resource, resource_status=None):
         "not found",
         "not exist",
     ]
-    if not list(filter(lambda marker, e=e: marker in str(e), markers)):
+
+    markers_hit = [m for m in markers if m in str(e)]
+    if not markers_hit:
         LOG.warning(
             "Unexpected error retrieving details for resource type %s: Exception: %s - %s - status: %s",
             resource_type,
-            e,
+            str(e),
             resource,
             resource_status,
         )
-
         return False
 
     return True

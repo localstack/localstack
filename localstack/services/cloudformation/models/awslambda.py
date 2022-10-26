@@ -162,31 +162,30 @@ class LambdaFunctionVersion(GenericBaseModel):
         return "AWS::Lambda::Version"
 
     def fetch_state(self, stack_name, resources):
-        name = self.resolve_refs_recursively(stack_name, self.props.get("FunctionName"), resources)
-        if not name:
+
+        props = self.props
+        if not self.physical_resource_id:
             return None
-        func_name = aws_stack.lambda_function_name(name)
-        func_version = name.split(":")[7] if len(name.split(":")) > 7 else "$LATEST"
-        versions = aws_stack.connect_to_service("lambda").list_versions_by_function(
-            FunctionName=func_name
-        )
-        return ([v for v in versions["Versions"] if v["Version"] == func_version] or [None])[0]
+
+        function_name = props["FunctionName"]
+        qualifier = self.resource_json["Version"]
+
+        lambda_client = aws_stack.connect_to_service("lambda")
+        return lambda_client.get_function(FunctionName=function_name, Qualifier=qualifier)
 
     @staticmethod
     def get_deploy_templates():
+        def _store_version(result, resource_id, resources, resource_type):
+            resources[resource_id]["Version"] = result["Version"]
+            resources[resource_id]["PhysicalResourceId"] = result["FunctionArn"]
+
         return {
             "create": {
                 "function": "publish_version",
                 "parameters": select_parameters("FunctionName", "CodeSha256", "Description"),
+                "result_handler": _store_version,
             }
         }
-
-    def get_physical_resource_id(self, attribute=None, **kwargs):
-        # TODO: broken, this produces ...:$LATEST:$LATEST in some cases
-        return "%s:%s" % (
-            self.props.get("FunctionArn"),
-            self.props.get("Version").split(":")[-1],
-        )
 
 
 class LambdaEventSourceMapping(GenericBaseModel):
