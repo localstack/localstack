@@ -207,6 +207,8 @@ def test_lambda_code_signing_config(
     )
 
 
+@pytest.mark.skip_snapshot_verify(condition=is_old_provider, paths=["$..DestinationConfig"])
+@pytest.mark.aws_validated
 def test_event_invoke_config(deploy_cfn_template, lambda_client, snapshot):
     snapshot.add_transformer(snapshot.transform.cloudformation_api())
     snapshot.add_transformer(snapshot.transform.lambda_api())
@@ -227,6 +229,26 @@ def test_event_invoke_config(deploy_cfn_template, lambda_client, snapshot):
 
 
 @pytest.mark.skip_snapshot_verify(paths=["$..CodeSize"])
+@pytest.mark.skip_snapshot_verify(
+    condition=is_old_provider,
+    paths=[
+        "$..Versions..Description",
+        "$..Versions..EphemeralStorage",
+        "$..Versions..LastUpdateStatus",
+        "$..Versions..MemorySize",
+        "$..Versions..State",
+        "$..Versions..VpcConfig",
+        "$..Code.RepositoryType",
+        "$..Configuration.Description",
+        "$..Configuration.EphemeralStorage",
+        "$..Configuration.FunctionArn",
+        "$..Configuration.MemorySize",
+        "$..Configuration.RevisionId",
+        "$..Configuration.Version",
+        "$..Configuration.VpcConfig",
+        "$..Tags",
+    ],
+)
 @pytest.mark.aws_validated
 def test_lambda_version(deploy_cfn_template, cfn_client, lambda_client, snapshot):
     snapshot.add_transformer(snapshot.transform.cloudformation_api())
@@ -275,6 +297,7 @@ class TestCfnLambdaIntegrations:
             "$..Attributes.DeliveryPolicy",  # shouldn't be there
             "$..Attributes.Policy",  # missing SNS:Receive
             "$..CodeSize",
+            "$..Configuration.Layers",
             "$..RevisionId",  # seems the revision id of the policy actually corresponds to the one of the function version
             "$..Tags",  # missing cloudformation automatic resource tags for the lambda function
         ]
@@ -368,6 +391,7 @@ class TestCfnLambdaIntegrations:
             # Lambda
             "$..Tags",
             "$..Configuration.CodeSize",
+            "$..Configuration.Layers",
             # SQS
             "$..Attributes.SqsManagedSseEnabled",
             # # IAM
