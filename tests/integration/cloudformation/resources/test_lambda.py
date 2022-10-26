@@ -3,6 +3,7 @@ import os
 
 import pytest
 
+from localstack.testing.aws.lambda_utils import is_old_provider
 from localstack.testing.snapshots.transformer import SortingTransformer
 from localstack.utils.common import short_uid, to_str
 from localstack.utils.http import safe_requests
@@ -257,6 +258,27 @@ def test_lambda_version(deploy_cfn_template, cfn_client, lambda_client, snapshot
 
 
 class TestCfnLambdaIntegrations:
+    @pytest.mark.skip_snapshot_verify(
+        paths=[
+            "$..Policy.PolicyArn",
+            "$..Policy.PolicyName",
+            "$..Code.RepositoryType",
+            "$..Configuration.EphemeralStorage",
+            "$..Configuration.MemorySize",
+            "$..Configuration.VpcConfig",
+        ],
+        condition=is_old_provider,
+    )
+    @pytest.mark.skip_snapshot_verify(
+        paths=[
+            "$..Attributes.EffectiveDeliveryPolicy",  # broken in sns right now. needs to be wrapped within an http key
+            "$..Attributes.DeliveryPolicy",  # shouldn't be there
+            "$..Attributes.Policy",  # missing SNS:Receive
+            "$..CodeSize",
+            "$..RevisionId",  # seems the revision id of the policy actually corresponds to the one of the function version
+            "$..Tags",  # missing cloudformation automatic resource tags for the lambda function
+        ]
+    )
     @pytest.mark.aws_validated
     def test_cfn_lambda_permissions(
         self,
@@ -314,6 +336,8 @@ class TestCfnLambdaIntegrations:
         msg = f"msg-verification-{short_uid()}"
         sns_client.publish(Message=msg, TopicArn=topic_arn)
 
+        # $.topic-attrs.Attributes.EffectiveDeliveryPolicy
+
         def wait_logs():
             log_events = logs_client.filter_log_events(logGroupName=f"/aws/lambda/{fn_name}")[
                 "events"
@@ -322,6 +346,39 @@ class TestCfnLambdaIntegrations:
 
         assert wait_until(wait_logs)
 
+    @pytest.mark.skip_snapshot_verify(
+        condition=is_old_provider,
+        paths=[
+            "$..Code.RepositoryType",
+            "$..Configuration.EphemeralStorage",
+            "$..Configuration.MemorySize",
+            "$..Configuration.VpcConfig",
+            "$..FunctionResponseTypes",
+            "$..LastProcessingResult",
+            "$..MaximumBatchingWindowInSeconds",
+            "$..MaximumRetryAttempts",
+            "$..ParallelizationFactor",
+            "$..StartingPosition",
+            "$..StateTransitionReason",
+            "$..Topics",
+        ],
+    )
+    @pytest.mark.skip_snapshot_verify(
+        paths=[
+            # Lambda
+            "$..Tags",
+            "$..Configuration.CodeSize",
+            # SQS
+            "$..Attributes.SqsManagedSseEnabled",
+            # # IAM
+            "$..PolicyNames",
+            "$..policies..PolicyName",
+            "$..Role.Description",
+            "$..Role.MaxSessionDuration",
+            "$..StackResources..LogicalResourceId",
+            "$..StackResources..PhysicalResourceId",
+        ]
+    )
     @pytest.mark.aws_validated
     def test_cfn_lambda_sqs_source(
         self,
