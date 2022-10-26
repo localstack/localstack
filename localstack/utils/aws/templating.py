@@ -1,3 +1,4 @@
+import contextlib
 import copy
 import json
 import re
@@ -119,6 +120,17 @@ def calculate(fn, self, *args, **kwarg):
     result = fn(self, *args, **kwarg)
     result = "" if result is None else result
     return result
+
+
+class ExtNameOrCall(airspeed.NameOrCall):
+    NAME = re.compile(r"([a-zA-Z0-9_-]+)(.*)$", re.S)
+
+
+@patch(airspeed.VariableExpression.parse, pass_target=False)
+def parse_expr(self):
+    self.part = self.next_element(ExtNameOrCall)
+    with contextlib.suppress(airspeed.NoMatch):
+        self.subexpression = self.next_element(airspeed.SubExpression)
 
 
 class ReturnDirective(airspeed.EvaluateDirective):
