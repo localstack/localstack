@@ -1,7 +1,7 @@
 import base64
 import json
 from enum import Enum
-from typing import Any, Dict, Optional, Union, List
+from typing import Any, Dict, List, Optional, Union
 
 from responses import Response
 
