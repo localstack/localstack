@@ -1,6 +1,7 @@
 import json
 import os
 
+import botocore.exceptions
 import pytest
 import yaml
 
@@ -295,6 +296,8 @@ def stack_process_is_finished(cfn_client, stack_name):
     )
 
 
+@pytest.mark.skip(reason="Not implemented")
+@pytest.mark.aws_verified
 def test_drift_detection_on_lambda(deploy_cfn_template, cfn_client, lambda_client, snapshot):
     snapshot.add_transformer(snapshot.transform.cloudformation_api())
     stack = deploy_cfn_template(
@@ -313,3 +316,18 @@ def test_drift_detection_on_lambda(deploy_cfn_template, cfn_client, lambda_clien
     )
 
     snapshot.match("drift_detection", drift_detection)
+
+
+@pytest.mark.aws_validate
+@pytest.mark.skip(reason="Implement validation before creation stack")
+def test_linting_error_during_creation(cfn_client):
+    stack_name = f"stack-{short_uid()}"
+    bad_template = {"Resources": "", "Outputs": ""}
+
+    with pytest.raises(botocore.exceptions.ClientError) as ex:
+        cfn_client.create_stack(StackName=stack_name, TemplateBody=json.dumps(bad_template))
+
+    error_response = ex.value.response
+
+    assert error_response["Error"]["Code"] == "ValidationError"
+    assert "Template format error" in error_response["Error"]["Message"]
