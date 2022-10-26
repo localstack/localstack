@@ -3,7 +3,7 @@ import os
 
 import pytest
 
-from localstack.testing.aws.lambda_utils import is_old_provider
+from localstack.testing.aws.lambda_utils import is_new_provider, is_old_provider
 from localstack.testing.snapshots.transformer import SortingTransformer
 from localstack.utils.common import short_uid, to_str
 from localstack.utils.http import safe_requests
@@ -84,7 +84,7 @@ def test_lambda_w_dynamodb_event_filter(
     retry(_assert_single_lambda_call, retries=30)
 
 
-@pytest.mark.aws_validated
+@pytest.mark.skipif(condition=is_new_provider(), reason="not implemented yet")
 @pytest.mark.skip_snapshot_verify(
     paths=[
         "$..Metadata",
@@ -99,6 +99,7 @@ def test_lambda_w_dynamodb_event_filter(
         "$..content-length",
     ]
 )
+@pytest.mark.aws_validated
 def test_cfn_function_url(deploy_cfn_template, cfn_client, lambda_client, snapshot):
     snapshot.add_transformer(snapshot.transform.cloudformation_api())
     snapshot.add_transformer(snapshot.transform.lambda_api())
@@ -207,6 +208,7 @@ def test_lambda_code_signing_config(
     )
 
 
+@pytest.mark.skipif(condition=is_new_provider(), reason="not implemented yet")
 @pytest.mark.skip_snapshot_verify(condition=is_old_provider, paths=["$..DestinationConfig"])
 @pytest.mark.aws_validated
 def test_event_invoke_config(deploy_cfn_template, lambda_client, snapshot):
@@ -247,6 +249,7 @@ def test_event_invoke_config(deploy_cfn_template, lambda_client, snapshot):
         "$..Configuration.Version",
         "$..Configuration.VpcConfig",
         "$..Tags",
+        "$..Layers",
     ],
 )
 @pytest.mark.aws_validated
