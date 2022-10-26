@@ -138,7 +138,7 @@
     }
   },
   "tests/integration/cloudformation/resources/test_lambda.py::TestCfnLambdaIntegrations::test_cfn_lambda_permissions": {
-    "recorded-date": "25-10-2022, 08:59:08",
+    "recorded-date": "26-10-2022, 09:57:43",
     "recorded-content": {
       "stack_resources": {
         "StackResources": [
@@ -337,7 +337,7 @@
     }
   },
   "tests/integration/cloudformation/resources/test_lambda.py::TestCfnLambdaIntegrations::test_cfn_lambda_sqs_source": {
-    "recorded-date": "25-10-2022, 09:38:57",
+    "recorded-date": "26-10-2022, 10:02:25",
     "recorded-content": {
       "stack_resources": {
         "StackResources": [

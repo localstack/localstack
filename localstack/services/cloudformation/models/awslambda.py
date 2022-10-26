@@ -1,6 +1,8 @@
+import json
 import os
 
-from localstack.services.awslambda.lambda_api import get_lambda_policy_name
+import mypy_boto3_lambda
+
 from localstack.services.awslambda.lambda_utils import get_handler_file_from_name
 from localstack.services.cloudformation.deployment_utils import (
     generate_default_name,
@@ -18,7 +20,6 @@ from localstack.utils.common import (
     rm_rf,
     save_file,
     select_attributes,
-    short_uid,
     to_bytes,
 )
 from localstack.utils.testutil import create_zip_file
@@ -238,31 +239,8 @@ class LambdaPermission(GenericBaseModel):
     def fetch_state(self, stack_name, resources):
         props = self.props
         func_name = self.resolve_refs_recursively(stack_name, props.get("FunctionName"), resources)
-        func_arn = aws_stack.lambda_function_arn(func_name)
-        return self.do_fetch_state(func_name, func_arn)
-
-    def do_fetch_state(self, resource_name, resource_arn):
-        iam = aws_stack.connect_to_service("iam")
-        props = self.props
-        policy_name = get_lambda_policy_name(resource_name)
-        policy_arn = aws_stack.policy_arn(policy_name)
-        policy = iam.get_policy(PolicyArn=policy_arn)["Policy"]
-        version = policy.get("DefaultVersionId")
-        policy = iam.get_policy_version(PolicyArn=policy_arn, VersionId=version)["PolicyVersion"]
-        statements = policy["Document"]["Statement"]
-        statements = statements if isinstance(statements, list) else [statements]
-        principal = props.get("Principal")
-        existing = [
-            s
-            for s in statements
-            if s["Action"] == props["Action"]
-            and s["Resource"] == resource_arn
-            and (
-                not principal
-                or s["Principal"] in [principal, {"Service": principal}, {"Service": [principal]}]
-            )
-        ]
-        return existing[0] if existing else None
+        lambda_client: mypy_boto3_lambda.LambdaClient = aws_stack.connect_to_service("lambda")
+        return lambda_client.get_policy(FunctionName=func_name)
 
     def get_physical_resource_id(self, attribute=None, **kwargs):
         # return statement ID here to indicate that the resource has been deployed
@@ -270,15 +248,23 @@ class LambdaPermission(GenericBaseModel):
 
     @staticmethod
     def get_deploy_templates():
-        def lambda_permission_params(params, **kwargs):
-            result = select_parameters("FunctionName", "Action", "Principal")(params, **kwargs)
-            result["StatementId"] = short_uid()
+        def _store_physical_id(result, resource_id, resources, resource_type):
+            parsed_statement = json.loads(result["Statement"])
+            resources[resource_id]["PhysicalResourceId"] = parsed_statement["Sid"]
+
+        def lambda_permission_params(params, resources, resource_id, **kwargs):
+            result = select_parameters("FunctionName", "Action", "Principal", "SourceArn")(
+                params, **kwargs
+            )
+            suffix = "9571XFZ"  # TODO: ?
+            result["StatementId"] = f"{resource_id}-{suffix}"
             return result
 
         return {
             "create": {
                 "function": "add_permission",
                 "parameters": lambda_permission_params,
+                "result_handler": _store_physical_id,
             }
         }
 

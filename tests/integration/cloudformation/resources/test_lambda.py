@@ -278,7 +278,7 @@ class TestCfnLambdaIntegrations:
         snapshot.add_transformer(snapshot.transform.lambda_api())
         snapshot.add_transformer(snapshot.transform.sns_api())
         snapshot.add_transformer(
-            SortingTransformer("StackResources", lambda sr: sr["LogicalResourceId"])
+            SortingTransformer("StackResources", lambda sr: sr["LogicalResourceId"]), priority=-1
         )
         snapshot.add_transformer(snapshot.transform.key_value("CodeSha256"))
         snapshot.add_transformer(
@@ -345,7 +345,7 @@ class TestCfnLambdaIntegrations:
         snapshot.add_transformer(snapshot.transform.lambda_api())
         snapshot.add_transformer(snapshot.transform.sns_api())
         snapshot.add_transformer(
-            SortingTransformer("StackResources", lambda sr: sr["LogicalResourceId"])
+            SortingTransformer("StackResources", lambda sr: sr["LogicalResourceId"]), priority=-1
         )
         snapshot.add_transformer(snapshot.transform.key_value("CodeSha256"))
         snapshot.add_transformer(snapshot.transform.key_value("RoleId"))
