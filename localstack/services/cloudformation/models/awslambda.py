@@ -1,8 +1,6 @@
 import json
 import os
 
-import mypy_boto3_lambda
-
 from localstack.services.awslambda.lambda_utils import get_handler_file_from_name
 from localstack.services.cloudformation.deployment_utils import (
     generate_default_name,
@@ -239,7 +237,7 @@ class LambdaPermission(GenericBaseModel):
     def fetch_state(self, stack_name, resources):
         props = self.props
         func_name = self.resolve_refs_recursively(stack_name, props.get("FunctionName"), resources)
-        lambda_client: mypy_boto3_lambda.LambdaClient = aws_stack.connect_to_service("lambda")
+        lambda_client = aws_stack.connect_to_service("lambda")
         return lambda_client.get_policy(FunctionName=func_name)
 
     def get_physical_resource_id(self, attribute=None, **kwargs):
