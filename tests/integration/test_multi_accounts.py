@@ -1,5 +1,4 @@
 import pytest
-from botocore.exceptions import ClientError
 
 from localstack.testing.pytest.fixtures import _client
 
@@ -66,81 +65,35 @@ class TestMultiAccounts:
         vpcs = ec2_client1.describe_vpcs()["Vpcs"]
         assert all([vpc["OwnerId"] == account_id1 for vpc in vpcs])
 
-        #
-        # ELB
-        #
-
-        elb_client1 = client_factory("elbv2", account_id1)
-        elb_client2 = client_factory("elbv2", account_id2)
-
-        # Ensure namespacing works for interdependent services
-        # In order to create an LB, a valid Subnet is required, which is part of EC2
-        subnet_id1 = ec2_client1.describe_subnets()["Subnets"][0]["SubnetId"]
-
-        # Creating LB in same namespace as subnet must work
-        elb_client1.create_load_balancer(Name="lorem", Subnets=[subnet_id1])
-
-        # and fail in second namespace throwing invalid subnet error
-        with pytest.raises(ClientError) as exc:
-            elb_client2.create_load_balancer(Name="lorem", Subnets=[subnet_id1])
-        err = exc.value.response["Error"]
-        assert err["Code"] == "InvalidSubnetID.NotFound"
-
     def test_account_id_namespacing_for_localstack_backends(self, client_factory):
         # Ensure resources are isolated by account ID namespaces
         account_id1 = "420420420420"
         account_id2 = "133713371337"
 
-        #
-        # IOT
-        #
+        sns_client1 = client_factory("sns", account_id1)
+        sns_client2 = client_factory("sns", account_id2)
 
-        iot_client1 = client_factory("iot", account_id1)
-        iot_client2 = client_factory("iot", account_id2)
+        arn1 = sns_client1.create_topic(Name="foo")["TopicArn"]
 
-        iot_client1.create_thing(thingName="foo")
+        assert len(sns_client1.list_topics()["Topics"]) == 1
+        assert len(sns_client2.list_topics()["Topics"]) == 0
 
-        assert len(iot_client1.list_things()["things"]) == 1
-        assert len(iot_client2.list_things()["things"]) == 0
+        arn2 = sns_client2.create_topic(Name="foo")["TopicArn"]
+        arn3 = sns_client2.create_topic(Name="bar")["TopicArn"]
 
-        iot_client2.create_thing(thingName="foo")
-        iot_client2.create_thing(thingName="bar")
+        assert len(sns_client1.list_topics()["Topics"]) == 1
+        assert len(sns_client2.list_topics()["Topics"]) == 2
 
-        assert len(iot_client1.list_things()["things"]) == 1
-        assert len(iot_client2.list_things()["things"]) == 2
+        sns_client1.tag_resource(ResourceArn=arn1, Tags=[{"Key": "foo", "Value": "1"}])
 
-        #
-        # Amplify
-        #
+        assert len(sns_client1.list_tags_for_resource(ResourceArn=arn1)["Tags"]) == 1
+        assert len(sns_client2.list_tags_for_resource(ResourceArn=arn2)["Tags"]) == 0
+        assert len(sns_client2.list_tags_for_resource(ResourceArn=arn3)["Tags"]) == 0
 
-        amplify_client1 = client_factory("amplify", account_id1)
-        amplify_client2 = client_factory("amplify", account_id2)
+        sns_client2.tag_resource(ResourceArn=arn2, Tags=[{"Key": "foo", "Value": "1"}])
+        sns_client2.tag_resource(ResourceArn=arn2, Tags=[{"Key": "bar", "Value": "1"}])
+        sns_client2.tag_resource(ResourceArn=arn3, Tags=[{"Key": "foo", "Value": "1"}])
 
-        amplify_client1.create_app(name="foo")
-
-        assert len(amplify_client1.list_apps()["apps"]) == 1
-        assert len(amplify_client2.list_apps()["apps"]) == 0
-
-        amplify_client2.create_app(name="foo")
-        amplify_client2.create_app(name="bar")
-
-        assert len(amplify_client1.list_apps()["apps"]) == 1
-        assert len(amplify_client2.list_apps()["apps"]) == 2
-
-        #
-        # Appconfig
-        #
-
-        appconfig_client1 = client_factory("appconfig", account_id1)
-        appconfig_client2 = client_factory("appconfig", account_id2)
-
-        appconfig_client1.create_application(Name="foo")
-
-        assert len(appconfig_client1.list_applications()["Items"]) == 1
-        assert len(appconfig_client2.list_applications()["Items"]) == 0
-
-        appconfig_client2.create_application(Name="foo")
-        appconfig_client2.create_application(Name="bar")
-
-        assert len(appconfig_client1.list_applications()["Items"]) == 1
-        assert len(appconfig_client2.list_applications()["Items"]) == 2
+        assert len(sns_client1.list_tags_for_resource(ResourceArn=arn1)["Tags"]) == 1
+        assert len(sns_client2.list_tags_for_resource(ResourceArn=arn2)["Tags"]) == 2
+        assert len(sns_client2.list_tags_for_resource(ResourceArn=arn3)["Tags"]) == 1
