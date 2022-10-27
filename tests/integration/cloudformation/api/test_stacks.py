@@ -9,7 +9,7 @@ from localstack.testing.aws.cloudformation_utils import load_template_file
 from localstack.testing.snapshots.transformer import SortingTransformer
 from localstack.utils.files import load_file
 from localstack.utils.strings import short_uid
-from localstack.utils.sync import wait_until
+from localstack.utils.sync import retry, wait_until
 
 
 class TestStacksApi:
@@ -333,7 +333,65 @@ def test_linting_error_during_creation(cfn_client):
     assert "Template format error" in error_response["Error"]["Message"]
 
 
-# def test_notifications(deploy_cfn_template, cfn_client, sns_create_topic, snapshot):
-#     stack_name = f"stack-{short_uid()}"
-#     topic_arn=sns_create_topic()["TopicArn"]
-#     cfn_client.create_stack(StackName=stack_name, NotificationsArM)
+@pytest.mark.aws_validated
+@pytest.mark.skip(reason="feature not implemented")
+def test_notifications(
+    sqs_client,
+    cfn_client,
+    deploy_cfn_template,
+    sns_create_topic,
+    is_stack_created,
+    is_stack_updated,
+    sqs_create_queue,
+    sns_create_sqs_subscription,
+):
+    stack_name = f"stack-{short_uid()}"
+    topic_arn = sns_create_topic()["TopicArn"]
+    sqs_url = sqs_create_queue()
+    sns_create_sqs_subscription(topic_arn, sqs_url)
+
+    template = load_file(
+        os.path.join(os.path.dirname(__file__), "../../templates/sns_topic_simple.yaml")
+    )
+    cfn_client.create_stack(
+        StackName=stack_name,
+        NotificationARNs=[topic_arn],
+        TemplateBody=template,
+        Parameters=[{"ParameterKey": "TopicName", "ParameterValue": f"topic-{short_uid()}"}],
+    )
+
+    assert wait_until(is_stack_created(stack_name))
+
+    template = load_file(
+        os.path.join(os.path.dirname(__file__), "../../templates/sns_topic_simple.yaml")
+    )
+    cfn_client.update_stack(
+        StackName=stack_name,
+        TemplateBody=template,
+        Parameters=[
+            {"ParameterKey": "TopicName", "ParameterValue": f"topic-{short_uid()}"},
+        ],
+    )
+    assert wait_until(is_stack_updated(stack_name))
+
+    messages = {}
+
+    def _assert_messages():
+        sqs_messages = sqs_client.receive_message(QueueUrl=sqs_url)["Messages"]
+        for sqs_message in sqs_messages:
+            sns_message = json.loads(sqs_message["Body"])
+            messages.update({sns_message["MessageId"]: sns_message})
+
+        # Assert notifications of resources created
+        assert [message for message in messages.values() if "CREATE_" in message["Message"]]
+
+        # Assert notifications of resources deleted
+        assert [message for message in messages.values() if "UPDATE_" in message["Message"]]
+
+        # Assert notifications of resources deleted
+        assert [message for message in messages.values() if "DELETE_" in message["Message"]]
+
+    try:
+        retry(_assert_messages, retries=10, sleep=2)
+    finally:
+        cfn_client.delete_stack(StackName=stack_name)
