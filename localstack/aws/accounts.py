@@ -3,8 +3,6 @@ import logging
 import re
 import threading
 
-import moto.core
-
 from localstack.config import LS_LOG
 from localstack.constants import (
     DEFAULT_AWS_ACCOUNT_ID,
@@ -51,10 +49,6 @@ def get_aws_account_id() -> str:
 
 def set_aws_account_id(account_id: str) -> None:
     REQUEST_CTX_TLS.account_id = account_id
-
-
-def get_moto_default_account_id() -> str:
-    return moto.core.DEFAULT_ACCOUNT_ID
 
 
 def get_account_id_from_access_key_id(access_key_id: str) -> str:
