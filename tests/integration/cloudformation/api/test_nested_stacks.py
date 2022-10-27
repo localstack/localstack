@@ -1,6 +1,7 @@
 import os
 
 import pytest
+from botocore.exceptions import ClientError
 
 from localstack.testing.aws.util import is_aws_cloud
 from localstack.utils.files import load_file
@@ -106,3 +107,57 @@ def test_nested_with_nested_stack(cfn_client, deploy_cfn_template, s3_client, s3
     ).outputs
 
     assert f"arn:aws:s3:::{bucket_to_create_name}" == outputs["parameterValue"]
+
+
+@pytest.mark.aws_validated
+@pytest.mark.skip(reason="not working correctly")
+def test_lifecycle_nested_stack(cfn_client, deploy_cfn_template, s3_client, s3_create_bucket):
+    bucket_name = s3_create_bucket()
+    nested_bucket_name = f"test-bucket-nested-{short_uid()}"
+    altered_nested_bucket_name = f"test-bucket-nested-{short_uid()}"
+    key = f"test-key-{short_uid()}"
+
+    s3_client.upload_file(
+        os.path.join(
+            os.path.dirname(__file__), "../../templates/nested-stack-output-refs.nested.yaml"
+        ),
+        Bucket=bucket_name,
+        Key=key,
+    )
+
+    stack = deploy_cfn_template(
+        template_path=os.path.join(
+            os.path.dirname(__file__), "../../templates/nested-stack-output-refs.yaml"
+        ),
+        template_mapping={
+            "s3_bucket_url": f"/{bucket_name}/{key}",
+            "nested_bucket_name": nested_bucket_name,
+        },
+    )
+    assert s3_client.head_bucket(Bucket=nested_bucket_name)
+
+    deploy_cfn_template(
+        is_update=True,
+        stack_name=stack.stack_name,
+        template_path=os.path.join(
+            os.path.dirname(__file__), "../../templates/nested-stack-output-refs.yaml"
+        ),
+        template_mapping={
+            "s3_bucket_url": f"/{bucket_name}/{key}",
+            "nested_bucket_name": altered_nested_bucket_name,
+        },
+        max_wait=120 if is_aws_cloud() else None,
+    )
+
+    assert s3_client.head_bucket(Bucket=altered_nested_bucket_name)
+
+    cfn_client.delete_stack(StackName=stack.stack_name)
+
+    def _assert_bucket_is_deleted():
+        try:
+            s3_client.head_bucket(Bucket=altered_nested_bucket_name)
+            return False
+        except ClientError:
+            return True
+
+    retry(_assert_bucket_is_deleted, retries=5, sleep=2, sleep_before=2)
