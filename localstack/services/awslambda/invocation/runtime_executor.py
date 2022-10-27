@@ -102,6 +102,11 @@ class RuntimeExecutor(ABC):
         pass
 
 
+class LambdaRuntimeException(Exception):
+    def __init__(self, message: str):
+        super().__init__(message)
+
+
 EXECUTOR_PLUGIN_MANAGER: PluginManager[Type[RuntimeExecutor]] = PluginManager(
     RuntimeExecutorPlugin.namespace
 )

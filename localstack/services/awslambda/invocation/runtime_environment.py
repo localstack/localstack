@@ -19,7 +19,7 @@ from localstack.utils.strings import to_str
 if TYPE_CHECKING:
     from localstack.services.awslambda.invocation.version_manager import QueuedInvocation
 
-STARTUP_TIMEOUT_SEC = 10.0
+STARTUP_TIMEOUT_SEC = config.LAMBDA_RUNTIME_ENVIRONMENT_TIMEOUT
 HEX_CHARS = [str(num) for num in range(10)] + ["a", "b", "c", "d", "e", "f"]
 
 LOG = logging.getLogger(__name__)
@@ -127,7 +127,11 @@ class RuntimeEnvironment:
             if self.status != RuntimeStatus.INACTIVE:
                 raise InvalidStatusException("Runtime Handler can only be started when inactive")
             self.status = RuntimeStatus.STARTING
-            self.runtime_executor.start(self.get_environment_variables())
+            try:
+                self.runtime_executor.start(self.get_environment_variables())
+            except Exception:
+                self.errored()
+                raise
             self.startup_timer = Timer(STARTUP_TIMEOUT_SEC, self.timed_out)
             self.startup_timer.start()
 
