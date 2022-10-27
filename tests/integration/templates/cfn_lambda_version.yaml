@@ -1,5 +1,5 @@
 Resources:
-  MyFnServiceRoleF3016589:
+  fnServiceRole5D180AFD:
     Type: AWS::IAM::Role
     Properties:
       AssumeRolePolicyDocument:
@@ -15,16 +15,35 @@ Resources:
             - - "arn:"
               - Ref: AWS::Partition
               - :iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
-  {{ lambda_functional_id }}:
+  fn5FF616E3:
     Type: AWS::Lambda::Function
     Properties:
       Code:
-        ZipFile: exports.handler = function(event) =>  { console.log(event); };
+        ZipFile: |
+
+          def handler(event, context):
+              print(event)
+              return "hello"
       Role:
         Fn::GetAtt:
-          - MyFnServiceRoleF3016589
+          - fnServiceRole5D180AFD
           - Arn
       Handler: index.handler
-      Runtime: nodejs12.x
+      Runtime: python3.9
     DependsOn:
-      - MyFnServiceRoleF3016589
+      - fnServiceRole5D180AFD
+  fnVersion7BF8AE5A:
+    Type: AWS::Lambda::Version
+    Properties:
+      FunctionName:
+        Ref: fn5FF616E3
+      Description: test description
+Outputs:
+  FunctionName:
+    Value:
+      Ref: fn5FF616E3
+  FunctionVersion:
+    Value:
+      Fn::GetAtt:
+        - fnVersion7BF8AE5A
+        - Version

@@ -1,6 +1,8 @@
+import json
 import os
+import random
+import string
 
-from localstack.services.awslambda.lambda_api import get_lambda_policy_name
 from localstack.services.awslambda.lambda_utils import get_handler_file_from_name
 from localstack.services.cloudformation.deployment_utils import (
     generate_default_name,
@@ -18,7 +20,6 @@ from localstack.utils.common import (
     rm_rf,
     save_file,
     select_attributes,
-    short_uid,
     to_bytes,
 )
 from localstack.utils.testutil import create_zip_file
@@ -162,30 +163,30 @@ class LambdaFunctionVersion(GenericBaseModel):
         return "AWS::Lambda::Version"
 
     def fetch_state(self, stack_name, resources):
-        name = self.resolve_refs_recursively(stack_name, self.props.get("FunctionName"), resources)
-        if not name:
+
+        props = self.props
+        if not self.physical_resource_id:
             return None
-        func_name = aws_stack.lambda_function_name(name)
-        func_version = name.split(":")[7] if len(name.split(":")) > 7 else "$LATEST"
-        versions = aws_stack.connect_to_service("lambda").list_versions_by_function(
-            FunctionName=func_name
-        )
-        return ([v for v in versions["Versions"] if v["Version"] == func_version] or [None])[0]
+
+        function_name = props["FunctionName"]
+        qualifier = self.resource_json["Version"]
+
+        lambda_client = aws_stack.connect_to_service("lambda")
+        return lambda_client.get_function(FunctionName=function_name, Qualifier=qualifier)
 
     @staticmethod
     def get_deploy_templates():
+        def _store_version(result, resource_id, resources, resource_type):
+            resources[resource_id]["Version"] = result["Version"]
+            resources[resource_id]["PhysicalResourceId"] = result["FunctionArn"]
+
         return {
             "create": {
                 "function": "publish_version",
                 "parameters": select_parameters("FunctionName", "CodeSha256", "Description"),
+                "result_handler": _store_version,
             }
         }
-
-    def get_physical_resource_id(self, attribute=None, **kwargs):
-        return "%s:%s" % (
-            self.props.get("FunctionArn"),
-            self.props.get("Version").split(":")[-1],
-        )
 
 
 class LambdaEventSourceMapping(GenericBaseModel):
@@ -238,31 +239,8 @@ class LambdaPermission(GenericBaseModel):
     def fetch_state(self, stack_name, resources):
         props = self.props
         func_name = self.resolve_refs_recursively(stack_name, props.get("FunctionName"), resources)
-        func_arn = aws_stack.lambda_function_arn(func_name)
-        return self.do_fetch_state(func_name, func_arn)
-
-    def do_fetch_state(self, resource_name, resource_arn):
-        iam = aws_stack.connect_to_service("iam")
-        props = self.props
-        policy_name = get_lambda_policy_name(resource_name)
-        policy_arn = aws_stack.policy_arn(policy_name)
-        policy = iam.get_policy(PolicyArn=policy_arn)["Policy"]
-        version = policy.get("DefaultVersionId")
-        policy = iam.get_policy_version(PolicyArn=policy_arn, VersionId=version)["PolicyVersion"]
-        statements = policy["Document"]["Statement"]
-        statements = statements if isinstance(statements, list) else [statements]
-        principal = props.get("Principal")
-        existing = [
-            s
-            for s in statements
-            if s["Action"] == props["Action"]
-            and s["Resource"] == resource_arn
-            and (
-                not principal
-                or s["Principal"] in [principal, {"Service": principal}, {"Service": [principal]}]
-            )
-        ]
-        return existing[0] if existing else None
+        lambda_client = aws_stack.connect_to_service("lambda")
+        return lambda_client.get_policy(FunctionName=func_name)
 
     def get_physical_resource_id(self, attribute=None, **kwargs):
         # return statement ID here to indicate that the resource has been deployed
@@ -270,15 +248,31 @@ class LambdaPermission(GenericBaseModel):
 
     @staticmethod
     def get_deploy_templates():
-        def lambda_permission_params(params, **kwargs):
-            result = select_parameters("FunctionName", "Action", "Principal")(params, **kwargs)
-            result["StatementId"] = short_uid()
+        def _store_physical_id(result, resource_id, resources, resource_type):
+            parsed_statement = json.loads(result["Statement"])
+            resources[resource_id]["PhysicalResourceId"] = parsed_statement["Sid"]
+
+        def lambda_permission_params(params, resources, resource_id, **kwargs):
+            result = select_parameters("FunctionName", "Action", "Principal", "SourceArn")(
+                params, **kwargs
+            )
+            # generate SID
+            # e.g. stack-78d0ac66-fnAllowInvokeLambdaPermissionsStacktopicF723B1A748672DB5-1D7VMEAZ2UQIN
+            # e.g. stack-6283277e-fnAllowInvokeLambdaPermissionsStacktopicF48672DB5-19EAQW5GIWOS5 when the functional ID is shorter
+            suffix = "".join(random.choices(string.digits + string.ascii_uppercase, k=13))
+            prefix = kwargs.get("stack_name")
+            if prefix:
+                result["StatementId"] = f"{prefix}-{resource_id}-{suffix}"
+            else:
+                result["StatementId"] = f"{resource_id}-{suffix}"
+
             return result
 
         return {
             "create": {
                 "function": "add_permission",
                 "parameters": lambda_permission_params,
+                "result_handler": _store_physical_id,
             }
         }
 
@@ -365,5 +359,79 @@ class LambdaUrl(GenericBaseModel):
             "delete": {
                 "function": "delete_function_url_config",
                 "parameters": {"FunctionName": "TargetFunctionArn", "Qualifier": "Qualifier"},
+            },
+        }
+
+
+class LambdaAlias(GenericBaseModel):
+    @staticmethod
+    def cloudformation_type():
+        return "AWS::Lambda::Alias"
+
+    def fetch_state(self, stack_name, resources):
+        client = aws_stack.connect_to_service("lambda")
+        props = self.props
+        result = client.get_alias(FunctionName=props.get("FunctionName"), Name=props.get("Name"))
+        return result
+
+    @staticmethod
+    def get_deploy_templates():
+        def _store_arn(result, resource_id, resources, resource_type):
+            resources[resource_id]["PhysicalResourceId"] = result["AliasArn"]
+
+        return {
+            "create": {"function": "create_alias", "result_handler": _store_arn},
+            "delete": {
+                "function": "delete_alias",
+                "parameters": {
+                    "FunctionName": "FunctionName",
+                    "Name": "Name",
+                },
+            },
+        }
+
+
+class LambdaCodeSigningConfig(GenericBaseModel):
+    @staticmethod
+    def cloudformation_type():
+        return "AWS::Lambda::CodeSigningConfig"
+
+    def fetch_state(self, stack_name, resources):
+        if not self.physical_resource_id:
+            return None
+
+        client = aws_stack.connect_to_service("lambda")
+        result = client.get_code_signing_config(CodeSigningConfigArn=self.physical_resource_id)[
+            "CodeSigningConfig"
+        ]
+        return result
+
+    def get_physical_resource_id(self, attribute=None, **kwargs):
+        return self.physical_resource_id
+
+    def get_cfn_attribute(self, attribute_name):
+        if attribute_name == "CodeSigningConfigId":
+            return self.props()["CodeSigningConfigId"]
+
+        return self.physical_resource_id
+
+    @classmethod
+    def get_deploy_templates(cls):
+        def _store_arn(result, resource_id, resources, resource_type):
+            resources[resource_id]["PhysicalResourceId"] = result["CodeSigningConfig"][
+                "CodeSigningConfigArn"
+            ]
+
+        def _arn(params, resources, resource_id, **kwargs):
+            resource = cls(resources[resource_id])
+            return resource.physical_resource_id or resource.get_physical_resource_id()
+
+        return {
+            "create": {"function": "create_code_signing_config", "result_handler": _store_arn},
+            "delete": {
+                "function": "delete_code_signing_config",
+                "parameters": {
+                    "CodeSigningConfigArn": _arn,
+                },
             },
         }

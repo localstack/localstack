@@ -121,3 +121,10 @@ def is_old_provider():
         os.environ.get("TEST_TARGET") != "AWS_CLOUD"
         and os.environ.get("PROVIDER_OVERRIDE_LAMBDA") != "asf"
     )
+
+
+def is_new_provider():
+    return (
+        os.environ.get("TEST_TARGET") != "AWS_CLOUD"
+        and os.environ.get("PROVIDER_OVERRIDE_LAMBDA") == "asf"
+    )
