@@ -435,7 +435,9 @@ class TestRoute53Resolver:
 
         # clean up
         cleanups.append(
-            lambda: route53resolver_client.delete_resolver_endpoint(ResolverEndpointId=resolver_endpoint_id)
+            lambda: route53resolver_client.delete_resolver_endpoint(
+                ResolverEndpointId=resolver_endpoint_id
+            )
         )
 
     @pytest.mark.aws_validated
@@ -518,7 +520,9 @@ class TestRoute53Resolver:
         )
 
         cleanups.append(
-            lambda: route53resolver_client.delete_resolver_endpoint(ResolverEndpointId=resolver_endpoint_id)
+            lambda: route53resolver_client.delete_resolver_endpoint(
+                ResolverEndpointId=resolver_endpoint_id
+            )
         )
 
     @pytest.mark.aws_validated
