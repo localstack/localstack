@@ -50,6 +50,7 @@ def test_update_lambda_inline_code(cfn_client, lambda_client, return_value, depl
     assert result.strip('" \n') == return_value
 
 
+@pytest.mark.skipif(condition=is_new_provider(), reason="not implemented yet")
 @pytest.mark.aws_validated
 def test_lambda_w_dynamodb_event_filter(
     cfn_client, dynamodb_client, logs_client, deploy_cfn_template
@@ -208,7 +209,6 @@ def test_lambda_code_signing_config(
     )
 
 
-@pytest.mark.skipif(condition=is_new_provider(), reason="not implemented yet")
 @pytest.mark.skip_snapshot_verify(condition=is_old_provider, paths=["$..DestinationConfig"])
 @pytest.mark.aws_validated
 def test_event_invoke_config(deploy_cfn_template, lambda_client, snapshot):
