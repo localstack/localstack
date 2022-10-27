@@ -176,7 +176,8 @@ jobs:
         type: string
     machine:
       image: << parameters.machine_image >>
-      docker_layer_caching: true
+      # TODO re-enable docker layer caching after file system problems are fixed
+      # docker_layer_caching: true
     resource_class: << parameters.resource_class >>
     working_directory: /tmp/workspace/repo
     steps:
