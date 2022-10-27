@@ -1,5 +1,7 @@
 import json
 import os
+import random
+import string
 
 from localstack.services.awslambda.lambda_utils import get_handler_file_from_name
 from localstack.services.cloudformation.deployment_utils import (
@@ -254,8 +256,16 @@ class LambdaPermission(GenericBaseModel):
             result = select_parameters("FunctionName", "Action", "Principal", "SourceArn")(
                 params, **kwargs
             )
-            suffix = "9571XFZ"  # TODO: ?
-            result["StatementId"] = f"{resource_id}-{suffix}"
+            # generate SID
+            # e.g. stack-78d0ac66-fnAllowInvokeLambdaPermissionsStacktopicF723B1A748672DB5-1D7VMEAZ2UQIN
+            # e.g. stack-6283277e-fnAllowInvokeLambdaPermissionsStacktopicF48672DB5-19EAQW5GIWOS5 when the functional ID is shorter
+            suffix = "".join(random.choices(string.digits + string.ascii_uppercase, k=13))
+            prefix = kwargs.get("stack_name")
+            if prefix:
+                result["StatementId"] = f"{prefix}-{resource_id}-{suffix}"
+            else:
+                result["StatementId"] = f"{resource_id}-{suffix}"
+
             return result
 
         return {
