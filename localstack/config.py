@@ -468,6 +468,9 @@ SKIP_INFRA_DOWNLOADS = os.environ.get("SKIP_INFRA_DOWNLOADS", "").strip()
 # Whether to skip downloading our signed SSL cert.
 SKIP_SSL_CERT_DOWNLOAD = is_env_true("SKIP_SSL_CERT_DOWNLOAD")
 
+# Absolute path to a custom certificate (pem file)
+CUSTOM_SSL_CERT_PATH = os.environ.get("CUSTOM_SSL_CERT_PATH", "").strip()
+
 # name of the main Docker container
 MAIN_CONTAINER_NAME = os.environ.get("MAIN_CONTAINER_NAME", "").strip() or "localstack_main"
 
@@ -712,6 +715,7 @@ MAIN_DOCKER_NETWORK = os.environ.get("MAIN_DOCKER_NETWORK", "") or LAMBDA_DOCKER
 # Note: do *not* include DATA_DIR in this list, as it is treated separately
 CONFIG_ENV_VARS = [
     "BUCKET_MARKER_LOCAL",
+    "CUSTOM_SSL_CERT_PATH",
     "DEBUG",
     "DEFAULT_REGION",
     "DEVELOP",

@@ -905,7 +905,7 @@ if hasattr(BaseSelectorEventLoop, "_accept_connection2") and not hasattr(
 
 
 def get_cert_pem_file_path():
-    return os.path.join(config.dirs.cache, SERVER_CERT_PEM_FILE)
+    return config.CUSTOM_SSL_CERT_PATH or os.path.join(config.dirs.cache, SERVER_CERT_PEM_FILE)
 
 
 def start_proxy_server(
