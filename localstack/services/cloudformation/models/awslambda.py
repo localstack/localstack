@@ -4,9 +4,9 @@ from localstack.services.awslambda.lambda_api import get_lambda_policy_name
 from localstack.services.awslambda.lambda_utils import get_handler_file_from_name
 from localstack.services.cloudformation.deployment_utils import (
     generate_default_name,
-    get_cfn_response_mod_file,
     select_parameters,
 )
+from localstack.services.cloudformation.packages import cloudformation_package
 from localstack.services.cloudformation.service_models import LOG, REF_ID_ATTRS, GenericBaseModel
 from localstack.utils.aws import aws_stack
 from localstack.utils.common import (
@@ -97,7 +97,10 @@ class LambdaFunction(GenericBaseModel):
 
             # add 'cfn-response' module to archive - see:
             # https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/cfn-lambda-function-code-cfnresponsemodule.html
-            cfn_response_tmp_file = get_cfn_response_mod_file()
+            cloudformation_installer = cloudformation_package.get_installer()
+            cloudformation_installer.install()
+            cfn_response_tmp_file = cloudformation_installer.get_executable_path()
+
             cfn_response_mod_dir = os.path.join(tmp_dir, "node_modules", "cfn-response")
             mkdir(cfn_response_mod_dir)
             cp_r(

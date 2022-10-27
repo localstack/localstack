@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-import functools
 import glob
 import logging
 import os
@@ -7,9 +6,9 @@ import re
 import sys
 import tempfile
 import time
-from typing import Callable, Dict, List, Tuple, Union
+from typing import Callable, List, Tuple, Union
 
-from plugin import Plugin, PluginManager
+from plugin import Plugin
 
 from localstack import config
 from localstack.config import dirs
@@ -135,13 +134,6 @@ def upgrade_jar_file(base_dir: str, file_glob: str, maven_asset: str):
     download(maven_asset_url, target_file)
 
 
-def install_cloudformation_libs():
-    from localstack.services.cloudformation import deployment_utils
-
-    # trigger download of CF module file
-    deployment_utils.get_cfn_response_mod_file()
-
-
 def install_component(name):
     from localstack.packages import InstallTarget
     from localstack.services.awslambda.packages import awslambda_runtime_package
@@ -226,6 +218,8 @@ def download_and_extract_with_retry(archive_url, tmp_archive, target_dir):
         download_and_extract(archive_url, target_dir, tmp_archive=tmp_archive)
 
 
+# TODO remove (only used for migrating to new #package plugin system)
+
 Installer = Tuple[str, Callable]
 
 
@@ -235,68 +229,6 @@ class InstallerRepository(Plugin):
 
     def get_installer(self) -> List[Installer]:
         raise NotImplementedError
-
-
-class CommunityInstallerRepository(InstallerRepository):
-    name = "community"
-
-    def get_installer(self) -> List[Installer]:
-        from localstack.packages.terraform import terraform_package
-        from localstack.services.awslambda.packages import (
-            awslambda_go_runtime_package,
-            awslambda_runtime_package,
-            lambda_java_libs_package,
-        )
-        from localstack.services.cloudformation.packages import cloudformation_package
-        from localstack.services.dynamodb.packages import dynamodblocal_package
-        from localstack.services.kinesis.packages import kinesalite_package, kinesismock_package
-        from localstack.services.kms.packages import kms_local_package
-        from localstack.services.opensearch.packages import (
-            elasticsearch_package,
-            opensearch_package,
-        )
-        from localstack.services.sqs.legacy.packages import elasticmq_package
-        from localstack.services.stepfunctions.packages import stepfunctions_local_package
-
-        return [
-            ("awslambda-go-runtime", awslambda_go_runtime_package),
-            ("awslambda-runtime", awslambda_runtime_package),
-            ("cloudformation-libs", cloudformation_package),
-            ("dynamodb-local", dynamodblocal_package),
-            ("elasticmq", elasticmq_package),
-            ("elasticsearch", elasticsearch_package),
-            ("opensearch", opensearch_package),
-            ("kinesalite", kinesalite_package),
-            ("kinesis-mock", kinesismock_package),
-            ("lambda-java-libs", lambda_java_libs_package),
-            ("local-kms", kms_local_package),
-            ("stepfunctions-local", stepfunctions_local_package),
-            ("terraform", terraform_package),
-        ]
-
-
-class InstallerManager:
-    def __init__(self):
-        self.repositories: PluginManager[InstallerRepository] = PluginManager(
-            InstallerRepository.namespace
-        )
-
-    @functools.lru_cache()
-    def get_installers(self) -> Dict[str, Callable]:
-        installer: List[Installer] = []
-
-        for repo in self.repositories.load_all():
-            installer.extend(repo.get_installer())
-
-        return dict(installer)
-
-    def install(self, package: str, *args, **kwargs):
-        installer = self.get_installers().get(package)
-
-        if not installer:
-            raise ValueError("no installer for package %s" % package)
-
-        return installer(*args, **kwargs)
 
 
 def main():
