@@ -1,6 +1,7 @@
 import copy
 import datetime
 import logging
+import os
 from typing import Dict
 
 from cryptography.hazmat.primitives import hashes
@@ -38,6 +39,8 @@ from localstack.aws.api.kms import (
     GenerateDataKeyResponse,
     GenerateDataKeyWithoutPlaintextRequest,
     GenerateDataKeyWithoutPlaintextResponse,
+    GenerateRandomRequest,
+    GenerateRandomResponse,
     GetKeyPolicyRequest,
     GetKeyPolicyResponse,
     GetKeyRotationStatusRequest,
@@ -465,6 +468,28 @@ class KmsProvider(KmsApi, ServiceLifecycleHook):
             request.get("KeyId"), request.get("KeyPairSpec"), context
         )
         return GenerateDataKeyPairResponse(**result)
+
+    @handler("GenerateRandom", expand=False)
+    def generate_random(
+        self, context: RequestContext, request: GenerateRandomRequest
+    ) -> GenerateRandomResponse:
+        number_of_bytes = request.get("NumberOfBytes")
+        if number_of_bytes is None:
+            raise ValidationException("NumberOfBytes is required.")
+        if number_of_bytes > 1024:
+            raise ValidationException(
+                f"1 validation error detected: Value '{number_of_bytes}' at 'numberOfBytes' failed "
+                "to satisfy constraint: Member must have value less than or equal to 1024"
+            )
+        if number_of_bytes < 1:
+            raise ValidationException(
+                f"1 validation error detected: Value '{number_of_bytes}' at 'numberOfBytes' failed "
+                "to satisfy constraint: Member must have value greater than or equal to 1"
+            )
+
+        byte_string = os.urandom(number_of_bytes)
+
+        return GenerateRandomResponse(Plaintext=byte_string)
 
     @handler("GenerateDataKeyPairWithoutPlaintext", expand=False)
     def generate_data_key_pair_without_plaintext(
