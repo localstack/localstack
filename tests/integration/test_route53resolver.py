@@ -335,7 +335,7 @@ class TestRoute53Resolver:
 
         # clean up
         cleanups.append(
-            route53resolver_client.delete_resolver_endpoint(
+            lambda: route53resolver_client.delete_resolver_endpoint(
                 ResolverEndpointId=create_resolver_endpoint_res["Id"]
             )
         )
@@ -382,7 +382,7 @@ class TestRoute53Resolver:
 
         # clean up
         cleanups.append(
-            route53resolver_client.delete_resolver_endpoint(
+            lambda: route53resolver_client.delete_resolver_endpoint(
                 ResolverEndpointId=create_resolver_endpoint_res["Id"]
             )
         )
@@ -430,12 +430,12 @@ class TestRoute53Resolver:
             resolver_endpoint_id = create_resolver_endpoint_res["Id"]
 
             cleanups.append(
-                route53resolver_client.delete_resolver_rule(ResolverRuleId=resolver_rule_id)
+                lambda: route53resolver_client.delete_resolver_rule(ResolverRuleId=resolver_rule_id)
             )
 
         # clean up
         cleanups.append(
-            route53resolver_client.delete_resolver_endpoint(ResolverEndpointId=resolver_endpoint_id)
+            lambda: route53resolver_client.delete_resolver_endpoint(ResolverEndpointId=resolver_endpoint_id)
         )
 
     @pytest.mark.aws_validated
@@ -514,11 +514,11 @@ class TestRoute53Resolver:
         snapshot.match("disassociate_resolver_rule_res", disassociate_resolver_rule_res)
 
         cleanups.append(
-            route53resolver_client.delete_resolver_rule(ResolverRuleId=resolver_rule_id)
+            lambda: route53resolver_client.delete_resolver_rule(ResolverRuleId=resolver_rule_id)
         )
 
         cleanups.append(
-            route53resolver_client.delete_resolver_endpoint(ResolverEndpointId=resolver_endpoint_id)
+            lambda: route53resolver_client.delete_resolver_endpoint(ResolverEndpointId=resolver_endpoint_id)
         )
 
     @pytest.mark.aws_validated

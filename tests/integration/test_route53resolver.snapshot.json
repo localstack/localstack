@@ -167,7 +167,7 @@
     }
   },
   "tests/integration/test_route53resolver.py::TestRoute53Resolver::test_create_resolver_rule": {
-    "recorded-date": "27-10-2022, 11:02:08",
+    "recorded-date": "27-10-2022, 13:58:19",
     "recorded-content": {
       "create_resolver_endpoint_res": {
         "Arn": "arn:aws:route53resolver:<region>:111111111111:resolver-endpoint/<id:1>",
