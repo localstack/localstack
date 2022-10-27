@@ -8,8 +8,8 @@ from localstack.aws.api.route53resolver import (
     FirewallRuleGroup,
     FirewallRuleGroupAssociation,
     ResolverQueryLogConfig,
-    ResolverQueryLogConfigStatus,
     ResolverQueryLogConfigAssociation,
+    ResolverQueryLogConfigStatus,
     ResourceNotFoundException,
 )
 from localstack.services.route53resolver.utils import get_firewall_config_id, validate_vpc
