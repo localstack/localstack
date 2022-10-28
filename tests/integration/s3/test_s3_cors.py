@@ -588,6 +588,11 @@ class TestS3Cors:
 
         snapshot.match("put-cors-exc", e.value.response)
 
+        with pytest.raises(ClientError) as e:
+            s3_client.put_bucket_cors(Bucket=s3_bucket, CORSConfiguration={"CORSRules": []})
+
+        snapshot.match("put-cors-exc-empty", e.value.response)
+
     @pytest.mark.aws_validated
     def test_put_cors_empty_origin(self, s3_client, s3_bucket, snapshot):
         # derived from TestAccS3Bucket_Security_corsEmptyOrigin TF test

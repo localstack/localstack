@@ -609,8 +609,6 @@ class S3Provider(S3Api, ServiceLifecycleHook):
         expected_bucket_owner: AccountId = None,
     ) -> None:
         response = call_moto(context)
-        # max 100 rules
-        # validate CORS? see moto
         self.get_store().bucket_cors[bucket] = cors_configuration
         self._cors_handler.invalidate_cache()
         return response

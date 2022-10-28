@@ -638,9 +638,7 @@ def append_cors_headers(
 
             for allowed in allowed_origins:
                 allowed = allowed or ""
-                if origin in allowed or re.match(
-                    allowed.replace("*", ".*"), origin
-                ):  # no wildcard in origin?
+                if origin in allowed or re.match(allowed.replace("*", ".*"), origin):
 
                     response.headers["Access-Control-Allow-Origin"] = origin
                     if "AllowedMethod" in rule:

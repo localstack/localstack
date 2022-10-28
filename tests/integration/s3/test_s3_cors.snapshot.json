@@ -525,12 +525,22 @@
     }
   },
   "tests/integration/s3/test_s3_cors.py::TestS3Cors::test_put_cors_invalid_rules": {
-    "recorded-date": "24-10-2022, 14:39:40",
+    "recorded-date": "28-10-2022, 15:57:45",
     "recorded-content": {
       "put-cors-exc": {
         "Error": {
           "Code": "InvalidRequest",
           "Message": "Found unsupported HTTP method in CORS config. Unsupported method is MYMETHOD"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "put-cors-exc-empty": {
+        "Error": {
+          "Code": "MalformedXML",
+          "Message": "The XML you provided was not well-formed or did not validate against our published schema"
         },
         "ResponseMetadata": {
           "HTTPHeaders": {},

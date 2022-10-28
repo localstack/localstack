@@ -38,18 +38,25 @@ class S3CorsHandler(Handler):
     def __call__(self, chain: HandlerChain, context: RequestContext, response: Response):
         self.handle_cors(chain, context, response)
 
-    def pre_parse_s3_request(self, context: RequestContext) -> Tuple[bool, Optional[str]]:
+    def pre_parse_s3_request(self, request: Request) -> Tuple[bool, Optional[str]]:
+        """
+        Parse the request to try to determine if it's directed towards S3. It tries to match on host, then check
+        if the targeted bucket exists. If we could not determine it was a s3 request from the host, but the first
+        element in the path contains an existing bucket, we can think it's S3.
+        :param request: Request from the context
+        :return: is_s3, whether we're certain it's a s3 request, and bucket_name if the bucket exists
+        """
         is_s3: bool
         bucket_name: str
 
-        path = context.request.path
-        host = context.request.host
+        path = request.path
+        host = request.host
 
         # first, try to figure out best-effort whether the request is an s3 request
         if host.startswith(S3_VIRTUAL_HOSTNAME):
             is_s3 = True
             bucket_name = path.split("/")[1]
-        # try to extract the bucket from the hostname (the "in" check is a minor optimization
+        # try to extract the bucket from the hostname (the "in" check is a minor optimization)
         elif ".s3" in host and (match := _s3_virtual_host_regex.match(host)):
             is_s3 = True
             bucket_name = match.group(3)
@@ -76,21 +83,23 @@ class S3CorsHandler(Handler):
         if config.LEGACY_S3_PROVIDER or config.DISABLE_CUSTOM_CORS_S3:
             return
 
-        is_s3, bucket_name = self.pre_parse_s3_request(context)
+        request = context.request
+        is_s3, bucket_name = self.pre_parse_s3_request(context.request)
 
-        if not is_s3 and not bucket_name:
+        if not is_s3:
             # continue the chain, let the default CORS handler take care of the request
             return
 
         # set the service so that the regular CORS enforcer knows it needs to ignore this request
         context.service = self._service
 
-        request = context.request
         is_options_request = request.method == "OPTIONS"
 
         def stop_options_chain():
-            # FIXME: need to add it there as not handled by the serializer, we stop the chain to avoid the request
-            #  being parsed
+            """
+            Stops the chain to avoid the OPTIONS request being parsed. The request is ready to be returned to the
+            client. We also need to add specific headers normally added by the serializer for regular requests.
+            """
             request_id = gen_amzn_requestid_long()
             response.headers["x-amz-request-id"] = request_id
             response.headers[
@@ -134,11 +143,8 @@ class S3CorsHandler(Handler):
                         message = "CORSResponse: Bucket not found"
                     else:
                         message = "CORSResponse: CORS is not enabled for this bucket."
-                    try:
-                        context.operation = self._get_op_from_request(request)
-                    except Exception:
-                        context.operation = context.service.operation_model("GetObject")
 
+                    context.operation = self._get_op_from_request(request)
                     raise AccessForbidden(
                         message, HostId=FAKE_HOST_ID, Method="OPTIONS", ResourceType="BUCKET"
                     )
@@ -147,11 +153,6 @@ class S3CorsHandler(Handler):
                 return
 
         rules = self.bucket_cors_index.cors[bucket_name]["CORSRules"]
-        # check this but should not happen? maybe?
-        if not rules:
-            if is_options_request:
-                stop_options_chain()
-            return
 
         if not (rule := self.match_rules(request, rules)):
             if is_options_request:
