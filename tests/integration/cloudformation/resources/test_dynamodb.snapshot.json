@@ -1,0 +1,39 @@
+{
+  "tests/integration/cloudformation/resources/test_dynamodb.py::test_default_name_for_table": {
+    "recorded-date": "21-10-2022, 11:11:09",
+    "recorded-content": {
+      "table_description": {
+        "Table": {
+          "AttributeDefinitions": [
+            {
+              "AttributeName": "keyName",
+              "AttributeType": "S"
+            }
+          ],
+          "CreationDateTime": "datetime",
+          "ItemCount": 0,
+          "KeySchema": [
+            {
+              "AttributeName": "keyName",
+              "KeyType": "HASH"
+            }
+          ],
+          "ProvisionedThroughput": {
+            "NumberOfDecreasesToday": 0,
+            "ReadCapacityUnits": 5,
+            "WriteCapacityUnits": 5
+          },
+          "TableArn": "arn:aws:dynamodb:<region>:111111111111:table/<table-name:1>",
+          "TableId": "<uuid:1>",
+          "TableName": "<table-name:1>",
+          "TableSizeBytes": 0,
+          "TableStatus": "ACTIVE"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  }
+}
