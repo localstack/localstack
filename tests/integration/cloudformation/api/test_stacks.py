@@ -437,3 +437,17 @@ def test_prevent_stack_update(deploy_cfn_template, cfn_client, snapshot):
             ]
             progress_is_finished = "PROGRESS" not in status
         cfn_client.delete_stack(StackName=stack.stack_name)
+
+
+@pytest.mark.aws_validated
+@pytest.mark.skip(reason="feature not implemented")
+def test_prevent_resource_deletion(deploy_cfn_template, cfn_client, sns_client, snapshot):
+    template = load_file(
+        os.path.join(os.path.dirname(__file__), "../../templates/sns_topic_simple.yaml")
+    )
+
+    template = template.replace("DeletionPolicy: Delete", "DeletionPolicy: Retain")
+    stack = deploy_cfn_template(template=template, parameters={"TopicName": f"topic-{short_uid()}"})
+    cfn_client.delete_stack(StackName=stack.stack_name)
+
+    sns_client.get_topic_attributes(TopicArn=stack.outputs["TopicArn"])
