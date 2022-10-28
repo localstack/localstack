@@ -1,12 +1,13 @@
+AWSTemplateFormatVersion: 2010-09-09
+
 Parameters:
   FunctionName:
     Type: String
-  Arch:
+  AliasName:
     Type: String
-  ReturnValue:
-    Type: String
+
 Resources:
-  fnServiceRole5D180AFD:
+  MyFnServiceRole:
     Type: AWS::IAM::Role
     Properties:
       AssumeRolePolicyDocument:
@@ -22,19 +23,34 @@ Resources:
             - - "arn:"
               - Ref: AWS::Partition
               - :iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
-  fn5FF616E3:
+
+  LambdaFunction:
     Type: AWS::Lambda::Function
     Properties:
-      Architectures:
-        - !Ref Arch
+      FunctionName: !Ref FunctionName
       Code:
-        ZipFile: !Join ["",["exports.handler = async (event, context) => {return '", !Ref ReturnValue,"'}"]]
+        ZipFile: exports.handler = function(event) =>  { console.log(event); };
       Role:
         Fn::GetAtt:
-          - fnServiceRole5D180AFD
+          - MyFnServiceRole
           - Arn
-      FunctionName: !Ref FunctionName
       Handler: index.handler
-      Runtime: nodejs14.x
+      Runtime: nodejs12.x
     DependsOn:
-      - fnServiceRole5D180AFD
+      - MyFnServiceRole
+
+  Version:
+    Type: AWS::Lambda::Version
+    Properties:
+      FunctionName: !Ref LambdaFunction
+      Description: v1
+
+  FunctionAlias:
+    Type: AWS::Lambda::Alias
+    Properties:
+      FunctionName: !Ref FunctionName
+      FunctionVersion: !GetAtt Version.Version
+      Name: !Ref AliasName
+
+    DependsOn:
+      - LambdaFunction

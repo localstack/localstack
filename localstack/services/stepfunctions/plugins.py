@@ -1,8 +1,8 @@
-from localstack.packages import Package, packages
+from localstack.packages import Package, package
 
 
-@packages()
-def stepfunctions_local_package() -> Package:
+@package(name="stepfunctions-local")
+def stepfunctions_local_packages() -> Package:
     from localstack.services.stepfunctions.packages import stepfunctions_local_package
 
     return stepfunctions_local_package

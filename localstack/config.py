@@ -468,6 +468,9 @@ SKIP_INFRA_DOWNLOADS = os.environ.get("SKIP_INFRA_DOWNLOADS", "").strip()
 # Whether to skip downloading our signed SSL cert.
 SKIP_SSL_CERT_DOWNLOAD = is_env_true("SKIP_SSL_CERT_DOWNLOAD")
 
+# Absolute path to a custom certificate (pem file)
+CUSTOM_SSL_CERT_PATH = os.environ.get("CUSTOM_SSL_CERT_PATH", "").strip()
+
 # name of the main Docker container
 MAIN_CONTAINER_NAME = os.environ.get("MAIN_CONTAINER_NAME", "").strip() or "localstack_main"
 
@@ -628,6 +631,9 @@ LAMBDA_PREBUILD_IMAGES = is_env_true("LAMBDA_PREBUILD_IMAGES")
 # get the lambda runtime executor name
 LAMBDA_RUNTIME_EXECUTOR = os.environ.get("LAMBDA_RUNTIME_EXECUTOR", "").strip()
 
+# Lambda executor startup timeout
+LAMBDA_RUNTIME_ENVIRONMENT_TIMEOUT = int(os.environ.get("LAMBDA_RUNTIME_ENVIRONMENT_TIMEOUT") or 10)
+
 # default container registry for lambda execution images
 LAMBDA_CONTAINER_REGISTRY = (
     os.environ.get("LAMBDA_CONTAINER_REGISTRY", "").strip() or DEFAULT_LAMBDA_CONTAINER_REGISTRY
@@ -709,6 +715,7 @@ MAIN_DOCKER_NETWORK = os.environ.get("MAIN_DOCKER_NETWORK", "") or LAMBDA_DOCKER
 # Note: do *not* include DATA_DIR in this list, as it is treated separately
 CONFIG_ENV_VARS = [
     "BUCKET_MARKER_LOCAL",
+    "CUSTOM_SSL_CERT_PATH",
     "DEBUG",
     "DEFAULT_REGION",
     "DEVELOP",
@@ -755,6 +762,7 @@ CONFIG_ENV_VARS = [
     "LAMBDA_REMOTE_DOCKER",
     "LAMBDA_REMOVE_CONTAINERS",
     "LAMBDA_RUNTIME_EXECUTOR",
+    "LAMBDA_RUNTIME_ENVIRONMENT_TIMEOUT",
     "LAMBDA_STAY_OPEN_MODE",
     "LAMBDA_TRUNCATE_STDOUT",
     "LEGACY_DIRECTORIES",

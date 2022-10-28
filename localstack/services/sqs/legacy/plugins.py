@@ -1,7 +1,7 @@
-from localstack.packages import packages
+from localstack.packages import package
 
 
-@packages(service="sqs", name="elasticmq")
+@package(name="elasticmq")
 def elasticmq_package():
     from localstack.services.sqs.legacy.packages import elasticmq_package
 

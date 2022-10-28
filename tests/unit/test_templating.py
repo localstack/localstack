@@ -221,3 +221,15 @@ class TestMessageTransformationApiGateway:
         variables = {"input": {"body": body}}
         result = ApiGatewayVtlTemplate().render_vtl(template, variables)
         assert result == " b"
+
+    def test_dash_in_variable_name(self):
+        template = "#set($start = 1)#set($end = 5)#foreach($i in [$start .. $end])$i -#end"
+        result = ApiGatewayVtlTemplate().render_vtl(template, {})
+        assert result == "1 -2 -3 -4 -5 -"
+
+        template = """
+         $method.request.header.X-My-Header
+        """
+        variables = {"method": {"request": {"header": {"X-My-Header": "my-header-value"}}}}
+        result = ApiGatewayVtlTemplate().render_vtl(template, variables).strip()
+        assert result == "my-header-value"

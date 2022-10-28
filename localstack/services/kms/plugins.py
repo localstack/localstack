@@ -1,8 +1,8 @@
-from localstack.packages import Package, packages
+from localstack.packages import Package, package
 
 
-@packages()
-def kms_local_package() -> Package:
+@package(name="local-kms")
+def local_kms_package() -> Package:
     from localstack.services.kms.packages import kms_local_package
 
     return kms_local_package
