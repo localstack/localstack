@@ -5,6 +5,8 @@ from functools import lru_cache
 
 import requests
 
+from localstack import config
+
 from ..services.install import download_and_extract
 from ..utils.files import chmod_r, mkdir, rm_rf
 from ..utils.http import download
@@ -104,7 +106,7 @@ class ArchiveDownloadAndExtractInstaller(ExecutableInstaller):
         archive_name = os.path.basename(download_url)
         download_and_extract(
             download_url,
-            tmp_archive=os.path.join("/tmp", archive_name),
+            tmp_archive=os.path.join(config.dirs.tmp, archive_name),
             target_dir=target_directory,
         )
         if self.extract_single_directory:
