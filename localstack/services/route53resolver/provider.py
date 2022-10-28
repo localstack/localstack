@@ -16,6 +16,7 @@ from localstack.aws.api.route53resolver import (
     CreateFirewallDomainListResponse,
     CreateFirewallRuleGroupResponse,
     CreateFirewallRuleResponse,
+    CreateResolverEndpointResponse,
     CreateResolverQueryLogConfigResponse,
     CreatorRequestId,
     DeleteFirewallDomainListResponse,
@@ -45,6 +46,7 @@ from localstack.aws.api.route53resolver import (
     GetResolverQueryLogConfigResponse,
     InvalidParameterException,
     InvalidRequestException,
+    IpAddressesRequest,
     ListDomainMaxResults,
     ListFirewallConfigsMaxResult,
     ListFirewallConfigsResponse,
@@ -63,9 +65,11 @@ from localstack.aws.api.route53resolver import (
     ResolverQueryLogConfig,
     ResolverQueryLogConfigAssociation,
     ResolverQueryLogConfigName,
+    ResolverQueryLogConfigStatus,
     ResourceId,
     ResourceNotFoundException,
     Route53ResolverApi,
+    SecurityGroupIds,
     SortByKey,
     SortOrder,
     TagList,
@@ -75,6 +79,7 @@ from localstack.aws.api.route53resolver import (
     UpdateFirewallRuleResponse,
     ValidationException,
 )
+from localstack.services.moto import call_moto
 from localstack.services.route53resolver.models import Route53ResolverStore, route53resolver_stores
 from localstack.services.route53resolver.utils import (
     get_resolver_query_log_config_id,
@@ -525,6 +530,22 @@ class Route53ResolverProvider(Route53ResolverApi):
             ResolverQueryLogConfig=resolver_query_log_config
         )
 
+    def create_resolver_endpoint(
+        self,
+        context: RequestContext,
+        creator_request_id: CreatorRequestId,
+        security_group_ids: SecurityGroupIds,
+        direction: ResolverEndpointDirection,
+        ip_addresses: IpAddressesRequest,
+        name: Name = None,
+        tags: TagList = None,
+    ) -> CreateResolverEndpointResponse:
+        create_resolver_endpoint_resp = call_moto(context)
+        create_resolver_endpoint_resp["ResolverEndpoint"][
+            "Status"
+        ] = ResolverQueryLogConfigStatus.CREATING
+        return create_resolver_endpoint_resp
+
     def get_resolver_query_log_config(
         self, context: RequestContext, resolver_query_log_config_id: ResourceId
     ) -> GetResolverQueryLogConfigResponse:
@@ -724,7 +745,6 @@ def moto_create_resolver_endpoint(fn, self, *args, **kwargs):
                 f'[RSLVR-00408] Malformed security group ID: "Invalid id: "{group_id}" '
                 f'(expecting "sg-...")".'
             )
-
     return fn(self, *args, **kwargs)
 
 

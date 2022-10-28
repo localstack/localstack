@@ -37,14 +37,7 @@ class TestRoute53Resolver:
     def get_security_group_ids(client):
         security_groups_ids = []
         security_groups_response = client.describe_security_groups()["SecurityGroups"]
-        security_groups_ip_permissions_response = (
-            security_groups_response[0]["IpPermissions"] if security_groups_response else None
-        )
-        if security_groups_ip_permissions_response:
-            security_groups_user_id_group_pairs = security_groups_ip_permissions_response[0][
-                "UserIdGroupPairs"
-            ]
-            security_groups_ids = [sg["GroupId"] for sg in security_groups_user_id_group_pairs]
+        security_groups_ids = [sg["GroupId"] for sg in security_groups_response]
         return security_groups_ids
 
     @staticmethod
@@ -144,14 +137,6 @@ class TestRoute53Resolver:
         )
 
         create_resolver_endpoint_res = result.get("ResolverEndpoint")
-
-        if self._wait_created_endpoint_is_listed_with_status(
-            route53resolver_client, request_id, "OPERATIONAL"
-        ):
-            create_resolver_endpoint_res["Status"] = "OPERATIONAL"
-
-        snapshot.match("create_resolver_endpoint_res", create_resolver_endpoint_res)
-
         # clean up
         cleanups.append(
             lambda: route53resolver_client.delete_resolver_endpoint(
@@ -159,13 +144,20 @@ class TestRoute53Resolver:
             )
         )
 
+        self._wait_created_endpoint_is_listed_with_status(
+            route53resolver_client, request_id, "OPERATIONAL"
+        )
+        snapshot.match("create_resolver_endpoint_res", create_resolver_endpoint_res)
+
     @pytest.mark.aws_validated
     def test_route53resolver_bad_create_endpoint_security_groups(
         self, ec2_client, route53resolver_client, snapshot
     ):
         request_id = short_uid()
         resolver_endpoint_name = f"rs-{request_id}"
-        with pytest.raises(Exception) as inavlid_param_request_res:
+        with pytest.raises(
+            route53resolver_client.exceptions.InvalidParameterException
+        ) as inavlid_param_request_res:
             route53resolver_client.create_resolver_endpoint(
                 CreatorRequestId=request_id,
                 SecurityGroupIds=["test-invalid-sg-123"],
@@ -194,14 +186,18 @@ class TestRoute53Resolver:
 
         create_resolver_endpoint_res = result.get("ResolverEndpoint")
 
-        if self._wait_created_endpoint_is_listed_with_status(
-            route53resolver_client, request_id, "OPERATIONAL"
-        ):
-            create_resolver_endpoint_res["Status"] = "OPERATIONAL"
+        cleanups.append(
+            lambda: route53resolver_client.delete_resolver_endpoint(
+                ResolverEndpointId=create_resolver_endpoint_res["Id"]
+            )
+        )
 
+        self._wait_created_endpoint_is_listed_with_status(
+            route53resolver_client, request_id, "OPERATIONAL"
+        )
         snapshot.match("create_resolver_endpoint_res", create_resolver_endpoint_res)
 
-        with pytest.raises(Exception) as invalid_request:
+        with pytest.raises(Exception) as res_exists_ex:
             route53resolver_client.create_resolver_endpoint(
                 CreatorRequestId=request_id,
                 SecurityGroupIds=security_groups_ids,
@@ -209,18 +205,13 @@ class TestRoute53Resolver:
                 Name=resolver_endpoint_name,
                 IpAddresses=ip_addresses,
             )
+
         snapshot.match(
-            "invalid_request_error_code", invalid_request.value.response.get("Error").get("Code")
+            "invalid_request_error_code", res_exists_ex.value.response.get("Error").get("Code")
         )
         snapshot.match(
             "invalid_request_error_http_status_code",
-            invalid_request.value.response.get("ResponseMetadata").get("HTTPStatusCode"),
-        )
-
-        cleanups.append(
-            lambda: route53resolver_client.delete_resolver_endpoint(
-                ResolverEndpointId=create_resolver_endpoint_res["Id"]
-            )
+            res_exists_ex.value.response.get("ResponseMetadata").get("HTTPStatusCode"),
         )
 
     @pytest.mark.aws_validated
@@ -236,10 +227,15 @@ class TestRoute53Resolver:
 
         create_resolver_endpoint_res = result.get("ResolverEndpoint")
 
-        if self._wait_created_endpoint_is_listed_with_status(
+        cleanups.append(
+            lambda: route53resolver_client.delete_resolver_endpoint(
+                ResolverEndpointId=create_resolver_endpoint_res["Id"]
+            )
+        )
+
+        self._wait_created_endpoint_is_listed_with_status(
             route53resolver_client, request_id, "OPERATIONAL"
-        ):
-            create_resolver_endpoint_res["Status"] = "OPERATIONAL"
+        )
         snapshot.match("create_resolver_endpoint_res", create_resolver_endpoint_res)
 
         # update resolver endpoint
@@ -252,12 +248,6 @@ class TestRoute53Resolver:
         ):
             update_resolver_endpoint_res["Status"] = "OPERATIONAL"
         snapshot.match("update_resolver_endpoint_res", update_resolver_endpoint_res)
-
-        cleanups.append(
-            lambda: route53resolver_client.delete_resolver_endpoint(
-                ResolverEndpointId=create_resolver_endpoint_res["Id"]
-            )
-        )
 
     @pytest.mark.aws_validated
     @pytest.mark.skip_snapshot_verify(paths=["$..SecurityGroupIds"])
@@ -272,10 +262,9 @@ class TestRoute53Resolver:
 
         create_resolver_endpoint_res = result.get("ResolverEndpoint")
 
-        if self._wait_created_endpoint_is_listed_with_status(
+        self._wait_created_endpoint_is_listed_with_status(
             route53resolver_client, request_id, "OPERATIONAL"
-        ):
-            create_resolver_endpoint_res["Status"] = "OPERATIONAL"
+        )
         snapshot.match("create_resolver_endpoint_res", create_resolver_endpoint_res)
 
         delete_resolver_endpoint = route53resolver_client.delete_resolver_endpoint(
@@ -286,11 +275,13 @@ class TestRoute53Resolver:
     @pytest.mark.aws_validated
     def test_delete_non_existent_resolver_endpoint(self, route53resolver_client, snapshot):
         resolver_endpoint_id = "rslvr-123"
-        with pytest.raises(Exception) as resource_not_found:
-            route53resolver_client.delete_resolver_endpoint(ResolverEndpointId=resolver_endpoint_id)
         msg = f"Resolver endpoint with ID {resolver_endpoint_id} does not exist"
         snapshot.add_transformer(snapshot.transform.key_value("Message", msg))
         snapshot.add_transformer(snapshot.transform.jsonpath("$..Error.Message", msg))
+        with pytest.raises(
+            route53resolver_client.exceptions.ResourceNotFoundException
+        ) as resource_not_found:
+            route53resolver_client.delete_resolver_endpoint(ResolverEndpointId=resolver_endpoint_id)
         snapshot.match("resource_not_found_resp", resource_not_found.value.response)
 
     @pytest.mark.aws_validated
@@ -308,31 +299,6 @@ class TestRoute53Resolver:
 
         create_resolver_endpoint_res = result.get("ResolverEndpoint")
 
-        if self._wait_created_endpoint_is_listed_with_status(
-            route53resolver_client, request_id, "OPERATIONAL"
-        ):
-            create_resolver_endpoint_res["Status"] = "OPERATIONAL"
-
-        snapshot.match("create_resolver_endpoint_res", create_resolver_endpoint_res)
-
-        result = route53resolver_client.create_resolver_rule(
-            CreatorRequestId=short_uid(),
-            RuleType="FORWARD",
-            DomainName="www.example.com",
-            ResolverEndpointId=create_resolver_endpoint_res["Id"],
-            TargetIps=[
-                {"Ip": "10.0.1.200", "Port": 123},
-            ],
-        )
-
-        create_resolver_rule_res = result.get("ResolverRule")
-        snapshot.match("create_resolver_rule_res", create_resolver_rule_res)
-
-        delete_resolver_rule_res = route53resolver_client.delete_resolver_rule(
-            ResolverRuleId=create_resolver_rule_res["Id"]
-        )
-        snapshot.match("delete_resolver_rule_res", delete_resolver_rule_res)
-
         # clean up
         cleanups.append(
             lambda: route53resolver_client.delete_resolver_endpoint(
@@ -340,11 +306,37 @@ class TestRoute53Resolver:
             )
         )
 
+        self._wait_created_endpoint_is_listed_with_status(
+            route53resolver_client, request_id, "OPERATIONAL"
+        )
+        snapshot.match("create_resolver_endpoint_res", create_resolver_endpoint_res)
+
+        create_resolver_rule_res = route53resolver_client.create_resolver_rule(
+            CreatorRequestId=short_uid(),
+            RuleType="FORWARD",
+            DomainName="www.example1.com",
+            ResolverEndpointId=create_resolver_endpoint_res["Id"],
+            TargetIps=[
+                {"Ip": "10.0.1.200", "Port": 123},
+            ],
+        )
+
+        create_resolver_rule_res = create_resolver_rule_res.get("ResolverRule")
+        snapshot.match("create_resolver_rule_res", create_resolver_rule_res)
+
+        delete_resolver_rule_res = route53resolver_client.delete_resolver_rule(
+            ResolverRuleId=create_resolver_rule_res["Id"]
+        )
+        snapshot.match("delete_resolver_rule_res", delete_resolver_rule_res)
+
     @pytest.mark.aws_validated
     @pytest.mark.skip_snapshot_verify(paths=["$..SecurityGroupIds"])
     def test_create_resolver_rule_with_invalid_direction(
         self, ec2_client, route53resolver_client, cleanups, snapshot
     ):
+        msg = "Resolver rules can only be associated to OUTBOUND resolver endpoints."
+        snapshot.add_transformer(snapshot.transform.key_value("Message", msg))
+        snapshot.add_transformer(snapshot.transform.jsonpath("$..Error.Message", msg))
         request_id = short_uid()
         resolver_endpoint_name = f"rs-{request_id}"
         result = route53resolver_client.create_resolver_endpoint(
@@ -356,36 +348,32 @@ class TestRoute53Resolver:
         )
 
         create_resolver_endpoint_res = result.get("ResolverEndpoint")
-
-        if self._wait_created_endpoint_is_listed_with_status(
-            route53resolver_client, request_id, "OPERATIONAL"
-        ):
-            create_resolver_endpoint_res["Status"] = "OPERATIONAL"
-
-        snapshot.match("create_resolver_endpoint_res", create_resolver_endpoint_res)
-
-        with pytest.raises(Exception) as inavlid_request:
-            route53resolver_client.create_resolver_rule(
-                CreatorRequestId=short_uid(),
-                RuleType="FORWARD",
-                DomainName="www.example.com",
-                ResolverEndpointId=create_resolver_endpoint_res["Id"],
-                TargetIps=[
-                    {"Ip": "10.0.1.200", "Port": 123},
-                ],
-            )
-
-        msg = "Resolver rules can only be associated to OUTBOUND resolver endpoints."
-        snapshot.add_transformer(snapshot.transform.key_value("Message", msg))
-        snapshot.add_transformer(snapshot.transform.jsonpath("$..Error.Message", msg))
-        snapshot.match("invalid_request_ex", inavlid_request.value.response)
-
         # clean up
         cleanups.append(
             lambda: route53resolver_client.delete_resolver_endpoint(
                 ResolverEndpointId=create_resolver_endpoint_res["Id"]
             )
         )
+
+        self._wait_created_endpoint_is_listed_with_status(
+            route53resolver_client, request_id, "OPERATIONAL"
+        )
+        snapshot.match("create_resolver_endpoint_res", create_resolver_endpoint_res)
+
+        with pytest.raises(
+            route53resolver_client.exceptions.InvalidRequestException
+        ) as inavlid_request:
+            route53resolver_client.create_resolver_rule(
+                CreatorRequestId=short_uid(),
+                RuleType="FORWARD",
+                DomainName="www.example2.com",
+                ResolverEndpointId=create_resolver_endpoint_res["Id"],
+                TargetIps=[
+                    {"Ip": "10.0.1.200", "Port": 123},
+                ],
+            )
+
+        snapshot.match("invalid_request_ex", inavlid_request.value.response)
 
     @pytest.mark.aws_validated
     @pytest.mark.skip_snapshot_verify(paths=["$..SecurityGroupIds", "$..ShareStatus"])
@@ -403,35 +391,7 @@ class TestRoute53Resolver:
         )
 
         create_resolver_endpoint_res = result.get("ResolverEndpoint")
-
-        if self._wait_created_endpoint_is_listed_with_status(
-            route53resolver_client, request_id, "OPERATIONAL"
-        ):
-            create_resolver_endpoint_res["Status"] = "OPERATIONAL"
-
-        snapshot.match("create_resolver_endpoint_res", create_resolver_endpoint_res)
-
-        rslvr_rule_req_ids = [short_uid(), short_uid(), short_uid()]
-        for ind, req_id in enumerate(rslvr_rule_req_ids):
-            result = route53resolver_client.create_resolver_rule(
-                CreatorRequestId=req_id,
-                RuleType="FORWARD",
-                DomainName="www.example.com",
-                ResolverEndpointId=create_resolver_endpoint_res["Id"],
-                TargetIps=[
-                    {"Ip": "10.0.1.100", "Port": 123},
-                ],
-            )
-
-            create_resolver_rule_res = result.get("ResolverRule")
-            snapshot.match(f"create_resolver_rule_res_{ind}", create_resolver_rule_res)
-
-            resolver_rule_id = create_resolver_rule_res["Id"]
-            resolver_endpoint_id = create_resolver_endpoint_res["Id"]
-
-            cleanups.append(
-                lambda: route53resolver_client.delete_resolver_rule(ResolverRuleId=resolver_rule_id)
-            )
+        resolver_endpoint_id = create_resolver_endpoint_res["Id"]
 
         # clean up
         cleanups.append(
@@ -440,11 +400,86 @@ class TestRoute53Resolver:
             )
         )
 
+        self._wait_created_endpoint_is_listed_with_status(
+            route53resolver_client, request_id, "OPERATIONAL"
+        )
+        snapshot.match("create_resolver_endpoint_res", create_resolver_endpoint_res)
+
+        rslvr_rule_req_ids = [short_uid(), short_uid(), short_uid()]
+        for ind, req_id in enumerate(rslvr_rule_req_ids):
+            create_resolver_rule_res = route53resolver_client.create_resolver_rule(
+                CreatorRequestId=req_id,
+                RuleType="FORWARD",
+                DomainName=f"www.example{ind}.com",
+                ResolverEndpointId=resolver_endpoint_id,
+                TargetIps=[
+                    {"Ip": "10.0.1.100", "Port": 123},
+                ],
+            )
+
+            create_resolver_rule_res = create_resolver_rule_res.get("ResolverRule")
+            resolver_rule_id = create_resolver_rule_res["Id"]
+            snapshot.match(f"create_resolver_rule_res_{ind}", create_resolver_rule_res)
+
+            delete_resolver_rule = route53resolver_client.delete_resolver_rule(
+                ResolverRuleId=resolver_rule_id
+            )
+            snapshot.match(f"delete_resolver_rule_res{ind}", delete_resolver_rule)
+
     @pytest.mark.aws_validated
     def test_delete_non_existent_resolver_rule(self, route53resolver_client, snapshot):
         resolver_rule_id = "id-123"
-        with pytest.raises(Exception) as resource_not_found:
+        with pytest.raises(
+            route53resolver_client.exceptions.ResourceNotFoundException
+        ) as resource_not_found:
             route53resolver_client.delete_resolver_rule(ResolverRuleId=resolver_rule_id)
+        snapshot.match("resource_not_found_res", resource_not_found.value.response)
+
+    @pytest.mark.aws_validated
+    def test_disassociate_non_existent_association(self, route53resolver_client, snapshot):
+        with pytest.raises(
+            route53resolver_client.exceptions.ResourceNotFoundException
+        ) as resource_not_found:
+            route53resolver_client.disassociate_resolver_rule(
+                ResolverRuleId="rslvr-123", VPCId="vpc-123"
+            )
+        snapshot.match("resource_not_found_res", resource_not_found)
+
+    @pytest.mark.aws_validated
+    def test_create_resolver_query_log_config(self, route53resolver_client, cleanups, snapshot):
+        snapshot.add_transformer(snapshot.transform.key_value("Name", "name"))
+        request_id = short_uid()
+        result = route53resolver_client.create_resolver_query_log_config(
+            Name=f"test-{short_uid()}",
+            DestinationArn="arn:aws:logs:us-east-1:123456789012:log-group:sampletest123",
+            CreatorRequestId=request_id,
+        )
+        create_rqlc = result.get("ResolverQueryLogConfig")
+        resolver_config_id = create_rqlc["Id"]
+        if self._wait_created_log_config_is_listed_with_status(
+            route53resolver_client, resolver_config_id, "CREATED"
+        ):
+            create_rqlc["Status"] = "CREATED"
+
+        snapshot.match("create_resolver_query_log_config_res", create_rqlc)
+
+        delete_resolver_config = route53resolver_client.delete_resolver_query_log_config(
+            ResolverQueryLogConfigId=resolver_config_id
+        )
+        snapshot.match("delete_resolver_query_log_config_res", delete_resolver_config)
+
+    @pytest.mark.aws_validated
+    def test_delete_non_existent_resolver_query_log_config(self, route53resolver_client, snapshot):
+        resolver_rqlc_id = "test_123"
+        with pytest.raises(
+            route53resolver_client.exceptions.ResourceNotFoundException
+        ) as resource_not_found:
+            route53resolver_client.delete_resolver_query_log_config(
+                ResolverQueryLogConfigId=resolver_rqlc_id
+            )
+        msg = resource_not_found.value.response["Message"].split(".")[0]
+        snapshot.add_transformer(snapshot.transform.jsonpath("$..Error.Message", msg))
+        snapshot.add_transformer(snapshot.transform.jsonpath("$..Message", msg))
         snapshot.match("resource_not_found_res", resource_not_found.value.response)
 
     @pytest.mark.aws_validated
@@ -454,6 +489,8 @@ class TestRoute53Resolver:
     def test_associate_and_disassociate_resolver_rule(
         self, ec2_client, route53resolver_client, cleanups, snapshot
     ):
+        snapshot.add_transformer(snapshot.transform.key_value("ResolverRuleId", "rslvr-rr-id"))
+        snapshot.add_transformer(snapshot.transform.key_value("VPCId", "vpc_id"))
         request_id = short_uid()
         resolver_endpoint_name = f"rs-{request_id}"
         result = route53resolver_client.create_resolver_endpoint(
@@ -461,33 +498,40 @@ class TestRoute53Resolver:
             SecurityGroupIds=self.get_security_group_ids(ec2_client),
             Direction="OUTBOUND",
             Name=resolver_endpoint_name,
-            IpAddresses=self.get_create_resolver_endpoint_ip_address(ec2_client, "13"),
+            IpAddresses=self.get_create_resolver_endpoint_ip_address(ec2_client, "68"),
         )
 
         create_resolver_endpoint_res = result.get("ResolverEndpoint")
+        resolver_endpoint_id = create_resolver_endpoint_res["Id"]
+        cleanups.append(
+            lambda: route53resolver_client.delete_resolver_endpoint(
+                ResolverEndpointId=resolver_endpoint_id
+            )
+        )
 
-        if self._wait_created_endpoint_is_listed_with_status(
+        self._wait_created_endpoint_is_listed_with_status(
             route53resolver_client, request_id, "OPERATIONAL"
-        ):
-            create_resolver_endpoint_res["Status"] = "OPERATIONAL"
-
+        )
         snapshot.match("create_resolver_endpoint_res", create_resolver_endpoint_res)
 
-        result = route53resolver_client.create_resolver_rule(
+        create_resolver_rule_res = route53resolver_client.create_resolver_rule(
             CreatorRequestId=short_uid(),
             RuleType="FORWARD",
-            DomainName="www.example.com",
-            ResolverEndpointId=create_resolver_endpoint_res["Id"],
+            DomainName="www.example4.com",
+            ResolverEndpointId=resolver_endpoint_id,
             TargetIps=[
                 {"Ip": "10.0.1.100", "Port": 123},
             ],
         )
 
-        create_resolver_rule_res = result.get("ResolverRule")
-        snapshot.match("create_resolver_rule_res", create_resolver_rule_res)
-
+        create_resolver_rule_res = create_resolver_rule_res.get("ResolverRule")
         resolver_rule_id = create_resolver_rule_res["Id"]
-        resolver_endpoint_id = create_resolver_endpoint_res["Id"]
+
+        cleanups.append(
+            lambda: route53resolver_client.delete_resolver_rule(ResolverRuleId=resolver_rule_id)
+        )
+
+        snapshot.match("create_resolver_rule_res", create_resolver_rule_res)
 
         vpcs = ec2_client.describe_vpcs()["Vpcs"]
         vpcId = random.choice(vpcs)["VpcId"]
@@ -498,8 +542,6 @@ class TestRoute53Resolver:
             VPCId=random.choice(vpcs)["VpcId"],
         )["ResolverRuleAssociation"]
 
-        snapshot.add_transformer(snapshot.transform.key_value("ResolverRuleId", "rslvr-rr-id"))
-        snapshot.add_transformer(snapshot.transform.key_value("VPCId", "vpc_id"))
         if self._wait_associate_or_disassociate_resolver_rule(
             route53resolver_client, resolver_rule_id, vpcId, "associate"
         ):
@@ -514,57 +556,3 @@ class TestRoute53Resolver:
             route53resolver_client, resolver_rule_id, vpcId, "disassociate"
         )
         snapshot.match("disassociate_resolver_rule_res", disassociate_resolver_rule_res)
-
-        cleanups.append(
-            lambda: route53resolver_client.delete_resolver_rule(ResolverRuleId=resolver_rule_id)
-        )
-
-        cleanups.append(
-            lambda: route53resolver_client.delete_resolver_endpoint(
-                ResolverEndpointId=resolver_endpoint_id
-            )
-        )
-
-    @pytest.mark.aws_validated
-    def test_disassociate_non_existent_association(self, route53resolver_client, snapshot):
-        with pytest.raises(Exception) as resource_not_found:
-            route53resolver_client.disassociate_resolver_rule(
-                ResolverRuleId="rslvr-123", VPCId="vpc-123"
-            )
-        snapshot.match("resource_not_found_res", resource_not_found)
-
-    @pytest.mark.aws_validated
-    def test_create_resolver_query_log_config(self, route53resolver_client, cleanups, snapshot):
-
-        request_id = short_uid()
-        result = route53resolver_client.create_resolver_query_log_config(
-            Name=f"test-{short_uid()}",
-            DestinationArn="arn:aws:logs:us-east-1:123456789012:log-group:sampletest123",
-            CreatorRequestId=request_id,
-        )
-        create_rqlc = result.get("ResolverQueryLogConfig")
-        resolver_config_id = create_rqlc["Id"]
-        if self._wait_created_log_config_is_listed_with_status(
-            route53resolver_client, resolver_config_id, "CREATED"
-        ):
-            create_rqlc["Status"] = "CREATED"
-
-        snapshot.add_transformer(snapshot.transform.key_value("Name", "name"))
-        snapshot.match("create_resolver_query_log_config_res", create_rqlc)
-
-        delete_resolver_config = route53resolver_client.delete_resolver_query_log_config(
-            ResolverQueryLogConfigId=resolver_config_id
-        )
-        snapshot.match("delete_resolver_query_log_config_res", delete_resolver_config)
-
-    @pytest.mark.aws_validated
-    def test_delete_non_existent_resolver_query_log_config(self, route53resolver_client, snapshot):
-        resolver_rqlc_id = "test_123"
-        with pytest.raises(Exception) as resource_not_found:
-            route53resolver_client.delete_resolver_query_log_config(
-                ResolverQueryLogConfigId=resolver_rqlc_id
-            )
-        msg = resource_not_found.value.response["Message"].split(".")[0]
-        snapshot.add_transformer(snapshot.transform.jsonpath("$..Error.Message", msg))
-        snapshot.add_transformer(snapshot.transform.jsonpath("$..Message", msg))
-        snapshot.match("resource_not_found_res", resource_not_found.value.response)

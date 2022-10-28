@@ -1804,7 +1804,7 @@ class TestSecretsManager:
         assert len(secrets.keys()) == 1
         assert secret_arn in secrets.values()
 
-        with pytest.raises(Exception) as res_exists_ex:
+        with pytest.raises(sm_client.exceptions.ResourceExistsException) as res_exists_ex:
             sm_client.create_secret(
                 Name=secret_name,
                 SecretString="my_secret_{}".format(secret_name),
@@ -1836,10 +1836,7 @@ class TestSecretsManager:
         self._wait_created_is_listed(sm_client, secret_id=secret_name)
         sm_snapshot.add_transformers_list(sm_snapshot.transform.secretsmanager_secret_id_arn(rs, 0))
 
-        list_secrets_res = sm_client.list_secrets()
-        sm_snapshot.match("list_secrets_res", list_secrets_res)
-
-        with pytest.raises(Exception) as res_exists_ex:
+        with pytest.raises(sm_client.exceptions.ResourceExistsException) as res_exists_ex:
             sm_client.create_secret(
                 Name=secret_name,
                 SecretString="my_secret_{}".format(secret_name),

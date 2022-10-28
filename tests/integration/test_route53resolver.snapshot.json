@@ -1,6 +1,6 @@
 {
   "tests/integration/test_route53resolver.py::TestRoute53Resolver::test_create_resolver_endpoint[INBOUND-5]": {
-    "recorded-date": "27-10-2022, 10:56:20",
+    "recorded-date": "28-10-2022, 23:38:07",
     "recorded-content": {
       "create_resolver_endpoint_res": {
         "Arn": "arn:aws:route53resolver:<region>:111111111111:resolver-endpoint/<id:1>",
@@ -13,13 +13,13 @@
         "ModificationTime": "date",
         "Name": "rs-<creator-request-id:1>",
         "SecurityGroupIds": "sg-ids",
-        "Status": "OPERATIONAL",
+        "Status": "CREATING",
         "StatusMessage": "status-message"
       }
     }
   },
   "tests/integration/test_route53resolver.py::TestRoute53Resolver::test_create_resolver_endpoint[OUTBOUND-10]": {
-    "recorded-date": "27-10-2022, 10:58:18",
+    "recorded-date": "28-10-2022, 23:40:12",
     "recorded-content": {
       "create_resolver_endpoint_res": {
         "Arn": "arn:aws:route53resolver:<region>:111111111111:resolver-endpoint/<id:1>",
@@ -32,13 +32,13 @@
         "ModificationTime": "date",
         "Name": "rs-<creator-request-id:1>",
         "SecurityGroupIds": "sg-ids",
-        "Status": "OPERATIONAL",
+        "Status": "CREATING",
         "StatusMessage": "status-message"
       }
     }
   },
   "tests/integration/test_route53resolver.py::TestRoute53Resolver::test_route53resolver_bad_create_endpoint_security_groups": {
-    "recorded-date": "27-10-2022, 10:58:21",
+    "recorded-date": "28-10-2022, 23:40:15",
     "recorded-content": {
       "inavlid_param_request_res": {
         "Error": {
@@ -54,7 +54,7 @@
     }
   },
   "tests/integration/test_route53resolver.py::TestRoute53Resolver::test_multiple_create_resolver_endpoint_with_same_req_id": {
-    "recorded-date": "27-10-2022, 10:58:56",
+    "recorded-date": "29-10-2022, 01:23:06",
     "recorded-content": {
       "create_resolver_endpoint_res": {
         "Arn": "arn:aws:route53resolver:<region>:111111111111:resolver-endpoint/<id:1>",
@@ -67,7 +67,7 @@
         "ModificationTime": "date",
         "Name": "rs-<creator-request-id:1>",
         "SecurityGroupIds": "sg-ids",
-        "Status": "OPERATIONAL",
+        "Status": "CREATING",
         "StatusMessage": "status-message"
       },
       "invalid_request_error_code": "ResourceExistsException",
@@ -75,7 +75,7 @@
     }
   },
   "tests/integration/test_route53resolver.py::TestRoute53Resolver::test_update_resolver_endpoint": {
-    "recorded-date": "27-10-2022, 10:59:35",
+    "recorded-date": "28-10-2022, 23:41:31",
     "recorded-content": {
       "create_resolver_endpoint_res": {
         "Arn": "arn:aws:route53resolver:<region>:111111111111:resolver-endpoint/<id:1>",
@@ -87,7 +87,7 @@
         "IpAddressCount": 2,
         "ModificationTime": "date",
         "SecurityGroupIds": "sg-ids",
-        "Status": "OPERATIONAL",
+        "Status": "CREATING",
         "StatusMessage": "status-message"
       },
       "update_resolver_endpoint_res": {
@@ -114,7 +114,7 @@
     }
   },
   "tests/integration/test_route53resolver.py::TestRoute53Resolver::test_delete_resolver_endpoint": {
-    "recorded-date": "27-10-2022, 11:00:16",
+    "recorded-date": "28-10-2022, 23:41:54",
     "recorded-content": {
       "create_resolver_endpoint_res": {
         "Arn": "arn:aws:route53resolver:<region>:111111111111:resolver-endpoint/<id:1>",
@@ -126,7 +126,7 @@
         "IpAddressCount": 2,
         "ModificationTime": "date",
         "SecurityGroupIds": "sg-ids",
-        "Status": "OPERATIONAL",
+        "Status": "CREATING",
         "StatusMessage": "status-message"
       },
       "delete_resolver_endpoint_res": {
@@ -151,7 +151,7 @@
     }
   },
   "tests/integration/test_route53resolver.py::TestRoute53Resolver::test_delete_non_existent_resolver_endpoint": {
-    "recorded-date": "27-10-2022, 11:00:16",
+    "recorded-date": "28-10-2022, 23:41:56",
     "recorded-content": {
       "resource_not_found_resp": {
         "Error": {
@@ -167,7 +167,7 @@
     }
   },
   "tests/integration/test_route53resolver.py::TestRoute53Resolver::test_create_resolver_rule": {
-    "recorded-date": "27-10-2022, 13:58:19",
+    "recorded-date": "28-10-2022, 23:43:57",
     "recorded-content": {
       "create_resolver_endpoint_res": {
         "Arn": "arn:aws:route53resolver:<region>:111111111111:resolver-endpoint/<id:1>",
@@ -180,14 +180,14 @@
         "ModificationTime": "date",
         "Name": "rs-<creator-request-id:1>",
         "SecurityGroupIds": "sg-ids",
-        "Status": "OPERATIONAL",
+        "Status": "CREATING",
         "StatusMessage": "status-message"
       },
       "create_resolver_rule_res": {
         "Arn": "arn:aws:route53resolver:<region>:111111111111:resolver-rule/<id:2>",
         "CreationTime": "date",
         "CreatorRequestId": "<creator-request-id:2>",
-        "DomainName": "www.example.com.",
+        "DomainName": "www.example1.com.",
         "Id": "<id:2>",
         "ModificationTime": "date",
         "OwnerId": "111111111111",
@@ -208,7 +208,7 @@
           "Arn": "arn:aws:route53resolver:<region>:111111111111:resolver-rule/<id:2>",
           "CreationTime": "date",
           "CreatorRequestId": "<creator-request-id:2>",
-          "DomainName": "www.example.com.",
+          "DomainName": "www.example1.com.",
           "Id": "<id:2>",
           "ModificationTime": "date",
           "OwnerId": "111111111111",
@@ -232,7 +232,7 @@
     }
   },
   "tests/integration/test_route53resolver.py::TestRoute53Resolver::test_create_resolver_rule_with_invalid_direction": {
-    "recorded-date": "27-10-2022, 11:02:41",
+    "recorded-date": "28-10-2022, 23:44:38",
     "recorded-content": {
       "create_resolver_endpoint_res": {
         "Arn": "arn:aws:route53resolver:<region>:111111111111:resolver-endpoint/<id:1>",
@@ -245,7 +245,7 @@
         "ModificationTime": "date",
         "Name": "rs-<creator-request-id:1>",
         "SecurityGroupIds": "sg-ids",
-        "Status": "OPERATIONAL",
+        "Status": "CREATING",
         "StatusMessage": "status-message"
       },
       "invalid_request_ex": {
@@ -262,7 +262,7 @@
     }
   },
   "tests/integration/test_route53resolver.py::TestRoute53Resolver::test_multipe_create_resolver_rule": {
-    "recorded-date": "27-10-2022, 11:04:42",
+    "recorded-date": "29-10-2022, 00:33:15",
     "recorded-content": {
       "create_resolver_endpoint_res": {
         "Arn": "arn:aws:route53resolver:<region>:111111111111:resolver-endpoint/<id:1>",
@@ -275,14 +275,14 @@
         "ModificationTime": "date",
         "Name": "rs-<creator-request-id:1>",
         "SecurityGroupIds": "sg-ids",
-        "Status": "OPERATIONAL",
+        "Status": "CREATING",
         "StatusMessage": "status-message"
       },
       "create_resolver_rule_res_0": {
         "Arn": "arn:aws:route53resolver:<region>:111111111111:resolver-rule/<id:2>",
         "CreationTime": "date",
         "CreatorRequestId": "<creator-request-id:2>",
-        "DomainName": "www.example.com.",
+        "DomainName": "www.example0.com.",
         "Id": "<id:2>",
         "ModificationTime": "date",
         "OwnerId": "111111111111",
@@ -298,11 +298,37 @@
           }
         ]
       },
+      "delete_resolver_rule_res0": {
+        "ResolverRule": {
+          "Arn": "arn:aws:route53resolver:<region>:111111111111:resolver-rule/<id:2>",
+          "CreationTime": "date",
+          "CreatorRequestId": "<creator-request-id:2>",
+          "DomainName": "www.example0.com.",
+          "Id": "<id:2>",
+          "ModificationTime": "date",
+          "OwnerId": "111111111111",
+          "ResolverEndpointId": "<id:1>",
+          "RuleType": "FORWARD",
+          "ShareStatus": "NOT_SHARED",
+          "Status": "DELETING",
+          "StatusMessage": "status-message",
+          "TargetIps": [
+            {
+              "Ip": "10.0.1.100",
+              "Port": 123
+            }
+          ]
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
       "create_resolver_rule_res_1": {
         "Arn": "arn:aws:route53resolver:<region>:111111111111:resolver-rule/<id:3>",
         "CreationTime": "date",
         "CreatorRequestId": "<creator-request-id:3>",
-        "DomainName": "www.example.com.",
+        "DomainName": "www.example1.com.",
         "Id": "<id:3>",
         "ModificationTime": "date",
         "OwnerId": "111111111111",
@@ -318,11 +344,37 @@
           }
         ]
       },
+      "delete_resolver_rule_res1": {
+        "ResolverRule": {
+          "Arn": "arn:aws:route53resolver:<region>:111111111111:resolver-rule/<id:3>",
+          "CreationTime": "date",
+          "CreatorRequestId": "<creator-request-id:3>",
+          "DomainName": "www.example1.com.",
+          "Id": "<id:3>",
+          "ModificationTime": "date",
+          "OwnerId": "111111111111",
+          "ResolverEndpointId": "<id:1>",
+          "RuleType": "FORWARD",
+          "ShareStatus": "NOT_SHARED",
+          "Status": "DELETING",
+          "StatusMessage": "status-message",
+          "TargetIps": [
+            {
+              "Ip": "10.0.1.100",
+              "Port": 123
+            }
+          ]
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
       "create_resolver_rule_res_2": {
         "Arn": "arn:aws:route53resolver:<region>:111111111111:resolver-rule/<id:4>",
         "CreationTime": "date",
         "CreatorRequestId": "<creator-request-id:4>",
-        "DomainName": "www.example.com.",
+        "DomainName": "www.example2.com.",
         "Id": "<id:4>",
         "ModificationTime": "date",
         "OwnerId": "111111111111",
@@ -337,11 +389,37 @@
             "Port": 123
           }
         ]
+      },
+      "delete_resolver_rule_res2": {
+        "ResolverRule": {
+          "Arn": "arn:aws:route53resolver:<region>:111111111111:resolver-rule/<id:4>",
+          "CreationTime": "date",
+          "CreatorRequestId": "<creator-request-id:4>",
+          "DomainName": "www.example2.com.",
+          "Id": "<id:4>",
+          "ModificationTime": "date",
+          "OwnerId": "111111111111",
+          "ResolverEndpointId": "<id:1>",
+          "RuleType": "FORWARD",
+          "ShareStatus": "NOT_SHARED",
+          "Status": "DELETING",
+          "StatusMessage": "status-message",
+          "TargetIps": [
+            {
+              "Ip": "10.0.1.100",
+              "Port": 123
+            }
+          ]
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
       }
     }
   },
   "tests/integration/test_route53resolver.py::TestRoute53Resolver::test_delete_non_existent_resolver_rule": {
-    "recorded-date": "27-10-2022, 11:04:42",
+    "recorded-date": "28-10-2022, 23:46:45",
     "recorded-content": {
       "resource_not_found_res": {
         "Error": {
@@ -357,7 +435,7 @@
     }
   },
   "tests/integration/test_route53resolver.py::TestRoute53Resolver::test_associate_and_disassociate_resolver_rule": {
-    "recorded-date": "27-10-2022, 11:10:27",
+    "recorded-date": "28-10-2022, 23:51:44",
     "recorded-content": {
       "create_resolver_endpoint_res": {
         "Arn": "arn:aws:route53resolver:<region>:111111111111:resolver-endpoint/<id:1>",
@@ -370,14 +448,14 @@
         "ModificationTime": "date",
         "Name": "rs-<creator-request-id:1>",
         "SecurityGroupIds": "sg-ids",
-        "Status": "OPERATIONAL",
+        "Status": "CREATING",
         "StatusMessage": "status-message"
       },
       "create_resolver_rule_res": {
         "Arn": "arn:aws:route53resolver:<region>:111111111111:resolver-rule/<id:2>",
         "CreationTime": "date",
         "CreatorRequestId": "<creator-request-id:2>",
-        "DomainName": "www.example.com.",
+        "DomainName": "www.example4.com.",
         "Id": "<id:2>",
         "ModificationTime": "date",
         "OwnerId": "111111111111",
@@ -418,13 +496,13 @@
     }
   },
   "tests/integration/test_route53resolver.py::TestRoute53Resolver::test_disassociate_non_existent_association": {
-    "recorded-date": "27-10-2022, 11:10:27",
+    "recorded-date": "28-10-2022, 23:46:45",
     "recorded-content": {
       "resource_not_found_res": "<ExceptionInfo ResourceNotFoundException('An error occurred (ResourceNotFoundException) when calling the DisassociateResolverRule operation: [RSLVR-00703] Resolver rule with ID \"rslvr-123\" does not exist.') tblen=3>"
     }
   },
   "tests/integration/test_route53resolver.py::TestRoute53Resolver::test_create_resolver_query_log_config": {
-    "recorded-date": "27-10-2022, 11:10:28",
+    "recorded-date": "28-10-2022, 23:46:46",
     "recorded-content": {
       "create_resolver_query_log_config_res": {
         "Arn": "arn:aws:route53resolver:<region>:111111111111:resolver-query-log-config/<id:1>",
@@ -459,7 +537,7 @@
     }
   },
   "tests/integration/test_route53resolver.py::TestRoute53Resolver::test_delete_non_existent_resolver_query_log_config": {
-    "recorded-date": "27-10-2022, 11:10:29",
+    "recorded-date": "28-10-2022, 23:46:47",
     "recorded-content": {
       "resource_not_found_res": {
         "Error": {
