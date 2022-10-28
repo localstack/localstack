@@ -1,0 +1,33 @@
+Parameters:
+  Value1:
+    Type: String
+  Value2:
+    Type: String
+
+Mappings:
+  RegionMap:
+    us-east-1:
+      key: value1
+    us-west-1:
+      key: value2
+
+Transform: "AWS::LanguageExtensions"
+
+Resources:
+  JsonTest:
+    Type: AWS::SSM::Parameter
+    Properties:
+      Type: String
+      Value:
+          Fn::ToJsonString:
+            key1: !Ref Value1
+            key2: !Ref Value2
+
+Outputs:
+  Result:
+    Value:
+      Fn::GetAtt:
+        - JsonTest
+        - Value
+  Result2:
+    Value: !FindInMap [RegionMap, us-east-1, key]

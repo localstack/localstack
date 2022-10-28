@@ -1,3 +1,5 @@
+import base64
+import json
 import os
 
 import pytest
@@ -118,7 +120,7 @@ class TestIntrinsicFunctions:
             ("Fn::Or", "1", "1", True),
         ],
     )
-    def test_intrinsic_functions(
+    def test_and_or_functions(
         self,
         cfn_client,
         s3_client,
@@ -147,6 +149,95 @@ class TestIntrinsicFunctions:
         buckets = s3_client.list_buckets()
         bucket_names = [b["Name"] for b in buckets["Buckets"]]
         assert (bucket_name in bucket_names) == expected_bucket_created
+
+    @pytest.mark.aws_validated
+    def test_base64_sub_and_getatt_functions(self, deploy_cfn_template):
+        template_path = os.path.join(
+            os.path.dirname(__file__), "../templates/functions_getatt_sub_base64.yml"
+        )
+        original_string = f"string-{short_uid()}"
+        deployed = deploy_cfn_template(
+            template_path=template_path, parameters={"OriginalString": original_string}
+        )
+
+        converted_string = base64.b64encode(bytes(original_string, "utf-8")).decode("utf-8")
+        assert converted_string == deployed.outputs["Encoded"]
+
+    @pytest.mark.aws_validated
+    def test_split_length_and_join_functions(self, deploy_cfn_template):
+        template_path = os.path.join(
+            os.path.dirname(__file__), "../templates/functions_select_split_join.yml"
+        )
+
+        first_value = f"string-{short_uid()}"
+        second_value = f"string-{short_uid()}"
+        deployed = deploy_cfn_template(
+            template_path=template_path,
+            parameters={
+                "MultipleValues": f"{first_value};{second_value}",
+                "Value1": first_value,
+                "Value2": second_value,
+            },
+        )
+
+        assert first_value == deployed.outputs["SplitResult"]
+        assert f"{first_value}_{second_value}" == deployed.outputs["JoinResult"]
+
+        # TODO support join+split and length operations
+        # assert f"{first_value}_{second_value}" == deployed.outputs["SplitJoin"]
+        # assert 2 == deployed.outputs["LengthResult"]
+
+    @pytest.mark.aws_validated
+    @pytest.mark.skip(reason="functions not currently supported")
+    def test_json_and_find_in_map_functions(self, deploy_cfn_template):
+        template_path = os.path.join(
+            os.path.dirname(__file__), "../templates/function_to_json_string.yml"
+        )
+
+        first_value = f"string-{short_uid()}"
+        second_value = f"string-{short_uid()}"
+        deployed = deploy_cfn_template(
+            template_path=template_path,
+            parameters={
+                "Value1": first_value,
+                "Value2": second_value,
+            },
+        )
+
+        json_result = json.loads(deployed.outputs["Result"])
+
+        assert json_result["key1"] == first_value
+        assert json_result["key2"] == second_value
+        assert "value1" == deployed.outputs["Result2"]
+
+    @pytest.mark.aws_validated
+    @pytest.mark.skip(reason="function not currently supported")
+    def test_cidr_function(self, deploy_cfn_template):
+        template_path = os.path.join(os.path.dirname(__file__), "../templates/functions_cidr.yml")
+
+        # TODO parametrize parameters and result
+        deployed = deploy_cfn_template(
+            template_path=template_path,
+            parameters={"IpBlock": "10.0.0.0/16", "Count": "1", "CidrBits": "8", "Select": "0"},
+        )
+
+        assert deployed.outputs["Address"] == "10.0.0.0/24"
+
+    @pytest.mark.aws_validated
+    @pytest.mark.skip(reason="function not currently supported")
+    def test_get_azs_function(self, deploy_cfn_template):
+        template_path = os.path.join(
+            os.path.dirname(__file__), "../templates/functions_get_azs.yml"
+        )
+        region = "us-east-1"  # TODO parametrize
+
+        deployed = deploy_cfn_template(
+            template_path=template_path,
+            parameters={"Region": region},
+        )
+
+        zone = "us-east-1a"  # TODO parametrize
+        assert zone in deployed.outputs["Zones"]
 
 
 class TestImports:
