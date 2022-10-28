@@ -12,6 +12,7 @@ from localstack.testing.aws.lambda_utils import (
     _await_event_source_mapping_enabled,
     _await_event_source_mapping_state,
     _get_lambda_invocation_events,
+    is_new_provider,
     is_old_provider,
     lambda_role,
     s3_lambda_permission,
@@ -58,7 +59,7 @@ def _snapshot_transformers(snapshot):
         "$..Topics",
         "$..TumblingWindowInSeconds",
     ],
-    condition=is_old_provider,
+    # condition=is_old_provider,
 )
 class TestKinesisSource:
     @pytest.mark.aws_validated
@@ -119,74 +120,6 @@ class TestKinesisSource:
         events = retry(_send_and_receive_messages, retries=3)
         records = events[0]
         snapshot.match("kinesis_records", records)
-
-    @pytest.mark.aws_validated
-    def test_kinesis_event_source_mapping_with_async_invocation(
-        self,
-        lambda_client,
-        kinesis_client,
-        create_lambda_function,
-        kinesis_create_stream,
-        wait_for_stream_ready,
-        logs_client,
-        lambda_su_role,
-        cleanups,
-        snapshot,
-    ):
-        # TODO: this test will fail if `log_cli=true` is set and `LAMBDA_EXECUTOR=local`!
-        # apparently this particular configuration prevents lambda logs from being extracted properly, giving the
-        # appearance that the function was never invoked.
-        function_name = f"lambda_func-{short_uid()}"
-        stream_name = f"test-foobar-{short_uid()}"
-        num_records_per_batch = 10
-        num_batches = 2
-
-        create_lambda_function(
-            handler_file=TEST_LAMBDA_PARALLEL_FILE,
-            func_name=function_name,
-            runtime=LAMBDA_RUNTIME_PYTHON39,
-            role=lambda_su_role,
-        )
-        kinesis_create_stream(StreamName=stream_name, ShardCount=1)
-        stream_arn = kinesis_client.describe_stream(StreamName=stream_name)["StreamDescription"][
-            "StreamARN"
-        ]
-        wait_for_stream_ready(stream_name=stream_name)
-        stream_summary = kinesis_client.describe_stream_summary(StreamName=stream_name)
-        assert stream_summary["StreamDescriptionSummary"]["OpenShardCount"] == 1
-
-        create_event_source_mapping_response = lambda_client.create_event_source_mapping(
-            EventSourceArn=stream_arn,
-            FunctionName=function_name,
-            StartingPosition="LATEST",
-            BatchSize=num_records_per_batch,
-        )
-        snapshot.match("create_event_source_mapping_response", create_event_source_mapping_response)
-        uuid = create_event_source_mapping_response["UUID"]
-        cleanups.append(lambda: lambda_client.delete_event_source_mapping(UUID=uuid))
-        _await_event_source_mapping_enabled(lambda_client, uuid)
-
-        def _send_and_receive_messages():
-            for i in range(num_batches):
-                start = time.perf_counter()
-                kinesis_client.put_records(
-                    Records=[
-                        {"Data": json.dumps({"record_id": j}), "PartitionKey": f"test_{i}"}
-                        for j in range(0, num_records_per_batch)
-                    ],
-                    StreamName=stream_name,
-                )
-                assert (time.perf_counter() - start) < 1  # this should not take more than a second
-
-            return _get_lambda_invocation_events(
-                logs_client, function_name, expected_num_events=num_batches, retries=5
-            )
-
-        # need to retry here in case the LATEST StartingPosition of the event source mapping does not catch records
-        invocation_events = retry(_send_and_receive_messages, retries=3)
-        snapshot.match("invocation_events", invocation_events)
-
-        assert (invocation_events[1]["executionStart"] - invocation_events[0]["executionStart"]) > 5
 
     @pytest.mark.aws_validated
     def test_kinesis_event_source_trim_horizon(
@@ -339,6 +272,7 @@ class TestKinesisSource:
         ],
         condition=is_old_provider,
     )
+    @pytest.mark.skipif(condition=is_new_provider(), reason="destinations not yet implemented")
     @pytest.mark.aws_validated
     def test_kinesis_event_source_mapping_with_on_failure_destination_config(
         self,

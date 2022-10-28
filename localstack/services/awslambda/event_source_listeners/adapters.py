@@ -196,5 +196,5 @@ class EventSourceAsfAdapter(EventSourceAdapter):
                     if event_source_arn_matches(
                         mapped=esm.get("EventSourceArn"), searched=source_arn
                     ):
-                        results.append(esm)
+                        results.append(esm.copy())
         return results

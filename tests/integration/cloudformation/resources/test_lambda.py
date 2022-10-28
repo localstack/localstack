@@ -473,40 +473,40 @@ class TestCfnLambdaIntegrations:
 
         assert wait_until(wait_logs)
 
-    # @pytest.mark.skip_snapshot_verify(
-    #     condition=is_old_provider,
-    #     paths=[
-    #         "$..Code.RepositoryType",
-    #         "$..Configuration.EphemeralStorage",
-    #         "$..Configuration.MemorySize",
-    #         "$..Configuration.VpcConfig",
-    #         "$..FunctionResponseTypes",
-    #         "$..LastProcessingResult",
-    #         "$..MaximumBatchingWindowInSeconds",
-    #         "$..MaximumRetryAttempts",
-    #         "$..ParallelizationFactor",
-    #         "$..StartingPosition",
-    #         "$..StateTransitionReason",
-    #         "$..Topics",
-    #     ],
-    # )
-    # @pytest.mark.skip_snapshot_verify(
-    #     paths=[
-    #         # Lambda
-    #         "$..Tags",
-    #         "$..Configuration.CodeSize",
-    #         "$..Configuration.Layers",
-    #         # SQS
-    #         "$..Attributes.SqsManagedSseEnabled",
-    #         # # IAM
-    #         "$..PolicyNames",
-    #         "$..policies..PolicyName",
-    #         "$..Role.Description",
-    #         "$..Role.MaxSessionDuration",
-    #         "$..StackResources..LogicalResourceId",
-    #         "$..StackResources..PhysicalResourceId",
-    #     ]
-    # )
+    @pytest.mark.skip_snapshot_verify(
+        condition=is_old_provider,
+        paths=[
+            "$..Code.RepositoryType",
+            "$..Configuration.EphemeralStorage",
+            "$..Configuration.MemorySize",
+            "$..Configuration.VpcConfig",
+            "$..FunctionResponseTypes",
+            "$..LastProcessingResult",
+            "$..MaximumBatchingWindowInSeconds",
+            "$..MaximumRetryAttempts",
+            "$..ParallelizationFactor",
+            "$..StartingPosition",
+            "$..StateTransitionReason",
+            "$..Topics",
+        ],
+    )
+    @pytest.mark.skip_snapshot_verify(
+        paths=[
+            # Lambda
+            "$..Tags",
+            "$..Configuration.CodeSize",
+            "$..Configuration.Layers",
+            # SQS
+            "$..Attributes.SqsManagedSseEnabled",
+            # # IAM
+            "$..PolicyNames",
+            "$..policies..PolicyName",
+            "$..Role.Description",
+            "$..Role.MaxSessionDuration",
+            "$..StackResources..LogicalResourceId",
+            "$..StackResources..PhysicalResourceId",
+        ]
+    )
     @pytest.mark.aws_validated
     def test_cfn_lambda_dynamodb_source(
         self,

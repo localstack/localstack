@@ -473,7 +473,6 @@ class DynamoDBProvider(DynamodbApi, ServiceLifecycleHook):
 
         table_arn = result.get("TableDescription", {}).get("TableArn")
         table_arn = self.fix_table_arn(table_arn)
-        self.delete_all_event_source_mappings(table_arn)
         dynamodbstreams_api.delete_streams(table_arn)
         get_store(context.account_id, context.region).TABLE_TAGS.pop(table_arn, None)
 
@@ -1320,15 +1319,6 @@ class DynamoDBProvider(DynamodbApi, ServiceLifecycleHook):
                 for record in records:
                     record["eventSourceARN"] = aws_stack.dynamodb_table_arn(table_name)
             EventForwarder.forward_to_targets(records, background=True)
-
-    def delete_all_event_source_mappings(self, table_arn):
-        if table_arn:
-
-            lambda_client = aws_stack.connect_to_service("lambda")
-            result = lambda_client.list_event_source_mappings(EventSourceArn=table_arn)
-            for event in result["EventSourceMappings"]:
-                event_source_mapping_id = event["UUID"]
-                lambda_client.delete_event_source_mapping(UUID=event_source_mapping_id)
 
     def get_record_template(self) -> Dict:
         return {
