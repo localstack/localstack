@@ -197,7 +197,9 @@ class TestRoute53Resolver:
         )
         snapshot.match("create_resolver_endpoint_res", create_resolver_endpoint_res)
 
-        with pytest.raises(Exception) as res_exists_ex:
+        with pytest.raises(
+            route53resolver_client.exceptions.ResourceExistsException
+        ) as res_exists_ex:
             route53resolver_client.create_resolver_endpoint(
                 CreatorRequestId=request_id,
                 SecurityGroupIds=security_groups_ids,
@@ -207,10 +209,10 @@ class TestRoute53Resolver:
             )
 
         snapshot.match(
-            "invalid_request_error_code", res_exists_ex.value.response.get("Error").get("Code")
+            "res_exists_ex_error_code", res_exists_ex.value.response.get("Error").get("Code")
         )
         snapshot.match(
-            "invalid_request_error_http_status_code",
+            "res_exists_ex_http_status_code",
             res_exists_ex.value.response.get("ResponseMetadata").get("HTTPStatusCode"),
         )
 

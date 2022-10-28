@@ -54,7 +54,7 @@
     }
   },
   "tests/integration/test_route53resolver.py::TestRoute53Resolver::test_multiple_create_resolver_endpoint_with_same_req_id": {
-    "recorded-date": "29-10-2022, 01:23:06",
+    "recorded-date": "29-10-2022, 03:14:07",
     "recorded-content": {
       "create_resolver_endpoint_res": {
         "Arn": "arn:aws:route53resolver:<region>:111111111111:resolver-endpoint/<id:1>",
@@ -70,8 +70,8 @@
         "Status": "CREATING",
         "StatusMessage": "status-message"
       },
-      "invalid_request_error_code": "ResourceExistsException",
-      "invalid_request_error_http_status_code": 400
+      "res_exists_ex_error_code": "ResourceExistsException",
+      "res_exists_ex_http_status_code": 400
     }
   },
   "tests/integration/test_route53resolver.py::TestRoute53Resolver::test_update_resolver_endpoint": {
