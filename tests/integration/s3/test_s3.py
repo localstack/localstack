@@ -488,6 +488,9 @@ class TestS3:
         condition=is_old_provider,
         paths=[
             "$..HTTPHeaders.access-control-allow-origin",
+            "$..HTTPHeaders.access-control-allow-headers",
+            "$..HTTPHeaders.access-control-allow-methods",
+            "$..HTTPHeaders.access-control-expose-headers",
             "$..HTTPHeaders.connection",
             "$..HTTPHeaders.content-md5",
             "$..HTTPHeaders.x-amz-version-id",
@@ -497,6 +500,7 @@ class TestS3:
             "$..HTTPHeaders.content-type",
             "$..HTTPHeaders.last-modified",
             "$..HTTPHeaders.location",
+            "$..MaxAttemptsReached",
         ],
     )
     def test_put_and_get_object_with_content_language_disposition(
