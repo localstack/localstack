@@ -25,10 +25,15 @@ class EventSourceAdapter(ABC):
         self,
         function_arn: str,
         context: dict,
-        payload: str,
+        payload: dict,
         invocation_type: InvocationType,
         callback: Optional[Callable] = None,
     ) -> None:
+        pass
+
+    def invoke_with_statuscode(
+        self, function_arn, context, payload, invocation_type, callback=None
+    ) -> int:
         pass
 
     def get_event_sources(self, source_arn: str):
@@ -49,6 +54,21 @@ class EventSourceLegacyAdapter(EventSourceAdapter):
             asynchronous=(invocation_type == InvocationType.Event),
             callback=callback,
         )
+
+    def invoke_with_statuscode(
+        self, function_arn, context, payload, invocation_type, callback=None
+    ) -> int:
+        from localstack.services.awslambda.lambda_api import run_lambda
+
+        result = run_lambda(
+            func_arn=function_arn,
+            event=payload,
+            context=context,
+            asynchronous=(invocation_type == InvocationType.Event),
+            callback=callback,
+        )
+        status_code = getattr(result.result, "status_code", 0)
+        return status_code
 
     def get_event_sources(self, source_arn: str) -> list:
         from localstack.services.awslambda.lambda_api import get_event_sources
@@ -111,6 +131,60 @@ class EventSourceAsfAdapter(EventSourceAdapter):
                     )
 
             ft.add_done_callback(new_callback)
+
+    def invoke_with_statuscode(
+        self, function_arn, context, payload, invocation_type, callback=None
+    ) -> int:
+        # split ARN ( a bit unnecessary since we build an ARN again in the service)
+        fn_parts = api_utils.FULL_FN_ARN_PATTERN.search(function_arn).groupdict()
+
+        ft = self.lambda_service.invoke(
+            # basically function ARN
+            function_name=fn_parts["function_name"],
+            qualifier=fn_parts["qualifier"],
+            region=fn_parts["region_name"],
+            account_id=fn_parts["account_id"],
+            invocation_type=invocation_type,
+            client_context=json.dumps(context or {}),
+            payload=to_bytes(json.dumps(payload or {})),
+        )
+
+        if callback:
+
+            def new_callback(ft_result: Future[InvocationResult]) -> None:
+                try:
+                    result = ft_result.result(timeout=10)
+                    error = None
+                    if isinstance(result, InvocationError):
+                        error = "?"
+                    callback(
+                        result=LegacyInvocationResult(
+                            result=to_str(json.loads(result.payload)),
+                            log_output=result.logs,
+                        ),
+                        func_arn="doesntmatter",
+                        event="doesntmatter",
+                        error=error,
+                    )
+
+                except Exception as e:
+                    # TODO: map exception to old error format?
+                    LOG.error(e)
+                    callback(
+                        result=None,
+                        func_arn="doesntmatter",
+                        event="doesntmatter",
+                        error=e,
+                    )
+
+            ft.add_done_callback(new_callback)
+        try:
+            ft.result()
+            # TODO: isinstance(result, InvocationError)
+            return 200
+        except Exception as e:
+            LOG.error(e)
+            return 500
 
     def get_event_sources(self, source_arn: str):
         # assuming the region/account from function_arn

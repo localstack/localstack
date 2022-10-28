@@ -1082,6 +1082,7 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
         params["State"] = "Enabled"
         params["StateTransitionReason"] = "USER_INITIATED"
         params["UUID"] = new_uuid
+        params["ParallelizationFactor"] = request.get("ParallelizationFactor", 1)
         params["FunctionResponseTypes"] = request.get("FunctionResponseTypes", [])
         params["MaximumBatchingWindowInSeconds"] = request.get("MaximumBatchingWindowInSeconds", 0)
         params["LastModified"] = api_utils.generate_lambda_date()

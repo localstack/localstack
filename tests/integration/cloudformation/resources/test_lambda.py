@@ -646,7 +646,7 @@ class TestCfnLambdaIntegrations:
 
         snapshot.add_transformer(snapshot.transform.cloudformation_api())
         snapshot.add_transformer(snapshot.transform.lambda_api())
-        snapshot.add_transformer(snapshot.transform.dynamodb_api())
+        snapshot.add_transformer(snapshot.transform.kinesis_api())
         snapshot.add_transformer(
             SortingTransformer("StackResources", lambda sr: sr["LogicalResourceId"]), priority=-1
         )

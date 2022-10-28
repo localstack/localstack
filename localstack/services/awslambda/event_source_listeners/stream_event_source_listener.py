@@ -3,6 +3,7 @@ import math
 import time
 from typing import Dict, List, Optional, Tuple
 
+from localstack.aws.api.lambda_ import InvocationType
 from localstack.services.awslambda.event_source_listeners.adapters import (
     EventSourceAdapter,
     EventSourceLegacyAdapter,
@@ -10,8 +11,6 @@ from localstack.services.awslambda.event_source_listeners.adapters import (
 from localstack.services.awslambda.event_source_listeners.event_source_listener import (
     EventSourceListener,
 )
-from localstack.services.awslambda.lambda_api import run_lambda
-from localstack.services.awslambda.lambda_executors import InvocationResult
 from localstack.services.awslambda.lambda_utils import filter_stream_records
 from localstack.utils.aws.aws_stack import extract_region_from_arn
 from localstack.utils.aws.message_forwarding import send_event_to_target
@@ -136,20 +135,16 @@ class StreamEventSourceListener(EventSourceListener):
         :returns: True if the invocation was successful (False otherwise) and the status code of the invocation result
         """
 
-        result = run_lambda(
-            func_arn=function_arn,
-            event=payload,
+        status_code = self._invoke_adapter.invoke_with_statuscode(
+            function_arn=function_arn,
+            payload=payload,
+            invocation_type=InvocationType.RequestResponse,
             context={},
-            asynchronous=False,
         )
 
-        # TODO: ?
-        if isinstance(result, InvocationResult):
-            status_code = getattr(result.result, "status_code", 0)
-            if status_code >= 400:
-                return False, status_code
-            return True, status_code
-        return False, 500
+        if status_code >= 400:
+            return False, status_code
+        return True, status_code
 
     def _get_lambda_event_filters_for_arn(self, function_arn: str, queue_arn: str):
         result = []
