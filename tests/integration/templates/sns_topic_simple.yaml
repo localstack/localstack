@@ -10,3 +10,7 @@ Resources:
       TopicName: !Ref TopicName
     UpdateReplacePolicy: Delete
     DeletionPolicy: Delete
+
+Outputs:
+  TopicArn:
+    Value: !GetAtt [topic123, TopicArn]

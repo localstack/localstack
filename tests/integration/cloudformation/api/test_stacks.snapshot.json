@@ -473,5 +473,13 @@
         }
       }
     }
+  },
+  "tests/integration/cloudformation/api/test_stacks.py::test_prevent_stack_deletion_and_update": {
+    "recorded-date": "28-10-2022, 11:41:53",
+    "recorded-content": {}
+  },
+  "tests/integration/cloudformation/api/test_stacks.py::test_prevent_stack_update": {
+    "recorded-date": "28-10-2022, 12:10:42",
+    "recorded-content": {}
   }
 }

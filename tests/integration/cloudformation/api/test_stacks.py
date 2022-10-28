@@ -395,3 +395,45 @@ def test_notifications(
         retry(_assert_messages, retries=10, sleep=2)
     finally:
         cfn_client.delete_stack(StackName=stack_name)
+
+
+@pytest.mark.aws_validated
+@pytest.mark.skip(reason="feature not implemented")
+def test_prevent_stack_update(deploy_cfn_template, cfn_client, snapshot):
+    template = load_file(
+        os.path.join(os.path.dirname(__file__), "../../templates/sns_topic_simple.yaml")
+    )
+    stack = deploy_cfn_template(template=template, parameters={"TopicName": f"topic-{short_uid()}"})
+    policy = {
+        "Statement": [
+            {"Effect": "Deny", "Action": "Update:*", "Principal": "*", "Resource": "*"},
+        ]
+    }
+    cfn_client.set_stack_policy(StackName=stack.stack_name, StackPolicyBody=json.dumps(policy))
+
+    policy = cfn_client.get_stack_policy(StackName=stack.stack_name)
+
+    cfn_client.update_stack(
+        StackName=stack.stack_name,
+        TemplateBody=template,
+        Parameters=[{"ParameterKey": "TopicName", "ParameterValue": f"new-topic-{short_uid()}"}],
+    )
+
+    def _assert_failing_update_state():
+        events = cfn_client.describe_stack_events(StackName=stack.stack_name)["StackEvents"]
+        failed_event_update = [
+            event for event in events if event["ResourceStatus"] == "UPDATE_FAILED"
+        ]
+        assert failed_event_update
+        assert "Action denied by stack policy" in failed_event_update[0]["ResourceStatusReason"]
+
+    try:
+        retry(_assert_failing_update_state, retries=5, sleep=2, sleep_before=2)
+    finally:
+        progress_is_finished = False
+        while not progress_is_finished:
+            status = cfn_client.describe_stacks(StackName=stack.stack_name)["Stacks"][0][
+                "StackStatus"
+            ]
+            progress_is_finished = "PROGRESS" not in status
+        cfn_client.delete_stack(StackName=stack.stack_name)
