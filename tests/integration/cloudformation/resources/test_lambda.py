@@ -1,3 +1,4 @@
+import base64
 import json
 import os
 
@@ -7,6 +8,7 @@ from localstack.testing.aws.lambda_utils import is_new_provider, is_old_provider
 from localstack.testing.snapshots.transformer import SortingTransformer
 from localstack.utils.common import short_uid
 from localstack.utils.http import safe_requests
+from localstack.utils.strings import to_bytes, to_str
 from localstack.utils.sync import retry, wait_until
 from localstack.utils.testutil import get_lambda_log_events
 
@@ -468,5 +470,272 @@ class TestCfnLambdaIntegrations:
                 "events"
             ]
             return any([msg in e["message"] for e in log_events])
+
+        assert wait_until(wait_logs)
+
+    # @pytest.mark.skip_snapshot_verify(
+    #     condition=is_old_provider,
+    #     paths=[
+    #         "$..Code.RepositoryType",
+    #         "$..Configuration.EphemeralStorage",
+    #         "$..Configuration.MemorySize",
+    #         "$..Configuration.VpcConfig",
+    #         "$..FunctionResponseTypes",
+    #         "$..LastProcessingResult",
+    #         "$..MaximumBatchingWindowInSeconds",
+    #         "$..MaximumRetryAttempts",
+    #         "$..ParallelizationFactor",
+    #         "$..StartingPosition",
+    #         "$..StateTransitionReason",
+    #         "$..Topics",
+    #     ],
+    # )
+    # @pytest.mark.skip_snapshot_verify(
+    #     paths=[
+    #         # Lambda
+    #         "$..Tags",
+    #         "$..Configuration.CodeSize",
+    #         "$..Configuration.Layers",
+    #         # SQS
+    #         "$..Attributes.SqsManagedSseEnabled",
+    #         # # IAM
+    #         "$..PolicyNames",
+    #         "$..policies..PolicyName",
+    #         "$..Role.Description",
+    #         "$..Role.MaxSessionDuration",
+    #         "$..StackResources..LogicalResourceId",
+    #         "$..StackResources..PhysicalResourceId",
+    #     ]
+    # )
+    @pytest.mark.aws_validated
+    def test_cfn_lambda_dynamodb_source(
+        self,
+        deploy_cfn_template,
+        cfn_client,
+        lambda_client,
+        dynamodb_client,
+        dynamodbstreams_client,
+        logs_client,
+        iam_client,
+        snapshot,
+    ):
+        """
+        Resources:
+        * Lambda Function
+        * DynamoDB Table + Stream
+        * EventSourceMapping
+        * IAM Roles/Policies (e.g. dynamodb:GetRecords for lambda service to poll dynamodb)
+        """
+
+        snapshot.add_transformer(snapshot.transform.cloudformation_api())
+        snapshot.add_transformer(snapshot.transform.lambda_api())
+        snapshot.add_transformer(snapshot.transform.dynamodb_api())
+        snapshot.add_transformer(
+            SortingTransformer("StackResources", lambda sr: sr["LogicalResourceId"]), priority=-1
+        )
+        snapshot.add_transformer(snapshot.transform.key_value("CodeSha256"))
+        snapshot.add_transformer(snapshot.transform.key_value("RoleId"))
+        snapshot.add_transformer(
+            snapshot.transform.key_value("ShardId", reference_replacement=False)
+        )
+        snapshot.add_transformer(
+            snapshot.transform.key_value("StartingSequenceNumber", reference_replacement=False)
+        )
+
+        deployment = deploy_cfn_template(
+            template_path=os.path.join(
+                os.path.dirname(__file__), "../../templates/cfn_lambda_dynamodb_source.yaml"
+            ),
+            max_wait=240,
+        )
+        fn_name = deployment.outputs["FunctionName"]
+        table_name = deployment.outputs["TableName"]
+        stream_arn = deployment.outputs["StreamArn"]
+        esm_id = deployment.outputs["ESMId"]
+
+        stack_resources = cfn_client.describe_stack_resources(StackName=deployment.stack_id)
+
+        # IAM::Policy seems to have a pretty weird physical resource ID (e.g. stack-fnSe-3OZPF82JL41D)
+        iam_policy_resource = cfn_client.describe_stack_resource(
+            StackName=deployment.stack_id, LogicalResourceId="fnServiceRoleDefaultPolicy0ED5D3E5"
+        )
+        snapshot.add_transformer(
+            snapshot.transform.regex(
+                iam_policy_resource["StackResourceDetail"]["PhysicalResourceId"],
+                "<iam-policy-physicalid>",
+            )
+        )
+
+        snapshot.match("stack_resources", stack_resources)
+
+        # query service APIs for resource states
+        get_function_result = lambda_client.get_function(FunctionName=fn_name)
+        get_esm_result = lambda_client.get_event_source_mapping(UUID=esm_id)
+
+        describe_table_result = dynamodb_client.describe_table(TableName=table_name)
+        describe_stream_result = dynamodbstreams_client.describe_stream(StreamArn=stream_arn)
+        role_arn = get_function_result["Configuration"]["Role"]
+        role_name = role_arn.partition("role/")[-1]
+        get_role_result = iam_client.get_role(RoleName=role_name)
+        list_attached_role_policies_result = iam_client.list_attached_role_policies(
+            RoleName=role_name
+        )
+        list_inline_role_policies_result = iam_client.list_role_policies(RoleName=role_name)
+        policies = []
+        for rp in list_inline_role_policies_result["PolicyNames"]:
+            get_rp_result = iam_client.get_role_policy(RoleName=role_name, PolicyName=rp)
+            policies.append(get_rp_result)
+
+        snapshot.add_transformer(
+            snapshot.transform.jsonpath(
+                "$..policies..ResponseMetadata", "<response-metadata>", reference_replacement=False
+            )
+        )
+
+        snapshot.match("role_policies", {"policies": policies})
+        snapshot.match("get_function_result", get_function_result)
+        snapshot.match("get_esm_result", get_esm_result)
+        snapshot.match("describe_table_result", describe_table_result)
+        snapshot.match("describe_stream_result", describe_stream_result)
+        snapshot.match("get_role_result", get_role_result)
+        snapshot.match("list_attached_role_policies_result", list_attached_role_policies_result)
+        snapshot.match("list_inline_role_policies_result", list_inline_role_policies_result)
+
+        # TODO: extract
+        # TODO: is this even necessary? should the cloudformation deployment guarantee that this is enabled already?
+        def wait_esm_active():
+            try:
+                return lambda_client.get_event_source_mapping(UUID=esm_id)["State"] == "Enabled"
+            except Exception as e:
+                print(e)
+
+        assert wait_until(wait_esm_active)
+
+        msg = f"msg-verification-{short_uid()}"
+        dynamodb_client.put_item(
+            TableName=table_name, Item={"id": {"S": "test"}, "msg": {"S": msg}}
+        )
+
+        # TODO: extract
+        def wait_logs():
+            log_events = logs_client.filter_log_events(logGroupName=f"/aws/lambda/{fn_name}")[
+                "events"
+            ]
+            return any([msg in e["message"] for e in log_events])
+
+        assert wait_until(wait_logs)
+
+    @pytest.mark.aws_validated
+    def test_cfn_lambda_kinesis_source(
+        self,
+        deploy_cfn_template,
+        cfn_client,
+        lambda_client,
+        kinesis_client,
+        logs_client,
+        iam_client,
+        snapshot,
+    ):
+        """
+        Resources:
+        * Lambda Function
+        * Kinesis Stream
+        * EventSourceMapping
+        * IAM Roles/Policies (e.g. kinesis:GetRecords for lambda service to poll kinesis)
+        """
+
+        snapshot.add_transformer(snapshot.transform.cloudformation_api())
+        snapshot.add_transformer(snapshot.transform.lambda_api())
+        snapshot.add_transformer(snapshot.transform.dynamodb_api())
+        snapshot.add_transformer(
+            SortingTransformer("StackResources", lambda sr: sr["LogicalResourceId"]), priority=-1
+        )
+        snapshot.add_transformer(snapshot.transform.key_value("CodeSha256"))
+        snapshot.add_transformer(snapshot.transform.key_value("RoleId"))
+        snapshot.add_transformer(
+            snapshot.transform.key_value("ShardId", reference_replacement=False)
+        )
+        snapshot.add_transformer(
+            snapshot.transform.key_value("StartingSequenceNumber", reference_replacement=False)
+        )
+
+        deployment = deploy_cfn_template(
+            template_path=os.path.join(
+                os.path.dirname(__file__), "../../templates/cfn_lambda_kinesis_source.yaml"
+            ),
+            max_wait=240,
+        )
+        fn_name = deployment.outputs["FunctionName"]
+        stream_name = deployment.outputs["StreamName"]
+        # stream_arn = deployment.outputs["StreamArn"]
+        esm_id = deployment.outputs["ESMId"]
+
+        stack_resources = cfn_client.describe_stack_resources(StackName=deployment.stack_id)
+
+        # IAM::Policy seems to have a pretty weird physical resource ID (e.g. stack-fnSe-3OZPF82JL41D)
+        iam_policy_resource = cfn_client.describe_stack_resource(
+            StackName=deployment.stack_id, LogicalResourceId="fnServiceRoleDefaultPolicy0ED5D3E5"
+        )
+        snapshot.add_transformer(
+            snapshot.transform.regex(
+                iam_policy_resource["StackResourceDetail"]["PhysicalResourceId"],
+                "<iam-policy-physicalid>",
+            )
+        )
+
+        snapshot.match("stack_resources", stack_resources)
+
+        # query service APIs for resource states
+        get_function_result = lambda_client.get_function(FunctionName=fn_name)
+        get_esm_result = lambda_client.get_event_source_mapping(UUID=esm_id)
+        describe_stream_result = kinesis_client.describe_stream(StreamName=stream_name)
+        role_arn = get_function_result["Configuration"]["Role"]
+        role_name = role_arn.partition("role/")[-1]
+        get_role_result = iam_client.get_role(RoleName=role_name)
+        list_attached_role_policies_result = iam_client.list_attached_role_policies(
+            RoleName=role_name
+        )
+        list_inline_role_policies_result = iam_client.list_role_policies(RoleName=role_name)
+        policies = []
+        for rp in list_inline_role_policies_result["PolicyNames"]:
+            get_rp_result = iam_client.get_role_policy(RoleName=role_name, PolicyName=rp)
+            policies.append(get_rp_result)
+
+        snapshot.add_transformer(
+            snapshot.transform.jsonpath(
+                "$..policies..ResponseMetadata", "<response-metadata>", reference_replacement=False
+            )
+        )
+
+        snapshot.match("role_policies", {"policies": policies})
+        snapshot.match("get_function_result", get_function_result)
+        snapshot.match("get_esm_result", get_esm_result)
+        snapshot.match("describe_stream_result", describe_stream_result)
+        snapshot.match("get_role_result", get_role_result)
+        snapshot.match("list_attached_role_policies_result", list_attached_role_policies_result)
+        snapshot.match("list_inline_role_policies_result", list_inline_role_policies_result)
+
+        # TODO: extract
+        # TODO: is this even necessary? should the cloudformation deployment guarantee that this is enabled already?
+        def wait_esm_active():
+            try:
+                return lambda_client.get_event_source_mapping(UUID=esm_id)["State"] == "Enabled"
+            except Exception as e:
+                print(e)
+
+        assert wait_until(wait_esm_active)
+
+        msg = f"msg-verification-{short_uid()}"
+        data_msg = to_str(base64.b64encode(to_bytes(msg)))
+        kinesis_client.put_record(
+            StreamName=stream_name, Data=msg, PartitionKey="samplepartitionkey"
+        )
+
+        # TODO: extract
+        def wait_logs():
+            log_events = logs_client.filter_log_events(logGroupName=f"/aws/lambda/{fn_name}")[
+                "events"
+            ]
+            return any([data_msg in e["message"] for e in log_events])
 
         assert wait_until(wait_logs)
