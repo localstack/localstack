@@ -60,6 +60,7 @@ from localstack.aws.api.sqs import (
     TagKeyList,
     TagMap,
     Token,
+    TooManyEntriesInBatchRequest,
 )
 from localstack.aws.spec import load_service
 from localstack.services.plugins import ServiceLifecycleHook
@@ -520,6 +521,11 @@ class SqsProvider(SqsApi, ServiceLifecycleHook):
         self, context: RequestContext, queue_url: String, entries: SendMessageBatchRequestEntryList
     ) -> SendMessageBatchResult:
         queue = self._resolve_queue(context, queue_url=queue_url)
+
+        if entries and (no_entries := len(entries)) > 10:
+            raise TooManyEntriesInBatchRequest(
+                f"Maximum number of entries per request are 10. You have sent {no_entries}."
+            )
 
         self._assert_batch(entries)
         # check the total batch size first and raise BatchRequestTooLong id > DEFAULT_MAXIMUM_MESSAGE_SIZE.

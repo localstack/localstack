@@ -573,5 +573,22 @@
         }
       }
     }
+  },
+  "tests/integration/test_sqs.py::TestSqsProvider::test_too_many_entries_in_batch_request": {
+    "recorded-date": "27-10-2022, 20:25:28",
+    "recorded-content": {
+      "test_too_many_entries_in_batch_request": {
+        "Error": {
+          "Code": "AWS.SimpleQueueService.TooManyEntriesInBatchRequest",
+          "Detail": null,
+          "Message": "Maximum number of entries per request are 10. You have sent 20.",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
   }
 }
