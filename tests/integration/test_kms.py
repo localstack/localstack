@@ -20,7 +20,6 @@ def _get_all_key_ids(kms_client):
         kwargs = {"nextToken": next_token} if next_token else {}
         response = kms_client.list_keys(**kwargs)
         for key in response["Keys"]:
-            print(key)
             ids.add(key["KeyId"])
         if "nextToken" not in response:
             break
