@@ -482,12 +482,14 @@ class TestS3:
         assert response["Body"].read() == b"abc123"
 
     @pytest.mark.aws_validated
-    @pytest.mark.xfail(
-        condition=not LEGACY_S3_PROVIDER,
-        reason="content-length and type is wrong",  # TODO
-    )
     @pytest.mark.skip_snapshot_verify(
-        condition=is_asf_provider, paths=["$..HTTPHeaders.connection"]
+        condition=is_asf_provider,
+        paths=[
+            "$..HTTPHeaders.connection",
+            # TODO content-length and type is wrong, skipping for now
+            "$..HTTPHeaders.content-length",  # 58, but should be 0
+            "$..HTTPHeaders.content-type",  # application/xml but should not be set
+        ],
     )  # for ASF we currently always set 'close'
     @pytest.mark.skip_snapshot_verify(
         condition=is_old_provider,
