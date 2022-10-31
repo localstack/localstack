@@ -1,0 +1,23 @@
+AWSTemplateFormatVersion: '2010-09-09'
+
+Parameters:
+  BucketName1:
+    Type: String
+
+  BucketName2:
+    Type: String
+
+Resources:
+  Bucket1:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName: !Ref BucketName1
+    UpdateReplacePolicy: Delete
+    DeletionPolicy: Delete
+
+  Bucket2:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName: !Ref BucketName2
+    UpdateReplacePolicy: Delete
+    DeletionPolicy: Delete

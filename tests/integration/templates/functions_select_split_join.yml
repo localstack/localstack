@@ -1,0 +1,52 @@
+Parameters:
+  MultipleValues:
+    Type: String
+  Value1:
+    Type: String
+  Value2:
+    Type: String
+
+Transform: "AWS::LanguageExtensions"
+
+Resources:
+  SplitTest:
+    Type: AWS::SSM::Parameter
+    Properties:
+      Type: String
+      Value: !Select
+        - 0
+        - !Split
+          - ";"
+          - !Ref MultipleValues
+
+  JoinTest:
+    Type: AWS::SSM::Parameter
+    Properties:
+      Type: String
+      Value: !Join ["_", [!Ref Value1, !Ref Value2]]
+
+  SplitJoinTest:
+    Type: AWS::SSM::Parameter
+    Properties:
+      Type: String
+      Value: !Join ["_", !Split [ ";", !Ref MultipleValues]]
+
+Outputs:
+  SplitResult:
+    Value:
+      Fn::GetAtt:
+        - SplitTest
+        - Value
+  JoinResult:
+    Value:
+      Fn::GetAtt:
+        - JoinTest
+        - Value
+  SplitJoin:
+    Value:
+      Fn::GetAtt:
+        - SplitJoinTest
+        - Value
+  LengthResult:
+    Value:
+      Fn::Length: !Split [ ";", !Ref MultipleValues]
