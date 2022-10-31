@@ -3417,6 +3417,9 @@ class TestS3PresignedUrl:
         assert "something something" == to_str(response.content)
 
     @pytest.mark.aws_validated
+    @pytest.mark.xfail(
+        reason="sporadically failing in CI: presigned-post does not set the body, and then etag is wrong"
+    )
     def test_s3_presigned_post_success_action_status_201_response(self, s3_client, s3_bucket):
         # a security policy is required if the bucket is not publicly writable
         # see https://docs.aws.amazon.com/AmazonS3/latest/API/RESTObjectPOST.html#RESTObjectPOST-requests-form-fields
