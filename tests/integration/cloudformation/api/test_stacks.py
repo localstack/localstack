@@ -351,7 +351,7 @@ def test_notifications(
     sns_create_sqs_subscription(topic_arn, sqs_url)
 
     template = load_file(
-        os.path.join(os.path.dirname(__file__), "../../templates/sns_topic_simple.yaml")
+        os.path.join(os.path.dirname(__file__), "../../templates/sns_topic_parameter.yml")
     )
     cfn_client.create_stack(
         StackName=stack_name,
@@ -363,7 +363,7 @@ def test_notifications(
     assert wait_until(is_stack_created(stack_name))
 
     template = load_file(
-        os.path.join(os.path.dirname(__file__), "../../templates/sns_topic_simple.yaml")
+        os.path.join(os.path.dirname(__file__), "../../templates/sns_topic_parameter.yml")
     )
     cfn_client.update_stack(
         StackName=stack_name,
@@ -401,7 +401,7 @@ def test_notifications(
 @pytest.mark.skip(reason="feature not implemented")
 def test_prevent_stack_update(deploy_cfn_template, cfn_client, snapshot):
     template = load_file(
-        os.path.join(os.path.dirname(__file__), "../../templates/sns_topic_simple.yaml")
+        os.path.join(os.path.dirname(__file__), "../../templates/sns_topic_parameter.yml")
     )
     stack = deploy_cfn_template(template=template, parameters={"TopicName": f"topic-{short_uid()}"})
     policy = {
@@ -443,7 +443,7 @@ def test_prevent_stack_update(deploy_cfn_template, cfn_client, snapshot):
 @pytest.mark.skip(reason="feature not implemented")
 def test_prevent_resource_deletion(deploy_cfn_template, cfn_client, sns_client, snapshot):
     template = load_file(
-        os.path.join(os.path.dirname(__file__), "../../templates/sns_topic_simple.yaml")
+        os.path.join(os.path.dirname(__file__), "../../templates/sns_topic_parameter.yml")
     )
 
     template = template.replace("DeletionPolicy: Delete", "DeletionPolicy: Retain")
