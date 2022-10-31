@@ -1,5 +1,8 @@
 import os
 
+import pytest
+
+from localstack.testing.aws.util import is_aws_cloud
 from localstack.utils.files import load_file
 from localstack.utils.strings import short_uid
 from localstack.utils.sync import retry
@@ -69,3 +72,37 @@ def test_nested_stack_output_refs(cfn_client, deploy_cfn_template, s3_client, s3
         ][0]
     )
     assert f"{nested_bucket_name}-suffix" == result.outputs["CustomOutput"]
+
+
+@pytest.mark.skip(reason="Nested stacks don't work properly")
+@pytest.mark.aws_validated
+def test_nested_with_nested_stack(cfn_client, deploy_cfn_template, s3_client, s3_create_bucket):
+    bucket_name = s3_create_bucket()
+    bucket_to_create_name = f"test-bucket-{short_uid()}"
+    domain = "amazonaws.com" if is_aws_cloud() else "localhost.localstack.cloud:4566"
+
+    nested_stacks = ["nested_child.yml", "nested_parent.yml"]
+    urls = []
+
+    for nested_stack in nested_stacks:
+        s3_client.upload_file(
+            os.path.join(os.path.dirname(__file__), "../../templates/", nested_stack),
+            Bucket=bucket_name,
+            Key=nested_stack,
+        )
+
+        urls.append(f"https://{bucket_name}.s3.{domain}/{nested_stack}")
+
+    outputs = deploy_cfn_template(
+        max_wait=120 if is_aws_cloud() else None,
+        template_path=os.path.join(
+            os.path.dirname(__file__), "../../templates/nested_grand_parent.yml"
+        ),
+        parameters={
+            "ChildStackURL": urls[0],
+            "ParentStackURL": urls[1],
+            "BucketToCreate": bucket_to_create_name,
+        },
+    ).outputs
+
+    assert f"arn:aws:s3:::{bucket_to_create_name}" == outputs["parameterValue"]

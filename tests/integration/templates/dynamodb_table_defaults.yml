@@ -1,0 +1,17 @@
+Resources:
+  Table:
+      Type: AWS::DynamoDB::Table
+      Properties:
+        KeySchema:
+          - AttributeName: keyName
+            KeyType: HASH
+        AttributeDefinitions:
+          - AttributeName: keyName
+            AttributeType: S
+        ProvisionedThroughput:
+          ReadCapacityUnits: 5
+          WriteCapacityUnits: 5
+
+Outputs:
+  TableName:
+    Value: !Ref Table

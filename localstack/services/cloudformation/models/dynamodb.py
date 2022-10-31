@@ -1,8 +1,10 @@
-from localstack.services.cloudformation.deployment_utils import PLACEHOLDER_AWS_NO_VALUE
+from localstack.services.cloudformation.deployment_utils import (
+    PLACEHOLDER_AWS_NO_VALUE,
+    generate_default_name,
+)
 from localstack.services.cloudformation.service_models import REF_ID_ATTRS, GenericBaseModel
 from localstack.utils import common
 from localstack.utils.aws import aws_stack
-from localstack.utils.common import short_uid
 
 
 def get_ddb_provisioned_throughput(params, **kwargs):
@@ -77,26 +79,22 @@ class DynamoDBTable(GenericBaseModel):
     @staticmethod
     def add_defaults(resource, stack_name: str):
         is_pay_per_request = resource.get("Properties", {}).get("BillingMode") == "PAY_PER_REQUEST"
+
         if not is_pay_per_request:
             resource["Properties"]["ProvisionedThroughput"] = {
                 "ReadCapacityUnits": 5,
                 "WriteCapacityUnits": 5,
             }
 
+        table_name = resource.get("Properties", {}).get("TableName")
+        resource["Properties"]["TableName"] = table_name or generate_default_name(
+            stack_name, resource["LogicalResourceId"]
+        )
+
     @classmethod
     def get_deploy_templates(cls):
-        def _pre_create(resource_id, resources, resource_type, func, stack_name):
-            resource = resources[resource_id]
-            props = resource["Properties"]
-
-            def _generate_res_name():  # TODO: generalize
-                return "%s-%s-%s" % (stack_name, resource_id, short_uid())
-
-            props["TableName"] = props.get("TableName") or _generate_res_name()
-
         return {
             "create": [
-                {"function": _pre_create},
                 {
                     "function": "create_table",
                     "parameters": {

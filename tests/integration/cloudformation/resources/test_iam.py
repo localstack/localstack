@@ -30,7 +30,7 @@ def test_delete_role_detaches_role_policy(cfn_client, iam_client, deploy_cfn_tem
     )
 
     with pytest.raises(Exception) as e:
-        iam_client.list_attached_role_policies(RoleName=role_name)["AttachedPolicies"]
+        iam_client.list_attached_role_policies(RoleName=role_name)
     assert e.value.response.get("Error").get("Code") == "NoSuchEntity"
 
 

@@ -1,0 +1,19 @@
+Parameters:
+  Region:
+    Type: String
+
+Resources:
+  SsmParameter:
+    Type: AWS::SSM::Parameter
+    Properties:
+      Type: String
+      Value:
+        Fn::Join:
+          - ";"
+          - Fn::GetAZs: !Ref Region
+Outputs:
+  Zones:
+    Value:
+      Fn::GetAtt:
+        - SsmParameter
+        - Value

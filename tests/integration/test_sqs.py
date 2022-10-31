@@ -1254,6 +1254,24 @@ class TestSqsProvider:
         assert "Messages" not in result_follow_up.keys()
 
     @pytest.mark.aws_validated
+    @pytest.mark.skip_snapshot_verify(paths=["$..Error.Detail"])
+    def test_too_many_entries_in_batch_request(self, sqs_client, sqs_create_queue, snapshot):
+        message_count = 20
+        queue_name = f"queue-{short_uid()}"
+        queue_url = sqs_create_queue(QueueName=queue_name)
+        message_batch = [
+            {
+                "Id": f"message-{i}",
+                "MessageBody": f"messageBody-{i}",
+            }
+            for i in range(message_count)
+        ]
+
+        with pytest.raises(ClientError) as e:
+            sqs_client.send_message_batch(QueueUrl=queue_url, Entries=message_batch)
+        snapshot.match("test_too_many_entries_in_batch_request", e.value.response)
+
+    @pytest.mark.aws_validated
     def test_publish_get_delete_message_batch(self, sqs_client, sqs_create_queue):
         message_count = 10
         queue_name = f"queue-{short_uid()}"
@@ -1694,7 +1712,7 @@ class TestSqsProvider:
         )
         message_id = response["MessageId"]
 
-        # receive the messages twice, which is the maximum allwed
+        # receive the messages twice, which is the maximum allowed
         sqs_client.receive_message(QueueUrl=queue_url, WaitTimeSeconds=1, VisibilityTimeout=0)
         sqs_client.receive_message(QueueUrl=queue_url, WaitTimeSeconds=1, VisibilityTimeout=0)
         # after this receive call the message should be in the DLQ
