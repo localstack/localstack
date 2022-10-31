@@ -277,14 +277,18 @@ class TestRoute53Resolver:
     @pytest.mark.aws_validated
     def test_delete_non_existent_resolver_endpoint(self, route53resolver_client, snapshot):
         resolver_endpoint_id = "rslvr-123"
-        msg = f"Resolver endpoint with ID {resolver_endpoint_id} does not exist"
-        snapshot.add_transformer(snapshot.transform.key_value("Message", msg))
-        snapshot.add_transformer(snapshot.transform.jsonpath("$..Error.Message", msg))
         with pytest.raises(
             route53resolver_client.exceptions.ResourceNotFoundException
         ) as resource_not_found:
             route53resolver_client.delete_resolver_endpoint(ResolverEndpointId=resolver_endpoint_id)
-        snapshot.match("resource_not_found_resp", resource_not_found.value.response)
+        snapshot.match(
+            "resource_not_found_ex_error_code",
+            resource_not_found.value.response.get("Error").get("Code"),
+        )
+        snapshot.match(
+            "resource_not_found_ex_http_status_code",
+            resource_not_found.value.response.get("ResponseMetadata").get("HTTPStatusCode"),
+        )
 
     @pytest.mark.aws_validated
     @pytest.mark.skip_snapshot_verify(paths=["$..SecurityGroupIds", "$..ShareStatus"])
@@ -336,9 +340,6 @@ class TestRoute53Resolver:
     def test_create_resolver_rule_with_invalid_direction(
         self, ec2_client, route53resolver_client, cleanups, snapshot
     ):
-        msg = "Resolver rules can only be associated to OUTBOUND resolver endpoints."
-        snapshot.add_transformer(snapshot.transform.key_value("Message", msg))
-        snapshot.add_transformer(snapshot.transform.jsonpath("$..Error.Message", msg))
         request_id = short_uid()
         resolver_endpoint_name = f"rs-{request_id}"
         result = route53resolver_client.create_resolver_endpoint(
@@ -449,7 +450,7 @@ class TestRoute53Resolver:
 
     @pytest.mark.aws_validated
     def test_create_resolver_query_log_config(self, route53resolver_client, cleanups, snapshot):
-        snapshot.add_transformer(snapshot.transform.key_value("Name", "name"))
+        snapshot.add_transformer(snapshot.transform.key_value("Name"))
         request_id = short_uid()
         result = route53resolver_client.create_resolver_query_log_config(
             Name=f"test-{short_uid()}",
@@ -479,10 +480,14 @@ class TestRoute53Resolver:
             route53resolver_client.delete_resolver_query_log_config(
                 ResolverQueryLogConfigId=resolver_rqlc_id
             )
-        msg = resource_not_found.value.response["Message"].split(".")[0]
-        snapshot.add_transformer(snapshot.transform.jsonpath("$..Error.Message", msg))
-        snapshot.add_transformer(snapshot.transform.jsonpath("$..Message", msg))
-        snapshot.match("resource_not_found_res", resource_not_found.value.response)
+        snapshot.match(
+            "resource_not_found_ex_error_code",
+            resource_not_found.value.response.get("Error").get("Code"),
+        )
+        snapshot.match(
+            "resource_not_found_ex_http_status_code",
+            resource_not_found.value.response.get("ResponseMetadata").get("HTTPStatusCode"),
+        )
 
     @pytest.mark.aws_validated
     @pytest.mark.skip_snapshot_verify(
@@ -492,7 +497,7 @@ class TestRoute53Resolver:
         self, ec2_client, route53resolver_client, cleanups, snapshot
     ):
         snapshot.add_transformer(snapshot.transform.key_value("ResolverRuleId", "rslvr-rr-id"))
-        snapshot.add_transformer(snapshot.transform.key_value("VPCId", "vpc_id"))
+        snapshot.add_transformer(snapshot.transform.key_value("VPCId", "vpc-id"))
         request_id = short_uid()
         resolver_endpoint_name = f"rs-{request_id}"
         result = route53resolver_client.create_resolver_endpoint(

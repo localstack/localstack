@@ -1,6 +1,6 @@
 {
   "tests/integration/test_route53resolver.py::TestRoute53Resolver::test_create_resolver_endpoint[INBOUND-5]": {
-    "recorded-date": "28-10-2022, 23:38:07",
+    "recorded-date": "31-10-2022, 13:52:02",
     "recorded-content": {
       "create_resolver_endpoint_res": {
         "Arn": "arn:aws:route53resolver:<region>:111111111111:resolver-endpoint/<id:1>",
@@ -19,7 +19,7 @@
     }
   },
   "tests/integration/test_route53resolver.py::TestRoute53Resolver::test_create_resolver_endpoint[OUTBOUND-10]": {
-    "recorded-date": "28-10-2022, 23:40:12",
+    "recorded-date": "31-10-2022, 13:54:02",
     "recorded-content": {
       "create_resolver_endpoint_res": {
         "Arn": "arn:aws:route53resolver:<region>:111111111111:resolver-endpoint/<id:1>",
@@ -38,7 +38,7 @@
     }
   },
   "tests/integration/test_route53resolver.py::TestRoute53Resolver::test_route53resolver_bad_create_endpoint_security_groups": {
-    "recorded-date": "28-10-2022, 23:40:15",
+    "recorded-date": "31-10-2022, 13:54:05",
     "recorded-content": {
       "inavlid_param_request_res": {
         "Error": {
@@ -54,7 +54,7 @@
     }
   },
   "tests/integration/test_route53resolver.py::TestRoute53Resolver::test_multiple_create_resolver_endpoint_with_same_req_id": {
-    "recorded-date": "29-10-2022, 03:14:07",
+    "recorded-date": "31-10-2022, 13:54:39",
     "recorded-content": {
       "create_resolver_endpoint_res": {
         "Arn": "arn:aws:route53resolver:<region>:111111111111:resolver-endpoint/<id:1>",
@@ -75,7 +75,7 @@
     }
   },
   "tests/integration/test_route53resolver.py::TestRoute53Resolver::test_update_resolver_endpoint": {
-    "recorded-date": "28-10-2022, 23:41:31",
+    "recorded-date": "31-10-2022, 13:55:19",
     "recorded-content": {
       "create_resolver_endpoint_res": {
         "Arn": "arn:aws:route53resolver:<region>:111111111111:resolver-endpoint/<id:1>",
@@ -114,7 +114,7 @@
     }
   },
   "tests/integration/test_route53resolver.py::TestRoute53Resolver::test_delete_resolver_endpoint": {
-    "recorded-date": "28-10-2022, 23:41:54",
+    "recorded-date": "31-10-2022, 13:55:57",
     "recorded-content": {
       "create_resolver_endpoint_res": {
         "Arn": "arn:aws:route53resolver:<region>:111111111111:resolver-endpoint/<id:1>",
@@ -151,23 +151,14 @@
     }
   },
   "tests/integration/test_route53resolver.py::TestRoute53Resolver::test_delete_non_existent_resolver_endpoint": {
-    "recorded-date": "28-10-2022, 23:41:56",
+    "recorded-date": "31-10-2022, 13:55:58",
     "recorded-content": {
-      "resource_not_found_resp": {
-        "Error": {
-          "Code": "ResourceNotFoundException",
-          "Message": "<Resolver endpoint with ID rslvr-123 does not exist:1>"
-        },
-        "Message": "<Resolver endpoint with ID rslvr-123 does not exist:1>",
-        "ResponseMetadata": {
-          "HTTPHeaders": {},
-          "HTTPStatusCode": 400
-        }
-      }
+      "resource_not_found_ex_error_code": "ResourceNotFoundException",
+      "resource_not_found_ex_http_status_code": 400
     }
   },
   "tests/integration/test_route53resolver.py::TestRoute53Resolver::test_create_resolver_rule": {
-    "recorded-date": "28-10-2022, 23:43:57",
+    "recorded-date": "31-10-2022, 13:58:01",
     "recorded-content": {
       "create_resolver_endpoint_res": {
         "Arn": "arn:aws:route53resolver:<region>:111111111111:resolver-endpoint/<id:1>",
@@ -232,7 +223,7 @@
     }
   },
   "tests/integration/test_route53resolver.py::TestRoute53Resolver::test_create_resolver_rule_with_invalid_direction": {
-    "recorded-date": "28-10-2022, 23:44:38",
+    "recorded-date": "31-10-2022, 13:58:42",
     "recorded-content": {
       "create_resolver_endpoint_res": {
         "Arn": "arn:aws:route53resolver:<region>:111111111111:resolver-endpoint/<id:1>",
@@ -251,9 +242,9 @@
       "invalid_request_ex": {
         "Error": {
           "Code": "InvalidRequestException",
-          "Message": "<Resolver rules can only be associated to OUTBOUND resolver endpoints.:1>"
+          "Message": "[RSLVR-00700] Resolver rules can only be associated to OUTBOUND resolver endpoints."
         },
-        "Message": "<Resolver rules can only be associated to OUTBOUND resolver endpoints.:1>",
+        "Message": "[RSLVR-00700] Resolver rules can only be associated to OUTBOUND resolver endpoints.",
         "ResponseMetadata": {
           "HTTPHeaders": {},
           "HTTPStatusCode": 400
@@ -262,7 +253,7 @@
     }
   },
   "tests/integration/test_route53resolver.py::TestRoute53Resolver::test_multipe_create_resolver_rule": {
-    "recorded-date": "29-10-2022, 00:33:15",
+    "recorded-date": "31-10-2022, 14:00:45",
     "recorded-content": {
       "create_resolver_endpoint_res": {
         "Arn": "arn:aws:route53resolver:<region>:111111111111:resolver-endpoint/<id:1>",
@@ -419,7 +410,7 @@
     }
   },
   "tests/integration/test_route53resolver.py::TestRoute53Resolver::test_delete_non_existent_resolver_rule": {
-    "recorded-date": "28-10-2022, 23:46:45",
+    "recorded-date": "31-10-2022, 14:00:45",
     "recorded-content": {
       "resource_not_found_res": {
         "Error": {
@@ -435,7 +426,7 @@
     }
   },
   "tests/integration/test_route53resolver.py::TestRoute53Resolver::test_associate_and_disassociate_resolver_rule": {
-    "recorded-date": "28-10-2022, 23:51:44",
+    "recorded-date": "31-10-2022, 14:06:10",
     "recorded-content": {
       "create_resolver_endpoint_res": {
         "Arn": "arn:aws:route53resolver:<region>:111111111111:resolver-endpoint/<id:1>",
@@ -496,13 +487,13 @@
     }
   },
   "tests/integration/test_route53resolver.py::TestRoute53Resolver::test_disassociate_non_existent_association": {
-    "recorded-date": "28-10-2022, 23:46:45",
+    "recorded-date": "31-10-2022, 14:00:45",
     "recorded-content": {
       "resource_not_found_res": "<ExceptionInfo ResourceNotFoundException('An error occurred (ResourceNotFoundException) when calling the DisassociateResolverRule operation: [RSLVR-00703] Resolver rule with ID \"rslvr-123\" does not exist.') tblen=3>"
     }
   },
   "tests/integration/test_route53resolver.py::TestRoute53Resolver::test_create_resolver_query_log_config": {
-    "recorded-date": "28-10-2022, 23:46:46",
+    "recorded-date": "31-10-2022, 14:00:47",
     "recorded-content": {
       "create_resolver_query_log_config_res": {
         "Arn": "arn:aws:route53resolver:<region>:111111111111:resolver-query-log-config/<id:1>",
@@ -537,19 +528,10 @@
     }
   },
   "tests/integration/test_route53resolver.py::TestRoute53Resolver::test_delete_non_existent_resolver_query_log_config": {
-    "recorded-date": "28-10-2022, 23:46:47",
+    "recorded-date": "31-10-2022, 14:00:47",
     "recorded-content": {
-      "resource_not_found_res": {
-        "Error": {
-          "Code": "ResourceNotFoundException",
-          "Message": "<[RSLVR-01601] The specified query logging configuration doesn't exist:1>"
-        },
-        "Message": "<[RSLVR-01601] The specified query logging configuration doesn't exist:1>",
-        "ResponseMetadata": {
-          "HTTPHeaders": {},
-          "HTTPStatusCode": 400
-        }
-      }
+      "resource_not_found_ex_error_code": "ResourceNotFoundException",
+      "resource_not_found_ex_http_status_code": 400
     }
   }
 }
