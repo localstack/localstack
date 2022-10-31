@@ -2,10 +2,12 @@ import copy
 import logging
 from urllib.parse import urlsplit, urlunsplit
 
+from localstack.config import LEGACY_S3_PROVIDER
 from localstack.constants import LOCALHOST_HOSTNAME
-from localstack.http import Request, Response, Router
-from localstack.http.dispatcher import Handler
+from localstack.http import Request, Response
 from localstack.http.proxy import Proxy
+from localstack.runtime import hooks
+from localstack.services.edge import ROUTER
 from localstack.services.s3.utils import S3_VIRTUAL_HOST_FORWARDED_HEADER
 from localstack.utils.aws.request_context import AWS_REGION_REGEX
 
@@ -82,34 +84,34 @@ class S3VirtualHostProxyHandler:
         return urlunsplit((splitted.scheme, netloc, path, splitted.query, splitted.fragment))
 
 
-def register_virtual_host_routes(router: Router[Handler]):
+@hooks.on_infra_ready(should_load=not LEGACY_S3_PROVIDER)
+def register_virtual_host_routes():
     """
-    Registers the S3 virtual host handler into the given router.
+    Registers the S3 virtual host handler into the edge router.
 
-    :param router: the router to add the handlers into.
     """
     s3_proxy_handler = S3VirtualHostProxyHandler()
-    router.add(
+    ROUTER.add(
         path="/",
         host=VHOST_REGEX_PATTERN,
         endpoint=s3_proxy_handler,
         defaults={"path": "/"},
     )
 
-    router.add(
+    ROUTER.add(
         path="/<path:path>",
         host=VHOST_REGEX_PATTERN,
         endpoint=s3_proxy_handler,
     )
 
-    router.add(
+    ROUTER.add(
         path="/<regex('.+'):bucket>",
         host=PATH_WITH_REGION_PATTERN,
         endpoint=s3_proxy_handler,
         defaults={"path": "/"},
     )
 
-    router.add(
+    ROUTER.add(
         path="/<regex('.+'):bucket>/<path:path>",
         host=PATH_WITH_REGION_PATTERN,
         endpoint=s3_proxy_handler,

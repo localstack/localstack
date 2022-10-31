@@ -105,7 +105,6 @@ from localstack.services.s3.utils import (
     is_valid_canonical_id,
     verify_checksum,
 )
-from localstack.services.s3.virtual_host import register_virtual_host_routes
 from localstack.services.s3.website_hosting import register_website_hosting_routes
 from localstack.utils.aws import aws_stack
 from localstack.utils.aws.aws_stack import s3_bucket_name
@@ -163,7 +162,7 @@ class S3Provider(S3Api, ServiceLifecycleHook):
 
     def on_after_init(self):
         apply_moto_patches()
-        register_virtual_host_routes(router=ROUTER)
+        # registering of virtual host routes happens with the hook on_infra_ready
         register_website_hosting_routes(router=ROUTER)
         register_custom_handlers()
 
