@@ -295,7 +295,7 @@ class TransformerUtility:
             KeyValueBasedTransformer(_resource_name_transformer, "Arn"),
             TransformerUtility.key_value("CreatorRequestId"),
             TransformerUtility.key_value(
-                "StatusMessage", value_replacement="status-message", reference_replacement=False
+                "StatusMessage", reference_replacement=False
             ),
         ]
 

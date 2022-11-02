@@ -209,11 +209,11 @@ class TestRoute53Resolver:
             )
 
         snapshot.match(
-            "res_exists_ex_error_code", res_exists_ex.value.response.get("Error").get("Code")
+            "res_exists_ex_error_code", res_exists_ex.value.response.get("Error", {}).get("Code")
         )
         snapshot.match(
             "res_exists_ex_http_status_code",
-            res_exists_ex.value.response.get("ResponseMetadata").get("HTTPStatusCode"),
+            res_exists_ex.value.response.get("ResponseMetadata", {}).get("HTTPStatusCode"),
         )
 
     @pytest.mark.aws_validated
@@ -283,11 +283,11 @@ class TestRoute53Resolver:
             route53resolver_client.delete_resolver_endpoint(ResolverEndpointId=resolver_endpoint_id)
         snapshot.match(
             "resource_not_found_ex_error_code",
-            resource_not_found.value.response.get("Error").get("Code"),
+            resource_not_found.value.response.get("Error", {}).get("Code"),
         )
         snapshot.match(
             "resource_not_found_ex_http_status_code",
-            resource_not_found.value.response.get("ResponseMetadata").get("HTTPStatusCode"),
+            resource_not_found.value.response.get("ResponseMetadata", {}).get("HTTPStatusCode"),
         )
 
     @pytest.mark.aws_validated
@@ -482,11 +482,11 @@ class TestRoute53Resolver:
             )
         snapshot.match(
             "resource_not_found_ex_error_code",
-            resource_not_found.value.response.get("Error").get("Code"),
+            resource_not_found.value.response.get("Error", {}).get("Code"),
         )
         snapshot.match(
             "resource_not_found_ex_http_status_code",
-            resource_not_found.value.response.get("ResponseMetadata").get("HTTPStatusCode"),
+            resource_not_found.value.response.get("ResponseMetadata", {}).get("HTTPStatusCode"),
         )
 
     @pytest.mark.aws_validated
