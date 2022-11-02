@@ -294,9 +294,7 @@ class TransformerUtility:
             TransformerUtility.key_value("HostVPCId", "host-vpc-id"),
             KeyValueBasedTransformer(_resource_name_transformer, "Arn"),
             TransformerUtility.key_value("CreatorRequestId"),
-            TransformerUtility.key_value(
-                "StatusMessage", reference_replacement=False
-            ),
+            TransformerUtility.key_value("StatusMessage", reference_replacement=False),
         ]
 
     @staticmethod
