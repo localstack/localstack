@@ -238,11 +238,6 @@ RUN pip3 install --upgrade awscli awscli-local requests
 # Add the code in the last step
 ADD localstack/ localstack/
 
-# Download some more dependencies (make init needs the LocalStack code)
-# FIXME the init python code should be independent (i.e. not depend on the localstack code), idempotent/reproducible,
-#       modify only folders outside of the localstack package folder, and executed in the builder stage.
-RUN make init
-
 # Install the latest version of localstack-ext and generate the plugin entrypoints.
 # If this is a pre-release build, also include dev releases of these packages.
 ARG LOCALSTACK_PRE_RELEASE=1
@@ -250,6 +245,23 @@ RUN (PIP_ARGS=$([[ "$LOCALSTACK_PRE_RELEASE" == "1" ]] && echo "--pre" || true);
       virtualenv .venv && . .venv/bin/activate && \
       pip3 install --upgrade ${PIP_ARGS} localstack-ext[runtime])
 RUN make entrypoints
+
+# Install packages which should be shipped by default
+RUN source .venv/bin/activate && \
+    python -m localstack.cli.lpm install --parallel 4 \
+      cloudformation-libs \
+      dynamodb-local \
+      iot-rule-engine \
+      kinesis-mock \
+      lambda-java-libs \
+      local-kms \
+      mqtt \
+      postgres \
+      redis \
+      stepfunctions \
+      stepfunctions-local \
+      timescaledb && \
+    rm -rf /tmp/localstack/*
 
 # Add the build date and git hash at last (changes everytime)
 ARG LOCALSTACK_BUILD_DATE
@@ -259,7 +271,7 @@ ENV LOCALSTACK_BUILD_DATE=${LOCALSTACK_BUILD_DATE}
 ENV LOCALSTACK_BUILD_GIT_HASH=${LOCALSTACK_BUILD_GIT_HASH}
 ENV LOCALSTACK_BUILD_VERSION=${LOCALSTACK_BUILD_VERSION}
 
-# clean up some libs (e.g., Maven should be no longer required after "make init" has completed)
+# clean up some libs (e.g., Maven should be no longer required after initial installation has completed)
 RUN rm -rf /usr/share/maven
 
 # expose edge service, external service ports, and debugpy

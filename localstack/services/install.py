@@ -1,24 +1,18 @@
-#!/usr/bin/env python
 import glob
 import logging
 import os
 import re
-import sys
 import tempfile
+from typing import Union
+
 import time
-from typing import Callable, List, Tuple, Union
 
-from plugin import Plugin
-
-from localstack import config
 from localstack.config import dirs
-from localstack.constants import DEFAULT_SERVICE_PORTS, MAVEN_REPO_URL
-from localstack.runtime import hooks
+from localstack.constants import MAVEN_REPO_URL
 from localstack.utils.archives import untar, unzip
 from localstack.utils.files import load_file, mkdir, new_tmp_file, rm_rf, save_file
 from localstack.utils.http import download
 from localstack.utils.run import run
-from localstack.utils.threads import parallelize
 
 LOG = logging.getLogger(__name__)
 
@@ -134,48 +128,6 @@ def upgrade_jar_file(base_dir: str, file_glob: str, maven_asset: str):
     download(maven_asset_url, target_file)
 
 
-def install_component(name):
-    from localstack.packages import InstallTarget
-    from localstack.services.awslambda.packages import awslambda_runtime_package
-    from localstack.services.cloudformation.packages import cloudformation_package
-    from localstack.services.dynamodb.packages import dynamodblocal_package
-    from localstack.services.kinesis.packages import kinesismock_package
-    from localstack.services.kms.packages import kms_local_package
-    from localstack.services.sqs.legacy.packages import elasticmq_package
-    from localstack.services.stepfunctions.packages import stepfunctions_local_package
-
-    installers = {
-        "cloudformation": cloudformation_package.install,
-        "dynamodb": dynamodblocal_package.install,
-        "kinesis": kinesismock_package.install,
-        "kms": kms_local_package.install,
-        "lambda": awslambda_runtime_package.install,
-        "sqs": elasticmq_package.install,
-        "stepfunctions": stepfunctions_local_package.install,
-    }
-
-    installer = installers.get(name)
-    if installer:
-        # since these installers are called at build-time, they should be installed to STATIC_LIBS
-        installer(target=InstallTarget.STATIC_LIBS)
-
-
-def install_components(names):
-    parallelize(install_component, names)
-
-    # TODO remove these installers here (the default services should be defined using an LPM call in the Dockerfile)
-    from localstack.packages import InstallTarget
-    from localstack.services.awslambda.packages import lambda_java_libs_package
-
-    lambda_java_libs_package.install(target=InstallTarget.STATIC_LIBS)
-
-
-def install_all_components():
-    # install dependencies - make sure that install_components(..) is called before hooks.install below!
-    install_components(DEFAULT_SERVICE_PORTS.keys())
-    hooks.install.run()
-
-
 # -----------------
 # HELPER FUNCTIONS
 # -----------------
@@ -216,36 +168,3 @@ def download_and_extract_with_retry(archive_url, tmp_archive, target_dir):
         LOG.info("Unable to extract file, re-downloading ZIP archive %s: %s", tmp_archive, e)
         rm_rf(tmp_archive)
         download_and_extract(archive_url, target_dir, tmp_archive=tmp_archive)
-
-
-# TODO remove (only used for migrating to new #package plugin system)
-
-Installer = Tuple[str, Callable]
-
-
-class InstallerRepository(Plugin):
-    # TODO the installer repositories should be migrated (downwards compatible) to use the packages / package installers
-    namespace = "localstack.installer"
-
-    def get_installer(self) -> List[Installer]:
-        raise NotImplementedError
-
-
-def main():
-    # TODO this main should be removed (together with the make init target in the Makefile)
-    #      once the installer refactoring is done
-    if len(sys.argv) > 1:
-        config.dirs.mkdirs()
-
-        # set test API key so pro install hooks are called
-        os.environ["LOCALSTACK_API_KEY"] = os.environ.get("LOCALSTACK_API_KEY") or "test"
-        if sys.argv[1] == "libs":
-            print("Initializing installation.")
-            logging.basicConfig(level=logging.INFO)
-            logging.getLogger("requests").setLevel(logging.WARNING)
-            install_all_components()
-        print("Done.")
-
-
-if __name__ == "__main__":
-    main()

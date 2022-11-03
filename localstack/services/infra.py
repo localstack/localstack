@@ -468,11 +468,6 @@ def do_start_infra(asynchronous, apis, is_in_docker):
         patch_moto_request_handling()
 
     @log_duration()
-    def prepare_installation():
-        # install libs if not present
-        install.install_components(apis)
-
-    @log_duration()
     def preload_services():
         """
         Preload services - restore persistence, and initialize services if EAGER_SERVICE_LOADING=1.
@@ -516,7 +511,6 @@ def do_start_infra(asynchronous, apis, is_in_docker):
         return t
 
     prepare_environment()
-    prepare_installation()
     thread = start_runtime_components()
     preload_services()
 
