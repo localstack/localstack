@@ -6585,6 +6585,8 @@ class CreateReplaceRootVolumeTaskRequest(ServiceRequest):
     ClientToken: Optional[String]
     DryRun: Optional[Boolean]
     TagSpecifications: Optional[TagSpecificationList]
+    ImageId: Optional[ImageId]
+    DeleteReplacedRootVolume: Optional[Boolean]
 
 
 class ReplaceRootVolumeTask(TypedDict, total=False):
@@ -6594,6 +6596,9 @@ class ReplaceRootVolumeTask(TypedDict, total=False):
     StartTime: Optional[String]
     CompleteTime: Optional[String]
     Tags: Optional[TagList]
+    ImageId: Optional[ImageId]
+    SnapshotId: Optional[SnapshotId]
+    DeleteReplacedRootVolume: Optional[Boolean]
 
 
 class CreateReplaceRootVolumeTaskResult(TypedDict, total=False):
@@ -16825,6 +16830,8 @@ class Ec2Api:
         client_token: String = None,
         dry_run: Boolean = None,
         tag_specifications: TagSpecificationList = None,
+        image_id: ImageId = None,
+        delete_replaced_root_volume: Boolean = None,
     ) -> CreateReplaceRootVolumeTaskResult:
         raise NotImplementedError
 
