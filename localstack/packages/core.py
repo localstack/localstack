@@ -5,8 +5,10 @@ from functools import lru_cache
 
 import requests
 
+from localstack import config
+
 from ..services.install import download_and_extract
-from ..utils.files import chmod_r, mkdir
+from ..utils.files import chmod_r, mkdir, rm_rf
 from ..utils.http import download
 from .api import InstallTarget, PackageException, PackageInstaller
 
@@ -54,6 +56,15 @@ class DownloadInstaller(ExecutableInstaller):
 
 
 class ArchiveDownloadAndExtractInstaller(ExecutableInstaller):
+    def __init__(self, name: str, version: str, extract_single_directory: bool = False):
+        """
+        :param name: technical package name, f.e. "opensearch"
+        :param version: version of the package to install
+        :param extract_single_directory: whether to extract files from single root folder in the archive
+        """
+        super().__init__(name, version)
+        self.extract_single_directory = extract_single_directory
+
     def _get_install_marker_path(self, install_dir: str) -> str:
         raise NotImplementedError()
 
@@ -94,8 +105,20 @@ class ArchiveDownloadAndExtractInstaller(ExecutableInstaller):
         download_url = self._get_download_url()
         archive_name = os.path.basename(download_url)
         download_and_extract(
-            download_url, target_directory, tmp_archive=os.path.join("/tmp", archive_name)
+            download_url,
+            tmp_archive=os.path.join(config.dirs.tmp, archive_name),
+            target_dir=target_directory,
         )
+        if self.extract_single_directory:
+            dir_contents = os.listdir(target_directory)
+            if len(dir_contents) != 1:
+                return
+            target_subdir = os.path.join(target_directory, dir_contents[0])
+            if not os.path.isdir(target_subdir):
+                return
+            os.rename(target_subdir, f"{target_directory}.backup")
+            rm_rf(target_directory)
+            os.rename(f"{target_directory}.backup", target_directory)
 
 
 class PermissionDownloadInstaller(DownloadInstaller, ABC):
