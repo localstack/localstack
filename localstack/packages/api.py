@@ -2,10 +2,10 @@ import abc
 import functools
 import logging
 import os
-from threading import RLock
 from collections import defaultdict
 from enum import Enum
 from inspect import getmodule
+from threading import RLock
 from typing import Callable, List, Optional, Tuple
 
 from plugin import Plugin, PluginManager, PluginSpec
