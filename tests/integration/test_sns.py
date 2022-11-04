@@ -18,8 +18,8 @@ from localstack import config
 from localstack.aws.accounts import get_aws_account_id
 from localstack.aws.api.lambda_ import Runtime
 from localstack.services.awslambda.lambda_utils import LAMBDA_RUNTIME_PYTHON37
-from localstack.services.sqs.legacy.packages import SQS_BACKEND_IMPL
 from localstack.services.sns.provider import PLATFORM_ENDPOINT_MSGS_ENDPOINT, SnsProvider
+from localstack.services.sqs.legacy.packages import SQS_BACKEND_IMPL
 from localstack.testing.aws.util import is_aws_cloud
 from localstack.utils import testutil
 from localstack.utils.net import wait_for_port_closed, wait_for_port_open

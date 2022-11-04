@@ -3,11 +3,9 @@ import logging
 import os
 import re
 import tempfile
+import time
 from typing import Union
 
-import time
-
-from localstack.config import dirs
 from localstack.constants import MAVEN_REPO_URL
 from localstack.utils.archives import untar, unzip
 from localstack.utils.files import load_file, mkdir, new_tmp_file, rm_rf, save_file
@@ -16,12 +14,15 @@ from localstack.utils.run import run
 
 LOG = logging.getLogger(__name__)
 
-ARTIFACTS_REPO = "https://github.com/localstack/localstack-artifacts"
-
-# additional JAR libs required for multi-region and persistence (PRO only) support
-URL_ASPECTJRT = f"{MAVEN_REPO_URL}/org/aspectj/aspectjrt/1.9.7/aspectjrt-1.9.7.jar"
-URL_ASPECTJWEAVER = f"{MAVEN_REPO_URL}/org/aspectj/aspectjweaver/1.9.7/aspectjweaver-1.9.7.jar"
-JAR_URLS = [URL_ASPECTJRT, URL_ASPECTJWEAVER]
+# TODO
+# - Migrate the utility functions (migration path?)
+#   - If using a migration path, we need to re-introduce the install hook.
+# - Ext:
+#   - Externalize the ext SSL cert installer to a package installer
+#   - Externalize download utils function
+#   - Discuss / delete the install_libs.
+#     - This could cause problems with tests (they wouldn't download that stuff automatically on startup anymore).
+#     - This could cause problems because the services using these packages might expect it to be installed.
 
 
 def add_file_to_jar(class_file, class_url, target_jar, base_dir=None):
@@ -85,11 +86,6 @@ def upgrade_jar_file(base_dir: str, file_glob: str, maven_asset: str):
 # -----------------
 # HELPER FUNCTIONS
 # -----------------
-
-
-def log_install_msg(component, verbatim=False):
-    component = component if verbatim else f"local {component} server"
-    LOG.info("Downloading and installing %s. This may take some time.", component)
 
 
 def download_and_extract(archive_url, target_dir, retries=0, sleep=3, tmp_archive=None):

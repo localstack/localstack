@@ -6,17 +6,18 @@ from typing import List
 
 import requests
 
+from localstack.constants import ARTIFACTS_REPO, MAVEN_REPO_URL
 from localstack.packages import InstallTarget, Package, PackageInstaller
 from localstack.packages.core import ExecutableInstaller
-from localstack.services.install import (
-    ARTIFACTS_REPO,
-    JAR_URLS,
-    add_file_to_jar,
-    update_jar_manifest,
-)
+from localstack.services.install import add_file_to_jar, update_jar_manifest
 from localstack.utils.archives import untar
 from localstack.utils.files import file_exists_not_empty, mkdir, new_tmp_file, rm_rf
 from localstack.utils.http import download
+
+# additional JAR libs required for multi-region and persistence (PRO only) support
+URL_ASPECTJRT = f"{MAVEN_REPO_URL}/org/aspectj/aspectjrt/1.9.7/aspectjrt-1.9.7.jar"
+URL_ASPECTJWEAVER = f"{MAVEN_REPO_URL}/org/aspectj/aspectjweaver/1.9.7/aspectjweaver-1.9.7.jar"
+JAR_URLS = [URL_ASPECTJRT, URL_ASPECTJWEAVER]
 
 SFN_PATCH_URL_PREFIX = (
     f"{ARTIFACTS_REPO}/raw/ac84739adc87ff4b5553478f6849134bcd259672/stepfunctions-local-patch"

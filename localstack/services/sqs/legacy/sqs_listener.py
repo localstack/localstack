@@ -11,8 +11,8 @@ from localstack import config
 from localstack.aws.accounts import get_aws_account_id
 from localstack.config import SQS_PORT_EXTERNAL
 from localstack.services.generic_proxy import ProxyListener
-from localstack.services.sqs.legacy.packages import SQS_BACKEND_IMPL
 from localstack.services.sns.provider import unsubscribe_sqs_queue
+from localstack.services.sqs.legacy.packages import SQS_BACKEND_IMPL
 from localstack.services.sqs.utils import is_sqs_queue_url
 from localstack.utils.aws import aws_stack
 from localstack.utils.aws.aws_responses import (

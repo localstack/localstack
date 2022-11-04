@@ -60,6 +60,10 @@ THUNDRA_PYTHON_AGENT_LOCAL_PATH_ON_HOST: Optional[str] = None
 ################
 
 
+def _log_install_msg(component):
+    LOG.info("Downloading and installing %s. This may take some time.", component)
+
+
 def _get_apikey(env_vars):
     thundra_apikey = env_vars.get(THUNDRA_APIKEY_ENV_VAR_NAME)
 
@@ -119,10 +123,11 @@ def _init_java_agent_configs():
     THUNDRA_JAVA_AGENT_LOCAL_PATH = "%s/%s" % (config.dirs.tmp, jar_name)
 
 
+# TODO migrate these install commands to package installers
 def _install_java_agent():
     # Install Thundra Java agent JAR file
     if not os.path.exists(THUNDRA_JAVA_AGENT_LOCAL_PATH):
-        install.log_install_msg("Thundra Java agent", verbatim=True)
+        _log_install_msg("Thundra Java agent")
         install.download(THUNDRA_JAVA_AGENT_REMOTE_URL, THUNDRA_JAVA_AGENT_LOCAL_PATH)
 
 
@@ -232,7 +237,7 @@ def _init_node_agent_configs() -> bool:
 def _install_node_agent() -> bool:
     # Install Thundra Node agent NPM package
     if not os.path.exists(THUNDRA_NODE_AGENT_LOCAL_PATH):
-        install.log_install_msg("Thundra Node agent", verbatim=True)
+        _log_install_msg("Thundra Node agent")
         try:
             install_thundra_cmd = "npm install --prefix %s @thundra/core@%s --no-save" % (
                 THUNDRA_NODE_AGENT_LOCAL_PATH,
@@ -342,7 +347,7 @@ def _init_python_agent_configs() -> bool:
 def _install_python_agent() -> bool:
     # Install Thundra Python agent PIP package
     if not os.path.exists(THUNDRA_PYTHON_AGENT_LOCAL_PATH):
-        install.log_install_msg("Thundra Python agent", verbatim=True)
+        _log_install_msg("Thundra Python agent")
         try:
             install_thundra_cmd = "pip install --target=%s thundra==%s --no-warn-conflicts" % (
                 THUNDRA_PYTHON_AGENT_LOCAL_PATH,

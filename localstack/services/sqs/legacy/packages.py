@@ -2,7 +2,6 @@ import os
 from typing import List
 
 from localstack.packages import InstallTarget, Package, PackageInstaller
-from localstack.services.install import log_install_msg
 from localstack.utils.files import mkdir
 from localstack.utils.http import download
 
@@ -30,7 +29,6 @@ class ElasticMQPackageInstaller(PackageInstaller):
         return os.path.join(install_dir, "elasticmq-server.jar")
 
     def _install(self, target: InstallTarget) -> None:
-        log_install_msg("ElasticMQ")
         install_dir = self._get_install_dir(target)
         mkdir(install_dir)
         download(ELASTICMQ_JAR_URL, self._get_install_marker_path(self._get_install_dir(target)))
