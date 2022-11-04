@@ -1,6 +1,6 @@
 import itertools
 import logging
-from multiprocessing import Pool
+from multiprocessing.pool import ThreadPool
 from typing import List, Optional
 
 import click
@@ -13,7 +13,6 @@ from localstack.packages.api import NoSuchPackageException, PackagesPluginManage
 from localstack.utils.bootstrap import setup_logging
 
 LOG = logging.getLogger(__name__)
-
 
 console = Console()
 
@@ -99,7 +98,7 @@ def install(
 
         config.dirs.mkdirs()
 
-        with Pool(processes=parallel) as pool:
+        with ThreadPool(processes=parallel) as pool:
             pool.starmap(
                 _do_install_package,
                 zip(package_instances, itertools.repeat(version), itertools.repeat(target)),

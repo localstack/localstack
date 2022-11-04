@@ -2,10 +2,10 @@ import abc
 import functools
 import logging
 import os
-import threading
 from collections import defaultdict
 from enum import Enum
 from inspect import getmodule
+from threading import RLock
 from typing import Callable, List, Optional, Tuple
 
 from plugin import Plugin, PluginManager, PluginSpec
@@ -52,14 +52,18 @@ class PackageInstaller(abc.ABC):
     multiple versions).
     """
 
-    def __init__(self, name: str, version: str):
+    def __init__(self, name: str, version: str, install_lock: Optional[RLock] = None):
         """
         :param name: technical package name, f.e. "opensearch"
         :param version: version of the package to install
+        :param install_lock: custom lock which should be used for this package installer instance for the
+                             complete #install call. Defaults to a per-instance reentrant lock (RLock).
+                             Package instances create one installer per version. Therefore, by default, the lock
+                             ensures that package installations of the same package and version are mutually exclusive.
         """
         self.name = name
         self.version = version
-        self.lock = threading.RLock()
+        self.install_lock = install_lock or RLock()
 
     def install(self, target: Optional[InstallTarget] = None) -> None:
         """
@@ -72,15 +76,18 @@ class PackageInstaller(abc.ABC):
         try:
             if not target:
                 target = InstallTarget.VAR_LIBS
-            with self.lock:
-                if not self.is_installed():
-                    LOG.debug("Starting installation of %s...", self.name)
-                    self._prepare_installation(target)
-                    self._install(target)
-                    self._post_process(target)
-                    LOG.debug("Installation of %s finished.", self.name)
-                else:
-                    LOG.debug("Installation of %s skipped (already installed).", self.name)
+            # Skip the installation if it's already installed
+            if not self.is_installed():
+                with self.install_lock:
+                    # Package might have been installed in the meantime, check again
+                    if not self.is_installed():
+                        LOG.debug("Starting installation of %s...", self.name)
+                        self._prepare_installation(target)
+                        self._install(target)
+                        self._post_process(target)
+                        LOG.debug("Installation of %s finished.", self.name)
+            else:
+                LOG.debug("Installation of %s skipped (already installed).", self.name)
         except PackageException as e:
             raise e
         except Exception as e:
