@@ -16,58 +16,12 @@ from localstack.utils.run import run
 
 LOG = logging.getLogger(__name__)
 
-# TODO: install paths should become parameterizable to allow lpm to chose static_libs or var_libs
-INSTALL_DIR_NPM = "%s/node_modules" % dirs.static_libs
-INSTALL_DIR_DDB = "%s/dynamodb" % dirs.static_libs
-INSTALL_DIR_KCL = "%s/amazon-kinesis-client" % dirs.static_libs
-INSTALL_DIR_ELASTICMQ = "%s/elasticmq" % dirs.var_libs
-INSTALL_PATH_DDB_JAR = os.path.join(INSTALL_DIR_DDB, "DynamoDBLocal.jar")
-INSTALL_PATH_KCL_JAR = os.path.join(INSTALL_DIR_KCL, "aws-java-sdk-sts.jar")
-INSTALL_PATH_ELASTICMQ_JAR = os.path.join(INSTALL_DIR_ELASTICMQ, "elasticmq-server.jar")
-
 ARTIFACTS_REPO = "https://github.com/localstack/localstack-artifacts"
 
 # additional JAR libs required for multi-region and persistence (PRO only) support
 URL_ASPECTJRT = f"{MAVEN_REPO_URL}/org/aspectj/aspectjrt/1.9.7/aspectjrt-1.9.7.jar"
 URL_ASPECTJWEAVER = f"{MAVEN_REPO_URL}/org/aspectj/aspectjweaver/1.9.7/aspectjweaver-1.9.7.jar"
 JAR_URLS = [URL_ASPECTJRT, URL_ASPECTJWEAVER]
-
-# Target version for javac, to ensure compatibility with earlier JREs
-JAVAC_TARGET_VERSION = "1.8"
-
-# SQS backend implementation provider - either "moto" or "elasticmq"
-SQS_BACKEND_IMPL = os.environ.get("SQS_PROVIDER") or "moto"
-
-
-# BEGIN OF SECTION
-
-# remove this whole section once its absence doesn't cause any problems anymore
-INSTALL_DIR_STEPFUNCTIONS = "%s/stepfunctions" % dirs.static_libs
-INSTALL_PATH_STEPFUNCTIONS_JAR = os.path.join(INSTALL_DIR_STEPFUNCTIONS, "StepFunctionsLocal.jar")
-IMAGE_NAME_SFN_LOCAL = "amazon/aws-stepfunctions-local:1.7.9"
-SFN_PATCH_URL_PREFIX = (
-    f"{ARTIFACTS_REPO}/raw/ac84739adc87ff4b5553478f6849134bcd259672/stepfunctions-local-patch"
-)
-SFN_PATCH_CLASS1 = "com/amazonaws/stepfunctions/local/runtime/Config.class"
-SFN_PATCH_CLASS2 = (
-    "com/amazonaws/stepfunctions/local/runtime/executors/task/LambdaTaskStateExecutor.class"
-)
-SFN_PATCH_CLASS_STARTER = "cloud/localstack/StepFunctionsStarter.class"
-SFN_PATCH_CLASS_REGION = "cloud/localstack/RegionAspect.class"
-SFN_PATCH_CLASS_ASYNC2SERVICEAPI = "cloud/localstack/Async2ServiceApi.class"
-SFN_PATCH_CLASS_DESCRIBEEXECUTIONPARSED = "cloud/localstack/DescribeExecutionParsed.class"
-SFN_PATCH_FILE_METAINF = "META-INF/aop.xml"
-
-SFN_IMAGE = "amazon/aws-stepfunctions-local"
-SFN_IMAGE_LAYER_DIGEST = "sha256:e7b256bdbc9d58c20436970e8a56bd03581b891a784b00fea7385faff897b777"
-
-SFN_AWS_SDK_URL_PREFIX = (
-    f"{ARTIFACTS_REPO}/raw/a4adc8f4da9c7ec0d93b50ca5b73dd14df791c0e/stepfunctions-internal-awssdk"
-)
-SFN_AWS_SDK_LAMBDA_ZIP_FILE = f"{SFN_AWS_SDK_URL_PREFIX}/awssdk.zip"
-
-
-# END OF SECTION
 
 
 def add_file_to_jar(class_file, class_url, target_jar, base_dir=None):

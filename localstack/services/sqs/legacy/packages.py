@@ -37,3 +37,6 @@ class ElasticMQPackageInstaller(PackageInstaller):
 
 
 elasticmq_package = ElasticMQPackage()
+
+# SQS backend implementation provider - either "moto" or "elasticmq"
+SQS_BACKEND_IMPL = os.environ.get("SQS_PROVIDER") or "moto"
