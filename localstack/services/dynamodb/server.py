@@ -106,8 +106,13 @@ def create_dynamodb_server(
     server = DynamodbServer(port)
     db_path = f"{config.dirs.data}/dynamodb" if not db_path and config.dirs.data else db_path
 
-    if is_env_true("DYNAMODB_IN_MEMORY"):
+    if is_env_true("DYNAMODB_IN_MEMORY") or not (
+        config.PERSISTENCE and os.environ.get("LOCALSTACK_API_KEY", "").strip()
+    ):
+
         # the DYNAMODB_IN_MEMORY variable takes precedence and will set the DB path to None which forces inMemory=true
+        # Furthermore, avoid cases where DBLocal data is persisted but not the Store data leading to an inconsistent state (#7118)
+        # The naive way to do this is to check whether persistence is enabled and API key is set.
         db_path = None
 
     if db_path:
