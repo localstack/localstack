@@ -94,3 +94,12 @@ class TestCdkInit:
             len([func for func in functions if func["Handler"] == "index.authenticateUserHandler"])
             == 1
         )
+
+
+class TestCdkSampleApp:
+
+    def test_cdk_sample(self, deploy_cfn_template, cfn_client):
+        deploy_cfn_template(
+            template_path=os.path.join(os.path.dirname(__file__), "../../templates/cfn_cdk_sample_app.yaml"),
+            max_wait=30
+        )
