@@ -84,3 +84,6 @@ available."""
 
 on_infra_shutdown = hook_spec(HOOKS_ON_INFRA_SHUTDOWN)
 """Hooks that are execute when localstack shuts down."""
+
+# TODO this is just for running the pipeline. remove this before merging.
+install = hook_spec("localstack.hooks.install")
