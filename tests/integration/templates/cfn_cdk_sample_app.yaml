@@ -39,3 +39,10 @@ Resources:
       - CdksampleQueuePolicyFA91005A
   CdksampleTopic7AD235A4:
     Type: AWS::SNS::Topic
+Outputs:
+  QueueUrl:
+    Value:
+      Ref: CdksampleQueue3139C8CD
+  TopicArn:
+    Value:
+      Ref: CdksampleTopic7AD235A4
