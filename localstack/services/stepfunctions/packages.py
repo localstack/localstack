@@ -9,8 +9,7 @@ import requests
 from localstack.constants import ARTIFACTS_REPO, MAVEN_REPO_URL
 from localstack.packages import InstallTarget, Package, PackageInstaller
 from localstack.packages.core import ExecutableInstaller
-from localstack.services.install import add_file_to_jar, update_jar_manifest
-from localstack.utils.archives import untar
+from localstack.utils.archives import add_file_to_jar, untar, update_jar_manifest
 from localstack.utils.files import file_exists_not_empty, mkdir, new_tmp_file, rm_rf
 from localstack.utils.http import download
 

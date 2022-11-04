@@ -17,8 +17,8 @@ from localstack.constants import (
     OPENSEARCH_PLUGIN_LIST,
 )
 from localstack.packages import InstallTarget, Package, PackageInstaller
-from localstack.services.install import download_and_extract_with_retry
 from localstack.services.opensearch import versions
+from localstack.utils.archives import download_and_extract_with_retry
 from localstack.utils.files import chmod_r, load_file, mkdir, rm_rf, save_file
 from localstack.utils.run import run
 from localstack.utils.sync import SynchronizedDefaultDict, retry

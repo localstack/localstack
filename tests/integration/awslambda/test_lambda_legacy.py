@@ -14,10 +14,10 @@ from localstack.services.awslambda.lambda_api import (
 )
 from localstack.services.awslambda.lambda_utils import LAMBDA_DEFAULT_HANDLER
 from localstack.services.awslambda.packages import awslambda_go_runtime_package
-from localstack.services.install import download_and_extract
 from localstack.testing.aws.lambda_utils import is_old_provider
 from localstack.testing.pytest.fixtures import skip_if_pro_enabled
 from localstack.utils import testutil
+from localstack.utils.archives import download_and_extract
 from localstack.utils.aws import aws_stack
 from localstack.utils.files import load_file
 from localstack.utils.platform import get_arch, get_os
