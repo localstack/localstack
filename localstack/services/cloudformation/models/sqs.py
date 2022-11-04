@@ -25,7 +25,7 @@ class QueuePolicy(GenericBaseModel):
         return "AWS::SQS::QueuePolicy"
 
     def fetch_state(self, stack_name, resources):
-        if self.resource_json.get('PhysicalResourceId'):
+        if self.resource_json.get("PhysicalResourceId"):
             return {"something": "something"}  # gotta return <something> since {} is falsey :)
 
     @classmethod
