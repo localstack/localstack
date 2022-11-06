@@ -1,5 +1,6 @@
 import ast
 import base64
+import copy
 import json
 import logging
 from enum import Enum
@@ -179,8 +180,16 @@ class Templates:
     @staticmethod
     def build_variables_mapping(api_context: ApiInvocationContext):
         # TODO: make this (dict) an object so usages of "render_vtl" variables are defined
+        ctx = copy.deepcopy(api_context.context or {})
+        # https://docs.aws.amazon.com/apigateway/latest/developerguide/apigateway-override-request-response-parameters.html
+        # create namespace for request override
+        ctx["requestOverride"] = {
+            "header": {},
+            "path": {},
+            "querystring": {},
+        }
         return {
-            "context": api_context.context or {},
+            "context": ctx,
             "stage_variables": api_context.stage_variables or {},
             "input": {
                 "body": api_context.data_as_string(),
@@ -214,6 +223,12 @@ class RequestTemplates(Templates):
 
         variables = self.build_variables_mapping(api_context)
         result = self.render_vtl(template.strip(), variables=variables)
+
+        # set the request overrides into context
+        api_context.headers.update(
+            variables.get("context", {}).get("requestOverride", {}).get("header", {})
+        )
+
         LOG.info(f"Endpoint request body after transformations:\n{result}")
         return result
 
