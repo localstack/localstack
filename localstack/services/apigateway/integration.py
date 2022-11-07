@@ -27,6 +27,8 @@ from localstack.utils import common
 from localstack.utils.aws import aws_stack
 from localstack.utils.aws.arns import extract_region_from_arn
 from localstack.utils.aws.aws_responses import LambdaResponse, requests_response
+from localstack.utils.aws.aws_stack import extract_region_from_arn
+from localstack.utils.aws.templating import VtlTemplate
 from localstack.utils.collections import remove_attributes
 from localstack.utils.common import make_http_request, to_str
 from localstack.utils.http import canonicalize_headers, parse_request_data
@@ -321,22 +323,31 @@ class LambdaProxyIntegration(BackendIntegration):
 
 
 class LambdaIntegration(BackendIntegration):
-    def invoke(self, invocation_context: ApiInvocationContext):
+    def _lambda_integration_uri(self, invocation_context: ApiInvocationContext):
+        """
+        https://docs.aws.amazon.com/apigateway/latest/developerguide/aws-api-gateway-stage-variables-reference.html
+        """
         uri = (
             invocation_context.integration.get("uri")
             or invocation_context.integration.get("integrationUri")
             or ""
         )
-        func_arn = uri
+        variables = {
+            "stageVariables": invocation_context.stage_variables
+        }
+        uri = VtlTemplate().render_vtl(uri, variables)
         if ":lambda:path" in uri:
-            func_arn = uri.split(":lambda:path")[1].split("functions/")[1].split("/invocations")[0]
+            uri = uri.split(":lambda:path")[1].split("functions/")[1].split("/invocations")[0]
+        return uri
 
+    def invoke(self, invocation_context: ApiInvocationContext):
         headers = helpers.create_invocation_headers(invocation_context)
         invocation_context.context = helpers.get_event_request_context(invocation_context)
         invocation_context.stage_variables = helpers.get_stage_variables(invocation_context)
         if invocation_context.authorizer_type:
             invocation_context.context["authorizer"] = invocation_context.auth_context
 
+        func_arn = self._lambda_integration_uri(invocation_context)
         request_templates = RequestTemplates()
         event = request_templates.render(invocation_context) or b""
         asynchronous = headers.get("X-Amz-Invocation-Type", "").strip("'") == "Event"
