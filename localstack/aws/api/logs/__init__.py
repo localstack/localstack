@@ -9,6 +9,7 @@ else:
 from localstack.aws.api import RequestContext, ServiceException, ServiceRequest, handler
 
 AccessPolicy = str
+AmazonResourceName = str
 Arn = str
 Days = int
 DefaultValue = float
@@ -195,6 +196,13 @@ class ServiceUnavailableException(ServiceException):
     code: str = "ServiceUnavailableException"
     sender_fault: bool = False
     status_code: int = 400
+
+
+class TooManyTagsException(ServiceException):
+    code: str = "TooManyTagsException"
+    sender_fault: bool = False
+    status_code: int = 400
+    resourceName: Optional[AmazonResourceName]
 
 
 class UnrecognizedClientException(ServiceException):
@@ -667,6 +675,14 @@ class InputLogEvent(TypedDict, total=False):
 InputLogEvents = List[InputLogEvent]
 
 
+class ListTagsForResourceRequest(ServiceRequest):
+    resourceArn: AmazonResourceName
+
+
+class ListTagsForResourceResponse(TypedDict, total=False):
+    tags: Optional[Tags]
+
+
 class ListTagsLogGroupRequest(ServiceRequest):
     logGroupName: LogGroupName
 
@@ -694,6 +710,7 @@ class PutDestinationRequest(ServiceRequest):
     destinationName: DestinationName
     targetArn: TargetArn
     roleArn: RoleArn
+    tags: Optional[Tags]
 
 
 class PutDestinationResponse(TypedDict, total=False):
@@ -780,11 +797,17 @@ class StopQueryResponse(TypedDict, total=False):
     success: Optional[Success]
 
 
+TagKeyList = List[TagKey]
 TagList = List[TagKey]
 
 
 class TagLogGroupRequest(ServiceRequest):
     logGroupName: LogGroupName
+    tags: Tags
+
+
+class TagResourceRequest(ServiceRequest):
+    resourceArn: AmazonResourceName
     tags: Tags
 
 
@@ -803,6 +826,11 @@ class TestMetricFilterResponse(TypedDict, total=False):
 class UntagLogGroupRequest(ServiceRequest):
     logGroupName: LogGroupName
     tags: TagList
+
+
+class UntagResourceRequest(ServiceRequest):
+    resourceArn: AmazonResourceName
+    tagKeys: TagKeyList
 
 
 class LogsApi:
@@ -1035,6 +1063,12 @@ class LogsApi:
     ) -> GetQueryResultsResponse:
         raise NotImplementedError
 
+    @handler("ListTagsForResource")
+    def list_tags_for_resource(
+        self, context: RequestContext, resource_arn: AmazonResourceName
+    ) -> ListTagsForResourceResponse:
+        raise NotImplementedError
+
     @handler("ListTagsLogGroup")
     def list_tags_log_group(
         self, context: RequestContext, log_group_name: LogGroupName
@@ -1048,6 +1082,7 @@ class LogsApi:
         destination_name: DestinationName,
         target_arn: TargetArn,
         role_arn: RoleArn,
+        tags: Tags = None,
     ) -> PutDestinationResponse:
         raise NotImplementedError
 
@@ -1145,6 +1180,12 @@ class LogsApi:
     ) -> None:
         raise NotImplementedError
 
+    @handler("TagResource")
+    def tag_resource(
+        self, context: RequestContext, resource_arn: AmazonResourceName, tags: Tags
+    ) -> None:
+        raise NotImplementedError
+
     @handler("TestMetricFilter")
     def test_metric_filter(
         self,
@@ -1157,5 +1198,11 @@ class LogsApi:
     @handler("UntagLogGroup")
     def untag_log_group(
         self, context: RequestContext, log_group_name: LogGroupName, tags: TagList
+    ) -> None:
+        raise NotImplementedError
+
+    @handler("UntagResource")
+    def untag_resource(
+        self, context: RequestContext, resource_arn: AmazonResourceName, tag_keys: TagKeyList
     ) -> None:
         raise NotImplementedError
