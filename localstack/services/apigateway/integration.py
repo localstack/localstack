@@ -332,9 +332,7 @@ class LambdaIntegration(BackendIntegration):
             or invocation_context.integration.get("integrationUri")
             or ""
         )
-        variables = {
-            "stageVariables": invocation_context.stage_variables
-        }
+        variables = {"stageVariables": invocation_context.stage_variables}
         uri = VtlTemplate().render_vtl(uri, variables)
         if ":lambda:path" in uri:
             uri = uri.split(":lambda:path")[1].split("functions/")[1].split("/invocations")[0]
