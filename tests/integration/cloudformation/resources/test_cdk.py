@@ -5,6 +5,7 @@ import pytest
 import requests
 
 from localstack import config
+from localstack.testing.snapshots.transformer import SortingTransformer
 from localstack.utils.aws import aws_stack
 from localstack.utils.files import load_file
 from localstack.utils.strings import short_uid
@@ -94,3 +95,50 @@ class TestCdkInit:
             len([func for func in functions if func["Handler"] == "index.authenticateUserHandler"])
             == 1
         )
+
+
+class TestCdkSampleApp:
+    @pytest.mark.skip_snapshot_verify(
+        paths=[
+            "$..Attributes.Policy.Statement..Condition",
+            "$..Attributes.Policy.Statement..Resource",
+            "$..StackResourceSummaries..PhysicalResourceId",
+        ]
+    )
+    @pytest.mark.aws_validated
+    def test_cdk_sample(self, deploy_cfn_template, cfn_client, sqs_client, snapshot):
+        snapshot.add_transformer(snapshot.transform.cloudformation_api())
+        snapshot.add_transformer(snapshot.transform.sqs_api())
+        snapshot.add_transformer(snapshot.transform.sns_api())
+        snapshot.add_transformer(
+            SortingTransformer("StackResourceSummaries", lambda x: x["LogicalResourceId"]),
+            priority=-1,
+        )
+
+        deploy = deploy_cfn_template(
+            template_path=os.path.join(
+                os.path.dirname(__file__), "../../templates/cfn_cdk_sample_app.yaml"
+            ),
+            max_wait=120,
+        )
+
+        queue_url = deploy.outputs["QueueUrl"]
+
+        queue_attr_policy = sqs_client.get_queue_attributes(
+            QueueUrl=queue_url, AttributeNames=["Policy"]
+        )
+        snapshot.match("queue_attr_policy", queue_attr_policy)
+        stack_resources = cfn_client.list_stack_resources(StackName=deploy.stack_id)
+        snapshot.match("stack_resources", stack_resources)
+
+        # physical resource id of the queue policy AWS::SQS::QueuePolicy
+        queue_policy_resource = cfn_client.describe_stack_resource(
+            StackName=deploy.stack_id, LogicalResourceId="CdksampleQueuePolicyFA91005A"
+        )
+        snapshot.add_transformer(
+            snapshot.transform.regex(
+                queue_policy_resource["StackResourceDetail"]["PhysicalResourceId"],
+                "<queue-policy-physid>",
+            )
+        )
+        # TODO: make sure phys id of the resource conforms to this format: stack-d98dcad5-CdksampleQueuePolicyFA91005A-1WYVV4PMCWOYI

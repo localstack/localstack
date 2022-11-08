@@ -1,0 +1,81 @@
+{
+  "tests/integration/cloudformation/resources/test_cdk.py::TestCdkSampleApp::test_cdk_sample": {
+    "recorded-date": "04-11-2022, 15:15:44",
+    "recorded-content": {
+      "queue_attr_policy": {
+        "Attributes": {
+          "Policy": {
+            "Version": "2012-10-17",
+            "Statement": [
+              {
+                "Effect": "Allow",
+                "Principal": {
+                  "Service": "sns.amazonaws.com"
+                },
+                "Action": "sqs:SendMessage",
+                "Resource": "arn:aws:sqs:<region>:111111111111:<resource:1>",
+                "Condition": {
+                  "ArnEquals": {
+                    "aws:SourceArn": "arn:aws:sns:<region>:111111111111:<resource:2>"
+                  }
+                }
+              }
+            ]
+          }
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "stack_resources": {
+        "StackResourceSummaries": [
+          {
+            "DriftInformation": {
+              "StackResourceDriftStatus": "NOT_CHECKED"
+            },
+            "LastUpdatedTimestamp": "timestamp",
+            "LogicalResourceId": "CdksampleQueue3139C8CD",
+            "PhysicalResourceId": "https://sqs.<region>.amazonaws.com/111111111111/<resource:1>",
+            "ResourceStatus": "CREATE_COMPLETE",
+            "ResourceType": "AWS::SQS::Queue"
+          },
+          {
+            "DriftInformation": {
+              "StackResourceDriftStatus": "NOT_CHECKED"
+            },
+            "LastUpdatedTimestamp": "timestamp",
+            "LogicalResourceId": "CdksampleQueueCdksampleStackCdksampleTopicCB3FDFDDC0BCF47C",
+            "PhysicalResourceId": "arn:aws:sns:<region>:111111111111:<resource:2>:<resource:3>",
+            "ResourceStatus": "CREATE_COMPLETE",
+            "ResourceType": "AWS::SNS::Subscription"
+          },
+          {
+            "DriftInformation": {
+              "StackResourceDriftStatus": "NOT_CHECKED"
+            },
+            "LastUpdatedTimestamp": "timestamp",
+            "LogicalResourceId": "CdksampleQueuePolicyFA91005A",
+            "PhysicalResourceId": "<queue-policy-physid>",
+            "ResourceStatus": "CREATE_COMPLETE",
+            "ResourceType": "AWS::SQS::QueuePolicy"
+          },
+          {
+            "DriftInformation": {
+              "StackResourceDriftStatus": "NOT_CHECKED"
+            },
+            "LastUpdatedTimestamp": "timestamp",
+            "LogicalResourceId": "CdksampleTopic7AD235A4",
+            "PhysicalResourceId": "arn:aws:sns:<region>:111111111111:<resource:2>",
+            "ResourceStatus": "CREATE_COMPLETE",
+            "ResourceType": "AWS::SNS::Topic"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  }
+}
