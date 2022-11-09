@@ -212,7 +212,12 @@ class TestEdgeAPI:
         relay_proxy.stop()
 
     def test_invoke_sns_sqs_integration_using_edge_port(
-        self, sqs_create_queue, sqs_client, sns_client, sns_create_topic, sns_subscription
+        self,
+        sqs_create_queue,
+        sqs_client,
+        sns_client,
+        sns_create_topic,
+        sns_create_sqs_subscription,
     ):
         topic_name = f"topic-{short_uid()}"
         queue_name = f"queue-{short_uid()}"
@@ -224,7 +229,7 @@ class TestEdgeAPI:
         topic_arn = topic["TopicArn"]
         queue_url = sqs_create_queue(QueueName=queue_name)
         sqs_client.get_queue_attributes(QueueUrl=queue_url, AttributeNames=["QueueArn"])
-        sns_subscription(TopicArn=topic_arn, Protocol="sqs", Endpoint=queue_url)
+        sns_create_sqs_subscription(topic_arn=topic_arn, queue_url=queue_url)
         sns_client.publish(TargetArn=topic_arn, Message="Test msg")
 
         response = sqs_client.receive_message(

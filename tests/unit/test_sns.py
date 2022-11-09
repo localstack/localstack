@@ -6,11 +6,9 @@ from base64 import b64encode
 import dateutil.parser
 import pytest
 
-from localstack.services.sns.provider import (
-    check_filter_policy,
-    create_sns_message_body,
-    is_raw_message_delivery,
-)
+from localstack.services.sns.models import SnsMessage
+from localstack.services.sns.provider import is_raw_message_delivery
+from localstack.services.sns.publisher import SubscriptionFilter, create_sns_message_body
 
 
 @pytest.fixture
@@ -27,14 +25,19 @@ def subscriber():
 class TestSns:
     def test_create_sns_message_body_raw_message_delivery(self, subscriber):
         subscriber["RawMessageDelivery"] = "true"
-        action = {"Message": ["msg"]}
-        result = create_sns_message_body(subscriber, action)
+        message_ctx = SnsMessage(
+            message="msg",
+            type="Notification",
+        )
+        result = create_sns_message_body(message_ctx, subscriber)
         assert "msg" == result
 
     def test_create_sns_message_body(self, subscriber):
-        action = {"Message": ["msg"]}
-
-        result_str = create_sns_message_body(subscriber, action, str(uuid.uuid4()))
+        message_ctx = SnsMessage(
+            message="msg",
+            type="Notification",
+        )
+        result_str = create_sns_message_body(message_ctx, subscriber)
         result = json.loads(result_str)
         try:
             uuid.UUID(result.pop("MessageId"))
@@ -62,10 +65,6 @@ class TestSns:
         assert expected_sns_body == result
 
         # Now add a subject and message attributes
-        action = {
-            "Message": ["msg"],
-            "Subject": ["subject"],
-        }
         message_attributes = {
             "attr1": {
                 "DataType": "String",
@@ -76,9 +75,13 @@ class TestSns:
                 "BinaryValue": b"\x02\x03\x04",
             },
         }
-        result_str = create_sns_message_body(
-            subscriber, action, str(uuid.uuid4()), message_attributes
+        message_ctx = SnsMessage(
+            type="Notification",
+            message="msg",
+            subject="subject",
+            message_attributes=message_attributes,
         )
+        result_str = create_sns_message_body(message_ctx, subscriber)
         result = json.loads(result_str)
         del result["MessageId"]
         del result["Timestamp"]
@@ -105,56 +108,61 @@ class TestSns:
         assert msg == result
 
     def test_create_sns_message_body_json_structure(self, subscriber):
-        action = {
-            "Message": ['{"default": {"message": "abc"}}'],
-            "MessageStructure": ["json"],
-        }
-        result_str = create_sns_message_body(subscriber, action)
+        message_ctx = SnsMessage(
+            type="Notification",
+            message=json.loads('{"default": {"message": "abc"}}'),
+            message_structure="json",
+        )
+
+        result_str = create_sns_message_body(message_ctx, subscriber)
         result = json.loads(result_str)
 
         assert {"message": "abc"} == result["Message"]
 
     def test_create_sns_message_body_json_structure_raw_delivery(self, subscriber):
         subscriber["RawMessageDelivery"] = "true"
-        action = {
-            "Message": ['{"default": {"message": "abc"}}'],
-            "MessageStructure": ["json"],
-        }
-        result = create_sns_message_body(subscriber, action)
+        message_ctx = SnsMessage(
+            type="Notification",
+            message=json.loads('{"default": {"message": "abc"}}'),
+            message_structure="json",
+        )
+
+        result = create_sns_message_body(message_ctx, subscriber)
 
         assert {"message": "abc"} == result
 
-    def test_create_sns_message_body_json_structure_without_default_key(self, subscriber):
-        action = {"Message": ['{"message": "abc"}'], "MessageStructure": ["json"]}
-        with pytest.raises(Exception) as exc:
-            create_sns_message_body(subscriber, action)
-        assert "Unable to find 'default' key in message payload" == str(exc.value)
-
     def test_create_sns_message_body_json_structure_sqs_protocol(self, subscriber):
-        action = {
-            "Message": ['{"default": "default message", "sqs": "sqs message"}'],
-            "MessageStructure": ["json"],
-        }
-        result_str = create_sns_message_body(subscriber, action)
-        result = json.loads(result_str)
+        message_ctx = SnsMessage(
+            type="Notification",
+            message=json.loads('{"default": "default message", "sqs": "sqs message"}'),
+            message_structure="json",
+        )
 
+        result_str = create_sns_message_body(message_ctx, subscriber)
+        result = json.loads(result_str)
         assert "sqs message" == result["Message"]
 
     def test_create_sns_message_body_json_structure_raw_delivery_sqs_protocol(self, subscriber):
         subscriber["RawMessageDelivery"] = "true"
-        action = {
-            "Message": [
+        message_ctx = SnsMessage(
+            type="Notification",
+            message=json.loads(
                 '{"default": {"message": "default version"}, "sqs": {"message": "sqs version"}}'
-            ],
-            "MessageStructure": ["json"],
-        }
-        result = create_sns_message_body(subscriber, action)
+            ),
+            message_structure="json",
+        )
+
+        result = create_sns_message_body(message_ctx, subscriber)
 
         assert {"message": "sqs version"} == result
 
     def test_create_sns_message_timestamp_millis(self, subscriber):
-        action = {"Message": ["msg"]}
-        result_str = create_sns_message_body(subscriber, action)
+        message_ctx = SnsMessage(
+            type="Notification",
+            message="msg",
+        )
+
+        result_str = create_sns_message_body(message_ctx, subscriber)
         result = json.loads(result_str)
         timestamp = result.pop("Timestamp")
         end = timestamp[-5:]
@@ -492,11 +500,14 @@ class TestSns:
             ),
         ]
 
+        sub_filter = SubscriptionFilter()
         for test in test_data:
             filter_policy = test[1]
             attributes = test[2]
             expected = test[3]
-            assert expected == check_filter_policy(filter_policy, attributes)
+            assert expected == sub_filter.check_filter_policy_on_message_attributes(
+                filter_policy, attributes
+            )
 
     def test_is_raw_message_delivery(self, subscriber):
         valid_true_values = ["true", "True", True]
