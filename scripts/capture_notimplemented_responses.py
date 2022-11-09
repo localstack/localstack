@@ -132,7 +132,7 @@ def map_to_notimplemented(row: RowEntry) -> bool:
         row["service"]
         in [
             "route53",
-            "s3",
+            # "s3", -> for s3 404 not found is returned in some case when the bucket does not exist
             "s3control",
         ]
         and row["status_code"] == 404
