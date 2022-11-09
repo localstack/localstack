@@ -329,7 +329,7 @@
     }
   },
   "tests/integration/test_dynamodb.py::TestDynamoDB::test_data_encoding_consistency": {
-    "recorded-date": "23-09-2022, 13:03:42",
+    "recorded-date": "09-11-2022, 10:59:09",
     "recorded-content": {
       "GetItem": {
         "data": {
@@ -337,6 +337,9 @@
         },
         "id": {
           "S": "id1"
+        },
+        "version": {
+          "N": "1"
         }
       },
       "GetRecords": {
@@ -352,10 +355,13 @@
           },
           "id": {
             "S": "id1"
+          },
+          "version": {
+            "N": "1"
           }
         },
-        "SequenceNumber": "100000000023871950156",
-        "SizeBytes": 15,
+        "SequenceNumber": "49635015294555906768458308548925564526240922751190695938",
+        "SizeBytes": 67,
         "StreamViewType": "NEW_AND_OLD_IMAGES"
       }
     }

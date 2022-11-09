@@ -1512,7 +1512,7 @@ class TestDynamoDB:
 
         # put item
         dynamodb_client.put_item(
-            TableName=table_name, Item={"id": {"S": "id1"}, "data": {"B": b"\x90"}}
+            TableName=table_name, Item={"id": {"S": "id1"}, "version": {"N": "1"}, "data": {"B": b"\x90"}}
         )
 
         # get item
