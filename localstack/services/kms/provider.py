@@ -90,7 +90,6 @@ from localstack.aws.api.kms import (
 )
 from localstack.services.kms.models import (
     KeyImportState,
-    KmsAlias,
     KmsCryptoKey,
     KmsGrant,
     KmsKey,
@@ -724,8 +723,7 @@ class KmsProvider(KmsApi, ServiceLifecycleHook):
             context, request.get("TargetKeyId"), enabled_key_allowed=True, disabled_key_allowed=True
         )
         request["TargetKeyId"] = key.metadata.get("KeyId")
-        alias = KmsAlias(request)
-        store.aliases[alias_name] = alias
+        store.create_alias(request)
 
     @handler("DeleteAlias", expand=False)
     def delete_alias(self, context: RequestContext, request: DeleteAliasRequest) -> None:
