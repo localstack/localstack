@@ -45,6 +45,7 @@ DedicatedHostFlag = bool
 DedicatedHostId = str
 DefaultNetworkCardIndex = int
 DefaultingDhcpOptionsId = str
+DescribeAddressTransfersMaxResults = int
 DescribeByoipCidrsMaxResults = int
 DescribeCapacityReservationFleetsMaxResults = int
 DescribeCapacityReservationsMaxResults = int
@@ -314,6 +315,12 @@ class AddressAttributeName(str):
 class AddressFamily(str):
     ipv4 = "ipv4"
     ipv6 = "ipv6"
+
+
+class AddressTransferStatus(str):
+    pending = "pending"
+    disabled = "disabled"
+    accepted = "accepted"
 
 
 class Affinity(str):
@@ -2777,6 +2784,44 @@ class AcceleratorTotalMemoryMiBRequest(TypedDict, total=False):
 AcceleratorTypeSet = List[AcceleratorType]
 
 
+class Tag(TypedDict, total=False):
+    Key: Optional[String]
+    Value: Optional[String]
+
+
+TagList = List[Tag]
+
+
+class TagSpecification(TypedDict, total=False):
+    ResourceType: Optional[ResourceType]
+    Tags: Optional[TagList]
+
+
+TagSpecificationList = List[TagSpecification]
+
+
+class AcceptAddressTransferRequest(ServiceRequest):
+    Address: String
+    TagSpecifications: Optional[TagSpecificationList]
+    DryRun: Optional[Boolean]
+
+
+MillisecondDateTime = datetime
+
+
+class AddressTransfer(TypedDict, total=False):
+    PublicIp: Optional[String]
+    AllocationId: Optional[String]
+    TransferAccountId: Optional[String]
+    TransferOfferExpirationTimestamp: Optional[MillisecondDateTime]
+    TransferOfferAcceptedTimestamp: Optional[MillisecondDateTime]
+    AddressTransferStatus: Optional[AddressTransferStatus]
+
+
+class AcceptAddressTransferResult(TypedDict, total=False):
+    AddressTransfer: Optional[AddressTransfer]
+
+
 class TargetConfigurationRequest(TypedDict, total=False):
     InstanceCount: Optional[Integer]
     OfferingId: ReservedInstancesOfferingId
@@ -2832,12 +2877,6 @@ class AcceptTransitGatewayPeeringAttachmentRequest(ServiceRequest):
     DryRun: Optional[Boolean]
 
 
-class Tag(TypedDict, total=False):
-    Key: Optional[String]
-    Value: Optional[String]
-
-
-TagList = List[Tag]
 DateTime = datetime
 
 
@@ -3316,6 +3355,7 @@ class AddressAttribute(TypedDict, total=False):
 
 AddressList = List[Address]
 AddressSet = List[AddressAttribute]
+AddressTransferList = List[AddressTransfer]
 
 
 class AdvertiseByoipCidrRequest(ServiceRequest):
@@ -3332,14 +3372,6 @@ class ByoipCidr(TypedDict, total=False):
 
 class AdvertiseByoipCidrResult(TypedDict, total=False):
     ByoipCidr: Optional[ByoipCidr]
-
-
-class TagSpecification(TypedDict, total=False):
-    ResourceType: Optional[ResourceType]
-    Tags: Optional[TagList]
-
-
-TagSpecificationList = List[TagSpecification]
 
 
 class AllocateAddressRequest(ServiceRequest):
@@ -3787,7 +3819,6 @@ class AssociatedTargetNetwork(TypedDict, total=False):
 
 AssociatedTargetNetworkSet = List[AssociatedTargetNetwork]
 AssociationIdList = List[IamInstanceProfileAssociationId]
-MillisecondDateTime = datetime
 
 
 class AthenaIntegration(TypedDict, total=False):
@@ -4193,6 +4224,15 @@ class CancelConversionRequest(ServiceRequest):
 
 class CancelExportTaskRequest(ServiceRequest):
     ExportTaskId: ExportVmTaskId
+
+
+class CancelImageLaunchPermissionRequest(ServiceRequest):
+    ImageId: ImageId
+    DryRun: Optional[Boolean]
+
+
+class CancelImageLaunchPermissionResult(TypedDict, total=False):
+    Return: Optional[Boolean]
 
 
 class CancelImportTaskRequest(ServiceRequest):
@@ -8554,6 +8594,18 @@ class DescribeAccountAttributesResult(TypedDict, total=False):
     AccountAttributes: Optional[AccountAttributeList]
 
 
+class DescribeAddressTransfersRequest(ServiceRequest):
+    AllocationIds: Optional[AllocationIdList]
+    NextToken: Optional[String]
+    MaxResults: Optional[DescribeAddressTransfersMaxResults]
+    DryRun: Optional[Boolean]
+
+
+class DescribeAddressTransfersResult(TypedDict, total=False):
+    AddressTransfers: Optional[AddressTransferList]
+    NextToken: Optional[String]
+
+
 class DescribeAddressesAttributeRequest(ServiceRequest):
     AllocationIds: Optional[AllocationIds]
     Attribute: Optional[AddressAttributeName]
@@ -12449,6 +12501,15 @@ class DetachVpnGatewayRequest(ServiceRequest):
     DryRun: Optional[Boolean]
 
 
+class DisableAddressTransferRequest(ServiceRequest):
+    AllocationId: AllocationId
+    DryRun: Optional[Boolean]
+
+
+class DisableAddressTransferResult(TypedDict, total=False):
+    AddressTransfer: Optional[AddressTransfer]
+
+
 class DisableEbsEncryptionByDefaultRequest(ServiceRequest):
     DryRun: Optional[Boolean]
 
@@ -12748,6 +12809,16 @@ class ElasticInferenceAccelerator(TypedDict, total=False):
 
 
 ElasticInferenceAccelerators = List[ElasticInferenceAccelerator]
+
+
+class EnableAddressTransferRequest(ServiceRequest):
+    AllocationId: AllocationId
+    TransferAccountId: String
+    DryRun: Optional[Boolean]
+
+
+class EnableAddressTransferResult(TypedDict, total=False):
+    AddressTransfer: Optional[AddressTransfer]
 
 
 class EnableEbsEncryptionByDefaultRequest(ServiceRequest):
@@ -15784,6 +15855,16 @@ class Ec2Api:
     service = "ec2"
     version = "2016-11-15"
 
+    @handler("AcceptAddressTransfer")
+    def accept_address_transfer(
+        self,
+        context: RequestContext,
+        address: String,
+        tag_specifications: TagSpecificationList = None,
+        dry_run: Boolean = None,
+    ) -> AcceptAddressTransferResult:
+        raise NotImplementedError
+
     @handler("AcceptReservedInstancesExchangeQuote")
     def accept_reserved_instances_exchange_quote(
         self,
@@ -16220,6 +16301,12 @@ class Ec2Api:
 
     @handler("CancelExportTask")
     def cancel_export_task(self, context: RequestContext, export_task_id: ExportVmTaskId) -> None:
+        raise NotImplementedError
+
+    @handler("CancelImageLaunchPermission")
+    def cancel_image_launch_permission(
+        self, context: RequestContext, image_id: ImageId, dry_run: Boolean = None
+    ) -> CancelImageLaunchPermissionResult:
         raise NotImplementedError
 
     @handler("CancelImportTask")
@@ -17932,6 +18019,17 @@ class Ec2Api:
     ) -> DescribeAccountAttributesResult:
         raise NotImplementedError
 
+    @handler("DescribeAddressTransfers")
+    def describe_address_transfers(
+        self,
+        context: RequestContext,
+        allocation_ids: AllocationIdList = None,
+        next_token: String = None,
+        max_results: DescribeAddressTransfersMaxResults = None,
+        dry_run: Boolean = None,
+    ) -> DescribeAddressTransfersResult:
+        raise NotImplementedError
+
     @handler("DescribeAddresses")
     def describe_addresses(
         self,
@@ -19541,6 +19639,12 @@ class Ec2Api:
     ) -> None:
         raise NotImplementedError
 
+    @handler("DisableAddressTransfer")
+    def disable_address_transfer(
+        self, context: RequestContext, allocation_id: AllocationId, dry_run: Boolean = None
+    ) -> DisableAddressTransferResult:
+        raise NotImplementedError
+
     @handler("DisableEbsEncryptionByDefault")
     def disable_ebs_encryption_by_default(
         self, context: RequestContext, dry_run: Boolean = None
@@ -19724,6 +19828,16 @@ class Ec2Api:
     def disassociate_vpc_cidr_block(
         self, context: RequestContext, association_id: VpcCidrAssociationId
     ) -> DisassociateVpcCidrBlockResult:
+        raise NotImplementedError
+
+    @handler("EnableAddressTransfer")
+    def enable_address_transfer(
+        self,
+        context: RequestContext,
+        allocation_id: AllocationId,
+        transfer_account_id: String,
+        dry_run: Boolean = None,
+    ) -> EnableAddressTransferResult:
         raise NotImplementedError
 
     @handler("EnableEbsEncryptionByDefault")

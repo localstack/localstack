@@ -57,6 +57,7 @@ NonEmptyMaxLength1024String = str
 NonEmptyMaxLength2048String = str
 NonEmptyMaxLength256String = str
 NonEmptyMaxLength64String = str
+NoncurrentVersionCount = int
 ObjectLambdaAccessPointArn = str
 ObjectLambdaAccessPointName = str
 ObjectLambdaPolicy = str
@@ -1077,6 +1078,7 @@ class GetBucketLifecycleConfigurationRequest(ServiceRequest):
 
 class NoncurrentVersionExpiration(TypedDict, total=False):
     NoncurrentDays: Optional[Days]
+    NewerNoncurrentVersions: Optional[NoncurrentVersionCount]
 
 
 class NoncurrentVersionTransition(TypedDict, total=False):
@@ -1094,17 +1096,23 @@ class Transition(TypedDict, total=False):
 
 
 TransitionList = List[Transition]
+ObjectSizeLessThanBytes = int
+ObjectSizeGreaterThanBytes = int
 
 
 class LifecycleRuleAndOperator(TypedDict, total=False):
     Prefix: Optional[Prefix]
     Tags: Optional[S3TagSet]
+    ObjectSizeGreaterThan: Optional[ObjectSizeGreaterThanBytes]
+    ObjectSizeLessThan: Optional[ObjectSizeLessThanBytes]
 
 
 class LifecycleRuleFilter(TypedDict, total=False):
     Prefix: Optional[Prefix]
     Tag: Optional[S3Tag]
     And: Optional[LifecycleRuleAndOperator]
+    ObjectSizeGreaterThan: Optional[ObjectSizeGreaterThanBytes]
+    ObjectSizeLessThan: Optional[ObjectSizeLessThanBytes]
 
 
 class LifecycleExpiration(TypedDict, total=False):

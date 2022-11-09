@@ -24,6 +24,10 @@ class QueuePolicy(GenericBaseModel):
     def cloudformation_type(cls):
         return "AWS::SQS::QueuePolicy"
 
+    def fetch_state(self, stack_name, resources):
+        if self.resource_json.get("PhysicalResourceId"):
+            return {"something": "something"}  # gotta return <something> since {} is falsey :)
+
     @classmethod
     def get_deploy_templates(cls):
         def _create(resource_id, resources, resource_type, func, stack_name):
