@@ -329,7 +329,7 @@
     }
   },
   "tests/integration/test_dynamodb.py::TestDynamoDB::test_data_encoding_consistency": {
-    "recorded-date": "09-11-2022, 10:59:09",
+    "recorded-date": "09-11-2022, 11:27:21",
     "recorded-content": {
       "GetItem": {
         "data": {
@@ -343,26 +343,37 @@
         }
       },
       "GetRecords": {
-        "ApproximateCreationDateTime": "datetime",
-        "Keys": {
-          "id": {
-            "S": "id1"
-          }
+        "data": {
+          "B": "b'\\x90'"
         },
-        "NewImage": {
-          "data": {
-            "B": "b'\\x90'"
-          },
-          "id": {
-            "S": "id1"
-          },
-          "version": {
-            "N": "1"
-          }
+        "id": {
+          "S": "id1"
         },
-        "SequenceNumber": "49635015294555906768458308548925564526240922751190695938",
-        "SizeBytes": 67,
-        "StreamViewType": "NEW_AND_OLD_IMAGES"
+        "version": {
+          "N": "1"
+        }
+      },
+      "GetItemAfterUpdate": {
+        "data": {
+          "B": "b'\\x90'"
+        },
+        "id": {
+          "S": "id1"
+        },
+        "version": {
+          "N": "2"
+        }
+      },
+      "GetRecordsAfterUpdate": {
+        "data": {
+          "B": "b'kA=='"
+        },
+        "id": {
+          "S": "id1"
+        },
+        "version": {
+          "N": "2"
+        }
       }
     }
   }
