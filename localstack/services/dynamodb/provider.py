@@ -1090,7 +1090,7 @@ class DynamoDBProvider(DynamodbApi, ServiceLifecycleHook):
 
         # Note: We need to ensure that the same access key is used here for all requests,
         # otherwise DynamoDBLocal stores tables/items in separate namespaces
-        _replace(r"Credential=[^/]+/", rf"Credential={constants.INTERNAL_AWS_ACCESS_KEY_ID}/")
+        _replace(r"Credential=[^/]+/", rf"Credential={constants.TEST_AWS_ACCESS_KEY_ID}/")
 
         # Note: The NoSQL Workbench sends "localhost" or "local" as the region name, which we need to fix here
         _replace(

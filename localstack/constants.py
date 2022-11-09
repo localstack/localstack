@@ -39,15 +39,11 @@ DEFAULT_SERVICE_PORTS = localstack_client.config.get_service_ports()
 # host to bind to when starting the services
 BIND_HOST = "0.0.0.0"
 
-# Fallback Account ID if not available in the client request
+# Fallback Account ID if not available in the client request context
 DEFAULT_AWS_ACCOUNT_ID = "000000000000"
 
-# AWS user account ID used for tests - TODO move to config.py
-if "TEST_AWS_ACCOUNT_ID" not in os.environ:
-    os.environ["TEST_AWS_ACCOUNT_ID"] = DEFAULT_AWS_ACCOUNT_ID
-
 # Values used by tests
-TEST_AWS_ACCOUNT_ID = os.environ["TEST_AWS_ACCOUNT_ID"]
+TEST_AWS_ACCOUNT_ID = os.environ.get("TEST_AWS_ACCOUNT_ID", DEFAULT_AWS_ACCOUNT_ID)
 TEST_AWS_REGION_NAME = "us-west-2"
 
 # root code folder
@@ -163,13 +159,9 @@ try:
 except Exception:
     MAX_POOL_CONNECTIONS = 150
 
-# test credentials used for generating signature for S3 presigned URLs (to be used by external clients)
+# Credentials used for generating signature for S3 presigned URLs (to be used by external clients) or as fillers
 TEST_AWS_ACCESS_KEY_ID = "test"
 TEST_AWS_SECRET_ACCESS_KEY = "test"
-
-# credentials being used for internal calls
-INTERNAL_AWS_ACCESS_KEY_ID = "__internal_call__"
-INTERNAL_AWS_SECRET_ACCESS_KEY = "__internal_call__"
 
 # This header must be set to the AWS Account ID
 # Presence of this header in an incoming request typically means that the request originated within localstack,

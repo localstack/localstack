@@ -330,7 +330,7 @@ def log_startup_message(service):
 def check_aws_credentials():
     # Setup AWS environment vars, these are used by Boto when LocalStack makes internal cross-service calls
     os.environ["AWS_ACCESS_KEY_ID"] = get_aws_account_id()
-    os.environ["AWS_SECRET_ACCESS_KEY"] = constants.INTERNAL_AWS_SECRET_ACCESS_KEY
+    os.environ["AWS_SECRET_ACCESS_KEY"] = constants.TEST_AWS_SECRET_ACCESS_KEY
     session = boto3.Session()
     credentials = session.get_credentials()
     assert credentials

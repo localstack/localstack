@@ -53,7 +53,7 @@ from localstack.aws.api.iam import (
     tagListType,
     userNameType,
 )
-from localstack.constants import INTERNAL_AWS_SECRET_ACCESS_KEY
+from localstack.constants import TEST_AWS_SECRET_ACCESS_KEY
 from localstack.services.moto import call_moto
 from localstack.utils.aws import aws_stack
 from localstack.utils.aws.aws_stack import extract_access_key_id_from_auth_header
@@ -384,7 +384,7 @@ class IamProvider(IamApi):
             sts_client = aws_stack.connect_to_service(
                 "sts",
                 aws_access_key_id=access_key_id,
-                aws_secret_access_key=INTERNAL_AWS_SECRET_ACCESS_KEY,
+                aws_secret_access_key=TEST_AWS_SECRET_ACCESS_KEY,
             )
             caller_identity = sts_client.get_caller_identity()
             caller_arn = caller_identity["Arn"]
