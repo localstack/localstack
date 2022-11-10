@@ -351,6 +351,9 @@ class TestCfnLambdaIntegrations:
     )
     @pytest.mark.skip_snapshot_verify(
         paths=[
+            "$..MaximumRetryAttempts",
+            "$..ParallelizationFactor",
+            "$..StateTransitionReason"
             # Lambda
             "$..Tags",
             "$..Configuration.CodeSize",
@@ -496,15 +499,24 @@ class TestCfnLambdaIntegrations:
             "$..Tags",
             "$..Configuration.CodeSize",
             "$..Configuration.Layers",
-            # SQS
-            "$..Attributes.SqsManagedSseEnabled",
-            # # IAM
+            # IAM
             "$..PolicyNames",
             "$..policies..PolicyName",
             "$..Role.Description",
             "$..Role.MaxSessionDuration",
             "$..StackResources..LogicalResourceId",
             "$..StackResources..PhysicalResourceId",
+            # dynamodb describe_table
+            "$..Table.ProvisionedThroughput.LastDecreaseDateTime",
+            "$..Table.ProvisionedThroughput.LastIncreaseDateTime",
+            # stream result
+            "$..StreamDescription.CreationRequestDateTime",
+            # event source mapping
+            "$..BisectBatchOnFunctionError",
+            "$..DestinationConfig",
+            "$..LastProcessingResult",
+            "$..MaximumRecordAgeInSeconds",
+            "$..TumblingWindowInSeconds",
         ]
     )
     @pytest.mark.aws_validated
@@ -625,6 +637,43 @@ class TestCfnLambdaIntegrations:
 
         assert wait_until(wait_logs)
 
+    @pytest.mark.skip_snapshot_verify(
+        condition=is_old_provider,
+        paths=[
+            "$..Role.Description",
+            "$..Role.MaxSessionDuration",
+            "$..Tags",
+            "$..StreamDescription.StreamModeDetails",
+            "$..Code.RepositoryType",
+            "$..Configuration.CodeSize",
+            "$..Configuration.EphemeralStorage",
+            "$..Configuration.MemorySize",
+            "$..Configuration.VpcConfig",
+            "$..BisectBatchOnFunctionError",
+            "$..DestinationConfig",
+            "$..FunctionResponseTypes",
+            "$..LastProcessingResult",
+            "$..MaximumBatchingWindowInSeconds",
+            "$..MaximumRecordAgeInSeconds",
+            "$..Topics",
+            "$..TumblingWindowInSeconds",
+        ],
+    )
+    @pytest.mark.skip_snapshot_verify(
+        condition=is_new_provider,
+        paths=[
+            "$..Role.Description",
+            "$..Role.MaxSessionDuration",
+            "$..BisectBatchOnFunctionError",
+            "$..DestinationConfig",
+            "$..LastProcessingResult",
+            "$..MaximumRecordAgeInSeconds",
+            "$..TumblingWindowInSeconds",
+            "$..Configuration.CodeSize",
+            "$..Tags",
+            "$..StreamDescription.StreamModeDetails",
+        ],
+    )
     @pytest.mark.aws_validated
     def test_cfn_lambda_kinesis_source(
         self,

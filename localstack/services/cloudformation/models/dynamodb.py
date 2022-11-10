@@ -1,8 +1,8 @@
+from localstack.services.cloudformation.deployment_utils import PLACEHOLDER_AWS_NO_VALUE
 from localstack.services.cloudformation.deployment_utils import (
-    PLACEHOLDER_AWS_NO_VALUE,
     generate_default_name,
 )
-from localstack.services.cloudformation.service_models import REF_ID_ATTRS, GenericBaseModel
+from localstack.services.cloudformation.service_models import GenericBaseModel
 from localstack.utils import common
 from localstack.utils.aws import aws_stack
 
@@ -66,10 +66,7 @@ class DynamoDBTable(GenericBaseModel):
         return super(DynamoDBTable, self).get_cfn_attribute(attribute_name)
 
     def get_physical_resource_id(self, attribute=None, **kwargs):
-        table_name = self.props.get("TableName")
-        if attribute in REF_ID_ATTRS:
-            return table_name
-        return aws_stack.dynamodb_table_arn(table_name)
+        return self.props.get("TableName")
 
     def fetch_state(self, stack_name, resources):
         table_name = self.props.get("TableName") or self.resource_id

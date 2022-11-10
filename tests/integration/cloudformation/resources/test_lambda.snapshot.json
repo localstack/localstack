@@ -771,7 +771,7 @@
     }
   },
   "tests/integration/cloudformation/resources/test_lambda.py::TestCfnLambdaIntegrations::test_cfn_lambda_dynamodb_source": {
-    "recorded-date": "28-10-2022, 08:27:33",
+    "recorded-date": "28-10-2022, 15:32:05",
     "recorded-content": {
       "stack_resources": {
         "StackResources": [
@@ -1056,7 +1056,7 @@
     }
   },
   "tests/integration/cloudformation/resources/test_lambda.py::TestCfnLambdaIntegrations::test_cfn_lambda_kinesis_source": {
-    "recorded-date": "28-10-2022, 09:53:56",
+    "recorded-date": "10-11-2022, 19:42:55",
     "recorded-content": {
       "stack_resources": {
         "StackResources": [
@@ -1238,8 +1238,8 @@
           "Shards": [
             {
               "HashKeyRange": {
-                "EndingHashKey": "340282366920938463463374607431768211455",
-                "StartingHashKey": "0"
+                "EndingHashKey": "ending_hash",
+                "StartingHashKey": "starting_hash"
               },
               "SequenceNumberRange": {
                 "StartingSequenceNumber": "starting-sequence-number"
