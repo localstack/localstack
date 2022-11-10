@@ -271,8 +271,8 @@ jobs:
       - run:
           name: Run localstack
           command: |
-            <<#parameters.pro>>LOCALSTACK_API_KEY=$TEST_LOCALSTACK_API_KEY<</parameters.pro>> DISABLE_EVENTS="1" IMAGE_NAME="localstack/localstack-full:latest" bin/localstack start -d
-            bin/localstack wait -t 120
+            <<#parameters.pro>>LOCALSTACK_API_KEY=$TEST_LOCALSTACK_API_KEY<</parameters.pro>> DEBUG=1 DISABLE_EVENTS="1" IMAGE_NAME="localstack/localstack-full:latest" bin/localstack start -d
+            bin/localstack wait -t 120 || (bin/localstack logs && false)
       - run:
           name: Run capture-not-implemented
           command: |
