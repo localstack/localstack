@@ -12,7 +12,7 @@ from typing import Dict, List
 import requests
 import werkzeug
 
-from localstack import config, constants
+from localstack import config
 from localstack.aws import handlers
 from localstack.aws.accounts import get_aws_account_id
 from localstack.aws.api import (
@@ -88,7 +88,7 @@ from localstack.aws.api.dynamodb import (
 )
 from localstack.aws.forwarder import HttpFallbackDispatcher, get_request_forwarder_http
 from localstack.aws.proxy import AwsApiListener
-from localstack.constants import LOCALHOST
+from localstack.constants import LOCALHOST, TEST_AWS_SECRET_ACCESS_KEY
 from localstack.http import Response
 from localstack.services.dynamodb import server
 from localstack.services.dynamodb.models import DynamoDBStore, dynamodb_stores
@@ -136,6 +136,9 @@ WRITE_THROTTLED_ACTIONS = [
 THROTTLED_ACTIONS = READ_THROTTLED_ACTIONS + WRITE_THROTTLED_ACTIONS
 
 MANAGED_KMS_KEYS = {}
+
+# The Access Key ID to be used while communicating with DynamoDB Local
+AWS_ACCESS_KEY_ID_TEMPL = "{region_name}XO42OX{account_id}"
 
 
 class EventForwarder:
@@ -228,15 +231,18 @@ class SSEUtils:
     def get_sse_kms_managed_key(cls):
         from localstack.services.kms import provider
 
+        # TODO must run within account context
         existing_key = MANAGED_KMS_KEYS.get(aws_stack.get_region())
         if existing_key:
             return existing_key
+        # TODO must run within account context
         kms_client = aws_stack.connect_to_service("kms")
         key_data = kms_client.create_key(
             Description="Default key that protects my DynamoDB data when no other key is defined"
         )
         key_id = key_data["KeyMetadata"]["KeyId"]
 
+        # TODO must use correct context
         provider.set_key_managed(key_id, get_aws_account_id(), aws_stack.get_region())
         MANAGED_KMS_KEYS[aws_stack.get_region()] = key_id
         return key_id
@@ -270,28 +276,29 @@ class DynamoDBApiListener(AwsApiListener):
         super().__init__("dynamodb", HttpFallbackDispatcher(provider, provider.get_forward_url))
 
 
-def get_store(context: RequestContext | None = None) -> DynamoDBStore:
-    # todo: create an explicit protocol for to retrieve stores for each provider
-    _account_id: str = context.account_id if context else get_aws_account_id()
-    _region: str = context.region if context else aws_stack.get_region()
+def get_store(context: RequestContext) -> DynamoDBStore:
+    region = context.region
+
     # special case: AWS NoSQL Workbench sends "localhost" as region - replace with proper region here
-    if _region == "localhost":
-        _region = aws_stack.get_local_region()
-    return dynamodb_stores[_account_id][_region]
+    if context.region == "localhost":
+        region = aws_stack.get_local_region()
+
+    return dynamodb_stores[context.account_id][region]
 
 
-def find_global_table_region(table_name: str, target_region: str | None = None) -> str | None:
+def find_global_table_region(context: RequestContext, table_name: str) -> str | None:
     """
     Check if the table is a Version 2019.11.21 table.
-    :param target_region: the region we are looking for
+
+    :param context: request context
     :param table_name: the name of the table
     :return: the original region; `None` if this is not a global table
     """
-    replicas = get_store().REPLICA_UPDATES.get(table_name)
+    replicas = get_store(context).REPLICA_UPDATES.get(table_name)
     if not replicas:
         return None
     original_region = list(replicas.keys())[0]
-    return original_region if target_region in replicas[original_region] else None
+    return original_region if context.region in replicas[original_region] else None
 
 
 @contextmanager
@@ -350,6 +357,7 @@ class DynamoDBProvider(DynamodbApi, ServiceLifecycleHook):
                 rf'\1: "arn:\2:dynamodb:{aws_stack.get_region()}:\3"',
                 response_content,
             )
+            # TODO replace the account ID too
             if content_replaced != response_content:
                 response.data = content_replaced
                 context.service_response = (
@@ -400,7 +408,7 @@ class DynamoDBProvider(DynamodbApi, ServiceLifecycleHook):
     ) -> CreateTableOutput:
         # Check if table exists, to avoid error log output from DynamoDBLocal
         table_name = create_table_input["TableName"]
-        if self.table_exists(table_name):
+        if self.table_exists(context.account_id, context.region, table_name):
             raise ResourceInUseException(f"Table already exists: {table_name}")
         billing_mode = create_table_input.get("BillingMode")
         provisioned_throughput = create_table_input.get("ProvisionedThroughput")
@@ -412,7 +420,11 @@ class DynamoDBProvider(DynamodbApi, ServiceLifecycleHook):
 
         # forward request to backend
         result = self.forward_request(context)
+
         table_description = result["TableDescription"]
+        table_description["TableArn"] = table_arn = self.fix_table_arn(
+            table_description["TableArn"]
+        )
 
         backend = get_store(context)
         backend.table_definitions[table_name] = table_definitions = dict(create_table_input)
@@ -440,8 +452,6 @@ class DynamoDBProvider(DynamodbApi, ServiceLifecycleHook):
 
         tags = table_definitions.pop("Tags", [])
         if tags:
-            table_arn = table_description["TableArn"]
-            table_arn = self.fix_table_arn(table_arn)
             get_store(context).TABLE_TAGS[table_arn] = {tag["Key"]: tag["Value"] for tag in tags}
 
         # remove invalid attributes from result
@@ -452,7 +462,7 @@ class DynamoDBProvider(DynamodbApi, ServiceLifecycleHook):
 
     def delete_table(self, context: RequestContext, table_name: TableName) -> DeleteTableOutput:
         # Check if table exists, to avoid error log output from DynamoDBLocal
-        if not self.table_exists(table_name):
+        if not self.table_exists(context.account_id, context.region, table_name):
             raise ResourceNotFoundException("Cannot do operations on a non-existent table")
 
         # forward request to backend
@@ -473,11 +483,12 @@ class DynamoDBProvider(DynamodbApi, ServiceLifecycleHook):
         return self.forward_request(context)
 
     def describe_table(self, context: RequestContext, table_name: TableName) -> DescribeTableOutput:
-        global_table_region: str | None = find_global_table_region(
-            table_name=table_name, target_region=context.region
-        )
+        global_table_region = find_global_table_region(context, table_name)
         # Check if table exists, to avoid error log output from DynamoDBLocal
-        if not self.table_exists(table_name) and not global_table_region:
+        if (
+            not self.table_exists(context.account_id, context.region, table_name)
+            and not global_table_region
+        ):
             raise ResourceNotFoundException("Cannot do operations on a non-existent table")
 
         result = self._forward_request(context=context, region=global_table_region)
@@ -577,9 +588,7 @@ class DynamoDBProvider(DynamodbApi, ServiceLifecycleHook):
 
     @handler("PutItem", expand=False)
     def put_item(self, context: RequestContext, put_item_input: PutItemInput) -> PutItemOutput:
-        global_table_region: str | None = find_global_table_region(
-            table_name=put_item_input.get("TableName"), target_region=context.region
-        )
+        global_table_region = find_global_table_region(context, put_item_input.get("TableName"))
         existing_item = None
         table_name = put_item_input["TableName"]
         event_sources_or_streams_enabled = has_event_sources_or_streams_enabled(table_name)
@@ -685,9 +694,7 @@ class DynamoDBProvider(DynamodbApi, ServiceLifecycleHook):
 
     @handler("GetItem", expand=False)
     def get_item(self, context: RequestContext, get_item_input: GetItemInput) -> GetItemOutput:
-        global_table_region: str | None = find_global_table_region(
-            table_name=get_item_input.get("TableName"), target_region=context.region
-        )
+        global_table_region = find_global_table_region(context, get_item_input.get("TableName"))
         result = self._forward_request(context=context, region=global_table_region)
         self.fix_consumed_capacity(get_item_input, result)
         return result
@@ -995,7 +1002,7 @@ class DynamoDBProvider(DynamodbApi, ServiceLifecycleHook):
         self, context: RequestContext, table_name: TableName, stream_arn: StreamArn
     ) -> KinesisStreamingDestinationOutput:
         # Check if table exists, to avoid error log output from DynamoDBLocal
-        if not self.table_exists(table_name):
+        if not self.table_exists(context.account_id, context.region, table_name):
             raise ResourceNotFoundException("Cannot do operations on a non-existent table")
         stream = EventForwarder.is_kinesis_stream_exists(stream_arn=stream_arn)
         if not stream:
@@ -1035,7 +1042,7 @@ class DynamoDBProvider(DynamodbApi, ServiceLifecycleHook):
         self, context: RequestContext, table_name: TableName, stream_arn: StreamArn
     ) -> KinesisStreamingDestinationOutput:
         # Check if table exists, to avoid error log output from DynamoDBLocal
-        if not self.table_exists(table_name):
+        if not self.table_exists(context.account_id, context.region, table_name):
             raise ResourceNotFoundException("Cannot do operations on a non-existent table")
         stream = EventForwarder.is_kinesis_stream_exists(stream_arn=stream_arn)
         if not stream:
@@ -1067,7 +1074,7 @@ class DynamoDBProvider(DynamodbApi, ServiceLifecycleHook):
         self, context: RequestContext, table_name: TableName
     ) -> DescribeKinesisStreamingDestinationOutput:
         # Check if table exists, to avoid error log output from DynamoDBLocal
-        if not self.table_exists(table_name):
+        if not self.table_exists(context.account_id, context.region, table_name):
             raise ResourceNotFoundException("Cannot do operations on a non-existent table")
 
         table_def = get_store(context).table_definitions.get(table_name) or {}
@@ -1078,8 +1085,16 @@ class DynamoDBProvider(DynamodbApi, ServiceLifecycleHook):
         )
 
     @staticmethod
-    def table_exists(table_name):
-        return aws_stack.dynamodb_table_exists(table_name)
+    def table_exists(account_id: str, region_name: str, table_name: str):
+        access_key_id = AWS_ACCESS_KEY_ID_TEMPL.format(
+            account_id=account_id, region_name=region_name
+        )
+        client = aws_stack.connect_to_service(
+            "dynamodb",
+            aws_access_key_id=access_key_id,
+            aws_secret_access_key=TEST_AWS_SECRET_ACCESS_KEY,
+        )
+        return dynamodb_table_exists(table_name, client=client)
 
     @staticmethod
     def prepare_request_headers(headers: Dict):
@@ -1088,9 +1103,12 @@ class DynamoDBProvider(DynamodbApi, ServiceLifecycleHook):
                 regex, replace, headers.get("Authorization") or "", flags=re.IGNORECASE
             )
 
-        # Note: We need to ensure that the same access key is used here for all requests,
-        # otherwise DynamoDBLocal stores tables/items in separate namespaces
-        _replace(r"Credential=[^/]+/", rf"Credential={constants.INTERNAL_AWS_ACCESS_KEY_ID}/")
+        # DynamoDB Local namespaces based on the value of Credentials
+        # Since we want to namespace by both account ID and region, use an aggregate key
+        key = AWS_ACCESS_KEY_ID_TEMPL.format(
+            account_id=get_aws_account_id(), region_name=aws_stack.get_region()
+        )
+        _replace(r"Credential=[^/]+/", rf"Credential={key}/")
 
         # Note: The NoSQL Workbench sends "localhost" or "local" as the region name, which we need to fix here
         _replace(
@@ -1111,11 +1129,10 @@ class DynamoDBProvider(DynamodbApi, ServiceLifecycleHook):
                 "WriteCapacityUnits": 3,
             }
 
-    def fix_table_arn(self, table_arn: str) -> str:
-        return re.sub(
-            "arn:aws:dynamodb:ddblocal:",
-            f"arn:aws:dynamodb:{aws_stack.get_region()}:",
-            table_arn,
+    def fix_table_arn(self, arn: str) -> str:
+        """Set the correct account ID and region in ARNs returned by DynamoDB local."""
+        return arn.replace(":ddblocal:", f":{aws_stack.get_region()}:").replace(
+            ":000000000000:", f":{get_aws_account_id()}:"
         )
 
     def prepare_transact_write_item_records(self, transact_items, existing_items):
@@ -1470,3 +1487,13 @@ def dynamodb_get_table_stream_specification(table_name):
             traceback.format_exc(),
         )
         raise e
+
+
+def dynamodb_table_exists(table_name, client):
+    paginator = client.get_paginator("list_tables")
+    pages = paginator.paginate(PaginationConfig={"PageSize": 100})
+    for page in pages:
+        table_names = page["TableNames"]
+        if to_str(table_name) in table_names:
+            return True
+    return False

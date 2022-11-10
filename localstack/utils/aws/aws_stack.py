@@ -387,7 +387,7 @@ def create_external_boto_client(
         cache,
         internal=False,
         aws_access_key_id=aws_access_key_id,
-        aws_secret_access_key="__test_key__",
+        aws_secret_access_key=TEST_AWS_SECRET_ACCESS_KEY,
         *args,
         **kwargs,
     )
@@ -467,17 +467,6 @@ def inject_test_credentials_into_env(env):
 
 def inject_region_into_env(env, region):
     env["AWS_REGION"] = region
-
-
-def dynamodb_table_exists(table_name, client=None):
-    client = client or connect_to_service("dynamodb")
-    paginator = client.get_paginator("list_tables")
-    pages = paginator.paginate(PaginationConfig={"PageSize": 100})
-    for page in pages:
-        table_names = page["TableNames"]
-        if to_str(table_name) in table_names:
-            return True
-    return False
 
 
 def sqs_queue_url_for_arn(queue_arn):
