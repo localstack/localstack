@@ -373,6 +373,7 @@ def create_external_boto_client(
 ):
     # Currently we use the Access Key ID field to specify the AWS account ID; this will change when IAM matures.
     # It is important that the correct Account ID is included in the request as that will determine access to namespaced resources.
+    # TODO@viren make this arg required
     if aws_access_key_id is None:
         aws_access_key_id = get_aws_account_id()
 
