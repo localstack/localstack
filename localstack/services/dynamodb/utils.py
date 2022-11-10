@@ -5,6 +5,7 @@ from typing import Dict, List, Optional
 from cachetools import TTLCache
 from moto.core.exceptions import JsonRESTError
 
+from localstack.aws.accounts import get_aws_account_id
 from localstack.aws.api.dynamodb import ResourceNotFoundException
 from localstack.utils.aws import aws_stack
 from localstack.utils.json import canonical_json
@@ -61,7 +62,9 @@ class SchemaExtractor:
     def get_key_schema(cls, table_name: str) -> Optional[List[Dict]]:
         from localstack.services.dynamodb.provider import get_store
 
-        table_definitions: Dict = get_store().table_definitions
+        table_definitions: Dict = get_store(
+            account_id=get_aws_account_id(), region_name=aws_stack.get_region()
+        ).table_definitions
         table_def = table_definitions.get(table_name)
         if not table_def:
             raise ResourceNotFoundException(

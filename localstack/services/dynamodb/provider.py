@@ -106,6 +106,7 @@ from localstack.services.dynamodbstreams.dynamodbstreams_api import (
 from localstack.services.edge import ROUTER
 from localstack.services.plugins import ServiceLifecycleHook
 from localstack.utils.aws import aws_stack
+from localstack.utils.aws.aws_stack import extract_account_id_from_arn, extract_region_from_arn
 from localstack.utils.collections import select_attributes
 from localstack.utils.common import short_uid, to_bytes
 from localstack.utils.json import BytesEncoder, canonical_json
@@ -137,9 +138,6 @@ THROTTLED_ACTIONS = READ_THROTTLED_ACTIONS + WRITE_THROTTLED_ACTIONS
 
 MANAGED_KMS_KEYS = {}
 
-# The Access Key ID to be used while communicating with DynamoDB Local
-AWS_ACCESS_KEY_ID_TEMPL = "{region_name}XO42OX{account_id}"
-
 
 class EventForwarder:
     @classmethod
@@ -165,13 +163,15 @@ class EventForwarder:
     @staticmethod
     def forward_to_kinesis_stream(records):
         kinesis = aws_stack.connect_to_service("kinesis")
-        table_definitions = get_store().table_definitions
         for record in records:
             event_source_arn = record.get("eventSourceARN")
             if not event_source_arn:
                 continue
             table_name = event_source_arn.split("/", 1)[-1]
-            table_def = table_definitions.get(table_name) or {}
+            account_id = extract_account_id_from_arn(event_source_arn)
+            region_name = extract_region_from_arn(event_source_arn)
+            store = get_store(account_id, region_name)
+            table_def = store.table_definitions.get(table_name) or {}
             if table_def.get("KinesisDataStreamDestinationStatus") != "ACTIVE":
                 continue
             stream_arn = table_def["KinesisDataStreamDestinations"][-1]["StreamArn"]
@@ -228,32 +228,34 @@ class SSEUtils:
     """Utils for server-side encryption (SSE)"""
 
     @classmethod
-    def get_sse_kms_managed_key(cls):
+    def get_sse_kms_managed_key(cls, account_id: str, region_name: str):
         from localstack.services.kms import provider
 
-        # TODO must run within account context
-        existing_key = MANAGED_KMS_KEYS.get(aws_stack.get_region())
+        existing_key = MANAGED_KMS_KEYS.get(region_name)
         if existing_key:
             return existing_key
-        # TODO must run within account context
-        kms_client = aws_stack.connect_to_service("kms")
+        kms_client = aws_stack.connect_to_service(
+            "kms",
+            aws_access_key_id=account_id,
+            aws_secret_access_key=TEST_AWS_SECRET_ACCESS_KEY,
+            region_name=region_name,
+        )
         key_data = kms_client.create_key(
             Description="Default key that protects my DynamoDB data when no other key is defined"
         )
         key_id = key_data["KeyMetadata"]["KeyId"]
 
-        # TODO must use correct context
-        provider.set_key_managed(key_id, get_aws_account_id(), aws_stack.get_region())
+        provider.set_key_managed(key_id, account_id, region_name)
         MANAGED_KMS_KEYS[aws_stack.get_region()] = key_id
         return key_id
 
     @classmethod
-    def get_sse_description(cls, data):
+    def get_sse_description(cls, account_id: str, region_name: str, data):
         if data.get("Enabled"):
             kms_master_key_id = data.get("KMSMasterKeyId")
             if not kms_master_key_id:
                 # this is of course not the actual key for dynamodb, just a better, since existing, mock
-                kms_master_key_id = cls.get_sse_kms_managed_key()
+                kms_master_key_id = cls.get_sse_kms_managed_key(account_id, region_name)
             kms_master_key_id = aws_stack.kms_key_arn(kms_master_key_id)
             return {
                 "Status": "ENABLED",
@@ -276,14 +278,13 @@ class DynamoDBApiListener(AwsApiListener):
         super().__init__("dynamodb", HttpFallbackDispatcher(provider, provider.get_forward_url))
 
 
-def get_store(context: RequestContext) -> DynamoDBStore:
-    region = context.region
+def get_store(account_id: str, region_name: str) -> DynamoDBStore:
 
     # special case: AWS NoSQL Workbench sends "localhost" as region - replace with proper region here
-    if context.region == "localhost":
-        region = aws_stack.get_local_region()
+    if region_name == "localhost":
+        region_name = aws_stack.get_local_region()
 
-    return dynamodb_stores[context.account_id][region]
+    return dynamodb_stores[account_id][region_name]
 
 
 def find_global_table_region(context: RequestContext, table_name: str) -> str | None:
@@ -294,7 +295,7 @@ def find_global_table_region(context: RequestContext, table_name: str) -> str | 
     :param table_name: the name of the table
     :return: the original region; `None` if this is not a global table
     """
-    replicas = get_store(context).REPLICA_UPDATES.get(table_name)
+    replicas = get_store(context.account_id, context.region).REPLICA_UPDATES.get(table_name)
     if not replicas:
         return None
     original_region = list(replicas.keys())[0]
@@ -353,11 +354,10 @@ class DynamoDBProvider(DynamodbApi, ServiceLifecycleHook):
         if response_content := response.get_data(as_text=True):
             # fix the table and latest stream ARNs (DynamoDBLocal hardcodes "ddblocal" as the region)
             content_replaced = re.sub(
-                r'("TableArn"|"LatestStreamArn"|"StreamArn")\s*:\s*"arn:([a-z-]+):dynamodb:ddblocal:([^"]+)"',
-                rf'\1: "arn:\2:dynamodb:{aws_stack.get_region()}:\3"',
+                r'("TableArn"|"LatestStreamArn"|"StreamArn")\s*:\s*"arn:([a-z-]+):dynamodb:ddblocal:000000000000:([^"]+)"',
+                rf'\1: "arn:\2:dynamodb:{context.region}:{context.account_id}:\3"',
                 response_content,
             )
-            # TODO replace the account ID too
             if content_replaced != response_content:
                 response.data = content_replaced
                 context.service_response = (
@@ -426,7 +426,7 @@ class DynamoDBProvider(DynamodbApi, ServiceLifecycleHook):
             table_description["TableArn"]
         )
 
-        backend = get_store(context)
+        backend = get_store(context.account_id, context.region)
         backend.table_definitions[table_name] = table_definitions = dict(create_table_input)
 
         if "TableId" not in table_definitions:
@@ -434,7 +434,9 @@ class DynamoDBProvider(DynamodbApi, ServiceLifecycleHook):
 
         if "SSESpecification" in table_definitions:
             sse_specification = table_definitions.pop("SSESpecification")
-            table_definitions["SSEDescription"] = SSEUtils.get_sse_description(sse_specification)
+            table_definitions["SSEDescription"] = SSEUtils.get_sse_description(
+                context.account_id, context.region, sse_specification
+            )
 
         if table_definitions:
             table_content = result.get("Table", {})
@@ -452,7 +454,9 @@ class DynamoDBProvider(DynamodbApi, ServiceLifecycleHook):
 
         tags = table_definitions.pop("Tags", [])
         if tags:
-            get_store(context).TABLE_TAGS[table_arn] = {tag["Key"]: tag["Value"] for tag in tags}
+            get_store(context.account_id, context.region).TABLE_TAGS[table_arn] = {
+                tag["Key"]: tag["Value"] for tag in tags
+            }
 
         # remove invalid attributes from result
         table_description.pop("Tags", None)
@@ -472,7 +476,7 @@ class DynamoDBProvider(DynamodbApi, ServiceLifecycleHook):
         table_arn = self.fix_table_arn(table_arn)
         self.delete_all_event_source_mappings(table_arn)
         dynamodbstreams_api.delete_streams(table_arn)
-        get_store(context).TABLE_TAGS.pop(table_arn, None)
+        get_store(context.account_id, context.region).TABLE_TAGS.pop(table_arn, None)
 
         return result
 
@@ -494,11 +498,13 @@ class DynamoDBProvider(DynamodbApi, ServiceLifecycleHook):
         result = self._forward_request(context=context, region=global_table_region)
 
         # update response with additional props
-        table_props = get_store(context).table_properties.get(table_name)
+        table_props = get_store(context.account_id, context.region).table_properties.get(table_name)
         if table_props:
             result.get("Table", {}).update(table_props)
 
-        replicas: Dict = get_store().REPLICA_UPDATES.get(table_name)
+        replicas: Dict = get_store(context.account_id, context.region).REPLICA_UPDATES.get(
+            table_name
+        )
         if replicas and replicas.get(context.region):
             regions = replicas.get(context.region)
             result.get("Table", {}).update(
@@ -506,7 +512,9 @@ class DynamoDBProvider(DynamodbApi, ServiceLifecycleHook):
             )
 
         # update only TableId and SSEDescription if present
-        table_definitions = get_store(context).table_definitions.get(table_name)
+        table_definitions = get_store(context.account_id, context.region).table_definitions.get(
+            table_name
+        )
         if table_definitions:
             for key in ["TableId", "SSEDescription"]:
                 if table_definitions.get(key):
@@ -537,12 +545,16 @@ class DynamoDBProvider(DynamodbApi, ServiceLifecycleHook):
             table_name = update_table_input.get("TableName")
 
             if update_table_input.get("TableClass"):
-                table_definitions = get_store(context).table_definitions.setdefault(table_name, {})
+                table_definitions = get_store(
+                    context.account_id, context.region
+                ).table_definitions.setdefault(table_name, {})
                 table_definitions["TableClass"] = update_table_input.get("TableClass")
 
             if update_table_input.get("ReplicaUpdates"):
                 # update local table props (replicas)
-                table_properties: Dict = get_store(context).REPLICA_UPDATES
+                table_properties: Dict = get_store(
+                    context.account_id, context.region
+                ).REPLICA_UPDATES
                 table_properties[table_name] = table_replicas = (
                     table_properties.get(table_name) or {}
                 )
@@ -878,7 +890,7 @@ class DynamoDBProvider(DynamodbApi, ServiceLifecycleHook):
     def tag_resource(
         self, context: RequestContext, resource_arn: ResourceArnString, tags: TagList
     ) -> None:
-        table_tags = get_store(context).TABLE_TAGS
+        table_tags = get_store(context.account_id, context.region).TABLE_TAGS
         if resource_arn not in table_tags:
             table_tags[resource_arn] = {}
         table_tags[resource_arn].update({tag["Key"]: tag["Value"] for tag in tags})
@@ -887,7 +899,9 @@ class DynamoDBProvider(DynamodbApi, ServiceLifecycleHook):
         self, context: RequestContext, resource_arn: ResourceArnString, tag_keys: TagKeyList
     ) -> None:
         for tag_key in tag_keys or []:
-            get_store(context).TABLE_TAGS.get(resource_arn, {}).pop(tag_key, None)
+            get_store(context.account_id, context.region).TABLE_TAGS.get(resource_arn, {}).pop(
+                tag_key, None
+            )
 
     def list_tags_of_resource(
         self,
@@ -897,14 +911,16 @@ class DynamoDBProvider(DynamodbApi, ServiceLifecycleHook):
     ) -> ListTagsOfResourceOutput:
         result = [
             {"Key": k, "Value": v}
-            for k, v in get_store(context).TABLE_TAGS.get(resource_arn, {}).items()
+            for k, v in get_store(context.account_id, context.region)
+            .TABLE_TAGS.get(resource_arn, {})
+            .items()
         ]
         return ListTagsOfResourceOutput(Tags=result)
 
     def describe_time_to_live(
         self, context: RequestContext, table_name: TableName
     ) -> DescribeTimeToLiveOutput:
-        backend = get_store(context)
+        backend = get_store(context.account_id, context.region)
 
         ttl_spec = backend.ttl_specifications.get(table_name)
         result = {"TimeToLiveStatus": "DISABLED"}
@@ -927,14 +943,14 @@ class DynamoDBProvider(DynamodbApi, ServiceLifecycleHook):
         time_to_live_specification: TimeToLiveSpecification,
     ) -> UpdateTimeToLiveOutput:
         # TODO: TTL status is maintained/mocked but no real expiry is happening for items
-        backend = get_store(context)
+        backend = get_store(context.account_id, context.region)
         backend.ttl_specifications[table_name] = time_to_live_specification
         return UpdateTimeToLiveOutput(TimeToLiveSpecification=time_to_live_specification)
 
     def create_global_table(
         self, context: RequestContext, global_table_name: TableName, replication_group: ReplicaList
     ) -> CreateGlobalTableOutput:
-        global_tables: Dict = get_store(context).GLOBAL_TABLES
+        global_tables: Dict = get_store(context.account_id, context.region).GLOBAL_TABLES
         if global_table_name in global_tables:
             raise GlobalTableAlreadyExistsException("Global table with this name already exists")
         replication_group = [grp.copy() for grp in replication_group or []]
@@ -948,7 +964,7 @@ class DynamoDBProvider(DynamodbApi, ServiceLifecycleHook):
     def describe_global_table(
         self, context: RequestContext, global_table_name: TableName
     ) -> DescribeGlobalTableOutput:
-        details = get_store(context).GLOBAL_TABLES.get(global_table_name)
+        details = get_store(context.account_id, context.region).GLOBAL_TABLES.get(global_table_name)
         if not details:
             raise GlobalTableNotFoundException("Global table with this name does not exist")
         return DescribeGlobalTableOutput(GlobalTableDescription=details)
@@ -963,7 +979,7 @@ class DynamoDBProvider(DynamodbApi, ServiceLifecycleHook):
         # TODO: add paging support
         result = [
             select_attributes(tab, ["GlobalTableName", "ReplicationGroup"])
-            for tab in get_store(context).GLOBAL_TABLES.values()
+            for tab in get_store(context.account_id, context.region).GLOBAL_TABLES.values()
         ]
         return ListGlobalTablesOutput(GlobalTables=result)
 
@@ -973,7 +989,7 @@ class DynamoDBProvider(DynamodbApi, ServiceLifecycleHook):
         global_table_name: TableName,
         replica_updates: ReplicaUpdateList,
     ) -> UpdateGlobalTableOutput:
-        details = get_store(context).GLOBAL_TABLES.get(global_table_name)
+        details = get_store(context.account_id, context.region).GLOBAL_TABLES.get(global_table_name)
         if not details:
             raise GlobalTableNotFoundException("Global table with this name does not exist")
         for update in replica_updates or []:
@@ -1008,7 +1024,9 @@ class DynamoDBProvider(DynamodbApi, ServiceLifecycleHook):
         if not stream:
             raise ValidationException("User does not have a permission to use kinesis stream")
 
-        table_def = get_store(context).table_definitions.setdefault(table_name, {})
+        table_def = get_store(context.account_id, context.region).table_definitions.setdefault(
+            table_name, {}
+        )
 
         dest_status = table_def.get("KinesisDataStreamDestinationStatus")
         if dest_status not in ["DISABLED", "ENABLE_FAILED", None]:
@@ -1050,7 +1068,9 @@ class DynamoDBProvider(DynamodbApi, ServiceLifecycleHook):
                 "User does not have a permission to use kinesis stream",
             )
 
-        table_def = get_store(context).table_definitions.setdefault(table_name, {})
+        table_def = get_store(context.account_id, context.region).table_definitions.setdefault(
+            table_name, {}
+        )
 
         stream_destinations = table_def.get("KinesisDataStreamDestinations")
         if stream_destinations:
@@ -1077,7 +1097,9 @@ class DynamoDBProvider(DynamodbApi, ServiceLifecycleHook):
         if not self.table_exists(context.account_id, context.region, table_name):
             raise ResourceNotFoundException("Cannot do operations on a non-existent table")
 
-        table_def = get_store(context).table_definitions.get(table_name) or {}
+        table_def = (
+            get_store(context.account_id, context.region).table_definitions.get(table_name) or {}
+        )
 
         stream_destinations = table_def.get("KinesisDataStreamDestinations") or []
         return DescribeKinesisStreamingDestinationOutput(
@@ -1085,13 +1107,17 @@ class DynamoDBProvider(DynamodbApi, ServiceLifecycleHook):
         )
 
     @staticmethod
-    def table_exists(account_id: str, region_name: str, table_name: str):
-        access_key_id = AWS_ACCESS_KEY_ID_TEMPL.format(
+    def aggregate_access_key(account_id: str, region_name: str) -> str:
+        """Get the access key to be used while communicating with DynamoDB Local."""
+        return "{account_id}{region_name}".format(
             account_id=account_id, region_name=region_name
-        )
+        ).replace("-", "")
+
+    @staticmethod
+    def table_exists(account_id: str, region_name: str, table_name: str):
         client = aws_stack.connect_to_service(
             "dynamodb",
-            aws_access_key_id=access_key_id,
+            aws_access_key_id=DynamoDBProvider.aggregate_access_key(account_id, region_name),
             aws_secret_access_key=TEST_AWS_SECRET_ACCESS_KEY,
         )
         return dynamodb_table_exists(table_name, client=client)
@@ -1103,12 +1129,11 @@ class DynamoDBProvider(DynamodbApi, ServiceLifecycleHook):
                 regex, replace, headers.get("Authorization") or "", flags=re.IGNORECASE
             )
 
-        # DynamoDB Local namespaces based on the value of Credentials
+        key = DynamoDBProvider.aggregate_access_key(get_aws_account_id(), aws_stack.get_region())
+
+        # DynamoDBLocal namespaces based on the value of Credentials
         # Since we want to namespace by both account ID and region, use an aggregate key
-        key = AWS_ACCESS_KEY_ID_TEMPL.format(
-            account_id=get_aws_account_id(), region_name=aws_stack.get_region()
-        )
-        _replace(r"Credential=[^/]+/", rf"Credential={key}/")
+        _replace(r"Credential=(\d{12})/", rf"Credential={key}/")
 
         # Note: The NoSQL Workbench sends "localhost" or "local" as the region name, which we need to fix here
         _replace(
@@ -1393,7 +1418,9 @@ def has_event_sources_or_streams_enabled(table_name: str, cache: Dict = None):
     # get table name from table_arn
     # since batch_write and transact write operations passing table_arn instead of table_name
     table_name = table_arn.split("/", 1)[-1]
-    table_definitions: Dict = get_store().table_definitions
+    account_id = extract_account_id_from_arn(table_arn)
+    region_name = extract_region_from_arn(table_arn)
+    table_definitions: Dict = get_store(account_id, region_name).table_definitions
     if not result and table_definitions.get(table_name):
         if table_definitions[table_name].get("KinesisDataStreamDestinationStatus") == "ACTIVE":
             result = True
