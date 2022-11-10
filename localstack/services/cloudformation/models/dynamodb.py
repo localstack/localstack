@@ -1,5 +1,5 @@
-from localstack.services.cloudformation.deployment_utils import PLACEHOLDER_AWS_NO_VALUE
 from localstack.services.cloudformation.deployment_utils import (
+    PLACEHOLDER_AWS_NO_VALUE,
     generate_default_name,
 )
 from localstack.services.cloudformation.service_models import GenericBaseModel
