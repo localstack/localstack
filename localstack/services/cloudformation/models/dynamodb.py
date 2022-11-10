@@ -63,9 +63,14 @@ class DynamoDBTable(GenericBaseModel):
         value = self.props.get("Table", {}).get(actual_attribute)
         if value:
             return value
+        #
+        # if attribute_name == "Arn":
+        #     return self.props.get("TableArn")
         return super(DynamoDBTable, self).get_cfn_attribute(attribute_name)
 
     def get_physical_resource_id(self, attribute=None, **kwargs):
+        if attribute == "Arn":
+            return self.props.get("Table", {}).get("TableArn")
         return self.props.get("TableName")
 
     def fetch_state(self, stack_name, resources):

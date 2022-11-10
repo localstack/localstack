@@ -133,6 +133,8 @@ class StreamEventSourceListener(EventSourceListener):
         """
         invoke a given lambda function
         :returns: True if the invocation was successful (False otherwise) and the status code of the invocation result
+
+        # TODO: rework this to properly invoke a lambda through the API. Needs additional restructuring upstream of this function as well.
         """
 
         status_code = self._invoke_adapter.invoke_with_statuscode(

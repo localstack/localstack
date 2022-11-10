@@ -353,7 +353,7 @@ class TestCfnLambdaIntegrations:
         paths=[
             "$..MaximumRetryAttempts",
             "$..ParallelizationFactor",
-            "$..StateTransitionReason"
+            "$..StateTransitionReason",
             # Lambda
             "$..Tags",
             "$..Configuration.CodeSize",
@@ -362,11 +362,10 @@ class TestCfnLambdaIntegrations:
             "$..Attributes.SqsManagedSseEnabled",
             # # IAM
             "$..PolicyNames",
-            "$..policies..PolicyName",
+            "$..PolicyName",
             "$..Role.Description",
             "$..Role.MaxSessionDuration",
-            "$..StackResources..LogicalResourceId",
-            "$..StackResources..PhysicalResourceId",
+            "$..StackResources..PhysicalResourceId",  # TODO: compatibility between AWS URL and localstack URL
         ]
     )
     @pytest.mark.aws_validated
@@ -640,27 +639,16 @@ class TestCfnLambdaIntegrations:
     @pytest.mark.skip_snapshot_verify(
         condition=is_old_provider,
         paths=[
-            "$..Role.Description",
-            "$..Role.MaxSessionDuration",
-            "$..Tags",
-            "$..StreamDescription.StreamModeDetails",
             "$..Code.RepositoryType",
-            "$..Configuration.CodeSize",
             "$..Configuration.EphemeralStorage",
             "$..Configuration.MemorySize",
             "$..Configuration.VpcConfig",
-            "$..BisectBatchOnFunctionError",
-            "$..DestinationConfig",
             "$..FunctionResponseTypes",
-            "$..LastProcessingResult",
             "$..MaximumBatchingWindowInSeconds",
-            "$..MaximumRecordAgeInSeconds",
             "$..Topics",
-            "$..TumblingWindowInSeconds",
         ],
     )
     @pytest.mark.skip_snapshot_verify(
-        condition=is_new_provider,
         paths=[
             "$..Role.Description",
             "$..Role.MaxSessionDuration",
@@ -668,10 +656,16 @@ class TestCfnLambdaIntegrations:
             "$..DestinationConfig",
             "$..LastProcessingResult",
             "$..MaximumRecordAgeInSeconds",
-            "$..TumblingWindowInSeconds",
             "$..Configuration.CodeSize",
             "$..Tags",
             "$..StreamDescription.StreamModeDetails",
+            "$..Configuration.Layers",
+            "$..TumblingWindowInSeconds",
+            # flaky because we currently don't actually wait in cloudformation for it to be active
+            "$..Configuration.LastUpdateStatus",
+            "$..Configuration.State",
+            "$..Configuration.StateReason",
+            "$..Configuration.StateReasonCode",
         ],
     )
     @pytest.mark.aws_validated
