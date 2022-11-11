@@ -162,9 +162,9 @@ class S3Provider(S3Api, ServiceLifecycleHook):
 
     def on_after_init(self):
         apply_moto_patches()
-        # registering of virtual host routes happens with the hook on_infra_ready
         register_website_hosting_routes(router=ROUTER)
         register_custom_handlers()
+        # registering of virtual host routes happens with the hook on_infra_ready in virtual_host.py
 
     def __init__(self) -> None:
         super().__init__()
