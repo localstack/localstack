@@ -95,5 +95,33 @@
         }
       }
     }
+  },
+  "tests/integration/cloudformation/api/test_stack_policies.py::test_set_policy_both_policy_and_url": {
+    "recorded-date": "11-11-2022, 14:19:19",
+    "recorded-content": {
+      "error": {
+        "Error": {
+          "Code": "ValidationError",
+          "Message": "You cannot specify both StackPolicyURL and StackPolicyBody",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/integration/cloudformation/api/test_stack_policies.py::test_set_empty_policy_with_url": {
+    "recorded-date": "11-11-2022, 14:25:18",
+    "recorded-content": {
+      "policy": {
+        "StackPolicyBody": {},
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
   }
 }

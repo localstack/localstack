@@ -97,6 +97,69 @@ def test_set_invalid_policy_with_url(
 
 @pytest.mark.aws_validated
 @pytest.mark.skip(reason="Not implemented")
+def test_set_empty_policy_with_url(
+    deploy_cfn_template, cfn_client, s3_client, s3_create_bucket, snapshot
+):
+    stack = deploy_cfn_template(
+        template_path=os.path.join(
+            os.path.dirname(__file__), "../../templates/sns_topic_simple.yaml"
+        ),
+    )
+    bucket_name = s3_create_bucket()
+    key = "policy.json"
+    domain = "amazonaws.com" if is_aws_cloud() else "localhost.localstack.cloud:4566"
+
+    s3_client.upload_file(
+        os.path.join(os.path.dirname(__file__), "../../templates/empty_policy.json"),
+        Bucket=bucket_name,
+        Key=key,
+    )
+
+    url = f"https://{bucket_name}.s3.{domain}/{key}"
+
+    cfn_client.set_stack_policy(StackName=stack.stack_name, StackPolicyURL=url)
+    obtained_policy = cfn_client.get_stack_policy(StackName=stack.stack_name)
+    snapshot.match("policy", obtained_policy)
+
+
+@pytest.mark.aws_validated
+@pytest.mark.skip(reason="Not implemented")
+def test_set_policy_both_policy_and_url(
+    deploy_cfn_template, cfn_client, s3_client, s3_create_bucket, snapshot
+):
+    stack = deploy_cfn_template(
+        template_path=os.path.join(
+            os.path.dirname(__file__), "../../templates/sns_topic_simple.yaml"
+        ),
+    )
+
+    domain = "amazonaws.com" if is_aws_cloud() else "localhost.localstack.cloud:4566"
+    bucket_name = s3_create_bucket()
+    key = "policy.json"
+
+    s3_client.upload_file(
+        os.path.join(os.path.dirname(__file__), "../../templates/stack_policy.json"),
+        Bucket=bucket_name,
+        Key=key,
+    )
+
+    url = f"https://{bucket_name}.s3.{domain}/{key}"
+
+    policy = {
+        "Statement": [{"Effect": "Allow", "Action": "Update:*", "Principal": "*", "Resource": "*"}]
+    }
+
+    with pytest.raises(botocore.exceptions.ClientError) as ex:
+        cfn_client.set_stack_policy(
+            StackName=stack.stack_name, StackPolicyBody=json.dumps(policy), StackPolicyURL=url
+        )
+
+    error_response = ex.value.response
+    snapshot.match("error", error_response)
+
+
+@pytest.mark.aws_validated
+@pytest.mark.skip(reason="Not implemented")
 def test_empty_policy(cfn_client, deploy_cfn_template, snapshot):
     stack = deploy_cfn_template(
         template_path=os.path.join(
