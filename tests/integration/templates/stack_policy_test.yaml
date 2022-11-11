@@ -10,9 +10,11 @@ Resources:
   topic123:
     Type: AWS::SNS::Topic
     Properties:
-      TopicName: !Ref TopicName
+      TopicName:
+        Ref: TopicName
 
   bucket123:
     Type: AWS::S3::Bucket
     Properties:
-      BucketName: !Ref BucketName
+      BucketName:
+        Ref: BucketName
