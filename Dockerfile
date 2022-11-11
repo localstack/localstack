@@ -261,7 +261,10 @@ RUN source .venv/bin/activate && \
       stepfunctions \
       stepfunctions-local \
       timescaledb && \
-    rm -rf /tmp/localstack/*
+    rm -rf /tmp/localstack/* && \
+    rm -rf /var/lib/localstack/cache/* && \
+    chmod -R 777 /var/lib/localstack
+
 
 # Add the build date and git hash at last (changes everytime)
 ARG LOCALSTACK_BUILD_DATE
