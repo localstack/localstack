@@ -296,31 +296,9 @@ def stack_process_is_finished(cfn_client, stack_name):
     )
 
 
-@pytest.mark.skip(reason="Not implemented")
-@pytest.mark.aws_verified
-def test_drift_detection_on_lambda(deploy_cfn_template, cfn_client, lambda_client, snapshot):
-    snapshot.add_transformer(snapshot.transform.cloudformation_api())
-    stack = deploy_cfn_template(
-        template_path=os.path.join(os.path.dirname(__file__), "../../templates/lambda_url.yaml")
-    )
-
-    lambda_client.update_function_configuration(
-        FunctionName=stack.outputs["LambdaName"],
-        Runtime="python3.8",
-        Description="different description",
-        Environment={"Variables": {"ENDPOINT_URL": "localhost.localstack.cloud"}},
-    )
-
-    drift_detection = cfn_client.detect_stack_resource_drift(
-        StackName=stack.stack_name, LogicalResourceId="Function76856677"
-    )
-
-    snapshot.match("drift_detection", drift_detection)
-
-
 @pytest.mark.aws_validate
 @pytest.mark.skip(reason="Not Implemented")
-def test_linting_error_during_creation(cfn_client):
+def test_linting_error_during_creation(cfn_client, snapshot):
     stack_name = f"stack-{short_uid()}"
     bad_template = {"Resources": "", "Outputs": ""}
 
@@ -328,9 +306,7 @@ def test_linting_error_during_creation(cfn_client):
         cfn_client.create_stack(StackName=stack_name, TemplateBody=json.dumps(bad_template))
 
     error_response = ex.value.response
-
-    assert error_response["Error"]["Code"] == "ValidationError"
-    assert "Template format error" in error_response["Error"]["Message"]
+    snapshot.match("error", error_response)
 
 
 @pytest.mark.aws_validated
@@ -344,6 +320,7 @@ def test_notifications(
     is_stack_updated,
     sqs_create_queue,
     sns_create_sqs_subscription,
+    cleanup_stacks,
 ):
     stack_name = f"stack-{short_uid()}"
     topic_arn = sns_create_topic()["TopicArn"]
@@ -359,6 +336,7 @@ def test_notifications(
         TemplateBody=template,
         Parameters=[{"ParameterKey": "TopicName", "ParameterValue": f"topic-{short_uid()}"}],
     )
+    cleanup_stacks([stack_name])
 
     assert wait_until(is_stack_created(stack_name))
 
@@ -391,13 +369,10 @@ def test_notifications(
         # Assert notifications of resources deleted
         assert [message for message in messages.values() if "DELETE_" in message["Message"]]
 
-    try:
-        retry(_assert_messages, retries=10, sleep=2)
-    finally:
-        cfn_client.delete_stack(StackName=stack_name)
+    retry(_assert_messages, retries=10, sleep=2)
 
 
-@pytest.mark.aws_validated
+@pytest.mark.aws_validatetest_stacks.pd
 @pytest.mark.skip(reason="feature not implemented")
 def test_prevent_stack_update(deploy_cfn_template, cfn_client, snapshot):
     template = load_file(

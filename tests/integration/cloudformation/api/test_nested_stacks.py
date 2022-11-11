@@ -151,7 +151,7 @@ def test_lifecycle_nested_stack(cfn_client, deploy_cfn_template, s3_client, s3_c
 
     assert s3_client.head_bucket(Bucket=altered_nested_bucket_name)
 
-    cfn_client.delete_stack(StackName=stack.stack_name)
+    stack.destroy()
 
     def _assert_bucket_is_deleted():
         try:
