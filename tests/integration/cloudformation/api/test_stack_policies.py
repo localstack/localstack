@@ -1,6 +1,7 @@
 import json
 import os
 
+import botocore.exceptions
 import pytest
 
 from localstack.utils.files import load_file
@@ -8,6 +9,46 @@ from localstack.utils.strings import short_uid
 from localstack.utils.sync import retry
 
 
+def test_policy_lifecycle():
+    pass
+
+
+@pytest.mark.aws_validated
+@pytest.mark.skip(reason="Not implemented")
+def test_empty_policy(cfn_client, deploy_cfn_template, snapshot):
+    stack = deploy_cfn_template(
+        template_path=os.path.join(
+            os.path.dirname(__file__), "../../templates/stack_policy_test.yaml"
+        ),
+        parameters={"TopicName": f"topic-{short_uid()}", "BucketName": f"bucket-{short_uid()}"},
+    )
+    policy = {}
+
+    cfn_client.set_stack_policy(StackName=stack.stack_name, StackPolicyBody=json.dumps(policy))
+
+    policy = cfn_client.get_stack_policy(StackName=stack.stack_name)
+    snapshot.match("policy", policy)
+
+
+@pytest.mark.aws_validated
+@pytest.mark.skip(reason="Not implemented")
+def test_invalid_policy(cfn_client, deploy_cfn_template):
+    stack = deploy_cfn_template(
+        template_path=os.path.join(
+            os.path.dirname(__file__), "../../templates/stack_policy_test.yaml"
+        ),
+        parameters={"TopicName": f"topic-{short_uid()}", "BucketName": f"bucket-{short_uid()}"},
+    )
+
+    with pytest.raises(botocore.exceptions.ClientError) as ex:
+        cfn_client.set_stack_policy(StackName=stack.stack_name, StackPolicyBody=short_uid())
+
+    error_response = ex.value.response["Error"]
+    assert error_response["Code"] == "ValidationError"
+    assert "Error validating stack policy: Invalid stack policy" in error_response["Message"]
+
+
+@pytest.mark.aws_validated
 @pytest.mark.skip(reason="Not implemented")
 @pytest.mark.parametrize("resource_type", ["AWS::S3::Bucket", "AWS::SNS::Topic"])
 def test_prevent_update(resource_type, cfn_client, deploy_cfn_template):

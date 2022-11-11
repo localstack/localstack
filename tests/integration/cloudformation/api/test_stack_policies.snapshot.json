@@ -1,0 +1,18 @@
+{
+  "tests/integration/cloudformation/api/test_stack_policies.py::test_empty_policy": {
+    "recorded-date": "10-11-2022, 12:40:34",
+    "recorded-content": {
+      "policy": {
+        "StackPolicyBody": {},
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/integration/cloudformation/api/test_stack_policies.py::test_invalid_policy": {
+    "recorded-date": "10-11-2022, 12:54:20",
+    "recorded-content": {}
+  }
+}
