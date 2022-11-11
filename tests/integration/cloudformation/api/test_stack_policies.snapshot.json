@@ -58,5 +58,42 @@
         }
       }
     }
+  },
+  "tests/integration/cloudformation/api/test_stack_policies.py::test_set_policy_with_url": {
+    "recorded-date": "11-11-2022, 13:58:17",
+    "recorded-content": {
+      "policy": {
+        "StackPolicyBody": {
+          "Statement": [
+            {
+              "Effect": "Allow",
+              "Action": "Update:*",
+              "Principal": "*",
+              "Resource": "*"
+            }
+          ]
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/integration/cloudformation/api/test_stack_policies.py::test_set_invalid_policy_with_url": {
+    "recorded-date": "11-11-2022, 14:07:44",
+    "recorded-content": {
+      "error": {
+        "Error": {
+          "Code": "ValidationError",
+          "Message": "Error validating stack policy: Invalid stack policy",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
   }
 }

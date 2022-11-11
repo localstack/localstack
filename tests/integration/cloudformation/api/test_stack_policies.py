@@ -5,11 +5,14 @@ import botocore.exceptions
 import pytest
 import yaml
 
+from localstack.testing.aws.util import is_aws_cloud
 from localstack.utils.files import load_file
 from localstack.utils.strings import short_uid
 from localstack.utils.sync import retry
 
 
+@pytest.mark.aws_validated
+@pytest.mark.skip(reason="Not implemented")
 def test_policy_lifecycle(cfn_client, deploy_cfn_template, snapshot):
     stack = deploy_cfn_template(
         template_path=os.path.join(
@@ -34,6 +37,62 @@ def test_policy_lifecycle(cfn_client, deploy_cfn_template, snapshot):
     cfn_client.set_stack_policy(StackName=stack.stack_name, StackPolicyBody=json.dumps(policy))
     obtained_policy = cfn_client.get_stack_policy(StackName=stack.stack_name)
     snapshot.match("policy_deleted", obtained_policy)
+
+
+@pytest.mark.aws_validated
+@pytest.mark.skip(reason="Not implemented")
+def test_set_policy_with_url(
+    deploy_cfn_template, cfn_client, s3_client, s3_create_bucket, snapshot
+):
+    stack = deploy_cfn_template(
+        template_path=os.path.join(
+            os.path.dirname(__file__), "../../templates/sns_topic_simple.yaml"
+        ),
+    )
+    bucket_name = s3_create_bucket()
+    key = "policy.json"
+    domain = "amazonaws.com" if is_aws_cloud() else "localhost.localstack.cloud:4566"
+
+    s3_client.upload_file(
+        os.path.join(os.path.dirname(__file__), "../../templates/stack_policy.json"),
+        Bucket=bucket_name,
+        Key=key,
+    )
+
+    url = f"https://{bucket_name}.s3.{domain}/{key}"
+
+    cfn_client.set_stack_policy(StackName=stack.stack_name, StackPolicyURL=url)
+    obtained_policy = cfn_client.get_stack_policy(StackName=stack.stack_name)
+    snapshot.match("policy", obtained_policy)
+
+
+@pytest.mark.aws_validated
+@pytest.mark.skip(reason="Not implemented")
+def test_set_invalid_policy_with_url(
+    deploy_cfn_template, cfn_client, s3_client, s3_create_bucket, snapshot
+):
+    stack = deploy_cfn_template(
+        template_path=os.path.join(
+            os.path.dirname(__file__), "../../templates/sns_topic_simple.yaml"
+        ),
+    )
+    bucket_name = s3_create_bucket()
+    key = "policy.json"
+    domain = "amazonaws.com" if is_aws_cloud() else "localhost.localstack.cloud:4566"
+
+    s3_client.upload_file(
+        os.path.join(os.path.dirname(__file__), "../../templates/invalid_stack_policy.json"),
+        Bucket=bucket_name,
+        Key=key,
+    )
+
+    url = f"https://{bucket_name}.s3.{domain}/{key}"
+
+    with pytest.raises(botocore.exceptions.ClientError) as ex:
+        cfn_client.set_stack_policy(StackName=stack.stack_name, StackPolicyURL=url)
+
+    error_response = ex.value.response
+    snapshot.match("error", error_response)
 
 
 @pytest.mark.aws_validated
