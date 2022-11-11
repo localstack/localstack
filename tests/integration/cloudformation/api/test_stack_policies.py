@@ -9,8 +9,30 @@ from localstack.utils.strings import short_uid
 from localstack.utils.sync import retry
 
 
-def test_policy_lifecycle():
-    pass
+def test_policy_lifecycle(cfn_client, deploy_cfn_template, snapshot):
+    stack = deploy_cfn_template(
+        template_path=os.path.join(
+            os.path.dirname(__file__), "../../templates/sns_topic_simple.yaml"
+        ),
+    )
+    policy = {
+        "Statement": [{"Effect": "Allow", "Action": "Update:*", "Principal": "*", "Resource": "*"}]
+    }
+    cfn_client.set_stack_policy(StackName=stack.stack_name, StackPolicyBody=json.dumps(policy))
+    obtained_policy = cfn_client.get_stack_policy(StackName=stack.stack_name)
+    snapshot.match("policy", obtained_policy)
+
+    policy = {
+        "Statement": [{"Effect": "Deny", "Action": "Update:*", "Principal": "*", "Resource": "*"}]
+    }
+    cfn_client.set_stack_policy(StackName=stack.stack_name, StackPolicyBody=json.dumps(policy))
+    obtained_policy = cfn_client.get_stack_policy(StackName=stack.stack_name)
+    snapshot.match("policy_updated", obtained_policy)
+
+    policy = {}
+    cfn_client.set_stack_policy(StackName=stack.stack_name, StackPolicyBody=json.dumps(policy))
+    obtained_policy = cfn_client.get_stack_policy(StackName=stack.stack_name)
+    snapshot.match("policy_deleted", obtained_policy)
 
 
 @pytest.mark.aws_validated
