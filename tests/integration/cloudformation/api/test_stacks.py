@@ -296,7 +296,7 @@ def stack_process_is_finished(cfn_client, stack_name):
     )
 
 
-@pytest.mark.aws_validate
+@pytest.mark.aws_validated
 @pytest.mark.skip(reason="Not Implemented")
 def test_linting_error_during_creation(cfn_client, snapshot):
     stack_name = f"stack-{short_uid()}"
@@ -372,7 +372,7 @@ def test_notifications(
     retry(_assert_messages, retries=10, sleep=2)
 
 
-@pytest.mark.aws_validatetest_stacks.pd
+@pytest.mark.aws_validated
 @pytest.mark.skip(reason="feature not implemented")
 def test_prevent_stack_update(deploy_cfn_template, cfn_client, snapshot):
     template = load_file(

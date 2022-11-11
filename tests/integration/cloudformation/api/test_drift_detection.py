@@ -4,7 +4,7 @@ import pytest
 
 
 @pytest.mark.skip(reason="Not implemented")
-@pytest.mark.aws_verified
+@pytest.mark.aws_validated
 def test_drift_detection_on_lambda(deploy_cfn_template, cfn_client, lambda_client, snapshot):
     snapshot.add_transformer(snapshot.transform.cloudformation_api())
     stack = deploy_cfn_template(
