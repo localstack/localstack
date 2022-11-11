@@ -94,7 +94,8 @@ WORKDIR /opt/code/localstack/
 
 # create filesystem hierarchy
 RUN mkdir -p /var/lib/localstack && \
-    mkdir -p /usr/lib/localstack
+    mkdir -p /usr/lib/localstack \
+
 # backwards compatibility with LEGACY_DIRECTORIES (TODO: deprecate and remove)
 RUN mkdir -p /opt/code/localstack/localstack && \
     ln -s /usr/lib/localstack /opt/code/localstack/localstack/infra && \
@@ -228,7 +229,6 @@ RUN mkdir -p /.npm && \
     chmod 777 . && \
     chmod 755 /root && \
     chmod -R 777 /.npm && \
-    chmod -R 777 /var/lib/localstack && \
     useradd -ms /bin/bash localstack && \
     ln -s `pwd` /tmp/localstack_install_dir
 
@@ -261,6 +261,9 @@ ENV LOCALSTACK_BUILD_VERSION=${LOCALSTACK_BUILD_VERSION}
 
 # clean up some libs (e.g., Maven should be no longer required after "make init" has completed)
 RUN rm -rf /usr/share/maven
+
+# Fix permissions on initialized directory
+RUN chmod -R 777 /var/lib/localstack
 
 # expose edge service, external service ports, and debugpy
 EXPOSE 4566 4510-4559 5678
