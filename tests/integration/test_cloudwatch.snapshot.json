@@ -666,5 +666,26 @@
         }
       }
     }
+  },
+  "tests/integration/test_cloudwatch.py::TestCloudwatch::test_put_metric_data_values_list": {
+    "recorded-date": "11-11-2022, 16:04:47",
+    "recorded-content": {
+      "get_metric_statistics": {
+        "Datapoints": [
+          {
+            "Maximum": 10.0,
+            "SampleCount": 6.0,
+            "Sum": 42.0,
+            "Timestamp": "timestamp",
+            "Unit": "Count"
+          }
+        ],
+        "Label": "test-metric",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
   }
 }
