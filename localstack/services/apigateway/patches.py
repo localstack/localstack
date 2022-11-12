@@ -182,7 +182,7 @@ def apply_patches():
         resource_id = url_path_parts[4]
         method_type = url_path_parts[6]
 
-        integration = self.backend.get_integration(function_id, resource_id, method_type)
+        integration = self.backend.get_integration(function_id, resource_id, method_type).to_json()
         if not integration:
             return result
 
@@ -229,9 +229,9 @@ def apply_patches():
             )
 
             if response_parameters:
-                integration_response["responseParameters"] = response_parameters
+                integration_response.response_parameters = response_parameters
 
-            return 201, {}, json.dumps(integration_response)
+            return 201, {}, integration_response.to_json()
 
         return result
 
@@ -248,7 +248,7 @@ def apply_patches():
 
             method_response = self.backend.get_method_response(
                 function_id, resource_id, method_type, response_code
-            )
+            ).to_json()
 
             if response_parameters:
                 method_response["responseParameters"] = response_parameters
@@ -265,7 +265,7 @@ def apply_patches():
             url_path_parts = self.path.split("/")
             usage_plan_id = url_path_parts[2]
             patch_operations = self._get_param("patchOperations")
-            usage_plan = self.backend.usage_plans.get(usage_plan_id)
+            usage_plan = self.backend.usage_plans.get(usage_plan_id).to_json()
             if not usage_plan:
                 raise UsagePlanNotFoundException()
 
@@ -409,9 +409,9 @@ def apply_patches():
     # patch integration error responses
     def apigateway_models_resource_get_integration(self, method_type):
         resource_method = self.resource_methods.get(method_type, {})
-        if "methodIntegration" not in resource_method:
+        if not resource_method.method_integration:
             raise NoIntegrationDefined()
-        return resource_method["methodIntegration"]
+        return resource_method.method_integration
 
     # TODO: put_rest_api now available upstream - see if we can leverage some synergies
     apigateway_response_restapis_individual_orig = APIGatewayResponse.restapis_individual
@@ -453,7 +453,7 @@ def apply_patches():
             deployment = self.backend.update_deployment(
                 function_id, deployment_id, patch_operations
             )
-            return 201, {}, json.dumps(deployment)
+            return 201, {}, deployment.to_json()
         return result
 
     # patch create_rest_api to allow using static API IDs defined via tags

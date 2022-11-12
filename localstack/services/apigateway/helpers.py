@@ -655,7 +655,7 @@ def import_api_from_openapi_spec(rest_api: RestAPI, body: Dict, query_params: Di
 
             method_integration = field_schema.get("x-amazon-apigateway-integration", {})
             method_resource = create_method_resource(resource, field, field_schema)
-            method_resource["requestParameters"] = method_integration.get("requestParameters")
+            method_resource.request_parameters = method_integration.get("requestParameters")
             responses = field_schema.get("responses", {})
             for status_code in responses:
                 response_model = None
@@ -691,7 +691,7 @@ def import_api_from_openapi_spec(rest_api: RestAPI, body: Dict, query_params: Di
                 .get("responseTemplates", None),
                 content_handling=None,
             )
-            resource.resource_methods[field]["methodIntegration"] = integration
+            resource.resource_methods[field].method_integration = integration
 
         rest_api.resources[child_id] = resource
         return resource
