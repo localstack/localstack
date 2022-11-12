@@ -1139,21 +1139,12 @@ def apply_moto_patches():
         return cors_rules
 
     @patch(moto_s3_responses.S3Response.is_delete_keys)
-    def s3_response_is_delete_keys(fn, self, request, path, bucket_name):
+    def s3_response_is_delete_keys(fn, self):
         """
         Old provider had a fix for a ticket, concerning 'x-id' - there is no documentation on AWS about this, but it is probably still valid
         Additional fix for testing if this is a "delete_objects" request, by removing trailing "=" from the path
         """
-        if self.subdomain_based_buckets(request):
-            # Temporary fix until moto supports x-id and DeleteObjects (#3931)
-            query = self._get_querystring(request.url)
-            is_delete_keys_v3 = (
-                query and ("delete" in query) and get_safe(query, "$.x-id.0") == "DeleteObjects"
-            )
-            return is_delete_keys_v3 or moto_s3_responses.is_delete_keys(request, path)
-        else:
-            path = path.rstrip("=")
-            return fn(self, request, path, bucket_name)
+        return get_safe(self.querystring, "$.x-id.0") == "DeleteObjects" or fn(self)
 
 
 def register_custom_handlers():
