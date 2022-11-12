@@ -453,7 +453,7 @@
     }
   },
   "tests/integration/test_sqs.py::TestSqsProvider::test_send_oversized_message": {
-    "recorded-date": "28-08-2022, 13:58:06",
+    "recorded-date": "12-11-2022, 15:12:26",
     "recorded-content": {
       "send_oversized_message": {
         "Error": {
@@ -470,7 +470,7 @@
     }
   },
   "tests/integration/test_sqs.py::TestSqsProvider::test_send_message_with_updated_maximum_message_size": {
-    "recorded-date": "28-08-2022, 13:58:12",
+    "recorded-date": "12-11-2022, 15:19:10",
     "recorded-content": {
       "send_oversized_message": {
         "Error": {

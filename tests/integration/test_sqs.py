@@ -301,8 +301,13 @@ class TestSqsProvider:
     @pytest.mark.skip_snapshot_verify(paths=["$..Error.Detail"])
     def test_send_oversized_message(self, sqs_client, sqs_queue, snapshot):
         with pytest.raises(ClientError) as e:
+            message_attributes = {"k": {"DataType": "String", "StringValue": "x"}}
+            message_attributes_size = len("k") + len("String") + len("x")
+            message_body = "a" * (DEFAULT_MAXIMUM_MESSAGE_SIZE - message_attributes_size + 1)
             sqs_client.send_message(
-                QueueUrl=sqs_queue, MessageBody="a" * (DEFAULT_MAXIMUM_MESSAGE_SIZE + 1)
+                QueueUrl=sqs_queue,
+                MessageBody=message_body,
+                MessageAttributes=message_attributes,
             )
 
         snapshot.match("send_oversized_message", e.value.response)
@@ -321,8 +326,13 @@ class TestSqsProvider:
 
         # check error case
         with pytest.raises(ClientError) as e:
+            message_attributes = {"k": {"DataType": "String", "StringValue": "x"}}
+            message_attributes_size = len("k") + len("String") + len("x")
+            message_body = "a" * (new_max_message_size - message_attributes_size + 1)
             sqs_client.send_message(
-                QueueUrl=sqs_queue, MessageBody="a" * (new_max_message_size + 1)
+                QueueUrl=sqs_queue,
+                MessageBody=message_body,
+                MessageAttributes=message_attributes,
             )
 
         snapshot.match("send_oversized_message", e.value.response)

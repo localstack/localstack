@@ -124,6 +124,8 @@ def _message_body_size(body: str):
 
 
 def _message_attributes_size(attributes: MessageBodyAttributeMap):
+    if not attributes:
+        return 0
     # must encode as utf8 to get correct bytes with len
     message_attributes_keys_size = sum(len(k.encode("utf8")) for k in attributes.keys())
     message_attributes_values_size = sum(
