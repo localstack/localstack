@@ -155,9 +155,9 @@ def apply_patches():
             resource_id = url_path_parts[4]
             method_type = url_path_parts[6]
             resource = self.backend.get_resource(function_id, resource_id)
-            resource.resource_methods[method_type]["requestParameters"] = request_parameters
+            resource.resource_methods[method_type].request_parameters = request_parameters
             method = resource.resource_methods[method_type]
-            result = 201, {}, json.dumps(method)
+            result = 201, {}, json.dumps(method.to_json())
         if len(result) != 3:
             return result
         authorization_type = self._get_param("authorizationType")
@@ -287,7 +287,7 @@ def apply_patches():
     def backend_update_deployment(self, function_id, deployment_id, patch_operations):
         rest_api = self.get_rest_api(function_id)
         deployment = rest_api.get_deployment(deployment_id)
-        deployment = deployment or {}
+        deployment = deployment.to_json() or {}
         apply_json_patch_safe(deployment, patch_operations, in_place=True)
         return deployment
 
@@ -453,7 +453,7 @@ def apply_patches():
             deployment = self.backend.update_deployment(
                 function_id, deployment_id, patch_operations
             )
-            return 201, {}, deployment.to_json()
+            return 201, {}, json.dumps(deployment)
         return result
 
     # patch create_rest_api to allow using static API IDs defined via tags

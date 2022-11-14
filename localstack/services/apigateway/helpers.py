@@ -605,7 +605,7 @@ def import_api_from_openapi_spec(rest_api: RestAPI, body: Dict, query_params: Di
                         or 300,
                     )
                     if authorizer:
-                        authorizers.update({security_scheme_name: authorizer})
+                        authorizers[security_scheme_name] = authorizer
                     return authorizer
 
     def get_or_create_path(abs_path: str, base_path: str):
@@ -700,9 +700,9 @@ def import_api_from_openapi_spec(rest_api: RestAPI, body: Dict, query_params: Di
         return (
             child.add_method(
                 method,
-                authorization_type=authorizer.get("type"),
+                authorization_type=authorizer.type,
                 api_key_required=None,
-                authorizer_id=authorizer.get("id"),
+                authorizer_id=authorizer.id,
             )
             if (authorizer := create_authorizer(method_schema))
             else child.add_method(method, None, None)
@@ -710,7 +710,10 @@ def import_api_from_openapi_spec(rest_api: RestAPI, body: Dict, query_params: Di
 
     if definitions := resolved_schema.get("definitions", {}):
         for name, model in definitions.items():
-            rest_api.add_model(name=name, schema=model, content_type=APPLICATION_JSON)
+            # TODO: validate if description is required
+            rest_api.add_model(
+                name=name, description="", schema=model, content_type=APPLICATION_JSON
+            )
 
     # determine base path
     basepath_mode = (query_params.get("basepath") or ["prepend"])[0]
