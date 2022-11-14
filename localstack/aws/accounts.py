@@ -3,12 +3,7 @@ import logging
 import re
 import threading
 
-from localstack.config import LS_LOG
-from localstack.constants import (
-    DEFAULT_AWS_ACCOUNT_ID,
-    LS_LOG_TRACE_INTERNAL,
-    TEST_AWS_ACCESS_KEY_ID,
-)
+from localstack.constants import DEFAULT_AWS_ACCOUNT_ID, TEST_AWS_ACCESS_KEY_ID
 
 LOG = logging.getLogger(__name__)
 
@@ -39,11 +34,10 @@ def get_aws_account_id() -> str:
     try:
         return REQUEST_CTX_TLS.account_id
     except AttributeError:
-        if LS_LOG and LS_LOG == LS_LOG_TRACE_INTERNAL:
-            LOG.debug(
-                "No Account ID in thread-local storage for thread %s",
-                threading.current_thread().ident,
-            )
+        LOG.debug(
+            "No Account ID in thread-local storage for thread %s",
+            threading.current_thread().ident,
+        )
         return DEFAULT_AWS_ACCOUNT_ID
 
 
