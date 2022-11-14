@@ -44,6 +44,7 @@ def test_policy_lifecycle(cfn_client, deploy_cfn_template, snapshot):
 def test_set_policy_with_url(
     deploy_cfn_template, cfn_client, s3_client, s3_create_bucket, snapshot
 ):
+    """Test to validate the setting of a Stack Policy through an URL"""
     stack = deploy_cfn_template(
         template_path=os.path.join(
             os.path.dirname(__file__), "../../templates/sns_topic_simple.yaml"
@@ -71,6 +72,7 @@ def test_set_policy_with_url(
 def test_set_invalid_policy_with_url(
     deploy_cfn_template, cfn_client, s3_client, s3_create_bucket, snapshot
 ):
+    """Test to validate the error response resulting of setting an invalid Stack Policy through an URL"""
     stack = deploy_cfn_template(
         template_path=os.path.join(
             os.path.dirname(__file__), "../../templates/sns_topic_simple.yaml"
@@ -100,6 +102,7 @@ def test_set_invalid_policy_with_url(
 def test_set_empty_policy_with_url(
     deploy_cfn_template, cfn_client, s3_client, s3_create_bucket, snapshot
 ):
+    """Test to validate the setting of an empty Stack Policy through an URL"""
     stack = deploy_cfn_template(
         template_path=os.path.join(
             os.path.dirname(__file__), "../../templates/sns_topic_simple.yaml"
@@ -127,6 +130,9 @@ def test_set_empty_policy_with_url(
 def test_set_policy_both_policy_and_url(
     deploy_cfn_template, cfn_client, s3_client, s3_create_bucket, snapshot
 ):
+
+    """Test to validate the API behaviour when setting trying to set a Stack policy using both the body and the URL"""
+
     stack = deploy_cfn_template(
         template_path=os.path.join(
             os.path.dirname(__file__), "../../templates/sns_topic_simple.yaml"
@@ -176,8 +182,9 @@ def test_empty_policy(cfn_client, deploy_cfn_template, snapshot):
 
 
 @pytest.mark.aws_validated
-@pytest.mark.skip(reason="Not implemented")
-def test_invalid_policy(cfn_client, deploy_cfn_template):
+# @pytest.mark.skip(reason="Not implemented")
+def test_invalid_policy(cfn_client, deploy_cfn_template, snapshot):
+    """Test to validate the error response when setting and Invalid Policy"""
     stack = deploy_cfn_template(
         template_path=os.path.join(
             os.path.dirname(__file__), "../../templates/stack_policy_test.yaml"
@@ -189,14 +196,17 @@ def test_invalid_policy(cfn_client, deploy_cfn_template):
         cfn_client.set_stack_policy(StackName=stack.stack_name, StackPolicyBody=short_uid())
 
     error_response = ex.value.response["Error"]
-    assert error_response["Code"] == "ValidationError"
-    assert "Error validating stack policy: Invalid stack policy" in error_response["Message"]
+    snapshot.match("error", error_response)
 
 
 @pytest.mark.aws_validated
 @pytest.mark.skip(reason="Not implemented")
 @pytest.mark.parametrize("resource_type", ["AWS::S3::Bucket", "AWS::SNS::Topic"])
 def test_prevent_update(resource_type, cfn_client, deploy_cfn_template):
+    """
+    Test to validate the correct behaviour of the update operation on a Stack with a Policy that prevents an update
+    for an specific resource type
+    """
     template = load_file(
         os.path.join(os.path.dirname(__file__), "../../templates/stack_policy_test.yaml")
     )
@@ -265,6 +275,10 @@ def test_prevent_update(resource_type, cfn_client, deploy_cfn_template):
     [{"id": "bucket123", "type": "AWS::S3::Bucket"}, {"id": "topic123", "type": "AWS::SNS::Topic"}],
 )
 def test_prevent_deletion(resource, cfn_client, deploy_cfn_template):
+    """
+    Test to validate that CFn won't delete resources during an update operation that are protected by the Stack
+    Policy
+    """
     template = load_file(
         os.path.join(os.path.dirname(__file__), "../../templates/stack_policy_test.yaml")
     )
@@ -323,6 +337,9 @@ def test_prevent_deletion(resource, cfn_client, deploy_cfn_template):
 @pytest.mark.aws_validated
 @pytest.mark.skip(reason="Not implemented")
 def test_update_with_policy(deploy_cfn_template, cfn_client):
+    """
+    Test to validate the completion of a stack update that is allowed byt the Stack Policy
+    """
     template = load_file(
         os.path.join(os.path.dirname(__file__), "../../templates/stack_policy_test.yaml")
     )
