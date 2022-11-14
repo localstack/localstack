@@ -119,19 +119,22 @@ def check_message_size(
 
 
 def _message_body_size(body: str):
-    # must encode as utf8 to get correct bytes with len
-    return len(body.encode("utf8"))
+    return _bytesize(body)
 
 
 def _message_attributes_size(attributes: MessageBodyAttributeMap):
     if not attributes:
         return 0
-    # must encode as utf8 to get correct bytes with len
-    message_attributes_keys_size = sum(len(k.encode("utf8")) for k in attributes.keys())
+    message_attributes_keys_size = sum(_bytesize(k) for k in attributes.keys())
     message_attributes_values_size = sum(
-        sum(len(v.encode("utf8")) for v in attr.values()) for attr in attributes.values()
+        sum(_bytesize(v) for v in attr.values()) for attr in attributes.values()
     )
     return message_attributes_keys_size + message_attributes_values_size
+
+
+def _bytesize(value: str | bytes):
+    # must encode as utf8 to get correct bytes with len
+    return len(value.encode("utf8")) if isinstance(value, str) else len(value)
 
 
 def check_message_content(message_body: str):
