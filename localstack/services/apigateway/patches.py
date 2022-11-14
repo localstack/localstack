@@ -228,10 +228,13 @@ def apply_patches():
                 function_id, resource_id, method_type, status_code
             )
 
+            # to_json() returns a dict, not a json string
+            # we need to assemble integration_response with response_parameters
+            integration_response = integration_response.to_json()
             if response_parameters:
-                integration_response.response_parameters = response_parameters
+                integration_response["responseParameters"] = response_parameters
 
-            return 201, {}, integration_response.to_json()
+            return 201, {}, json.dumps(integration_response)
 
         return result
 
