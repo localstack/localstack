@@ -162,6 +162,31 @@ jobs:
       - store_test_results:
           path: target/reports/
 
+  itest-s3-asf-provider:
+    executor: ubuntu-machine-amd64
+    working_directory: /tmp/workspace/repo
+    steps:
+      - attach_workspace:
+          at: /tmp/workspace
+      - run:
+          name: Test ASF S3 provider
+          environment:
+            PROVIDER_OVERRIDE_S3: "asf"
+            TEST_PATH: "tests/integration/s3/"
+            PYTEST_ARGS: "--reruns 3 --junitxml=target/reports/s3_asf.xml -o junit_suite_name='s3_asf'"
+            COVERAGE_ARGS: "-p"
+          command: make test-coverage
+      - run:
+          name: Store coverage results
+          command: mv .coverage.* target/coverage/
+      - persist_to_workspace:
+          root:
+            /tmp/workspace
+          paths:
+            - repo/target/coverage/
+      - store_test_results:
+          path: target/reports/
+
   docker-build:
     parameters:
       platform:
@@ -406,6 +431,9 @@ workflows:
       - itest-lambda-provider:
           requires:
             - preflight
+      - itest-s3-asf-provider:
+          requires:
+            - preflight
       - unit-tests:
           requires:
             - preflight
@@ -452,6 +480,7 @@ workflows:
           requires:
             - itest-lambda-docker
             - itest-lambda-provider
+            - itest-s3-asf-provider
             - docker-test-amd64
             - docker-test-arm64
             - collect-not-implemented-community
@@ -464,6 +493,7 @@ workflows:
           requires:
             - itest-lambda-docker
             - itest-lambda-provider
+            - itest-s3-asf-provider
             - docker-test-amd64
             - docker-test-arm64
             - unit-tests
