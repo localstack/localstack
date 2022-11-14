@@ -293,7 +293,7 @@
     }
   },
   "tests/integration/awslambda/test_lambda.py::TestLambdaBehavior::test_lambda_invoke_with_timeout": {
-    "recorded-date": "09-09-2022, 20:59:16",
+    "recorded-date": "14-11-2022, 16:13:13",
     "recorded-content": {
       "create-result": {
         "CreateEventSourceMappingResponse": null,

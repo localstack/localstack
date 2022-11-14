@@ -10,12 +10,16 @@ def handler(event, context):
             f.write(write_content)
     elif event.get("read-file"):
         with open("/tmp/temp-store", mode="rt") as f:
-            return {"content": f.read(write_content)}
+            payload = {"content": f.read(write_content)}
+            print(payload)
+            return payload
     elif new_num := event.get("set-number"):
         global INTERNAL_NUMBER
         INTERNAL_NUMBER = new_num
     elif event.get("read-number"):
-        return {"number": INTERNAL_NUMBER}
+        payload = {"number": INTERNAL_NUMBER}
+        print(payload)
+        return payload
     elif sleep_time := event.get("sleep"):
         try:
             print("starting wait")

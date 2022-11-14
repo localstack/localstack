@@ -474,7 +474,7 @@ class TestLambdaBehavior:
         )
         snapshot.match("invoke-result-set-number", result)
         result = lambda_client.invoke(
-            FunctionName=func_name, Payload=json.dumps({"read-number": set_number})
+            FunctionName=func_name, Payload=json.dumps({"read-number": True})
         )
         snapshot.match("invoke-result-read-number", result)
         # file is written, let's let the function timeout and check if it is still there
@@ -502,7 +502,7 @@ class TestLambdaBehavior:
         )
         snapshot.match("invoke-result-file-read-after-timeout", result)
         result = lambda_client.invoke(
-            FunctionName=func_name, Payload=json.dumps({"read-number": set_number})
+            FunctionName=func_name, Payload=json.dumps({"read-number": True})
         )
         snapshot.match("invoke-result-read-number-after-timeout", result)
 
