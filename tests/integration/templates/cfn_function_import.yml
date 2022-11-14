@@ -1,0 +1,14 @@
+Parameters:
+  BucketExportName:
+    Type: String
+Resources:
+  Bucket2:
+    Type: AWS::S3::Bucket
+    Properties:
+      Tags:
+        - Key: test
+          Value: !ImportValue
+            'Fn::Sub': '${BucketExportName}'
+Outputs:
+  BucketName2:
+    Value: !Ref Bucket2
