@@ -1891,6 +1891,7 @@ class TargetLocation(TypedDict, total=False):
     TargetLocationMaxConcurrency: Optional[MaxConcurrency]
     TargetLocationMaxErrors: Optional[MaxErrors]
     ExecutionRoleName: Optional[ExecutionRoleName]
+    TargetLocationAlarmConfiguration: Optional[AlarmConfiguration]
 
 
 TargetLocations = List[TargetLocation]
@@ -2134,6 +2135,7 @@ class StepExecution(TypedDict, total=False):
     ValidNextSteps: Optional[ValidNextStepList]
     Targets: Optional[Targets]
     TargetLocation: Optional[TargetLocation]
+    TriggeredAlarms: Optional[AlarmStateInformationList]
 
 
 StepExecutionList = List[StepExecution]
