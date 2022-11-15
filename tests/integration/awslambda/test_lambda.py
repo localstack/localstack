@@ -76,6 +76,7 @@ TEST_LAMBDA_URL = os.path.join(THIS_FOLDER, "functions/lambda_url.js")
 TEST_LAMBDA_CACHE_NODEJS = os.path.join(THIS_FOLDER, "functions/lambda_cache.js")
 TEST_LAMBDA_CACHE_PYTHON = os.path.join(THIS_FOLDER, "functions/lambda_cache.py")
 TEST_LAMBDA_TIMEOUT_PYTHON = os.path.join(THIS_FOLDER, "functions/lambda_timeout.py")
+TEST_LAMBDA_TIMEOUT_ENV_PYTHON = os.path.join(THIS_FOLDER, "functions/lambda_timeout_env.py")
 TEST_LAMBDA_SLEEP_ENVIRONMENT = os.path.join(THIS_FOLDER, "functions/lambda_sleep_environment.py")
 TEST_LAMBDA_INTROSPECT_PYTHON = os.path.join(THIS_FOLDER, "functions/lambda_introspect.py")
 TEST_LAMBDA_VERSION = os.path.join(THIS_FOLDER, "functions/lambda_version.py")
@@ -339,7 +340,6 @@ class TestLambdaBehavior:
 
     @pytest.mark.skipif(is_old_provider(), reason="old provider")
     @pytest.mark.aws_validated
-    @pytest.mark.skipif(not is_old_provider(), reason="Not yet implemented")
     def test_lambda_invoke_with_timeout(
         self,
         lambda_client,
@@ -370,6 +370,13 @@ class TestLambdaBehavior:
         snapshot.match("invoke-result", result)
 
         log_group_name = f"/aws/lambda/{func_name}"
+
+        def _log_stream_available():
+            result = logs_client.describe_log_streams(logGroupName=log_group_name)["logStreams"]
+            return len(result) > 0
+
+        wait_until(_log_stream_available, strategy="linear")
+
         ls_result = logs_client.describe_log_streams(logGroupName=log_group_name)
         log_stream_name = ls_result["logStreams"][0]["logStreamName"]
 
@@ -427,6 +434,89 @@ class TestLambdaBehavior:
             )
 
         wait_until(_assert_log_output, strategy="linear")
+
+    @pytest.mark.skipif(is_old_provider(), reason="old provider")
+    @pytest.mark.aws_validated
+    def test_lambda_invoke_timed_out_environment_reuse(
+        self,
+        lambda_client,
+        create_lambda_function,
+        logs_client,
+        snapshot,
+    ):
+        """Test checking if a timeout leads to a new environment with a new filesystem (and lost /tmp) or not"""
+        regex = re.compile(r".*\s(?P<uuid>[-a-z0-9]+) Task timed out after \d.\d+ seconds")
+        snapshot.add_transformer(
+            KeyValueBasedTransformer(
+                lambda k, v: regex.search(v).group("uuid") if k == "errorMessage" else None,
+                "<timeout_error_msg>",
+                replace_reference=False,
+            )
+        )
+
+        func_name = f"test_lambda_{short_uid()}"
+        create_result = create_lambda_function(
+            func_name=func_name,
+            handler_file=TEST_LAMBDA_TIMEOUT_ENV_PYTHON,
+            runtime=Runtime.python3_9,
+            client=lambda_client,
+            timeout=1,
+        )
+        snapshot.match("create-result", create_result)
+        file_content = "some-content"
+        set_number = 42
+
+        result = lambda_client.invoke(
+            FunctionName=func_name, Payload=json.dumps({"write-file": file_content})
+        )
+        snapshot.match("invoke-result-file-write", result)
+        result = lambda_client.invoke(
+            FunctionName=func_name, Payload=json.dumps({"read-file": True})
+        )
+        snapshot.match("invoke-result-file-read", result)
+        result = lambda_client.invoke(
+            FunctionName=func_name, Payload=json.dumps({"set-number": set_number})
+        )
+        snapshot.match("invoke-result-set-number", result)
+        result = lambda_client.invoke(
+            FunctionName=func_name, Payload=json.dumps({"read-number": True})
+        )
+        snapshot.match("invoke-result-read-number", result)
+        # file is written, let's let the function timeout and check if it is still there
+
+        result = lambda_client.invoke(FunctionName=func_name, Payload=json.dumps({"sleep": 2}))
+        snapshot.match("invoke-result-timed-out", result)
+        log_group_name = f"/aws/lambda/{func_name}"
+
+        def _log_stream_available():
+            result = logs_client.describe_log_streams(logGroupName=log_group_name)["logStreams"]
+            return len(result) > 0
+
+        wait_until(_log_stream_available, strategy="linear")
+
+        ls_result = logs_client.describe_log_streams(logGroupName=log_group_name)
+        log_stream_name = ls_result["logStreams"][0]["logStreamName"]
+
+        def assert_events():
+            log_events = logs_client.get_log_events(
+                logGroupName=log_group_name, logStreamName=log_stream_name
+            )["events"]
+
+            assert any(["starting wait" in e["message"] for e in log_events])
+            # TODO: this part is a bit flaky, at least locally with old provider
+            assert not any(["done waiting" in e["message"] for e in log_events])
+
+        retry(assert_events, retries=15)
+
+        # check if, for the next normal invocation, the file is still there:
+        result = lambda_client.invoke(
+            FunctionName=func_name, Payload=json.dumps({"read-file": True})
+        )
+        snapshot.match("invoke-result-file-read-after-timeout", result)
+        result = lambda_client.invoke(
+            FunctionName=func_name, Payload=json.dumps({"read-number": True})
+        )
+        snapshot.match("invoke-result-read-number-after-timeout", result)
 
 
 @pytest.mark.skipif(not is_old_provider(), reason="Not yet implemented")
