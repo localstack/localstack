@@ -1142,7 +1142,7 @@ def apply_moto_patches():
     def s3_response_is_delete_keys(fn, self):
         """
         Old provider had a fix for a ticket, concerning 'x-id' - there is no documentation on AWS about this, but it is probably still valid
-        Additional fix for testing if this is a "delete_objects" request, by removing trailing "=" from the path
+        original comment: Temporary fix until moto supports x-id and DeleteObjects (#3931)
         """
         return get_safe(self.querystring, "$.x-id.0") == "DeleteObjects" or fn(self)
 
