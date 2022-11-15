@@ -387,7 +387,7 @@ def create_external_boto_client(
         cache,
         internal=False,
         aws_access_key_id=aws_access_key_id,
-        aws_secret_access_key=TEST_AWS_SECRET_ACCESS_KEY,
+        aws_secret_access_key="__test_key__",
         *args,
         **kwargs,
     )
@@ -620,6 +620,17 @@ def cf_change_set_arn(change_set_name, change_set_id=None, account_id=None, regi
     change_set_id = change_set_id or "id-456"
     pattern = "arn:aws:cloudformation:%s:%s:changeSet/%s/{cs_id}".format(cs_id=change_set_id)
     return _resource_arn(change_set_name, pattern, account_id=account_id, region_name=region_name)
+
+
+def dynamodb_table_exists(table_name, client=None):
+    client = client or connect_to_service("dynamodb")
+    paginator = client.get_paginator("list_tables")
+    pages = paginator.paginate(PaginationConfig={"PageSize": 100})
+    for page in pages:
+        table_names = page["TableNames"]
+        if to_str(table_name) in table_names:
+            return True
+    return False
 
 
 def dynamodb_table_arn(table_name, account_id=None, region_name=None):

@@ -1129,7 +1129,7 @@ class DynamoDBProvider(DynamodbApi, ServiceLifecycleHook):
             aws_access_key_id=access_key_id,
             aws_secret_access_key=TEST_AWS_SECRET_ACCESS_KEY,
         )
-        return dynamodb_table_exists(table_name, client=client)
+        return aws_stack.dynamodb_table_exists(table_name, client)
 
     @staticmethod
     def prepare_request_headers(headers: Dict):
@@ -1143,7 +1143,7 @@ class DynamoDBProvider(DynamodbApi, ServiceLifecycleHook):
 
         # DynamoDBLocal namespaces based on the value of Credentials
         # Since we want to namespace by both account ID and region, use an aggregate key
-        _replace(r"Credential=(\d{12})/", rf"Credential={key}/")
+        _replace(r"Credential=(\d{12}|\w{20,})/", rf"Credential={key}/")
 
         # Note: The NoSQL Workbench sends "localhost" or "local" as the region name, which we need to fix here
         _replace(
@@ -1524,13 +1524,3 @@ def dynamodb_get_table_stream_specification(table_name):
             traceback.format_exc(),
         )
         raise e
-
-
-def dynamodb_table_exists(table_name, client):
-    paginator = client.get_paginator("list_tables")
-    pages = paginator.paginate(PaginationConfig={"PageSize": 100})
-    for page in pages:
-        table_names = page["TableNames"]
-        if to_str(table_name) in table_names:
-            return True
-    return False
