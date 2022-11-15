@@ -48,7 +48,7 @@ def set_aws_account_id(account_id: str) -> None:
 def get_account_id_from_access_key_id(access_key_id: str) -> str:
     """Return the Account ID associated the Access Key ID."""
 
-    # If AWS_ACCES_KEY_ID has a 12-digit integer value, use it as the account ID
+    # If AWS_ACCESS_KEY_ID has a 12-digit integer value, use it as the account ID
     if re.match(r"\d{12}", access_key_id):
         return access_key_id
 
