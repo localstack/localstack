@@ -57,6 +57,7 @@ if TYPE_CHECKING:
     from mypy_boto3_resource_groups import ResourceGroupsClient
     from mypy_boto3_resourcegroupstaggingapi import ResourceGroupsTaggingAPIClient
     from mypy_boto3_route53 import Route53Client
+    from mypy_boto3_route53resolver import Route53ResolverClient
     from mypy_boto3_s3 import S3Client, S3ServiceResource
     from mypy_boto3_s3control import S3ControlClient
     from mypy_boto3_secretsmanager import SecretsManagerClient
@@ -379,6 +380,11 @@ def rgsa_client() -> "ResourceGroupsTaggingAPIClient":
 @pytest.fixture(scope="class")
 def route53_client() -> "Route53Client":
     return _client("route53")
+
+
+@pytest.fixture(scope="class")
+def route53resolver_client() -> "Route53ResolverClient":
+    return _client("route53resolver")
 
 
 @pytest.fixture(scope="class")

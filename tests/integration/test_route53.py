@@ -1,5 +1,3 @@
-import re
-
 import pytest
 
 from localstack.aws.accounts import get_aws_account_id
@@ -146,32 +144,3 @@ class TestRoute53:
         with pytest.raises(Exception) as ctx:
             client.get_reusable_delegation_set(Id=set_id_1)
         assert "NoSuchDelegationSet" in str(ctx.value)
-
-
-class TestRoute53Resolver:
-    def test_create_resolver_endpoint(self):
-        ec2 = aws_stack.create_external_boto_client("ec2")
-        resolver = aws_stack.create_external_boto_client("route53resolver")
-
-        # getting list of existing (default) subnets
-        subnets = ec2.describe_subnets()["Subnets"]
-        subnet_ids = [s["SubnetId"] for s in subnets]
-        # construct IPs within CIDR range
-        ips = [re.sub(r"(.*)\.[0-9]+/.+", r"\1.5", s["CidrBlock"]) for s in subnets]
-
-        groups = []
-        addresses = [
-            {"SubnetId": subnet_ids[0], "Ip": ips[0]},
-            {"SubnetId": subnet_ids[1], "Ip": ips[1]},
-        ]
-
-        result = resolver.create_resolver_endpoint(
-            CreatorRequestId="req123",
-            SecurityGroupIds=groups,
-            Direction="INBOUND",
-            IpAddresses=addresses,
-        )
-        result = result.get("ResolverEndpoint")
-        assert result
-        assert result.get("CreatorRequestId") == "req123"
-        assert result.get("Direction") == "INBOUND"

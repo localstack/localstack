@@ -1,5 +1,5 @@
 Resources:
-  FunctionServiceRole675BB04A:
+  FunctionServiceRole:
     Type: AWS::IAM::Role
     Properties:
       AssumeRolePolicyDocument:
@@ -15,7 +15,7 @@ Resources:
             - - "arn:"
               - Ref: AWS::Partition
               - :iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
-  Function76856677:
+  Function:
     Type: AWS::Lambda::Function
     Properties:
       Description: "function to test lambda function url"
@@ -25,41 +25,22 @@ Resources:
               return {"hello": "world"}
       Role:
         Fn::GetAtt:
-          - FunctionServiceRole675BB04A
+          - FunctionServiceRole
           - Arn
       Handler: index.handler
       Runtime: python3.9
+      Environment:
+        Variables:
+          ENDPOINT_URL: aws.amazon.com
+
     DependsOn:
-      - FunctionServiceRole675BB04A
-  FunctioninvokefunctionurlA70D8F37:
-    Type: AWS::Lambda::Permission
-    Properties:
-      Action: lambda:InvokeFunctionUrl
-      FunctionName:
-        Fn::GetAtt:
-          - Function76856677
-          - Arn
-      Principal: "*"
-      FunctionUrlAuthType: NONE
-  UrlD4FAABD0:
-    Type: AWS::Lambda::Url
-    Properties:
-      AuthType: NONE
-      TargetFunctionArn:
-        Fn::GetAtt:
-          - Function76856677
-          - Arn
+      - FunctionServiceRole
 Outputs:
   LambdaName:
     Value:
-      Ref: Function76856677
-  LambdaUrl:
-    Value:
-      Fn::GetAtt:
-        - UrlD4FAABD0
-        - FunctionUrl
+      Ref: Function
   LambdaArn:
     Value:
       Fn::GetAtt:
-        - Function76856677
+        - Function
         - Arn

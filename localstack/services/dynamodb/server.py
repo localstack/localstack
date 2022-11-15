@@ -6,8 +6,10 @@ from localstack import config
 from localstack.config import is_env_true
 from localstack.services.dynamodb.packages import dynamodblocal_package
 from localstack.utils.aws import aws_stack
+from localstack.utils.bootstrap import is_api_key_configured
 from localstack.utils.common import TMP_THREADS, ShellCommandThread, get_free_tcp_port, mkdir
 from localstack.utils.files import rm_rf
+from localstack.utils.persistence import is_persistence_enabled
 from localstack.utils.run import FuncThread
 from localstack.utils.serving import Server
 from localstack.utils.sync import retry
@@ -109,6 +111,11 @@ def create_dynamodb_server(
     if is_env_true("DYNAMODB_IN_MEMORY"):
         # the DYNAMODB_IN_MEMORY variable takes precedence and will set the DB path to None which forces inMemory=true
         db_path = None
+
+    # In some cases (e.g., DDB starting not in memory and persistence not set), the DBLocal assets are persisted
+    # but the Store data is not. This might lead to an inconsistent state (#7118). Therefore, we clean the db path
+    # before starting the DynamoDB server.
+    clean_db_path = clean_db_path or not (is_persistence_enabled() and is_api_key_configured())
 
     if db_path:
         if clean_db_path:

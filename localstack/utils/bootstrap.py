@@ -738,3 +738,12 @@ def in_ci():
         if os.environ.get(key, "") not in [False, "", "0", "false"]:
             return True
     return False
+
+
+def is_api_key_configured() -> bool:
+    """Whether an API key is set in the environment."""
+    return (
+        True
+        if os.environ.get("LOCALSTACK_API_KEY") and os.environ.get("LOCALSTACK_API_KEY").strip()
+        else False
+    )

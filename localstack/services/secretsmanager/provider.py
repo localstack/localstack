@@ -42,6 +42,7 @@ from localstack.aws.api.secretsmanager import (
     RemoveRegionsFromReplicationResponse,
     ReplicateSecretToRegionsRequest,
     ReplicateSecretToRegionsResponse,
+    ResourceExistsException,
     ResourceNotFoundException,
     RestoreSecretRequest,
     RestoreSecretResponse,
@@ -364,6 +365,11 @@ def moto_smb_create_secret(fn, self, name, *args, **kwargs):
     secret: Optional[FakeSecret] = self.secrets.get(name, None)
     if secret is not None and secret.deleted_date is not None:
         raise InvalidRequestException(AWS_INVALID_REQUEST_MESSAGE_CREATE_WITH_SCHEDULED_DELETION)
+
+    if name in self.secrets.keys():
+        raise ResourceExistsException(
+            f"The operation failed because the secret {name} already exists."
+        )
 
     return fn(self, name, *args, **kwargs)
 

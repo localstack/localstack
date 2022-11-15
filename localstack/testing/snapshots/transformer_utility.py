@@ -282,6 +282,22 @@ class TransformerUtility:
         ]
 
     @staticmethod
+    def route53resolver_api():
+        """
+        :return: array with Transformers, for route53resolver api.
+        """
+        return [
+            TransformerUtility.key_value(
+                "SecurityGroupIds", value_replacement="sg-ids", reference_replacement=False
+            ),
+            TransformerUtility.key_value("Id"),
+            TransformerUtility.key_value("HostVPCId", "host-vpc-id"),
+            KeyValueBasedTransformer(_resource_name_transformer, "Arn"),
+            TransformerUtility.key_value("CreatorRequestId"),
+            TransformerUtility.key_value("StatusMessage", reference_replacement=False),
+        ]
+
+    @staticmethod
     def sqs_api():
         """
         :return: array with Transformers, for sqs api.
