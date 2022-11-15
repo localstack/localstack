@@ -83,16 +83,32 @@ class TestElasticsearchProvider:
 
         versions = response["CompatibleElasticsearchVersions"]
 
-        assert len(versions) == 18
+        assert len(versions) == 20
 
-        assert {"SourceVersion": "OpenSearch_1.0", "TargetVersions": ["OpenSearch_1.1"]} in versions
+        assert {
+            "SourceVersion": "OpenSearch_1.0",
+            "TargetVersions": ["OpenSearch_1.1", "OpenSearch_1.2", "OpenSearch_1.3"],
+        } in versions
         assert {
             "SourceVersion": "7.10",
-            "TargetVersions": ["OpenSearch_1.0", "OpenSearch_1.1"],
+            "TargetVersions": [
+                "OpenSearch_1.0",
+                "OpenSearch_1.1",
+                "OpenSearch_1.2",
+                "OpenSearch_1.3",
+            ],
         } in versions
         assert {
             "SourceVersion": "7.7",
-            "TargetVersions": ["7.8", "7.9", "7.10", "OpenSearch_1.0", "OpenSearch_1.1"],
+            "TargetVersions": [
+                "7.8",
+                "7.9",
+                "7.10",
+                "OpenSearch_1.0",
+                "OpenSearch_1.1",
+                "OpenSearch_1.2",
+                "OpenSearch_1.3",
+            ],
         } in versions
 
     @pytest.mark.skip_offline
