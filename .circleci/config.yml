@@ -24,6 +24,8 @@ jobs:
       - run:
           name: Install prerequisites
           command: |
+            # fix for: https://discuss.circleci.com/t/heroku-gpg-issues-in-ubuntu-images/43834/3
+            sudo rm -rf /etc/apt/sources.list.d/heroku.list
             sudo apt-get update
             sudo apt-get install -y libsasl2-dev
       - run:
