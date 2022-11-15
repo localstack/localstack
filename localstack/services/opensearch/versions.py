@@ -13,7 +13,7 @@ from localstack.aws.api.opensearch import CompatibleVersionsMap, EngineType
 from localstack.utils.common import get_arch
 
 # Internal representation of the OpenSearch versions (without the "OpenSearch_" prefix)
-_opensearch_install_versions = {"1.1": "1.1.0", "1.0": "1.0.0"}
+_opensearch_install_versions = {"1.0": "1.0.0", "1.1": "1.1.0", "1.2": "1.2.4", "1.3": "1.3.6"}
 # Internal representation of the Elasticsearch versions (without the "Elasticsearch_" prefix)
 _elasticsearch_install_versions = {
     "7.10": "7.10.0",
@@ -33,7 +33,6 @@ _elasticsearch_install_versions = {
     "5.5": "5.5.3",
     "5.3": "5.3.3",
     "5.1": "5.1.2",
-    "5.0": "5.0.2",
 }
 #  prefixed versions
 _prefixed_opensearch_install_versions = {
@@ -49,88 +48,20 @@ install_versions = {
 
 # List of compatible versions (using the external representations)
 compatible_versions = [
-    CompatibleVersionsMap(SourceVersion="OpenSearch_1.0", TargetVersions=["OpenSearch_1.1"]),
     CompatibleVersionsMap(
-        SourceVersion="Elasticsearch_7.10", TargetVersions=["OpenSearch_1.0", "OpenSearch_1.1"]
+        SourceVersion="Elasticsearch_5.1",
+        TargetVersions=["Elasticsearch_5.6"],
     ),
     CompatibleVersionsMap(
-        SourceVersion="Elasticsearch_7.9",
-        TargetVersions=["Elasticsearch_7.10", "OpenSearch_1.0", "OpenSearch_1.1"],
+        SourceVersion="Elasticsearch_5.3",
+        TargetVersions=["Elasticsearch_5.6"],
     ),
     CompatibleVersionsMap(
-        SourceVersion="Elasticsearch_7.8",
-        TargetVersions=[
-            "Elasticsearch_7.9",
-            "Elasticsearch_7.10",
-            "OpenSearch_1.1",
-            "OpenSearch_1.0",
-        ],
+        SourceVersion="Elasticsearch_5.5",
+        TargetVersions=["Elasticsearch_5.6"],
     ),
     CompatibleVersionsMap(
-        SourceVersion="Elasticsearch_7.7",
-        TargetVersions=[
-            "Elasticsearch_7.8",
-            "Elasticsearch_7.9",
-            "Elasticsearch_7.10",
-            "OpenSearch_1.0",
-            "OpenSearch_1.1",
-        ],
-    ),
-    CompatibleVersionsMap(
-        SourceVersion="Elasticsearch_7.4",
-        TargetVersions=[
-            "Elasticsearch_7.7",
-            "Elasticsearch_7.8",
-            "Elasticsearch_7.9",
-            "Elasticsearch_7.10",
-            "OpenSearch_1.0",
-            "OpenSearch_1.1",
-        ],
-    ),
-    CompatibleVersionsMap(
-        SourceVersion="Elasticsearch_7.1",
-        TargetVersions=[
-            "Elasticsearch_7.4",
-            "Elasticsearch_7.7",
-            "Elasticsearch_7.8",
-            "Elasticsearch_7.9",
-            "Elasticsearch_7.10",
-            "OpenSearch_1.0",
-            "OpenSearch_1.1",
-        ],
-    ),
-    CompatibleVersionsMap(
-        SourceVersion="Elasticsearch_6.8",
-        TargetVersions=[
-            "Elasticsearch_7.1",
-            "Elasticsearch_7.4",
-            "Elasticsearch_7.7",
-            "Elasticsearch_7.8",
-            "Elasticsearch_7.9",
-            "Elasticsearch_7.10",
-            "OpenSearch_1.0",
-            "OpenSearch_1.1",
-        ],
-    ),
-    CompatibleVersionsMap(SourceVersion="Elasticsearch_6.7", TargetVersions=["Elasticsearch_6.8"]),
-    CompatibleVersionsMap(
-        SourceVersion="Elasticsearch_6.5", TargetVersions=["Elasticsearch_6.7", "Elasticsearch_6.8"]
-    ),
-    CompatibleVersionsMap(
-        SourceVersion="Elasticsearch_6.4",
-        TargetVersions=["Elasticsearch_6.5", "Elasticsearch_6.7", "Elasticsearch_6.8"],
-    ),
-    CompatibleVersionsMap(
-        SourceVersion="Elasticsearch_6.3",
-        TargetVersions=[
-            "Elasticsearch_6.4",
-            "Elasticsearch_6.5",
-            "Elasticsearch_6.7",
-            "Elasticsearch_6.8",
-        ],
-    ),
-    CompatibleVersionsMap(
-        SourceVersion="Elasticsearch_6.2",
+        SourceVersion="Elasticsearch_5.6",
         TargetVersions=[
             "Elasticsearch_6.3",
             "Elasticsearch_6.4",
@@ -150,7 +81,7 @@ compatible_versions = [
         ],
     ),
     CompatibleVersionsMap(
-        SourceVersion="Elasticsearch_5.6",
+        SourceVersion="Elasticsearch_6.2",
         TargetVersions=[
             "Elasticsearch_6.3",
             "Elasticsearch_6.4",
@@ -159,9 +90,118 @@ compatible_versions = [
             "Elasticsearch_6.8",
         ],
     ),
-    CompatibleVersionsMap(SourceVersion="Elasticsearch_5.5", TargetVersions=["Elasticsearch_5.6"]),
-    CompatibleVersionsMap(SourceVersion="Elasticsearch_5.3", TargetVersions=["Elasticsearch_5.6"]),
-    CompatibleVersionsMap(SourceVersion="Elasticsearch_5.1", TargetVersions=["Elasticsearch_5.6"]),
+    CompatibleVersionsMap(
+        SourceVersion="Elasticsearch_6.3",
+        TargetVersions=[
+            "Elasticsearch_6.4",
+            "Elasticsearch_6.5",
+            "Elasticsearch_6.7",
+            "Elasticsearch_6.8",
+        ],
+    ),
+    CompatibleVersionsMap(
+        SourceVersion="Elasticsearch_6.4",
+        TargetVersions=["Elasticsearch_6.5", "Elasticsearch_6.7", "Elasticsearch_6.8"],
+    ),
+    CompatibleVersionsMap(
+        SourceVersion="Elasticsearch_6.5",
+        TargetVersions=["Elasticsearch_6.7", "Elasticsearch_6.8"],
+    ),
+    CompatibleVersionsMap(
+        SourceVersion="Elasticsearch_6.7",
+        TargetVersions=["Elasticsearch_6.8"],
+    ),
+    CompatibleVersionsMap(
+        SourceVersion="Elasticsearch_6.8",
+        TargetVersions=[
+            "Elasticsearch_7.1",
+            "Elasticsearch_7.4",
+            "Elasticsearch_7.7",
+            "Elasticsearch_7.8",
+            "Elasticsearch_7.9",
+            "Elasticsearch_7.10",
+            "OpenSearch_1.0",
+            "OpenSearch_1.1",
+            "OpenSearch_1.2",
+            "OpenSearch_1.3",
+        ],
+    ),
+    CompatibleVersionsMap(
+        SourceVersion="Elasticsearch_7.1",
+        TargetVersions=[
+            "Elasticsearch_7.4",
+            "Elasticsearch_7.7",
+            "Elasticsearch_7.8",
+            "Elasticsearch_7.9",
+            "Elasticsearch_7.10",
+            "OpenSearch_1.0",
+            "OpenSearch_1.1",
+            "OpenSearch_1.2",
+            "OpenSearch_1.3",
+        ],
+    ),
+    CompatibleVersionsMap(
+        SourceVersion="Elasticsearch_7.4",
+        TargetVersions=[
+            "Elasticsearch_7.7",
+            "Elasticsearch_7.8",
+            "Elasticsearch_7.9",
+            "Elasticsearch_7.10",
+            "OpenSearch_1.0",
+            "OpenSearch_1.1",
+            "OpenSearch_1.2",
+            "OpenSearch_1.3",
+        ],
+    ),
+    CompatibleVersionsMap(
+        SourceVersion="Elasticsearch_7.7",
+        TargetVersions=[
+            "Elasticsearch_7.8",
+            "Elasticsearch_7.9",
+            "Elasticsearch_7.10",
+            "OpenSearch_1.0",
+            "OpenSearch_1.1",
+            "OpenSearch_1.2",
+            "OpenSearch_1.3",
+        ],
+    ),
+    CompatibleVersionsMap(
+        SourceVersion="Elasticsearch_7.8",
+        TargetVersions=[
+            "Elasticsearch_7.9",
+            "Elasticsearch_7.10",
+            "OpenSearch_1.0",
+            "OpenSearch_1.1",
+            "OpenSearch_1.2",
+            "OpenSearch_1.3",
+        ],
+    ),
+    CompatibleVersionsMap(
+        SourceVersion="Elasticsearch_7.9",
+        TargetVersions=[
+            "Elasticsearch_7.10",
+            "OpenSearch_1.0",
+            "OpenSearch_1.1",
+            "OpenSearch_1.2",
+            "OpenSearch_1.3",
+        ],
+    ),
+    CompatibleVersionsMap(
+        SourceVersion="Elasticsearch_7.10",
+        TargetVersions=["OpenSearch_1.0", "OpenSearch_1.1", "OpenSearch_1.2", "OpenSearch_1.3"],
+    ),
+    CompatibleVersionsMap(
+        SourceVersion="OpenSearch_1.0",
+        TargetVersions=["OpenSearch_1.1", "OpenSearch_1.2", "OpenSearch_1.3"],
+    ),
+    CompatibleVersionsMap(
+        SourceVersion="OpenSearch_1.1",
+        TargetVersions=["OpenSearch_1.2", "OpenSearch_1.3"],
+    ),
+    CompatibleVersionsMap(
+        SourceVersion="OpenSearch_1.2",
+        TargetVersions=["OpenSearch_1.3"],
+    ),
 ]
 
 

@@ -128,7 +128,7 @@ ELASTICSEARCH_PLUGIN_LIST = [
 ELASTICSEARCH_DELETE_MODULES = ["ingest-geoip"]
 
 # the version of opensearch which is used by default
-OPENSEARCH_DEFAULT_VERSION = "OpenSearch_1.1"
+OPENSEARCH_DEFAULT_VERSION = "OpenSearch_1.3"
 
 # See https://docs.aws.amazon.com/opensearch-service/latest/developerguide/supported-plugins.html
 OPENSEARCH_PLUGIN_LIST = [

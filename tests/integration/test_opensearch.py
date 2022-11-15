@@ -93,6 +93,8 @@ class TestOpensearchProvider:
         versions = response["Versions"]
 
         expected_versions = [
+            "OpenSearch_1.3",
+            "OpenSearch_1.2",
             "OpenSearch_1.1",
             "OpenSearch_1.0",
             "Elasticsearch_7.10",
@@ -112,7 +114,6 @@ class TestOpensearchProvider:
             "Elasticsearch_5.5",
             "Elasticsearch_5.3",
             "Elasticsearch_5.1",
-            "Elasticsearch_5.0",
         ]
         # We iterate over the expected versions to avoid breaking the test if new versions are supported
         for expected_version in expected_versions:
@@ -125,24 +126,40 @@ class TestOpensearchProvider:
 
         compatible_versions = response["CompatibleVersions"]
 
-        assert len(compatible_versions) >= 18
+        assert len(compatible_versions) >= 20
         expected_compatible_versions = [
-            {"SourceVersion": "OpenSearch_1.0", "TargetVersions": ["OpenSearch_1.1"]},
+            {
+                "SourceVersion": "OpenSearch_1.0",
+                "TargetVersions": ["OpenSearch_1.1", "OpenSearch_1.2", "OpenSearch_1.3"],
+            },
             {
                 "SourceVersion": "Elasticsearch_7.10",
-                "TargetVersions": ["OpenSearch_1.0", "OpenSearch_1.1"],
+                "TargetVersions": [
+                    "OpenSearch_1.0",
+                    "OpenSearch_1.1",
+                    "OpenSearch_1.2",
+                    "OpenSearch_1.3",
+                ],
             },
             {
                 "SourceVersion": "Elasticsearch_7.9",
-                "TargetVersions": ["Elasticsearch_7.10", "OpenSearch_1.0", "OpenSearch_1.1"],
+                "TargetVersions": [
+                    "Elasticsearch_7.10",
+                    "OpenSearch_1.0",
+                    "OpenSearch_1.1",
+                    "OpenSearch_1.2",
+                    "OpenSearch_1.3",
+                ],
             },
             {
                 "SourceVersion": "Elasticsearch_7.8",
                 "TargetVersions": [
                     "Elasticsearch_7.9",
                     "Elasticsearch_7.10",
-                    "OpenSearch_1.1",
                     "OpenSearch_1.0",
+                    "OpenSearch_1.1",
+                    "OpenSearch_1.2",
+                    "OpenSearch_1.3",
                 ],
             },
             {
@@ -153,6 +170,8 @@ class TestOpensearchProvider:
                     "Elasticsearch_7.10",
                     "OpenSearch_1.0",
                     "OpenSearch_1.1",
+                    "OpenSearch_1.2",
+                    "OpenSearch_1.3",
                 ],
             },
             {
@@ -164,6 +183,8 @@ class TestOpensearchProvider:
                     "Elasticsearch_7.10",
                     "OpenSearch_1.0",
                     "OpenSearch_1.1",
+                    "OpenSearch_1.2",
+                    "OpenSearch_1.3",
                 ],
             },
             {
@@ -176,6 +197,8 @@ class TestOpensearchProvider:
                     "Elasticsearch_7.10",
                     "OpenSearch_1.0",
                     "OpenSearch_1.1",
+                    "OpenSearch_1.2",
+                    "OpenSearch_1.3",
                 ],
             },
             {
@@ -189,6 +212,8 @@ class TestOpensearchProvider:
                     "Elasticsearch_7.10",
                     "OpenSearch_1.0",
                     "OpenSearch_1.1",
+                    "OpenSearch_1.2",
+                    "OpenSearch_1.3",
                 ],
             },
             {"SourceVersion": "Elasticsearch_6.7", "TargetVersions": ["Elasticsearch_6.8"]},
@@ -448,7 +473,7 @@ class TestEdgeProxiedOpensearchCluster:
 
             response = requests.get(cluster_url)
             assert response.ok, f"cluster endpoint returned an error: {response.text}"
-            assert response.json()["version"]["number"] == "1.1.0"
+            assert response.json()["version"]["number"] == "1.3.6"
 
             response = requests.get(f"{cluster_url}/_cluster/health")
             assert response.ok, f"cluster health endpoint returned an error: {response.text}"
