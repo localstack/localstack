@@ -2612,3 +2612,13 @@ class TestSNSProvider:
             },
         )
         snapshot.match("publish-ok", response)
+
+        with pytest.raises(ClientError) as e:
+            sns_client.publish(
+                TopicArn=topic_arn,
+                Message="test message",
+                MessageAttributes={
+                    "attr1": {"DataType": "Stringprefixed", "StringValue": "prefixed-1"}
+                },
+            )
+        snapshot.match("publish-error", e.value.response)
