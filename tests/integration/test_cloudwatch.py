@@ -11,6 +11,7 @@ from localstack import config
 from localstack.services.cloudwatch.provider import PATH_GET_RAW_METRICS
 from localstack.utils.aws import aws_stack
 from localstack.utils.common import retry, short_uid, to_str
+from localstack.utils.sync import poll_condition
 
 PUBLICATION_RETRIES = 5
 
@@ -728,6 +729,63 @@ class TestCloudwatch:
         finally:
             sns_client.unsubscribe(SubscriptionArn=subscription["SubscriptionArn"])
             cloudwatch_client.delete_alarms(AlarmNames=[alarm_name])
+
+    @pytest.mark.aws_validated
+    def test_aws_sqs_metrics_created(
+        self, cloudwatch_client, sqs_client, sqs_create_queue, snapshot
+    ):
+        snapshot.add_transformer(snapshot.transform.cloudwatch_api())
+        sqs_url = sqs_create_queue()
+        sqs_arn = sqs_client.get_queue_attributes(QueueUrl=sqs_url, AttributeNames=["QueueArn"])[
+            "Attributes"
+        ]["QueueArn"]
+        queue_name = aws_stack.sqs_queue_name(sqs_arn)
+        sqs_client.send_message(QueueUrl=sqs_url, MessageBody="Hello")
+        dimensions = [{"Name": "QueueName", "Value": queue_name}]
+
+        def get_metrics() -> int:
+            result = cloudwatch_client.list_metrics(Dimensions=dimensions)
+            return len(result["Metrics"])
+
+        assert poll_condition(lambda: get_metrics() >= 2, interval=1, timeout=120)
+
+        result = cloudwatch_client.list_metrics(Dimensions=dimensions)
+        metrics = [metric["MetricName"] for metric in result["Metrics"]]
+        assert "NumberOfMessagesSent" in metrics
+        assert "SentMessageSize" in metrics
+
+        response = cloudwatch_client.get_metric_data(
+            MetricDataQueries=[
+                {
+                    "Id": "sent",
+                    "MetricStat": {
+                        "Metric": {
+                            "Namespace": "AWS/SQS",
+                            "MetricName": "NumberOfMessagesSent",
+                            "Dimensions": dimensions,
+                        },
+                        "Period": 60,
+                        "Stat": "Sum",
+                    },
+                },
+                {
+                    "Id": "sent_size",
+                    "MetricStat": {
+                        "Metric": {
+                            "Namespace": "AWS/SQS",
+                            "MetricName": "SentMessageSize",
+                            "Dimensions": dimensions,
+                        },
+                        "Period": 60,
+                        "Stat": "Sum",
+                    },
+                },
+            ],
+            StartTime=datetime.utcnow() - timedelta(hours=1),
+            EndTime=datetime.utcnow(),
+        )
+
+        snapshot.match("get_metric_data", response)
 
 
 def _check_alarm_triggered(

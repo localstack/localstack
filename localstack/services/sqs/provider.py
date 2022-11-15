@@ -78,6 +78,7 @@ from localstack.services.sqs.models import (
 from localstack.services.sqs.utils import generate_message_id
 from localstack.utils.aws import aws_stack
 from localstack.utils.aws.aws_stack import parse_arn
+from localstack.utils.cloudwatch.cloudwatch_util import publish_sqs_metric
 from localstack.utils.run import FuncThread
 from localstack.utils.scheduler import Scheduler
 from localstack.utils.strings import md5
@@ -142,6 +143,65 @@ def check_message_content(message_body: str):
 
     if not re.match(sqs_constants.MSG_CONTENT_REGEX, message_body):
         raise InvalidMessageContents(error)
+
+
+class CloudwatchPublishWorker:
+    def __init__(self) -> None:
+        super().__init__()
+        self.scheduler = Scheduler()
+        self.thread: Optional[FuncThread] = None
+
+    def publish_approximate_cloudwatch_metrics(self):
+        for account_id, region_bundle in sqs_stores.items():
+            for region, store in region_bundle.items():
+                for queue in store.queues.values():
+                    self.publish_approximate_metrics_for_queue_to_cloudwatch(queue)
+
+    def publish_approximate_metrics_for_queue_to_cloudwatch(self, queue):
+        """Publishes the metrics for ApproximateNumberOfMessagesVisible, ApproximateNumberOfMessagesNotVisible
+        and ApproximateNumberOfMessagesDelayed to CloudWatch"""
+        # TODO ApproximateAgeOfOldestMessage is missing
+        #  https://docs.aws.amazon.com/AWSSimpleQueueService/latest/SQSDeveloperGuide/sqs-available-cloudwatch-metrics.html
+        publish_sqs_metric(
+            region=queue.region,
+            queue_name=queue.name,
+            metric="ApproximateNumberOfMessagesVisible",
+            value=queue.visible._qsize(),
+        )
+        publish_sqs_metric(
+            region=queue.region,
+            queue_name=queue.name,
+            metric="ApproximateNumberOfMessagesNotVisible",
+            value=len(queue.inflight),
+        )
+        publish_sqs_metric(
+            region=queue.region,
+            queue_name=queue.name,
+            metric="ApproximateNumberOfMessagesDelayed",
+            value=len(queue.delayed),
+        )
+
+    def start(self):
+        if self.thread:
+            return
+
+        self.scheduler = Scheduler()
+        self.scheduler.schedule(self.publish_approximate_cloudwatch_metrics, period=60)
+
+        def _run(*_args):
+            self.scheduler.run()
+
+        self.thread = start_thread(_run, name="sqs-queue-cloudwatch-publisher")
+
+    def stop(self):
+        if self.scheduler:
+            self.scheduler.close()
+
+        if self.thread:
+            self.thread.stop()
+
+        self.thread = None
+        self.scheduler = None
 
 
 class QueueUpdateWorker:
@@ -273,6 +333,7 @@ class SqsProvider(SqsApi, ServiceLifecycleHook):
         super().__init__()
         self._mutex = threading.RLock()
         self._queue_update_worker = QueueUpdateWorker()
+        self._cloudwatch_publish_worker = CloudwatchPublishWorker()
 
     @staticmethod
     def get_store(account_id: str = None, region: str = None) -> SqsStore:
@@ -280,9 +341,11 @@ class SqsProvider(SqsApi, ServiceLifecycleHook):
 
     def on_before_start(self):
         self._queue_update_worker.start()
+        self._cloudwatch_publish_worker.start()
 
     def on_before_stop(self):
         self._queue_update_worker.stop()
+        self._cloudwatch_publish_worker.stop()
 
     def _require_queue(self, context: RequestContext, name: str) -> SqsQueue:
         """
@@ -627,6 +690,17 @@ class SqsProvider(SqsApi, ServiceLifecycleHook):
             MessageAttributes=message_attributes,
         )
 
+        publish_sqs_metric(
+            region=queue.region, queue_name=queue.name, metric="NumberOfMessagesSent"
+        )
+        publish_sqs_metric(
+            region=queue.region,
+            queue_name=queue.name,
+            metric="SentMessageSize",
+            value=len(message_body.encode("utf-8")),
+            units="Bytes",
+        )
+
         return queue.put(
             message=message,
             message_deduplication_id=message_deduplication_id,
@@ -666,6 +740,7 @@ class SqsProvider(SqsApi, ServiceLifecycleHook):
                 )
                 msg = standard_message.message
             except Empty:
+
                 break
 
             # setting block to false guarantees that, if we've already waited before, we don't wait the full time
@@ -697,6 +772,18 @@ class SqsProvider(SqsApi, ServiceLifecycleHook):
             # add message to result
             messages.append(msg)
             num -= 1
+
+        if len(messages) > 0:
+            publish_sqs_metric(
+                region=queue.region,
+                queue_name=queue.name,
+                metric="NumberOfMessagesReceived",
+                value=len(messages),
+            )
+        else:
+            publish_sqs_metric(
+                region=queue.region, queue_name=queue.name, metric="NumberOfEmptyReceives"
+            )
 
         # TODO: how does receiving behave if the queue was deleted in the meantime?
         return ReceiveMessageResult(Messages=messages)
@@ -746,6 +833,9 @@ class SqsProvider(SqsApi, ServiceLifecycleHook):
     ) -> None:
         queue = self._resolve_queue(context, queue_url=queue_url)
         queue.remove(receipt_handle)
+        publish_sqs_metric(
+            region=queue.region, queue_name=queue.name, metric="NumberOfMessagesDeleted"
+        )
 
     def delete_message_batch(
         self,
@@ -774,7 +864,12 @@ class SqsProvider(SqsApi, ServiceLifecycleHook):
                             Message=str(e),
                         )
                     )
-
+        publish_sqs_metric(
+            region=queue.region,
+            queue_name=queue.name,
+            metric="NumberOfMessagesDeleted",
+            value=len(successful),
+        )
         return DeleteMessageBatchResult(
             Successful=successful,
             Failed=failed,

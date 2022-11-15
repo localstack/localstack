@@ -13,13 +13,20 @@ from localstack.aws.api.cloudwatch import (
     CloudwatchApi,
     DescribeAlarmsInput,
     DescribeAlarmsOutput,
+    GetMetricDataMaxDatapoints,
+    GetMetricDataOutput,
+    LabelOptions,
     ListTagsForResourceOutput,
+    MetricDataQueries,
+    NextToken,
     PutCompositeAlarmInput,
     PutMetricAlarmInput,
+    ScanBy,
     StateValue,
     TagKeyList,
     TagList,
     TagResourceOutput,
+    Timestamp,
     UntagResourceOutput,
 )
 from localstack.constants import DEFAULT_AWS_ACCOUNT_ID
@@ -284,6 +291,32 @@ class CloudwatchProvider(CloudwatchApi, ServiceLifecycleHook):
     ) -> TagResourceOutput:
         self.tags.tag_resource(resource_arn, tags)
         return TagResourceOutput()
+
+    def get_metric_data(
+        self,
+        context: RequestContext,
+        metric_data_queries: MetricDataQueries,
+        start_time: Timestamp,
+        end_time: Timestamp,
+        next_token: NextToken = None,
+        scan_by: ScanBy = None,
+        max_datapoints: GetMetricDataMaxDatapoints = None,
+        label_options: LabelOptions = None,
+    ) -> GetMetricDataOutput:
+        result = moto.call_moto(context)
+        # moto currently uses hardcoded label metric_name + stat
+        # parity tests shows that default is MetricStat, but there might also be a label explicitly set
+        for i in range(0, len(metric_data_queries)):
+            metric_query = metric_data_queries[i]
+            label = metric_query.get("Label") or metric_query.get("MetricStat", {}).get(
+                "Metric", {}
+            ).get("MetricName")
+            if label:
+                result["MetricDataResults"][i]["Label"] = label
+        if "Messages" not in result:
+            # parity tests reveals that an empty messages list is added
+            result["Messages"] = []
+        return result
 
     @handler("PutMetricAlarm", expand=False)
     def put_metric_alarm(
