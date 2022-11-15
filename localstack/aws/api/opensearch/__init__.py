@@ -10,10 +10,12 @@ else:
 from localstack.aws.api import RequestContext, ServiceException, ServiceRequest, handler
 
 ARN = str
+AWSAccount = str
 BackendRole = str
 Boolean = bool
 ChangeProgressStageName = str
 ChangeProgressStageStatus = str
+ClientToken = str
 CloudWatchLogsLogGroupArn = str
 CommitMessage = str
 ConnectionAlias = str
@@ -22,11 +24,13 @@ ConnectionStatusMessage = str
 DeploymentType = str
 DescribePackagesFilterValue = str
 Description = str
+DomainArn = str
 DomainId = str
 DomainName = str
 DomainNameFqdn = str
 Double = float
 DryRun = bool
+Endpoint = str
 ErrorMessage = str
 ErrorType = str
 GUID = str
@@ -73,6 +77,7 @@ UpgradeName = str
 UserPoolId = str
 Username = str
 VersionString = str
+VpcEndpointId = str
 
 
 class AutoTuneDesiredState(str):
@@ -286,6 +291,11 @@ class PackageType(str):
     TXT_DICTIONARY = "TXT-DICTIONARY"
 
 
+class PrincipalType(str):
+    AWS_ACCOUNT = "AWS_ACCOUNT"
+    AWS_SERVICE = "AWS_SERVICE"
+
+
 class ReservedInstancePaymentOption(str):
     ALL_UPFRONT = "ALL_UPFRONT"
     PARTIAL_UPFRONT = "PARTIAL_UPFRONT"
@@ -335,6 +345,21 @@ class VolumeType(str):
     gp2 = "gp2"
     io1 = "io1"
     gp3 = "gp3"
+
+
+class VpcEndpointErrorCode(str):
+    ENDPOINT_NOT_FOUND = "ENDPOINT_NOT_FOUND"
+    SERVER_ERROR = "SERVER_ERROR"
+
+
+class VpcEndpointStatus(str):
+    CREATING = "CREATING"
+    CREATE_FAILED = "CREATE_FAILED"
+    ACTIVE = "ACTIVE"
+    UPDATING = "UPDATING"
+    UPDATE_FAILED = "UPDATE_FAILED"
+    DELETING = "DELETING"
+    DELETE_FAILED = "DELETE_FAILED"
 
 
 class AccessDeniedException(ServiceException):
@@ -561,6 +586,21 @@ class AssociatePackageResponse(TypedDict, total=False):
     DomainPackageDetails: Optional[DomainPackageDetails]
 
 
+class AuthorizeVpcEndpointAccessRequest(ServiceRequest):
+    DomainName: DomainName
+    Account: AWSAccount
+
+
+class AuthorizedPrincipal(TypedDict, total=False):
+    PrincipalType: Optional[PrincipalType]
+    Principal: Optional[String]
+
+
+class AuthorizeVpcEndpointAccessResponse(TypedDict, total=False):
+    AuthorizedPrincipal: AuthorizedPrincipal
+
+
+AuthorizedPrincipalList = List[AuthorizedPrincipal]
 AutoTuneDate = datetime
 
 
@@ -882,6 +922,25 @@ class CreatePackageResponse(TypedDict, total=False):
     PackageDetails: Optional[PackageDetails]
 
 
+class CreateVpcEndpointRequest(ServiceRequest):
+    DomainArn: DomainArn
+    VpcOptions: VPCOptions
+    ClientToken: Optional[ClientToken]
+
+
+class VpcEndpoint(TypedDict, total=False):
+    VpcEndpointId: Optional[VpcEndpointId]
+    VpcEndpointOwner: Optional[AWSAccount]
+    DomainArn: Optional[DomainArn]
+    VpcOptions: Optional[VPCDerivedInfo]
+    Status: Optional[VpcEndpointStatus]
+    Endpoint: Optional[Endpoint]
+
+
+class CreateVpcEndpointResponse(TypedDict, total=False):
+    VpcEndpoint: VpcEndpoint
+
+
 class DeleteDomainRequest(ServiceRequest):
     DomainName: DomainName
 
@@ -920,6 +979,21 @@ class DeletePackageRequest(ServiceRequest):
 
 class DeletePackageResponse(TypedDict, total=False):
     PackageDetails: Optional[PackageDetails]
+
+
+class DeleteVpcEndpointRequest(ServiceRequest):
+    VpcEndpointId: VpcEndpointId
+
+
+class VpcEndpointSummary(TypedDict, total=False):
+    VpcEndpointId: Optional[VpcEndpointId]
+    VpcEndpointOwner: Optional[String]
+    DomainArn: Optional[DomainArn]
+    Status: Optional[VpcEndpointStatus]
+
+
+class DeleteVpcEndpointResponse(TypedDict, total=False):
+    VpcEndpointSummary: VpcEndpointSummary
 
 
 class DescribeDomainAutoTunesRequest(ServiceRequest):
@@ -1206,6 +1280,28 @@ class DescribeReservedInstancesResponse(TypedDict, total=False):
     ReservedInstances: Optional[ReservedInstanceList]
 
 
+VpcEndpointIdList = List[VpcEndpointId]
+
+
+class DescribeVpcEndpointsRequest(ServiceRequest):
+    VpcEndpointIds: VpcEndpointIdList
+
+
+class VpcEndpointError(TypedDict, total=False):
+    VpcEndpointId: Optional[VpcEndpointId]
+    ErrorCode: Optional[VpcEndpointErrorCode]
+    ErrorMessage: Optional[String]
+
+
+VpcEndpointErrorList = List[VpcEndpointError]
+VpcEndpoints = List[VpcEndpoint]
+
+
+class DescribeVpcEndpointsResponse(TypedDict, total=False):
+    VpcEndpoints: VpcEndpoints
+    VpcEndpointErrors: VpcEndpointErrorList
+
+
 class DissociatePackageRequest(ServiceRequest):
     PackageID: PackageID
     DomainName: DomainName
@@ -1379,6 +1475,38 @@ class ListVersionsResponse(TypedDict, total=False):
     NextToken: Optional[NextToken]
 
 
+class ListVpcEndpointAccessRequest(ServiceRequest):
+    DomainName: DomainName
+    NextToken: Optional[NextToken]
+
+
+class ListVpcEndpointAccessResponse(TypedDict, total=False):
+    AuthorizedPrincipalList: AuthorizedPrincipalList
+    NextToken: NextToken
+
+
+class ListVpcEndpointsForDomainRequest(ServiceRequest):
+    DomainName: DomainName
+    NextToken: Optional[NextToken]
+
+
+VpcEndpointSummaryList = List[VpcEndpointSummary]
+
+
+class ListVpcEndpointsForDomainResponse(TypedDict, total=False):
+    VpcEndpointSummaryList: VpcEndpointSummaryList
+    NextToken: NextToken
+
+
+class ListVpcEndpointsRequest(ServiceRequest):
+    NextToken: Optional[NextToken]
+
+
+class ListVpcEndpointsResponse(TypedDict, total=False):
+    VpcEndpointSummaryList: VpcEndpointSummaryList
+    NextToken: NextToken
+
+
 class PurchaseReservedInstanceOfferingRequest(ServiceRequest):
     ReservedInstanceOfferingId: GUID
     ReservationName: ReservationToken
@@ -1401,6 +1529,15 @@ class RejectInboundConnectionResponse(TypedDict, total=False):
 class RemoveTagsRequest(ServiceRequest):
     ARN: ARN
     TagKeys: StringList
+
+
+class RevokeVpcEndpointAccessRequest(ServiceRequest):
+    DomainName: DomainName
+    Account: AWSAccount
+
+
+class RevokeVpcEndpointAccessResponse(TypedDict, total=False):
+    pass
 
 
 class StartServiceSoftwareUpdateRequest(ServiceRequest):
@@ -1445,6 +1582,15 @@ class UpdatePackageResponse(TypedDict, total=False):
     PackageDetails: Optional[PackageDetails]
 
 
+class UpdateVpcEndpointRequest(ServiceRequest):
+    VpcEndpointId: VpcEndpointId
+    VpcOptions: VPCOptions
+
+
+class UpdateVpcEndpointResponse(TypedDict, total=False):
+    VpcEndpoint: VpcEndpoint
+
+
 class UpgradeDomainRequest(ServiceRequest):
     DomainName: DomainName
     TargetVersion: VersionString
@@ -1480,6 +1626,12 @@ class OpensearchApi:
     def associate_package(
         self, context: RequestContext, package_id: PackageID, domain_name: DomainName
     ) -> AssociatePackageResponse:
+        raise NotImplementedError
+
+    @handler("AuthorizeVpcEndpointAccess")
+    def authorize_vpc_endpoint_access(
+        self, context: RequestContext, domain_name: DomainName, account: AWSAccount
+    ) -> AuthorizeVpcEndpointAccessResponse:
         raise NotImplementedError
 
     @handler("CancelServiceSoftwareUpdate")
@@ -1532,6 +1684,16 @@ class OpensearchApi:
     ) -> CreatePackageResponse:
         raise NotImplementedError
 
+    @handler("CreateVpcEndpoint")
+    def create_vpc_endpoint(
+        self,
+        context: RequestContext,
+        domain_arn: DomainArn,
+        vpc_options: VPCOptions,
+        client_token: ClientToken = None,
+    ) -> CreateVpcEndpointResponse:
+        raise NotImplementedError
+
     @handler("DeleteDomain")
     def delete_domain(
         self, context: RequestContext, domain_name: DomainName
@@ -1554,6 +1716,12 @@ class OpensearchApi:
     def delete_package(
         self, context: RequestContext, package_id: PackageID
     ) -> DeletePackageResponse:
+        raise NotImplementedError
+
+    @handler("DeleteVpcEndpoint")
+    def delete_vpc_endpoint(
+        self, context: RequestContext, vpc_endpoint_id: VpcEndpointId
+    ) -> DeleteVpcEndpointResponse:
         raise NotImplementedError
 
     @handler("DescribeDomain")
@@ -1650,6 +1818,12 @@ class OpensearchApi:
     ) -> DescribeReservedInstancesResponse:
         raise NotImplementedError
 
+    @handler("DescribeVpcEndpoints")
+    def describe_vpc_endpoints(
+        self, context: RequestContext, vpc_endpoint_ids: VpcEndpointIdList
+    ) -> DescribeVpcEndpointsResponse:
+        raise NotImplementedError
+
     @handler("DissociatePackage")
     def dissociate_package(
         self, context: RequestContext, package_id: PackageID, domain_name: DomainName
@@ -1735,6 +1909,24 @@ class OpensearchApi:
     ) -> ListVersionsResponse:
         raise NotImplementedError
 
+    @handler("ListVpcEndpointAccess")
+    def list_vpc_endpoint_access(
+        self, context: RequestContext, domain_name: DomainName, next_token: NextToken = None
+    ) -> ListVpcEndpointAccessResponse:
+        raise NotImplementedError
+
+    @handler("ListVpcEndpoints")
+    def list_vpc_endpoints(
+        self, context: RequestContext, next_token: NextToken = None
+    ) -> ListVpcEndpointsResponse:
+        raise NotImplementedError
+
+    @handler("ListVpcEndpointsForDomain")
+    def list_vpc_endpoints_for_domain(
+        self, context: RequestContext, domain_name: DomainName, next_token: NextToken = None
+    ) -> ListVpcEndpointsForDomainResponse:
+        raise NotImplementedError
+
     @handler("PurchaseReservedInstanceOffering")
     def purchase_reserved_instance_offering(
         self,
@@ -1753,6 +1945,12 @@ class OpensearchApi:
 
     @handler("RemoveTags")
     def remove_tags(self, context: RequestContext, arn: ARN, tag_keys: StringList) -> None:
+        raise NotImplementedError
+
+    @handler("RevokeVpcEndpointAccess")
+    def revoke_vpc_endpoint_access(
+        self, context: RequestContext, domain_name: DomainName, account: AWSAccount
+    ) -> RevokeVpcEndpointAccessResponse:
         raise NotImplementedError
 
     @handler("StartServiceSoftwareUpdate")
@@ -1792,6 +1990,12 @@ class OpensearchApi:
         package_description: PackageDescription = None,
         commit_message: CommitMessage = None,
     ) -> UpdatePackageResponse:
+        raise NotImplementedError
+
+    @handler("UpdateVpcEndpoint")
+    def update_vpc_endpoint(
+        self, context: RequestContext, vpc_endpoint_id: VpcEndpointId, vpc_options: VPCOptions
+    ) -> UpdateVpcEndpointResponse:
         raise NotImplementedError
 
     @handler("UpgradeDomain")

@@ -62,38 +62,6 @@ Outputs:
     Value: !Ref MessageQueue
 """
 
-TEMPLATE_EXPORT = """
-Parameters:
-  BucketExportName:
-    Type: String
-Resources:
-  Bucket1:
-    Type: AWS::S3::Bucket
-    Properties: {}
-Outputs:
-  BucketName1:
-    Value: !Ref Bucket1
-    Export:
-      Name: !Ref BucketExportName
-    """
-
-TEMPLATE_IMPORT = """
-Parameters:
-  BucketExportName:
-    Type: String
-Resources:
-  Bucket2:
-    Type: AWS::S3::Bucket
-    Properties:
-      Tags:
-        - Key: test
-          Value: !ImportValue
-            'Fn::Sub': '${BucketExportName}'
-Outputs:
-  BucketName2:
-    Value: !Ref Bucket2
-    """
-
 
 class TestTypes:
     @pytest.mark.aws_validated
@@ -438,14 +406,20 @@ class TestImportValues:
 
         # create stack #1
         result = deploy_cfn_template(
-            template=TEMPLATE_EXPORT, parameters={"BucketExportName": export_name}
+            template_path=os.path.join(
+                os.path.dirname(__file__), "../templates/cfn_function_export.yml"
+            ),
+            parameters={"BucketExportName": export_name},
         )
         bucket_name1 = result.outputs.get("BucketName1")
         assert bucket_name1
 
         # create stack #2
         result = deploy_cfn_template(
-            template=TEMPLATE_IMPORT, parameters={"BucketExportName": export_name}
+            template_path=os.path.join(
+                os.path.dirname(__file__), "../templates/cfn_function_import.yml"
+            ),
+            parameters={"BucketExportName": export_name},
         )
         bucket_name2 = result.outputs.get("BucketName2")
         assert bucket_name2
@@ -456,4 +430,5 @@ class TestImportValues:
         assert test_tag
         assert test_tag[0]["Value"] == bucket_name1
 
-        # TODO add assert for list-import
+        # TODO support this method
+        # assert cfn_client.list_imports(ExportName=export_name)["Imports"]

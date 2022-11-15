@@ -99,23 +99,29 @@ class DynamodbServer(Server):
 
 
 def create_dynamodb_server(
-    port=None, db_path: Optional[str] = None, clean_db_path: bool = False
+    port: Optional[int] = None, db_path: Optional[str] = None, clean_db_path: Optional[bool] = None
 ) -> DynamodbServer:
     """
-    Creates a dynamodb server from the LocalStack configuration.
+    Creates a DynamoDB server from the local configuration.
+    :param port:          optional, the port to start the server on (defaults to a random port)
+    :param db_path:       path to the persistent state files used by the DynamoDB Local process
+    :param clean_db_path: optional, whether to clean the state files before starting the process; if None is passed,
+                          the state files are cleaned by default, unless persistence is enabled with API key configured
+    :return: the server instance
     """
     port = port or get_free_tcp_port()
     server = DynamodbServer(port)
     db_path = f"{config.dirs.data}/dynamodb" if not db_path and config.dirs.data else db_path
 
-    if is_env_true("DYNAMODB_IN_MEMORY") or not (
-        is_persistence_enabled() and is_api_key_configured()
-    ):
-
+    if is_env_true("DYNAMODB_IN_MEMORY"):
         # the DYNAMODB_IN_MEMORY variable takes precedence and will set the DB path to None which forces inMemory=true
-        # Furthermore, avoid cases where DBLocal data is persisted but not the Store data leading to an inconsistent state (#7118)
-        # The naive way to do this is to check whether persistence is enabled and API key is set.
         db_path = None
+
+    # In some cases (e.g., DDB starting not in memory and persistence not set), the DBLocal assets are persisted
+    # but the Store data is not. This might lead to an inconsistent state (#7118). Therefore, we clean the db path
+    # before starting the DynamoDB server. Note: only cleaning if clean_db_path is None (i.e., not specified)
+    if clean_db_path is None:
+        clean_db_path = not (is_persistence_enabled() and is_api_key_configured())
 
     if db_path:
         if clean_db_path:

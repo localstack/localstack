@@ -11,6 +11,7 @@ from localstack.aws.api import RequestContext, ServiceRequest, handler
 
 AddressMaxResults = int
 AllocationId = str
+AllowedInstanceType = str
 AutoRecoveryFlag = bool
 BareMetalFlag = bool
 BaselineBandwidthInMbps = int
@@ -342,6 +343,7 @@ class AllocationStrategy(str):
     diversified = "diversified"
     capacityOptimized = "capacityOptimized"
     capacityOptimizedPrioritized = "capacityOptimizedPrioritized"
+    priceCapacityOptimized = "priceCapacityOptimized"
 
 
 class AllocationType(str):
@@ -369,6 +371,7 @@ class ArchitectureType(str):
     x86_64 = "x86_64"
     arm64 = "arm64"
     x86_64_mac = "x86_64_mac"
+    arm64_mac = "arm64_mac"
 
 
 class ArchitectureValues(str):
@@ -376,6 +379,7 @@ class ArchitectureValues(str):
     x86_64 = "x86_64"
     arm64 = "arm64"
     x86_64_mac = "x86_64_mac"
+    arm64_mac = "arm64_mac"
 
 
 class AssociatedNetworkType(str):
@@ -1650,6 +1654,10 @@ class InstanceType(str):
     r6a_metal = "r6a.metal"
     p4de_24xlarge = "p4de.24xlarge"
     u_3tb1_56xlarge = "u-3tb1.56xlarge"
+    u_18tb1_112xlarge = "u-18tb1.112xlarge"
+    u_24tb1_112xlarge = "u-24tb1.112xlarge"
+    trn1_2xlarge = "trn1.2xlarge"
+    trn1_32xlarge = "trn1.32xlarge"
 
 
 class InstanceTypeHypervisor(str):
@@ -2310,6 +2318,7 @@ class SpotAllocationStrategy(str):
     diversified = "diversified"
     capacity_optimized = "capacity-optimized"
     capacity_optimized_prioritized = "capacity-optimized-prioritized"
+    price_capacity_optimized = "price-capacity-optimized"
 
 
 class SpotInstanceInterruptionBehavior(str):
@@ -3444,6 +3453,7 @@ class AllocateIpamPoolCidrResult(TypedDict, total=False):
 
 AllocationIdList = List[AllocationId]
 AllocationIds = List[AllocationId]
+AllowedInstanceTypeSet = List[AllowedInstanceType]
 
 
 class AllowedPrincipal(TypedDict, total=False):
@@ -5148,6 +5158,11 @@ class CreateEgressOnlyInternetGatewayResult(TypedDict, total=False):
     EgressOnlyInternetGateway: Optional[EgressOnlyInternetGateway]
 
 
+class NetworkBandwidthGbps(TypedDict, total=False):
+    Min: Optional[Double]
+    Max: Optional[Double]
+
+
 class TotalLocalStorageGB(TypedDict, total=False):
     Min: Optional[Double]
     Max: Optional[Double]
@@ -5202,6 +5217,8 @@ class InstanceRequirements(TypedDict, total=False):
     AcceleratorManufacturers: Optional[AcceleratorManufacturerSet]
     AcceleratorNames: Optional[AcceleratorNameSet]
     AcceleratorTotalMemoryMiB: Optional[AcceleratorTotalMemoryMiB]
+    NetworkBandwidthGbps: Optional[NetworkBandwidthGbps]
+    AllowedInstanceTypes: Optional[AllowedInstanceTypeSet]
 
 
 class PlacementResponse(TypedDict, total=False):
@@ -5261,6 +5278,11 @@ class TargetCapacitySpecificationRequest(TypedDict, total=False):
     TargetCapacityUnitType: Optional[TargetCapacityUnitType]
 
 
+class NetworkBandwidthGbpsRequest(TypedDict, total=False):
+    Min: Optional[Double]
+    Max: Optional[Double]
+
+
 class TotalLocalStorageGBRequest(TypedDict, total=False):
     Min: Optional[Double]
     Max: Optional[Double]
@@ -5308,6 +5330,8 @@ class InstanceRequirementsRequest(TypedDict, total=False):
     AcceleratorManufacturers: Optional[AcceleratorManufacturerSet]
     AcceleratorNames: Optional[AcceleratorNameSet]
     AcceleratorTotalMemoryMiB: Optional[AcceleratorTotalMemoryMiBRequest]
+    NetworkBandwidthGbps: Optional[NetworkBandwidthGbpsRequest]
+    AllowedInstanceTypes: Optional[AllowedInstanceTypeSet]
 
 
 class Placement(TypedDict, total=False):
@@ -5319,6 +5343,7 @@ class Placement(TypedDict, total=False):
     Tenancy: Optional[Tenancy]
     SpreadDomain: Optional[String]
     HostResourceGroupArn: Optional[String]
+    GroupId: Optional[PlacementGroupId]
 
 
 class FleetLaunchTemplateOverridesRequest(TypedDict, total=False):
@@ -5773,6 +5798,7 @@ class LaunchTemplatePlacementRequest(TypedDict, total=False):
     SpreadDomain: Optional[String]
     HostResourceGroupArn: Optional[String]
     PartitionNumber: Optional[Integer]
+    GroupId: Optional[PlacementGroupId]
 
 
 class LaunchTemplatesMonitoringRequest(TypedDict, total=False):
@@ -6038,6 +6064,7 @@ class LaunchTemplatePlacement(TypedDict, total=False):
     SpreadDomain: Optional[String]
     HostResourceGroupArn: Optional[String]
     PartitionNumber: Optional[Integer]
+    GroupId: Optional[PlacementGroupId]
 
 
 class LaunchTemplatesMonitoring(TypedDict, total=False):
@@ -14378,6 +14405,7 @@ class ModifyInstancePlacementRequest(ServiceRequest):
     Tenancy: Optional[HostTenancy]
     PartitionNumber: Optional[Integer]
     HostResourceGroupArn: Optional[String]
+    GroupId: Optional[PlacementGroupId]
 
 
 class ModifyInstancePlacementResult(TypedDict, total=False):
@@ -20724,6 +20752,7 @@ class Ec2Api:
         tenancy: HostTenancy = None,
         partition_number: Integer = None,
         host_resource_group_arn: String = None,
+        group_id: PlacementGroupId = None,
     ) -> ModifyInstancePlacementResult:
         raise NotImplementedError
 
