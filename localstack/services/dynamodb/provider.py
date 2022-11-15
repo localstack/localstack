@@ -279,11 +279,8 @@ class DynamoDBApiListener(AwsApiListener):
 
 
 def get_store(account_id: str, region_name: str) -> DynamoDBStore:
-
     # special case: AWS NoSQL Workbench sends "localhost" as region - replace with proper region here
-    if region_name == "localhost":
-        region_name = aws_stack.get_local_region()
-
+    region_name = DynamoDBProvider.ddb_region_name(aws_stack.get_local_region())
     return dynamodb_stores[account_id][region_name]
 
 
@@ -1107,17 +1104,29 @@ class DynamoDBProvider(DynamodbApi, ServiceLifecycleHook):
         )
 
     @staticmethod
-    def aggregate_access_key(account_id: str, region_name: str) -> str:
+    def ddb_access_key(account_id: str, region_name: str) -> str:
         """Get the access key to be used while communicating with DynamoDB Local."""
         return "{account_id}{region_name}".format(
             account_id=account_id, region_name=region_name
         ).replace("-", "")
 
     @staticmethod
+    def ddb_region_name(region_name: str) -> str:
+        """Map `local` or `localhost` region to the default region. These values are used by NoSQL Workbench."""
+        # TODO: could this be somehow moved into the request handler chain?
+        if region_name in ("local", "localhost"):
+            region_name = aws_stack.get_local_region()
+
+        return region_name
+
+    @staticmethod
     def table_exists(account_id: str, region_name: str, table_name: str):
+        region_name = DynamoDBProvider.ddb_region_name(aws_stack.get_local_region())
+        access_key_id = DynamoDBProvider.ddb_access_key(account_id, region_name)
+
         client = aws_stack.connect_to_service(
             "dynamodb",
-            aws_access_key_id=DynamoDBProvider.aggregate_access_key(account_id, region_name),
+            aws_access_key_id=access_key_id,
             aws_secret_access_key=TEST_AWS_SECRET_ACCESS_KEY,
         )
         return dynamodb_table_exists(table_name, client=client)
@@ -1129,7 +1138,8 @@ class DynamoDBProvider(DynamodbApi, ServiceLifecycleHook):
                 regex, replace, headers.get("Authorization") or "", flags=re.IGNORECASE
             )
 
-        key = DynamoDBProvider.aggregate_access_key(get_aws_account_id(), aws_stack.get_region())
+        region_name = DynamoDBProvider.ddb_region_name(aws_stack.get_region())
+        key = DynamoDBProvider.ddb_access_key(get_aws_account_id(), region_name)
 
         # DynamoDBLocal namespaces based on the value of Credentials
         # Since we want to namespace by both account ID and region, use an aggregate key
