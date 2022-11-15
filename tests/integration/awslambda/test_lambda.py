@@ -370,6 +370,13 @@ class TestLambdaBehavior:
         snapshot.match("invoke-result", result)
 
         log_group_name = f"/aws/lambda/{func_name}"
+
+        def _log_stream_available():
+            result = logs_client.describe_log_streams(logGroupName=log_group_name)["logStreams"]
+            return len(result) > 0
+
+        wait_until(_log_stream_available, strategy="linear")
+
         ls_result = logs_client.describe_log_streams(logGroupName=log_group_name)
         log_stream_name = ls_result["logStreams"][0]["logStreamName"]
 
@@ -480,6 +487,13 @@ class TestLambdaBehavior:
         result = lambda_client.invoke(FunctionName=func_name, Payload=json.dumps({"sleep": 2}))
         snapshot.match("invoke-result-timed-out", result)
         log_group_name = f"/aws/lambda/{func_name}"
+
+        def _log_stream_available():
+            result = logs_client.describe_log_streams(logGroupName=log_group_name)["logStreams"]
+            return len(result) > 0
+
+        wait_until(_log_stream_available, strategy="linear")
+
         ls_result = logs_client.describe_log_streams(logGroupName=log_group_name)
         log_stream_name = ls_result["logStreams"][0]["logStreamName"]
 
