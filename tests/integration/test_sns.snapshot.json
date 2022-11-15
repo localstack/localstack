@@ -2168,5 +2168,17 @@
         }
       }
     }
+  },
+  "tests/integration/test_sns.py::TestSNSProvider::test_message_attributes_prefixes": {
+    "recorded-date": "15-11-2022, 15:59:45",
+    "recorded-content": {
+      "publish-ok": {
+        "MessageId": "<uuid:1>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
   }
 }

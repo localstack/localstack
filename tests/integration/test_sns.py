@@ -2589,3 +2589,26 @@ class TestSNSProvider:
         # each endpoint should only receive the message that was directed to them
         assert platform_endpoint_msgs[endpoints_arn["GCM"]][0]["Message"][0] == message["GCM"]
         assert platform_endpoint_msgs[endpoints_arn["APNS"]][0]["Message"][0] == message["APNS"]
+
+    @pytest.mark.aws_validated
+    def test_message_attributes_prefixes(
+        self,
+        sns_client,
+        sns_create_sqs_subscription,
+        sns_create_topic,
+        sqs_create_queue,
+        snapshot,
+    ):
+        topic_arn = sns_create_topic()["TopicArn"]
+        queue_url = sqs_create_queue()
+
+        sns_create_sqs_subscription(topic_arn=topic_arn, queue_url=queue_url)
+
+        response = sns_client.publish(
+            TopicArn=topic_arn,
+            Message="test message",
+            MessageAttributes={
+                "attr1": {"DataType": "String.prefixed", "StringValue": "prefixed-1"}
+            },
+        )
+        snapshot.match("publish-ok", response)
