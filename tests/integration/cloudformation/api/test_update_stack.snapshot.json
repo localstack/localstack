@@ -1,0 +1,6 @@
+{
+  "tests/integration/cloudformation/api/test_update_stack.py::test_basic_update": {
+    "recorded-date": "15-11-2022, 08:58:15",
+    "recorded-content": {}
+  }
+}
