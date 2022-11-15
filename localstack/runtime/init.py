@@ -78,7 +78,7 @@ class PythonScriptRunner(ScriptRunner):
 
     def run(self, path: str) -> None:
         with open(path, "rb") as fd:
-            exec(fd.read())
+            exec(fd.read(), {})
 
 
 class InitScriptManager:
