@@ -340,7 +340,6 @@ class TestLambdaBehavior:
 
     @pytest.mark.skipif(is_old_provider(), reason="old provider")
     @pytest.mark.aws_validated
-    # @pytest.mark.skipif(not is_old_provider(), reason="Not yet implemented")
     def test_lambda_invoke_with_timeout(
         self,
         lambda_client,
@@ -431,7 +430,6 @@ class TestLambdaBehavior:
 
     @pytest.mark.skipif(is_old_provider(), reason="old provider")
     @pytest.mark.aws_validated
-    # @pytest.mark.skipif(not is_old_provider(), reason="Not yet implemented")
     def test_lambda_invoke_timed_out_environment_reuse(
         self,
         lambda_client,
