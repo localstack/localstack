@@ -131,7 +131,7 @@ def test_set_policy_both_policy_and_url(
     deploy_cfn_template, cfn_client, s3_client, s3_create_bucket, snapshot
 ):
 
-    """Test to validate the API behaviour when setting trying to set a Stack policy using both the body and the URL"""
+    """Test to validate the API behavior when trying to set a Stack policy using both the body and the URL"""
 
     stack = deploy_cfn_template(
         template_path=os.path.join(
@@ -182,8 +182,8 @@ def test_empty_policy(cfn_client, deploy_cfn_template, snapshot):
 
 
 @pytest.mark.aws_validated
-# @pytest.mark.skip(reason="Not implemented")
-def test_invalid_policy(cfn_client, deploy_cfn_template, snapshot):
+@pytest.mark.skip(reason="Not implemented")
+def test_not_json_policy(cfn_client, deploy_cfn_template, snapshot):
     """Test to validate the error response when setting and Invalid Policy"""
     stack = deploy_cfn_template(
         template_path=os.path.join(
@@ -200,12 +200,12 @@ def test_invalid_policy(cfn_client, deploy_cfn_template, snapshot):
 
 
 @pytest.mark.aws_validated
-@pytest.mark.skip(reason="Not implemented")
+# @pytest.mark.skip(reason="Not implemented")
 @pytest.mark.parametrize("resource_type", ["AWS::S3::Bucket", "AWS::SNS::Topic"])
 def test_prevent_update(resource_type, cfn_client, deploy_cfn_template):
     """
-    Test to validate the correct behaviour of the update operation on a Stack with a Policy that prevents an update
-    for an specific resource type
+    Test to validate the correct behavior of the update operation on a Stack with a Policy that prevents an update
+    for a specific resource type
     """
     template = load_file(
         os.path.join(os.path.dirname(__file__), "../../templates/stack_policy_test.yaml")
@@ -238,23 +238,8 @@ def test_prevent_update(resource_type, cfn_client, deploy_cfn_template):
     )
 
     def _assert_failing_update_state():
-        events = cfn_client.describe_stack_events(StackName=stack.stack_name)["StackEvents"]
-        failed_event_updates = [
-            event for event in events if event["ResourceStatus"] == "UPDATE_FAILED"
-        ]
-        assert failed_event_updates
-        for failed_event_update in failed_event_updates:
-            failed_by_policy = (
-                "Action denied by stack policy" in failed_event_update["ResourceStatusReason"]
-                or "Action not allowed by stack policy"
-                in failed_event_update["ResourceStatusReason"]
-            ) and failed_event_update["ResourceType"] == resource_type
-            failed_by_collateral = (
-                "Resource update cancelled" in failed_event_update["ResourceStatusReason"]
-            )
-
-            # if the policy prevents one resource to update the whole update fails
-            assert failed_by_policy or failed_by_collateral
+        # if the policy prevents one resource to update the whole update fails
+        assert get_events_canceled_by_policy(cfn_client, stack.stack_name)
 
     try:
         retry(_assert_failing_update_state, retries=5, sleep=2, sleep_before=2)
@@ -269,7 +254,7 @@ def test_prevent_update(resource_type, cfn_client, deploy_cfn_template):
 
 
 @pytest.mark.aws_validated
-@pytest.mark.skip(reason="Not implemented")
+# @pytest.mark.skip(reason="Not implemented")
 @pytest.mark.parametrize(
     "resource",
     [{"id": "bucket123", "type": "AWS::S3::Bucket"}, {"id": "topic123", "type": "AWS::SNS::Topic"}],
@@ -313,14 +298,7 @@ def test_prevent_deletion(resource, cfn_client, deploy_cfn_template):
     )
 
     def _assert_failing_update_state():
-        events = cfn_client.describe_stack_events(StackName=stack.stack_name)["StackEvents"]
-        failed_event_update = [
-            event
-            for event in events
-            if "ResourceStatusReason" in event
-            and "Action denied by stack policy" in event["ResourceStatusReason"]
-        ]
-        assert failed_event_update
+        assert get_events_canceled_by_policy(cfn_client, stack.stack_name)
 
     try:
         retry(_assert_failing_update_state, retries=6, sleep=2, sleep_before=2)
@@ -338,7 +316,7 @@ def test_prevent_deletion(resource, cfn_client, deploy_cfn_template):
 @pytest.mark.skip(reason="Not implemented")
 def test_update_with_policy(deploy_cfn_template, cfn_client):
     """
-    Test to validate the completion of a stack update that is allowed byt the Stack Policy
+    Test to validate the completion of a stack update that is allowed by the Stack Policy
     """
     template = load_file(
         os.path.join(os.path.dirname(__file__), "../../templates/stack_policy_test.yaml")
@@ -366,3 +344,20 @@ def test_update_with_policy(deploy_cfn_template, cfn_client):
         template=template,
         parameters={"TopicName": f"topic-{short_uid()}", "BucketName": f"bucket-{short_uid()}"},
     )
+
+
+def get_events_canceled_by_policy(cfn_client, stack_name):
+    events = cfn_client.describe_stack_events(StackName=stack_name)["StackEvents"]
+
+    failed_events_by_policy = [
+        event
+        for event in events
+        if "ResourceStatusReason" in event
+        and (
+            "Action denied by stack policy" in event["ResourceStatusReason"]
+            or "Action not allowed by stack policy" in event["ResourceStatusReason"]
+            or "Resource update cancelled" in event["ResourceStatusReason"]
+        )
+    ]
+
+    return failed_events_by_policy

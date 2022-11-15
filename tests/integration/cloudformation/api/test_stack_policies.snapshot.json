@@ -129,5 +129,15 @@
         }
       }
     }
+  },
+  "tests/integration/cloudformation/api/test_stack_policies.py::test_not_json_policy": {
+    "recorded-date": "15-11-2022, 14:47:45",
+    "recorded-content": {
+      "error": {
+        "Code": "ValidationError",
+        "Message": "Error validating stack policy: Invalid stack policy",
+        "Type": "Sender"
+      }
+    }
   }
 }
