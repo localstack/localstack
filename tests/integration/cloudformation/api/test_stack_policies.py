@@ -12,13 +12,17 @@ from localstack.utils.sync import retry
 
 
 @pytest.mark.aws_validated
-@pytest.mark.skip(reason="Not implemented")
+# @pytest.mark.skip(reason="Not implemented")
 def test_policy_lifecycle(cfn_client, deploy_cfn_template, snapshot):
     stack = deploy_cfn_template(
         template_path=os.path.join(
             os.path.dirname(__file__), "../../templates/sns_topic_simple.yaml"
         ),
     )
+
+    obtained_policy = cfn_client.get_stack_policy(StackName=stack.stack_name)
+    snapshot.match("initial_policy", obtained_policy)
+
     policy = {
         "Statement": [{"Effect": "Allow", "Action": "Update:*", "Principal": "*", "Resource": "*"}]
     }
@@ -254,7 +258,7 @@ def test_prevent_update(resource_type, cfn_client, deploy_cfn_template):
 
 
 @pytest.mark.aws_validated
-# @pytest.mark.skip(reason="Not implemented")
+@pytest.mark.skip(reason="Not implemented")
 @pytest.mark.parametrize(
     "resource",
     [{"id": "bucket123", "type": "AWS::S3::Bucket"}, {"id": "topic123", "type": "AWS::SNS::Topic"}],
@@ -344,6 +348,34 @@ def test_update_with_policy(deploy_cfn_template, cfn_client):
         template=template,
         parameters={"TopicName": f"topic-{short_uid()}", "BucketName": f"bucket-{short_uid()}"},
     )
+
+
+def test_update_with_empty_policy(deploy_cfn_template, cfn_client, is_stack_updated):
+    """
+    Test to validate the behavior of a stack update that has an empty Stack Policy
+    """
+    template = load_file(
+        os.path.join(os.path.dirname(__file__), "../../templates/stack_policy_test.yaml")
+    )
+    stack = deploy_cfn_template(
+        template=template,
+        parameters={"TopicName": f"topic-{short_uid()}", "BucketName": f"bucket-{short_uid()}"},
+    )
+    cfn_client.set_stack_policy(StackName=stack.stack_name, StackPolicyBody="{}")
+
+    cfn_client.update_stack(
+        StackName=stack.stack_name,
+        TemplateBody=template,
+        Parameters=[
+            {"ParameterKey": "TopicName", "ParameterValue": f"new-topic-{short_uid()}"},
+            {"ParameterKey": "BucketName", "ParameterValue": f"new-bucket-{short_uid()}"},
+        ],
+    )
+
+    def _assert_stack_is_updated():
+        assert is_stack_updated(stack.stack_name)
+
+    retry(_assert_stack_is_updated, retries=5, sleep=2, sleep_before=1)
 
 
 def get_events_canceled_by_policy(cfn_client, stack_name):
