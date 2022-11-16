@@ -315,15 +315,6 @@ def validate_localstack_config(name):
 
     # docker-compose file validation cases
 
-    if (
-        docker_env.get("PORT_WEB_UI") not in ["${PORT_WEB_UI- }", None, ""]
-        and image_name == "localstack/localstack"
-    ):
-        warns.append(
-            '"PORT_WEB_UI" Web UI is now deprecated, '
-            'and requires to use the "localstack/localstack-full" image.'
-        )
-
     if (main_container not in container_name) and not docker_env.get("MAIN_CONTAINER_NAME"):
         warns.append(
             'Please use "container_name: %s" or add "MAIN_CONTAINER_NAME" in "environment".'
