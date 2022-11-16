@@ -19,7 +19,6 @@ from localstack.aws.accounts import get_aws_account_id
 from localstack.aws.api.lambda_ import Runtime
 from localstack.services.awslambda.lambda_utils import LAMBDA_RUNTIME_PYTHON37
 from localstack.services.sns.provider import PLATFORM_ENDPOINT_MSGS_ENDPOINT, SnsProvider
-from localstack.services.sqs.legacy.packages import SQS_BACKEND_IMPL
 from localstack.testing.aws.util import is_aws_cloud
 from localstack.utils import testutil
 from localstack.utils.net import wait_for_port_closed, wait_for_port_open
@@ -1533,41 +1532,41 @@ class TestSNSProvider:
     def test_publish_sqs_from_sns_with_xray_propagation(
         self, sns_client, sns_create_topic, sqs_client, sqs_create_queue, sns_subscription
     ):
-        # TODO: remove or adapt for asf
-        if SQS_BACKEND_IMPL != "elasticmq":
-            pytest.skip("not using elasticmq as SQS backend")
-
         def add_xray_header(request, **kwargs):
             request.headers[
                 "X-Amzn-Trace-Id"
             ] = "Root=1-3152b799-8954dae64eda91bc9a23a7e8;Parent=7fa8c0f79203be72;Sampled=1"
 
-        sns_client.meta.events.register("before-send.sns.Publish", add_xray_header)
+        try:
+            # TODO this needs to be removed again!
+            sns_client.meta.events.register("before-send.sns.Publish", add_xray_header)
 
-        topic = sns_create_topic()
-        topic_arn = topic["TopicArn"]
-        queue_url = sqs_create_queue()
+            topic = sns_create_topic()
+            topic_arn = topic["TopicArn"]
+            queue_url = sqs_create_queue()
 
-        sns_subscription(TopicArn=topic_arn, Protocol="sqs", Endpoint=queue_url)
-        sns_client.publish(TargetArn=topic_arn, Message="X-Ray propagation test msg")
+            sns_subscription(TopicArn=topic_arn, Protocol="sqs", Endpoint=queue_url)
+            sns_client.publish(TargetArn=topic_arn, Message="X-Ray propagation test msg")
 
-        response = sqs_client.receive_message(
-            QueueUrl=queue_url,
-            AttributeNames=["SentTimestamp", "AWSTraceHeader"],
-            MaxNumberOfMessages=1,
-            MessageAttributeNames=["All"],
-            VisibilityTimeout=2,
-            WaitTimeSeconds=2,
-        )
+            response = sqs_client.receive_message(
+                QueueUrl=queue_url,
+                AttributeNames=["SentTimestamp", "AWSTraceHeader"],
+                MaxNumberOfMessages=1,
+                MessageAttributeNames=["All"],
+                VisibilityTimeout=2,
+                WaitTimeSeconds=2,
+            )
 
-        assert len(response["Messages"]) == 1
-        message = response["Messages"][0]
-        assert "Attributes" in message
-        assert "AWSTraceHeader" in message["Attributes"]
-        assert (
-            message["Attributes"]["AWSTraceHeader"]
-            == "Root=1-3152b799-8954dae64eda91bc9a23a7e8;Parent=7fa8c0f79203be72;Sampled=1"
-        )
+            assert len(response["Messages"]) == 1
+            message = response["Messages"][0]
+            assert "Attributes" in message
+            assert "AWSTraceHeader" in message["Attributes"]
+            assert (
+                message["Attributes"]["AWSTraceHeader"]
+                == "Root=1-3152b799-8954dae64eda91bc9a23a7e8;Parent=7fa8c0f79203be72;Sampled=1"
+            )
+        finally:
+            sns_client.meta.events.unregister("before-send.sns.Publish", add_xray_header)
 
     @pytest.mark.aws_validated
     def test_create_topic_after_delete_with_new_tags(self, sns_create_topic, sns_client, snapshot):
