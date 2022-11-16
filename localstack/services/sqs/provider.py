@@ -104,14 +104,37 @@ def assert_queue_name(queue_name: str, fifo: bool = False):
         )
 
 
-def check_message_size(message_body: str, max_message_size: int):
+def check_message_size(
+    message_body: str, message_attributes: MessageBodyAttributeMap, max_message_size: int
+):
     # https://docs.aws.amazon.com/AWSSimpleQueueService/latest/SQSDeveloperGuide/quotas-messages.html
     error = "One or more parameters are invalid. "
     error += f"Reason: Message must be shorter than {max_message_size} bytes."
 
-    # must encode as utf8 to get correct bytes with len
-    if len(message_body.encode("utf8")) > max_message_size:
+    if (
+        _message_body_size(message_body) + _message_attributes_size(message_attributes)
+        > max_message_size
+    ):
         raise InvalidParameterValue(error)
+
+
+def _message_body_size(body: str):
+    return _bytesize(body)
+
+
+def _message_attributes_size(attributes: MessageBodyAttributeMap):
+    if not attributes:
+        return 0
+    message_attributes_keys_size = sum(_bytesize(k) for k in attributes.keys())
+    message_attributes_values_size = sum(
+        sum(_bytesize(v) for v in attr.values()) for attr in attributes.values()
+    )
+    return message_attributes_keys_size + message_attributes_values_size
+
+
+def _bytesize(value: str | bytes):
+    # must encode as utf8 to get correct bytes with len
+    return len(value.encode("utf8")) if isinstance(value, str) else len(value)
 
 
 def check_message_content(message_body: str):
@@ -496,7 +519,7 @@ class SqsProvider(SqsApi, ServiceLifecycleHook):
 
         # Have to check the message size here, rather than in _put_message
         # to avoid multiple calls for batch messages.
-        check_message_size(message_body, queue.maximum_message_size)
+        check_message_size(message_body, message_attributes, queue.maximum_message_size)
 
         queue_item = self._put_message(
             queue,
@@ -896,7 +919,11 @@ class SqsProvider(SqsApi, ServiceLifecycleHook):
                 visited.add(entry["Id"])
 
     def _assert_valid_batch_size(self, batch: List, max_message_size: int):
-        batch_message_size = sum([len(entry.get("MessageBody").encode("utf8")) for entry in batch])
+        batch_message_size = sum(
+            _message_body_size(entry.get("MessageBody"))
+            + _message_attributes_size(entry.get("MessageAttributes"))
+            for entry in batch
+        )
         if batch_message_size > max_message_size:
             error = f"Batch requests cannot be longer than {max_message_size} bytes."
             error += f" You have sent {batch_message_size} bytes."

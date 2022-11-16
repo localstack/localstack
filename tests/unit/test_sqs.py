@@ -54,11 +54,14 @@ def test_handle_string_max_receive_count_in_dead_letter_check():
 
 
 def test_except_check_message_size():
-    message_body = "".join(("a" for _ in range(DEFAULT_MAXIMUM_MESSAGE_SIZE + 1)))
+    message_attributes = {"k": {"DataType": "String", "StringValue": "x"}}
+    message_attributes_size = len("k") + len("String") + len("x")
+    message_body = "a" * (DEFAULT_MAXIMUM_MESSAGE_SIZE - message_attributes_size + 1)
     with pytest.raises(localstack.services.sqs.exceptions.InvalidParameterValue):
-        provider.check_message_size(message_body, DEFAULT_MAXIMUM_MESSAGE_SIZE)
+        provider.check_message_size(message_body, message_attributes, DEFAULT_MAXIMUM_MESSAGE_SIZE)
 
 
 def test_check_message_size():
     message_body = "a"
-    provider.check_message_size(message_body, DEFAULT_MAXIMUM_MESSAGE_SIZE)
+    message_attributes = {"k": {"DataType": "String", "StringValue": "x"}}
+    provider.check_message_size(message_body, message_attributes, DEFAULT_MAXIMUM_MESSAGE_SIZE)
