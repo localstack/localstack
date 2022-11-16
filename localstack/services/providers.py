@@ -148,18 +148,6 @@ def sts():
     return Service("sts", listener=AwsApiListener("sts", MotoFallbackDispatcher(provider)))
 
 
-@aws_provider(api="kinesis", name="legacy")
-def kinesis_legacy():
-    from localstack.services.kinesis import kinesis_listener, kinesis_starter
-
-    return Service(
-        "kinesis",
-        listener=kinesis_listener.UPDATE_KINESIS,
-        start=kinesis_starter.start_kinesis,
-        check=kinesis_starter.check_kinesis,
-    )
-
-
 @aws_provider()
 def kinesis():
     from localstack.services.kinesis.provider import KinesisProvider

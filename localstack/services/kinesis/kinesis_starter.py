@@ -2,9 +2,8 @@ import logging
 from typing import Optional
 
 from localstack import config
-from localstack.services.infra import log_startup_message, start_proxy_for_service
-from localstack.services.kinesis import kinesalite_server, kinesis_mock_server
-from localstack.services.plugins import SERVICE_PLUGINS
+from localstack.services.infra import log_startup_message
+from localstack.services.kinesis import kinesis_mock_server
 from localstack.utils.aws import aws_stack
 from localstack.utils.serving import Server
 
@@ -25,29 +24,14 @@ def start_kinesis(
     :param asynchronous: currently unused but required by localstack.services.plugins.Service.start().
     TODO: either make use of this param or refactor Service.start() to not pass it.
     :returns: A running Kinesis server instance
-    :raises: ValueError: Value of config.KINESIS_PROVIDER is not recognized as one of "kinesis-mock" or "kinesalite"
     """
     global _server
     if not _server:
-        if config.KINESIS_PROVIDER == "kinesis-mock":
-            _server = kinesis_mock_server.create_kinesis_mock_server(persist_path=persist_path)
-        elif config.KINESIS_PROVIDER == "kinesalite":
-            _server = kinesalite_server.create_kinesalite_server(persist_path=persist_path)
-        else:
-            raise ValueError('Unsupported Kinesis provider "%s"' % config.KINESIS_PROVIDER)
+        _server = kinesis_mock_server.create_kinesis_mock_server(persist_path=persist_path)
 
     _server.start()
     log_startup_message("Kinesis")
     port = port or config.service_port("kinesis")
-
-    # TODO: flip back to "!= kinesis:asf" to be sure we have the old control path when merging
-    if SERVICE_PLUGINS.get("kinesis").name() == "kinesis:legacy":
-        start_proxy_for_service(
-            "kinesis",
-            port,
-            backend_port=_server.port,
-            update_listener=update_listener,
-        )
 
     return _server
 
