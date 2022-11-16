@@ -312,10 +312,12 @@ def modify_context_region(context: RequestContext, region: str):
     original_region = context.region
     original_authorization = context.request.headers.get("Authorization")
 
+    key = DynamoDBProvider.ddb_access_key(context.account_id, region)
+
     context.region = region
     context.request.headers["Authorization"] = re.sub(
-        r"Credential=([^/]+/[^/]+)/(.*?)/",
-        rf"Credential=\1/{region}/",
+        r"Credential=(\w{12,})/(\d{8})/(.*?)/",
+        rf"Credential={key}/\2/{region}/",
         original_authorization or "",
         flags=re.IGNORECASE,
     )
@@ -487,9 +489,9 @@ class DynamoDBProvider(DynamodbApi, ServiceLifecycleHook):
         global_table_region = find_global_table_region(context, table_name)
         # Check if table exists, to avoid error log output from DynamoDBLocal
         if (
-            not self.table_exists(context.account_id, context.region, table_name)
-            and not global_table_region
-        ):
+            global_table_region
+            and not self.table_exists(context.account_id, global_table_region, table_name)
+        ) or not self.table_exists(context.account_id, context.region, table_name):
             raise ResourceNotFoundException("Cannot do operations on a non-existent table")
 
         result = self._forward_request(context=context, region=global_table_region)
@@ -1121,12 +1123,11 @@ class DynamoDBProvider(DynamodbApi, ServiceLifecycleHook):
 
     @staticmethod
     def table_exists(account_id: str, region_name: str, table_name: str):
-        region_name = DynamoDBProvider.ddb_region_name(aws_stack.get_local_region())
-        access_key_id = DynamoDBProvider.ddb_access_key(account_id, region_name)
+        region_name = DynamoDBProvider.ddb_region_name(region_name)
 
         client = aws_stack.connect_to_service(
             "dynamodb",
-            aws_access_key_id=access_key_id,
+            aws_access_key_id=account_id,
             aws_secret_access_key=TEST_AWS_SECRET_ACCESS_KEY,
         )
         return aws_stack.dynamodb_table_exists(table_name, client)
