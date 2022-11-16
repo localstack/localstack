@@ -21,6 +21,7 @@ from localstack.aws.api.s3 import (
     ContentMD5,
     CopyObjectOutput,
     CopyObjectRequest,
+    CORSConfiguration,
     CreateBucketOutput,
     CreateBucketRequest,
     Delete,
@@ -31,6 +32,7 @@ from localstack.aws.api.s3 import (
     DeleteResult,
     ETag,
     GetBucketAclOutput,
+    GetBucketCorsOutput,
     GetBucketLifecycleConfigurationOutput,
     GetBucketLifecycleOutput,
     GetBucketLocationOutput,
@@ -78,11 +80,16 @@ from localstack.aws.api.s3 import (
 )
 from localstack.aws.api.s3 import Type as GranteeType
 from localstack.aws.api.s3 import WebsiteConfiguration
-from localstack.aws.handlers import modify_service_response, serve_custom_service_request_handlers
+from localstack.aws.handlers import (
+    modify_service_response,
+    preprocess_request,
+    serve_custom_service_request_handlers,
+)
 from localstack.constants import LOCALHOST_HOSTNAME
 from localstack.services.edge import ROUTER
 from localstack.services.moto import call_moto
 from localstack.services.plugins import ServiceLifecycleHook
+from localstack.services.s3.cors import S3CorsHandler
 from localstack.services.s3.models import S3Store, get_moto_s3_backend, s3_stores
 from localstack.services.s3.notifications import NotificationDispatcher, S3EventNotificationContext
 from localstack.services.s3.presigned_url import (
@@ -162,6 +169,7 @@ class S3Provider(S3Api, ServiceLifecycleHook):
 
     def on_after_init(self):
         apply_moto_patches()
+        preprocess_request.append(self._cors_handler)
         register_website_hosting_routes(router=ROUTER)
         register_custom_handlers()
         # registering of virtual host routes happens with the hook on_infra_ready in virtual_host.py
@@ -169,6 +177,7 @@ class S3Provider(S3Api, ServiceLifecycleHook):
     def __init__(self) -> None:
         super().__init__()
         self._notification_dispatcher = NotificationDispatcher()
+        self._cors_handler = S3CorsHandler()
 
     def on_before_stop(self):
         self._notification_dispatcher.shutdown()
@@ -215,6 +224,7 @@ class S3Provider(S3Api, ServiceLifecycleHook):
                 response["Location"] = get_full_default_bucket_location(bucket_name)
         if "Location" not in response:
             response["Location"] = f"/{bucket_name}"
+        self._cors_handler.invalidate_cache()
         return response
 
     def delete_bucket(
@@ -222,6 +232,7 @@ class S3Provider(S3Api, ServiceLifecycleHook):
     ) -> None:
         call_moto(context)
         self._clear_bucket_from_store(bucket)
+        self._cors_handler.invalidate_cache()
 
     def get_bucket_location(
         self, context: RequestContext, bucket: BucketName, expected_bucket_owner: AccountId = None
@@ -587,6 +598,35 @@ class S3Provider(S3Api, ServiceLifecycleHook):
 
         store = self.get_store()
         store.bucket_lifecycle_configuration.pop(bucket, None)
+
+    def put_bucket_cors(
+        self,
+        context: RequestContext,
+        bucket: BucketName,
+        cors_configuration: CORSConfiguration,
+        content_md5: ContentMD5 = None,
+        checksum_algorithm: ChecksumAlgorithm = None,
+        expected_bucket_owner: AccountId = None,
+    ) -> None:
+        response = call_moto(context)
+        self.get_store().bucket_cors[bucket] = cors_configuration
+        self._cors_handler.invalidate_cache()
+        return response
+
+    def get_bucket_cors(
+        self, context: RequestContext, bucket: BucketName, expected_bucket_owner: AccountId = None
+    ) -> GetBucketCorsOutput:
+        call_moto(context)
+        cors_rules = self.get_store().bucket_cors.get(bucket)
+        return GetBucketCorsOutput(CORSRules=cors_rules["CORSRules"])
+
+    def delete_bucket_cors(
+        self, context: RequestContext, bucket: BucketName, expected_bucket_owner: AccountId = None
+    ) -> None:
+        response = call_moto(context)
+        if self.get_store().bucket_cors.pop(bucket, None):
+            self._cors_handler.invalidate_cache()
+        return response
 
     def get_bucket_acl(
         self, context: RequestContext, bucket: BucketName, expected_bucket_owner: AccountId = None
@@ -1086,6 +1126,17 @@ def apply_moto_patches():
         except TypeError:
             tags = {}
         return tags
+
+    @patch(moto_s3_responses.S3Response._cors_from_body)
+    def _fix_parsing_cors_rules(fn, *args, **kwargs) -> List[Dict]:
+        """
+        Fix parsing of CORS Rules from moto, you can set empty origin in AWS. Replace None by an empty string
+        """
+        cors_rules = fn(*args, **kwargs)
+        for rule in cors_rules:
+            if rule["AllowedOrigin"] is None:
+                rule["AllowedOrigin"] = ""
+        return cors_rules
 
     @patch(moto_s3_responses.S3Response.is_delete_keys)
     def s3_response_is_delete_keys(fn, self, request, path, bucket_name):

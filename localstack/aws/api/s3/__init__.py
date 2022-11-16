@@ -177,6 +177,8 @@ StringToSignBytes = str
 CanonicalRequest = str
 CanonicalRequestBytes = str
 X_Amz_Expires = int
+HttpMethod = str
+ResourceType = str
 
 
 class AnalyticsS3ExportFileFormat(str):
@@ -705,6 +707,22 @@ class ReplicationConfigurationNotFoundError(ServiceException):
     sender_fault: bool = False
     status_code: int = 404
     BucketName: Optional[BucketName]
+
+
+class BadRequest(ServiceException):
+    code: str = "BadRequest"
+    sender_fault: bool = False
+    status_code: int = 400
+    HostId: Optional[HostId]
+
+
+class AccessForbidden(ServiceException):
+    code: str = "AccessForbidden"
+    sender_fault: bool = False
+    status_code: int = 403
+    HostId: Optional[HostId]
+    Method: Optional[HttpMethod]
+    ResourceType: Optional[ResourceType]
 
 
 AbortDate = datetime

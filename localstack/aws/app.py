@@ -24,6 +24,7 @@ class LocalstackAwsGateway(Gateway):
             [
                 handlers.push_request_context,
                 metric_collector.create_metric_handler_item,
+                handlers.preprocess_request,
                 handlers.parse_service_name,  # enforce_cors and content_decoder depend on the service name
                 handlers.enforce_cors,
                 handlers.content_decoder,

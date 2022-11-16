@@ -645,6 +645,74 @@
         "path": "/shapes/BucketCannedACL/enum/4",
         "value": "log-delivery-write",
         "documentation": "<p>Not included in the specs, but valid value according to the docs: https://docs.aws.amazon.com/AmazonS3/latest/userguide/acl-overview.html#canned-acl</p>"
+    },
+    {
+      "op": "add",
+      "path": "/shapes/BadRequest",
+      "value": {
+        "type": "structure",
+        "members": {
+          "HostId": {
+            "shape": "HostId"
+          }
+        },
+        "documentation": "<p>Insufficient information. Origin request header needed.</p>",
+        "exception": true
+      }
+    },
+    {
+      "op": "add",
+      "path": "/shapes/AccessForbidden",
+      "value": {
+        "type": "structure",
+        "members": {
+          "HostId": {
+            "shape": "HostId"
+          },
+          "Method": {
+            "shape": "HttpMethod"
+          },
+          "ResourceType": {
+            "shape": "ResourceType"
+          }
+        },
+        "error": {
+          "httpStatusCode": 403
+        },
+        "documentation": "<p>CORSResponse</p>",
+        "exception": true
+      }
+    },
+    {
+      "op": "add",
+      "path": "/shapes/HttpMethod",
+      "value": {
+        "type": "string"
+      }
+    },
+    {
+      "op": "add",
+      "path": "/shapes/ResourceType",
+      "value": {
+        "type": "string"
+      }
+    },
+    {
+      "op": "add",
+      "path": "/shapes/NoSuchCORSConfiguration",
+      "value": {
+        "type": "structure",
+        "members": {
+          "BucketName": {
+            "shape": "BucketName"
+          }
+        },
+        "error": {
+          "httpStatusCode": 404
+        },
+        "documentation": "<p>The CORS configuration does not exist</p>",
+        "exception": true
+      }
     }
   ]
 }
