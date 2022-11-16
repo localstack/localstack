@@ -3,10 +3,8 @@ from functools import lru_cache
 from typing import List
 
 from localstack import config
-from localstack.packages import GitHubReleaseInstaller, InstallTarget, Package, PackageInstaller
-from localstack.utils.files import replace_in_file
+from localstack.packages import GitHubReleaseInstaller, Package, PackageInstaller
 from localstack.utils.platform import get_arch, get_os
-from localstack.utils.run import run
 
 _KINESIS_MOCK_VERSION = os.environ.get("KINESIS_MOCK_VERSION") or "0.2.5"
 
@@ -47,49 +45,4 @@ class KinesisMockPackageInstaller(GitHubReleaseInstaller):
         return bin_file
 
 
-# kinesalite version (npm dependency)
-_KINESALITE_VERSION = os.environ.get("KINESALITE_VERSION") or "3.3.3"
-
-
-class KinesalitePackage(Package):
-    def __init__(self, default_version: str = _KINESALITE_VERSION):
-        super().__init__(name="Kinesalite", default_version=default_version)
-
-    def _get_installer(self, version: str) -> PackageInstaller:
-        return KinesalitePackageInstaller(version)
-
-    def get_versions(self) -> List[str]:
-        return [_KINESALITE_VERSION]
-
-
-class KinesalitePackageInstaller(PackageInstaller):
-    def __init__(self, version: str):
-        super().__init__("kinesalite", version)
-
-    def _get_install_marker_path(self, install_dir: str) -> str:
-        return os.path.join(install_dir, "node_modules", "kinesalite", "cli.js")
-
-    def _install(self, target: InstallTarget) -> None:
-        run(
-            [
-                "npm",
-                "install",
-                "--prefix",
-                self._get_install_dir(target),
-                f"kinesalite@{self.version}",
-            ]
-        )
-
-    def _post_process(self, target: InstallTarget) -> None:
-        base_dir = self._get_install_dir(target)
-        files = [
-            "%s/kinesalite/validations/decreaseStreamRetentionPeriod.js",
-            "%s/kinesalite/validations/increaseStreamRetentionPeriod.js",
-        ]
-        for file_path in files:
-            file_path = file_path % base_dir
-            replace_in_file("lessThanOrEqual: 168", "lessThanOrEqual: 8760", file_path)
-
-
 kinesismock_package = KinesisMockPackage()
-kinesalite_package = KinesalitePackage()
