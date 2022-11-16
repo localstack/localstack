@@ -17,8 +17,8 @@ from localstack.constants import (
     OPENSEARCH_PLUGIN_LIST,
 )
 from localstack.packages import InstallTarget, Package, PackageInstaller
-from localstack.services.install import download_and_extract_with_retry, log_install_msg
 from localstack.services.opensearch import versions
+from localstack.utils.archives import download_and_extract_with_retry
 from localstack.utils.files import chmod_r, load_file, mkdir, rm_rf, save_file
 from localstack.utils.run import run
 from localstack.utils.sync import SynchronizedDefaultDict, retry
@@ -56,7 +56,6 @@ class OpensearchPackageInstaller(PackageInstaller):
         install_dir = self._get_install_dir(target)
         with _OPENSEARCH_INSTALL_LOCKS[version]:
             if not os.path.exists(install_dir):
-                log_install_msg(f"OpenSearch ({version})")
                 opensearch_url = versions.get_download_url(version, EngineType.OpenSearch)
                 install_dir_parent = os.path.dirname(install_dir)
                 mkdir(install_dir_parent)
@@ -128,7 +127,6 @@ class ElasticsearchPackageInstaller(PackageInstaller):
         install_dir = self._get_install_dir(target)
         installed_executable = os.path.join(install_dir, "bin", "elasticsearch")
         if not os.path.exists(installed_executable):
-            log_install_msg(f"Elasticsearch ({version})")
             es_url = versions.get_download_url(version, EngineType.Elasticsearch)
             install_dir_parent = os.path.dirname(install_dir)
             mkdir(install_dir_parent)

@@ -2,10 +2,9 @@ import os
 import tempfile
 from typing import List
 
-from localstack.constants import MAVEN_REPO_URL
+from localstack.constants import ARTIFACTS_REPO, MAVEN_REPO_URL
 from localstack.packages import InstallTarget, Package, PackageInstaller
-from localstack.services.install import (
-    ARTIFACTS_REPO,
+from localstack.utils.archives import (
     download_and_extract_with_retry,
     update_jar_manifest,
     upgrade_jar_file,

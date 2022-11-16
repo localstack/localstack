@@ -293,7 +293,7 @@
     }
   },
   "tests/integration/awslambda/test_lambda.py::TestLambdaBehavior::test_lambda_invoke_with_timeout": {
-    "recorded-date": "09-09-2022, 20:59:16",
+    "recorded-date": "14-11-2022, 16:13:13",
     "recorded-content": {
       "create-result": {
         "CreateEventSourceMappingResponse": null,
@@ -1953,6 +1953,123 @@
           "ingestionTime": "timestamp"
         }
       ]
+    }
+  },
+  "tests/integration/awslambda/test_lambda.py::TestLambdaBehavior::test_lambda_invoke_timed_out_environment_reuse": {
+    "recorded-date": "10-11-2022, 18:59:18",
+    "recorded-content": {
+      "create-result": {
+        "CreateEventSourceMappingResponse": null,
+        "CreateFunctionResponse": {
+          "Architectures": [
+            "x86_64"
+          ],
+          "CodeSha256": "code-sha256",
+          "CodeSize": 929,
+          "Description": "",
+          "Environment": {
+            "Variables": {}
+          },
+          "EphemeralStorage": {
+            "Size": 512
+          },
+          "FunctionArn": "arn:aws:lambda:<region>:111111111111:function:<function-name:1>",
+          "FunctionName": "<function-name:1>",
+          "Handler": "handler.handler",
+          "LastModified": "date",
+          "MemorySize": 128,
+          "PackageType": "Zip",
+          "RevisionId": "<uuid:1>",
+          "Role": "arn:aws:iam::111111111111:role/<resource:1>",
+          "Runtime": "python3.9",
+          "State": "Pending",
+          "StateReason": "The function is being created.",
+          "StateReasonCode": "Creating",
+          "Timeout": 1,
+          "TracingConfig": {
+            "Mode": "PassThrough"
+          },
+          "Version": "$LATEST",
+          "ResponseMetadata": {
+            "HTTPHeaders": {},
+            "HTTPStatusCode": 201
+          }
+        }
+      },
+      "invoke-result-file-write": {
+        "ExecutedVersion": "$LATEST",
+        "Payload": "null",
+        "StatusCode": 200,
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "invoke-result-file-read": {
+        "ExecutedVersion": "$LATEST",
+        "Payload": {
+          "content": "some-content"
+        },
+        "StatusCode": 200,
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "invoke-result-set-number": {
+        "ExecutedVersion": "$LATEST",
+        "Payload": "null",
+        "StatusCode": 200,
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "invoke-result-read-number": {
+        "ExecutedVersion": "$LATEST",
+        "Payload": {
+          "number": 42
+        },
+        "StatusCode": 200,
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "invoke-result-timed-out": {
+        "ExecutedVersion": "$LATEST",
+        "FunctionError": "Unhandled",
+        "Payload": {
+          "errorMessage": "date <timeout_error_msg> Task timed out after 1.00 seconds"
+        },
+        "StatusCode": 200,
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "invoke-result-file-read-after-timeout": {
+        "ExecutedVersion": "$LATEST",
+        "Payload": {
+          "content": "some-content"
+        },
+        "StatusCode": 200,
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "invoke-result-read-number-after-timeout": {
+        "ExecutedVersion": "$LATEST",
+        "Payload": {
+          "number": 0
+        },
+        "StatusCode": 200,
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
     }
   }
 }

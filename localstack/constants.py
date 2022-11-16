@@ -33,6 +33,9 @@ LOCALHOST_HOSTNAME = "localhost.localstack.cloud"
 LOCALSTACK_MAVEN_VERSION = "0.2.21"
 MAVEN_REPO_URL = "https://repo1.maven.org/maven2"
 
+# URL of localstack's artifacts repository on GitHub
+ARTIFACTS_REPO = "https://github.com/localstack/localstack-artifacts"
+
 # map of default service APIs and ports to be spun up (fetch map from localstack_client)
 DEFAULT_SERVICE_PORTS = localstack_client.config.get_service_ports()
 
@@ -128,7 +131,7 @@ ELASTICSEARCH_PLUGIN_LIST = [
 ELASTICSEARCH_DELETE_MODULES = ["ingest-geoip"]
 
 # the version of opensearch which is used by default
-OPENSEARCH_DEFAULT_VERSION = "OpenSearch_1.1"
+OPENSEARCH_DEFAULT_VERSION = "OpenSearch_1.3"
 
 # See https://docs.aws.amazon.com/opensearch-service/latest/developerguide/supported-plugins.html
 OPENSEARCH_PLUGIN_LIST = [

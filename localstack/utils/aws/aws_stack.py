@@ -884,7 +884,7 @@ def mock_aws_request_headers(
     # For S3 presigned URLs, we require that the client and server use the same
     # access key ID to sign requests. So try to use the access key ID for the
     # current request if available
-    access_key = access_key or get_aws_access_key_id() or TEST_AWS_ACCESS_KEY_ID
+    access_key = access_key or get_aws_access_key_id()
     region_name = region_name or get_region()
     headers = {
         "Content-Type": ctype,

@@ -7,7 +7,7 @@ import requests
 
 from localstack import config
 
-from ..services.install import download_and_extract
+from ..utils.archives import download_and_extract
 from ..utils.files import chmod_r, mkdir, rm_rf
 from ..utils.http import download
 from .api import InstallTarget, PackageException, PackageInstaller
