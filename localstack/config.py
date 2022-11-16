@@ -399,9 +399,6 @@ LEGACY_EDGE_PROXY = is_env_true("LEGACY_EDGE_PROXY")
 # TODO change when asf becomes default: os.environ.get("PROVIDER_OVERRIDE_S3", "") == 'legacy'
 LEGACY_S3_PROVIDER = os.environ.get("PROVIDER_OVERRIDE_S3", "") not in ("asf", "asf_pro")
 
-# whether to use the legacy installers in LPM or enable the new package-based installers (with versions and targets)
-LEGACY_LPM_INSTALLERS = is_env_not_false("LEGACY_LPM_INSTALLERS")
-
 # Whether to report internal failures as 500 or 501 errors.
 FAIL_FAST = is_env_true("FAIL_FAST")
 
