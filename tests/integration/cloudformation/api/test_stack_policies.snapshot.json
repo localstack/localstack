@@ -165,5 +165,43 @@
         "Type": "Sender"
       }
     }
+  },
+  "tests/integration/cloudformation/api/test_stack_policies.py::TestStackPolicy::test_create_stack_with_policy": {
+    "recorded-date": "16-11-2022, 15:42:23",
+    "recorded-content": {
+      "policy": {
+        "StackPolicyBody": {
+          "Statement": [
+            {
+              "Effect": "Allow",
+              "Action": "Update:*",
+              "Principal": "*",
+              "Resource": "*"
+            }
+          ]
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/integration/cloudformation/api/test_stack_policies.py::TestStackPolicy::test_set_policy_during_update": {
+    "recorded-date": "16-11-2022, 15:49:10",
+    "recorded-content": {
+      "policy": {
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "policy_after_update": {
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
   }
 }
