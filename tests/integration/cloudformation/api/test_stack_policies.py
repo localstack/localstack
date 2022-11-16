@@ -11,6 +11,31 @@ from localstack.utils.strings import short_uid
 from localstack.utils.sync import retry
 
 
+def get_events_canceled_by_policy(cfn_client, stack_name):
+    events = cfn_client.describe_stack_events(StackName=stack_name)["StackEvents"]
+
+    failed_events_by_policy = [
+        event
+        for event in events
+        if "ResourceStatusReason" in event
+        and (
+            "Action denied by stack policy" in event["ResourceStatusReason"]
+            or "Action not allowed by stack policy" in event["ResourceStatusReason"]
+            or "Resource update cancelled" in event["ResourceStatusReason"]
+        )
+    ]
+
+    return failed_events_by_policy
+
+
+def delete_stack_after_process(cfn_client, stack_name):
+    progress_is_finished = False
+    while not progress_is_finished:
+        status = cfn_client.describe_stacks(StackName=stack_name)["Stacks"][0]["StackStatus"]
+        progress_is_finished = "PROGRESS" not in status
+    cfn_client.delete_stack(StackName=stack_name)
+
+
 class TestStackPolicy:
     @pytest.mark.aws_validated
     # @pytest.mark.skip(reason="Not implemented")
@@ -510,27 +535,51 @@ class TestStackPolicy:
 
         retry(_assert_stack_is_updated, retries=5, sleep=2, sleep_before=1)
 
-
-def get_events_canceled_by_policy(cfn_client, stack_name):
-    events = cfn_client.describe_stack_events(StackName=stack_name)["StackEvents"]
-
-    failed_events_by_policy = [
-        event
-        for event in events
-        if "ResourceStatusReason" in event
-        and (
-            "Action denied by stack policy" in event["ResourceStatusReason"]
-            or "Action not allowed by stack policy" in event["ResourceStatusReason"]
-            or "Resource update cancelled" in event["ResourceStatusReason"]
+    @pytest.mark.aws_validated
+    @pytest.mark.skip(reason="Not implemented")
+    @pytest.mark.parametrize("reverse_statements", [False, True])
+    def test_update_with_overlapping_policies(
+        self, reverse_statements, deploy_cfn_template, cfn_client, is_stack_updated
+    ):
+        template = load_file(
+            os.path.join(os.path.dirname(__file__), "../../templates/sns_topic_parameter.yml")
         )
-    ]
+        stack = deploy_cfn_template(
+            template=template,
+            parameters={"TopicName": f"topic-{short_uid()}"},
+        )
 
-    return failed_events_by_policy
+        statements = [
+            {"Effect": "Deny", "Action": "Update:*", "Principal": "*", "Resource": "*"},
+            {"Effect": "Allow", "Action": "Update:*", "Principal": "*", "Resource": "*"},
+        ]
 
+        if reverse_statements:
+            statements.reverse()
 
-def delete_stack_after_process(cfn_client, stack_name):
-    progress_is_finished = False
-    while not progress_is_finished:
-        status = cfn_client.describe_stacks(StackName=stack_name)["Stacks"][0]["StackStatus"]
-        progress_is_finished = "PROGRESS" not in status
-    cfn_client.delete_stack(StackName=stack_name)
+        policy = {"Statement": statements}
+
+        cfn_client.set_stack_policy(StackName=stack.stack_name, StackPolicyBody=json.dumps(policy))
+
+        cfn_client.update_stack(
+            StackName=stack.stack_name,
+            TemplateBody=template,
+            Parameters=[
+                {"ParameterKey": "TopicName", "ParameterValue": f"new-topic-{short_uid()}"},
+            ],
+        )
+
+        def _assert_stack_is_updated():
+            assert is_stack_updated(stack.stack_name)
+
+        def _assert_failing_update_state():
+            assert get_events_canceled_by_policy(cfn_client, stack.stack_name)
+
+        retry(
+            _assert_stack_is_updated if not reverse_statements else _assert_failing_update_state,
+            retries=5,
+            sleep=2,
+            sleep_before=2,
+        )
+
+        delete_stack_after_process(cfn_client, stack.stack_name)
