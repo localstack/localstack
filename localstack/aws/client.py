@@ -114,7 +114,7 @@ def _patch_botocore_json_parser():
     def _parse_body_as_json(fn, self, body_contents):
         """
         botocore does not support CBOR encoded response parsing. Since we use the botocore parsers
-        to parse responses from external backends (like kinesalite), we need to patch botocore to
+        to parse responses from external backends (like kinesis-mock), we need to patch botocore to
         try CBOR decoding in case the JSON decoding fails.
         """
         try:
