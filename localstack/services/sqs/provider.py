@@ -146,6 +146,12 @@ def check_message_content(message_body: str):
 
 
 class CloudwatchPublishWorker:
+    """
+    Regularly publish metrics data about approximate messages to Cloudwatch.
+    Includes: ApproximateNumberOfMessagesVisible, ApproximateNumberOfMessagesNotVisible
+        and ApproximateNumberOfMessagesDelayed
+    """
+
     def __init__(self) -> None:
         super().__init__()
         self.scheduler = Scheduler()
@@ -191,7 +197,7 @@ class CloudwatchPublishWorker:
         def _run(*_args):
             self.scheduler.run()
 
-        self.thread = start_thread(_run, name="sqs-queue-cloudwatch-publisher")
+        self.thread = start_thread(_run, name="sqs-metrics-cloudwatch-publisher")
 
     def stop(self):
         if self.scheduler:
@@ -740,7 +746,6 @@ class SqsProvider(SqsApi, ServiceLifecycleHook):
                 )
                 msg = standard_message.message
             except Empty:
-
                 break
 
             # setting block to false guarantees that, if we've already waited before, we don't wait the full time

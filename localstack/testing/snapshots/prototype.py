@@ -112,6 +112,7 @@ class SnapshotSession:
                     }
                     full_state[self.scope_key] = recorded
                     state_to_dump = json.dumps(full_state, indent=2)
+                    # add line ending to be compatible with pre-commit-hooks (end-of-file-fixer)
                     fd.write(f"{state_to_dump}\n")
                 except Exception as e:
                     SNAPSHOT_LOGGER.exception(e)
