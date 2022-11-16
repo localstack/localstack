@@ -1107,7 +1107,13 @@ class DynamoDBProvider(DynamodbApi, ServiceLifecycleHook):
 
     @staticmethod
     def ddb_access_key(account_id: str, region_name: str) -> str:
-        """Get the access key to be used while communicating with DynamoDB Local."""
+        """
+        Get the access key to be used while communicating with DynamoDB Local.
+
+        DDBLocal supports namespacing as an undocumented feature. It works based on the value of the `Credentials`
+        field of the `Authorization` header. We use a concatenated value of account ID and region to achieve
+        namespacing.
+        """
         return "{account_id}{region_name}".format(
             account_id=account_id, region_name=region_name
         ).replace("-", "")
