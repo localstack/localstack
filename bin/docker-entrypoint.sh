@@ -16,22 +16,19 @@ fi
 # FIXME: deprecation path for legacy directories
 # the Dockerfile creates .marker file that will be overwritten if a volume is mounted into /tmp/localstack
 if [ ! -f /tmp/localstack/.marker ]; then
-    # unless LEGACY_DIRECTORIES is explicitly set to 1, print a friendly warning message
+    # unless LEGACY_DIRECTORIES is explicitly set to 1, print an error message and exit with a non-zero exit code
     if [[ -z ${LEGACY_DIRECTORIES} ]] || [[ ${LEGACY_DIRECTORIES} == "0" ]]; then
-        export LEGACY_DIRECTORIES=1
-
-        echo "WARNING"
+        echo "ERROR"
         echo "============================================================================"
         echo "  It seems you are mounting the LocalStack volume into /tmp/localstack."
         echo "  This will break the LocalStack container! Please update your volume mount"
-        echo "  destination to /var/lib/localstack. In the meantime, we have set"
-        echo "  LEGACY_DIRECTORIES=1, to make LocalStack behave as in <1.0.0, and which "
-        echo "  should prevent any serious issues, but will be removed soon!"
-        echo "  You can suppress this warning by setting LEGACY_DIRECTORIES=1"
+        echo "  destination to /var/lib/localstack."
+        echo "  You can suppress this error by setting LEGACY_DIRECTORIES=1."
         echo ""
         echo "  See: https://github.com/localstack/localstack/issues/6398"
         echo "============================================================================"
         echo ""
+        exit 1
     fi
 fi
 
