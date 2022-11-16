@@ -328,18 +328,6 @@ def sqs():
     return Service("sqs", listener=AwsApiListener("sqs", provider), lifecycle_hook=provider)
 
 
-@aws_provider(api="sqs", name="legacy")
-def sqs_legacy():
-    from localstack.services.sqs.legacy import sqs_listener, sqs_starter
-
-    return Service(
-        "sqs",
-        listener=sqs_listener.UPDATE_SQS,
-        start=sqs_starter.start_sqs,
-        check=sqs_starter.check_sqs,
-    )
-
-
 @aws_provider()
 def ssm():
     from localstack.services.moto import MotoFallbackDispatcher
