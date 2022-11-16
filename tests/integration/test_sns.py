@@ -2604,6 +2604,14 @@ class TestSNSProvider:
 
         sns_create_sqs_subscription(topic_arn=topic_arn, queue_url=queue_url)
 
+        with pytest.raises(ClientError) as e:
+            sns_client.publish(
+                TopicArn=topic_arn,
+                Message="test message",
+                MessageAttributes={"attr1": {"DataType": "String.", "StringValue": "prefixed-1"}},
+            )
+        snapshot.match("publish-error", e.value.response)
+
         response = sns_client.publish(
             TopicArn=topic_arn,
             Message="test message",
@@ -2611,14 +2619,13 @@ class TestSNSProvider:
                 "attr1": {"DataType": "String.prefixed", "StringValue": "prefixed-1"}
             },
         )
-        snapshot.match("publish-ok", response)
+        snapshot.match("publish-ok-1", response)
 
-        with pytest.raises(ClientError) as e:
-            sns_client.publish(
-                TopicArn=topic_arn,
-                Message="test message",
-                MessageAttributes={
-                    "attr1": {"DataType": "Stringprefixed", "StringValue": "prefixed-1"}
-                },
-            )
-        snapshot.match("publish-error", e.value.response)
+        response = sns_client.publish(
+            TopicArn=topic_arn,
+            Message="test message",
+            MessageAttributes={
+                "attr1": {"DataType": "String.  prefixed.", "StringValue": "prefixed-1"}
+            },
+        )
+        snapshot.match("publish-ok-2", response)
