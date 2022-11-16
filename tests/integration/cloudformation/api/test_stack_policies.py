@@ -205,6 +205,62 @@ class TestStackPolicy:
 
     @pytest.mark.aws_validated
     @pytest.mark.skip(reason="Not implemented")
+    def test_different_principal_attribute(self, cfn_client, deploy_cfn_template, snapshot):
+        stack = deploy_cfn_template(
+            template_path=os.path.join(
+                os.path.dirname(__file__), "../../templates/sns_topic_parameter.yml"
+            ),
+            parameters={"TopicName": f"topic-{short_uid()}"},
+        )
+
+        policy = {
+            "Statement": [
+                {
+                    "Effect": "Deny",
+                    "Action": "Update:*",
+                    "Principal": short_uid(),
+                    "Resource": "*",
+                }
+            ]
+        }
+        with pytest.raises(botocore.exceptions.ClientError) as ex:
+            cfn_client.set_stack_policy(
+                StackName=stack.stack_name, StackPolicyBody=json.dumps(policy)
+            )
+
+        error_response = ex.value.response["Error"]
+        snapshot.match("error", error_response)
+
+    @pytest.mark.aws_validated
+    @pytest.mark.skip(reason="Not implemented")
+    def test_different_action_attribute(self, cfn_client, deploy_cfn_template, snapshot):
+        stack = deploy_cfn_template(
+            template_path=os.path.join(
+                os.path.dirname(__file__), "../../templates/sns_topic_parameter.yml"
+            ),
+            parameters={"TopicName": f"topic-{short_uid()}"},
+        )
+
+        policy = {
+            "Statement": [
+                {
+                    "Effect": "Deny",
+                    "Action": "Delete:*",
+                    "Principal": short_uid(),
+                    "Resource": "*",
+                }
+            ]
+        }
+        with pytest.raises(botocore.exceptions.ClientError) as ex:
+            cfn_client.set_stack_policy(
+                StackName=stack.stack_name, StackPolicyBody=json.dumps(policy)
+            )
+
+        error_response = ex.value.response["Error"]
+        snapshot.match("error", error_response)
+
+    @pytest.mark.aws_validated
+    @pytest.mark.skip(reason="Not implemented")
     @pytest.mark.parametrize("resource_type", ["AWS::S3::Bucket", "AWS::SNS::Topic"])
     def test_prevent_update(self, resource_type, cfn_client, deploy_cfn_template):
         """

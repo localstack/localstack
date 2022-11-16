@@ -145,5 +145,25 @@
         "Type": "Sender"
       }
     }
+  },
+  "tests/integration/cloudformation/api/test_stack_policies.py::TestStackPolicy::test_different_principal_attribute": {
+    "recorded-date": "16-11-2022, 11:01:36",
+    "recorded-content": {
+      "error": {
+        "Code": "ValidationError",
+        "Message": "Error validating stack policy: Invalid stack policy",
+        "Type": "Sender"
+      }
+    }
+  },
+  "tests/integration/cloudformation/api/test_stack_policies.py::TestStackPolicy::test_different_action_attribute": {
+    "recorded-date": "16-11-2022, 11:02:19",
+    "recorded-content": {
+      "error": {
+        "Code": "ValidationError",
+        "Message": "Error validating stack policy: Invalid stack policy",
+        "Type": "Sender"
+      }
+    }
   }
 }
