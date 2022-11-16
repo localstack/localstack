@@ -17,7 +17,7 @@ from localstack import config, constants
 from localstack.aws.accounts import get_aws_account_id
 from localstack.constants import ENV_DEV, LOCALSTACK_INFRA_PROCESS, LOCALSTACK_VENV_FOLDER
 from localstack.runtime import events, hooks
-from localstack.services import generic_proxy, install, motoserver
+from localstack.services import generic_proxy, motoserver
 from localstack.services.generic_proxy import ProxyListener, start_proxy_server
 from localstack.services.plugins import SERVICE_PLUGINS, ServiceDisabled, wait_for_infra_shutdown
 from localstack.utils import analytics, config_listener, files, persistence
@@ -468,11 +468,6 @@ def do_start_infra(asynchronous, apis, is_in_docker):
         patch_moto_request_handling()
 
     @log_duration()
-    def prepare_installation():
-        # install libs if not present
-        install.install_components(apis)
-
-    @log_duration()
     def preload_services():
         """
         Preload services - restore persistence, and initialize services if EAGER_SERVICE_LOADING=1.
@@ -516,7 +511,6 @@ def do_start_infra(asynchronous, apis, is_in_docker):
         return t
 
     prepare_environment()
-    prepare_installation()
     thread = start_runtime_components()
     preload_services()
 

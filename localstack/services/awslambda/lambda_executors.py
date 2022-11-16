@@ -76,7 +76,6 @@ from localstack.utils.run import CaptureOutputProcess, FuncThread
 from localstack.utils.time import timestamp_millis
 
 # constants
-LAMBDA_JAVA_INSTALLER = lambda_java_libs_package.get_installer()
 LAMBDA_EXECUTOR_CLASS = "cloud.localstack.LambdaExecutor"
 LAMBDA_HANDLER_ENV_VAR_NAME = "_HANDLER"
 EVENT_FILE_PATTERN = "%s/lambda.event.*.json" % config.dirs.tmp
@@ -1537,8 +1536,9 @@ class LambdaExecutorLocal(LambdaExecutor):
         event_file = EVENT_FILE_PATTERN.replace("*", short_uid())
         save_file(event_file, json.dumps(json_safe(event)))
         TMP_FILES.append(event_file)
-
-        lambda_executor_jar = LAMBDA_JAVA_INSTALLER.get_executable_path()
+        installer = lambda_java_libs_package.get_installer()
+        installer.install()
+        lambda_executor_jar = installer.get_executable_path()
         classpath = "%s:%s:%s" % (
             main_file,
             Util.get_java_classpath(lambda_function.cwd),

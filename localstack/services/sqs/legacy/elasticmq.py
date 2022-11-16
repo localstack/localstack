@@ -2,7 +2,7 @@ import logging
 import os
 
 from localstack import config
-from localstack.services import install
+from localstack.services.sqs.legacy.packages import elasticmq_package
 from localstack.utils.common import (
     TMP_FILES,
     TMP_THREADS,
@@ -40,10 +40,10 @@ rest-sqs {
 
 class ElasticMQSerer(Server):
     max_heap_size: str = "256m"
-    install_dir: str = install.INSTALL_DIR_ELASTICMQ
 
     def do_start_thread(self) -> FuncThread:
-        install.install_elasticmq()
+        installer = elasticmq_package.get_installer()
+        installer.install()
         # create config file
         config_params = config_template % (
             config.LOCALSTACK_HOSTNAME,
@@ -63,7 +63,7 @@ class ElasticMQSerer(Server):
             f"-Dconfig.file={config_file}",
             f"-Xmx{self.max_heap_size}",
             "-jar",
-            os.path.join(self.install_dir, "elasticmq-server.jar"),
+            os.path.join(installer.get_installed_dir(), "elasticmq-server.jar"),
         ]
 
         LOG.debug("starting elasticmq server with command %s", " ".join(cmd))
