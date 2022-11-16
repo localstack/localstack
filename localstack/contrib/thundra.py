@@ -4,7 +4,6 @@ import os
 from typing import Optional, Union
 
 from localstack import config
-from localstack.services import install
 from localstack.services.awslambda.lambda_executors import (
     AdditionalInvocationOptions,
     InvocationContext,
@@ -27,6 +26,7 @@ from localstack.services.awslambda.lambda_utils import (
     is_python_runtime,
 )
 from localstack.utils import common
+from localstack.utils.http import download
 
 # logger
 LOG = logging.getLogger(__name__)
@@ -128,7 +128,7 @@ def _install_java_agent():
     # Install Thundra Java agent JAR file
     if not os.path.exists(THUNDRA_JAVA_AGENT_LOCAL_PATH):
         _log_install_msg("Thundra Java agent")
-        install.download(THUNDRA_JAVA_AGENT_REMOTE_URL, THUNDRA_JAVA_AGENT_LOCAL_PATH)
+        download(THUNDRA_JAVA_AGENT_REMOTE_URL, THUNDRA_JAVA_AGENT_LOCAL_PATH)
 
 
 def _is_java8_lambda(func_details):
