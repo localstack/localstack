@@ -1150,7 +1150,7 @@ class DynamoDBProvider(DynamodbApi, ServiceLifecycleHook):
 
         # DynamoDBLocal namespaces based on the value of Credentials
         # Since we want to namespace by both account ID and region, use an aggregate key
-        _replace(r"Credential=(\d{12}|\w{20,})/", rf"Credential={key}/")
+        _replace(r"Credential=(\d{12}|\w{1,})/", rf"Credential={key}/")
 
         # Note: The NoSQL Workbench sends "localhost" or "local" as the region name, which we need to fix here
         _replace(
