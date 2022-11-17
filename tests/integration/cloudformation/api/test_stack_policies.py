@@ -614,7 +614,7 @@ class TestStackPolicy:
 
     @pytest.mark.aws_validated
     @pytest.mark.skip(reason="Not implemented")
-    def test_set_policy_during_update(
+    def test_set_policy_with_update_operation(
         self, cfn_client, deploy_cfn_template, is_stack_updated, snapshot, cleanup_stacks
     ):
         template = load_file(
@@ -648,6 +648,47 @@ class TestStackPolicy:
             assert is_stack_updated(stack.stack_name)
 
         retry(_assert_stack_is_updated, retries=5, sleep=2, sleep_before=1)
+
+        obtained_policy = cfn_client.get_stack_policy(StackName=stack.stack_name)
+        snapshot.match("policy_after_update", obtained_policy)
+
+        delete_stack_after_process(cfn_client, stack.stack_name)
+
+    @pytest.mark.aws_validated
+    # @pytest.mark.skip(reason="Not implemented")
+    def test_policy_during_update(
+        self, cfn_client, deploy_cfn_template, is_stack_updated, snapshot, cleanup_stacks
+    ):
+        template = load_file(
+            os.path.join(os.path.dirname(__file__), "../../templates/simple_api.yaml")
+        )
+        stack = deploy_cfn_template(
+            template=template,
+            parameters={"ApiName": f"api-{short_uid()}"},
+        )
+
+        policy = {
+            "Statement": [
+                {"Effect": "Deny", "Action": "Update:*", "Principal": "*", "Resource": "*"},
+            ]
+        }
+
+        cfn_client.update_stack(
+            StackName=stack.stack_name,
+            TemplateBody=template,
+            Parameters=[
+                {"ParameterKey": "ApiName", "ParameterValue": f"api-{short_uid()}"},
+            ],
+            StackPolicyDuringUpdateBody=json.dumps(policy),
+        )
+
+        obtained_policy = cfn_client.get_stack_policy(StackName=stack.stack_name)
+        snapshot.match("policy_during_update", obtained_policy)
+
+        def _assert_update_failed():
+            assert get_events_canceled_by_policy(cfn_client, stack.stack_name)
+
+        retry(_assert_update_failed, retries=5, sleep=2, sleep_before=1)
 
         obtained_policy = cfn_client.get_stack_policy(StackName=stack.stack_name)
         snapshot.match("policy_after_update", obtained_policy)
