@@ -452,7 +452,8 @@ def resolve_refs_recursively(stack, value):
                 if "SecretString" in reference_key:
                     parts = reference_key.split(":SecretString:")
                     secret_id = parts[0]
-                    [json_key, version_stage, version_id] = parts[1].split(":")
+                    # json-key, version-stage and version-id are optional.
+                    [json_key, version_stage, version_id] = f"{parts[1]}::".split(":")[:3]
 
                 kwargs = {}  # optional args for get_secret_value
                 if version_id:

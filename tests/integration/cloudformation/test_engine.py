@@ -326,7 +326,12 @@ class TestSsmParameters:
 
 class TestSecretsManagerParameters:
     @pytest.mark.parametrize(
-        "template_name", ["resolve_secretsmanager_full.yaml", "resolve_secretsmanager.yaml"]
+        "template_name",
+        [
+            "resolve_secretsmanager_full.yaml",
+            "resolve_secretsmanager_partial.yaml",
+            "resolve_secretsmanager.yaml",
+        ],
     )
     def test_resolve_secretsmanager(
         self,
