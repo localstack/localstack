@@ -598,5 +598,73 @@
         }
       }
     }
+  },
+  "tests/integration/test_cloudwatch.py::TestCloudwatch::test_aws_sqs_metrics_created": {
+    "recorded-date": "17-11-2022, 14:40:11",
+    "recorded-content": {
+      "get_metric_data": {
+        "Messages": [],
+        "MetricDataResults": [
+          {
+            "Id": "sent",
+            "Label": "NumberOfMessagesSent",
+            "StatusCode": "Complete",
+            "Timestamps": "timestamp",
+            "Values": [
+              1.0
+            ]
+          },
+          {
+            "Id": "sent_size",
+            "Label": "SentMessageSize",
+            "StatusCode": "Complete",
+            "Timestamps": "timestamp",
+            "Values": [
+              5.0
+            ]
+          },
+          {
+            "Id": "empty_receives",
+            "Label": "NumberOfEmptyReceives",
+            "StatusCode": "Complete",
+            "Timestamps": "timestamp",
+            "Values": [
+              1.0
+            ]
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "get_metric_data_2": {
+        "Messages": [],
+        "MetricDataResults": [
+          {
+            "Id": "num_msg_received",
+            "Label": "NumberOfMessagesReceived",
+            "StatusCode": "Complete",
+            "Timestamps": "timestamp",
+            "Values": [
+              1.0
+            ]
+          },
+          {
+            "Id": "num_msg_deleted",
+            "Label": "NumberOfMessagesDeleted",
+            "StatusCode": "Complete",
+            "Timestamps": "timestamp",
+            "Values": [
+              1.0
+            ]
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
   }
 }

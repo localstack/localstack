@@ -13,6 +13,8 @@ from localstack.aws.api.cloudwatch import (
     CloudwatchApi,
     DescribeAlarmsInput,
     DescribeAlarmsOutput,
+    GetMetricDataInput,
+    GetMetricDataOutput,
     ListTagsForResourceOutput,
     PutCompositeAlarmInput,
     PutMetricAlarmInput,
@@ -284,6 +286,26 @@ class CloudwatchProvider(CloudwatchApi, ServiceLifecycleHook):
     ) -> TagResourceOutput:
         self.tags.tag_resource(resource_arn, tags)
         return TagResourceOutput()
+
+    @handler("GetMetricData", expand=False)
+    def get_metric_data(
+        self, context: RequestContext, request: GetMetricDataInput
+    ) -> GetMetricDataOutput:
+        result = moto.call_moto(context)
+        # moto currently uses hardcoded label metric_name + stat
+        # parity tests shows that default is MetricStat, but there might also be a label explicitly set
+        metric_data_queries = request["MetricDataQueries"]
+        for i in range(0, len(metric_data_queries)):
+            metric_query = metric_data_queries[i]
+            label = metric_query.get("Label") or metric_query.get("MetricStat", {}).get(
+                "Metric", {}
+            ).get("MetricName")
+            if label:
+                result["MetricDataResults"][i]["Label"] = label
+        if "Messages" not in result:
+            # parity tests reveals that an empty messages list is added
+            result["Messages"] = []
+        return result
 
     @handler("PutMetricAlarm", expand=False)
     def put_metric_alarm(

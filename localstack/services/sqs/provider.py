@@ -6,6 +6,7 @@ import logging
 import re
 import threading
 import time
+from concurrent.futures.thread import ThreadPoolExecutor
 from queue import Empty
 from typing import Dict, List, Optional
 
@@ -78,6 +79,7 @@ from localstack.services.sqs.models import (
 from localstack.services.sqs.utils import generate_message_id
 from localstack.utils.aws import aws_stack
 from localstack.utils.aws.aws_stack import parse_arn
+from localstack.utils.cloudwatch.cloudwatch_util import publish_sqs_metric
 from localstack.utils.run import FuncThread
 from localstack.utils.scheduler import Scheduler
 from localstack.utils.strings import md5
@@ -142,6 +144,153 @@ def check_message_content(message_body: str):
 
     if not re.match(sqs_constants.MSG_CONTENT_REGEX, message_body):
         raise InvalidMessageContents(error)
+
+
+class CloudwatchDispatcher:
+    """
+    Dispatches SQS metrics for specific api-calls using a ThreadPool
+    """
+
+    def __init__(self, num_thread: int = 3):
+        self.executor = ThreadPoolExecutor(
+            num_thread, thread_name_prefix="sqs-metrics-cloudwatch-dispatcher"
+        )
+
+    def shutdown(self):
+        self.executor.shutdown(wait=False)
+
+    def dispatch_sqs_metric(
+        self, region: str, queue_name: str, metric: str, value: float = 1, unit: str = "Count"
+    ):
+        """
+        Publishes a metric to Cloudwatch using a Threadpool
+        :param region The region that should be used for Cloudwatch client
+        :param queue_name The name of the queue that the metric belongs to
+        :param metric The name of the metric
+        :param value The value for that metric, default 1
+        :param unit The unit for the value, default "Count"
+        """
+        self.executor.submit(
+            publish_sqs_metric,
+            region=region,
+            queue_name=queue_name,
+            metric=metric,
+            value=value,
+            unit=unit,
+        )
+
+    def dispatch_metric_message_sent(self, queue: SqsQueue, message_body_size: int):
+        """
+        Sends metric 'NumberOfMessagesSent' and 'SentMessageSize' to Cloudwatch
+        :param queue The Queue for which the metric will be send
+        :param message_body_size the size of the message in bytes
+        """
+        self.dispatch_sqs_metric(
+            region=queue.region, queue_name=queue.name, metric="NumberOfMessagesSent"
+        )
+        self.dispatch_sqs_metric(
+            region=queue.region,
+            queue_name=queue.name,
+            metric="SentMessageSize",
+            value=message_body_size,
+            unit="Bytes",
+        )
+
+    def dispatch_metric_message_deleted(self, queue: SqsQueue, deleted: int = 1):
+        """
+        Sends metric 'NumberOfMessagesDeleted' to Cloudwatch
+        :param queue The Queue for which the metric will be sent
+        :param deleted The number of messages that were successfully deleted, default: 1
+        """
+        self.dispatch_sqs_metric(
+            region=queue.region,
+            queue_name=queue.name,
+            metric="NumberOfMessagesDeleted",
+            value=deleted,
+        )
+
+    def dispatch_metric_received(self, queue: SqsQueue, received: int):
+        """
+        Sends metric 'NumberOfMessagesReceived' (if received > 0), or 'NumberOfEmptyReceives' to Cloudwatch
+        :param queue The Queue for which the metric will be send
+        :param received The number of messages that have been received
+        """
+        if received > 0:
+            self.dispatch_sqs_metric(
+                region=queue.region,
+                queue_name=queue.name,
+                metric="NumberOfMessagesReceived",
+                value=received,
+            )
+        else:
+            self.dispatch_sqs_metric(
+                region=queue.region, queue_name=queue.name, metric="NumberOfEmptyReceives"
+            )
+
+
+class CloudwatchPublishWorker:
+    """
+    Regularly publish metrics data about approximate messages to Cloudwatch.
+    Includes: ApproximateNumberOfMessagesVisible, ApproximateNumberOfMessagesNotVisible
+        and ApproximateNumberOfMessagesDelayed
+    """
+
+    def __init__(self) -> None:
+        super().__init__()
+        self.scheduler = Scheduler()
+        self.thread: Optional[FuncThread] = None
+
+    def publish_approximate_cloudwatch_metrics(self):
+        for account_id, region_bundle in sqs_stores.items():
+            for region, store in region_bundle.items():
+                for queue in store.queues.values():
+                    self.publish_approximate_metrics_for_queue_to_cloudwatch(queue)
+
+    def publish_approximate_metrics_for_queue_to_cloudwatch(self, queue):
+        """Publishes the metrics for ApproximateNumberOfMessagesVisible, ApproximateNumberOfMessagesNotVisible
+        and ApproximateNumberOfMessagesDelayed to CloudWatch"""
+        # TODO ApproximateAgeOfOldestMessage is missing
+        #  https://docs.aws.amazon.com/AWSSimpleQueueService/latest/SQSDeveloperGuide/sqs-available-cloudwatch-metrics.html
+        publish_sqs_metric(
+            region=queue.region,
+            queue_name=queue.name,
+            metric="ApproximateNumberOfMessagesVisible",
+            value=queue.approx_number_of_messages,
+        )
+        publish_sqs_metric(
+            region=queue.region,
+            queue_name=queue.name,
+            metric="ApproximateNumberOfMessagesNotVisible",
+            value=queue.approx_number_of_messages_not_visible,
+        )
+        publish_sqs_metric(
+            region=queue.region,
+            queue_name=queue.name,
+            metric="ApproximateNumberOfMessagesDelayed",
+            value=queue.approx_number_of_messages_delayed,
+        )
+
+    def start(self):
+        if self.thread:
+            return
+
+        self.scheduler = Scheduler()
+        self.scheduler.schedule(self.publish_approximate_cloudwatch_metrics, period=60)
+
+        def _run(*_args):
+            self.scheduler.run()
+
+        self.thread = start_thread(_run, name="sqs-approx-metrics-cloudwatch-publisher")
+
+    def stop(self):
+        if self.scheduler:
+            self.scheduler.close()
+
+        if self.thread:
+            self.thread.stop()
+
+        self.thread = None
+        self.scheduler = None
 
 
 class QueueUpdateWorker:
@@ -273,6 +422,8 @@ class SqsProvider(SqsApi, ServiceLifecycleHook):
         super().__init__()
         self._mutex = threading.RLock()
         self._queue_update_worker = QueueUpdateWorker()
+        self._cloudwatch_publish_worker = CloudwatchPublishWorker()
+        self._cloudwatch_dispatcher = CloudwatchDispatcher()
 
     @staticmethod
     def get_store(account_id: str = None, region: str = None) -> SqsStore:
@@ -280,9 +431,12 @@ class SqsProvider(SqsApi, ServiceLifecycleHook):
 
     def on_before_start(self):
         self._queue_update_worker.start()
+        self._cloudwatch_publish_worker.start()
 
     def on_before_stop(self):
         self._queue_update_worker.stop()
+        self._cloudwatch_publish_worker.stop()
+        self._cloudwatch_dispatcher.shutdown()
 
     def _require_queue(self, context: RequestContext, name: str) -> SqsQueue:
         """
@@ -627,6 +781,10 @@ class SqsProvider(SqsApi, ServiceLifecycleHook):
             MessageAttributes=message_attributes,
         )
 
+        self._cloudwatch_dispatcher.dispatch_metric_message_sent(
+            queue=queue, message_body_size=len(message_body.encode("utf-8"))
+        )
+
         return queue.put(
             message=message,
             message_deduplication_id=message_deduplication_id,
@@ -698,6 +856,8 @@ class SqsProvider(SqsApi, ServiceLifecycleHook):
             messages.append(msg)
             num -= 1
 
+        self._cloudwatch_dispatcher.dispatch_metric_received(queue, received=len(messages))
+
         # TODO: how does receiving behave if the queue was deleted in the meantime?
         return ReceiveMessageResult(Messages=messages)
 
@@ -746,6 +906,7 @@ class SqsProvider(SqsApi, ServiceLifecycleHook):
     ) -> None:
         queue = self._resolve_queue(context, queue_url=queue_url)
         queue.remove(receipt_handle)
+        self._cloudwatch_dispatcher.dispatch_metric_message_deleted(queue)
 
     def delete_message_batch(
         self,
@@ -774,6 +935,7 @@ class SqsProvider(SqsApi, ServiceLifecycleHook):
                             Message=str(e),
                         )
                     )
+        self._cloudwatch_dispatcher.dispatch_metric_message_deleted(queue, deleted=len(successful))
 
         return DeleteMessageBatchResult(
             Successful=successful,

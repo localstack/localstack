@@ -44,6 +44,36 @@ def publish_lambda_metric(metric, value, kwargs):
         LOG.info('Unable to put metric data for metric "%s" to CloudWatch: %s', metric, e)
 
 
+def publish_sqs_metric(
+    region: str, queue_name: str, metric: str, value: float = 1, unit: str = "Count"
+):
+    """
+    Publishes the metrics for SQS to CloudWatch using the namespace "AWS/SQS"
+    See also: https://docs.aws.amazon.com/AWSSimpleQueueService/latest/SQSDeveloperGuide/sqs-available-cloudwatch-metrics.html
+    :param region The region that should be used for CloudWatch
+    :param queue_name The name of the queue
+    :param metric The metric name to be used
+    :param value The value of the metric data, default: 1
+    :param unit The unit of the metric data, default: "Count"
+    """
+    cw_client = aws_stack.connect_to_service("cloudwatch", region_name=region)
+    try:
+        cw_client.put_metric_data(
+            Namespace="AWS/SQS",
+            MetricData=[
+                {
+                    "MetricName": metric,
+                    "Dimensions": [{"Name": "QueueName", "Value": queue_name}],
+                    "Unit": unit,
+                    "Timestamp": datetime.utcnow().replace(tzinfo=timezone.utc),
+                    "Value": value,
+                }
+            ],
+        )
+    except Exception as e:
+        LOG.info(f'Unable to put metric data for metric "{metric}" to CloudWatch: {e}')
+
+
 def publish_lambda_duration(time_before, kwargs):
     time_after = now_utc()
     publish_lambda_metric("Duration", time_after - time_before, kwargs)
