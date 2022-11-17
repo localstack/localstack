@@ -1,3 +1,4 @@
+import copy
 import gzip
 import json
 from datetime import datetime, timedelta, timezone
@@ -740,52 +741,102 @@ class TestCloudwatch:
             "Attributes"
         ]["QueueArn"]
         queue_name = aws_stack.sqs_queue_name(sqs_arn)
+        # this should trigger the metric "NumberOfEmptyReceives"
+        sqs_client.receive_message(QueueUrl=sqs_url)
+
         sqs_client.send_message(QueueUrl=sqs_url, MessageBody="Hello")
         dimensions = [{"Name": "QueueName", "Value": queue_name}]
 
-        def get_metrics() -> int:
-            result = cloudwatch_client.list_metrics(Dimensions=dimensions)
-            return len(result["Metrics"])
+        metric_default = {
+            "MetricStat": {
+                "Metric": {
+                    "Namespace": "AWS/SQS",
+                    "Dimensions": dimensions,
+                },
+                "Period": 60,
+                "Stat": "Sum",
+            },
+        }
+        sent = {"Id": "sent"}
+        sent.update(copy.deepcopy(metric_default))
+        sent["MetricStat"]["Metric"]["MetricName"] = "NumberOfMessagesSent"
 
-        assert poll_condition(lambda: get_metrics() >= 2, interval=1, timeout=120)
+        sent_size = {"Id": "sent_size"}
+        sent_size.update(copy.deepcopy(metric_default))
+        sent_size["MetricStat"]["Metric"]["MetricName"] = "SentMessageSize"
 
-        result = cloudwatch_client.list_metrics(Dimensions=dimensions)
-        metrics = [metric["MetricName"] for metric in result["Metrics"]]
-        assert "NumberOfMessagesSent" in metrics
-        assert "SentMessageSize" in metrics
+        empty = {"Id": "empty_receives"}
+        empty.update(copy.deepcopy(metric_default))
+        empty["MetricStat"]["Metric"]["MetricName"] = "NumberOfEmptyReceives"
+
+        def contains_sent_messages_metrics() -> int:
+            res = cloudwatch_client.list_metrics(Dimensions=dimensions)
+            metrics = [metric["MetricName"] for metric in res["Metrics"]]
+            if all(
+                m in metrics
+                for m in ["NumberOfMessagesSent", "SentMessageSize", "NumberOfEmptyReceives"]
+            ):
+                res = cloudwatch_client.get_metric_data(
+                    MetricDataQueries=[sent, sent_size, empty],
+                    StartTime=datetime.utcnow() - timedelta(hours=1),
+                    EndTime=datetime.utcnow(),
+                )
+                # add check for values, because AWS is sometimes a bit slower to fill those values up...
+                if (
+                    res["MetricDataResults"][0]["Values"]
+                    and res["MetricDataResults"][1]["Values"]
+                    and res["MetricDataResults"][2]["Values"]
+                ):
+                    return True
+            return False
+
+        assert poll_condition(lambda: contains_sent_messages_metrics(), interval=1, timeout=120)
 
         response = cloudwatch_client.get_metric_data(
-            MetricDataQueries=[
-                {
-                    "Id": "sent",
-                    "MetricStat": {
-                        "Metric": {
-                            "Namespace": "AWS/SQS",
-                            "MetricName": "NumberOfMessagesSent",
-                            "Dimensions": dimensions,
-                        },
-                        "Period": 60,
-                        "Stat": "Sum",
-                    },
-                },
-                {
-                    "Id": "sent_size",
-                    "MetricStat": {
-                        "Metric": {
-                            "Namespace": "AWS/SQS",
-                            "MetricName": "SentMessageSize",
-                            "Dimensions": dimensions,
-                        },
-                        "Period": 60,
-                        "Stat": "Sum",
-                    },
-                },
-            ],
+            MetricDataQueries=[sent, sent_size, empty],
             StartTime=datetime.utcnow() - timedelta(hours=1),
             EndTime=datetime.utcnow(),
         )
 
         snapshot.match("get_metric_data", response)
+
+        # receive + delete message
+        sqs_messages = sqs_client.receive_message(QueueUrl=sqs_url)["Messages"]
+        assert len(sqs_messages) == 1
+        receipt_handle = sqs_messages[0]["ReceiptHandle"]
+        sqs_client.delete_message(QueueUrl=sqs_url, ReceiptHandle=receipt_handle)
+
+        msg_received = {"Id": "num_msg_received"}
+        msg_received.update(copy.deepcopy(metric_default))
+        msg_received["MetricStat"]["Metric"]["MetricName"] = "NumberOfMessagesReceived"
+
+        msg_deleted = {"Id": "num_msg_deleted"}
+        msg_deleted.update(copy.deepcopy(metric_default))
+        msg_deleted["MetricStat"]["Metric"]["MetricName"] = "NumberOfMessagesDeleted"
+
+        def contains_receive_delete_metrics() -> int:
+            res = cloudwatch_client.list_metrics(Dimensions=dimensions)
+            metrics = [metric["MetricName"] for metric in res["Metrics"]]
+            if all(m in metrics for m in ["NumberOfMessagesReceived", "NumberOfMessagesDeleted"]):
+                res = cloudwatch_client.get_metric_data(
+                    MetricDataQueries=[msg_received, msg_deleted],
+                    StartTime=datetime.utcnow() - timedelta(hours=1),
+                    EndTime=datetime.utcnow(),
+                )
+                # add check for values, because AWS is sometimes a bit slower to fill those values up...
+                if res["MetricDataResults"][0]["Values"] and res["MetricDataResults"][1]["Values"]:
+                    return True
+            return False
+
+        assert poll_condition(lambda: contains_receive_delete_metrics(), interval=1, timeout=120)
+
+        response = cloudwatch_client.get_metric_data(
+            MetricDataQueries=[msg_received, msg_deleted],
+            StartTime=datetime.utcnow() - timedelta(hours=1),
+            EndTime=datetime.utcnow(),
+        )
+
+        snapshot.match("get_metric_data_2", response)
 
 
 def _check_alarm_triggered(

@@ -203,9 +203,9 @@ class SqsQueue:
 
     def default_attributes(self) -> QueueAttributeMap:
         return {
-            QueueAttributeName.ApproximateNumberOfMessages: lambda: self.visible._qsize(),
-            QueueAttributeName.ApproximateNumberOfMessagesNotVisible: lambda: len(self.inflight),
-            QueueAttributeName.ApproximateNumberOfMessagesDelayed: lambda: len(self.delayed),
+            QueueAttributeName.ApproximateNumberOfMessages: lambda: self.approx_number_of_messages,
+            QueueAttributeName.ApproximateNumberOfMessagesNotVisible: lambda: self.approx_number_of_messages_not_visible,
+            QueueAttributeName.ApproximateNumberOfMessagesDelayed: lambda: self.approx_number_of_messages_delayed,
             QueueAttributeName.CreatedTimestamp: str(now()),
             QueueAttributeName.DelaySeconds: "0",
             QueueAttributeName.LastModifiedTimestamp: str(now()),
@@ -278,6 +278,18 @@ class SqsQueue:
     @property
     def maximum_message_size(self):
         return int(self.attributes[QueueAttributeName.MaximumMessageSize])
+
+    @property
+    def approx_number_of_messages(self):
+        return self.visible._qsize()
+
+    @property
+    def approx_number_of_messages_not_visible(self):
+        return len(self.inflight)
+
+    @property
+    def approx_number_of_messages_delayed(self):
+        return len(self.delayed)
 
     def validate_receipt_handle(self, receipt_handle: str):
         if self.arn != decode_receipt_handle(receipt_handle):

@@ -44,7 +44,9 @@ def publish_lambda_metric(metric, value, kwargs):
         LOG.info('Unable to put metric data for metric "%s" to CloudWatch: %s', metric, e)
 
 
-def publish_sqs_metric(region, queue_name, metric, value=1, units="Count"):
+def publish_sqs_metric(
+    region: str, queue_name: str, metric: str, value: float = 1, unit: str = "Count"
+):
     """
     Publishes the metrics for SQS to CloudWatch using the namespace "AWS/SQS"
     See also: https://docs.aws.amazon.com/AWSSimpleQueueService/latest/SQSDeveloperGuide/sqs-available-cloudwatch-metrics.html
@@ -52,7 +54,7 @@ def publish_sqs_metric(region, queue_name, metric, value=1, units="Count"):
     :param queue_name The name of the queue
     :param metric The metric name to be used
     :param value The value of the metric data, default: 1
-    :param units The unit of the metric data, default: "Count"
+    :param unit The unit of the metric data, default: "Count"
     """
     cw_client = aws_stack.connect_to_service("cloudwatch", region_name=region)
     try:
@@ -62,7 +64,7 @@ def publish_sqs_metric(region, queue_name, metric, value=1, units="Count"):
                 {
                     "MetricName": metric,
                     "Dimensions": [{"Name": "QueueName", "Value": queue_name}],
-                    "Unit": units,
+                    "Unit": unit,
                     "Timestamp": datetime.utcnow().replace(tzinfo=timezone.utc),
                     "Value": value,
                 }
