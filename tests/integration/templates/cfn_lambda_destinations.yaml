@@ -1,0 +1,271 @@
+Parameters:
+  RetryParam:
+    Type: Number
+    Default: 0
+  MaxEventAgeSecondsParam:
+    Type: Number
+    Default: 60
+  QualifierParameter:
+    Type: String
+    Default: $LATEST
+  OnSuccessSwitch:
+    Type: Number
+    Default: 1
+    MaxValue: 3
+    MinValue: 0
+  OnFailureSwitch:
+    Type: Number
+    Default: 1
+    MaxValue: 3
+    MinValue: 0
+
+Resources:
+  FunctionServiceRole675BB04A:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Statement:
+          - Action: sts:AssumeRole
+            Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+        Version: "2012-10-17"
+      ManagedPolicyArns:
+        - Fn::Join:
+            - ""
+            - - "arn:"
+              - Ref: AWS::Partition
+              - :iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+  FunctionServiceRoleDefaultPolicy2F49994A:
+    Type: AWS::IAM::Policy
+    Properties:
+      PolicyDocument:
+        Statement:
+          - Action: "*"
+            Effect: Allow
+            Resource: "*"
+        Version: "2012-10-17"
+      PolicyName: FunctionServiceRoleDefaultPolicy2F49994A
+      Roles:
+        - Ref: FunctionServiceRole675BB04A
+  Function76856677:
+    Type: AWS::Lambda::Function
+    Properties:
+      Code:
+        ZipFile: |
+
+          def handler(event, context):
+              should_fail = event.get("should_fail", "0") == "1"
+              message = event.get("message", "no message received")
+
+              if should_fail:
+                  raise Exception(message)
+
+              return {"lstest_message": message}
+      Role:
+        Fn::GetAtt:
+          - FunctionServiceRole675BB04A
+          - Arn
+      Handler: index.handler
+      Runtime: python3.9
+    DependsOn:
+      - FunctionServiceRoleDefaultPolicy2F49994A
+      - FunctionServiceRole675BB04A
+  DestinationQueueCFE59110:
+    Type: AWS::SQS::Queue
+    UpdateReplacePolicy: Delete
+    DeletionPolicy: Delete
+  DestinationTopicBA438545:
+    Type: AWS::SNS::Topic
+  DestinationBus49F1CD08:
+    Type: AWS::Events::EventBus
+    Properties:
+      Name: LambdaDestinationsStackDestinationBus6871B0FD
+  CollectFnServiceRoleF762C82B:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Statement:
+          - Action: sts:AssumeRole
+            Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+        Version: "2012-10-17"
+      ManagedPolicyArns:
+        - Fn::Join:
+            - ""
+            - - "arn:"
+              - Ref: AWS::Partition
+              - :iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+  CollectFnServiceRoleDefaultPolicy62B683B3:
+    Type: AWS::IAM::Policy
+    Properties:
+      PolicyDocument:
+        Statement:
+          - Action:
+              - sqs:ReceiveMessage
+              - sqs:ChangeMessageVisibility
+              - sqs:GetQueueUrl
+              - sqs:DeleteMessage
+              - sqs:GetQueueAttributes
+            Effect: Allow
+            Resource:
+              Fn::GetAtt:
+                - DestinationQueueCFE59110
+                - Arn
+        Version: "2012-10-17"
+      PolicyName: CollectFnServiceRoleDefaultPolicy62B683B3
+      Roles:
+        - Ref: CollectFnServiceRoleF762C82B
+  CollectFn65CC4EC9:
+    Type: AWS::Lambda::Function
+    Properties:
+      Code:
+        ZipFile: |
+
+          import json
+
+          def handler(event, context):
+              print(json.dumps(event))
+              return {"hello": "world"}  # the return value here doesn't really matter
+      Role:
+        Fn::GetAtt:
+          - CollectFnServiceRoleF762C82B
+          - Arn
+      Handler: index.handler
+      Runtime: python3.9
+    DependsOn:
+      - CollectFnServiceRoleDefaultPolicy62B683B3
+      - CollectFnServiceRoleF762C82B
+  CollectFnSqsEventSourceLambdaDestinationsStackDestinationQueueAC30B78B1A1DF4A5:
+    Type: AWS::Lambda::EventSourceMapping
+    Properties:
+      FunctionName:
+        Ref: CollectFn65CC4EC9
+      BatchSize: 1
+      EventSourceArn:
+        Fn::GetAtt:
+          - DestinationQueueCFE59110
+          - Arn
+  CollectFnAllowInvokeLambdaDestinationsStackDestinationTopic1C03E78E417BD695:
+    Type: AWS::Lambda::Permission
+    Properties:
+      Action: lambda:InvokeFunction
+      FunctionName:
+        Fn::GetAtt:
+          - CollectFn65CC4EC9
+          - Arn
+      Principal: sns.amazonaws.com
+      SourceArn:
+        Ref: DestinationTopicBA438545
+  CollectFnDestinationTopicE5523079:
+    Type: AWS::SNS::Subscription
+    Properties:
+      Protocol: lambda
+      TopicArn:
+        Ref: DestinationTopicBA438545
+      Endpoint:
+        Fn::GetAtt:
+          - CollectFn65CC4EC9
+          - Arn
+  eic:
+    Type: AWS::Lambda::EventInvokeConfig
+    Properties:
+      FunctionName:
+        Ref: Function76856677
+      Qualifier:
+        Ref: QualifierParameter
+      DestinationConfig:
+        OnFailure:
+          Destination:
+            Fn::Select:
+              - Ref: OnFailureSwitch
+              - - Fn::GetAtt:
+                    - DestinationQueueCFE59110
+                    - Arn
+                - Ref: DestinationTopicBA438545
+                - Fn::GetAtt:
+                    - CollectFn65CC4EC9
+                    - Arn
+                - Fn::GetAtt:
+                    - DestinationBus49F1CD08
+                    - Arn
+        OnSuccess:
+          Destination:
+            Fn::Select:
+              - Ref: OnSuccessSwitch
+              - - Fn::GetAtt:
+                    - DestinationQueueCFE59110
+                    - Arn
+                - Ref: DestinationTopicBA438545
+                - Fn::GetAtt:
+                    - CollectFn65CC4EC9
+                    - Arn
+                - Fn::GetAtt:
+                    - DestinationBus49F1CD08
+                    - Arn
+      MaximumEventAgeInSeconds:
+        Ref: MaxEventAgeSecondsParam
+      MaximumRetryAttempts:
+        Ref: RetryParam
+  ruleF2C1DCDC:
+    Type: AWS::Events::Rule
+    Properties:
+      EventBusName:
+        Ref: DestinationBus49F1CD08
+      EventPattern:
+        resources:
+          - "*"
+      State: ENABLED
+      Targets:
+        - Arn:
+            Fn::GetAtt:
+              - CollectFn65CC4EC9
+              - Arn
+          Id: Target0
+  ruleAllowEventRuleLambdaDestinationsStackCollectFnE5027CC0363B5D5F:
+    Type: AWS::Lambda::Permission
+    Properties:
+      Action: lambda:InvokeFunction
+      FunctionName:
+        Fn::GetAtt:
+          - CollectFn65CC4EC9
+          - Arn
+      Principal: events.amazonaws.com
+      SourceArn:
+        Fn::GetAtt:
+          - ruleF2C1DCDC
+          - Arn
+Outputs:
+  LambdaName:
+    Value:
+      Ref: Function76856677
+  LambdaArn:
+    Value:
+      Fn::GetAtt:
+        - Function76856677
+        - Arn
+  DestinationQueueUrl:
+    Value:
+      Ref: DestinationQueueCFE59110
+  DestinationQueueArn:
+    Value:
+      Fn::GetAtt:
+        - DestinationQueueCFE59110
+        - Arn
+  DestinationTopicName:
+    Value:
+      Fn::GetAtt:
+        - DestinationTopicBA438545
+        - TopicName
+  DestinationTopicArn:
+    Value:
+      Ref: DestinationTopicBA438545
+  CollectLambdaName:
+    Value:
+      Ref: CollectFn65CC4EC9
+  CollectLambdaArn:
+    Value:
+      Fn::GetAtt:
+        - CollectFn65CC4EC9
+        - Arn

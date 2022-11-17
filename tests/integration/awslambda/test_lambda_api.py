@@ -1521,6 +1521,14 @@ class TestLambdaEventInvokeConfig:
             "update_eventinvokeconfig_config_doesnotexist_without_qualifier", e.value.response
         )
 
+    def test_lambda_eventinvokeconfig_normal(self, lambda_client):
+        lambda_client.put_function_event_invoke_config(
+            FunctionName="bla",
+            DestinationConfig={},
+            MaximumRetryAttempts=0,
+            MaximumEventAgeInSeconds=100,
+        )
+
 
 # note: these tests are inherently a bit flaky on AWS since it depends on account/region global usage limits/quotas
 @pytest.mark.skipif(condition=is_old_provider(), reason="not supported")
