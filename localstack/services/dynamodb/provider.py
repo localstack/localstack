@@ -1145,7 +1145,7 @@ class DynamoDBProvider(DynamodbApi, ServiceLifecycleHook):
                 regex, replace, headers.get("Authorization") or "", flags=re.IGNORECASE
             )
 
-        region_name = DynamoDBProvider.ddb_region_name(aws_stack.get_region())
+        region_name = DynamoDBProvider.ddb_region_name(aws_stack.get_local_region())
         key = DynamoDBProvider.ddb_access_key(get_aws_account_id(), region_name)
 
         # DynamoDBLocal namespaces based on the value of Credentials
