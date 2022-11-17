@@ -38,7 +38,7 @@ def delete_stack_after_process(cfn_client, stack_name):
 
 class TestStackPolicy:
     @pytest.mark.aws_validated
-    # @pytest.mark.skip(reason="Not implemented")
+    @pytest.mark.skip(reason="Not implemented")
     def test_policy_lifecycle(self, cfn_client, deploy_cfn_template, snapshot):
         stack = deploy_cfn_template(
             template_path=os.path.join(
