@@ -31,7 +31,7 @@ from localstack.utils.collections import ensure_list
 from localstack.utils.functions import run_safe
 from localstack.utils.http import safe_requests as requests
 from localstack.utils.net import wait_for_port_open
-from localstack.utils.strings import short_uid
+from localstack.utils.strings import short_uid, to_str
 from localstack.utils.sync import ShortCircuitWaitException, poll_condition, retry, wait_until
 from localstack.utils.testutil import start_http_server
 
@@ -516,6 +516,34 @@ def sqs_create_queue(sqs_client):
             sqs_client.delete_queue(QueueUrl=queue_url)
         except Exception as e:
             LOG.debug("error cleaning up queue %s: %s", queue_url, e)
+
+
+@pytest.fixture
+def sqs_receive_messages_delete(sqs_client):
+    def factory(
+        queue_url: str,
+        expected_messages: Optional[int] = None,
+        wait_time: Optional[int] = 5,
+    ):
+        response = sqs_client.receive_message(
+            QueueUrl=queue_url,
+            MessageAttributeNames=["All"],
+            VisibilityTimeout=0,
+            WaitTimeSeconds=wait_time,
+        )
+        messages = []
+        for m in response["Messages"]:
+            message = json.loads(to_str(m["Body"]))
+            messages.append(message)
+
+        if expected_messages is not None:
+            assert len(messages) == expected_messages
+
+        for message in response["Messages"]:
+            sqs_client.delete_message(QueueUrl=queue_url, ReceiptHandle=message["ReceiptHandle"])
+        return messages
+
+    return factory
 
 
 @pytest.fixture
