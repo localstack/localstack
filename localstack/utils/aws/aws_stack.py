@@ -339,7 +339,8 @@ def create_external_boto_client(
     config: botocore.config.Config = None,
     verify=False,
     cache=True,
-    aws_access_key_id=None,
+    aws_access_key_id: str = None,
+    aws_secret_access_key: str = None,
     *args,
     **kwargs,
 ):
@@ -347,6 +348,9 @@ def create_external_boto_client(
     # It is important that the correct Account ID is included in the request as that will determine access to namespaced resources.
     if aws_access_key_id is None:
         aws_access_key_id = get_aws_account_id()
+
+    if aws_secret_access_key is None:
+        aws_secret_access_key = TEST_AWS_SECRET_ACCESS_KEY
 
     return connect_to_service(
         service_name,
@@ -359,7 +363,7 @@ def create_external_boto_client(
         cache,
         internal=False,
         aws_access_key_id=aws_access_key_id,
-        aws_secret_access_key="__test_key__",
+        aws_secret_access_key=aws_secret_access_key,
         *args,
         **kwargs,
     )

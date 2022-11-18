@@ -9,6 +9,7 @@ import pytest
 from boto3.dynamodb.conditions import Key
 from boto3.dynamodb.types import STRING
 
+from localstack.constants import TEST_AWS_SECRET_ACCESS_KEY
 from localstack.services.awslambda.lambda_utils import LAMBDA_RUNTIME_PYTHON36
 from localstack.services.dynamodbstreams.dynamodbstreams_api import get_kinesis_stream_name
 from localstack.testing.snapshots.transformer import SortingTransformer
@@ -797,7 +798,12 @@ class TestDynamoDB:
     @pytest.mark.only_localstack
     def test_dynamodb_with_kinesis_stream(self):
         dynamodb = aws_stack.create_external_boto_client("dynamodb")
-        kinesis = aws_stack.create_external_boto_client("kinesis")
+        # Create Kinesis stream in another account to test that integration works cross-account
+        kinesis = aws_stack.create_external_boto_client(
+            "kinesis",
+            aws_access_key_id="222244448888",
+            aws_secret_access_key=TEST_AWS_SECRET_ACCESS_KEY,
+        )
 
         # create kinesis datastream
         stream_name = "kinesis_dest_stream"
