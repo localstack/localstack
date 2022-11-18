@@ -2780,7 +2780,7 @@ class TestS3PresignedUrl:
         # attempt to use the presigned request
         response = requests.get(presigned_request)
         # response should not be successful as it is expired -> signature will not match
-        "SignatureDoesNotMatch" in str(response.content)
+        # "SignatureDoesNotMatch" in str(response.content)
         assert response.status_code in [400, 403]
 
         # set skip signature validation to True -> the request should now work
