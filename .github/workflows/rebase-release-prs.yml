@@ -14,7 +14,7 @@ jobs:
       with:
         script: |
           // find all refs in the repo starting with "release/"
-          const refs = await github.rest.git.listMatchingRefs({owner: "localstack", repo: "localstack-ext", ref: "heads/release/"})
+          const refs = await github.rest.git.listMatchingRefs({owner: "localstack", repo: "localstack", ref: "heads/release/"})
           // extract the ref name of every ref entry in the data field of the response
           // remove the "refs/heads/" prefix and add the organization prefix for the rebase action
           // f.e. ["localstack:release/v1.3", "localstack:release/v2"]
