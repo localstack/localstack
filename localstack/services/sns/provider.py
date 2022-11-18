@@ -132,7 +132,8 @@ LOG = logging.getLogger(__name__)
 
 GCM_URL = "https://fcm.googleapis.com/fcm/send"
 
-MSG_ATTR_NAME_REGEX = r"^(?!\.)(?!.*\.$)(?!.*\.\.)[a-zA-Z0-9_\-.]+$"
+MSG_ATTR_NAME_REGEX = re.compile(r"^(?!\.)(?!.*\.$)(?!.*\.\.)[a-zA-Z0-9_\-.]+$")
+ATTR_TYPE_REGEX = re.compile(r"^(String|Number|Binary)\..+$")
 VALID_MSG_ATTR_NAME_CHARS = set(ascii_letters + digits + "." + "-" + "_")
 
 
@@ -1376,7 +1377,7 @@ def validate_message_attributes(message_attributes: MessageAttributeMap) -> None
         validate_message_attribute_name(attr_name)
         # `DataType` is a required field for MessageAttributeValue
         data_type = attr["DataType"]
-        if data_type not in ("String", "Number", "Binary", "String.Array"):
+        if data_type not in ("String", "Number", "Binary") and not ATTR_TYPE_REGEX.match(data_type):
             raise InvalidParameterValueException(
                 f"The message attribute '{attr_name}' has an invalid message attribute type, the set of supported type prefixes is Binary, Number, and String."
             )
@@ -1399,7 +1400,7 @@ def validate_message_attribute_name(name: str) -> None:
     :param name: message attribute name
     :raises InvalidParameterValueException: if the name does not conform to the spec
     """
-    if not re.match(MSG_ATTR_NAME_REGEX, name):
+    if not MSG_ATTR_NAME_REGEX.match(name):
         # find the proper exception
         if name[0] == ".":
             raise InvalidParameterValueException(

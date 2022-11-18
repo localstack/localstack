@@ -2168,5 +2168,46 @@
         }
       }
     }
+  },
+  "tests/integration/test_sns.py::TestSNSProvider::test_message_attributes_prefixes": {
+    "recorded-date": "16-11-2022, 15:34:40",
+    "recorded-content": {
+      "publish-error": {
+        "Error": {
+          "Code": "ParameterValueInvalid",
+          "Message": "The message attribute 'attr1' has an invalid message attribute type, the set of supported type prefixes is Binary, Number, and String.",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "publish-error-2": {
+        "Error": {
+          "Code": "ParameterValueInvalid",
+          "Message": "The message attribute 'attr1' has an invalid message attribute type, the set of supported type prefixes is Binary, Number, and String.",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "publish-ok-1": {
+        "MessageId": "<uuid:1>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "publish-ok-2": {
+        "MessageId": "<uuid:2>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
   }
 }
