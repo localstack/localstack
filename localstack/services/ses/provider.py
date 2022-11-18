@@ -1,8 +1,8 @@
 import json
 import logging
 import os
-from datetime import date, datetime, time
-from typing import Any, Dict, Optional
+from datetime import date, datetime, time, timezone
+from typing import Any, Dict, Optional, Protocol
 
 from moto.ses import ses_backends
 from moto.ses.models import SESBackend
@@ -15,20 +15,22 @@ from localstack.aws.api.ses import (
     AmazonResourceName,
     CloneReceiptRuleSetResponse,
     ConfigurationSetName,
+    CreateConfigurationSetEventDestinationResponse,
     DeleteTemplateResponse,
     Destination,
+    EventDestination,
     GetIdentityVerificationAttributesResponse,
     IdentityList,
     IdentityVerificationAttributes,
     ListTemplatesResponse,
     MaxItems,
-    Message,
     MessageId,
     MessageRejected,
     MessageTagList,
     NextToken,
     RawMessage,
     ReceiptRuleSetName,
+    SendEmailRequest,
     SendEmailResponse,
     SendRawEmailResponse,
     SendTemplatedEmailResponse,
@@ -41,6 +43,7 @@ from localstack.aws.api.ses import (
 from localstack.services.internal import get_internal_apis
 from localstack.services.moto import call_moto
 from localstack.services.plugins import ServiceLifecycleHook
+from localstack.utils.aws import aws_stack
 from localstack.utils.files import mkdir
 from localstack.utils.strings import long_uid, to_str
 from localstack.utils.time import timestamp, timestamp_millis
@@ -156,6 +159,23 @@ class SesProvider(SesApi, ServiceLifecycleHook):
     # Implementations for SES operations
     #
 
+    @handler("CreateConfigurationSetEventDestination")
+    def create_configuration_set_event_destination(
+        self,
+        context: RequestContext,
+        configuration_set_name: ConfigurationSetName,
+        event_destination: EventDestination,
+    ) -> CreateConfigurationSetEventDestinationResponse:
+        result = call_moto(context)
+
+        # send SES test event if an SNS topic is attached
+        sns_topic_arn = event_destination.get("SNSDestination", {}).get("TopicARN")
+        if sns_topic_arn is not None:
+            emitter = SNSEmitter(context)
+            emitter.emit_create_configuration_set_event_destination_test_message(sns_topic_arn)
+
+        return result
+
     @handler("ListTemplates")
     def list_templates(
         self, context: RequestContext, next_token: NextToken = None, max_items: MaxItems = None
@@ -196,31 +216,36 @@ class SesProvider(SesApi, ServiceLifecycleHook):
             VerificationAttributes=attributes,
         )
 
-    @handler("SendEmail")
+    @handler("SendEmail", expand=False)
     def send_email(
         self,
         context: RequestContext,
-        source: Address,
-        destination: Destination,
-        message: Message,
-        reply_to_addresses: AddressList = None,
-        return_path: Address = None,
-        source_arn: AmazonResourceName = None,
-        return_path_arn: AmazonResourceName = None,
-        tags: MessageTagList = None,
-        configuration_set_name: ConfigurationSetName = None,
+        request: SendEmailRequest,
     ) -> SendEmailResponse:
+        backend = get_ses_backend(context)
+        emitter = SNSEmitter(context)
+        for event_destination in backend.config_set_event_destination.values():
+            if not event_destination["Enabled"]:
+                continue
+
+            sns_destination_arn = event_destination.get("SNSDestination")
+            if not sns_destination_arn:
+                continue
+
+            emitter.emit_send_event(request, sns_destination_arn)
+            emitter.emit_delivery_event(request, sns_destination_arn)
+
         response = call_moto(context)
 
-        text_part = message["Body"].get("Text", {}).get("Data")
-        html_part = message["Body"].get("Html", {}).get("Data")
+        text_part = request["Message"]["Body"].get("Text", {}).get("Data")
+        html_part = request["Message"]["Body"].get("Html", {}).get("Data")
 
         save_for_retrospection(
             response["MessageId"],
             context.region,
-            Source=source,
-            Destination=destination,
-            Subject=message["Subject"].get("Data"),
+            Source=request["Source"],
+            Destination=request["Destination"],
+            Subject=request["Message"]["Subject"].get("Data"),
             Body=dict(text_part=text_part, html_part=html_part),
         )
 
@@ -310,3 +335,81 @@ class SesProvider(SesApi, ServiceLifecycleHook):
             backend.create_receipt_rule(rule_set_name, rule)
 
         return CloneReceiptRuleSetResponse()
+
+
+class SNSClient(Protocol):
+    def publish(self, TopicArn: str, Message: str, Subject: Optional[str] = None):
+        ...
+
+
+class SNSEmitter:
+    def __init__(
+        self,
+        context: RequestContext,
+        client: Optional[SNSClient] = None,
+    ):
+        self.context = context
+        self.client = client if client is not None else aws_stack.connect_to_service("sns")
+
+    def emit_create_configuration_set_event_destination_test_message(
+        self, sns_topic_arn: str
+    ) -> None:
+        self.client.publish(
+            TopicArn=sns_topic_arn,
+            Message="Successfully validated SNS topic for Amazon SES event publishing.",
+        )
+
+    def emit_send_event(self, request: SendEmailRequest, sns_topic_arn: str):
+        now = datetime.now(tz=timezone.utc)
+        sender_email = self._sender_email(request)
+        destination_addresses = self._destination_addresses(request)
+
+        event_payload = {
+            "eventType": "Send",
+            "mail": {
+                "timestamp": now.isoformat(),
+                "source": sender_email,
+                "sourceArn": f"arn:aws:ses:{self.context.region}:{self.context.account_id}:identity/{sender_email}",
+                "sendingAccountId": self.context.account_id,
+                "destination": destination_addresses,
+            },
+            "send": {},
+        }
+        self.client.publish(
+            TopicArn=sns_topic_arn,
+            Message=json.dumps(event_payload),
+            Subject="Amazon SES Email Event Notification",
+        )
+
+    def emit_delivery_event(self, request: SendEmailRequest, sns_topic_arn: str):
+        now = datetime.now(tz=timezone.utc)
+        sender_email = self._sender_email(request)
+        destination_addresses = self._destination_addresses(request)
+
+        event_payload = {
+            "eventType": "Delivery",
+            "mail": {
+                "timestamp": "",
+                "source": sender_email,
+                "sourceArn": f"arn:aws:ses:{self.context.region}:{self.context.account_id}:identity/{sender_email}",
+                "sendingAccountId": self.context.account_id,
+                "destination": destination_addresses,
+            },
+            "delivery": {
+                "recipients": destination_addresses,
+                "timestamp": now.isoformat(),
+            },
+        }
+        self.client.publish(
+            TopicArn=sns_topic_arn,
+            Message=json.dumps(event_payload),
+            Subject="Amazon SES Email Event Notification",
+        )
+
+    @staticmethod
+    def _sender_email(request: SendEmailRequest) -> str:
+        return request["Source"]
+
+    @staticmethod
+    def _destination_addresses(request: SendEmailRequest) -> AddressList:
+        return request["Destination"]["ToAddresses"]
