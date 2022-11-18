@@ -2,8 +2,7 @@ name: Rebase PRs targeting release branches
 on:
   push:
     branches:
-    # TODO use a better pattern here (once there's a clear branch name pattern)
-    - 'v[0-9]+'
+    - 'release/*'
 jobs:
   rebase:
     runs-on: ubuntu-latest
