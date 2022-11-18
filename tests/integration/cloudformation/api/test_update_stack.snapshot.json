@@ -1,6 +1,34 @@
 {
-  "tests/integration/cloudformation/api/test_update_stack.py::test_basic_update": {
-    "recorded-date": "15-11-2022, 08:58:15",
-    "recorded-content": {}
+  "tests/integration/cloudformation/api/test_update_stack.py::test_update_with_capabilities[capability0]": {
+    "recorded-date": "18-11-2022, 13:36:22",
+    "recorded-content": {
+      "error": {
+        "Error": {
+          "Code": "InsufficientCapabilitiesException",
+          "Message": "Requires capabilities : [CAPABILITY_IAM]",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/integration/cloudformation/api/test_update_stack.py::test_update_with_capabilities[capability1]": {
+    "recorded-date": "18-11-2022, 13:36:52",
+    "recorded-content": {
+      "error": {
+        "Error": {
+          "Code": "InsufficientCapabilitiesException",
+          "Message": "Requires capabilities : [CAPABILITY_NAMED_IAM]",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
   }
 }
