@@ -549,7 +549,7 @@ class S3SigV4SignatureContext:
             self._original_host = netloc
             self.path = context.request.path
 
-        self._set_aws_request(self.request_url)
+        self.aws_request = self._to_aws_request(self.request_url)
 
     def update_host_port(self, new_host_port: str, original_host_port: str = None):
         """
@@ -564,7 +564,7 @@ class S3SigV4SignatureContext:
             updated_netloc = f"{self._original_host}{new_host_port}"
         self.host = updated_netloc
         self.signed_headers["host"] = updated_netloc
-        self._set_aws_request(request_url=self.request_url)
+        self.aws_request = self._to_aws_request(request_url=self.request_url)
 
     @property
     def request_url(self) -> str:
@@ -614,7 +614,7 @@ class S3SigV4SignatureContext:
         new_query_string = percent_encode_sequence(new_query_args)
         return signature_headers, new_query_string
 
-    def _set_aws_request(self, request_url: str) -> None:
+    def _to_aws_request(self, request_url: str) -> AWSRequest:
         """
         Creates and sets the AWSRequest needed for S3SigV4QueryAuth signer
         :param request_url: the request_url used for the calculation
@@ -631,7 +631,7 @@ class S3SigV4SignatureContext:
                 "signing": {"bucket": self._bucket},
             },
         }
-        self.aws_request: AWSRequest = create_request_object(request_dict)
+        return create_request_object(request_dict)
 
 
 def _validate_headers_for_moto(headers: Headers) -> None:
