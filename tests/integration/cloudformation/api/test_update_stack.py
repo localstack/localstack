@@ -173,3 +173,28 @@ def test_update_with_resource_types(deploy_cfn_template, cfn_client, is_stack_up
         assert is_stack_updated(stack.stack_name)
 
     retry(verify_stack, retries=5, sleep_before=2, sleep=1)
+
+
+@pytest.mark.aws_validated
+@pytest.mark.skip(reason="Update value not being applied")
+def test_set_notification_arn_with_update(deploy_cfn_template, cfn_client, sns_create_topic):
+    template = load_file(
+        os.path.join(os.path.dirname(__file__), "../../templates/sns_topic_parameter.yml")
+    )
+
+    stack = deploy_cfn_template(
+        template=template,
+        parameters={"TopicName": f"topic-{short_uid()}"},
+    )
+
+    topic_arn = sns_create_topic()["TopicArn"]
+
+    cfn_client.update_stack(
+        StackName=stack.stack_name,
+        TemplateBody=template,
+        NotificationARNs=[topic_arn],
+        Parameters=[{"ParameterKey": "TopicName", "ParameterValue": f"topic-{short_uid()}"}],
+    )
+
+    description = cfn_client.describe_stacks(StackName=stack.stack_name)["Stacks"][0]
+    assert topic_arn in description["NotificationARNs"]
