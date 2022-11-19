@@ -198,3 +198,9 @@ def test_set_notification_arn_with_update(deploy_cfn_template, cfn_client, sns_c
 
     description = cfn_client.describe_stacks(StackName=stack.stack_name)["Stacks"][0]
     assert topic_arn in description["NotificationARNs"]
+
+
+# TODO implement next test
+# def test_update_tags_of_stack(deploy_cfn_template, cfn_client)
+# def test_update_with_role_without_permissions(deploy_cfn_template, cfn_client)
+# def test_update_with_rollback_configurateion
