@@ -689,6 +689,7 @@ def import_api_from_openapi_spec(rest_api: RestAPI, body: Dict, query_params: Di
                 response_templates=method_integration.get("responses", {})
                 .get("default", {})
                 .get("responseTemplates", None),
+                response_parameters=None,
                 content_handling=None,
             )
             resource.resource_methods[field].method_integration = integration
