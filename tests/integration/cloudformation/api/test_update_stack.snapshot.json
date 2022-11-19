@@ -1,27 +1,22 @@
 {
-  "tests/integration/cloudformation/api/test_update_stack.py::test_update_with_capabilities[capability0]": {
-    "recorded-date": "18-11-2022, 13:36:22",
+  "tests/integration/cloudformation/api/test_update_stack.py::test_update_with_resource_types": {
+    "recorded-date": "19-11-2022, 14:34:18",
     "recorded-content": {
-      "error": {
+      "invalid_type_error": {
         "Error": {
-          "Code": "InsufficientCapabilitiesException",
-          "Message": "Requires capabilities : [CAPABILITY_IAM]",
+          "Code": "ValidationError",
+          "Message": "Resource type AWS::SNS::Topic is not allowed by parameter ResourceTypes [AWS::EC2:*]",
           "Type": "Sender"
         },
         "ResponseMetadata": {
           "HTTPHeaders": {},
           "HTTPStatusCode": 400
         }
-      }
-    }
-  },
-  "tests/integration/cloudformation/api/test_update_stack.py::test_update_with_capabilities[capability1]": {
-    "recorded-date": "18-11-2022, 13:36:52",
-    "recorded-content": {
-      "error": {
+      },
+      "resource_not_allowed": {
         "Error": {
-          "Code": "InsufficientCapabilitiesException",
-          "Message": "Requires capabilities : [CAPABILITY_NAMED_IAM]",
+          "Code": "ValidationError",
+          "Message": "Resource type AWS::SNS::Topic is not allowed by parameter ResourceTypes [AWS::EC2::*]",
           "Type": "Sender"
         },
         "ResponseMetadata": {

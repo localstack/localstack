@@ -1,6 +1,7 @@
 import os
 
 import botocore.errorfactory
+import botocore.exceptions
 import pytest
 
 from localstack.utils.files import load_file
@@ -126,3 +127,49 @@ def test_update_with_capabilities(
         assert is_stack_updated(stack.stack_name)
 
     retry(verify_stack, retries=10, sleep_before=4, sleep=1)
+
+
+@pytest.mark.aws_validated
+@pytest.mark.skip(reason="Not raising the correct error")
+def test_update_with_resource_types(deploy_cfn_template, cfn_client, is_stack_updated, snapshot):
+    template = load_file(
+        os.path.join(os.path.dirname(__file__), "../../templates/sns_topic_parameter.yml")
+    )
+
+    stack = deploy_cfn_template(
+        template=template,
+        parameters={"TopicName": f"topic-{short_uid()}"},
+    )
+
+    # Test with invalid type
+    with pytest.raises(botocore.exceptions.ClientError) as ex:
+        cfn_client.update_stack(
+            StackName=stack.stack_name,
+            TemplateBody=template,
+            ResourceTypes=["AWS::EC2:*"],
+            Parameters=[{"ParameterKey": "TopicName", "ParameterValue": f"topic-{short_uid()}"}],
+        )
+
+    snapshot.match("invalid_type_error", ex.value.response)
+
+    with pytest.raises(botocore.exceptions.ClientError) as ex:
+        cfn_client.update_stack(
+            StackName=stack.stack_name,
+            TemplateBody=template,
+            ResourceTypes=["AWS::EC2::*"],
+            Parameters=[{"ParameterKey": "TopicName", "ParameterValue": f"topic-{short_uid()}"}],
+        )
+
+    snapshot.match("resource_not_allowed", ex.value.response)
+
+    cfn_client.update_stack(
+        StackName=stack.stack_name,
+        TemplateBody=template,
+        ResourceTypes=["AWS::SNS::Topic"],
+        Parameters=[{"ParameterKey": "TopicName", "ParameterValue": f"topic-{short_uid()}"}],
+    )
+
+    def verify_stack():
+        assert is_stack_updated(stack.stack_name)
+
+    retry(verify_stack, retries=5, sleep_before=2, sleep=1)
