@@ -541,7 +541,28 @@ def sqs_receive_messages_delete(sqs_client):
 
         for message in response["Messages"]:
             sqs_client.delete_message(QueueUrl=queue_url, ReceiptHandle=message["ReceiptHandle"])
+
         return messages
+
+    return factory
+
+
+@pytest.fixture
+def sqs_receive_num_messages(sqs_receive_messages_delete):
+    def factory(queue_url: str, expected_messages: int, max_iterations: int = 3):
+        all_messages = []
+        for _ in range(max_iterations):
+            try:
+                messages = sqs_receive_messages_delete(queue_url, wait_time=5)
+            except KeyError:
+                # there were no messages
+                continue
+            all_messages.extend(messages)
+
+            if len(all_messages) >= expected_messages:
+                return all_messages[:expected_messages]
+
+        raise AssertionError(f"max iterations reached with {len(all_messages)} messages received")
 
     return factory
 

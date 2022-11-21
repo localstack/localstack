@@ -24,7 +24,7 @@ class TestNotifications:
         sns_client,
         sqs_create_queue,
         sns_create_topic,
-        sqs_receive_messages_delete,
+        sqs_receive_num_messages,
     ):
 
         # create topic and queue
@@ -52,7 +52,7 @@ class TestNotifications:
         def assert_message():
             # receive, and delete message from SQS
             expected = {"attr1": {"Type": "String", "Value": test_value}}
-            messages = sqs_receive_messages_delete(queue_url, expected_messages=1)
+            messages = sqs_receive_num_messages(queue_url, expected_messages=1)
             assert messages[0]["TopicArn"] == topic_arn
             assert expected == messages[0]["MessageAttributes"]
 
