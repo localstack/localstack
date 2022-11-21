@@ -63,12 +63,12 @@
     "recorded-content": {}
   },
   "tests/integration/cloudformation/api/test_update_stack.py::test_update_with_role_without_permissions": {
-    "recorded-date": "21-11-2022, 11:04:38",
+    "recorded-date": "21-11-2022, 14:14:52",
     "recorded-content": {
       "error": {
         "Error": {
           "Code": "ValidationError",
-          "Message": "Role arn:aws:iam::111111111111:role/role-04a372af is invalid or cannot be assumed",
+          "Message": "Role arn:aws:iam::111111111111:role/role-fb405076 is invalid or cannot be assumed",
           "Type": "Sender"
         },
         "ResponseMetadata": {
@@ -77,5 +77,36 @@
         }
       }
     }
+  },
+  "tests/integration/cloudformation/api/test_update_stack.py::test_update_with_invalid_rollback_configuration_errors": {
+    "recorded-date": "21-11-2022, 14:49:50",
+    "recorded-content": {
+      "type_error": {
+        "Error": {
+          "Code": "ValidationError",
+          "Message": "Rollback Trigger Type not supported",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "arn_error": {
+        "Error": {
+          "Code": "ValidationError",
+          "Message": "RelativeId of a Rollback Trigger's ARN is incorrect",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/integration/cloudformation/api/test_update_stack.py::test_update_with_rollback_configuration": {
+    "recorded-date": "21-11-2022, 15:33:00",
+    "recorded-content": {}
   }
 }

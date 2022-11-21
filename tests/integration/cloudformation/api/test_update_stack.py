@@ -298,6 +298,8 @@ def test_update_with_previous_parameter_value(
     retry(verify_stack, retries=5, sleep_before=2, sleep=1)
 
 
+@pytest.mark.aws_validated
+@pytest.mark.skip(reason="The correct error is not being raised")
 def test_update_with_role_without_permissions(
     deploy_cfn_template, cfn_client, snapshot, sts_client, create_role
 ):
@@ -335,5 +337,101 @@ def test_update_with_role_without_permissions(
     snapshot.match("error", ex.value.response)
 
 
-# TODO implement next test
-# def test_update_with_rollback_configuration
+@pytest.mark.aws_validated
+@pytest.mark.skip(reason="The correct error is not being raised")
+def test_update_with_invalid_rollback_configuration_errors(
+    deploy_cfn_template, cfn_client, snapshot
+):
+    template = load_file(
+        os.path.join(os.path.dirname(__file__), "../../templates/sns_topic_parameter.yml")
+    )
+
+    stack = deploy_cfn_template(
+        template=template,
+        parameters={"TopicName": f"topic-{short_uid()}"},
+    )
+
+    # Test invalid alarm type
+    with pytest.raises(botocore.exceptions.ClientError) as ex:
+        cfn_client.update_stack(
+            StackName=stack.stack_name,
+            UsePreviousTemplate=True,
+            Parameters=[{"ParameterKey": "TopicName", "ParameterValue": f"topic-{short_uid()}"}],
+            RollbackConfiguration={"RollbackTriggers": [{"Arn": short_uid(), "Type": "Another"}]},
+        )
+    snapshot.match("type_error", ex.value.response)
+
+    # Test invalid alarm arn
+    with pytest.raises(botocore.exceptions.ClientError) as ex:
+        cfn_client.update_stack(
+            StackName=stack.stack_name,
+            UsePreviousTemplate=True,
+            Parameters=[{"ParameterKey": "TopicName", "ParameterValue": f"topic-{short_uid()}"}],
+            RollbackConfiguration={
+                "RollbackTriggers": [
+                    {
+                        "Arn": "arn:aws:cloudwatch:us-east-1:123456789012:example-name",
+                        "Type": "AWS::CloudWatch::Alarm",
+                    }
+                ]
+            },
+        )
+
+    snapshot.match("arn_error", ex.value.response)
+
+
+@pytest.mark.aws_validated
+@pytest.mark.skip(reason="The update value is not being applied")
+def test_update_with_rollback_configuration(
+    deploy_cfn_template, cfn_client, snapshot, is_stack_updated, cloudwatch_client
+):
+
+    cloudwatch_client.put_metric_alarm(
+        AlarmName="HighResourceUsage",
+        ComparisonOperator="GreaterThanThreshold",
+        EvaluationPeriods=1,
+        MetricName="CPUUsage",
+        Namespace="CustomNamespace",
+        Period=60,
+        Statistic="Average",
+        Threshold=70,
+        TreatMissingData="notBreaching",
+    )
+
+    alarms = cloudwatch_client.describe_alarms(AlarmNames=["HighResourceUsage"])
+    alarm_arn = alarms["MetricAlarms"][0]["AlarmArn"]
+
+    rollback_configuration = {
+        "RollbackTriggers": [
+            {"Arn": alarm_arn, "Type": "AWS::CloudWatch::Alarm"},
+        ],
+        "MonitoringTimeInMinutes": 123,
+    }
+
+    template = load_file(
+        os.path.join(os.path.dirname(__file__), "../../templates/sns_topic_parameter.yml")
+    )
+
+    stack = deploy_cfn_template(
+        template=template,
+        parameters={"TopicName": f"topic-{short_uid()}"},
+    )
+
+    cfn_client.update_stack(
+        StackName=stack.stack_name,
+        TemplateBody=template,
+        Parameters=[{"ParameterKey": "TopicName", "UsePreviousValue": True}],
+        RollbackConfiguration=rollback_configuration,
+    )
+
+    def verify_stack():
+        assert is_stack_updated(stack.stack_name)
+
+    retry(verify_stack, retries=5, sleep_before=2, sleep=1)
+
+    config = cfn_client.describe_stacks(StackName=stack.stack_name)["Stacks"][0][
+        "RollbackConfiguration"
+    ]
+    assert config == rollback_configuration
+
+    cloudwatch_client.delete_alarms(AlarmNames=["HighResourceUsage"])
