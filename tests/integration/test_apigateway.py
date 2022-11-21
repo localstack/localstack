@@ -866,7 +866,6 @@ class TestAPIGateway:
             "uri",
             "cacheNamespace",
             "timeoutInMillis",
-            "contentHandling",
             "requestParameters",
         ]
         assert 201 == rs["ResponseMetadata"]["HTTPStatusCode"]

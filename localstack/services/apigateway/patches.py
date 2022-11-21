@@ -92,10 +92,7 @@ def apply_patches():
         if self.method == "PATCH":
             rest_api = self.backend.apis.get(function_id)
             if not rest_api:
-                msg = "Invalid API identifier specified %s:%s" % (
-                    get_aws_account_id(),
-                    function_id,
-                )
+                msg = f"Invalid API identifier specified {get_aws_account_id()}:{function_id}"
                 raise NotFoundException(msg)
 
             if not isinstance(rest_api.__dict__, DelSafeDict):
@@ -214,12 +211,12 @@ def apply_patches():
             patch_operations = self._get_param("patchOperations")
             apply_json_patch_safe(integration, patch_operations, in_place=True)
             # fix data types
-            if integration.get("timeoutInMillis"):
-                integration["timeoutInMillis"] = int(integration.get("timeoutInMillis"))
-            if skip_verification := (integration.get("tlsConfig") or {}).get(
+            if integration.timeout_in_millis:
+                integration.timeout_in_millis = int(integration.timeout_in_millis)
+            if skip_verification := (integration.tls_config or {}).get(
                 "insecureSkipVerification"
             ):
-                integration["tlsConfig"]["insecureSkipVerification"] = str_to_bool(
+                integration.tls_config["insecureSkipVerification"] = str_to_bool(
                     skip_verification
                 )
 
@@ -233,15 +230,15 @@ def apply_patches():
             url_path_parts = self.path.split("/")
             usage_plan_id = url_path_parts[2]
             patch_operations = self._get_param("patchOperations")
-            usage_plan = self.backend.usage_plans.get(usage_plan_id).to_json()
+            usage_plan = self.backend.usage_plans.get(usage_plan_id)
             if not usage_plan:
                 raise UsagePlanNotFoundException()
 
-            apply_json_patch_safe(usage_plan, patch_operations, in_place=True)
+            apply_json_patch_safe(usage_plan.to_json(), patch_operations, in_place=True)
             # fix certain attributes after running the patch updates
-            if isinstance(usage_plan.get("apiStages"), (dict, str)):
-                usage_plan["apiStages"] = [usage_plan["apiStages"]]
-            api_stages = usage_plan.get("apiStages") or []
+            if isinstance(usage_plan.api_stages, (dict, str)):
+                usage_plan.api_stages = [usage_plan.api_stages]
+            api_stages = usage_plan.api_stages or []
             for i in range(len(api_stages)):
                 if isinstance(api_stages[i], str) and ":" in api_stages[i]:
                     api_id, stage = api_stages[i].split(":")
@@ -266,7 +263,7 @@ def apply_patches():
         if isinstance(self, apigateway_models.Stage) and [
             op for op in patch_operations if "/accessLogSettings" in op.get("path", "")
         ]:
-            self["accessLogSettings"] = self.get("accessLogSettings") or {}
+            self.access_log_settings = self.access_log_settings or {}
         # apply patches
         apply_json_patch_safe(self, patch_operations, in_place=True)
         # run post-actions
