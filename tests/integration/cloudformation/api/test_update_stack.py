@@ -10,7 +10,7 @@ from localstack.utils.sync import retry
 
 
 @pytest.mark.aws_validated
-def test_basic_update(cfn_client, deploy_cfn_template, is_stack_updated):
+def test_basic_update(cfn_client, deploy_cfn_template, snapshot, is_stack_updated):
     stack = deploy_cfn_template(
         template_path=os.path.join(
             os.path.dirname(__file__), "../../templates/sns_topic_parameter.yml"
@@ -18,13 +18,16 @@ def test_basic_update(cfn_client, deploy_cfn_template, is_stack_updated):
         parameters={"TopicName": f"topic-{short_uid()}"},
     )
 
-    cfn_client.update_stack(
+    response = cfn_client.update_stack(
         StackName=stack.stack_name,
         TemplateBody=load_file(
             os.path.join(os.path.dirname(__file__), "../../templates/sns_topic_parameter.yml")
         ),
         Parameters=[{"ParameterKey": "TopicName", "ParameterValue": f"topic-{short_uid()}"}],
     )
+
+    snapshot.add_transformer(snapshot.transform.key_value("StackId", "stack-id"))
+    snapshot.match("update_response", response)
 
     def verify_stack():
         assert is_stack_updated(stack.stack_name)
@@ -200,7 +203,35 @@ def test_set_notification_arn_with_update(deploy_cfn_template, cfn_client, sns_c
     assert topic_arn in description["NotificationARNs"]
 
 
+@pytest.mark.aws_validated
+@pytest.mark.skip(reason="Update value not being applied")
+def test_update_tags(deploy_cfn_template, cfn_client):
+    template = load_file(
+        os.path.join(os.path.dirname(__file__), "../../templates/sns_topic_parameter.yml")
+    )
+
+    stack = deploy_cfn_template(
+        template=template,
+        parameters={"TopicName": f"topic-{short_uid()}"},
+    )
+
+    key = f"key-{short_uid()}"
+    value = f"value-{short_uid()}"
+
+    cfn_client.update_stack(
+        StackName=stack.stack_name,
+        Tags=[{"Key": key, "Value": value}],
+        TemplateBody=template,
+        Parameters=[{"ParameterKey": "TopicName", "ParameterValue": f"topic-{short_uid()}"}],
+    )
+
+    tags = cfn_client.describe_stacks(StackName=stack.stack_name)["Stacks"][0]["Tags"]
+    assert tags[0]["Key"] == key
+    assert tags[0]["Value"] == value
+
+
 # TODO implement next test
-# def test_update_tags_of_stack(deploy_cfn_template, cfn_client)
+# def update with previous parameter value
+# def test_no_template_error
 # def test_update_with_role_without_permissions(deploy_cfn_template, cfn_client)
 # def test_update_with_rollback_configurateion

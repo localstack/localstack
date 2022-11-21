@@ -25,5 +25,17 @@
         }
       }
     }
+  },
+  "tests/integration/cloudformation/api/test_update_stack.py::test_basic_update": {
+    "recorded-date": "21-11-2022, 08:27:37",
+    "recorded-content": {
+      "update_response": {
+        "StackId": "<stack-id:1>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
   }
 }
