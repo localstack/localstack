@@ -1233,7 +1233,7 @@ def process_sns_notification_to_lambda(
     inv_result = lambda_client.invoke(
         FunctionName=func_arn,
         Payload=to_bytes(json.dumps(event)),
-        InvocationType="RequestResponse",
+        InvocationType="Event",
     )
     status_code = inv_result.get("StatusCode")
     payload = inv_result.get("Payload")
