@@ -223,6 +223,8 @@ class SesProvider(SesApi, ServiceLifecycleHook):
         context: RequestContext,
         request: SendEmailRequest,
     ) -> SendEmailResponse:
+        response = call_moto(context)
+
         backend = get_ses_backend(context)
         emitter = SNSEmitter(context)
         for event_destination in backend.config_set_event_destination.values():
@@ -235,8 +237,6 @@ class SesProvider(SesApi, ServiceLifecycleHook):
 
             emitter.emit_send_event(request, sns_destination_arn)
             emitter.emit_delivery_event(request, sns_destination_arn)
-
-        response = call_moto(context)
 
         text_part = request["Message"]["Body"].get("Text", {}).get("Data")
         html_part = request["Message"]["Body"].get("Html", {}).get("Data")
