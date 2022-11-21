@@ -213,12 +213,8 @@ def apply_patches():
             # fix data types
             if integration.timeout_in_millis:
                 integration.timeout_in_millis = int(integration.timeout_in_millis)
-            if skip_verification := (integration.tls_config or {}).get(
-                "insecureSkipVerification"
-            ):
-                integration.tls_config["insecureSkipVerification"] = str_to_bool(
-                    skip_verification
-                )
+            if skip_verification := (integration.tls_config or {}).get("insecureSkipVerification"):
+                integration.tls_config["insecureSkipVerification"] = str_to_bool(skip_verification)
 
         return result
 
