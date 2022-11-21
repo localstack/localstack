@@ -190,6 +190,8 @@ OpsEntityItemCaptureTime = str
 OpsEntityItemKey = str
 OpsFilterKey = str
 OpsFilterValue = str
+OpsItemAccountId = str
+OpsItemArn = str
 OpsItemCategory = str
 OpsItemDataKey = str
 OpsItemDataValueString = str
@@ -275,6 +277,9 @@ PatchTitle = str
 PatchUnreportedNotApplicableCount = int
 PatchVendor = str
 PatchVersion = str
+Policy = str
+PolicyHash = str
+PolicyId = str
 Product = str
 PutInventoryMessage = str
 Region = str
@@ -283,6 +288,7 @@ RegistrationMetadataKey = str
 RegistrationMetadataValue = str
 RegistrationsCount = int
 RemainingCount = int
+ResourceArnString = str
 ResourceCount = int
 ResourceCountByStatus = str
 ResourceDataSyncAWSKMSKeyARN = str
@@ -300,6 +306,7 @@ ResourceDataSyncSourceType = str
 ResourceDataSyncState = str
 ResourceDataSyncType = str
 ResourceId = str
+ResourcePolicyMaxResults = int
 ResponseCode = int
 Reviewer = str
 S3BucketName = str
@@ -775,6 +782,7 @@ class OpsItemFilterKey(str):
     ChangeRequestByTemplate = "ChangeRequestByTemplate"
     ChangeRequestByTargetsResourceGroup = "ChangeRequestByTargetsResourceGroup"
     InsightByType = "InsightByType"
+    AccountId = "AccountId"
 
 
 class OpsItemFilterOperator(str):
@@ -1498,6 +1506,12 @@ class MaxDocumentSizeExceeded(ServiceException):
     status_code: int = 400
 
 
+class OpsItemAccessDeniedException(ServiceException):
+    code: str = "OpsItemAccessDeniedException"
+    sender_fault: bool = False
+    status_code: int = 400
+
+
 class OpsItemAlreadyExistsException(ServiceException):
     code: str = "OpsItemAlreadyExistsException"
     sender_fault: bool = False
@@ -1671,6 +1685,30 @@ class ResourceLimitExceededException(ServiceException):
     code: str = "ResourceLimitExceededException"
     sender_fault: bool = False
     status_code: int = 400
+
+
+class ResourcePolicyConflictException(ServiceException):
+    code: str = "ResourcePolicyConflictException"
+    sender_fault: bool = False
+    status_code: int = 400
+
+
+ResourcePolicyParameterNamesList = List[String]
+
+
+class ResourcePolicyInvalidParameterException(ServiceException):
+    code: str = "ResourcePolicyInvalidParameterException"
+    sender_fault: bool = False
+    status_code: int = 400
+    ParameterNames: Optional[ResourcePolicyParameterNamesList]
+
+
+class ResourcePolicyLimitExceededException(ServiceException):
+    code: str = "ResourcePolicyLimitExceededException"
+    sender_fault: bool = False
+    status_code: int = 400
+    Limit: Optional[Integer]
+    LimitType: Optional[String]
 
 
 class ServiceSettingNotFound(ServiceException):
@@ -2692,10 +2730,12 @@ class CreateOpsItemRequest(ServiceRequest):
     ActualEndTime: Optional[DateTime]
     PlannedStartTime: Optional[DateTime]
     PlannedEndTime: Optional[DateTime]
+    AccountId: Optional[OpsItemAccountId]
 
 
 class CreateOpsItemResponse(TypedDict, total=False):
     OpsItemId: Optional[String]
+    OpsItemArn: Optional[OpsItemArn]
 
 
 class MetadataValue(TypedDict, total=False):
@@ -2889,6 +2929,16 @@ class DeleteResourceDataSyncRequest(ServiceRequest):
 
 
 class DeleteResourceDataSyncResult(TypedDict, total=False):
+    pass
+
+
+class DeleteResourcePolicyRequest(ServiceRequest):
+    ResourceArn: ResourceArnString
+    PolicyId: PolicyId
+    PolicyHash: PolicyHash
+
+
+class DeleteResourcePolicyResponse(TypedDict, total=False):
     pass
 
 
@@ -4288,6 +4338,7 @@ class GetMaintenanceWindowTaskResult(TypedDict, total=False):
 
 class GetOpsItemRequest(ServiceRequest):
     OpsItemId: OpsItemId
+    OpsItemArn: Optional[OpsItemArn]
 
 
 class OpsItem(TypedDict, total=False):
@@ -4312,6 +4363,7 @@ class OpsItem(TypedDict, total=False):
     ActualEndTime: Optional[DateTime]
     PlannedStartTime: Optional[DateTime]
     PlannedEndTime: Optional[DateTime]
+    OpsItemArn: Optional[OpsItemArn]
 
 
 class GetOpsItemResponse(TypedDict, total=False):
@@ -4508,6 +4560,26 @@ class GetPatchBaselineResult(TypedDict, total=False):
     ModifiedDate: Optional[DateTime]
     Description: Optional[BaselineDescription]
     Sources: Optional[PatchSourceList]
+
+
+class GetResourcePoliciesRequest(ServiceRequest):
+    ResourceArn: ResourceArnString
+    NextToken: Optional[String]
+    MaxResults: Optional[ResourcePolicyMaxResults]
+
+
+class GetResourcePoliciesResponseEntry(TypedDict, total=False):
+    PolicyId: Optional[PolicyId]
+    PolicyHash: Optional[PolicyHash]
+    Policy: Optional[Policy]
+
+
+GetResourcePoliciesResponseEntries = List[GetResourcePoliciesResponseEntry]
+
+
+class GetResourcePoliciesResponse(TypedDict, total=False):
+    NextToken: Optional[String]
+    Policies: Optional[GetResourcePoliciesResponseEntries]
 
 
 class GetServiceSettingRequest(ServiceRequest):
@@ -4933,6 +5005,18 @@ class PutParameterResult(TypedDict, total=False):
     Tier: Optional[ParameterTier]
 
 
+class PutResourcePolicyRequest(ServiceRequest):
+    ResourceArn: ResourceArnString
+    Policy: Policy
+    PolicyId: Optional[PolicyId]
+    PolicyHash: Optional[PolicyHash]
+
+
+class PutResourcePolicyResponse(TypedDict, total=False):
+    PolicyId: Optional[PolicyId]
+    PolicyHash: Optional[PolicyHash]
+
+
 class RegisterDefaultPatchBaselineRequest(ServiceRequest):
     BaselineId: BaselineId
 
@@ -5325,6 +5409,7 @@ class UpdateOpsItemRequest(ServiceRequest):
     ActualEndTime: Optional[DateTime]
     PlannedStartTime: Optional[DateTime]
     PlannedEndTime: Optional[DateTime]
+    OpsItemArn: Optional[OpsItemArn]
 
 
 class UpdateOpsItemResponse(TypedDict, total=False):
@@ -5532,6 +5617,7 @@ class SsmApi:
         actual_end_time: DateTime = None,
         planned_start_time: DateTime = None,
         planned_end_time: DateTime = None,
+        account_id: OpsItemAccountId = None,
     ) -> CreateOpsItemResponse:
         raise NotImplementedError
 
@@ -5651,6 +5737,16 @@ class SsmApi:
         sync_name: ResourceDataSyncName,
         sync_type: ResourceDataSyncType = None,
     ) -> DeleteResourceDataSyncResult:
+        raise NotImplementedError
+
+    @handler("DeleteResourcePolicy")
+    def delete_resource_policy(
+        self,
+        context: RequestContext,
+        resource_arn: ResourceArnString,
+        policy_id: PolicyId,
+        policy_hash: PolicyHash,
+    ) -> DeleteResourcePolicyResponse:
         raise NotImplementedError
 
     @handler("DeregisterManagedInstance")
@@ -6156,7 +6252,9 @@ class SsmApi:
         raise NotImplementedError
 
     @handler("GetOpsItem")
-    def get_ops_item(self, context: RequestContext, ops_item_id: OpsItemId) -> GetOpsItemResponse:
+    def get_ops_item(
+        self, context: RequestContext, ops_item_id: OpsItemId, ops_item_arn: OpsItemArn = None
+    ) -> GetOpsItemResponse:
         raise NotImplementedError
 
     @handler("GetOpsMetadata")
@@ -6231,6 +6329,16 @@ class SsmApi:
         patch_group: PatchGroup,
         operating_system: OperatingSystem = None,
     ) -> GetPatchBaselineForPatchGroupResult:
+        raise NotImplementedError
+
+    @handler("GetResourcePolicies")
+    def get_resource_policies(
+        self,
+        context: RequestContext,
+        resource_arn: ResourceArnString,
+        next_token: String = None,
+        max_results: ResourcePolicyMaxResults = None,
+    ) -> GetResourcePoliciesResponse:
         raise NotImplementedError
 
     @handler("GetServiceSetting")
@@ -6457,6 +6565,17 @@ class SsmApi:
     def put_parameter(
         self, context: RequestContext, request: PutParameterRequest
     ) -> PutParameterResult:
+        raise NotImplementedError
+
+    @handler("PutResourcePolicy")
+    def put_resource_policy(
+        self,
+        context: RequestContext,
+        resource_arn: ResourceArnString,
+        policy: Policy,
+        policy_id: PolicyId = None,
+        policy_hash: PolicyHash = None,
+    ) -> PutResourcePolicyResponse:
         raise NotImplementedError
 
     @handler("RegisterDefaultPatchBaseline")
@@ -6792,6 +6911,7 @@ class SsmApi:
         actual_end_time: DateTime = None,
         planned_start_time: DateTime = None,
         planned_end_time: DateTime = None,
+        ops_item_arn: OpsItemArn = None,
     ) -> UpdateOpsItemResponse:
         raise NotImplementedError
 

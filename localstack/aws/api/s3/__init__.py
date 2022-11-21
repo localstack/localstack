@@ -725,6 +725,13 @@ class AccessForbidden(ServiceException):
     ResourceType: Optional[ResourceType]
 
 
+class NoSuchCORSConfiguration(ServiceException):
+    code: str = "NoSuchCORSConfiguration"
+    sender_fault: bool = False
+    status_code: int = 404
+    BucketName: Optional[BucketName]
+
+
 AbortDate = datetime
 
 
