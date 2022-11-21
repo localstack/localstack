@@ -40,6 +40,7 @@ from localstack.aws.api.ses import (
     VerificationAttributes,
     VerificationStatus,
 )
+from localstack.config import DEFAULT_REGION
 from localstack.services.internal import get_internal_apis
 from localstack.services.moto import call_moto
 from localstack.services.plugins import ServiceLifecycleHook
@@ -349,12 +350,12 @@ class SNSEmitter:
         client: Optional[SNSClient] = None,
     ):
         self.context = context
-        self.client = client if client is not None else aws_stack.connect_to_service("sns")
 
     def emit_create_configuration_set_event_destination_test_message(
         self, sns_topic_arn: str
     ) -> None:
-        self.client.publish(
+        client = self._client_for_topic(sns_topic_arn)
+        client.publish(
             TopicArn=sns_topic_arn,
             Message="Successfully validated SNS topic for Amazon SES event publishing.",
         )
@@ -375,7 +376,8 @@ class SNSEmitter:
             },
             "send": {},
         }
-        self.client.publish(
+        client = self._client_for_topic(sns_topic_arn)
+        client.publish(
             TopicArn=sns_topic_arn,
             Message=json.dumps(event_payload),
             Subject="Amazon SES Email Event Notification",
@@ -400,7 +402,8 @@ class SNSEmitter:
                 "timestamp": now.isoformat(),
             },
         }
-        self.client.publish(
+        client = self._client_for_topic(sns_topic_arn)
+        client.publish(
             TopicArn=sns_topic_arn,
             Message=json.dumps(event_payload),
             Subject="Amazon SES Email Event Notification",
@@ -413,3 +416,11 @@ class SNSEmitter:
     @staticmethod
     def _destination_addresses(request: SendEmailRequest) -> AddressList:
         return request["Destination"]["ToAddresses"]
+
+    @staticmethod
+    def _client_for_topic(topic_arn: str) -> SNSClient:
+        region = aws_stack.extract_region_from_arn(topic_arn)
+        if not region:
+            region = DEFAULT_REGION
+
+        return aws_stack.connect_to_service("sns", region_name=region)
