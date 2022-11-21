@@ -407,6 +407,18 @@ class AccessPoint(TypedDict, total=False):
 AccessPointList = List[AccessPoint]
 
 
+class DetailedStatusCodesMetrics(TypedDict, total=False):
+    IsEnabled: Optional[IsEnabled]
+
+
+class AdvancedDataProtectionMetrics(TypedDict, total=False):
+    IsEnabled: Optional[IsEnabled]
+
+
+class AdvancedCostOptimizationMetrics(TypedDict, total=False):
+    IsEnabled: Optional[IsEnabled]
+
+
 class SelectionCriteria(TypedDict, total=False):
     Delimiter: Optional[StorageLensPrefixLevelDelimiter]
     MaxDepth: Optional[StorageLensPrefixLevelMaxDepth]
@@ -429,11 +441,17 @@ class ActivityMetrics(TypedDict, total=False):
 class BucketLevel(TypedDict, total=False):
     ActivityMetrics: Optional[ActivityMetrics]
     PrefixLevel: Optional[PrefixLevel]
+    AdvancedCostOptimizationMetrics: Optional[AdvancedCostOptimizationMetrics]
+    AdvancedDataProtectionMetrics: Optional[AdvancedDataProtectionMetrics]
+    DetailedStatusCodesMetrics: Optional[DetailedStatusCodesMetrics]
 
 
 class AccountLevel(TypedDict, total=False):
     ActivityMetrics: Optional[ActivityMetrics]
     BucketLevel: BucketLevel
+    AdvancedCostOptimizationMetrics: Optional[AdvancedCostOptimizationMetrics]
+    AdvancedDataProtectionMetrics: Optional[AdvancedDataProtectionMetrics]
+    DetailedStatusCodesMetrics: Optional[DetailedStatusCodesMetrics]
 
 
 AsyncCreationTimestamp = datetime

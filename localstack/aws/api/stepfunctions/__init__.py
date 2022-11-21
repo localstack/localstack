@@ -18,6 +18,7 @@ Identity = str
 IncludeExecutionData = bool
 IncludeExecutionDataGetExecutionHistory = bool
 ListExecutionsPageToken = str
+LongArn = str
 Name = str
 PageSize = int
 PageToken = str
@@ -556,11 +557,16 @@ class LambdaFunctionStartFailedEventDetails(TypedDict, total=False):
     cause: Optional[SensitiveCause]
 
 
+class TaskCredentials(TypedDict, total=False):
+    roleArn: Optional[LongArn]
+
+
 class LambdaFunctionScheduledEventDetails(TypedDict, total=False):
     resource: Arn
     input: Optional[SensitiveData]
     inputDetails: Optional[HistoryEventExecutionDataDetails]
     timeoutInSeconds: Optional[TimeoutInSeconds]
+    taskCredentials: Optional[TaskCredentials]
 
 
 class LambdaFunctionScheduleFailedEventDetails(TypedDict, total=False):
@@ -629,6 +635,7 @@ class TaskScheduledEventDetails(TypedDict, total=False):
     parameters: ConnectorParameters
     timeoutInSeconds: Optional[TimeoutInSeconds]
     heartbeatInSeconds: Optional[TimeoutInSeconds]
+    taskCredentials: Optional[TaskCredentials]
 
 
 class TaskFailedEventDetails(TypedDict, total=False):

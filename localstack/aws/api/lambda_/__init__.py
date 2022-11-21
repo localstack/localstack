@@ -201,6 +201,7 @@ class Runtime(str):
     ruby2_7 = "ruby2.7"
     provided = "provided"
     provided_al2 = "provided.al2"
+    nodejs18_x = "nodejs18.x"
 
 
 class SourceAccessType(str):

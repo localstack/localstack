@@ -4831,6 +4831,7 @@ class CopyImageRequest(ServiceRequest):
     SourceRegion: String
     DestinationOutpostArn: Optional[String]
     DryRun: Optional[Boolean]
+    CopyImageTags: Optional[Boolean]
 
 
 class CopyImageResult(TypedDict, total=False):
@@ -6332,6 +6333,7 @@ class CreateNatGatewayRequest(ServiceRequest):
     SubnetId: SubnetId
     TagSpecifications: Optional[TagSpecificationList]
     ConnectivityType: Optional[ConnectivityType]
+    PrivateIpAddress: Optional[String]
 
 
 class ProvisionedBandwidth(TypedDict, total=False):
@@ -16408,6 +16410,7 @@ class Ec2Api:
         kms_key_id: KmsKeyId = None,
         destination_outpost_arn: String = None,
         dry_run: Boolean = None,
+        copy_image_tags: Boolean = None,
     ) -> CopyImageResult:
         raise NotImplementedError
 
@@ -16821,6 +16824,7 @@ class Ec2Api:
         dry_run: Boolean = None,
         tag_specifications: TagSpecificationList = None,
         connectivity_type: ConnectivityType = None,
+        private_ip_address: String = None,
     ) -> CreateNatGatewayResult:
         raise NotImplementedError
 

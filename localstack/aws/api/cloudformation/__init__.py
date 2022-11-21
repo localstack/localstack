@@ -271,6 +271,7 @@ class HandlerErrorCode(str):
     HandlerInternalFailure = "HandlerInternalFailure"
     NonCompliant = "NonCompliant"
     Unknown = "Unknown"
+    UnsupportedTarget = "UnsupportedTarget"
 
 
 class HookFailureMode(str):
