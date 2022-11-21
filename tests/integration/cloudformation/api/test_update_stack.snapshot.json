@@ -37,5 +37,21 @@
         }
       }
     }
+  },
+  "tests/integration/cloudformation/api/test_update_stack.py::test_no_template_error": {
+    "recorded-date": "21-11-2022, 08:57:45",
+    "recorded-content": {
+      "error": {
+        "Error": {
+          "Code": "ValidationError",
+          "Message": "Either Template URL or Template Body must be specified.",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
   }
 }

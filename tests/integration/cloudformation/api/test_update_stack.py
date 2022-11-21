@@ -230,8 +230,44 @@ def test_update_tags(deploy_cfn_template, cfn_client):
     assert tags[0]["Value"] == value
 
 
+@pytest.mark.aws_validated
+@pytest.mark.skip(reason="The correct error is not being raised")
+def test_no_template_error(deploy_cfn_template, cfn_client, snapshot):
+    template = load_file(
+        os.path.join(os.path.dirname(__file__), "../../templates/sns_topic_parameter.yml")
+    )
+
+    stack = deploy_cfn_template(
+        template=template,
+        parameters={"TopicName": f"topic-{short_uid()}"},
+    )
+
+    with pytest.raises(botocore.exceptions.ClientError) as ex:
+        cfn_client.update_stack(StackName=stack.stack_name)
+
+    snapshot.match("error", ex.value.response)
+
+
+@pytest.mark.aws_validated
+def test_no_parameters_update(deploy_cfn_template, cfn_client, is_stack_updated):
+    template = load_file(
+        os.path.join(os.path.dirname(__file__), "../../templates/sns_topic_parameter.yml")
+    )
+
+    stack = deploy_cfn_template(
+        template=template,
+        parameters={"TopicName": f"topic-{short_uid()}"},
+    )
+
+    cfn_client.update_stack(StackName=stack.stack_name, TemplateBody=template)
+
+    def verify_stack():
+        assert is_stack_updated(stack.stack_name)
+
+    retry(verify_stack, retries=5, sleep_before=2, sleep=1)
+
+
 # TODO implement next test
 # def update with previous parameter value
-# def test_no_template_error
 # def test_update_with_role_without_permissions(deploy_cfn_template, cfn_client)
 # def test_update_with_rollback_configurateion
