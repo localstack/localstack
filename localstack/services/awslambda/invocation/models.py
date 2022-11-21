@@ -18,7 +18,7 @@ class LambdaStore(BaseStore):
     # maps CodeSigningConfig ARNs to the respective CodeSigningConfig
     code_signing_configs: dict[str, CodeSigningConfig] = LocalAttribute(default=dict)
 
-    # maps Layer ARNs to the respective Layer
+    # maps layer names to Layers
     layers: dict[str, Layer] = LocalAttribute(default=dict)
 
     # region-specific account settings/limits

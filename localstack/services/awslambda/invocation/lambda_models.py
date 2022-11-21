@@ -479,13 +479,25 @@ class CodeSigningConfig:
 
 
 @dataclasses.dataclass
-class Layer:
-    ...
+class LayerVersion:
+    layer_version_arn: str
+    layer_arn: str
+
+    version: int
+    code: S3Code
+    license_info: str
+    compatible_runtimes: list[Runtime]
+    compatible_architectures: list[Architecture]
+    created: str  # date
+    description: str = ""
 
 
 @dataclasses.dataclass
-class LayerVersion:
-    ...
+class Layer:
+    arn: str
+    next_version: int = 1
+    next_version_lock: threading.RLock = dataclasses.field(default_factory=threading.RLock)
+    layer_versions: dict[str, LayerVersion] = dataclasses.field(default_factory=dict)
 
 
 class ValidationException(CommonServiceException):
