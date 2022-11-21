@@ -127,6 +127,7 @@ class StreamEventSourceListener(EventSourceListener):
         )
         self._COORDINATOR_THREAD.start()
 
+    # TODO: remove lock_discriminator and parallelization_factor old lambda provider is gone
     def _invoke_lambda(
         self, function_arn, payload, lock_discriminator, parallelization_factor
     ) -> Tuple[bool, int]:
@@ -142,6 +143,8 @@ class StreamEventSourceListener(EventSourceListener):
             payload=payload,
             invocation_type=InvocationType.RequestResponse,
             context={},
+            lock_discriminator=lock_discriminator,
+            parallelization_factor=parallelization_factor,
         )
 
         if status_code >= 400:

@@ -1,9 +1,11 @@
 import json
 import logging
+import threading
 from abc import ABC
 from concurrent.futures import Future
 from typing import Callable, Optional
 
+from localstack import config
 from localstack.aws.api.lambda_ import InvocationType
 from localstack.services.awslambda import api_utils
 from localstack.services.awslambda.invocation.lambda_models import InvocationError, InvocationResult
@@ -37,7 +39,15 @@ class EventSourceAdapter(ABC):
         pass
 
     def invoke_with_statuscode(
-        self, function_arn, context, payload, invocation_type, callback=None
+        self,
+        function_arn,
+        context,
+        payload,
+        invocation_type,
+        callback=None,
+        *,
+        lock_discriminator,
+        parallelization_factor
     ) -> int:
         pass
 
@@ -61,9 +71,25 @@ class EventSourceLegacyAdapter(EventSourceAdapter):
         )
 
     def invoke_with_statuscode(
-        self, function_arn, context, payload, invocation_type, callback=None
+        self,
+        function_arn,
+        context,
+        payload,
+        invocation_type,
+        callback=None,
+        *,
+        lock_discriminator,
+        parallelization_factor
     ) -> int:
+        from localstack.services.awslambda import lambda_executors
         from localstack.services.awslambda.lambda_api import run_lambda
+
+        if not config.SYNCHRONOUS_KINESIS_EVENTS:
+            lambda_executors.LAMBDA_ASYNC_LOCKS.assure_lock_present(
+                lock_discriminator, threading.BoundedSemaphore(parallelization_factor)
+            )
+        else:
+            lock_discriminator = None
 
         result = run_lambda(
             func_arn=function_arn,
@@ -71,6 +97,7 @@ class EventSourceLegacyAdapter(EventSourceAdapter):
             context=context,
             asynchronous=(invocation_type == InvocationType.Event),
             callback=callback,
+            lock_discriminator=lock_discriminator,
         )
         status_code = getattr(result.result, "status_code", 0)
         return status_code
@@ -138,7 +165,15 @@ class EventSourceAsfAdapter(EventSourceAdapter):
             ft.add_done_callback(mapped_callback)
 
     def invoke_with_statuscode(
-        self, function_arn, context, payload, invocation_type, callback=None
+        self,
+        function_arn,
+        context,
+        payload,
+        invocation_type,
+        callback=None,
+        *,
+        lock_discriminator,
+        parallelization_factor
     ) -> int:
         # split ARN ( a bit unnecessary since we build an ARN again in the service)
         fn_parts = api_utils.FULL_FN_ARN_PATTERN.search(function_arn).groupdict()
