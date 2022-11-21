@@ -275,32 +275,6 @@ class TestSES:
         ses_verify_identity(recipient_email_address)
 
         # create queue to listen for for SES -> SNS events
-        queue_arn = sqs_queue_arn(sqs_queue)
-
-        # update queue policy
-        policy = json.dumps(
-            {
-                "Id": f"Policy{short_uid()}",
-                "Version": "2012-10-17",
-                "Statement": [
-                    {
-                        "Sid": f"stmt{short_uid()}",
-                        "Action": "sqs:*",
-                        "Effect": "Allow",
-                        "Resource": queue_arn,
-                        "Condition": {
-                            "ArnEquals": {
-                                "aws:SourceArn": queue_arn,
-                            },
-                        },
-                        "Principal": "*",
-                    },
-                ],
-            }
-        )
-        sqs_client.set_queue_attributes(QueueUrl=sqs_queue, Attributes={"Policy": policy})
-
-        # Subscribe the queue to the topic
         topic_arn = sns_topic["Attributes"]["TopicArn"]
         sns_create_sqs_subscription(topic_arn=topic_arn, queue_url=sqs_queue)
 
