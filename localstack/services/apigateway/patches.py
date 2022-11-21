@@ -158,16 +158,15 @@ def apply_patches():
         if len(result) != 3:
             return result
 
-        # if self.method == "PATCH":
-        #     patch_operations = self._get_param("patchOperations")
-        #     url_path_parts = self.path.split("/")
-        #     function_id = url_path_parts[2]
-        #     resource_id = url_path_parts[4]
-        #     method_type = url_path_parts[6]
-        #     method = self.backend.get_method(function_id, resource_id, method_type)
-        #     method = method.to_json() or {}
-        #     apply_json_patch_safe(method, patch_operations, in_place=True)
-        #     return 200, {}, json.dumps(method)
+        if self.method == "PATCH":
+            patch_operations = self._get_param("patchOperations")
+            url_path_parts = self.path.split("/")
+            function_id = url_path_parts[2]
+            resource_id = url_path_parts[4]
+            method_type = url_path_parts[6]
+            method = self.backend.get_method(function_id, resource_id, method_type)
+            method.apply_patch_operations(patch_operations)
+            return 200, {}, json.dumps(method)
 
         authorization_type = self._get_param("authorizationType")
         if authorization_type in ["CUSTOM", "COGNITO_USER_POOLS"]:
