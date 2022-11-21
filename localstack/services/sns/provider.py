@@ -19,6 +19,7 @@ from moto.sns.exceptions import DuplicateSnsEndpointError
 from moto.sns.models import MAXIMUM_MESSAGE_LENGTH
 from requests.models import Response as RequestsResponse
 
+from localstack import config
 from localstack.aws.accounts import get_aws_account_id
 from localstack.aws.api import RequestContext
 from localstack.aws.api.core import CommonServiceException
@@ -1234,7 +1235,9 @@ def process_sns_notification_to_lambda(
     inv_result = lambda_client.invoke(
         FunctionName=func_arn,
         Payload=to_bytes(json.dumps(event)),
-        InvocationType=InvocationType.Event,
+        InvocationType=InvocationType.RequestResponse
+        if config.SYNCHRONOUS_SNS_EVENTS
+        else InvocationType.Event,  # DEPRECATED
     )
     status_code = inv_result.get("StatusCode")
     payload = inv_result.get("Payload")
