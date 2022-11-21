@@ -280,7 +280,7 @@ class DynamoDBApiListener(AwsApiListener):
 
 def get_store(account_id: str, region_name: str) -> DynamoDBStore:
     # special case: AWS NoSQL Workbench sends "localhost" as region - replace with proper region here
-    region_name = DynamoDBProvider.ddb_region_name(aws_stack.get_local_region())
+    region_name = DynamoDBProvider.ddb_region_name(region_name)
     return dynamodb_stores[account_id][region_name]
 
 
@@ -1135,6 +1135,7 @@ class DynamoDBProvider(DynamodbApi, ServiceLifecycleHook):
             "dynamodb",
             aws_access_key_id=account_id,
             aws_secret_access_key=TEST_AWS_SECRET_ACCESS_KEY,
+            region_name=region_name,
         )
         return aws_stack.dynamodb_table_exists(table_name, client)
 
