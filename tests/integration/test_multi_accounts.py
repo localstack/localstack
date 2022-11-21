@@ -111,28 +111,40 @@ class TestMultiAccounts:
         # The CreateTable call gets forwarded to DDBLocal.
         # The assertions below test whether DDBLocal correctly namespaces the tables.
 
-        ddb_client1.create_table(
+        response1 = ddb_client1.create_table(
             TableName=tab1,
             KeySchema=[{"AttributeName": "Username", "KeyType": "HASH"}],
             AttributeDefinitions=[{"AttributeName": "Username", "AttributeType": "S"}],
             ProvisionedThroughput={"ReadCapacityUnits": 5, "WriteCapacityUnits": 5},
         )
         cleanups.append(lambda: ddb_client1.delete_table(TableName=tab1))
+        assert (
+            response1["TableDescription"]["TableArn"]
+            == f"arn:aws:dynamodb:ap-south-1:{account_id1}:table/{tab1}"
+        )
 
         # Create table with the same name in a different region
-        ddb_client2.create_table(
+        response2 = ddb_client2.create_table(
             TableName=tab1,
             KeySchema=[{"AttributeName": "Username", "KeyType": "HASH"}],
             AttributeDefinitions=[{"AttributeName": "Username", "AttributeType": "S"}],
             ProvisionedThroughput={"ReadCapacityUnits": 5, "WriteCapacityUnits": 5},
         )
         cleanups.append(lambda: ddb_client2.delete_table(TableName=tab1))
+        assert (
+            response2["TableDescription"]["TableArn"]
+            == f"arn:aws:dynamodb:eu-central-1:{account_id1}:table/{tab1}"
+        )
 
         # Create table with the same name in a different account
-        ddb_client3.create_table(
+        response3 = ddb_client3.create_table(
             TableName=tab1,
             KeySchema=[{"AttributeName": "Username", "KeyType": "HASH"}],
             AttributeDefinitions=[{"AttributeName": "Username", "AttributeType": "S"}],
             ProvisionedThroughput={"ReadCapacityUnits": 5, "WriteCapacityUnits": 5},
         )
         cleanups.append(lambda: ddb_client3.delete_table(TableName=tab1))
+        assert (
+            response3["TableDescription"]["TableArn"]
+            == f"arn:aws:dynamodb:eu-central-1:{account_id2}:table/{tab1}"
+        )
