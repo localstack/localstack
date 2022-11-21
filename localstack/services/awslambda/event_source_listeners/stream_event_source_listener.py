@@ -1,11 +1,8 @@
 import logging
 import math
-import threading
 import time
 from typing import Dict, List, Optional, Tuple
 
-from localstack import config
-from localstack.services.awslambda import lambda_executors
 from localstack.services.awslambda.event_source_listeners.adapters import (
     EventSourceAdapter,
     EventSourceLegacyAdapter,
@@ -138,20 +135,15 @@ class StreamEventSourceListener(EventSourceListener):
         invoke a given lambda function
         :returns: True if the invocation was successful (False otherwise) and the status code of the invocation result
         """
-        if not config.SYNCHRONOUS_KINESIS_EVENTS:
-            lambda_executors.LAMBDA_ASYNC_LOCKS.assure_lock_present(
-                lock_discriminator, threading.BoundedSemaphore(parallelization_factor)
-            )
-        else:
-            lock_discriminator = None
 
         result = run_lambda(
             func_arn=function_arn,
             event=payload,
             context={},
-            asynchronous=not config.SYNCHRONOUS_KINESIS_EVENTS,
-            lock_discriminator=lock_discriminator,
+            asynchronous=False,
         )
+
+        # TODO: ?
         if isinstance(result, InvocationResult):
             status_code = getattr(result.result, "status_code", 0)
             if status_code >= 400:

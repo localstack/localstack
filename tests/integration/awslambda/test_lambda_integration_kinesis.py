@@ -1,11 +1,9 @@
 import json
 import os
 import time
-from unittest.mock import patch
 
 import pytest
 
-from localstack import config
 from localstack.services.awslambda.lambda_utils import (
     LAMBDA_RUNTIME_PYTHON37,
     LAMBDA_RUNTIME_PYTHON39,
@@ -122,7 +120,6 @@ class TestKinesisSource:
         records = events[0]
         snapshot.match("kinesis_records", records)
 
-    @patch.object(config, "SYNCHRONOUS_KINESIS_EVENTS", False)
     @pytest.mark.aws_validated
     def test_kinesis_event_source_mapping_with_async_invocation(
         self,
