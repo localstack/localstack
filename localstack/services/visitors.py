@@ -1,7 +1,7 @@
 import importlib
 import logging
 from functools import singledispatchmethod
-from typing import Any, Dict, List, Protocol, TypedDict, runtime_checkable
+from typing import Any, Dict, List, Protocol, TypedDict, runtime_checkable, Optional
 
 from moto.core.utils import BackendDict
 
@@ -92,15 +92,15 @@ class ReflectionStateLocator:
 
     provider: Any
 
-    def __init__(self, provider: Any):
+    def __init__(self, provider: Optional[Any] = None, service: Optional[str] = None):
         self.provider = provider
+        self.service = service or provider.service
 
     def accept(self, visitor: StateVisitor):
-        service: str = self.provider.snake_service_name.replace(
-            "-", "_"
-        )  # needed for services like cognito-idp
+        # needed for services like cognito-idp
+        service_name: str = self.service.replace("-", "_")
 
-        match service:
+        match service_name:
             # lambda is a special case in package and module naming
             # the store attribute is `awslambda_stores` in `localstack.services.awslambda.lambda_models`
             case "lambda":
@@ -116,14 +116,14 @@ class ReflectionStateLocator:
 
             case _:
                 # try to load AccountRegionBundle from predictable location
-                attribute_name = f"{service}_stores"
-                module_name = f"localstack_ext.services.{service}.models"
+                attribute_name = f"{service_name}_stores"
+                module_name = f"localstack_ext.services.{service_name}.models"
 
                 # it first looks for a module in ext; eventually, it falls back to community
                 attribute = _load_attribute_from_module(module_name, attribute_name)
                 if attribute is None:
                     attribute = _load_attribute_from_module(
-                        f"localstack.services.{service}.models", attribute_name
+                        f"localstack.services.{service_name}.models", attribute_name
                     )
 
                 if attribute is not None:
@@ -131,8 +131,8 @@ class ReflectionStateLocator:
                     visitor.visit(attribute)
 
                 # try to load BackendDict from predictable location
-                module_name = f"moto.{service}.models"
-                attribute_name = f"{service}_backends"
+                module_name = f"moto.{service_name}.models"
+                attribute_name = f"{service_name}_backends"
                 attribute = _load_attribute_from_module(module_name, attribute_name)
 
                 if attribute is not None:
