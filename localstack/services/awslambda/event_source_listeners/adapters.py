@@ -2,6 +2,7 @@ import json
 import logging
 from abc import ABC
 from concurrent.futures import Future
+from typing import Callable, Optional
 
 from localstack.aws.api.lambda_ import InvocationType
 from localstack.services.awslambda import api_utils
@@ -20,7 +21,14 @@ LOG = logging.getLogger(__name__)
 class EventSourceAdapter(ABC):
     """Adapter for the communication between event source mapping and lambda service"""
 
-    def invoke(self, function_arn, context, payload, invocation_type, callback) -> None:
+    def invoke(
+        self,
+        function_arn: str,
+        context: dict,
+        payload: str,
+        invocation_type: InvocationType,
+        callback: Optional[Callable] = None,
+    ) -> None:
         pass
 
     def get_event_sources(self, source_arn: str):
@@ -31,7 +39,7 @@ class EventSourceLegacyAdapter(EventSourceAdapter):
     def __init__(self):
         pass
 
-    def invoke(self, function_arn, context, payload, invocation_type, callback):
+    def invoke(self, function_arn, context, payload, invocation_type, callback=None):
         from localstack.services.awslambda.lambda_api import run_lambda
 
         run_lambda(
@@ -58,7 +66,7 @@ class EventSourceAsfAdapter(EventSourceAdapter):
     def __init__(self, lambda_service: LambdaService):
         self.lambda_service = lambda_service
 
-    def invoke(self, function_arn, context, payload, invocation_type, callback):
+    def invoke(self, function_arn, context, payload, invocation_type, callback=None):
 
         # split ARN ( a bit unnecessary since we build an ARN again in the service)
         fn_parts = api_utils.FULL_FN_ARN_PATTERN.search(function_arn).groupdict()
@@ -74,33 +82,35 @@ class EventSourceAsfAdapter(EventSourceAdapter):
             payload=to_bytes(json.dumps(payload or {})),
         )
 
-        def new_callback(ft_result: Future[InvocationResult]) -> None:
-            try:
-                result = ft_result.result(timeout=10)
-                error = None
-                if isinstance(result, InvocationError):
-                    error = "?"
-                callback(
-                    result=LegacyInvocationResult(
-                        result=to_str(json.loads(result.payload)),
-                        log_output=result.logs,
-                    ),
-                    func_arn="doesntmatter",
-                    event="doesntmatter",
-                    error=error,
-                )
+        if callback:
 
-            except Exception as e:
-                # TODO: map exception to old error format?
-                LOG.error(e)
-                callback(
-                    result=None,
-                    func_arn="doesntmatter",
-                    event="doesntmatter",
-                    error=e,
-                )
+            def new_callback(ft_result: Future[InvocationResult]) -> None:
+                try:
+                    result = ft_result.result(timeout=10)
+                    error = None
+                    if isinstance(result, InvocationError):
+                        error = "?"
+                    callback(
+                        result=LegacyInvocationResult(
+                            result=to_str(json.loads(result.payload)),
+                            log_output=result.logs,
+                        ),
+                        func_arn="doesntmatter",
+                        event="doesntmatter",
+                        error=error,
+                    )
 
-        ft.add_done_callback(new_callback)
+                except Exception as e:
+                    # TODO: map exception to old error format?
+                    LOG.error(e)
+                    callback(
+                        result=None,
+                        func_arn="doesntmatter",
+                        event="doesntmatter",
+                        error=e,
+                    )
+
+            ft.add_done_callback(new_callback)
 
     def get_event_sources(self, source_arn: str):
         # assuming the region/account from function_arn
