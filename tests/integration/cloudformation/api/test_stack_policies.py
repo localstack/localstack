@@ -225,7 +225,7 @@ class TestStackPolicy:
         with pytest.raises(botocore.exceptions.ClientError) as ex:
             cfn_client.set_stack_policy(StackName=stack.stack_name, StackPolicyBody=short_uid())
 
-        error_response = ex.value.response["Error"]
+        error_response = ex.value.response
         snapshot.match("error", error_response)
 
     @pytest.mark.aws_validated
@@ -281,7 +281,7 @@ class TestStackPolicy:
                 StackName=stack.stack_name, StackPolicyBody=json.dumps(policy)
             )
 
-        error_response = ex.value.response["Error"]
+        error_response = ex.value.response
         snapshot.match("error", error_response)
 
     @pytest.mark.aws_validated
@@ -541,6 +541,10 @@ class TestStackPolicy:
     def test_update_with_overlapping_policies(
         self, reverse_statements, deploy_cfn_template, cfn_client, is_stack_updated
     ):
+        """
+        This test validates the behaviour when two statements in  policy contradict each other.
+        According to the AWS triage, the last statement is the one that is followed.
+        """
         template = load_file(
             os.path.join(os.path.dirname(__file__), "../../templates/sns_topic_parameter.yml")
         )
