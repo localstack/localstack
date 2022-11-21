@@ -479,6 +479,24 @@ class CodeSigningConfig:
 
 
 @dataclasses.dataclass
+class LayerPolicyStatement:
+    sid: str
+    action: str
+    principal: str
+    organization_id: Optional[str]
+
+
+@dataclasses.dataclass
+class LayerPolicy:
+    revision_id: str = dataclasses.field(init=False, default_factory=long_uid)
+    id: str = "default"  # static
+    version: str = "2012-10-17"  # static
+    statements: dict[str, LayerPolicyStatement] = dataclasses.field(
+        default_factory=dict
+    )  # statement ID => statement
+
+
+@dataclasses.dataclass
 class LayerVersion:
     layer_version_arn: str
     layer_arn: str
@@ -490,6 +508,8 @@ class LayerVersion:
     compatible_architectures: list[Architecture]
     created: str  # date
     description: str = ""
+
+    policy: LayerPolicy = None
 
 
 @dataclasses.dataclass

@@ -3182,7 +3182,6 @@ class TestLambdaLayer:
         )
         snapshot.match("publish_layer_result", publish_layer_result)
 
-    @pytest.mark.skip(reason="not implemented yet")
     @pytest.mark.aws_validated
     def test_layer_policy_exceptions(
         self, lambda_client, create_lambda_function, snapshot, dummylayer, cleanups
@@ -3295,7 +3294,6 @@ class TestLambdaLayer:
             )
         snapshot.match("layer_permission_statementid_doesnotexist_remove", e.value.response)
 
-    @pytest.mark.skip(reason="not implemented yet")
     @pytest.mark.aws_validated
     def test_layer_policy_lifecycle(
         self, lambda_client, create_lambda_function, snapshot, dummylayer, cleanups

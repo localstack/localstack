@@ -12,6 +12,7 @@ from localstack.aws.api import RequestContext, handler
 from localstack.aws.api.lambda_ import (
     AccountLimit,
     AccountUsage,
+    AddLayerVersionPermissionResponse,
     AddPermissionRequest,
     AddPermissionResponse,
     Alias,
@@ -53,6 +54,7 @@ from localstack.aws.api.lambda_ import (
     GetFunctionConcurrencyResponse,
     GetFunctionResponse,
     GetFunctionUrlConfigResponse,
+    GetLayerVersionPolicyResponse,
     GetLayerVersionResponse,
     GetPolicyResponse,
     GetProvisionedConcurrencyConfigResponse,
@@ -63,6 +65,8 @@ from localstack.aws.api.lambda_ import (
     LambdaApi,
     LastUpdateStatus,
     LayerName,
+    LayerPermissionAllowedAction,
+    LayerPermissionAllowedPrincipal,
     LayersListItem,
     LayerVersionArn,
     LayerVersionContentInput,
@@ -93,6 +97,7 @@ from localstack.aws.api.lambda_ import (
     NamespacedStatementId,
     OnFailure,
     OnSuccess,
+    OrganizationId,
     PackageType,
     PositiveInteger,
     PreconditionFailedException,
@@ -109,6 +114,7 @@ from localstack.aws.api.lambda_ import (
     Runtime,
     ServiceException,
     State,
+    StatementId,
     StateReasonCode,
     String,
     TagKeyList,
@@ -142,6 +148,8 @@ from localstack.services.awslambda.invocation.lambda_models import (
     InvocationError,
     LambdaEphemeralStorage,
     Layer,
+    LayerPolicy,
+    LayerPolicyStatement,
     LayerVersion,
     ProvisionedConcurrencyConfiguration,
     ProvisionedConcurrencyState,
@@ -2574,34 +2582,157 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
         if layer:
             layer.layer_versions.pop(str(version_number), None)
 
-    #
-    # def add_layer_version_permission(
-    #     self,
-    #     context: RequestContext,
-    #     layer_name: LayerName,
-    #     version_number: LayerVersionNumber,
-    #     statement_id: StatementId,
-    #     action: LayerPermissionAllowedAction,
-    #     principal: LayerPermissionAllowedPrincipal,
-    #     organization_id: OrganizationId = None,
-    #     revision_id: String = None,
-    # ) -> AddLayerVersionPermissionResponse:
-    #     ...
-    #
-    # def remove_layer_version_permission(
-    #     self,
-    #     context: RequestContext,
-    #     layer_name: LayerName,
-    #     version_number: LayerVersionNumber,
-    #     statement_id: StatementId,
-    #     revision_id: String = None,
-    # ) -> None:
-    #     ...
-    #
-    # def get_layer_version_policy(
-    #     self, context: RequestContext, layer_name: LayerName, version_number: LayerVersionNumber
-    # ) -> GetLayerVersionPolicyResponse:
-    #     ...
+    # =======================================
+    # =====  Layer Version Permissions  =====
+    # =======================================
+    # TODO: lock updates that change revision IDs
+
+    def add_layer_version_permission(
+        self,
+        context: RequestContext,
+        layer_name: LayerName,
+        version_number: LayerVersionNumber,
+        statement_id: StatementId,
+        action: LayerPermissionAllowedAction,
+        principal: LayerPermissionAllowedPrincipal,
+        organization_id: OrganizationId = None,
+        revision_id: String = None,
+    ) -> AddLayerVersionPermissionResponse:
+        # TODO: test for revision_id
+
+        layer_version_arn = api_utils.layer_version_arn(
+            layer_name, context.account_id, context.region, str(version_number)
+        )
+
+        if action != "lambda:GetLayerVersion":
+            raise ValidationException(
+                f"1 validation error detected: Value '{action}' at 'action' failed to satisfy constraint: Member must satisfy regular expression pattern: lambda:GetLayerVersion"
+            )
+
+        state = lambda_stores[context.account_id][context.region]
+        layer = state.layers.get(layer_name)
+        if layer is None:
+            raise ResourceNotFoundException(
+                f"Layer version {layer_version_arn} does not exist.", Type="User"
+            )
+        layer_version = layer.layer_versions.get(str(version_number))
+        if layer_version is None:
+            raise ResourceNotFoundException(
+                f"Layer version {layer_version_arn} does not exist.", Type="User"
+            )
+        # do we have a policy? if not set one
+        if layer_version.policy is None:
+            layer_version.policy = LayerPolicy()
+
+        if statement_id in layer_version.policy.statements:
+            raise ResourceConflictException(
+                f"The statement id ({statement_id}) provided already exists. Please provide a new statement id, or remove the existing statement.",
+                Type="User",
+            )
+
+        statement = LayerPolicyStatement(
+            sid=statement_id, action=action, principal=principal, organization_id=organization_id
+        )
+
+        old_statements = layer_version.policy.statements
+        layer_version.policy = dataclasses.replace(
+            layer_version.policy, statements={**old_statements, statement_id: statement}
+        )
+
+        return AddLayerVersionPermissionResponse(
+            Statement=json.dumps(
+                {
+                    "Sid": statement.sid,
+                    "Effect": "Allow",
+                    "Principal": statement.principal,
+                    "Action": statement.action,
+                    "Resource": layer_version.layer_version_arn,
+                }
+            ),
+            RevisionId=layer_version.policy.revision_id,
+        )
+
+    def remove_layer_version_permission(
+        self,
+        context: RequestContext,
+        layer_name: LayerName,
+        version_number: LayerVersionNumber,
+        statement_id: StatementId,
+        revision_id: String = None,
+    ) -> None:
+        layer_version_arn = api_utils.layer_version_arn(
+            layer_name, context.account_id, context.region, str(version_number)
+        )
+        state = lambda_stores[context.account_id][context.region]
+        layer = state.layers.get(layer_name)
+        if layer is None:
+            raise ResourceNotFoundException(
+                f"Layer version {layer_version_arn} does not exist.", Type="User"
+            )
+        layer_version = layer.layer_versions.get(str(version_number))
+        if layer_version is None:
+            raise ResourceNotFoundException(
+                f"Layer version {layer_version_arn} does not exist.", Type="User"
+            )
+
+        if revision_id and layer_version.policy.revision_id != revision_id:
+            # TODO: add test
+            return
+
+        if statement_id not in layer_version.policy.statements:
+            raise ResourceNotFoundException(
+                f"Statement {statement_id} is not found in resource policy.", Type="User"
+            )
+
+        old_statements = layer_version.policy.statements
+        layer_version.policy = dataclasses.replace(
+            layer_version.policy,
+            statements={k: v for k, v in old_statements.items() if k != statement_id},
+        )
+
+    def get_layer_version_policy(
+        self, context: RequestContext, layer_name: LayerName, version_number: LayerVersionNumber
+    ) -> GetLayerVersionPolicyResponse:
+        layer_version_arn = api_utils.layer_version_arn(
+            layer_name, context.account_id, context.region, str(version_number)
+        )
+        state = lambda_stores[context.account_id][context.region]
+        layer = state.layers.get(layer_name)
+        if layer is None:
+            raise ResourceNotFoundException(
+                f"Layer version {layer_version_arn} does not exist.", Type="User"
+            )
+
+        layer_version = layer.layer_versions.get(str(version_number))
+        if layer_version is None:
+            raise ResourceNotFoundException(
+                f"Layer version {layer_version_arn} does not exist.", Type="User"
+            )
+
+        if layer_version.policy is None:
+            raise ResourceNotFoundException(
+                "No policy is associated with the given resource.", Type="User"
+            )
+
+        return GetLayerVersionPolicyResponse(
+            Policy=json.dumps(
+                {
+                    "Version": layer_version.policy.version,
+                    "Id": layer_version.policy.id,
+                    "Statement": [
+                        {
+                            "Sid": ps.sid,
+                            "Effect": "Allow",
+                            "Principal": ps.principal,
+                            "Action": ps.action,
+                            "Resource": layer_version.layer_version_arn,
+                        }
+                        for ps in layer_version.policy.statements.values()
+                    ],
+                }
+            ),
+            RevisionId=layer_version.policy.revision_id,
+        )
 
     # =======================================
     # =======  Function Concurrency  ========
@@ -2769,4 +2900,4 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
         invoke_args: IO[BlobStream],
     ) -> InvokeAsyncResponse:
         """LEGACY API endpoint. Even AWS heavily discourages its usage."""
-        pass  # TODO
+        raise NotImplementedError
