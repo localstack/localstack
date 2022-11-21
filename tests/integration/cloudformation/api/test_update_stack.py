@@ -1,8 +1,10 @@
+import json
 import os
 
 import botocore.errorfactory
 import botocore.exceptions
 import pytest
+import yaml
 
 from localstack.utils.files import load_file
 from localstack.utils.strings import short_uid
@@ -267,7 +269,71 @@ def test_no_parameters_update(deploy_cfn_template, cfn_client, is_stack_updated)
     retry(verify_stack, retries=5, sleep_before=2, sleep=1)
 
 
+@pytest.mark.aws_validated
+def test_update_with_previous_parameter_value(
+    deploy_cfn_template, cfn_client, is_stack_updated, snapshot
+):
+    template = load_file(
+        os.path.join(os.path.dirname(__file__), "../../templates/sns_topic_parameter.yml")
+    )
+
+    stack = deploy_cfn_template(
+        template=template,
+        parameters={"TopicName": f"topic-{short_uid()}"},
+    )
+
+    template_dict = yaml.safe_load(template)
+    del template_dict["Resources"]["topic123"]["UpdateReplacePolicy"]
+    template = yaml.safe_dump(template_dict)
+
+    cfn_client.update_stack(
+        StackName=stack.stack_name,
+        TemplateBody=template,
+        Parameters=[{"ParameterKey": "TopicName", "UsePreviousValue": True}],
+    )
+
+    def verify_stack():
+        assert is_stack_updated(stack.stack_name)
+
+    retry(verify_stack, retries=5, sleep_before=2, sleep=1)
+
+
+def test_update_with_role_without_permissions(
+    deploy_cfn_template, cfn_client, snapshot, sts_client, create_role
+):
+    template = load_file(
+        os.path.join(os.path.dirname(__file__), "../../templates/sns_topic_parameter.yml")
+    )
+
+    stack = deploy_cfn_template(
+        template=template,
+        parameters={"TopicName": f"topic-{short_uid()}"},
+    )
+
+    account_arn = sts_client.get_caller_identity()["Arn"]
+    assume_policy_doc = {
+        "Version": "2012-10-17",
+        "Statement": [
+            {
+                "Action": "sts:AssumeRole",
+                "Principal": {"AWS": account_arn},
+                "Effect": "Deny",
+            }
+        ],
+    }
+
+    role_arn = create_role(AssumeRolePolicyDocument=json.dumps(assume_policy_doc))["Role"]["Arn"]
+
+    with pytest.raises(botocore.exceptions.ClientError) as ex:
+        cfn_client.update_stack(
+            StackName=stack.stack_name,
+            UsePreviousTemplate=True,
+            Parameters=[{"ParameterKey": "TopicName", "ParameterValue": f"topic-{short_uid()}"}],
+            RoleARN=role_arn,
+        )
+
+    snapshot.match("error", ex.value.response)
+
+
 # TODO implement next test
-# def update with previous parameter value
-# def test_update_with_role_without_permissions(deploy_cfn_template, cfn_client)
-# def test_update_with_rollback_configurateion
+# def test_update_with_rollback_configuration

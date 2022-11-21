@@ -53,5 +53,29 @@
         }
       }
     }
+  },
+  "tests/integration/cloudformation/api/test_update_stack.py::test_no_parameters_error_update": {
+    "recorded-date": "21-11-2022, 09:45:22",
+    "recorded-content": {}
+  },
+  "tests/integration/cloudformation/api/test_update_stack.py::test_update_with_previous_parameter_value": {
+    "recorded-date": "21-11-2022, 10:38:33",
+    "recorded-content": {}
+  },
+  "tests/integration/cloudformation/api/test_update_stack.py::test_update_with_role_without_permissions": {
+    "recorded-date": "21-11-2022, 11:04:38",
+    "recorded-content": {
+      "error": {
+        "Error": {
+          "Code": "ValidationError",
+          "Message": "Role arn:aws:iam::111111111111:role/role-04a372af is invalid or cannot be assumed",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
   }
 }

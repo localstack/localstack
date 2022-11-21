@@ -14,4 +14,7 @@ Resources:
 
 Outputs:
   TopicArn:
-    Value: !GetAtt [topic123, TopicArn]
+    Value:
+      Fn::GetAtt:
+        - topic123
+        - TopicArn
