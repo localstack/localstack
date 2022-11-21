@@ -383,7 +383,7 @@ def test_update_with_invalid_rollback_configuration_errors(
 @pytest.mark.aws_validated
 @pytest.mark.skip(reason="The update value is not being applied")
 def test_update_with_rollback_configuration(
-    deploy_cfn_template, cfn_client, snapshot, is_stack_updated, cloudwatch_client
+    deploy_cfn_template, cfn_client, is_stack_updated, cloudwatch_client
 ):
 
     cloudwatch_client.put_metric_alarm(
