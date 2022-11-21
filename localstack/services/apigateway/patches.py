@@ -225,50 +225,6 @@ def apply_patches():
 
         return result
 
-    def apigateway_response_integration_responses(self, request, *args, **kwargs):
-        result = apigateway_response_integration_responses_orig(self, request, *args, **kwargs)
-        response_parameters = self._get_param("responseParameters")
-
-        if self.method == "PUT":
-            url_path_parts = self.path.split("/")
-            function_id = url_path_parts[2]
-            resource_id = url_path_parts[4]
-            method_type = url_path_parts[6]
-            status_code = url_path_parts[9]
-
-            integration_response = self.backend.get_integration_response(
-                function_id, resource_id, method_type, status_code
-            )
-
-            if response_parameters:
-                integration_response.response_parameters = response_parameters
-
-            return 201, {}, json.dumps(integration_response.to_json())
-
-        return result
-
-    # def apigateway_response_resource_method_responses(self, request, *args, **kwargs):
-    #     result = apigateway_response_resource_method_responses_orig(self, request, *args, **kwargs)
-    #     response_parameters = self._get_param("responseParameters")
-    #
-    #     if self.method == "PUT":
-    #         url_path_parts = self.path.split("/")
-    #         function_id = url_path_parts[2]
-    #         resource_id = url_path_parts[4]
-    #         method_type = url_path_parts[6]
-    #         response_code = url_path_parts[8]
-    #
-    #         method_response = self.backend.get_method_response(
-    #             function_id, resource_id, method_type, response_code
-    #         ).to_json()
-    #
-    #         if response_parameters:
-    #             method_response["responseParameters"] = response_parameters
-    #
-    #         return 201, {}, json.dumps(method_response)
-    #
-    #     return result
-
     def apigateway_response_usage_plan_individual(
         self, request, full_url, headers, *args, **kwargs
     ):
@@ -468,9 +424,11 @@ def apply_patches():
             return 201, {}, json.dumps(deployment)
         return result
 
-    # patch create_rest_api to allow using static API IDs defined via tags
-
     def create_rest_api(self, *args, tags={}, **kwargs):
+        """
+        https://github.com/localstack/localstack/pull/4413/files
+        Add ability to specify custom IDs for API GW REST APIs via tags
+        """
         result = create_rest_api_orig(self, *args, tags=tags, **kwargs)
         tags = tags or {}
         if custom_id := tags.get(TAG_KEY_CUSTOM_ID):
@@ -496,8 +454,7 @@ def apply_patches():
     APIGatewayResponse.individual_deployment = individual_deployment
     apigateway_response_integrations_orig = APIGatewayResponse.integrations
     APIGatewayResponse.integrations = apigateway_response_integrations
-    apigateway_response_integration_responses_orig = APIGatewayResponse.integration_responses
-    APIGatewayResponse.integration_responses = apigateway_response_integration_responses
+
     apigateway_response_usage_plan_individual_orig = APIGatewayResponse.usage_plan_individual
     APIGatewayResponse.usage_plan_individual = apigateway_response_usage_plan_individual
     apigateway_models.RestAPI.to_dict = apigateway_models_RestAPI_to_dict
