@@ -469,17 +469,6 @@ def inject_region_into_env(env, region):
     env["AWS_REGION"] = region
 
 
-def dynamodb_table_exists(table_name, client=None):
-    client = client or connect_to_service("dynamodb")
-    paginator = client.get_paginator("list_tables")
-    pages = paginator.paginate(PaginationConfig={"PageSize": 100})
-    for page in pages:
-        table_names = page["TableNames"]
-        if to_str(table_name) in table_names:
-            return True
-    return False
-
-
 def sqs_queue_url_for_arn(queue_arn):
     if "://" in queue_arn:
         return queue_arn
@@ -631,6 +620,17 @@ def cf_change_set_arn(change_set_name, change_set_id=None, account_id=None, regi
     change_set_id = change_set_id or "id-456"
     pattern = "arn:aws:cloudformation:%s:%s:changeSet/%s/{cs_id}".format(cs_id=change_set_id)
     return _resource_arn(change_set_name, pattern, account_id=account_id, region_name=region_name)
+
+
+def dynamodb_table_exists(table_name, client=None):
+    client = client or connect_to_service("dynamodb")
+    paginator = client.get_paginator("list_tables")
+    pages = paginator.paginate(PaginationConfig={"PageSize": 100})
+    for page in pages:
+        table_names = page["TableNames"]
+        if to_str(table_name) in table_names:
+            return True
+    return False
 
 
 def dynamodb_table_arn(table_name, account_id=None, region_name=None):

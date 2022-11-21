@@ -1,13 +1,12 @@
 import pytest
 
 from localstack.testing.pytest.fixtures import _client
+from localstack.utils.strings import short_uid
 
 
 @pytest.fixture
 def client_factory():
-    region_name = "eu-central-1"
-
-    def _client_factory(service: str, aws_access_key_id: str):
+    def _client_factory(service: str, aws_access_key_id: str, region_name: str = "eu-central-1"):
         return _client(service, region_name=region_name, aws_access_key_id=aws_access_key_id)
 
     yield _client_factory
@@ -97,3 +96,55 @@ class TestMultiAccounts:
         assert len(sns_client1.list_tags_for_resource(ResourceArn=arn1)["Tags"]) == 1
         assert len(sns_client2.list_tags_for_resource(ResourceArn=arn2)["Tags"]) == 2
         assert len(sns_client2.list_tags_for_resource(ResourceArn=arn3)["Tags"]) == 1
+
+    def test_multi_accounts_dynamodb(self, client_factory, cleanups):
+        """DynamoDB depends on an external service - DynamoDB Local"""
+        account_id1 = "420420420420"
+        account_id2 = "133713371337"
+
+        ddb_client1 = client_factory("dynamodb", account_id1, region_name="ap-south-1")
+        ddb_client2 = client_factory("dynamodb", account_id1)
+        ddb_client3 = client_factory("dynamodb", account_id2)
+
+        tab1 = f"table-{short_uid()}"
+
+        # The CreateTable call gets forwarded to DDBLocal.
+        # The assertions below test whether DDBLocal correctly namespaces the tables.
+
+        response1 = ddb_client1.create_table(
+            TableName=tab1,
+            KeySchema=[{"AttributeName": "Username", "KeyType": "HASH"}],
+            AttributeDefinitions=[{"AttributeName": "Username", "AttributeType": "S"}],
+            ProvisionedThroughput={"ReadCapacityUnits": 5, "WriteCapacityUnits": 5},
+        )
+        cleanups.append(lambda: ddb_client1.delete_table(TableName=tab1))
+        assert (
+            response1["TableDescription"]["TableArn"]
+            == f"arn:aws:dynamodb:ap-south-1:{account_id1}:table/{tab1}"
+        )
+
+        # Create table with the same name in a different region
+        response2 = ddb_client2.create_table(
+            TableName=tab1,
+            KeySchema=[{"AttributeName": "Username", "KeyType": "HASH"}],
+            AttributeDefinitions=[{"AttributeName": "Username", "AttributeType": "S"}],
+            ProvisionedThroughput={"ReadCapacityUnits": 5, "WriteCapacityUnits": 5},
+        )
+        cleanups.append(lambda: ddb_client2.delete_table(TableName=tab1))
+        assert (
+            response2["TableDescription"]["TableArn"]
+            == f"arn:aws:dynamodb:eu-central-1:{account_id1}:table/{tab1}"
+        )
+
+        # Create table with the same name in a different account
+        response3 = ddb_client3.create_table(
+            TableName=tab1,
+            KeySchema=[{"AttributeName": "Username", "KeyType": "HASH"}],
+            AttributeDefinitions=[{"AttributeName": "Username", "AttributeType": "S"}],
+            ProvisionedThroughput={"ReadCapacityUnits": 5, "WriteCapacityUnits": 5},
+        )
+        cleanups.append(lambda: ddb_client3.delete_table(TableName=tab1))
+        assert (
+            response3["TableDescription"]["TableArn"]
+            == f"arn:aws:dynamodb:eu-central-1:{account_id2}:table/{tab1}"
+        )
