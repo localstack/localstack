@@ -160,6 +160,18 @@ def apply_patches():
             result = 201, {}, json.dumps(method.to_json())
         if len(result) != 3:
             return result
+
+        # if self.method == "PATCH":
+        #     patch_operations = self._get_param("patchOperations")
+        #     url_path_parts = self.path.split("/")
+        #     function_id = url_path_parts[2]
+        #     resource_id = url_path_parts[4]
+        #     method_type = url_path_parts[6]
+        #     method = self.backend.get_method(function_id, resource_id, method_type)
+        #     method = method.to_json() or {}
+        #     apply_json_patch_safe(method, patch_operations, in_place=True)
+        #     return 200, {}, json.dumps(method)
+
         authorization_type = self._get_param("authorizationType")
         if authorization_type in ["CUSTOM", "COGNITO_USER_POOLS"]:
             data = json.loads(result[2])
@@ -182,7 +194,7 @@ def apply_patches():
         resource_id = url_path_parts[4]
         method_type = url_path_parts[6]
 
-        integration = self.backend.get_integration(function_id, resource_id, method_type).to_json()
+        integration = self.backend.get_integration(function_id, resource_id, method_type)
         if not integration:
             return result
 
@@ -191,12 +203,12 @@ def apply_patches():
             request_parameters = self._get_param("requestParameters") or {}
             cache_key_parameters = self._get_param("cacheKeyParameters") or []
             content_handling = self._get_param("contentHandling")
-            integration["cacheNamespace"] = resource_id
-            integration["timeoutInMillis"] = timeout_milliseconds
-            integration["requestParameters"] = request_parameters
-            integration["cacheKeyParameters"] = cache_key_parameters
-            integration["contentHandling"] = content_handling
-            return 201, {}, json.dumps(integration)
+            integration.cache_namespace = resource_id
+            integration.timeout_in_millis = timeout_milliseconds
+            integration.request_parameters = request_parameters
+            integration.cache_key_parameters = cache_key_parameters
+            integration.content_handling = content_handling
+            return 201, {}, json.dumps(integration.to_json())
 
         if self.method == "PATCH":
             patch_operations = self._get_param("patchOperations")
@@ -228,13 +240,10 @@ def apply_patches():
                 function_id, resource_id, method_type, status_code
             )
 
-            # to_json() returns a dict, not a json string
-            # we need to assemble integration_response with response_parameters
-            integration_response = integration_response.to_json()
             if response_parameters:
-                integration_response["responseParameters"] = response_parameters
+                integration_response.response_parameters = response_parameters
 
-            return 201, {}, json.dumps(integration_response)
+            return 201, {}, json.dumps(integration_response.to_json())
 
         return result
 
