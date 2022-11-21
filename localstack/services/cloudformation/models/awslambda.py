@@ -228,7 +228,10 @@ class LambdaEventSourceMapping(GenericBaseModel):
 
     @staticmethod
     def get_deploy_templates():
-        return {"create": {"function": "create_event_source_mapping"}}
+        return {
+            "create": {"function": "create_event_source_mapping"},
+            "delete": {"function": "delete_event_source_mapping", "parameters": ["UUID"]},
+        }
 
 
 class LambdaPermission(GenericBaseModel):

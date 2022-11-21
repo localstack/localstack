@@ -475,6 +475,10 @@ class TestCfnLambdaIntegrations:
 
         assert wait_until(wait_logs)
 
+        deployment.destroy()
+        with pytest.raises(lambda_client.exceptions.ResourceNotFoundException):
+            lambda_client.get_event_source_mapping(UUID=esm_id)
+
     @pytest.mark.skip_snapshot_verify(
         condition=is_old_provider,
         paths=[
@@ -636,6 +640,10 @@ class TestCfnLambdaIntegrations:
 
         assert wait_until(wait_logs)
 
+        deployment.destroy()
+        with pytest.raises(lambda_client.exceptions.ResourceNotFoundException):
+            lambda_client.get_event_source_mapping(UUID=esm_id)
+
     @pytest.mark.skip_snapshot_verify(
         condition=is_old_provider,
         paths=[
@@ -782,3 +790,8 @@ class TestCfnLambdaIntegrations:
             return any([data_msg in e["message"] for e in log_events])
 
         assert wait_until(wait_logs)
+
+        deployment.destroy()
+
+        with pytest.raises(lambda_client.exceptions.ResourceNotFoundException):
+            lambda_client.get_event_source_mapping(UUID=esm_id)
