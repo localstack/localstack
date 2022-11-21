@@ -46,8 +46,8 @@ def apply_patches():
             **kwargs,
         )
 
-        if (cacheClusterSize or cacheClusterEnabled) and not self.get("cacheClusterStatus"):
-            self["cacheClusterStatus"] = "AVAILABLE"
+        if (cacheClusterSize or cacheClusterEnabled) and not self.cache_cluster_status:
+            self.cache_cluster_status = "AVAILABLE"
 
     apigateway_models_Stage_init_orig = apigateway_models.Stage.__init__
     apigateway_models.Stage.__init__ = apigateway_models_Stage_init
