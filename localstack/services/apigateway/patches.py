@@ -247,27 +247,27 @@ def apply_patches():
 
         return result
 
-    def apigateway_response_resource_method_responses(self, request, *args, **kwargs):
-        result = apigateway_response_resource_method_responses_orig(self, request, *args, **kwargs)
-        response_parameters = self._get_param("responseParameters")
-
-        if self.method == "PUT":
-            url_path_parts = self.path.split("/")
-            function_id = url_path_parts[2]
-            resource_id = url_path_parts[4]
-            method_type = url_path_parts[6]
-            response_code = url_path_parts[8]
-
-            method_response = self.backend.get_method_response(
-                function_id, resource_id, method_type, response_code
-            ).to_json()
-
-            if response_parameters:
-                method_response["responseParameters"] = response_parameters
-
-            return 201, {}, json.dumps(method_response)
-
-        return result
+    # def apigateway_response_resource_method_responses(self, request, *args, **kwargs):
+    #     result = apigateway_response_resource_method_responses_orig(self, request, *args, **kwargs)
+    #     response_parameters = self._get_param("responseParameters")
+    #
+    #     if self.method == "PUT":
+    #         url_path_parts = self.path.split("/")
+    #         function_id = url_path_parts[2]
+    #         resource_id = url_path_parts[4]
+    #         method_type = url_path_parts[6]
+    #         response_code = url_path_parts[8]
+    #
+    #         method_response = self.backend.get_method_response(
+    #             function_id, resource_id, method_type, response_code
+    #         ).to_json()
+    #
+    #         if response_parameters:
+    #             method_response["responseParameters"] = response_parameters
+    #
+    #         return 201, {}, json.dumps(method_response)
+    #
+    #     return result
 
     def apigateway_response_usage_plan_individual(
         self, request, full_url, headers, *args, **kwargs
@@ -479,18 +479,6 @@ def apply_patches():
             self.apis[custom_id] = result
         return result
 
-    def apigateway_response_deployments(self, request, full_url, headers):
-        result = apigateway_response_deployments_orig(self, request, full_url, headers)
-        if self.method == "POST":
-            return 201, {}, result[2]
-        return result
-
-    def apigateway_restapis_stages(self, request, full_url, headers):
-        result = apigateway_restapis_stages_orig(self, request, full_url, headers)
-        if self.method == "POST":
-            return 201, {}, result[2]
-        return result
-
     def get_rest_api(self, function_id):
         for key in self.apis.keys():
             if key.lower() == function_id.lower():
@@ -510,14 +498,6 @@ def apply_patches():
     APIGatewayResponse.integrations = apigateway_response_integrations
     apigateway_response_integration_responses_orig = APIGatewayResponse.integration_responses
     APIGatewayResponse.integration_responses = apigateway_response_integration_responses
-    apigateway_response_resource_method_responses_orig = (
-        APIGatewayResponse.resource_method_responses
-    )
-    APIGatewayResponse.resource_method_responses = apigateway_response_resource_method_responses
     apigateway_response_usage_plan_individual_orig = APIGatewayResponse.usage_plan_individual
     APIGatewayResponse.usage_plan_individual = apigateway_response_usage_plan_individual
     apigateway_models.RestAPI.to_dict = apigateway_models_RestAPI_to_dict
-    apigateway_response_deployments_orig = APIGatewayResponse.deployments
-    APIGatewayResponse.deployments = apigateway_response_deployments
-    apigateway_restapis_stages_orig = APIGatewayResponse.restapis_stages
-    APIGatewayResponse.restapis_stages = apigateway_restapis_stages
