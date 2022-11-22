@@ -26,6 +26,7 @@ class KinesisMockServer(Server):
         port: int,
         bin_path: str,
         latency: str,
+        account_id: str,
         host: str = "localhost",
         log_level: str = "INFO",
         data_dir: Optional[str] = None,
@@ -36,6 +37,7 @@ class KinesisMockServer(Server):
         self._data_dir = data_dir
         self._bin_path = bin_path
         self._log_level = log_level
+        self._account_id = account_id
         super().__init__(port, host)
 
     def do_start_thread(self) -> FuncThread:
@@ -58,7 +60,12 @@ class KinesisMockServer(Server):
         Helper method for creating kinesis mock invocation command
         :return: returns a tuple containing the command list and a dictionary with the environment variables
         """
-        env_vars = {"KINESIS_MOCK_PLAIN_PORT": self.port, "SHARD_LIMIT": config.KINESIS_SHARD_LIMIT}
+        env_vars = {
+            "KINESIS_MOCK_PLAIN_PORT": self.port,
+            "KINESIS_MOCK_TLS_PORT": get_free_tcp_port(),  # each kinesis-mock instance listens to two ports. Use unique port here just to avoid conflicts.
+            "SHARD_LIMIT": config.KINESIS_SHARD_LIMIT,
+            "AWS_ACCOUNT_ID": self._account_id,
+        }
 
         latency_params = [
             "CREATE_STREAM_DURATION",
@@ -94,7 +101,9 @@ class KinesisMockServer(Server):
         LOG.info(line.rstrip())
 
 
-def create_kinesis_mock_server(port=None, persist_path: Optional[str] = None) -> KinesisMockServer:
+def create_kinesis_mock_server(
+    account_id: str, port=None, persist_path: Optional[str] = None
+) -> KinesisMockServer:
     """
     Creates a new Kinesis Mock server instance. Installs Kinesis Mock on the host first if necessary.
     Introspects on the host config to determine server configuration:
@@ -132,5 +141,6 @@ def create_kinesis_mock_server(port=None, persist_path: Optional[str] = None) ->
         latency=latency,
         initialize_streams=initialize_streams,
         data_dir=persist_path,
+        account_id=account_id,
     )
     return server
