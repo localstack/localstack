@@ -48,7 +48,6 @@ def test_lambda_w_dynamodb_event_filter(
     retry(_assert_single_lambda_call, retries=30)
 
 
-@pytest.mark.skipif(condition=is_new_provider(), reason="not implemented yet")
 @pytest.mark.skip_snapshot_verify(
     paths=[
         "$..Metadata",
