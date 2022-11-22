@@ -352,7 +352,9 @@ class StreamEventSourceListener(EventSourceListener):
                                     "function_arn": source["FunctionArn"],
                                     "stream_arn": stream_arn,
                                     "batch_size": batch_size,
-                                    "parallelization_factor": source["ParallelizationFactor"],
+                                    "parallelization_factor": source.get(
+                                        "ParallelizationFactor", 1
+                                    ),
                                     "lock_discriminator": lock_discriminator,
                                     "shard_id": shard_id,
                                     "stream_client": stream_client,
