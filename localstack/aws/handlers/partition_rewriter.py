@@ -12,6 +12,8 @@ from localstack.http import Response
 from localstack.http.proxy import forward
 from localstack.http.request import Request, restore_payload
 from localstack.utils.aws.aws_responses import calculate_crc32
+from localstack.utils.aws.aws_stack import is_internal_call_context
+from localstack.utils.aws.request_context import extract_region_from_headers
 from localstack.utils.run import to_str
 from localstack.utils.strings import to_bytes
 
@@ -51,13 +53,37 @@ class ArnPartitionRewriteHandler(Handler):
     )
 
     def __call__(self, chain: HandlerChain, context: RequestContext, response: Response):
-        # If this header is present, remove it and continue the handler chain
         request = context.request
-        if request.headers.pop("LS-INTERNAL-REWRITE-HANDLER", None):
+        # If this header is present, or the request is internal, remove it and continue the handler chain
+        if request.headers.pop("LS-INTERNAL-REWRITE-HANDLER", None) or is_internal_call_context(
+            request.headers
+        ):
             return
+        # since we are very early in the handler chain, we cannot use the request context here
+        request_region = extract_region_from_headers(request.headers)
+        forward_request = self.modify_request(request)
+        # forward to the handler chain again
+        result_response = forward(
+            request=forward_request,
+            forward_base_url=config.get_edge_url(),
+            forward_path=forward_request.path,
+            headers=forward_request.headers,
+        )
+        self.modify_response(result_response, request_region=request_region)
+        response.update_from(result_response)
 
+        # terminate this chain, as the request was proxied
+        chain.terminate()
+
+    def modify_request(self, request: Request) -> Request:
+        """
+        Modifies the request by rewriting ARNs
+
+        :param request: Request
+        :return: New request with rewritten data
+        """
         # rewrite inbound request
-        forward_rewritten_path = self._adjust_partition_in_path(
+        forward_rewritten_path, forward_rewritten_query_string = self._adjust_partition_in_path(
             request.full_path, self.DEFAULT_INBOUND_PARTITION
         )
         forward_rewritten_body = self._adjust_partition(
@@ -70,31 +96,30 @@ class ArnPartitionRewriteHandler(Handler):
         # add header to signal request has already been rewritten
         forward_rewritten_headers["LS-INTERNAL-REWRITE-HANDLER"] = "1"
         # Create a new request with the updated data
-        forward_request = Request(
+        return Request(
             method=request.method,
             headers=forward_rewritten_headers,
             path=forward_rewritten_path,
             body=forward_rewritten_body,
+            # we have to set query string to None to avoid it being counted as defined in werkzeug
+            query_string=forward_rewritten_query_string,
         )
 
-        # forward to the handler chain again
-        result_response = forward(
-            request=forward_request,
-            forward_base_url=config.get_edge_url(),
-            forward_path=forward_rewritten_path,
-            headers=forward_rewritten_headers,
-        )
+    def modify_response(self, response: Response, request_region: str):
+        """
+        Modifies the supplied response by rewriting the ARNs back based on the regions in the arn or the supplied region
 
+        :param response: Response to be modified
+        :param request_region: Region the original request was meant for
+        """
         # rewrite response
-        result_response.headers = self._adjust_partition(result_response.headers)
-        result_response.data = self._adjust_partition(result_response.data)
-        self._post_process_response_headers(result_response)
-        response.update_from(result_response)
+        response.headers = self._adjust_partition(
+            dict(response.headers), request_region=request_region
+        )
+        response.data = self._adjust_partition(response.data, request_region=request_region)
+        self._post_process_response_headers(response)
 
-        # terminate this chain, as the request was proxied
-        chain.terminate()
-
-    def _adjust_partition_in_path(self, path: str, static_partition: str = None):
+    def _adjust_partition_in_path(self, path: str | bytes, static_partition: str = None):
         """Adjusts the (still url encoded) URL path"""
         parsed_url = urlparse(path)
         # Make sure to keep blank values, otherwise we drop query params which do not have a
@@ -108,24 +133,24 @@ class ArnPartitionRewriteHandler(Handler):
         encoded_query = encoded_query.replace("=&", "&")
         encoded_query = re.sub(r"=$", "", encoded_query)
 
-        return f"{adjusted_path}{('?' + encoded_query) if encoded_query else ''}"
+        return adjusted_path, encoded_query or ""
 
-    def _adjust_partition(self, source, static_partition: str = None):
+    def _adjust_partition(self, source, static_partition: str = None, request_region: str = None):
         # Call this function recursively if we get a dictionary or a list
         if isinstance(source, dict):
             result = {}
             for k, v in source.items():
-                result[k] = self._adjust_partition(v, static_partition)
+                result[k] = self._adjust_partition(v, static_partition, request_region)
             return result
         if isinstance(source, list):
             result = []
             for v in source:
-                result.append(self._adjust_partition(v, static_partition))
+                result.append(self._adjust_partition(v, static_partition, request_region))
             return result
         elif isinstance(source, bytes):
             try:
                 decoded = unquote(to_str(source))
-                adjusted = self._adjust_partition(decoded, static_partition)
+                adjusted = self._adjust_partition(decoded, static_partition, request_region)
                 return to_bytes(adjusted)
             except UnicodeDecodeError:
                 # If the body can't be decoded to a string, we return the initial source
@@ -133,27 +158,36 @@ class ArnPartitionRewriteHandler(Handler):
         elif not isinstance(source, str):
             # Ignore any other types
             return source
-        return self.arn_regex.sub(lambda m: self._adjust_match(m, static_partition), source)
+        return self.arn_regex.sub(
+            lambda m: self._adjust_match(m, static_partition, request_region), source
+        )
 
-    def _adjust_match(self, match: Match, static_partition: str = None):
+    def _adjust_match(self, match: Match, static_partition: str = None, request_region: str = None):
         region = match.group("Region")
-        partition = self._partition_lookup(region) if static_partition is None else static_partition
+        partition = (
+            self._partition_lookup(region, request_region)
+            if static_partition is None
+            else static_partition
+        )
         service = match.group("Service")
         account_id = match.group("AccountID")
         resource_path = match.group("ResourcePath")
         return f"arn:{partition}:{service}:{region}:{account_id}:{resource_path}"
 
-    def _partition_lookup(self, region: str):
+    def _partition_lookup(self, region: str, request_region: str = None):
         try:
             partition = self._get_partition_for_region(region)
         except ArnPartitionRewriteHandler.InvalidRegionException:
             try:
-                # If the region is not properly set (f.e. because it is set to a wildcard),
-                # the partition is determined based on the default region.
-                partition = self._get_partition_for_region(config.DEFAULT_REGION)
+                partition = self._get_partition_for_region(request_region)
             except self.InvalidRegionException:
-                # If it also fails with the DEFAULT_REGION, we use us-east-1 as a fallback
-                partition = self._get_partition_for_region(AWS_REGION_US_EAST_1)
+                try:
+                    # If the region is not properly set (f.e. because it is set to a wildcard),
+                    # the partition is determined based on the default region.
+                    partition = self._get_partition_for_region(config.DEFAULT_REGION)
+                except self.InvalidRegionException:
+                    # If it also fails with the DEFAULT_REGION, we use us-east-1 as a fallback
+                    partition = self._get_partition_for_region(AWS_REGION_US_EAST_1)
         return partition
 
     @staticmethod
