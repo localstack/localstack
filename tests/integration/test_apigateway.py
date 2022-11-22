@@ -2374,7 +2374,9 @@ def test_tag_api(apigateway_client, create_rest_apigw):
     tags = {"foo": "bar"}
 
     # add resource tags
-    api_id, _, _ = create_rest_apigw(name=api_name)
+    api_id, _, _ = create_rest_apigw(name=api_name, tags={TAG_KEY_CUSTOM_ID: "c0stIOm1d"})
+    assert api_id == "c0stIOm1d"
+
     api_arn = aws_stack.apigateway_restapi_arn(api_id=api_id)
     apigateway_client.tag_resource(resourceArn=api_arn, tags=tags)
 
