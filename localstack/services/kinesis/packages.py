@@ -8,7 +8,7 @@ from localstack.utils.files import replace_in_file
 from localstack.utils.platform import get_arch, get_os
 from localstack.utils.run import run
 
-_KINESIS_MOCK_VERSION = os.environ.get("KINESIS_MOCK_VERSION") or "0.2.5"
+_KINESIS_MOCK_VERSION = os.environ.get("KINESIS_MOCK_VERSION") or "0.2.6"
 
 
 class KinesisMockPackage(Package):
