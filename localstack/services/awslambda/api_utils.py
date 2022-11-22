@@ -484,6 +484,12 @@ def layer_version_arn(layer_name: str, account: str, region: str, version: str):
     return f"arn:aws:lambda:{region}:{account}:layer:{layer_name}:{version}"
 
 
+def parse_layer_arn(layer_version_arn: str):
+    return LAYER_VERSION_ARN_PATTERN.match(layer_version_arn).group(
+        "region_name", "account_id", "layer_name", "layer_version"
+    )
+
+
 # TODO: save list of valid runtimes somewhere
 def validate_layer_runtime(compatible_runtime: str) -> str | None:
     if compatible_runtime is not None and compatible_runtime not in RUNTIMES:
@@ -504,12 +510,12 @@ def validate_layer_runtimes_and_architectures(
 
     if compatible_runtimes and set(compatible_runtimes).difference(RUNTIMES):
         constraint = "Member must satisfy enum value set: [nodejs12.x, provided, nodejs16.x, nodejs14.x, ruby2.7, java11, dotnet6, go1.x, nodejs18.x, provided.al2, java8, java8.al2, dotnetcore3.1, python3.7, python3.8, python3.9]"
-        validation_msg = f"Value '[{','.join([s for s in compatible_runtimes])}]' at 'compatibleRuntimes' failed to satisfy constraint: {constraint}"
+        validation_msg = f"Value '[{', '.join([s for s in compatible_runtimes])}]' at 'compatibleRuntimes' failed to satisfy constraint: {constraint}"
         validations.append(validation_msg)
 
     if compatible_architectures and set(compatible_architectures).difference(ARCHITECTURES):
         constraint = "[Member must satisfy enum value set: [x86_64, arm64]]"
-        validation_msg = f"Value '[{','.join([s for s in compatible_architectures])}]' at 'compatibleArchitectures' failed to satisfy constraint: Member must satisfy constraint: {constraint}"
+        validation_msg = f"Value '[{', '.join([s for s in compatible_architectures])}]' at 'compatibleArchitectures' failed to satisfy constraint: Member must satisfy constraint: {constraint}"
         validations.append(validation_msg)
 
     return validations

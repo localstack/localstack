@@ -6926,7 +6926,7 @@
     }
   },
   "tests/integration/awslambda/test_lambda_api.py::TestLambdaLayer::test_layer_exceptions": {
-    "recorded-date": "18-11-2022, 08:32:06",
+    "recorded-date": "22-11-2022, 19:12:27",
     "recorded-content": {
       "publish_result": {
         "CompatibleArchitectures": [
@@ -7105,6 +7105,16 @@
         "Error": {
           "Code": "ValidationException",
           "Message": "2 validation errors detected: Value '[invalidruntime]' at 'compatibleRuntimes' failed to satisfy constraint: Member must satisfy enum value set: [nodejs12.x, provided, nodejs16.x, nodejs14.x, ruby2.7, java11, dotnet6, go1.x, nodejs18.x, provided.al2, java8, java8.al2, dotnetcore3.1, python3.7, python3.8, python3.9]; Value '[invalidarch]' at 'compatibleArchitectures' failed to satisfy constraint: Member must satisfy constraint: [Member must satisfy enum value set: [x86_64, arm64]]"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "publish_layer_version_exc_partially_invalid_values": {
+        "Error": {
+          "Code": "ValidationException",
+          "Message": "2 validation errors detected: Value '[invalidruntime, invalidruntime2, nodejs16.x]' at 'compatibleRuntimes' failed to satisfy constraint: Member must satisfy enum value set: [nodejs12.x, provided, nodejs16.x, nodejs14.x, ruby2.7, java11, dotnet6, go1.x, nodejs18.x, provided.al2, java8, java8.al2, dotnetcore3.1, python3.7, python3.8, python3.9]; Value '[invalidarch, x86_64]' at 'compatibleArchitectures' failed to satisfy constraint: Member must satisfy constraint: [Member must satisfy enum value set: [x86_64, arm64]]"
         },
         "ResponseMetadata": {
           "HTTPHeaders": {},
@@ -7732,6 +7742,181 @@
         "ResponseMetadata": {
           "HTTPHeaders": {},
           "HTTPStatusCode": 201
+        }
+      }
+    }
+  },
+  "tests/integration/awslambda/test_lambda_api.py::TestLambdaLayer::test_layer_function_exceptions": {
+    "recorded-date": "22-11-2022, 19:53:01",
+    "recorded-content": {
+      "publish_result": {
+        "CompatibleArchitectures": [
+          "x86_64"
+        ],
+        "CompatibleRuntimes": [],
+        "Content": {
+          "CodeSha256": "<code-sha256:1>",
+          "CodeSize": 169,
+          "Location": "<layer-location>"
+        },
+        "CreatedDate": "date",
+        "Description": "",
+        "LayerArn": "arn:aws:lambda:<region>:111111111111:layer:<resource:1>",
+        "LayerVersionArn": "arn:aws:lambda:<region>:111111111111:layer:<resource:1>:1",
+        "Version": 1,
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 201
+        }
+      },
+      "publish_result_2": {
+        "CompatibleArchitectures": [
+          "x86_64"
+        ],
+        "CompatibleRuntimes": [],
+        "Content": {
+          "CodeSha256": "<code-sha256:1>",
+          "CodeSize": 169,
+          "Location": "<layer-location>"
+        },
+        "CreatedDate": "date",
+        "Description": "",
+        "LayerArn": "arn:aws:lambda:<region>:111111111111:layer:<resource:1>",
+        "LayerVersionArn": "arn:aws:lambda:<region>:111111111111:layer:<resource:1>:2",
+        "Version": 2,
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 201
+        }
+      },
+      "publish_result_3": {
+        "CompatibleArchitectures": [
+          "x86_64"
+        ],
+        "CompatibleRuntimes": [],
+        "Content": {
+          "CodeSha256": "<code-sha256:1>",
+          "CodeSize": 169,
+          "Location": "<layer-location>"
+        },
+        "CreatedDate": "date",
+        "Description": "",
+        "LayerArn": "arn:aws:lambda:<region>:111111111111:layer:<resource:1>",
+        "LayerVersionArn": "arn:aws:lambda:<region>:111111111111:layer:<resource:1>:3",
+        "Version": 3,
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 201
+        }
+      },
+      "get_fn_result": {
+        "Code": {
+          "Location": "<location>",
+          "RepositoryType": "S3"
+        },
+        "Configuration": {
+          "Architectures": [
+            "x86_64"
+          ],
+          "CodeSha256": "<code-sha256:2>",
+          "CodeSize": 264,
+          "Description": "",
+          "Environment": {
+            "Variables": {}
+          },
+          "EphemeralStorage": {
+            "Size": 512
+          },
+          "FunctionArn": "arn:aws:lambda:<region>:111111111111:function:<function-name:1>",
+          "FunctionName": "<function-name:1>",
+          "Handler": "handler.handler",
+          "LastModified": "date",
+          "LastUpdateStatus": "Successful",
+          "MemorySize": 128,
+          "PackageType": "Zip",
+          "RevisionId": "<uuid:1>",
+          "Role": "arn:aws:iam::111111111111:role/<resource:2>",
+          "Runtime": "python3.9",
+          "State": "Active",
+          "Timeout": 30,
+          "TracingConfig": {
+            "Mode": "PassThrough"
+          },
+          "Version": "$LATEST"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "two_layer_versions_single_function_exc": {
+        "Error": {
+          "Code": "InvalidParameterValueException",
+          "Message": "Two different versions of the same layer are not allowed to be referenced in the same function. arn:aws:lambda:<region>:111111111111:layer:<resource:1>:1 and arn:aws:lambda:<region>:111111111111:layer:<resource:1>:2 are versions of the same layer."
+        },
+        "Type": "User",
+        "message": "Two different versions of the same layer are not allowed to be referenced in the same function. arn:aws:lambda:<region>:111111111111:layer:<resource:1>:1 and arn:aws:lambda:<region>:111111111111:layer:<resource:1>:2 are versions of the same layer.",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "three_layer_versions_single_function_exc": {
+        "Error": {
+          "Code": "InvalidParameterValueException",
+          "Message": "Two different versions of the same layer are not allowed to be referenced in the same function. arn:aws:lambda:<region>:111111111111:layer:<resource:1>:1 and arn:aws:lambda:<region>:111111111111:layer:<resource:1>:2 are versions of the same layer."
+        },
+        "Type": "User",
+        "message": "Two different versions of the same layer are not allowed to be referenced in the same function. arn:aws:lambda:<region>:111111111111:layer:<resource:1>:1 and arn:aws:lambda:<region>:111111111111:layer:<resource:1>:2 are versions of the same layer.",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "two_identical_layer_versions_single_function_exc": {
+        "Error": {
+          "Code": "InvalidParameterValueException",
+          "Message": "Two different versions of the same layer are not allowed to be referenced in the same function. arn:aws:lambda:<region>:111111111111:layer:<resource:1>:1 and arn:aws:lambda:<region>:111111111111:layer:<resource:1>:1 are versions of the same layer."
+        },
+        "Type": "User",
+        "message": "Two different versions of the same layer are not allowed to be referenced in the same function. arn:aws:lambda:<region>:111111111111:layer:<resource:1>:1 and arn:aws:lambda:<region>:111111111111:layer:<resource:1>:1 are versions of the same layer.",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "add_nonexistent_layer_exc": {
+        "Error": {
+          "Code": "InvalidParameterValueException",
+          "Message": "Layer version arn:aws:lambda:<region>:111111111111:layer:doesnotexist:1 does not exist."
+        },
+        "Type": "User",
+        "message": "Layer version arn:aws:lambda:<region>:111111111111:layer:doesnotexist:1 does not exist.",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "add_nonexistent_layer_version_exc": {
+        "Error": {
+          "Code": "InvalidParameterValueException",
+          "Message": "Layer version arn:aws:lambda:<region>:111111111111:layer:<resource:1>:9 does not exist."
+        },
+        "Type": "User",
+        "message": "Layer version arn:aws:lambda:<region>:111111111111:layer:<resource:1>:9 does not exist.",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "add_layer_arn_without_version_exc": {
+        "Error": {
+          "Code": "ValidationException",
+          "Message": "1 validation error detected: Value '[arn:aws:lambda:<region>:111111111111:layer:<resource:1>]' at 'layers' failed to satisfy constraint: Member must satisfy constraint: [Member must have length less than or equal to 140, Member must have length greater than or equal to 1, Member must satisfy regular expression pattern: (arn:[a-zA-Z0-9-]+:lambda:[a-zA-Z0-9-]+:\\d{12}:layer:[a-zA-Z0-9-_]+:[0-9]+)|(arn:[a-zA-Z0-9-]+:lambda:::awslayer:[a-zA-Z0-9-_]+), Member must not be null]"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
         }
       }
     }

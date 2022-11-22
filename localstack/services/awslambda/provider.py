@@ -573,6 +573,51 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
             if env_vars := request.get("Environment", {}).get("Variables", {}):
                 self._verify_env_variables(env_vars)
             replace_kwargs["environment"] = env_vars
+
+        if "Layers" in request:
+            # validate layers
+            new_layers = request["Layers"]
+            # TODO: extract validation
+            # 1. make sure layers follow format
+            # 2. make sure layers aren't used more than once
+            # only the first two matches in the array are considered for the error message
+            visited_layers = dict()
+
+            def arn_without_version(arn: str) -> str:
+                return ":".join(arn.split(":")[:-1])
+
+            for layer_version_arn in new_layers:
+
+                region_name, account_id, layer_name, layer_version = api_utils.parse_layer_arn(
+                    layer_version_arn
+                )
+                if layer_version is None:
+                    raise ValidationException(
+                        f"1 validation error detected: Value '[{layer_version_arn}]'"
+                        + r" at 'layers' failed to satisfy constraint: Member must satisfy constraint: [Member must have length less than or equal to 140, Member must have length greater than or equal to 1, Member must satisfy regular expression pattern: (arn:[a-zA-Z0-9-]+:lambda:[a-zA-Z0-9-]+:\d{12}:layer:[a-zA-Z0-9-_]+:[0-9]+)|(arn:[a-zA-Z0-9-]+:lambda:::awslayer:[a-zA-Z0-9-_]+), Member must not be null]",
+                    )
+
+                layer = lambda_stores[account_id][region_name].layers.get(layer_name)
+                if layer is None:
+                    raise InvalidParameterValueException(
+                        f"Layer version {layer_version_arn} does not exist.", Type="User"
+                    )
+                layer_version = layer.layer_versions.get(layer_version)
+                if layer_version is None:
+                    raise InvalidParameterValueException(
+                        f"Layer version {layer_version_arn} does not exist.", Type="User"
+                    )
+
+                layer_arn = arn_without_version(layer_version_arn)
+                if layer_arn in visited_layers:
+                    conflict_layer_version_arn = visited_layers[layer_arn]
+                    raise InvalidParameterValueException(
+                        f"Two different versions of the same layer are not allowed to be referenced in the same function. {conflict_layer_version_arn} and {layer_version_arn} are versions of the same layer.",
+                        Type="User",
+                    )
+                visited_layers[layer_arn] = layer_version_arn
+            replace_kwargs["layers"] = new_layers
+
         new_latest_version = dataclasses.replace(
             latest_version,
             config=dataclasses.replace(
