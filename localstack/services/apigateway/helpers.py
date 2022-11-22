@@ -882,10 +882,11 @@ def get_api_account_id_and_region(api_id: str) -> Tuple[Optional[str], Optional[
     """Return the region name for the given REST API ID"""
     for account_id, account in apigateway_backends.items():
         for region_name, region in account.items():
-            if api_id in region.apis:
-                return (account_id, region_name)
-
-    return (None, None)
+            # compare low case keys to avoid case sensitivity issues
+            for key in region.apis.keys():
+                if key.lower() == api_id.lower():
+                    return account_id, region_name
+    return None, None
 
 
 def extract_api_id_from_hostname_in_url(hostname: str) -> str:
