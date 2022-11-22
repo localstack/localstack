@@ -3,8 +3,8 @@ import json
 import pytest
 from requests.models import Response
 
+from localstack.aws.handlers.partition_rewriter import ArnPartitionRewriteHandler
 from localstack.constants import INTERNAL_AWS_ACCESS_KEY_ID
-from localstack.services.generic_proxy import ArnPartitionRewriteListener
 from localstack.utils.aws.aws_stack import mock_aws_request_headers
 from localstack.utils.common import to_bytes, to_str
 
@@ -15,7 +15,7 @@ string_encoding = to_str
 
 @pytest.mark.parametrize("encoding", [byte_encoding, string_encoding])
 def test_no_arn_partition_rewriting_in_request(encoding):
-    listener = ArnPartitionRewriteListener()
+    listener = ArnPartitionRewriteHandler()
     data = encoding(json.dumps({"some-data-without-arn": "nothing to see here"}))
     headers = {"some-header-without-arn": "nothing to see here"}
     result = listener.forward_request(
@@ -34,7 +34,7 @@ def test_no_arn_partition_rewriting_in_request(encoding):
 @pytest.mark.parametrize("encoding", [byte_encoding, string_encoding])
 @pytest.mark.parametrize("origin_partition", ["aws", "aws-us-gov"])
 def test_arn_partition_rewriting_in_request(internal_call, encoding, origin_partition):
-    listener = ArnPartitionRewriteListener()
+    listener = ArnPartitionRewriteHandler()
     data = encoding(
         json.dumps(
             {
@@ -87,7 +87,7 @@ def test_arn_partition_rewriting_in_request(internal_call, encoding, origin_part
 def test_arn_partition_rewriting_in_request_without_region_and_without_default_partition(
     encoding, origin_partition
 ):
-    listener = ArnPartitionRewriteListener()
+    listener = ArnPartitionRewriteHandler()
     data = encoding(
         json.dumps({"some-data-with-arn": f"arn:{origin_partition}:iam::123456789012:ArnInData"})
     )
@@ -112,7 +112,7 @@ def test_arn_partition_rewriting_in_request_without_region_and_without_default_p
 
 @pytest.mark.parametrize("encoding", [byte_encoding, string_encoding])
 def test_arn_partition_rewriting_in_response(encoding):
-    listener = ArnPartitionRewriteListener()
+    listener = ArnPartitionRewriteHandler()
     response = Response()
     response._content = encoding(
         json.dumps(
@@ -143,7 +143,7 @@ def test_arn_partition_rewriting_in_response(encoding):
 
 def test_no_arn_partition_rewriting_in_internal_response():
     """Partitions should not be rewritten for _responses_ of _internal_ requests."""
-    listener = ArnPartitionRewriteListener()
+    listener = ArnPartitionRewriteHandler()
     response = Response()
     body_content = json.dumps(
         {"some-data-with-arn": "arn:aws:apigateway:us-gov-west-1::/restapis/arn-in-body/*"}
@@ -174,7 +174,7 @@ def test_arn_partition_rewriting_in_response_without_region_and_without_default_
     encoding, switch_region
 ):
     with switch_region(None):
-        listener = ArnPartitionRewriteListener()
+        listener = ArnPartitionRewriteHandler()
         response = Response()
         response._content = encoding(
             json.dumps({"some-data-with-arn": "arn:aws-us-gov:iam::123456789012:ArnInData"})
@@ -198,7 +198,7 @@ def test_arn_partition_rewriting_in_response_without_region_and_with_default_reg
     encoding, switch_region
 ):
     with switch_region("us-gov-east-1"):
-        listener = ArnPartitionRewriteListener()
+        listener = ArnPartitionRewriteHandler()
         response = Response()
         response._content = encoding(
             json.dumps({"some-data-with-arn": "arn:aws:iam::123456789012:ArnInData"})
