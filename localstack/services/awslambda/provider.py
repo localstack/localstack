@@ -1080,11 +1080,12 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
         params = request.copy()
         params.pop("FunctionName")
         params["State"] = "Enabled"
-        params["StateTransitionReason"] = "User action"
-        # params["StateTransitionReason"] = "USER_INITIATED"
+        params["StateTransitionReason"] = "USER_INITIATED"
         params["UUID"] = new_uuid
-        params["MaximumRetryAttempts"] = request.get("MaximumRetryAttempts", -1)
-        params["ParallelizationFactor"] = request.get("ParallelizationFactor", 1)
+        if request.get("MaximumRetryAttempts"):
+            params["MaximumRetryAttempts"] = request.get("MaximumRetryAttempts", -1)
+        if request.get("ParallelizationFactor"):
+            params["ParallelizationFactor"] = request.get("ParallelizationFactor", 1)
         params["FunctionResponseTypes"] = request.get("FunctionResponseTypes", [])
         params["MaximumBatchingWindowInSeconds"] = request.get("MaximumBatchingWindowInSeconds", 0)
         params["LastModified"] = api_utils.generate_lambda_date()
@@ -1138,8 +1139,12 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
                 "The resource you requested does not exist.", Type="User"
             )
         old_event_source_mapping = state.event_source_mappings.get(uuid)
-
+        if old_event_source_mapping is None:
+            raise ResourceNotFoundException(
+                "The resource you requested does not exist.", Type="User"
+            )  # TODO: test?
         event_source_mapping = {**old_event_source_mapping, **request_data}
+
         if request.get("Enabled") is not None:
             if request["Enabled"]:
                 esm_state = "Enabled"
