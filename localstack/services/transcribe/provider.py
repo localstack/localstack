@@ -2,14 +2,11 @@ import datetime
 import json
 import logging
 import os
-import subprocess
 import threading
 import wave
 from pathlib import Path
 from typing import Tuple
 from zipfile import ZipFile
-
-import magic
 
 from localstack import config
 from localstack.aws.api import RequestContext, handler
@@ -36,6 +33,7 @@ from localstack.utils.files import new_tmp_file
 from localstack.utils.http import download
 from localstack.utils.strings import short_uid
 from localstack.utils.threads import start_thread
+from localstack.utils.run import run
 
 LOG = logging.getLogger(__name__)
 
@@ -213,22 +211,26 @@ class TranscribeProvider(TranscribeApi):
 
             # Check audio file type and convert to wav
             support_audio_list = [
-                "audio/flac",
-                "audio/mpeg",
-                "video/mp4",
-                "audio/ogg",
-                "video/webm",
+                "flac",
+                "mp3",
+                "mov,mp4,m4a,3gp,3g2,mj2", # ffprobe output of mp4 format
+                "ogg",
+                "webm",
             ]
-            file_type = magic.from_file(file_path, mime=True)
-            if file_type != "audio/x-wav" and file_type in support_audio_list:
+            json_file_info = run(f"ffprobe -show_format -print_format json -hide_banner -v error {file_path}")
+            file_type = json_file_info.split("format_name")[1].split("\n")[0][4:-2] # Extract format from ffprobe
+
+            if file_type != "wav" and file_type in support_audio_list:
                 LOG.debug("Starting to convert audio to wav type: %s", job_name)
 
                 tmp_wav_file_path = new_tmp_file() + ".wav"
                 cmd = "ffmpeg -nostdin -loglevel quiet -y -i {} {}".format(
                     str(file_path), tmp_wav_file_path
                 )
-                subprocess.run(cmd.split(" "), stdout=subprocess.PIPE, check=True)
+                run(cmd)
                 file_path = tmp_wav_file_path
+                if os.path.exists(file_path) == False:
+                    raise ValueError("Audio file format conversion failed")
                 LOG.debug("Finishing conversion: %s", job_name)
 
             # Check if file is valid wav
@@ -239,7 +241,7 @@ class TranscribeProvider(TranscribeApi):
                 or audio.getcomptype() != "NONE"
             ):
                 # Fail job
-                failure_reason = "Audio file must be mono PCM WAV format"
+                failure_reason = "Unsupport Audio file format"
                 raise RuntimeError()
 
             # Prepare transcriber
