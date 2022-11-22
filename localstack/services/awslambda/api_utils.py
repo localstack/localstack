@@ -186,7 +186,7 @@ def build_statement(
     source_account: Optional[str] = None,  # TODO: test & implement
     principal_org_id: Optional[str] = None,  # TODO: test & implement
     event_source_token: Optional[str] = None,  # TODO: test & implement
-    auth_type: Optional[FunctionUrlAuthType] = None,  # TODO: test & implement
+    auth_type: Optional[FunctionUrlAuthType] = None,
 ) -> dict[str, Any]:
     statement = {
         "Sid": statement_id,
@@ -203,6 +203,9 @@ def build_statement(
 
     if source_arn:
         statement["Condition"] = {"ArnLike": {"AWS:SourceArn": source_arn}}
+
+    if auth_type:
+        statement["Condition"] = {"StringEquals": {"lambda:FunctionUrlAuthType": auth_type}}
 
     return statement
 

@@ -7,6 +7,7 @@ import threading
 import time
 from typing import IO
 
+from localstack import config
 from localstack.aws.api import RequestContext, handler
 from localstack.aws.api.lambda_ import (
     AccountLimit,
@@ -125,6 +126,7 @@ from localstack.aws.api.lambda_ import (
     UpdateFunctionUrlConfigResponse,
     Version,
 )
+from localstack.constants import LOCALHOST_HOSTNAME
 from localstack.services.awslambda import api_utils
 from localstack.services.awslambda.event_source_listeners.event_source_listener import (
     EventSourceListener,
@@ -164,6 +166,8 @@ from localstack.services.awslambda.invocation.lambda_service import (
 )
 from localstack.services.awslambda.invocation.models import LambdaStore
 from localstack.services.awslambda.lambda_utils import validate_filters
+from localstack.services.awslambda.urlrouter import FunctionUrlRouter
+from localstack.services.edge import ROUTER
 from localstack.services.plugins import ServiceLifecycleHook
 from localstack.utils.collections import PaginatedList
 from localstack.utils.strings import get_random_hex, long_uid, short_uid, to_bytes, to_str
@@ -179,12 +183,18 @@ LAMBDA_TAG_LIMIT_PER_RESOURCE = 50
 class LambdaProvider(LambdaApi, ServiceLifecycleHook):
     lambda_service: LambdaService
     create_fn_lock: threading.RLock
+    router: FunctionUrlRouter
 
     def __init__(self) -> None:
         self.lambda_service = LambdaService()
         self.create_fn_lock = threading.RLock()
+        self.router = FunctionUrlRouter(ROUTER, self.lambda_service)
+
+    def on_after_init(self):
+        self.router.register_routes()
 
     def on_before_stop(self) -> None:
+        # TODO: should probably unregister routes?
         self.lambda_service.stop()
 
     @staticmethod
@@ -1258,7 +1268,7 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
             function_name=function_name,
             cors=cors,
             url_id=url_id,
-            url=f"https://{url_id}.lambda-url.{context.region}.on.aws/",
+            url=f"http://{url_id}.lambda-url.{context.region}.{LOCALHOST_HOSTNAME}:{config.EDGE_PORT_HTTP or config.EDGE_PORT}/",  # TODO: https support
             auth_type=auth_type,
             creation_time=api_utils.generate_lambda_date(),
             last_modified_time=api_utils.generate_lambda_date(),
@@ -1478,6 +1488,7 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
             request["Action"],
             request["Principal"],
             source_arn=request.get("SourceArn"),
+            auth_type=request.get("FunctionUrlAuthType"),
         )
         policy = existing_policy
         if not existing_policy:
@@ -1947,7 +1958,7 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
             )
 
         configs = []
-        for qualifier, config in fn.provisioned_concurrency_configs.items():
+        for qualifier, pc_config in fn.provisioned_concurrency_configs.items():
 
             if api_utils.qualifier_is_alias(qualifier):
                 alias = fn.aliases.get(qualifier)
@@ -1966,12 +1977,12 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
                     FunctionArn=api_utils.qualified_lambda_arn(
                         function_name, qualifier, context.account_id, context.region
                     ),
-                    RequestedProvisionedConcurrentExecutions=config.provisioned_concurrent_executions,
+                    RequestedProvisionedConcurrentExecutions=pc_config.provisioned_concurrent_executions,
                     AvailableProvisionedConcurrentExecutions=manager.provisioned_state.available,
                     AllocatedProvisionedConcurrentExecutions=manager.provisioned_state.allocated,
                     Status=manager.provisioned_state.status,
                     StatusReason=manager.provisioned_state.status_reason,
-                    LastModified=config.last_modified,
+                    LastModified=pc_config.last_modified,
                 )
             )
 

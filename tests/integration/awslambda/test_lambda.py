@@ -519,22 +519,30 @@ class TestLambdaBehavior:
         snapshot.match("invoke-result-read-number-after-timeout", result)
 
 
-@pytest.mark.skipif(not is_old_provider(), reason="Not yet implemented")
+@pytest.mark.skip_snapshot_verify(
+    condition=is_old_provider,
+    paths=[
+        "$..context",
+        "$..event.headers.x-forwarded-proto",
+        "$..event.headers.x-forwarded-for",
+        "$..event.headers.x-forwarded-port",
+        "$..event.headers.x-amzn-lambda-forwarded-client-ip",
+        "$..event.headers.x-amzn-lambda-forwarded-host",
+        "$..event.headers.x-amzn-lambda-proxy-auth",
+        "$..event.headers.x-amzn-lambda-proxying-cell",
+        "$..event.headers.x-amzn-trace-id",
+    ],
+)
+@pytest.mark.skip_snapshot_verify(
+    paths=[
+        "$..event.headers.x-forwarded-proto",
+        "$..event.headers.x-forwarded-port",
+        "$..event.headers.x-amzn-trace-id",
+    ],
+)
 class TestLambdaURL:
-    @pytest.mark.skip_snapshot_verify(
-        condition=is_old_provider,
-        paths=[
-            "$..context",
-            "$..event.headers.x-forwarded-proto",
-            "$..event.headers.x-forwarded-for",
-            "$..event.headers.x-forwarded-port",
-            "$..event.headers.x-amzn-lambda-forwarded-client-ip",
-            "$..event.headers.x-amzn-lambda-forwarded-host",
-            "$..event.headers.x-amzn-lambda-proxy-auth",
-            "$..event.headers.x-amzn-lambda-proxying-cell",
-            "$..event.headers.x-amzn-trace-id",
-        ],
-    )
+    # TODO: add more tests
+
     @pytest.mark.aws_validated
     def test_lambda_url_invocation(self, lambda_client, create_lambda_function, snapshot):
         snapshot.add_transformers_list(
@@ -621,6 +629,7 @@ class TestLambdaURL:
         snapshot.match("lambda_url_invocation", json.loads(result.content))
 
         result = safe_requests.post(url, data="text", headers={"Content-Type": "text/plain"})
+        assert result.status_code == 200
         event = json.loads(result.content)["event"]
         assert event["body"] == "text"
         assert event["isBase64Encoded"] is False
@@ -629,6 +638,45 @@ class TestLambdaURL:
         event = json.loads(result.content)["event"]
         assert "Body" not in event
         assert event["isBase64Encoded"] is False
+
+    @pytest.mark.aws_validated
+    @pytest.mark.skipif(condition=is_old_provider(), reason="not implemented")
+    def test_lambda_url_invocation_exception(self, lambda_client, create_lambda_function, snapshot):
+        snapshot.add_transformer(
+            snapshot.transform.key_value("FunctionUrl", reference_replacement=False)
+        )
+        function_name = f"test-function-{short_uid()}"
+
+        create_lambda_function(
+            func_name=function_name,
+            handler_file=TEST_LAMBDA_PYTHON_UNHANDLED_ERROR,
+            runtime=Runtime.python3_9,
+        )
+        get_fn_result = lambda_client.get_function(FunctionName=function_name)
+        snapshot.match("get_fn_result", get_fn_result)
+
+        url_config = lambda_client.create_function_url_config(
+            FunctionName=function_name,
+            AuthType="NONE",
+        )
+        snapshot.match("create_lambda_url_config", url_config)
+
+        permissions_response = lambda_client.add_permission(
+            FunctionName=function_name,
+            StatementId="urlPermission",
+            Action="lambda:InvokeFunctionUrl",
+            Principal="*",
+            FunctionUrlAuthType="NONE",
+        )
+        snapshot.match("add_permission", permissions_response)
+
+        url = url_config["FunctionUrl"]
+
+        result = safe_requests.post(
+            url, data=b"{}", headers={"User-Agent": "python-requests/testing"}
+        )
+        assert to_str(result.content) == "Internal Server Error"
+        assert result.status_code == 502
 
 
 class TestLambdaFeatures:
