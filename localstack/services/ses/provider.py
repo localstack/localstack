@@ -40,7 +40,7 @@ from localstack.aws.api.ses import (
     VerificationAttributes,
     VerificationStatus,
 )
-from localstack.config import DEFAULT_REGION
+from localstack.constants import TEST_AWS_SECRET_ACCESS_KEY
 from localstack.services.internal import get_internal_apis
 from localstack.services.moto import call_moto
 from localstack.services.plugins import ServiceLifecycleHook
@@ -419,8 +419,13 @@ class SNSEmitter:
 
     @staticmethod
     def _client_for_topic(topic_arn: str) -> SNSClient:
-        region = aws_stack.extract_region_from_arn(topic_arn)
-        if not region:
-            region = DEFAULT_REGION
+        arn_parameters = aws_stack.parse_arn(topic_arn)
+        region = arn_parameters["region"]
+        access_key_id = arn_parameters["account"]
 
-        return aws_stack.connect_to_service("sns", region_name=region)
+        return aws_stack.connect_to_service(
+            "sns",
+            region_name=region,
+            aws_access_key_id=access_key_id,
+            aws_secret_access_key=TEST_AWS_SECRET_ACCESS_KEY,
+        )
