@@ -35,7 +35,6 @@ from localstack.aws.api.ses import (
     NextToken,
     RawMessage,
     ReceiptRuleSetName,
-    SendEmailRequest,
     SendEmailResponse,
     SendRawEmailResponse,
     SendTemplatedEmailResponse,
@@ -431,7 +430,6 @@ class SNSEmitter:
     def __init__(
         self,
         context: RequestContext,
-        client: Optional[SNSClient] = None,
     ):
         self.context = context
 
@@ -497,14 +495,6 @@ class SNSEmitter:
             Message=json.dumps(event_payload),
             Subject="Amazon SES Email Event Notification",
         )
-
-    @staticmethod
-    def _sender_email(request: SendEmailRequest) -> str:
-        return request["Source"]
-
-    @staticmethod
-    def _destination_addresses(request: SendEmailRequest) -> AddressList:
-        return request["Destination"]["ToAddresses"]
 
     @staticmethod
     def _client_for_topic(topic_arn: str) -> SNSClient:
