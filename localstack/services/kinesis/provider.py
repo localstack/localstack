@@ -45,12 +45,11 @@ def find_stream_for_consumer(consumer_arn):
 
 
 def find_consumer(consumer_arn="", consumer_name="", stream_arn=""):
-    account_id = get_aws_account_id()
-    region_name = aws_stack.get_region()
-    if consumer_arn:
-        account_id = aws_stack.extract_account_id_from_arn(consumer_arn)
-        region_name = aws_stack.extract_region_from_arn(consumer_arn)
+    account_id = extract_account_id_from_arn(consumer_arn) or get_aws_account_id()
+    region_name = extract_region_from_arn(consumer_arn) or aws_stack.get_region()
+
     store = KinesisProvider.get_store(account_id, region_name)
+
     for consumer in store.stream_consumers:
         if consumer_arn and consumer_arn == consumer.get("ConsumerARN"):
             return consumer
