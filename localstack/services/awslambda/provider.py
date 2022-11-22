@@ -1076,29 +1076,35 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
 
         new_uuid = long_uid()
 
-        # TODO: create domain models and map accordingly
+        # defaults etc. vary depending on type of event source
+        # TODO: find a better abstraction to create these
         params = request.copy()
         params.pop("FunctionName")
-        params["State"] = "Enabled"
-        params["StateTransitionReason"] = "USER_INITIATED"
-        params["UUID"] = new_uuid
-        params["FunctionResponseTypes"] = request.get("FunctionResponseTypes", [])
-        params["MaximumBatchingWindowInSeconds"] = request.get("MaximumBatchingWindowInSeconds", 0)
-        params["LastModified"] = api_utils.generate_lambda_date()
-
-        params["FunctionArn"] = fn_arn
-
         batch_size = api_utils.validate_and_set_batch_size(
             request["EventSourceArn"], request.get("BatchSize")
         )
-
-        if batch_size > 10 and request.get("MaximumBatchingWindowInSeconds", 0) == 0:
-            raise InvalidParameterValueException(
-                "Maximum batch window in seconds must be greater than 0 if maximum batch size is greater than 10",
-                Type="User",
-            )
-
+        params["FunctionArn"] = fn_arn
         params["BatchSize"] = batch_size
+        params["UUID"] = new_uuid
+        params["MaximumBatchingWindowInSeconds"] = request.get("MaximumBatchingWindowInSeconds", 0)
+        params["LastModified"] = api_utils.generate_lambda_date()
+        params["FunctionResponseTypes"] = request.get("FunctionResponseTypes", [])
+        params["State"] = "Enabled"
+
+        if "sqs" in request["EventSourceArn"]:
+            params["StateTransitionReason"] = "USER_INITIATED"
+            if batch_size > 10 and request.get("MaximumBatchingWindowInSeconds", 0) == 0:
+                raise InvalidParameterValueException(
+                    "Maximum batch window in seconds must be greater than 0 if maximum batch size is greater than 10",
+                    Type="User",
+                )
+        else:
+            # afaik every other one currently is a stream
+            params["StateTransitionReason"] = "User action"
+            params["MaximumRetryAttempts"] = request.get("MaximumRetryAttempts", -1)
+            params["ParallelizationFactor"] = request.get("ParallelizationFactor", 1)
+
+        # TODO: create domain models and map accordingly
 
         esm_config = EventSourceMappingConfiguration(**params)
         filter_criteria = esm_config.get("FilterCriteria")
@@ -1123,8 +1129,25 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
         request: UpdateEventSourceMappingRequest,
     ) -> EventSourceMappingConfiguration:
         state = lambda_stores[context.account_id][context.region]
-        uuid = request["UUID"]
-        event_source_mapping = state.event_source_mappings.get(uuid)
+        request_data = {**request}
+        uuid = request_data.pop("UUID", None)
+        if not uuid:
+            raise ResourceNotFoundException(
+                "The resource you requested does not exist.", Type="User"
+            )
+        old_event_source_mapping = state.event_source_mappings.get(uuid)
+        if old_event_source_mapping is None:
+            raise ResourceNotFoundException(
+                "The resource you requested does not exist.", Type="User"
+            )  # TODO: test?
+        event_source_mapping = {**old_event_source_mapping, **request_data}
+
+        if request.get("Enabled") is not None:
+            if request["Enabled"]:
+                esm_state = "Enabled"
+            else:
+                esm_state = "Disabled"
+            event_source_mapping["State"] = esm_state
 
         if request.get("BatchSize"):
             batch_size = api_utils.validate_and_set_batch_size(
@@ -1135,12 +1158,9 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
                     "Maximum batch window in seconds must be greater than 0 if maximum batch size is greater than 10",
                     Type="User",
                 )
-
-        if not event_source_mapping:
-            raise ResourceNotFoundException(
-                "The resource you requested does not exist.", Type="User"
-            )
-        return EventSourceMappingConfiguration()  # TODO: implement
+        event_source_mapping["LastProcessingResult"] = "OK"
+        state.event_source_mappings[uuid] = event_source_mapping
+        return event_source_mapping  # TODO: implement
 
     def delete_event_source_mapping(
         self, context: RequestContext, uuid: String
@@ -1176,7 +1196,7 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
         state = lambda_stores[context.account_id][context.region]
         esms = PaginatedList(state.event_source_mappings.values())
         page, token = esms.get_page(
-            lambda x: x,
+            lambda x: x["UUID"],
             marker,
             max_items,
         )

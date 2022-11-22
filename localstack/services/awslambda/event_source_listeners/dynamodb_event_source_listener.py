@@ -4,7 +4,6 @@ from typing import Dict, List, Optional
 from localstack.services.awslambda.event_source_listeners.stream_event_source_listener import (
     StreamEventSourceListener,
 )
-from localstack.services.awslambda.lambda_api import get_event_sources
 from localstack.utils.aws import aws_stack
 from localstack.utils.threads import FuncThread
 
@@ -23,7 +22,7 @@ class DynamoDBEventSourceListener(StreamEventSourceListener):
         return "dynamodb"
 
     def _get_matching_event_sources(self) -> List[Dict]:
-        event_sources = get_event_sources(source_arn=r".*:dynamodb:.*")
+        event_sources = self._invoke_adapter.get_event_sources(source_arn=r".*:dynamodb:.*")
         return [source for source in event_sources if source["State"] == "Enabled"]
 
     def _get_stream_client(self, region_name):

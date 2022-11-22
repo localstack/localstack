@@ -14,6 +14,7 @@ from localstack.testing.aws.lambda_utils import (
     _await_event_source_mapping_enabled,
     _await_event_source_mapping_state,
     _get_lambda_invocation_events,
+    is_new_provider,
     is_old_provider,
     lambda_role,
     s3_lambda_permission,
@@ -60,7 +61,6 @@ def _snapshot_transformers(snapshot):
         "$..Topics",
         "$..TumblingWindowInSeconds",
     ],
-    condition=is_old_provider,
 )
 class TestKinesisSource:
     @pytest.mark.aws_validated
@@ -124,6 +124,9 @@ class TestKinesisSource:
 
     @patch.object(config, "SYNCHRONOUS_KINESIS_EVENTS", False)
     @pytest.mark.aws_validated
+    @pytest.mark.skipif(
+        condition=is_new_provider(), reason="deprecated config that only works in legacy provider"
+    )
     def test_kinesis_event_source_mapping_with_async_invocation(
         self,
         lambda_client,
@@ -342,6 +345,7 @@ class TestKinesisSource:
         ],
         condition=is_old_provider,
     )
+    @pytest.mark.skipif(condition=is_new_provider(), reason="destinations not yet implemented")
     @pytest.mark.aws_validated
     def test_kinesis_event_source_mapping_with_on_failure_destination_config(
         self,

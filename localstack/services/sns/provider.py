@@ -23,6 +23,7 @@ from localstack import config
 from localstack.aws.accounts import get_aws_account_id
 from localstack.aws.api import RequestContext
 from localstack.aws.api.core import CommonServiceException
+from localstack.aws.api.lambda_ import InvocationType
 from localstack.aws.api.sns import (
     ActionsList,
     AmazonResourceName,
@@ -1234,7 +1235,9 @@ def process_sns_notification_to_lambda(
     inv_result = lambda_client.invoke(
         FunctionName=func_arn,
         Payload=to_bytes(json.dumps(event)),
-        InvocationType="RequestResponse" if config.SYNCHRONOUS_SNS_EVENTS else "Event",
+        InvocationType=InvocationType.RequestResponse
+        if config.SYNCHRONOUS_SNS_EVENTS
+        else InvocationType.Event,  # DEPRECATED
     )
     status_code = inv_result.get("StatusCode")
     payload = inv_result.get("Payload")

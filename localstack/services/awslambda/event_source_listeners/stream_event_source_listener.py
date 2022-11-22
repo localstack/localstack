@@ -1,11 +1,9 @@
 import logging
 import math
-import threading
 import time
 from typing import Dict, List, Optional, Tuple
 
-from localstack import config
-from localstack.services.awslambda import lambda_executors
+from localstack.aws.api.lambda_ import InvocationType
 from localstack.services.awslambda.event_source_listeners.adapters import (
     EventSourceAdapter,
     EventSourceLegacyAdapter,
@@ -13,8 +11,6 @@ from localstack.services.awslambda.event_source_listeners.adapters import (
 from localstack.services.awslambda.event_source_listeners.event_source_listener import (
     EventSourceListener,
 )
-from localstack.services.awslambda.lambda_api import run_lambda
-from localstack.services.awslambda.lambda_executors import InvocationResult
 from localstack.services.awslambda.lambda_utils import filter_stream_records
 from localstack.utils.aws.aws_stack import extract_region_from_arn
 from localstack.utils.aws.message_forwarding import send_event_to_target
@@ -131,33 +127,29 @@ class StreamEventSourceListener(EventSourceListener):
         )
         self._COORDINATOR_THREAD.start()
 
+    # TODO: remove lock_discriminator and parallelization_factor old lambda provider is gone
     def _invoke_lambda(
         self, function_arn, payload, lock_discriminator, parallelization_factor
     ) -> Tuple[bool, int]:
         """
         invoke a given lambda function
         :returns: True if the invocation was successful (False otherwise) and the status code of the invocation result
-        """
-        if not config.SYNCHRONOUS_KINESIS_EVENTS:
-            lambda_executors.LAMBDA_ASYNC_LOCKS.assure_lock_present(
-                lock_discriminator, threading.BoundedSemaphore(parallelization_factor)
-            )
-        else:
-            lock_discriminator = None
 
-        result = run_lambda(
-            func_arn=function_arn,
-            event=payload,
+        # TODO: rework this to properly invoke a lambda through the API. Needs additional restructuring upstream of this function as well.
+        """
+
+        status_code = self._invoke_adapter.invoke_with_statuscode(
+            function_arn=function_arn,
+            payload=payload,
+            invocation_type=InvocationType.RequestResponse,
             context={},
-            asynchronous=not config.SYNCHRONOUS_KINESIS_EVENTS,
             lock_discriminator=lock_discriminator,
+            parallelization_factor=parallelization_factor,
         )
-        if isinstance(result, InvocationResult):
-            status_code = getattr(result.result, "status_code", 0)
-            if status_code >= 400:
-                return False, status_code
-            return True, status_code
-        return False, 500
+
+        if status_code >= 400:
+            return False, status_code
+        return True, status_code
 
     def _get_lambda_event_filters_for_arn(self, function_arn: str, queue_arn: str):
         result = []
@@ -360,7 +352,9 @@ class StreamEventSourceListener(EventSourceListener):
                                     "function_arn": source["FunctionArn"],
                                     "stream_arn": stream_arn,
                                     "batch_size": batch_size,
-                                    "parallelization_factor": source["ParallelizationFactor"],
+                                    "parallelization_factor": source.get(
+                                        "ParallelizationFactor", 1
+                                    ),
                                     "lock_discriminator": lock_discriminator,
                                     "shard_id": shard_id,
                                     "stream_client": stream_client,

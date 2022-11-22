@@ -1,5 +1,7 @@
 import json
 import logging
+import random
+import string
 
 from botocore.exceptions import ClientError
 
@@ -439,13 +441,15 @@ class IAMPolicy(GenericBaseModel):
     def fetch_state(self, stack_name, resources):
         return IAMPolicy.get_policy_state(self, stack_name, resources, managed_policy=False)
 
-    def get_physical_resource_id(self, attribute=None, **kwargs):
-        if attribute == "Arn":
-            return aws_stack.policy_arn(self.props.get("PolicyName"))
-        return self.props.get("PolicyName")
-
     @classmethod
     def get_deploy_templates(cls):
+        def _store_physical_id(result, resource_id, resources, resource_type):
+            resource = resources[resource_id]
+            # the physical resource ID here has a bit of a weird format
+            # e.g. 'stack-fnSe-1OKWZIBB89193' where fnSe are the first 4 characters of the LogicalResourceId (or name?)
+            suffix = "".join(random.choices(string.ascii_uppercase + string.digits, k=13))
+            resource["PhysicalResourceId"] = f"stack-{resource.get('PolicyName', '')[:4]}-{suffix}"
+
         def _create(resource_id, resources, resource_type, func, stack_name, *args, **kwargs):
             iam = aws_stack.connect_to_service("iam")
             props = resources[resource_id]["Properties"]
@@ -469,7 +473,10 @@ class IAMPolicy(GenericBaseModel):
             return {"PolicyArn": aws_stack.policy_arn(params["PolicyName"])}
 
         return {
-            "create": {"function": _create},
+            "create": {
+                "function": _create,
+                "result_handler": _store_physical_id,
+            },
             "delete": {"function": "delete_policy", "parameters": _delete_params},
         }
 
