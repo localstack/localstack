@@ -250,7 +250,7 @@ class TestSES:
         sns_topic,
         sns_create_sqs_subscription,
         ses_configuration_set,
-        ses_configuration_set_event_destination,
+        ses_configuration_set_sns_event_destination,
         ses_verify_identity,
         sqs_receive_num_messages,
         snapshot,
@@ -282,7 +282,9 @@ class TestSES:
         config_set_name = f"config-set-{short_uid()}"
         ses_configuration_set(config_set_name)
         event_destination_name = f"config-set-event-destination-{short_uid()}"
-        ses_configuration_set_event_destination(config_set_name, event_destination_name, topic_arn)
+        ses_configuration_set_sns_event_destination(
+            config_set_name, event_destination_name, topic_arn
+        )
 
         # send an email to trigger the SNS message and SQS message
         destination = {

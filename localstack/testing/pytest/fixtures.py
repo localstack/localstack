@@ -1778,7 +1778,7 @@ def ses_configuration_set(ses_client):
 
 
 @pytest.fixture
-def ses_configuration_set_event_destination(ses_client):
+def ses_configuration_set_sns_event_destination(ses_client):
     event_destinations = []
 
     def factory(config_set_name: str, event_destination_name: str, topic_arn: str) -> None:
