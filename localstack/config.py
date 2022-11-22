@@ -668,11 +668,6 @@ LAMBDA_STAY_OPEN_MODE = is_in_docker and is_env_not_false("LAMBDA_STAY_OPEN_MODE
 # truncate output string slices value
 LAMBDA_TRUNCATE_STDOUT = int(os.getenv("LAMBDA_TRUNCATE_STDOUT") or 2000)
 
-# A comma-delimited string of stream names and its corresponding shard count to
-# initialize during startup.
-# For example: "my-first-stream:1,my-other-stream:2,my-last-stream:1"
-KINESIS_INITIALIZE_STREAMS = os.environ.get("KINESIS_INITIALIZE_STREAMS", "").strip()
-
 # KMS provider - can be either "local-kms" or "moto"
 KMS_PROVIDER = (os.environ.get("KMS_PROVIDER") or "").strip() or "moto"
 
@@ -739,7 +734,6 @@ CONFIG_ENV_VARS = [
     "HOSTNAME_EXTERNAL",
     "HOSTNAME_FROM_LAMBDA",
     "KINESIS_ERROR_PROBABILITY",
-    "KINESIS_INITIALIZE_STREAMS",
     "KINESIS_MOCK_PERSIST_INTERVAL",
     "LAMBDA_CODE_EXTRACT_TIME",
     "LAMBDA_CONTAINER_REGISTRY",
