@@ -353,6 +353,7 @@ class SesProvider(SesApi, ServiceLifecycleHook):
         tags: MessageTagList = None,
         configuration_set_name: ConfigurationSetName = None,
     ) -> SendRawEmailResponse:
+        response = call_moto(context)
         raw_data = to_str(raw_message["Data"])
 
         if source is None or not source.strip():
@@ -368,6 +369,23 @@ class SesProvider(SesApi, ServiceLifecycleHook):
 
         backend = get_ses_backend(context)
         message = backend.send_raw_email(source, destinations, raw_data, context.region)
+
+        emitter = SNSEmitter(context)
+        for event_destination in backend.config_set_event_destination.values():
+            if not event_destination["Enabled"]:
+                continue
+
+            sns_destination_arn = event_destination.get("SNSDestination")
+            if not sns_destination_arn:
+                continue
+
+            payload = SNSPayload(
+                message_id=response["MessageId"],
+                sender_email=source,
+                destination_addresses=destinations,
+            )
+            emitter.emit_send_event(payload, sns_destination_arn)
+            emitter.emit_delivery_event(payload, sns_destination_arn)
 
         save_for_retrospection(
             message.id,
