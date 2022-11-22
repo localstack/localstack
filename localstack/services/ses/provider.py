@@ -311,6 +311,24 @@ class SesProvider(SesApi, ServiceLifecycleHook):
     ) -> SendTemplatedEmailResponse:
         response = call_moto(context)
 
+        backend = get_ses_backend(context)
+        emitter = SNSEmitter(context)
+        for event_destination in backend.config_set_event_destination.values():
+            if not event_destination["Enabled"]:
+                continue
+
+            sns_destination_arn = event_destination.get("SNSDestination")
+            if not sns_destination_arn:
+                continue
+
+            payload = SNSPayload(
+                message_id=response["MessageId"],
+                sender_email=source,
+                destination_addresses=destination["ToAddresses"],
+            )
+            emitter.emit_send_event(payload, sns_destination_arn, emit_source_arn=False)
+            emitter.emit_delivery_event(payload, sns_destination_arn)
+
         save_for_retrospection(
             response["MessageId"],
             context.region,
@@ -395,6 +413,7 @@ class SNSEmitter:
     def __init__(
         self,
         context: RequestContext,
+        client: Optional[SNSClient] = None,
     ):
         self.context = context
 
@@ -407,7 +426,9 @@ class SNSEmitter:
             Message="Successfully validated SNS topic for Amazon SES event publishing.",
         )
 
-    def emit_send_event(self, payload: SNSPayload, sns_topic_arn: str):
+    def emit_send_event(
+        self, payload: SNSPayload, sns_topic_arn: str, emit_source_arn: bool = True
+    ):
         now = datetime.now(tz=timezone.utc)
 
         event_payload = {
@@ -415,13 +436,18 @@ class SNSEmitter:
             "mail": {
                 "timestamp": now.isoformat(),
                 "source": payload.sender_email,
-                "sourceArn": f"arn:aws:ses:{self.context.region}:{self.context.account_id}:identity/{payload.sender_email}",
                 "sendingAccountId": self.context.account_id,
                 "destination": payload.destination_addresses,
                 "messageId": payload.message_id,
             },
             "send": {},
         }
+
+        if emit_source_arn:
+            event_payload["mail"][
+                "sourceArn"
+            ] = f"arn:aws:ses:{self.context.region}:{self.context.account_id}:identity/{payload.sender_email}"
+
         client = self._client_for_topic(sns_topic_arn)
         client.publish(
             TopicArn=sns_topic_arn,
