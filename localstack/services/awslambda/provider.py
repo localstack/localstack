@@ -1076,38 +1076,35 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
 
         new_uuid = long_uid()
 
-        # TODO: create domain models and map accordingly
+        # defaults etc. vary depending on type of event source
+        # TODO: find a better abstraction to create these
         params = request.copy()
         params.pop("FunctionName")
-        params["State"] = "Enabled"
-        params["StateTransitionReason"] = "USER_INITIATED"
-        params["UUID"] = new_uuid
-        if request.get("MaximumRetryAttempts"):
-            params["MaximumRetryAttempts"] = request.get("MaximumRetryAttempts", -1)
-        if request.get("ParallelizationFactor"):
-            params["ParallelizationFactor"] = request.get("ParallelizationFactor", 1)
-        params["FunctionResponseTypes"] = request.get("FunctionResponseTypes", [])
-        params["MaximumBatchingWindowInSeconds"] = request.get("MaximumBatchingWindowInSeconds", 0)
-        params["LastModified"] = api_utils.generate_lambda_date()
-
-        params["FunctionArn"] = fn_arn
-
         batch_size = api_utils.validate_and_set_batch_size(
             request["EventSourceArn"], request.get("BatchSize")
         )
-
-        # TODO: seems to only be a problem with SQS?
-        if (
-            "sqs" in request["EventSourceArn"]
-            and batch_size > 10
-            and request.get("MaximumBatchingWindowInSeconds", 0) == 0
-        ):
-            raise InvalidParameterValueException(
-                "Maximum batch window in seconds must be greater than 0 if maximum batch size is greater than 10",
-                Type="User",
-            )
-
+        params["FunctionArn"] = fn_arn
         params["BatchSize"] = batch_size
+        params["UUID"] = new_uuid
+        params["MaximumBatchingWindowInSeconds"] = request.get("MaximumBatchingWindowInSeconds", 0)
+        params["LastModified"] = api_utils.generate_lambda_date()
+        params["FunctionResponseTypes"] = request.get("FunctionResponseTypes", [])
+        params["State"] = "Enabled"
+
+        if "sqs" in request["EventSourceArn"]:
+            params["StateTransitionReason"] = "USER_INITIATED"
+            if batch_size > 10 and request.get("MaximumBatchingWindowInSeconds", 0) == 0:
+                raise InvalidParameterValueException(
+                    "Maximum batch window in seconds must be greater than 0 if maximum batch size is greater than 10",
+                    Type="User",
+                )
+        else:
+            # afaik every other one currently is a stream
+            params["StateTransitionReason"] = "User action"
+            params["MaximumRetryAttempts"] = request.get("MaximumRetryAttempts", -1)
+            params["ParallelizationFactor"] = request.get("ParallelizationFactor", 1)
+
+        # TODO: create domain models and map accordingly
 
         esm_config = EventSourceMappingConfiguration(**params)
         filter_criteria = esm_config.get("FilterCriteria")
