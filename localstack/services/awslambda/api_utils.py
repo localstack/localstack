@@ -369,6 +369,11 @@ def map_config_out(
             Variables=version.config.environment
         )  # TODO: Errors key?
 
+    if version.config.layers:
+        optional_kwargs["Layers"] = [
+            {"Arn": layer.arn, "CodeSize": layer.code_size} for layer in version.config.layers
+        ]
+
     func_conf = FunctionConfiguration(
         RevisionId=version.config.revision_id,
         FunctionName=version.id.function_name,

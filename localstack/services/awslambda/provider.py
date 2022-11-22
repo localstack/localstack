@@ -148,6 +148,7 @@ from localstack.services.awslambda.invocation.lambda_models import (
     InvocationError,
     LambdaEphemeralStorage,
     Layer,
+    LayerConfigItem,
     LayerPolicy,
     LayerPolicyStatement,
     LayerVersion,
@@ -401,6 +402,55 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
                 Type="User",
             )
 
+    @staticmethod
+    def _validate_layers(new_layers: list[str]):
+        visited_layers = dict()
+
+        for layer_version_arn in new_layers:
+            region_name, account_id, layer_name, layer_version = api_utils.parse_layer_arn(
+                layer_version_arn
+            )
+            if layer_version is None:
+                raise ValidationException(
+                    f"1 validation error detected: Value '[{layer_version_arn}]'"
+                    + r" at 'layers' failed to satisfy constraint: Member must satisfy constraint: [Member must have length less than or equal to 140, Member must have length greater than or equal to 1, Member must satisfy regular expression pattern: (arn:[a-zA-Z0-9-]+:lambda:[a-zA-Z0-9-]+:\d{12}:layer:[a-zA-Z0-9-_]+:[0-9]+)|(arn:[a-zA-Z0-9-]+:lambda:::awslayer:[a-zA-Z0-9-_]+), Member must not be null]",
+                )
+
+            layer = lambda_stores[account_id][region_name].layers.get(layer_name)
+            if layer is None:
+                raise InvalidParameterValueException(
+                    f"Layer version {layer_version_arn} does not exist.", Type="User"
+                )
+            layer_version = layer.layer_versions.get(layer_version)
+            if layer_version is None:
+                raise InvalidParameterValueException(
+                    f"Layer version {layer_version_arn} does not exist.", Type="User"
+                )
+
+            # only the first two matches in the array are considered for the error message
+            layer_arn = ":".join(layer_version_arn.split(":")[:-1])
+            if layer_arn in visited_layers:
+                conflict_layer_version_arn = visited_layers[layer_arn]
+                raise InvalidParameterValueException(
+                    f"Two different versions of the same layer are not allowed to be referenced in the same function. {conflict_layer_version_arn} and {layer_version_arn} are versions of the same layer.",
+                    Type="User",
+                )
+            visited_layers[layer_arn] = layer_version_arn
+
+    @staticmethod
+    def map_layers(new_layers: list[str]) -> list[LayerConfigItem]:
+        layers = []
+        for layer_version_arn in new_layers:
+            region_name, account_id, layer_name, layer_version = api_utils.parse_layer_arn(
+                layer_version_arn
+            )
+            layer = lambda_stores[account_id][region_name].layers.get(layer_name)
+            layer_version = layer.layer_versions.get(layer_version)
+            layers.append(
+                LayerConfigItem(arn=layer_version_arn, code_size=layer_version.code.code_size)
+            )
+        return layers
+
     @handler(operation="CreateFunction", expand=False)
     def create_function(
         self,
@@ -418,6 +468,9 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
 
         if env_vars := request.get("Environment", {}).get("Variables"):
             self._verify_env_variables(env_vars)
+
+        if layers := request.get("Layers", []):
+            self._validate_layers(layers)
 
         if not api_utils.is_role_arn(request.get("Role")):
             raise ValidationException(
@@ -486,7 +539,7 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
                     tracing_config_mode=TracingMode.PassThrough,  # TODO
                     image_config=None,  # TODO
                     code=code,
-                    layers=[],  # TODO
+                    layers=self.map_layers(layers),
                     internal_revision=short_uid(),
                     ephemeral_storage=LambdaEphemeralStorage(
                         size=request.get("EphemeralStorage", {}).get("Size", 512)
@@ -575,48 +628,10 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
             replace_kwargs["environment"] = env_vars
 
         if "Layers" in request:
-            # validate layers
             new_layers = request["Layers"]
-            # TODO: extract validation
-            # 1. make sure layers follow format
-            # 2. make sure layers aren't used more than once
-            # only the first two matches in the array are considered for the error message
-            visited_layers = dict()
-
-            def arn_without_version(arn: str) -> str:
-                return ":".join(arn.split(":")[:-1])
-
-            for layer_version_arn in new_layers:
-
-                region_name, account_id, layer_name, layer_version = api_utils.parse_layer_arn(
-                    layer_version_arn
-                )
-                if layer_version is None:
-                    raise ValidationException(
-                        f"1 validation error detected: Value '[{layer_version_arn}]'"
-                        + r" at 'layers' failed to satisfy constraint: Member must satisfy constraint: [Member must have length less than or equal to 140, Member must have length greater than or equal to 1, Member must satisfy regular expression pattern: (arn:[a-zA-Z0-9-]+:lambda:[a-zA-Z0-9-]+:\d{12}:layer:[a-zA-Z0-9-_]+:[0-9]+)|(arn:[a-zA-Z0-9-]+:lambda:::awslayer:[a-zA-Z0-9-_]+), Member must not be null]",
-                    )
-
-                layer = lambda_stores[account_id][region_name].layers.get(layer_name)
-                if layer is None:
-                    raise InvalidParameterValueException(
-                        f"Layer version {layer_version_arn} does not exist.", Type="User"
-                    )
-                layer_version = layer.layer_versions.get(layer_version)
-                if layer_version is None:
-                    raise InvalidParameterValueException(
-                        f"Layer version {layer_version_arn} does not exist.", Type="User"
-                    )
-
-                layer_arn = arn_without_version(layer_version_arn)
-                if layer_arn in visited_layers:
-                    conflict_layer_version_arn = visited_layers[layer_arn]
-                    raise InvalidParameterValueException(
-                        f"Two different versions of the same layer are not allowed to be referenced in the same function. {conflict_layer_version_arn} and {layer_version_arn} are versions of the same layer.",
-                        Type="User",
-                    )
-                visited_layers[layer_arn] = layer_version_arn
-            replace_kwargs["layers"] = new_layers
+            if new_layers:
+                self._validate_layers(new_layers)
+            replace_kwargs["layers"] = self.map_layers(new_layers)
 
         new_latest_version = dataclasses.replace(
             latest_version,
@@ -785,7 +800,7 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
         self,
         context: RequestContext,
         function_name: NamespacedFunctionName,
-        qualifier: Qualifier = None,  # TODO
+        qualifier: Qualifier = None,
     ) -> GetFunctionResponse:
         function_name, qualifier = api_utils.get_name_and_qualifier(
             function_name, qualifier, context.region

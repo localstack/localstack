@@ -241,6 +241,12 @@ class FunctionUrlConfig:
 
 
 @dataclasses.dataclass(frozen=True)
+class LayerConfigItem:
+    arn: str
+    code_size: int
+
+
+@dataclasses.dataclass(frozen=True)
 class VersionFunctionConfiguration:
     # fields
     # name: str
@@ -266,7 +272,7 @@ class VersionFunctionConfiguration:
     image_config: Optional[ImageConfig] = None
     last_update: Optional[UpdateStatus] = None
     revision_id: str = dataclasses.field(init=False, default_factory=long_uid)
-    layers: list[str] = dataclasses.field(default_factory=list)
+    layers: list[LayerConfigItem] = dataclasses.field(default_factory=list)
 
     dead_letter_arn: Optional[str] = None
 

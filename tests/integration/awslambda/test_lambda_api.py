@@ -2930,7 +2930,6 @@ class TestLambdaTags:
         snapshot.match("list_tags_postdelete", e.value.response)
 
 
-@pytest.mark.skip_snapshot_verify(paths=["$..Layers"])
 @pytest.mark.skipif(condition=is_old_provider(), reason="not supported")
 class TestLambdaLayer:
     @pytest.fixture(scope="class")
@@ -3196,6 +3195,9 @@ class TestLambdaLayer:
         )
         get_fn_result = lambda_client.get_function(FunctionName=function_name)
         snapshot.match("get_fn_result", get_fn_result)
+
+        get_fn_config_result = lambda_client.get_function_configuration(FunctionName=function_name)
+        snapshot.match("get_fn_config_result", get_fn_config_result)
 
         publish_result = lambda_client.publish_layer_version(
             LayerName=layer_name,
