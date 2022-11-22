@@ -24,6 +24,7 @@ from localstack.aws.api.ses import (
     IdentityVerificationAttributes,
     ListTemplatesResponse,
     MaxItems,
+    Message,
     MessageId,
     MessageRejected,
     MessageTagList,
@@ -217,11 +218,19 @@ class SesProvider(SesApi, ServiceLifecycleHook):
             VerificationAttributes=attributes,
         )
 
-    @handler("SendEmail", expand=False)
+    @handler("SendEmail")
     def send_email(
         self,
         context: RequestContext,
-        request: SendEmailRequest,
+        source: Address,
+        destination: Destination,
+        message: Message,
+        reply_to_addresses: AddressList = None,
+        return_path: Address = None,
+        source_arn: AmazonResourceName = None,
+        return_path_arn: AmazonResourceName = None,
+        tags: MessageTagList = None,
+        configuration_set_name: ConfigurationSetName = None,
     ) -> SendEmailResponse:
         response = call_moto(context)
 
@@ -235,18 +244,18 @@ class SesProvider(SesApi, ServiceLifecycleHook):
             if not sns_destination_arn:
                 continue
 
-            emitter.emit_send_event(request, sns_destination_arn)
-            emitter.emit_delivery_event(request, sns_destination_arn)
+            emitter.emit_send_event(source, destination["ToAddresses"], sns_destination_arn)
+            emitter.emit_delivery_event(source, destination["ToAddresses"], sns_destination_arn)
 
-        text_part = request["Message"]["Body"].get("Text", {}).get("Data")
-        html_part = request["Message"]["Body"].get("Html", {}).get("Data")
+        text_part = message["Body"].get("Text", {}).get("Data")
+        html_part = message["Body"].get("Html", {}).get("Data")
 
         save_for_retrospection(
             response["MessageId"],
             context.region,
-            Source=request["Source"],
-            Destination=request["Destination"],
-            Subject=request["Message"]["Subject"].get("Data"),
+            Source=source,
+            Destination=destination,
+            Subject=message["Subject"].get("Data"),
             Body=dict(text_part=text_part, html_part=html_part),
         )
 
@@ -360,10 +369,10 @@ class SNSEmitter:
             Message="Successfully validated SNS topic for Amazon SES event publishing.",
         )
 
-    def emit_send_event(self, request: SendEmailRequest, sns_topic_arn: str):
+    def emit_send_event(
+        self, sender_email: Address, destination_addresses: AddressList, sns_topic_arn: str
+    ):
         now = datetime.now(tz=timezone.utc)
-        sender_email = self._sender_email(request)
-        destination_addresses = self._destination_addresses(request)
 
         event_payload = {
             "eventType": "Send",
@@ -383,15 +392,15 @@ class SNSEmitter:
             Subject="Amazon SES Email Event Notification",
         )
 
-    def emit_delivery_event(self, request: SendEmailRequest, sns_topic_arn: str):
+    def emit_delivery_event(
+        self, sender_email: Address, destination_addresses: AddressList, sns_topic_arn: str
+    ):
         now = datetime.now(tz=timezone.utc)
-        sender_email = self._sender_email(request)
-        destination_addresses = self._destination_addresses(request)
 
         event_payload = {
             "eventType": "Delivery",
             "mail": {
-                "timestamp": "",
+                "timestamp": now.isoformat(),
                 "source": sender_email,
                 "sourceArn": f"arn:aws:ses:{self.context.region}:{self.context.account_id}:identity/{sender_email}",
                 "sendingAccountId": self.context.account_id,
