@@ -29,7 +29,7 @@ class StateVisitable(Protocol):
         """
 
 
-class ServiceBackend(TypedDict):
+class ServiceBackend(TypedDict, total=False):
     """Wrapper of the possible type of backends that a service can use."""
 
     localstack: AccountRegionBundle | None
@@ -56,7 +56,12 @@ class ServiceBackendCollectorVisitor:
         self.backend_dict = state_container
 
     def collect(self) -> ServiceBackend:
-        return ServiceBackend(localstack=self.store, moto=self.backend_dict)
+        service_backend = ServiceBackend()
+        if self.store:
+            service_backend.update({"localstack": self.store})
+        if self.backend_dict:
+            service_backend.update({"moto": self.backend_dict})
+        return service_backend
 
 
 def _load_attribute_from_module(module_name: str, attribute_name: str) -> Any | None:
