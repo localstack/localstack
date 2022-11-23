@@ -439,6 +439,7 @@ def _log_stream_name_transformer(key: str, val: str) -> str:
     return None
 
 
+# TODO: actual and declared type diverge
 def _resource_name_transformer(key: str, val: str) -> str:
     if isinstance(val, str):
         match = re.match(PATTERN_ARN, val)
@@ -467,7 +468,7 @@ def _resource_name_transformer(key: str, val: str) -> str:
             if ":" in res:
                 return res.split(":")[-1]  # TODO might not work for every replacement
             return res
-        return None  # TODO
+        return None
 
 
 def _change_set_id_transformer(key: str, val: str) -> str:
