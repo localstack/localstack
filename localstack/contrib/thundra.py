@@ -19,7 +19,6 @@ from localstack.services.awslambda.lambda_utils import (
     LAMBDA_RUNTIME_NODEJS12X,
     LAMBDA_RUNTIME_NODEJS14X,
     LAMBDA_RUNTIME_NODEJS16X,
-    LAMBDA_RUNTIME_PYTHON36,
     LAMBDA_RUNTIME_PYTHON37,
     LAMBDA_RUNTIME_PYTHON38,
     get_executor_mode,
@@ -363,7 +362,6 @@ def _install_python_agent() -> bool:
 def _is_python_lambda_with_support_version(func_details):
     runtime = getattr(func_details, "runtime", func_details)
     return runtime in [
-        LAMBDA_RUNTIME_PYTHON36,
         LAMBDA_RUNTIME_PYTHON37,
         LAMBDA_RUNTIME_PYTHON38,
     ]

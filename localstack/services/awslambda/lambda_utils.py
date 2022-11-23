@@ -34,7 +34,6 @@ API_PATH_ROOT_2 = "/2021-10-31"
 
 
 # Lambda runtime constants (LEGACY, use values in Runtime class instead)
-LAMBDA_RUNTIME_PYTHON36 = Runtime.python3_6
 LAMBDA_RUNTIME_PYTHON37 = Runtime.python3_7
 LAMBDA_RUNTIME_PYTHON38 = Runtime.python3_8
 LAMBDA_RUNTIME_PYTHON39 = Runtime.python3_9

@@ -9,6 +9,7 @@ import pytest
 import requests
 
 from localstack.aws.accounts import get_aws_account_id
+from localstack.aws.api.lambda_ import Runtime
 from localstack.aws.api.secretsmanager import (
     CreateSecretRequest,
     CreateSecretResponse,
@@ -16,7 +17,6 @@ from localstack.aws.api.secretsmanager import (
     DeleteSecretResponse,
     ListSecretsResponse,
 )
-from localstack.services.awslambda.lambda_utils import LAMBDA_RUNTIME_PYTHON36
 from localstack.utils import testutil
 from localstack.utils.aws import aws_stack
 from localstack.utils.collections import select_from_typed_dict
@@ -320,7 +320,7 @@ class TestSecretsManager:
         function_arn = testutil.create_lambda_function(
             handler_file=TEST_LAMBDA_PYTHON_VERSION,
             func_name=function_name,
-            runtime=LAMBDA_RUNTIME_PYTHON36,
+            runtime=Runtime.python3_9,
         )["CreateFunctionResponse"]["FunctionArn"]
 
         response = sm_client.rotate_secret(
@@ -350,7 +350,7 @@ class TestSecretsManager:
         function_arn = testutil.create_lambda_function(
             handler_file=TEST_LAMBDA_ROTATE_SECRET,
             func_name=function_name,
-            runtime=LAMBDA_RUNTIME_PYTHON36,
+            runtime=Runtime.python3_9,
         )["CreateFunctionResponse"]["FunctionArn"]
 
         rot_res = sm_client.rotate_secret(

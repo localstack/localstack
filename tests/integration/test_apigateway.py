@@ -17,6 +17,7 @@ from requests.structures import CaseInsensitiveDict
 
 from localstack import config
 from localstack.aws.accounts import get_aws_account_id
+from localstack.aws.api.lambda_ import Runtime
 from localstack.aws.handlers import cors
 from localstack.config import get_edge_url
 from localstack.constants import (
@@ -39,7 +40,6 @@ from localstack.services.awslambda.lambda_api import add_event_source, use_docke
 from localstack.services.awslambda.lambda_utils import (
     LAMBDA_RUNTIME_NODEJS12X,
     LAMBDA_RUNTIME_NODEJS14X,
-    LAMBDA_RUNTIME_PYTHON36,
     LAMBDA_RUNTIME_PYTHON39,
 )
 from localstack.services.generic_proxy import ProxyListener
@@ -1490,7 +1490,7 @@ class TestAPIGateway:
         testutil.create_lambda_function(
             handler_file=TEST_LAMBDA_PYTHON_ECHO,
             func_name=fn_name,
-            runtime=LAMBDA_RUNTIME_PYTHON36,
+            runtime=Runtime.python3_9,
         )
         role_arn = arns.role_arn("sfn_role")
 
@@ -1918,6 +1918,8 @@ class TestAPIGateway:
         testutil.create_lambda_function(
             handler_file=TEST_LAMBDA_PYTHON, libs=TEST_LAMBDA_LIBS, func_name=fn_name
         )
+        lambda_client = aws_stack.create_external_boto_client("lambda")
+        lambda_client.get_waiter("function_active_v2").wait(FunctionName=fn_name)
 
     def test_apigw_test_invoke_method_api(self, apigateway_client, create_rest_apigw):
         lambda_client = aws_stack.create_external_boto_client("lambda")
