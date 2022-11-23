@@ -846,7 +846,7 @@ class TestCfnLambdaDestinations:
         self, lambda_client, logs_client, deploy_cfn_template, cfn_client, on_success, on_failure
     ):
         """
-        This fairly simple template lets us choose between the 4 different destinations for both OnSuccess as well as OnSuccess.
+        This fairly simple template lets us choose between the 4 different destinations for both OnSuccess as well as OnFailure.
         The template chooses between one of 4 ARNs via indexed access according to this mapping:
 
         0: SQS
