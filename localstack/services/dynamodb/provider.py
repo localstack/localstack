@@ -173,7 +173,6 @@ class EventForwarder:
 
     @staticmethod
     def forward_to_kinesis_stream(records):
-        kinesis = aws_stack.connect_to_service("kinesis")
         for record in records:
             event_source_arn = record.get("eventSourceARN")
             if not event_source_arn:
@@ -192,6 +191,15 @@ class EventForwarder:
             record["dynamodb"].pop("StreamViewType", None)
             hash_keys = list(filter(lambda key: key["KeyType"] == "HASH", table_def["KeySchema"]))
             partition_key = hash_keys[0]["AttributeName"]
+
+            stream_account_id = extract_account_id_from_arn(stream_arn)
+            stream_region_name = extract_region_from_arn(stream_arn)
+            kinesis = aws_stack.connect_to_service(
+                "kinesis",
+                aws_access_key_id=stream_account_id,
+                aws_secret_access_key=TEST_AWS_SECRET_ACCESS_KEY,
+                region_name=stream_region_name,
+            )
             kinesis.put_record(
                 StreamName=stream_name,
                 Data=json.dumps(record, cls=BytesEncoder),
@@ -223,7 +231,15 @@ class EventForwarder:
 
     @classmethod
     def is_kinesis_stream_exists(cls, stream_arn):
-        kinesis = aws_stack.connect_to_service("kinesis")
+        account_id = extract_account_id_from_arn(stream_arn)
+        region_name = extract_region_from_arn(stream_arn)
+
+        kinesis = aws_stack.connect_to_service(
+            "kinesis",
+            aws_access_key_id=account_id,
+            aws_secret_access_key=TEST_AWS_SECRET_ACCESS_KEY,
+            region_name=region_name,
+        )
         stream_name_from_arn = stream_arn.split("/", 1)[1]
         # check if the stream exists in kinesis for the user
         filtered = list(
