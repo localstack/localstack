@@ -148,7 +148,6 @@ from localstack.services.awslambda.invocation.lambda_models import (
     InvocationError,
     LambdaEphemeralStorage,
     Layer,
-    LayerConfigItem,
     LayerPolicy,
     LayerPolicyStatement,
     LayerVersion,
@@ -438,7 +437,7 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
             visited_layers[layer_arn] = layer_version_arn
 
     @staticmethod
-    def map_layers(new_layers: list[str]) -> list[LayerConfigItem]:
+    def map_layers(new_layers: list[str]) -> list[LayerVersion]:
         layers = []
         for layer_version_arn in new_layers:
             region_name, account_id, layer_name, layer_version = api_utils.parse_layer_arn(
@@ -446,9 +445,7 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
             )
             layer = lambda_stores[account_id][region_name].layers.get(layer_name)
             layer_version = layer.layer_versions.get(layer_version)
-            layers.append(
-                LayerConfigItem(arn=layer_version_arn, code_size=layer_version.code.code_size)
-            )
+            layers.append(layer_version)
         return layers
 
     @handler(operation="CreateFunction", expand=False)

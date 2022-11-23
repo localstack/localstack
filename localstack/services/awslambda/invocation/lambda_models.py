@@ -240,47 +240,6 @@ class FunctionUrlConfig:
     function_qualifier: Optional[str] = "$LATEST"  # only $LATEST or alias name
 
 
-@dataclasses.dataclass(frozen=True)
-class LayerConfigItem:
-    arn: str
-    code_size: int
-
-
-@dataclasses.dataclass(frozen=True)
-class VersionFunctionConfiguration:
-    # fields
-    # name: str
-    description: str
-    role: str
-    timeout: int
-    runtime: Runtime
-    memory_size: int
-    handler: str
-    package_type: PackageType
-    reserved_concurrent_executions: int
-    environment: dict[str, str]
-    architectures: list[Architecture]
-    # internal revision is updated when runtime restart is necessary
-    internal_revision: str
-    ephemeral_storage: LambdaEphemeralStorage
-
-    tracing_config_mode: TracingMode
-    code: S3Code
-    last_modified: str  # ISO string
-    state: VersionState
-
-    image_config: Optional[ImageConfig] = None
-    last_update: Optional[UpdateStatus] = None
-    revision_id: str = dataclasses.field(init=False, default_factory=long_uid)
-    layers: list[LayerConfigItem] = dataclasses.field(default_factory=list)
-
-    dead_letter_arn: Optional[str] = None
-
-    # kms_key_arn: str
-    # file_system_configs: FileSystemConfig
-    # vpc_config: VpcConfig
-
-
 @dataclasses.dataclass
 class ProvisionedConcurrencyConfiguration:
     provisioned_concurrent_executions: int
@@ -336,16 +295,6 @@ class VersionAlias:
     revision_id: str = dataclasses.field(init=False, default_factory=long_uid)
 
 
-@dataclasses.dataclass(frozen=True)
-class FunctionVersion:
-    id: VersionIdentifier
-    config: VersionFunctionConfiguration
-
-    @property
-    def qualified_arn(self) -> str:
-        return self.id.qualified_arn()
-
-
 @dataclasses.dataclass
 class ResourcePolicy:
     Version: str
@@ -368,34 +317,6 @@ class EventInvokeConfig:
     destination_config: Optional[DestinationConfig] = None
     maximum_retry_attempts: Optional[int] = None
     maximum_event_age_in_seconds: Optional[int] = None
-
-
-@dataclasses.dataclass
-class Function:
-    function_name: str
-    code_signing_config_arn: Optional[str] = None
-    aliases: dict[str, VersionAlias] = dataclasses.field(default_factory=dict)
-    versions: dict[str, FunctionVersion] = dataclasses.field(default_factory=dict)
-    function_url_configs: dict[str, FunctionUrlConfig] = dataclasses.field(
-        default_factory=dict
-    )  # key has to be $LATEST or alias name
-    permissions: dict[str, FunctionResourcePolicy] = dataclasses.field(
-        default_factory=dict
-    )  # key is $LATEST, version or alias
-    event_invoke_configs: dict[str, EventInvokeConfig] = dataclasses.field(
-        default_factory=dict
-    )  # key is $LATEST(?), version or alias
-    reserved_concurrent_executions: Optional[int] = None
-    provisioned_concurrency_configs: dict[
-        str, ProvisionedConcurrencyConfiguration
-    ] = dataclasses.field(default_factory=dict)
-    tags: dict[str, str] | None = None
-
-    lock: threading.RLock = dataclasses.field(default_factory=threading.RLock)
-    next_version: int = 1
-
-    def latest(self) -> FunctionVersion:
-        return self.versions["$LATEST"]
 
 
 # Result Models
@@ -524,6 +445,79 @@ class Layer:
     next_version: int = 1
     next_version_lock: threading.RLock = dataclasses.field(default_factory=threading.RLock)
     layer_versions: dict[str, LayerVersion] = dataclasses.field(default_factory=dict)
+
+
+@dataclasses.dataclass(frozen=True)
+class VersionFunctionConfiguration:
+    # fields
+    # name: str
+    description: str
+    role: str
+    timeout: int
+    runtime: Runtime
+    memory_size: int
+    handler: str
+    package_type: PackageType
+    reserved_concurrent_executions: int
+    environment: dict[str, str]
+    architectures: list[Architecture]
+    # internal revision is updated when runtime restart is necessary
+    internal_revision: str
+    ephemeral_storage: LambdaEphemeralStorage
+
+    tracing_config_mode: TracingMode
+    code: S3Code
+    last_modified: str  # ISO string
+    state: VersionState
+
+    image_config: Optional[ImageConfig] = None
+    last_update: Optional[UpdateStatus] = None
+    revision_id: str = dataclasses.field(init=False, default_factory=long_uid)
+    layers: list[LayerVersion] = dataclasses.field(default_factory=list)
+
+    dead_letter_arn: Optional[str] = None
+
+    # kms_key_arn: str
+    # file_system_configs: FileSystemConfig
+    # vpc_config: VpcConfig
+
+
+@dataclasses.dataclass(frozen=True)
+class FunctionVersion:
+    id: VersionIdentifier
+    config: VersionFunctionConfiguration
+
+    @property
+    def qualified_arn(self) -> str:
+        return self.id.qualified_arn()
+
+
+@dataclasses.dataclass
+class Function:
+    function_name: str
+    code_signing_config_arn: Optional[str] = None
+    aliases: dict[str, VersionAlias] = dataclasses.field(default_factory=dict)
+    versions: dict[str, FunctionVersion] = dataclasses.field(default_factory=dict)
+    function_url_configs: dict[str, FunctionUrlConfig] = dataclasses.field(
+        default_factory=dict
+    )  # key has to be $LATEST or alias name
+    permissions: dict[str, FunctionResourcePolicy] = dataclasses.field(
+        default_factory=dict
+    )  # key is $LATEST, version or alias
+    event_invoke_configs: dict[str, EventInvokeConfig] = dataclasses.field(
+        default_factory=dict
+    )  # key is $LATEST(?), version or alias
+    reserved_concurrent_executions: Optional[int] = None
+    provisioned_concurrency_configs: dict[
+        str, ProvisionedConcurrencyConfiguration
+    ] = dataclasses.field(default_factory=dict)
+    tags: dict[str, str] | None = None
+
+    lock: threading.RLock = dataclasses.field(default_factory=threading.RLock)
+    next_version: int = 1
+
+    def latest(self) -> FunctionVersion:
+        return self.versions["$LATEST"]
 
 
 class ValidationException(CommonServiceException):

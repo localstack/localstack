@@ -371,7 +371,8 @@ def map_config_out(
 
     if version.config.layers:
         optional_kwargs["Layers"] = [
-            {"Arn": layer.arn, "CodeSize": layer.code_size} for layer in version.config.layers
+            {"Arn": layer.layer_version_arn, "CodeSize": layer.code.code_size}
+            for layer in version.config.layers
         ]
 
     func_conf = FunctionConfiguration(
