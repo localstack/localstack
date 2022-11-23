@@ -2039,7 +2039,7 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
                                 "You can't specify the function as a destination for itself.",
                                 Type="User",
                             )
-                case "sns", "sqs", "events":
+                case "sns" | "sqs" | "events":
                     pass
                 case _:
                     return False
