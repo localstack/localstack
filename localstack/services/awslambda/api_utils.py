@@ -77,11 +77,11 @@ URL_CHAR_SET = string.ascii_lowercase + string.digits
 # Date format as returned by the lambda service
 LAMBDA_DATE_FORMAT = "%Y-%m-%dT%H:%M:%S.%f+0000"
 
-# TODO: add nodejs18_x
 RUNTIMES = [
     Runtime.nodejs12_x,
     Runtime.nodejs14_x,
     Runtime.nodejs16_x,
+    Runtime.nodejs18_x,
     Runtime.python3_7,
     Runtime.python3_8,
     Runtime.python3_9,
