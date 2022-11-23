@@ -9,15 +9,12 @@ import pytest
 from boto3.dynamodb.conditions import Key
 from boto3.dynamodb.types import STRING
 
-from localstack.services.awslambda.lambda_utils import LAMBDA_RUNTIME_PYTHON36
 from localstack.services.dynamodbstreams.dynamodbstreams_api import get_kinesis_stream_name
 from localstack.testing.snapshots.transformer import SortingTransformer
 from localstack.utils import testutil
 from localstack.utils.aws import arns, aws_stack, queries, resources
 from localstack.utils.common import json_safe, long_uid, retry, short_uid
-from localstack.utils.testutil import check_expected_lambda_log_events_length
 
-from .awslambda.test_lambda import TEST_LAMBDA_PYTHON_ECHO
 from .test_kinesis import get_shard_iterator
 
 PARTITION_KEY = "id"
@@ -1291,61 +1288,6 @@ class TestDynamoDB:
                 ExpressionAttributeValues={":username": {"S": "test"}},
             )
         assert ctx.match("ResourceNotFoundException")
-
-    @pytest.mark.only_localstack
-    def test_dynamodb_stream_to_lambda(
-        self, lambda_client, dynamodb_resource, dynamodb_create_table, wait_for_stream_ready
-    ):
-        table_name = "ddb-table-%s" % short_uid()
-        function_name = "func-%s" % short_uid()
-        partition_key = "SK"
-
-        dynamodb_create_table(
-            table_name=table_name,
-            partition_key=partition_key,
-            stream_view_type="NEW_AND_OLD_IMAGES",
-        )
-        table = dynamodb_resource.Table(table_name)
-        latest_stream_arn = table.latest_stream_arn
-        stream_name = get_kinesis_stream_name(table_name)
-
-        wait_for_stream_ready(stream_name)
-
-        testutil.create_lambda_function(
-            handler_file=TEST_LAMBDA_PYTHON_ECHO,
-            func_name=function_name,
-            runtime=LAMBDA_RUNTIME_PYTHON36,
-        )
-
-        mapping_uuid = lambda_client.create_event_source_mapping(
-            EventSourceArn=latest_stream_arn,
-            FunctionName=function_name,
-            StartingPosition="TRIM_HORIZON",
-        )["UUID"]
-
-        item = {"SK": short_uid(), "Name": "name-{}".format(short_uid())}
-
-        table.put_item(Item=item)
-
-        events = retry(
-            check_expected_lambda_log_events_length,
-            retries=10,
-            sleep=1,
-            function_name=function_name,
-            expected_length=1,
-            regex_filter=r"Records",
-        )
-
-        assert len(events) == 1
-        assert len(events[0]["Records"]) == 1
-
-        dynamodb_event = events[0]["Records"][0]["dynamodb"]
-        assert dynamodb_event["StreamViewType"] == "NEW_AND_OLD_IMAGES"
-        assert dynamodb_event["Keys"] == {"SK": {"S": item["SK"]}}
-        assert dynamodb_event["NewImage"]["Name"] == {"S": item["Name"]}
-        assert "SequenceNumber" in dynamodb_event
-
-        lambda_client.delete_event_source_mapping(UUID=mapping_uuid)
 
     @pytest.mark.aws_validated
     def test_dynamodb_pay_per_request(self, dynamodb_create_table_with_parameters, snapshot):
