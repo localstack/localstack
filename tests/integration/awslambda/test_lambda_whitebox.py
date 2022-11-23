@@ -16,6 +16,7 @@ from localstack.services.awslambda.lambda_api import do_set_function_code, use_d
 from localstack.services.awslambda.lambda_utils import LAMBDA_RUNTIME_PYTHON39
 from localstack.services.generic_proxy import ProxyListener
 from localstack.services.infra import start_proxy
+from localstack.testing.aws.lambda_utils import is_new_provider
 from localstack.utils import testutil
 from localstack.utils.aws import aws_stack
 from localstack.utils.common import (
@@ -47,6 +48,10 @@ TEST_LAMBDA_PYTHON3_MULTIPLE_CREATE2 = os.path.join(
 )
 
 LOG = logging.getLogger(__name__)
+
+pytestmark = pytest.mark.skipif(
+    condition=is_new_provider(), reason="only relevant for old provider"
+)
 
 
 class TestLambdaFallbackUrl(unittest.TestCase):
