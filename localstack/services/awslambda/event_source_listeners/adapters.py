@@ -219,7 +219,12 @@ class EventSourceAsfAdapter(EventSourceAdapter):
 
                 ft.add_done_callback(mapped_callback)
 
-            return 200
+            # they're always synchronous in the ASF provider
+            result = ft.result(timeout=900)
+            if isinstance(result, InvocationError):
+                return 500
+            else:
+                return 200
         except Exception:
             LOG.debug("Encountered an exception while handling lambda invoke", exc_info=True)
             return 500

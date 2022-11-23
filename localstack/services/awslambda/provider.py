@@ -1113,6 +1113,13 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
             params["StateTransitionReason"] = "User action"
             params["MaximumRetryAttempts"] = request.get("MaximumRetryAttempts", -1)
             params["ParallelizationFactor"] = request.get("ParallelizationFactor", 1)
+            params["BisectBatchOnFunctionError"] = request.get("BisectBatchOnFunctionError", False)
+            params["LastProcessingResult"] = "No records processed"
+            params["MaximumRecordAgeInSeconds"] = request.get("MaximumRecordAgeInSeconds", -1)
+            params["TumblingWindowInSeconds"] = request.get("TumblingWindowInSeconds", 0)
+            destination_config = request.get("DestinationConfig", {"OnFailure": {}})
+            self._validate_destination_config(state, function_name, destination_config)
+            params["DestinationConfig"] = destination_config
 
         # TODO: create domain models and map accordingly
 
@@ -1152,11 +1159,16 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
             )  # TODO: test?
         event_source_mapping = {**old_event_source_mapping, **request_data}
 
+        temp_params = (
+            {}
+        )  # values only set for the returned response, not saved internally (e.g. transient state)
+
         if request.get("Enabled") is not None:
             if request["Enabled"]:
                 esm_state = "Enabled"
             else:
                 esm_state = "Disabled"
+                temp_params["State"] = "Disabling"  # TODO: make this properly async
             event_source_mapping["State"] = esm_state
 
         if request.get("BatchSize"):
@@ -1168,9 +1180,15 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
                     "Maximum batch window in seconds must be greater than 0 if maximum batch size is greater than 10",
                     Type="User",
                 )
+        if request.get("DestinationConfig"):
+            destination_config = request["DestinationConfig"]
+            self._validate_destination_config(
+                state, event_source_mapping["FunctionName"], destination_config
+            )
+            event_source_mapping["DestinationConfig"] = destination_config
         event_source_mapping["LastProcessingResult"] = "OK"
         state.event_source_mappings[uuid] = event_source_mapping
-        return event_source_mapping  # TODO: implement
+        return {**event_source_mapping, **temp_params}
 
     def delete_event_source_mapping(
         self, context: RequestContext, uuid: String
@@ -1181,8 +1199,8 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
             raise ResourceNotFoundException(
                 "The resource you requested does not exist.", Type="User"
             )
-
-        return state.event_source_mappings.pop(uuid)
+        esm = state.event_source_mappings.pop(uuid)
+        return {**esm, "State": "Deleting"}
 
     def get_event_source_mapping(
         self, context: RequestContext, uuid: String
@@ -2050,7 +2068,7 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
                                 "You can't specify the function as a destination for itself.",
                                 Type="User",
                             )
-                case "sns", "sqs", "events":
+                case "sns" | "sqs" | "events":
                     pass
                 case _:
                     return False

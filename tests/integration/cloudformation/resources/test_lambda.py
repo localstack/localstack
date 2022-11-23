@@ -4,6 +4,7 @@ import os
 
 import pytest
 
+from localstack.aws.api.lambda_ import InvocationType
 from localstack.testing.aws.lambda_utils import is_new_provider, is_old_provider
 from localstack.testing.snapshots.transformer import SortingTransformer
 from localstack.utils.common import short_uid
@@ -794,3 +795,127 @@ class TestCfnLambdaIntegrations:
 
         with pytest.raises(lambda_client.exceptions.ResourceNotFoundException):
             lambda_client.get_event_source_mapping(UUID=esm_id)
+
+
+class TestCfnLambdaDestinations:
+    """
+    generic cases
+    1. verify payload
+
+    - [ ] SNS destination success
+    - [ ] SNS destination failure
+    - [ ] SQS destination success
+    - [ ] SQS destination failure
+    - [ ] Lambda destination success
+    - [ ] Lambda destination failure
+    - [ ] EventBridge destination success
+    - [ ] EventBridge destination failure
+
+    meta cases
+    * test max event age
+    * test retry count
+    * qualifier issues
+    * reserved concurrency set to 0 => should immediately go to failure destination / dlq
+    * combination with DLQ
+    * test with a very long queue (reserved concurrency 1, high function duration, low max event age)
+
+    edge cases
+    - [ ] Chaining async lambdas
+
+    doc:
+    "If the function doesn't have enough concurrency available to process all events, additional requests are throttled.
+    For throttling errors (429) and system errors (500-series), Lambda returns the event to the queue and attempts to run the function again for up to 6 hours.
+    The retry interval increases exponentially from 1 second after the first attempt to a maximum of 5 minutes.
+    If the queue contains many entries, Lambda increases the retry interval and reduces the rate at which it reads events from the queue."
+
+    """
+
+    @pytest.mark.skip(reason="not supported atm and test needs further work")
+    @pytest.mark.parametrize(
+        ["on_success", "on_failure"],
+        [
+            ("sqs", "sqs"),
+            # ("sns", "sns"),
+            # ("lambda", "lambda"),
+            # ("eventbridge", "eventbridge")
+        ],
+    )
+    @pytest.mark.aws_validated
+    def test_generic_destination_routing(
+        self, lambda_client, logs_client, deploy_cfn_template, cfn_client, on_success, on_failure
+    ):
+        """
+        This fairly simple template lets us choose between the 4 different destinations for both OnSuccess as well as OnFailure.
+        The template chooses between one of 4 ARNs via indexed access according to this mapping:
+
+        0: SQS
+        1: SNS
+        2: Lambda
+        3: EventBridge
+
+        All of them are connected downstream to another Lambda function.
+        This function can be used to verify that the payload has propagated through the hole scenario.
+        It also allows us to verify the specific payload format depending on the service integration.
+
+                       │
+                       ▼
+                    Lambda
+                       │
+            ┌──────┬───┴───┬───────┐
+            │      │       │       │
+            ▼      ▼       ▼       ▼
+        (direct)  SQS     SNS  EventBridge
+            │      │       │       │
+            │      │       │       │
+            └──────┴───┬───┴───────┘
+                       │
+                       ▼
+                     Lambda
+
+        # TODO: fix eventbridge name (reuse?)
+        """
+
+        name_to_index_map = {"sqs": "0", "sns": "1", "lambda": "2", "eventbridge": "3"}
+
+        deployment = deploy_cfn_template(
+            template_path=os.path.join(
+                os.path.dirname(__file__), "../../templates/cfn_lambda_destinations.yaml"
+            ),
+            parameters={
+                # "RetryParam": "",
+                # "MaxEventAgeSecondsParam": "",
+                # "QualifierParameter": "",
+                "OnSuccessSwitch": name_to_index_map[on_success],
+                "OnFailureSwitch": name_to_index_map[on_failure],
+            },
+            max_wait=600,
+        )
+
+        invoke_fn_name = deployment.outputs["LambdaName"]
+        collect_fn_name = deployment.outputs["CollectLambdaName"]
+
+        msg = f"message-{short_uid()}"
+
+        # Success case
+        lambda_client.invoke(
+            FunctionName=invoke_fn_name,
+            Payload=to_bytes(json.dumps({"message": msg, "should_fail": "0"})),
+            InvocationType=InvocationType.Event,
+        )
+
+        # Failure case
+        lambda_client.invoke(
+            FunctionName=invoke_fn_name,
+            Payload=to_bytes(json.dumps({"message": msg, "should_fail": "1"})),
+            InvocationType=InvocationType.Event,
+        )
+
+        def wait_for_logs():
+            events = logs_client.filter_log_events(logGroupName=f"/aws/lambda/{collect_fn_name}")[
+                "events"
+            ]
+            message_events = [e["message"] for e in events if msg in e["message"]]
+            return len(message_events) >= 2
+            # return len(events) >= 6  # note: each invoke comes with at least 3 events even without printing
+
+        wait_until(wait_for_logs)

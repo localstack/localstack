@@ -20,7 +20,7 @@ from botocore.config import Config
 from botocore.exceptions import ClientError
 
 from localstack.aws.api.lambda_ import Runtime
-from localstack.testing.aws.lambda_utils import is_old_provider
+from localstack.testing.aws.lambda_utils import _await_dynamodb_table_active, is_old_provider
 from localstack.testing.snapshots.transformer import SortingTransformer
 from localstack.utils import testutil
 from localstack.utils.aws import aws_stack
@@ -2610,8 +2610,9 @@ class TestLambdaAccountSettings:
         snapshot.match("acc_settings_modded", acc_settings)
 
 
-@pytest.mark.skipif(is_old_provider(), reason="new provider only")
 class TestLambdaEventSourceMappings:
+    @pytest.mark.skipif(is_old_provider(), reason="new provider only")
+    @pytest.mark.aws_validated
     def test_event_source_mapping_exceptions(self, lambda_client, snapshot):
 
         with pytest.raises(lambda_client.exceptions.ResourceNotFoundException) as e:
@@ -2643,8 +2644,31 @@ class TestLambdaEventSourceMappings:
                 EventSourceArn="arn:aws:sqs:us-east-1:111111111111:somequeue",
             )
         snapshot.match("create_unknown_params", e.value.response)
+        # TODO: add test for event source arn == failure destination
+        # TODO: add test for adding success destination
 
-    @pytest.mark.skip_snapshot_verify(paths=["$..State"])  # TODO: fix and remove
+    @pytest.mark.skip_snapshot_verify(
+        condition=is_old_provider,
+        paths=[
+            "$..BisectBatchOnFunctionError",
+            "$..FunctionResponseTypes",
+            "$..LastProcessingResult",
+            "$..MaximumBatchingWindowInSeconds",
+            "$..MaximumRecordAgeInSeconds",
+            "$..Topics",
+            "$..TumblingWindowInSeconds",
+        ],
+    )
+    @pytest.mark.skip_snapshot_verify(
+        paths=[
+            # all dynamodb service issues not related to lambda
+            "$..TableDescription.ProvisionedThroughput.LastDecreaseDateTime",
+            "$..TableDescription.ProvisionedThroughput.LastIncreaseDateTime",
+            "$..TableDescription.TableStatus",
+            "$..TableDescription.TableId",
+            "$..UUID",
+        ]
+    )
     def test_event_source_mapping_lifecycle(
         self,
         create_lambda_function,
@@ -2654,13 +2678,26 @@ class TestLambdaEventSourceMappings:
         sqs_client,
         cleanups,
         lambda_su_role,
+        dynamodb_client,
+        dynamodbstreams_client,
+        dynamodb_create_table,
     ):
         function_name = f"lambda_func-{short_uid()}"
+        table_name = f"teststreamtable-{short_uid()}"
 
-        queue_url = sqs_create_queue()
-        queue_arn = sqs_client.get_queue_attributes(
-            QueueUrl=queue_url, AttributeNames=["QueueArn"]
+        destination_queue_url = sqs_create_queue()
+        destination_queue_arn = sqs_client.get_queue_attributes(
+            QueueUrl=destination_queue_url, AttributeNames=["QueueArn"]
         )["Attributes"]["QueueArn"]
+
+        dynamodb_create_table(table_name=table_name, partition_key="id")
+        _await_dynamodb_table_active(dynamodb_client, table_name)
+        update_table_response = dynamodb_client.update_table(
+            TableName=table_name,
+            StreamSpecification={"StreamEnabled": True, "StreamViewType": "NEW_IMAGE"},
+        )
+        snapshot.match("update_table_response", update_table_response)
+        stream_arn = update_table_response["TableDescription"]["LatestStreamArn"]
 
         create_lambda_function(
             handler_file=TEST_LAMBDA_PYTHON_ECHO,
@@ -2670,11 +2707,17 @@ class TestLambdaEventSourceMappings:
         )
         # "minimal"
         create_response = lambda_client.create_event_source_mapping(
-            FunctionName=function_name, EventSourceArn=queue_arn
+            FunctionName=function_name,
+            EventSourceArn=stream_arn,
+            DestinationConfig={"OnFailure": {"Destination": destination_queue_arn}},
+            BatchSize=1,
+            StartingPosition="TRIM_HORIZON",
+            MaximumBatchingWindowInSeconds=1,
+            MaximumRetryAttempts=1,
         )
-        snapshot.match("create_response", create_response)
         uuid = create_response["UUID"]
         cleanups.append(lambda: lambda_client.delete_event_source_mapping(UUID=uuid))
+        snapshot.match("create_response", create_response)
 
         # the stream might not be active immediately(!)
         def check_esm_active():

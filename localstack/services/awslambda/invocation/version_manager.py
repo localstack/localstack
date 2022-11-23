@@ -22,6 +22,7 @@ from localstack.services.awslambda.invocation.lambda_models import (
     ServiceEndpoint,
     VersionState,
 )
+from localstack.services.awslambda.invocation.models import lambda_stores
 from localstack.services.awslambda.invocation.runtime_environment import (
     InvalidStatusException,
     RuntimeEnvironment,
@@ -30,8 +31,10 @@ from localstack.services.awslambda.invocation.runtime_environment import (
 from localstack.services.awslambda.invocation.runtime_executor import get_runtime_executor
 from localstack.services.awslambda.lambda_executors import InvocationException
 from localstack.utils.aws import dead_letter_queue
+from localstack.utils.aws.message_forwarding import send_event_to_target
 from localstack.utils.cloudwatch.cloudwatch_util import store_cloudwatch_logs
 from localstack.utils.strings import to_str, truncate
+from localstack.utils.time import timestamp_millis
 
 if TYPE_CHECKING:
     from localstack.services.awslambda.invocation.lambda_service import LambdaService
@@ -332,6 +335,9 @@ class LambdaVersionManager(ServiceEndpoint):
     def process_event_destinations(
         self, invocation_result: InvocationResult | InvocationError, original_payload: bytes
     ) -> None:
+        """
+        TODO: handle this asynchronously, to not block the rest of the execution
+        """
         LOG.debug("Got event invocation with id %s", invocation_result.invocation_id)
 
         # 1. Handle DLQ routing
@@ -347,8 +353,72 @@ class LambdaVersionManager(ServiceEndpoint):
             )
 
         # 2. Handle actual destination setup
-        LOG.debug("Event destinations and DLQ are not yet implemented.")
-        # TODO implement (ideally async to not block result)
+        state = lambda_stores[self.function_version.id.account][self.function_version.id.region]
+        fn = state.functions.get(self.function_version.id.function_name)
+        event_invoke_config = fn.event_invoke_configs.get(self.function_version.id.qualifier)
+
+        if event_invoke_config is None:
+            return
+
+        # TODO: we need more information about the invocation event
+
+        if isinstance(invocation_result, InvocationResult):
+            success_destination = event_invoke_config.destination_config.get("OnSuccess", {}).get(
+                "Destination"
+            )
+            if success_destination is None:
+                return
+            destination_payload = {
+                "version": "1.0",
+                "timestamp": timestamp_millis(),  # TODO
+                "requestContext": {
+                    "requestId": invocation_result.invocation_id,
+                    "functionArn": self.function_version.qualified_arn,
+                    "condition": "Success",
+                    "approximateInvokeCount": 1,
+                },
+                "requestPayload": json.loads(to_str(original_payload)),
+                "responseContext": {"statusCode": 200, "executedVersion": "$LATEST"},
+                "responsePayload": json.loads(to_str(invocation_result.payload or {})),
+            }
+
+            send_event_to_target(
+                target_arn=event_invoke_config.destination_config["OnSuccess"]["Destination"],
+                event=destination_payload,
+            )
+
+        elif isinstance(invocation_result, InvocationError):
+            failure_destination = event_invoke_config.destination_config.get("OnFailure", {}).get(
+                "Destination"
+            )
+            if failure_destination is None:
+                return
+            destination_payload = {
+                "version": "1.0",
+                "timestamp": timestamp_millis(),  # TODO
+                "requestContext": {
+                    "requestId": invocation_result.invocation_id,
+                    "functionArn": self.function_version.qualified_arn,
+                    "condition": "RetriesExhausted",  # TODO we don't know that here
+                    "approximateInvokeCount": 1,
+                },
+                "requestPayload": json.loads(to_str(original_payload)),
+                "responseContext": {
+                    "statusCode": 200,
+                    "executedVersion": "$LATEST",
+                    "functionError": "Unhandled",  # TODO
+                },
+                "responsePayload": json.loads(to_str(invocation_result.payload)),
+            }
+
+            send_event_to_target(
+                target_arn=event_invoke_config.destination_config["OnFailure"]["Destination"],
+                event=destination_payload,
+            )
+        else:
+            raise ValueError("Unknown type for invocation result received.")
+
+        # TODO make async to not block other executions
 
     def invocation_response(
         self, invoke_id: str, invocation_result: Union[InvocationResult, InvocationError]

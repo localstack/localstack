@@ -12,7 +12,6 @@ from localstack.testing.aws.lambda_utils import (
     _await_dynamodb_table_active,
     _await_event_source_mapping_enabled,
     _get_lambda_invocation_events,
-    is_new_provider,
     is_old_provider,
     lambda_role,
     s3_lambda_permission,
@@ -73,13 +72,8 @@ def get_lambda_logs_event(logs_client):
 
 
 @pytest.mark.skip_snapshot_verify(
-    # condition=is_old_provider,
+    condition=is_old_provider,
     paths=[
-        "$..TableDescription.BillingModeSummary.LastUpdateToPayPerRequestDateTime",
-        "$..TableDescription.ProvisionedThroughput.LastDecreaseDateTime",
-        "$..TableDescription.ProvisionedThroughput.LastIncreaseDateTime",
-        "$..TableDescription.StreamSpecification",
-        "$..TableDescription.TableStatus",
         "$..BisectBatchOnFunctionError",
         "$..DestinationConfig",
         "$..FunctionResponseTypes",
@@ -90,6 +84,16 @@ def get_lambda_logs_event(logs_client):
         "$..State",
         "$..Topics",
         "$..TumblingWindowInSeconds",
+    ],
+)
+@pytest.mark.skip_snapshot_verify(
+    paths=[
+        # dynamodb issues, not related to lambda
+        "$..TableDescription.BillingModeSummary.LastUpdateToPayPerRequestDateTime",
+        "$..TableDescription.ProvisionedThroughput.LastDecreaseDateTime",
+        "$..TableDescription.ProvisionedThroughput.LastIncreaseDateTime",
+        "$..TableDescription.StreamSpecification",
+        "$..TableDescription.TableStatus",
         "$..Records..dynamodb.SizeBytes",
         "$..Records..eventVersion",
     ],
@@ -276,11 +280,9 @@ class TestDynamoDBEventSourceMapping:
         list_esm = lambda_client.list_event_source_mappings(EventSourceArn=latest_stream_arn)
         snapshot.match("list_event_source_mapping_result", list_esm)
 
-    @pytest.mark.skipif(condition=is_new_provider(), reason="destinations not yet implemented")
     @pytest.mark.aws_validated
     # FIXME last three skip verification entries are purely due to numbering mismatches
     @pytest.mark.skip_snapshot_verify(
-        condition=is_old_provider,
         paths=[
             "$..Messages..Body.requestContext.approximateInvokeCount",
             "$..Messages..Body.requestContext.functionArn",

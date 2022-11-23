@@ -4895,7 +4895,7 @@
     }
   },
   "tests/integration/awslambda/test_lambda_api.py::TestLambdaEventSourceMappings::test_event_source_mapping_exceptions": {
-    "recorded-date": "30-09-2022, 15:35:37",
+    "recorded-date": "23-11-2022, 10:09:28",
     "recorded-content": {
       "get_unknown_uuid": {
         "Error": {
@@ -4960,48 +4960,126 @@
     }
   },
   "tests/integration/awslambda/test_lambda_api.py::TestLambdaEventSourceMappings::test_event_source_mapping_lifecycle": {
-    "recorded-date": "30-09-2022, 15:36:14",
+    "recorded-date": "23-11-2022, 10:09:53",
     "recorded-content": {
+      "update_table_response": {
+        "TableDescription": {
+          "AttributeDefinitions": [
+            {
+              "AttributeName": "id",
+              "AttributeType": "S"
+            }
+          ],
+          "BillingModeSummary": {
+            "BillingMode": "PAY_PER_REQUEST",
+            "LastUpdateToPayPerRequestDateTime": "datetime"
+          },
+          "CreationDateTime": "datetime",
+          "ItemCount": 0,
+          "KeySchema": [
+            {
+              "AttributeName": "id",
+              "KeyType": "HASH"
+            }
+          ],
+          "LatestStreamArn": "arn:aws:dynamodb:<region>:111111111111:table/<resource:2>/stream/<resource:1>",
+          "LatestStreamLabel": "<resource:1>",
+          "ProvisionedThroughput": {
+            "NumberOfDecreasesToday": 0,
+            "ReadCapacityUnits": 0,
+            "WriteCapacityUnits": 0
+          },
+          "StreamSpecification": {
+            "StreamEnabled": true,
+            "StreamViewType": "NEW_IMAGE"
+          },
+          "TableArn": "arn:aws:dynamodb:<region>:111111111111:table/<resource:2>",
+          "TableId": "<uuid:1>",
+          "TableName": "<resource:2>",
+          "TableSizeBytes": 0,
+          "TableStatus": "UPDATING"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
       "create_response": {
-        "BatchSize": 10,
-        "EventSourceArn": "arn:aws:sqs:<region>:111111111111:<resource:1>",
-        "FunctionArn": "arn:aws:lambda:<region>:111111111111:function:<resource:2>",
+        "BatchSize": 1,
+        "BisectBatchOnFunctionError": false,
+        "DestinationConfig": {
+          "OnFailure": {
+            "Destination": "arn:aws:sqs:<region>:111111111111:<resource:3>"
+          }
+        },
+        "EventSourceArn": "arn:aws:dynamodb:<region>:111111111111:table/<resource:2>/stream/<resource:1>",
+        "FunctionArn": "arn:aws:lambda:<region>:111111111111:function:<resource:4>",
         "FunctionResponseTypes": [],
         "LastModified": "datetime",
-        "MaximumBatchingWindowInSeconds": 0,
+        "LastProcessingResult": "No records processed",
+        "MaximumBatchingWindowInSeconds": 1,
+        "MaximumRecordAgeInSeconds": -1,
+        "MaximumRetryAttempts": 1,
+        "ParallelizationFactor": 1,
+        "StartingPosition": "TRIM_HORIZON",
         "State": "Creating",
-        "StateTransitionReason": "USER_INITIATED",
-        "UUID": "<uuid:1>",
+        "StateTransitionReason": "User action",
+        "TumblingWindowInSeconds": 0,
+        "UUID": "<uuid:2>",
         "ResponseMetadata": {
           "HTTPHeaders": {},
           "HTTPStatusCode": 202
         }
       },
       "get_response": {
-        "BatchSize": 10,
-        "EventSourceArn": "arn:aws:sqs:<region>:111111111111:<resource:1>",
-        "FunctionArn": "arn:aws:lambda:<region>:111111111111:function:<resource:2>",
+        "BatchSize": 1,
+        "BisectBatchOnFunctionError": false,
+        "DestinationConfig": {
+          "OnFailure": {
+            "Destination": "arn:aws:sqs:<region>:111111111111:<resource:3>"
+          }
+        },
+        "EventSourceArn": "arn:aws:dynamodb:<region>:111111111111:table/<resource:2>/stream/<resource:1>",
+        "FunctionArn": "arn:aws:lambda:<region>:111111111111:function:<resource:4>",
         "FunctionResponseTypes": [],
         "LastModified": "datetime",
-        "MaximumBatchingWindowInSeconds": 0,
+        "LastProcessingResult": "No records processed",
+        "MaximumBatchingWindowInSeconds": 1,
+        "MaximumRecordAgeInSeconds": -1,
+        "MaximumRetryAttempts": 1,
+        "ParallelizationFactor": 1,
+        "StartingPosition": "TRIM_HORIZON",
         "State": "Enabled",
-        "StateTransitionReason": "USER_INITIATED",
-        "UUID": "<uuid:1>",
+        "StateTransitionReason": "User action",
+        "TumblingWindowInSeconds": 0,
+        "UUID": "<uuid:2>",
         "ResponseMetadata": {
           "HTTPHeaders": {},
           "HTTPStatusCode": 200
         }
       },
       "delete_response": {
-        "BatchSize": 10,
-        "EventSourceArn": "arn:aws:sqs:<region>:111111111111:<resource:1>",
-        "FunctionArn": "arn:aws:lambda:<region>:111111111111:function:<resource:2>",
+        "BatchSize": 1,
+        "BisectBatchOnFunctionError": false,
+        "DestinationConfig": {
+          "OnFailure": {
+            "Destination": "arn:aws:sqs:<region>:111111111111:<resource:3>"
+          }
+        },
+        "EventSourceArn": "arn:aws:dynamodb:<region>:111111111111:table/<resource:2>/stream/<resource:1>",
+        "FunctionArn": "arn:aws:lambda:<region>:111111111111:function:<resource:4>",
         "FunctionResponseTypes": [],
         "LastModified": "datetime",
-        "MaximumBatchingWindowInSeconds": 0,
+        "LastProcessingResult": "No records processed",
+        "MaximumBatchingWindowInSeconds": 1,
+        "MaximumRecordAgeInSeconds": -1,
+        "MaximumRetryAttempts": 1,
+        "ParallelizationFactor": 1,
+        "StartingPosition": "TRIM_HORIZON",
         "State": "Deleting",
-        "StateTransitionReason": "USER_INITIATED",
-        "UUID": "<uuid:1>",
+        "StateTransitionReason": "User action",
+        "TumblingWindowInSeconds": 0,
+        "UUID": "<uuid:2>",
         "ResponseMetadata": {
           "HTTPHeaders": {},
           "HTTPStatusCode": 202

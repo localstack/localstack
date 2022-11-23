@@ -4,7 +4,7 @@ import json
 import pytest
 
 from localstack.aws.api.lambda_ import Runtime
-from localstack.testing.aws.lambda_utils import is_old_provider
+from localstack.testing.aws.lambda_utils import is_new_provider, is_old_provider
 from localstack.utils.strings import short_uid, to_str
 from localstack.utils.sync import retry
 from tests.integration.awslambda.functions import lambda_integration
@@ -95,6 +95,12 @@ class TestLambdaDestinationSqs:
             "$..FunctionArn",
             "$..approximateInvokeCount",
             "$..stackTrace",
+        ],
+    )
+    @pytest.mark.skip_snapshot_verify(
+        condition=is_new_provider,
+        paths=[
+            "$..approximateInvokeCount",  # TODO: retry support
         ],
     )
     @pytest.mark.parametrize(
