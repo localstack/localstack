@@ -524,3 +524,7 @@ def validate_layer_runtimes_and_architectures(
         validations.append(validation_msg)
 
     return validations
+
+
+def is_layer_arn(layer_name: str) -> bool:
+    return LAYER_VERSION_ARN_PATTERN.match(layer_name) is not None

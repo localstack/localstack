@@ -2499,7 +2499,14 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
     def get_layer_version(
         self, context: RequestContext, layer_name: LayerName, version_number: LayerVersionNumber
     ) -> GetLayerVersionResponse:
-        state = lambda_stores[context.account_id][context.region]
+        # TODO: handle layer_name as an ARN
+
+        account_id = context.account_id
+        region_name = context.region
+        if api_utils.is_layer_arn(layer_name):
+            region_name, account_id, layer_name, _ = api_utils.parse_layer_arn(layer_name)
+        state = lambda_stores[account_id][region_name]
+
         layer = state.layers.get(layer_name)
         if version_number < 1:
             raise InvalidParameterValueException("Layer Version Cannot be less than 1", Type="User")
@@ -2602,7 +2609,6 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
         max_items: MaxLayerListItems = None,
         compatible_architecture: Architecture = None,
     ) -> ListLayerVersionsResponse:
-
         validation_errors = api_utils.validate_layer_runtimes_and_architectures(
             [compatible_runtime] if compatible_runtime else [],
             [compatible_architecture] if compatible_architecture else [],
@@ -2612,14 +2618,19 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
                 f"{len(validation_errors)} validation error{'s' if len(validation_errors) > 1 else ''} detected: {';'.join(validation_errors)}"
             )
 
-        # TODO: handle filter: compatible_runtime
-        # TODO: handle filter: compatible_architecture
-        state = lambda_stores[context.account_id][context.region]
+        account_id = context.account_id
+        region_name = context.region
+        if api_utils.is_layer_arn(layer_name):
+            region_name, account_id, layer_name, _ = api_utils.parse_layer_arn(layer_name)
+        state = lambda_stores[account_id][region_name]
+
+        # TODO: Test & handle filter: compatible_runtime
+        # TODO: Test & handle filter: compatible_architecture
+
         all_layer_versions = []
         for layer in state.layers.values():
-            if (
-                layer_name in layer.arn
-            ):  # TODO: introduce name element explicitly to model or parse at least from ARN
+            _, _, arn_layer_name, _ = api_utils.parse_layer_arn(layer.arn)
+            if layer_name == arn_layer_name:
                 for layer_version in layer.layer_versions.values():
                     all_layer_versions.append(api_utils.map_layer_out(layer_version))
         all_layer_versions.sort(key=lambda x: x["Version"], reverse=True)
@@ -2637,7 +2648,13 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
         if version_number < 1:
             raise InvalidParameterValueException("Layer Version Cannot be less than 1", Type="User")
 
-        state = lambda_stores[context.account_id][context.region]
+        # TODO: test cross-region? (e.g. with functions it doesnt work and raises an exception)
+        account_id = context.account_id
+        region_name = context.region
+        if api_utils.is_layer_arn(layer_name):
+            region_name, account_id, layer_name, _ = api_utils.parse_layer_arn(layer_name)
+
+        state = lambda_stores[account_id][region_name]
         layer = state.layers.get(layer_name, {})
         if layer:
             layer.layer_versions.pop(str(version_number), None)
@@ -2659,6 +2676,7 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
         revision_id: String = None,
     ) -> AddLayerVersionPermissionResponse:
         # TODO: test for revision_id
+        # TODO: add layer ARN as layer_name support
 
         layer_version_arn = api_utils.layer_version_arn(
             layer_name, context.account_id, context.region, str(version_number)
@@ -2720,6 +2738,7 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
         statement_id: StatementId,
         revision_id: String = None,
     ) -> None:
+        # TODO: add layer ARN as layer_name support
         layer_version_arn = api_utils.layer_version_arn(
             layer_name, context.account_id, context.region, str(version_number)
         )
@@ -2753,6 +2772,7 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
     def get_layer_version_policy(
         self, context: RequestContext, layer_name: LayerName, version_number: LayerVersionNumber
     ) -> GetLayerVersionPolicyResponse:
+        # TODO: add layer ARN as layer_name support
         layer_version_arn = api_utils.layer_version_arn(
             layer_name, context.account_id, context.region, str(version_number)
         )

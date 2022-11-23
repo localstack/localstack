@@ -2930,6 +2930,8 @@ class TestLambdaTags:
         snapshot.match("list_tags_postdelete", e.value.response)
 
 
+# TODO: add more tests where layername can be an ARN
+# TODO: test if function has to be in same region as layer
 @pytest.mark.skipif(condition=is_old_provider(), reason="not supported")
 class TestLambdaLayer:
     @pytest.fixture(scope="class")
