@@ -2626,13 +2626,12 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
 
         # TODO: Test & handle filter: compatible_runtime
         # TODO: Test & handle filter: compatible_architecture
-
         all_layer_versions = []
-        for layer in state.layers.values():
-            _, _, arn_layer_name, _ = api_utils.parse_layer_arn(layer.arn)
-            if layer_name == arn_layer_name:
-                for layer_version in layer.layer_versions.values():
-                    all_layer_versions.append(api_utils.map_layer_out(layer_version))
+        layer = state.layers.get(layer_name)
+        if layer is not None:
+            for layer_version in layer.layer_versions.values():
+                all_layer_versions.append(api_utils.map_layer_out(layer_version))
+
         all_layer_versions.sort(key=lambda x: x["Version"], reverse=True)
         all_layer_versions = PaginatedList(all_layer_versions)
         page, token = all_layer_versions.get_page(
