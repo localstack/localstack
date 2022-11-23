@@ -3060,6 +3060,12 @@ class TestLambdaLayer:
     def test_layer_function_exceptions(
         self, lambda_client, create_lambda_function, snapshot, dummylayer, cleanups
     ):
+        """
+        Test interaction of layers when adding them to the function
+
+        TODO: add test for adding a layer with an incompatible runtime/arch
+        TODO: add test for > 5 layers
+        """
         function_name = f"fn-layer-{short_uid()}"
         layer_name = f"testlayer-{short_uid()}"
 
