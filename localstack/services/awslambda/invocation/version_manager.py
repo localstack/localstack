@@ -357,9 +357,17 @@ class LambdaVersionManager(ServiceEndpoint):
         fn = state.functions.get(self.function_version.id.function_name)
         event_invoke_config = fn.event_invoke_configs.get(self.function_version.id.qualifier)
 
+        if event_invoke_config is None:
+            return
+
         # TODO: we need more information about the invocation event
 
         if isinstance(invocation_result, InvocationResult):
+            success_destination = event_invoke_config.destination_config.get("OnSuccess", {}).get(
+                "Destination"
+            )
+            if success_destination is None:
+                return
             destination_payload = {
                 "version": "1.0",
                 "timestamp": timestamp_millis(),  # TODO
@@ -380,6 +388,11 @@ class LambdaVersionManager(ServiceEndpoint):
             )
 
         elif isinstance(invocation_result, InvocationError):
+            failure_destination = event_invoke_config.destination_config.get("OnFailure", {}).get(
+                "Destination"
+            )
+            if failure_destination is None:
+                return
             destination_payload = {
                 "version": "1.0",
                 "timestamp": timestamp_millis(),  # TODO
@@ -405,7 +418,7 @@ class LambdaVersionManager(ServiceEndpoint):
         else:
             raise ValueError("Unknown type for invocation result received.")
 
-        # TODO implement (ideally async to not block result)
+        # TODO make async to not block other executions
 
     def invocation_response(
         self, invoke_id: str, invocation_result: Union[InvocationResult, InvocationError]
