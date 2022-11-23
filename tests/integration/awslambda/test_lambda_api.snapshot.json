@@ -6924,5 +6924,1035 @@
         ]
       }
     }
+  },
+  "tests/integration/awslambda/test_lambda_api.py::TestLambdaLayer::test_layer_exceptions": {
+    "recorded-date": "22-11-2022, 19:12:27",
+    "recorded-content": {
+      "publish_result": {
+        "CompatibleArchitectures": [
+          "x86_64"
+        ],
+        "CompatibleRuntimes": [
+          "python3.9"
+        ],
+        "Content": {
+          "CodeSha256": "<code-sha256:1>",
+          "CodeSize": 169,
+          "Location": "<layer-location>"
+        },
+        "CreatedDate": "date",
+        "Description": "",
+        "LayerArn": "arn:aws:lambda:<region>:111111111111:layer:<resource:1>",
+        "LayerVersionArn": "arn:aws:lambda:<region>:111111111111:layer:<resource:1>:1",
+        "Version": 1,
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 201
+        }
+      },
+      "list_layers_exc_compatibleruntime_invalid": {
+        "Error": {
+          "Code": "ValidationException",
+          "Message": "1 validation error detected: Value 'runtimedoesnotexist' at 'compatibleRuntime' failed to satisfy constraint: Member must satisfy enum value set: [ruby2.6, dotnetcore1.0, python3.7, nodejs8.10, nasa, ruby2.7, python2.7-greengrass, dotnetcore2.0, python3.8, dotnet6, dotnetcore2.1, python3.9, java11, nodejs6.10, provided, dotnetcore3.1, java17, nodejs, nodejs4.3, java8.al2, go1.x, go1.9, byol, nodejs10.x, python3.10, java8, nodejs12.x, nodejs8.x, nodejs14.x, nodejs8.9, nodejs16.x, provided.al2, nodejs4.3-edge, nodejs18.x, python3.4, ruby2.5, python3.6, python2.7]"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "list_layers_exc_compatiblearchitecture_invalid": {
+        "Error": {
+          "Code": "ValidationException",
+          "Message": "1 validation error detected: Value 'archdoesnotexist' at 'compatibleArchitecture' failed to satisfy constraint: Member must satisfy enum value set: [x86_64, arm64]"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "list_nonexistent_layer": {
+        "LayerVersions": [],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "get_layer_version_exc_layer_doesnotexist": {
+        "Error": {
+          "Code": "ResourceNotFoundException",
+          "Message": "The resource you requested does not exist."
+        },
+        "Message": "The resource you requested does not exist.",
+        "Type": "User",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 404
+        }
+      },
+      "get_layer_version_exc_layer_version_doesnotexist_negative": {
+        "Error": {
+          "Code": "InvalidParameterValueException",
+          "Message": "Layer Version Cannot be less than 1"
+        },
+        "Type": "User",
+        "message": "Layer Version Cannot be less than 1",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "get_layer_version_exc_layer_version_doesnotexist_zero": {
+        "Error": {
+          "Code": "InvalidParameterValueException",
+          "Message": "Layer Version Cannot be less than 1"
+        },
+        "Type": "User",
+        "message": "Layer Version Cannot be less than 1",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "get_layer_version_exc_layer_version_doesnotexist_2": {
+        "Error": {
+          "Code": "ResourceNotFoundException",
+          "Message": "The resource you requested does not exist."
+        },
+        "Message": "The resource you requested does not exist.",
+        "Type": "User",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 404
+        }
+      },
+      "get_layer_version_by_arn_exc_invalidarn": {
+        "Error": {
+          "Code": "ValidationException",
+          "Message": "1 validation error detected: Value 'arn:aws:lambda:<region>:111111111111:layer:<resource:1>' at 'arn' failed to satisfy constraint: Member must satisfy regular expression pattern: arn:[a-zA-Z0-9-]+:lambda:[a-zA-Z0-9-]+:\\d{12}:layer:[a-zA-Z0-9-_]+:[0-9]+"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "get_layer_version_by_arn_exc_nonexistentversion": {
+        "Error": {
+          "Code": "ResourceNotFoundException",
+          "Message": "The resource you requested does not exist."
+        },
+        "Message": "The resource you requested does not exist.",
+        "Type": "User",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 404
+        }
+      },
+      "delete_nonexistent_response": {
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 204
+        }
+      },
+      "delete_nonexistent_version_response": {
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 204
+        }
+      },
+      "delete_layer_response": {
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 204
+        }
+      },
+      "delete_layer_again_response": {
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 204
+        }
+      },
+      "delete_layer_version_exc_layerversion_invalid_version": {
+        "Error": {
+          "Code": "InvalidParameterValueException",
+          "Message": "Layer Version Cannot be less than 1"
+        },
+        "Type": "User",
+        "message": "Layer Version Cannot be less than 1",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "publish_empty_result": {
+        "CompatibleArchitectures": [],
+        "CompatibleRuntimes": [],
+        "Content": {
+          "CodeSha256": "<code-sha256:1>",
+          "CodeSize": 169,
+          "Location": "<layer-location>"
+        },
+        "CreatedDate": "date",
+        "Description": "",
+        "LayerArn": "arn:aws:lambda:<region>:111111111111:layer:<resource:2>",
+        "LayerVersionArn": "arn:aws:lambda:<region>:111111111111:layer:<resource:2>:1",
+        "Version": 1,
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 201
+        }
+      },
+      "publish_layer_version_exc_invalid_runtime_arch": {
+        "Error": {
+          "Code": "ValidationException",
+          "Message": "2 validation errors detected: Value '[invalidruntime]' at 'compatibleRuntimes' failed to satisfy constraint: Member must satisfy enum value set: [nodejs12.x, provided, nodejs16.x, nodejs14.x, ruby2.7, java11, dotnet6, go1.x, nodejs18.x, provided.al2, java8, java8.al2, dotnetcore3.1, python3.7, python3.8, python3.9]; Value '[invalidarch]' at 'compatibleArchitectures' failed to satisfy constraint: Member must satisfy constraint: [Member must satisfy enum value set: [x86_64, arm64]]"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "publish_layer_version_exc_partially_invalid_values": {
+        "Error": {
+          "Code": "ValidationException",
+          "Message": "2 validation errors detected: Value '[invalidruntime, invalidruntime2, nodejs16.x]' at 'compatibleRuntimes' failed to satisfy constraint: Member must satisfy enum value set: [nodejs12.x, provided, nodejs16.x, nodejs14.x, ruby2.7, java11, dotnet6, go1.x, nodejs18.x, provided.al2, java8, java8.al2, dotnetcore3.1, python3.7, python3.8, python3.9]; Value '[invalidarch, x86_64]' at 'compatibleArchitectures' failed to satisfy constraint: Member must satisfy constraint: [Member must satisfy enum value set: [x86_64, arm64]]"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/integration/awslambda/test_lambda_api.py::TestLambdaLayer::test_layer_lifecycle": {
+    "recorded-date": "22-11-2022, 20:22:40",
+    "recorded-content": {
+      "get_fn_result": {
+        "Code": {
+          "Location": "<location>",
+          "RepositoryType": "S3"
+        },
+        "Configuration": {
+          "Architectures": [
+            "x86_64"
+          ],
+          "CodeSha256": "<code-sha256:1>",
+          "CodeSize": 264,
+          "Description": "",
+          "Environment": {
+            "Variables": {}
+          },
+          "EphemeralStorage": {
+            "Size": 512
+          },
+          "FunctionArn": "arn:aws:lambda:<region>:111111111111:function:<function-name:1>",
+          "FunctionName": "<function-name:1>",
+          "Handler": "handler.handler",
+          "LastModified": "date",
+          "LastUpdateStatus": "Successful",
+          "MemorySize": 128,
+          "PackageType": "Zip",
+          "RevisionId": "<uuid:1>",
+          "Role": "arn:aws:iam::111111111111:role/<resource:1>",
+          "Runtime": "python3.9",
+          "State": "Active",
+          "Timeout": 30,
+          "TracingConfig": {
+            "Mode": "PassThrough"
+          },
+          "Version": "$LATEST"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "get_fn_config_result": {
+        "Architectures": [
+          "x86_64"
+        ],
+        "CodeSha256": "<code-sha256:1>",
+        "CodeSize": 264,
+        "Description": "",
+        "Environment": {
+          "Variables": {}
+        },
+        "EphemeralStorage": {
+          "Size": 512
+        },
+        "FunctionArn": "arn:aws:lambda:<region>:111111111111:function:<function-name:1>",
+        "FunctionName": "<function-name:1>",
+        "Handler": "handler.handler",
+        "LastModified": "date",
+        "LastUpdateStatus": "Successful",
+        "MemorySize": 128,
+        "PackageType": "Zip",
+        "RevisionId": "<uuid:1>",
+        "Role": "arn:aws:iam::111111111111:role/<resource:1>",
+        "Runtime": "python3.9",
+        "State": "Active",
+        "Timeout": 30,
+        "TracingConfig": {
+          "Mode": "PassThrough"
+        },
+        "Version": "$LATEST",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "publish_result": {
+        "CompatibleArchitectures": [
+          "x86_64"
+        ],
+        "CompatibleRuntimes": [
+          "python3.9"
+        ],
+        "Content": {
+          "CodeSha256": "<code-sha256:2>",
+          "CodeSize": 169,
+          "Location": "<layer-location>"
+        },
+        "CreatedDate": "date",
+        "Description": "<description>",
+        "LayerArn": "arn:aws:lambda:<region>:111111111111:layer:<resource:2>",
+        "LayerVersionArn": "arn:aws:lambda:<region>:111111111111:layer:<resource:2>:1",
+        "LicenseInfo": "<license-info>",
+        "Version": 1,
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 201
+        }
+      },
+      "publish_result_2": {
+        "CompatibleArchitectures": [
+          "x86_64"
+        ],
+        "CompatibleRuntimes": [
+          "python3.9"
+        ],
+        "Content": {
+          "CodeSha256": "<code-sha256:2>",
+          "CodeSize": 169,
+          "Location": "<layer-location>"
+        },
+        "CreatedDate": "date",
+        "Description": "<description>",
+        "LayerArn": "arn:aws:lambda:<region>:111111111111:layer:<resource:2>",
+        "LayerVersionArn": "arn:aws:lambda:<region>:111111111111:layer:<resource:2>:2",
+        "LicenseInfo": "<license-info>",
+        "Version": 2,
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 201
+        }
+      },
+      "update_fn_config": {
+        "Architectures": [
+          "x86_64"
+        ],
+        "CodeSha256": "<code-sha256:1>",
+        "CodeSize": 264,
+        "Description": "",
+        "Environment": {
+          "Variables": {}
+        },
+        "EphemeralStorage": {
+          "Size": 512
+        },
+        "FunctionArn": "arn:aws:lambda:<region>:111111111111:function:<function-name:1>",
+        "FunctionName": "<function-name:1>",
+        "Handler": "handler.handler",
+        "LastModified": "date",
+        "LastUpdateStatus": "InProgress",
+        "LastUpdateStatusReason": "The function is being created.",
+        "LastUpdateStatusReasonCode": "Creating",
+        "Layers": [
+          {
+            "Arn": "arn:aws:lambda:<region>:111111111111:layer:<resource:2>:1",
+            "CodeSize": 169
+          }
+        ],
+        "MemorySize": 128,
+        "PackageType": "Zip",
+        "RevisionId": "<uuid:2>",
+        "Role": "arn:aws:iam::111111111111:role/<resource:1>",
+        "Runtime": "python3.9",
+        "State": "Active",
+        "Timeout": 30,
+        "TracingConfig": {
+          "Mode": "PassThrough"
+        },
+        "Version": "$LATEST",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "get_fn_config": {
+        "Architectures": [
+          "x86_64"
+        ],
+        "CodeSha256": "<code-sha256:1>",
+        "CodeSize": 264,
+        "Description": "",
+        "Environment": {
+          "Variables": {}
+        },
+        "EphemeralStorage": {
+          "Size": 512
+        },
+        "FunctionArn": "arn:aws:lambda:<region>:111111111111:function:<function-name:1>",
+        "FunctionName": "<function-name:1>",
+        "Handler": "handler.handler",
+        "LastModified": "date",
+        "LastUpdateStatus": "Successful",
+        "Layers": [
+          {
+            "Arn": "arn:aws:lambda:<region>:111111111111:layer:<resource:2>:1",
+            "CodeSize": 169
+          }
+        ],
+        "MemorySize": 128,
+        "PackageType": "Zip",
+        "RevisionId": "<uuid:3>",
+        "Role": "arn:aws:iam::111111111111:role/<resource:1>",
+        "Runtime": "python3.9",
+        "State": "Active",
+        "Timeout": 30,
+        "TracingConfig": {
+          "Mode": "PassThrough"
+        },
+        "Version": "$LATEST",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "get_layer_ver_result": {
+        "CompatibleArchitectures": [
+          "x86_64"
+        ],
+        "CompatibleRuntimes": [
+          "python3.9"
+        ],
+        "Content": {
+          "CodeSha256": "<code-sha256:2>",
+          "CodeSize": 169,
+          "Location": "<layer-location>"
+        },
+        "CreatedDate": "date",
+        "Description": "<description>",
+        "LayerArn": "arn:aws:lambda:<region>:111111111111:layer:<resource:2>",
+        "LayerVersionArn": "arn:aws:lambda:<region>:111111111111:layer:<resource:2>:1",
+        "LicenseInfo": "<license-info>",
+        "Version": 1,
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "get_layer_by_arn_version": {
+        "CompatibleArchitectures": [
+          "x86_64"
+        ],
+        "CompatibleRuntimes": [
+          "python3.9"
+        ],
+        "Content": {
+          "CodeSha256": "<code-sha256:2>",
+          "CodeSize": 169,
+          "Location": "<layer-location>"
+        },
+        "CreatedDate": "date",
+        "Description": "<description>",
+        "LayerArn": "arn:aws:lambda:<region>:111111111111:layer:<resource:2>",
+        "LayerVersionArn": "arn:aws:lambda:<region>:111111111111:layer:<resource:2>:1",
+        "LicenseInfo": "<license-info>",
+        "Version": 1,
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "list_layer_versions_predelete": {
+        "LayerVersions": [
+          {
+            "CompatibleArchitectures": [
+              "x86_64"
+            ],
+            "CompatibleRuntimes": [
+              "python3.9"
+            ],
+            "CreatedDate": "date",
+            "Description": "<description>",
+            "LayerVersionArn": "arn:aws:lambda:<region>:111111111111:layer:<resource:2>:2",
+            "LicenseInfo": "<license-info>",
+            "Version": 2
+          },
+          {
+            "CompatibleArchitectures": [
+              "x86_64"
+            ],
+            "CompatibleRuntimes": [
+              "python3.9"
+            ],
+            "CreatedDate": "date",
+            "Description": "<description>",
+            "LayerVersionArn": "arn:aws:lambda:<region>:111111111111:layer:<resource:2>:1",
+            "LicenseInfo": "<license-info>",
+            "Version": 1
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "delete_layer_1": {
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 204
+        }
+      },
+      "get_fn_config_postdelete": {
+        "Architectures": [
+          "x86_64"
+        ],
+        "CodeSha256": "<code-sha256:1>",
+        "CodeSize": 264,
+        "Description": "",
+        "Environment": {
+          "Variables": {}
+        },
+        "EphemeralStorage": {
+          "Size": 512
+        },
+        "FunctionArn": "arn:aws:lambda:<region>:111111111111:function:<function-name:1>",
+        "FunctionName": "<function-name:1>",
+        "Handler": "handler.handler",
+        "LastModified": "date",
+        "LastUpdateStatus": "Successful",
+        "Layers": [
+          {
+            "Arn": "arn:aws:lambda:<region>:111111111111:layer:<resource:2>:1",
+            "CodeSize": 169
+          }
+        ],
+        "MemorySize": 128,
+        "PackageType": "Zip",
+        "RevisionId": "<uuid:3>",
+        "Role": "arn:aws:iam::111111111111:role/<resource:1>",
+        "Runtime": "python3.9",
+        "State": "Active",
+        "Timeout": 30,
+        "TracingConfig": {
+          "Mode": "PassThrough"
+        },
+        "Version": "$LATEST",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "delete_layer_2": {
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 204
+        }
+      },
+      "list_layer_versions_postdelete": {
+        "LayerVersions": [],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "publish_result_3": {
+        "CompatibleArchitectures": [
+          "x86_64"
+        ],
+        "CompatibleRuntimes": [
+          "python3.9"
+        ],
+        "Content": {
+          "CodeSha256": "<code-sha256:2>",
+          "CodeSize": 169,
+          "Location": "<layer-location>"
+        },
+        "CreatedDate": "date",
+        "Description": "<description>",
+        "LayerArn": "arn:aws:lambda:<region>:111111111111:layer:<resource:2>",
+        "LayerVersionArn": "arn:aws:lambda:<region>:111111111111:layer:<resource:2>:3",
+        "LicenseInfo": "<license-info>",
+        "Version": 3,
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 201
+        }
+      }
+    }
+  },
+  "tests/integration/awslambda/test_lambda_api.py::TestLambdaLayer::test_layer_policy_exceptions": {
+    "recorded-date": "18-11-2022, 08:32:32",
+    "recorded-content": {
+      "publish_result": {
+        "CompatibleArchitectures": [
+          "x86_64"
+        ],
+        "CompatibleRuntimes": [
+          "python3.9"
+        ],
+        "Content": {
+          "CodeSha256": "<code-sha256:1>",
+          "CodeSize": 169,
+          "Location": "<layer-location>"
+        },
+        "CreatedDate": "date",
+        "Description": "",
+        "LayerArn": "arn:aws:lambda:<region>:111111111111:layer:<resource:1>",
+        "LayerVersionArn": "arn:aws:lambda:<region>:111111111111:layer:<resource:1>:1",
+        "Version": 1,
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 201
+        }
+      },
+      "layer_permission_nopolicy_get": {
+        "Error": {
+          "Code": "ResourceNotFoundException",
+          "Message": "No policy is associated with the given resource."
+        },
+        "Message": "No policy is associated with the given resource.",
+        "Type": "User",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 404
+        }
+      },
+      "add_layer_permission_result": {
+        "RevisionId": "<uuid:1>",
+        "Statement": {
+          "Sid": "s1",
+          "Effect": "Allow",
+          "Principal": "*",
+          "Action": "lambda:GetLayerVersion",
+          "Resource": "arn:aws:lambda:<region>:111111111111:layer:<resource:1>:1"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 201
+        }
+      },
+      "layer_permission_action_invalid": {
+        "Error": {
+          "Code": "ValidationException",
+          "Message": "1 validation error detected: Value '*' at 'action' failed to satisfy constraint: Member must satisfy regular expression pattern: lambda:GetLayerVersion"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "layer_permission_duplicate_statement": {
+        "Error": {
+          "Code": "ResourceConflictException",
+          "Message": "The statement id (s1) provided already exists. Please provide a new statement id, or remove the existing statement."
+        },
+        "Type": "User",
+        "message": "The statement id (s1) provided already exists. Please provide a new statement id, or remove the existing statement.",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 409
+        }
+      },
+      "layer_permission_layername_doesnotexist_add": {
+        "Error": {
+          "Code": "ResourceNotFoundException",
+          "Message": "Layer version arn:aws:lambda:<region>:111111111111:layer:<resource:1>-doesnotexist:1 does not exist."
+        },
+        "Message": "Layer version arn:aws:lambda:<region>:111111111111:layer:<resource:1>-doesnotexist:1 does not exist.",
+        "Type": "User",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 404
+        }
+      },
+      "layer_permission_layername_doesnotexist_get": {
+        "Error": {
+          "Code": "ResourceNotFoundException",
+          "Message": "Layer version arn:aws:lambda:<region>:111111111111:layer:<resource:1>-doesnotexist:1 does not exist."
+        },
+        "Message": "Layer version arn:aws:lambda:<region>:111111111111:layer:<resource:1>-doesnotexist:1 does not exist.",
+        "Type": "User",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 404
+        }
+      },
+      "layer_permission_layername_doesnotexist_remove": {
+        "Error": {
+          "Code": "ResourceNotFoundException",
+          "Message": "Layer version arn:aws:lambda:<region>:111111111111:layer:<resource:1>-doesnotexist:1 does not exist."
+        },
+        "Message": "Layer version arn:aws:lambda:<region>:111111111111:layer:<resource:1>-doesnotexist:1 does not exist.",
+        "Type": "User",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 404
+        }
+      },
+      "layer_permission_layerversion_doesnotexist_add": {
+        "Error": {
+          "Code": "ResourceNotFoundException",
+          "Message": "Layer version arn:aws:lambda:<region>:111111111111:layer:<resource:1>:2 does not exist."
+        },
+        "Message": "Layer version arn:aws:lambda:<region>:111111111111:layer:<resource:1>:2 does not exist.",
+        "Type": "User",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 404
+        }
+      },
+      "layer_permission_layerversion_doesnotexist_get": {
+        "Error": {
+          "Code": "ResourceNotFoundException",
+          "Message": "Layer version arn:aws:lambda:<region>:111111111111:layer:<resource:1>:2 does not exist."
+        },
+        "Message": "Layer version arn:aws:lambda:<region>:111111111111:layer:<resource:1>:2 does not exist.",
+        "Type": "User",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 404
+        }
+      },
+      "layer_permission_layerversion_doesnotexist_remove": {
+        "Error": {
+          "Code": "ResourceNotFoundException",
+          "Message": "Layer version arn:aws:lambda:<region>:111111111111:layer:<resource:1>:2 does not exist."
+        },
+        "Message": "Layer version arn:aws:lambda:<region>:111111111111:layer:<resource:1>:2 does not exist.",
+        "Type": "User",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 404
+        }
+      },
+      "layer_permission_statementid_doesnotexist_remove": {
+        "Error": {
+          "Code": "ResourceNotFoundException",
+          "Message": "Statement s2 is not found in resource policy."
+        },
+        "Message": "Statement s2 is not found in resource policy.",
+        "Type": "User",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 404
+        }
+      }
+    }
+  },
+  "tests/integration/awslambda/test_lambda_api.py::TestLambdaLayer::test_layer_policy_lifecycle": {
+    "recorded-date": "18-11-2022, 08:32:37",
+    "recorded-content": {
+      "publish_result": {
+        "CompatibleArchitectures": [
+          "x86_64"
+        ],
+        "CompatibleRuntimes": [
+          "python3.9"
+        ],
+        "Content": {
+          "CodeSha256": "<code-sha256:1>",
+          "CodeSize": 169,
+          "Location": "<layer-location>"
+        },
+        "CreatedDate": "date",
+        "Description": "",
+        "LayerArn": "arn:aws:lambda:<region>:111111111111:layer:<resource:1>",
+        "LayerVersionArn": "arn:aws:lambda:<region>:111111111111:layer:<resource:1>:1",
+        "Version": 1,
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 201
+        }
+      },
+      "add_policy_s1": {
+        "RevisionId": "<uuid:1>",
+        "Statement": {
+          "Sid": "s1",
+          "Effect": "Allow",
+          "Principal": "*",
+          "Action": "lambda:GetLayerVersion",
+          "Resource": "arn:aws:lambda:<region>:111111111111:layer:<resource:1>:1"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 201
+        }
+      },
+      "add_policy_s2": {
+        "RevisionId": "<uuid:2>",
+        "Statement": {
+          "Sid": "s2",
+          "Effect": "Allow",
+          "Principal": "*",
+          "Action": "lambda:GetLayerVersion",
+          "Resource": "arn:aws:lambda:<region>:111111111111:layer:<resource:1>:1"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 201
+        }
+      },
+      "get_layer_version_policy": {
+        "Policy": {
+          "Version": "2012-10-17",
+          "Id": "default",
+          "Statement": [
+            {
+              "Sid": "s1",
+              "Effect": "Allow",
+              "Principal": "*",
+              "Action": "lambda:GetLayerVersion",
+              "Resource": "arn:aws:lambda:<region>:111111111111:layer:<resource:1>:1"
+            },
+            {
+              "Sid": "s2",
+              "Effect": "Allow",
+              "Principal": "*",
+              "Action": "lambda:GetLayerVersion",
+              "Resource": "arn:aws:lambda:<region>:111111111111:layer:<resource:1>:1"
+            }
+          ]
+        },
+        "RevisionId": "<uuid:2>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "remove_s2": {
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 204
+        }
+      },
+      "get_layer_version_policy_postdeletes2": {
+        "Policy": {
+          "Version": "2012-10-17",
+          "Id": "default",
+          "Statement": [
+            {
+              "Sid": "s1",
+              "Effect": "Allow",
+              "Principal": "*",
+              "Action": "lambda:GetLayerVersion",
+              "Resource": "arn:aws:lambda:<region>:111111111111:layer:<resource:1>:1"
+            }
+          ]
+        },
+        "RevisionId": "<uuid:3>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/integration/awslambda/test_lambda_api.py::TestLambdaLayer::test_layer_s3_content": {
+    "recorded-date": "21-11-2022, 16:55:19",
+    "recorded-content": {
+      "publish_layer_result": {
+        "Content": {
+          "CodeSha256": "<code-sha256:1>",
+          "CodeSize": 169,
+          "Location": "<layer-location>"
+        },
+        "CreatedDate": "date",
+        "Description": "",
+        "LayerArn": "arn:aws:lambda:<region>:111111111111:layer:<resource:1>",
+        "LayerVersionArn": "arn:aws:lambda:<region>:111111111111:layer:<resource:1>:1",
+        "Version": 1,
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 201
+        }
+      }
+    }
+  },
+  "tests/integration/awslambda/test_lambda_api.py::TestLambdaLayer::test_layer_function_exceptions": {
+    "recorded-date": "22-11-2022, 19:53:01",
+    "recorded-content": {
+      "publish_result": {
+        "CompatibleArchitectures": [
+          "x86_64"
+        ],
+        "CompatibleRuntimes": [],
+        "Content": {
+          "CodeSha256": "<code-sha256:1>",
+          "CodeSize": 169,
+          "Location": "<layer-location>"
+        },
+        "CreatedDate": "date",
+        "Description": "",
+        "LayerArn": "arn:aws:lambda:<region>:111111111111:layer:<resource:1>",
+        "LayerVersionArn": "arn:aws:lambda:<region>:111111111111:layer:<resource:1>:1",
+        "Version": 1,
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 201
+        }
+      },
+      "publish_result_2": {
+        "CompatibleArchitectures": [
+          "x86_64"
+        ],
+        "CompatibleRuntimes": [],
+        "Content": {
+          "CodeSha256": "<code-sha256:1>",
+          "CodeSize": 169,
+          "Location": "<layer-location>"
+        },
+        "CreatedDate": "date",
+        "Description": "",
+        "LayerArn": "arn:aws:lambda:<region>:111111111111:layer:<resource:1>",
+        "LayerVersionArn": "arn:aws:lambda:<region>:111111111111:layer:<resource:1>:2",
+        "Version": 2,
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 201
+        }
+      },
+      "publish_result_3": {
+        "CompatibleArchitectures": [
+          "x86_64"
+        ],
+        "CompatibleRuntimes": [],
+        "Content": {
+          "CodeSha256": "<code-sha256:1>",
+          "CodeSize": 169,
+          "Location": "<layer-location>"
+        },
+        "CreatedDate": "date",
+        "Description": "",
+        "LayerArn": "arn:aws:lambda:<region>:111111111111:layer:<resource:1>",
+        "LayerVersionArn": "arn:aws:lambda:<region>:111111111111:layer:<resource:1>:3",
+        "Version": 3,
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 201
+        }
+      },
+      "get_fn_result": {
+        "Code": {
+          "Location": "<location>",
+          "RepositoryType": "S3"
+        },
+        "Configuration": {
+          "Architectures": [
+            "x86_64"
+          ],
+          "CodeSha256": "<code-sha256:2>",
+          "CodeSize": 264,
+          "Description": "",
+          "Environment": {
+            "Variables": {}
+          },
+          "EphemeralStorage": {
+            "Size": 512
+          },
+          "FunctionArn": "arn:aws:lambda:<region>:111111111111:function:<function-name:1>",
+          "FunctionName": "<function-name:1>",
+          "Handler": "handler.handler",
+          "LastModified": "date",
+          "LastUpdateStatus": "Successful",
+          "MemorySize": 128,
+          "PackageType": "Zip",
+          "RevisionId": "<uuid:1>",
+          "Role": "arn:aws:iam::111111111111:role/<resource:2>",
+          "Runtime": "python3.9",
+          "State": "Active",
+          "Timeout": 30,
+          "TracingConfig": {
+            "Mode": "PassThrough"
+          },
+          "Version": "$LATEST"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "two_layer_versions_single_function_exc": {
+        "Error": {
+          "Code": "InvalidParameterValueException",
+          "Message": "Two different versions of the same layer are not allowed to be referenced in the same function. arn:aws:lambda:<region>:111111111111:layer:<resource:1>:1 and arn:aws:lambda:<region>:111111111111:layer:<resource:1>:2 are versions of the same layer."
+        },
+        "Type": "User",
+        "message": "Two different versions of the same layer are not allowed to be referenced in the same function. arn:aws:lambda:<region>:111111111111:layer:<resource:1>:1 and arn:aws:lambda:<region>:111111111111:layer:<resource:1>:2 are versions of the same layer.",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "three_layer_versions_single_function_exc": {
+        "Error": {
+          "Code": "InvalidParameterValueException",
+          "Message": "Two different versions of the same layer are not allowed to be referenced in the same function. arn:aws:lambda:<region>:111111111111:layer:<resource:1>:1 and arn:aws:lambda:<region>:111111111111:layer:<resource:1>:2 are versions of the same layer."
+        },
+        "Type": "User",
+        "message": "Two different versions of the same layer are not allowed to be referenced in the same function. arn:aws:lambda:<region>:111111111111:layer:<resource:1>:1 and arn:aws:lambda:<region>:111111111111:layer:<resource:1>:2 are versions of the same layer.",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "two_identical_layer_versions_single_function_exc": {
+        "Error": {
+          "Code": "InvalidParameterValueException",
+          "Message": "Two different versions of the same layer are not allowed to be referenced in the same function. arn:aws:lambda:<region>:111111111111:layer:<resource:1>:1 and arn:aws:lambda:<region>:111111111111:layer:<resource:1>:1 are versions of the same layer."
+        },
+        "Type": "User",
+        "message": "Two different versions of the same layer are not allowed to be referenced in the same function. arn:aws:lambda:<region>:111111111111:layer:<resource:1>:1 and arn:aws:lambda:<region>:111111111111:layer:<resource:1>:1 are versions of the same layer.",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "add_nonexistent_layer_exc": {
+        "Error": {
+          "Code": "InvalidParameterValueException",
+          "Message": "Layer version arn:aws:lambda:<region>:111111111111:layer:doesnotexist:1 does not exist."
+        },
+        "Type": "User",
+        "message": "Layer version arn:aws:lambda:<region>:111111111111:layer:doesnotexist:1 does not exist.",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "add_nonexistent_layer_version_exc": {
+        "Error": {
+          "Code": "InvalidParameterValueException",
+          "Message": "Layer version arn:aws:lambda:<region>:111111111111:layer:<resource:1>:9 does not exist."
+        },
+        "Type": "User",
+        "message": "Layer version arn:aws:lambda:<region>:111111111111:layer:<resource:1>:9 does not exist.",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "add_layer_arn_without_version_exc": {
+        "Error": {
+          "Code": "ValidationException",
+          "Message": "1 validation error detected: Value '[arn:aws:lambda:<region>:111111111111:layer:<resource:1>]' at 'layers' failed to satisfy constraint: Member must satisfy constraint: [Member must have length less than or equal to 140, Member must have length greater than or equal to 1, Member must satisfy regular expression pattern: (arn:[a-zA-Z0-9-]+:lambda:[a-zA-Z0-9-]+:\\d{12}:layer:[a-zA-Z0-9-_]+:[0-9]+)|(arn:[a-zA-Z0-9-]+:lambda:::awslayer:[a-zA-Z0-9-_]+), Member must not be null]"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
   }
 }

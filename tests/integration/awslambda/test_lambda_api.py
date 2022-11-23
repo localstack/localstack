@@ -10,6 +10,7 @@ API-focused tests only. Don't add tests for asynchronous, blocking or implicit b
 import base64
 import io
 import json
+import os
 from hashlib import sha256
 from io import BytesIO
 from typing import Callable
@@ -19,7 +20,7 @@ import requests
 from botocore.config import Config
 from botocore.exceptions import ClientError
 
-from localstack.aws.api.lambda_ import Runtime
+from localstack.aws.api.lambda_ import Architecture, Runtime
 from localstack.testing.aws.lambda_utils import _await_dynamodb_table_active, is_old_provider
 from localstack.testing.snapshots.transformer import SortingTransformer
 from localstack.utils import testutil
@@ -2927,3 +2928,569 @@ class TestLambdaTags:
         with pytest.raises(lambda_client.exceptions.ResourceNotFoundException) as e:
             lambda_client.list_tags(Resource=fn_arn)
         snapshot.match("list_tags_postdelete", e.value.response)
+
+
+# TODO: add more tests where layername can be an ARN
+# TODO: test if function has to be in same region as layer
+@pytest.mark.skipif(condition=is_old_provider(), reason="not supported")
+class TestLambdaLayer:
+    @pytest.fixture(scope="class")
+    def dummylayer(self):
+        with open(os.path.join(os.path.dirname(__file__), "./layers/testlayer.zip"), "rb") as fd:
+            yield fd.read()
+
+    @pytest.mark.aws_validated
+    def test_layer_exceptions(
+        self, lambda_client, create_lambda_function, snapshot, dummylayer, cleanups
+    ):
+        """
+        API-level exceptions and edge cases for lambda layers
+        """
+        layer_name = f"testlayer-{short_uid()}"
+
+        publish_result = lambda_client.publish_layer_version(
+            LayerName=layer_name,
+            CompatibleRuntimes=[Runtime.python3_9],
+            Content={"ZipFile": dummylayer},
+            CompatibleArchitectures=[Architecture.x86_64],
+        )
+        cleanups.append(
+            lambda: lambda_client.delete_layer_version(
+                LayerName=layer_name, VersionNumber=publish_result["Version"]
+            )
+        )
+        snapshot.match("publish_result", publish_result)
+
+        with pytest.raises(lambda_client.exceptions.ClientError) as e:
+            lambda_client.list_layers(CompatibleRuntime="runtimedoesnotexist")
+        snapshot.match("list_layers_exc_compatibleruntime_invalid", e.value.response)
+
+        with pytest.raises(lambda_client.exceptions.ClientError) as e:
+            lambda_client.list_layers(CompatibleArchitecture="archdoesnotexist")
+        snapshot.match("list_layers_exc_compatiblearchitecture_invalid", e.value.response)
+
+        list_nonexistent_layer = lambda_client.list_layer_versions(LayerName="layerdoesnotexist")
+        snapshot.match("list_nonexistent_layer", list_nonexistent_layer)
+
+        with pytest.raises(lambda_client.exceptions.ResourceNotFoundException) as e:
+            lambda_client.get_layer_version(LayerName="layerdoesnotexist", VersionNumber=1)
+        snapshot.match("get_layer_version_exc_layer_doesnotexist", e.value.response)
+
+        with pytest.raises(lambda_client.exceptions.InvalidParameterValueException) as e:
+            lambda_client.get_layer_version(LayerName=layer_name, VersionNumber=-1)
+        snapshot.match(
+            "get_layer_version_exc_layer_version_doesnotexist_negative", e.value.response
+        )
+
+        with pytest.raises(lambda_client.exceptions.InvalidParameterValueException) as e:
+            lambda_client.get_layer_version(LayerName=layer_name, VersionNumber=0)
+        snapshot.match("get_layer_version_exc_layer_version_doesnotexist_zero", e.value.response)
+
+        with pytest.raises(lambda_client.exceptions.ResourceNotFoundException) as e:
+            lambda_client.get_layer_version(LayerName=layer_name, VersionNumber=2)
+        snapshot.match("get_layer_version_exc_layer_version_doesnotexist_2", e.value.response)
+
+        with pytest.raises(lambda_client.exceptions.ClientError) as e:
+            lambda_client.get_layer_version_by_arn(
+                Arn=publish_result["LayerArn"]
+            )  # doesn't include version in the arn
+        snapshot.match("get_layer_version_by_arn_exc_invalidarn", e.value.response)
+
+        with pytest.raises(lambda_client.exceptions.ResourceNotFoundException) as e:
+            lambda_client.get_layer_version_by_arn(Arn=f"{publish_result['LayerArn']}:2")
+        snapshot.match("get_layer_version_by_arn_exc_nonexistentversion", e.value.response)
+
+        # delete seem to be "idempotent"
+        delete_nonexistent_response = lambda_client.delete_layer_version(
+            LayerName="layerdoesnotexist", VersionNumber=1
+        )
+        snapshot.match("delete_nonexistent_response", delete_nonexistent_response)
+
+        delete_nonexistent_version_response = lambda_client.delete_layer_version(
+            LayerName=layer_name, VersionNumber=2
+        )
+        snapshot.match("delete_nonexistent_version_response", delete_nonexistent_version_response)
+
+        # this delete has an actual side effect (deleting the published layer)
+        delete_layer_response = lambda_client.delete_layer_version(
+            LayerName=layer_name, VersionNumber=1
+        )
+        snapshot.match("delete_layer_response", delete_layer_response)
+        delete_layer_again_response = lambda_client.delete_layer_version(
+            LayerName=layer_name, VersionNumber=1
+        )
+        snapshot.match("delete_layer_again_response", delete_layer_again_response)
+
+        with pytest.raises(lambda_client.exceptions.InvalidParameterValueException) as e:
+            lambda_client.delete_layer_version(LayerName=layer_name, VersionNumber=-1)
+        snapshot.match("delete_layer_version_exc_layerversion_invalid_version", e.value.response)
+
+        # note: empty CompatibleRuntimes and CompatibleArchitectures are actually valid (!)
+        layer_empty_name = f"testlayer-empty-{short_uid()}"
+        publish_empty_result = lambda_client.publish_layer_version(
+            LayerName=layer_empty_name,
+            Content={"ZipFile": dummylayer},
+            CompatibleRuntimes=[],
+            CompatibleArchitectures=[],
+        )
+        cleanups.append(
+            lambda: lambda_client.delete_layer_version(
+                LayerName=layer_empty_name, VersionNumber=publish_empty_result["Version"]
+            )
+        )
+        snapshot.match("publish_empty_result", publish_empty_result)
+
+        # TODO: test list_layers with invalid filter values
+        with pytest.raises(lambda_client.exceptions.ClientError) as e:
+            lambda_client.publish_layer_version(
+                LayerName=f"testlayer-2-{short_uid()}",
+                Content={"ZipFile": dummylayer},
+                CompatibleRuntimes=["invalidruntime"],
+                CompatibleArchitectures=["invalidarch"],
+            )
+        snapshot.match("publish_layer_version_exc_invalid_runtime_arch", e.value.response)
+
+        with pytest.raises(lambda_client.exceptions.ClientError) as e:
+            lambda_client.publish_layer_version(
+                LayerName=f"testlayer-2-{short_uid()}",
+                Content={"ZipFile": dummylayer},
+                CompatibleRuntimes=["invalidruntime", "invalidruntime2", Runtime.nodejs16_x],
+                CompatibleArchitectures=["invalidarch", Architecture.x86_64],
+            )
+        snapshot.match("publish_layer_version_exc_partially_invalid_values", e.value.response)
+
+    def test_layer_function_exceptions(
+        self, lambda_client, create_lambda_function, snapshot, dummylayer, cleanups
+    ):
+        """
+        Test interaction of layers when adding them to the function
+
+        TODO: add test for adding a layer with an incompatible runtime/arch
+        TODO: add test for > 5 layers
+        """
+        function_name = f"fn-layer-{short_uid()}"
+        layer_name = f"testlayer-{short_uid()}"
+
+        publish_result = lambda_client.publish_layer_version(
+            LayerName=layer_name,
+            CompatibleRuntimes=[],
+            Content={"ZipFile": dummylayer},
+            CompatibleArchitectures=[Architecture.x86_64],
+        )
+        cleanups.append(
+            lambda: lambda_client.delete_layer_version(
+                LayerName=layer_name, VersionNumber=publish_result["Version"]
+            )
+        )
+        snapshot.match("publish_result", publish_result)
+
+        publish_result_2 = lambda_client.publish_layer_version(
+            LayerName=layer_name,
+            CompatibleRuntimes=[],
+            Content={"ZipFile": dummylayer},
+            CompatibleArchitectures=[Architecture.x86_64],
+        )
+        cleanups.append(
+            lambda: lambda_client.delete_layer_version(
+                LayerName=layer_name, VersionNumber=publish_result_2["Version"]
+            )
+        )
+        snapshot.match("publish_result_2", publish_result_2)
+
+        publish_result_3 = lambda_client.publish_layer_version(
+            LayerName=layer_name,
+            CompatibleRuntimes=[],
+            Content={"ZipFile": dummylayer},
+            CompatibleArchitectures=[Architecture.x86_64],
+        )
+        cleanups.append(
+            lambda: lambda_client.delete_layer_version(
+                LayerName=layer_name, VersionNumber=publish_result_3["Version"]
+            )
+        )
+        snapshot.match("publish_result_3", publish_result_3)
+
+        create_lambda_function(
+            handler_file=TEST_LAMBDA_PYTHON_ECHO,
+            func_name=function_name,
+            runtime=Runtime.python3_9,
+        )
+        get_fn_result = lambda_client.get_function(FunctionName=function_name)
+        snapshot.match("get_fn_result", get_fn_result)
+
+        with pytest.raises(lambda_client.exceptions.InvalidParameterValueException) as e:
+            lambda_client.update_function_configuration(
+                FunctionName=function_name,
+                Layers=[
+                    publish_result["LayerVersionArn"],
+                    publish_result_2["LayerVersionArn"],
+                ],
+            )
+        snapshot.match("two_layer_versions_single_function_exc", e.value.response)
+
+        with pytest.raises(lambda_client.exceptions.InvalidParameterValueException) as e:
+            lambda_client.update_function_configuration(
+                FunctionName=function_name,
+                Layers=[
+                    publish_result["LayerVersionArn"],
+                    publish_result_2["LayerVersionArn"],
+                    publish_result_3["LayerVersionArn"],
+                ],
+            )
+        snapshot.match("three_layer_versions_single_function_exc", e.value.response)
+
+        with pytest.raises(lambda_client.exceptions.InvalidParameterValueException) as e:
+            lambda_client.update_function_configuration(
+                FunctionName=function_name,
+                Layers=[
+                    publish_result["LayerVersionArn"],
+                    publish_result["LayerVersionArn"],
+                ],
+            )
+        snapshot.match("two_identical_layer_versions_single_function_exc", e.value.response)
+
+        with pytest.raises(lambda_client.exceptions.InvalidParameterValueException) as e:
+            lambda_client.update_function_configuration(
+                FunctionName=function_name,
+                Layers=[
+                    f"{publish_result['LayerArn'].replace(layer_name, 'doesnotexist')}:1",
+                ],
+            )
+        snapshot.match("add_nonexistent_layer_exc", e.value.response)
+
+        with pytest.raises(lambda_client.exceptions.InvalidParameterValueException) as e:
+            lambda_client.update_function_configuration(
+                FunctionName=function_name,
+                Layers=[
+                    f"{publish_result['LayerArn']}:9",
+                ],
+            )
+        snapshot.match("add_nonexistent_layer_version_exc", e.value.response)
+
+        with pytest.raises(lambda_client.exceptions.ClientError) as e:
+            lambda_client.update_function_configuration(
+                FunctionName=function_name, Layers=[publish_result["LayerArn"]]
+            )
+        snapshot.match("add_layer_arn_without_version_exc", e.value.response)
+
+    @pytest.mark.aws_validated
+    def test_layer_lifecycle(
+        self, lambda_client, create_lambda_function, snapshot, dummylayer, cleanups
+    ):
+        """
+        Tests the general lifecycle of a Lambda layer
+
+        There are a few interesting behaviors we can observe
+        1. deleting all layer versions for a layer name and then publishing a new layer version with the same layer name, still increases the previous version counter
+        2. deleting a layer version that is associated with a lambda won't affect the lambda configuration
+
+        TODO: test paging of list operations
+        TODO: test list_layers
+
+        """
+        function_name = f"fn-layer-{short_uid()}"
+        layer_name = f"testlayer-{short_uid()}"
+        license_info = f"licenseinfo-{short_uid()}"
+        description = f"description-{short_uid()}"
+
+        snapshot.add_transformer(snapshot.transform.regex(license_info, "<license-info>"))
+        snapshot.add_transformer(snapshot.transform.regex(description, "<description>"))
+
+        create_lambda_function(
+            handler_file=TEST_LAMBDA_PYTHON_ECHO,
+            func_name=function_name,
+            runtime=Runtime.python3_9,
+        )
+        get_fn_result = lambda_client.get_function(FunctionName=function_name)
+        snapshot.match("get_fn_result", get_fn_result)
+
+        get_fn_config_result = lambda_client.get_function_configuration(FunctionName=function_name)
+        snapshot.match("get_fn_config_result", get_fn_config_result)
+
+        publish_result = lambda_client.publish_layer_version(
+            LayerName=layer_name,
+            CompatibleRuntimes=[Runtime.python3_9],
+            LicenseInfo=license_info,
+            Description=description,
+            Content={"ZipFile": dummylayer},
+            CompatibleArchitectures=[Architecture.x86_64],
+        )
+        cleanups.append(
+            lambda: lambda_client.delete_layer_version(
+                LayerName=layer_name, VersionNumber=publish_result["Version"]
+            )
+        )
+        snapshot.match("publish_result", publish_result)
+
+        # note: we don't even need to change anything for a second version to be published
+        publish_result_2 = lambda_client.publish_layer_version(
+            LayerName=layer_name,
+            CompatibleRuntimes=[Runtime.python3_9],
+            LicenseInfo=license_info,
+            Description=description,
+            Content={"ZipFile": dummylayer},
+            CompatibleArchitectures=[Architecture.x86_64],
+        )
+        cleanups.append(
+            lambda: lambda_client.delete_layer_version(
+                LayerName=layer_name, VersionNumber=publish_result_2["Version"]
+            )
+        )
+        snapshot.match("publish_result_2", publish_result_2)
+
+        assert publish_result["Version"] == 1
+        assert publish_result_2["Version"] == 2
+        assert publish_result["Content"]["CodeSha256"] == publish_result_2["Content"]["CodeSha256"]
+
+        update_fn_config = lambda_client.update_function_configuration(
+            FunctionName=function_name, Layers=[publish_result["LayerVersionArn"]]
+        )
+        snapshot.match("update_fn_config", update_fn_config)
+
+        # wait for update to be finished
+        lambda_client.get_waiter("function_updated_v2").wait(FunctionName=function_name)
+        get_fn_config = lambda_client.get_function_configuration(FunctionName=function_name)
+        snapshot.match("get_fn_config", get_fn_config)
+
+        get_layer_ver_result = lambda_client.get_layer_version(
+            LayerName=layer_name, VersionNumber=publish_result["Version"]
+        )
+        snapshot.match("get_layer_ver_result", get_layer_ver_result)
+
+        get_layer_by_arn_version = lambda_client.get_layer_version_by_arn(
+            Arn=publish_result["LayerVersionArn"]
+        )
+        snapshot.match("get_layer_by_arn_version", get_layer_by_arn_version)
+
+        list_layer_versions_predelete = lambda_client.list_layer_versions(LayerName=layer_name)
+        snapshot.match("list_layer_versions_predelete", list_layer_versions_predelete)
+
+        # scenario: what happens if we remove the layer when it's still associated with a function?
+        delete_layer_1 = lambda_client.delete_layer_version(LayerName=layer_name, VersionNumber=1)
+        snapshot.match("delete_layer_1", delete_layer_1)
+
+        # still there
+        get_fn_config_postdelete = lambda_client.get_function_configuration(
+            FunctionName=function_name
+        )
+        snapshot.match("get_fn_config_postdelete", get_fn_config_postdelete)
+        delete_layer_2 = lambda_client.delete_layer_version(LayerName=layer_name, VersionNumber=2)
+        snapshot.match("delete_layer_2", delete_layer_2)
+
+        # now there's no layer version left for <layer_name>
+        list_layer_versions_postdelete = lambda_client.list_layer_versions(LayerName=layer_name)
+        snapshot.match("list_layer_versions_postdelete", list_layer_versions_postdelete)
+        assert len(list_layer_versions_postdelete["LayerVersions"]) == 0
+
+        # creating a new layer version should still increment the previous version
+        publish_result_3 = lambda_client.publish_layer_version(
+            LayerName=layer_name,
+            CompatibleRuntimes=[Runtime.python3_9],
+            LicenseInfo=license_info,
+            Description=description,
+            Content={"ZipFile": dummylayer},
+            CompatibleArchitectures=[Architecture.x86_64],
+        )
+        cleanups.append(
+            lambda: lambda_client.delete_layer_version(
+                LayerName=layer_name, VersionNumber=publish_result_3["Version"]
+            )
+        )
+        snapshot.match("publish_result_3", publish_result_3)
+        assert publish_result_3["Version"] == 3
+
+    @pytest.mark.aws_validated
+    def test_layer_s3_content(
+        self,
+        lambda_client,
+        s3_client,
+        s3_create_bucket,
+        create_lambda_function,
+        snapshot,
+        dummylayer,
+        cleanups,
+    ):
+        """Publish a layer by referencing an s3 bucket instead of uploading the content directly"""
+        bucket = s3_create_bucket()
+
+        layer_name = f"bucket-layer-{short_uid()}"
+
+        bucket_key = "/layercontent.zip"
+        s3_client.upload_fileobj(Fileobj=io.BytesIO(dummylayer), Bucket=bucket, Key=bucket_key)
+
+        publish_layer_result = lambda_client.publish_layer_version(
+            LayerName=layer_name, Content={"S3Bucket": bucket, "S3Key": bucket_key}
+        )
+        snapshot.match("publish_layer_result", publish_layer_result)
+
+    @pytest.mark.aws_validated
+    def test_layer_policy_exceptions(
+        self, lambda_client, create_lambda_function, snapshot, dummylayer, cleanups
+    ):
+        """
+        API-level exceptions and edge cases for lambda layer permissions
+
+        TODO: OrganizationId & RevisionId
+        """
+        layer_name = f"layer4policy-{short_uid()}"
+
+        publish_result = lambda_client.publish_layer_version(
+            LayerName=layer_name,
+            CompatibleRuntimes=[Runtime.python3_9],
+            Content={"ZipFile": dummylayer},
+            CompatibleArchitectures=[Architecture.x86_64],
+        )
+        cleanups.append(
+            lambda: lambda_client.delete_layer_version(
+                LayerName=layer_name, VersionNumber=publish_result["Version"]
+            )
+        )
+        snapshot.match("publish_result", publish_result)
+
+        # we didn't add any permissions yet, so the policy does not exist
+        with pytest.raises(lambda_client.exceptions.ResourceNotFoundException) as e:
+            lambda_client.get_layer_version_policy(LayerName=layer_name, VersionNumber=1)
+        snapshot.match("layer_permission_nopolicy_get", e.value.response)
+
+        # add a policy with statement id "s1"
+        add_layer_permission_result = lambda_client.add_layer_version_permission(
+            LayerName=layer_name,
+            VersionNumber=1,
+            Action="lambda:GetLayerVersion",
+            Principal="*",
+            StatementId="s1",
+        )
+        snapshot.match("add_layer_permission_result", add_layer_permission_result)
+
+        # action can only be lambda:GetLayerVersion
+        with pytest.raises(lambda_client.exceptions.ClientError) as e:
+            lambda_client.add_layer_version_permission(
+                LayerName=layer_name,
+                VersionNumber=1,
+                Action="*",
+                Principal="*",
+                StatementId=f"s-{short_uid()}",
+            )
+        snapshot.match("layer_permission_action_invalid", e.value.response)
+
+        # duplicate statement Id (s1)
+        with pytest.raises(lambda_client.exceptions.ResourceConflictException) as e:
+            lambda_client.add_layer_version_permission(
+                LayerName=layer_name,
+                VersionNumber=1,
+                Action="lambda:GetLayerVersion",
+                Principal="*",
+                StatementId="s1",
+            )
+        snapshot.match("layer_permission_duplicate_statement", e.value.response)
+
+        # layer does not exist
+        with pytest.raises(lambda_client.exceptions.ResourceNotFoundException) as e:
+            lambda_client.add_layer_version_permission(
+                LayerName=f"{layer_name}-doesnotexist",
+                VersionNumber=1,
+                Action="lambda:GetLayerVersion",
+                Principal="*",
+                StatementId=f"s-{short_uid()}",
+            )
+        snapshot.match("layer_permission_layername_doesnotexist_add", e.value.response)
+
+        with pytest.raises(lambda_client.exceptions.ResourceNotFoundException) as e:
+            lambda_client.get_layer_version_policy(
+                LayerName=f"{layer_name}-doesnotexist", VersionNumber=1
+            )
+        snapshot.match("layer_permission_layername_doesnotexist_get", e.value.response)
+
+        with pytest.raises(lambda_client.exceptions.ResourceNotFoundException) as e:
+            lambda_client.remove_layer_version_permission(
+                LayerName=f"{layer_name}-doesnotexist", VersionNumber=1, StatementId="s1"
+            )
+        snapshot.match("layer_permission_layername_doesnotexist_remove", e.value.response)
+
+        # layer with given version does not exist
+        with pytest.raises(lambda_client.exceptions.ResourceNotFoundException) as e:
+            lambda_client.add_layer_version_permission(
+                LayerName=layer_name,
+                VersionNumber=2,
+                Action="lambda:GetLayerVersion",
+                Principal="*",
+                StatementId=f"s-{short_uid()}",
+            )
+        snapshot.match("layer_permission_layerversion_doesnotexist_add", e.value.response)
+
+        with pytest.raises(lambda_client.exceptions.ResourceNotFoundException) as e:
+            lambda_client.get_layer_version_policy(LayerName=layer_name, VersionNumber=2)
+        snapshot.match("layer_permission_layerversion_doesnotexist_get", e.value.response)
+
+        with pytest.raises(lambda_client.exceptions.ResourceNotFoundException) as e:
+            lambda_client.remove_layer_version_permission(
+                LayerName=layer_name, VersionNumber=2, StatementId="s1"
+            )
+        snapshot.match("layer_permission_layerversion_doesnotexist_remove", e.value.response)
+
+        # statement id does not exist for given layer version
+        with pytest.raises(lambda_client.exceptions.ResourceNotFoundException) as e:
+            lambda_client.remove_layer_version_permission(
+                LayerName=layer_name, VersionNumber=1, StatementId="s2"
+            )
+        snapshot.match("layer_permission_statementid_doesnotexist_remove", e.value.response)
+
+    @pytest.mark.aws_validated
+    def test_layer_policy_lifecycle(
+        self, lambda_client, create_lambda_function, snapshot, dummylayer, cleanups
+    ):
+        """
+        Simple lifecycle tests for lambda layer policies
+
+        TODO: OrganizationId & RevisionId
+        """
+        layer_name = f"testlayer-{short_uid()}"
+
+        publish_result = lambda_client.publish_layer_version(
+            LayerName=layer_name,
+            CompatibleRuntimes=[Runtime.python3_9],
+            Content={"ZipFile": dummylayer},
+            CompatibleArchitectures=[Architecture.x86_64],
+        )
+        cleanups.append(
+            lambda: lambda_client.delete_layer_version(
+                LayerName=layer_name, VersionNumber=publish_result["Version"]
+            )
+        )
+
+        snapshot.match("publish_result", publish_result)
+
+        add_policy_s1 = lambda_client.add_layer_version_permission(
+            LayerName=layer_name,
+            VersionNumber=1,
+            StatementId="s1",
+            Action="lambda:GetLayerVersion",
+            Principal="*",
+        )
+        snapshot.match("add_policy_s1", add_policy_s1)
+
+        add_policy_s2 = lambda_client.add_layer_version_permission(
+            LayerName=layer_name,
+            VersionNumber=1,
+            StatementId="s2",
+            Action="lambda:GetLayerVersion",
+            Principal="*",
+        )
+        snapshot.match("add_policy_s2", add_policy_s2)
+
+        get_layer_version_policy = lambda_client.get_layer_version_policy(
+            LayerName=layer_name, VersionNumber=1
+        )
+        snapshot.match("get_layer_version_policy", get_layer_version_policy)
+
+        remove_s2 = lambda_client.remove_layer_version_permission(
+            LayerName=layer_name, VersionNumber=1, StatementId="s2"
+        )
+        snapshot.match("remove_s2", remove_s2)
+
+        get_layer_version_policy_postdeletes2 = lambda_client.get_layer_version_policy(
+            LayerName=layer_name, VersionNumber=1
+        )
+        snapshot.match(
+            "get_layer_version_policy_postdeletes2", get_layer_version_policy_postdeletes2
+        )

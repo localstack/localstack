@@ -67,6 +67,7 @@ from localstack.aws.api.lambda_ import (
     LayerName,
     LayerPermissionAllowedAction,
     LayerPermissionAllowedPrincipal,
+    LayersListItem,
     LayerVersionArn,
     LayerVersionContentInput,
     LayerVersionNumber,
@@ -146,6 +147,10 @@ from localstack.services.awslambda.invocation.lambda_models import (
     FunctionVersion,
     InvocationError,
     LambdaEphemeralStorage,
+    Layer,
+    LayerPolicy,
+    LayerPolicyStatement,
+    LayerVersion,
     ProvisionedConcurrencyConfiguration,
     ProvisionedConcurrencyState,
     RequestEntityTooLargeException,
@@ -183,11 +188,13 @@ LAMBDA_TAG_LIMIT_PER_RESOURCE = 50
 class LambdaProvider(LambdaApi, ServiceLifecycleHook):
     lambda_service: LambdaService
     create_fn_lock: threading.RLock
+    create_layer_lock: threading.RLock
     router: FunctionUrlRouter
 
     def __init__(self) -> None:
         self.lambda_service = LambdaService()
         self.create_fn_lock = threading.RLock()
+        self.create_layer_lock = threading.RLock()
         self.router = FunctionUrlRouter(ROUTER, self.lambda_service)
 
     def on_after_init(self):
@@ -394,6 +401,53 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
                 Type="User",
             )
 
+    @staticmethod
+    def _validate_layers(new_layers: list[str]):
+        visited_layers = dict()
+
+        for layer_version_arn in new_layers:
+            region_name, account_id, layer_name, layer_version = api_utils.parse_layer_arn(
+                layer_version_arn
+            )
+            if layer_version is None:
+                raise ValidationException(
+                    f"1 validation error detected: Value '[{layer_version_arn}]'"
+                    + r" at 'layers' failed to satisfy constraint: Member must satisfy constraint: [Member must have length less than or equal to 140, Member must have length greater than or equal to 1, Member must satisfy regular expression pattern: (arn:[a-zA-Z0-9-]+:lambda:[a-zA-Z0-9-]+:\d{12}:layer:[a-zA-Z0-9-_]+:[0-9]+)|(arn:[a-zA-Z0-9-]+:lambda:::awslayer:[a-zA-Z0-9-_]+), Member must not be null]",
+                )
+
+            layer = lambda_stores[account_id][region_name].layers.get(layer_name)
+            if layer is None:
+                raise InvalidParameterValueException(
+                    f"Layer version {layer_version_arn} does not exist.", Type="User"
+                )
+            layer_version = layer.layer_versions.get(layer_version)
+            if layer_version is None:
+                raise InvalidParameterValueException(
+                    f"Layer version {layer_version_arn} does not exist.", Type="User"
+                )
+
+            # only the first two matches in the array are considered for the error message
+            layer_arn = ":".join(layer_version_arn.split(":")[:-1])
+            if layer_arn in visited_layers:
+                conflict_layer_version_arn = visited_layers[layer_arn]
+                raise InvalidParameterValueException(
+                    f"Two different versions of the same layer are not allowed to be referenced in the same function. {conflict_layer_version_arn} and {layer_version_arn} are versions of the same layer.",
+                    Type="User",
+                )
+            visited_layers[layer_arn] = layer_version_arn
+
+    @staticmethod
+    def map_layers(new_layers: list[str]) -> list[LayerVersion]:
+        layers = []
+        for layer_version_arn in new_layers:
+            region_name, account_id, layer_name, layer_version = api_utils.parse_layer_arn(
+                layer_version_arn
+            )
+            layer = lambda_stores[account_id][region_name].layers.get(layer_name)
+            layer_version = layer.layer_versions.get(layer_version)
+            layers.append(layer_version)
+        return layers
+
     @handler(operation="CreateFunction", expand=False)
     def create_function(
         self,
@@ -411,6 +465,9 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
 
         if env_vars := request.get("Environment", {}).get("Variables"):
             self._verify_env_variables(env_vars)
+
+        if layers := request.get("Layers", []):
+            self._validate_layers(layers)
 
         if not api_utils.is_role_arn(request.get("Role")):
             raise ValidationException(
@@ -479,7 +536,7 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
                     tracing_config_mode=TracingMode.PassThrough,  # TODO
                     image_config=None,  # TODO
                     code=code,
-                    layers=[],  # TODO
+                    layers=self.map_layers(layers),
                     internal_revision=short_uid(),
                     ephemeral_storage=LambdaEphemeralStorage(
                         size=request.get("EphemeralStorage", {}).get("Size", 512)
@@ -566,6 +623,13 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
             if env_vars := request.get("Environment", {}).get("Variables", {}):
                 self._verify_env_variables(env_vars)
             replace_kwargs["environment"] = env_vars
+
+        if "Layers" in request:
+            new_layers = request["Layers"]
+            if new_layers:
+                self._validate_layers(new_layers)
+            replace_kwargs["layers"] = self.map_layers(new_layers)
+
         new_latest_version = dataclasses.replace(
             latest_version,
             config=dataclasses.replace(
@@ -733,7 +797,7 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
         self,
         context: RequestContext,
         function_name: NamespacedFunctionName,
-        qualifier: Qualifier = None,  # TODO
+        qualifier: Qualifier = None,
     ) -> GetFunctionResponse:
         function_name, qualifier = api_utils.get_name_and_qualifier(
             function_name, qualifier, context.region
@@ -2360,17 +2424,125 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
         license_info: LicenseInfo = None,
         compatible_architectures: CompatibleArchitectures = None,
     ) -> PublishLayerVersionResponse:
-        ...
+        """
+        On first use of a LayerName a new layer is created and for each subsequent call with the same LayerName a new version is created.
+        Note that there are no $LATEST versions with layers!
+
+        """
+        validation_errors = api_utils.validate_layer_runtimes_and_architectures(
+            compatible_runtimes, compatible_architectures
+        )
+        if validation_errors:
+            raise ValidationException(
+                f"{len(validation_errors)} validation error{'s' if len(validation_errors) > 1 else ''} detected: {'; '.join(validation_errors)}"
+            )
+
+        state = lambda_stores[context.account_id][context.region]
+        with self.create_layer_lock:
+            if layer_name not in state.layers:
+                # we don't have a version so create new layer object
+                # lock is required to avoid creating two v1 objects for the same name
+                layer = Layer(
+                    arn=api_utils.layer_arn(
+                        layer_name=layer_name, account=context.account_id, region=context.region
+                    )
+                )
+                state.layers[layer_name] = layer
+
+        layer = state.layers[layer_name]
+        with layer.next_version_lock:
+            next_version = layer.next_version
+            layer.next_version += 1
+
+        # creating a new layer
+        if content.get("ZipFile"):
+            code = store_lambda_archive(
+                archive_file=content["ZipFile"],
+                function_name=layer_name,
+                region_name=context.region,
+                account_id=context.account_id,
+            )
+        else:
+            code = store_s3_bucket_archive(
+                archive_bucket=content["S3Bucket"],
+                archive_key=content["S3Key"],
+                archive_version=content.get("S3ObjectVersion"),
+                function_name=layer_name,
+                region_name=context.region,
+                account_id=context.account_id,
+            )
+
+        new_layer_version = LayerVersion(
+            layer_version_arn=api_utils.layer_version_arn(
+                layer_name=layer_name,
+                account=context.account_id,
+                region=context.region,
+                version=str(next_version),
+            ),
+            layer_arn=layer.arn,
+            version=next_version,
+            description=description or "",
+            license_info=license_info,
+            compatible_runtimes=compatible_runtimes,
+            compatible_architectures=compatible_architectures,
+            created=api_utils.generate_lambda_date(),
+            code=code,
+        )
+
+        layer.layer_versions[str(next_version)] = new_layer_version
+
+        return api_utils.map_layer_out(new_layer_version)
 
     def get_layer_version(
         self, context: RequestContext, layer_name: LayerName, version_number: LayerVersionNumber
     ) -> GetLayerVersionResponse:
-        ...
+        # TODO: handle layer_name as an ARN
+
+        account_id = context.account_id
+        region_name = context.region
+        if api_utils.is_layer_arn(layer_name):
+            region_name, account_id, layer_name, _ = api_utils.parse_layer_arn(layer_name)
+        state = lambda_stores[account_id][region_name]
+
+        layer = state.layers.get(layer_name)
+        if version_number < 1:
+            raise InvalidParameterValueException("Layer Version Cannot be less than 1", Type="User")
+        if layer is None:
+            raise ResourceNotFoundException(
+                "The resource you requested does not exist.", Type="User"
+            )
+        layer_version = layer.layer_versions.get(str(version_number))
+        if layer_version is None:
+            raise ResourceNotFoundException(
+                "The resource you requested does not exist.", Type="User"
+            )
+        return api_utils.map_layer_out(layer_version)
 
     def get_layer_version_by_arn(
         self, context: RequestContext, arn: LayerVersionArn
     ) -> GetLayerVersionResponse:
-        ...
+        match = api_utils.LAYER_VERSION_ARN_PATTERN.search(arn)
+        layer_version_parts = match.groupdict()
+        if not layer_version_parts.get("layer_version"):
+            raise ValidationException(
+                f"1 validation error detected: Value '{arn}' at 'arn' failed to satisfy constraint: Member must satisfy regular expression pattern: "
+                + "arn:[a-zA-Z0-9-]+:lambda:[a-zA-Z0-9-]+:\\d{12}:layer:[a-zA-Z0-9-_]+:[0-9]+"
+            )
+
+        layer_name = layer_version_parts["layer_name"]
+        layer_version = layer_version_parts["layer_version"]
+        account_id = layer_version_parts["account_id"]
+        region_name = layer_version_parts["region_name"]
+
+        state = lambda_stores[account_id][region_name]
+        layer_version = state.layers.get(layer_name, {}).layer_versions.get(layer_version)
+
+        if not layer_version:
+            raise ResourceNotFoundException(
+                "The resource you requested does not exist.", Type="User"
+            )
+
+        return api_utils.map_layer_out(layer_version)
 
     def list_layers(
         self,
@@ -2380,7 +2552,50 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
         max_items: MaxLayerListItems = None,
         compatible_architecture: Architecture = None,
     ) -> ListLayersResponse:
-        ...
+        validation_errors = []
+
+        validation_error_arch = api_utils.validate_layer_architecture(compatible_architecture)
+        if validation_error_arch:
+            validation_errors.append(validation_error_arch)
+
+        validation_error_runtime = api_utils.validate_layer_runtime(compatible_runtime)
+        if validation_error_runtime:
+            validation_errors.append(validation_error_runtime)
+
+        if validation_errors:
+            raise ValidationException(
+                f"{len(validation_errors)} validation error{'s' if len(validation_errors) > 1 else ''} detected: {';'.join(validation_errors)}"
+            )
+        # TODO: handle filter: compatible_runtime
+        # TODO: handle filter: compatible_architecture
+
+        state = lambda_stores[context.account_id][context.region]
+        layers = state.layers
+
+        # TODO: test how filters behave together with only returning layers here? Does it return the latest "matching" layer, i.e. does it ignore later layer versions that don't match?
+
+        responses: list[LayersListItem] = []
+        for layer_name, layer in layers.items():
+            # fetch latest version
+            layer_versions = list(layer.layer_versions.values())
+            sorted(layer_versions, key=lambda x: x.version)
+            latest_layer_version = layer_versions[-1]
+            responses.append(
+                LayersListItem(
+                    LayerName=layer_name,
+                    LayerArn=layer.arn,
+                    LatestMatchingVersion=api_utils.map_layer_out(latest_layer_version),
+                )
+            )
+
+        responses = PaginatedList(responses)
+        page, token = responses.get_page(
+            lambda version: version,
+            marker,
+            max_items,
+        )
+
+        return ListLayersResponse(NextMarker=token, Layers=page)
 
     def list_layer_versions(
         self,
@@ -2391,12 +2606,59 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
         max_items: MaxLayerListItems = None,
         compatible_architecture: Architecture = None,
     ) -> ListLayerVersionsResponse:
-        ...
+        validation_errors = api_utils.validate_layer_runtimes_and_architectures(
+            [compatible_runtime] if compatible_runtime else [],
+            [compatible_architecture] if compatible_architecture else [],
+        )
+        if validation_errors:
+            raise ValidationException(
+                f"{len(validation_errors)} validation error{'s' if len(validation_errors) > 1 else ''} detected: {';'.join(validation_errors)}"
+            )
+
+        account_id = context.account_id
+        region_name = context.region
+        if api_utils.is_layer_arn(layer_name):
+            region_name, account_id, layer_name, _ = api_utils.parse_layer_arn(layer_name)
+        state = lambda_stores[account_id][region_name]
+
+        # TODO: Test & handle filter: compatible_runtime
+        # TODO: Test & handle filter: compatible_architecture
+        all_layer_versions = []
+        layer = state.layers.get(layer_name)
+        if layer is not None:
+            for layer_version in layer.layer_versions.values():
+                all_layer_versions.append(api_utils.map_layer_out(layer_version))
+
+        all_layer_versions.sort(key=lambda x: x["Version"], reverse=True)
+        all_layer_versions = PaginatedList(all_layer_versions)
+        page, token = all_layer_versions.get_page(
+            lambda version: version["LayerVersionArn"],
+            marker,
+            max_items,
+        )
+        return ListLayerVersionsResponse(NextMarker=token, LayerVersions=page)
 
     def delete_layer_version(
         self, context: RequestContext, layer_name: LayerName, version_number: LayerVersionNumber
     ) -> None:
-        ...
+        if version_number < 1:
+            raise InvalidParameterValueException("Layer Version Cannot be less than 1", Type="User")
+
+        # TODO: test cross-region? (e.g. with functions it doesnt work and raises an exception)
+        account_id = context.account_id
+        region_name = context.region
+        if api_utils.is_layer_arn(layer_name):
+            region_name, account_id, layer_name, _ = api_utils.parse_layer_arn(layer_name)
+
+        state = lambda_stores[account_id][region_name]
+        layer = state.layers.get(layer_name, {})
+        if layer:
+            layer.layer_versions.pop(str(version_number), None)
+
+    # =======================================
+    # =====  Layer Version Permissions  =====
+    # =======================================
+    # TODO: lock updates that change revision IDs
 
     def add_layer_version_permission(
         self,
@@ -2409,7 +2671,60 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
         organization_id: OrganizationId = None,
         revision_id: String = None,
     ) -> AddLayerVersionPermissionResponse:
-        ...
+        # TODO: test for revision_id
+        # TODO: add layer ARN as layer_name support
+
+        layer_version_arn = api_utils.layer_version_arn(
+            layer_name, context.account_id, context.region, str(version_number)
+        )
+
+        if action != "lambda:GetLayerVersion":
+            raise ValidationException(
+                f"1 validation error detected: Value '{action}' at 'action' failed to satisfy constraint: Member must satisfy regular expression pattern: lambda:GetLayerVersion"
+            )
+
+        state = lambda_stores[context.account_id][context.region]
+        layer = state.layers.get(layer_name)
+        if layer is None:
+            raise ResourceNotFoundException(
+                f"Layer version {layer_version_arn} does not exist.", Type="User"
+            )
+        layer_version = layer.layer_versions.get(str(version_number))
+        if layer_version is None:
+            raise ResourceNotFoundException(
+                f"Layer version {layer_version_arn} does not exist.", Type="User"
+            )
+        # do we have a policy? if not set one
+        if layer_version.policy is None:
+            layer_version.policy = LayerPolicy()
+
+        if statement_id in layer_version.policy.statements:
+            raise ResourceConflictException(
+                f"The statement id ({statement_id}) provided already exists. Please provide a new statement id, or remove the existing statement.",
+                Type="User",
+            )
+
+        statement = LayerPolicyStatement(
+            sid=statement_id, action=action, principal=principal, organization_id=organization_id
+        )
+
+        old_statements = layer_version.policy.statements
+        layer_version.policy = dataclasses.replace(
+            layer_version.policy, statements={**old_statements, statement_id: statement}
+        )
+
+        return AddLayerVersionPermissionResponse(
+            Statement=json.dumps(
+                {
+                    "Sid": statement.sid,
+                    "Effect": "Allow",
+                    "Principal": statement.principal,
+                    "Action": statement.action,
+                    "Resource": layer_version.layer_version_arn,
+                }
+            ),
+            RevisionId=layer_version.policy.revision_id,
+        )
 
     def remove_layer_version_permission(
         self,
@@ -2419,12 +2734,81 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
         statement_id: StatementId,
         revision_id: String = None,
     ) -> None:
-        ...
+        # TODO: add layer ARN as layer_name support
+        layer_version_arn = api_utils.layer_version_arn(
+            layer_name, context.account_id, context.region, str(version_number)
+        )
+        state = lambda_stores[context.account_id][context.region]
+        layer = state.layers.get(layer_name)
+        if layer is None:
+            raise ResourceNotFoundException(
+                f"Layer version {layer_version_arn} does not exist.", Type="User"
+            )
+        layer_version = layer.layer_versions.get(str(version_number))
+        if layer_version is None:
+            raise ResourceNotFoundException(
+                f"Layer version {layer_version_arn} does not exist.", Type="User"
+            )
+
+        if revision_id and layer_version.policy.revision_id != revision_id:
+            # TODO: add test
+            return
+
+        if statement_id not in layer_version.policy.statements:
+            raise ResourceNotFoundException(
+                f"Statement {statement_id} is not found in resource policy.", Type="User"
+            )
+
+        old_statements = layer_version.policy.statements
+        layer_version.policy = dataclasses.replace(
+            layer_version.policy,
+            statements={k: v for k, v in old_statements.items() if k != statement_id},
+        )
 
     def get_layer_version_policy(
         self, context: RequestContext, layer_name: LayerName, version_number: LayerVersionNumber
     ) -> GetLayerVersionPolicyResponse:
-        ...
+        # TODO: add layer ARN as layer_name support
+        layer_version_arn = api_utils.layer_version_arn(
+            layer_name, context.account_id, context.region, str(version_number)
+        )
+        state = lambda_stores[context.account_id][context.region]
+        layer = state.layers.get(layer_name)
+        if layer is None:
+            raise ResourceNotFoundException(
+                f"Layer version {layer_version_arn} does not exist.", Type="User"
+            )
+
+        layer_version = layer.layer_versions.get(str(version_number))
+        if layer_version is None:
+            raise ResourceNotFoundException(
+                f"Layer version {layer_version_arn} does not exist.", Type="User"
+            )
+
+        if layer_version.policy is None:
+            raise ResourceNotFoundException(
+                "No policy is associated with the given resource.", Type="User"
+            )
+
+        return GetLayerVersionPolicyResponse(
+            Policy=json.dumps(
+                {
+                    "Version": layer_version.policy.version,
+                    "Id": layer_version.policy.id,
+                    "Statement": [
+                        {
+                            "Sid": ps.sid,
+                            "Effect": "Allow",
+                            "Principal": ps.principal,
+                            "Action": ps.action,
+                            "Resource": layer_version.layer_version_arn,
+                        }
+                        for ps in layer_version.policy.statements.values()
+                    ],
+                }
+            ),
+            RevisionId=layer_version.policy.revision_id,
+        )
 
     # =======================================
     # =======  Function Concurrency  ========
@@ -2592,4 +2976,4 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
         invoke_args: IO[BlobStream],
     ) -> InvokeAsyncResponse:
         """LEGACY API endpoint. Even AWS heavily discourages its usage."""
-        pass  # TODO
+        raise NotImplementedError

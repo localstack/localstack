@@ -8,13 +8,17 @@ from typing import TYPE_CHECKING, Any, Optional
 from localstack.aws.api import lambda_ as api_spec
 from localstack.aws.api.lambda_ import (
     AliasConfiguration,
+    Architecture,
     DeadLetterConfig,
     EnvironmentResponse,
     EphemeralStorage,
     FunctionConfiguration,
     FunctionUrlAuthType,
     InvalidParameterValueException,
+    LayerVersionContentOutput,
+    PublishLayerVersionResponse,
     ResourceNotFoundException,
+    Runtime,
     TracingConfig,
 )
 
@@ -24,6 +28,7 @@ if TYPE_CHECKING:
         Function,
         FunctionUrlConfig,
         FunctionVersion,
+        LayerVersion,
         VersionAlias,
     )
     from localstack.services.awslambda.invocation.models import LambdaStore
@@ -32,6 +37,12 @@ if TYPE_CHECKING:
 FULL_FN_ARN_PATTERN = re.compile(
     r"^arn:aws:lambda:(?P<region_name>[^:]+):(?P<account_id>\d{12}):function:(?P<function_name>[^:]+)(:(?P<qualifier>.*))?$"
 )
+
+# Pattern for a full (both with and without qualifier) lambda function ARN
+LAYER_VERSION_ARN_PATTERN = re.compile(
+    r"^arn:aws:lambda:(?P<region_name>[^:]+):(?P<account_id>\d{12}):layer:(?P<layer_name>[^:]+)(:(?P<layer_version>\d+))?$"
+)
+
 
 # Pattern for a valid destination arn
 DESTINATION_ARN_PATTERN = re.compile(
@@ -65,6 +76,27 @@ ALIAS_REGEX = re.compile(r"(?!^[0-9]+$)([a-zA-Z0-9-_]+)")
 URL_CHAR_SET = string.ascii_lowercase + string.digits
 # Date format as returned by the lambda service
 LAMBDA_DATE_FORMAT = "%Y-%m-%dT%H:%M:%S.%f+0000"
+
+RUNTIMES = [
+    Runtime.nodejs12_x,
+    Runtime.nodejs14_x,
+    Runtime.nodejs16_x,
+    Runtime.nodejs18_x,
+    Runtime.python3_7,
+    Runtime.python3_8,
+    Runtime.python3_9,
+    Runtime.ruby2_7,
+    Runtime.java8,
+    Runtime.java8_al2,
+    Runtime.java11,
+    Runtime.dotnetcore3_1,
+    Runtime.dotnet6,
+    Runtime.go1_x,
+    Runtime.provided,
+    Runtime.provided_al2,
+]
+
+ARCHITECTURES = [Architecture.arm64, Architecture.x86_64]
 
 
 def map_function_url_config(model: "FunctionUrlConfig") -> api_spec.FunctionUrlConfig:
@@ -337,6 +369,12 @@ def map_config_out(
             Variables=version.config.environment
         )  # TODO: Errors key?
 
+    if version.config.layers:
+        optional_kwargs["Layers"] = [
+            {"Arn": layer.layer_version_arn, "CodeSize": layer.code.code_size}
+            for layer in version.config.layers
+        ]
+
     func_conf = FunctionConfiguration(
         RevisionId=version.config.revision_id,
         FunctionName=version.id.function_name,
@@ -422,3 +460,72 @@ def validate_and_set_batch_size(event_source_arn: str, batch_size: Optional[int]
             raise InvalidParameterValueException("out of bounds todo", Type="User")  # TODO: test
 
     return batch_size
+
+
+def map_layer_out(layer_version: "LayerVersion") -> PublishLayerVersionResponse:
+    return PublishLayerVersionResponse(
+        Content=LayerVersionContentOutput(
+            Location=layer_version.code.generate_presigned_url(),
+            CodeSha256=layer_version.code.code_sha256,
+            CodeSize=layer_version.code.code_size,
+            # SigningProfileVersionArn="", # same as in function configuration
+            # SigningJobArn="" # same as in function configuration
+        ),
+        LicenseInfo=layer_version.license_info,
+        Description=layer_version.description,
+        CompatibleArchitectures=layer_version.compatible_architectures,
+        CompatibleRuntimes=layer_version.compatible_runtimes,
+        CreatedDate=layer_version.created,
+        LayerArn=layer_version.layer_arn,
+        LayerVersionArn=layer_version.layer_version_arn,
+        Version=layer_version.version,
+    )
+
+
+def layer_arn(layer_name: str, account: str, region: str):
+    return f"arn:aws:lambda:{region}:{account}:layer:{layer_name}"
+
+
+def layer_version_arn(layer_name: str, account: str, region: str, version: str):
+    return f"arn:aws:lambda:{region}:{account}:layer:{layer_name}:{version}"
+
+
+def parse_layer_arn(layer_version_arn: str):
+    return LAYER_VERSION_ARN_PATTERN.match(layer_version_arn).group(
+        "region_name", "account_id", "layer_name", "layer_version"
+    )
+
+
+# TODO: save list of valid runtimes somewhere
+def validate_layer_runtime(compatible_runtime: str) -> str | None:
+    if compatible_runtime is not None and compatible_runtime not in RUNTIMES:
+        return f"Value '{compatible_runtime}' at 'compatibleRuntime' failed to satisfy constraint: Member must satisfy enum value set: [ruby2.6, dotnetcore1.0, python3.7, nodejs8.10, nasa, ruby2.7, python2.7-greengrass, dotnetcore2.0, python3.8, dotnet6, dotnetcore2.1, python3.9, java11, nodejs6.10, provided, dotnetcore3.1, java17, nodejs, nodejs4.3, java8.al2, go1.x, go1.9, byol, nodejs10.x, python3.10, java8, nodejs12.x, nodejs8.x, nodejs14.x, nodejs8.9, nodejs16.x, provided.al2, nodejs4.3-edge, nodejs18.x, python3.4, ruby2.5, python3.6, python2.7]"
+    return None
+
+
+def validate_layer_architecture(compatible_architecture: str) -> str | None:
+    if compatible_architecture is not None and compatible_architecture not in ARCHITECTURES:
+        return f"Value '{compatible_architecture}' at 'compatibleArchitecture' failed to satisfy constraint: Member must satisfy enum value set: [x86_64, arm64]"
+    return None
+
+
+def validate_layer_runtimes_and_architectures(
+    compatible_runtimes: list[str], compatible_architectures: list[str]
+):
+    validations = []
+
+    if compatible_runtimes and set(compatible_runtimes).difference(RUNTIMES):
+        constraint = "Member must satisfy enum value set: [nodejs12.x, provided, nodejs16.x, nodejs14.x, ruby2.7, java11, dotnet6, go1.x, nodejs18.x, provided.al2, java8, java8.al2, dotnetcore3.1, python3.7, python3.8, python3.9]"
+        validation_msg = f"Value '[{', '.join([s for s in compatible_runtimes])}]' at 'compatibleRuntimes' failed to satisfy constraint: {constraint}"
+        validations.append(validation_msg)
+
+    if compatible_architectures and set(compatible_architectures).difference(ARCHITECTURES):
+        constraint = "[Member must satisfy enum value set: [x86_64, arm64]]"
+        validation_msg = f"Value '[{', '.join([s for s in compatible_architectures])}]' at 'compatibleArchitectures' failed to satisfy constraint: Member must satisfy constraint: {constraint}"
+        validations.append(validation_msg)
+
+    return validations
+
+
+def is_layer_arn(layer_name: str) -> bool:
+    return LAYER_VERSION_ARN_PATTERN.match(layer_name) is not None

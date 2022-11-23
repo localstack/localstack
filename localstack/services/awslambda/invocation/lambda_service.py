@@ -356,7 +356,7 @@ def store_lambda_archive(
     # s3 create bucket is idempotent
     s3_client.create_bucket(Bucket=bucket_name)
     code_id = f"{function_name}-{uuid.uuid4()}"
-    key = f"snapshots/{account_id}/{id}"
+    key = f"snapshots/{account_id}/{code_id}"
     s3_client.upload_fileobj(Fileobj=io.BytesIO(archive_file), Bucket=bucket_name, Key=key)
     code_sha256 = to_str(base64.b64encode(sha256(archive_file).digest()))
     return S3Code(
