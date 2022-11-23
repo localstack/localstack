@@ -5,6 +5,7 @@ import pytest
 from botocore.exceptions import ClientError
 
 from localstack.config import LEGACY_S3_PROVIDER
+from localstack.testing.aws.lambda_utils import _await_dynamodb_table_active
 from localstack.utils.aws import aws_stack
 from localstack.utils.http import safe_requests as requests
 from localstack.utils.strings import short_uid
@@ -173,6 +174,7 @@ class TestS3NotificationsToLambda:
         )
 
         dynamodb_create_table(table_name=table_name, partition_key="uuid", client=dynamodb_client)
+        _await_dynamodb_table_active(dynamodb_client, table_name)
 
         s3_client.put_bucket_notification_configuration(
             Bucket=bucket_name,
@@ -207,7 +209,7 @@ class TestS3NotificationsToLambda:
             rs["Items"] = sorted(rs["Items"], key=lambda x: x["data"]["eventName"])
             snapshot.match("items", rs["Items"])
 
-        retry(check_table, retries=10, sleep=1)
+        retry(check_table, retries=20, sleep=2)
 
     @pytest.mark.aws_validated
     @pytest.mark.skipif(condition=LEGACY_S3_PROVIDER, reason="no validation implemented")
