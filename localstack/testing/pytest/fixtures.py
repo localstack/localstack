@@ -1758,6 +1758,68 @@ def events_create_rule(events_client):
 
 
 @pytest.fixture
+def ses_configuration_set(ses_client):
+    configuration_set_names = []
+
+    def factory(name: str) -> None:
+        ses_client.create_configuration_set(
+            ConfigurationSet={
+                "Name": name,
+            },
+        )
+        configuration_set_names.append(name)
+
+    yield factory
+
+    # this endpoint is not implemented for localstack
+    if os.environ.get("TEST_TARGET") == "AWS_CLOUD":
+        for configuration_set_name in configuration_set_names:
+            ses_client.delete_configuration_set(ConfigurationSetName=configuration_set_name)
+
+
+@pytest.fixture
+def ses_configuration_set_sns_event_destination(ses_client):
+    event_destinations = []
+
+    def factory(config_set_name: str, event_destination_name: str, topic_arn: str) -> None:
+        ses_client.create_configuration_set_event_destination(
+            ConfigurationSetName=config_set_name,
+            EventDestination={
+                "Name": event_destination_name,
+                "Enabled": True,
+                "MatchingEventTypes": ["send", "bounce", "delivery", "open", "click"],
+                "SNSDestination": {
+                    "TopicARN": topic_arn,
+                },
+            },
+        )
+        event_destinations.append((config_set_name, event_destination_name))
+
+    yield factory
+
+    # this endpoint is not implemented for localstack
+    if os.environ.get("TEST_TARGET") == "AWS_CLOUD":
+        for (config_set_name, event_destination_name) in event_destinations:
+            ses_client.delete_configuration_set_event_destination(
+                ConfigurationSetName=config_set_name,
+                EventDestinationName=event_destination_name,
+            )
+
+
+@pytest.fixture
+def ses_verify_identity(ses_client):
+    identities = []
+
+    def factory(email_address: str) -> None:
+        ses_client.verify_email_identity(EmailAddress=email_address)
+
+    yield factory
+
+    for identity in identities:
+        ses_client.delete_identity(Identity=identity)
+
+
+@pytest.fixture
 def cleanups(ec2_client):
     cleanup_fns = []
 

@@ -1,8 +1,8 @@
 import json
 import logging
 import os
-from datetime import date, datetime, time
-from typing import Any, Dict, Optional
+from datetime import date, datetime, time, timezone
+from typing import Any, Dict, Optional, Protocol
 
 from moto.ses import ses_backends
 from moto.ses.models import SESBackend
@@ -15,8 +15,10 @@ from localstack.aws.api.ses import (
     AmazonResourceName,
     CloneReceiptRuleSetResponse,
     ConfigurationSetName,
+    CreateConfigurationSetEventDestinationResponse,
     DeleteTemplateResponse,
     Destination,
+    EventDestination,
     GetIdentityVerificationAttributesResponse,
     IdentityList,
     IdentityVerificationAttributes,
@@ -29,6 +31,7 @@ from localstack.aws.api.ses import (
     NextToken,
     RawMessage,
     ReceiptRuleSetName,
+    SendEmailRequest,
     SendEmailResponse,
     SendRawEmailResponse,
     SendTemplatedEmailResponse,
@@ -38,9 +41,11 @@ from localstack.aws.api.ses import (
     VerificationAttributes,
     VerificationStatus,
 )
+from localstack.constants import TEST_AWS_SECRET_ACCESS_KEY
 from localstack.services.internal import get_internal_apis
 from localstack.services.moto import call_moto
 from localstack.services.plugins import ServiceLifecycleHook
+from localstack.utils.aws import aws_stack
 from localstack.utils.files import mkdir
 from localstack.utils.strings import long_uid, to_str
 from localstack.utils.time import timestamp, timestamp_millis
@@ -156,6 +161,23 @@ class SesProvider(SesApi, ServiceLifecycleHook):
     # Implementations for SES operations
     #
 
+    @handler("CreateConfigurationSetEventDestination")
+    def create_configuration_set_event_destination(
+        self,
+        context: RequestContext,
+        configuration_set_name: ConfigurationSetName,
+        event_destination: EventDestination,
+    ) -> CreateConfigurationSetEventDestinationResponse:
+        result = call_moto(context)
+
+        # send SES test event if an SNS topic is attached
+        sns_topic_arn = event_destination.get("SNSDestination", {}).get("TopicARN")
+        if sns_topic_arn is not None:
+            emitter = SNSEmitter(context)
+            emitter.emit_create_configuration_set_event_destination_test_message(sns_topic_arn)
+
+        return result
+
     @handler("ListTemplates")
     def list_templates(
         self, context: RequestContext, next_token: NextToken = None, max_items: MaxItems = None
@@ -211,6 +233,19 @@ class SesProvider(SesApi, ServiceLifecycleHook):
         configuration_set_name: ConfigurationSetName = None,
     ) -> SendEmailResponse:
         response = call_moto(context)
+
+        backend = get_ses_backend(context)
+        emitter = SNSEmitter(context)
+        for event_destination in backend.config_set_event_destination.values():
+            if not event_destination["Enabled"]:
+                continue
+
+            sns_destination_arn = event_destination.get("SNSDestination")
+            if not sns_destination_arn:
+                continue
+
+            emitter.emit_send_event(source, destination["ToAddresses"], sns_destination_arn)
+            emitter.emit_delivery_event(source, destination["ToAddresses"], sns_destination_arn)
 
         text_part = message["Body"].get("Text", {}).get("Data")
         html_part = message["Body"].get("Html", {}).get("Data")
@@ -310,3 +345,96 @@ class SesProvider(SesApi, ServiceLifecycleHook):
             backend.create_receipt_rule(rule_set_name, rule)
 
         return CloneReceiptRuleSetResponse()
+
+
+class SNSClient(Protocol):
+    def publish(self, TopicArn: str, Message: str, Subject: Optional[str] = None):
+        ...
+
+
+class SNSEmitter:
+    def __init__(
+        self,
+        context: RequestContext,
+        client: Optional[SNSClient] = None,
+    ):
+        self.context = context
+
+    def emit_create_configuration_set_event_destination_test_message(
+        self, sns_topic_arn: str
+    ) -> None:
+        client = self._client_for_topic(sns_topic_arn)
+        client.publish(
+            TopicArn=sns_topic_arn,
+            Message="Successfully validated SNS topic for Amazon SES event publishing.",
+        )
+
+    def emit_send_event(
+        self, sender_email: Address, destination_addresses: AddressList, sns_topic_arn: str
+    ):
+        now = datetime.now(tz=timezone.utc)
+
+        event_payload = {
+            "eventType": "Send",
+            "mail": {
+                "timestamp": now.isoformat(),
+                "source": sender_email,
+                "sourceArn": f"arn:aws:ses:{self.context.region}:{self.context.account_id}:identity/{sender_email}",
+                "sendingAccountId": self.context.account_id,
+                "destination": destination_addresses,
+            },
+            "send": {},
+        }
+        client = self._client_for_topic(sns_topic_arn)
+        client.publish(
+            TopicArn=sns_topic_arn,
+            Message=json.dumps(event_payload),
+            Subject="Amazon SES Email Event Notification",
+        )
+
+    def emit_delivery_event(
+        self, sender_email: Address, destination_addresses: AddressList, sns_topic_arn: str
+    ):
+        now = datetime.now(tz=timezone.utc)
+
+        event_payload = {
+            "eventType": "Delivery",
+            "mail": {
+                "timestamp": now.isoformat(),
+                "source": sender_email,
+                "sourceArn": f"arn:aws:ses:{self.context.region}:{self.context.account_id}:identity/{sender_email}",
+                "sendingAccountId": self.context.account_id,
+                "destination": destination_addresses,
+            },
+            "delivery": {
+                "recipients": destination_addresses,
+                "timestamp": now.isoformat(),
+            },
+        }
+        client = self._client_for_topic(sns_topic_arn)
+        client.publish(
+            TopicArn=sns_topic_arn,
+            Message=json.dumps(event_payload),
+            Subject="Amazon SES Email Event Notification",
+        )
+
+    @staticmethod
+    def _sender_email(request: SendEmailRequest) -> str:
+        return request["Source"]
+
+    @staticmethod
+    def _destination_addresses(request: SendEmailRequest) -> AddressList:
+        return request["Destination"]["ToAddresses"]
+
+    @staticmethod
+    def _client_for_topic(topic_arn: str) -> SNSClient:
+        arn_parameters = aws_stack.parse_arn(topic_arn)
+        region = arn_parameters["region"]
+        access_key_id = arn_parameters["account"]
+
+        return aws_stack.connect_to_service(
+            "sns",
+            region_name=region,
+            aws_access_key_id=access_key_id,
+            aws_secret_access_key=TEST_AWS_SECRET_ACCESS_KEY,
+        )
