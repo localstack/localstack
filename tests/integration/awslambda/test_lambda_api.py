@@ -21,7 +21,7 @@ from botocore.config import Config
 from botocore.exceptions import ClientError
 
 from localstack.aws.api.lambda_ import Architecture, Runtime
-from localstack.testing.aws.lambda_utils import is_old_provider, _await_dynamodb_table_active
+from localstack.testing.aws.lambda_utils import _await_dynamodb_table_active, is_old_provider
 from localstack.testing.snapshots.transformer import SortingTransformer
 from localstack.utils import testutil
 from localstack.utils.aws import aws_stack
