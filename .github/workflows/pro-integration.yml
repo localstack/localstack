@@ -74,8 +74,8 @@ jobs:
                   if (error.status == 404) {
                     return false
                   } else {
-                    // another (unexpected) error ocurred, raise the error
-                    throw new Error(`Fetching companion refs failed: ${JSON.stringify(error)}`)
+                    // another (unexpected) error occurred, raise the error
+                    throw new Error(`Fetching companion refs failed: ${error}`)
                   }
               }
             }
