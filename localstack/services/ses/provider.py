@@ -190,7 +190,7 @@ class SesProvider(SesApi, ServiceLifecycleHook):
         # TODO: contribute upstream?
         backend = get_ses_backend(context)
         backend.config_set.pop(configuration_set_name, None)
-        return {}
+        return DeleteConfigurationSetResponse()
 
     @handler("DeleteConfigurationSetEventDestination")
     def delete_configuration_set_event_destination(
@@ -203,7 +203,7 @@ class SesProvider(SesApi, ServiceLifecycleHook):
         # TODO: contribute upstream?
         backend = get_ses_backend(context)
         backend.config_set_event_destination.pop(configuration_set_name, None)
-        return {}
+        return DeleteConfigurationSetEventDestinationResponse()
 
     @handler("ListTemplates")
     def list_templates(
