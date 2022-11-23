@@ -6,8 +6,8 @@ import re
 import pytest
 
 from localstack import config
+from localstack.aws.api.lambda_ import Runtime
 from localstack.constants import APPLICATION_AMZ_JSON_1_1
-from localstack.services.awslambda.lambda_utils import LAMBDA_RUNTIME_PYTHON36
 from localstack.testing.snapshots.transformer import KeyValueBasedTransformer
 from localstack.utils import testutil
 from localstack.utils.aws import arns
@@ -197,7 +197,7 @@ class TestCloudWatchLogs:
             handler_file=TEST_LAMBDA_PYTHON_ECHO,
             libs=TEST_LAMBDA_LIBS,
             func_name=test_lambda_name,
-            runtime=LAMBDA_RUNTIME_PYTHON36,
+            runtime=Runtime.python3_9,
         )
         lambda_client.invoke(FunctionName=test_lambda_name, Payload=b"{}")
         # get account-id to set the correct policy
