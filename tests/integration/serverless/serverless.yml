@@ -6,7 +6,7 @@ provider:
   memorySize: 384
   versionFunctions: false
   timeout: 900
-  runtime: "nodejs12.x"
+  runtime: "nodejs16.x"
   apiGateway:
     minimumCompressionSize: 1024
     shouldStartNameWithService: true
@@ -120,7 +120,7 @@ resources:
       Type: AWS::SQS::Queue
       Properties:
         QueueName: "${self:service}-${opt:stage}-CreateBackupQueue"
-    
+
     TestBucket:
       Type: AWS::S3::Bucket
       Properties:
@@ -179,7 +179,7 @@ functions:
           startingPosition: TRIM_HORIZON
   kinesisConsumerHandler:
     handler: handler.processKinesis
-    runtime: python3.8
+    runtime: python3.9
     events:
       - stream:
           type: kinesis

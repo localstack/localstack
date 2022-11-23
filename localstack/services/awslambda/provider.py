@@ -1315,7 +1315,16 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
         max_items: MaxListItems = None,
     ) -> ListEventSourceMappingsResponse:
         state = lambda_stores[context.account_id][context.region]
-        esms = PaginatedList(state.event_source_mappings.values())
+
+        esms = state.event_source_mappings.values()
+
+        if event_source_arn:  # TODO: validate pattern
+            esms = [e for e in esms if e["EventSourceArn"] == event_source_arn]
+
+        if function_name:
+            esms = [e for e in esms if function_name in e["FunctionArn"]]
+
+        esms = PaginatedList(esms)
         page, token = esms.get_page(
             lambda x: x["UUID"],
             marker,
