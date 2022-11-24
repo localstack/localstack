@@ -41,7 +41,7 @@ from localstack.utils.collections import pick_attributes
 from localstack.utils.functions import run_safe
 from localstack.utils.http import make_http_request
 from localstack.utils.strings import get_random_hex, is_string, is_string_or_bytes, to_str
-from localstack.utils.sync import poll_condition, retry
+from localstack.utils.sync import poll_condition
 
 # AWS environment variable names
 ENV_ACCESS_KEY = "AWS_ACCESS_KEY_ID"
@@ -1236,37 +1236,6 @@ def kinesis_get_latest_records(stream_name, shard_id, count=10, env=None):
         while len(result) > count:
             result.pop(0)
     return result
-
-
-def get_stack_details(stack_name, region_name=None):
-    cloudformation = connect_to_service("cloudformation", region_name=region_name)
-    stacks = cloudformation.describe_stacks(StackName=stack_name)
-    for stack in stacks["Stacks"]:
-        if stack["StackName"] == stack_name:
-            return stack
-
-
-def await_stack_status(stack_name, expected_statuses, retries=20, sleep=2, region_name=None):
-    def check_stack():
-        stack = get_stack_details(stack_name, region_name=region_name)
-        if stack["StackStatus"] not in expected_statuses:
-            raise Exception(
-                'Status "%s" for stack "%s" not in expected list: %s'
-                % (stack["StackStatus"], stack_name, expected_statuses)
-            )
-        return stack
-
-    expected_statuses = (
-        expected_statuses if isinstance(expected_statuses, list) else [expected_statuses]
-    )
-    return retry(check_stack, retries, sleep)
-
-
-def await_stack_completion(stack_name, retries=20, sleep=2, statuses=None, region_name=None):
-    statuses = statuses or ["CREATE_COMPLETE", "UPDATE_COMPLETE", "DELETE_COMPLETE"]
-    return await_stack_status(
-        stack_name, statuses, retries=retries, sleep=sleep, region_name=region_name
-    )
 
 
 def get_ecr_repository_arn(name, account_id=None, region_name=None):

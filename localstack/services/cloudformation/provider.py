@@ -1085,7 +1085,8 @@ class CloudformationProvider(CloudformationApi):
 
         # wait for completion of stack
         for stack in stacks_to_await:
-            aws_stack.await_stack_completion(stack[0], region_name=stack[1])
+            client = aws_stack.connect_to_service("cloudformation", region_name=stack[1])
+            client.get_waiter("stack_create_complete").wait(StackName=stack[0])
 
         # record operation
         operation = {
