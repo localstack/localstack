@@ -4,11 +4,10 @@ import unittest
 
 import requests
 
-import localstack.utils.aws.queries
 from localstack import config
 from localstack.constants import PATH_USER_REQUEST
 from localstack.services.apigateway.helpers import connect_api_gateway_to_sqs
-from localstack.utils.aws import arns, aws_stack
+from localstack.utils.aws import arns, aws_stack, queries
 from localstack.utils.common import short_uid, to_str
 
 REGION1 = "us-east-1"
@@ -74,7 +73,7 @@ class TestMultiRegion(unittest.TestCase):
         test_data = {"foo": "bar"}
         result = requests.post(url, data=json.dumps(test_data))
         self.assertEqual(result.status_code, 200)
-        messages = localstack.utils.aws.queries.sqs_receive_message(queue_arn)["Messages"]
+        messages = queries.sqs_receive_message(queue_arn)["Messages"]
         self.assertEqual(len(messages), 1)
         self.assertEqual(
             json.loads(to_str(base64.b64decode(to_str(messages[0]["Body"])))), test_data

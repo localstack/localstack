@@ -16,7 +16,6 @@ from moto.apigateway.models import Authorizer, Integration, Resource, RestAPI, a
 from moto.apigateway.utils import create_id as create_resource_id
 from requests.models import Response
 
-import localstack.utils.aws.queries
 from localstack import config
 from localstack.aws.accounts import get_aws_account_id
 from localstack.constants import (
@@ -28,7 +27,7 @@ from localstack.constants import (
 from localstack.services.apigateway.context import ApiInvocationContext
 from localstack.services.apigateway.models import ApiGatewayStore, apigateway_stores
 from localstack.utils import common
-from localstack.utils.aws import aws_stack
+from localstack.utils.aws import aws_stack, queries
 from localstack.utils.aws import resources as resource_utils
 from localstack.utils.aws.arns import parse_arn
 from localstack.utils.aws.aws_responses import requests_error_response_json, requests_response
@@ -395,7 +394,7 @@ def get_rest_api_paths(rest_api_id, region_name=None):
         path = resource.get("path")
         # TODO: check if this is still required in the general case (can we rely on "path" being
         #  present?)
-        path = path or localstack.utils.aws.queries.get_apigateway_path_for_resource(
+        path = path or queries.get_apigateway_path_for_resource(
             rest_api_id, resource["id"], region_name=region_name
         )
         resource_map[path] = resource

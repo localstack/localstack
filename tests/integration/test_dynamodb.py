@@ -9,12 +9,11 @@ import pytest
 from boto3.dynamodb.conditions import Key
 from boto3.dynamodb.types import STRING
 
-import localstack.utils.aws.queries
 from localstack.services.awslambda.lambda_utils import LAMBDA_RUNTIME_PYTHON36
 from localstack.services.dynamodbstreams.dynamodbstreams_api import get_kinesis_stream_name
 from localstack.testing.snapshots.transformer import SortingTransformer
 from localstack.utils import testutil
-from localstack.utils.aws import arns, aws_stack, resources
+from localstack.utils.aws import arns, aws_stack, queries, resources
 from localstack.utils.common import json_safe, long_uid, retry, short_uid
 from localstack.utils.testutil import check_expected_lambda_log_events_length
 
@@ -837,7 +836,7 @@ class TestDynamoDB:
         dynamodb.delete_item(TableName=table_name, Key={"Username": {"S": "Fred"}})
 
         def _fetch_records():
-            records = localstack.utils.aws.queries.kinesis_get_latest_records(
+            records = queries.kinesis_get_latest_records(
                 stream_name, shard_id=stream_description["Shards"][0]["ShardId"]
             )
             assert len(records) == 3

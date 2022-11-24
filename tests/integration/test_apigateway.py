@@ -15,7 +15,6 @@ from moto.apigateway import apigateway_backends
 from requests.models import Response
 from requests.structures import CaseInsensitiveDict
 
-import localstack.utils.aws.queries
 from localstack import config
 from localstack.aws.accounts import get_aws_account_id
 from localstack.aws.handlers import cors
@@ -46,7 +45,7 @@ from localstack.services.awslambda.lambda_utils import (
 from localstack.services.generic_proxy import ProxyListener
 from localstack.services.infra import start_proxy
 from localstack.utils import testutil
-from localstack.utils.aws import arns, aws_stack, resources
+from localstack.utils.aws import arns, aws_stack, queries, resources
 from localstack.utils.common import clone, get_free_tcp_port, json_safe, load_file
 from localstack.utils.common import safe_requests as requests
 from localstack.utils.common import select_attributes, short_uid, to_str
@@ -317,7 +316,7 @@ class TestAPIGateway:
         result = requests.post(url, data=json.dumps(test_data))
         assert 200 == result.status_code
 
-        messages = localstack.utils.aws.queries.sqs_receive_message(queue_name)["Messages"]
+        messages = queries.sqs_receive_message(queue_name)["Messages"]
         assert 1 == len(messages)
         assert test_data == json.loads(base64.b64decode(messages[0]["Body"]))
 
