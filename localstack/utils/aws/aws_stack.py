@@ -3,24 +3,16 @@ import logging
 import os
 import re
 import socket
-import sys
 import threading
 from functools import lru_cache
 from typing import Dict, Optional, Union
-from urllib.parse import urlparse
-
-from localstack.aws.accounts import get_aws_access_key_id, get_aws_account_id
-
-if sys.version_info >= (3, 8):
-    pass
-else:
-    pass
 
 import boto3
 import botocore
 import botocore.config
 
 from localstack import config
+from localstack.aws.accounts import get_aws_access_key_id, get_aws_account_id
 from localstack.constants import (
     APPLICATION_AMZ_JSON_1_0,
     APPLICATION_AMZ_JSON_1_1,
@@ -37,11 +29,6 @@ from localstack.constants import (
 from localstack.utils.http import make_http_request
 from localstack.utils.strings import is_string, is_string_or_bytes, to_str
 
-# AWS environment variable names
-ENV_ACCESS_KEY = "AWS_ACCESS_KEY_ID"
-ENV_SECRET_KEY = "AWS_SECRET_ACCESS_KEY"
-ENV_SESSION_TOKEN = "AWS_SESSION_TOKEN"
-
 # set up logger
 LOG = logging.getLogger(__name__)
 
@@ -56,10 +43,6 @@ INITIAL_BOTO3_SESSION = None
 
 # Boto clients cache
 BOTO_CLIENTS_CACHE = {}
-
-# Assume role loop seconds
-DEFAULT_TIMER_LOOP_SECONDS = 60 * 50
-
 
 # cached value used to determine the DNS status of the S3 hostname (whether it can be resolved properly)
 CACHE_S3_HOSTNAME_DNS_STATUS = None
@@ -449,11 +432,12 @@ def fix_account_id_in_arns(response, colon_delimiter=":", existing=None, replace
 
 
 def inject_test_credentials_into_env(env):
-    if ENV_ACCESS_KEY not in env and ENV_SECRET_KEY not in env:
-        env[ENV_ACCESS_KEY] = "test"
-        env[ENV_SECRET_KEY] = "test"
+    if "AWS_ACCESS_KEY_ID" not in env and "AWS_SECRET_ACCESS_KEY" not in env:
+        env["AWS_ACCESS_KEY_ID"] = "test"
+        env["AWS_SECRET_ACCESS_KEY"] = "test"
 
 
+# TODO: remove
 def inject_region_into_env(env, region):
     env["AWS_REGION"] = region
 
@@ -513,14 +497,6 @@ def mock_aws_request_headers(
     return headers
 
 
-def inject_region_into_auth_headers(region, headers):
-    auth_header = headers.get("Authorization")
-    if auth_header:
-        regex = r"Credential=([^/]+)/([^/]+)/([^/]+)/"
-        auth_header = re.sub(regex, r"Credential=\1/\2/%s/" % region, auth_header)
-        headers["Authorization"] = auth_header
-
-
 # TODO: is this still useful?
 def dynamodb_get_item_raw(request):
     headers = mock_aws_request_headers()
@@ -534,39 +510,3 @@ def dynamodb_get_item_raw(request):
     new_item = new_item.text
     new_item = new_item and json.loads(new_item)
     return new_item
-
-
-def get_search_db_connection(endpoint: str, region_name: str):
-    """
-    Get a connection to an ElasticSearch or OpenSearch DB
-    :param endpoint: cluster endpoint
-    :param region_name: cluster region e.g. us-east-1
-    """
-    from opensearchpy import OpenSearch, RequestsHttpConnection
-    from requests_aws4auth import AWS4Auth
-
-    verify_certs = False
-    use_ssl = False
-    # use ssl?
-    if "https://" in endpoint:
-        use_ssl = True
-        # TODO remove this condition once ssl certs are available for .es.localhost.localstack.cloud domains
-        endpoint_netloc = urlparse(endpoint).netloc
-        if not re.match(r"^.*(localhost(\.localstack\.cloud)?)(:\d+)?$", endpoint_netloc):
-            verify_certs = True
-
-    LOG.debug("Creating ES client with endpoint %s", endpoint)
-    if ENV_ACCESS_KEY in os.environ and ENV_SECRET_KEY in os.environ:
-        access_key = os.environ.get(ENV_ACCESS_KEY)
-        secret_key = os.environ.get(ENV_SECRET_KEY)
-        session_token = os.environ.get(ENV_SESSION_TOKEN)
-        awsauth = AWS4Auth(access_key, secret_key, region_name, "es", session_token=session_token)
-        connection_class = RequestsHttpConnection
-        return OpenSearch(
-            hosts=[endpoint],
-            verify_certs=verify_certs,
-            use_ssl=use_ssl,
-            connection_class=connection_class,
-            http_auth=awsauth,
-        )
-    return OpenSearch(hosts=[endpoint], verify_certs=verify_certs, use_ssl=use_ssl)
