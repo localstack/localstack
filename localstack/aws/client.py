@@ -1,16 +1,26 @@
 """Utils to process AWS requests as a client."""
+import dataclasses
 import io
+import json
 import logging
 from datetime import datetime
-from typing import Dict, Iterable, Optional
+from typing import TYPE_CHECKING, Dict, Iterable, Optional
 
+from boto3 import Session
+from botocore.awsrequest import AWSPreparedRequest
+from botocore.client import BaseClient
+from botocore.config import Config
 from botocore.model import OperationModel
 from botocore.parsers import ResponseParser, ResponseParserFactory
 from werkzeug import Response
 
 from localstack.aws.api import CommonServiceException, ServiceException, ServiceResponse
 from localstack.runtime import hooks
+from localstack.utils.aws.aws_stack import extract_region_from_arn
 from localstack.utils.patch import patch
+
+if TYPE_CHECKING:
+    from mypy_boto3_sqs import SQSClient
 
 LOG = logging.getLogger(__name__)
 
@@ -220,3 +230,105 @@ def raise_service_exception(response: Response, parsed_response: Dict) -> None:
     """
     if service_exception := parse_service_exception(response, parsed_response):
         raise service_exception
+
+
+@dataclasses.dataclass(frozen=True)
+class ClientOptions:
+    aws_region: Optional[str] = None
+    endpoint_url: Optional[str] = None
+    verify_ssl: Optional[bool] = True
+    use_ssl: Optional[bool] = True
+    aws_access_key_id: Optional[str] = None
+    aws_secret_access_key: Optional[str] = None
+    aws_session_token: Optional[str] = None
+    boto_config: Optional[Config] = dataclasses.field(default_factory=Config)
+    # TODO typing
+    localstack_data: dict[str, str] = dataclasses.field(default_factory=dict)
+
+
+class ClientFactory:
+    """
+    Client Factory to build boto clients for AWS services.
+
+    Usage:
+
+    """
+
+    # TODO migrate to immutable clientfactory instances
+    client_options: ClientOptions
+    session: Session
+
+    def __init__(self, client_options=None):
+        self.client_options = client_options or ClientOptions()
+        self.session = Session()
+
+    def endpoint(self, endpoint: str) -> "ClientFactory":
+        return ClientFactory(
+            client_options=dataclasses.replace(self.client_options, endpoint_url=endpoint)
+        )
+
+    def source_arn(self, arn: str) -> "ClientFactory":
+        return ClientFactory(
+            client_options=dataclasses.replace(
+                self.client_options,
+                localstack_data=self.client_options.localstack_data | {"source_arn": arn},
+            )
+        )
+
+    def target_arn(self, arn: str) -> "ClientFactory":
+        region = extract_region_from_arn(arn)
+        return ClientFactory(
+            client_options=dataclasses.replace(self.client_options, aws_region=region)
+        )
+
+    def source_service_principal(self, source_service: str) -> "ClientFactory":
+        return ClientFactory(
+            client_options=dataclasses.replace(
+                self.client_options,
+                localstack_data=self.client_options.localstack_data
+                | {"source_service": f"{source_service}.amazonaws.com"},
+            )
+        )
+
+    def credentials(self, credentials: Dict[str, str]) -> "ClientFactory":
+        return ClientFactory(client_options=dataclasses.replace(self.client_options, **credentials))
+
+    def default_credentials(self) -> "ClientFactory":
+        return self.credentials(
+            {"aws_access_key_id": "some-access-key-id", "aws_secret_access_key": "some-secret-key"}
+        )
+
+    def environment_credentials(self) -> "ClientFactory":
+        # TODO wrong output format of session.get_credentials()
+        return self.credentials(self.session.get_credentials())
+
+    def boto_config(self, config: Config) -> "ClientFactory":
+        return ClientFactory(
+            client_options=dataclasses.replace(
+                self.client_options, boto_config=self.client_options.boto_config.merge(config)
+            )
+        )
+
+    def build(self, service: str) -> BaseClient:
+        assert self.client_options.aws_access_key_id
+        assert self.client_options.aws_secret_access_key
+        # TODO: performance :(
+        client = self.session.client(
+            service_name=service,
+            config=self.client_options.boto_config,
+            aws_access_key_id=self.client_options.aws_access_key_id,
+        )
+
+        def event_handler(request: AWSPreparedRequest, **_):
+            request.headers["x-localstack-data"] = json.dumps(self.client_options.localstack_data)
+
+        client.meta.events.register("before-send.*.*", handler=event_handler)
+
+        return client
+
+    def sqs(self) -> "SQSClient":
+        return self.build("sqs")
+
+
+def aws_client():
+    return ClientFactory()
