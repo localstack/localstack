@@ -10,7 +10,8 @@ import time
 from contextlib import contextmanager
 from typing import Any, Callable, Dict, List, Optional, Tuple
 
-from localstack.utils.aws import arns, resources
+from localstack.utils.aws import arns
+from localstack.utils.aws import resources as resource_utils
 
 try:
     from typing import Literal
@@ -232,7 +233,7 @@ def create_lambda_function(
     lambda_code = {"ZipFile": zip_file}
     if len(zip_file) > MAX_LAMBDA_ARCHIVE_UPLOAD_SIZE:
         s3 = aws_stack.connect_to_service("s3")
-        resources.get_or_create_bucket(LAMBDA_ASSETS_BUCKET_NAME)
+        resource_utils.get_or_create_bucket(LAMBDA_ASSETS_BUCKET_NAME)
         asset_key = f"{short_uid()}.zip"
         s3.upload_fileobj(
             Fileobj=io.BytesIO(zip_file), Bucket=LAMBDA_ASSETS_BUCKET_NAME, Key=asset_key
@@ -304,7 +305,7 @@ def connect_api_gateway_to_http_with_lambda_proxy(
                 "integrations": [{"type": "AWS_PROXY", "uri": target_uri, "httpMethod": int_meth}],
             }
         )
-    return resources.create_api_gateway(
+    return resource_utils.create_api_gateway(
         name=gateway_name,
         resources=resources,
         stage_name=stage_name,
