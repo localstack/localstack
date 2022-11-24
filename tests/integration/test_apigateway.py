@@ -193,6 +193,13 @@ class TestAPIGateway:
         assert test_id == api_id
         assert apigw_name == name
 
+        spec_file = load_file(TEST_IMPORT_MOCK_INTEGRATION)
+        apigateway_client.put_rest_api(restApiId=test_id, body=spec_file, mode="overwrite")
+
+        url = path_based_url(api_id=test_id, stage_name="latest", path="/echo/foobar")
+        response = requests.get(url)
+        assert response._content == b'{"echo": "foobar", "response": "mocked"}'
+
     def test_api_gateway_kinesis_integration(self):
         # create target Kinesis stream
         stream = aws_stack.create_kinesis_stream(self.TEST_STREAM_KINESIS_API_GW)
