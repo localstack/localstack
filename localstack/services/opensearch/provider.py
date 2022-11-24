@@ -87,7 +87,7 @@ from localstack.services.opensearch.cluster_manager import (
     create_cluster_manager,
 )
 from localstack.services.opensearch.models import OpenSearchStore, opensearch_stores
-from localstack.utils.aws import aws_stack
+from localstack.utils.aws.request_context import get_region_from_request_context
 from localstack.utils.collections import PaginatedList, remove_none_values_from_dict
 from localstack.utils.objects import singleton_factory
 from localstack.utils.serving import Server
@@ -121,7 +121,7 @@ def _run_cluster_startup_monitor(cluster: Server, domain_name: str, region: str)
 
     LOG.debug("cluster state polling for %s returned! status = %s", domain_name, is_up)
     with _domain_mutex:
-        store = OpensearchProvider.get_store()
+        store = OpensearchProvider.get_store(region)
         status = store.opensearch_domains.get(domain_name)
         if status is not None:
             status["Processing"] = False
@@ -381,8 +381,13 @@ def is_valid_domain_name(name: str) -> bool:
 
 class OpensearchProvider(OpensearchApi):
     @staticmethod
-    def get_store() -> OpenSearchStore:
-        return opensearch_stores[get_aws_account_id()][aws_stack.get_region()]
+    def get_store(region: str = None) -> OpenSearchStore:
+        if not region:
+            region = get_region_from_request_context()
+            assert (
+                region
+            ), "The region was not given and it could not be extracted from a request context."
+        return opensearch_stores[get_aws_account_id()][region]
 
     def create_domain(
         self,
