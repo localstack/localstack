@@ -34,7 +34,7 @@ RESOURCE_POLICY = {
     "Statement": [
         {
             "Effect": "Allow",
-            "Principal": {"AWS": "arn:aws:iam::%s:root" % get_aws_account_id()},
+            "Principal": {"AWS": f"arn:aws:iam::{get_aws_account_id()}:root"},
             "Action": "secretsmanager:GetSecretValue",
             "Resource": "*",
         }
@@ -316,7 +316,7 @@ class TestSecretsManager:
             Description="testing rotation of secrets",
         )
 
-        function_name = "s-%s" % short_uid()
+        function_name = f"s-{short_uid()}"
         function_arn = testutil.create_lambda_function(
             handler_file=TEST_LAMBDA_PYTHON_VERSION,
             func_name=function_name,
