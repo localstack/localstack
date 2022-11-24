@@ -4,12 +4,11 @@ import json
 import pytest as pytest
 import requests
 
-import localstack.utils.aws.arns
 from localstack import config
 from localstack.services.generic_proxy import ProxyListener
 from localstack.services.infra import start_proxy
 from localstack.utils import testutil
-from localstack.utils.aws import aws_stack
+from localstack.utils.aws import arns, aws_stack
 from localstack.utils.aws.arns import lambda_function_arn
 from localstack.utils.common import (
     get_free_tcp_port,
@@ -170,7 +169,7 @@ class TestFirehoseIntegration:
             es_arn = es_create_response["DomainStatus"]["ARN"]
 
             # create s3 backup bucket arn
-            bucket_arn = localstack.utils.aws.arns.s3_bucket_arn(s3_bucket)
+            bucket_arn = arns.s3_bucket_arn(s3_bucket)
 
             # create kinesis stream
             kinesis_create_stream(StreamName=stream_name, ShardCount=2)
@@ -282,7 +281,7 @@ class TestFirehoseIntegration:
             opensearch_arn = opensearch_create_response["DomainStatus"]["ARN"]
 
             # create s3 backup bucket arn
-            bucket_arn = localstack.utils.aws.arns.s3_bucket_arn(s3_bucket)
+            bucket_arn = arns.s3_bucket_arn(s3_bucket)
 
             # create kinesis stream
             kinesis_create_stream(StreamName=stream_name, ShardCount=2)
@@ -383,7 +382,7 @@ class TestFirehoseIntegration:
         cleanups,
     ):
 
-        bucket_arn = localstack.utils.aws.arns.s3_bucket_arn(s3_bucket)
+        bucket_arn = arns.s3_bucket_arn(s3_bucket)
         stream_name = f"test-stream-{short_uid()}"
         log_group_name = f"group{short_uid()}"
         role_arn = "arn:aws:iam::000000000000:role/Firehose-Role"

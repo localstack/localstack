@@ -1,12 +1,12 @@
 from typing import Any, Dict, List
 
-import localstack.utils.aws.arns
 from localstack.services.stores import (
     AccountRegionBundle,
     BaseStore,
     CrossRegionAttribute,
     LocalAttribute,
 )
+from localstack.utils.aws import arns
 
 
 class ApiGatewayStore(BaseStore):
@@ -43,7 +43,7 @@ class ApiGatewayStore(BaseStore):
 
         self.account.update(
             {
-                "cloudwatchRoleArn": localstack.utils.aws.arns.role_arn("api-gw-cw-role"),
+                "cloudwatchRoleArn": arns.role_arn("api-gw-cw-role"),
                 "throttleSettings": {"burstLimit": 1000, "rateLimit": 500},
                 "features": ["UsagePlans"],
                 "apiKeyVersion": "1",

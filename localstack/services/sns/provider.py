@@ -19,7 +19,6 @@ from moto.sns.exceptions import DuplicateSnsEndpointError
 from moto.sns.models import MAXIMUM_MESSAGE_LENGTH
 from requests.models import Response as RequestsResponse
 
-import localstack.utils.aws.arns
 from localstack import config
 from localstack.aws.accounts import get_aws_account_id
 from localstack.aws.api import RequestContext
@@ -103,7 +102,7 @@ from localstack.services.edge import ROUTER
 from localstack.services.moto import call_moto
 from localstack.services.plugins import ServiceLifecycleHook
 from localstack.services.sns.models import SnsStore, sns_stores
-from localstack.utils.aws import aws_stack
+from localstack.utils.aws import arns, aws_stack
 from localstack.utils.aws.arns import extract_region_from_arn
 from localstack.utils.aws.aws_responses import create_sqs_system_attributes
 from localstack.utils.aws.dead_letter_queue import sns_error_to_dead_letter_queue
@@ -982,7 +981,7 @@ async def message_to_subscriber(
             elif "://" in endpoint:
                 queue_url = endpoint
             else:
-                queue_url = localstack.utils.aws.arns.get_sqs_queue_url(endpoint)
+                queue_url = arns.get_sqs_queue_url(endpoint)
                 subscriber["sqs_queue_url"] = queue_url
 
             message_group_id = req_data.get("MessageGroupId", [""])[0]
@@ -1173,9 +1172,7 @@ async def message_to_subscriber(
             subscriber=subscriber, req_data=req_data, message_id=message_id
         )
         if endpoint:
-            delivery_stream = localstack.utils.aws.arns.extract_resource_from_arn(endpoint).split(
-                "/"
-            )[1]
+            delivery_stream = arns.extract_resource_from_arn(endpoint).split("/")[1]
             firehose_client.put_record(
                 DeliveryStreamName=delivery_stream, Record={"Data": to_bytes(sns_body)}
             )

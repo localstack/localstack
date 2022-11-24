@@ -9,14 +9,13 @@ import pytest
 from boto3.dynamodb.conditions import Key
 from boto3.dynamodb.types import STRING
 
-import localstack.utils.aws.arns
 import localstack.utils.aws.queries
 import localstack.utils.aws.resources
 from localstack.services.awslambda.lambda_utils import LAMBDA_RUNTIME_PYTHON36
 from localstack.services.dynamodbstreams.dynamodbstreams_api import get_kinesis_stream_name
 from localstack.testing.snapshots.transformer import SortingTransformer
 from localstack.utils import testutil
-from localstack.utils.aws import aws_stack
+from localstack.utils.aws import arns, aws_stack
 from localstack.utils.common import json_safe, long_uid, retry, short_uid
 from localstack.utils.testutil import check_expected_lambda_log_events_length
 
@@ -1382,7 +1381,7 @@ class TestDynamoDB:
 
         kms_master_key_id = long_uid()
         sse_specification = {"Enabled": True, "SSEType": "KMS", "KMSMasterKeyId": kms_master_key_id}
-        kms_master_key_arn = localstack.utils.aws.arns.kms_key_arn(kms_master_key_id)
+        kms_master_key_arn = arns.kms_key_arn(kms_master_key_id)
 
         result = dynamodb_create_table_with_parameters(
             TableName=table_name,

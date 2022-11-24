@@ -15,7 +15,6 @@ from moto.apigateway import apigateway_backends
 from requests.models import Response
 from requests.structures import CaseInsensitiveDict
 
-import localstack.utils.aws.arns
 import localstack.utils.aws.queries
 import localstack.utils.aws.resources
 from localstack import config
@@ -48,7 +47,7 @@ from localstack.services.awslambda.lambda_utils import (
 from localstack.services.generic_proxy import ProxyListener
 from localstack.services.infra import start_proxy
 from localstack.utils import testutil
-from localstack.utils.aws import aws_stack
+from localstack.utils.aws import arns, aws_stack
 from localstack.utils.common import clone, get_free_tcp_port, json_safe, load_file
 from localstack.utils.common import safe_requests as requests
 from localstack.utils.common import select_attributes, short_uid, to_str
@@ -267,7 +266,7 @@ class TestAPIGateway:
         self.create_lambda_function(self.TEST_LAMBDA_SQS_HANDLER_NAME)
         event_source_data = {
             "FunctionName": self.TEST_LAMBDA_SQS_HANDLER_NAME,
-            "EventSourceArn": localstack.utils.aws.arns.sqs_queue_arn(queue_name),
+            "EventSourceArn": arns.sqs_queue_arn(queue_name),
             "Enabled": True,
         }
         add_event_source(event_source_data)
@@ -380,7 +379,7 @@ class TestAPIGateway:
             handler_file=TEST_LAMBDA_AWS_PROXY,
             runtime=LAMBDA_RUNTIME_PYTHON39,
         )
-        lambda_arn = localstack.utils.aws.arns.lambda_function_arn(fn_name)
+        lambda_arn = arns.lambda_function_arn(fn_name)
 
         api_id, _, root = create_rest_apigw(name="aws lambda api")
         resource_id, _ = create_rest_resource(
@@ -647,7 +646,7 @@ class TestAPIGateway:
         """
         self.create_lambda_function(fn_name)
         # create API Gateway and connect it to the Lambda proxy backend
-        lambda_uri = localstack.utils.aws.arns.lambda_function_arn(fn_name)
+        lambda_uri = arns.lambda_function_arn(fn_name)
         invocation_uri = "arn:aws:apigateway:%s:lambda:path/2015-03-31/functions/%s/invocations"
         target_uri = invocation_uri % (aws_stack.get_region(), lambda_uri)
 
@@ -766,7 +765,7 @@ class TestAPIGateway:
         testutil.create_lambda_function(
             handler_file=TEST_LAMBDA_NODEJS, func_name=fn_name, runtime=LAMBDA_RUNTIME_NODEJS12X
         )
-        lambda_arn = localstack.utils.aws.arns.lambda_function_arn(fn_name)
+        lambda_arn = arns.lambda_function_arn(fn_name)
 
         spec_file = load_file(TEST_IMPORT_REST_API_ASYNC_LAMBDA)
         spec_file = spec_file.replace("${lambda_invocation_arn}", lambda_arn)
@@ -835,8 +834,8 @@ class TestAPIGateway:
         # create Lambda function
         lambda_name = f"apigw-lambda-{short_uid()}"
         self.create_lambda_function(lambda_name)
-        lambda_uri = localstack.utils.aws.arns.lambda_function_arn(lambda_name)
-        target_uri = localstack.utils.aws.arns.apigateway_invocations_arn(lambda_uri)
+        lambda_uri = arns.lambda_function_arn(lambda_name)
+        target_uri = arns.apigateway_invocations_arn(lambda_uri)
 
         # create REST API
         api_id, _, _ = create_rest_apigw(name="test-api", description="")
@@ -933,7 +932,7 @@ class TestAPIGateway:
             handler="apigw_502.handler",
         )
 
-        lambda_uri = localstack.utils.aws.arns.lambda_function_arn(lambda_name)
+        lambda_uri = arns.lambda_function_arn(lambda_name)
         target_uri = f"arn:aws:apigateway:{aws_stack.get_region()}:lambda:path/2015-03-31/functions/{lambda_uri}/invocations"
         result = testutil.connect_api_gateway_to_http_with_lambda_proxy(
             "test_gateway",
@@ -963,8 +962,8 @@ class TestAPIGateway:
         self.create_lambda_function(fn_name)
 
         # create API Gateway and connect it to the Lambda proxy backend
-        lambda_uri = localstack.utils.aws.arns.lambda_function_arn(fn_name)
-        target_uri = localstack.utils.aws.arns.apigateway_invocations_arn(lambda_uri)
+        lambda_uri = arns.lambda_function_arn(fn_name)
+        target_uri = arns.apigateway_invocations_arn(lambda_uri)
 
         result = testutil.connect_api_gateway_to_http_with_lambda_proxy(
             "test_gateway3",
@@ -996,7 +995,7 @@ class TestAPIGateway:
         # create Lambda function
         lambda_name = f"apigw-lambda-{short_uid()}"
         self.create_lambda_function(lambda_name)
-        lambda_uri = localstack.utils.aws.arns.lambda_function_arn(lambda_name)
+        lambda_uri = arns.lambda_function_arn(lambda_name)
 
         # create REST API
         api_id, _, _ = create_rest_apigw(name="test-api", description="")
@@ -1497,11 +1496,11 @@ class TestAPIGateway:
             func_name=fn_name,
             runtime=LAMBDA_RUNTIME_PYTHON36,
         )
-        role_arn = localstack.utils.aws.arns.role_arn("sfn_role")
+        role_arn = arns.role_arn("sfn_role")
 
         # create state machine definition
         definition = clone(state_machine_def)
-        lambda_arn_1 = localstack.utils.aws.arns.lambda_function_arn(fn_name)
+        lambda_arn_1 = arns.lambda_function_arn(fn_name)
         definition["States"]["step1"]["Resource"] = lambda_arn_1
         definition = json.dumps(definition)
 
@@ -1794,7 +1793,7 @@ class TestAPIGateway:
             handler="apigw_integration.handler",
         )
 
-        lambda_uri = localstack.utils.aws.arns.lambda_function_arn(lambda_name)
+        lambda_uri = arns.lambda_function_arn(lambda_name)
         target_uri = f"arn:aws:apigateway:{aws_stack.get_region()}:lambda:path/2015-03-31/functions/{lambda_uri}/invocations"
         result = testutil.connect_api_gateway_to_http_with_lambda_proxy(
             "test_gateway",
@@ -1823,7 +1822,7 @@ class TestAPIGateway:
         )
 
         test_role = "test-s3-role"
-        role_arn = localstack.utils.aws.arns.role_arn(role_name=test_role)
+        role_arn = arns.role_arn(role_name=test_role)
         resources = apigw_client.get_resources(restApiId=api_id)
         # using the root resource '/' directly for this test
         root_resource_id = resources["items"][0]["id"]
@@ -1932,7 +1931,7 @@ class TestAPIGateway:
         testutil.create_lambda_function(
             handler_file=TEST_LAMBDA_NODEJS, func_name=fn_name, runtime=LAMBDA_RUNTIME_NODEJS12X
         )
-        lambda_arn_1 = localstack.utils.aws.arns.lambda_function_arn(fn_name)
+        lambda_arn_1 = arns.lambda_function_arn(fn_name)
 
         # create REST API and test resource
         rest_api_id, _, _ = create_rest_apigw(name="test", description="test")
@@ -2217,7 +2216,7 @@ def test_apigateway_rust_lambda(
     apigateway_client.put_method_response(
         restApiId=rest_api_id, resourceId=root_resource_id, httpMethod="GET", statusCode="200"
     )
-    lambda_target_uri = localstack.utils.aws.arns.apigateway_invocations_arn(
+    lambda_target_uri = arns.apigateway_invocations_arn(
         lambda_uri=lambda_arn, region_name=apigateway_client.meta.region_name
     )
     apigateway_client.put_integration(
@@ -2291,12 +2290,8 @@ def test_rest_api_multi_region(method, url_function):
         runtime=LAMBDA_RUNTIME_NODEJS14X,
         region_name="us-west-1",
     )
-    lambda_eu_arn = localstack.utils.aws.arns.lambda_function_arn(
-        lambda_name, region_name="eu-west-1"
-    )
-    uri_eu = localstack.utils.aws.arns.apigateway_invocations_arn(
-        lambda_eu_arn, region_name="eu-west-1"
-    )
+    lambda_eu_arn = arns.lambda_function_arn(lambda_name, region_name="eu-west-1")
+    uri_eu = arns.apigateway_invocations_arn(lambda_eu_arn, region_name="eu-west-1")
 
     integration_uri, _ = create_rest_api_integration(
         apigateway_client_eu,
@@ -2308,12 +2303,8 @@ def test_rest_api_multi_region(method, url_function):
         uri=uri_eu,
     )
 
-    lambda_us_arn = localstack.utils.aws.arns.lambda_function_arn(
-        lambda_name, region_name="us-west-1"
-    )
-    uri_us = localstack.utils.aws.arns.apigateway_invocations_arn(
-        lambda_us_arn, region_name="us-west-1"
-    )
+    lambda_us_arn = arns.lambda_function_arn(lambda_name, region_name="us-west-1")
+    uri_us = arns.apigateway_invocations_arn(lambda_us_arn, region_name="us-west-1")
 
     integration_uri, _ = create_rest_api_integration(
         apigateway_client_us,
@@ -2404,7 +2395,7 @@ def test_tag_api(apigateway_client, create_rest_apigw):
     api_id, _, _ = create_rest_apigw(name=api_name, tags={TAG_KEY_CUSTOM_ID: "c0stIOm1d"})
     assert api_id == "c0stIOm1d"
 
-    api_arn = localstack.utils.aws.arns.apigateway_restapi_arn(api_id=api_id)
+    api_arn = arns.apigateway_restapi_arn(api_id=api_id)
     apigateway_client.tag_resource(resourceArn=api_arn, tags=tags)
 
     # receive and assert tags

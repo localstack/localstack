@@ -10,8 +10,8 @@ import time
 from contextlib import contextmanager
 from typing import Any, Callable, Dict, List, Optional, Tuple
 
-import localstack.utils.aws.arns
 import localstack.utils.aws.resources
+from localstack.utils.aws import arns
 
 try:
     from typing import Literal
@@ -334,8 +334,8 @@ def create_lambda_api_gateway_integration(
     # create Lambda
     zip_file = create_lambda_archive(handler_file, get_content=True, runtime=runtime)
     create_lambda_function(func_name=func_name, zip_file=zip_file, runtime=runtime)
-    func_arn = localstack.utils.aws.arns.lambda_function_arn(func_name)
-    target_arn = localstack.utils.aws.arns.apigateway_invocations_arn(func_arn)
+    func_arn = arns.lambda_function_arn(func_name)
+    target_arn = arns.apigateway_invocations_arn(func_arn)
 
     # connect API GW to Lambda
     result = connect_api_gateway_to_http_with_lambda_proxy(
@@ -695,7 +695,7 @@ def list_all_resources(
 
 
 def response_arn_matches_partition(client, response_arn: str) -> bool:
-    parsed_arn = localstack.utils.aws.arns.parse_arn(response_arn)
+    parsed_arn = arns.parse_arn(response_arn)
     return (
         client.meta.partition
         == boto3.session.Session().get_partition_for_region(parsed_arn["region"])

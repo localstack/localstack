@@ -13,7 +13,6 @@ from moto.logs.models import LogsBackend
 from moto.logs.models import LogStream as MotoLogStream
 from moto.logs.models import logs_backends
 
-import localstack.utils.aws.arns
 from localstack.aws.accounts import get_aws_account_id
 from localstack.aws.api import RequestContext
 from localstack.aws.api.logs import (
@@ -26,7 +25,7 @@ from localstack.aws.api.logs import (
 )
 from localstack.services.moto import call_moto
 from localstack.services.plugins import ServiceLifecycleHook
-from localstack.utils.aws import aws_stack
+from localstack.utils.aws import arns, aws_stack
 from localstack.utils.aws.arns import extract_region_from_arn
 from localstack.utils.common import is_number
 from localstack.utils.patch import patch
@@ -96,7 +95,7 @@ def moto_put_subscription_filter(fn, self, *args, **kwargs):
         client = aws_stack.connect_to_service(
             "lambda", region_name=extract_region_from_arn(destination_arn)
         )
-        lambda_name = localstack.utils.aws.arns.lambda_function_name(destination_arn)
+        lambda_name = arns.lambda_function_name(destination_arn)
         try:
             client.get_function(FunctionName=lambda_name)
         except Exception:
@@ -106,7 +105,7 @@ def moto_put_subscription_filter(fn, self, *args, **kwargs):
 
     elif ":kinesis:" in destination_arn:
         client = aws_stack.connect_to_service("kinesis")
-        stream_name = localstack.utils.aws.arns.kinesis_stream_name(destination_arn)
+        stream_name = arns.kinesis_stream_name(destination_arn)
         try:
             client.describe_stream(StreamName=stream_name)
         except Exception:
@@ -117,7 +116,7 @@ def moto_put_subscription_filter(fn, self, *args, **kwargs):
 
     elif ":firehose:" in destination_arn:
         client = aws_stack.connect_to_service("firehose")
-        firehose_name = localstack.utils.aws.arns.firehose_name(destination_arn)
+        firehose_name = arns.firehose_name(destination_arn)
         try:
             client.describe_delivery_stream(DeliveryStreamName=firehose_name)
         except Exception:
@@ -127,7 +126,7 @@ def moto_put_subscription_filter(fn, self, *args, **kwargs):
             )
 
     else:
-        service = localstack.utils.aws.arns.extract_service_from_arn(destination_arn)
+        service = arns.extract_service_from_arn(destination_arn)
         raise InvalidParameterException(
             f"PutSubscriptionFilter operation cannot work with destinationArn for vendor {service}"
         )
@@ -187,11 +186,11 @@ def moto_put_log_events(self, log_group_name, log_stream_name, log_events):
             client = aws_stack.connect_to_service(
                 "lambda", region_name=extract_region_from_arn(self.destination_arn)
             )
-            lambda_name = localstack.utils.aws.arns.lambda_function_name(self.destination_arn)
+            lambda_name = arns.lambda_function_name(self.destination_arn)
             client.invoke(FunctionName=lambda_name, Payload=json.dumps(event))
         if ":kinesis:" in self.destination_arn:
             client = aws_stack.connect_to_service("kinesis")
-            stream_name = localstack.utils.aws.arns.kinesis_stream_name(self.destination_arn)
+            stream_name = arns.kinesis_stream_name(self.destination_arn)
             client.put_record(
                 StreamName=stream_name,
                 Data=payload_gz_encoded,
@@ -199,7 +198,7 @@ def moto_put_log_events(self, log_group_name, log_stream_name, log_events):
             )
         if ":firehose:" in self.destination_arn:
             client = aws_stack.connect_to_service("firehose")
-            firehose_name = localstack.utils.aws.arns.firehose_name(self.destination_arn)
+            firehose_name = arns.firehose_name(self.destination_arn)
             client.put_record(
                 DeliveryStreamName=firehose_name,
                 Record={"Data": payload_gz_encoded},

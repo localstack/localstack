@@ -3,14 +3,13 @@ import logging
 import random
 import string
 
-import localstack.utils.aws.arns
 from localstack.services.cloudformation.deployment_utils import generate_default_name
 from localstack.services.cloudformation.service_models import (
     REF_ARN_ATTRS,
     REF_ID_ATTRS,
     GenericBaseModel,
 )
-from localstack.utils.aws import aws_stack
+from localstack.utils.aws import arns, aws_stack
 from localstack.utils.common import select_attributes
 
 LOG = logging.getLogger(__name__)
@@ -131,7 +130,7 @@ class SecretsManagerSecretTargetAttachment(GenericBaseModel):
         return "AWS::SecretsManager::SecretTargetAttachment"
 
     def get_physical_resource_id(self, attribute, **kwargs):
-        return localstack.utils.aws.arns.secretsmanager_secret_arn(self.props.get("SecretId"))
+        return arns.secretsmanager_secret_arn(self.props.get("SecretId"))
 
     def fetch_state(self, stack_name, resources):
         # TODO implement?
@@ -144,7 +143,7 @@ class SecretsManagerRotationSchedule(GenericBaseModel):
         return "AWS::SecretsManager::RotationSchedule"
 
     def get_physical_resource_id(self, attribute, **kwargs):
-        return localstack.utils.aws.arns.secretsmanager_secret_arn(self.props.get("SecretId"))
+        return arns.secretsmanager_secret_arn(self.props.get("SecretId"))
 
     def fetch_state(self, stack_name, resources):
         # TODO implement?
@@ -157,7 +156,7 @@ class SecretsManagerResourcePolicy(GenericBaseModel):
         return "AWS::SecretsManager::ResourcePolicy"
 
     def get_physical_resource_id(self, attribute, **kwargs):
-        return localstack.utils.aws.arns.secretsmanager_secret_arn(self.props.get("SecretId"))
+        return arns.secretsmanager_secret_arn(self.props.get("SecretId"))
 
     def fetch_state(self, stack_name, resources):
         secret_id = self.resolve_refs_recursively(stack_name, self.props.get("SecretId"), resources)

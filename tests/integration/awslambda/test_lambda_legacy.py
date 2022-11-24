@@ -4,7 +4,6 @@ import os.path
 
 import pytest
 
-import localstack.utils.aws.arns
 from localstack.aws.accounts import get_aws_account_id
 from localstack.aws.api.lambda_ import Runtime
 from localstack.services.awslambda import lambda_api
@@ -19,7 +18,7 @@ from localstack.testing.aws.lambda_utils import is_old_provider
 from localstack.testing.pytest.fixtures import skip_if_pro_enabled
 from localstack.utils import testutil
 from localstack.utils.archives import download_and_extract
-from localstack.utils.aws import aws_stack
+from localstack.utils.aws import arns, aws_stack
 from localstack.utils.files import load_file
 from localstack.utils.platform import get_arch, get_os
 from localstack.utils.strings import short_uid, to_bytes, to_str
@@ -86,7 +85,7 @@ class TestLambdaLegacyProvider:
                 Action=action,
                 StatementId=sid,
                 Principal=principal,
-                SourceArn=localstack.utils.aws.arns.s3_bucket_arn("test-bucket"),
+                SourceArn=arns.s3_bucket_arn("test-bucket"),
             )
             assert "Statement" in resp
 
@@ -108,7 +107,7 @@ class TestLambdaLegacyProvider:
             assert lambda_api.func_arn(function_name) == statements[i]["Resource"]
             assert principal == statements[i]["Principal"]["Service"]
             assert (
-                localstack.utils.aws.arns.s3_bucket_arn("test-bucket")
+                arns.s3_bucket_arn("test-bucket")
                 == statements[i]["Condition"]["ArnLike"]["AWS:SourceArn"]
             )
             # check statement_ids in reverse order
@@ -140,7 +139,7 @@ class TestLambdaLegacyProvider:
             Action=action,
             StatementId=sid,
             Principal=principal,
-            SourceArn=localstack.utils.aws.arns.s3_bucket_arn("test-bucket"),
+            SourceArn=arns.s3_bucket_arn("test-bucket"),
         )
 
         # fetch lambda policy
@@ -152,7 +151,7 @@ class TestLambdaLegacyProvider:
         assert lambda_arn == policy["Statement"][0]["Resource"]
         assert principal == policy["Statement"][0]["Principal"]["Service"]
         assert (
-            localstack.utils.aws.arns.s3_bucket_arn("test-bucket")
+            arns.s3_bucket_arn("test-bucket")
             == policy["Statement"][0]["Condition"]["ArnLike"]["AWS:SourceArn"]
         )
 
