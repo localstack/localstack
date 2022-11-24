@@ -16,6 +16,8 @@ from moto.apigateway.models import Authorizer, Integration, Resource, RestAPI, a
 from moto.apigateway.utils import create_id as create_resource_id
 from requests.models import Response
 
+import localstack.utils.aws.queries
+import localstack.utils.aws.resources
 from localstack import config
 from localstack.aws.accounts import get_aws_account_id
 from localstack.constants import (
@@ -393,7 +395,7 @@ def get_rest_api_paths(rest_api_id, region_name=None):
         path = resource.get("path")
         # TODO: check if this is still required in the general case (can we rely on "path" being
         #  present?)
-        path = path or aws_stack.get_apigateway_path_for_resource(
+        path = path or localstack.utils.aws.queries.get_apigateway_path_for_resource(
             rest_api_id, resource["id"], region_name=region_name
         )
         resource_map[path] = resource
@@ -483,7 +485,7 @@ def connect_api_gateway_to_sqs(gateway_name, stage_name, queue_arn, path, region
             ],
         }
     ]
-    return aws_stack.create_api_gateway(
+    return localstack.utils.aws.resources.create_api_gateway(
         name=gateway_name,
         resources=resources,
         stage_name=stage_name,

@@ -1,6 +1,7 @@
 import json
 from urllib.parse import urlparse
 
+import localstack.utils.aws.queries
 from localstack.services.cloudformation.deployment_utils import (
     generate_default_name,
     lambda_keys_to_lower,
@@ -228,7 +229,7 @@ class GatewayResource(GenericBaseModel):
         if not target_resource:
             return None
 
-        path = aws_stack.get_apigateway_path_for_resource(
+        path = localstack.utils.aws.queries.get_apigateway_path_for_resource(
             api_id, target_resource[0]["id"], resources=api_resources
         )
         result = list(filter(lambda res: res["path"] == path, api_resources))

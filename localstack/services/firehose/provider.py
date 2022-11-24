@@ -121,6 +121,26 @@ def _get_description_or_raise_not_found(
     return delivery_stream_description
 
 
+def get_opensearch_endpoint(domain_arn: str) -> str:
+    """
+    Get an OpenSearch cluster endpoint by describing the cluster associated with the domain_arn
+    :param domain_arn: ARN of the cluster.
+    :returns: cluster endpoint
+    :raises: ValueError if the domain_arn is malformed
+    """
+    region_name = extract_region_from_arn(domain_arn)
+    if region_name is None:
+        raise ValueError("unable to parse region from opensearch domain ARN")
+    opensearch_client = aws_stack.connect_to_service(
+        service_name="opensearch", region_name=region_name
+    )
+    domain_name = domain_arn.rpartition("/")[2]
+    info = opensearch_client.describe_domain(DomainName=domain_name)
+    base_domain = info["DomainStatus"]["Endpoint"]
+    endpoint = base_domain if base_domain.startswith("http") else f"https://{base_domain}"
+    return endpoint
+
+
 class FirehoseProvider(FirehoseApi):
     @staticmethod
     def get_store() -> FirehoseStore:

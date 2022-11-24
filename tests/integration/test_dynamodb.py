@@ -10,6 +10,8 @@ from boto3.dynamodb.conditions import Key
 from boto3.dynamodb.types import STRING
 
 import localstack.utils.aws.arns
+import localstack.utils.aws.queries
+import localstack.utils.aws.resources
 from localstack.services.awslambda.lambda_utils import LAMBDA_RUNTIME_PYTHON36
 from localstack.services.dynamodbstreams.dynamodbstreams_api import get_kinesis_stream_name
 from localstack.testing.snapshots.transformer import SortingTransformer
@@ -46,7 +48,9 @@ def transcribe_snapshot_transformer(snapshot):
 class TestDynamoDB:
     @pytest.mark.only_localstack
     def test_non_ascii_chars(self, dynamodb):
-        aws_stack.create_dynamodb_table(TEST_DDB_TABLE_NAME, partition_key=PARTITION_KEY)
+        localstack.utils.aws.resources.create_dynamodb_table(
+            TEST_DDB_TABLE_NAME, partition_key=PARTITION_KEY
+        )
         table = dynamodb.Table(TEST_DDB_TABLE_NAME)
 
         # write some items containing non-ASCII characters
@@ -71,7 +75,9 @@ class TestDynamoDB:
 
     @pytest.mark.only_localstack
     def test_large_data_download(self, dynamodb):
-        aws_stack.create_dynamodb_table(TEST_DDB_TABLE_NAME_2, partition_key=PARTITION_KEY)
+        localstack.utils.aws.resources.create_dynamodb_table(
+            TEST_DDB_TABLE_NAME_2, partition_key=PARTITION_KEY
+        )
         table = dynamodb.Table(TEST_DDB_TABLE_NAME_2)
 
         # Create a large amount of items
@@ -89,7 +95,9 @@ class TestDynamoDB:
 
     @pytest.mark.only_localstack
     def test_time_to_live(self, dynamodb):
-        aws_stack.create_dynamodb_table(TEST_DDB_TABLE_NAME_3, partition_key=PARTITION_KEY)
+        localstack.utils.aws.resources.create_dynamodb_table(
+            TEST_DDB_TABLE_NAME_3, partition_key=PARTITION_KEY
+        )
         table = dynamodb.Table(TEST_DDB_TABLE_NAME_3)
 
         # Insert some items to the table
@@ -189,7 +197,7 @@ class TestDynamoDB:
         ddbstreams = aws_stack.create_external_boto_client("dynamodbstreams")
         kinesis = aws_stack.create_external_boto_client("kinesis")
         table_name = f"ddb-{short_uid()}"
-        aws_stack.create_dynamodb_table(
+        localstack.utils.aws.resources.create_dynamodb_table(
             table_name,
             partition_key=PARTITION_KEY,
             stream_view_type="NEW_AND_OLD_IMAGES",
@@ -228,7 +236,9 @@ class TestDynamoDB:
     @pytest.mark.only_localstack
     def test_multiple_update_expressions(self, dynamodb):
         dynamodb_client = aws_stack.create_external_boto_client("dynamodb")
-        aws_stack.create_dynamodb_table(TEST_DDB_TABLE_NAME, partition_key=PARTITION_KEY)
+        localstack.utils.aws.resources.create_dynamodb_table(
+            TEST_DDB_TABLE_NAME, partition_key=PARTITION_KEY
+        )
         table = dynamodb.Table(TEST_DDB_TABLE_NAME)
 
         item_id = short_uid()
@@ -432,7 +442,7 @@ class TestDynamoDB:
 
     @pytest.mark.aws_validated
     def test_return_values_in_put_item(self, dynamodb, dynamodb_client, snapshot):
-        aws_stack.create_dynamodb_table(
+        localstack.utils.aws.resources.create_dynamodb_table(
             TEST_DDB_TABLE_NAME, partition_key=PARTITION_KEY, client=dynamodb_client
         )
         table = dynamodb.Table(TEST_DDB_TABLE_NAME)
@@ -474,7 +484,7 @@ class TestDynamoDB:
     @pytest.mark.aws_validated
     def test_empty_and_binary_values(self, dynamodb, dynamodb_client, snapshot):
         table_name = f"table-{short_uid()}"
-        aws_stack.create_dynamodb_table(
+        localstack.utils.aws.resources.create_dynamodb_table(
             table_name=table_name, partition_key=PARTITION_KEY, client=dynamodb_client
         )
         table = dynamodb.Table(table_name)
@@ -837,7 +847,7 @@ class TestDynamoDB:
         dynamodb.delete_item(TableName=table_name, Key={"Username": {"S": "Fred"}})
 
         def _fetch_records():
-            records = aws_stack.kinesis_get_latest_records(
+            records = localstack.utils.aws.queries.kinesis_get_latest_records(
                 stream_name, shard_id=stream_description["Shards"][0]["ShardId"]
             )
             assert len(records) == 3
@@ -953,7 +963,9 @@ class TestDynamoDB:
 
     @pytest.mark.only_localstack
     def test_global_tables(self):
-        aws_stack.create_dynamodb_table(TEST_DDB_TABLE_NAME, partition_key=PARTITION_KEY)
+        localstack.utils.aws.resources.create_dynamodb_table(
+            TEST_DDB_TABLE_NAME, partition_key=PARTITION_KEY
+        )
         dynamodb = aws_stack.create_external_boto_client("dynamodb")
 
         # create global table

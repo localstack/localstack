@@ -1,19 +1,21 @@
+import logging
 import re
 from typing import Optional, TypedDict
 
-from botocore.utils import InvalidArnException
+from botocore.utils import ArnParser, InvalidArnException
 
 from localstack.aws.accounts import get_aws_account_id
-from localstack.utils.aws.aws_stack import (
-    LOG,
-    SQS_ARN_TO_URL_CACHE,
-    _arn_parser,
-    connect_to_service,
-    get_environment,
-    get_iam_role,
-    get_region,
-    get_valid_regions,
-)
+from localstack.utils.aws.aws_stack import connect_to_service, get_region, get_valid_regions
+
+# set up logger
+LOG = logging.getLogger(__name__)
+
+# maps SQS queue ARNs to queue URLs
+SQS_ARN_TO_URL_CACHE = {}
+
+# TODO: extract ARN utils into separate file!
+
+_arn_parser = ArnParser()
 
 
 def sqs_queue_url_for_arn(queue_arn):
@@ -104,10 +106,9 @@ def policy_arn(policy_name, account_id=None):
     return "arn:aws:iam::{}:policy/{}".format(account_id, policy_name)
 
 
-def iam_resource_arn(resource, role=None, env=None):
-    env = get_environment(env)
+def iam_resource_arn(resource, role=None):
     if not role:
-        role = get_iam_role(resource, env=env)
+        role = f"role-{resource}"
     return role_arn(role_name=role, account_id=get_aws_account_id())
 
 

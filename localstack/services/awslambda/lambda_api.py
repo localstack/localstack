@@ -23,6 +23,7 @@ from urllib.parse import urlparse
 from flask import Flask, Response, jsonify, request
 
 import localstack.utils.aws.arns
+import localstack.utils.aws.resources
 from localstack import config
 from localstack.aws.accounts import get_aws_account_id
 from localstack.constants import APPLICATION_JSON, LOCALHOST_HOSTNAME
@@ -899,7 +900,7 @@ def forward_to_fallback_url(func_arn, data):
             "payload": {"S": data},
             "function_name": {"S": lambda_name},
         }
-        aws_stack.create_dynamodb_table(table_name, partition_key="id")
+        localstack.utils.aws.resources.create_dynamodb_table(table_name, partition_key="id")
         dynamodb.put_item(TableName=table_name, Item=item)
         return ""
     if re.match(r"^https?://.+", config.LAMBDA_FALLBACK_URL):

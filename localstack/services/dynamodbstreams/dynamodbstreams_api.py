@@ -7,6 +7,7 @@ from typing import Dict
 from bson.json_util import dumps
 
 import localstack.utils.aws.arns
+import localstack.utils.aws.resources
 from localstack.aws.accounts import get_aws_account_id
 from localstack.aws.api.dynamodbstreams import StreamStatus, StreamViewType
 from localstack.services.dynamodbstreams.models import DynamoDbStreamsStore, dynamodbstreams_stores
@@ -42,7 +43,7 @@ def add_dynamodb_stream(
         store = get_dynamodbstreams_store()
         # create kinesis stream as a backend
         stream_name = get_kinesis_stream_name(table_name)
-        aws_stack.create_kinesis_stream(stream_name)
+        localstack.utils.aws.resources.create_kinesis_stream(stream_name)
         latest_stream_label = latest_stream_label or "latest"
         stream = {
             "StreamArn": localstack.utils.aws.arns.dynamodb_stream_arn(

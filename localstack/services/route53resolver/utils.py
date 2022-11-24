@@ -3,7 +3,6 @@ import re
 from moto.ec2 import ec2_backends
 
 from localstack.aws.api.route53resolver import ResourceNotFoundException, ValidationException
-from localstack.utils.aws import aws_stack
 from localstack.utils.strings import get_random_hex
 
 
@@ -36,7 +35,7 @@ def validate_priority(priority):
     if priority:
         if priority not in range(100, 9900):
             raise ValidationException(
-                f"[RSLVR-02017] The priority value you provided is reserved. Provide a number between '100' and '9900'. Trace Id: '{aws_stack.get_trace_id()}'"
+                f"[RSLVR-02017] The priority value you provided is reserved. Provide a number between '100' and '9900'. Trace Id: '{get_trace_id()}'"
             )
 
 
@@ -44,7 +43,7 @@ def validate_mutation_protection(mutation_protection):
     if mutation_protection:
         if mutation_protection not in ["ENABLED", "DISABLED"]:
             raise ValidationException(
-                f"[RSLVR-02018] The mutation protection value you provided is reserved. Provide a value of 'ENABLED' or 'DISABLED'. Trace Id: '{aws_stack.get_trace_id()}'"
+                f"[RSLVR-02018] The mutation protection value you provided is reserved. Provide a value of 'ENABLED' or 'DISABLED'. Trace Id: '{get_trace_id()}'"
             )
 
 
@@ -52,7 +51,7 @@ def validate_destination_arn(destination_arn):
     arn_pattern = r"arn:aws:(kinesis|logs|s3):?(.*)"
     if not re.match(arn_pattern, destination_arn):
         raise ResourceNotFoundException(
-            f"[RSLVR-01014] An Amazon Resource Name (ARN) for the destination is required. Trace Id: '{aws_stack.get_trace_id()}'"
+            f"[RSLVR-01014] An Amazon Resource Name (ARN) for the destination is required. Trace Id: '{get_trace_id()}'"
         )
 
 
@@ -61,5 +60,9 @@ def validate_vpc(vpc_id: str, region: str, account_id: str):
 
     if vpc_id not in backend.vpcs:
         raise ValidationException(
-            f"[RSLVR-02025] Can't find the resource with ID : '{vpc_id}'. Trace Id: '{aws_stack.get_trace_id()}'"
+            f"[RSLVR-02025] Can't find the resource with ID : '{vpc_id}'. Trace Id: '{get_trace_id()}'"
         )
+
+
+def get_trace_id():
+    return f"1-{get_random_hex(8)}-{get_random_hex(24)}"

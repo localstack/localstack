@@ -2,6 +2,7 @@ import pytest
 from botocore.config import Config
 from botocore.exceptions import ClientError
 
+import localstack.utils.aws.resources
 from localstack import config
 from localstack.utils.aws import aws_stack
 from localstack.utils.common import short_uid
@@ -14,7 +15,7 @@ class TestErrorInjection:
     def test_kinesis_error_injection(self, monkeypatch, kinesis_client, wait_for_stream_ready):
         kinesis = aws_stack.create_external_boto_client("kinesis", config=self.retry_config())
         stream_name = f"stream-{short_uid()}"
-        aws_stack.create_kinesis_stream(stream_name)
+        localstack.utils.aws.resources.create_kinesis_stream(stream_name)
         wait_for_stream_ready(stream_name)
 
         try:
@@ -96,7 +97,9 @@ class TestErrorInjection:
         # set max_attempts=1 to speed up the test execution
         dynamodb = aws_stack.connect_to_resource("dynamodb", config=self.retry_config())
         table_name = f"table-{short_uid()}"
-        aws_stack.create_dynamodb_table(table_name, partition_key=PARTITION_KEY)
+        localstack.utils.aws.resources.create_dynamodb_table(
+            table_name, partition_key=PARTITION_KEY
+        )
         return dynamodb.Table(table_name)
 
     def retry_config(self):

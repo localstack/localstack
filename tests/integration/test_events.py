@@ -10,6 +10,7 @@ import pytest
 from botocore.exceptions import ClientError
 
 import localstack.utils.aws.arns
+import localstack.utils.aws.resources
 from localstack import config
 from localstack.services.apigateway.helpers import extract_query_string_params
 from localstack.services.awslambda.lambda_utils import LAMBDA_RUNTIME_PYTHON36
@@ -842,7 +843,7 @@ class TestEvents:
         bus_name = "bus-{}".format(short_uid())
 
         # create firehose target bucket
-        aws_stack.get_or_create_bucket(s3_bucket)
+        localstack.utils.aws.resources.get_or_create_bucket(s3_bucket)
 
         # create firehose delivery stream to s3
         stream = firehose_client.create_delivery_stream(
