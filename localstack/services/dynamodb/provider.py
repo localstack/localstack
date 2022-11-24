@@ -139,6 +139,17 @@ THROTTLED_ACTIONS = READ_THROTTLED_ACTIONS + WRITE_THROTTLED_ACTIONS
 MANAGED_KMS_KEYS = {}
 
 
+def dynamodb_table_exists(table_name, client=None):
+    client = client or aws_stack.connect_to_service("dynamodb")
+    paginator = client.get_paginator("list_tables")
+    pages = paginator.paginate(PaginationConfig={"PageSize": 100})
+    for page in pages:
+        table_names = page["TableNames"]
+        if to_str(table_name) in table_names:
+            return True
+    return False
+
+
 class EventForwarder:
     @classmethod
     def forward_to_targets(cls, records: List[Dict], background: bool = True):
@@ -1136,11 +1147,12 @@ class DynamoDBProvider(DynamodbApi, ServiceLifecycleHook):
             aws_secret_access_key=TEST_AWS_SECRET_ACCESS_KEY,
             region_name=region_name,
         )
-        try:
-            client.describe_table(TableName=table_name)
-        except client.exceptions.ResourceNotFoundException:
-            return False
-        return True
+        return dynamodb_table_exists(table_name, client)
+        # try:
+        #     client.describe_table(TableName=table_name)
+        # except client.exceptions.ResourceNotFoundException:
+        #     return False
+        # return True
 
     @staticmethod
     def prepare_request_headers(headers: Dict):
