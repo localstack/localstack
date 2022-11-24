@@ -7,6 +7,7 @@ from typing import Any, Dict, Optional, Protocol
 from moto.ses import ses_backends
 from moto.ses.models import SESBackend
 
+import localstack.utils.aws.arns
 from localstack import config
 from localstack.aws.api import RequestContext, handler
 from localstack.aws.api.ses import (
@@ -428,7 +429,7 @@ class SNSEmitter:
 
     @staticmethod
     def _client_for_topic(topic_arn: str) -> SNSClient:
-        arn_parameters = aws_stack.parse_arn(topic_arn)
+        arn_parameters = localstack.utils.aws.arns.parse_arn(topic_arn)
         region = arn_parameters["region"]
         access_key_id = arn_parameters["account"]
 

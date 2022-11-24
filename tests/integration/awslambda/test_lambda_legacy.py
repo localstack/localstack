@@ -4,6 +4,7 @@ import os.path
 
 import pytest
 
+import localstack.utils.aws.arns
 from localstack.aws.accounts import get_aws_account_id
 from localstack.aws.api.lambda_ import Runtime
 from localstack.services.awslambda import lambda_api
@@ -85,7 +86,7 @@ class TestLambdaLegacyProvider:
                 Action=action,
                 StatementId=sid,
                 Principal=principal,
-                SourceArn=aws_stack.s3_bucket_arn("test-bucket"),
+                SourceArn=localstack.utils.aws.arns.s3_bucket_arn("test-bucket"),
             )
             assert "Statement" in resp
 
@@ -107,7 +108,7 @@ class TestLambdaLegacyProvider:
             assert lambda_api.func_arn(function_name) == statements[i]["Resource"]
             assert principal == statements[i]["Principal"]["Service"]
             assert (
-                aws_stack.s3_bucket_arn("test-bucket")
+                localstack.utils.aws.arns.s3_bucket_arn("test-bucket")
                 == statements[i]["Condition"]["ArnLike"]["AWS:SourceArn"]
             )
             # check statement_ids in reverse order
@@ -139,7 +140,7 @@ class TestLambdaLegacyProvider:
             Action=action,
             StatementId=sid,
             Principal=principal,
-            SourceArn=aws_stack.s3_bucket_arn("test-bucket"),
+            SourceArn=localstack.utils.aws.arns.s3_bucket_arn("test-bucket"),
         )
 
         # fetch lambda policy
@@ -151,7 +152,7 @@ class TestLambdaLegacyProvider:
         assert lambda_arn == policy["Statement"][0]["Resource"]
         assert principal == policy["Statement"][0]["Principal"]["Service"]
         assert (
-            aws_stack.s3_bucket_arn("test-bucket")
+            localstack.utils.aws.arns.s3_bucket_arn("test-bucket")
             == policy["Statement"][0]["Condition"]["ArnLike"]["AWS:SourceArn"]
         )
 

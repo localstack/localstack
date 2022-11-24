@@ -2,6 +2,7 @@ import json
 
 from botocore.exceptions import ClientError
 
+import localstack.utils.aws.arns
 from localstack.services.cloudformation.deployment_utils import (
     generate_default_name,
     is_none_or_empty_value,
@@ -17,7 +18,7 @@ class SNSTopic(GenericBaseModel):
         return "AWS::SNS::Topic"
 
     def get_physical_resource_id(self, attribute=None, **kwargs):
-        return aws_stack.sns_topic_arn(self.props["TopicName"])
+        return localstack.utils.aws.arns.sns_topic_arn(self.props["TopicName"])
 
     def fetch_state(self, stack_name, resources):
         topic_name = self.resolve_refs_recursively(stack_name, self.props["TopicName"], resources)

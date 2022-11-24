@@ -13,6 +13,7 @@ from moto.secretsmanager.exceptions import SecretNotFoundException as MotoSecret
 from moto.secretsmanager.models import FakeSecret, SecretsManagerBackend
 from moto.secretsmanager.responses import SecretsManagerResponse
 
+import localstack.utils.aws.arns
 from localstack.aws.api import CommonServiceException, RequestContext, ServiceResponse, handler
 from localstack.aws.api.secretsmanager import (
     CancelRotateSecretRequest,
@@ -109,7 +110,7 @@ class SecretsmanagerProvider(SecretsmanagerApi):
         # If secret ARN ends with "-<randomId>" this is removed from the request for upstream compatibility.
         t_secret_id = secret_id
         if secret_id and re.match(r"^arn:", secret_id):
-            arn = aws_stack.parse_arn(secret_id)
+            arn = localstack.utils.aws.arns.parse_arn(secret_id)
             aws_region = aws_stack.get_region()
             if arn["region"] != aws_region:
                 LOG.info(f'Expected request region "{aws_region}" for secret "{secret_id}"')
@@ -672,7 +673,7 @@ def get_arn_binding_for(account_id, region, secret_id):
     k = get_arn_binding_key_for(region, secret_id)
     if k not in SECRET_ARN_STORAGE:
         id_string = short_uid()[:6]
-        arn = aws_stack.secretsmanager_secret_arn(
+        arn = localstack.utils.aws.arns.secretsmanager_secret_arn(
             secret_id, account_id=account_id, region_name=region, random_suffix=id_string
         )
         SECRET_ARN_STORAGE[k] = arn

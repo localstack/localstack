@@ -1,14 +1,12 @@
 import pytest
 from botocore.utils import InvalidArnException
 
+from localstack.utils.aws.arns import extract_region_from_arn, lambda_function_name, parse_arn
 from localstack.utils.aws.aws_stack import (
     ENV_ACCESS_KEY,
     ENV_SECRET_KEY,
-    extract_region_from_arn,
     inject_region_into_env,
     inject_test_credentials_into_env,
-    lambda_function_name,
-    parse_arn,
 )
 
 

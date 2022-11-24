@@ -3,6 +3,7 @@ import logging
 import time
 from typing import Dict, List, Optional
 
+import localstack.utils.aws.arns
 from localstack.aws.api.lambda_ import InvocationType
 from localstack.services.awslambda.event_source_listeners.adapters import (
     EventSourceAdapter,
@@ -17,7 +18,7 @@ from localstack.services.awslambda.lambda_utils import (
     message_attributes_to_lower,
 )
 from localstack.utils.aws import aws_stack
-from localstack.utils.aws.aws_stack import extract_region_from_arn
+from localstack.utils.aws.arns import extract_region_from_arn
 from localstack.utils.threads import FuncThread
 
 LOG = logging.getLogger(__name__)
@@ -67,7 +68,7 @@ class SQSEventSourceListener(EventSourceListener):
                     batch_size = max(min(source.get("BatchSize", 1), 10), 1)
 
                     try:
-                        queue_url = aws_stack.sqs_queue_url_for_arn(queue_arn)
+                        queue_url = localstack.utils.aws.arns.sqs_queue_url_for_arn(queue_arn)
                         result = sqs_client.receive_message(
                             QueueUrl=queue_url,
                             AttributeNames=["All"],
@@ -98,7 +99,7 @@ class SQSEventSourceListener(EventSourceListener):
             "FunctionResponseTypes", []
         )
         region_name = extract_region_from_arn(queue_arn)
-        queue_url = aws_stack.sqs_queue_url_for_arn(queue_arn)
+        queue_url = localstack.utils.aws.arns.sqs_queue_url_for_arn(queue_arn)
         LOG.debug("Sending event from event source %s to Lambda %s", queue_arn, lambda_arn)
         self._send_event_to_lambda(
             queue_arn,

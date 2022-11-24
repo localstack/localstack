@@ -6,6 +6,7 @@ import time
 import unittest
 from unittest import mock
 
+import localstack.utils.aws.arns
 from localstack import config
 from localstack.aws.accounts import get_aws_account_id
 from localstack.services.awslambda import lambda_api, lambda_executors, lambda_utils
@@ -72,7 +73,7 @@ class TestLambdaAPI(unittest.TestCase):
             result = json.loads(lambda_api.get_function("myFunction").get_data())
             self.assertEqual(
                 result["Configuration"]["FunctionArn"],
-                aws_stack.lambda_function_arn("myFunction"),
+                localstack.utils.aws.arns.lambda_function_arn("myFunction"),
             )
 
     def test_get_function_two_functions_with_similar_names_match_by_name(self):
@@ -82,11 +83,12 @@ class TestLambdaAPI(unittest.TestCase):
             result = json.loads(lambda_api.get_function("myFunction").get_data())
             self.assertEqual(
                 result["Configuration"]["FunctionArn"],
-                aws_stack.lambda_function_arn("myFunction"),
+                localstack.utils.aws.arns.lambda_function_arn("myFunction"),
             )
             result = json.loads(lambda_api.get_function("myFunctions").get_data())
             self.assertEqual(
-                result["Configuration"]["FunctionArn"], aws_stack.lambda_function_arn("myFunctions")
+                result["Configuration"]["FunctionArn"],
+                localstack.utils.aws.arns.lambda_function_arn("myFunctions"),
             )
 
     def test_get_function_two_functions_with_similar_names_match_by_arn(self):
@@ -94,16 +96,22 @@ class TestLambdaAPI(unittest.TestCase):
             self._create_function("myFunctions")
             self._create_function("myFunction")
             result = json.loads(
-                lambda_api.get_function(aws_stack.lambda_function_arn("myFunction")).get_data()
+                lambda_api.get_function(
+                    localstack.utils.aws.arns.lambda_function_arn("myFunction")
+                ).get_data()
             )
             self.assertEqual(
-                result["Configuration"]["FunctionArn"], aws_stack.lambda_function_arn("myFunction")
+                result["Configuration"]["FunctionArn"],
+                localstack.utils.aws.arns.lambda_function_arn("myFunction"),
             )
             result = json.loads(
-                lambda_api.get_function(aws_stack.lambda_function_arn("myFunctions")).get_data()
+                lambda_api.get_function(
+                    localstack.utils.aws.arns.lambda_function_arn("myFunctions")
+                ).get_data()
             )
             self.assertEqual(
-                result["Configuration"]["FunctionArn"], aws_stack.lambda_function_arn("myFunctions")
+                result["Configuration"]["FunctionArn"],
+                localstack.utils.aws.arns.lambda_function_arn("myFunctions"),
             )
 
     def test_get_function_two_functions_with_similar_names_match_by_partial_arn(self):
@@ -116,7 +124,8 @@ class TestLambdaAPI(unittest.TestCase):
                 ).get_data()
             )
             self.assertEqual(
-                result["Configuration"]["FunctionArn"], aws_stack.lambda_function_arn("myFunction")
+                result["Configuration"]["FunctionArn"],
+                localstack.utils.aws.arns.lambda_function_arn("myFunction"),
             )
             result = json.loads(
                 lambda_api.get_function(
@@ -124,7 +133,8 @@ class TestLambdaAPI(unittest.TestCase):
                 ).get_data()
             )
             self.assertEqual(
-                result["Configuration"]["FunctionArn"], aws_stack.lambda_function_arn("myFunctions")
+                result["Configuration"]["FunctionArn"],
+                localstack.utils.aws.arns.lambda_function_arn("myFunctions"),
             )
 
     def test_get_event_source_mapping(self):
@@ -766,7 +776,9 @@ class TestLambdaAPI(unittest.TestCase):
 
     def test_get_container_name(self):
         executor = lambda_executors.EXECUTOR_CONTAINERS_REUSE
-        name = executor.get_container_name(aws_stack.lambda_function_arn("my_function_name"))
+        name = executor.get_container_name(
+            localstack.utils.aws.arns.lambda_function_arn("my_function_name")
+        )
         self.assertIn(
             f"_lambda_arn_aws_lambda_{aws_stack.get_region()}_{get_aws_account_id()}_function_my_function_name",
             name,
@@ -1153,9 +1165,13 @@ class TestLambdaStore:
 
         for region in ["us-east-1", "us-east-1", "eu-central-1"]:
             # check lookup for function ARNs
-            _lookup(aws_stack.lambda_function_arn("myfunc", region_name=region), region)
+            _lookup(
+                localstack.utils.aws.arns.lambda_function_arn("myfunc", region_name=region), region
+            )
             # check lookup for layer ARNs
-            _lookup(aws_stack.lambda_layer_arn("mylayer", region_name=region), region)
+            _lookup(
+                localstack.utils.aws.arns.lambda_layer_arn("mylayer", region_name=region), region
+            )
 
 
 class TestLambdaUtils:

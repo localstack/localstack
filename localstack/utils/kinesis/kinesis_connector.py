@@ -11,6 +11,7 @@ from urllib.parse import urlparse
 from amazon_kclpy import kcl
 from amazon_kclpy.v2 import processor
 
+import localstack.utils.aws.arns
 from localstack import config
 from localstack.constants import LOCALHOST, LOCALSTACK_ROOT_FOLDER, LOCALSTACK_VENV_FOLDER
 from localstack.utils.aws import aws_stack
@@ -283,7 +284,7 @@ def get_stream_info(
     env = aws_stack.get_environment(env)
     props_file = os.path.join(tempfile.gettempdir(), "kclipy.%s.properties" % short_uid())
     # make sure to convert stream ARN to stream name
-    stream_name = aws_stack.kinesis_stream_name(stream_name)
+    stream_name = localstack.utils.aws.arns.kinesis_stream_name(stream_name)
     app_name = "%s%s" % (stream_name, ddb_lease_table_suffix)
     stream_info = {
         "name": stream_name,
@@ -332,7 +333,7 @@ def start_kcl_client_process(
         log_subscribers = []
     env = aws_stack.get_environment(env)
     # make sure to convert stream ARN to stream name
-    stream_name = aws_stack.kinesis_stream_name(stream_name)
+    stream_name = localstack.utils.aws.arns.kinesis_stream_name(stream_name)
     if aws_stack.is_local_env(env):
         # disable CBOR protocol, enforce use of plain JSON
         env_vars["AWS_CBOR_DISABLE"] = "true"

@@ -4,6 +4,7 @@ import re
 from copy import deepcopy
 from typing import Any, Dict, List, Optional
 
+import localstack.utils.aws.arns
 from localstack.aws.accounts import get_aws_account_id
 from localstack.aws.api import CommonServiceException, RequestContext, handler
 from localstack.aws.api.cloudformation import (
@@ -138,9 +139,9 @@ class Stack:
                 "LogicalResourceId"
             ] = (resource.get("LogicalResourceId") or resource_id)
         # initialize stack template attributes
-        stack_id = self.metadata.get("StackId") or aws_stack.cloudformation_stack_arn(
-            self.stack_name, short_uid()
-        )
+        stack_id = self.metadata.get(
+            "StackId"
+        ) or localstack.utils.aws.arns.cloudformation_stack_arn(self.stack_name, short_uid())
         self.template["StackId"] = self.metadata["StackId"] = stack_id
         self.template["Parameters"] = self.template.get("Parameters") or {}
         self.template["Outputs"] = self.template.get("Outputs") or {}
@@ -474,7 +475,7 @@ class StackChangeSet(Stack):
 
         name = self.metadata["ChangeSetName"]
         if not self.metadata.get("ChangeSetId"):
-            self.metadata["ChangeSetId"] = aws_stack.cf_change_set_arn(
+            self.metadata["ChangeSetId"] = localstack.utils.aws.arns.cf_change_set_arn(
                 name, change_set_id=short_uid()
             )
 

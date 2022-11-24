@@ -1,5 +1,6 @@
 import json
 
+import localstack.utils.aws.arns
 from localstack.services.cloudformation.deployment_utils import (
     generate_default_name,
     select_parameters,
@@ -76,7 +77,9 @@ class EventsRule(GenericBaseModel):
 
     def get_cfn_attribute(self, attribute_name):
         if attribute_name == "Arn":
-            return self.params.get("Arn") or aws_stack.events_rule_arn(self.params.get("Name"))
+            return self.params.get("Arn") or localstack.utils.aws.arns.events_rule_arn(
+                self.params.get("Name")
+            )
         return super(EventsRule, self).get_cfn_attribute(attribute_name)
 
     def get_physical_resource_id(self, attribute=None, **kwargs):

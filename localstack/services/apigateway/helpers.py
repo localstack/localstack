@@ -28,8 +28,8 @@ from localstack.services.apigateway.context import ApiInvocationContext
 from localstack.services.apigateway.models import ApiGatewayStore, apigateway_stores
 from localstack.utils import common
 from localstack.utils.aws import aws_stack
+from localstack.utils.aws.arns import parse_arn
 from localstack.utils.aws.aws_responses import requests_error_response_json, requests_response
-from localstack.utils.aws.aws_stack import parse_arn
 from localstack.utils.aws.request_context import MARKER_APIGW_REQUEST_REGION, THREAD_LOCAL
 from localstack.utils.strings import long_uid
 from localstack.utils.time import TIMESTAMP_FORMAT_TZ, timestamp

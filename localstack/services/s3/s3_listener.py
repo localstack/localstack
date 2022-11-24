@@ -20,6 +20,7 @@ from moto.s3.models import FakeBucket
 from pytz import timezone
 from requests.models import Request, Response
 
+import localstack.utils.aws.arns
 from localstack import config, constants
 from localstack.aws.api import CommonServiceException
 from localstack.config import get_protocol as get_service_protocol
@@ -353,10 +354,10 @@ def send_notification_for_subscriber(
     message = json.dumps(message)
 
     if notification.get("Queue"):
-        region = aws_stack.extract_region_from_arn(notification["Queue"])
+        region = localstack.utils.aws.arns.extract_region_from_arn(notification["Queue"])
         sqs_client = aws_stack.connect_to_service("sqs", region_name=region)
         try:
-            queue_url = aws_stack.sqs_queue_url_for_arn(notification["Queue"])
+            queue_url = localstack.utils.aws.arns.sqs_queue_url_for_arn(notification["Queue"])
             sqs_client.send_message(
                 QueueUrl=queue_url,
                 MessageBody=message,
@@ -367,7 +368,7 @@ def send_notification_for_subscriber(
                 f"Unable to send notification for S3 bucket \"{bucket_name}\" to SQS queue \"{notification['Queue']}\": {e}",
             )
     if notification.get("Topic"):
-        region = aws_stack.extract_region_from_arn(notification["Topic"])
+        region = localstack.utils.aws.arns.extract_region_from_arn(notification["Topic"])
         sns_client = aws_stack.connect_to_service("sns", region_name=region)
         try:
             sns_client.publish(
@@ -383,7 +384,7 @@ def send_notification_for_subscriber(
     lambda_function_config = notification.get("CloudFunction") or notification.get("LambdaFunction")
     if lambda_function_config:
         # make sure we don't run into a socket timeout
-        region = aws_stack.extract_region_from_arn(lambda_function_config)
+        region = localstack.utils.aws.arns.extract_region_from_arn(lambda_function_config)
         connection_config = botocore.config.Config(read_timeout=300)
         lambda_client = aws_stack.connect_to_service(
             "lambda", config=connection_config, region_name=region

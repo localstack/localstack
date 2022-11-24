@@ -3,6 +3,7 @@ import os
 import random
 import string
 
+import localstack.utils.aws.arns
 from localstack.services.awslambda.lambda_utils import get_handler_file_from_name
 from localstack.services.cloudformation.deployment_utils import (
     generate_default_name,
@@ -37,7 +38,7 @@ class LambdaFunction(GenericBaseModel):
     def get_physical_resource_id(self, attribute=None, **kwargs):
         func_name = self.props.get("FunctionName")
         if attribute == "Arn":
-            return aws_stack.lambda_function_arn(func_name)
+            return localstack.utils.aws.arns.lambda_function_arn(func_name)
         return func_name
 
     def update_resource(self, new_resource, stack_name, resources):

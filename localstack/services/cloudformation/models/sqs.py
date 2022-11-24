@@ -3,6 +3,7 @@ import logging
 
 from botocore.exceptions import ClientError
 
+import localstack.utils.aws.arns
 from localstack.services.cloudformation.deployment_utils import (
     PLACEHOLDER_RESOURCE_NAME,
     generate_default_name,
@@ -78,14 +79,14 @@ class SQSQueue(GenericBaseModel):
         queue_url = None
         props = self.props
         try:
-            queue_url = aws_stack.get_sqs_queue_url(props.get("QueueName"))
+            queue_url = localstack.utils.aws.arns.get_sqs_queue_url(props.get("QueueName"))
         except Exception as e:
             if "NonExistentQueue" in str(e):
                 raise DependencyNotYetSatisfied(
                     resource_ids=self.resource_id, message="Unable to get queue: %s" % e
                 )
         if attribute == "Arn":
-            return aws_stack.sqs_queue_arn(props.get("QueueName"))
+            return localstack.utils.aws.arns.sqs_queue_arn(props.get("QueueName"))
         return queue_url
 
     def fetch_state(self, stack_name, resources):
@@ -127,7 +128,7 @@ class SQSQueue(GenericBaseModel):
             queue_url = resource.physical_resource_id or props.get("QueueUrl")
             if queue_url:
                 return queue_url
-            return aws_stack.sqs_queue_url_for_arn(props["QueueArn"])
+            return localstack.utils.aws.arns.sqs_queue_url_for_arn(props["QueueArn"])
 
         return {
             "create": {

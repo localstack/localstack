@@ -9,6 +9,7 @@ from datetime import datetime, timedelta
 
 import pytest
 
+import localstack.utils.aws.arns
 from localstack.testing.aws.util import get_lambda_logs
 from localstack.utils import testutil
 from localstack.utils.aws import aws_stack
@@ -90,8 +91,8 @@ class TestIntegration:
         stream = firehose_create_delivery_stream(
             DeliveryStreamName=stream_name,
             S3DestinationConfiguration={
-                "RoleARN": aws_stack.iam_resource_arn("firehose"),
-                "BucketARN": aws_stack.s3_bucket_arn(bucket_name),
+                "RoleARN": localstack.utils.aws.arns.iam_resource_arn("firehose"),
+                "BucketARN": localstack.utils.aws.arns.s3_bucket_arn(bucket_name),
                 "Prefix": s3_prefix,
             },
             Tags=TEST_TAGS,
@@ -127,8 +128,8 @@ class TestIntegration:
         stream = firehose_create_delivery_stream(
             DeliveryStreamName=stream_name,
             ExtendedS3DestinationConfiguration={
-                "RoleARN": aws_stack.iam_resource_arn("firehose"),
-                "BucketARN": aws_stack.s3_bucket_arn(bucket_name),
+                "RoleARN": localstack.utils.aws.arns.iam_resource_arn("firehose"),
+                "BucketARN": localstack.utils.aws.arns.s3_bucket_arn(bucket_name),
                 "Prefix": s3_prefix,
             },
             Tags=TEST_TAGS,
@@ -165,13 +166,15 @@ class TestIntegration:
         stream = firehose_client.create_delivery_stream(
             DeliveryStreamType="KinesisStreamAsSource",
             KinesisStreamSourceConfiguration={
-                "RoleARN": aws_stack.iam_resource_arn("firehose"),
-                "KinesisStreamARN": aws_stack.kinesis_stream_arn(kinesis_stream_name),
+                "RoleARN": localstack.utils.aws.arns.iam_resource_arn("firehose"),
+                "KinesisStreamARN": localstack.utils.aws.arns.kinesis_stream_arn(
+                    kinesis_stream_name
+                ),
             },
             DeliveryStreamName=stream_name,
             S3DestinationConfiguration={
-                "RoleARN": aws_stack.iam_resource_arn("firehose"),
-                "BucketARN": aws_stack.s3_bucket_arn(TEST_BUCKET_NAME),
+                "RoleARN": localstack.utils.aws.arns.iam_resource_arn("firehose"),
+                "BucketARN": localstack.utils.aws.arns.s3_bucket_arn(TEST_BUCKET_NAME),
                 "Prefix": s3_prefix,
             },
         )

@@ -4,6 +4,7 @@ import unittest
 
 import requests
 
+import localstack.utils.aws.arns
 from localstack import config
 from localstack.constants import PATH_USER_REQUEST
 from localstack.services.apigateway.helpers import connect_api_gateway_to_sqs
@@ -60,7 +61,7 @@ class TestMultiRegion(unittest.TestCase):
         api_name3 = "a-%s" % short_uid()
         queue_name1 = "q-%s" % short_uid()
         sqs_1.create_queue(QueueName=queue_name1)
-        queue_arn = aws_stack.sqs_queue_arn(queue_name1, region_name=REGION1)
+        queue_arn = localstack.utils.aws.arns.sqs_queue_arn(queue_name1, region_name=REGION1)
         result = connect_api_gateway_to_sqs(
             api_name3, stage_name="test", queue_arn=queue_arn, path="/data", region_name=REGION3
         )

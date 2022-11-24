@@ -7,6 +7,7 @@ from moto.sqs.models import TRANSPORT_TYPE_ENCODINGS, Message
 from moto.sqs.utils import parse_message_attributes
 from requests.models import Request
 
+import localstack.utils.aws.arns
 from localstack import config
 from localstack.aws.accounts import get_aws_account_id
 from localstack.config import SQS_PORT_EXTERNAL
@@ -121,7 +122,7 @@ def _fix_dlq_arn_in_attributes(req_data):
     dlq_arn = policy.get("deadLetterTargetArn", "")
     if "://" in dlq_arn:
         # convert queue URL to queue ARN
-        policy["deadLetterTargetArn"] = aws_stack.sqs_queue_arn(dlq_arn)
+        policy["deadLetterTargetArn"] = localstack.utils.aws.arns.sqs_queue_arn(dlq_arn)
         attrs["RedrivePolicy"] = json.dumps(policy)
         return attrs
 

@@ -4,6 +4,7 @@ from moto.ec2.models import ec2_backends
 from moto.route53resolver.models import Route53ResolverBackend as MotoRoute53ResolverBackend
 from moto.route53resolver.models import route53resolver_backends
 
+import localstack.utils.aws.arns
 from localstack.aws.api import RequestContext
 from localstack.aws.api.route53resolver import (
     Action,
@@ -92,7 +93,7 @@ from localstack.services.route53resolver.utils import (
     validate_priority,
 )
 from localstack.utils.aws import aws_stack
-from localstack.utils.aws.aws_stack import extract_account_id_from_arn, extract_region_from_arn
+from localstack.utils.aws.arns import extract_account_id_from_arn, extract_region_from_arn
 from localstack.utils.collections import select_from_typed_dict
 from localstack.utils.patch import patch
 
@@ -112,7 +113,7 @@ class Route53ResolverProvider(Route53ResolverApi):
         """Create a Firewall Rule Group."""
         store = self.get_store(context.account_id, context.region)
         id = get_route53_resolver_firewall_rule_group_id()
-        arn = aws_stack.get_route53_resolver_firewall_rule_group_arn(id)
+        arn = localstack.utils.aws.arns.get_route53_resolver_firewall_rule_group_arn(id)
         firewall_rule_group = FirewallRuleGroup(
             Id=id,
             Arn=arn,
@@ -174,7 +175,7 @@ class Route53ResolverProvider(Route53ResolverApi):
         """Create a Firewall Domain List."""
         store = self.get_store(context.account_id, context.region)
         id = get_route53_resolver_firewall_domain_list_id()
-        arn = aws_stack.get_route53_resolver_firewall_domain_list_arn(id)
+        arn = localstack.utils.aws.arns.get_route53_resolver_firewall_domain_list_arn(id)
         firewall_domain_list = FirewallDomainList(
             Id=id,
             Arn=arn,
@@ -422,7 +423,9 @@ class Route53ResolverProvider(Route53ResolverApi):
                 )
 
         id = get_route53_resolver_firewall_rule_group_association_id()
-        arn = aws_stack.get_route53_resolver_firewall_rule_group_associations_arn(id)
+        arn = localstack.utils.aws.arns.get_route53_resolver_firewall_rule_group_associations_arn(
+            id
+        )
 
         firewall_rule_group_association = FirewallRuleGroupAssociation(
             Id=id,
@@ -509,7 +512,7 @@ class Route53ResolverProvider(Route53ResolverApi):
         store = self.get_store(context.account_id, context.region)
         validate_destination_arn(destination_arn)
         id = get_resolver_query_log_config_id()
-        arn = aws_stack.get_resolver_query_log_config_arn(id)
+        arn = localstack.utils.aws.arns.get_resolver_query_log_config_arn(id)
         resolver_query_log_config: ResolverQueryLogConfig = ResolverQueryLogConfig(
             Id=id,
             Arn=arn,

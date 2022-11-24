@@ -100,7 +100,7 @@ from localstack.services.kms.models import (
     validate_alias_name,
 )
 from localstack.services.plugins import ServiceLifecycleHook
-from localstack.utils.aws.aws_stack import kms_alias_arn
+from localstack.utils.aws.arns import kms_alias_arn
 from localstack.utils.collections import PaginatedList
 from localstack.utils.common import select_attributes
 from localstack.utils.strings import short_uid, to_bytes, to_str

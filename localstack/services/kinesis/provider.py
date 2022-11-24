@@ -5,6 +5,7 @@ from random import random
 from typing import List
 
 import localstack.services.kinesis.kinesis_starter as starter
+import localstack.utils.aws.arns
 from localstack import config
 from localstack.aws.accounts import get_aws_account_id
 from localstack.aws.api import RequestContext
@@ -57,7 +58,7 @@ MAX_SUBSCRIPTION_SECONDS = 300
 def find_stream_for_consumer(consumer_arn):
     kinesis = aws_stack.connect_to_service("kinesis")
     for stream_name in kinesis.list_streams()["StreamNames"]:
-        stream_arn = aws_stack.kinesis_stream_arn(stream_name)
+        stream_arn = localstack.utils.aws.arns.kinesis_stream_arn(stream_name)
         for cons in kinesis.list_stream_consumers(StreamARN=stream_arn)["Consumers"]:
             if cons["ConsumerARN"] == consumer_arn:
                 return stream_name

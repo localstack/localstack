@@ -5,6 +5,7 @@ import string
 
 from botocore.exceptions import ClientError
 
+import localstack.utils.aws.arns
 from localstack.services.awslambda.lambda_api import IAM_POLICY_VERSION
 from localstack.services.cloudformation.deployment_utils import (
     PLACEHOLDER_AWS_NO_VALUE,
@@ -30,7 +31,7 @@ class IAMManagedPolicy(GenericBaseModel):
         return "AWS::IAM::ManagedPolicy"
 
     def get_physical_resource_id(self, attribute=None, **kwargs):
-        return aws_stack.policy_arn(self.props["ManagedPolicyName"])
+        return localstack.utils.aws.arns.policy_arn(self.props["ManagedPolicyName"])
 
     def fetch_state(self, stack_name, resources):
         return IAMPolicy.get_policy_state(self, stack_name, resources, managed_policy=True)
@@ -232,7 +233,7 @@ class IAMRole(GenericBaseModel):
         if not role_name:
             return role_name
         if attribute == "Arn":
-            return aws_stack.role_arn(role_name)
+            return localstack.utils.aws.arns.role_arn(role_name)
         return role_name
 
     def fetch_state(self, stack_name, resources):
@@ -470,7 +471,7 @@ class IAMPolicy(GenericBaseModel):
                 )
 
         def _delete_params(params, *args, **kwargs):
-            return {"PolicyArn": aws_stack.policy_arn(params["PolicyName"])}
+            return {"PolicyArn": localstack.utils.aws.arns.policy_arn(params["PolicyName"])}
 
         return {
             "create": {
@@ -494,7 +495,9 @@ class IAMPolicy(GenericBaseModel):
         users = props.get("Users", [])
         groups = props.get("Groups", [])
         if managed_policy:
-            result["policy"] = iam.get_policy(PolicyArn=aws_stack.policy_arn(policy_name))
+            result["policy"] = iam.get_policy(
+                PolicyArn=localstack.utils.aws.arns.policy_arn(policy_name)
+            )
         for role in roles:
             role = obj.resolve_refs_recursively(stack_name, role, resources)
             policies = (

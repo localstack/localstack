@@ -9,6 +9,7 @@ import pytest
 import requests
 from botocore.exceptions import ClientError
 
+import localstack.utils.aws.arns
 from localstack import config
 from localstack.aws.accounts import get_aws_account_id
 from localstack.aws.api.lambda_ import Runtime
@@ -1757,7 +1758,7 @@ class TestSqsProvider:
 
         # create arn
         url_parts = dl_queue_url.split("/")
-        dl_target_arn = aws_stack.sqs_queue_arn(
+        dl_target_arn = localstack.utils.aws.arns.sqs_queue_arn(
             url_parts[-1], account_id=url_parts[len(url_parts) - 2]
         )
 
@@ -1788,12 +1789,16 @@ class TestSqsProvider:
         queue_names = [f"q-{short_uid()}", f"q-{short_uid()}", f"q-{short_uid()}"]
         for queue_name in queue_names:
             sqs_create_queue(QueueName=queue_name, Attributes={"VisibilityTimeout": "0"})
-        queue_urls = [aws_stack.get_sqs_queue_url(queue_name) for queue_name in queue_names]
+        queue_urls = [
+            localstack.utils.aws.arns.get_sqs_queue_url(queue_name) for queue_name in queue_names
+        ]
 
         # set redrive policies
         for idx, queue_name in enumerate(queue_names[:2]):
             policy = {
-                "deadLetterTargetArn": aws_stack.sqs_queue_arn(queue_names[idx + 1]),
+                "deadLetterTargetArn": localstack.utils.aws.arns.sqs_queue_arn(
+                    queue_names[idx + 1]
+                ),
                 "maxReceiveCount": 1,
             }
             sqs_client.set_queue_attributes(

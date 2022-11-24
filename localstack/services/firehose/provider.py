@@ -78,13 +78,8 @@ from localstack.services.firehose.mappers import (
 )
 from localstack.services.firehose.models import FirehoseStore, firehose_stores
 from localstack.utils.aws import aws_stack
-from localstack.utils.aws.aws_stack import (
-    connect_to_resource,
-    extract_region_from_arn,
-    firehose_stream_arn,
-    get_search_db_connection,
-    s3_bucket_name,
-)
+from localstack.utils.aws.arns import extract_region_from_arn, firehose_stream_arn, s3_bucket_name
+from localstack.utils.aws.aws_stack import connect_to_resource, get_search_db_connection
 from localstack.utils.common import (
     TIMESTAMP_FORMAT_MICROS,
     first_char_to_lower,

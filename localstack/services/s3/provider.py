@@ -114,7 +114,7 @@ from localstack.services.s3.utils import (
 )
 from localstack.services.s3.website_hosting import register_website_hosting_routes
 from localstack.utils.aws import aws_stack
-from localstack.utils.aws.aws_stack import s3_bucket_name
+from localstack.utils.aws.arns import s3_bucket_name
 from localstack.utils.collections import get_safe
 from localstack.utils.patch import patch
 from localstack.utils.strings import short_uid

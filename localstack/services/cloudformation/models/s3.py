@@ -3,6 +3,7 @@ import re
 
 from botocore.exceptions import ClientError
 
+import localstack.utils.aws.arns
 from localstack.constants import S3_STATIC_WEBSITE_HOSTNAME, S3_VIRTUAL_HOSTNAME
 from localstack.services.cloudformation.deployment_utils import (
     PLACEHOLDER_RESOURCE_NAME,
@@ -225,7 +226,7 @@ class S3Bucket(GenericBaseModel):
     def get_physical_resource_id(self, attribute=None, **kwargs):
         bucket_name = self.props.get("BucketName")
         if attribute == "Arn":
-            return aws_stack.s3_bucket_arn(bucket_name)
+            return localstack.utils.aws.arns.s3_bucket_arn(bucket_name)
         return bucket_name
 
     def _get_bucket_name(self):
