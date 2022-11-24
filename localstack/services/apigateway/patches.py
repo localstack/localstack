@@ -3,7 +3,11 @@ import logging
 from typing import Dict, Optional, Tuple
 
 from moto.apigateway import models as apigateway_models
-from moto.apigateway.exceptions import NoIntegrationDefined, UsagePlanNotFoundException
+from moto.apigateway.exceptions import (
+    NoIntegrationDefined,
+    RestAPINotFound,
+    UsagePlanNotFoundException,
+)
 from moto.apigateway.responses import APIGatewayResponse
 from moto.core.utils import camelcase_to_underscores
 
@@ -475,8 +479,16 @@ def apply_patches():
             return 201, {}, result[2]
         return result
 
+    def get_rest_api(self, function_id):
+        for key in self.apis.keys():
+            if key.lower() == function_id.lower():
+                return self.apis[key]
+        raise RestAPINotFound()
+
     create_rest_api_orig = apigateway_models.APIGatewayBackend.create_rest_api
     apigateway_models.APIGatewayBackend.create_rest_api = create_rest_api
+    apigateway_models.APIGatewayBackend.get_rest_api = get_rest_api
+
     apigateway_models.Resource.get_integration = apigateway_models_resource_get_integration
     apigateway_response_resource_methods_orig = APIGatewayResponse.resource_methods
     APIGatewayResponse.resource_methods = apigateway_response_resource_methods
