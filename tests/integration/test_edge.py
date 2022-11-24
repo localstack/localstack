@@ -9,7 +9,6 @@ import xmltodict
 from quart import request as quart_request
 from requests.models import Request as RequestsRequest
 
-import localstack.utils.aws.resources
 from localstack import config
 from localstack.aws.accounts import get_aws_account_id
 from localstack.constants import APPLICATION_JSON, HEADER_LOCALSTACK_EDGE_URL
@@ -21,7 +20,7 @@ from localstack.services.generic_proxy import (
     update_path_in_url,
 )
 from localstack.services.messages import Request, Response
-from localstack.utils.aws import aws_stack
+from localstack.utils.aws import aws_stack, resources
 from localstack.utils.common import get_free_tcp_port, short_uid, to_str
 from localstack.utils.xml import strip_xmlns
 
@@ -84,7 +83,7 @@ class TestEdgeAPI:
     def _invoke_dynamodb_via_edge_go_sdk(self, edge_url):
         client = aws_stack.create_external_boto_client("dynamodb")
         table_name = f"t-{short_uid()}"
-        localstack.utils.aws.resources.create_dynamodb_table(table_name, "id")
+        resources.create_dynamodb_table(table_name, "id")
 
         # emulate a request sent from the AWS Go SDK v2
         headers = {

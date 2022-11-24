@@ -9,7 +9,6 @@ from typing import Dict, List, Tuple
 import pytest
 from botocore.exceptions import ClientError
 
-import localstack.utils.aws.resources
 from localstack import config
 from localstack.services.apigateway.helpers import extract_query_string_params
 from localstack.services.awslambda.lambda_utils import LAMBDA_RUNTIME_PYTHON36
@@ -17,7 +16,7 @@ from localstack.services.events.provider import _get_events_tmp_dir
 from localstack.services.generic_proxy import ProxyListener
 from localstack.services.infra import start_proxy
 from localstack.utils import testutil
-from localstack.utils.aws import arns, aws_stack
+from localstack.utils.aws import arns, aws_stack, resources
 from localstack.utils.aws.aws_responses import requests_response
 from localstack.utils.common import (
     get_free_tcp_port,
@@ -842,7 +841,7 @@ class TestEvents:
         bus_name = "bus-{}".format(short_uid())
 
         # create firehose target bucket
-        localstack.utils.aws.resources.get_or_create_bucket(s3_bucket)
+        resources.get_or_create_bucket(s3_bucket)
 
         # create firehose delivery stream to s3
         stream = firehose_client.create_delivery_stream(

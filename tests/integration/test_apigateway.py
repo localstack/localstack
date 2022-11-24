@@ -16,7 +16,6 @@ from requests.models import Response
 from requests.structures import CaseInsensitiveDict
 
 import localstack.utils.aws.queries
-import localstack.utils.aws.resources
 from localstack import config
 from localstack.aws.accounts import get_aws_account_id
 from localstack.aws.handlers import cors
@@ -47,7 +46,7 @@ from localstack.services.awslambda.lambda_utils import (
 from localstack.services.generic_proxy import ProxyListener
 from localstack.services.infra import start_proxy
 from localstack.utils import testutil
-from localstack.utils.aws import arns, aws_stack
+from localstack.utils.aws import arns, aws_stack, resources
 from localstack.utils.common import clone, get_free_tcp_port, json_safe, load_file
 from localstack.utils.common import safe_requests as requests
 from localstack.utils.common import select_attributes, short_uid, to_str
@@ -209,9 +208,7 @@ class TestAPIGateway:
 
     def test_api_gateway_kinesis_integration(self):
         # create target Kinesis stream
-        stream = localstack.utils.aws.resources.create_kinesis_stream(
-            self.TEST_STREAM_KINESIS_API_GW
-        )
+        stream = resources.create_kinesis_stream(self.TEST_STREAM_KINESIS_API_GW)
         stream.wait_for()
 
         # create API Gateway and connect it to the target stream
@@ -252,7 +249,7 @@ class TestAPIGateway:
     def test_api_gateway_sqs_integration_with_event_source(self):
         # create target SQS stream
         queue_name = f"queue-{short_uid()}"
-        queue_url = localstack.utils.aws.resources.create_sqs_queue(queue_name)["QueueUrl"]
+        queue_url = resources.create_sqs_queue(queue_name)["QueueUrl"]
 
         # create API Gateway and connect it to the target queue
         result = connect_api_gateway_to_sqs(
@@ -299,7 +296,7 @@ class TestAPIGateway:
     def test_api_gateway_sqs_integration(self):
         # create target SQS stream
         queue_name = f"queue-{short_uid()}"
-        localstack.utils.aws.resources.create_sqs_queue(queue_name)
+        resources.create_sqs_queue(queue_name)
 
         # create API Gateway and connect it to the target queue
         result = connect_api_gateway_to_sqs(
@@ -1718,7 +1715,7 @@ class TestAPIGateway:
         api_id, _, _ = create_rest_apigw(name=apigateway_name)
 
         try:
-            localstack.utils.aws.resources.get_or_create_bucket(bucket_name)
+            resources.get_or_create_bucket(bucket_name)
             s3_client.put_object(
                 Bucket=bucket_name,
                 Key=object_name,
@@ -1881,7 +1878,7 @@ class TestAPIGateway:
                 },
             ]
         }
-        return localstack.utils.aws.resources.create_api_gateway(
+        return resources.create_api_gateway(
             name=gateway_name, resources=resources, stage_name=self.TEST_STAGE_NAME
         )
 
@@ -1913,7 +1910,7 @@ class TestAPIGateway:
             }
             for method in methods
         ]
-        return localstack.utils.aws.resources.create_api_gateway(
+        return resources.create_api_gateway(
             name=gateway_name, resources=resources, stage_name=self.TEST_STAGE_NAME
         )
 
@@ -2021,9 +2018,7 @@ class TestAPIGateway:
 
         kwargs = {}
         if integration_type == "AWS_PROXY":
-            localstack.utils.aws.resources.create_dynamodb_table(
-                "MusicCollection", partition_key="id"
-            )
+            resources.create_dynamodb_table("MusicCollection", partition_key="id")
             kwargs[
                 "uri"
             ] = "arn:aws:apigateway:us-east-1:dynamodb:action/PutItem&Table=MusicCollection"

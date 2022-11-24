@@ -17,7 +17,6 @@ from moto.apigateway.utils import create_id as create_resource_id
 from requests.models import Response
 
 import localstack.utils.aws.queries
-import localstack.utils.aws.resources
 from localstack import config
 from localstack.aws.accounts import get_aws_account_id
 from localstack.constants import (
@@ -30,6 +29,7 @@ from localstack.services.apigateway.context import ApiInvocationContext
 from localstack.services.apigateway.models import ApiGatewayStore, apigateway_stores
 from localstack.utils import common
 from localstack.utils.aws import aws_stack
+from localstack.utils.aws import resources as resource_utils
 from localstack.utils.aws.arns import parse_arn
 from localstack.utils.aws.aws_responses import requests_error_response_json, requests_response
 from localstack.utils.aws.request_context import MARKER_APIGW_REQUEST_REGION, THREAD_LOCAL
@@ -485,7 +485,7 @@ def connect_api_gateway_to_sqs(gateway_name, stage_name, queue_arn, path, region
             ],
         }
     ]
-    return localstack.utils.aws.resources.create_api_gateway(
+    return resource_utils.create_api_gateway(
         name=gateway_name,
         resources=resources,
         stage_name=stage_name,
