@@ -17,7 +17,6 @@ from localstack.aws.api.secretsmanager import (
     DeleteSecretResponse,
     ListSecretsResponse,
 )
-from localstack.utils import testutil
 from localstack.utils.aws import aws_stack
 from localstack.utils.collections import select_from_typed_dict
 from localstack.utils.strings import short_uid
@@ -309,15 +308,17 @@ class TestSecretsManager:
         # clean up
         sm_client.delete_secret(SecretId=secret_name, ForceDeleteWithoutRecovery=True)
 
-    def test_rotate_secret_with_lambda_1(self, sm_client, secret_name):
-        sm_client.create_secret(
+    def test_rotate_secret_with_lambda_1(
+        self, sm_client, lambda_client, secret_name, create_secret, create_lambda_function
+    ):
+        create_secret(
             Name=secret_name,
             SecretString="my_secret",
             Description="testing rotation of secrets",
         )
 
         function_name = f"s-{short_uid()}"
-        function_arn = testutil.create_lambda_function(
+        function_arn = create_lambda_function(
             handler_file=TEST_LAMBDA_PYTHON_VERSION,
             func_name=function_name,
             runtime=Runtime.python3_9,
@@ -334,12 +335,10 @@ class TestSecretsManager:
 
         assert response["ResponseMetadata"]["HTTPStatusCode"] == 200
 
-        # clean up
-        sm_client.delete_secret(SecretId=secret_name, ForceDeleteWithoutRecovery=True)
-        testutil.delete_lambda_function(function_name)
-
-    def test_rotate_secret_with_lambda_2(self, sm_client, secret_name):
-        cre_res = sm_client.create_secret(
+    def test_rotate_secret_with_lambda_2(
+        self, sm_client, secret_name, create_lambda_function, create_secret
+    ):
+        cre_res = create_secret(
             Name=secret_name,
             SecretString="init",
             Description="testing rotation of secrets",
@@ -347,7 +346,7 @@ class TestSecretsManager:
         version_id_0 = cre_res["VersionId"]
 
         function_name = f"rotate-func-{short_uid()}"
-        function_arn = testutil.create_lambda_function(
+        function_arn = create_lambda_function(
             handler_file=TEST_LAMBDA_ROTATE_SECRET,
             func_name=function_name,
             runtime=Runtime.python3_9,
@@ -419,10 +418,6 @@ class TestSecretsManager:
         assert get_res["VersionId"] == version_id_2
         secret_string_2 = lambda_rotate_secret.secret_of_rotation_from_version_id(version_id_2)
         assert get_res["SecretString"] == secret_string_2
-
-        # clean up
-        sm_client.delete_secret(SecretId=secret_name, ForceDeleteWithoutRecovery=True)
-        testutil.delete_lambda_function(function_name)
 
     def test_rotate_secret_invalid_lambda_arn(self, sm_client, secret_name):
         sm_client.create_secret(Name=secret_name, SecretString="init")

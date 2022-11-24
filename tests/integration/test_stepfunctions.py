@@ -172,6 +172,7 @@ LOG = logging.getLogger(__name__)
 
 @pytest.fixture(scope="module")
 def setup_and_tear_down():
+    lambda_client = aws_stack.create_external_boto_client("lambda")
 
     zip_file = testutil.create_lambda_archive(load_file(TEST_LAMBDA_ENV), get_content=True)
     zip_file2 = testutil.create_lambda_archive(load_file(TEST_LAMBDA_PYTHON_ECHO), get_content=True)
@@ -196,6 +197,13 @@ def setup_and_tear_down():
         envvars={"Hello": TEST_RESULT_VALUE_4},
     )
     testutil.create_lambda_function(func_name=TEST_LAMBDA_NAME_5, zip_file=zip_file2)
+
+    active_waiter = lambda_client.get_waiter("function_active_v2")
+    active_waiter.wait(FunctionName=TEST_LAMBDA_NAME_1)
+    active_waiter.wait(FunctionName=TEST_LAMBDA_NAME_2)
+    active_waiter.wait(FunctionName=TEST_LAMBDA_NAME_3)
+    active_waiter.wait(FunctionName=TEST_LAMBDA_NAME_4)
+    active_waiter.wait(FunctionName=TEST_LAMBDA_NAME_5)
 
     yield
 
