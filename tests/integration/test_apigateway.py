@@ -1926,7 +1926,7 @@ class TestAPIGateway:
         # create test Lambda
         fn_name = f"test-{short_uid()}"
         create_lambda_function(
-            handler_file=TEST_LAMBDA_NODEJS, func_name=fn_name, runtime=Runtime.nodejs16_xF
+            handler_file=TEST_LAMBDA_NODEJS, func_name=fn_name, runtime=Runtime.nodejs16_x
         )
         lambda_arn_1 = arns.lambda_function_arn(fn_name)
 
