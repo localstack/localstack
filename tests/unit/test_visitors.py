@@ -5,7 +5,7 @@ from localstack.services.visitors import ReflectionStateLocator, ServiceBackendC
 
 
 class TestVisitors:
-    def test_store_load(self, sample_stores, monkeypatch):
+    def test_collect_store(self, sample_stores, monkeypatch):
         """Ensures that the visitor can effectively collect store backend"""
         account = "696969696969"
         eu_region = "eu-central-1"
@@ -24,7 +24,7 @@ class TestVisitors:
         oracle = {account: {eu_region: store}}
         assert store_backend == oracle
 
-    def test_load_backend_dicts(self, sample_backend_dict, monkeypatch):
+    def test_collect_backend_dict(self, sample_backend_dict, monkeypatch):
         """Ensures that the visitor can effectively collect backend dict backends"""
 
         account = "696969696969"
