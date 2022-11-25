@@ -119,6 +119,10 @@ LOG = logging.getLogger(__name__)
 # action header prefix
 ACTION_PREFIX = "DynamoDB_20120810."
 
+# Credential regex in the Authorization header
+# Credential=<access-key-id>/<date>/<aws-region>/<aws-service>/aws4_request
+AUTH_CREDENTIAL_REGEX = r"Credential=([a-zA-Z0-9-_]{1,})/(\d{8})/([a-z0-9-]{1,})/([a-z0-9]{1,})/"
+
 # list of actions subject to throughput limitations
 READ_THROTTLED_ACTIONS = [
     "GetItem",
@@ -327,8 +331,8 @@ def modify_context_region(context: RequestContext, region: str):
 
     context.region = region
     context.request.headers["Authorization"] = re.sub(
-        r"Credential=(\w{12,})/(\d{8})/(.*?)/",
-        rf"Credential={key}/\2/{region}/",
+        AUTH_CREDENTIAL_REGEX,
+        rf"Credential={key}/\2/{region}/\4/",
         original_authorization or "",
         flags=re.IGNORECASE,
     )
@@ -1156,22 +1160,17 @@ class DynamoDBProvider(DynamodbApi, ServiceLifecycleHook):
 
     @staticmethod
     def prepare_request_headers(headers: Dict):
-        def _replace(regex, replace):
-            headers["Authorization"] = re.sub(
-                regex, replace, headers.get("Authorization") or "", flags=re.IGNORECASE
-            )
-
-        region_name = DynamoDBProvider.ddb_region_name(aws_stack.get_local_region())
+        region_name = DynamoDBProvider.ddb_region_name(aws_stack.get_region())
         key = DynamoDBProvider.ddb_access_key(get_aws_account_id(), region_name)
 
         # DynamoDBLocal namespaces based on the value of Credentials
         # Since we want to namespace by both account ID and region, use an aggregate key
-        _replace(r"Credential=(\d{12}|\w{1,})/", rf"Credential={key}/")
-
-        # Note: The NoSQL Workbench sends "localhost" or "local" as the region name, which we need to fix here
-        _replace(
-            r"Credential=([^/]+/[^/]+)/local(host)?/",
-            rf"Credential=\1/{aws_stack.get_local_region()}/",
+        # We also replace the region to keep compatibilty with NoSQL Workbench
+        headers["Authorization"] = re.sub(
+            AUTH_CREDENTIAL_REGEX,
+            rf"Credential={key}/\2/{region_name}/\4/",
+            headers.get("Authorization") or "",
+            flags=re.IGNORECASE,
         )
 
     def fix_consumed_capacity(self, request: Dict, result: Dict):

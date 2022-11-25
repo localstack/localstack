@@ -7,6 +7,7 @@ from moto.core.exceptions import JsonRESTError
 
 from localstack.aws.accounts import get_aws_account_id
 from localstack.aws.api.dynamodb import ResourceNotFoundException
+from localstack.constants import TEST_AWS_SECRET_ACCESS_KEY
 from localstack.utils.aws import aws_stack
 from localstack.utils.json import canonical_json
 from localstack.utils.testutil import list_all_resources
@@ -95,7 +96,12 @@ class ItemFinder:
         from localstack.services.dynamodb.provider import ValidationException
 
         table_name = table_name or put_item["TableName"]
-        ddb_client = aws_stack.connect_to_service("dynamodb")
+        ddb_client = aws_stack.connect_to_service(
+            "dynamodb",
+            aws_access_key_id=get_aws_account_id(),
+            aws_secret_access_key=TEST_AWS_SECRET_ACCESS_KEY,
+            region_name=aws_stack.get_region(),
+        )
 
         search_key = {}
         if "Key" in put_item:
