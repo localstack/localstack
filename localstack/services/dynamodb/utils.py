@@ -79,7 +79,12 @@ class SchemaExtractor:
         schema = SCHEMA_CACHE.get(key)
         if not schema:
             # TODO: consider making in-memory lookup instead of API call
-            ddb_client = aws_stack.connect_to_service("dynamodb")
+            ddb_client = aws_stack.connect_to_service(
+                "dynamodb",
+                aws_access_key_id=get_aws_account_id(),
+                aws_secret_access_key=TEST_AWS_SECRET_ACCESS_KEY,
+                region_name=aws_stack.get_region(),
+            )
             try:
                 schema = ddb_client.describe_table(TableName=table_name)
                 SCHEMA_CACHE[key] = schema
@@ -153,7 +158,12 @@ class ItemFinder:
 
     @staticmethod
     def get_all_table_items(table_name: str) -> List:
-        ddb_client = aws_stack.connect_to_service("dynamodb")
+        ddb_client = aws_stack.connect_to_service(
+            "dynamodb",
+            aws_access_key_id=get_aws_account_id(),
+            aws_secret_access_key=TEST_AWS_SECRET_ACCESS_KEY,
+            region_name=aws_stack.get_region(),
+        )
         dynamodb_kwargs = {"TableName": table_name}
         all_items = list_all_resources(
             lambda kwargs: ddb_client.scan(**{**kwargs, **dynamodb_kwargs}),
