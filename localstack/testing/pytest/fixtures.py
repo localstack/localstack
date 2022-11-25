@@ -16,11 +16,19 @@ from _pytest.config import Config
 from _pytest.nodes import Item
 from botocore.exceptions import ClientError
 from botocore.regions import EndpointResolver
+from moto.core import BaseBackend
+from moto.core.utils import BackendDict
 from pytest_httpserver import HTTPServer
 
 from localstack import config
 from localstack.aws.accounts import get_aws_account_id
 from localstack.constants import TEST_AWS_ACCESS_KEY_ID, TEST_AWS_SECRET_ACCESS_KEY
+from localstack.services.stores import (
+    AccountRegionBundle,
+    BaseStore,
+    CrossRegionAttribute,
+    LocalAttribute,
+)
 from localstack.testing.aws.cloudformation_utils import load_template_file, render_template
 from localstack.testing.aws.util import get_lambda_logs
 from localstack.utils import testutil
@@ -1856,3 +1864,22 @@ def pytest_collection_modifyitems(config: Config, items: list[Item]):
     for item in items:
         if "only_localstack" in item.keywords:
             item.add_marker(only_localstack)
+
+
+@pytest.fixture
+def sample_stores() -> AccountRegionBundle:
+    class SampleStore(BaseStore):
+        CROSS_REGION_ATTR = CrossRegionAttribute(default=list)
+        region_specific_attr = LocalAttribute(default=list)
+
+    return AccountRegionBundle("zzz", SampleStore, validate=False)
+
+
+@pytest.fixture()
+def sample_backend_dict() -> BackendDict:
+    class SampleBackend(BaseBackend):
+        def __init__(self, region_name, account_id):
+            super().__init__(region_name, account_id)
+            self.attributes = {}
+
+    return BackendDict(SampleBackend, "sns")
