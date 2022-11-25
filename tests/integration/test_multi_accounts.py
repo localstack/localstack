@@ -148,3 +148,21 @@ class TestMultiAccounts:
             response3["TableDescription"]["TableArn"]
             == f"arn:aws:dynamodb:eu-central-1:{account_id2}:table/{tab1}"
         )
+
+        ddb_client1.delete_table(TableName=tab1)
+        ddb_client2.delete_table(TableName=tab1)
+
+        # CreateTable uses a different mechanism than other calls. Test that other mechanisms work;
+        # Ensure PutWriteItems work in multi-accounts
+        ddb_client3.batch_write_item(
+            RequestItems={
+                tab1: [
+                    {"PutRequest": {"Item": {"Username": {"S": "Alice"}}}},
+                    {"PutRequest": {"Item": {"Username": {"S": "Bob"}}}},
+                    {"PutRequest": {"Item": {"Username": {"S": "Fred"}}}},
+                ]
+            }
+        )
+        # Ensure items are inserted to correct namespace resource
+        response = ddb_client3.describe_table(TableName=tab1)
+        assert response["Table"]["ItemCount"] == 3
