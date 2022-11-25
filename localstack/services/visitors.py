@@ -45,7 +45,7 @@ class ServiceBackendCollectorVisitor:
 
     @singledispatchmethod
     def visit(self, state_container: Any):
-        raise NotImplementedError("Can't restore state container o type %s", type(state_container))
+        raise NotImplementedError("Can't restore state container of type %s", type(state_container))
 
     @visit.register(AccountRegionBundle)
     def _(self, state_container: AccountRegionBundle):
