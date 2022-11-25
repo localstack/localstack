@@ -1,7 +1,7 @@
 import json
 
 from localstack.services.cloudformation.service_models import REF_ID_ATTRS, GenericBaseModel
-from localstack.utils.aws import aws_stack
+from localstack.utils.aws import arns, aws_stack
 from localstack.utils.common import short_uid
 
 
@@ -38,7 +38,7 @@ class KMSKey(GenericBaseModel):
     def get_physical_resource_id(self, attribute=None, **kwargs):
         if attribute in REF_ID_ATTRS:
             return self.physical_resource_id
-        return self.physical_resource_id and aws_stack.kms_key_arn(self.physical_resource_id)
+        return self.physical_resource_id and arns.kms_key_arn(self.physical_resource_id)
 
     # TODO: try to remove this workaround (ensures idempotency)
     @staticmethod

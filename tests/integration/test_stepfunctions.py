@@ -6,7 +6,7 @@ import pytest
 
 from localstack.services.events.provider import TEST_EVENTS_CACHE
 from localstack.utils import testutil
-from localstack.utils.aws import aws_stack
+from localstack.utils.aws import arns, aws_stack
 from localstack.utils.files import load_file
 from localstack.utils.json import clone
 from localstack.utils.strings import short_uid
@@ -265,10 +265,10 @@ def get_machine_arn(sm_name, sfn_client):
 class TestStateMachine:
     def test_create_choice_state_machine(self, stepfunctions_client):
         state_machines_before = stepfunctions_client.list_state_machines()["stateMachines"]
-        role_arn = aws_stack.role_arn("sfn_role")
+        role_arn = arns.role_arn("sfn_role")
 
         definition = clone(STATE_MACHINE_CHOICE)
-        lambda_arn_4 = aws_stack.lambda_function_arn(TEST_LAMBDA_NAME_4)
+        lambda_arn_4 = arns.lambda_function_arn(TEST_LAMBDA_NAME_4)
         definition["States"]["Add"]["Resource"] = lambda_arn_4
         definition = json.dumps(definition)
         sm_name = f"choice-{short_uid()}"
@@ -306,9 +306,9 @@ class TestStateMachine:
         test_output = [{"Hello": name} for name in names]
         state_machines_before = stepfunctions_client.list_state_machines()["stateMachines"]
 
-        role_arn = aws_stack.role_arn("sfn_role")
+        role_arn = arns.role_arn("sfn_role")
         definition = clone(STATE_MACHINE_MAP)
-        lambda_arn_3 = aws_stack.lambda_function_arn(TEST_LAMBDA_NAME_3)
+        lambda_arn_3 = arns.lambda_function_arn(TEST_LAMBDA_NAME_3)
         definition["States"]["ExampleMapState"]["Iterator"]["States"]["CallLambda"][
             "Resource"
         ] = lambda_arn_3
@@ -343,10 +343,10 @@ class TestStateMachine:
         state_machines_before = stepfunctions_client.list_state_machines()["stateMachines"]
 
         # create state machine
-        role_arn = aws_stack.role_arn("sfn_role")
+        role_arn = arns.role_arn("sfn_role")
         definition = clone(STATE_MACHINE_BASIC)
-        lambda_arn_1 = aws_stack.lambda_function_arn(TEST_LAMBDA_NAME_1)
-        lambda_arn_2 = aws_stack.lambda_function_arn(TEST_LAMBDA_NAME_2)
+        lambda_arn_1 = arns.lambda_function_arn(TEST_LAMBDA_NAME_1)
+        lambda_arn_2 = arns.lambda_function_arn(TEST_LAMBDA_NAME_2)
         definition["States"]["step1"]["Resource"] = lambda_arn_1
         definition["States"]["step2"]["Resource"] = lambda_arn_2
         definition = json.dumps(definition)
@@ -381,10 +381,10 @@ class TestStateMachine:
         state_machines_before = stepfunctions_client.list_state_machines()["stateMachines"]
 
         # create state machine
-        role_arn = aws_stack.role_arn("sfn_role")
+        role_arn = arns.role_arn("sfn_role")
         definition = clone(STATE_MACHINE_CATCH)
-        lambda_arn_1 = aws_stack.lambda_function_arn(TEST_LAMBDA_NAME_1)
-        lambda_arn_2 = aws_stack.lambda_function_arn(TEST_LAMBDA_NAME_2)
+        lambda_arn_1 = arns.lambda_function_arn(TEST_LAMBDA_NAME_1)
+        lambda_arn_2 = arns.lambda_function_arn(TEST_LAMBDA_NAME_2)
         definition["States"]["Start"]["Parameters"]["FunctionName"] = lambda_arn_1
         definition["States"]["ErrorHandler"]["Resource"] = lambda_arn_2
         definition["States"]["Final"]["Resource"] = lambda_arn_2
@@ -417,10 +417,10 @@ class TestStateMachine:
         state_machines_before = stepfunctions_client.list_state_machines()["stateMachines"]
 
         # create state machine
-        role_arn = aws_stack.role_arn("sfn_role")
+        role_arn = arns.role_arn("sfn_role")
         definition = clone(STATE_MACHINE_INTRINSIC_FUNCS)
-        lambda_arn_1 = aws_stack.lambda_function_arn(TEST_LAMBDA_NAME_5)
-        lambda_arn_2 = aws_stack.lambda_function_arn(TEST_LAMBDA_NAME_5)
+        lambda_arn_1 = arns.lambda_function_arn(TEST_LAMBDA_NAME_5)
+        lambda_arn_2 = arns.lambda_function_arn(TEST_LAMBDA_NAME_5)
         if isinstance(definition["States"]["state1"].get("Parameters"), dict):
             definition["States"]["state1"]["Parameters"]["lambda_params"][
                 "FunctionName"
@@ -464,7 +464,7 @@ class TestStateMachine:
         definition["States"]["step1"]["Parameters"]["Entries"][0]["EventBusName"] = bus_name
         definition = json.dumps(definition)
         sm_name = f"events-{short_uid()}"
-        role_arn = aws_stack.role_arn("sfn_role")
+        role_arn = arns.role_arn("sfn_role")
         stepfunctions_client.create_state_machine(
             name=sm_name, definition=definition, roleArn=role_arn
         )
@@ -547,7 +547,7 @@ def test_multiregion_nested(region_name, statemachine_definition):
     client1 = aws_stack.create_external_boto_client("stepfunctions", region_name=region_name)
     # create state machine
     child_machine_name = f"sf-child-{short_uid()}"
-    role = aws_stack.role_arn("sfn_role")
+    role = arns.role_arn("sfn_role")
     child_machine_result = client1.create_state_machine(
         name=child_machine_name, definition=json.dumps(TEST_STATE_MACHINE), roleArn=role
     )
@@ -555,7 +555,7 @@ def test_multiregion_nested(region_name, statemachine_definition):
 
     # create parent state machine
     name = f"sf-parent-{short_uid()}"
-    role = aws_stack.role_arn("sfn_role")
+    role = arns.role_arn("sfn_role")
     result = client1.create_state_machine(
         name=name,
         definition=json.dumps(statemachine_definition).replace(

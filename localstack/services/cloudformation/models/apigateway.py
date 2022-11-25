@@ -7,7 +7,7 @@ from localstack.services.cloudformation.deployment_utils import (
     params_list_to_dict,
 )
 from localstack.services.cloudformation.service_models import GenericBaseModel
-from localstack.utils.aws import aws_stack
+from localstack.utils.aws import aws_stack, queries
 from localstack.utils.common import keys_to_lower, select_attributes, to_bytes
 
 
@@ -228,7 +228,7 @@ class GatewayResource(GenericBaseModel):
         if not target_resource:
             return None
 
-        path = aws_stack.get_apigateway_path_for_resource(
+        path = queries.get_apigateway_path_for_resource(
             api_id, target_resource[0]["id"], resources=api_resources
         )
         result = list(filter(lambda res: res["path"] == path, api_resources))

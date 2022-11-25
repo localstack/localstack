@@ -13,7 +13,7 @@ from localstack.services.cloudformation.service_models import (
     DependencyNotYetSatisfied,
     GenericBaseModel,
 )
-from localstack.utils.aws import aws_stack
+from localstack.utils.aws import arns, aws_stack
 from localstack.utils.common import short_uid
 
 LOG = logging.getLogger(__name__)
@@ -78,14 +78,14 @@ class SQSQueue(GenericBaseModel):
         queue_url = None
         props = self.props
         try:
-            queue_url = aws_stack.get_sqs_queue_url(props.get("QueueName"))
+            queue_url = arns.get_sqs_queue_url(props.get("QueueName"))
         except Exception as e:
             if "NonExistentQueue" in str(e):
                 raise DependencyNotYetSatisfied(
                     resource_ids=self.resource_id, message="Unable to get queue: %s" % e
                 )
         if attribute == "Arn":
-            return aws_stack.sqs_queue_arn(props.get("QueueName"))
+            return arns.sqs_queue_arn(props.get("QueueName"))
         return queue_url
 
     def fetch_state(self, stack_name, resources):
@@ -127,7 +127,7 @@ class SQSQueue(GenericBaseModel):
             queue_url = resource.physical_resource_id or props.get("QueueUrl")
             if queue_url:
                 return queue_url
-            return aws_stack.sqs_queue_url_for_arn(props["QueueArn"])
+            return arns.sqs_queue_url_for_arn(props["QueueArn"])
 
         return {
             "create": {

@@ -1,6 +1,6 @@
 from localstack.services.cloudformation.deployment_utils import select_parameters
 from localstack.services.cloudformation.service_models import GenericBaseModel
-from localstack.utils.aws import aws_stack
+from localstack.utils.aws import arns, aws_stack
 
 
 class FirehoseDeliveryStream(GenericBaseModel):
@@ -17,7 +17,7 @@ class FirehoseDeliveryStream(GenericBaseModel):
 
     def get_cfn_attribute(self, attribute_name):
         if attribute_name == "Arn":
-            return aws_stack.firehose_stream_arn(self.props.get("DeliveryStreamName"))
+            return arns.firehose_stream_arn(self.props.get("DeliveryStreamName"))
         return super().get_cfn_attribute(attribute_name)
 
     def get_physical_resource_id(self, attribute=None, **kwargs):

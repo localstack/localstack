@@ -78,7 +78,7 @@ from localstack.services.sqs.models import (
 )
 from localstack.services.sqs.utils import generate_message_id
 from localstack.utils.aws import aws_stack
-from localstack.utils.aws.aws_stack import parse_arn
+from localstack.utils.aws.arns import parse_arn
 from localstack.utils.cloudwatch.cloudwatch_util import publish_sqs_metric
 from localstack.utils.run import FuncThread
 from localstack.utils.scheduler import Scheduler

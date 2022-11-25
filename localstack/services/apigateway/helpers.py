@@ -27,9 +27,10 @@ from localstack.constants import (
 from localstack.services.apigateway.context import ApiInvocationContext
 from localstack.services.apigateway.models import ApiGatewayStore, apigateway_stores
 from localstack.utils import common
-from localstack.utils.aws import aws_stack
+from localstack.utils.aws import aws_stack, queries
+from localstack.utils.aws import resources as resource_utils
+from localstack.utils.aws.arns import parse_arn
 from localstack.utils.aws.aws_responses import requests_error_response_json, requests_response
-from localstack.utils.aws.aws_stack import parse_arn
 from localstack.utils.aws.request_context import MARKER_APIGW_REQUEST_REGION, THREAD_LOCAL
 from localstack.utils.strings import long_uid
 from localstack.utils.time import TIMESTAMP_FORMAT_TZ, timestamp
@@ -393,7 +394,7 @@ def get_rest_api_paths(rest_api_id, region_name=None):
         path = resource.get("path")
         # TODO: check if this is still required in the general case (can we rely on "path" being
         #  present?)
-        path = path or aws_stack.get_apigateway_path_for_resource(
+        path = path or queries.get_apigateway_path_for_resource(
             rest_api_id, resource["id"], region_name=region_name
         )
         resource_map[path] = resource
@@ -483,7 +484,7 @@ def connect_api_gateway_to_sqs(gateway_name, stage_name, queue_arn, path, region
             ],
         }
     ]
-    return aws_stack.create_api_gateway(
+    return resource_utils.create_api_gateway(
         name=gateway_name,
         resources=resources,
         stage_name=stage_name,

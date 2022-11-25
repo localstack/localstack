@@ -3,7 +3,7 @@ import logging
 import uuid
 from typing import Dict, List
 
-from localstack.utils.aws import aws_stack
+from localstack.utils.aws import arns, aws_stack
 from localstack.utils.aws.aws_models import LambdaFunction
 from localstack.utils.strings import convert_to_printable_chars, first_char_to_upper
 
@@ -32,7 +32,7 @@ def _send_to_dead_letter_queue(source_arn: str, dlq_arn: str, event: Dict, error
     LOG.info("Sending failed execution %s to dead letter queue %s", source_arn, dlq_arn)
     messages = _prepare_messages_to_dlq(source_arn, event, error)
     if ":sqs:" in dlq_arn:
-        queue_url = aws_stack.get_sqs_queue_url(dlq_arn)
+        queue_url = arns.get_sqs_queue_url(dlq_arn)
         sqs_client = aws_stack.connect_to_service("sqs")
         error = None
         result_code = None

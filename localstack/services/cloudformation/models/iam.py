@@ -17,7 +17,7 @@ from localstack.services.cloudformation.deployment_utils import (
 )
 from localstack.services.cloudformation.service_models import GenericBaseModel
 from localstack.services.iam.provider import SERVICE_LINKED_ROLE_PATH_PREFIX
-from localstack.utils.aws import aws_stack
+from localstack.utils.aws import arns, aws_stack
 from localstack.utils.common import ensure_list
 from localstack.utils.functions import call_safe
 
@@ -30,7 +30,7 @@ class IAMManagedPolicy(GenericBaseModel):
         return "AWS::IAM::ManagedPolicy"
 
     def get_physical_resource_id(self, attribute=None, **kwargs):
-        return aws_stack.policy_arn(self.props["ManagedPolicyName"])
+        return arns.policy_arn(self.props["ManagedPolicyName"])
 
     def fetch_state(self, stack_name, resources):
         return IAMPolicy.get_policy_state(self, stack_name, resources, managed_policy=True)
@@ -232,7 +232,7 @@ class IAMRole(GenericBaseModel):
         if not role_name:
             return role_name
         if attribute == "Arn":
-            return aws_stack.role_arn(role_name)
+            return arns.role_arn(role_name)
         return role_name
 
     def fetch_state(self, stack_name, resources):
@@ -470,7 +470,7 @@ class IAMPolicy(GenericBaseModel):
                 )
 
         def _delete_params(params, *args, **kwargs):
-            return {"PolicyArn": aws_stack.policy_arn(params["PolicyName"])}
+            return {"PolicyArn": arns.policy_arn(params["PolicyName"])}
 
         return {
             "create": {
@@ -494,7 +494,7 @@ class IAMPolicy(GenericBaseModel):
         users = props.get("Users", [])
         groups = props.get("Groups", [])
         if managed_policy:
-            result["policy"] = iam.get_policy(PolicyArn=aws_stack.policy_arn(policy_name))
+            result["policy"] = iam.get_policy(PolicyArn=arns.policy_arn(policy_name))
         for role in roles:
             role = obj.resolve_refs_recursively(stack_name, role, resources)
             policies = (

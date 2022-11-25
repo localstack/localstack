@@ -1,11 +1,14 @@
 import base64
 import json
 import logging
+import os
+import re
 import threading
 import time
 import uuid
 from datetime import datetime
 from typing import Dict, List
+from urllib.parse import urlparse
 
 import requests
 
@@ -78,13 +81,7 @@ from localstack.services.firehose.mappers import (
 )
 from localstack.services.firehose.models import FirehoseStore, firehose_stores
 from localstack.utils.aws import aws_stack
-from localstack.utils.aws.aws_stack import (
-    connect_to_resource,
-    extract_region_from_arn,
-    firehose_stream_arn,
-    get_search_db_connection,
-    s3_bucket_name,
-)
+from localstack.utils.aws.arns import extract_region_from_arn, firehose_stream_arn, s3_bucket_name
 from localstack.utils.common import (
     TIMESTAMP_FORMAT_MICROS,
     first_char_to_lower,
@@ -124,6 +121,64 @@ def _get_description_or_raise_not_found(
             f"Firehose {delivery_stream_name} under account {context.account_id} " f"not found."
         )
     return delivery_stream_description
+
+
+def get_opensearch_endpoint(domain_arn: str) -> str:
+    """
+    Get an OpenSearch cluster endpoint by describing the cluster associated with the domain_arn
+    :param domain_arn: ARN of the cluster.
+    :returns: cluster endpoint
+    :raises: ValueError if the domain_arn is malformed
+    """
+    region_name = extract_region_from_arn(domain_arn)
+    if region_name is None:
+        raise ValueError("unable to parse region from opensearch domain ARN")
+    opensearch_client = aws_stack.connect_to_service(
+        service_name="opensearch", region_name=region_name
+    )
+    domain_name = domain_arn.rpartition("/")[2]
+    info = opensearch_client.describe_domain(DomainName=domain_name)
+    base_domain = info["DomainStatus"]["Endpoint"]
+    # Add the URL scheme "http" if it's not set yet. https might not be enabled for all instances
+    # f.e. when the endpoint strategy is PORT or there is a custom opensearch/elasticsearch instance
+    endpoint = base_domain if base_domain.startswith("http") else f"http://{base_domain}"
+    return endpoint
+
+
+def get_search_db_connection(endpoint: str, region_name: str):
+    """
+    Get a connection to an ElasticSearch or OpenSearch DB
+    :param endpoint: cluster endpoint
+    :param region_name: cluster region e.g. us-east-1
+    """
+    from opensearchpy import OpenSearch, RequestsHttpConnection
+    from requests_aws4auth import AWS4Auth
+
+    verify_certs = False
+    use_ssl = False
+    # use ssl?
+    if "https://" in endpoint:
+        use_ssl = True
+        # TODO remove this condition once ssl certs are available for .es.localhost.localstack.cloud domains
+        endpoint_netloc = urlparse(endpoint).netloc
+        if not re.match(r"^.*(localhost(\.localstack\.cloud)?)(:\d+)?$", endpoint_netloc):
+            verify_certs = True
+
+    LOG.debug("Creating ES client with endpoint %s", endpoint)
+    if "AWS_ACCESS_KEY_ID" in os.environ and "AWS_SECRET_ACCESS_KEY" in os.environ:
+        access_key = os.environ.get("AWS_ACCESS_KEY_ID")
+        secret_key = os.environ.get("AWS_SECRET_ACCESS_KEY")
+        session_token = os.environ.get("AWS_SESSION_TOKEN")
+        awsauth = AWS4Auth(access_key, secret_key, region_name, "es", session_token=session_token)
+        connection_class = RequestsHttpConnection
+        return OpenSearch(
+            hosts=[endpoint],
+            verify_certs=verify_certs,
+            use_ssl=use_ssl,
+            connection_class=connection_class,
+            http_auth=awsauth,
+        )
+    return OpenSearch(hosts=[endpoint], verify_certs=verify_certs, use_ssl=use_ssl)
 
 
 class FirehoseProvider(FirehoseApi):
@@ -516,7 +571,7 @@ class FirehoseProvider(FirehoseApi):
         domain_arn = db_description.get("DomainARN")
         cluster_endpoint = db_description.get("ClusterEndpoint")
         if cluster_endpoint is None:
-            cluster_endpoint = aws_stack.get_opensearch_endpoint(domain_arn)
+            cluster_endpoint = get_opensearch_endpoint(domain_arn)
 
         db_connection = get_search_db_connection(cluster_endpoint, region)
         if db_description.get("S3BackupMode") == ElasticsearchS3BackupMode.AllDocuments:
@@ -622,7 +677,7 @@ class FirehoseProvider(FirehoseApi):
         bucket = s3_bucket_name(s3_destination_description["BucketARN"])
         prefix = s3_destination_description.get("Prefix", "")
 
-        s3 = connect_to_resource("s3")
+        s3 = aws_stack.connect_to_resource("s3")
         batched_data = b"".join([base64.b64decode(r.get("Data") or r.get("data")) for r in records])
 
         obj_path = self._get_s3_object_path(stream_name, prefix)

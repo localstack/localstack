@@ -5,7 +5,7 @@ from moto.awslambda import models as moto_awslambda_models
 from localstack import config
 from localstack.services.awslambda.lambda_api import handle_lambda_url_invocation
 from localstack.services.edge import ROUTER
-from localstack.utils.aws import aws_stack
+from localstack.utils.aws import arns, aws_stack
 from localstack.utils.aws.request_context import AWS_REGION_REGEX
 from localstack.utils.patch import patch
 from localstack.utils.platform import is_linux
@@ -104,12 +104,12 @@ def get_function(fn, self, *args, **kwargs):
         return result
 
     client = aws_stack.connect_to_service("lambda")
-    lambda_name = aws_stack.lambda_function_name(args[0])
+    lambda_name = arns.lambda_function_name(args[0])
     response = client.get_function(FunctionName=lambda_name)
 
     spec = response["Configuration"]
     spec["Code"] = {"ZipFile": "ZW1wdHkgc3RyaW5n"}
-    region = aws_stack.extract_region_from_arn(spec["FunctionArn"])
+    region = arns.extract_region_from_arn(spec["FunctionArn"])
     new_function = moto_awslambda_models.LambdaFunction(spec, region)
 
     return new_function

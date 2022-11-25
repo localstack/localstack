@@ -6,7 +6,7 @@ from datetime import datetime, timedelta, timezone
 from typing import TYPE_CHECKING, List
 
 from localstack.aws.api.cloudwatch import MetricAlarm, MetricDataQuery, StateValue
-from localstack.utils.aws import aws_stack
+from localstack.utils.aws import arns, aws_stack
 from localstack.utils.scheduler import Scheduler
 
 if TYPE_CHECKING:
@@ -116,13 +116,13 @@ class AlarmScheduler:
 
 
 def get_metric_alarm_details_for_alarm_arn(alarm_arn: str) -> MetricAlarm:
-    alarm_name = aws_stack.extract_resource_from_arn(alarm_arn).split(":", 1)[1]
+    alarm_name = arns.extract_resource_from_arn(alarm_arn).split(":", 1)[1]
     client = get_cloudwatch_client_for_region_of_alarm(alarm_arn)
     return client.describe_alarms(AlarmNames=[alarm_name])["MetricAlarms"][0]
 
 
 def get_cloudwatch_client_for_region_of_alarm(alarm_arn: str) -> "CloudWatchClient":
-    region = aws_stack.extract_region_from_arn(alarm_arn)
+    region = arns.extract_region_from_arn(alarm_arn)
     return aws_stack.connect_to_service("cloudwatch", region_name=region)
 
 

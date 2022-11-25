@@ -16,7 +16,7 @@ from localstack.services.events.provider import _get_events_tmp_dir
 from localstack.services.generic_proxy import ProxyListener
 from localstack.services.infra import start_proxy
 from localstack.utils import testutil
-from localstack.utils.aws import aws_stack
+from localstack.utils.aws import arns, aws_stack, resources
 from localstack.utils.aws.aws_responses import requests_response
 from localstack.utils.common import (
     get_free_tcp_port,
@@ -336,7 +336,7 @@ class TestEvents:
         topic_arn = sns_client.create_topic(Name=topic_name)["TopicArn"]
 
         queue_url = sqs_client.create_queue(QueueName=queue_name)["QueueUrl"]
-        queue_arn = aws_stack.sqs_queue_arn(queue_name)
+        queue_arn = arns.sqs_queue_arn(queue_name)
 
         sns_subscription(TopicArn=topic_arn, Protocol="sqs", Endpoint=queue_arn)
 
@@ -530,7 +530,7 @@ class TestEvents:
         endpoint = "{}://{}:{}".format(
             get_service_protocol(), config.LOCALSTACK_HOSTNAME, local_port
         )
-        sm_role_arn = aws_stack.role_arn("sfn_role")
+        sm_role_arn = arns.role_arn("sfn_role")
         sm_name = "state-machine-{}".format(short_uid())
         topic_target_id = "target-{}".format(short_uid())
         sm_target_id = "target-{}".format(short_uid())
@@ -563,8 +563,8 @@ class TestEvents:
             QueueName=fifo_queue_name,
             Attributes={"FifoQueue": "true", "ContentBasedDeduplication": "true"},
         )["QueueUrl"]
-        queue_arn = aws_stack.sqs_queue_arn(queue_name)
-        fifo_queue_arn = aws_stack.sqs_queue_arn(fifo_queue_name)
+        queue_arn = arns.sqs_queue_arn(queue_name)
+        fifo_queue_arn = arns.sqs_queue_arn(fifo_queue_name)
 
         event = {"env": "testing"}
 
@@ -841,14 +841,14 @@ class TestEvents:
         bus_name = "bus-{}".format(short_uid())
 
         # create firehose target bucket
-        aws_stack.get_or_create_bucket(s3_bucket)
+        resources.get_or_create_bucket(s3_bucket)
 
         # create firehose delivery stream to s3
         stream = firehose_client.create_delivery_stream(
             DeliveryStreamName=stream_name,
             S3DestinationConfiguration={
-                "RoleARN": aws_stack.iam_resource_arn("firehose"),
-                "BucketARN": aws_stack.s3_bucket_arn(s3_bucket),
+                "RoleARN": arns.iam_resource_arn("firehose"),
+                "BucketARN": arns.s3_bucket_arn(s3_bucket),
                 "Prefix": s3_prefix,
             },
         )
@@ -907,7 +907,7 @@ class TestEvents:
 
         sqs_client = aws_stack.create_external_boto_client("sqs", region_name="eu-west-1")
         sqs_client.create_queue(QueueName=queue_name)
-        queue_arn = aws_stack.sqs_queue_arn(queue_name)
+        queue_arn = arns.sqs_queue_arn(queue_name)
 
         events_client.create_event_bus(Name=bus_name)
 
@@ -942,7 +942,7 @@ class TestEvents:
         target_id = "target-{}".format(short_uid())
         bus_name = "bus-{}".format(short_uid())
         stream_name = "stream-{}".format(short_uid())
-        stream_arn = aws_stack.kinesis_stream_arn(stream_name)
+        stream_arn = arns.kinesis_stream_arn(stream_name)
 
         kinesis_client.create_stream(StreamName=stream_name, ShardCount=1)
 
@@ -1014,7 +1014,7 @@ class TestEvents:
         bus_name = f"bus-{short_uid()}"
 
         queue_url = sqs_client.create_queue(QueueName=queue_name)["QueueUrl"]
-        queue_arn = aws_stack.sqs_queue_arn(queue_name)
+        queue_arn = arns.sqs_queue_arn(queue_name)
 
         events_client.create_event_bus(Name=bus_name)
         events_client.put_rule(
@@ -1073,10 +1073,10 @@ class TestEvents:
         bus_name = "bus-{}".format(short_uid())
 
         queue_url = sqs_client.create_queue(QueueName=queue_name)["QueueUrl"]
-        queue_arn = aws_stack.sqs_queue_arn(queue_name)
+        queue_arn = arns.sqs_queue_arn(queue_name)
 
         queue_url_1 = sqs_client.create_queue(QueueName=queue_name_1)["QueueUrl"]
-        queue_arn_1 = aws_stack.sqs_queue_arn(queue_name_1)
+        queue_arn_1 = arns.sqs_queue_arn(queue_name_1)
 
         events_client.create_event_bus(Name=bus_name)
 
@@ -1163,7 +1163,7 @@ class TestEvents:
         # create queue
         queue_name = "queue-{}".format(short_uid())
         queue_url = sqs_client.create_queue(QueueName=queue_name)["QueueUrl"]
-        queue_arn = aws_stack.sqs_queue_arn(queue_name)
+        queue_arn = arns.sqs_queue_arn(queue_name)
 
         # put rule listening on SSM changes
         ssm_prefix = "/test/local/"
@@ -1211,7 +1211,7 @@ class TestEvents:
         target_id = f"target-{short_uid()}"
 
         queue_url = sqs_client.create_queue(QueueName=queue_name)["QueueUrl"]
-        queue_arn = aws_stack.sqs_queue_arn(queue_name)
+        queue_arn = arns.sqs_queue_arn(queue_name)
 
         pattern = {
             "Source": [{"exists": True}],

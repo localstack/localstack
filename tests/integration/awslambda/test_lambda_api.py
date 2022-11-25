@@ -24,7 +24,7 @@ from localstack.aws.api.lambda_ import Architecture, Runtime
 from localstack.testing.aws.lambda_utils import _await_dynamodb_table_active, is_old_provider
 from localstack.testing.snapshots.transformer import SortingTransformer
 from localstack.utils import testutil
-from localstack.utils.aws import aws_stack
+from localstack.utils.aws import arns
 from localstack.utils.files import load_file
 from localstack.utils.strings import long_uid, short_uid, to_str
 from localstack.utils.sync import wait_until
@@ -1861,7 +1861,7 @@ class TestLambdaPermissions:
                 Action="lambda:InvokeFunction",
                 StatementId="s3",
                 Principal="s3.amazonaws.com",
-                SourceArn=aws_stack.s3_bucket_arn("test-bucket"),
+                SourceArn=arns.s3_bucket_arn("test-bucket"),
             )
         snapshot.match("add_permission_fn_doesnotexist", e.value.response)
 
@@ -1901,7 +1901,7 @@ class TestLambdaPermissions:
             Action=action,
             StatementId=sid,
             Principal=principal,
-            SourceArn=aws_stack.s3_bucket_arn("test-bucket"),
+            SourceArn=arns.s3_bucket_arn("test-bucket"),
         )
         snapshot.match("add_permission", resp)
 
@@ -1939,7 +1939,7 @@ class TestLambdaPermissions:
             Action=action,
             StatementId=sid_2,
             Principal=principal_2,
-            SourceArn=aws_stack.s3_bucket_arn("test-bucket"),
+            SourceArn=arns.s3_bucket_arn("test-bucket"),
         )
         snapshot.match("add_permission_2", permission_2_add)
         policy_response = lambda_client.get_policy(

@@ -65,7 +65,7 @@ from localstack.aws.api.cloudformation import (
     ValidateTemplateOutput,
 )
 from localstack.services.cloudformation.stores import CloudFormationStore, cloudformation_stores
-from localstack.utils.aws import aws_stack
+from localstack.utils.aws import arns, aws_stack
 from localstack.utils.cloudformation import template_deployer, template_preparer
 from localstack.utils.cloudformation.template_deployer import NoStackUpdates
 from localstack.utils.cloudformation.template_preparer import (
@@ -138,7 +138,7 @@ class Stack:
                 "LogicalResourceId"
             ] = (resource.get("LogicalResourceId") or resource_id)
         # initialize stack template attributes
-        stack_id = self.metadata.get("StackId") or aws_stack.cloudformation_stack_arn(
+        stack_id = self.metadata.get("StackId") or arns.cloudformation_stack_arn(
             self.stack_name, short_uid()
         )
         self.template["StackId"] = self.metadata["StackId"] = stack_id
@@ -474,9 +474,7 @@ class StackChangeSet(Stack):
 
         name = self.metadata["ChangeSetName"]
         if not self.metadata.get("ChangeSetId"):
-            self.metadata["ChangeSetId"] = aws_stack.cf_change_set_arn(
-                name, change_set_id=short_uid()
-            )
+            self.metadata["ChangeSetId"] = arns.cf_change_set_arn(name, change_set_id=short_uid())
 
         stack = self.stack = find_stack(self.metadata["StackName"])
         self.metadata["StackId"] = stack.stack_id
@@ -1085,7 +1083,8 @@ class CloudformationProvider(CloudformationApi):
 
         # wait for completion of stack
         for stack in stacks_to_await:
-            aws_stack.await_stack_completion(stack[0], region_name=stack[1])
+            client = aws_stack.connect_to_service("cloudformation", region_name=stack[1])
+            client.get_waiter("stack_create_complete").wait(StackName=stack[0])
 
         # record operation
         operation = {

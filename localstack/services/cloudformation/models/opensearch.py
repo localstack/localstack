@@ -5,7 +5,7 @@ from localstack.aws.api.opensearch import (
 )
 from localstack.services.cloudformation.deployment_utils import remove_none_values
 from localstack.services.cloudformation.service_models import GenericBaseModel
-from localstack.utils.aws import aws_stack
+from localstack.utils.aws import arns, aws_stack
 from localstack.utils.collections import select_attributes
 
 
@@ -13,7 +13,7 @@ from localstack.utils.collections import select_attributes
 # See examples in:
 # https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-opensearchservice-domain.html
 def opensearch_add_tags_params(params, **kwargs):
-    es_arn = aws_stack.es_domain_arn(params.get("DomainName"))
+    es_arn = arns.es_domain_arn(params.get("DomainName"))
     tags = params.get("Tags", [])
     return {"ARN": es_arn, "TagList": tags}
 
@@ -27,7 +27,7 @@ class OpenSearchDomain(GenericBaseModel):
         domain_name = self._domain_name()
         if attribute == "Arn":
             # As mentioned above, OpenSearch still uses "es" ARNs
-            return aws_stack.elasticsearch_domain_arn(domain_name)
+            return arns.elasticsearch_domain_arn(domain_name)
         return domain_name
 
     def fetch_state(self, stack_name, resources):

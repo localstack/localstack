@@ -105,8 +105,8 @@ from localstack.services.dynamodbstreams.dynamodbstreams_api import (
 )
 from localstack.services.edge import ROUTER
 from localstack.services.plugins import ServiceLifecycleHook
-from localstack.utils.aws import aws_stack
-from localstack.utils.aws.aws_stack import extract_account_id_from_arn, extract_region_from_arn
+from localstack.utils.aws import arns, aws_stack
+from localstack.utils.aws.arns import extract_account_id_from_arn, extract_region_from_arn
 from localstack.utils.collections import select_attributes
 from localstack.utils.common import short_uid, to_bytes
 from localstack.utils.json import BytesEncoder, canonical_json
@@ -137,6 +137,17 @@ WRITE_THROTTLED_ACTIONS = [
 THROTTLED_ACTIONS = READ_THROTTLED_ACTIONS + WRITE_THROTTLED_ACTIONS
 
 MANAGED_KMS_KEYS = {}
+
+
+def dynamodb_table_exists(table_name, client=None):
+    client = client or aws_stack.connect_to_service("dynamodb")
+    paginator = client.get_paginator("list_tables")
+    pages = paginator.paginate(PaginationConfig={"PageSize": 100})
+    for page in pages:
+        table_names = page["TableNames"]
+        if to_str(table_name) in table_names:
+            return True
+    return False
 
 
 class EventForwarder:
@@ -256,7 +267,7 @@ class SSEUtils:
             if not kms_master_key_id:
                 # this is of course not the actual key for dynamodb, just a better, since existing, mock
                 kms_master_key_id = cls.get_sse_kms_managed_key(account_id, region_name)
-            kms_master_key_id = aws_stack.kms_key_arn(kms_master_key_id)
+            kms_master_key_id = arns.kms_key_arn(kms_master_key_id)
             return {
                 "Status": "ENABLED",
                 "SSEType": "KMS",  # no other value is allowed here
@@ -1136,7 +1147,12 @@ class DynamoDBProvider(DynamodbApi, ServiceLifecycleHook):
             aws_secret_access_key=TEST_AWS_SECRET_ACCESS_KEY,
             region_name=region_name,
         )
-        return aws_stack.dynamodb_table_exists(table_name, client)
+        return dynamodb_table_exists(table_name, client)
+        # try:
+        #     client.describe_table(TableName=table_name)
+        # except client.exceptions.ResourceNotFoundException:
+        #     return False
+        # return True
 
     @staticmethod
     def prepare_request_headers(headers: Dict):
@@ -1200,7 +1216,7 @@ class DynamoDBProvider(DynamodbApi, ServiceLifecycleHook):
                 new_record["dynamodb"]["NewImage"] = put_request["Item"]
                 if existing_item:
                     new_record["dynamodb"]["OldImage"] = existing_item
-                new_record["eventSourceARN"] = aws_stack.dynamodb_table_arn(table_name)
+                new_record["eventSourceARN"] = arns.dynamodb_table_arn(table_name)
                 new_record["dynamodb"]["SizeBytes"] = _get_size_bytes(put_request["Item"])
                 records.append(new_record)
                 i += 1
@@ -1220,7 +1236,7 @@ class DynamoDBProvider(DynamodbApi, ServiceLifecycleHook):
                 new_record["dynamodb"]["Keys"] = keys
                 new_record["dynamodb"]["OldImage"] = existing_items[i]
                 new_record["dynamodb"]["NewImage"] = updated_item
-                new_record["eventSourceARN"] = aws_stack.dynamodb_table_arn(table_name)
+                new_record["eventSourceARN"] = arns.dynamodb_table_arn(table_name)
                 new_record["dynamodb"]["SizeBytes"] = _get_size_bytes(updated_item)
                 records.append(new_record)
                 i += 1
@@ -1238,7 +1254,7 @@ class DynamoDBProvider(DynamodbApi, ServiceLifecycleHook):
                 new_record["dynamodb"]["Keys"] = keys
                 new_record["dynamodb"]["OldImage"] = existing_item
                 new_record["dynamodb"]["SizeBytes"] = _get_size_bytes(existing_items)
-                new_record["eventSourceARN"] = aws_stack.dynamodb_table_arn(table_name)
+                new_record["eventSourceARN"] = arns.dynamodb_table_arn(table_name)
                 records.append(new_record)
                 i += 1
         return records
@@ -1284,7 +1300,7 @@ class DynamoDBProvider(DynamodbApi, ServiceLifecycleHook):
                         new_record["dynamodb"]["NewImage"] = put_request["Item"]
                         if existing_item:
                             new_record["dynamodb"]["OldImage"] = existing_item
-                        new_record["eventSourceARN"] = aws_stack.dynamodb_table_arn(table_name)
+                        new_record["eventSourceARN"] = arns.dynamodb_table_arn(table_name)
                         records.append(new_record)
                     if unprocessed_put_items and len(unprocessed_put_items) > i:
                         unprocessed_item = unprocessed_put_items[i]
@@ -1302,7 +1318,7 @@ class DynamoDBProvider(DynamodbApi, ServiceLifecycleHook):
                         new_record["dynamodb"]["Keys"] = keys
                         new_record["dynamodb"]["OldImage"] = existing_items[i]
                         new_record["dynamodb"]["SizeBytes"] = _get_size_bytes(existing_items[i])
-                        new_record["eventSourceARN"] = aws_stack.dynamodb_table_arn(table_name)
+                        new_record["eventSourceARN"] = arns.dynamodb_table_arn(table_name)
                         records.append(new_record)
                     if unprocessed_delete_items and len(unprocessed_delete_items) > i:
                         unprocessed_item = unprocessed_delete_items[i]
@@ -1317,7 +1333,7 @@ class DynamoDBProvider(DynamodbApi, ServiceLifecycleHook):
         if records and "eventName" in records[0]:
             if table_name:
                 for record in records:
-                    record["eventSourceARN"] = aws_stack.dynamodb_table_arn(table_name)
+                    record["eventSourceARN"] = arns.dynamodb_table_arn(table_name)
             EventForwarder.forward_to_targets(records, background=True)
 
     def get_record_template(self) -> Dict:
@@ -1408,7 +1424,7 @@ def has_event_sources_or_streams_enabled(table_name: str, cache: Dict = None):
         cache = {}
     if not table_name:
         return
-    table_arn = aws_stack.dynamodb_table_arn(table_name)
+    table_arn = arns.dynamodb_table_arn(table_name)
     cached = cache.get(table_arn)
     if isinstance(cached, bool):
         return cached

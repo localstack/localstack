@@ -1,11 +1,11 @@
 from localstack.services.cloudformation.deployment_utils import remove_none_values
 from localstack.services.cloudformation.service_models import GenericBaseModel
-from localstack.utils.aws import aws_stack
+from localstack.utils.aws import arns, aws_stack
 from localstack.utils.common import select_attributes
 
 
 def es_add_tags_params(params, **kwargs):
-    es_arn = aws_stack.es_domain_arn(params.get("DomainName"))
+    es_arn = arns.es_domain_arn(params.get("DomainName"))
     tags = params.get("Tags", [])
     return {"ARN": es_arn, "TagList": tags}
 
@@ -18,13 +18,13 @@ class ElasticsearchDomain(GenericBaseModel):
     def get_physical_resource_id(self, attribute=None, **kwargs):
         domain_name = self._domain_name()
         if attribute == "Arn":
-            return aws_stack.elasticsearch_domain_arn(domain_name)
+            return arns.elasticsearch_domain_arn(domain_name)
         return domain_name
 
     def get_cfn_attribute(self, attribute_name):
         if attribute_name == "DomainArn":
             domain_name = self._domain_name()
-            return aws_stack.elasticsearch_domain_arn(domain_name)
+            return arns.elasticsearch_domain_arn(domain_name)
         if attribute_name == "DomainEndpoint":
             domain_status = self.props.get("DomainStatus", {})
             result = domain_status.get("Endpoint")

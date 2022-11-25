@@ -32,7 +32,7 @@ from localstack.aws.api.kms import (
     UnsupportedOperationException,
 )
 from localstack.services.stores import AccountRegionBundle, BaseStore, LocalAttribute
-from localstack.utils.aws.aws_stack import kms_alias_arn, kms_key_arn
+from localstack.utils.aws.arns import kms_alias_arn, kms_key_arn
 from localstack.utils.crypto import decrypt, encrypt
 from localstack.utils.strings import long_uid
 

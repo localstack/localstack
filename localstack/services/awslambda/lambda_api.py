@@ -55,10 +55,10 @@ from localstack.services.awslambda.lambda_utils import (
 )
 from localstack.services.awslambda.packages import awslambda_go_runtime_package
 from localstack.utils.archives import unzip
-from localstack.utils.aws import aws_stack
+from localstack.utils.aws import arns, aws_stack, resources
+from localstack.utils.aws.arns import extract_region_from_arn
 from localstack.utils.aws.aws_models import CodeSigningConfig, InvalidEnvVars, LambdaFunction
 from localstack.utils.aws.aws_responses import ResourceNotFoundException
-from localstack.utils.aws.aws_stack import extract_region_from_arn
 from localstack.utils.common import get_unzipped_size, is_zip_file
 from localstack.utils.container_networking import get_main_container_name
 from localstack.utils.docker_utils import DOCKER_CLIENT
@@ -166,12 +166,12 @@ def func_arn(function_name, remove_qualifier=True):
     parts = function_name.split(":function:")
     if remove_qualifier and len(parts) > 1:
         function_name = "%s:function:%s" % (parts[0], parts[1].split(":")[0])
-    return aws_stack.lambda_function_arn(function_name)
+    return arns.lambda_function_arn(function_name)
 
 
 def func_qualifier(function_name, qualifier=None):
     store = get_awslambda_store_for_arn(function_name)
-    arn = aws_stack.lambda_function_arn(function_name)
+    arn = arns.lambda_function_arn(function_name)
     details = store.lambdas.get(arn)
     if not details:
         return details
@@ -424,7 +424,7 @@ def run_lambda(
         sys.stdout = stream
         sys.stderr = stream
     try:
-        func_arn = aws_stack.fix_arn(func_arn)
+        func_arn = arns.fix_arn(func_arn)
         lambda_function = store.lambdas.get(func_arn)
         if not lambda_function:
             region_name = extract_region_from_arn(func_arn)
@@ -888,7 +888,7 @@ def forward_to_fallback_url(func_arn, data):
     if not config.LAMBDA_FALLBACK_URL:
         return
 
-    lambda_name = aws_stack.lambda_function_name(func_arn)
+    lambda_name = arns.lambda_function_name(func_arn)
     if config.LAMBDA_FALLBACK_URL.startswith("dynamodb://"):
         table_name = urlparse(config.LAMBDA_FALLBACK_URL.replace("dynamodb://", "http://")).netloc
         dynamodb = aws_stack.connect_to_service("dynamodb")
@@ -898,7 +898,7 @@ def forward_to_fallback_url(func_arn, data):
             "payload": {"S": data},
             "function_name": {"S": lambda_name},
         }
-        aws_stack.create_dynamodb_table(table_name, partition_key="id")
+        resources.create_dynamodb_table(table_name, partition_key="id")
         dynamodb.put_item(TableName=table_name, Item=item)
         return ""
     if re.match(r"^https?://.+", config.LAMBDA_FALLBACK_URL):
@@ -940,9 +940,7 @@ def get_lambda_policy(function, qualifier=None):
         docs.append(doc)
 
     # find policy by name
-    policy_name = get_lambda_policy_name(
-        aws_stack.lambda_function_name(function), qualifier=qualifier
-    )
+    policy_name = get_lambda_policy_name(arns.lambda_function_name(function), qualifier=qualifier)
     policy = [d for d in docs if d["PolicyName"] == policy_name]
     if policy:
         return policy[0]
@@ -2262,7 +2260,7 @@ def create_code_signing_config():
     signing_profile_version_arns = data.get("AllowedPublishers").get("SigningProfileVersionArns")
 
     code_signing_id = "csc-%s" % long_uid().replace("-", "")[0:17]
-    arn = aws_stack.code_signing_arn(code_signing_id)
+    arn = arns.code_signing_arn(code_signing_id)
 
     store.code_signing_configs[arn] = CodeSigningConfig(
         arn, code_signing_id, signing_profile_version_arns

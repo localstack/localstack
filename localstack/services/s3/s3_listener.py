@@ -43,7 +43,7 @@ from localstack.services.s3.s3_utils import (
     uses_host_addressing,
     validate_bucket_name,
 )
-from localstack.utils.aws import aws_stack
+from localstack.utils.aws import arns, aws_stack
 from localstack.utils.aws.aws_responses import (
     create_sqs_system_attributes,
     is_invalid_html_response,
@@ -353,10 +353,10 @@ def send_notification_for_subscriber(
     message = json.dumps(message)
 
     if notification.get("Queue"):
-        region = aws_stack.extract_region_from_arn(notification["Queue"])
+        region = arns.extract_region_from_arn(notification["Queue"])
         sqs_client = aws_stack.connect_to_service("sqs", region_name=region)
         try:
-            queue_url = aws_stack.sqs_queue_url_for_arn(notification["Queue"])
+            queue_url = arns.sqs_queue_url_for_arn(notification["Queue"])
             sqs_client.send_message(
                 QueueUrl=queue_url,
                 MessageBody=message,
@@ -367,7 +367,7 @@ def send_notification_for_subscriber(
                 f"Unable to send notification for S3 bucket \"{bucket_name}\" to SQS queue \"{notification['Queue']}\": {e}",
             )
     if notification.get("Topic"):
-        region = aws_stack.extract_region_from_arn(notification["Topic"])
+        region = arns.extract_region_from_arn(notification["Topic"])
         sns_client = aws_stack.connect_to_service("sns", region_name=region)
         try:
             sns_client.publish(
@@ -383,7 +383,7 @@ def send_notification_for_subscriber(
     lambda_function_config = notification.get("CloudFunction") or notification.get("LambdaFunction")
     if lambda_function_config:
         # make sure we don't run into a socket timeout
-        region = aws_stack.extract_region_from_arn(lambda_function_config)
+        region = arns.extract_region_from_arn(lambda_function_config)
         connection_config = botocore.config.Config(read_timeout=300)
         lambda_client = aws_stack.connect_to_service(
             "lambda", config=connection_config, region_name=region

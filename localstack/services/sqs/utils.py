@@ -8,7 +8,7 @@ from moto.sqs.models import TRANSPORT_TYPE_ENCODINGS, Message
 
 from localstack.aws.accounts import get_aws_account_id
 from localstack.aws.api.sqs import ReceiptHandleIsInvalid
-from localstack.utils.aws.aws_stack import parse_arn
+from localstack.utils.aws.arns import parse_arn
 from localstack.utils.common import clone
 from localstack.utils.objects import singleton_factory
 from localstack.utils.strings import long_uid

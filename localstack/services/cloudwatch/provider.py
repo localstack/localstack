@@ -30,7 +30,7 @@ from localstack.services import moto
 from localstack.services.cloudwatch.alarm_scheduler import AlarmScheduler
 from localstack.services.edge import ROUTER
 from localstack.services.plugins import SERVICE_PLUGINS, ServiceLifecycleHook
-from localstack.utils.aws import aws_stack
+from localstack.utils.aws import arns, aws_stack
 from localstack.utils.aws.aws_stack import extract_access_key_id_from_auth_header
 from localstack.utils.patch import patch
 from localstack.utils.sync import poll_condition
@@ -63,7 +63,7 @@ def update_state(target, self, reason, reason_data, state_value):
     else:
         actions = self.insufficient_data_actions
     for action in actions:
-        data = aws_stack.parse_arn(action)
+        data = arns.parse_arn(action)
         # test for sns - can this be done in a more generic way?
         if data["service"] == "sns":
             service = aws_stack.connect_to_service(data["service"])
@@ -243,7 +243,7 @@ class CloudwatchProvider(CloudwatchApi, ServiceLifecycleHook):
     def delete_alarms(self, context: RequestContext, alarm_names: AlarmNames) -> None:
         moto.call_moto(context)
         for alarm_name in alarm_names:
-            arn = aws_stack.cloudwatch_alarm_arn(alarm_name)
+            arn = arns.cloudwatch_alarm_arn(alarm_name)
             self.alarm_scheduler.delete_scheduler_for_alarm(arn)
 
     def get_raw_metrics(self, request: Request):
@@ -346,7 +346,7 @@ class CloudwatchProvider(CloudwatchApi, ServiceLifecycleHook):
         moto.call_moto(context)
 
         name = request.get("AlarmName")
-        arn = aws_stack.cloudwatch_alarm_arn(name)
+        arn = arns.cloudwatch_alarm_arn(name)
         self.tags.tag_resource(arn, request.get("Tags"))
         self.alarm_scheduler.schedule_metric_alarm(arn)
 

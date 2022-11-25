@@ -2,7 +2,7 @@ import json
 import logging
 import os
 
-from localstack.utils.aws import aws_stack
+from localstack.utils.aws import arns
 from localstack.utils.strings import short_uid
 from localstack.utils.sync import wait_until
 
@@ -221,7 +221,7 @@ def test_cfn_handle_events_rule(events_client, deploy_cfn_template):
     rs = events_client.list_rules(NamePrefix=rule_prefix)
     assert rule_name in [rule["Name"] for rule in rs["Rules"]]
 
-    target_arn = aws_stack.s3_bucket_arn(bucket_name)  # TODO: !
+    target_arn = arns.s3_bucket_arn(bucket_name)  # TODO: !
     rs = events_client.list_targets_by_rule(Rule=rule_name)
     assert target_arn in [target["Arn"] for target in rs["Targets"]]
 
@@ -236,7 +236,7 @@ def test_cfn_handle_events_rule_without_name(events_client, deploy_cfn_template)
     rule_names = [rule["Name"] for rule in rs["Rules"]]
 
     stack = deploy_cfn_template(
-        template=TEST_TEMPLATE_18 % aws_stack.role_arn("sfn_role"),  # TODO: !
+        template=TEST_TEMPLATE_18 % arns.role_arn("sfn_role"),  # TODO: !
     )
 
     rs = events_client.list_rules()

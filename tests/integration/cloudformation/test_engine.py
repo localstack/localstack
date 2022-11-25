@@ -5,7 +5,7 @@ import os
 import pytest
 
 from localstack.testing.aws.cloudformation_utils import load_template_raw
-from localstack.utils.aws import aws_stack
+from localstack.utils.aws import arns
 from localstack.utils.common import short_uid
 from localstack.utils.sync import wait_until
 
@@ -233,7 +233,7 @@ class TestImports:
         output = [out["OutputValue"] for out in outputs if out["OutputKey"] == "MessageQueueUrl1"][
             0
         ]
-        assert aws_stack.sqs_queue_arn(queue_url1) == output  # TODO
+        assert arns.sqs_queue_arn(queue_url1) == output  # TODO
         output = [out["OutputValue"] for out in outputs if out["OutputKey"] == "MessageQueueUrl2"][
             0
         ]

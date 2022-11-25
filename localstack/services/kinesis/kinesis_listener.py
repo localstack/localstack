@@ -12,7 +12,7 @@ from localstack import config
 from localstack.constants import APPLICATION_CBOR, APPLICATION_JSON, HEADER_AMZN_ERROR_TYPE
 from localstack.services.generic_proxy import ProxyListener
 from localstack.services.kinesis.provider import KinesisProvider
-from localstack.utils.aws import aws_stack
+from localstack.utils.aws import arns, aws_stack
 from localstack.utils.aws.aws_responses import convert_to_binary_event_payload
 from localstack.utils.common import clone, json_safe, now_utc, to_bytes, to_str
 
@@ -343,7 +343,7 @@ def find_consumer(consumer_arn="", consumer_name="", stream_arn=""):
 def find_stream_for_consumer(consumer_arn):
     kinesis = aws_stack.connect_to_service("kinesis")
     for stream_name in kinesis.list_streams()["StreamNames"]:
-        stream_arn = aws_stack.kinesis_stream_arn(stream_name)
+        stream_arn = arns.kinesis_stream_arn(stream_name)
         for cons in kinesis.list_stream_consumers(StreamARN=stream_arn)["Consumers"]:
             if cons["ConsumerARN"] == consumer_arn:
                 return stream_name

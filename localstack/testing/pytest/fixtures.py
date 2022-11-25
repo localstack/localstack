@@ -33,8 +33,8 @@ from localstack.testing.aws.cloudformation_utils import load_template_file, rend
 from localstack.testing.aws.util import get_lambda_logs
 from localstack.utils import testutil
 from localstack.utils.aws import aws_stack
-from localstack.utils.aws.aws_stack import create_dynamodb_table
 from localstack.utils.aws.client import SigningHttpClient
+from localstack.utils.aws.resources import create_dynamodb_table
 from localstack.utils.collections import ensure_list
 from localstack.utils.functions import run_safe
 from localstack.utils.http import safe_requests as requests

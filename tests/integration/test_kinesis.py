@@ -10,7 +10,7 @@ from botocore.exceptions import ClientError
 
 from localstack import config, constants
 from localstack.services.kinesis import provider as kinesis_provider
-from localstack.utils.aws import aws_stack
+from localstack.utils.aws import aws_stack, resources
 from localstack.utils.common import poll_condition, retry, select_attributes, short_uid
 from localstack.utils.kinesis import kinesis_connector
 
@@ -425,7 +425,7 @@ class TestKinesisPythonClient:
 
         # start Kinesis client
         stream_name = f"test-foobar-{short_uid()}"
-        aws_stack.create_kinesis_stream(stream_name, delete=True)
+        resources.create_kinesis_stream(stream_name, delete=True)
         process = kinesis_connector.listen_to_kinesis(
             stream_name=stream_name,
             listener_func=process_records,

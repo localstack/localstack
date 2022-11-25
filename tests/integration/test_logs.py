@@ -10,7 +10,7 @@ from localstack.constants import APPLICATION_AMZ_JSON_1_1
 from localstack.services.awslambda.lambda_utils import LAMBDA_RUNTIME_PYTHON36
 from localstack.testing.snapshots.transformer import KeyValueBasedTransformer
 from localstack.utils import testutil
-from localstack.utils.aws import aws_stack
+from localstack.utils.aws import arns
 from localstack.utils.common import now_utc, poll_condition, retry, short_uid
 
 from .awslambda.test_lambda import TEST_LAMBDA_LIBS, TEST_LAMBDA_PYTHON_ECHO
@@ -217,7 +217,7 @@ class TestCloudWatchLogs:
             logGroupName=logs_log_group,
             filterName="test",
             filterPattern="",
-            destinationArn=aws_stack.lambda_function_arn(
+            destinationArn=arns.lambda_function_arn(
                 test_lambda_name, account_id=account_id, region_name=config.DEFAULT_REGION
             ),
         )

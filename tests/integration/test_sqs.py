@@ -15,7 +15,7 @@ from localstack.aws.api.lambda_ import Runtime
 from localstack.services.sqs.constants import DEFAULT_MAXIMUM_MESSAGE_SIZE
 from localstack.services.sqs.models import sqs_stores
 from localstack.testing.snapshots.transformer import GenericTransformer
-from localstack.utils.aws import aws_stack
+from localstack.utils.aws import arns, aws_stack
 from localstack.utils.common import poll_condition, retry, short_uid, to_str
 
 from .awslambda.functions import lambda_integration
@@ -1757,9 +1757,7 @@ class TestSqsProvider:
 
         # create arn
         url_parts = dl_queue_url.split("/")
-        dl_target_arn = aws_stack.sqs_queue_arn(
-            url_parts[-1], account_id=url_parts[len(url_parts) - 2]
-        )
+        dl_target_arn = arns.sqs_queue_arn(url_parts[-1], account_id=url_parts[len(url_parts) - 2])
 
         policy = {"deadLetterTargetArn": dl_target_arn, "maxReceiveCount": 1}
         queue_url = sqs_create_queue(
@@ -1788,12 +1786,12 @@ class TestSqsProvider:
         queue_names = [f"q-{short_uid()}", f"q-{short_uid()}", f"q-{short_uid()}"]
         for queue_name in queue_names:
             sqs_create_queue(QueueName=queue_name, Attributes={"VisibilityTimeout": "0"})
-        queue_urls = [aws_stack.get_sqs_queue_url(queue_name) for queue_name in queue_names]
+        queue_urls = [arns.get_sqs_queue_url(queue_name) for queue_name in queue_names]
 
         # set redrive policies
         for idx, queue_name in enumerate(queue_names[:2]):
             policy = {
-                "deadLetterTargetArn": aws_stack.sqs_queue_arn(queue_names[idx + 1]),
+                "deadLetterTargetArn": arns.sqs_queue_arn(queue_names[idx + 1]),
                 "maxReceiveCount": 1,
             }
             sqs_client.set_queue_attributes(

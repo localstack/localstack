@@ -35,8 +35,8 @@ from localstack.services.s3.utils import (
     get_bucket_from_moto,
     get_key_from_moto_bucket,
 )
-from localstack.utils.aws import aws_stack
-from localstack.utils.aws.aws_stack import ArnData, parse_arn
+from localstack.utils.aws import arns, aws_stack
+from localstack.utils.aws.arns import ArnData, parse_arn
 from localstack.utils.strings import short_uid
 from localstack.utils.time import timestamp_millis
 
@@ -322,7 +322,7 @@ class SqsNotifier(BaseNotifier):
         parsed_arn = parse_arn(queue_arn)
         sqs_client = aws_stack.connect_to_service("sqs", region_name=parsed_arn["region"])
         try:
-            queue_url = aws_stack.sqs_queue_url_for_arn(queue_arn)
+            queue_url = arns.sqs_queue_url_for_arn(queue_arn)
             system_attributes = {}
             if ctx.xray:
                 system_attributes["AWSTraceHeader"] = {
@@ -372,7 +372,7 @@ class SnsNotifier(BaseNotifier):
         message = json.dumps(event_payload)
         topic_arn = config["TopicArn"]
 
-        region_name = aws_stack.extract_region_from_arn(topic_arn)
+        region_name = arns.extract_region_from_arn(topic_arn)
         sns_client = aws_stack.connect_to_service("sns", region_name=region_name)
         try:
             sns_client.publish(
@@ -413,9 +413,9 @@ class LambdaNotifier(BaseNotifier):
         payload = json.dumps(event_payload)
         lambda_arn = config["LambdaFunctionArn"]
 
-        region_name = aws_stack.extract_region_from_arn(lambda_arn)
+        region_name = arns.extract_region_from_arn(lambda_arn)
         lambda_client = aws_stack.connect_to_service("lambda", region_name=region_name)
-        lambda_function_config = aws_stack.lambda_function_name(lambda_arn)
+        lambda_function_config = arns.lambda_function_name(lambda_arn)
         try:
             lambda_client.invoke(
                 FunctionName=lambda_function_config,

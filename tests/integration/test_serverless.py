@@ -4,7 +4,7 @@ import unittest
 
 import pytest
 
-from localstack.utils.aws import aws_stack
+from localstack.utils.aws import arns, aws_stack
 from localstack.utils.common import retry, run
 from localstack.utils.testutil import get_lambda_log_events
 
@@ -117,9 +117,9 @@ class TestServerless(unittest.TestCase):
         self.assertEqual(1, len(events))
         event_source_arn = events[0]["EventSourceArn"]
 
-        self.assertEqual(event_source_arn, aws_stack.sqs_queue_arn(queue_name))
+        self.assertEqual(event_source_arn, arns.sqs_queue_arn(queue_name))
         result = sqs_client.get_queue_attributes(
-            QueueUrl=aws_stack.get_sqs_queue_url(queue_name),
+            QueueUrl=arns.get_sqs_queue_url(queue_name),
             AttributeNames=[
                 "RedrivePolicy",
             ],
@@ -168,7 +168,7 @@ class TestServerless(unittest.TestCase):
             self.assertIn(method, proxy_resource["resourceMethods"])
             resource_method = proxy_resource["resourceMethods"][method]
             self.assertIn(
-                aws_stack.lambda_function_arn(function_name),
+                arns.lambda_function_arn(function_name),
                 resource_method["methodIntegration"]["uri"],
             )
 

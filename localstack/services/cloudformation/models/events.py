@@ -10,7 +10,7 @@ from localstack.services.cloudformation.service_models import (
     GenericBaseModel,
 )
 from localstack.utils import common
-from localstack.utils.aws import aws_stack
+from localstack.utils.aws import arns, aws_stack
 from localstack.utils.common import short_uid
 
 
@@ -76,7 +76,7 @@ class EventsRule(GenericBaseModel):
 
     def get_cfn_attribute(self, attribute_name):
         if attribute_name == "Arn":
-            return self.params.get("Arn") or aws_stack.events_rule_arn(self.params.get("Name"))
+            return self.params.get("Arn") or arns.events_rule_arn(self.params.get("Name"))
         return super(EventsRule, self).get_cfn_attribute(attribute_name)
 
     def get_physical_resource_id(self, attribute=None, **kwargs):

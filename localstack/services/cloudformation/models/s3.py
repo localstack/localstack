@@ -11,7 +11,7 @@ from localstack.services.cloudformation.deployment_utils import (
 )
 from localstack.services.cloudformation.service_models import GenericBaseModel
 from localstack.services.s3 import s3_listener, s3_utils
-from localstack.utils.aws import aws_stack
+from localstack.utils.aws import arns, aws_stack
 from localstack.utils.cloudformation.cfn_utils import rename_params
 from localstack.utils.common import canonical_json, md5
 from localstack.utils.testutil import delete_all_s3_objects
@@ -225,7 +225,7 @@ class S3Bucket(GenericBaseModel):
     def get_physical_resource_id(self, attribute=None, **kwargs):
         bucket_name = self.props.get("BucketName")
         if attribute == "Arn":
-            return aws_stack.s3_bucket_arn(bucket_name)
+            return arns.s3_bucket_arn(bucket_name)
         return bucket_name
 
     def _get_bucket_name(self):

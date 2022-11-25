@@ -14,7 +14,7 @@ from localstack.services.generic_proxy import ProxyListener
 from localstack.services.sns.provider import unsubscribe_sqs_queue
 from localstack.services.sqs.legacy.packages import SQS_BACKEND_IMPL
 from localstack.services.sqs.utils import is_sqs_queue_url
-from localstack.utils.aws import aws_stack
+from localstack.utils.aws import arns, aws_stack
 from localstack.utils.aws.aws_responses import (
     calculate_crc32,
     make_requests_error,
@@ -121,7 +121,7 @@ def _fix_dlq_arn_in_attributes(req_data):
     dlq_arn = policy.get("deadLetterTargetArn", "")
     if "://" in dlq_arn:
         # convert queue URL to queue ARN
-        policy["deadLetterTargetArn"] = aws_stack.sqs_queue_arn(dlq_arn)
+        policy["deadLetterTargetArn"] = arns.sqs_queue_arn(dlq_arn)
         attrs["RedrivePolicy"] = json.dumps(policy)
         return attrs
 

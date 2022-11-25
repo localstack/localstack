@@ -10,7 +10,7 @@ from dateutil.tz import tzutc
 
 from localstack import config
 from localstack.services.cloudwatch.provider import PATH_GET_RAW_METRICS
-from localstack.utils.aws import aws_stack
+from localstack.utils.aws import arns, aws_stack
 from localstack.utils.common import retry, short_uid, to_str
 from localstack.utils.sync import poll_condition
 
@@ -241,7 +241,7 @@ class TestCloudwatch:
             ComparisonOperator="GreaterThanThreshold",
         )
         assert 200 == response["ResponseMetadata"]["HTTPStatusCode"]
-        alarm_arn = aws_stack.cloudwatch_alarm_arn(alarm_name)
+        alarm_arn = arns.cloudwatch_alarm_arn(alarm_name)
 
         tags = [{"Key": "tag1", "Value": "foo"}, {"Key": "tag2", "Value": "bar"}]
         response = cloudwatch_client.tag_resource(ResourceARN=alarm_arn, Tags=tags)
@@ -740,7 +740,7 @@ class TestCloudwatch:
         sqs_arn = sqs_client.get_queue_attributes(QueueUrl=sqs_url, AttributeNames=["QueueArn"])[
             "Attributes"
         ]["QueueArn"]
-        queue_name = aws_stack.sqs_queue_name(sqs_arn)
+        queue_name = arns.sqs_queue_name(sqs_arn)
         # this should trigger the metric "NumberOfEmptyReceives"
         sqs_client.receive_message(QueueUrl=sqs_url)
 
