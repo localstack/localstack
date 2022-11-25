@@ -1,3 +1,4 @@
+import dataclasses
 import json
 import logging
 import os
@@ -244,8 +245,13 @@ class SesProvider(SesApi, ServiceLifecycleHook):
             if not sns_destination_arn:
                 continue
 
-            emitter.emit_send_event(source, destination["ToAddresses"], sns_destination_arn)
-            emitter.emit_delivery_event(source, destination["ToAddresses"], sns_destination_arn)
+            payload = SNSPayload(
+                message_id=response["MessageId"],
+                sender_email=source,
+                destination_addresses=destination["ToAddresses"],
+            )
+            emitter.emit_send_event(payload, sns_destination_arn)
+            emitter.emit_delivery_event(payload, sns_destination_arn)
 
         text_part = message["Body"].get("Text", {}).get("Data")
         html_part = message["Body"].get("Html", {}).get("Data")
@@ -352,11 +358,17 @@ class SNSClient(Protocol):
         ...
 
 
+@dataclasses.dataclass(frozen=True)
+class SNSPayload:
+    message_id: str
+    sender_email: Address
+    destination_addresses: AddressList
+
+
 class SNSEmitter:
     def __init__(
         self,
         context: RequestContext,
-        client: Optional[SNSClient] = None,
     ):
         self.context = context
 
@@ -369,19 +381,18 @@ class SNSEmitter:
             Message="Successfully validated SNS topic for Amazon SES event publishing.",
         )
 
-    def emit_send_event(
-        self, sender_email: Address, destination_addresses: AddressList, sns_topic_arn: str
-    ):
+    def emit_send_event(self, payload: SNSPayload, sns_topic_arn: str):
         now = datetime.now(tz=timezone.utc)
 
         event_payload = {
             "eventType": "Send",
             "mail": {
                 "timestamp": now.isoformat(),
-                "source": sender_email,
-                "sourceArn": f"arn:aws:ses:{self.context.region}:{self.context.account_id}:identity/{sender_email}",
+                "source": payload.sender_email,
+                "sourceArn": f"arn:aws:ses:{self.context.region}:{self.context.account_id}:identity/{payload.sender_email}",
                 "sendingAccountId": self.context.account_id,
-                "destination": destination_addresses,
+                "destination": payload.destination_addresses,
+                "messageId": payload.message_id,
             },
             "send": {},
         }
@@ -392,22 +403,21 @@ class SNSEmitter:
             Subject="Amazon SES Email Event Notification",
         )
 
-    def emit_delivery_event(
-        self, sender_email: Address, destination_addresses: AddressList, sns_topic_arn: str
-    ):
+    def emit_delivery_event(self, payload: SNSPayload, sns_topic_arn: str):
         now = datetime.now(tz=timezone.utc)
 
         event_payload = {
             "eventType": "Delivery",
             "mail": {
                 "timestamp": now.isoformat(),
-                "source": sender_email,
-                "sourceArn": f"arn:aws:ses:{self.context.region}:{self.context.account_id}:identity/{sender_email}",
+                "source": payload.sender_email,
+                "sourceArn": f"arn:aws:ses:{self.context.region}:{self.context.account_id}:identity/{payload.sender_email}",
                 "sendingAccountId": self.context.account_id,
-                "destination": destination_addresses,
+                "destination": payload.destination_addresses,
+                "messageId": payload.message_id,
             },
             "delivery": {
-                "recipients": destination_addresses,
+                "recipients": payload.destination_addresses,
                 "timestamp": now.isoformat(),
             },
         }

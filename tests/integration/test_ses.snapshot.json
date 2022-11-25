@@ -1,6 +1,6 @@
 {
   "tests/integration/test_ses.py::TestSES::test_ses_sns_topic_integration": {
-    "recorded-date": "21-11-2022, 09:38:18",
+    "recorded-date": "25-11-2022, 12:16:13",
     "recorded-content": {
       "messages": [
         {
@@ -26,7 +26,7 @@
               "source": "<sender-email-address>",
               "sourceArn": "arn:aws:ses:<region>:111111111111:identity/<sender-email-address>",
               "sendingAccountId": "111111111111",
-              "messageId": "01070184998d7f5f-9821ae1c-7289-498a-9e6f-1baf98cc547d-000000",
+              "messageId": "<message-id:1>",
               "destination": [
                 "<recipient-email-address>"
               ],
@@ -64,7 +64,7 @@
                 "to": [
                   "<recipient-email-address>"
                 ],
-                "messageId": "01070184998d7f5f-9821ae1c-7289-498a-9e6f-1baf98cc547d-000000",
+                "messageId": "<message-id:1>",
                 "subject": "foo subject"
               },
               "tags": {
@@ -72,13 +72,13 @@
                   "SendEmail"
                 ],
                 "ses:configuration-set": [
-                  "config-set-f721b02c"
+                  "config-set-90b751e6"
                 ],
                 "ses:source-ip": [
                   "80.189.216.182"
                 ],
                 "ses:from-domain": [
-                  "localstack.cloud"
+                  "gmail.com"
                 ],
                 "ses:caller-identity": [
                   "localstack-testing"
@@ -105,7 +105,7 @@
               "source": "<sender-email-address>",
               "sourceArn": "arn:aws:ses:<region>:111111111111:identity/<sender-email-address>",
               "sendingAccountId": "111111111111",
-              "messageId": "01070184998d7f5f-9821ae1c-7289-498a-9e6f-1baf98cc547d-000000",
+              "messageId": "<message-id:1>",
               "destination": [
                 "<recipient-email-address>"
               ],
@@ -143,7 +143,7 @@
                 "to": [
                   "<recipient-email-address>"
                 ],
-                "messageId": "01070184998d7f5f-9821ae1c-7289-498a-9e6f-1baf98cc547d-000000",
+                "messageId": "<message-id:1>",
                 "subject": "foo subject"
               },
               "tags": {
@@ -151,13 +151,13 @@
                   "SendEmail"
                 ],
                 "ses:configuration-set": [
-                  "config-set-f721b02c"
+                  "config-set-90b751e6"
                 ],
                 "ses:source-ip": [
                   "80.189.216.182"
                 ],
                 "ses:from-domain": [
-                  "localstack.cloud"
+                  "gmail.com"
                 ],
                 "ses:caller-identity": [
                   "localstack-testing"
@@ -169,11 +169,11 @@
             },
             "delivery": {
               "timestamp": "date",
-              "processingTimeMillis": 497,
+              "processingTimeMillis": 1043,
               "recipients": [
                 "<recipient-email-address>"
               ],
-              "smtpResponse": "250 2.0.0 OK  1669023498 q4-20020adffec4000000b002368e4d5d74si6016172wrs.528 - gsmtp",
+              "smtpResponse": "250 2.0.0 OK  1669378573 f10-20020a5d64ca000000b0024207ba48d6si799363wri.326 - gsmtp",
               "reportingMTA": "b224-7.smtp-out.<region>.amazonses.com"
             }
           },

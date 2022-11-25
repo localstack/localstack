@@ -235,7 +235,6 @@ class TestSES:
             "$..Message.delivery.processingTimeMillis",
             "$..Message.delivery.reportingMTA",
             "$..Message.delivery.smtpResponse",
-            "$..Message.mail.messageId",
             "$..Message.mail.commonHeaders",
             "$..Message.mail.headers",
             "$..Message.mail.headersTruncated",
@@ -267,6 +266,7 @@ class TestSES:
             [
                 snapshot.transform.regex(sender_email_address, "<sender-email-address>"),
                 snapshot.transform.regex(recipient_email_address, "<recipient-email-address>"),
+                snapshot.transform.key_value("messageId"),
             ]
             + snapshot.transform.sns_api()
         )
@@ -308,4 +308,17 @@ class TestSES:
         )
 
         messages = sqs_receive_num_messages(sqs_queue, 3)
+        # the messages may arrive out of order so sort
+
+        def sort_fn(message):
+            if "Successfully validated" in message["Message"]:
+                return 0
+            elif json.loads(message["Message"])["eventType"] == "Send":
+                return 1
+            elif json.loads(message["Message"])["eventType"] == "Delivery":
+                return 2
+            else:
+                raise ValueError("bad")
+
+        messages.sort(key=sort_fn)
         snapshot.match("messages", messages)
