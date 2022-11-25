@@ -251,7 +251,7 @@
             "x86_64"
           ],
           "CodeSha256": "<code-sha256:1>",
-          "CodeSize": 17553859,
+          "CodeSize": "<code-size>",
           "DeadLetterConfig": {
             "TargetArn": "arn:aws:sqs:<region>:111111111111:<resource:1>"
           },
@@ -321,7 +321,7 @@
           "x86_64"
         ],
         "CodeSha256": "<code-sha256:1>",
-        "CodeSize": 17553859,
+        "CodeSize": "<code-size>",
         "DeadLetterConfig": {
           "TargetArn": "arn:aws:sqs:<region>:111111111111:<resource:1>"
         },

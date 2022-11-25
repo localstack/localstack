@@ -7,7 +7,7 @@
           "x86_64"
         ],
         "CodeSha256": "code-sha256",
-        "CodeSize": 276,
+        "CodeSize": "<code-size>",
         "Description": "",
         "EphemeralStorage": {
           "Size": 512
@@ -39,7 +39,7 @@
           "x86_64"
         ],
         "CodeSha256": "code-sha256",
-        "CodeSize": 276,
+        "CodeSize": "<code-size>",
         "Description": "",
         "EphemeralStorage": {
           "Size": 512
@@ -76,7 +76,7 @@
             "x86_64"
           ],
           "CodeSha256": "code-sha256",
-          "CodeSize": 276,
+          "CodeSize": "<code-size>",
           "Description": "",
           "EphemeralStorage": {
             "Size": 512
@@ -113,7 +113,7 @@
             "x86_64"
           ],
           "CodeSha256": "code-sha256",
-          "CodeSize": 276,
+          "CodeSize": "<code-size>",
           "Description": "",
           "EphemeralStorage": {
             "Size": 512
@@ -302,7 +302,7 @@
             "x86_64"
           ],
           "CodeSha256": "code-sha256",
-          "CodeSize": 373,
+          "CodeSize": "<code-size>",
           "Description": "",
           "Environment": {
             "Variables": {}
@@ -357,7 +357,7 @@
             "x86_64"
           ],
           "CodeSha256": "code-sha256",
-          "CodeSize": 373,
+          "CodeSize": "<code-size>",
           "Description": "",
           "Environment": {
             "Variables": {}
@@ -407,7 +407,7 @@
           "x86_64"
         ],
         "CodeSha256": "code-sha256",
-        "CodeSize": 264,
+        "CodeSize": "<code-size>",
         "Description": "",
         "EphemeralStorage": {
           "Size": 512
@@ -444,7 +444,7 @@
             "x86_64"
           ],
           "CodeSha256": "code-sha256",
-          "CodeSize": 264,
+          "CodeSize": "<code-size>",
           "Description": "",
           "EphemeralStorage": {
             "Size": 512
@@ -615,7 +615,7 @@
             "x86_64"
           ],
           "CodeSha256": "code-sha256",
-          "CodeSize": 17476987,
+          "CodeSize": "<code-size>",
           "Description": "",
           "Environment": {
             "Variables": {
@@ -664,7 +664,7 @@
           "x86_64"
         ],
         "CodeSha256": "code-sha256",
-        "CodeSize": 17476987,
+        "CodeSize": "<code-size>",
         "Description": "",
         "Environment": {
           "Variables": {
@@ -705,7 +705,7 @@
           "x86_64"
         ],
         "CodeSha256": "code-sha256",
-        "CodeSize": 17484537,
+        "CodeSize": "<code-size>",
         "Description": "",
         "EphemeralStorage": {
           "Size": 512
@@ -774,7 +774,7 @@
           "x86_64"
         ],
         "CodeSha256": "code-sha256",
-        "CodeSize": 17484537,
+        "CodeSize": "<code-size>",
         "Description": "",
         "EphemeralStorage": {
           "Size": 512
@@ -836,7 +836,7 @@
             "x86_64"
           ],
           "CodeSha256": "code-sha256",
-          "CodeSize": 357,
+          "CodeSize": "<code-size>",
           "Description": "",
           "Environment": {
             "Variables": {}
@@ -908,7 +908,7 @@
     "recorded-content": {
       "v1_result": {
         "CodeSha256": "code-sha256",
-        "CodeSize": 264,
+        "CodeSize": "<code-size>",
         "Description": "",
         "Environment": {
           "Variables": {}
@@ -1013,7 +1013,7 @@
           "x86_64"
         ],
         "CodeSha256": "code-sha256",
-        "CodeSize": 345,
+        "CodeSize": "<code-size>",
         "Description": "No version :(",
         "EphemeralStorage": {
           "Size": 512
@@ -1045,7 +1045,7 @@
           "x86_64"
         ],
         "CodeSha256": "code-sha256",
-        "CodeSize": 345,
+        "CodeSize": "<code-size>",
         "Description": "First version description :)",
         "EphemeralStorage": {
           "Size": 512
@@ -1076,7 +1076,7 @@
           "x86_64"
         ],
         "CodeSha256": "code-sha256",
-        "CodeSize": 345,
+        "CodeSize": "<code-size>",
         "Description": "No version :(",
         "EphemeralStorage": {
           "Size": 512
@@ -1135,7 +1135,7 @@
           "x86_64"
         ],
         "CodeSha256": "code-sha256",
-        "CodeSize": 345,
+        "CodeSize": "<code-size>",
         "Description": "Second version description :)",
         "EphemeralStorage": {
           "Size": 512
@@ -1179,7 +1179,7 @@
           "x86_64"
         ],
         "CodeSha256": "code-sha256",
-        "CodeSize": 345,
+        "CodeSize": "<code-size>",
         "Description": "No version :(",
         "EphemeralStorage": {
           "Size": 512
@@ -1268,7 +1268,7 @@
           "x86_64"
         ],
         "CodeSha256": "code-sha256",
-        "CodeSize": 345,
+        "CodeSize": "<code-size>",
         "Description": "No version :(",
         "EphemeralStorage": {
           "Size": 512
@@ -1337,7 +1337,7 @@
           "x86_64"
         ],
         "CodeSha256": "code-sha256",
-        "CodeSize": 345,
+        "CodeSize": "<code-size>",
         "Description": "No version :(",
         "EphemeralStorage": {
           "Size": 512
@@ -1383,7 +1383,7 @@
           "x86_64"
         ],
         "CodeSha256": "code-sha256",
-        "CodeSize": 345,
+        "CodeSize": "<code-size>",
         "Description": "Second version description :)",
         "EphemeralStorage": {
           "Size": 512
@@ -1491,7 +1491,7 @@
             "x86_64"
           ],
           "CodeSha256": "code-sha256",
-          "CodeSize": 282,
+          "CodeSize": "<code-size>",
           "Description": "",
           "Environment": {
             "Variables": {}
@@ -1534,7 +1534,7 @@
             "x86_64"
           ],
           "CodeSha256": "code-sha256",
-          "CodeSize": 330,
+          "CodeSize": "<code-size>",
           "Description": "",
           "Environment": {
             "Variables": {}
@@ -1570,7 +1570,7 @@
           "x86_64"
         ],
         "CodeSha256": "code-sha256",
-        "CodeSize": 330,
+        "CodeSize": "<code-size>",
         "Description": "",
         "Environment": {
           "Variables": {}
@@ -1604,7 +1604,7 @@
           "x86_64"
         ],
         "CodeSha256": "code-sha256",
-        "CodeSize": 330,
+        "CodeSize": "<code-size>",
         "Description": "my-first-version",
         "Environment": {
           "Variables": {}
@@ -1638,7 +1638,7 @@
           "x86_64"
         ],
         "CodeSha256": "code-sha256",
-        "CodeSize": 330,
+        "CodeSize": "<code-size>",
         "Description": "my-first-version",
         "Environment": {
           "Variables": {}
@@ -1688,7 +1688,7 @@
             "x86_64"
           ],
           "CodeSha256": "code-sha256",
-          "CodeSize": 330,
+          "CodeSize": "<code-size>",
           "Description": "my-first-version",
           "Environment": {
             "Variables": {}
@@ -1728,7 +1728,7 @@
             "x86_64"
           ],
           "CodeSha256": "code-sha256",
-          "CodeSize": 330,
+          "CodeSize": "<code-size>",
           "Description": "my-first-version",
           "Environment": {
             "Variables": {}
@@ -1763,7 +1763,7 @@
           "x86_64"
         ],
         "CodeSha256": "code-sha256",
-        "CodeSize": 330,
+        "CodeSize": "<code-size>",
         "Description": "",
         "Environment": {
           "Variables": {}
@@ -1797,7 +1797,7 @@
           "x86_64"
         ],
         "CodeSha256": "code-sha256",
-        "CodeSize": 330,
+        "CodeSize": "<code-size>",
         "Description": "",
         "Environment": {
           "Variables": {}
@@ -1872,7 +1872,7 @@
             "x86_64"
           ],
           "CodeSha256": "code-sha256",
-          "CodeSize": 241,
+          "CodeSize": "<code-size>",
           "Description": "",
           "Environment": {
             "Variables": {}
@@ -1965,7 +1965,7 @@
             "x86_64"
           ],
           "CodeSha256": "code-sha256",
-          "CodeSize": 929,
+          "CodeSize": "<code-size>",
           "Description": "",
           "Environment": {
             "Variables": {}
@@ -2085,7 +2085,7 @@
             "x86_64"
           ],
           "CodeSha256": "code-sha256",
-          "CodeSize": 241,
+          "CodeSize": "<code-size>",
           "Description": "",
           "Environment": {
             "Variables": {}
