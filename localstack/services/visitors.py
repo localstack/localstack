@@ -39,9 +39,12 @@ class ServiceBackend(TypedDict, total=False):
 class ServiceBackendCollectorVisitor:
     """Implementation of StateVisitor meant to collect the backends that a given service use to hold its state."""
 
+    store: AccountRegionBundle | None
+    backend_dict: BackendDict | Dict | None
+
     def __init__(self) -> None:
-        self.store: AccountRegionBundle | None = None
-        self.backend_dict: BackendDict | Dict | None = None
+        self.store = None
+        self.backend_dict = None
 
     @singledispatchmethod
     def visit(self, state_container: Any):
