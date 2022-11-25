@@ -10,7 +10,7 @@ from localstack.services.stores import AccountRegionBundle
 LOG = logging.getLogger(__name__)
 
 
-class StateVisitor:
+class StateVisitor(Protocol):
     def visit(self, state_container: Any):
         """
         Visit (=do something with) a given state container. A state container can be anything that holds service state.
@@ -127,9 +127,8 @@ class ReflectionStateLocator:
                 # it first looks for a module in ext; eventually, it falls back to community
                 attribute = _load_attribute_from_module(module_name, attribute_name)
                 if attribute is None:
-                    attribute = _load_attribute_from_module(
-                        f"localstack.services.{service_name}.models", attribute_name
-                    )
+                    module_name = f"localstack.services.{service_name}.models"
+                    attribute = _load_attribute_from_module(module_name, attribute_name)
 
                 if attribute is not None:
                     LOG.debug("Visiting attribute %s in module %s", attribute_name, module_name)
