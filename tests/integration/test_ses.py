@@ -235,7 +235,6 @@ class TestSES:
             "$..Message.delivery.processingTimeMillis",
             "$..Message.delivery.reportingMTA",
             "$..Message.delivery.smtpResponse",
-            "$..Message.mail.messageId",
             "$..Message.mail.commonHeaders",
             "$..Message.mail.headers",
             "$..Message.mail.headersTruncated",
@@ -267,6 +266,7 @@ class TestSES:
             [
                 snapshot.transform.regex(sender_email_address, "<sender-email-address>"),
                 snapshot.transform.regex(recipient_email_address, "<recipient-email-address>"),
+                snapshot.transform.key_value("messageId"),
             ]
             + snapshot.transform.sns_api()
         )
