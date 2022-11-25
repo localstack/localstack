@@ -206,3 +206,10 @@ OS_USER_OPENSEARCH = "localstack"
 
 # output string that indicates that the stack is ready
 READY_MARKER_OUTPUT = "Ready."
+
+# Regex for `Credential` field in the Authorization header in AWS signature version v4
+# The format is as follows:
+#   Credential=<access-key-id>/<date>/<region-name>/<service-name>/aws4_request
+# eg.
+#   Credential=AKIAIOSFODNN7EXAMPLE/20130524/us-east-1/s3/aws4_request
+AUTH_CREDENTIAL_REGEX = r"Credential=(?P<access_key_id>[a-zA-Z0-9-_.]{1,})/(?P<date>\d{8})/(?P<region_name>[a-z0-9-]{1,})/(?P<service_name>[a-z0-9]{1,})/"

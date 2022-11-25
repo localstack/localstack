@@ -88,7 +88,7 @@ from localstack.aws.api.dynamodb import (
 )
 from localstack.aws.forwarder import HttpFallbackDispatcher, get_request_forwarder_http
 from localstack.aws.proxy import AwsApiListener
-from localstack.constants import LOCALHOST, TEST_AWS_SECRET_ACCESS_KEY
+from localstack.constants import AUTH_CREDENTIAL_REGEX, LOCALHOST, TEST_AWS_SECRET_ACCESS_KEY
 from localstack.http import Response
 from localstack.services.dynamodb import server
 from localstack.services.dynamodb.models import DynamoDBStore, dynamodb_stores
@@ -118,10 +118,6 @@ LOG = logging.getLogger(__name__)
 
 # action header prefix
 ACTION_PREFIX = "DynamoDB_20120810."
-
-# Credential regex in the Authorization header
-# Credential=<access-key-id>/<date>/<aws-region>/<aws-service>/aws4_request
-AUTH_CREDENTIAL_REGEX = r"Credential=([a-zA-Z0-9-_]{1,})/(\d{8})/([a-z0-9-]{1,})/([a-z0-9]{1,})/"
 
 # list of actions subject to throughput limitations
 READ_THROTTLED_ACTIONS = [
