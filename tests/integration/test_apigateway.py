@@ -183,7 +183,10 @@ class TestAPIGateway:
         assert "Invalid API identifier specified" in e.value.response["Error"]["Message"]
         assert "foobar" in e.value.response["Error"]["Message"]
 
-    def test_create_rest_api_with_custom_id(self, apigateway_client, create_rest_apigw):
+    @pytest.mark.parametrize("url_function", [path_based_url, host_based_url])
+    def test_create_rest_api_with_custom_id(
+        self, apigateway_client, create_rest_apigw, url_function
+    ):
         apigw_name = f"gw-{short_uid()}"
         test_id = "testId123"
         api_id, name, _ = create_rest_apigw(name=apigw_name, tags={TAG_KEY_CUSTOM_ID: test_id})
@@ -192,6 +195,15 @@ class TestAPIGateway:
         api_id, name = get_rest_api(apigateway_client, restApiId=test_id)
         assert test_id == api_id
         assert apigw_name == name
+
+        spec_file = load_file(TEST_IMPORT_MOCK_INTEGRATION)
+        apigateway_client.put_rest_api(restApiId=test_id, body=spec_file, mode="overwrite")
+
+        url = url_function(test_id, stage_name="latest", path="/echo/foobar")
+        response = requests.get(url)
+
+        assert response.ok
+        assert response._content == b'{"echo": "foobar", "response": "mocked"}'
 
     def test_api_gateway_kinesis_integration(self):
         # create target Kinesis stream
@@ -2374,7 +2386,9 @@ def test_tag_api(apigateway_client, create_rest_apigw):
     tags = {"foo": "bar"}
 
     # add resource tags
-    api_id, _, _ = create_rest_apigw(name=api_name)
+    api_id, _, _ = create_rest_apigw(name=api_name, tags={TAG_KEY_CUSTOM_ID: "c0stIOm1d"})
+    assert api_id == "c0stIOm1d"
+
     api_arn = aws_stack.apigateway_restapi_arn(api_id=api_id)
     apigateway_client.tag_resource(resourceArn=api_arn, tags=tags)
 
