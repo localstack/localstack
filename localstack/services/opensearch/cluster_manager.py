@@ -298,7 +298,9 @@ class MultiClusterManager(ClusterManager):
             if engine_type == EngineType.OpenSearch:
                 return OpensearchCluster(port=port, host=EDGE_BIND_HOST, arn=arn, version=version)
             else:
-                return ElasticsearchCluster(port=port, host=LOCALHOST, arn=arn, version=version)
+                return ElasticsearchCluster(
+                    port=port, host=EDGE_BIND_HOST, arn=arn, version=version
+                )
 
 
 class SingletonClusterManager(ClusterManager):

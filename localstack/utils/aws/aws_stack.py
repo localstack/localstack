@@ -1162,7 +1162,9 @@ def get_opensearch_endpoint(domain_arn: str) -> str:
     domain_name = domain_arn.rpartition("/")[2]
     info = opensearch_client.describe_domain(DomainName=domain_name)
     base_domain = info["DomainStatus"]["Endpoint"]
-    endpoint = base_domain if base_domain.startswith("http") else f"https://{base_domain}"
+    # Add the URL scheme "http" if it's not set yet. https might not be enabled for all instances
+    # f.e. when the endpoint strategy is PORT or there is a custom opensearch/elasticsearch instance
+    endpoint = base_domain if base_domain.startswith("http") else f"http://{base_domain}"
     return endpoint
 
 
