@@ -461,7 +461,7 @@ class StepFunctionIntegration(BackendIntegration):
         )
         action = uri.split("/")[-1]
 
-        if invocation_context.integration.get("type") == "AWS_PROXY":
+        if invocation_context.integration.get("IntegrationType") == "AWS_PROXY":
             payload = self._create_request_parameters(invocation_context)
         elif APPLICATION_JSON in invocation_context.integration.get("requestTemplates", {}):
             payload = self.request_templates.render(invocation_context)
