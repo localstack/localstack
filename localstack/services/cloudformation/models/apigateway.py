@@ -726,6 +726,33 @@ class GatewayAccount(GenericBaseModel):
     def cloudformation_type():
         return "AWS::ApiGateway::Account"
 
-    @staticmethod
-    def get_deploy_templates():
-        return {}
+    def fetch_state(self, stack_name, resources):
+        client = aws_stack.connect_to_service("apigateway")
+        return client.get_account()
+
+    def get_physical_resource_id(self, attribute=None, **kwargs):
+        return self.physical_resource_id
+
+    def get_cfn_attribute(self, attribute_name):
+        return self.physical_resource_id
+
+    @classmethod
+    def get_deploy_templates(cls):
+        def _create(resource_id, resources, *args, **kwargs):
+            resource = resources[resource_id]
+            props = cls(resource).props
+
+            role_arn = props["CloudWatchRoleArn"]
+
+            kwargs = {
+                "patchOperations": [
+                    {"op": "replace", "path": "/cloudwatchRoleArn", "value": role_arn}
+                ]
+            }
+
+            aws_stack.connect_to_service("apigateway").update_account(**kwargs)
+            resource["PhysicalResourceId"] = generate_default_name(
+                args[2], resource["LogicalResourceId"]
+            )
+
+        return {"create": {"function": _create}, "update": {"function": _create}}
