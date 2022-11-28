@@ -635,6 +635,24 @@ def sns_create_topic(sns_client):
 
 
 @pytest.fixture
+def sns_wait_for_topic_delete(sns_client):
+    def wait_for_topic_delete(topic_arn: str) -> None:
+        def wait():
+            try:
+                sns_client.get_topic_attributes(TopicArn=topic_arn)
+                return False
+            except Exception as e:
+                if "NotFound" in e.response["Error"]["Code"]:
+                    return True
+
+                raise
+
+        poll_condition(wait, timeout=30)
+
+    return wait_for_topic_delete
+
+
+@pytest.fixture
 def sns_subscription(sns_client):
     sub_arns = []
 

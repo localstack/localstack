@@ -524,6 +524,7 @@ class TestSES:
         sns_create_sqs_subscription,
         sns_client,
         sns_topic,
+        sns_wait_for_topic_delete,
         ses_verify_identity,
         ses_configuration_set,
         sqs_receive_num_messages,
@@ -570,6 +571,7 @@ class TestSES:
         # FIXME: there will be an issue with the fixture deleting the topic. Currently it logs
         #  only, but this may change in the future.
         sns_client.delete_topic(TopicArn=topic_arn)
+        sns_wait_for_topic_delete(topic_arn=topic_arn)
 
         ses_client.send_email(
             Destination=destination,
