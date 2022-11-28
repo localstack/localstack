@@ -9,7 +9,7 @@ from localstack.aws.accounts import get_aws_account_id
 from localstack.aws.api.dynamodb import ResourceNotFoundException
 from localstack.constants import TEST_AWS_SECRET_ACCESS_KEY
 from localstack.utils.aws import aws_stack
-from localstack.utils.aws.aws_stack import dynamodb_table_arn
+from localstack.utils.aws.arns import dynamodb_table_arn
 from localstack.utils.json import canonical_json
 from localstack.utils.testutil import list_all_resources
 
