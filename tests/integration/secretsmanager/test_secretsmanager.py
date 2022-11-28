@@ -17,6 +17,7 @@ from localstack.aws.api.secretsmanager import (
     DeleteSecretResponse,
     ListSecretsResponse,
 )
+from localstack.testing.aws.lambda_utils import is_new_provider
 from localstack.utils.aws import aws_stack
 from localstack.utils.collections import select_from_typed_dict
 from localstack.utils.strings import short_uid
@@ -308,6 +309,7 @@ class TestSecretsManager:
         # clean up
         sm_client.delete_secret(SecretId=secret_name, ForceDeleteWithoutRecovery=True)
 
+    @pytest.mark.skip(condition=is_new_provider(), reason="needs lambda usage rework")
     def test_rotate_secret_with_lambda_1(
         self, sm_client, lambda_client, secret_name, create_secret, create_lambda_function
     ):
@@ -335,6 +337,7 @@ class TestSecretsManager:
 
         assert response["ResponseMetadata"]["HTTPStatusCode"] == 200
 
+    @pytest.mark.skipif(condition=is_new_provider(), reason="needs lambda usage rework")
     def test_rotate_secret_with_lambda_2(
         self, sm_client, secret_name, create_lambda_function, create_secret
     ):
