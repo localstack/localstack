@@ -349,6 +349,8 @@ def get_docker_image_to_start():
         image_name = constants.DOCKER_IMAGE_NAME
         if os.environ.get("USE_LIGHT_IMAGE") in constants.FALSE_STRINGS:
             image_name = constants.DOCKER_IMAGE_NAME_FULL
+        if os.environ.get("LOCALSTACK_API_KEY"):
+            image_name = constants.DOCKER_IMAGE_NAME_PRO
     return image_name
 
 

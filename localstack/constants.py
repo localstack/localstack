@@ -77,6 +77,7 @@ PATH_USER_REQUEST = "_user_request_"
 
 # name of LocalStack Docker image
 DOCKER_IMAGE_NAME = "localstack/localstack"
+DOCKER_IMAGE_NAME_PRO = "localstack/localstack-pro"
 DOCKER_IMAGE_NAME_FULL = "localstack/localstack-full"
 
 # backdoor API path used to retrieve or update config variables
@@ -143,7 +144,6 @@ ELASTICMQ_JAR_URL = (
 )
 STEPFUNCTIONS_ZIP_URL = "https://s3.amazonaws.com/stepfunctionslocal/StepFunctionsLocal.zip"
 KMS_URL_PATTERN = "https://s3-eu-west-2.amazonaws.com/local-kms/3/local-kms_<arch>.bin"
-
 
 # API endpoint for analytics events
 API_ENDPOINT = os.environ.get("API_ENDPOINT") or "https://api.localstack.cloud/v1"
