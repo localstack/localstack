@@ -15,7 +15,6 @@ from localstack.services.apigateway.helpers import extract_query_string_params
 from localstack.services.events.provider import _get_events_tmp_dir
 from localstack.services.generic_proxy import ProxyListener
 from localstack.services.infra import start_proxy
-from localstack.utils import testutil
 from localstack.utils.aws import arns, aws_stack, resources
 from localstack.utils.aws.aws_responses import requests_response
 from localstack.utils.common import (

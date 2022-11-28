@@ -231,6 +231,11 @@ def test_lambda_version(deploy_cfn_template, cfn_client, lambda_client, snapshot
         max_wait=240,
     )
 
+    invoke_result = lambda_client.invoke(
+        FunctionName=deployment.outputs["FunctionName"], Payload=b"{}"
+    )
+    assert 200 <= invoke_result["StatusCode"] < 300
+
     stack_resources = cfn_client.describe_stack_resources(StackName=deployment.stack_id)
     snapshot.match("stack_resources", stack_resources)
 
