@@ -550,6 +550,5 @@ class SNSEmitter:
         try:
             client.publish(TopicArn=topic_arn, *args, **kwargs)
         except ClientError as e:
-            if "NotFound" in e.response["Error"]["Code"]:
-                raise InvalidSNSDestinationException(f"SNS topic <{topic_arn}> not found.")
-            raise
+            if "NotFound" not in e.response["Error"]["Code"]:
+                raise
