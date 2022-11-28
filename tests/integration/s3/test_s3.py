@@ -856,6 +856,9 @@ class TestS3:
         snapshot.match("head-object", response)
 
     @pytest.mark.aws_validated
+    @pytest.mark.skip_snapshot_verify(
+        condition=is_old_provider, paths=["$..ContentLanguage", "$..Error.RequestID"]
+    )
     def test_get_object_after_deleted_in_versioned_bucket(
         self, s3_client, s3_bucket, s3_resource, snapshot
     ):
