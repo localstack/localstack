@@ -41,7 +41,7 @@ class ExceptionLogger(ExceptionHandler):
 
 class ResponseLogger:
     def __call__(self, _: HandlerChain, context: RequestContext, response: Response):
-        if context.request.path == "/health":
+        if context.request.path == "/health" or context.request.path == "/_localstack/health":
             # special case so the health check doesn't spam the logs
             return
         self._log(context, response)

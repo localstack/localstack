@@ -2,7 +2,7 @@
 import logging
 import os
 from dataclasses import dataclass
-from typing import List, Optional
+from typing import Callable, List, Optional
 
 from localstack.utils.analytics import log
 
@@ -181,3 +181,28 @@ def log_env_warning(deprecations: List[EnvVarDeprecation]) -> None:
 def log_deprecation_warnings(deprecations: Optional[List[EnvVarDeprecation]] = None) -> None:
     affected_deprecations = collect_affected_deprecations(deprecations)
     log_env_warning(affected_deprecations)
+
+
+def deprecated_endpoint(
+    endpoint: Callable, previous_path: str, deprecation_version: str, new_path: str
+) -> Callable:
+    """
+    Wrapper function which logs a warning (and a deprecation path) whenever a deprecated URL is invoked by a router.
+
+    :param endpoint: to wrap (log a warning whenevery it is invoked)
+    :param previous_path: route path it is triggered by
+    :param deprecation_version: version of LocalStack with which this endpoint is deprecated
+    :param new_path: new route path which should be used instead
+    :return: wrapped function which can be registered for a route
+    """
+
+    def deprecated_wrapper(*args, **kwargs):
+        LOG.warning(
+            "%s is deprecated (since %s) and will be removed in upcoming releases of LocalStack! Use %s instead.",
+            previous_path,
+            deprecation_version,
+            new_path,
+        )
+        return endpoint(*args, **kwargs)
+
+    return deprecated_wrapper
