@@ -27,6 +27,7 @@ from localstack.services.generic_proxy import ProxyListener
 from localstack.services.generic_proxy import append_cors_headers as _append_default_cors_headers
 from localstack.services.generic_proxy import is_cors_origin_allowed
 from localstack.services.s3 import multipart_content
+from localstack.services.s3.utils import is_key_expired
 from localstack.services.s3.s3_utils import (
     ALLOWED_HEADER_OVERRIDES,
     SIGNATURE_V2_PARAMS,
@@ -688,13 +689,7 @@ def add_accept_range_header(response):
 def is_object_expired(bucket_name: str, key: str) -> bool:
     bucket = BackendState.get_bucket(bucket_name)
     key_obj = bucket.keys.get(key)
-    if not key_obj or not getattr(key_obj, "_expiry", False):
-        return False
-    tzname = key_obj._expiry.tzname()
-    if not tzname:
-        return False
-    tzone = timezone(tzname)
-    return key_obj._expiry <= datetime.datetime.now(tzone)
+    return is_key_expired(key_obj)
 
 
 def set_object_expiry(bucket_name: str, key: str, headers: Dict[str, str]):
