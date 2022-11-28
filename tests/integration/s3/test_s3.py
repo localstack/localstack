@@ -856,10 +856,6 @@ class TestS3:
         snapshot.match("head-object", response)
 
     @pytest.mark.aws_validated
-    @pytest.mark.xfail(
-        condition=LEGACY_S3_PROVIDER,
-        reason="see https://github.com/localstack/localstack/issues/6553",
-    )
     def test_get_object_after_deleted_in_versioned_bucket(
         self, s3_client, s3_bucket, s3_resource, snapshot
     ):
