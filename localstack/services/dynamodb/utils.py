@@ -9,6 +9,7 @@ from localstack.aws.accounts import get_aws_account_id
 from localstack.aws.api.dynamodb import ResourceNotFoundException
 from localstack.constants import TEST_AWS_SECRET_ACCESS_KEY
 from localstack.utils.aws import aws_stack
+from localstack.utils.aws.aws_stack import dynamodb_table_arn
 from localstack.utils.json import canonical_json
 from localstack.utils.testutil import list_all_resources
 
@@ -42,8 +43,10 @@ class ItemSet:
 
 class SchemaExtractor:
     @classmethod
-    def extract_keys(cls, item: Dict, table_name: str) -> Optional[Dict]:
-        key_schema = cls.get_key_schema(table_name)
+    def extract_keys(
+        cls, item: Dict, table_name: str, account_id: str = None, region_name: str = None
+    ) -> Optional[Dict]:
+        key_schema = cls.get_key_schema(table_name, account_id, region_name)
         return cls.extract_keys_for_schema(item, key_schema)
 
     @classmethod
@@ -60,11 +63,17 @@ class SchemaExtractor:
         return result
 
     @classmethod
-    def get_key_schema(cls, table_name: str) -> Optional[List[Dict]]:
+    def get_key_schema(
+        cls, table_name: str, account_id: str = None, region_name: str = None
+    ) -> Optional[List[Dict]]:
         from localstack.services.dynamodb.provider import get_store
 
+        account_id = account_id or get_aws_account_id()
+        region_name = region_name or aws_stack.get_region()
+
         table_definitions: Dict = get_store(
-            account_id=get_aws_account_id(), region_name=aws_stack.get_region()
+            account_id=account_id,
+            region_name=region_name,
         ).table_definitions
         table_def = table_definitions.get(table_name)
         if not table_def:
@@ -74,16 +83,20 @@ class SchemaExtractor:
         return table_def["KeySchema"]
 
     @classmethod
-    def get_table_schema(cls, table_name):
-        key = f"{aws_stack.get_region()}/{table_name}"
+    def get_table_schema(cls, table_name: str, account_id: str = None, region_name: str = None):
+        account_id = account_id or get_aws_account_id()
+        region_name = region_name or aws_stack.get_region()
+        key = dynamodb_table_arn(
+            table_name=table_name, account_id=account_id, region_name=region_name
+        )
         schema = SCHEMA_CACHE.get(key)
         if not schema:
             # TODO: consider making in-memory lookup instead of API call
             ddb_client = aws_stack.connect_to_service(
                 "dynamodb",
-                aws_access_key_id=get_aws_account_id(),
+                aws_access_key_id=account_id,
                 aws_secret_access_key=TEST_AWS_SECRET_ACCESS_KEY,
-                region_name=aws_stack.get_region(),
+                region_name=region_name,
             )
             try:
                 schema = ddb_client.describe_table(TableName=table_name)
