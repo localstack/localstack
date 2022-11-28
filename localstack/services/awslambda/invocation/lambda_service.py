@@ -182,6 +182,12 @@ class LambdaService:
         qualifier = qualifier or "$LATEST"
         state = lambda_stores[account_id][region]
         function = state.functions.get(function_name)
+
+        if function is None:
+            raise ResourceNotFoundException(
+                f"Function not found: {invoked_arn}", Type="User"
+            )  # TODO: test
+
         if qualifier_is_alias(qualifier):
             alias = function.aliases.get(qualifier)
             if not alias:
