@@ -28,8 +28,8 @@ LOG = logging.getLogger(__name__)
 
 RUNTIME_REGEX = r"(?P<runtime>[a-z]+)(?P<version>\d+(\.\d+)?(\.al2)?)(?:.*)"
 
-# IMAGE_PREFIX = "gallery.ecr.aws/lambda/"
-IMAGE_PREFIX = "amazon/aws-lambda-"
+IMAGE_PREFIX = "public.ecr.aws/lambda/"
+# IMAGE_PREFIX = "amazon/aws-lambda-"
 
 RAPID_ENTRYPOINT = "/var/rapid/init"
 
