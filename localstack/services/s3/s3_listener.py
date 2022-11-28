@@ -17,7 +17,6 @@ import xmltodict
 from botocore.client import ClientError
 from moto.s3.exceptions import InvalidFilterRuleName, MissingBucket
 from moto.s3.models import FakeBucket
-from pytz import timezone
 from requests.models import Request, Response
 
 from localstack import config, constants
@@ -27,7 +26,6 @@ from localstack.services.generic_proxy import ProxyListener
 from localstack.services.generic_proxy import append_cors_headers as _append_default_cors_headers
 from localstack.services.generic_proxy import is_cors_origin_allowed
 from localstack.services.s3 import multipart_content
-from localstack.services.s3.utils import is_key_expired
 from localstack.services.s3.s3_utils import (
     ALLOWED_HEADER_OVERRIDES,
     SIGNATURE_V2_PARAMS,
@@ -44,6 +42,7 @@ from localstack.services.s3.s3_utils import (
     uses_host_addressing,
     validate_bucket_name,
 )
+from localstack.services.s3.utils import is_key_expired
 from localstack.utils.aws import arns, aws_stack
 from localstack.utils.aws.aws_responses import (
     create_sqs_system_attributes,
