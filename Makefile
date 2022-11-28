@@ -1,4 +1,5 @@
 IMAGE_NAME ?= localstack/localstack
+IMAGE_NAME_PRO ?= $(IMAGE_NAME)-pro
 IMAGE_NAME_LIGHT ?= $(IMAGE_NAME)-light
 IMAGE_NAME_FULL ?= $(IMAGE_NAME)-full
 IMAGE_TAG ?= $(shell cat localstack/__init__.py | grep '^__version__ =' | sed "s/__version__ = ['\"]\(.*\)['\"].*/\1/")
@@ -134,8 +135,9 @@ docker-push-master: 	  ## Push a single platform-specific Docker image to regist
 				  docker push $(TARGET_IMAGE_NAME):latest-$(PLATFORM) \
 	)
 
-docker-push-master-all:		## Push Docker images of localstack, localstack-light, and localstack-full
+docker-push-master-all:		## Push Docker images of localstack, localstack-pro, localstack-light, and localstack-full
 	make SOURCE_IMAGE_NAME=$(IMAGE_NAME_LIGHT) TARGET_IMAGE_NAME=$(IMAGE_NAME) docker-push-master
+	make SOURCE_IMAGE_NAME=$(IMAGE_NAME_LIGHT) TARGET_IMAGE_NAME=$(IMAGE_NAME_PRO) docker-push-master
 	make SOURCE_IMAGE_NAME=$(IMAGE_NAME_LIGHT) TARGET_IMAGE_NAME=$(IMAGE_NAME_LIGHT) docker-push-master
 	make SOURCE_IMAGE_NAME=$(IMAGE_NAME_FULL) TARGET_IMAGE_NAME=$(IMAGE_NAME_FULL) docker-push-master
 
