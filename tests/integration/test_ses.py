@@ -228,10 +228,6 @@ class TestSES:
     @pytest.mark.only_localstack
     @pytest.mark.skip_snapshot_verify(
         paths=[
-            "$..Signature",
-            "$..SigningCertURL",
-            "$..TopicArn",
-            "$..UnsubscribeURL",
             "$..Message.delivery.processingTimeMillis",
             "$..Message.delivery.reportingMTA",
             "$..Message.delivery.smtpResponse",
@@ -326,10 +322,6 @@ class TestSES:
     @pytest.mark.only_localstack
     @pytest.mark.skip_snapshot_verify(
         paths=[
-            "$..Signature",
-            "$..SigningCertURL",
-            "$..TopicArn",
-            "$..UnsubscribeURL",
             "$..Message.delivery.processingTimeMillis",
             "$..Message.delivery.reportingMTA",
             "$..Message.delivery.smtpResponse",
@@ -414,14 +406,9 @@ class TestSES:
     @pytest.mark.only_localstack
     @pytest.mark.skip_snapshot_verify(
         paths=[
-            "$..Signature",
-            "$..SigningCertURL",
-            "$..TopicArn",
-            "$..UnsubscribeURL",
             "$..Message.delivery.processingTimeMillis",
             "$..Message.delivery.reportingMTA",
             "$..Message.delivery.smtpResponse",
-            "$..Message.mail.messageId",
             "$..Message.mail.commonHeaders",
             "$..Message.mail.headers",
             "$..Message.mail.headersTruncated",
@@ -434,7 +421,6 @@ class TestSES:
         ses_client,
         ses_configuration_set,
         ses_configuration_set_sns_event_destination,
-        ses_email_template,
         ses_verify_identity,
         sns_create_sqs_subscription,
         sns_create_topic,
