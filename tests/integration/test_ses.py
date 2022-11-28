@@ -1,6 +1,7 @@
 import json
 import os
 from datetime import date, datetime
+from typing import TYPE_CHECKING
 
 import pytest
 import requests
@@ -10,6 +11,9 @@ import localstack.config as config
 from localstack.constants import INTERNAL_RESOURCE_PATH
 from localstack.services.ses.provider import EMAILS_ENDPOINT
 from localstack.utils.strings import short_uid
+
+if TYPE_CHECKING:
+    from mypy_boto3_ses import SESClient
 
 TEST_TEMPLATE_ATTRIBUTES = {
     "TemplateName": "hello-world",
@@ -576,6 +580,28 @@ class TestSES:
 
         messages = sqs_receive_num_messages(sqs_queue, 1)
         snapshot.match("messages", messages)
+
+    def test_creating_event_destination_without_configuration_set(
+        self, sns_topic, ses_client: "SESClient", snapshot
+    ):
+        config_set_name = f"nonexistent-configuration-set-{short_uid()}"
+        snapshot.add_transformer(snapshot.transform.regex(config_set_name, "<config-set>"))
+
+        topic_arn = sns_topic["Attributes"]["TopicArn"]
+        event_destination_name = f"event-destination-{short_uid()}"
+        with pytest.raises(ClientError) as e_info:
+            ses_client.create_configuration_set_event_destination(
+                ConfigurationSetName=config_set_name,
+                EventDestination={
+                    "Name": event_destination_name,
+                    "Enabled": True,
+                    "MatchingEventTypes": ["send", "bounce", "delivery", "open", "click"],
+                    "SNSDestination": {
+                        "TopicARN": topic_arn,
+                    },
+                },
+            )
+        snapshot.match("create-error", e_info.value.response)
 
     def test_deleting_non_existent_configuration_set(self, ses_client, snapshot):
         config_set_name = f"config-set-{short_uid()}"

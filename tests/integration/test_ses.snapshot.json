@@ -550,5 +550,21 @@
         }
       ]
     }
+  },
+  "tests/integration/test_ses.py::TestSES::test_creating_event_destination_without_configuration_set": {
+    "recorded-date": "28-11-2022, 16:12:48",
+    "recorded-content": {
+      "create-error": {
+        "Error": {
+          "Code": "ConfigurationSetDoesNotExist",
+          "Message": "Configuration set <<config-set>> does not exist.",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
   }
 }

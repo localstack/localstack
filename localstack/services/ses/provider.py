@@ -11,6 +11,7 @@ from moto.ses.models import SESBackend
 
 from localstack import config
 from localstack.aws.api import RequestContext, handler
+from localstack.aws.api.core import CommonServiceException
 from localstack.aws.api.ses import (
     Address,
     AddressList,
@@ -185,7 +186,15 @@ class SesProvider(SesApi, ServiceLifecycleHook):
             emitter.emit_create_configuration_set_event_destination_test_message(sns_topic_arn)
 
         # only register the event destiation if emitting the message worked
-        result = call_moto(context)
+        try:
+            result = call_moto(context)
+        except CommonServiceException as e:
+            if e.code == "ConfigurationSetDoesNotExist":
+                raise ConfigurationSetDoesNotExistException(
+                    f"Configuration set <{configuration_set_name}> does not exist."
+                )
+            else:
+                raise
 
         return result
 
