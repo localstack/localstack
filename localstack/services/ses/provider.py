@@ -17,9 +17,12 @@ from localstack.aws.api.ses import (
     CloneReceiptRuleSetResponse,
     ConfigurationSetName,
     CreateConfigurationSetEventDestinationResponse,
+    DeleteConfigurationSetEventDestinationResponse,
+    DeleteConfigurationSetResponse,
     DeleteTemplateResponse,
     Destination,
     EventDestination,
+    EventDestinationName,
     GetIdentityVerificationAttributesResponse,
     IdentityList,
     IdentityVerificationAttributes,
@@ -178,6 +181,29 @@ class SesProvider(SesApi, ServiceLifecycleHook):
             emitter.emit_create_configuration_set_event_destination_test_message(sns_topic_arn)
 
         return result
+
+    @handler("DeleteConfigurationSet")
+    def delete_configuration_set(
+        self, context: RequestContext, configuration_set_name: ConfigurationSetName
+    ) -> DeleteConfigurationSetResponse:
+        # not implemented in moto
+        # TODO: contribute upstream?
+        backend = get_ses_backend(context)
+        backend.config_set.pop(configuration_set_name, None)
+        return DeleteConfigurationSetResponse()
+
+    @handler("DeleteConfigurationSetEventDestination")
+    def delete_configuration_set_event_destination(
+        self,
+        context: RequestContext,
+        configuration_set_name: ConfigurationSetName,
+        event_destination_name: EventDestinationName,
+    ) -> DeleteConfigurationSetEventDestinationResponse:
+        # not implemented in moto
+        # TODO: contribute upstream?
+        backend = get_ses_backend(context)
+        backend.config_set_event_destination.pop(configuration_set_name, None)
+        return DeleteConfigurationSetEventDestinationResponse()
 
     @handler("ListTemplates")
     def list_templates(

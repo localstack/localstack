@@ -1779,10 +1779,8 @@ def ses_configuration_set(ses_client):
 
     yield factory
 
-    # this endpoint is not implemented for localstack
-    if os.environ.get("TEST_TARGET") == "AWS_CLOUD":
-        for configuration_set_name in configuration_set_names:
-            ses_client.delete_configuration_set(ConfigurationSetName=configuration_set_name)
+    for configuration_set_name in configuration_set_names:
+        ses_client.delete_configuration_set(ConfigurationSetName=configuration_set_name)
 
 
 @pytest.fixture
@@ -1805,13 +1803,11 @@ def ses_configuration_set_sns_event_destination(ses_client):
 
     yield factory
 
-    # this endpoint is not implemented for localstack
-    if os.environ.get("TEST_TARGET") == "AWS_CLOUD":
-        for (config_set_name, event_destination_name) in event_destinations:
-            ses_client.delete_configuration_set_event_destination(
-                ConfigurationSetName=config_set_name,
-                EventDestinationName=event_destination_name,
-            )
+    for (config_set_name, event_destination_name) in event_destinations:
+        ses_client.delete_configuration_set_event_destination(
+            ConfigurationSetName=config_set_name,
+            EventDestinationName=event_destination_name,
+        )
 
 
 @pytest.fixture
