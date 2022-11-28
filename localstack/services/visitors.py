@@ -3,7 +3,7 @@ import logging
 from functools import singledispatchmethod
 from typing import Any, Dict, List, Optional, Protocol, TypedDict, runtime_checkable
 
-from moto.core.utils import BackendDict
+from moto.core import BackendDict
 
 from localstack.services.stores import AccountRegionBundle
 

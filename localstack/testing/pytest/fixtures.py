@@ -16,8 +16,7 @@ from _pytest.config import Config
 from _pytest.nodes import Item
 from botocore.exceptions import ClientError
 from botocore.regions import EndpointResolver
-from moto.core import BaseBackend
-from moto.core.utils import BackendDict
+from moto.core import BackendDict, BaseBackend
 from pytest_httpserver import HTTPServer
 
 from localstack import config
