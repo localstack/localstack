@@ -62,6 +62,11 @@ class CallAnalyticsJobStatus(str):
     COMPLETED = "COMPLETED"
 
 
+class InputType(str):
+    REAL_TIME = "REAL_TIME"
+    POST_CALL = "POST_CALL"
+
+
 class LanguageCode(str):
     af_ZA = "af-ZA"
     ar_AE = "ar-AE"
@@ -379,6 +384,7 @@ class CategoryProperties(TypedDict, total=False):
     Rules: Optional[RuleList]
     CreateTime: Optional[DateTime]
     LastUpdateTime: Optional[DateTime]
+    InputType: Optional[InputType]
 
 
 CategoryPropertiesList = List[CategoryProperties]
@@ -387,6 +393,7 @@ CategoryPropertiesList = List[CategoryProperties]
 class CreateCallAnalyticsCategoryRequest(ServiceRequest):
     CategoryName: CategoryName
     Rules: RuleList
+    InputType: Optional[InputType]
 
 
 class CreateCallAnalyticsCategoryResponse(TypedDict, total=False):
@@ -958,6 +965,7 @@ class UntagResourceResponse(TypedDict, total=False):
 class UpdateCallAnalyticsCategoryRequest(ServiceRequest):
     CategoryName: CategoryName
     Rules: RuleList
+    InputType: Optional[InputType]
 
 
 class UpdateCallAnalyticsCategoryResponse(TypedDict, total=False):
@@ -1010,7 +1018,11 @@ class TranscribeApi:
 
     @handler("CreateCallAnalyticsCategory")
     def create_call_analytics_category(
-        self, context: RequestContext, category_name: CategoryName, rules: RuleList
+        self,
+        context: RequestContext,
+        category_name: CategoryName,
+        rules: RuleList,
+        input_type: InputType = None,
     ) -> CreateCallAnalyticsCategoryResponse:
         raise NotImplementedError
 
@@ -1301,7 +1313,11 @@ class TranscribeApi:
 
     @handler("UpdateCallAnalyticsCategory")
     def update_call_analytics_category(
-        self, context: RequestContext, category_name: CategoryName, rules: RuleList
+        self,
+        context: RequestContext,
+        category_name: CategoryName,
+        rules: RuleList,
+        input_type: InputType = None,
     ) -> UpdateCallAnalyticsCategoryResponse:
         raise NotImplementedError
 
