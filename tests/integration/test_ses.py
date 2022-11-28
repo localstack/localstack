@@ -496,6 +496,14 @@ class TestSES:
             )
         snapshot.match("create-error", e_info.value.response)
 
+    def test_deleting_non_existent_configuration_set(self, ses_client, snapshot):
+        config_set_name = f"config-set-{short_uid()}"
+        snapshot.add_transformer(snapshot.transform.regex(config_set_name, "<config-set>"))
+
+        with pytest.raises(ClientError) as e_info:
+            ses_client.delete_configuration_set(ConfigurationSetName=config_set_name)
+        snapshot.match("delete-error", e_info.value.response)
+
     def test_deleting_non_existent_configuration_set_event_destination(
         self, ses_configuration_set, ses_client, snapshot
     ):

@@ -501,6 +501,22 @@
       }
     }
   },
+  "tests/integration/test_ses.py::TestSES::test_deleting_non_existent_configuration_set": {
+    "recorded-date": "28-11-2022, 11:07:06",
+    "recorded-content": {
+      "delete-error": {
+        "Error": {
+          "Code": "ConfigurationSetDoesNotExist",
+          "Message": "Configuration set <<config-set>> does not exist.",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
   "tests/integration/test_ses.py::TestSES::test_deleting_non_existent_configuration_set_event_destination": {
     "recorded-date": "28-11-2022, 11:00:55",
     "recorded-content": {

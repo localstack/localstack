@@ -15,6 +15,7 @@ from localstack.aws.api.ses import (
     AddressList,
     AmazonResourceName,
     CloneReceiptRuleSetResponse,
+    ConfigurationSetDoesNotExistException,
     ConfigurationSetName,
     CreateConfigurationSetEventDestinationResponse,
     DeleteConfigurationSetEventDestinationResponse,
@@ -189,7 +190,13 @@ class SesProvider(SesApi, ServiceLifecycleHook):
         # not implemented in moto
         # TODO: contribute upstream?
         backend = get_ses_backend(context)
-        backend.config_set.pop(configuration_set_name, None)
+        try:
+            backend.config_set.pop(configuration_set_name)
+        except KeyError:
+            raise ConfigurationSetDoesNotExistException(
+                f"Configuration set <{configuration_set_name}> does not exist."
+            )
+
         return DeleteConfigurationSetResponse()
 
     @handler("DeleteConfigurationSetEventDestination")
