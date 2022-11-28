@@ -28,6 +28,19 @@ if [[ $LOCALSTACK_API_KEY ]] && [[ ! -f /usr/lib/localstack/.pro-version ]]; the
     echo "============================================================================"
     echo ""
 fi
+if [[ -f /usr/lib/localstack/.light-version ]] || [[ -f /usr/lib/localstack/.full-version ]]; then
+    echo "ERROR"
+    echo "============================================================================"
+    echo "  It seems you are using a deprecated image (-light or -full image)."
+    echo "  Future versions will not be supplied in these image tags."
+    echo "  To fix this error, use localstack/localstack-pro or localstack/localstack "
+    echo "  instead."
+    echo ""
+    echo "  See: <deprecation-gh-issue>"
+    echo "============================================================================"
+    echo ""
+    exit 1
+fi
 
 # FIXME: deprecation path for legacy directories
 # the Dockerfile creates .marker file that will be overwritten if a volume is mounted into /tmp/localstack
