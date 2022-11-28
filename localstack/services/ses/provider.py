@@ -3,8 +3,9 @@ import json
 import logging
 import os
 from datetime import date, datetime, time, timezone
-from typing import Any, Dict, Optional, Protocol
+from typing import TYPE_CHECKING, Any, Dict, Optional
 
+from botocore.exceptions import ClientError
 from moto.ses import ses_backends
 from moto.ses.models import SESBackend
 
@@ -28,6 +29,7 @@ from localstack.aws.api.ses import (
     GetIdentityVerificationAttributesResponse,
     IdentityList,
     IdentityVerificationAttributes,
+    InvalidSNSDestinationException,
     ListTemplatesResponse,
     MaxItems,
     Message,
@@ -54,6 +56,9 @@ from localstack.utils.aws import arns, aws_stack
 from localstack.utils.files import mkdir
 from localstack.utils.strings import long_uid, to_str
 from localstack.utils.time import timestamp, timestamp_millis
+
+if TYPE_CHECKING:
+    from mypy_boto3_sns import SNSClient
 
 LOGGER = logging.getLogger(__name__)
 
@@ -173,13 +178,14 @@ class SesProvider(SesApi, ServiceLifecycleHook):
         configuration_set_name: ConfigurationSetName,
         event_destination: EventDestination,
     ) -> CreateConfigurationSetEventDestinationResponse:
-        result = call_moto(context)
-
         # send SES test event if an SNS topic is attached
         sns_topic_arn = event_destination.get("SNSDestination", {}).get("TopicARN")
         if sns_topic_arn is not None:
             emitter = SNSEmitter(context)
             emitter.emit_create_configuration_set_event_destination_test_message(sns_topic_arn)
+
+        # only register the event destiation if emitting the message worked
+        result = call_moto(context)
 
         return result
 
@@ -428,11 +434,6 @@ class SesProvider(SesApi, ServiceLifecycleHook):
         return CloneReceiptRuleSetResponse()
 
 
-class SNSClient(Protocol):
-    def publish(self, TopicArn: str, Message: str, Subject: Optional[str] = None):
-        ...
-
-
 @dataclasses.dataclass(frozen=True)
 class SNSPayload:
     message_id: str
@@ -451,7 +452,16 @@ class SNSEmitter:
         self, sns_topic_arn: str
     ) -> None:
         client = self._client_for_topic(sns_topic_arn)
-        client.publish(
+        # topic must exist
+        try:
+            client.get_topic_attributes(TopicArn=sns_topic_arn)
+        except ClientError as exc:
+            if "NotFound" in exc.response["Error"]["Code"]:
+                raise InvalidSNSDestinationException(f"SNS topic <{sns_topic_arn}> not found.")
+            raise
+
+        self._publish(
+            client,
             TopicArn=sns_topic_arn,
             Message="Successfully validated SNS topic for Amazon SES event publishing.",
         )
@@ -479,7 +489,8 @@ class SNSEmitter:
             ] = f"arn:aws:ses:{self.context.region}:{self.context.account_id}:identity/{payload.sender_email}"
 
         client = self._client_for_topic(sns_topic_arn)
-        client.publish(
+        self._publish(
+            client,
             TopicArn=sns_topic_arn,
             Message=json.dumps(event_payload),
             Subject="Amazon SES Email Event Notification",
@@ -504,14 +515,15 @@ class SNSEmitter:
             },
         }
         client = self._client_for_topic(sns_topic_arn)
-        client.publish(
+        self._publish(
+            client,
             TopicArn=sns_topic_arn,
             Message=json.dumps(event_payload),
             Subject="Amazon SES Email Event Notification",
         )
 
     @staticmethod
-    def _client_for_topic(topic_arn: str) -> SNSClient:
+    def _client_for_topic(topic_arn: str) -> "SNSClient":
         arn_parameters = arns.parse_arn(topic_arn)
         region = arn_parameters["region"]
         access_key_id = arn_parameters["account"]
@@ -522,3 +534,13 @@ class SNSEmitter:
             aws_access_key_id=access_key_id,
             aws_secret_access_key=TEST_AWS_SECRET_ACCESS_KEY,
         )
+
+    @staticmethod
+    def _publish(client, *args, **kwargs):
+        topic_arn: str = kwargs.pop("TopicArn")
+        try:
+            client.publish(TopicArn=topic_arn, *args, **kwargs)
+        except ClientError as e:
+            if "NotFound" in e.response["Error"]["Code"]:
+                raise InvalidSNSDestinationException(f"SNS topic <{topic_arn}> not found.")
+            raise

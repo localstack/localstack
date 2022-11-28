@@ -532,5 +532,23 @@
         }
       }
     }
+  },
+  "tests/integration/test_ses.py::TestSES::test_sending_to_deleted_topic": {
+    "recorded-date": "28-11-2022, 12:33:32",
+    "recorded-content": {
+      "messages": [
+        {
+          "Type": "Notification",
+          "MessageId": "<uuid:1>",
+          "TopicArn": "arn:aws:sns:<region>:111111111111:<resource:1>",
+          "Message": "Successfully validated SNS topic for Amazon SES event publishing.",
+          "Timestamp": "date",
+          "SignatureVersion": "1",
+          "Signature": "<signature>",
+          "SigningCertURL": "https://sns.<region>.amazonaws.com/SimpleNotificationService-<signing-cert-file:1>",
+          "UnsubscribeURL": "<unsubscribe-domain>/?Action=Unsubscribe&SubscriptionArn=arn:aws:sns:<region>:111111111111:<resource:1>:<resource:2>"
+        }
+      ]
+    }
   }
 }
