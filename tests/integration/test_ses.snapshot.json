@@ -1,6 +1,6 @@
 {
-  "tests/integration/test_ses.py::TestSES::test_ses_sns_topic_integration": {
-    "recorded-date": "25-11-2022, 12:16:13",
+  "tests/integration/test_ses.py::TestSES::test_ses_sns_topic_integration_send_email": {
+    "recorded-date": "28-11-2022, 11:48:20",
     "recorded-content": {
       "messages": [
         {
@@ -72,7 +72,7 @@
                   "SendEmail"
                 ],
                 "ses:configuration-set": [
-                  "config-set-90b751e6"
+                  "config-set-b022b370"
                 ],
                 "ses:source-ip": [
                   "80.189.216.182"
@@ -151,7 +151,7 @@
                   "SendEmail"
                 ],
                 "ses:configuration-set": [
-                  "config-set-90b751e6"
+                  "config-set-b022b370"
                 ],
                 "ses:source-ip": [
                   "80.189.216.182"
@@ -163,18 +163,317 @@
                   "localstack-testing"
                 ],
                 "ses:outgoing-ip": [
-                  "69.169.224.7"
+                  "69.169.224.10"
                 ]
               }
             },
             "delivery": {
               "timestamp": "date",
-              "processingTimeMillis": 1043,
+              "processingTimeMillis": 623,
               "recipients": [
                 "<recipient-email-address>"
               ],
-              "smtpResponse": "250 2.0.0 OK  1669378573 f10-20020a5d64ca000000b0024207ba48d6si799363wri.326 - gsmtp",
-              "reportingMTA": "b224-7.smtp-out.<region>.amazonses.com"
+              "smtpResponse": "250 2.0.0 OK  1669636100 n20-20020a05600c501400b003cf484ba59dsi10504395wmr.122 - gsmtp",
+              "reportingMTA": "b224-10.smtp-out.<region>.amazonses.com"
+            }
+          },
+          "Timestamp": "date",
+          "SignatureVersion": "1",
+          "Signature": "<signature>",
+          "SigningCertURL": "https://sns.<region>.amazonaws.com/SimpleNotificationService-<signing-cert-file:1>",
+          "UnsubscribeURL": "<unsubscribe-domain>/?Action=Unsubscribe&SubscriptionArn=arn:aws:sns:<region>:111111111111:<resource:1>:<resource:3>"
+        }
+      ]
+    }
+  },
+  "tests/integration/test_ses.py::TestSES::test_ses_sns_topic_integration_send_templated_email": {
+    "recorded-date": "28-11-2022, 11:48:15",
+    "recorded-content": {
+      "messages": [
+        {
+          "Type": "Notification",
+          "MessageId": "<uuid:1>",
+          "TopicArn": "arn:aws:sns:<region>:111111111111:<resource:1>",
+          "Message": "Successfully validated SNS topic for Amazon SES event publishing.",
+          "Timestamp": "date",
+          "SignatureVersion": "1",
+          "Signature": "<signature>",
+          "SigningCertURL": "https://sns.<region>.amazonaws.com/SimpleNotificationService-<signing-cert-file:1>",
+          "UnsubscribeURL": "<unsubscribe-domain>/?Action=Unsubscribe&SubscriptionArn=arn:aws:sns:<region>:111111111111:<resource:1>:<resource:3>"
+        },
+        {
+          "Type": "Notification",
+          "MessageId": "<uuid:2>",
+          "TopicArn": "arn:aws:sns:<region>:111111111111:<resource:1>",
+          "Subject": "Amazon SES Email Event Notification",
+          "Message": {
+            "eventType": "Send",
+            "mail": {
+              "timestamp": "date",
+              "source": "<sender-email-address>",
+              "sendingAccountId": "111111111111",
+              "messageId": "<message-id:1>",
+              "destination": [
+                "<recipient-email-address>"
+              ],
+              "headersTruncated": false,
+              "headers": [
+                {
+                  "name": "From",
+                  "value": "<sender-email-address>"
+                },
+                {
+                  "name": "To",
+                  "value": "<recipient-email-address>"
+                },
+                {
+                  "name": "MIME-Version",
+                  "value": "1.0"
+                }
+              ],
+              "commonHeaders": {
+                "from": [
+                  "<sender-email-address>"
+                ],
+                "to": [
+                  "<recipient-email-address>"
+                ],
+                "messageId": "<message-id:1>"
+              },
+              "tags": {
+                "ses:operation": [
+                  "SendTemplatedEmail"
+                ],
+                "ses:configuration-set": [
+                  "config-set-8ed3500d"
+                ],
+                "ses:source-ip": [
+                  "80.189.216.182"
+                ],
+                "ses:from-domain": [
+                  "gmail.com"
+                ],
+                "ses:caller-identity": [
+                  "localstack-testing"
+                ]
+              }
+            },
+            "send": {}
+          },
+          "Timestamp": "date",
+          "SignatureVersion": "1",
+          "Signature": "<signature>",
+          "SigningCertURL": "https://sns.<region>.amazonaws.com/SimpleNotificationService-<signing-cert-file:1>",
+          "UnsubscribeURL": "<unsubscribe-domain>/?Action=Unsubscribe&SubscriptionArn=arn:aws:sns:<region>:111111111111:<resource:1>:<resource:3>"
+        },
+        {
+          "Type": "Notification",
+          "MessageId": "<uuid:3>",
+          "TopicArn": "arn:aws:sns:<region>:111111111111:<resource:1>",
+          "Subject": "Amazon SES Email Event Notification",
+          "Message": {
+            "eventType": "Delivery",
+            "mail": {
+              "timestamp": "date",
+              "source": "<sender-email-address>",
+              "sourceArn": "arn:aws:ses:<region>:111111111111:identity/<sender-email-address>",
+              "sendingAccountId": "111111111111",
+              "messageId": "<message-id:1>",
+              "destination": [
+                "<recipient-email-address>"
+              ],
+              "headersTruncated": false,
+              "headers": [
+                {
+                  "name": "Date",
+                  "value": "Mon, 28 Nov 2022 11:48:14 +0000"
+                },
+                {
+                  "name": "From",
+                  "value": "<sender-email-address>"
+                },
+                {
+                  "name": "To",
+                  "value": "<recipient-email-address>"
+                },
+                {
+                  "name": "Message-ID",
+                  "value": "<1253528252.927764.1669636094798@ip-10-0-171-26.<region>.compute.internal>"
+                },
+                {
+                  "name": "Subject",
+                  "value": "Email template 30e6086e"
+                },
+                {
+                  "name": "MIME-Version",
+                  "value": "1.0"
+                },
+                {
+                  "name": "Content-Type",
+                  "value": "text/plain; charset=UTF-8"
+                },
+                {
+                  "name": "Content-Transfer-Encoding",
+                  "value": "7bit"
+                }
+              ],
+              "commonHeaders": {
+                "from": [
+                  "<sender-email-address>"
+                ],
+                "date": "Mon, 28 Nov 2022 11:48:14 +0000",
+                "to": [
+                  "<recipient-email-address>"
+                ],
+                "messageId": "<message-id:1>",
+                "subject": "Email template 30e6086e"
+              },
+              "tags": {
+                "ses:operation": [
+                  "SendTemplatedEmail"
+                ],
+                "ses:configuration-set": [
+                  "config-set-8ed3500d"
+                ],
+                "ses:source-ip": [
+                  "80.189.216.182"
+                ],
+                "ses:from-domain": [
+                  "gmail.com"
+                ],
+                "ses:caller-identity": [
+                  "localstack-testing"
+                ],
+                "ses:outgoing-ip": [
+                  "69.169.224.12"
+                ]
+              }
+            },
+            "delivery": {
+              "timestamp": "date",
+              "processingTimeMillis": 776,
+              "recipients": [
+                "<recipient-email-address>"
+              ],
+              "smtpResponse": "250 2.0.0 OK  1669636095 g2-20020a5d64e2000000b0024165c0a6a1si8609938wri.49 - gsmtp",
+              "reportingMTA": "b224-12.smtp-out.<region>.amazonses.com"
+            }
+          },
+          "Timestamp": "date",
+          "SignatureVersion": "1",
+          "Signature": "<signature>",
+          "SigningCertURL": "https://sns.<region>.amazonaws.com/SimpleNotificationService-<signing-cert-file:1>",
+          "UnsubscribeURL": "<unsubscribe-domain>/?Action=Unsubscribe&SubscriptionArn=arn:aws:sns:<region>:111111111111:<resource:1>:<resource:3>"
+        }
+      ]
+    }
+  },
+  "tests/integration/test_ses.py::TestSES::test_ses_sns_topic_integration_send_raw_email": {
+    "recorded-date": "28-11-2022, 11:49:35",
+    "recorded-content": {
+      "messages": [
+        {
+          "Type": "Notification",
+          "MessageId": "<uuid:1>",
+          "TopicArn": "arn:aws:sns:<region>:111111111111:<resource:1>",
+          "Message": "Successfully validated SNS topic for Amazon SES event publishing.",
+          "Timestamp": "date",
+          "SignatureVersion": "1",
+          "Signature": "<signature>",
+          "SigningCertURL": "https://sns.<region>.amazonaws.com/SimpleNotificationService-<signing-cert-file:1>",
+          "UnsubscribeURL": "<unsubscribe-domain>/?Action=Unsubscribe&SubscriptionArn=arn:aws:sns:<region>:111111111111:<resource:1>:<resource:3>"
+        },
+        {
+          "Type": "Notification",
+          "MessageId": "<uuid:2>",
+          "TopicArn": "arn:aws:sns:<region>:111111111111:<resource:1>",
+          "Subject": "Amazon SES Email Event Notification",
+          "Message": {
+            "eventType": "Send",
+            "mail": {
+              "timestamp": "date",
+              "source": "<sender-email-address>",
+              "sourceArn": "arn:aws:ses:<region>:111111111111:identity/<sender-email-address>",
+              "sendingAccountId": "111111111111",
+              "messageId": "<message-id:1>",
+              "destination": [
+                "<recipient-email-address>"
+              ],
+              "headersTruncated": false,
+              "headers": [],
+              "commonHeaders": {
+                "messageId": "<message-id:1>"
+              },
+              "tags": {
+                "ses:operation": [
+                  "SendRawEmail"
+                ],
+                "ses:configuration-set": [
+                  "config-set-0faf5da7"
+                ],
+                "ses:source-ip": [
+                  "80.189.216.182"
+                ],
+                "ses:caller-identity": [
+                  "localstack-testing"
+                ]
+              }
+            },
+            "send": {}
+          },
+          "Timestamp": "date",
+          "SignatureVersion": "1",
+          "Signature": "<signature>",
+          "SigningCertURL": "https://sns.<region>.amazonaws.com/SimpleNotificationService-<signing-cert-file:1>",
+          "UnsubscribeURL": "<unsubscribe-domain>/?Action=Unsubscribe&SubscriptionArn=arn:aws:sns:<region>:111111111111:<resource:1>:<resource:3>"
+        },
+        {
+          "Type": "Notification",
+          "MessageId": "<uuid:3>",
+          "TopicArn": "arn:aws:sns:<region>:111111111111:<resource:1>",
+          "Subject": "Amazon SES Email Event Notification",
+          "Message": {
+            "eventType": "Delivery",
+            "mail": {
+              "timestamp": "date",
+              "source": "<sender-email-address>",
+              "sourceArn": "arn:aws:ses:<region>:111111111111:identity/<sender-email-address>",
+              "sendingAccountId": "111111111111",
+              "messageId": "<message-id:1>",
+              "destination": [
+                "<recipient-email-address>"
+              ],
+              "headersTruncated": false,
+              "headers": [],
+              "commonHeaders": {
+                "messageId": "<message-id:1>"
+              },
+              "tags": {
+                "ses:operation": [
+                  "SendRawEmail"
+                ],
+                "ses:configuration-set": [
+                  "config-set-0faf5da7"
+                ],
+                "ses:source-ip": [
+                  "80.189.216.182"
+                ],
+                "ses:caller-identity": [
+                  "localstack-testing"
+                ],
+                "ses:outgoing-ip": [
+                  "69.169.224.11"
+                ]
+              }
+            },
+            "delivery": {
+              "timestamp": "date",
+              "processingTimeMillis": 684,
+              "recipients": [
+                "<recipient-email-address>"
+              ],
+              "smtpResponse": "250 2.0.0 OK  1669636175 p4-20020a05600c358400b003c6f645db8bsi10597375wmq.192 - gsmtp",
+              "reportingMTA": "b224-11.smtp-out.<region>.amazonses.com"
             }
           },
           "Timestamp": "date",

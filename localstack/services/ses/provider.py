@@ -35,7 +35,6 @@ from localstack.aws.api.ses import (
     NextToken,
     RawMessage,
     ReceiptRuleSetName,
-    SendEmailRequest,
     SendEmailResponse,
     SendRawEmailResponse,
     SendTemplatedEmailResponse,
@@ -311,6 +310,24 @@ class SesProvider(SesApi, ServiceLifecycleHook):
     ) -> SendTemplatedEmailResponse:
         response = call_moto(context)
 
+        backend = get_ses_backend(context)
+        emitter = SNSEmitter(context)
+        for event_destination in backend.config_set_event_destination.values():
+            if not event_destination["Enabled"]:
+                continue
+
+            sns_destination_arn = event_destination.get("SNSDestination")
+            if not sns_destination_arn:
+                continue
+
+            payload = SNSPayload(
+                message_id=response["MessageId"],
+                sender_email=source,
+                destination_addresses=destination["ToAddresses"],
+            )
+            emitter.emit_send_event(payload, sns_destination_arn, emit_source_arn=False)
+            emitter.emit_delivery_event(payload, sns_destination_arn)
+
         save_for_retrospection(
             response["MessageId"],
             context.region,
@@ -335,6 +352,7 @@ class SesProvider(SesApi, ServiceLifecycleHook):
         tags: MessageTagList = None,
         configuration_set_name: ConfigurationSetName = None,
     ) -> SendRawEmailResponse:
+        response = call_moto(context)
         raw_data = to_str(raw_message["Data"])
 
         if source is None or not source.strip():
@@ -350,6 +368,23 @@ class SesProvider(SesApi, ServiceLifecycleHook):
 
         backend = get_ses_backend(context)
         message = backend.send_raw_email(source, destinations, raw_data, context.region)
+
+        emitter = SNSEmitter(context)
+        for event_destination in backend.config_set_event_destination.values():
+            if not event_destination["Enabled"]:
+                continue
+
+            sns_destination_arn = event_destination.get("SNSDestination")
+            if not sns_destination_arn:
+                continue
+
+            payload = SNSPayload(
+                message_id=response["MessageId"],
+                sender_email=source,
+                destination_addresses=destinations,
+            )
+            emitter.emit_send_event(payload, sns_destination_arn)
+            emitter.emit_delivery_event(payload, sns_destination_arn)
 
         save_for_retrospection(
             message.id,
@@ -407,7 +442,9 @@ class SNSEmitter:
             Message="Successfully validated SNS topic for Amazon SES event publishing.",
         )
 
-    def emit_send_event(self, payload: SNSPayload, sns_topic_arn: str):
+    def emit_send_event(
+        self, payload: SNSPayload, sns_topic_arn: str, emit_source_arn: bool = True
+    ):
         now = datetime.now(tz=timezone.utc)
 
         event_payload = {
@@ -415,13 +452,18 @@ class SNSEmitter:
             "mail": {
                 "timestamp": now.isoformat(),
                 "source": payload.sender_email,
-                "sourceArn": f"arn:aws:ses:{self.context.region}:{self.context.account_id}:identity/{payload.sender_email}",
                 "sendingAccountId": self.context.account_id,
                 "destination": payload.destination_addresses,
                 "messageId": payload.message_id,
             },
             "send": {},
         }
+
+        if emit_source_arn:
+            event_payload["mail"][
+                "sourceArn"
+            ] = f"arn:aws:ses:{self.context.region}:{self.context.account_id}:identity/{payload.sender_email}"
+
         client = self._client_for_topic(sns_topic_arn)
         client.publish(
             TopicArn=sns_topic_arn,
@@ -453,14 +495,6 @@ class SNSEmitter:
             Message=json.dumps(event_payload),
             Subject="Amazon SES Email Event Notification",
         )
-
-    @staticmethod
-    def _sender_email(request: SendEmailRequest) -> str:
-        return request["Source"]
-
-    @staticmethod
-    def _destination_addresses(request: SendEmailRequest) -> AddressList:
-        return request["Destination"]["ToAddresses"]
 
     @staticmethod
     def _client_for_topic(topic_arn: str) -> SNSClient:

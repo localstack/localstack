@@ -1815,6 +1815,26 @@ def ses_configuration_set_sns_event_destination(ses_client):
 
 
 @pytest.fixture
+def ses_email_template(ses_client):
+    template_names = []
+
+    def factory(name: str, contents: str, subject: str = f"Email template {short_uid()}"):
+        ses_client.create_template(
+            Template={
+                "TemplateName": name,
+                "SubjectPart": subject,
+                "TextPart": contents,
+            }
+        )
+        template_names.append(name)
+
+    yield factory
+
+    for template_name in template_names:
+        ses_client.delete_template(TemplateName=template_name)
+
+
+@pytest.fixture
 def ses_verify_identity(ses_client):
     identities = []
 
