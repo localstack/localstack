@@ -484,5 +484,37 @@
         }
       ]
     }
+  },
+  "tests/integration/test_ses.py::TestSES::test_cannot_create_event_for_no_topic": {
+    "recorded-date": "23-11-2022, 21:30:20",
+    "recorded-content": {
+      "create-error": {
+        "Error": {
+          "Code": "InvalidSNSDestination",
+          "Message": "SNS topic <<arn>> not found.",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/integration/test_ses.py::TestSES::test_deleting_non_existent_configuration_set_event_destination": {
+    "recorded-date": "28-11-2022, 11:00:55",
+    "recorded-content": {
+      "delete-error": {
+        "Error": {
+          "Code": "EventDestinationDoesNotExist",
+          "Message": "No EventDestination found for <config-set>",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
   }
 }

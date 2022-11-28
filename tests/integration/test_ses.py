@@ -4,6 +4,7 @@ from datetime import date, datetime
 
 import pytest
 import requests
+from botocore.exceptions import ClientError
 
 import localstack.config as config
 from localstack.constants import INTERNAL_RESOURCE_PATH
@@ -467,3 +468,46 @@ class TestSES:
 
         messages = sqs_receive_num_messages(sqs_queue, 3)
         snapshot.match("messages", messages)
+
+    def test_cannot_create_event_for_no_topic(
+        self, ses_configuration_set, ses_client, snapshot, account_id
+    ):
+        topic_name = f"missing-topic-{short_uid()}"
+        topic_arn = f"arn:aws:sns:{ses_client.meta.region_name}:{account_id}:{topic_name}"
+        snapshot.add_transformer(snapshot.transform.regex(topic_arn, "<arn>"))
+
+        config_set_name = f"config-set-{short_uid()}"
+        ses_configuration_set(config_set_name)
+
+        event_destination_name = f"config-set-event-destination-{short_uid()}"
+
+        # check if job is gone
+        with pytest.raises(ClientError) as e_info:
+            ses_client.create_configuration_set_event_destination(
+                ConfigurationSetName=config_set_name,
+                EventDestination={
+                    "Name": event_destination_name,
+                    "Enabled": True,
+                    "MatchingEventTypes": ["send", "bounce", "delivery", "open", "click"],
+                    "SNSDestination": {
+                        "TopicARN": topic_arn,
+                    },
+                },
+            )
+        snapshot.match("create-error", e_info.value.response)
+
+    def test_deleting_non_existent_configuration_set_event_destination(
+        self, ses_configuration_set, ses_client, snapshot
+    ):
+        config_set_name = f"config-set-{short_uid()}"
+        snapshot.add_transformer(snapshot.transform.regex(config_set_name, "<config-set>"))
+        ses_configuration_set(config_set_name)
+
+        event_destination_name = f"non-existent-configuration-set-{short_uid()}"
+        # check if job is gone
+        with pytest.raises(ClientError) as e_info:
+            ses_client.delete_configuration_set_event_destination(
+                ConfigurationSetName=config_set_name,
+                EventDestinationName=event_destination_name,
+            )
+        snapshot.match("delete-error", e_info.value.response)

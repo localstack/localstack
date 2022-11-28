@@ -22,6 +22,7 @@ from localstack.aws.api.ses import (
     DeleteTemplateResponse,
     Destination,
     EventDestination,
+    EventDestinationDoesNotExistException,
     EventDestinationName,
     GetIdentityVerificationAttributesResponse,
     IdentityList,
@@ -201,7 +202,13 @@ class SesProvider(SesApi, ServiceLifecycleHook):
         # not implemented in moto
         # TODO: contribute upstream?
         backend = get_ses_backend(context)
-        backend.config_set_event_destination.pop(configuration_set_name, None)
+        try:
+            backend.config_set_event_destination.pop(configuration_set_name)
+        except KeyError:
+            raise EventDestinationDoesNotExistException(
+                f"No EventDestination found for {configuration_set_name}"
+            )
+
         return DeleteConfigurationSetEventDestinationResponse()
 
     @handler("ListTemplates")
