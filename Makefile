@@ -81,6 +81,9 @@ docker-save-image: 		  ## Export the built Docker image
 docker-save-image-light:
 	make EXPORT_SUFFIX="-light" TAG=$(IMAGE_NAME_LIGHT) docker-save-image
 
+docker-save-image-pro:
+	make EXPORT_SUFFIX="-pro" TAG=$(IMAGE_NAME_PRO) docker-save-image
+
 # By default we export the full image
 TAG ?= $(IMAGE_NAME_FULL)
 # By default we load the result to the docker daemon
@@ -103,6 +106,10 @@ docker-build: 			  ## Build Docker image
 docker-build-light: 	  ## Build Light Docker image
 	make DOCKER_BUILD_FLAGS="--build-arg IMAGE_TYPE=light --load" \
 	  TAG=$(IMAGE_NAME_LIGHT) docker-build
+
+docker-build-pro: 	  ## Build Light Docker image
+	make DOCKER_BUILD_FLAGS="--build-arg IMAGE_TYPE=pro --load" \
+	  TAG=$(IMAGE_NAME_PRO) docker-build
 
 docker-build-multiarch:   ## Build the Multi-Arch Full Docker Image
 	# Make sure to prepare your environment for cross-platform docker builds! (see doc/developer_guides/README.md)
@@ -137,8 +144,8 @@ docker-push-master: 	  ## Push a single platform-specific Docker image to regist
 
 docker-push-master-all:		## Push Docker images of localstack, localstack-pro, localstack-light, and localstack-full
 	make SOURCE_IMAGE_NAME=$(IMAGE_NAME_LIGHT) TARGET_IMAGE_NAME=$(IMAGE_NAME) docker-push-master
-	make SOURCE_IMAGE_NAME=$(IMAGE_NAME_LIGHT) TARGET_IMAGE_NAME=$(IMAGE_NAME_PRO) docker-push-master
 	make SOURCE_IMAGE_NAME=$(IMAGE_NAME_LIGHT) TARGET_IMAGE_NAME=$(IMAGE_NAME_LIGHT) docker-push-master
+	make SOURCE_IMAGE_NAME=$(IMAGE_NAME_PRO) TARGET_IMAGE_NAME=$(IMAGE_NAME_PRO) docker-push-master
 	make SOURCE_IMAGE_NAME=$(IMAGE_NAME_FULL) TARGET_IMAGE_NAME=$(IMAGE_NAME_FULL) docker-push-master
 
 MANIFEST_IMAGE_NAME ?= $(IMAGE_NAME_FULL)
