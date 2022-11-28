@@ -7,6 +7,9 @@ import wave
 from pathlib import Path
 from typing import Tuple
 from zipfile import ZipFile
+import platform
+import tarfile 
+import shutil
 
 from localstack import config
 from localstack.aws.api import RequestContext, handler
@@ -186,6 +189,37 @@ class TranscribeProvider(TranscribeApi):
 
             Path(model_zip_path).unlink()
 
+    @staticmethod
+    def check_and_download_ffmpeg():
+        """
+        Check if system already has ffmpeg installed. 
+        If can not find, this function will download statically linked build of ffmpeg to /bin/ffmpeg
+        """
+        try:
+            run("ffmpeg -version")
+        except Exception as exc:
+            if platform.uname()[4] == 'aarch64':
+                download_link = "https://johnvansickle.com/ffmpeg/releases/ffmpeg-release-arm64-static.tar.xz"
+            elif platform.uname()[4] == 'x86_64':
+                download_link = "https://johnvansickle.com/ffmpeg/releases/ffmpeg-release-amd64-static.tar.xz"
+            else:
+                raise("Can not find a suitable ffmpeg binary version for this system.")
+            file_path = new_tmp_file() + '.tar.xz'
+
+            LOG.debug("Downloading ffmpeg binary: %s", file_path)
+            download(download_link, file_path, verify_ssl=False)
+
+            with tarfile.open(file_path) as f:
+                for member in f.getmembers():
+                    if member.split('/')[-1] == 'ffmpeg':
+                        f.extract(member, '/tmp')
+            directory_list = os.listdir('/tmp')
+            for directory in directory_list:
+                if "ffmpeg-" in directory and "-static" in directory:
+                    ffmpeg_full_path = '/tmp/' + directory + '/ffmpeg'
+                    shutil.copy(ffmpeg_full_path, '/bin')
+                    break 
+        
     #
     # Threads
     #
@@ -224,6 +258,7 @@ class TranscribeProvider(TranscribeApi):
                 LOG.debug("Starting to convert audio to wav type: %s", job_name)
 
                 tmp_wav_file_path = new_tmp_file() + ".wav"
+                self.check_and_download_ffmpeg()
                 cmd = "ffmpeg -nostdin -loglevel quiet -y -i {} {}".format(
                     str(file_path), tmp_wav_file_path
                 )
