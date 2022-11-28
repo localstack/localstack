@@ -13,6 +13,23 @@ then
   EDGE_PORT=4566
 fi
 
+# FIXME: deprecation path for legacy images
+# the Dockerfile creates .pro-version file for the pro image. When trying to activate pro features with any other
+# version, an error is printed.
+if [[ $LOCALSTACK_API_KEY ]] && [[ ! -f /usr/lib/localstack/.pro-version ]]; then
+    echo "ERROR"
+    echo "============================================================================"
+    echo "  It seems you are using the LocalStack Pro version with the wrong image."
+    echo "  Future versions will not support running LocalStack Pro with the base"
+    echo "  image (localstack/localstack)"
+    echo "  To fix this error, use localstack/localstack-pro instead."
+    echo ""
+    echo "  See: <deprecation-gh-issue>"
+    echo "============================================================================"
+    echo ""
+    exit 1
+fi
+
 # FIXME: deprecation path for legacy directories
 # the Dockerfile creates .marker file that will be overwritten if a volume is mounted into /tmp/localstack
 if [ ! -f /tmp/localstack/.marker ]; then

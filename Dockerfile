@@ -167,12 +167,13 @@ RUN echo /var/lib/localstack/lib/extensions/python_venv/lib/python3.10/site-pack
     mv localstack-extensions-venv.pth .venv/lib/python*/site-packages/
 
 
+# base-pro: Stage which will contain the pro-version starting from 2.0.0
+FROM base as base-pro
+RUN touch /usr/lib/localstack/.pro-version
 
 # base-light: Stage which does not add additional dependencies (like elasticsearch)
 FROM base as base-light
 RUN touch /usr/lib/localstack/.light-version
-
-
 
 # base-full: Stage which adds additional dependencies to avoid installing them at runtime (f.e. elasticsearch)
 FROM base as base-full
