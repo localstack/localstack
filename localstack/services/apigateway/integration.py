@@ -535,5 +535,5 @@ class StepFunctionIntegration(BackendIntegration):
         rendered_input = VtlTemplate().render_vtl(request_parameters.get("Input"), variables)
         return {
             "stateMachineArn": request_parameters.get("StateMachineArn"),
-            "input": rendered_input
+            "input": rendered_input,
         }
