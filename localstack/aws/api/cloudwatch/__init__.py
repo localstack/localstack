@@ -45,6 +45,7 @@ GetMetricDataLabelTimezone = str
 GetMetricDataMaxDatapoints = int
 HistoryData = str
 HistorySummary = str
+IncludeLinkedAccounts = bool
 InsightRuleAggregationStatistic = str
 InsightRuleContributorKey = str
 InsightRuleContributorKeyLabel = str
@@ -192,6 +193,7 @@ class StatusCode(str):
     Complete = "Complete"
     InternalError = "InternalError"
     PartialData = "PartialData"
+    Forbidden = "Forbidden"
 
 
 class ConcurrentModificationException(ServiceException):
@@ -881,14 +883,18 @@ class ListMetricsInput(ServiceRequest):
     Dimensions: Optional[DimensionFilters]
     NextToken: Optional[NextToken]
     RecentlyActive: Optional[RecentlyActive]
+    IncludeLinkedAccounts: Optional[IncludeLinkedAccounts]
+    OwningAccount: Optional[AccountId]
 
 
+OwningAccounts = List[AccountId]
 Metrics = List[Metric]
 
 
 class ListMetricsOutput(TypedDict, total=False):
     Metrics: Optional[Metrics]
     NextToken: Optional[NextToken]
+    OwningAccounts: Optional[OwningAccounts]
 
 
 class ListTagsForResourceInput(ServiceRequest):
@@ -1314,6 +1320,8 @@ class CloudwatchApi:
         dimensions: DimensionFilters = None,
         next_token: NextToken = None,
         recently_active: RecentlyActive = None,
+        include_linked_accounts: IncludeLinkedAccounts = None,
+        owning_account: AccountId = None,
     ) -> ListMetricsOutput:
         raise NotImplementedError
 
