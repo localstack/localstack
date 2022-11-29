@@ -17,7 +17,6 @@ import xmltodict
 from botocore.client import ClientError
 from moto.s3.exceptions import InvalidFilterRuleName, MissingBucket
 from moto.s3.models import FakeBucket
-from pytz import timezone
 from requests.models import Request, Response
 
 from localstack import config, constants
@@ -43,6 +42,7 @@ from localstack.services.s3.s3_utils import (
     uses_host_addressing,
     validate_bucket_name,
 )
+from localstack.services.s3.utils import is_key_expired
 from localstack.utils.aws import arns, aws_stack
 from localstack.utils.aws.aws_responses import (
     create_sqs_system_attributes,
@@ -688,13 +688,7 @@ def add_accept_range_header(response):
 def is_object_expired(bucket_name: str, key: str) -> bool:
     bucket = BackendState.get_bucket(bucket_name)
     key_obj = bucket.keys.get(key)
-    if not key_obj or not key_obj._expiry:
-        return False
-    tzname = key_obj._expiry.tzname()
-    if not tzname:
-        return False
-    tzone = timezone(tzname)
-    return key_obj._expiry <= datetime.datetime.now(tzone)
+    return is_key_expired(key_obj)
 
 
 def set_object_expiry(bucket_name: str, key: str, headers: Dict[str, str]):
