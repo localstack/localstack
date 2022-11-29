@@ -116,8 +116,8 @@ docker-build-multiarch:   ## Build the Multi-Arch Full Docker Image
 	# Multi-Platform builds cannot be loaded to the docker daemon from buildx, so we can't add "--load".
 	make DOCKER_BUILD_FLAGS="--platform linux/amd64,linux/arm64" docker-build
 
-SOURCE_IMAGE_NAME ?= $(IMAGE_NAME_FULL)
-TARGET_IMAGE_NAME ?= $(IMAGE_NAME_FULL)
+SOURCE_IMAGE_NAME ?= $(IMAGE_NAME)
+TARGET_IMAGE_NAME ?= $(IMAGE_NAME)
 docker-push-master: 	  ## Push a single platform-specific Docker image to registry IF we are currently on the master branch
 	(CURRENT_BRANCH=`(git rev-parse --abbrev-ref HEAD | grep '^master$$' || ((git branch -a | grep 'HEAD detached at [0-9a-zA-Z]*)') && git branch -a)) | grep '^[* ]*master$$' | sed 's/[* ]//g' || true`; \
 		test "$$CURRENT_BRANCH" != 'master' && echo "Not on master branch.") || \
@@ -148,8 +148,8 @@ docker-push-master-all:		## Push Docker images of localstack, localstack-pro, lo
 	make SOURCE_IMAGE_NAME=$(IMAGE_NAME_PRO) TARGET_IMAGE_NAME=$(IMAGE_NAME_PRO) docker-push-master
 	make SOURCE_IMAGE_NAME=$(IMAGE_NAME_FULL) TARGET_IMAGE_NAME=$(IMAGE_NAME_FULL) docker-push-master
 
-MANIFEST_IMAGE_NAME ?= $(IMAGE_NAME_FULL)
-docker-create-push-manifests:	## Create and push manifests for a docker image (default: full)
+MANIFEST_IMAGE_NAME ?= $(IMAGE_NAME)
+docker-create-push-manifests:	## Create and push manifests for a docker image (default: community)
 	(CURRENT_BRANCH=`(git rev-parse --abbrev-ref HEAD | grep '^master$$' || ((git branch -a | grep 'HEAD detached at [0-9a-zA-Z]*)') && git branch -a)) | grep '^[* ]*master$$' | sed 's/[* ]//g' || true`; \
 		test "$$CURRENT_BRANCH" != 'master' && echo "Not on master branch.") || \
 	((test "$$DOCKER_USERNAME" = '' || test "$$DOCKER_PASSWORD" = '' ) && \
@@ -178,9 +178,10 @@ docker-create-push-manifests:	## Create and push manifests for a docker image (d
 		docker manifest push $(MANIFEST_IMAGE_NAME):latest \
 	)
 
-docker-create-push-manifests-light:	## Create and push manifests for the light docker image
-	make MANIFEST_IMAGE_NAME=$(IMAGE_NAME_LIGHT) docker-create-push-manifests
+docker-create-push-manifests-light:	## Create and push manifests for all light docker images
 	make MANIFEST_IMAGE_NAME=$(IMAGE_NAME) docker-create-push-manifests
+	make MANIFEST_IMAGE_NAME=$(IMAGE_NAME_PRO) docker-create-push-manifests
+	make MANIFEST_IMAGE_NAME=$(IMAGE_NAME_LIGHT) docker-create-push-manifests
 
 docker-run-tests:		  ## Initializes the test environment and runs the tests in a docker container
 	# Remove argparse and dataclasses to fix https://github.com/pytest-dev/pytest/issues/5594
