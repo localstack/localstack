@@ -9,6 +9,7 @@ from localstack.services.cloudformation.deployment_utils import (
 from localstack.services.cloudformation.service_models import GenericBaseModel
 from localstack.utils.aws import aws_stack, queries
 from localstack.utils.common import keys_to_lower, select_attributes, to_bytes
+from localstack.utils.strings import first_char_to_lower
 
 
 class GatewayResponse(GenericBaseModel):
@@ -516,6 +517,65 @@ class GatewayUsagePlan(GenericBaseModel):
 
     def get_physical_resource_id(self, attribute=None, **kwargs):
         return self.props.get("id")
+
+    def update_resource(self, new_resource, stack_name, resources):
+        props = new_resource["Properties"]
+        parameters_to_select = [
+            "UsagePlanName",
+            "Description",
+            "ApiStages",
+            "Quota",
+            "Throttle",
+            "Tags",
+        ]
+        update_config_props = select_attributes(props, parameters_to_select)
+        update_config_props = self.resolve_refs_recursively(
+            stack_name, update_config_props, resources
+        )
+
+        usage_plan_id = new_resource["PhysicalResourceId"]
+        client = aws_stack.connect_to_service("apigateway")
+
+        patch_operations = []
+
+        for parameter in update_config_props:
+            value = update_config_props[parameter]
+            if parameter == "ApiStages":
+                patch_operations.append(
+                    {
+                        "op": "remove",
+                        "path": f"/{first_char_to_lower(parameter)}",
+                    }
+                )
+
+                for stage in value:
+                    patch_operations.append(
+                        {
+                            "op": "replace",
+                            "path": f"/{first_char_to_lower(parameter)}",
+                            "value": f'{stage["ApiId"]}:{stage["Stage"]}',
+                        }
+                    )
+
+                    if "Throttle" in stage:
+                        patch_operations.append(
+                            {
+                                "op": "replace",
+                                "path": f'/{first_char_to_lower(parameter)}/{stage["ApiId"]}:{stage["Stage"]}',
+                                "value": json.dumps(stage["Throttle"]),
+                            }
+                        )
+
+            elif isinstance(value, dict):
+                for item in value:
+                    last_value = value[item]
+                    path = f"/{first_char_to_lower(parameter)}/{first_char_to_lower(item)}"
+                    patch_operations.append({"op": "replace", "path": path, "value": last_value})
+            else:
+                patch_operations.append(
+                    {"op": "replace", "path": f"/{first_char_to_lower(parameter)}", "value": value}
+                )
+        client.update_usage_plan(usagePlanId=usage_plan_id, patchOperations=patch_operations)
 
 
 class GatewayApiKey(GenericBaseModel):

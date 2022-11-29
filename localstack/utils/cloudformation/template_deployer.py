@@ -51,6 +51,7 @@ UPDATEABLE_RESOURCES = [
     "Lambda::Function",
     "Lambda::Permission",
     "ApiGateway::Method",
+    "ApiGateway::UsagePlan",
     "StepFunctions::StateMachine",
     "IAM::Role",
     "EC2::Instance",
