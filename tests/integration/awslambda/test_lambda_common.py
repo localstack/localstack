@@ -1,6 +1,5 @@
 import json
 import logging
-import platform
 
 import pytest
 
@@ -38,9 +37,6 @@ def snapshot_transformers(snapshot):
 @pytest.mark.skipif(
     condition=is_old_provider(),
     reason="Local executor does not support the majority of the runtimes",
-)
-@pytest.mark.skipif(
-    condition=platform.machine() != "x86_64", reason="build process doesn't support arm64 right now"
 )
 class TestLambdaRuntimesCommon:
     """
