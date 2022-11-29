@@ -126,8 +126,8 @@ docker-build-multiarch:   ## Build the Multi-Arch Full Docker Image
 SOURCE_IMAGE_NAME ?= $(IMAGE_NAME)
 TARGET_IMAGE_NAME ?= $(IMAGE_NAME)
 docker-push-master: 	  ## Push a single platform-specific Docker image to registry IF we are currently on the master branch
-	(CURRENT_BRANCH=`(git rev-parse --abbrev-ref HEAD | grep '^master$$' || ((git branch -a | grep 'HEAD detached at [0-9a-zA-Z]*)') && git branch -a)) | grep '^[* ]*master$$' | sed 's/[* ]//g' || true`; \
-		test "$$CURRENT_BRANCH" != 'master' && echo "Not on master branch.") || \
+#	(CURRENT_BRANCH=`(git rev-parse --abbrev-ref HEAD | grep '^master$$' || ((git branch -a | grep 'HEAD detached at [0-9a-zA-Z]*)') && git branch -a)) | grep '^[* ]*master$$' | sed 's/[* ]//g' || true`; \
+#		test "$$CURRENT_BRANCH" != 'master' && echo "Not on master branch.") ||
 	((test "$$DOCKER_USERNAME" = '' || test "$$DOCKER_PASSWORD" = '' ) && \
 		echo "Skipping docker push as no credentials are provided.") || \
 	(REMOTE_ORIGIN="`git remote -v | grep '/localstack' | grep origin | grep push | awk '{print $$2}'`"; \
@@ -142,11 +142,11 @@ docker-push-master: 	  ## Push a single platform-specific Docker image to regist
 			(docker tag $(TARGET_IMAGE_NAME):latest-$(PLATFORM) $(TARGET_IMAGE_NAME):$(IMAGE_TAG)-$(PLATFORM) && \
 				docker tag $(TARGET_IMAGE_NAME):latest-$(PLATFORM) $(TARGET_IMAGE_NAME):$(MAJOR_VERSION).$(MINOR_VERSION)-$(PLATFORM) && \
 				docker tag $(TARGET_IMAGE_NAME):latest-$(PLATFORM) $(TARGET_IMAGE_NAME):$(MAJOR_VERSION).$(MINOR_VERSION).$(PATCH_VERSION)-$(PLATFORM) && \
-				docker push $(TARGET_IMAGE_NAME):$(IMAGE_TAG)-$(PLATFORM) && \
-				docker push $(TARGET_IMAGE_NAME):$(MAJOR_VERSION).$(MINOR_VERSION)-$(PLATFORM) && \
-				docker push $(TARGET_IMAGE_NAME):$(MAJOR_VERSION).$(MINOR_VERSION).$(PATCH_VERSION)-$(PLATFORM) \
+				echo "docker push $(TARGET_IMAGE_NAME):$(IMAGE_TAG)-$(PLATFORM)" && \
+				echo "docker push $(TARGET_IMAGE_NAME):$(MAJOR_VERSION).$(MINOR_VERSION)-$(PLATFORM)" && \
+				echo "docker push $(TARGET_IMAGE_NAME):$(MAJOR_VERSION).$(MINOR_VERSION).$(PATCH_VERSION)-$(PLATFORM)" \
 				)) && \
-				  docker push $(TARGET_IMAGE_NAME):latest-$(PLATFORM) \
+				  echo "docker push $(TARGET_IMAGE_NAME):latest-$(PLATFORM)" \
 	)
 
 docker-push-master-all:		## Push Docker images of localstack, localstack-pro, localstack-light, and localstack-full
@@ -157,8 +157,8 @@ docker-push-master-all:		## Push Docker images of localstack, localstack-pro, lo
 
 MANIFEST_IMAGE_NAME ?= $(IMAGE_NAME)
 docker-create-push-manifests:	## Create and push manifests for a docker image (default: community)
-	(CURRENT_BRANCH=`(git rev-parse --abbrev-ref HEAD | grep '^master$$' || ((git branch -a | grep 'HEAD detached at [0-9a-zA-Z]*)') && git branch -a)) | grep '^[* ]*master$$' | sed 's/[* ]//g' || true`; \
-		test "$$CURRENT_BRANCH" != 'master' && echo "Not on master branch.") || \
+#	(CURRENT_BRANCH=`(git rev-parse --abbrev-ref HEAD | grep '^master$$' || ((git branch -a | grep 'HEAD detached at [0-9a-zA-Z]*)') && git branch -a)) | grep '^[* ]*master$$' | sed 's/[* ]//g' || true`; \
+#		test "$$CURRENT_BRANCH" != 'master' && echo "Not on master branch.") ||
 	((test "$$DOCKER_USERNAME" = '' || test "$$DOCKER_PASSWORD" = '' ) && \
 		echo "Skipping docker manifest push as no credentials are provided.") || \
 	(REMOTE_ORIGIN="`git remote -v | grep '/localstack' | grep origin | grep push | awk '{print $$2}'`"; \
@@ -179,10 +179,10 @@ docker-create-push-manifests:	## Create and push manifests for a docker image (d
 			docker manifest create $(MANIFEST_IMAGE_NAME):$(MAJOR_VERSION).$(MINOR_VERSION).$(PATCH_VERSION) \
 			--amend $(MANIFEST_IMAGE_NAME):$(MAJOR_VERSION).$(MINOR_VERSION).$(PATCH_VERSION)-amd64 \
 			--amend $(MANIFEST_IMAGE_NAME):$(MAJOR_VERSION).$(MINOR_VERSION).$(PATCH_VERSION)-arm64 && \
-				docker manifest push $(MANIFEST_IMAGE_NAME):$(IMAGE_TAG) && \
-				docker manifest push $(MANIFEST_IMAGE_NAME):$(MAJOR_VERSION).$(MINOR_VERSION) && \
-				docker manifest push $(MANIFEST_IMAGE_NAME):$(MAJOR_VERSION).$(MINOR_VERSION).$(PATCH_VERSION))) && \
-		docker manifest push $(MANIFEST_IMAGE_NAME):latest \
+				echo "docker manifest push $(MANIFEST_IMAGE_NAME):$(IMAGE_TAG)" && \
+				echo "docker manifest push $(MANIFEST_IMAGE_NAME):$(MAJOR_VERSION).$(MINOR_VERSION)" && \
+				echo "docker manifest push $(MANIFEST_IMAGE_NAME):$(MAJOR_VERSION).$(MINOR_VERSION).$(PATCH_VERSION)))" && \
+		echo "docker manifest push $(MANIFEST_IMAGE_NAME):latest" \
 	)
 
 docker-create-push-manifests-light:	## Create and push manifests for all light docker images
