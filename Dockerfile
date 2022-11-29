@@ -291,7 +291,7 @@ RUN TARGETARCH_SYNONYM=$([[ "$TARGETARCH" == "amd64" ]] && echo "x86_64" || echo
         rm -rf $ES_BASE_DIR/modules/ingest-geoip)
 
 
-FROM marked-${IMAGE_TYPE}
+FROM unmarked-${IMAGE_TYPE}
 ARG IMAGE_TYPE
 
 # mark the image version
