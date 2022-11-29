@@ -32,10 +32,6 @@ def test_sam_template(lambda_client, deploy_cfn_template):
         parameters={"FunctionName": func_name},
     )
 
-    lambda_client.get_waiter("function_active_v2").wait(
-        FunctionName=func_name
-    )  # TODO: fix cfn model instead
-
     # run Lambda test invocation
     result = lambda_client.invoke(FunctionName=func_name)
     result = json.loads(to_str(result["Payload"].read()))

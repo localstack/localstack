@@ -103,7 +103,6 @@ def call_lambda(function_arn: str, event: bytes, asynchronous: bool) -> str:
     lambda_client = aws_stack.connect_to_service(
         "lambda", region_name=extract_region_from_arn(function_arn)
     )
-    lambda_client.get_waiter("function_active_v2").wait(FunctionName=function_arn)
     inv_result = lambda_client.invoke(
         FunctionName=function_arn,
         Payload=event,
