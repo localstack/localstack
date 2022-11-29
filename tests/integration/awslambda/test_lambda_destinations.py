@@ -1,12 +1,14 @@
 import base64
 import json
+import os
+import time
 
 import pytest
 
 from localstack.aws.api.lambda_ import Runtime
 from localstack.testing.aws.lambda_utils import is_new_provider, is_old_provider
-from localstack.utils.strings import short_uid, to_str
-from localstack.utils.sync import retry
+from localstack.utils.strings import short_uid, to_bytes, to_str
+from localstack.utils.sync import retry, wait_until
 from tests.integration.awslambda.functions import lambda_integration
 from tests.integration.awslambda.test_lambda import TEST_LAMBDA_LIBS, TEST_LAMBDA_PYTHON
 
@@ -164,6 +166,81 @@ class TestLambdaDestinationSqs:
 
         receive_message_result = retry(receive_message, retries=120, sleep=3)
         snapshot.match("receive_message_result", receive_message_result)
+
+    @pytest.mark.aws_validated
+    def test_retries(
+        self,
+        lambda_client,
+        snapshot,
+        create_lambda_function,
+        sqs_create_queue,
+        sqs_queue_arn,
+        lambda_su_role,
+        logs_client,
+        sqs_client,
+    ):
+        """
+        behavior test, we don't really care about any API surface here right now
+
+        this is quite long since lambda waits 1 minute between the invoke and first retry and 2 minutes between the first retry and the second retry!
+        # TODO: make 1st and 2nd retry time configurable
+        """
+        # setup
+        queue_name = f"destination-queue-{short_uid()}"
+        fn_name = f"retry-fn-{short_uid()}"
+        queue_url = sqs_create_queue(QueueName=queue_name)
+        queue_arn = sqs_queue_arn(queue_url)
+
+        create_lambda_function(
+            handler_file=os.path.join(os.path.dirname(__file__), "./functions/lambda_echofail.py"),
+            func_name=fn_name,
+            libs=TEST_LAMBDA_LIBS,
+            role=lambda_su_role,
+        )
+        lambda_client.put_function_event_invoke_config(
+            FunctionName=fn_name,
+            MaximumRetryAttempts=2,
+            DestinationConfig={"OnFailure": {"Destination": queue_arn}},
+        )
+
+        message_id = f"retry-msg-{short_uid()}"
+        invoke_result = lambda_client.invoke(
+            FunctionName=fn_name,
+            Payload=to_bytes(json.dumps({"message": message_id})),
+            InvocationType="Event",  # important, otherwise destinations won't be triggered
+        )
+        assert 200 <= invoke_result["StatusCode"] < 300
+
+        def get_filtered_event_count() -> int:
+            log_events = logs_client.filter_log_events(logGroupName=f"/aws/lambda/{fn_name}")[
+                "events"
+            ]
+            filtered_log_events = [e for e in log_events if message_id in e["message"]]
+            return len(filtered_log_events)
+
+        # between 0 and 1 min the lambda should NOT have been retried yet
+        # between 1 min and 3 min the lambda should have been retried once
+        time.sleep(30)
+        assert get_filtered_event_count() == 1
+        time.sleep(60)
+        assert get_filtered_event_count() == 2
+        time.sleep(120)
+        assert get_filtered_event_count() == 3
+
+        # 1. event should be in queue
+        def msg_in_queue():
+            msgs = sqs_client.receive_message(QueueUrl=queue_url, AttributeNames=["All"])
+            return len(msgs["Messages"]) == 1
+
+        assert wait_until(msg_in_queue, wait=6)
+
+        # 2. there should be only one event stream (re-use of environment)
+        #    technically not guaranteed but should be nearly 100%
+        log_streams = logs_client.describe_log_streams(logGroupName=f"/aws/lambda/{fn_name}")
+        assert len(log_streams["logStreams"]) == 1
+
+        # 3. the lambda should have been called 3 times (correlation via custom message id)
+        assert get_filtered_event_count() == 3
 
 
 # class TestLambdaDestinationSns:
