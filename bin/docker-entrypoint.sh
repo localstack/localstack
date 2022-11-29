@@ -7,7 +7,7 @@ then
   EDGE_PORT=4566
 fi
 
-# FIXME: deprecation path for legacy images
+# FIXME: remove with 2.0
 # the Dockerfile creates .pro-version file for the pro image. When trying to activate pro features with any other
 # version, an error is printed.
 if [[ $LOCALSTACK_API_KEY ]] && [[ ! -f /usr/lib/localstack/.pro-version ]]; then
