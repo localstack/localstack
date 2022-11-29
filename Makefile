@@ -107,7 +107,11 @@ docker-build-light: 	  ## Build Light Docker image
 	make DOCKER_BUILD_FLAGS="--build-arg IMAGE_TYPE=light --load" \
 	  TAG=$(IMAGE_NAME_LIGHT) docker-build
 
-docker-build-pro: 	  ## Build Light Docker image
+docker-build-community:   ## Build Community Docker image
+	make DOCKER_BUILD_FLAGS="--build-arg IMAGE_TYPE=community --load" \
+	  TAG=$(IMAGE_NAME) docker-build
+
+docker-build-pro: 	  	  ## Build Pro Docker image
 	make DOCKER_BUILD_FLAGS="--build-arg IMAGE_TYPE=pro --load" \
 	  TAG=$(IMAGE_NAME_PRO) docker-build
 
@@ -143,9 +147,9 @@ docker-push-master: 	  ## Push a single platform-specific Docker image to regist
 	)
 
 docker-push-master-all:		## Push Docker images of localstack, localstack-pro, localstack-light, and localstack-full
-	make SOURCE_IMAGE_NAME=$(IMAGE_NAME_LIGHT) TARGET_IMAGE_NAME=$(IMAGE_NAME) docker-push-master
-	make SOURCE_IMAGE_NAME=$(IMAGE_NAME_LIGHT) TARGET_IMAGE_NAME=$(IMAGE_NAME_LIGHT) docker-push-master
+	make SOURCE_IMAGE_NAME=$(IMAGE_NAME) TARGET_IMAGE_NAME=$(IMAGE_NAME) docker-push-master
 	make SOURCE_IMAGE_NAME=$(IMAGE_NAME_PRO) TARGET_IMAGE_NAME=$(IMAGE_NAME_PRO) docker-push-master
+	make SOURCE_IMAGE_NAME=$(IMAGE_NAME_LIGHT) TARGET_IMAGE_NAME=$(IMAGE_NAME_LIGHT) docker-push-master
 	make SOURCE_IMAGE_NAME=$(IMAGE_NAME_FULL) TARGET_IMAGE_NAME=$(IMAGE_NAME_FULL) docker-push-master
 
 MANIFEST_IMAGE_NAME ?= $(IMAGE_NAME)

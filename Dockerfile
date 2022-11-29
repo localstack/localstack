@@ -166,17 +166,23 @@ RUN make freeze > requirements-runtime.txt
 RUN echo /var/lib/localstack/lib/extensions/python_venv/lib/python3.10/site-packages > localstack-extensions-venv.pth && \
     mv localstack-extensions-venv.pth .venv/lib/python*/site-packages/
 
+# base-community: Stage which will contain the community-version starting from 2.0.0
+FROM base as base-community
+RUN touch /usr/lib/localstack/.community-version
 
 # base-pro: Stage which will contain the pro-version starting from 2.0.0
 FROM base as base-pro
 RUN touch /usr/lib/localstack/.pro-version
 
 # base-light: Stage which does not add additional dependencies (like elasticsearch)
+# FIXME deprecated
 FROM base as base-light
 RUN touch /usr/lib/localstack/.light-version
 
 # base-full: Stage which adds additional dependencies to avoid installing them at runtime (f.e. elasticsearch)
+# FIXME deprecated
 FROM base as base-full
+RUN touch /usr/lib/localstack/.full-version
 
 # Install Elasticsearch
 # https://github.com/pires/docker-elasticsearch/issues/56
