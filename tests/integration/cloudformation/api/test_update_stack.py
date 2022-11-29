@@ -9,6 +9,7 @@ import yaml
 from localstack.utils.files import load_file
 from localstack.utils.strings import short_uid
 from localstack.utils.sync import retry
+from localstack.utils.testutil import upload_file_to_bucket
 
 
 @pytest.mark.aws_validated
@@ -38,7 +39,9 @@ def test_basic_update(cfn_client, deploy_cfn_template, snapshot, is_stack_update
 
 
 @pytest.mark.aws_validated
-def test_update_using_template_url(cfn_client, deploy_cfn_template, upload_file, is_stack_updated):
+def test_update_using_template_url(
+    cfn_client, deploy_cfn_template, is_stack_updated, s3_client, s3_create_bucket
+):
     stack = deploy_cfn_template(
         template_path=os.path.join(
             os.path.dirname(__file__), "../../templates/sns_topic_parameter.yml"
@@ -46,8 +49,10 @@ def test_update_using_template_url(cfn_client, deploy_cfn_template, upload_file,
         parameters={"TopicName": f"topic-{short_uid()}"},
     )
 
-    file_url = upload_file(
-        os.path.join(os.path.dirname(__file__), "../../templates/sns_topic_parameter.yml")
+    file_url = upload_file_to_bucket(
+        s3_client,
+        s3_create_bucket(),
+        os.path.join(os.path.dirname(__file__), "../../templates/sns_topic_parameter.yml"),
     )["Url"]
 
     cfn_client.update_stack(
@@ -63,7 +68,7 @@ def test_update_using_template_url(cfn_client, deploy_cfn_template, upload_file,
 
 
 @pytest.mark.aws_validated
-@pytest.mark.skip(reason="Not supported")
+@pytest.mark.xfail(reason="Not supported")
 def test_update_with_previous_template(cfn_client, deploy_cfn_template, is_stack_updated):
     stack = deploy_cfn_template(
         template_path=os.path.join(
@@ -85,7 +90,7 @@ def test_update_with_previous_template(cfn_client, deploy_cfn_template, is_stack
 
 
 @pytest.mark.aws_validated
-@pytest.mark.skip(reason="Not raising the correct error")
+@pytest.mark.xfail(reason="Not raising the correct error")
 @pytest.mark.parametrize(
     "capability",
     [
@@ -135,7 +140,7 @@ def test_update_with_capabilities(
 
 
 @pytest.mark.aws_validated
-@pytest.mark.skip(reason="Not raising the correct error")
+@pytest.mark.xfail(reason="Not raising the correct error")
 def test_update_with_resource_types(deploy_cfn_template, cfn_client, is_stack_updated, snapshot):
     template = load_file(
         os.path.join(os.path.dirname(__file__), "../../templates/sns_topic_parameter.yml")
@@ -181,7 +186,7 @@ def test_update_with_resource_types(deploy_cfn_template, cfn_client, is_stack_up
 
 
 @pytest.mark.aws_validated
-@pytest.mark.skip(reason="Update value not being applied")
+@pytest.mark.xfail(reason="Update value not being applied")
 def test_set_notification_arn_with_update(deploy_cfn_template, cfn_client, sns_create_topic):
     template = load_file(
         os.path.join(os.path.dirname(__file__), "../../templates/sns_topic_parameter.yml")
@@ -206,7 +211,7 @@ def test_set_notification_arn_with_update(deploy_cfn_template, cfn_client, sns_c
 
 
 @pytest.mark.aws_validated
-@pytest.mark.skip(reason="Update value not being applied")
+@pytest.mark.xfail(reason="Update value not being applied")
 def test_update_tags(deploy_cfn_template, cfn_client):
     template = load_file(
         os.path.join(os.path.dirname(__file__), "../../templates/sns_topic_parameter.yml")
@@ -233,7 +238,7 @@ def test_update_tags(deploy_cfn_template, cfn_client):
 
 
 @pytest.mark.aws_validated
-@pytest.mark.skip(reason="The correct error is not being raised")
+@pytest.mark.xfail(reason="The correct error is not being raised")
 def test_no_template_error(deploy_cfn_template, cfn_client, snapshot):
     template = load_file(
         os.path.join(os.path.dirname(__file__), "../../templates/sns_topic_parameter.yml")
@@ -299,7 +304,7 @@ def test_update_with_previous_parameter_value(
 
 
 @pytest.mark.aws_validated
-@pytest.mark.skip(reason="The correct error is not being raised")
+@pytest.mark.xfail(reason="The correct error is not being raised")
 def test_update_with_role_without_permissions(
     deploy_cfn_template, cfn_client, snapshot, sts_client, create_role
 ):
@@ -338,7 +343,7 @@ def test_update_with_role_without_permissions(
 
 
 @pytest.mark.aws_validated
-@pytest.mark.skip(reason="The correct error is not being raised")
+@pytest.mark.xfail(reason="The correct error is not being raised")
 def test_update_with_invalid_rollback_configuration_errors(
     deploy_cfn_template, cfn_client, snapshot
 ):
@@ -381,7 +386,7 @@ def test_update_with_invalid_rollback_configuration_errors(
 
 
 @pytest.mark.aws_validated
-@pytest.mark.skip(reason="The update value is not being applied")
+@pytest.mark.xfail(reason="The update value is not being applied")
 def test_update_with_rollback_configuration(
     deploy_cfn_template, cfn_client, is_stack_updated, cloudwatch_client
 ):
@@ -434,4 +439,5 @@ def test_update_with_rollback_configuration(
     ]
     assert config == rollback_configuration
 
+    # cleanup
     cloudwatch_client.delete_alarms(AlarmNames=["HighResourceUsage"])
