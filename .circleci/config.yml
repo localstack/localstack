@@ -388,7 +388,7 @@ jobs:
             # Push to Docker Hub
             PLATFORM="amd64" make docker-push-master-all
             # Push to Amazon Public ECR
-            PLATFORM="amd64" SOURCE_IMAGE_NAME="localstack/localstack-light" TARGET_IMAGE_NAME="public.ecr.aws/localstack/localstack" make docker-push-master
+            PLATFORM="amd64" SOURCE_IMAGE_NAME="localstack/localstack" TARGET_IMAGE_NAME="public.ecr.aws/localstack/localstack" make docker-push-master
             PLATFORM="amd64" SOURCE_IMAGE_NAME="localstack/localstack-pro" TARGET_IMAGE_NAME="public.ecr.aws/localstack/localstack-pro" make docker-push-master
       # Load and push per architecture (load overwrites the previous ones)
       - run:
@@ -405,7 +405,7 @@ jobs:
             # Push to Docker Hub
             PLATFORM="arm64" make docker-push-master-all
             # Push to Amazon Public ECR
-            PLATFORM="arm64" SOURCE_IMAGE_NAME="localstack/localstack-light" TARGET_IMAGE_NAME="public.ecr.aws/localstack/localstack" make docker-push-master
+            PLATFORM="arm64" SOURCE_IMAGE_NAME="localstack/localstack" TARGET_IMAGE_NAME="public.ecr.aws/localstack/localstack" make docker-push-master
             PLATFORM="arm64" SOURCE_IMAGE_NAME="localstack/localstack-pro" TARGET_IMAGE_NAME="public.ecr.aws/localstack/localstack-pro" make docker-push-master
       - run:
           name: Create multi-platform manifests - full
