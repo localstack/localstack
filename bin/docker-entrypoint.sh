@@ -23,17 +23,16 @@ if [[ $LOCALSTACK_API_KEY ]] && [[ ! -f /usr/lib/localstack/.pro-version ]]; the
     echo ""
 fi
 if [[ -f /usr/lib/localstack/.light-version ]] || [[ -f /usr/lib/localstack/.full-version ]]; then
-    echo "ERROR"
+    echo "WARNING"
     echo "============================================================================"
     echo "  It seems you are using a deprecated image (-light or -full image)."
     echo "  Future versions will not be supplied in these image tags."
-    echo "  To fix this error, use localstack/localstack-pro or localstack/localstack "
-    echo "  instead."
+    echo "  To fix this warning, use localstack/localstack-pro or "
+    echo "  localstack/localstack instead."
     echo ""
-    echo "  See: <deprecation-gh-issue>"
+    echo "  See: https://github.com/localstack/localstack/issues/7257"
     echo "============================================================================"
     echo ""
-    exit 1
 fi
 
 # FIXME: remove with 2.0
