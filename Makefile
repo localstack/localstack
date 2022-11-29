@@ -72,7 +72,7 @@ docker-image-stats: 	  ## TODO remove when image size is acceptable
 	docker history $(IMAGE_NAME_FULL)
 
 # By default we export the full image
-TAG ?= $(IMAGE_NAME_FULL)
+TAG ?= $(IMAGE_NAME)
 # By default we use no suffix
 EXPORT_SUFFIX ?=
 docker-save-image: 		  ## Export the built Docker image
@@ -81,11 +81,14 @@ docker-save-image: 		  ## Export the built Docker image
 docker-save-image-light:
 	make EXPORT_SUFFIX="-light" TAG=$(IMAGE_NAME_LIGHT) docker-save-image
 
+docker-save-image-full:
+	make EXPORT_SUFFIX="-full" TAG=$(IMAGE_NAME_FULL) docker-save-image
+
 docker-save-image-pro:
 	make EXPORT_SUFFIX="-pro" TAG=$(IMAGE_NAME_PRO) docker-save-image
 
-# By default we export the full image
-TAG ?= $(IMAGE_NAME_FULL)
+# By default we export the community image
+TAG ?= $(IMAGE_NAME)
 # By default we load the result to the docker daemon
 DOCKER_BUILD_FLAGS ?= "--load"
 DOCKERFILE ?= "./Dockerfile"
@@ -107,9 +110,9 @@ docker-build-light: 	  ## Build Light Docker image
 	make DOCKER_BUILD_FLAGS="--build-arg IMAGE_TYPE=light --load" \
 	  TAG=$(IMAGE_NAME_LIGHT) docker-build
 
-docker-build-community:   ## Build Community Docker image
-	make DOCKER_BUILD_FLAGS="--build-arg IMAGE_TYPE=community --load" \
-	  TAG=$(IMAGE_NAME) docker-build
+docker-build-full:   ## Build Full Docker image
+	make DOCKER_BUILD_FLAGS="--build-arg IMAGE_TYPE=full --load" \
+	  TAG=$(IMAGE_NAME_FULL) docker-build
 
 docker-build-pro: 	  	  ## Build Pro Docker image
 	make DOCKER_BUILD_FLAGS="--build-arg IMAGE_TYPE=pro --load" \

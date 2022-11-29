@@ -212,23 +212,35 @@ jobs:
           at: /tmp/workspace
       - run:
           name: Build full docker image
-          command: make docker-build
+          command: make docker-build-full
       - run:
           name: Save full docker image
-          command: PLATFORM="<< parameters.platform >>" make docker-save-image
+          command: PLATFORM="<< parameters.platform >>" make docker-save-image-full
       - when:
           condition:
             equal: [ master, << pipeline.git.branch >> ]
           steps:
             - run:
+                name: Build community docker image
+                command: make docker-build
+            - run:
                 name: Build light docker image
                 command: make docker-build-light
+            - run:
+                name: Build pro docker image
+                command: make docker-build-pro
             - run:
                 name: Run pre-release smoke tests
                 command: make ci-pro-smoke-tests
             - run:
+                name: Save community docker image
+                command: PLATFORM="<< parameters.platform >>" make docker-save-image
+            - run:
                 name: Save light docker image
                 command: PLATFORM="<< parameters.platform >>" make docker-save-image-light
+            - run:
+                name: Save pro docker image
+                command: PLATFORM="<< parameters.platform >>" make docker-save-image-pro
       - persist_to_workspace:
           root:
             /tmp/workspace
@@ -259,7 +271,7 @@ jobs:
           at: /tmp/workspace
       - run:
           name: Load docker localstack-full image
-          command: docker load -i target/localstack-docker-image-<< parameters.platform >>.tar
+          command: docker load -i target/localstack-docker-image-full-<< parameters.platform >>.tar
       - run:
           name: Run integration tests
           # circleci split returns newline separated list, so `tr` is necessary to prevent problems in the Makefile
@@ -292,7 +304,7 @@ jobs:
           at: /tmp/workspace
       - run:
           name: Load docker localstack-full image
-          command: docker load -i target/localstack-docker-image-amd64.tar
+          command: docker load -i target/localstack-docker-image-full-amd64.tar
       - run:
           name: Run localstack
           command: |
@@ -373,7 +385,17 @@ jobs:
           name: Load docker image - amd64/full
           command: |
             # Load localstack/localstack-full:latest for AMD64
+            docker load -i target/localstack-docker-image-full-amd64.tar
+      - run:
+          name: Load docker image - amd64/community
+          command: |
+            # Load localstack/localstack:latest
             docker load -i target/localstack-docker-image-amd64.tar
+      - run:
+          name: Load docker image - amd64/pro
+          command: |
+            # Load localstack/localstack-pro:latest
+            docker load -i target/localstack-docker-image-pro-amd64.tar
       - run:
           name: Load docker image - amd64/light
           command: |
@@ -396,6 +418,12 @@ jobs:
           command: |
             # Load localstack/localstack-full:latest for ARM64
             docker load -i target/localstack-docker-image-arm64.tar
+      - run:
+          name: Load docker image - arm64/community
+          command: docker load -i target/localstack-docker-image-arm64.tar
+      - run:
+          name: Load docker image - arm64/pro
+          command: docker load -i target/localstack-docker-image-pro-arm64.tar
       - run:
           name: Load docker image - arm64/light
           command: docker load -i target/localstack-docker-image-light-arm64.tar
