@@ -17,17 +17,16 @@ fi
 # the Dockerfile creates .pro-version file for the pro image. When trying to activate pro features with any other
 # version, an error is printed.
 if [[ $LOCALSTACK_API_KEY ]] && [[ ! -f /usr/lib/localstack/.pro-version ]]; then
-    echo "ERROR"
+    echo "WARNING"
     echo "============================================================================"
     echo "  It seems you are using the LocalStack Pro version with the wrong image."
     echo "  Future versions will not support running LocalStack Pro with the base"
     echo "  image (localstack/localstack)"
-    echo "  To fix this error, use localstack/localstack-pro instead."
+    echo "  To fix this warning, use localstack/localstack-pro instead."
     echo ""
-    echo "  See: <deprecation-gh-issue>"
+    echo "  See: https://github.com/localstack/localstack/issues/7257"
     echo "============================================================================"
     echo ""
-    exit 1
 fi
 
 # FIXME: deprecation path for legacy directories
