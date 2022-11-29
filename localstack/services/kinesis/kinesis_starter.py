@@ -15,8 +15,7 @@ def start_kinesis(
     port=None, update_listener=None, asynchronous=None, persist_path: Optional[str] = None
 ) -> Server:
     """
-    Creates a singleton of a Kinesis server and starts it on a new thread. Uses either Kinesis Mock or Kinesalite
-    based on value of config.KINESIS_PROVIDER
+    Creates a singleton of a Kinesis server and starts it on a new thread. Uses Kinesis Mock
 
     :param persist_path: path to persist data to
     :param port: port to run server on. Selects an arbitrary available port if None.
