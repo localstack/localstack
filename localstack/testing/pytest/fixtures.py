@@ -1168,6 +1168,7 @@ def deploy_cfn_template(
         )
         change_set_id = response["Id"]
         stack_id = response["StackId"]
+        state.append({"stack_id": stack_id, "change_set_id": change_set_id})
 
         assert wait_until(is_change_set_created_and_available(change_set_id), _max_wait=60)
         cfn_client.execute_change_set(ChangeSetName=change_set_id)
@@ -1176,8 +1177,6 @@ def deploy_cfn_template(
         outputs = cfn_client.describe_stacks(StackName=stack_id)["Stacks"][0].get("Outputs", [])
 
         mapped_outputs = {o["OutputKey"]: o["OutputValue"] for o in outputs}
-
-        state.append({"stack_id": stack_id, "change_set_id": change_set_id})
 
         def _destroy_stack():
             cfn_client.delete_stack(StackName=stack_id)
