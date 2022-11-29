@@ -17,8 +17,6 @@ jsonpath-rw               | Apache License 2.0
 moto                      | Apache License 2.0
 requests                  | Apache License 2.0
 subprocess32              | PSF License
-**Node.js/npm modules:**  |
-kinesalite                | MIT License
 **Other tools:**          |
 Elasticsearch             | Apache License 2.0
 local-kms                 | MIT License
