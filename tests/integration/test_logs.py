@@ -18,7 +18,7 @@ from .awslambda.test_lambda import TEST_LAMBDA_LIBS, TEST_LAMBDA_PYTHON_ECHO
 logs_role = {
     "Statement": {
         "Effect": "Allow",
-        "Principal": {"Service": f"logs.{config.DEFAULT_REGION}.amazonaws.com"},
+        "Principal": {"Service": f"logs.{config.AWS_REGION_US_EAST_1}.amazonaws.com"},
         "Action": "sts:AssumeRole",
     }
 }
@@ -205,9 +205,9 @@ class TestCloudWatchLogs:
         result = lambda_client.add_permission(
             FunctionName=test_lambda_name,
             StatementId=test_lambda_name,
-            Principal=f"logs.{config.DEFAULT_REGION}.amazonaws.com",
+            Principal=f"logs.{config.AWS_REGION_US_EAST_1}.amazonaws.com",
             Action="lambda:InvokeFunction",
-            SourceArn=f"arn:aws:logs:{config.DEFAULT_REGION}:{account_id}:log-group:{logs_log_group}:*",
+            SourceArn=f"arn:aws:logs:{config.AWS_REGION_US_EAST_1}:{account_id}:log-group:{logs_log_group}:*",
             SourceAccount=account_id,
         )
 
@@ -218,7 +218,7 @@ class TestCloudWatchLogs:
             filterName="test",
             filterPattern="",
             destinationArn=arns.lambda_function_arn(
-                test_lambda_name, account_id=account_id, region_name=config.DEFAULT_REGION
+                test_lambda_name, account_id=account_id, region_name=config.AWS_REGION_US_EAST_1
             ),
         )
         snapshot.match("put_subscription_filter", result)
