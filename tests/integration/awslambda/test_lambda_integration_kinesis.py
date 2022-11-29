@@ -122,6 +122,7 @@ class TestKinesisSource:
         records = events[0]
         snapshot.match("kinesis_records", records)
 
+    # FIXME remove usage of this config value with 2.0
     @patch.object(config, "SYNCHRONOUS_KINESIS_EVENTS", False)
     @pytest.mark.aws_validated
     @pytest.mark.skipif(
