@@ -183,7 +183,10 @@ class TestLambdaDestinationSqs:
         behavior test, we don't really care about any API surface here right now
 
         this is quite long since lambda waits 1 minute between the invoke and first retry and 2 minutes between the first retry and the second retry!
-        # TODO: make 1st and 2nd retry time configurable
+        TODO: make 1st and 2nd retry time configurable
+        TODO: add snapshot test for 1 retry
+        TODO: add snapshot test for 1 retry => then success
+        TODO: test if invocation/request ID changes between retries
         """
         # setup
         queue_name = f"destination-queue-{short_uid()}"
