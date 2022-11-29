@@ -6,6 +6,7 @@ import requests
 
 from localstack import constants
 from localstack.utils.common import short_uid
+from localstack.utils.files import load_file
 from localstack.utils.run import to_str
 from localstack.utils.sync import wait_until
 from localstack.utils.testutil import create_zip_file
@@ -268,3 +269,30 @@ def test_account(deploy_cfn_template, apigateway_client, is_stack_deleted):
     wait_until(is_stack_deleted(stack.stack_name), strategy="linear")
     account_info = apigateway_client.get_account()
     assert account_info["cloudwatchRoleArn"] == stack.outputs["RoleArn"]
+
+
+@pytest.mark.aws_validated
+def test_update_usage_plan(deploy_cfn_template, cfn_client, apigateway_client):
+    stack = deploy_cfn_template(
+        template_path=os.path.join(
+            os.path.dirname(__file__), "../../templates/apigateway_usage_plan.yml"
+        ),
+        parameters={"QuotaLimit": "5000", "RestApiName": f"api-{short_uid()}"},
+    )
+
+    cfn_client.update_stack(
+        StackName=stack.stack_name,
+        Parameters=[
+            {"ParameterKey": "QuotaLimit", "ParameterValue": "7000"},
+            {"ParameterKey": "RestApiName", "UsePreviousValue": True},
+        ],
+        TemplateBody=load_file(
+            os.path.join(os.path.dirname(__file__), "../../templates/apigateway_usage_plan.yml")
+        ),
+    )
+
+    cfn_client.get_waiter("stack_update_complete").wait(StackName=stack.stack_name)
+
+    usage_plan = apigateway_client.get_usage_plan(usagePlanId=stack.outputs["UsagePlanId"])
+
+    assert 7000 == usage_plan["quota"]["limit"]

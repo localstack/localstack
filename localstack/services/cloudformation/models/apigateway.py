@@ -755,4 +755,4 @@ class GatewayAccount(GenericBaseModel):
                 args[2], resource["LogicalResourceId"]
             )
 
-        return {"create": {"function": _create}, "update": {"function": _create}}
+        return {"create": {"function": _create}}
