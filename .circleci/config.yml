@@ -417,7 +417,7 @@ jobs:
           name: Load docker image - arm64/full
           command: |
             # Load localstack/localstack-full:latest for ARM64
-            docker load -i target/localstack-docker-image-arm64.tar
+            docker load -i target/localstack-docker-image-full-arm64.tar
       - run:
           name: Load docker image - arm64/community
           command: docker load -i target/localstack-docker-image-arm64.tar
