@@ -16,6 +16,7 @@ from localstack.services.awslambda.lambda_api import do_set_function_code, use_d
 from localstack.services.awslambda.lambda_utils import LAMBDA_RUNTIME_PYTHON39
 from localstack.services.generic_proxy import ProxyListener
 from localstack.services.infra import start_proxy
+from localstack.testing.aws.lambda_utils import is_new_provider
 from localstack.utils import testutil
 from localstack.utils.aws import aws_stack
 from localstack.utils.common import (
@@ -47,6 +48,10 @@ TEST_LAMBDA_PYTHON3_MULTIPLE_CREATE2 = os.path.join(
 )
 
 LOG = logging.getLogger(__name__)
+
+pytestmark = pytest.mark.skipif(
+    condition=is_new_provider(), reason="only relevant for old provider"
+)
 
 
 class TestLambdaFallbackUrl(unittest.TestCase):
@@ -89,6 +94,8 @@ class TestLambdaFallbackUrl(unittest.TestCase):
         self.assertEqual(items_before + 3, items_after)
 
     def test_forward_to_fallback_url_http(self):
+        lambda_client = aws_stack.create_external_boto_client("lambda")
+
         class MyUpdateListener(ProxyListener):
             def forward_request(self, method, path, data, headers):
                 records.append({"data": data, "headers": headers, "method": method, "path": path})
@@ -98,7 +105,7 @@ class TestLambdaFallbackUrl(unittest.TestCase):
         local_port = get_free_tcp_port()
         proxy = start_proxy(local_port, backend_url=None, update_listener=MyUpdateListener())
 
-        local_url = "%s://localhost:%s" % (get_service_protocol(), local_port)
+        local_url = f"{get_service_protocol()}://localhost:{local_port}"
 
         # test 1: forward to LAMBDA_FALLBACK_URL
         records = []
@@ -109,12 +116,13 @@ class TestLambdaFallbackUrl(unittest.TestCase):
         self.assertEqual(3, items_after)
 
         # create test Lambda
-        lambda_name = "test-%s" % short_uid()
+        lambda_name = f"test-{short_uid()}"
         testutil.create_lambda_function(
             handler_file=TEST_LAMBDA_PYTHON,
             func_name=lambda_name,
             libs=TEST_LAMBDA_LIBS,
         )
+        lambda_client.get_waiter("function_active_v2").wait(FunctionName=lambda_name)
 
         # test 2: forward to LAMBDA_FORWARD_URL
         records = []
@@ -136,7 +144,6 @@ class TestLambdaFallbackUrl(unittest.TestCase):
         self.assertEqual(lambda_result, json.loads(response_payload))
 
         # clean up / shutdown
-        lambda_client = aws_stack.create_external_boto_client("lambda")
         lambda_client.delete_function(FunctionName=lambda_name)
         proxy.stop()
 
@@ -180,6 +187,7 @@ class TestDockerExecutors(unittest.TestCase):
                 func_name=function_name,
             )
             lambda_client = aws_stack.create_external_boto_client("lambda")
+            lambda_client.get_waiter("function_active_v2").wait(FunctionName=function_name)
             result = lambda_client.invoke(FunctionName=function_name, Payload="{}")
             self.assertEqual(200, result["ResponseMetadata"]["HTTPStatusCode"])
             result_data = result["Payload"].read()
@@ -203,6 +211,7 @@ class TestDockerExecutors(unittest.TestCase):
             libs=TEST_LAMBDA_LIBS,
             envvars={"Hello": "World"},
         )
+        self.lambda_client.get_waiter("function_active_v2").wait(FunctionName=func_name)
 
         # test first invocation
         result = self.lambda_client.invoke(FunctionName=func_name, Payload=b"{}")
@@ -245,6 +254,7 @@ class TestDockerExecutors(unittest.TestCase):
             libs=TEST_LAMBDA_LIBS,
             envvars={"Hello": "World"},
         )
+        self.lambda_client.get_waiter("function_active_v2").wait(FunctionName=func_name)
 
         self.assertEqual(0, len(executor.get_all_container_names()))
         self.assertDictEqual({}, executor.function_invoke_times)
@@ -313,6 +323,7 @@ class TestDockerExecutors(unittest.TestCase):
             libs=TEST_LAMBDA_LIBS,
             envvars={"Hello": "World"},
         )
+        self.lambda_client.get_waiter("function_active_v2").wait(FunctionName=func_name)
 
         self.assertEqual(0, len(executor.get_all_container_names()))
 
@@ -356,6 +367,7 @@ class TestLocalExecutors(unittest.TestCase):
                 runtime=LAMBDA_RUNTIME_PYTHON39,
                 handler="handler1.handler",
             )
+            lambda_client.get_waiter("function_active_v2").wait(FunctionName=lambda_name1)
 
             lambda_name2 = "test2-%s" % short_uid()
             testutil.create_lambda_function(
@@ -364,6 +376,7 @@ class TestLocalExecutors(unittest.TestCase):
                 runtime=LAMBDA_RUNTIME_PYTHON39,
                 handler="handler2.handler",
             )
+            lambda_client.get_waiter("function_active_v2").wait(FunctionName=lambda_name2)
 
             result1 = lambda_client.invoke(FunctionName=lambda_name1, Payload=b"{}")
             result_data1 = result1["Payload"].read()

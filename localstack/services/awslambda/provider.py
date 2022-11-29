@@ -3,6 +3,7 @@ import dataclasses
 import datetime
 import json
 import logging
+import os
 import threading
 import time
 from typing import IO
@@ -174,7 +175,9 @@ from localstack.services.awslambda.lambda_utils import validate_filters
 from localstack.services.awslambda.urlrouter import FunctionUrlRouter
 from localstack.services.edge import ROUTER
 from localstack.services.plugins import ServiceLifecycleHook
+from localstack.utils.aws import aws_stack
 from localstack.utils.collections import PaginatedList
+from localstack.utils.files import load_file
 from localstack.utils.strings import get_random_hex, long_uid, short_uid, to_bytes, to_str
 
 LOG = logging.getLogger(__name__)
@@ -857,9 +860,35 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
         function_name, qualifier = api_utils.get_name_and_qualifier(
             function_name, qualifier, context.region
         )
-        self._get_function(
-            function_name=function_name, account_id=context.account_id, region=context.region
-        )
+        try:
+            self._get_function(
+                function_name=function_name, account_id=context.account_id, region=context.region
+            )
+        except ResourceNotFoundException:
+            # remove this block when AWS updates the stepfunctions image to support aws-sdk invocations
+            if "localstack-internal-awssdk" in function_name:
+                # init aws-sdk stepfunctions task handler
+                from localstack.services.stepfunctions.packages import stepfunctions_local_package
+
+                code = load_file(
+                    os.path.join(
+                        stepfunctions_local_package.get_installed_dir(),
+                        "localstack-internal-awssdk",
+                        "awssdk.zip",
+                    ),
+                    mode="rb",
+                )
+                lambda_client = aws_stack.connect_to_service("lambda")
+                lambda_client.create_function(
+                    FunctionName="localstack-internal-awssdk",
+                    Runtime=Runtime.nodejs16_x,
+                    Handler="index.handler",
+                    Code={"ZipFile": code},
+                    Role="arn:aws:iam::{account_id}:role/lambda-test-role".format(
+                        account_id=context.account_id
+                    ),  # TODO: proper role
+                )
+
         time_before = time.perf_counter()
         result = self.lambda_service.invoke(
             function_name=function_name,
@@ -1286,7 +1315,16 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
         max_items: MaxListItems = None,
     ) -> ListEventSourceMappingsResponse:
         state = lambda_stores[context.account_id][context.region]
-        esms = PaginatedList(state.event_source_mappings.values())
+
+        esms = state.event_source_mappings.values()
+
+        if event_source_arn:  # TODO: validate pattern
+            esms = [e for e in esms if e["EventSourceArn"] == event_source_arn]
+
+        if function_name:
+            esms = [e for e in esms if function_name in e["FunctionArn"]]
+
+        esms = PaginatedList(esms)
         page, token = esms.get_page(
             lambda x: x["UUID"],
             marker,

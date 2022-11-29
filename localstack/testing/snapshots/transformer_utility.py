@@ -105,6 +105,9 @@ class TransformerUtility:
         """
         return [
             TransformerUtility.key_value("FunctionName"),
+            TransformerUtility.key_value(
+                "CodeSize", value_replacement="<code-size>", reference_replacement=False
+            ),
             TransformerUtility.jsonpath(
                 jsonpath="$..Code.Location",
                 value_replacement="<location>",

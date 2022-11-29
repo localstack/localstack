@@ -1605,7 +1605,7 @@ def create_secret(secretsmanager_client):
     yield _create_parameter
 
     for item in items:
-        secretsmanager_client.delete_secret(SecretId=item)
+        secretsmanager_client.delete_secret(SecretId=item, ForceDeleteWithoutRecovery=True)
 
 
 # TODO Figure out how to make cert creation tests pass against AWS.

@@ -10,12 +10,11 @@ import pytest
 from botocore.exceptions import ClientError
 
 from localstack import config
+from localstack.aws.api.lambda_ import Runtime
 from localstack.services.apigateway.helpers import extract_query_string_params
-from localstack.services.awslambda.lambda_utils import LAMBDA_RUNTIME_PYTHON36
 from localstack.services.events.provider import _get_events_tmp_dir
 from localstack.services.generic_proxy import ProxyListener
 from localstack.services.infra import start_proxy
-from localstack.utils import testutil
 from localstack.utils.aws import arns, aws_stack, resources
 from localstack.utils.aws.aws_responses import requests_response
 from localstack.utils.common import (
@@ -439,16 +438,22 @@ class TestEvents:
         self.cleanup(bus_name_2)
         sqs_client.delete_queue(QueueUrl=queue_url)
 
-    def test_put_events_with_target_lambda(self, events_client):
-        rule_name = "rule-{}".format(short_uid())
-        function_name = "lambda-func-{}".format(short_uid())
-        target_id = "target-{}".format(short_uid())
-        bus_name = "bus-{}".format(short_uid())
+    def test_put_events_with_target_lambda(
+        self, events_client, lambda_client, create_lambda_function, cleanups
+    ):
+        rule_name = f"rule-{short_uid()}"
+        function_name = f"lambda-func-{short_uid()}"
+        target_id = f"target-{short_uid()}"
+        bus_name = f"bus-{short_uid()}"
 
-        rs = testutil.create_lambda_function(
+        # clean up
+        cleanups.append(lambda: lambda_client.delete_function(FunctionName=function_name))
+        cleanups.append(lambda: self.cleanup(bus_name, rule_name, target_id))
+
+        rs = create_lambda_function(
             handler_file=TEST_LAMBDA_PYTHON_ECHO,
             func_name=function_name,
-            runtime=LAMBDA_RUNTIME_PYTHON36,
+            runtime=Runtime.python3_9,
         )
 
         func_arn = rs["CreateFunctionResponse"]["FunctionArn"]
@@ -492,10 +497,6 @@ class TestEvents:
         actual_event = events[0]
         self.assert_valid_event(actual_event)
         assert actual_event["detail"] == EVENT_DETAIL
-
-        # clean up
-        testutil.delete_lambda_function(function_name)
-        self.cleanup(bus_name, rule_name, target_id)
 
     def test_rule_disable(self, events_client):
         rule_name = "rule-{}".format(short_uid())

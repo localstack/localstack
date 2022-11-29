@@ -12,7 +12,10 @@ from tests.integration.awslambda.test_lambda import TEST_LAMBDA_LIBS, TEST_LAMBD
 
 
 class TestLambdaDLQ:
-    @pytest.mark.skip_snapshot_verify(condition=is_old_provider)
+    @pytest.mark.skip_snapshot_verify(paths=["$..DeadLetterConfig", "$..result"])
+    @pytest.mark.skip_snapshot_verify(
+        condition=is_old_provider,
+    )
     @pytest.mark.aws_validated
     def test_dead_letter_queue(
         self,
@@ -77,11 +80,11 @@ class TestLambdaDLQ:
         snapshot.match("invoke_result", invoke_result)
 
         log_result = invoke_result["LogResult"]
-        raw_logs = to_str(base64.b64decode(to_str(log_result)))
+        raw_logs = to_str(base64.b64decode(log_result))
         log_lines = raw_logs.splitlines()
         snapshot.match(
             "log_result",
-            {"log_result": [line for line in log_lines if not line.startswith("REPORT")]},
+            {"result": [line for line in log_lines if not line.startswith("REPORT")]},
         )
 
 

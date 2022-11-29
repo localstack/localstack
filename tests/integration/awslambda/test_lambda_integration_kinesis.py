@@ -337,15 +337,18 @@ class TestKinesisSource:
             "$..Messages..Body.KinesisBatchInfo.shardId",
             "$..Messages..Body.KinesisBatchInfo.streamArn",
             "$..Messages..Body.requestContext.approximateInvokeCount",
-            "$..Messages..Body.requestContext.functionArn",
             "$..Messages..Body.responseContext.statusCode",
+        ],
+    )
+    @pytest.mark.skip_snapshot_verify(
+        paths=[
+            "$..Messages..Body.requestContext.functionArn",
             # destination config arn missing, which leads to those having wrong resource ids
             "$..EventSourceArn",
             "$..FunctionArn",
         ],
         condition=is_old_provider,
     )
-    @pytest.mark.skipif(condition=is_new_provider(), reason="destinations not yet implemented")
     @pytest.mark.aws_validated
     def test_kinesis_event_source_mapping_with_on_failure_destination_config(
         self,

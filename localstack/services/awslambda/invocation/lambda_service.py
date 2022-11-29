@@ -85,8 +85,8 @@ class LambdaService:
         """
         LOG.debug("Stopping version %s", qualified_arn)
         version_manager = self.lambda_running_versions.pop(
-            qualified_arn
-        ) or self.lambda_starting_versions.pop(qualified_arn)
+            qualified_arn, self.lambda_starting_versions.pop(qualified_arn, None)
+        )
         if not version_manager:
             raise ValueError(f"Unable to find version manager for {qualified_arn}")
         self.task_executor.submit(version_manager.stop)
@@ -182,6 +182,12 @@ class LambdaService:
         qualifier = qualifier or "$LATEST"
         state = lambda_stores[account_id][region]
         function = state.functions.get(function_name)
+
+        if function is None:
+            raise ResourceNotFoundException(
+                f"Function not found: {invoked_arn}", Type="User"
+            )  # TODO: test
+
         if qualifier_is_alias(qualifier):
             alias = function.aliases.get(qualifier)
             if not alias:
