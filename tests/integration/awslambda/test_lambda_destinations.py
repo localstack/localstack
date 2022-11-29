@@ -167,6 +167,7 @@ class TestLambdaDestinationSqs:
         receive_message_result = retry(receive_message, retries=120, sleep=3)
         snapshot.match("receive_message_result", receive_message_result)
 
+    @pytest.mark.skipif(condition=is_old_provider(), reason="only works with new provider")
     @pytest.mark.aws_validated
     def test_retries(
         self,
@@ -215,10 +216,10 @@ class TestLambdaDestinationSqs:
         assert 200 <= invoke_result["StatusCode"] < 300
 
         def get_filtered_event_count() -> int:
-            log_events = logs_client.filter_log_events(logGroupName=f"/aws/lambda/{fn_name}")[
-                "events"
-            ]
-            filtered_log_events = [e for e in log_events if message_id in e["message"]]
+            filter_result = retry(
+                logs_client.filter_log_events, sleep=2.0, logGroupName=f"/aws/lambda/{fn_name}"
+            )
+            filtered_log_events = [e for e in filter_result["events"] if message_id in e["message"]]
             return len(filtered_log_events)
 
         # between 0 and 1 min the lambda should NOT have been retried yet
@@ -235,7 +236,7 @@ class TestLambdaDestinationSqs:
             msgs = sqs_client.receive_message(QueueUrl=queue_url, AttributeNames=["All"])
             return len(msgs["Messages"]) == 1
 
-        assert wait_until(msg_in_queue, wait=6)
+        assert wait_until(msg_in_queue)
 
         # 2. there should be only one event stream (re-use of environment)
         #    technically not guaranteed but should be nearly 100%
@@ -244,6 +245,99 @@ class TestLambdaDestinationSqs:
 
         # 3. the lambda should have been called 3 times (correlation via custom message id)
         assert get_filtered_event_count() == 3
+
+        # verify the event ID is the same in all calls
+        log_events = logs_client.filter_log_events(logGroupName=f"/aws/lambda/{fn_name}")["events"]
+
+        # only get messages with the printed event
+        request_ids = [
+            json.loads(e["message"])["aws_request_id"]
+            for e in log_events
+            if message_id in e["message"]
+        ]
+
+        assert len(request_ids) == 3  # gather invocation ID from all 3 invocations
+        assert len(set(request_ids)) == 1  # all 3 are equal
+
+    @pytest.mark.aws_validated
+    def test_maxretryattempts(
+        self,
+        lambda_client,
+        snapshot,
+        create_lambda_function,
+        sqs_create_queue,
+        sqs_queue_arn,
+        lambda_su_role,
+        logs_client,
+        sqs_client,
+    ):
+        """
+        Behavior test for MaximumRetryAttempts in EventInvokeConfig
+
+        Noteworthy observation:
+        * lambda doesn't even wait for the full 60s before the OnFailure destination / DLQ is triggered
+        * the runtime of this test is extremely unpredictable
+
+        """
+        queue_name = f"destination-queue-{short_uid()}"
+        fn_name = f"retry-fn-{short_uid()}"
+        queue_url = sqs_create_queue(QueueName=queue_name)
+        queue_arn = sqs_queue_arn(queue_url)
+
+        create_lambda_function(
+            handler_file=os.path.join(os.path.dirname(__file__), "./functions/lambda_echofail.py"),
+            func_name=fn_name,
+            libs=TEST_LAMBDA_LIBS,
+            role=lambda_su_role,
+        )
+        lambda_client.put_function_event_invoke_config(
+            FunctionName=fn_name,
+            MaximumRetryAttempts=2,  # with 2 retries, the last retry will happen when age is > 60s
+            MaximumEventAgeInSeconds=60,
+            DestinationConfig={"OnFailure": {"Destination": queue_arn}},
+        )
+
+        message_id = f"retry-msg-{short_uid()}"
+        lambda_client.invoke(
+            FunctionName=fn_name,
+            Payload=to_bytes(json.dumps({"message": message_id})),
+            InvocationType="Event",  # important, otherwise destinations won't be triggered
+        )
+
+        def get_filtered_event_count() -> int:
+            filter_result = retry(
+                logs_client.filter_log_events, sleep=2.0, logGroupName=f"/aws/lambda/{fn_name}"
+            )
+            filtered_log_events = [e for e in filter_result["events"] if message_id in e["message"]]
+            return len(filtered_log_events)
+
+        # lambda doesn't retry because the first delay already is 60s
+        # invocation + 60s (1st delay) > 60s (configured max)
+        def msg_in_queue():
+            msgs = sqs_client.receive_message(QueueUrl=queue_url, AttributeNames=["All"])
+            result = len(msgs["Messages"]) == 1
+            if result:
+                sqs_client.delete_message(
+                    QueueUrl=queue_url, ReceiptHandle=msgs["Messages"][0]["ReceiptHandle"]
+                )
+            return result
+
+        assert wait_until(msg_in_queue, strategy="linear", wait=5, max_retries=20)
+        assert get_filtered_event_count() == 1
+
+        # now we increase the max event age to give it a bit of a buffer for the actual lambda execution (60s + 30s buffer = 90s)
+        # one retry should now be issued
+        lambda_client.update_function_event_invoke_config(
+            FunctionName=fn_name, MaximumEventAgeInSeconds=90
+        )
+        lambda_client.invoke(
+            FunctionName=fn_name,
+            Payload=to_bytes(json.dumps({"message": message_id})),
+            InvocationType="Event",  # important, otherwise destinations won't be triggered
+        )
+
+        assert wait_until(msg_in_queue, strategy="linear", wait=5, max_retries=20)
+        assert get_filtered_event_count() == 3  # 2 (invoke + 1 retry) + 1 (from before)
 
 
 # class TestLambdaDestinationSns:
