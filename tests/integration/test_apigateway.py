@@ -866,7 +866,6 @@ class TestAPIGateway:
             "uri",
             "cacheNamespace",
             "timeoutInMillis",
-            "contentHandling",
             "requestParameters",
         ]
         assert 201 == rs["ResponseMetadata"]["HTTPStatusCode"]
@@ -1752,7 +1751,7 @@ class TestAPIGateway:
 
         url = path_based_url(api_id=api_id, stage_name=self.TEST_STAGE_NAME, path="/")
         result = requests.options(url)
-        assert result.status_code < 400
+        assert result.ok
         assert "Origin" == result.headers.get("vary")
         assert "POST,OPTIONS" == result.headers.get("Access-Control-Allow-Methods")
 
@@ -2144,32 +2143,30 @@ def test_import_swagger_api(apigateway_client):
     methods = {kk[0] for k, v in resource_methods.items() for kk in v.items()}
     assert methods == {"POST", "OPTIONS", "GET"}
 
-    assert resource_methods.get("/").get("GET")["methodResponses"] == {
-        "200": {
-            "statusCode": "200",
-            "responseModels": None,
-            "responseParameters": {"method.response.header.Content-Type": "'text/html'"},
-        }
+    response_resource = resource_methods.get("/").get("GET").method_responses.get("200")
+    assert response_resource.to_json() == {
+        "statusCode": "200",
+        "responseModels": None,
+        "responseParameters": {"method.response.header.Content-Type": "'text/html'"},
     }
 
-    assert resource_methods.get("pets").get("GET")["methodResponses"] == {
-        "200": {
-            "responseModels": {
-                "application/json": {
-                    "items": {
-                        "properties": {
-                            "id": {"type": "integer"},
-                            "price": {"type": "number"},
-                            "type": {"type": "string"},
-                        },
-                        "type": "object",
+    method_response_resource = resource_methods.get("pets").get("GET").method_responses.get("200")
+    assert method_response_resource.to_json() == {
+        "responseModels": {
+            "application/json": {
+                "items": {
+                    "properties": {
+                        "id": {"type": "integer"},
+                        "price": {"type": "number"},
+                        "type": {"type": "string"},
                     },
-                    "type": "array",
-                }
-            },
-            "responseParameters": {"method.response.header.Access-Control-Allow-Origin": "'*'"},
-            "statusCode": "200",
-        }
+                    "type": "object",
+                },
+                "type": "array",
+            }
+        },
+        "responseParameters": {"method.response.header.Access-Control-Allow-Origin": "'*'"},
+        "statusCode": "200",
     }
 
 

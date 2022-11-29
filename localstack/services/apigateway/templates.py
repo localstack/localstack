@@ -215,7 +215,7 @@ class ResponseTemplates(Templates):
     def render(self, api_context: ApiInvocationContext, **kwargs) -> Union[bytes, str]:
         # XXX: keep backwards compatibility until we migrate all integrations to this new classes
         # api_context contains a response object that we want slowly remove from it
-        data = kwargs["response"] if "response" in kwargs else ""
+        data = kwargs.get("response", "")
         response = data or api_context.response
         integration = api_context.integration
         # we set context data with the response content because later on we use context data as
