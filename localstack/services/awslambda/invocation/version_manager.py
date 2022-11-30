@@ -466,11 +466,6 @@ class LambdaVersionManager(ServiceEndpoint):
         invocation_result.executed_version = self.function_version.id.qualifier
         executor = running_invocation.executor
 
-        # mark executor available again
-        executor.invocation_done()
-        self.available_environments.put(executor)
-        self.store_logs(invocation_result=invocation_result, executor=executor)
-
         if running_invocation.invocation.invocation.invocation_type == "RequestResponse":
             running_invocation.invocation.result_future.set_result(invocation_result)
         else:
@@ -480,6 +475,12 @@ class LambdaVersionManager(ServiceEndpoint):
                 original_invocation=running_invocation,
                 original_payload=running_invocation.invocation.invocation.payload,
             )
+
+        self.store_logs(invocation_result=invocation_result, executor=executor)
+
+        # mark executor available again
+        executor.invocation_done()
+        self.available_environments.put(executor)
 
     # Service Endpoint implementation
     def invocation_result(self, invoke_id: str, invocation_result: InvocationResult) -> None:
