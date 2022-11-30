@@ -230,9 +230,9 @@ jobs:
              equal: [ true, true ]
 #            equal: [ master, << pipeline.git.branch >> ]
           steps:
-#            - run:
-#                name: Run pre-release smoke tests
-#                command: make ci-pro-smoke-tests
+            - run:
+                name: Run pre-release smoke tests
+                command: echo "make ci-pro-smoke-tests"
       - persist_to_workspace:
           root:
             /tmp/workspace
