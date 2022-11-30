@@ -11,6 +11,8 @@ linkTitle: "LocalStack Coverage"
 weight: 100
 description: >
   Overview of the implemented AWS APIs in LocalStack
+aliases:
+  - /localstack/coverage/
 ---
 \n\n
 """
