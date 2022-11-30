@@ -188,7 +188,8 @@ class Stack:
         if outputs:
             result["Outputs"] = outputs
         params = self.stack_parameters()
-        result["Parameters"] = params or []
+        if params:
+            result["Parameters"] = params
         if not result.get("DriftInformation"):
             result["DriftInformation"] = {"StackDriftStatus": "NOT_CHECKED"}
         for attr in ["Capabilities", "Tags", "NotificationARNs"]:
@@ -719,6 +720,7 @@ class CloudformationProvider(CloudformationApi):
             stack = Stack(request, template)
 
         result: GetTemplateSummaryOutput = stack.describe_details()
+        result["Parameters"] = result.get("Parameters") or []
         id_summaries = defaultdict(list)
         for resource_id, resource in stack.template_resources.items():
             res_type = resource["Type"]
