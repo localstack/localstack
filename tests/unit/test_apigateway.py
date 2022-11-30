@@ -195,7 +195,7 @@ class ApiGatewayPathsTest(unittest.TestCase):
         self.assertFalse(validator.is_request_valid())
 
     def _mock_client(self):
-        return Mock(boto3.client("apigateway", region_name=config.DEFAULT_REGION))
+        return Mock(boto3.client("apigateway", region_name=config.AWS_REGION_US_EAST_1))
 
 
 def test_render_template_values():
