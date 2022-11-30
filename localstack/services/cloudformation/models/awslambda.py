@@ -274,15 +274,21 @@ class LambdaPermission(GenericBaseModel):
                 result["StatementId"] = f"{prefix}-{resource_id}-{suffix}"
             else:
                 result["StatementId"] = f"{resource_id}-{suffix}"
-
             return result
+
+        def get_delete_params(params, **kwargs):
+            return {
+                "FunctionName": params.get("FunctionName"),
+                "StatementId": kwargs["resources"][kwargs["resourcesId"]]["Sid"],
+            }
 
         return {
             "create": {
                 "function": "add_permission",
                 "parameters": lambda_permission_params,
                 "result_handler": _store_physical_id,
-            }
+            },
+            "delete": {"function": "remove_permission", "parameters": get_delete_params},
         }
 
 
