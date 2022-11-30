@@ -181,7 +181,7 @@ docker-create-push-manifests:	## Create and push manifests for a docker image (d
 			--amend $(MANIFEST_IMAGE_NAME):$(MAJOR_VERSION).$(MINOR_VERSION).$(PATCH_VERSION)-arm64 && \
 				echo "docker manifest push $(MANIFEST_IMAGE_NAME):$(IMAGE_TAG)" && \
 				echo "docker manifest push $(MANIFEST_IMAGE_NAME):$(MAJOR_VERSION).$(MINOR_VERSION)" && \
-				echo "docker manifest push $(MANIFEST_IMAGE_NAME):$(MAJOR_VERSION).$(MINOR_VERSION).$(PATCH_VERSION)))" && \
+				echo "docker manifest push $(MANIFEST_IMAGE_NAME):$(MAJOR_VERSION).$(MINOR_VERSION).$(PATCH_VERSION)")) && \
 		echo "docker manifest push $(MANIFEST_IMAGE_NAME):latest" \
 	)
 
