@@ -419,13 +419,21 @@ class LambdaVersionManager(ServiceEndpoint):
                 # TODO: does this also apply before a DLQ?
                 time.sleep(60 if previous_retry_attempts == 0 else 120)
 
-                # reschedule
-                self.invoke(
-                    invocation=original_invocation.invocation.invocation,
-                    current_retry=previous_retry_attempts + 1,
-                    invocation_id=original_invocation.invocation.invocation_id,
+                max_event_age_passed = (
+                    event_invoke_config.maximum_event_age_in_seconds
+                    and (
+                        datetime.now() - original_invocation.invocation.invocation.invoke_time
+                    ).seconds
+                    > event_invoke_config.maximum_event_age_in_seconds
                 )
-                return
+                if not max_event_age_passed:
+                    # reschedule
+                    self.invoke(
+                        invocation=original_invocation.invocation.invocation,
+                        current_retry=previous_retry_attempts + 1,
+                        invocation_id=original_invocation.invocation.invocation_id,
+                    )
+                    return
 
             if failure_destination is None:
                 return
