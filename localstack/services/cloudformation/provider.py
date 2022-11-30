@@ -1,6 +1,7 @@
 import json
 import logging
 import re
+from collections import defaultdict
 from copy import deepcopy
 from typing import Any, Dict, List, Optional
 
@@ -718,10 +719,9 @@ class CloudformationProvider(CloudformationApi):
             stack = Stack(request, template)
 
         result: GetTemplateSummaryOutput = stack.describe_details()
-        id_summaries = {}
+        id_summaries = defaultdict(list)
         for resource_id, resource in stack.template_resources.items():
             res_type = resource["Type"]
-            id_summaries[res_type] = id_summaries.get(res_type) or []
             id_summaries[res_type].append(resource_id)
 
         result["ResourceTypes"] = list(id_summaries.keys())
@@ -729,6 +729,9 @@ class CloudformationProvider(CloudformationApi):
             {"ResourceType": key, "LogicalResourceIds": values}
             for key, values in id_summaries.items()
         ]
+        result["Version"] = stack.template.get("AWSTemplateFormatVersion", "2010-09-09")
+        # these do not appear in the output
+        result.pop("Capabilities", None)
         return result
 
     @handler("ValidateTemplate", expand=False)
