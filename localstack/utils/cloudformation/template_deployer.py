@@ -49,6 +49,7 @@ LOG = logging.getLogger(__name__)
 # TODO: make this a property of the model classes themselves
 UPDATEABLE_RESOURCES = [
     "Lambda::Function",
+    "Lambda::Permission",
     "ApiGateway::Method",
     "StepFunctions::StateMachine",
     "IAM::Role",

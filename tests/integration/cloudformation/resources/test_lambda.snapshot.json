@@ -1312,32 +1312,5 @@
         }
       }
     }
-  },
-  "tests/integration/cloudformation/resources/test_lambda.py::test_update_lambda_permissions": {
-    "recorded-date": "28-11-2022, 15:57:20",
-    "recorded-content": {
-      "permission": {
-        "Policy": {
-          "Version": "2012-10-17",
-          "Id": "default",
-          "Statement": [
-            {
-              "Sid": "stack-97792e08-fnAllowInvokeLambdaPermissionsStacktopicF723B1A748672DB5-RA1XBDW5ZR8J",
-              "Effect": "Allow",
-              "Principal": {
-                "AWS": "<account:1>"
-              },
-              "Action": "lambda:InvokeFunction",
-              "Resource": "arn:aws:lambda:<region>:111111111111:function:stack-97792e08-fn5FF616E3-YQNCSgAQn1VA"
-            }
-          ]
-        },
-        "RevisionId": "<uuid:1>",
-        "ResponseMetadata": {
-          "HTTPHeaders": {},
-          "HTTPStatusCode": 200
-        }
-      }
-    }
   }
 }

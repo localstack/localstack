@@ -6,6 +6,7 @@ import pytest
 
 from localstack.aws.api.lambda_ import InvocationType, State
 from localstack.testing.aws.lambda_utils import is_new_provider, is_old_provider
+from localstack.testing.aws.util import is_aws_cloud
 from localstack.testing.snapshots.transformer import SortingTransformer
 from localstack.utils.common import short_uid
 from localstack.utils.http import safe_requests
@@ -300,7 +301,7 @@ def test_lambda_vpc(deploy_cfn_template, lambda_client):
         "$..RevisionId",
     ]
 )
-def test_update_lambda_permissions(deploy_cfn_template, lambda_client, snapshot, sts_client):
+def test_update_lambda_permissions(deploy_cfn_template, lambda_client, sts_client):
     stack = deploy_cfn_template(
         template_path=os.path.join(
             os.path.dirname(__file__), "../../templates/cfn_lambda_permission.yml"
@@ -318,10 +319,13 @@ def test_update_lambda_permissions(deploy_cfn_template, lambda_client, snapshot,
         ),
     )
 
-    snapshot.add_transformer(snapshot.transform.key_value("AWS", "account"))
-    snapshot.add_transformer(snapshot.transform.iam_api())
-    permission = lambda_client.get_policy(FunctionName=stack.outputs["FunctionName"])
-    snapshot.match("permission", permission)
+    policy = lambda_client.get_policy(FunctionName=stack.outputs["FunctionName"])
+    if is_aws_cloud():
+        principal = json.loads(policy["Policy"])["Statement"][0]["Principal"]["AWS"]
+    else:
+        principal = json.loads(policy["Policy"])["Statement"][0]["Principal"]["Service"]
+
+    assert new_principal in principal
 
 
 class TestCfnLambdaIntegrations:
