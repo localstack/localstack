@@ -212,23 +212,26 @@ jobs:
           at: /tmp/workspace
       - run:
           name: Build full docker image
+          command: make docker-build-full
+      - run:
+          name: Build community docker image
           command: make docker-build
       - run:
-          name: Save full docker image
-          command: PLATFORM="<< parameters.platform >>" make docker-save-image
+          name: Build light docker image
+          command: make docker-build-light
+      - run:
+          name: Build pro docker image
+          command: make docker-build-pro
+      - run:
+          name: Save docker images
+          command: PLATFORM="<< parameters.platform >>" make docker-save-images
       - when:
           condition:
             equal: [ master, << pipeline.git.branch >> ]
           steps:
             - run:
-                name: Build light docker image
-                command: make docker-build-light
-            - run:
                 name: Run pre-release smoke tests
-                command: make ci-pro-smoke-tests
-            - run:
-                name: Save light docker image
-                command: PLATFORM="<< parameters.platform >>" make docker-save-image-light
+                command: echo "make ci-pro-smoke-tests"
       - persist_to_workspace:
           root:
             /tmp/workspace
@@ -259,7 +262,7 @@ jobs:
           at: /tmp/workspace
       - run:
           name: Load docker localstack-full image
-          command: docker load -i target/localstack-docker-image-<< parameters.platform >>.tar
+          command: docker load -i target/localstack-docker-images-<< parameters.platform >>.tar
       - run:
           name: Run integration tests
           # circleci split returns newline separated list, so `tr` is necessary to prevent problems in the Makefile
@@ -292,7 +295,7 @@ jobs:
           at: /tmp/workspace
       - run:
           name: Load docker localstack-full image
-          command: docker load -i target/localstack-docker-image-amd64.tar
+          command: docker load -i target/localstack-docker-images-amd64.tar
       - run:
           name: Run localstack
           command: |
@@ -370,15 +373,10 @@ jobs:
       - attach_workspace:
           at: /tmp/workspace
       - run:
-          name: Load docker image - amd64/full
+          name: Load docker images - amd64
           command: |
-            # Load localstack/localstack-full:latest for AMD64
-            docker load -i target/localstack-docker-image-amd64.tar
-      - run:
-          name: Load docker image - amd64/light
-          command: |
-            # Load localstack/localstack-light:latest
-            docker load -i target/localstack-docker-image-light-amd64.tar
+            # Load all images for AMD64
+            docker load -i target/localstack-docker-images-amd64.tar
       - run:
           name: Log in to ECR registry
           command: aws ecr-public get-login-password --region us-east-1 | docker login --username AWS --password-stdin public.ecr.aws
@@ -388,28 +386,27 @@ jobs:
             # Push to Docker Hub
             PLATFORM="amd64" make docker-push-master-all
             # Push to Amazon Public ECR
-            PLATFORM="amd64" SOURCE_IMAGE_NAME="localstack/localstack-light" TARGET_IMAGE_NAME="public.ecr.aws/localstack/localstack" make docker-push-master
+            PLATFORM="amd64" SOURCE_IMAGE_NAME="localstack/localstack" TARGET_IMAGE_NAME="public.ecr.aws/localstack/localstack" make docker-push-master
+            PLATFORM="amd64" SOURCE_IMAGE_NAME="localstack/localstack-pro" TARGET_IMAGE_NAME="public.ecr.aws/localstack/localstack-pro" make docker-push-master
       # Load and push per architecture (load overwrites the previous ones)
       - run:
-          name: Load docker image - arm64/full
+          name: Load docker image - arm64
           command: |
-            # Load localstack/localstack-full:latest for ARM64
-            docker load -i target/localstack-docker-image-arm64.tar
-      - run:
-          name: Load docker image - arm64/light
-          command: docker load -i target/localstack-docker-image-light-arm64.tar
+            # Load all images for AMD64
+            docker load -i target/localstack-docker-images-arm64.tar
       - run:
           name: Push docker images - arm64
           command: |
             # Push to Docker Hub
             PLATFORM="arm64" make docker-push-master-all
             # Push to Amazon Public ECR
-            PLATFORM="arm64" SOURCE_IMAGE_NAME="localstack/localstack-light" TARGET_IMAGE_NAME="public.ecr.aws/localstack/localstack" make docker-push-master
+            PLATFORM="arm64" SOURCE_IMAGE_NAME="localstack/localstack" TARGET_IMAGE_NAME="public.ecr.aws/localstack/localstack" make docker-push-master
+            PLATFORM="arm64" SOURCE_IMAGE_NAME="localstack/localstack-pro" TARGET_IMAGE_NAME="public.ecr.aws/localstack/localstack-pro" make docker-push-master
       - run:
           name: Create multi-platform manifests - full
           command: |
             # Push to Docker Hub
-            make docker-create-push-manifests
+            MANIFEST_IMAGE_NAME="localstack/localstack-full" make docker-create-push-manifests
       - run:
           name: Create multi-platform manifests - light
           command: |
@@ -417,6 +414,7 @@ jobs:
             make docker-create-push-manifests-light
             # Push to Amazon Public ECR
             MANIFEST_IMAGE_NAME="public.ecr.aws/localstack/localstack" make docker-create-push-manifests
+            MANIFEST_IMAGE_NAME="public.ecr.aws/localstack/localstack-pro" make docker-create-push-manifests
 
 workflows:
   main:

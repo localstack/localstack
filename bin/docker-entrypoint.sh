@@ -8,6 +8,34 @@ then
 fi
 
 # FIXME: remove with 2.0
+# the Dockerfile creates .pro-version file for the pro image. When trying to activate pro features with any other
+# version, an error is printed.
+if [[ $LOCALSTACK_API_KEY ]] && [[ ! -f /usr/lib/localstack/.pro-version ]]; then
+    echo "WARNING"
+    echo "============================================================================"
+    echo "  It seems you are using the LocalStack Pro version without using the"
+    echo "  dedicated Pro image."
+    echo "  Future versions will only support running LocalStack Pro with the"
+    echo "  dedicated image."
+    echo "  To fix this warning, use localstack/localstack-pro instead."
+    echo ""
+    echo "  See: https://github.com/localstack/localstack/issues/7257"
+    echo "============================================================================"
+    echo ""
+elif [[ -f /usr/lib/localstack/.light-version ]] || [[ -f /usr/lib/localstack/.full-version ]]; then
+    echo "WARNING"
+    echo "============================================================================"
+    echo "  It seems you are using a deprecated image (localstack/localstack-light"
+    echo "  or localstack/localstack-full)."
+    echo "  These images are deprecated and will be removed in the future."
+    echo "  To fix this warning, use localstack/localstack instead."
+    echo ""
+    echo "  See: https://github.com/localstack/localstack/issues/7257"
+    echo "============================================================================"
+    echo ""
+fi
+
+# FIXME: remove with 2.0
 # the Dockerfile creates .marker file that will be overwritten if a volume is mounted into /tmp/localstack
 if [ ! -f /tmp/localstack/.marker ]; then
     # unless LEGACY_DIRECTORIES is explicitly set to 1, print an error message and exit with a non-zero exit code
