@@ -15,21 +15,11 @@ def acm():
     return Service("acm", listener=AwsApiListener("acm", MotoFallbackDispatcher(provider)))
 
 
-@aws_provider(api="apigateway", name="legacy")
-def apigateway_legacy():
-    from localstack.services.apigateway.provider import ApigatewayApiListener, ApigatewayProvider
+@aws_provider(api="apigateway")
+def apigateway():
+    from localstack.services.apigateway.provider import ApigatewayProvider
 
     provider = ApigatewayProvider()
-    listener = ApigatewayApiListener("apigateway", MotoFallbackDispatcher(provider))
-
-    return Service("apigateway", listener=listener, lifecycle_hook=provider)
-
-
-@aws_provider(api="apigateway", name="default")
-def apigateway_asf():
-    from localstack.services.apigateway.provider_asf import AsfApigatewayProvider
-
-    provider = AsfApigatewayProvider()
     listener = AwsApiListener("apigateway", MotoFallbackDispatcher(provider))
 
     return Service("apigateway", listener=listener, lifecycle_hook=provider)
@@ -146,18 +136,6 @@ def sts():
 
     provider = StsProvider()
     return Service("sts", listener=AwsApiListener("sts", MotoFallbackDispatcher(provider)))
-
-
-@aws_provider(api="kinesis", name="legacy")
-def kinesis_legacy():
-    from localstack.services.kinesis import kinesis_listener, kinesis_starter
-
-    return Service(
-        "kinesis",
-        listener=kinesis_listener.UPDATE_KINESIS,
-        start=kinesis_starter.start_kinesis,
-        check=kinesis_starter.check_kinesis,
-    )
 
 
 @aws_provider()
@@ -338,18 +316,6 @@ def sqs():
     provider = SqsProvider()
 
     return Service("sqs", listener=AwsApiListener("sqs", provider), lifecycle_hook=provider)
-
-
-@aws_provider(api="sqs", name="legacy")
-def sqs_legacy():
-    from localstack.services.sqs.legacy import sqs_listener, sqs_starter
-
-    return Service(
-        "sqs",
-        listener=sqs_listener.UPDATE_SQS,
-        start=sqs_starter.start_sqs,
-        check=sqs_starter.check_sqs,
-    )
 
 
 @aws_provider()

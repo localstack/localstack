@@ -24,3 +24,11 @@ def register_partition_adjusting_proxy_listener():
     from localstack.services.generic_proxy import ArnPartitionRewriteListener, ProxyListener
 
     ProxyListener.DEFAULT_LISTENERS.append(ArnPartitionRewriteListener())
+
+
+@hooks.on_infra_start()
+def deprecation_warnings() -> None:
+    LOG.debug("Checking for the usage of deprecated community features and configs...")
+    from localstack.deprecations import log_deprecation_warnings
+
+    log_deprecation_warnings()

@@ -74,7 +74,9 @@ def test_status_services(runner, httpserver, monkeypatch):
     monkeypatch.setattr(config, "EDGE_PORT", httpserver.port)
 
     services = {"dynamodb": "starting", "s3": "running"}
-    httpserver.expect_request("/health", method="GET").respond_with_json({"services": services})
+    httpserver.expect_request("/_localstack/health", method="GET").respond_with_json(
+        {"services": services}
+    )
 
     result = runner.invoke(cli, ["status", "services"])
 

@@ -1,6 +1,5 @@
 import json
 import logging
-import re
 from copy import deepcopy
 from typing import IO
 
@@ -36,17 +35,14 @@ from localstack.aws.api.apigateway import (
     RestApi,
     String,
     Tags,
+    TestInvokeMethodRequest,
+    TestInvokeMethodResponse,
     VpcLink,
     VpcLinks,
 )
 from localstack.aws.forwarder import create_aws_request_context
-from localstack.aws.proxy import AwsApiListener
-from localstack.constants import APPLICATION_JSON, HEADER_LOCALSTACK_EDGE_URL
-from localstack.services.apigateway import helpers
-from localstack.services.apigateway.context import ApiInvocationContext
+from localstack.constants import APPLICATION_JSON
 from localstack.services.apigateway.helpers import (
-    PATH_REGEX_TEST_INVOKE_API,
-    PATH_REGEX_USER_REQUEST,
     OpenApiExporter,
     apply_json_patch_safe,
     find_api_subentity_by_id,
@@ -54,9 +50,10 @@ from localstack.services.apigateway.helpers import (
 )
 from localstack.services.apigateway.invocations import invoke_rest_api_from_request
 from localstack.services.apigateway.patches import apply_patches
+from localstack.services.apigateway.router_asf import ApigatewayRouter, to_invocation_context
+from localstack.services.edge import ROUTER
 from localstack.services.moto import call_moto
 from localstack.services.plugins import ServiceLifecycleHook
-from localstack.utils.aws.aws_responses import requests_response
 from localstack.utils.collections import PaginatedList, ensure_list
 from localstack.utils.json import parse_json_or_yaml
 from localstack.utils.strings import short_uid, str_to_bool, to_str
@@ -65,56 +62,43 @@ from localstack.utils.time import now_utc
 LOG = logging.getLogger(__name__)
 
 
-class ApigatewayApiListener(AwsApiListener):
-    """Custom API listener that handles both, API Gateway API calls (managing the
-    state/metadata of the service) and invocations (invoking a user-created API)."""
+class ApigatewayProvider(ApigatewayApi, ServiceLifecycleHook):
+    router: ApigatewayRouter
 
-    def forward_request(self, method, path, data, headers):
-        invocation_context = ApiInvocationContext(method, path, data, headers)
+    def __init__(self, router: ApigatewayRouter = None):
+        self.router = router or ApigatewayRouter(ROUTER)
 
-        forwarded_for = headers.get(HEADER_LOCALSTACK_EDGE_URL, "")
-        if re.match(PATH_REGEX_USER_REQUEST, path) or "execute-api" in forwarded_for:
-            result = invoke_rest_api_from_request(invocation_context)
-            if result is not None:
-                return result
+    def on_after_init(self):
+        apply_patches()
+        self.router.register_routes()
 
-        if helpers.is_test_invoke_method(method, path):
-            return self._handle_test_invoke_method(invocation_context)
-        return super().forward_request(method, path, data, headers)
+    @handler("TestInvokeMethod", expand=False)
+    def test_invoke_method(
+        self, context: RequestContext, request: TestInvokeMethodRequest
+    ) -> TestInvokeMethodResponse:
 
-    def _handle_test_invoke_method(self, invocation_context):
-        # if call is from test_invoke_api then use http_method to find the integration,
-        #   as test_invoke_api makes a POST call to request the test invocation
-        match = re.match(PATH_REGEX_TEST_INVOKE_API, invocation_context.path)
-        invocation_context.method = match[3]
+        invocation_context = to_invocation_context(context.request)
+        invocation_context.method = request["httpMethod"]
+
         if data := parse_json_or_yaml(to_str(invocation_context.data or b"")):
             orig_data = data
-            if path_with_query_string := orig_data.get("pathWithQueryString", None):
+            if path_with_query_string := orig_data.get("pathWithQueryString"):
                 invocation_context.path_with_query_string = path_with_query_string
             invocation_context.data = data.get("body")
             invocation_context.headers = orig_data.get("headers", {})
+
         result = invoke_rest_api_from_request(invocation_context)
-        result = {
-            "status": result.status_code,
-            "body": to_str(result.content),
-            "headers": dict(result.headers),
-        }
-        return result
 
-    def return_response(self, method, path, data, headers, response):
-        # TODO: clean up logic below!
+        # TODO: implement the other TestInvokeMethodResponse parameters
+        #   * multiValueHeaders: Optional[MapOfStringToList]
+        #   * log: Optional[String]
+        #   * latency: Optional[Long]
 
-        # fix backend issue (missing support for API documentation)
-        if (
-            re.match(r"/restapis/[^/]+/documentation/versions", path)
-            and response.status_code == 404
-        ):
-            return requests_response({"position": "1", "items": []})
-
-
-class ApigatewayProvider(ApigatewayApi, ServiceLifecycleHook):
-    def on_after_init(self):
-        apply_patches()
+        return TestInvokeMethodResponse(
+            status=result.status_code,
+            headers=dict(result.headers),
+            body=to_str(result.content),
+        )
 
     @handler("CreateRestApi", expand=False)
     def create_rest_api(self, context: RequestContext, request: CreateRestApiRequest) -> RestApi:

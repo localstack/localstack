@@ -60,14 +60,14 @@ class TestCliContainerLifecycle:
             config.MAIN_CONTAINER_NAME
         ), "container name was not running after wait"
 
-        health = requests.get(get_edge_url() + "/health")
+        health = requests.get(get_edge_url() + "/_localstack/health")
         assert health.ok, "health request did not return OK: %s" % health.text
 
         result = runner.invoke(cli, ["stop"])
         assert result.exit_code == 0
 
         with pytest.raises(requests.ConnectionError):
-            requests.get(get_edge_url() + "/health")
+            requests.get(get_edge_url() + "/_localstack/health")
 
     def test_wait_timeout_raises_exception(self, runner, container_client):
         result = runner.invoke(cli, ["start", "-d"])
