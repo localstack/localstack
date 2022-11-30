@@ -272,7 +272,6 @@ def test_account(deploy_cfn_template, apigateway_client, is_stack_deleted):
 
 
 @pytest.mark.aws_validated
-# @pytest.mark.xfail(reason="patch operations not working properly")
 def test_update_usage_plan(deploy_cfn_template, cfn_client, apigateway_client):
     rest_api_name = f"api-{short_uid()}"
     stack = deploy_cfn_template(
@@ -282,15 +281,13 @@ def test_update_usage_plan(deploy_cfn_template, cfn_client, apigateway_client):
         parameters={"QuotaLimit": "5000", "RestApiName": rest_api_name},
     )
 
-    cfn_client.update_stack(
-        StackName=stack.stack_name,
-        Parameters=[
-            {"ParameterKey": "QuotaLimit", "ParameterValue": "7000"},
-            {"ParameterKey": "RestApiName", "ParameterValue": rest_api_name},
-        ],
-        TemplateBody=load_file(
+    deploy_cfn_template(
+        is_update=True,
+        stack_name=stack.stack_name,
+        template=load_file(
             os.path.join(os.path.dirname(__file__), "../../templates/apigateway_usage_plan.yml")
         ),
+        parameters={"QuotaLimit": "7000", "RestApiName": rest_api_name},
     )
 
     cfn_client.get_waiter("stack_update_complete").wait(StackName=stack.stack_name)
