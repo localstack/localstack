@@ -533,6 +533,12 @@ class GatewayUsagePlan(GenericBaseModel):
             stack_name, update_config_props, resources
         )
 
+        if "Tags" in update_config_props:
+            tags_dict = {}
+            for tag in update_config_props:
+                tags_dict.update({tag["Key"]: tag["Value"]})
+            update_config_props["Tags"] = tags_dict
+
         usage_plan_id = new_resource["PhysicalResourceId"]
         client = aws_stack.connect_to_service("apigateway")
 
@@ -784,7 +790,7 @@ class GatewayModel(GenericBaseModel):
 class GatewayAccount(GenericBaseModel):
     @staticmethod
     def cloudformation_type():
-        return "AWS::ApiGateway::Account"
+        return "AWS::ApiGateway:Account"
 
     def fetch_state(self, stack_name, resources):
         client = aws_stack.connect_to_service("apigateway")
