@@ -85,6 +85,9 @@ class HealthResource:
         result["version"] = constants.VERSION
         return result
 
+    def on_head(self, _request: Request):
+        return Response("ok", 200)
+
     def on_put(self, request: Request):
         data = request.get_json(True, True) or {}
 
