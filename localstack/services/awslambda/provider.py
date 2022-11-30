@@ -146,6 +146,7 @@ from localstack.services.awslambda.invocation.lambda_models import (
     FunctionResourcePolicy,
     FunctionUrlConfig,
     FunctionVersion,
+    ImageConfig,
     InvocationError,
     LambdaEphemeralStorage,
     Layer,
@@ -498,8 +499,10 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
             )
             # save function code to s3
             code = None
+            image = None
+            image_config = None
+            request_code = request.get("Code")
             if package_type == PackageType.Zip:
-                request_code = request["Code"]
                 # TODO verify if correct combination of code is set
                 if zip_file := request_code.get("ZipFile"):
                     code = store_lambda_archive(
@@ -521,6 +524,16 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
                     )
                 else:
                     raise ServiceException("Gotta have s3 bucket or zip file")
+            elif package_type == PackageType.Image:
+                image = request_code.get("ImageUri")
+                if not image:
+                    raise ServiceException("Gotta have an image when package type is image")
+
+                image_config = ImageConfig(
+                    command=request.get("ImageConfig", {}).get("Command"),
+                    entrypoint=request.get("ImageConfig", {}).get("EntryPoint"),
+                    working_directory=request.get("ImageConfig", {}).get("WorkingDirectory"),
+                )
 
             version = FunctionVersion(
                 id=arn,
@@ -529,15 +542,16 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
                     description=request.get("Description", ""),
                     role=request["Role"],
                     timeout=request.get("Timeout", LAMBDA_DEFAULT_TIMEOUT),
-                    runtime=request["Runtime"],
+                    runtime=request.get("Runtime"),
                     memory_size=request.get("MemorySize", LAMBDA_DEFAULT_MEMORY_SIZE),
-                    handler=request["Handler"],
-                    package_type=PackageType.Zip,  # TODO
+                    handler=request.get("Handler"),
+                    package_type=package_type,
                     reserved_concurrent_executions=0,
                     environment=env_vars,
                     architectures=request.get("Architectures") or ["x86_64"],  # TODO
                     tracing_config_mode=TracingMode.PassThrough,  # TODO
-                    image_config=None,  # TODO
+                    image=image,
+                    image_config=image_config,
                     code=code,
                     layers=self.map_layers(layers),
                     internal_revision=short_uid(),
@@ -670,6 +684,7 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
             )
         function = state.functions[function_name]
         # TODO verify if correct combination of code is set
+        image = None
         if zip_file := request.get("ZipFile"):
             code = store_lambda_archive(
                 archive_file=zip_file,
@@ -688,13 +703,16 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
                 region_name=context.region,
                 account_id=context.account_id,
             )
+        elif image := request.get("ImageUri"):
+            code = None
+            image = image
         else:
-            raise ServiceException("Gotta have s3 bucket or zip file")
+            raise ServiceException("Gotta have s3 bucket or zip file or image")
 
         old_function_version = function.versions.get("$LATEST")
+        replace_kwargs = {"code": code} if code else {"image": image}
         config = dataclasses.replace(
             old_function_version.config,
-            code=code,
             internal_revision=short_uid(),
             last_modified=api_utils.generate_lambda_date(),
             last_update=UpdateStatus(
@@ -702,6 +720,7 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
                 code="Creating",
                 reason="The function is being created.",
             ),
+            **replace_kwargs,
         )
         function_version = dataclasses.replace(old_function_version, config=config)
         function.versions["$LATEST"] = function_version
@@ -756,7 +775,8 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
             for version in function.versions.values():
                 self.lambda_service.stop_version(qualified_arn=version.id.qualified_arn())
                 # we can safely destroy the code here
-                version.config.code.destroy()
+                if version.config.code:
+                    version.config.code.destroy()
 
     def list_functions(
         self,
@@ -819,12 +839,17 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
         if tags:
             additional_fields["Tags"] = tags
         # TODO what if no version?
-        code = version.config.code
+        code_location = None
+        if code := version.config.code:
+            code_location = FunctionCodeLocation(
+                Location=code.generate_presigned_url(), RepositoryType="S3"
+            )
+        elif image := version.config.image:
+            code_location = FunctionCodeLocation(ImageUri=image, ResolvedImageUri=image)
+
         return GetFunctionResponse(
             Configuration=api_utils.map_config_out(version, return_qualified_arn=bool(qualifier)),
-            Code=FunctionCodeLocation(
-                Location=code.generate_presigned_url(), RepositoryType="S3"
-            ),  # TODO
+            Code=code_location,  # TODO
             **additional_fields
             # Concurrency={},  # TODO
         )

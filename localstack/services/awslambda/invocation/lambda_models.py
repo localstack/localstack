@@ -490,6 +490,7 @@ class VersionFunctionConfiguration:
     last_modified: str  # ISO string
     state: VersionState
 
+    image: Optional[str] = None
     image_config: Optional[ImageConfig] = None
     last_update: Optional[UpdateStatus] = None
     revision_id: str = dataclasses.field(init=False, default_factory=long_uid)

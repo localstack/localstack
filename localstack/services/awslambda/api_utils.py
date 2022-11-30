@@ -374,6 +374,20 @@ def map_config_out(
             {"Arn": layer.layer_version_arn, "CodeSize": layer.code.code_size}
             for layer in version.config.layers
         ]
+    if version.config.image_config:
+        image_config_response = {}
+        if version.config.image_config.command:
+            image_config_response["Command"] = version.config.image_config.command
+        if version.config.image_config.entrypoint:
+            image_config_response["EntryPoint"] = version.config.image_config.entrypoint
+        if version.config.image_config.working_directory:
+            image_config_response[
+                "WorkingDirectory"
+            ] = version.config.image_config.working_directory
+        optional_kwargs["ImageConfigResponse"] = image_config_response
+    if version.config.code:
+        optional_kwargs["CodeSize"] = version.config.code.code_size
+        optional_kwargs["CodeSha256"] = version.config.code.code_sha256
 
     func_conf = FunctionConfiguration(
         RevisionId=version.config.revision_id,
@@ -388,8 +402,6 @@ def map_config_out(
         Timeout=version.config.timeout,
         Runtime=version.config.runtime,
         Handler=version.config.handler,
-        CodeSize=version.config.code.code_size,
-        CodeSha256=version.config.code.code_sha256,
         MemorySize=version.config.memory_size,
         PackageType=version.config.package_type,
         TracingConfig=TracingConfig(Mode=version.config.tracing_config_mode),
