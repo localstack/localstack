@@ -227,8 +227,7 @@ jobs:
           command: PLATFORM="<< parameters.platform >>" make docker-save-images
       - when:
           condition:
-             equal: [ true, true ]
-#            equal: [ master, << pipeline.git.branch >> ]
+            equal: [ master, << pipeline.git.branch >> ]
           steps:
             - run:
                 name: Run pre-release smoke tests
@@ -387,8 +386,8 @@ jobs:
             # Push to Docker Hub
             PLATFORM="amd64" make docker-push-master-all
             # Push to Amazon Public ECR
-#            PLATFORM="amd64" SOURCE_IMAGE_NAME="localstack/localstack" TARGET_IMAGE_NAME="public.ecr.aws/localstack/localstack" make docker-push-master
-#            PLATFORM="amd64" SOURCE_IMAGE_NAME="localstack/localstack-pro" TARGET_IMAGE_NAME="public.ecr.aws/localstack/localstack-pro" make docker-push-master
+            PLATFORM="amd64" SOURCE_IMAGE_NAME="localstack/localstack" TARGET_IMAGE_NAME="public.ecr.aws/localstack/localstack" make docker-push-master
+            PLATFORM="amd64" SOURCE_IMAGE_NAME="localstack/localstack-pro" TARGET_IMAGE_NAME="public.ecr.aws/localstack/localstack-pro" make docker-push-master
       # Load and push per architecture (load overwrites the previous ones)
       - run:
           name: Load docker image - arm64
@@ -401,8 +400,8 @@ jobs:
             # Push to Docker Hub
             PLATFORM="arm64" make docker-push-master-all
             # Push to Amazon Public ECR
-#            PLATFORM="arm64" SOURCE_IMAGE_NAME="localstack/localstack" TARGET_IMAGE_NAME="public.ecr.aws/localstack/localstack" make docker-push-master
-#            PLATFORM="arm64" SOURCE_IMAGE_NAME="localstack/localstack-pro" TARGET_IMAGE_NAME="public.ecr.aws/localstack/localstack-pro" make docker-push-master
+            PLATFORM="arm64" SOURCE_IMAGE_NAME="localstack/localstack" TARGET_IMAGE_NAME="public.ecr.aws/localstack/localstack" make docker-push-master
+            PLATFORM="arm64" SOURCE_IMAGE_NAME="localstack/localstack-pro" TARGET_IMAGE_NAME="public.ecr.aws/localstack/localstack-pro" make docker-push-master
       - run:
           name: Create multi-platform manifests - full
           command: |
@@ -414,8 +413,8 @@ jobs:
             # Push to Docker Hub
             make docker-create-push-manifests-light
             # Push to Amazon Public ECR
-#            MANIFEST_IMAGE_NAME="public.ecr.aws/localstack/localstack" make docker-create-push-manifests
-#            MANIFEST_IMAGE_NAME="public.ecr.aws/localstack/localstack-pro" make docker-create-push-manifests
+            MANIFEST_IMAGE_NAME="public.ecr.aws/localstack/localstack" make docker-create-push-manifests
+            MANIFEST_IMAGE_NAME="public.ecr.aws/localstack/localstack-pro" make docker-create-push-manifests
 
 workflows:
   main:
@@ -486,9 +485,9 @@ workflows:
             - collect-not-implemented-pro
             - unit-tests
       - docker-push:
-#          filters:
-#            branches:
-#              only: master
+          filters:
+            branches:
+              only: master
           requires:
             - itest-lambda-docker
             - itest-lambda-provider
