@@ -1,0 +1,65 @@
+{
+  "tests/integration/cloudformation/resources/test_apigateway.py::test_cfn_deploy_apigateway_integration": {
+    "recorded-date": "30-11-2022, 15:37:01",
+    "recorded-content": {
+      "rest_api": {
+        "apiKeySource": "HEADER",
+        "createdDate": "datetime",
+        "disableExecuteApiEndpoint": false,
+        "endpointConfiguration": {
+          "types": [
+            "EDGE"
+          ]
+        },
+        "id": "<id:1>",
+        "name": "<name:1>",
+        "tags": {
+          "aws:cloudformation:logical-id": "<name:1>",
+          "aws:cloudformation:stack-id": "arn:aws:cloudformation:<region>:111111111111:stack/stack-name/<resource:1>",
+          "aws:cloudformation:stack-name": "stack-name"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "method": {
+        "apiKeyRequired": false,
+        "authorizationType": "NONE",
+        "httpMethod": "GET",
+        "methodIntegration": {
+          "cacheKeyParameters": [],
+          "cacheNamespace": "qlkinc",
+          "connectionType": "INTERNET",
+          "httpMethod": "GET",
+          "integrationResponses": {
+            "200": {
+              "responseParameters": {},
+              "responseTemplates": {},
+              "statusCode": "200"
+            }
+          },
+          "passthroughBehavior": "WHEN_NO_MATCH",
+          "requestParameters": {},
+          "requestTemplates": {},
+          "timeoutInMillis": 29000,
+          "type": "HTTP_PROXY",
+          "uri": "http://www.example.com"
+        },
+        "methodResponses": {
+          "200": {
+            "responseModels": {},
+            "responseParameters": {},
+            "statusCode": "200"
+          }
+        },
+        "requestModels": {},
+        "requestParameters": {},
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  }
+}

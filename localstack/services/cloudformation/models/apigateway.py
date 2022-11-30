@@ -129,15 +129,21 @@ class GatewayRestAPI(GenericBaseModel):
             client = aws_stack.connect_to_service("apigateway")
             resource = resources[resource_id]
             props = resource["Properties"]
+            kwargs = keys_to_lower(props, ["Body"])
 
-            tags = {tag["Key"]: tag["Value"] for tag in props.get("Tags", [])}
-
-            # TODO: add missing attributes
-            result = client.create_rest_api(
-                name=props["Name"],
-                description=props.get("Description", ""),
-                tags=tags,
+            kwargs["tags"] = {tag["Key"]: tag["Value"] for tag in kwargs.get("tags", [])}
+            cfn_client = aws_stack.connect_to_service("cloudformation")
+            stack_id = cfn_client.describe_stacks(StackName=stack_name)["Stacks"][0]["StackId"]
+            kwargs["tags"].update(
+                {
+                    "aws:cloudformation:logical-id": resource_id,
+                    "aws:cloudformation:stack-name": stack_name,
+                    "aws:cloudformation:stack-id": stack_id,
+                }
             )
+
+            result = client.create_rest_api(**kwargs)
+
             body = props.get("Body")
             if body:
                 # the default behavior for imports via CFn is basepath=ignore (validated against AWS)
@@ -350,7 +356,8 @@ class GatewayMethod(GenericBaseModel):
                 res_id = resource.resolve_refs_recursively(
                     stack_name, props["ResourceId"], resources
                 )
-                kwargs = {}
+
+                kwargs = keys_to_lower(integration)
                 if integration.get("Uri"):
                     uri = resource.resolve_refs_recursively(
                         stack_name, integration.get("Uri"), resources
@@ -365,25 +372,29 @@ class GatewayMethod(GenericBaseModel):
 
                     kwargs["uri"] = uri
 
-                if integration.get("IntegrationHttpMethod"):
-                    kwargs["integrationHttpMethod"] = integration["IntegrationHttpMethod"]
-
-                if integration.get("RequestTemplates"):
-                    kwargs["requestTemplates"] = integration["RequestTemplates"]
-
-                if integration.get("Credentials"):
-                    kwargs["credentials"] = integration["Credentials"]
-
-                if integration.get("RequestParameters"):
-                    kwargs["requestParameters"] = integration["RequestParameters"]
+                integration_responses = []
+                if kwargs.get("integrationResponses"):
+                    integration_responses = kwargs["integrationResponses"]
+                    del kwargs["integrationResponses"]
 
                 apigateway.put_integration(
                     restApiId=api_id,
                     resourceId=res_id,
-                    httpMethod=props["HttpMethod"],
-                    type=integration["Type"],
+                    httpMethod=kwargs["integrationHttpMethod"],
                     **kwargs,
                 )
+
+                for integration_response in integration_responses:
+                    integration_response["statusCode"] = str(integration_response["statusCode"])
+                    integration_response["responseParameters"] = integration_response.get(
+                        "responseParameters", {}
+                    )
+                    apigateway.put_integration_response(
+                        restApiId=api_id,
+                        resourceId=res_id,
+                        httpMethod=integration["integrationHttpMethod"],
+                        **keys_to_lower(integration_response),
+                    )
 
             responses = props.get("MethodResponses") or []
             for response in responses:
