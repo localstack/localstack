@@ -72,20 +72,9 @@ docker-image-stats: 	  ## TODO remove when image size is acceptable
 	docker history $(IMAGE_NAME_FULL)
 
 # By default we export the full image
-TAG ?= $(IMAGE_NAME)
-# By default we use no suffix
-EXPORT_SUFFIX ?=
-docker-save-image: 		  ## Export the built Docker image
-	docker save $(TAG) -o target/localstack-docker-image$(EXPORT_SUFFIX)-$(PLATFORM).tar
-
-docker-save-image-light:
-	make EXPORT_SUFFIX="-light" TAG=$(IMAGE_NAME_LIGHT) docker-save-image
-
-docker-save-image-full:
-	make EXPORT_SUFFIX="-full" TAG=$(IMAGE_NAME_FULL) docker-save-image
-
-docker-save-image-pro:
-	make EXPORT_SUFFIX="-pro" TAG=$(IMAGE_NAME_PRO) docker-save-image
+TAGS ?= $(IMAGE_NAME) $(IMAGE_NAME_PRO) $(IMAGE_NAME_LIGHT) $(IMAGE_NAME_FULL)
+docker-save-images: 		  ## Export the built Docker image
+	docker save -o target/localstack-docker-images-$(PLATFORM).tar $(TAGS)
 
 # By default we export the community image
 TAG ?= $(IMAGE_NAME)
@@ -305,4 +294,4 @@ clean-dist:				  ## Clean up python distribution directories
 	rm -rf dist/ build/
 	rm -rf *.egg-info
 
-.PHONY: usage venv freeze install-basic install-runtime install-test install-dev install entrypoints dist publish coveralls start docker-save-image docker-save-image-light docker-build docker-build-light docker-build-multi-platform docker-push-master docker-push-master-all docker-create-push-manifests docker-create-push-manifests-light docker-run-tests docker-run docker-mount-run docker-build-lambdas docker-cp-coverage test test-coverage test-docker test-docker-mount test-docker-mount-code ci-pro-smoke-tests lint lint-modified format format-modified init-precommit clean clean-dist vagrant-start vagrant-stop infra
+.PHONY: usage venv freeze install-basic install-runtime install-test install-dev install entrypoints dist publish coveralls start docker-save-images docker-build docker-build-light docker-build-multi-platform docker-push-master docker-push-master-all docker-create-push-manifests docker-create-push-manifests-light docker-run-tests docker-run docker-mount-run docker-build-lambdas docker-cp-coverage test test-coverage test-docker test-docker-mount test-docker-mount-code ci-pro-smoke-tests lint lint-modified format format-modified init-precommit clean clean-dist vagrant-start vagrant-stop infra

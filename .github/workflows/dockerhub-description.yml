@@ -22,3 +22,11 @@ jobs:
         password: ${{ secrets.DOCKERHUB_PASSWORD }}
         repository: localstack/localstack
         short-description: ${{ github.event.repository.description }}
+
+    - name: Docker Hub Description - Pro
+      uses: peter-evans/dockerhub-description@v3
+      with:
+        username: ${{ secrets.DOCKERHUB_USERNAME }}
+        password: ${{ secrets.DOCKERHUB_PASSWORD }}
+        repository: localstack/localstack-pro
+        short-description: ${{ github.event.repository.description }}

@@ -214,34 +214,25 @@ jobs:
           name: Build full docker image
           command: make docker-build-full
       - run:
-          name: Save full docker image
-          command: PLATFORM="<< parameters.platform >>" make docker-save-image-full
+          name: Build community docker image
+          command: make docker-build
+      - run:
+          name: Build light docker image
+          command: make docker-build-light
+      - run:
+          name: Build pro docker image
+          command: make docker-build-pro
+      - run:
+          name: Save docker images
+          command: PLATFORM="<< parameters.platform >>" make docker-save-images
       - when:
           condition:
              equal: [ true, true ]
 #            equal: [ master, << pipeline.git.branch >> ]
           steps:
-            - run:
-                name: Build community docker image
-                command: make docker-build
-            - run:
-                name: Build light docker image
-                command: make docker-build-light
-            - run:
-                name: Build pro docker image
-                command: make docker-build-pro
 #            - run:
 #                name: Run pre-release smoke tests
 #                command: make ci-pro-smoke-tests
-            - run:
-                name: Save community docker image
-                command: PLATFORM="<< parameters.platform >>" make docker-save-image
-            - run:
-                name: Save light docker image
-                command: PLATFORM="<< parameters.platform >>" make docker-save-image-light
-            - run:
-                name: Save pro docker image
-                command: PLATFORM="<< parameters.platform >>" make docker-save-image-pro
       - persist_to_workspace:
           root:
             /tmp/workspace
@@ -272,7 +263,7 @@ jobs:
           at: /tmp/workspace
       - run:
           name: Load docker localstack-full image
-          command: docker load -i target/localstack-docker-image-full-<< parameters.platform >>.tar
+          command: docker load -i target/localstack-docker-images-<< parameters.platform >>.tar
       - run:
           name: Run integration tests
           # circleci split returns newline separated list, so `tr` is necessary to prevent problems in the Makefile
@@ -305,7 +296,7 @@ jobs:
           at: /tmp/workspace
       - run:
           name: Load docker localstack-full image
-          command: docker load -i target/localstack-docker-image-full-amd64.tar
+          command: docker load -i target/localstack-docker-images-amd64.tar
       - run:
           name: Run localstack
           command: |
@@ -383,25 +374,10 @@ jobs:
       - attach_workspace:
           at: /tmp/workspace
       - run:
-          name: Load docker image - amd64/full
+          name: Load docker images - amd64
           command: |
-            # Load localstack/localstack-full:latest for AMD64
-            docker load -i target/localstack-docker-image-full-amd64.tar
-      - run:
-          name: Load docker image - amd64/community
-          command: |
-            # Load localstack/localstack:latest
-            docker load -i target/localstack-docker-image-amd64.tar
-      - run:
-          name: Load docker image - amd64/pro
-          command: |
-            # Load localstack/localstack-pro:latest
-            docker load -i target/localstack-docker-image-pro-amd64.tar
-      - run:
-          name: Load docker image - amd64/light
-          command: |
-            # Load localstack/localstack-light:latest
-            docker load -i target/localstack-docker-image-light-amd64.tar
+            # Load all images for AMD64
+            docker load -i target/localstack-docker-images-amd64.tar
       - run:
           name: Log in to ECR registry
           command: aws ecr-public get-login-password --region us-east-1 | docker login --username AWS --password-stdin public.ecr.aws
@@ -415,19 +391,10 @@ jobs:
 #            PLATFORM="amd64" SOURCE_IMAGE_NAME="localstack/localstack-pro" TARGET_IMAGE_NAME="public.ecr.aws/localstack/localstack-pro" make docker-push-master
       # Load and push per architecture (load overwrites the previous ones)
       - run:
-          name: Load docker image - arm64/full
+          name: Load docker image - arm64
           command: |
-            # Load localstack/localstack-full:latest for ARM64
-            docker load -i target/localstack-docker-image-full-arm64.tar
-      - run:
-          name: Load docker image - arm64/community
-          command: docker load -i target/localstack-docker-image-arm64.tar
-      - run:
-          name: Load docker image - arm64/pro
-          command: docker load -i target/localstack-docker-image-pro-arm64.tar
-      - run:
-          name: Load docker image - arm64/light
-          command: docker load -i target/localstack-docker-image-light-arm64.tar
+            # Load all images for AMD64
+            docker load -i target/localstack-docker-images-arm64.tar
       - run:
           name: Push docker images - arm64
           command: |
