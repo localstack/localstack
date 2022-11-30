@@ -354,7 +354,7 @@ def get_docker_image_to_start():
                 "The localstack/localstack-full image is deprecated. Please remove this environment variable."
             )
             image_name = constants.DOCKER_IMAGE_NAME_FULL
-        if os.environ.get("LOCALSTACK_API_KEY") and os.environ.get("LOCALSTACK_API_KEY").strip():
+        if is_api_key_configured():
             image_name = constants.DOCKER_IMAGE_NAME_PRO
     return image_name
 
