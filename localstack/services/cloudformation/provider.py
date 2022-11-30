@@ -187,8 +187,7 @@ class Stack:
         if outputs:
             result["Outputs"] = outputs
         params = self.stack_parameters()
-        if params:
-            result["Parameters"] = params
+        result["Parameters"] = params or []
         if not result.get("DriftInformation"):
             result["DriftInformation"] = {"StackDriftStatus": "NOT_CHECKED"}
         for attr in ["Capabilities", "Tags", "NotificationARNs"]:
