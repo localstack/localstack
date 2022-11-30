@@ -674,6 +674,11 @@ LAMBDA_STAY_OPEN_MODE = is_in_docker and is_env_not_false("LAMBDA_STAY_OPEN_MODE
 # truncate output string slices value
 LAMBDA_TRUNCATE_STDOUT = int(os.getenv("LAMBDA_TRUNCATE_STDOUT") or 2000)
 
+
+# LAMBDA ASF
+
+LAMBDA_RETRY_BASE_DELAY_SECONDS = int(os.getenv("LAMBDA_RETRY_BASE_DELAY") or 60)
+
 # A comma-delimited string of stream names and its corresponding shard count to
 # initialize during startup (DEPRECATED).
 # For example: "my-first-stream:1,my-other-stream:2,my-last-stream:1"
@@ -763,6 +768,7 @@ CONFIG_ENV_VARS = [
     "LAMBDA_RUNTIME_ENVIRONMENT_TIMEOUT",
     "LAMBDA_STAY_OPEN_MODE",
     "LAMBDA_TRUNCATE_STDOUT",
+    "LAMBDA_RETRY_BASE_DELAY_SECONDS",
     "LEGACY_DIRECTORIES",
     "LEGACY_DOCKER_CLIENT",
     "LEGACY_EDGE_PROXY",

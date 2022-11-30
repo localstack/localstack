@@ -417,7 +417,11 @@ class LambdaVersionManager(ServiceEndpoint):
                 # wait and then reschedule
                 # TODO: should actually not wait 60s if the time left is insufficient
                 # TODO: does this also apply before a DLQ?
-                time.sleep(60 if previous_retry_attempts == 0 else 120)
+
+                delay_queue_invoke_seconds = config.LAMBDA_RETRY_BASE_DELAY_SECONDS * (
+                    previous_retry_attempts + 1
+                )
+                time.sleep(delay_queue_invoke_seconds)
 
                 max_event_age_passed = (
                     event_invoke_config.maximum_event_age_in_seconds

@@ -5,8 +5,10 @@ import time
 
 import pytest
 
+from localstack import config
 from localstack.aws.api.lambda_ import Runtime
 from localstack.testing.aws.lambda_utils import is_new_provider, is_old_provider
+from localstack.testing.aws.util import is_aws_cloud
 from localstack.utils.strings import short_uid, to_bytes, to_str
 from localstack.utils.sync import retry, wait_until
 from tests.integration.awslambda.functions import lambda_integration
@@ -179,6 +181,7 @@ class TestLambdaDestinationSqs:
         lambda_su_role,
         logs_client,
         sqs_client,
+        monkeypatch,
     ):
         """
         behavior test, we don't really care about any API surface here right now
@@ -189,6 +192,11 @@ class TestLambdaDestinationSqs:
         TODO: add snapshot test for 1 retry => then success
         TODO: test if invocation/request ID changes between retries
         """
+        test_delay_base = 60
+        if not is_aws_cloud():
+            test_delay_base = 5
+            monkeypatch.setattr(config, "LAMBDA_RETRY_BASE_DELAY_SECONDS", test_delay_base)
+
         # setup
         queue_name = f"destination-queue-{short_uid()}"
         fn_name = f"retry-fn-{short_uid()}"
@@ -224,11 +232,11 @@ class TestLambdaDestinationSqs:
 
         # between 0 and 1 min the lambda should NOT have been retried yet
         # between 1 min and 3 min the lambda should have been retried once
-        time.sleep(30)
+        time.sleep(test_delay_base / 2)
         assert get_filtered_event_count() == 1
-        time.sleep(60)
+        time.sleep(test_delay_base)
         assert get_filtered_event_count() == 2
-        time.sleep(120)
+        time.sleep(test_delay_base * 2)
         assert get_filtered_event_count() == 3
 
         # 1. event should be in queue
@@ -270,6 +278,7 @@ class TestLambdaDestinationSqs:
         lambda_su_role,
         logs_client,
         sqs_client,
+        monkeypatch,
     ):
         """
         Behavior test for MaximumRetryAttempts in EventInvokeConfig
