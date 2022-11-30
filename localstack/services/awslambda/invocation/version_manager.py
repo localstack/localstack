@@ -296,10 +296,14 @@ class LambdaVersionManager(ServiceEndpoint):
             except Exception as e:
                 queued_invocation.result_future.set_exception(e)
 
-    def invoke(self, *, invocation: Invocation, current_retry=0) -> Future[InvocationResult] | None:
+    def invoke(
+        self, *, invocation: Invocation, current_retry: int = 0, invocation_id: str | None = None
+    ) -> Future[InvocationResult] | None:
         future = Future() if invocation.invocation_type == "RequestResponse" else None
+        if invocation_id is None:
+            invocation_id = str(uuid.uuid4())
         invocation_storage = QueuedInvocation(
-            invocation_id=str(uuid.uuid4()),  # TODO: do retries get a new invocation?
+            invocation_id=invocation_id,
             result_future=future,
             retries=current_retry,
             invocation=invocation,
@@ -409,23 +413,24 @@ class LambdaVersionManager(ServiceEndpoint):
             retry_attempts = event_invoke_config.maximum_retry_attempts
             previous_retry_attempts = original_invocation.invocation.retries
             if retry_attempts > 0 and retry_attempts > previous_retry_attempts:
-                # it's a retry! :)
-                # wait and then reschedule
-                if previous_retry_attempts == 0:
-                    retry_delay = 60
-                else:
-                    retry_delay = 120
 
-                time.sleep(retry_delay)
+                # wait and then reschedule
+                # TODO: should actually not wait 60s if the time left is insufficient
+                # TODO: does this also apply before a DLQ?
+                time.sleep(60 if previous_retry_attempts == 0 else 120)
+
                 # reschedule
                 self.invoke(
                     invocation=original_invocation.invocation.invocation,
                     current_retry=previous_retry_attempts + 1,
+                    invocation_id=original_invocation.invocation.invocation_id,
                 )
                 return
 
             if failure_destination is None:
                 return
+
+            # TODO: add snapshot tests for different possible payloads
             destination_payload = {
                 "version": "1.0",
                 "timestamp": timestamp_millis(),  # TODO

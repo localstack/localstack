@@ -1716,36 +1716,6 @@ class TestLambdaEventInvokeConfig:
             )
         snapshot.match("put_shorthand_qualifier_mismatch_3", e.value.response)
 
-        # MaximumRetryAttempts (0 <= x <= 2)
-
-        with pytest.raises(lambda_client.exceptions.ClientError) as e:
-            lambda_client.put_function_event_invoke_config(
-                FunctionName=function_name,
-                MaximumRetryAttempts=-1,
-            )
-        snapshot.match("put_retries_invalid_-1", e.value.response)
-
-        with pytest.raises(lambda_client.exceptions.ClientError) as e:
-            lambda_client.put_function_event_invoke_config(
-                FunctionName=function_name,
-                MaximumRetryAttempts=3,
-            )
-        snapshot.match("put_retries_invalid_3", e.value.response)
-
-        # MaximumEventAgeInSeconds (60 <= x <= 21600)
-
-        with pytest.raises(lambda_client.exceptions.ClientError) as e:
-            lambda_client.put_function_event_invoke_config(
-                FunctionName=function_name, MaximumRetryAttempts=1, MaximumEventAgeInSeconds=59
-            )
-        snapshot.match("put_eventage_invalid_59", e.value.response)
-
-        with pytest.raises(lambda_client.exceptions.ClientError) as e:
-            lambda_client.put_function_event_invoke_config(
-                FunctionName=function_name, MaximumRetryAttempts=1, MaximumEventAgeInSeconds=21601
-            )
-        snapshot.match("put_eventage_invalid_21601", e.value.response)
-
         put_maxevent_maxvalue_result = lambda_client.put_function_event_invoke_config(
             FunctionName=function_name, MaximumRetryAttempts=2, MaximumEventAgeInSeconds=21600
         )

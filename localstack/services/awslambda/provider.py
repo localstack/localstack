@@ -2399,7 +2399,7 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
 
         event_invoke_configs = PaginatedList(event_invoke_configs)
         page, token = event_invoke_configs.get_page(
-            lambda x: x,
+            lambda x: x["FunctionArn"],
             marker,
             max_items,
         )
