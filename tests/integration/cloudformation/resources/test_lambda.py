@@ -6,7 +6,6 @@ import pytest
 
 from localstack.aws.api.lambda_ import InvocationType, State
 from localstack.testing.aws.lambda_utils import is_new_provider, is_old_provider
-from localstack.testing.aws.util import is_aws_cloud
 from localstack.testing.snapshots.transformer import SortingTransformer
 from localstack.utils.common import short_uid
 from localstack.utils.http import safe_requests
@@ -320,10 +319,11 @@ def test_update_lambda_permissions(deploy_cfn_template, lambda_client, sts_clien
     )
 
     policy = lambda_client.get_policy(FunctionName=stack.outputs["FunctionName"])
-    if is_aws_cloud():
-        principal = json.loads(policy["Policy"])["Statement"][0]["Principal"]["AWS"]
-    else:
-        principal = json.loads(policy["Policy"])["Statement"][0]["Principal"]["Service"]
+
+    # The behaviour of thi principal acocunt setting changes with aws or lambda providers
+    principal = json.loads(policy["Policy"])["Statement"][0]["Principal"]
+    if isinstance(principal, dict):
+        principal = principal.get("AWS") or principal.get("Service", "")
 
     assert new_principal in principal
 
