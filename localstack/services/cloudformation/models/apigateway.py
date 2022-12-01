@@ -540,7 +540,6 @@ class GatewayUsagePlan(GenericBaseModel):
             update_config_props["Tags"] = tags_dict
 
         usage_plan_id = new_resource["PhysicalResourceId"]
-        client = aws_stack.connect_to_service("apigateway")
 
         patch_operations = []
 
@@ -581,6 +580,7 @@ class GatewayUsagePlan(GenericBaseModel):
                 patch_operations.append(
                     {"op": "replace", "path": f"/{first_char_to_lower(parameter)}", "value": value}
                 )
+        client = aws_stack.connect_to_service("apigateway")
         client.update_usage_plan(usagePlanId=usage_plan_id, patchOperations=patch_operations)
 
 
@@ -790,7 +790,7 @@ class GatewayModel(GenericBaseModel):
 class GatewayAccount(GenericBaseModel):
     @staticmethod
     def cloudformation_type():
-        return "AWS::ApiGateway:Account"
+        return "AWS::ApiGateway::Account"
 
     def fetch_state(self, stack_name, resources):
         client = aws_stack.connect_to_service("apigateway")
