@@ -531,12 +531,12 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
                     raise ServiceException("Gotta have an image when package type is image")
                 image = store_image_code(image_uri=image)
 
-                if image_config_req := request.get("ImageConfig"):
-                    image_config = ImageConfig(
-                        command=image_config_req.get("Command"),
-                        entrypoint=image_config_req.get("EntryPoint"),
-                        working_directory=image_config_req.get("WorkingDirectory"),
-                    )
+                image_config_req = request.get("ImageConfig", {})
+                image_config = ImageConfig(
+                    command=image_config_req.get("Command"),
+                    entrypoint=image_config_req.get("EntryPoint"),
+                    working_directory=image_config_req.get("WorkingDirectory"),
+                )
 
             version = FunctionVersion(
                 id=arn,

@@ -422,7 +422,7 @@ def store_image_code(image_uri: str) -> ImageCode:
     try:
         code_sha256 = CONTAINER_CLIENT.inspect_image(image_name=image_uri)["RepoDigests"][
             0
-        ].partition(":")[2]
+        ].rpartition(":")[2]
     except Exception as e:
         LOG.debug(
             "Cannot inspect image %s. Is this image and/or docker available: %s", image_uri, e
