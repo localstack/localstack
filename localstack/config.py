@@ -674,9 +674,12 @@ LAMBDA_STAY_OPEN_MODE = is_in_docker and is_env_not_false("LAMBDA_STAY_OPEN_MODE
 # truncate output string slices value
 LAMBDA_TRUNCATE_STDOUT = int(os.getenv("LAMBDA_TRUNCATE_STDOUT") or 2000)
 
-
-# LAMBDA ASF
-
+# sets an alternative base delay in seconds for async retries (only applicable to ASF Lambda provider)
+# defaults to 60s (behavior on AWS)
+# the first retry will be 1x LAMBDA_RETRY_BASE_DELAY_SECONDS, the second one 2x LAMBDA_RETRY_BASE_DELAY_SECONDS
+# e.g. LAMBDA_RETRY_BASE_DELAY_SECONDS=30.
+#   The delay between the initial invocation and first retry will be 30s.
+#   The delay between the first retry and the second retry will be 60s
 LAMBDA_RETRY_BASE_DELAY_SECONDS = int(os.getenv("LAMBDA_RETRY_BASE_DELAY") or 60)
 
 # A comma-delimited string of stream names and its corresponding shard count to
