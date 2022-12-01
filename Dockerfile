@@ -1,4 +1,4 @@
-ARG IMAGE_TYPE=full
+ARG IMAGE_TYPE=community
 
 # java-builder: Stage to build a custom JRE (with jlink)
 FROM python:3.10.8-slim-buster@sha256:95f2dd6b380d0762cba090f5167259543dc156f08b8a85262926a2919604e2b5 as java-builder
@@ -167,50 +167,8 @@ RUN echo /var/lib/localstack/lib/extensions/python_venv/lib/python3.10/site-pack
     mv localstack-extensions-venv.pth .venv/lib/python*/site-packages/
 
 
-
-# base-light: Stage which does not add additional dependencies (like elasticsearch)
-FROM base as base-light
-RUN touch /usr/lib/localstack/.light-version
-
-
-
-# base-full: Stage which adds additional dependencies to avoid installing them at runtime (f.e. elasticsearch)
-FROM base as base-full
-
-# Install Elasticsearch
-# https://github.com/pires/docker-elasticsearch/issues/56
-ENV ES_TMPDIR /tmp
-
-ENV ES_BASE_DIR=/usr/lib/localstack/elasticsearch/Elasticsearch_7.10
-ENV ES_JAVA_HOME /usr/lib/jvm/java-11
-RUN TARGETARCH_SYNONYM=$([[ "$TARGETARCH" == "amd64" ]] && echo "x86_64" || echo "aarch64"); \
-    curl -L -o /tmp/localstack.es.tar.gz \
-        https://artifacts.elastic.co/downloads/elasticsearch/elasticsearch-7.10.0-linux-${TARGETARCH_SYNONYM}.tar.gz && \
-    (cd /tmp && tar -xf localstack.es.tar.gz && \
-        mkdir -p $ES_BASE_DIR && mv elasticsearch*/* $ES_BASE_DIR && rm /tmp/localstack.es.tar.gz) && \
-    (cd $ES_BASE_DIR && \
-        bin/elasticsearch-plugin install analysis-icu && \
-        bin/elasticsearch-plugin install ingest-attachment --batch && \
-        bin/elasticsearch-plugin install analysis-kuromoji && \
-        bin/elasticsearch-plugin install mapper-murmur3 && \
-        bin/elasticsearch-plugin install mapper-size && \
-        bin/elasticsearch-plugin install analysis-phonetic && \
-        bin/elasticsearch-plugin install analysis-smartcn && \
-        bin/elasticsearch-plugin install analysis-stempel && \
-        bin/elasticsearch-plugin install analysis-ukrainian) && \
-    ( rm -rf $ES_BASE_DIR/jdk/ ) && \
-    ( mkdir -p $ES_BASE_DIR/data && \
-        mkdir -p $ES_BASE_DIR/logs && \
-        chmod -R 777 $ES_BASE_DIR/config && \
-        chmod -R 777 $ES_BASE_DIR/data && \
-        chmod -R 777 $ES_BASE_DIR/logs) && \
-    ( rm -rf $ES_BASE_DIR/modules/x-pack-ml/platform && \
-        rm -rf $ES_BASE_DIR/modules/ingest-geoip)
-
-
-
-# light: Stage which produces a final working localstack image (which does not contain some additional infrastructure like eleasticsearch - see "full" stage)
-FROM base-${IMAGE_TYPE}
+# intermediate step which creates a working localstack image without the entrypoint and the version marker
+FROM base as unmarked
 
 LABEL authors="LocalStack Contributors"
 LABEL maintainer="LocalStack Team (info@localstack.cloud)"
@@ -286,6 +244,58 @@ HEALTHCHECK --interval=10s --start-period=15s --retries=5 --timeout=5s CMD ./bin
 
 # default volume directory
 VOLUME /var/lib/localstack
+
+
+# base-community: Stage which will contain the community-version starting from 2.0.0
+FROM unmarked as unmarked-community
+
+# base-pro: Stage which will contain the pro-version starting from 2.0.0
+FROM unmarked as unmarked-pro
+
+# base-light: Stage which does not add additional dependencies (like elasticsearch)
+# FIXME deprecated
+FROM unmarked as unmarked-light
+
+# base-full: Stage which adds additional dependencies to avoid installing them at runtime (f.e. elasticsearch)
+# FIXME deprecated
+FROM unmarked as unmarked-full
+
+# Install Elasticsearch
+# https://github.com/pires/docker-elasticsearch/issues/56
+ENV ES_TMPDIR /tmp
+
+ENV ES_BASE_DIR=/usr/lib/localstack/elasticsearch/Elasticsearch_7.10
+ENV ES_JAVA_HOME /usr/lib/jvm/java-11
+RUN TARGETARCH_SYNONYM=$([[ "$TARGETARCH" == "amd64" ]] && echo "x86_64" || echo "aarch64"); \
+    curl -L -o /tmp/localstack.es.tar.gz \
+        https://artifacts.elastic.co/downloads/elasticsearch/elasticsearch-7.10.0-linux-${TARGETARCH_SYNONYM}.tar.gz && \
+    (cd /tmp && tar -xf localstack.es.tar.gz && \
+        mkdir -p $ES_BASE_DIR && mv elasticsearch*/* $ES_BASE_DIR && rm /tmp/localstack.es.tar.gz) && \
+    (cd $ES_BASE_DIR && \
+        bin/elasticsearch-plugin install analysis-icu && \
+        bin/elasticsearch-plugin install ingest-attachment --batch && \
+        bin/elasticsearch-plugin install analysis-kuromoji && \
+        bin/elasticsearch-plugin install mapper-murmur3 && \
+        bin/elasticsearch-plugin install mapper-size && \
+        bin/elasticsearch-plugin install analysis-phonetic && \
+        bin/elasticsearch-plugin install analysis-smartcn && \
+        bin/elasticsearch-plugin install analysis-stempel && \
+        bin/elasticsearch-plugin install analysis-ukrainian) && \
+    ( rm -rf $ES_BASE_DIR/jdk/ ) && \
+    ( mkdir -p $ES_BASE_DIR/data && \
+        mkdir -p $ES_BASE_DIR/logs && \
+        chmod -R 777 $ES_BASE_DIR/config && \
+        chmod -R 777 $ES_BASE_DIR/data && \
+        chmod -R 777 $ES_BASE_DIR/logs) && \
+    ( rm -rf $ES_BASE_DIR/modules/x-pack-ml/platform && \
+        rm -rf $ES_BASE_DIR/modules/ingest-geoip)
+
+
+FROM unmarked-${IMAGE_TYPE}
+ARG IMAGE_TYPE
+
+# mark the image version
+RUN touch /usr/lib/localstack/.${IMAGE_TYPE}-version
 
 # define command at startup
 ENTRYPOINT ["docker-entrypoint.sh"]

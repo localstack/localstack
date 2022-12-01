@@ -51,6 +51,44 @@ class TestCloudwatch:
         assert 1 == len(rs["Metrics"])
         assert namespace == rs["Metrics"][0]["Namespace"]
 
+    @pytest.mark.aws_validated
+    def test_put_metric_data_values_list(self, cloudwatch_client, snapshot):
+        metric_name = "test-metric"
+        namespace = f"ns-{short_uid()}"
+        utc_now = datetime.utcnow().replace(tzinfo=timezone.utc)
+        snapshot.add_transformer(
+            snapshot.transform.key_value("Timestamp", reference_replacement=False)
+        )
+
+        cloudwatch_client.put_metric_data(
+            Namespace=namespace,
+            MetricData=[
+                {
+                    "MetricName": metric_name,
+                    "Timestamp": utc_now,
+                    "Values": [1.0, 10.0],
+                    "Counts": [2, 4],
+                    "Unit": "Count",
+                }
+            ],
+        )
+
+        def get_stats() -> int:
+            global stats
+            stats = cloudwatch_client.get_metric_statistics(
+                Namespace=namespace,
+                MetricName=metric_name,
+                StartTime=utc_now - timedelta(seconds=60),
+                EndTime=utc_now + timedelta(seconds=60),
+                Period=60,
+                Statistics=["SampleCount", "Sum", "Maximum"],
+            )
+            datapoints = stats["Datapoints"]
+            return len(datapoints)
+
+        assert poll_condition(lambda: get_stats() >= 1, timeout=10)
+        snapshot.match("get_metric_statistics", stats)
+
     def test_put_metric_data_gzip(self, cloudwatch_client):
         metric_name = "test-metric"
         namespace = "namespace"

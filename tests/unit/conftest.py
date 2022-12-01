@@ -12,6 +12,7 @@ def switch_region():
     def _switch_region(region: Optional[str]):
         from localstack import config
 
+        # FIXME adapt or remove with 2.0
         previous_region = config.DEFAULT_REGION
         try:
             config.DEFAULT_REGION = region

@@ -15,6 +15,8 @@ from localstack.aws.api.cloudwatch import (
     DescribeAlarmsOutput,
     GetMetricDataInput,
     GetMetricDataOutput,
+    GetMetricStatisticsInput,
+    GetMetricStatisticsOutput,
     ListTagsForResourceOutput,
     PutCompositeAlarmInput,
     PutMetricAlarmInput,
@@ -25,6 +27,7 @@ from localstack.aws.api.cloudwatch import (
     UntagResourceOutput,
 )
 from localstack.constants import DEFAULT_AWS_ACCOUNT_ID
+from localstack.deprecations import deprecated_endpoint
 from localstack.http import Request
 from localstack.services import moto
 from localstack.services.cloudwatch.alarm_scheduler import AlarmScheduler
@@ -37,7 +40,8 @@ from localstack.utils.sync import poll_condition
 from localstack.utils.tagging import TaggingService
 from localstack.utils.threads import start_worker_thread
 
-PATH_GET_RAW_METRICS = "/cloudwatch/metrics/raw"
+PATH_GET_RAW_METRICS = "/_aws/cloudwatch/metrics/raw"
+DEPRECATED_PATH_GET_RAW_METRICS = "/cloudwatch/metrics/raw"
 MOTO_INITIAL_UNCHECKED_REASON = "Unchecked: Initial alarm creation"
 
 LOG = logging.getLogger(__name__)
@@ -227,6 +231,16 @@ class CloudwatchProvider(CloudwatchApi, ServiceLifecycleHook):
 
     def on_after_init(self):
         ROUTER.add(PATH_GET_RAW_METRICS, self.get_raw_metrics)
+        # TODO remove with 2.0
+        ROUTER.add(
+            DEPRECATED_PATH_GET_RAW_METRICS,
+            deprecated_endpoint(
+                self.get_raw_metrics,
+                previous_path=DEPRECATED_PATH_GET_RAW_METRICS,
+                deprecation_version="1.3.0",
+                new_path=PATH_GET_RAW_METRICS,
+            ),
+        )
         self.alarm_scheduler = AlarmScheduler()
 
     def on_before_start(self):
@@ -404,5 +418,18 @@ class CloudwatchProvider(CloudwatchApi, ServiceLifecycleHook):
             _cleanup_describe_output(c)
         for m in response["MetricAlarms"]:
             _cleanup_describe_output(m)
+
+        return response
+
+    @handler("GetMetricStatistics", expand=False)
+    def get_metric_statistics(
+        self, context: RequestContext, request: GetMetricStatisticsInput
+    ) -> GetMetricStatisticsOutput:
+        response = moto.call_moto(context)
+
+        # cleanup -> ExtendendStatics is not included in AWS response if it returned empty
+        for datapoint in response.get("Datapoints"):
+            if "ExtendedStatistics" in datapoint and not datapoint.get("ExtendedStatistics"):
+                datapoint.pop("ExtendedStatistics")
 
         return response

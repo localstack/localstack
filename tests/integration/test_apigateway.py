@@ -17,6 +17,7 @@ from requests.structures import CaseInsensitiveDict
 
 from localstack import config
 from localstack.aws.accounts import get_aws_account_id
+from localstack.aws.api.lambda_ import Runtime
 from localstack.aws.handlers import cors
 from localstack.config import get_edge_url
 from localstack.constants import (
@@ -36,12 +37,6 @@ from localstack.services.apigateway.helpers import (
     path_based_url,
 )
 from localstack.services.awslambda.lambda_api import add_event_source, use_docker
-from localstack.services.awslambda.lambda_utils import (
-    LAMBDA_RUNTIME_NODEJS12X,
-    LAMBDA_RUNTIME_NODEJS14X,
-    LAMBDA_RUNTIME_PYTHON36,
-    LAMBDA_RUNTIME_PYTHON39,
-)
 from localstack.services.generic_proxy import ProxyListener
 from localstack.services.infra import start_proxy
 from localstack.utils import testutil
@@ -374,7 +369,7 @@ class TestAPIGateway:
         create_lambda_function(
             func_name=fn_name,
             handler_file=TEST_LAMBDA_AWS_PROXY,
-            runtime=LAMBDA_RUNTIME_PYTHON39,
+            runtime=Runtime.python3_9,
         )
         lambda_arn = arns.lambda_function_arn(fn_name)
 
@@ -424,7 +419,7 @@ class TestAPIGateway:
         create_lambda_function(
             func_name=fn_name,
             handler_file=TEST_LAMBDA_PYTHON_ECHO,
-            runtime=LAMBDA_RUNTIME_PYTHON39,
+            runtime=Runtime.python3_9,
         )
         lambda_arn = lambda_client.get_function(FunctionName=fn_name)["Configuration"][
             "FunctionArn"
@@ -754,13 +749,15 @@ class TestAPIGateway:
             self.API_PATH_LAMBDA_PROXY_BACKEND_ANY_METHOD_WITH_PATH_PARAM,
         )
 
-    def test_api_gateway_lambda_asynchronous_invocation(self, apigateway_client, create_rest_apigw):
+    def test_api_gateway_lambda_asynchronous_invocation(
+        self, apigateway_client, create_rest_apigw, create_lambda_function
+    ):
         api_gateway_name = f"api_gateway_{short_uid()}"
         rest_api_id, _, _ = create_rest_apigw(name=api_gateway_name)
 
         fn_name = f"test-{short_uid()}"
-        testutil.create_lambda_function(
-            handler_file=TEST_LAMBDA_NODEJS, func_name=fn_name, runtime=LAMBDA_RUNTIME_NODEJS12X
+        create_lambda_function(
+            handler_file=TEST_LAMBDA_NODEJS, func_name=fn_name, runtime=Runtime.nodejs16_x
         )
         lambda_arn = arns.lambda_function_arn(fn_name)
 
@@ -924,7 +921,7 @@ class TestAPIGateway:
         create_lambda_function(
             func_name=lambda_name,
             zip_file=testutil.create_zip_file(TEST_LAMBDA_NODEJS_APIGW_502, get_content=True),
-            runtime=LAMBDA_RUNTIME_NODEJS14X,
+            runtime=Runtime.nodejs16_x,
             handler="apigw_502.handler",
         )
 
@@ -1472,7 +1469,9 @@ class TestAPIGateway:
         assert "/pets" in paths
         assert "/pets/{petId}" in paths
 
-    def test_step_function_integrations(self, create_rest_apigw, apigateway_client):
+    def test_step_function_integrations(
+        self, create_rest_apigw, apigateway_client, create_lambda_function
+    ):
         sfn_client = aws_stack.create_external_boto_client("stepfunctions")
         lambda_client = aws_stack.create_external_boto_client("lambda")
 
@@ -1487,10 +1486,10 @@ class TestAPIGateway:
 
         # create state machine
         fn_name = f"sfn-apigw-{short_uid()}"
-        testutil.create_lambda_function(
+        create_lambda_function(
             handler_file=TEST_LAMBDA_PYTHON_ECHO,
             func_name=fn_name,
-            runtime=LAMBDA_RUNTIME_PYTHON36,
+            runtime=Runtime.python3_9,
         )
         role_arn = arns.role_arn("sfn_role")
 
@@ -1785,7 +1784,7 @@ class TestAPIGateway:
             zip_file=testutil.create_zip_file(
                 TEST_LAMBDA_NODEJS_APIGW_INTEGRATION, get_content=True
             ),
-            runtime=LAMBDA_RUNTIME_NODEJS14X,
+            runtime=Runtime.nodejs16_x,
             handler="apigw_integration.handler",
         )
 
@@ -1918,14 +1917,16 @@ class TestAPIGateway:
         testutil.create_lambda_function(
             handler_file=TEST_LAMBDA_PYTHON, libs=TEST_LAMBDA_LIBS, func_name=fn_name
         )
-
-    def test_apigw_test_invoke_method_api(self, apigateway_client, create_rest_apigw):
         lambda_client = aws_stack.create_external_boto_client("lambda")
+        lambda_client.get_waiter("function_active_v2").wait(FunctionName=fn_name)
 
+    def test_apigw_test_invoke_method_api(
+        self, apigateway_client, create_rest_apigw, create_lambda_function
+    ):
         # create test Lambda
         fn_name = f"test-{short_uid()}"
-        testutil.create_lambda_function(
-            handler_file=TEST_LAMBDA_NODEJS, func_name=fn_name, runtime=LAMBDA_RUNTIME_NODEJS12X
+        create_lambda_function(
+            handler_file=TEST_LAMBDA_NODEJS, func_name=fn_name, runtime=Runtime.nodejs16_x
         )
         lambda_arn_1 = arns.lambda_function_arn(fn_name)
 
@@ -1978,9 +1979,6 @@ class TestAPIGateway:
         assert 200 == response.get("status")
         assert "response from" in json.loads(response.get("body")).get("body")
         assert "val123" in json.loads(response.get("body")).get("body")
-
-        # Clean up
-        lambda_client.delete_function(FunctionName=fn_name)
 
     @staticmethod
     def start_http_backend(test_port):
@@ -2273,15 +2271,23 @@ def test_rest_api_multi_region(method, url_function):
     testutil.create_lambda_function(
         handler_file=TEST_LAMBDA_NODEJS,
         func_name=lambda_name,
-        runtime=LAMBDA_RUNTIME_NODEJS14X,
+        runtime=Runtime.nodejs16_x,
         region_name="eu-west-1",
     )
     testutil.create_lambda_function(
         handler_file=TEST_LAMBDA_NODEJS,
         func_name=lambda_name,
-        runtime=LAMBDA_RUNTIME_NODEJS14X,
+        runtime=Runtime.nodejs16_x,
         region_name="us-west-1",
     )
+    lambda_eu_west_1_client = aws_stack.create_external_boto_client(
+        "lambda", region_name="eu-west-1"
+    )
+    lambda_us_west_1_client = aws_stack.create_external_boto_client(
+        "lambda", region_name="us-west-1"
+    )
+    lambda_eu_west_1_client.get_waiter("function_active_v2").wait(FunctionName=lambda_name)
+    lambda_us_west_1_client.get_waiter("function_active_v2").wait(FunctionName=lambda_name)
     lambda_eu_arn = arns.lambda_function_arn(lambda_name, region_name="eu-west-1")
     uri_eu = arns.apigateway_invocations_arn(lambda_eu_arn, region_name="eu-west-1")
 

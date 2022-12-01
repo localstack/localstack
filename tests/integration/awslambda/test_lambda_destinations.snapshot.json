@@ -242,13 +242,16 @@
     }
   },
   "tests/integration/awslambda/test_lambda_destinations.py::TestLambdaDLQ::test_dead_letter_queue": {
-    "recorded-date": "01-09-2022, 09:57:06",
+    "recorded-date": "23-11-2022, 21:22:49",
     "recorded-content": {
       "create_lambda_with_dlq": {
         "CreateEventSourceMappingResponse": null,
         "CreateFunctionResponse": {
+          "Architectures": [
+            "x86_64"
+          ],
           "CodeSha256": "<code-sha256:1>",
-          "CodeSize": 17481634,
+          "CodeSize": "<code-size>",
           "DeadLetterConfig": {
             "TargetArn": "arn:aws:sqs:<region>:111111111111:<resource:1>"
           },
@@ -265,10 +268,6 @@
           "LastModified": "date",
           "MemorySize": 128,
           "PackageType": "Zip",
-          "ResponseMetadata": {
-            "HTTPHeaders": {},
-            "HTTPStatusCode": 201
-          },
           "RevisionId": "<uuid:1>",
           "Role": "arn:aws:iam::111111111111:role/<resource:2>",
           "Runtime": "python3.9",
@@ -279,7 +278,11 @@
           "TracingConfig": {
             "Mode": "PassThrough"
           },
-          "Version": "$LATEST"
+          "Version": "$LATEST",
+          "ResponseMetadata": {
+            "HTTPHeaders": {},
+            "HTTPStatusCode": 201
+          }
         }
       },
       "receive_result": {
@@ -314,8 +317,11 @@
         }
       },
       "delete_dlq": {
+        "Architectures": [
+          "x86_64"
+        ],
         "CodeSha256": "<code-sha256:1>",
-        "CodeSize": 17481634,
+        "CodeSize": "<code-size>",
         "DeadLetterConfig": {
           "TargetArn": "arn:aws:sqs:<region>:111111111111:<resource:1>"
         },
@@ -335,10 +341,6 @@
         "LastUpdateStatusReasonCode": "Creating",
         "MemorySize": 128,
         "PackageType": "Zip",
-        "ResponseMetadata": {
-          "HTTPHeaders": {},
-          "HTTPStatusCode": 200
-        },
         "RevisionId": "<uuid:3>",
         "Role": "arn:aws:iam::111111111111:role/<resource:2>",
         "Runtime": "python3.9",
@@ -347,7 +349,11 @@
         "TracingConfig": {
           "Mode": "PassThrough"
         },
-        "Version": "$LATEST"
+        "Version": "$LATEST",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
       },
       "invoke_result": {
         "ExecutedVersion": "$LATEST",
@@ -361,14 +367,14 @@
             "  File \"/var/task/handler.py\", line 54, in handler\n    raise Exception(\"Test exception (this is intentional)\")\n"
           ]
         },
+        "StatusCode": 200,
         "ResponseMetadata": {
           "HTTPHeaders": {},
           "HTTPStatusCode": 200
-        },
-        "StatusCode": 200
+        }
       },
       "log_result": {
-        "log_result": [
+        "result": [
           "START RequestId: <uuid:4> Version: $LATEST",
           "Lambda log message - print function",
           "[INFO]\tdate\t<uuid:4>\tLambda log message - logging module",

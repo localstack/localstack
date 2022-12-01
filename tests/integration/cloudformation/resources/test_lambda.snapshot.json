@@ -218,7 +218,7 @@
             "x86_64"
           ],
           "CodeSha256": "<code-sha256:1>",
-          "CodeSize": 189,
+          "CodeSize": "<code-size>",
           "Description": "",
           "EphemeralStorage": {
             "Size": 512
@@ -442,7 +442,7 @@
             "x86_64"
           ],
           "CodeSha256": "<code-sha256:1>",
-          "CodeSize": 189,
+          "CodeSize": "<code-size>",
           "Description": "",
           "EphemeralStorage": {
             "Size": 512
@@ -680,7 +680,7 @@
               "x86_64"
             ],
             "CodeSha256": "<code-sha256:1>",
-            "CodeSize": 189,
+            "CodeSize": "<code-size>",
             "Description": "",
             "EphemeralStorage": {
               "Size": 512
@@ -705,7 +705,7 @@
               "x86_64"
             ],
             "CodeSha256": "<code-sha256:1>",
-            "CodeSize": 189,
+            "CodeSize": "<code-size>",
             "Description": "test description",
             "EphemeralStorage": {
               "Size": 512
@@ -741,7 +741,7 @@
             "x86_64"
           ],
           "CodeSha256": "<code-sha256:1>",
-          "CodeSize": 189,
+          "CodeSize": "<code-size>",
           "Description": "test description",
           "EphemeralStorage": {
             "Size": 512
@@ -879,7 +879,7 @@
             "x86_64"
           ],
           "CodeSha256": "<code-sha256:1>",
-          "CodeSize": 189,
+          "CodeSize": "<code-size>",
           "Description": "",
           "EphemeralStorage": {
             "Size": 512
@@ -1168,7 +1168,7 @@
             "x86_64"
           ],
           "CodeSha256": "<code-sha256:1>",
-          "CodeSize": 189,
+          "CodeSize": "<code-size>",
           "Description": "",
           "EphemeralStorage": {
             "Size": 512

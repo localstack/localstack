@@ -14,7 +14,7 @@ from localstack.utils.strings import short_uid
 
 def _bucket_url_vhost(bucket_name: str, region: str = "", localstack_host: str = None) -> str:
     if not region:
-        region = config.DEFAULT_REGION
+        region = config.AWS_REGION_US_EAST_1
     if os.environ.get("TEST_TARGET") == "AWS_CLOUD":
         if region == "us-east-1":
             return f"https://{bucket_name}.s3.amazonaws.com"

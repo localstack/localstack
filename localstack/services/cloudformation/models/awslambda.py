@@ -129,6 +129,11 @@ class LambdaFunction(GenericBaseModel):
                 environment_variables = params["Environment"].get("Variables", {})
                 return {"Variables": {k: str(v) for k, v in environment_variables.items()}}
 
+        def result_handler(result, resource_id, resources, resource_type):
+            """waits for the lambda to be in a "terminal" state, i.e. not pending"""
+            lambda_client = aws_stack.connect_to_service("lambda")
+            lambda_client.get_waiter("function_active_v2").wait(FunctionName=result["FunctionArn"])
+
         return {
             "create": {
                 "function": "create_function",
@@ -152,6 +157,7 @@ class LambdaFunction(GenericBaseModel):
                 },
                 "defaults": {"Role": "test_role"},
                 "types": {"Timeout": int, "MemorySize": int},
+                "result_handler": result_handler,
             },
             "delete": {"function": "delete_function", "parameters": get_delete_params},
         }

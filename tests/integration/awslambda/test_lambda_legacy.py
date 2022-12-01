@@ -14,7 +14,7 @@ from localstack.services.awslambda.lambda_api import (
 )
 from localstack.services.awslambda.lambda_utils import LAMBDA_DEFAULT_HANDLER
 from localstack.services.awslambda.packages import awslambda_go_runtime_package
-from localstack.testing.aws.lambda_utils import is_old_provider
+from localstack.testing.aws.lambda_utils import is_new_provider, is_old_provider
 from localstack.testing.pytest.fixtures import skip_if_pro_enabled
 from localstack.utils import testutil
 from localstack.utils.archives import download_and_extract
@@ -28,6 +28,10 @@ from tests.integration.awslambda.test_lambda import (
     TEST_LAMBDA_PYTHON_ECHO,
     TEST_LAMBDA_RUBY,
     read_streams,
+)
+
+pytestmark = pytest.mark.skipif(
+    condition=is_new_provider(), reason="only relevant for old provider"
 )
 
 

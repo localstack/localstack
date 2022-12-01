@@ -2,18 +2,40 @@
 
 set -eo pipefail
 shopt -s nullglob
-
-if [[ ! $INIT_SCRIPTS_PATH ]]
-then
-  # FIXME: deprecate and use /etc/localstack/init/ready.d
-  INIT_SCRIPTS_PATH=/docker-entrypoint-initaws.d
-fi
 if [[ ! $EDGE_PORT ]]
 then
   EDGE_PORT=4566
 fi
 
-# FIXME: deprecation path for legacy directories
+# FIXME: remove with 2.0
+# the Dockerfile creates .pro-version file for the pro image. When trying to activate pro features with any other
+# version, an error is printed.
+if [[ $LOCALSTACK_API_KEY ]] && [[ ! -f /usr/lib/localstack/.pro-version ]]; then
+    echo "WARNING"
+    echo "============================================================================"
+    echo "  It seems you are using the LocalStack Pro version without using the"
+    echo "  dedicated Pro image."
+    echo "  Future versions will only support running LocalStack Pro with the"
+    echo "  dedicated image."
+    echo "  To fix this warning, use localstack/localstack-pro instead."
+    echo ""
+    echo "  See: https://github.com/localstack/localstack/issues/7257"
+    echo "============================================================================"
+    echo ""
+elif [[ -f /usr/lib/localstack/.light-version ]] || [[ -f /usr/lib/localstack/.full-version ]]; then
+    echo "WARNING"
+    echo "============================================================================"
+    echo "  It seems you are using a deprecated image (localstack/localstack-light"
+    echo "  or localstack/localstack-full)."
+    echo "  These images are deprecated and will be removed in the future."
+    echo "  To fix this warning, use localstack/localstack instead."
+    echo ""
+    echo "  See: https://github.com/localstack/localstack/issues/7257"
+    echo "============================================================================"
+    echo ""
+fi
+
+# FIXME: remove with 2.0
 # the Dockerfile creates .marker file that will be overwritten if a volume is mounted into /tmp/localstack
 if [ ! -f /tmp/localstack/.marker ]; then
     # unless LEGACY_DIRECTORIES is explicitly set to 1, print an error message and exit with a non-zero exit code
@@ -80,13 +102,35 @@ test -d /etc/localstack/init/boot.d && /opt/code/localstack/.venv/bin/python -m 
 supervisord -c /etc/supervisord.conf &
 suppid="$!"
 
+
+# FIXME: remove with 2.0
+if [[ ! $INIT_SCRIPTS_PATH ]]
+then
+  INIT_SCRIPTS_PATH=/docker-entrypoint-initaws.d
+fi
+# check if the init script directory exists (by default it does not)
+if [ -d "$INIT_SCRIPTS_PATH" ]; then
+    # unless LEGACY_INIT_DIR is explicitly set to 1 print a prominent warning
+    if [[ -z ${LEGACY_INIT_DIR} ]] || [[ ${LEGACY_INIT_DIR} == "0" ]]; then
+        echo "WARNING"
+        echo "============================================================================"
+        echo "  It seems you are using an init script in $INIT_SCRIPTS_PATH."
+        echo "  The INIT_SCRIPTS_PATH have been deprecated with v1.1.0 and will be removed in future releases"
+        echo "  of LocalStack. Please use /etc/localstack/init/ready.d instead."
+        echo "  You can suppress this warning by setting LEGACY_INIT_DIR=1."
+        echo ""
+        echo "  See: https://github.com/localstack/localstack/issues/7257"
+        echo "============================================================================"
+        echo ""
+    fi
+fi
 function run_startup_scripts {
   until grep -q '^Ready.' ${LOG_DIR}/localstack_infra.log >/dev/null 2>&1 ; do
     echo "Waiting for all LocalStack services to be ready"
     sleep 7
   done
 
-  curl -XPUT -s -H "Content-Type: application/json" -d '{"features:initScripts":"initializing"}' "http://localhost:$EDGE_PORT/health" > /dev/null
+  curl -XPUT -s -H "Content-Type: application/json" -d '{"features:initScripts":"initializing"}' "http://localhost:$EDGE_PORT/_localstack/health" > /dev/null
   for f in $INIT_SCRIPTS_PATH/*; do
     case "$f" in
       *.sh)     echo "$0: running $f"; . "$f" ;;
@@ -94,9 +138,8 @@ function run_startup_scripts {
     esac
     echo
   done
-  curl -XPUT -s -H "Content-Type: application/json" -d '{"features:initScripts":"initialized"}' "http://localhost:$EDGE_PORT/health" > /dev/null
+  curl -XPUT -s -H "Content-Type: application/json" -d '{"features:initScripts":"initialized"}' "http://localhost:$EDGE_PORT/_localstack/health" > /dev/null
 }
-
 run_startup_scripts &
 
 # Run tail on the localstack log files forever until we are told to terminate

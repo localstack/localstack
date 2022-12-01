@@ -4,7 +4,7 @@ import os
 
 import pytest
 
-from localstack.aws.api.lambda_ import InvocationType
+from localstack.aws.api.lambda_ import InvocationType, State
 from localstack.testing.aws.lambda_utils import is_new_provider, is_old_provider
 from localstack.testing.snapshots.transformer import SortingTransformer
 from localstack.utils.common import short_uid
@@ -231,6 +231,11 @@ def test_lambda_version(deploy_cfn_template, cfn_client, lambda_client, snapshot
         max_wait=240,
     )
 
+    invoke_result = lambda_client.invoke(
+        FunctionName=deployment.outputs["FunctionName"], Payload=b"{}"
+    )
+    assert 200 <= invoke_result["StatusCode"] < 300
+
     stack_resources = cfn_client.describe_stack_resources(StackName=deployment.stack_id)
     snapshot.match("stack_resources", stack_resources)
 
@@ -243,6 +248,47 @@ def test_lambda_version(deploy_cfn_template, cfn_client, lambda_client, snapshot
 
     snapshot.match("versions_by_fn", versions_by_fn)
     snapshot.match("get_function_version", get_function_version)
+
+
+@pytest.mark.aws_validated
+def test_lambda_cfn_run(deploy_cfn_template, lambda_client):
+    """
+    simply deploys a lambda and immediately invokes it
+    """
+    deployment = deploy_cfn_template(
+        template_path=os.path.join(
+            os.path.dirname(__file__), "../../templates/cfn_lambda_simple.yaml"
+        ),
+        max_wait=120,
+    )
+    fn_name = deployment.outputs["FunctionName"]
+    assert (
+        lambda_client.get_function(FunctionName=fn_name)["Configuration"]["State"] == State.Active
+    )
+    lambda_client.invoke(FunctionName=fn_name, LogType="Tail", Payload=b"{}")
+
+
+@pytest.mark.skip(reason="broken/notimplemented")
+@pytest.mark.aws_validated
+def test_lambda_vpc(deploy_cfn_template, lambda_client):
+    """
+    this test showcases a very long-running deployment of a fairly straight forward lambda function
+    cloudformation will poll get_function until the active state has been reached
+    """
+    fn_name = f"vpc-lambda-fn-{short_uid()}"
+    deploy_cfn_template(
+        template_path=os.path.join(
+            os.path.dirname(__file__), "../../templates/cfn_lambda_vpc.yaml"
+        ),
+        parameters={
+            "FunctionNameParam": fn_name,
+        },
+        max_wait=600,
+    )
+    assert (
+        lambda_client.get_function(FunctionName=fn_name)["Configuration"]["State"] == State.Active
+    )
+    lambda_client.invoke(FunctionName=fn_name, LogType="Tail", Payload=b"{}")
 
 
 class TestCfnLambdaIntegrations:

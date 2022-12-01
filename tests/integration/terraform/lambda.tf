@@ -3,12 +3,12 @@ variable "function_name" {
 }
 
 resource "aws_lambda_function" "tf_lambda" {
-  filename      = "../awslambda/functions/dotnetcore2/dotnetcore2.zip"
+  filename      = "../awslambda/functions/echo.zip"
   function_name = var.function_name
   role          = aws_iam_role.iam_for_lambda.arn
-  handler       = "DotNetCore2::DotNetCore2.Lambda.Function::SimpleFunctionHandler"
+  handler       = "index.handler"
 
-  source_code_hash = filebase64sha256("../awslambda/functions/dotnetcore2/dotnetcore2.zip")
+  source_code_hash = filebase64sha256("../awslambda/functions/echo.zip")
 
-  runtime = "dotnetcore2.0"
+  runtime = "python3.8"
 }

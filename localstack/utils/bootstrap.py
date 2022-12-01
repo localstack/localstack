@@ -348,7 +348,14 @@ def get_docker_image_to_start():
     if not image_name:
         image_name = constants.DOCKER_IMAGE_NAME
         if os.environ.get("USE_LIGHT_IMAGE") in constants.FALSE_STRINGS:
+            # FIXME deprecated - remove with 2.0
+            LOG.warning(
+                "USE_LIGHT_IMAGE is deprecated (since 1.3.0) and will be removed in upcoming releases of LocalStack! "
+                "The localstack/localstack-full image is deprecated. Please remove this environment variable."
+            )
             image_name = constants.DOCKER_IMAGE_NAME_FULL
+        if is_api_key_configured():
+            image_name = constants.DOCKER_IMAGE_NAME_PRO
     return image_name
 
 

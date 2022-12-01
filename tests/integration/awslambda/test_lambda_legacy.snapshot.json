@@ -9,7 +9,7 @@
             "x86_64"
           ],
           "CodeSha256": "JFAgt2kkssqT3Gurh9mgynGIENd7X7Q8wgSDWV8t+yc=",
-          "CodeSize": 5742911,
+          "CodeSize": "<code-size>",
           "Description": "",
           "Environment": {
             "Variables": {}
@@ -61,7 +61,7 @@
             "x86_64"
           ],
           "CodeSha256": "nNBldQurI5xsU7pHXqhF5ExQE8XXHm/ccdLGTFJpMJU=",
-          "CodeSize": 179,
+          "CodeSize": "<code-size>",
           "Description": "",
           "Environment": {
             "Variables": {}

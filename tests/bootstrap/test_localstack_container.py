@@ -18,7 +18,7 @@ class TestLocalstackContainerServer:
             server.start()
             assert server.wait_is_up(60)
 
-            response = requests.get("http://localhost:4566/health")
+            response = requests.get("http://localhost:4566/_localstack/health")
             assert response.ok, "expected health check to return OK: %s" % response.text
         finally:
             server.shutdown()

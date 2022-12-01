@@ -91,7 +91,7 @@ def cmd_status_services(format):
     url = config.get_edge_url()
 
     try:
-        health = requests.get(f"{url}/health", timeout=2)
+        health = requests.get(f"{url}/_localstack/health", timeout=2)
         doc = health.json()
         services = doc.get("services", [])
         if format == "table":

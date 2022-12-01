@@ -10,8 +10,12 @@ def test_fix_region_in_headers():
     for region_name in ["local", "localhost"]:
         headers = aws_stack.mock_aws_request_headers("dynamodb", region_name=region_name)
         assert aws_stack.get_region() not in headers.get("Authorization")
-        DynamoDBProvider.prepare_request_headers(headers)
-        assert aws_stack.get_region() in headers.get("Authorization")
+
+        # Ensure that the correct namespacing key is passed as Access Key ID to DynamoDB Local
+        DynamoDBProvider.prepare_request_headers(
+            headers, account_id="000011112222", region_name="ap-south-1"
+        )
+        assert "000011112222apsouth1" in headers.get("Authorization")
 
 
 def test_lookup_via_item_set():

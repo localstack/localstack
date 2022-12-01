@@ -53,23 +53,24 @@ def handler(event, *args):
 
 
 @pytest.fixture(scope="class")
-def scheduled_test_lambda():
+def scheduled_test_lambda(lambda_client):
     # Note: create scheduled Lambda here - assertions will be run in test_scheduled_lambda() below..
 
     # create test Lambda
-    scheduled_lambda_name = "scheduled-%s" % short_uid()
+    scheduled_lambda_name = f"scheduled-{short_uid()}"
     handler_file = new_tmp_file()
     save_file(handler_file, TEST_HANDLER)
     resp = testutil.create_lambda_function(
         handler_file=handler_file, func_name=scheduled_lambda_name
     )
+    lambda_client.get_waiter("function_active_v2").wait(FunctionName=scheduled_lambda_name)
     func_arn = resp["CreateFunctionResponse"]["FunctionArn"]
 
     # create scheduled Lambda function
-    rule_name = "rule-%s" % short_uid()
+    rule_name = f"rule-{short_uid()}"
     events = aws_stack.create_external_boto_client("events")
     events.put_rule(Name=rule_name, ScheduleExpression="rate(1 minutes)")
-    events.put_targets(Rule=rule_name, Targets=[{"Id": "target-%s" % short_uid(), "Arn": func_arn}])
+    events.put_targets(Rule=rule_name, Targets=[{"Id": f"target-{short_uid()}", "Arn": func_arn}])
 
     yield scheduled_lambda_name
 

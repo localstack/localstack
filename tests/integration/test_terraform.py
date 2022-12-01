@@ -18,8 +18,8 @@ QUEUE_ARN = "arn:aws:sqs:us-east-1:{account_id}:tf-queue"
 # lambda Testing Variables
 LAMBDA_NAME = "tf-lambda"
 LAMBDA_ARN = "arn:aws:lambda:us-east-1:{account_id}:function:{lambda_name}"
-LAMBDA_HANDLER = "DotNetCore2::DotNetCore2.Lambda.Function::SimpleFunctionHandler"
-LAMBDA_RUNTIME = "dotnetcore2.0"
+LAMBDA_HANDLER = "index.handler"
+LAMBDA_RUNTIME = "python3.8"
 LAMBDA_ROLE = "arn:aws:iam::{account_id}:role/iam_for_lambda"
 
 INIT_LOCK = threading.RLock()
