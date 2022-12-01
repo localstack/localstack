@@ -168,6 +168,7 @@ from localstack.services.awslambda.invocation.lambda_service import (
     LambdaService,
     destroy_code_if_not_used,
     lambda_stores,
+    store_image_code,
     store_lambda_archive,
     store_s3_bucket_archive,
 )
@@ -528,12 +529,14 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
                 image = request_code.get("ImageUri")
                 if not image:
                     raise ServiceException("Gotta have an image when package type is image")
+                image = store_image_code(image_uri=image)
 
-                image_config = ImageConfig(
-                    command=request.get("ImageConfig", {}).get("Command"),
-                    entrypoint=request.get("ImageConfig", {}).get("EntryPoint"),
-                    working_directory=request.get("ImageConfig", {}).get("WorkingDirectory"),
-                )
+                if image_config_req := request.get("ImageConfig"):
+                    image_config = ImageConfig(
+                        command=image_config_req.get("Command"),
+                        entrypoint=image_config_req.get("EntryPoint"),
+                        working_directory=image_config_req.get("WorkingDirectory"),
+                    )
 
             version = FunctionVersion(
                 id=arn,
@@ -647,6 +650,14 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
                 self._validate_layers(new_layers)
             replace_kwargs["layers"] = self.map_layers(new_layers)
 
+        if "ImageConfig" in request:
+            new_image_config = request["ImageConfig"]
+            replace_kwargs["image_config"] = ImageConfig(
+                command=new_image_config.get("Command"),
+                entrypoint=new_image_config.get("EntryPoint"),
+                working_directory=new_image_config.get("WorkingDirectory"),
+            )
+
         new_latest_version = dataclasses.replace(
             latest_version,
             config=dataclasses.replace(
@@ -685,6 +696,19 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
         function = state.functions[function_name]
         # TODO verify if correct combination of code is set
         image = None
+        if (
+            request.get("ZipFile") or request.get("S3Bucket")
+        ) and function.latest().config.package_type == PackageType.Image:
+            raise InvalidParameterValueException(
+                "Please provide ImageUri when updating a function with packageType Image.",
+                Type="User",
+            )
+        elif request.get("ImageUri") and function.latest().config.package_type == PackageType.Zip:
+            raise InvalidParameterValueException(
+                "Please don't provide ImageUri when updating a function with packageType Zip.",
+                Type="User",
+            )
+
         if zip_file := request.get("ZipFile"):
             code = store_lambda_archive(
                 archive_file=zip_file,
@@ -705,7 +729,7 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
             )
         elif image := request.get("ImageUri"):
             code = None
-            image = image
+            image = store_image_code(image_uri=image)
         else:
             raise ServiceException("Gotta have s3 bucket or zip file or image")
 
@@ -845,7 +869,11 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
                 Location=code.generate_presigned_url(), RepositoryType="S3"
             )
         elif image := version.config.image:
-            code_location = FunctionCodeLocation(ImageUri=image, ResolvedImageUri=image)
+            code_location = FunctionCodeLocation(
+                ImageUri=image.image_uri,
+                RepositoryType=image.repository_type,
+                ResolvedImageUri=image.resolved_image_uri,
+            )
 
         return GetFunctionResponse(
             Configuration=api_utils.map_config_out(version, return_qualified_arn=bool(qualifier)),

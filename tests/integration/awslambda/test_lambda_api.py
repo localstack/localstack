@@ -589,6 +589,7 @@ class TestLambdaImages:
     def test_lambda_image_crud(
         self, lambda_client, create_lambda_function_aws, lambda_su_role, test_image, snapshot
     ):
+        """Test lambda crud with package type image"""
         image = test_image("alpine")
         repo_uri = image.rpartition(":")[0]
         snapshot.add_transformer(snapshot.transform.regex(repo_uri, "<repo_uri>"))
@@ -634,9 +635,50 @@ class TestLambdaImages:
         snapshot.match("get-function-config-response-after-update", get_function_config_response)
 
     @pytest.mark.aws_validated
+    def test_lambda_zip_file_to_image(
+        self, lambda_client, create_lambda_function_aws, lambda_su_role, test_image, snapshot
+    ):
+        """Test that verifies conversion from zip file lambda to image lambda is not possible"""
+        image = test_image("alpine")
+        repo_uri = image.rpartition(":")[0]
+        snapshot.add_transformer(snapshot.transform.regex(repo_uri, "<repo_uri>"))
+        function_name = f"test-function-{short_uid()}"
+        create_image_response = create_lambda_function_aws(
+            FunctionName=function_name,
+            Role=lambda_su_role,
+            Runtime=Runtime.python3_9,
+            Handler="handler.handler",
+            Code={
+                "ZipFile": create_lambda_archive(
+                    load_file(TEST_LAMBDA_PYTHON_ECHO), get_content=True
+                )
+            },
+        )
+        snapshot.match("create-image-response", create_image_response)
+        lambda_client.get_waiter("function_active_v2").wait(FunctionName=function_name)
+        get_function_response = lambda_client.get_function(FunctionName=function_name)
+        snapshot.match("get-function-code-response", get_function_response)
+        get_function_config_response = lambda_client.get_function_configuration(
+            FunctionName=function_name
+        )
+        snapshot.match("get-function-config-response", get_function_config_response)
+
+        with pytest.raises(ClientError) as e:
+            lambda_client.update_function_code(FunctionName=function_name, ImageUri=image)
+        snapshot.match("zipfile-to-image-error", e.value.response)
+
+        get_function_response = lambda_client.get_function(FunctionName=function_name)
+        snapshot.match("get-function-code-response-after-update", get_function_response)
+        get_function_config_response = lambda_client.get_function_configuration(
+            FunctionName=function_name
+        )
+        snapshot.match("get-function-config-response-after-update", get_function_config_response)
+
+    @pytest.mark.aws_validated
     def test_lambda_image_and_image_config_crud(
         self, lambda_client, create_lambda_function_aws, lambda_su_role, test_image, snapshot
     ):
+        """Test lambda crud with packagetype image and image configs"""
         image = test_image("alpine")
         repo_uri = image.rpartition(":")[0]
         snapshot.add_transformer(snapshot.transform.regex(repo_uri, "<repo_uri>"))
