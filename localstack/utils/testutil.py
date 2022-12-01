@@ -10,9 +10,9 @@ import time
 from contextlib import contextmanager
 from typing import Any, Callable, Dict, List, Optional, Tuple
 
+from localstack.testing.aws.util import is_aws_cloud
 from localstack.utils.aws import arns
 from localstack.utils.aws import resources as resource_utils
-from localstack.testing.aws.util import is_aws_cloud
 
 try:
     from typing import Literal

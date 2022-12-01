@@ -8,12 +8,11 @@ import yaml
 
 from localstack.utils.files import load_file
 from localstack.utils.strings import short_uid
-from localstack.utils.sync import retry
 from localstack.utils.testutil import upload_file_to_bucket
 
 
 @pytest.mark.aws_validated
-def test_basic_update(cfn_client, deploy_cfn_template, snapshot, is_stack_updated):
+def test_basic_update(cfn_client, deploy_cfn_template, snapshot):
     stack = deploy_cfn_template(
         template_path=os.path.join(
             os.path.dirname(__file__), "../../templates/sns_topic_parameter.yml"
@@ -32,16 +31,11 @@ def test_basic_update(cfn_client, deploy_cfn_template, snapshot, is_stack_update
     snapshot.add_transformer(snapshot.transform.key_value("StackId", "stack-id"))
     snapshot.match("update_response", response)
 
-    def verify_stack():
-        assert is_stack_updated(stack.stack_name)
-
-    retry(verify_stack, retries=5, sleep_before=2, sleep=1)
+    cfn_client.get_waiter("stack_update_complete").wait(StackName=stack.stack_name)
 
 
 @pytest.mark.aws_validated
-def test_update_using_template_url(
-    cfn_client, deploy_cfn_template, is_stack_updated, s3_client, s3_create_bucket
-):
+def test_update_using_template_url(cfn_client, deploy_cfn_template, s3_client, s3_create_bucket):
     stack = deploy_cfn_template(
         template_path=os.path.join(
             os.path.dirname(__file__), "../../templates/sns_topic_parameter.yml"
@@ -61,15 +55,12 @@ def test_update_using_template_url(
         Parameters=[{"ParameterKey": "TopicName", "ParameterValue": f"topic-{short_uid()}"}],
     )
 
-    def verify_stack():
-        assert is_stack_updated(stack.stack_name)
-
-    retry(verify_stack, retries=5, sleep_before=2, sleep=1)
+    cfn_client.get_waiter("stack_update_complete").wait(StackName=stack.stack_name)
 
 
 @pytest.mark.aws_validated
 @pytest.mark.xfail(reason="Not supported")
-def test_update_with_previous_template(cfn_client, deploy_cfn_template, is_stack_updated):
+def test_update_with_previous_template(cfn_client, deploy_cfn_template):
     stack = deploy_cfn_template(
         template_path=os.path.join(
             os.path.dirname(__file__), "../../templates/sns_topic_parameter.yml"
@@ -83,10 +74,7 @@ def test_update_with_previous_template(cfn_client, deploy_cfn_template, is_stack
         Parameters=[{"ParameterKey": "TopicName", "ParameterValue": f"topic-{short_uid()}"}],
     )
 
-    def verify_stack():
-        assert is_stack_updated(stack.stack_name)
-
-    retry(verify_stack, retries=5, sleep_before=2, sleep=1)
+    cfn_client.get_waiter("stack_update_complete").wait(StackName=stack.stack_name)
 
 
 @pytest.mark.aws_validated
@@ -99,9 +87,7 @@ def test_update_with_previous_template(cfn_client, deploy_cfn_template, is_stack
     ],
 )
 # The AUTO_EXPAND option is used for macros
-def test_update_with_capabilities(
-    capability, deploy_cfn_template, cfn_client, snapshot, is_stack_updated
-):
+def test_update_with_capabilities(capability, deploy_cfn_template, cfn_client, snapshot):
     template = load_file(
         os.path.join(os.path.dirname(__file__), "../../templates/sns_topic_parameter.yml")
     )
@@ -133,15 +119,12 @@ def test_update_with_capabilities(
         Parameters=[{"ParameterKey": parameter_key, "ParameterValue": f"{short_uid()}"}],
     )
 
-    def verify_stack():
-        assert is_stack_updated(stack.stack_name)
-
-    retry(verify_stack, retries=10, sleep_before=4, sleep=1)
+    cfn_client.get_waiter("stack_update_complete").wait(StackName=stack.stack_name)
 
 
 @pytest.mark.aws_validated
 @pytest.mark.xfail(reason="Not raising the correct error")
-def test_update_with_resource_types(deploy_cfn_template, cfn_client, is_stack_updated, snapshot):
+def test_update_with_resource_types(deploy_cfn_template, cfn_client, snapshot):
     template = load_file(
         os.path.join(os.path.dirname(__file__), "../../templates/sns_topic_parameter.yml")
     )
@@ -179,10 +162,7 @@ def test_update_with_resource_types(deploy_cfn_template, cfn_client, is_stack_up
         Parameters=[{"ParameterKey": "TopicName", "ParameterValue": f"topic-{short_uid()}"}],
     )
 
-    def verify_stack():
-        assert is_stack_updated(stack.stack_name)
-
-    retry(verify_stack, retries=5, sleep_before=2, sleep=1)
+    cfn_client.get_waiter("stack_update_complete").wait(StackName=stack.stack_name)
 
 
 @pytest.mark.aws_validated
@@ -256,7 +236,7 @@ def test_no_template_error(deploy_cfn_template, cfn_client, snapshot):
 
 
 @pytest.mark.aws_validated
-def test_no_parameters_update(deploy_cfn_template, cfn_client, is_stack_updated):
+def test_no_parameters_update(deploy_cfn_template, cfn_client):
     template = load_file(
         os.path.join(os.path.dirname(__file__), "../../templates/sns_topic_parameter.yml")
     )
@@ -268,16 +248,11 @@ def test_no_parameters_update(deploy_cfn_template, cfn_client, is_stack_updated)
 
     cfn_client.update_stack(StackName=stack.stack_name, TemplateBody=template)
 
-    def verify_stack():
-        assert is_stack_updated(stack.stack_name)
-
-    retry(verify_stack, retries=5, sleep_before=2, sleep=1)
+    cfn_client.get_waiter("stack_update_complete").wait(StackName=stack.stack_name)
 
 
 @pytest.mark.aws_validated
-def test_update_with_previous_parameter_value(
-    deploy_cfn_template, cfn_client, is_stack_updated, snapshot
-):
+def test_update_with_previous_parameter_value(deploy_cfn_template, cfn_client, snapshot):
     template = load_file(
         os.path.join(os.path.dirname(__file__), "../../templates/sns_topic_parameter.yml")
     )
@@ -297,10 +272,7 @@ def test_update_with_previous_parameter_value(
         Parameters=[{"ParameterKey": "TopicName", "UsePreviousValue": True}],
     )
 
-    def verify_stack():
-        assert is_stack_updated(stack.stack_name)
-
-    retry(verify_stack, retries=5, sleep_before=2, sleep=1)
+    cfn_client.get_waiter("stack_update_complete").wait(StackName=stack.stack_name)
 
 
 @pytest.mark.aws_validated
@@ -387,9 +359,7 @@ def test_update_with_invalid_rollback_configuration_errors(
 
 @pytest.mark.aws_validated
 @pytest.mark.xfail(reason="The update value is not being applied")
-def test_update_with_rollback_configuration(
-    deploy_cfn_template, cfn_client, is_stack_updated, cloudwatch_client
-):
+def test_update_with_rollback_configuration(deploy_cfn_template, cfn_client, cloudwatch_client):
 
     cloudwatch_client.put_metric_alarm(
         AlarmName="HighResourceUsage",
@@ -429,10 +399,7 @@ def test_update_with_rollback_configuration(
         RollbackConfiguration=rollback_configuration,
     )
 
-    def verify_stack():
-        assert is_stack_updated(stack.stack_name)
-
-    retry(verify_stack, retries=5, sleep_before=2, sleep=1)
+    cfn_client.get_waiter("stack_update_complete").wait(StackName=stack.stack_name)
 
     config = cfn_client.describe_stacks(StackName=stack.stack_name)["Stacks"][0][
         "RollbackConfiguration"
