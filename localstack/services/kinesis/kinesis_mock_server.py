@@ -60,7 +60,9 @@ class KinesisMockServer(Server):
         """
         env_vars = {
             "KINESIS_MOCK_PLAIN_PORT": self.port,
-            "KINESIS_MOCK_TLS_PORT": get_free_tcp_port(),  # each kinesis-mock instance listens to two ports. Use unique port here just to avoid conflicts.
+            # Each kinesis-mock instance listens to two ports - secure and insecure.
+            # LocalStack uses only one - the insecure one. Block the secure port to avoid conflicts.
+            "KINESIS_MOCK_TLS_PORT": get_free_tcp_port(),
             "SHARD_LIMIT": config.KINESIS_SHARD_LIMIT,
             "AWS_ACCOUNT_ID": self._account_id,
         }

@@ -1538,7 +1538,6 @@ class TestSNSProvider:
             ] = "Root=1-3152b799-8954dae64eda91bc9a23a7e8;Parent=7fa8c0f79203be72;Sampled=1"
 
         try:
-            # TODO this needs to be removed again!
             sns_client.meta.events.register("before-send.sns.Publish", add_xray_header)
 
             topic = sns_create_topic()
