@@ -183,7 +183,7 @@ def patch_moto_request_handling():
             service = extract_service_name_from_auth_header(request.headers)
             msg = (
                 f"API action '{action}' for service '{service}' not yet implemented or pro feature"
-                f" - check https://docs.localstack.cloud/aws/feature-coverage for further information"
+                f" - check https://docs.localstack.cloud/user-guide/aws/feature-coverage for further information"
             )
             response = requests_error_response(request.headers, msg, code=501)
             if config.MOCK_UNIMPLEMENTED:
