@@ -1066,7 +1066,11 @@ class TemplateDeployer:
             raise
 
     def apply_change_set(self, change_set):
-        action = "UPDATE" if change_set.stack.status == "CREATE_COMPLETE" else "CREATE"
+        action = (
+            "UPDATE"
+            if change_set.stack.status in {"CREATE_COMPLETE", "UPDATE_COMPLETE"}
+            else "CREATE"
+        )
         change_set.stack.set_stack_status(f"{action}_IN_PROGRESS")
 
         # update attributes that the stack inherits from the changeset

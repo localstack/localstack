@@ -426,3 +426,29 @@ def test_prevent_resource_deletion(deploy_cfn_template, cfn_client, sns_client, 
     cfn_client.delete_stack(StackName=stack.stack_name)
 
     sns_client.get_topic_attributes(TopicArn=stack.outputs["TopicArn"])
+
+
+def test_updating_an_updated_stack_sets_status(deploy_cfn_template, cfn_client):
+    """
+    The status of a stack that has been updated twice should be "UPDATE_COMPLETE"
+    """
+    # need multiple templates to support updates to the stack
+    template_1 = load_file(
+        os.path.join(os.path.dirname(__file__), "../../templates/stack_update_1.yaml")
+    )
+    template_2 = load_file(
+        os.path.join(os.path.dirname(__file__), "../../templates/stack_update_2.yaml")
+    )
+    template_3 = load_file(
+        os.path.join(os.path.dirname(__file__), "../../templates/stack_update_3.yaml")
+    )
+
+    stack = deploy_cfn_template(template=template_1)
+    # update the stack
+    deploy_cfn_template(template=template_2, is_update=True, stack_name=stack.stack_name)
+
+    # update the stack again
+    deploy_cfn_template(template=template_3, is_update=True, stack_name=stack.stack_name)
+
+    res = cfn_client.describe_stacks(StackName=stack.stack_name)
+    assert res["Stacks"][0]["StackStatus"] == "UPDATE_COMPLETE"

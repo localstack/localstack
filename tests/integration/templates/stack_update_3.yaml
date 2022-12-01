@@ -1,0 +1,18 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Resources:
+  topic123:
+    Type: AWS::SNS::Topic
+    Properties:
+      TopicName: sns-topic-simple
+    UpdateReplacePolicy: Delete
+    DeletionPolicy: Delete
+
+  bucket123:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName: bucket123
+
+  bucket456:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName: bucket456
