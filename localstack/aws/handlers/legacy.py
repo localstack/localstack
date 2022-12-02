@@ -28,8 +28,9 @@ def push_request_context(_chain: HandlerChain, context: RequestContext, _respons
 
     from localstack.utils.aws import request_context
 
-    quart.globals._request_ctx_stack.push(context)
-    flask.globals._request_ctx_stack.push(context)
+    # set the request context variable and hackily set the reset token on our internal request context
+    context._legacy_quart_cv_request_token = quart.globals._cv_request.set(context)
+    context._legacy_flask_cv_request_token = flask.globals._cv_request.set(context)
     request_context.THREAD_LOCAL.request_context = context.request
 
 
@@ -40,8 +41,9 @@ def pop_request_context(_chain: HandlerChain, _context: RequestContext, _respons
 
     from localstack.utils.aws import request_context
 
-    quart.globals._request_ctx_stack.pop()
-    flask.globals._request_ctx_stack.pop()
+    # reset the request context based on the token stored at the request context
+    quart.globals._cv_request.reset(_context._legacy_quart_cv_request_token)
+    flask.globals._cv_request.reset(_context._legacy_flask_cv_request_token)
     request_context.THREAD_LOCAL.request_context = None
 
 
