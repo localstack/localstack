@@ -1,0 +1,108 @@
+{
+  "tests/integration/cloudformation/api/test_update_stack.py::test_update_with_resource_types": {
+    "recorded-date": "19-11-2022, 14:34:18",
+    "recorded-content": {
+      "invalid_type_error": {
+        "Error": {
+          "Code": "ValidationError",
+          "Message": "Resource type AWS::SNS::Topic is not allowed by parameter ResourceTypes [AWS::EC2:*]",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "resource_not_allowed": {
+        "Error": {
+          "Code": "ValidationError",
+          "Message": "Resource type AWS::SNS::Topic is not allowed by parameter ResourceTypes [AWS::EC2::*]",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/integration/cloudformation/api/test_update_stack.py::test_basic_update": {
+    "recorded-date": "21-11-2022, 08:27:37",
+    "recorded-content": {
+      "update_response": {
+        "StackId": "<stack-id:1>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/integration/cloudformation/api/test_update_stack.py::test_no_template_error": {
+    "recorded-date": "21-11-2022, 08:57:45",
+    "recorded-content": {
+      "error": {
+        "Error": {
+          "Code": "ValidationError",
+          "Message": "Either Template URL or Template Body must be specified.",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/integration/cloudformation/api/test_update_stack.py::test_no_parameters_error_update": {
+    "recorded-date": "21-11-2022, 09:45:22",
+    "recorded-content": {}
+  },
+  "tests/integration/cloudformation/api/test_update_stack.py::test_update_with_previous_parameter_value": {
+    "recorded-date": "21-11-2022, 10:38:33",
+    "recorded-content": {}
+  },
+  "tests/integration/cloudformation/api/test_update_stack.py::test_update_with_role_without_permissions": {
+    "recorded-date": "21-11-2022, 14:14:52",
+    "recorded-content": {
+      "error": {
+        "Error": {
+          "Code": "ValidationError",
+          "Message": "Role arn:aws:iam::111111111111:role/role-fb405076 is invalid or cannot be assumed",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/integration/cloudformation/api/test_update_stack.py::test_update_with_invalid_rollback_configuration_errors": {
+    "recorded-date": "21-11-2022, 15:36:32",
+    "recorded-content": {
+      "type_error": {
+        "Error": {
+          "Code": "ValidationError",
+          "Message": "Rollback Trigger Type not supported",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "arn_error": {
+        "Error": {
+          "Code": "ValidationError",
+          "Message": "RelativeId of a Rollback Trigger's ARN is incorrect",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  }
+}

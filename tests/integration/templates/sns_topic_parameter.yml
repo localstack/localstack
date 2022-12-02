@@ -7,10 +7,14 @@ Resources:
   topic123:
     Type: AWS::SNS::Topic
     Properties:
-      TopicName: !Ref TopicName
+      TopicName:
+        Ref: TopicName
     UpdateReplacePolicy: Delete
     DeletionPolicy: Delete
 
 Outputs:
   TopicArn:
-    Value: !GetAtt [topic123, TopicArn]
+    Value:
+      Fn::GetAtt:
+        - topic123
+        - TopicArn

@@ -10,6 +10,7 @@ import time
 from contextlib import contextmanager
 from typing import Any, Callable, Dict, List, Optional, Tuple
 
+from localstack.testing.aws.util import is_aws_cloud
 from localstack.utils.aws import arns
 from localstack.utils.aws import resources as resource_utils
 
@@ -23,7 +24,7 @@ import requests
 
 from localstack import config
 from localstack.aws.accounts import get_aws_account_id
-from localstack.constants import LOCALSTACK_ROOT_FOLDER, LOCALSTACK_VENV_FOLDER
+from localstack.constants import LOCALHOST_HOSTNAME, LOCALSTACK_ROOT_FOLDER, LOCALSTACK_VENV_FOLDER
 from localstack.services.awslambda.lambda_api import LAMBDA_TEST_ROLE
 from localstack.services.awslambda.lambda_utils import (
     LAMBDA_DEFAULT_HANDLER,
@@ -701,3 +702,18 @@ def response_arn_matches_partition(client, response_arn: str) -> bool:
         == boto3.session.Session().get_partition_for_region(parsed_arn["region"])
         and client.meta.partition == parsed_arn["partition"]
     )
+
+
+def upload_file_to_bucket(s3_client, bucket_name, file_path, file_name=None):
+    key = file_name or f"file-{short_uid()}"
+
+    s3_client.upload_file(
+        file_path,
+        Bucket=bucket_name,
+        Key=key,
+    )
+
+    domain = "amazonaws.com" if is_aws_cloud() else f"{LOCALHOST_HOSTNAME}:{config.EDGE_PORT}"
+    url = f"https://{bucket_name}.s3.{domain}/{key}"
+
+    return {"Bucket": bucket_name, "Key": key, "Url": url}
