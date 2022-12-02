@@ -483,8 +483,7 @@ class SNSEmitter:
                 raise InvalidSNSDestinationException(f"SNS topic <{sns_topic_arn}> not found.")
             raise
 
-        self._publish(
-            client,
+        client.publish(
             TopicArn=sns_topic_arn,
             Message="Successfully validated SNS topic for Amazon SES event publishing.",
         )
@@ -512,12 +511,14 @@ class SNSEmitter:
             ] = f"arn:aws:ses:{self.context.region}:{self.context.account_id}:identity/{payload.sender_email}"
 
         client = self._client_for_topic(sns_topic_arn)
-        self._publish(
-            client,
-            TopicArn=sns_topic_arn,
-            Message=json.dumps(event_payload),
-            Subject="Amazon SES Email Event Notification",
-        )
+        try:
+            client.publish(
+                TopicArn=sns_topic_arn,
+                Message=json.dumps(event_payload),
+                Subject="Amazon SES Email Event Notification",
+            )
+        except ClientError:
+            LOGGER.exception("sending SNS message")
 
     def emit_delivery_event(self, payload: SNSPayload, sns_topic_arn: str):
         now = datetime.now(tz=timezone.utc)
@@ -538,12 +539,14 @@ class SNSEmitter:
             },
         }
         client = self._client_for_topic(sns_topic_arn)
-        self._publish(
-            client,
-            TopicArn=sns_topic_arn,
-            Message=json.dumps(event_payload),
-            Subject="Amazon SES Email Event Notification",
-        )
+        try:
+            client.publish(
+                TopicArn=sns_topic_arn,
+                Message=json.dumps(event_payload),
+                Subject="Amazon SES Email Event Notification",
+            )
+        except ClientError:
+            LOGGER.exception("sending SNS message")
 
     @staticmethod
     def _client_for_topic(topic_arn: str) -> "SNSClient":
@@ -557,12 +560,3 @@ class SNSEmitter:
             aws_access_key_id=access_key_id,
             aws_secret_access_key=TEST_AWS_SECRET_ACCESS_KEY,
         )
-
-    @staticmethod
-    def _publish(client, *args, **kwargs):
-        topic_arn: str = kwargs.pop("TopicArn")
-        try:
-            client.publish(TopicArn=topic_arn, *args, **kwargs)
-        except ClientError as e:
-            if "NotFound" not in e.response["Error"]["Code"]:
-                raise
