@@ -1,4 +1,3 @@
-import functools
 import json
 import logging
 import os
@@ -319,17 +318,11 @@ def connect_to_service(
         # identify requests as such
         if client and internal:
 
-            def _add_internal_header(account_id: str, request, **kwargs):
-                request.headers.add_header(HEADER_LOCALSTACK_ACCOUNT_ID, account_id)
-
-            # The handler invocation happens in boto context leading to loss of account ID
-            # Hence we build a partial here and bake-in the account ID.
-            _handler = functools.partial(
-                _add_internal_header, kwargs.get("aws_access_key_id", get_aws_account_id())
-            )
+            def _add_internal_header(request, **kwargs):
+                request.headers.add_header(HEADER_LOCALSTACK_ACCOUNT_ID, get_aws_account_id())
 
             event_system = new_client.meta.events
-            event_system.register_first("before-sign.*.*", _handler)
+            event_system.register_first("before-sign.*.*", _add_internal_header)
 
         if cache:
             BOTO_CLIENTS_CACHE[cache_key] = new_client
@@ -346,8 +339,8 @@ def create_external_boto_client(
     config: botocore.config.Config = None,
     verify=False,
     cache=True,
-    aws_access_key_id: str = None,
-    aws_secret_access_key: str = None,
+    aws_access_key_id=None,
+    aws_secret_access_key=None,
     *args,
     **kwargs,
 ):

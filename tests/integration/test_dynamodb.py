@@ -840,7 +840,9 @@ class TestDynamoDB:
 
         def _fetch_records():
             records = queries.kinesis_get_latest_records(
-                stream_name, shard_id=stream_description["Shards"][0]["ShardId"]
+                stream_name,
+                shard_id=stream_description["Shards"][0]["ShardId"],
+                client=kinesis,
             )
             assert len(records) == 3
             return records
@@ -885,7 +887,7 @@ class TestDynamoDB:
 
         # clean up
         delete_table(table_name)
-        kinesis.delete_stream(StreamName="kinesis_dest_stream")
+        kinesis.delete_stream(StreamName=stream_name)
 
     @pytest.mark.only_localstack
     def test_global_tables_version_2019(

@@ -5,7 +5,7 @@ from localstack.aws.accounts import (
     set_aws_access_key_id,
     set_aws_account_id,
 )
-from localstack.constants import HEADER_LOCALSTACK_ACCOUNT_ID, TEST_AWS_ACCESS_KEY_ID
+from localstack.constants import TEST_AWS_ACCESS_KEY_ID
 from localstack.http import Response
 from localstack.utils.aws.aws_stack import extract_access_key_id_from_auth_header
 
@@ -45,10 +45,7 @@ class AccountIdEnricher(Handler):
         set_aws_access_key_id(access_key_id)
 
         # Obtain the account ID and save it in the request context
-        if account_id_from_header := context.request.headers.get(HEADER_LOCALSTACK_ACCOUNT_ID):
-            context.account_id = account_id_from_header
-        else:
-            context.account_id = get_account_id_from_access_key_id(access_key_id)
+        context.account_id = get_account_id_from_access_key_id(access_key_id)
 
         # Save the same account ID in the thread context
         set_aws_account_id(context.account_id)
