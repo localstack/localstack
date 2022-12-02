@@ -1,8 +1,15 @@
 AWSTemplateFormatVersion: '2010-09-09'
+Parameters:
+  Topic1Name:
+    Type: String
+  Topic2Name:
+    Type: String
+  Topic3Name:
+    Type: String
 Resources:
-  topic123:
+  topic1:
     Type: AWS::SNS::Topic
     Properties:
-      TopicName: sns-topic-simple
+      TopicName: !Ref Topic1Name
     UpdateReplacePolicy: Delete
     DeletionPolicy: Delete
