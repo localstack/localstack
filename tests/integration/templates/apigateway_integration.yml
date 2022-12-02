@@ -152,12 +152,20 @@ Resources:
       HttpMethod: GET
       MethodResponses:
         - StatusCode: 200
+          ResponseParameters:
+            method.response.header.Access-Control-Allow-Origin: true
+            method.response.header.Access-Control-Allow-Headers: true
+            method.response.header.Access-Control-Allow-Methods: true
       Integration:
         IntegrationHttpMethod: GET
         Type: HTTP_PROXY
         Uri: http://www.example.com
         IntegrationResponses:
           - StatusCode: 200
+            ResponseParameters:
+              method.response.header.Access-Control-Allow-Origin: "'*'"
+              method.response.header.Access-Control-Allow-Headers: "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token,X-Amz-User-Agent,X-Amzn-Trace-Id'"
+              method.response.header.Access-Control-Allow-Methods: "'OPTIONS,GET,POST'"
 
   ApiGWDeployment:
     Type: AWS::ApiGateway::Deployment

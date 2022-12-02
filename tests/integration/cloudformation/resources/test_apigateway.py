@@ -197,7 +197,6 @@ def test_cfn_with_apigateway_resources(deploy_cfn_template, apigateway_client):
         "$..version",
         "$..methodIntegration.cacheNamespace",
         "$..methodIntegration.connectionType",
-        "$..methodIntegration.integrationResponses",
         "$..methodIntegration.passthroughBehavior",
         "$..methodIntegration.requestTemplates",
         "$..methodIntegration.timeoutInMillis",

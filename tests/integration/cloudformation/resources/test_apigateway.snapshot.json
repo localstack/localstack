@@ -1,6 +1,6 @@
 {
   "tests/integration/cloudformation/resources/test_apigateway.py::test_cfn_deploy_apigateway_integration": {
-    "recorded-date": "30-11-2022, 15:37:01",
+    "recorded-date": "02-12-2022, 10:04:00",
     "recorded-content": {
       "rest_api": {
         "apiKeySource": "HEADER",
@@ -29,12 +29,16 @@
         "httpMethod": "GET",
         "methodIntegration": {
           "cacheKeyParameters": [],
-          "cacheNamespace": "qlkinc",
+          "cacheNamespace": "vp3310",
           "connectionType": "INTERNET",
           "httpMethod": "GET",
           "integrationResponses": {
             "200": {
-              "responseParameters": {},
+              "responseParameters": {
+                "method.response.header.Access-Control-Allow-Headers": "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token,X-Amz-User-Agent,X-Amzn-Trace-Id'",
+                "method.response.header.Access-Control-Allow-Methods": "'OPTIONS,GET,POST'",
+                "method.response.header.Access-Control-Allow-Origin": "'*'"
+              },
               "responseTemplates": {},
               "statusCode": "200"
             }
@@ -49,7 +53,11 @@
         "methodResponses": {
           "200": {
             "responseModels": {},
-            "responseParameters": {},
+            "responseParameters": {
+              "method.response.header.Access-Control-Allow-Headers": true,
+              "method.response.header.Access-Control-Allow-Methods": true,
+              "method.response.header.Access-Control-Allow-Origin": true
+            },
             "statusCode": "200"
           }
         },
