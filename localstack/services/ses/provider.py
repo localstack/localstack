@@ -224,12 +224,26 @@ class SesProvider(SesApi, ServiceLifecycleHook):
         # not implemented in moto
         # TODO: contribute upstream?
         backend = get_ses_backend(context)
-        try:
-            backend.config_set_event_destination.pop(configuration_set_name)
-        except KeyError:
+
+        # the configuration set must exist
+        if configuration_set_name not in backend.config_set:
+            raise ConfigurationSetDoesNotExistException(
+                f"Configuration set <{configuration_set_name}> does not exist."
+            )
+
+        # the event destination must exist
+        if configuration_set_name not in backend.config_set_event_destination:
             raise EventDestinationDoesNotExistException(
                 f"No EventDestination found for {configuration_set_name}"
             )
+
+        if event_destination_name in backend.event_destinations:
+            backend.event_destinations.pop(event_destination_name)
+        else:
+            # FIXME: inconsistent state
+            LOGGER.warning("inconsistent state encountered in ses backend")
+
+        backend.config_set_event_destination.pop(configuration_set_name)
 
         return DeleteConfigurationSetEventDestinationResponse()
 

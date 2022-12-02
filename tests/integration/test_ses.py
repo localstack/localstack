@@ -628,3 +628,32 @@ class TestSES:
                 EventDestinationName=event_destination_name,
             )
         snapshot.match("delete-error", e_info.value.response)
+
+    def test_trying_to_delete_event_destination_from_non_existent_configuration_set(
+        self,
+        ses_configuration_set,
+        ses_client,
+        ses_configuration_set_sns_event_destination,
+        sns_topic,
+        snapshot,
+    ):
+        config_set_name = f"config-set-{short_uid()}"
+        snapshot.add_transformer(snapshot.transform.regex(config_set_name, "<config-set>"))
+
+        ses_configuration_set(config_set_name)
+
+        event_destination_name = f"event-destination-{short_uid()}"
+        snapshot.add_transformer(
+            snapshot.transform.regex(event_destination_name, "<event-destination>")
+        )
+        topic_arn = sns_topic["Attributes"]["TopicArn"]
+        ses_configuration_set_sns_event_destination(
+            config_set_name, event_destination_name, topic_arn
+        )
+
+        with pytest.raises(ClientError) as e_info:
+            ses_client.delete_configuration_set_event_destination(
+                ConfigurationSetName="non-existent-configuration-set",
+                EventDestinationName=event_destination_name,
+            )
+        snapshot.match("delete-error", e_info.value.response)

@@ -1825,10 +1825,10 @@ def ses_configuration_set_sns_event_destination(ses_client):
 
     yield factory
 
-    for (config_set_name, event_destination_name) in event_destinations:
+    for (created_config_set_name, created_event_destination_name) in event_destinations:
         ses_client.delete_configuration_set_event_destination(
-            ConfigurationSetName=config_set_name,
-            EventDestinationName=event_destination_name,
+            ConfigurationSetName=created_config_set_name,
+            EventDestinationName=created_event_destination_name,
         )
 
 

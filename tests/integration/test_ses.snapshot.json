@@ -566,5 +566,21 @@
         }
       }
     }
+  },
+  "tests/integration/test_ses.py::TestSES::test_trying_to_delete_event_destination_from_non_existent_configuration_set": {
+    "recorded-date": "02-12-2022, 15:19:54",
+    "recorded-content": {
+      "delete-error": {
+        "Error": {
+          "Code": "ConfigurationSetDoesNotExist",
+          "Message": "Configuration set <non-existent-configuration-set> does not exist.",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
   }
 }
