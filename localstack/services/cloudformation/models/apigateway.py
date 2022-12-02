@@ -374,7 +374,7 @@ class GatewayMethod(GenericBaseModel):
                     kwargs["uri"] = uri
 
                 integration_responses = kwargs.pop("integrationResponses", [])
-                method = integration.get("integrationHttpMethod") or props.get("HttpMethod")
+                method = props.get("HttpMethod")
 
                 apigateway.put_integration(
                     restApiId=api_id,
