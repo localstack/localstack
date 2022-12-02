@@ -462,6 +462,19 @@ class CmdDockerClient(ContainerClient):
                     "Docker process returned with errorcode %s" % e.returncode, e.stdout, e.stderr
                 ) from e
 
+    def login(self, username: str, password: str, registry: Optional[str] = None) -> None:
+        cmd = self._docker_cmd()
+        # TODO specify password via stdin
+        cmd += ["login", "-u", username, "-p", password]
+        if registry:
+            cmd.append(registry)
+        try:
+            run(cmd)
+        except subprocess.CalledProcessError as e:
+            raise ContainerException(
+                "Docker process returned with errorcode %s" % e.returncode, e.stdout, e.stderr
+            ) from e
+
     def has_docker(self) -> bool:
         try:
             run(self._docker_cmd() + ["ps"])

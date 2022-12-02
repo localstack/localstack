@@ -51,6 +51,7 @@ if TYPE_CHECKING:
     from mypy_boto3_dynamodb import DynamoDBClient, DynamoDBServiceResource
     from mypy_boto3_dynamodbstreams import DynamoDBStreamsClient
     from mypy_boto3_ec2 import EC2Client
+    from mypy_boto3_ecr import ECRClient
     from mypy_boto3_es import ElasticsearchServiceClient
     from mypy_boto3_events import EventBridgeClient
     from mypy_boto3_firehose import FirehoseClient
@@ -399,6 +400,11 @@ def route53resolver_client() -> "Route53ResolverClient":
 @pytest.fixture(scope="class")
 def transcribe_client() -> "TranscribeClient":
     return _client("transcribe")
+
+
+@pytest.fixture(scope="class")
+def ecr_client() -> "ECRClient":
+    return _client("ecr")
 
 
 @pytest.fixture

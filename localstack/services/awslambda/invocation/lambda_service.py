@@ -27,6 +27,7 @@ from localstack.services.awslambda.invocation.lambda_models import (
     LAMBDA_LIMITS_CODE_SIZE_UNZIPPED_DEFAULT,
     Function,
     FunctionVersion,
+    ImageCode,
     Invocation,
     InvocationResult,
     S3Code,
@@ -37,6 +38,8 @@ from localstack.services.awslambda.invocation.models import lambda_stores
 from localstack.services.awslambda.invocation.version_manager import LambdaVersionManager
 from localstack.utils.archives import get_unzipped_size, is_zip_file
 from localstack.utils.aws import aws_stack
+from localstack.utils.container_utils.container_client import ContainerException
+from localstack.utils.docker_utils import DOCKER_CLIENT as CONTAINER_CLIENT
 from localstack.utils.strings import to_str
 
 if TYPE_CHECKING:
@@ -402,3 +405,26 @@ def store_s3_bucket_archive(
     return store_lambda_archive(
         archive_file, function_name=function_name, region_name=region_name, account_id=account_id
     )
+
+
+def create_image_code(image_uri: str) -> ImageCode:
+    """
+    Creates an image code by inspecting the provided image
+
+    :param image_uri: Image URI of the image to inspect
+    :return: Image code object
+    """
+    code_sha256 = "<cannot-find-image>"
+    try:
+        CONTAINER_CLIENT.pull_image(docker_image=image_uri)
+    except ContainerException:
+        LOG.debug("Cannot pull image %s. Maybe only available locally?", image_uri)
+    try:
+        code_sha256 = CONTAINER_CLIENT.inspect_image(image_name=image_uri)["RepoDigests"][
+            0
+        ].rpartition(":")[2]
+    except Exception as e:
+        LOG.debug(
+            "Cannot inspect image %s. Is this image and/or docker available: %s", image_uri, e
+        )
+    return ImageCode(image_uri=image_uri, code_sha256=code_sha256, repository_type="ECR")

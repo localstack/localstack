@@ -203,6 +203,17 @@ class S3Code:
             )
 
 
+@dataclasses.dataclass(frozen=True)
+class ImageCode:
+    image_uri: str
+    repository_type: str
+    code_sha256: str
+
+    @property
+    def resolved_image_uri(self):
+        return f"{self.image_uri.rpartition(':')[0]}@sha256:{self.code_sha256}"
+
+
 @dataclasses.dataclass
 class DeadLetterConfig:
     target_arn: str
@@ -214,7 +225,7 @@ class FileSystemConfig:
     local_mount_path: str
 
 
-@dataclasses.dataclass
+@dataclasses.dataclass(frozen=True)
 class ImageConfig:
     working_directory: str
     command: list[str] = dataclasses.field(default_factory=list)
@@ -490,6 +501,7 @@ class VersionFunctionConfiguration:
     last_modified: str  # ISO string
     state: VersionState
 
+    image: Optional[ImageCode] = None
     image_config: Optional[ImageConfig] = None
     last_update: Optional[UpdateStatus] = None
     revision_id: str = dataclasses.field(init=False, default_factory=long_uid)

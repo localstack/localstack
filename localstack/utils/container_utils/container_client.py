@@ -773,6 +773,17 @@ class ContainerClient(metaclass=ABCMeta):
         """
         pass
 
+    @abstractmethod
+    def login(self, username: str, password: str, registry: Optional[str] = None) -> None:
+        """
+        Login into an OCI registry
+
+        :param username: Username for the registry
+        :param password: Password / token for the registry
+        :param registry: Registry url
+        """
+        pass
+
 
 class Util:
     MAX_ENV_ARGS_LENGTH = 20000

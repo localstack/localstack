@@ -10,6 +10,7 @@ API-focused tests only. Don't add tests for asynchronous, blocking or implicit b
 import base64
 import io
 import json
+import logging
 import os
 from hashlib import sha256
 from io import BytesIO
@@ -22,10 +23,13 @@ from botocore.exceptions import ClientError
 
 from localstack.aws.api.lambda_ import Architecture, Runtime
 from localstack.testing.aws.lambda_utils import _await_dynamodb_table_active, is_old_provider
+from localstack.testing.aws.util import is_aws_cloud
 from localstack.testing.snapshots.transformer import SortingTransformer
 from localstack.utils import testutil
 from localstack.utils.aws import arns
+from localstack.utils.docker_utils import DOCKER_CLIENT
 from localstack.utils.files import load_file
+from localstack.utils.functions import call_safe
 from localstack.utils.strings import long_uid, short_uid, to_str
 from localstack.utils.sync import wait_until
 from localstack.utils.testutil import create_lambda_archive
@@ -35,6 +39,8 @@ from tests.integration.awslambda.test_lambda import (
     TEST_LAMBDA_PYTHON_ECHO,
     TEST_LAMBDA_PYTHON_VERSION,
 )
+
+LOG = logging.getLogger(__name__)
 
 KB = 1024
 
@@ -521,6 +527,227 @@ class TestLambdaFunction:
 
         snapshot.match("list_all", list_all)
         snapshot.match("list_default", list_default)
+
+
+@pytest.mark.skipif(is_old_provider(), reason="focusing on new provider")
+class TestLambdaImages:
+    @pytest.fixture(scope="class")
+    def login_docker_client(self, ecr_client):
+        if not is_aws_cloud():
+            return
+        auth_data = ecr_client.get_authorization_token()
+        # if check is necessary since registry login data is not available at LS before min. 1 repository is created
+        if auth_data["authorizationData"]:
+            auth_data = auth_data["authorizationData"][0]
+            decoded_auth_token = str(
+                base64.decodebytes(bytes(auth_data["authorizationToken"], "utf-8")), "utf-8"
+            )
+            username, password = decoded_auth_token.split(":")
+            DOCKER_CLIENT.login(
+                username=username, password=password, registry=auth_data["proxyEndpoint"]
+            )
+
+    @pytest.fixture(scope="class")
+    def test_image(self, ecr_client, login_docker_client):
+        repository_names = []
+        image_names = []
+
+        def _create_test_image(base_image: str):
+            if is_aws_cloud():
+                repository_name = f"test-repo-{short_uid()}"
+                repository_uri = ecr_client.create_repository(repositoryName=repository_name)[
+                    "repository"
+                ]["repositoryUri"]
+                image_name = f"{repository_uri}:latest"
+                repository_names.append(repository_name)
+            else:
+                image_name = f"test-image-{short_uid()}:latest"
+            image_names.append(image_name)
+
+            DOCKER_CLIENT.pull_image(base_image)
+            DOCKER_CLIENT.tag_image(base_image, image_name)
+            if is_aws_cloud():
+                DOCKER_CLIENT.push_image(image_name)
+            return image_name
+
+        yield _create_test_image
+
+        for image_name in image_names:
+            try:
+                DOCKER_CLIENT.remove_image(image=image_name, force=True)
+            except Exception as e:
+                LOG.debug("Error cleaning up image %s: %s", image_name, e)
+
+        for repository_name in repository_names:
+            try:
+                image_ids = ecr_client.list_images(repositoryName=repository_name).get(
+                    "imageIds", []
+                )
+                if image_ids:
+                    call_safe(
+                        ecr_client.batch_delete_image,
+                        kwargs={"repositoryName": repository_name, "imageIds": image_ids},
+                    )
+                ecr_client.delete_repository(repositoryName=repository_name)
+            except Exception as e:
+                LOG.debug("Error cleaning up repository %s: %s", repository_name, e)
+
+    @pytest.mark.aws_validated
+    def test_lambda_image_crud(
+        self, lambda_client, create_lambda_function_aws, lambda_su_role, test_image, snapshot
+    ):
+        """Test lambda crud with package type image"""
+        image = test_image("alpine")
+        repo_uri = image.rpartition(":")[0]
+        snapshot.add_transformer(snapshot.transform.regex(repo_uri, "<repo_uri>"))
+        function_name = f"test-function-{short_uid()}"
+        create_image_response = create_lambda_function_aws(
+            FunctionName=function_name,
+            Role=lambda_su_role,
+            Code={"ImageUri": image},
+            PackageType="Image",
+            Environment={"Variables": {"CUSTOM_ENV": "test"}},
+        )
+        snapshot.match("create-image-response", create_image_response)
+        lambda_client.get_waiter("function_active_v2").wait(FunctionName=function_name)
+        get_function_response = lambda_client.get_function(FunctionName=function_name)
+        snapshot.match("get-function-code-response", get_function_response)
+        get_function_config_response = lambda_client.get_function_configuration(
+            FunctionName=function_name
+        )
+        snapshot.match("get-function-config-response", get_function_config_response)
+
+        # try update to a zip file - should fail
+        with pytest.raises(ClientError) as e:
+            lambda_client.update_function_code(
+                FunctionName=function_name,
+                ZipFile=create_lambda_archive(load_file(TEST_LAMBDA_PYTHON_ECHO), get_content=True),
+            )
+        snapshot.match("image-to-zipfile-error", e.value.response)
+
+        image_2 = test_image("debian")
+        repo_uri_2 = image_2.rpartition(":")[0]
+        snapshot.add_transformer(snapshot.transform.regex(repo_uri_2, "<repo_uri_2>"))
+        update_function_code_response = lambda_client.update_function_code(
+            FunctionName=function_name, ImageUri=image_2
+        )
+        snapshot.match("update-function-code-response", update_function_code_response)
+        lambda_client.get_waiter("function_updated_v2").wait(FunctionName=function_name)
+
+        get_function_response = lambda_client.get_function(FunctionName=function_name)
+        snapshot.match("get-function-code-response-after-update", get_function_response)
+        get_function_config_response = lambda_client.get_function_configuration(
+            FunctionName=function_name
+        )
+        snapshot.match("get-function-config-response-after-update", get_function_config_response)
+
+    @pytest.mark.aws_validated
+    def test_lambda_zip_file_to_image(
+        self, lambda_client, create_lambda_function_aws, lambda_su_role, test_image, snapshot
+    ):
+        """Test that verifies conversion from zip file lambda to image lambda is not possible"""
+        image = test_image("alpine")
+        repo_uri = image.rpartition(":")[0]
+        snapshot.add_transformer(snapshot.transform.regex(repo_uri, "<repo_uri>"))
+        function_name = f"test-function-{short_uid()}"
+        create_image_response = create_lambda_function_aws(
+            FunctionName=function_name,
+            Role=lambda_su_role,
+            Runtime=Runtime.python3_9,
+            Handler="handler.handler",
+            Code={
+                "ZipFile": create_lambda_archive(
+                    load_file(TEST_LAMBDA_PYTHON_ECHO), get_content=True
+                )
+            },
+        )
+        snapshot.match("create-image-response", create_image_response)
+        lambda_client.get_waiter("function_active_v2").wait(FunctionName=function_name)
+        get_function_response = lambda_client.get_function(FunctionName=function_name)
+        snapshot.match("get-function-code-response", get_function_response)
+        get_function_config_response = lambda_client.get_function_configuration(
+            FunctionName=function_name
+        )
+        snapshot.match("get-function-config-response", get_function_config_response)
+
+        with pytest.raises(ClientError) as e:
+            lambda_client.update_function_code(FunctionName=function_name, ImageUri=image)
+        snapshot.match("zipfile-to-image-error", e.value.response)
+
+        get_function_response = lambda_client.get_function(FunctionName=function_name)
+        snapshot.match("get-function-code-response-after-update", get_function_response)
+        get_function_config_response = lambda_client.get_function_configuration(
+            FunctionName=function_name
+        )
+        snapshot.match("get-function-config-response-after-update", get_function_config_response)
+
+    @pytest.mark.aws_validated
+    def test_lambda_image_and_image_config_crud(
+        self, lambda_client, create_lambda_function_aws, lambda_su_role, test_image, snapshot
+    ):
+        """Test lambda crud with packagetype image and image configs"""
+        image = test_image("alpine")
+        repo_uri = image.rpartition(":")[0]
+        snapshot.add_transformer(snapshot.transform.regex(repo_uri, "<repo_uri>"))
+        # Create another lambda with image config
+        function_name = f"test-function-{short_uid()}"
+        image_config = {
+            "EntryPoint": ["sh"],
+            "Command": ["-c", "echo test"],
+            "WorkingDirectory": "/app1",
+        }
+        create_image_response = create_lambda_function_aws(
+            FunctionName=function_name,
+            Role=lambda_su_role,
+            Code={"ImageUri": image},
+            PackageType="Image",
+            ImageConfig=image_config,
+            Environment={"Variables": {"CUSTOM_ENV": "test"}},
+        )
+        snapshot.match("create-image-with-config-response", create_image_response)
+        lambda_client.get_waiter("function_active_v2").wait(FunctionName=function_name)
+        get_function_response = lambda_client.get_function(FunctionName=function_name)
+        snapshot.match("get-function-code-with-config-response", get_function_response)
+        get_function_config_response = lambda_client.get_function_configuration(
+            FunctionName=function_name
+        )
+        snapshot.match("get-function-config-with-config-response", get_function_config_response)
+
+        # update image config
+        new_image_config = {
+            "Command": ["-c", "echo test1"],
+            "WorkingDirectory": "/app1",
+        }
+        update_function_config_response = lambda_client.update_function_configuration(
+            FunctionName=function_name, ImageConfig=new_image_config
+        )
+        snapshot.match("update-function-code-response", update_function_config_response)
+        lambda_client.get_waiter("function_updated_v2").wait(FunctionName=function_name)
+
+        get_function_response = lambda_client.get_function(FunctionName=function_name)
+        snapshot.match("get-function-code-response-after-update", get_function_response)
+        get_function_config_response = lambda_client.get_function_configuration(
+            FunctionName=function_name
+        )
+        snapshot.match("get-function-config-response-after-update", get_function_config_response)
+
+        # update to empty image config
+        update_function_config_response = lambda_client.update_function_configuration(
+            FunctionName=function_name, ImageConfig={}
+        )
+        snapshot.match(
+            "update-function-code-delete-imageconfig-response", update_function_config_response
+        )
+        lambda_client.get_waiter("function_updated_v2").wait(FunctionName=function_name)
+
+        get_function_response = lambda_client.get_function(FunctionName=function_name)
+        snapshot.match("get-function-code-response-after-delete-imageconfig", get_function_response)
+        get_function_config_response = lambda_client.get_function_configuration(
+            FunctionName=function_name
+        )
+        snapshot.match(
+            "get-function-config-response-after-delete-imageconfig", get_function_config_response
+        )
 
 
 @pytest.mark.skipif(is_old_provider(), reason="focusing on new provider")

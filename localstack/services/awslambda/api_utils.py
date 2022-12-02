@@ -14,6 +14,8 @@ from localstack.aws.api.lambda_ import (
     EphemeralStorage,
     FunctionConfiguration,
     FunctionUrlAuthType,
+    ImageConfig,
+    ImageConfigResponse,
     InvalidParameterValueException,
     LayerVersionContentOutput,
     PublishLayerVersionResponse,
@@ -374,6 +376,22 @@ def map_config_out(
             {"Arn": layer.layer_version_arn, "CodeSize": layer.code.code_size}
             for layer in version.config.layers
         ]
+    if version.config.image_config:
+        image_config = ImageConfig()
+        if version.config.image_config.command:
+            image_config["Command"] = version.config.image_config.command
+        if version.config.image_config.entrypoint:
+            image_config["EntryPoint"] = version.config.image_config.entrypoint
+        if version.config.image_config.working_directory:
+            image_config["WorkingDirectory"] = version.config.image_config.working_directory
+        if image_config:
+            optional_kwargs["ImageConfigResponse"] = ImageConfigResponse(ImageConfig=image_config)
+    if version.config.code:
+        optional_kwargs["CodeSize"] = version.config.code.code_size
+        optional_kwargs["CodeSha256"] = version.config.code.code_sha256
+    elif version.config.image:
+        optional_kwargs["CodeSize"] = 0
+        optional_kwargs["CodeSha256"] = version.config.image.code_sha256
 
     func_conf = FunctionConfiguration(
         RevisionId=version.config.revision_id,
@@ -388,8 +406,6 @@ def map_config_out(
         Timeout=version.config.timeout,
         Runtime=version.config.runtime,
         Handler=version.config.handler,
-        CodeSize=version.config.code.code_size,
-        CodeSha256=version.config.code.code_sha256,
         MemorySize=version.config.memory_size,
         PackageType=version.config.package_type,
         TracingConfig=TracingConfig(Mode=version.config.tracing_config_mode),

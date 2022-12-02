@@ -1,3 +1,4 @@
+import dataclasses
 import json
 import logging
 import shutil
@@ -6,6 +7,8 @@ from pathlib import Path
 from typing import Dict, Literal, Optional
 
 from localstack import config
+from localstack.aws.api.lambda_ import PackageType
+from localstack.services.awslambda import hooks as lambda_hooks
 from localstack.services.awslambda.invocation.executor_endpoint import (
     ExecutorEndpoint,
     ServiceEndpoint,
@@ -96,6 +99,11 @@ def prepare_image(target_path: Path, function_version: FunctionVersion) -> None:
             )
 
 
+@dataclasses.dataclass
+class LambdaContainerConfiguration(ContainerConfiguration):
+    copy_folders: list[tuple[str, str]] = dataclasses.field(default_factory=list)
+
+
 class DockerRuntimeExecutor(RuntimeExecutor):
     ip: Optional[str]
     executor_endpoint: Optional[ExecutorEndpoint]
@@ -135,23 +143,35 @@ class DockerRuntimeExecutor(RuntimeExecutor):
     def start(self, env_vars: dict[str, str]) -> None:
         self.executor_endpoint.start()
         network = self._get_network_for_executor()
-        container_config = ContainerConfiguration(
-            image_name=self.get_image(),
+        container_config = LambdaContainerConfiguration(
+            image_name=None,
             name=self.id,
             env_vars=env_vars,
             network=network,
             entrypoint=RAPID_ENTRYPOINT,
         )
+        lambda_hooks.start_docker_executor.run(container_config, self.function_version)
+
+        if not container_config.image_name:
+            container_config.image_name = self.get_image()
+
         CONTAINER_CLIENT.create_container_from_config(container_config)
-        if not config.LAMBDA_PREBUILD_IMAGES:
+        if (
+            not config.LAMBDA_PREBUILD_IMAGES
+            or self.function_version.config.package_type != PackageType.Zip
+        ):
             CONTAINER_CLIENT.copy_into_container(
                 self.id, str(get_runtime_client_path()), RAPID_ENTRYPOINT
             )
-            CONTAINER_CLIENT.copy_into_container(
-                self.id,
-                f"{str(self.function_version.config.code.get_unzipped_code_location())}/.",
-                "/var/task",
-            )
+        if self.function_version.config.package_type == PackageType.Zip:
+            if not config.LAMBDA_PREBUILD_IMAGES:
+                CONTAINER_CLIENT.copy_into_container(
+                    self.id,
+                    f"{str(self.function_version.config.code.get_unzipped_code_location())}/.",
+                    "/var/task",
+                )
+                for source, target in container_config.copy_folders:
+                    CONTAINER_CLIENT.copy_into_container(self.id, source, target)
 
         CONTAINER_CLIENT.start_container(self.id)
         self.ip = CONTAINER_CLIENT.get_container_ipv4_for_network(
@@ -193,19 +213,23 @@ class DockerRuntimeExecutor(RuntimeExecutor):
     @classmethod
     def prepare_version(cls, function_version: FunctionVersion) -> None:
         time_before = time.perf_counter()
-        function_version.config.code.prepare_for_execution()
-        target_path = function_version.config.code.get_unzipped_code_location()
-        image_name = get_image_for_runtime(function_version.config.runtime)
-        if image_name not in PULLED_IMAGES:
-            CONTAINER_CLIENT.pull_image(image_name)
-            PULLED_IMAGES.add(image_name)
-        if config.LAMBDA_PREBUILD_IMAGES:
-            prepare_image(target_path, function_version)
-        LOG.debug(
-            "Version preparation of version %s took %0.2fms",
-            function_version.qualified_arn,
-            (time.perf_counter() - time_before) * 1000,
-        )
+        lambda_hooks.prepare_docker_executor.run(function_version)
+        if function_version.config.code:
+            function_version.config.code.prepare_for_execution()
+            for layer in function_version.config.layers:
+                layer.code.prepare_for_execution()
+            image_name = get_image_for_runtime(function_version.config.runtime)
+            if image_name not in PULLED_IMAGES:
+                CONTAINER_CLIENT.pull_image(image_name)
+                PULLED_IMAGES.add(image_name)
+            if config.LAMBDA_PREBUILD_IMAGES:
+                target_path = function_version.config.code.get_unzipped_code_location()
+                prepare_image(target_path, function_version)
+            LOG.debug(
+                "Version preparation of version %s took %0.2fms",
+                function_version.qualified_arn,
+                (time.perf_counter() - time_before) * 1000,
+            )
 
     @classmethod
     def cleanup_version(cls, function_version: FunctionVersion) -> None:
