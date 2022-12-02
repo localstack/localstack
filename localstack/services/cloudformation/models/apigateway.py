@@ -105,11 +105,12 @@ class GatewayRestAPI(GenericBaseModel):
         return self.props.get("id")
 
     def fetch_state(self, stack_name, resources):
-        apis = aws_stack.connect_to_service("apigateway").get_rest_apis()["items"]
-        api_name = self.props.get("Name") or self.resource_id
-        api_name = self.resolve_refs_recursively(stack_name, api_name, resources)
-        result = list(filter(lambda api: api["name"] == api_name, apis))
-        return result[0] if result else None
+        if not self.props.get("id"):
+            return None
+
+        return aws_stack.connect_to_service("apigateway").get_rest_api(
+            restApiId=self.props.get("id")
+        )
 
     @staticmethod
     def add_defaults(resource, stack_name: str):
@@ -373,11 +374,12 @@ class GatewayMethod(GenericBaseModel):
                     kwargs["uri"] = uri
 
                 integration_responses = kwargs.pop("integrationResponses", [])
+                method = integration.get("integrationHttpMethod") or props.get("HttpMethod")
 
                 apigateway.put_integration(
                     restApiId=api_id,
                     resourceId=res_id,
-                    httpMethod=kwargs["integrationHttpMethod"],
+                    httpMethod=method,
                     **kwargs,
                 )
 
@@ -389,7 +391,7 @@ class GatewayMethod(GenericBaseModel):
                     apigateway.put_integration_response(
                         restApiId=api_id,
                         resourceId=res_id,
-                        httpMethod=integration["integrationHttpMethod"],
+                        httpMethod=method,
                         **keys_to_lower(integration_response),
                     )
 
