@@ -440,5 +440,53 @@
         }
       }
     }
+  },
+  "tests/integration/cloudformation/api/test_stacks.py::test_updating_an_updated_stack_sets_status": {
+    "recorded-date": "02-12-2022, 11:19:41",
+    "recorded-content": {
+      "describe-result": {
+        "Stacks": [
+          {
+            "Capabilities": [
+              "CAPABILITY_AUTO_EXPAND",
+              "CAPABILITY_IAM",
+              "CAPABILITY_NAMED_IAM"
+            ],
+            "ChangeSetId": "arn:aws:cloudformation:<region>:111111111111:changeSet/<resource:1>",
+            "CreationTime": "datetime",
+            "DisableRollback": false,
+            "DriftInformation": {
+              "StackDriftStatus": "NOT_CHECKED"
+            },
+            "EnableTerminationProtection": false,
+            "LastUpdatedTime": "datetime",
+            "NotificationARNs": [],
+            "Parameters": [
+              {
+                "ParameterKey": "Topic2Name",
+                "ParameterValue": "topic-2"
+              },
+              {
+                "ParameterKey": "Topic1Name",
+                "ParameterValue": "topic-1"
+              },
+              {
+                "ParameterKey": "Topic3Name",
+                "ParameterValue": "topic-3"
+              }
+            ],
+            "RollbackConfiguration": {},
+            "StackId": "arn:aws:cloudformation:<region>:111111111111:stack/<stack-name:1>/<resource:2>",
+            "StackName": "<stack-name:1>",
+            "StackStatus": "UPDATE_COMPLETE",
+            "Tags": []
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
   }
 }
