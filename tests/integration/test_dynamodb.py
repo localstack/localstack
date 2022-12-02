@@ -803,7 +803,7 @@ class TestDynamoDB:
         )
 
         # create kinesis datastream
-        stream_name = "kinesis_dest_stream"
+        stream_name = f"kinesis_dest_stream_{short_uid()}"
         kinesis.create_stream(StreamName=stream_name, ShardCount=1)
         # wait for the stream to be created
         sleep(1)
