@@ -799,9 +799,6 @@ class GatewayAccount(GenericBaseModel):
     def get_physical_resource_id(self, attribute=None, **kwargs):
         return self.physical_resource_id
 
-    def get_cfn_attribute(self, attribute_name):
-        return self.physical_resource_id
-
     @classmethod
     def get_deploy_templates(cls):
         def _create(resource_id, resources, *args, **kwargs):
@@ -810,13 +807,12 @@ class GatewayAccount(GenericBaseModel):
 
             role_arn = props["CloudWatchRoleArn"]
 
-            kwargs = {
-                "patchOperations": [
+            aws_stack.connect_to_service("apigateway").update_account(
+                patchCoperations=[
                     {"op": "replace", "path": "/cloudwatchRoleArn", "value": role_arn}
                 ]
-            }
+            )
 
-            aws_stack.connect_to_service("apigateway").update_account(**kwargs)
             resource["PhysicalResourceId"] = generate_default_name(
                 args[2], resource["LogicalResourceId"]
             )
