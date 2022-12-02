@@ -1,0 +1,7 @@
+from localstack.runtime.hooks import hook_spec
+
+HOOKS_LAMBDA_START_DOCKER_EXECUTOR = "localstack.hooks.lambda_start_docker_executor"
+HOOKS_LAMBDA_PREPARE_DOCKER_EXECUTOR = "localstack.hooks.lambda_prepare_docker_executors"
+
+start_docker_executor = hook_spec(HOOKS_LAMBDA_START_DOCKER_EXECUTOR)
+prepare_docker_executor = hook_spec(HOOKS_LAMBDA_PREPARE_DOCKER_EXECUTOR)

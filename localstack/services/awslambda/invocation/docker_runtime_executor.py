@@ -8,7 +8,7 @@ from typing import Dict, Literal, Optional
 
 from localstack import config
 from localstack.aws.api.lambda_ import PackageType
-from localstack.runtime.hooks import hook_spec
+from localstack.services.awslambda import hooks as lambda_hooks
 from localstack.services.awslambda.invocation.executor_endpoint import (
     ExecutorEndpoint,
     ServiceEndpoint,
@@ -26,13 +26,6 @@ from localstack.services.awslambda.packages import awslambda_runtime_package
 from localstack.utils.container_utils.container_client import ContainerConfiguration
 from localstack.utils.docker_utils import DOCKER_CLIENT as CONTAINER_CLIENT
 from localstack.utils.strings import truncate
-
-# Hook definitions
-HOOKS_LAMBDA_START_DOCKER_EXECUTOR = "localstack.hooks.lambda_start_docker_executor"
-HOOKS_LAMBDA_PREPARE_DOCKER_EXECUTOR = "localstack.hooks.lambda_prepare_docker_executors"
-
-start_docker_executor = hook_spec(HOOKS_LAMBDA_START_DOCKER_EXECUTOR)
-prepare_docker_executor = hook_spec(HOOKS_LAMBDA_PREPARE_DOCKER_EXECUTOR)
 
 LOG = logging.getLogger(__name__)
 
@@ -157,7 +150,7 @@ class DockerRuntimeExecutor(RuntimeExecutor):
             network=network,
             entrypoint=RAPID_ENTRYPOINT,
         )
-        start_docker_executor.run(container_config, self.function_version)
+        lambda_hooks.start_docker_executor.run(container_config, self.function_version)
 
         if not container_config.image_name:
             container_config.image_name = self.get_image()
@@ -220,7 +213,7 @@ class DockerRuntimeExecutor(RuntimeExecutor):
     @classmethod
     def prepare_version(cls, function_version: FunctionVersion) -> None:
         time_before = time.perf_counter()
-        prepare_docker_executor.run(function_version)
+        lambda_hooks.prepare_docker_executor.run(function_version)
         if function_version.config.code:
             function_version.config.code.prepare_for_execution()
             for layer in function_version.config.layers:

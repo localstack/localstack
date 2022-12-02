@@ -166,9 +166,9 @@ from localstack.services.awslambda.invocation.lambda_models import (
 )
 from localstack.services.awslambda.invocation.lambda_service import (
     LambdaService,
+    create_image_code,
     destroy_code_if_not_used,
     lambda_stores,
-    store_image_code,
     store_lambda_archive,
     store_s3_bucket_archive,
 )
@@ -529,7 +529,7 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
                 image = request_code.get("ImageUri")
                 if not image:
                     raise ServiceException("Gotta have an image when package type is image")
-                image = store_image_code(image_uri=image)
+                image = create_image_code(image_uri=image)
 
                 image_config_req = request.get("ImageConfig", {})
                 image_config = ImageConfig(
@@ -729,7 +729,7 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
             )
         elif image := request.get("ImageUri"):
             code = None
-            image = store_image_code(image_uri=image)
+            image = create_image_code(image_uri=image)
         else:
             raise ServiceException("Gotta have s3 bucket or zip file or image")
 

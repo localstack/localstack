@@ -407,7 +407,7 @@ def store_s3_bucket_archive(
     )
 
 
-def store_image_code(image_uri: str) -> ImageCode:
+def create_image_code(image_uri: str) -> ImageCode:
     """
     Creates an image code by inspecting the provided image
 

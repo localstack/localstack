@@ -203,7 +203,7 @@ class S3Code:
             )
 
 
-@dataclasses.dataclass
+@dataclasses.dataclass(frozen=True)
 class ImageCode:
     image_uri: str
     repository_type: str
@@ -225,7 +225,7 @@ class FileSystemConfig:
     local_mount_path: str
 
 
-@dataclasses.dataclass
+@dataclasses.dataclass(frozen=True)
 class ImageConfig:
     working_directory: str
     command: list[str] = dataclasses.field(default_factory=list)

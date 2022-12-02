@@ -29,6 +29,7 @@ from localstack.utils import testutil
 from localstack.utils.aws import arns
 from localstack.utils.docker_utils import DOCKER_CLIENT
 from localstack.utils.files import load_file
+from localstack.utils.functions import call_safe
 from localstack.utils.strings import long_uid, short_uid, to_str
 from localstack.utils.sync import wait_until
 from localstack.utils.testutil import create_lambda_archive
@@ -579,8 +580,14 @@ class TestLambdaImages:
 
         for repository_name in repository_names:
             try:
-                image_ids = ecr_client.list_images(repositoryName=repository_name)["imageIds"]
-                ecr_client.batch_delete_image(repositoryName=repository_name, imageIds=image_ids)
+                image_ids = ecr_client.list_images(repositoryName=repository_name).get(
+                    "imageIds", []
+                )
+                if image_ids:
+                    call_safe(
+                        ecr_client.batch_delete_image,
+                        kwargs={"repositoryName": repository_name, "imageIds": image_ids},
+                    )
                 ecr_client.delete_repository(repositoryName=repository_name)
             except Exception as e:
                 LOG.debug("Error cleaning up repository %s: %s", repository_name, e)
