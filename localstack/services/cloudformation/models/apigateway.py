@@ -372,10 +372,7 @@ class GatewayMethod(GenericBaseModel):
 
                     kwargs["uri"] = uri
 
-                integration_responses = []
-                if kwargs.get("integrationResponses"):
-                    integration_responses = kwargs["integrationResponses"]
-                    del kwargs["integrationResponses"]
+                integration_responses = kwargs.pop("integrationResponses", [])
 
                 apigateway.put_integration(
                     restApiId=api_id,
