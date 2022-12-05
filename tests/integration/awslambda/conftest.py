@@ -243,3 +243,9 @@ def multiruntime_lambda(lambda_client, request, lambda_su_role) -> ParametrizedL
     yield param_lambda
 
     param_lambda.destroy()
+
+
+@pytest.fixture
+def dummylayer():
+    with open(os.path.join(os.path.dirname(__file__), "./layers/testlayer.zip"), "rb") as fd:
+        yield fd.read()

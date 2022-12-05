@@ -8777,5 +8777,14 @@
         }
       }
     }
+  },
+  "tests/integration/awslambda/test_lambda_api.py::TestLambdaAccountSettings::test_account_settings_total_code_size": {
+    "recorded-date": "05-12-2022, 14:06:49",
+    "recorded-content": {
+      "total_code_size_diff_create_function": 264,
+      "total_code_size_diff_update_function": 264,
+      "total_code_size_diff_publish_layer": 169,
+      "total_code_size_diff_publish_layer_version": 169
+    }
   }
 }

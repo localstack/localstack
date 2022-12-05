@@ -11,7 +11,6 @@ import base64
 import io
 import json
 import logging
-import os
 from hashlib import sha256
 from io import BytesIO
 from typing import Callable
@@ -2829,14 +2828,122 @@ class TestCodeSigningConfig:
 
 @pytest.mark.skipif(is_old_provider(), reason="not implemented")
 class TestLambdaAccountSettings:
-
-    # TODO: for now probably fine if it just returns some static values, but might be interesting to properly implement this in the new provider
     @pytest.mark.aws_validated
     def test_account_settings(self, lambda_client, snapshot):
+        """Limitation: only checks keys because AccountLimits are specific to AWS accounts. Example limits (2022-12-05):
+
+        "AccountLimit": {
+            "TotalCodeSize": 80530636800,
+            "CodeSizeUnzipped": 262144000,
+            "CodeSizeZipped": 52428800,
+            "ConcurrentExecutions": 10,
+            "UnreservedConcurrentExecutions": 10
+        }"""
         acc_settings = lambda_client.get_account_settings()
-        acc_settings["AccountLimit"] = sorted(list(acc_settings["AccountLimit"].keys()))
-        acc_settings["AccountUsage"] = sorted(list(acc_settings["AccountUsage"].keys()))
-        snapshot.match("acc_settings_modded", acc_settings)
+        acc_settings_modded = acc_settings
+        acc_settings_modded["AccountLimit"] = sorted(list(acc_settings["AccountLimit"].keys()))
+        acc_settings_modded["AccountUsage"] = sorted(list(acc_settings["AccountUsage"].keys()))
+        snapshot.match("acc_settings_modded", acc_settings_modded)
+
+    @pytest.mark.aws_validated
+    def test_account_settings_total_code_size(
+        self, lambda_client, create_lambda_function, dummylayer, cleanups, snapshot
+    ):
+        """Caveat: Could be flaky if another test simultaneously deletes a larger lambda function in the same region.
+        Hence, testing for monotonically increasing `TotalCodeSize` rather than matching exact differences.
+        """
+        acc_settings0 = lambda_client.get_account_settings()
+
+        # 1) create a new function
+        function_name = f"lambda_func-{short_uid()}"
+        create_lambda_function(
+            handler_file=TEST_LAMBDA_PYTHON_ECHO,
+            func_name=function_name,
+            runtime=Runtime.python3_9,
+        )
+        acc_settings1 = lambda_client.get_account_settings()
+        assert (
+            acc_settings1["AccountUsage"]["TotalCodeSize"]
+            > acc_settings0["AccountUsage"]["TotalCodeSize"]
+        )
+        assert (
+            acc_settings1["AccountUsage"]["FunctionCount"]
+            > acc_settings0["AccountUsage"]["FunctionCount"]
+        )
+        snapshot.match(
+            "total_code_size_diff_create_function",
+            acc_settings1["AccountUsage"]["TotalCodeSize"]
+            - acc_settings0["AccountUsage"]["TotalCodeSize"],
+        )
+
+        # 2) update the function
+        update_zip_file = create_lambda_archive(
+            load_file(TEST_LAMBDA_PYTHON_ECHO), get_content=True
+        )
+        lambda_client.update_function_code(
+            FunctionName=function_name, ZipFile=update_zip_file, Publish=True
+        )
+        acc_settings2 = lambda_client.get_account_settings()
+        assert (
+            acc_settings2["AccountUsage"]["TotalCodeSize"]
+            > acc_settings1["AccountUsage"]["TotalCodeSize"]
+        )
+        snapshot.match(
+            "total_code_size_diff_update_function",
+            acc_settings2["AccountUsage"]["TotalCodeSize"]
+            - acc_settings1["AccountUsage"]["TotalCodeSize"],
+        )
+
+        # 3) publish a new layer
+        layer_name = f"testlayer-{short_uid()}"
+        publish_result1 = lambda_client.publish_layer_version(
+            LayerName=layer_name, Content={"ZipFile": dummylayer}
+        )
+        cleanups.append(
+            lambda: lambda_client.delete_layer_version(
+                LayerName=layer_name, VersionNumber=publish_result1["Version"]
+            )
+        )
+        acc_settings3 = lambda_client.get_account_settings()
+        assert (
+            acc_settings3["AccountUsage"]["TotalCodeSize"]
+            > acc_settings2["AccountUsage"]["TotalCodeSize"]
+        )
+        snapshot.match(
+            "total_code_size_diff_publish_layer",
+            acc_settings3["AccountUsage"]["TotalCodeSize"]
+            - acc_settings2["AccountUsage"]["TotalCodeSize"],
+        )
+
+        # 4) publish a new layer version
+        publish_result2 = lambda_client.publish_layer_version(
+            LayerName=layer_name, Content={"ZipFile": dummylayer}
+        )
+        cleanups.append(
+            lambda: lambda_client.delete_layer_version(
+                LayerName=layer_name, VersionNumber=publish_result2["Version"]
+            )
+        )
+        acc_settings4 = lambda_client.get_account_settings()
+        assert (
+            acc_settings4["AccountUsage"]["TotalCodeSize"]
+            > acc_settings3["AccountUsage"]["TotalCodeSize"]
+        )
+        snapshot.match(
+            "total_code_size_diff_publish_layer_version",
+            acc_settings4["AccountUsage"]["TotalCodeSize"]
+            - acc_settings3["AccountUsage"]["TotalCodeSize"],
+        )
+        # Exact differences (delta validated against AWS):
+        # TotalCodeSize:v0=0;v1=264(+264);v2=630(+366);v3=799(+169);v4=968(+169)
+        logging.debug(
+            f"TotalCodeSize:"
+            f'v0={acc_settings0["AccountUsage"]["TotalCodeSize"]};'
+            f'v1={acc_settings1["AccountUsage"]["TotalCodeSize"]}(+{acc_settings1["AccountUsage"]["TotalCodeSize"] - acc_settings0["AccountUsage"]["TotalCodeSize"]});'
+            f'v2={acc_settings2["AccountUsage"]["TotalCodeSize"]}(+{acc_settings2["AccountUsage"]["TotalCodeSize"] - acc_settings1["AccountUsage"]["TotalCodeSize"]});'
+            f'v3={acc_settings3["AccountUsage"]["TotalCodeSize"]}(+{acc_settings3["AccountUsage"]["TotalCodeSize"] - acc_settings2["AccountUsage"]["TotalCodeSize"]});'
+            f'v4={acc_settings4["AccountUsage"]["TotalCodeSize"]}(+{acc_settings4["AccountUsage"]["TotalCodeSize"] - acc_settings3["AccountUsage"]["TotalCodeSize"]})'
+        )
 
 
 class TestLambdaEventSourceMappings:
@@ -3162,11 +3269,6 @@ class TestLambdaTags:
 # TODO: test if function has to be in same region as layer
 @pytest.mark.skipif(condition=is_old_provider(), reason="not supported")
 class TestLambdaLayer:
-    @pytest.fixture(scope="class")
-    def dummylayer(self):
-        with open(os.path.join(os.path.dirname(__file__), "./layers/testlayer.zip"), "rb") as fd:
-            yield fd.read()
-
     @pytest.mark.aws_validated
     def test_layer_exceptions(
         self, lambda_client, create_lambda_function, snapshot, dummylayer, cleanups
