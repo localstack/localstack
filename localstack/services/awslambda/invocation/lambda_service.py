@@ -7,6 +7,7 @@ import random
 import uuid
 from concurrent.futures import Executor, Future, ThreadPoolExecutor
 from hashlib import sha256
+from pathlib import Path
 from threading import RLock
 from typing import TYPE_CHECKING, Dict, Optional
 
@@ -27,6 +28,7 @@ from localstack.services.awslambda.invocation.lambda_models import (
     LAMBDA_LIMITS_CODE_SIZE_UNZIPPED_DEFAULT,
     Function,
     FunctionVersion,
+    HotReloadingCode,
     ImageCode,
     Invocation,
     InvocationResult,
@@ -397,6 +399,16 @@ def store_s3_bucket_archive(
     :param account_id: account id the archive should be stored for
     :return: S3 Code object representing the archive stored in S3
     """
+    # TODO change test-bucket-for-hot-reloading to actual bucket
+    if archive_bucket == "test-bucket-for-hot-reloading":
+        # TODO extract into other function
+        if not Path(archive_key).is_absolute():
+            raise InvalidParameterValueException(
+                "When using hot reloading, the archive key has to be an absolute path! Your archive key: %s",
+                archive_key,
+            )
+        # TODO fix types
+        return HotReloadingCode(host_path=archive_key)
     s3_client: "S3Client" = aws_stack.connect_to_service("s3")
     kwargs = {"VersionId": archive_version} if archive_version else {}
     archive_file = s3_client.get_object(Bucket=archive_bucket, Key=archive_key, **kwargs)[

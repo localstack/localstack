@@ -149,6 +149,14 @@ class S3Code:
             params["VersionId"] = self.s3_object_version
         return s3_client.generate_presigned_url("get_object", Params=params)
 
+    def has_to_be_mounted(self) -> bool:
+        """
+        Whether this code archive has to be mounted (from the host)
+
+        :return: True if it must be mounted, False otherwise
+        """
+        return False
+
     def get_unzipped_code_location(self) -> Path:
         """
         Get the location of the unzipped archive on disk
@@ -201,6 +209,46 @@ class S3Code:
             LOG.debug(
                 "Cannot delete lambda archive %s in bucket %s: %s", self.s3_key, self.s3_bucket, e
             )
+
+
+@dataclasses.dataclass(frozen=True)
+class HotReloadingCode:
+    """
+    Objects representing code which is mounted from a given directory from the host, for hot reloading
+    """
+
+    host_path: str
+    code_sha256: str = "hot-reloading-hash-not-available"
+    code_size: int = 0
+
+    def generate_presigned_url(self, endpoint_url: str | None = None) -> str:
+        return f"Code location: {self.host_path}"
+
+    def get_unzipped_code_location(self) -> Path:
+        return Path(self.host_path)
+
+    def has_to_be_mounted(self) -> bool:
+        """
+        Whether this code archive has to be mounted (from the host)
+
+        :return: True if it must be mounted, False otherwise
+        """
+        return True
+
+    def prepare_for_execution(self) -> None:
+        pass
+
+    def destroy_cached(self) -> None:
+        """
+        Destroys the code object on disk, if it was saved on disk before
+        """
+        pass
+
+    def destroy(self) -> None:
+        """
+        Deletes the code object from S3 and the unzipped version from disk
+        """
+        pass
 
 
 @dataclasses.dataclass(frozen=True)
