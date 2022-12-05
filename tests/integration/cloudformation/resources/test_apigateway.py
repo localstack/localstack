@@ -8,7 +8,6 @@ from localstack import constants
 from localstack.utils.common import short_uid
 from localstack.utils.files import load_file
 from localstack.utils.run import to_str
-from localstack.utils.sync import wait_until
 from localstack.utils.testutil import create_zip_file
 from tests.integration.apigateway_fixtures import api_invoke_url
 
@@ -254,7 +253,7 @@ def test_cfn_apigateway_rest_api(deploy_cfn_template, apigateway_client):
 
 
 @pytest.mark.aws_validated
-def test_account(deploy_cfn_template, apigateway_client, is_stack_deleted):
+def test_account(deploy_cfn_template, apigateway_client, cfn_client):
     stack = deploy_cfn_template(
         template_path=os.path.join(
             os.path.dirname(__file__), "../../templates/apigateway_account.yml"
@@ -266,7 +265,7 @@ def test_account(deploy_cfn_template, apigateway_client, is_stack_deleted):
 
     # Assert that after deletion of stack, the apigw account is not updated
     stack.destroy()
-    wait_until(is_stack_deleted(stack.stack_name), strategy="linear")
+    cfn_client.get_waiter("stack_delete_complete").wait(StackName=stack.stack_name)
     account_info = apigateway_client.get_account()
     assert account_info["cloudwatchRoleArn"] == stack.outputs["RoleArn"]
 
