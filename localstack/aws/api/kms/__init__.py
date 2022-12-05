@@ -37,6 +37,12 @@ RegionType = str
 TagKeyType = str
 TagValueType = str
 TrustAnchorCertificateType = str
+XksKeyIdType = str
+XksProxyAuthenticationAccessKeyIdType = str
+XksProxyAuthenticationRawSecretAccessKeyType = str
+XksProxyUriEndpointType = str
+XksProxyUriPathType = str
+XksProxyVpcEndpointServiceNameType = str
 
 
 class AlgorithmSpec(str):
@@ -56,6 +62,16 @@ class ConnectionErrorCodeType(str):
     USER_LOGGED_IN = "USER_LOGGED_IN"
     SUBNET_NOT_FOUND = "SUBNET_NOT_FOUND"
     INSUFFICIENT_FREE_ADDRESSES_IN_SUBNET = "INSUFFICIENT_FREE_ADDRESSES_IN_SUBNET"
+    XKS_PROXY_ACCESS_DENIED = "XKS_PROXY_ACCESS_DENIED"
+    XKS_PROXY_NOT_REACHABLE = "XKS_PROXY_NOT_REACHABLE"
+    XKS_VPC_ENDPOINT_SERVICE_NOT_FOUND = "XKS_VPC_ENDPOINT_SERVICE_NOT_FOUND"
+    XKS_PROXY_INVALID_RESPONSE = "XKS_PROXY_INVALID_RESPONSE"
+    XKS_PROXY_INVALID_CONFIGURATION = "XKS_PROXY_INVALID_CONFIGURATION"
+    XKS_VPC_ENDPOINT_SERVICE_INVALID_CONFIGURATION = (
+        "XKS_VPC_ENDPOINT_SERVICE_INVALID_CONFIGURATION"
+    )
+    XKS_PROXY_TIMED_OUT = "XKS_PROXY_TIMED_OUT"
+    XKS_PROXY_INVALID_TLS_CONFIGURATION = "XKS_PROXY_INVALID_TLS_CONFIGURATION"
 
 
 class ConnectionStateType(str):
@@ -64,6 +80,11 @@ class ConnectionStateType(str):
     FAILED = "FAILED"
     DISCONNECTED = "DISCONNECTED"
     DISCONNECTING = "DISCONNECTING"
+
+
+class CustomKeyStoreType(str):
+    AWS_CLOUDHSM = "AWS_CLOUDHSM"
+    EXTERNAL_KEY_STORE = "EXTERNAL_KEY_STORE"
 
 
 class CustomerMasterKeySpec(str):
@@ -188,6 +209,7 @@ class OriginType(str):
     AWS_KMS = "AWS_KMS"
     EXTERNAL = "EXTERNAL"
     AWS_CLOUDHSM = "AWS_CLOUDHSM"
+    EXTERNAL_KEY_STORE = "EXTERNAL_KEY_STORE"
 
 
 class SigningAlgorithmSpec(str):
@@ -205,6 +227,11 @@ class SigningAlgorithmSpec(str):
 
 class WrappingKeySpec(str):
     RSA_2048 = "RSA_2048"
+
+
+class XksProxyConnectivityType(str):
+    PUBLIC_ENDPOINT = "PUBLIC_ENDPOINT"
+    VPC_ENDPOINT_SERVICE = "VPC_ENDPOINT_SERVICE"
 
 
 class AlreadyExistsException(ServiceException):
@@ -411,6 +438,78 @@ class UnsupportedOperationException(ServiceException):
     status_code: int = 400
 
 
+class XksKeyAlreadyInUseException(ServiceException):
+    code: str = "XksKeyAlreadyInUseException"
+    sender_fault: bool = False
+    status_code: int = 400
+
+
+class XksKeyInvalidConfigurationException(ServiceException):
+    code: str = "XksKeyInvalidConfigurationException"
+    sender_fault: bool = False
+    status_code: int = 400
+
+
+class XksKeyNotFoundException(ServiceException):
+    code: str = "XksKeyNotFoundException"
+    sender_fault: bool = False
+    status_code: int = 400
+
+
+class XksProxyIncorrectAuthenticationCredentialException(ServiceException):
+    code: str = "XksProxyIncorrectAuthenticationCredentialException"
+    sender_fault: bool = False
+    status_code: int = 400
+
+
+class XksProxyInvalidConfigurationException(ServiceException):
+    code: str = "XksProxyInvalidConfigurationException"
+    sender_fault: bool = False
+    status_code: int = 400
+
+
+class XksProxyInvalidResponseException(ServiceException):
+    code: str = "XksProxyInvalidResponseException"
+    sender_fault: bool = False
+    status_code: int = 400
+
+
+class XksProxyUriEndpointInUseException(ServiceException):
+    code: str = "XksProxyUriEndpointInUseException"
+    sender_fault: bool = False
+    status_code: int = 400
+
+
+class XksProxyUriInUseException(ServiceException):
+    code: str = "XksProxyUriInUseException"
+    sender_fault: bool = False
+    status_code: int = 400
+
+
+class XksProxyUriUnreachableException(ServiceException):
+    code: str = "XksProxyUriUnreachableException"
+    sender_fault: bool = False
+    status_code: int = 400
+
+
+class XksProxyVpcEndpointServiceInUseException(ServiceException):
+    code: str = "XksProxyVpcEndpointServiceInUseException"
+    sender_fault: bool = False
+    status_code: int = 400
+
+
+class XksProxyVpcEndpointServiceInvalidConfigurationException(ServiceException):
+    code: str = "XksProxyVpcEndpointServiceInvalidConfigurationException"
+    sender_fault: bool = False
+    status_code: int = 400
+
+
+class XksProxyVpcEndpointServiceNotFoundException(ServiceException):
+    code: str = "XksProxyVpcEndpointServiceNotFoundException"
+    sender_fault: bool = False
+    status_code: int = 400
+
+
 DateType = datetime
 
 
@@ -449,11 +548,22 @@ class CreateAliasRequest(ServiceRequest):
     TargetKeyId: KeyIdType
 
 
+class XksProxyAuthenticationCredentialType(TypedDict, total=False):
+    AccessKeyId: XksProxyAuthenticationAccessKeyIdType
+    RawSecretAccessKey: XksProxyAuthenticationRawSecretAccessKeyType
+
+
 class CreateCustomKeyStoreRequest(ServiceRequest):
     CustomKeyStoreName: CustomKeyStoreNameType
     CloudHsmClusterId: Optional[CloudHsmClusterIdType]
     TrustAnchorCertificate: Optional[TrustAnchorCertificateType]
     KeyStorePassword: Optional[KeyStorePasswordType]
+    CustomKeyStoreType: Optional[CustomKeyStoreType]
+    XksProxyUriEndpoint: Optional[XksProxyUriEndpointType]
+    XksProxyUriPath: Optional[XksProxyUriPathType]
+    XksProxyVpcEndpointServiceName: Optional[XksProxyVpcEndpointServiceNameType]
+    XksProxyAuthenticationCredential: Optional[XksProxyAuthenticationCredentialType]
+    XksProxyConnectivity: Optional[XksProxyConnectivityType]
 
 
 class CreateCustomKeyStoreResponse(TypedDict, total=False):
@@ -506,6 +616,11 @@ class CreateKeyRequest(ServiceRequest):
     BypassPolicyLockoutSafetyCheck: Optional[BooleanType]
     Tags: Optional[TagList]
     MultiRegion: Optional[NullableBooleanType]
+    XksKeyId: Optional[XksKeyIdType]
+
+
+class XksKeyConfigurationType(TypedDict, total=False):
+    Id: Optional[XksKeyIdType]
 
 
 MacAlgorithmSpecList = List[MacAlgorithmSpec]
@@ -553,10 +668,19 @@ class KeyMetadata(TypedDict, total=False):
     MultiRegionConfiguration: Optional[MultiRegionConfiguration]
     PendingDeletionWindowInDays: Optional[PendingWindowInDaysType]
     MacAlgorithms: Optional[MacAlgorithmSpecList]
+    XksKeyConfiguration: Optional[XksKeyConfigurationType]
 
 
 class CreateKeyResponse(TypedDict, total=False):
     KeyMetadata: Optional[KeyMetadata]
+
+
+class XksProxyConfigurationType(TypedDict, total=False):
+    Connectivity: Optional[XksProxyConnectivityType]
+    AccessKeyId: Optional[XksProxyAuthenticationAccessKeyIdType]
+    UriEndpoint: Optional[XksProxyUriEndpointType]
+    UriPath: Optional[XksProxyUriPathType]
+    VpcEndpointServiceName: Optional[XksProxyVpcEndpointServiceNameType]
 
 
 class CustomKeyStoresListEntry(TypedDict, total=False):
@@ -567,6 +691,8 @@ class CustomKeyStoresListEntry(TypedDict, total=False):
     ConnectionState: Optional[ConnectionStateType]
     ConnectionErrorCode: Optional[ConnectionErrorCodeType]
     CreationDate: Optional[DateType]
+    CustomKeyStoreType: Optional[CustomKeyStoreType]
+    XksProxyConfiguration: Optional[XksProxyConfigurationType]
 
 
 CustomKeyStoresList = List[CustomKeyStoresListEntry]
@@ -997,6 +1123,11 @@ class UpdateCustomKeyStoreRequest(ServiceRequest):
     NewCustomKeyStoreName: Optional[CustomKeyStoreNameType]
     KeyStorePassword: Optional[KeyStorePasswordType]
     CloudHsmClusterId: Optional[CloudHsmClusterIdType]
+    XksProxyUriEndpoint: Optional[XksProxyUriEndpointType]
+    XksProxyUriPath: Optional[XksProxyUriPathType]
+    XksProxyVpcEndpointServiceName: Optional[XksProxyVpcEndpointServiceNameType]
+    XksProxyAuthenticationCredential: Optional[XksProxyAuthenticationCredentialType]
+    XksProxyConnectivity: Optional[XksProxyConnectivityType]
 
 
 class UpdateCustomKeyStoreResponse(TypedDict, total=False):
@@ -1073,6 +1204,12 @@ class KmsApi:
         cloud_hsm_cluster_id: CloudHsmClusterIdType = None,
         trust_anchor_certificate: TrustAnchorCertificateType = None,
         key_store_password: KeyStorePasswordType = None,
+        custom_key_store_type: CustomKeyStoreType = None,
+        xks_proxy_uri_endpoint: XksProxyUriEndpointType = None,
+        xks_proxy_uri_path: XksProxyUriPathType = None,
+        xks_proxy_vpc_endpoint_service_name: XksProxyVpcEndpointServiceNameType = None,
+        xks_proxy_authentication_credential: XksProxyAuthenticationCredentialType = None,
+        xks_proxy_connectivity: XksProxyConnectivityType = None,
     ) -> CreateCustomKeyStoreResponse:
         raise NotImplementedError
 
@@ -1104,6 +1241,7 @@ class KmsApi:
         bypass_policy_lockout_safety_check: BooleanType = None,
         tags: TagList = None,
         multi_region: NullableBooleanType = None,
+        xks_key_id: XksKeyIdType = None,
     ) -> CreateKeyResponse:
         raise NotImplementedError
 
@@ -1448,6 +1586,11 @@ class KmsApi:
         new_custom_key_store_name: CustomKeyStoreNameType = None,
         key_store_password: KeyStorePasswordType = None,
         cloud_hsm_cluster_id: CloudHsmClusterIdType = None,
+        xks_proxy_uri_endpoint: XksProxyUriEndpointType = None,
+        xks_proxy_uri_path: XksProxyUriPathType = None,
+        xks_proxy_vpc_endpoint_service_name: XksProxyVpcEndpointServiceNameType = None,
+        xks_proxy_authentication_credential: XksProxyAuthenticationCredentialType = None,
+        xks_proxy_connectivity: XksProxyConnectivityType = None,
     ) -> UpdateCustomKeyStoreResponse:
         raise NotImplementedError
 

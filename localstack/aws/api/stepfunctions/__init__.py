@@ -19,6 +19,8 @@ IncludeExecutionData = bool
 IncludeExecutionDataGetExecutionHistory = bool
 ListExecutionsPageToken = str
 LongArn = str
+MapRunLabel = str
+MaxConcurrency = int
 Name = str
 PageSize = int
 PageToken = str
@@ -30,6 +32,7 @@ SensitiveError = str
 TagKey = str
 TagValue = str
 TaskToken = str
+ToleratedFailurePercentage = float
 TraceHeader = str
 UnsignedInteger = int
 includedDetails = bool
@@ -100,6 +103,10 @@ class HistoryEventType(str):
     WaitStateAborted = "WaitStateAborted"
     WaitStateEntered = "WaitStateEntered"
     WaitStateExited = "WaitStateExited"
+    MapRunAborted = "MapRunAborted"
+    MapRunFailed = "MapRunFailed"
+    MapRunStarted = "MapRunStarted"
+    MapRunSucceeded = "MapRunSucceeded"
 
 
 class LogLevel(str):
@@ -107,6 +114,13 @@ class LogLevel(str):
     ERROR = "ERROR"
     FATAL = "FATAL"
     OFF = "OFF"
+
+
+class MapRunStatus(str):
+    RUNNING = "RUNNING"
+    SUCCEEDED = "SUCCEEDED"
+    FAILED = "FAILED"
+    ABORTED = "ABORTED"
 
 
 class StateMachineStatus(str):
@@ -123,6 +137,12 @@ class SyncExecutionStatus(str):
     SUCCEEDED = "SUCCEEDED"
     FAILED = "FAILED"
     TIMED_OUT = "TIMED_OUT"
+
+
+class ValidationExceptionReason(str):
+    API_DOES_NOT_SUPPORT_LABELED_ARNS = "API_DOES_NOT_SUPPORT_LABELED_ARNS"
+    MISSING_REQUIRED_PARAMETER = "MISSING_REQUIRED_PARAMETER"
+    CANNOT_UPDATE_COMPLETED_MAP_RUN = "CANNOT_UPDATE_COMPLETED_MAP_RUN"
 
 
 class ActivityDoesNotExist(ServiceException):
@@ -269,6 +289,13 @@ class TooManyTags(ServiceException):
     sender_fault: bool = False
     status_code: int = 400
     resourceName: Optional[Arn]
+
+
+class ValidationException(ServiceException):
+    code: str = "ValidationException"
+    sender_fault: bool = False
+    status_code: int = 400
+    reason: Optional[ValidationExceptionReason]
 
 
 class ActivityFailedEventDetails(TypedDict, total=False):
@@ -436,6 +463,54 @@ class DescribeExecutionOutput(TypedDict, total=False):
     output: Optional[SensitiveData]
     outputDetails: Optional[CloudWatchEventsExecutionDataDetails]
     traceHeader: Optional[TraceHeader]
+    mapRunArn: Optional[LongArn]
+    error: Optional[SensitiveError]
+    cause: Optional[SensitiveCause]
+
+
+class DescribeMapRunInput(ServiceRequest):
+    mapRunArn: LongArn
+
+
+UnsignedLong = int
+
+
+class MapRunExecutionCounts(TypedDict, total=False):
+    pending: UnsignedLong
+    running: UnsignedLong
+    succeeded: UnsignedLong
+    failed: UnsignedLong
+    timedOut: UnsignedLong
+    aborted: UnsignedLong
+    total: UnsignedLong
+    resultsWritten: UnsignedLong
+
+
+class MapRunItemCounts(TypedDict, total=False):
+    pending: UnsignedLong
+    running: UnsignedLong
+    succeeded: UnsignedLong
+    failed: UnsignedLong
+    timedOut: UnsignedLong
+    aborted: UnsignedLong
+    total: UnsignedLong
+    resultsWritten: UnsignedLong
+
+
+ToleratedFailureCount = int
+
+
+class DescribeMapRunOutput(TypedDict, total=False):
+    mapRunArn: LongArn
+    executionArn: Arn
+    status: MapRunStatus
+    startDate: Timestamp
+    stopDate: Optional[Timestamp]
+    maxConcurrency: MaxConcurrency
+    toleratedFailurePercentage: ToleratedFailurePercentage
+    toleratedFailureCount: ToleratedFailureCount
+    itemCounts: MapRunItemCounts
+    executionCounts: MapRunExecutionCounts
 
 
 class DescribeStateMachineForExecutionInput(ServiceRequest):
@@ -450,6 +525,8 @@ class DescribeStateMachineForExecutionOutput(TypedDict, total=False):
     updateDate: Timestamp
     loggingConfiguration: Optional[LoggingConfiguration]
     tracingConfiguration: Optional[TracingConfiguration]
+    mapRunArn: Optional[LongArn]
+    label: Optional[MapRunLabel]
 
 
 class DescribeStateMachineInput(ServiceRequest):
@@ -468,6 +545,7 @@ DescribeStateMachineOutput = TypedDict(
         "creationDate": Timestamp,
         "loggingConfiguration": Optional[LoggingConfiguration],
         "tracingConfiguration": Optional[TracingConfiguration],
+        "label": Optional[MapRunLabel],
     },
     total=False,
 )
@@ -491,6 +569,8 @@ class ExecutionListItem(TypedDict, total=False):
     status: ExecutionStatus
     startDate: Timestamp
     stopDate: Optional[Timestamp]
+    mapRunArn: Optional[LongArn]
+    itemCount: Optional[UnsignedInteger]
 
 
 ExecutionList = List[ExecutionListItem]
@@ -528,6 +608,15 @@ class GetExecutionHistoryInput(ServiceRequest):
     reverseOrder: Optional[ReverseOrder]
     nextToken: Optional[PageToken]
     includeExecutionData: Optional[IncludeExecutionDataGetExecutionHistory]
+
+
+class MapRunFailedEventDetails(TypedDict, total=False):
+    error: Optional[SensitiveError]
+    cause: Optional[SensitiveCause]
+
+
+class MapRunStartedEventDetails(TypedDict, total=False):
+    mapRunArn: Optional[LongArn]
 
 
 class StateExitedEventDetails(TypedDict, total=False):
@@ -686,6 +775,8 @@ HistoryEvent = TypedDict(
         "lambdaFunctionTimedOutEventDetails": Optional[LambdaFunctionTimedOutEventDetails],
         "stateEnteredEventDetails": Optional[StateEnteredEventDetails],
         "stateExitedEventDetails": Optional[StateExitedEventDetails],
+        "mapRunStartedEventDetails": Optional[MapRunStartedEventDetails],
+        "mapRunFailedEventDetails": Optional[MapRunFailedEventDetails],
     },
     total=False,
 )
@@ -708,15 +799,38 @@ class ListActivitiesOutput(TypedDict, total=False):
 
 
 class ListExecutionsInput(ServiceRequest):
-    stateMachineArn: Arn
+    stateMachineArn: Optional[Arn]
     statusFilter: Optional[ExecutionStatus]
     maxResults: Optional[PageSize]
     nextToken: Optional[ListExecutionsPageToken]
+    mapRunArn: Optional[LongArn]
 
 
 class ListExecutionsOutput(TypedDict, total=False):
     executions: ExecutionList
     nextToken: Optional[ListExecutionsPageToken]
+
+
+class ListMapRunsInput(ServiceRequest):
+    executionArn: Arn
+    maxResults: Optional[PageSize]
+    nextToken: Optional[PageToken]
+
+
+class MapRunListItem(TypedDict, total=False):
+    executionArn: Arn
+    mapRunArn: LongArn
+    stateMachineArn: Arn
+    startDate: Timestamp
+    stopDate: Optional[Timestamp]
+
+
+MapRunList = List[MapRunListItem]
+
+
+class ListMapRunsOutput(TypedDict, total=False):
+    mapRuns: MapRunList
+    nextToken: Optional[PageToken]
 
 
 class ListStateMachinesInput(ServiceRequest):
@@ -844,6 +958,17 @@ class UntagResourceOutput(TypedDict, total=False):
     pass
 
 
+class UpdateMapRunInput(ServiceRequest):
+    mapRunArn: LongArn
+    maxConcurrency: Optional[MaxConcurrency]
+    toleratedFailurePercentage: Optional[ToleratedFailurePercentage]
+    toleratedFailureCount: Optional[ToleratedFailureCount]
+
+
+class UpdateMapRunOutput(TypedDict, total=False):
+    pass
+
+
 class UpdateStateMachineInput(ServiceRequest):
     stateMachineArn: Arn
     definition: Optional[Definition]
@@ -895,6 +1020,12 @@ class StepfunctionsApi:
     ) -> DescribeExecutionOutput:
         raise NotImplementedError
 
+    @handler("DescribeMapRun")
+    def describe_map_run(
+        self, context: RequestContext, map_run_arn: LongArn
+    ) -> DescribeMapRunOutput:
+        raise NotImplementedError
+
     @handler("DescribeStateMachine")
     def describe_state_machine(
         self, context: RequestContext, state_machine_arn: Arn
@@ -935,11 +1066,22 @@ class StepfunctionsApi:
     def list_executions(
         self,
         context: RequestContext,
-        state_machine_arn: Arn,
+        state_machine_arn: Arn = None,
         status_filter: ExecutionStatus = None,
         max_results: PageSize = None,
         next_token: ListExecutionsPageToken = None,
+        map_run_arn: LongArn = None,
     ) -> ListExecutionsOutput:
+        raise NotImplementedError
+
+    @handler("ListMapRuns")
+    def list_map_runs(
+        self,
+        context: RequestContext,
+        execution_arn: Arn,
+        max_results: PageSize = None,
+        next_token: PageToken = None,
+    ) -> ListMapRunsOutput:
         raise NotImplementedError
 
     @handler("ListStateMachines")
@@ -1018,6 +1160,17 @@ class StepfunctionsApi:
     def untag_resource(
         self, context: RequestContext, resource_arn: Arn, tag_keys: TagKeyList
     ) -> UntagResourceOutput:
+        raise NotImplementedError
+
+    @handler("UpdateMapRun")
+    def update_map_run(
+        self,
+        context: RequestContext,
+        map_run_arn: LongArn,
+        max_concurrency: MaxConcurrency = None,
+        tolerated_failure_percentage: ToleratedFailurePercentage = None,
+        tolerated_failure_count: ToleratedFailureCount = None,
+    ) -> UpdateMapRunOutput:
         raise NotImplementedError
 
     @handler("UpdateStateMachine")
