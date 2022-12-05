@@ -106,11 +106,12 @@ class GatewayRestAPI(GenericBaseModel):
         return self.props.get("id")
 
     def fetch_state(self, stack_name, resources):
-        apis = aws_stack.connect_to_service("apigateway").get_rest_apis()["items"]
-        api_name = self.props.get("Name") or self.resource_id
-        api_name = self.resolve_refs_recursively(stack_name, api_name, resources)
-        result = list(filter(lambda api: api["name"] == api_name, apis))
-        return result[0] if result else None
+        if not self.props.get("id"):
+            return None
+
+        return aws_stack.connect_to_service("apigateway").get_rest_api(
+            restApiId=self.props.get("id")
+        )
 
     @staticmethod
     def add_defaults(resource, stack_name: str):
@@ -131,14 +132,37 @@ class GatewayRestAPI(GenericBaseModel):
             resource = resources[resource_id]
             props = resource["Properties"]
 
-            tags = {tag["Key"]: tag["Value"] for tag in props.get("Tags", [])}
-
-            # TODO: add missing attributes
-            result = client.create_rest_api(
-                name=props["Name"],
-                description=props.get("Description", ""),
-                tags=tags,
+            kwargs = select_attributes(
+                props,
+                [
+                    "Name",
+                    "Description",
+                    "Version",
+                    "CloneFrom",
+                    "BinaryMediaTypes",
+                    "MinimumCompressionSize",
+                    "ApiKeySource",
+                    "EndpointConfiguration",
+                    "Policy",
+                    "Tags",
+                    "DisableExecuteApiEndpoint",
+                ],
             )
+            kwargs = keys_to_lower(kwargs)
+            kwargs["tags"] = {tag["key"]: tag["value"] for tag in kwargs.get("tags", [])}
+
+            cfn_client = aws_stack.connect_to_service("cloudformation")
+            stack_id = cfn_client.describe_stacks(StackName=stack_name)["Stacks"][0]["StackId"]
+            kwargs["tags"].update(
+                {
+                    "aws:cloudformation:logical-id": resource_id,
+                    "aws:cloudformation:stack-name": stack_name,
+                    "aws:cloudformation:stack-id": stack_id,
+                }
+            )
+
+            result = client.create_rest_api(**kwargs)
+
             body = props.get("Body")
             if body:
                 # the default behavior for imports via CFn is basepath=ignore (validated against AWS)
@@ -351,7 +375,8 @@ class GatewayMethod(GenericBaseModel):
                 res_id = resource.resolve_refs_recursively(
                     stack_name, props["ResourceId"], resources
                 )
-                kwargs = {}
+
+                kwargs = keys_to_lower(integration)
                 if integration.get("Uri"):
                     uri = resource.resolve_refs_recursively(
                         stack_name, integration.get("Uri"), resources
@@ -366,25 +391,27 @@ class GatewayMethod(GenericBaseModel):
 
                     kwargs["uri"] = uri
 
-                if integration.get("IntegrationHttpMethod"):
-                    kwargs["integrationHttpMethod"] = integration["IntegrationHttpMethod"]
-
-                if integration.get("RequestTemplates"):
-                    kwargs["requestTemplates"] = integration["RequestTemplates"]
-
-                if integration.get("Credentials"):
-                    kwargs["credentials"] = integration["Credentials"]
-
-                if integration.get("RequestParameters"):
-                    kwargs["requestParameters"] = integration["RequestParameters"]
+                integration_responses = kwargs.pop("integrationResponses", [])
+                method = props.get("HttpMethod")
 
                 apigateway.put_integration(
                     restApiId=api_id,
                     resourceId=res_id,
-                    httpMethod=props["HttpMethod"],
-                    type=integration["Type"],
+                    httpMethod=method,
                     **kwargs,
                 )
+
+                for integration_response in integration_responses:
+                    integration_response["statusCode"] = str(integration_response["statusCode"])
+                    integration_response["responseParameters"] = integration_response.get(
+                        "responseParameters", {}
+                    )
+                    apigateway.put_integration_response(
+                        restApiId=api_id,
+                        resourceId=res_id,
+                        httpMethod=method,
+                        **keys_to_lower(integration_response),
+                    )
 
             responses = props.get("MethodResponses") or []
             for response in responses:
