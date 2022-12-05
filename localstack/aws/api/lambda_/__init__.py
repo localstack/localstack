@@ -155,6 +155,17 @@ class LastUpdateStatusReasonCode(str):
     ImageDeleted = "ImageDeleted"
     ImageAccessDenied = "ImageAccessDenied"
     InvalidImage = "InvalidImage"
+    KMSKeyAccessDenied = "KMSKeyAccessDenied"
+    KMSKeyNotFound = "KMSKeyNotFound"
+    InvalidStateKMSKey = "InvalidStateKMSKey"
+    DisabledKMSKey = "DisabledKMSKey"
+    EFSIOError = "EFSIOError"
+    EFSMountConnectivityError = "EFSMountConnectivityError"
+    EFSMountFailure = "EFSMountFailure"
+    EFSMountTimeout = "EFSMountTimeout"
+    InvalidRuntime = "InvalidRuntime"
+    InvalidZipFileException = "InvalidZipFileException"
+    FunctionError = "FunctionError"
 
 
 class LogType(str):
@@ -204,6 +215,16 @@ class Runtime(str):
     nodejs18_x = "nodejs18.x"
 
 
+class SnapStartApplyOn(str):
+    PublishedVersions = "PublishedVersions"
+    None_ = "None"
+
+
+class SnapStartOptimizationStatus(str):
+    On = "On"
+    Off = "Off"
+
+
 class SourceAccessType(str):
     BASIC_AUTH = "BASIC_AUTH"
     VPC_SUBNET = "VPC_SUBNET"
@@ -236,6 +257,17 @@ class StateReasonCode(str):
     ImageDeleted = "ImageDeleted"
     ImageAccessDenied = "ImageAccessDenied"
     InvalidImage = "InvalidImage"
+    KMSKeyAccessDenied = "KMSKeyAccessDenied"
+    KMSKeyNotFound = "KMSKeyNotFound"
+    InvalidStateKMSKey = "InvalidStateKMSKey"
+    DisabledKMSKey = "DisabledKMSKey"
+    EFSIOError = "EFSIOError"
+    EFSMountConnectivityError = "EFSMountConnectivityError"
+    EFSMountFailure = "EFSMountFailure"
+    EFSMountTimeout = "EFSMountTimeout"
+    InvalidRuntime = "InvalidRuntime"
+    InvalidZipFileException = "InvalidZipFileException"
+    FunctionError = "FunctionError"
 
 
 class ThrottleReason(str):
@@ -246,6 +278,7 @@ class ThrottleReason(str):
     )
     ReservedFunctionInvocationRateLimitExceeded = "ReservedFunctionInvocationRateLimitExceeded"
     CallerRateLimitExceeded = "CallerRateLimitExceeded"
+    ConcurrentSnapshotCreateLimitExceeded = "ConcurrentSnapshotCreateLimitExceeded"
 
 
 class TracingMode(str):
@@ -468,6 +501,27 @@ class ServiceException(ServiceException):
     code: str = "ServiceException"
     sender_fault: bool = False
     status_code: int = 500
+    Type: Optional[String]
+
+
+class SnapStartException(ServiceException):
+    code: str = "SnapStartException"
+    sender_fault: bool = False
+    status_code: int = 400
+    Type: Optional[String]
+
+
+class SnapStartNotReadyException(ServiceException):
+    code: str = "SnapStartNotReadyException"
+    sender_fault: bool = False
+    status_code: int = 409
+    Type: Optional[String]
+
+
+class SnapStartTimeoutException(ServiceException):
+    code: str = "SnapStartTimeoutException"
+    sender_fault: bool = False
+    status_code: int = 408
     Type: Optional[String]
 
 
@@ -707,6 +761,10 @@ class CreateEventSourceMappingRequest(ServiceRequest):
     SelfManagedKafkaEventSourceConfig: Optional[SelfManagedKafkaEventSourceConfig]
 
 
+class SnapStart(TypedDict, total=False):
+    ApplyOn: Optional[SnapStartApplyOn]
+
+
 class EphemeralStorage(TypedDict, total=False):
     Size: EphemeralStorageSize
 
@@ -785,6 +843,7 @@ class CreateFunctionRequest(ServiceRequest):
     CodeSigningConfigArn: Optional[CodeSigningConfigArn]
     Architectures: Optional[ArchitecturesList]
     EphemeralStorage: Optional[EphemeralStorage]
+    SnapStart: Optional[SnapStart]
 
 
 class CreateFunctionUrlConfigRequest(ServiceRequest):
@@ -901,6 +960,11 @@ class FunctionCodeLocation(TypedDict, total=False):
     ResolvedImageUri: Optional[String]
 
 
+class SnapStartResponse(TypedDict, total=False):
+    ApplyOn: Optional[SnapStartApplyOn]
+    OptimizationStatus: Optional[SnapStartOptimizationStatus]
+
+
 class ImageConfigError(TypedDict, total=False):
     ErrorCode: Optional[String]
     Message: Optional[SensitiveString]
@@ -965,6 +1029,7 @@ class FunctionConfiguration(TypedDict, total=False):
     SigningJobArn: Optional[Arn]
     Architectures: Optional[ArchitecturesList]
     EphemeralStorage: Optional[EphemeralStorage]
+    SnapStart: Optional[SnapStartResponse]
 
 
 class FunctionEventInvokeConfig(TypedDict, total=False):
@@ -1496,6 +1561,7 @@ class UpdateFunctionConfigurationRequest(ServiceRequest):
     FileSystemConfigs: Optional[FileSystemConfigList]
     ImageConfig: Optional[ImageConfig]
     EphemeralStorage: Optional[EphemeralStorage]
+    SnapStart: Optional[SnapStart]
 
 
 class UpdateFunctionEventInvokeConfigRequest(ServiceRequest):
@@ -1635,6 +1701,7 @@ class LambdaApi:
         code_signing_config_arn: CodeSigningConfigArn = None,
         architectures: ArchitecturesList = None,
         ephemeral_storage: EphemeralStorage = None,
+        snap_start: SnapStart = None,
     ) -> FunctionConfiguration:
         raise NotImplementedError
 
@@ -2132,6 +2199,7 @@ class LambdaApi:
         file_system_configs: FileSystemConfigList = None,
         image_config: ImageConfig = None,
         ephemeral_storage: EphemeralStorage = None,
+        snap_start: SnapStart = None,
     ) -> FunctionConfiguration:
         raise NotImplementedError
 
