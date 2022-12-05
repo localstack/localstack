@@ -221,7 +221,7 @@ def test_skeleton_e2e_sqs_send_message_not_implemented():
     assert parsed_response["Error"] == {
         "Code": "InternalFailure",
         "Message": "API action 'SendMessage' for service 'sqs' not yet implemented or pro feature - check "
-        "https://docs.localstack.cloud/aws/feature-coverage for further information",
+        "https://docs.localstack.cloud/user-guide/aws/feature-coverage for further information",
     }
 
 
@@ -291,7 +291,7 @@ def test_dispatch_missing_method_returns_internal_failure():
     assert parsed_response["Error"] == {
         "Code": "InternalFailure",
         "Message": "API action 'DeleteQueue' for service 'sqs' not yet implemented or pro feature - check "
-        "https://docs.localstack.cloud/aws/feature-coverage for further information",
+        "https://docs.localstack.cloud/user-guide/aws/feature-coverage for further information",
     }
 
 

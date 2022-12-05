@@ -766,7 +766,7 @@ def convert_data_types(func_details, params):
 def log_not_available_message(resource_type: str, message: str):
     LOG.warning(
         f"{message}. To find out if {resource_type} is supported in LocalStack Pro, "
-        "please check out our docs at https://docs.localstack.cloud/aws/cloudformation"
+        "please check out our docs at https://docs.localstack.cloud/user-guide/aws/cloudformation/#resources-pro--enterprise-edition"
     )
 
 
