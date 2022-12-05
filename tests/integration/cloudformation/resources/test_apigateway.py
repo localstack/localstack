@@ -6,6 +6,7 @@ import requests
 
 from localstack import constants
 from localstack.utils.common import short_uid
+from localstack.utils.files import load_file
 from localstack.utils.run import to_str
 from localstack.utils.testutil import create_zip_file
 from tests.integration.apigateway_fixtures import api_invoke_url
@@ -249,3 +250,47 @@ def test_cfn_apigateway_rest_api(deploy_cfn_template, apigateway_client):
 
     apis = [item for item in rs["items"] if item["name"] == "DemoApi_dev"]
     assert not apis
+
+
+@pytest.mark.aws_validated
+def test_account(deploy_cfn_template, apigateway_client, cfn_client):
+    stack = deploy_cfn_template(
+        template_path=os.path.join(
+            os.path.dirname(__file__), "../../templates/apigateway_account.yml"
+        )
+    )
+
+    account_info = apigateway_client.get_account()
+    assert account_info["cloudwatchRoleArn"] == stack.outputs["RoleArn"]
+
+    # Assert that after deletion of stack, the apigw account is not updated
+    stack.destroy()
+    cfn_client.get_waiter("stack_delete_complete").wait(StackName=stack.stack_name)
+    account_info = apigateway_client.get_account()
+    assert account_info["cloudwatchRoleArn"] == stack.outputs["RoleArn"]
+
+
+@pytest.mark.aws_validated
+def test_update_usage_plan(deploy_cfn_template, cfn_client, apigateway_client):
+    rest_api_name = f"api-{short_uid()}"
+    stack = deploy_cfn_template(
+        template_path=os.path.join(
+            os.path.dirname(__file__), "../../templates/apigateway_usage_plan.yml"
+        ),
+        parameters={"QuotaLimit": "5000", "RestApiName": rest_api_name},
+    )
+
+    deploy_cfn_template(
+        is_update=True,
+        stack_name=stack.stack_name,
+        template=load_file(
+            os.path.join(os.path.dirname(__file__), "../../templates/apigateway_usage_plan.yml")
+        ),
+        parameters={"QuotaLimit": "7000", "RestApiName": rest_api_name},
+    )
+
+    cfn_client.get_waiter("stack_update_complete").wait(StackName=stack.stack_name)
+
+    usage_plan = apigateway_client.get_usage_plan(usagePlanId=stack.outputs["UsagePlanId"])
+
+    assert 7000 == usage_plan["quota"]["limit"]

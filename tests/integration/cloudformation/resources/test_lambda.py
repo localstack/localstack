@@ -291,6 +291,43 @@ def test_lambda_vpc(deploy_cfn_template, lambda_client):
     lambda_client.invoke(FunctionName=fn_name, LogType="Tail", Payload=b"{}")
 
 
+@pytest.mark.skip_snapshot_verify(
+    paths=[
+        "$..Policy.PolicyArn",
+        "$..Policy.PolicyName",
+        "$..Policy.Statement..Resource",
+        "$..Policy.Statement..Sid",
+        "$..RevisionId",
+    ]
+)
+def test_update_lambda_permissions(deploy_cfn_template, lambda_client, sts_client):
+    stack = deploy_cfn_template(
+        template_path=os.path.join(
+            os.path.dirname(__file__), "../../templates/cfn_lambda_permission.yml"
+        )
+    )
+
+    new_principal = sts_client.get_caller_identity()["Account"]
+
+    deploy_cfn_template(
+        is_update=True,
+        stack_name=stack.stack_name,
+        parameters={"PrincipalForPermission": new_principal},
+        template_path=os.path.join(
+            os.path.dirname(__file__), "../../templates/cfn_lambda_permission.yml"
+        ),
+    )
+
+    policy = lambda_client.get_policy(FunctionName=stack.outputs["FunctionName"])
+
+    # The behaviour of thi principal acocunt setting changes with aws or lambda providers
+    principal = json.loads(policy["Policy"])["Statement"][0]["Principal"]
+    if isinstance(principal, dict):
+        principal = principal.get("AWS") or principal.get("Service", "")
+
+    assert new_principal in principal
+
+
 class TestCfnLambdaIntegrations:
     @pytest.mark.skip_snapshot_verify(
         paths=[

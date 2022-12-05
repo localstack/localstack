@@ -9,6 +9,7 @@ from localstack.services.cloudformation.deployment_utils import (
 from localstack.services.cloudformation.service_models import GenericBaseModel
 from localstack.utils.aws import aws_stack, queries
 from localstack.utils.common import keys_to_lower, select_attributes, to_bytes
+from localstack.utils.strings import first_char_to_lower
 
 
 class GatewayResponse(GenericBaseModel):
@@ -517,6 +518,71 @@ class GatewayUsagePlan(GenericBaseModel):
     def get_physical_resource_id(self, attribute=None, **kwargs):
         return self.props.get("id")
 
+    def update_resource(self, new_resource, stack_name, resources):
+        props = new_resource["Properties"]
+        parameters_to_select = [
+            "UsagePlanName",
+            "Description",
+            "ApiStages",
+            "Quota",
+            "Throttle",
+            "Tags",
+        ]
+        update_config_props = select_attributes(props, parameters_to_select)
+        update_config_props = self.resolve_refs_recursively(
+            stack_name, update_config_props, resources
+        )
+
+        if "Tags" in update_config_props:
+            tags_dict = {}
+            for tag in update_config_props:
+                tags_dict.update({tag["Key"]: tag["Value"]})
+            update_config_props["Tags"] = tags_dict
+
+        usage_plan_id = new_resource["PhysicalResourceId"]
+
+        patch_operations = []
+
+        for parameter in update_config_props:
+            value = update_config_props[parameter]
+            if parameter == "ApiStages":
+                patch_operations.append(
+                    {
+                        "op": "remove",
+                        "path": f"/{first_char_to_lower(parameter)}",
+                    }
+                )
+
+                for stage in value:
+                    patch_operations.append(
+                        {
+                            "op": "replace",
+                            "path": f"/{first_char_to_lower(parameter)}",
+                            "value": f'{stage["ApiId"]}:{stage["Stage"]}',
+                        }
+                    )
+
+                    if "Throttle" in stage:
+                        patch_operations.append(
+                            {
+                                "op": "replace",
+                                "path": f'/{first_char_to_lower(parameter)}/{stage["ApiId"]}:{stage["Stage"]}',
+                                "value": json.dumps(stage["Throttle"]),
+                            }
+                        )
+
+            elif isinstance(value, dict):
+                for item in value:
+                    last_value = value[item]
+                    path = f"/{first_char_to_lower(parameter)}/{first_char_to_lower(item)}"
+                    patch_operations.append({"op": "replace", "path": path, "value": last_value})
+            else:
+                patch_operations.append(
+                    {"op": "replace", "path": f"/{first_char_to_lower(parameter)}", "value": value}
+                )
+        client = aws_stack.connect_to_service("apigateway")
+        client.update_usage_plan(usagePlanId=usage_plan_id, patchOperations=patch_operations)
+
 
 class GatewayApiKey(GenericBaseModel):
     @staticmethod
@@ -726,6 +792,27 @@ class GatewayAccount(GenericBaseModel):
     def cloudformation_type():
         return "AWS::ApiGateway::Account"
 
-    @staticmethod
-    def get_deploy_templates():
-        return {}
+    def fetch_state(self, stack_name, resources):
+        client = aws_stack.connect_to_service("apigateway")
+        return client.get_account()
+
+    def get_physical_resource_id(self, attribute=None, **kwargs):
+        return self.physical_resource_id
+
+    @classmethod
+    def get_deploy_templates(cls):
+        def _create(resource_id, resources, *args, **kwargs):
+            resource = resources[resource_id]
+            props = cls(resource).props
+
+            role_arn = props["CloudWatchRoleArn"]
+
+            aws_stack.connect_to_service("apigateway").update_account(
+                patchOperations=[{"op": "replace", "path": "/cloudwatchRoleArn", "value": role_arn}]
+            )
+
+            resource["PhysicalResourceId"] = generate_default_name(
+                args[2], resource["LogicalResourceId"]
+            )
+
+        return {"create": {"function": _create}}

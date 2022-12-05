@@ -255,6 +255,21 @@ class LambdaPermission(GenericBaseModel):
         # return statement ID here to indicate that the resource has been deployed
         return self.props.get("Sid")
 
+    def update_resource(self, new_resource, stack_name, resources):
+        props = new_resource["Properties"]
+        parameters_to_select = ["FunctionName", "Action", "Principal", "SourceArn"]
+        update_config_props = select_attributes(props, parameters_to_select)
+        update_config_props = self.resolve_refs_recursively(
+            stack_name, update_config_props, resources
+        )
+
+        client = aws_stack.connect_to_service("lambda")
+        sid = new_resource["PhysicalResourceId"]
+
+        client.remove_permission(FunctionName=update_config_props["FunctionName"], StatementId=sid)
+
+        return client.add_permission(StatementId=sid, **update_config_props)
+
     @staticmethod
     def get_deploy_templates():
         def _store_physical_id(result, resource_id, resources, resource_type):
@@ -274,15 +289,21 @@ class LambdaPermission(GenericBaseModel):
                 result["StatementId"] = f"{prefix}-{resource_id}-{suffix}"
             else:
                 result["StatementId"] = f"{resource_id}-{suffix}"
-
             return result
+
+        def get_delete_params(params, **kwargs):
+            resources = kwargs["resources"]
+            resource_id = kwargs["resource_id"]
+            statement_id = resources[resource_id]["PhysicalResourceId"]
+            return {"FunctionName": params.get("FunctionName"), "StatementId": statement_id}
 
         return {
             "create": {
                 "function": "add_permission",
                 "parameters": lambda_permission_params,
                 "result_handler": _store_physical_id,
-            }
+            },
+            "delete": {"function": "remove_permission", "parameters": get_delete_params},
         }
 
 

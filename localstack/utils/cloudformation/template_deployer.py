@@ -48,8 +48,12 @@ LOG = logging.getLogger(__name__)
 # list of resource types that can be updated
 # TODO: make this a property of the model classes themselves
 UPDATEABLE_RESOURCES = [
+    "CDK::Metadata",
     "Lambda::Function",
+    "Lambda::Permission",
     "ApiGateway::Method",
+    "ApiGateway::UsagePlan",
+    "SSM::Parameter",
     "StepFunctions::StateMachine",
     "IAM::Role",
     "EC2::Instance",
