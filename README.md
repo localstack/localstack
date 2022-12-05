@@ -1,4 +1,4 @@
-<a href="https://localstack.cloud/blog/2022-07-13-announcing-localstack-v1-general-availability/"><img src="https://raw.githubusercontent.com/localstack/localstack/master/.github/images/v1-release.svg"></a>
+<a href="https://localstack.cloud/blog/2022-07-13-announcing-localstack-v1-general-availability/"><img src="https://raw.githubusercontent.com/localstack/localstack/master/.github/images/v1.3-release.svg"></a>
 <p align="center">
   <img src="https://raw.githubusercontent.com/localstack/localstack/master/doc/localstack-readme-banner.svg" alt="LocalStack - A fully functional local cloud stack">
 </p>
@@ -31,8 +31,7 @@
   <br>–<br>
   <a href="https://docs.localstack.cloud" target="_blank">📖 Docs</a> •
   <a href="https://app.localstack.cloud" target="_blank">💻 Pro version</a> •
-  <a href="https://docs.localstack.cloud/user-guide/aws/feature-coverage/" target="_blank">☑️ Feature coverage</a> •
-  <a href="#announcements">📢 Announcements</a>
+  <a href="https://docs.localstack.cloud/user-guide/aws/feature-coverage/" target="_blank">☑️ Feature coverage</a>
 </p>
 
 ---
