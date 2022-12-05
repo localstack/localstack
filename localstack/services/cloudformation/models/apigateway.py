@@ -132,7 +132,7 @@ class GatewayRestAPI(GenericBaseModel):
             props = resource["Properties"]
             kwargs = keys_to_lower(props, ["Body"])
 
-            kwargs["tags"] = {tag["Key"]: tag["Value"] for tag in kwargs.get("tags", [])}
+            kwargs["tags"] = {tag["key"]: tag["value"] for tag in kwargs.get("tags", [])}
             cfn_client = aws_stack.connect_to_service("cloudformation")
             stack_id = cfn_client.describe_stacks(StackName=stack_name)["Stacks"][0]["StackId"]
             kwargs["tags"].update(
