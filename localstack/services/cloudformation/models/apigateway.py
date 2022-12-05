@@ -808,9 +808,7 @@ class GatewayAccount(GenericBaseModel):
             role_arn = props["CloudWatchRoleArn"]
 
             aws_stack.connect_to_service("apigateway").update_account(
-                patchCoperations=[
-                    {"op": "replace", "path": "/cloudwatchRoleArn", "value": role_arn}
-                ]
+                patchOperations=[{"op": "replace", "path": "/cloudwatchRoleArn", "value": role_arn}]
             )
 
             resource["PhysicalResourceId"] = generate_default_name(
