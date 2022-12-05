@@ -130,26 +130,26 @@ class GatewayRestAPI(GenericBaseModel):
             client = aws_stack.connect_to_service("apigateway")
             resource = resources[resource_id]
             props = resource["Properties"]
-            kwargs = keys_to_lower(props)
 
             kwargs = select_attributes(
-                kwargs,
+                props,
                 [
-                    "name",
-                    "description",
-                    "version",
-                    "cloneFrom",
-                    "binaryMediaTypes",
-                    "minimumCompressionSize",
-                    "apiKeySource",
-                    "endpointConfiguration",
-                    "policy",
-                    "tags",
-                    "disableExecuteApiEndpoint",
+                    "Name",
+                    "Description",
+                    "Version",
+                    "CloneFrom",
+                    "BinaryMediaTypes",
+                    "MinimumCompressionSize",
+                    "ApiKeySource",
+                    "EndpointConfiguration",
+                    "Policy",
+                    "Tags",
+                    "DisableExecuteApiEndpoint",
                 ],
             )
-
+            kwargs = keys_to_lower(kwargs)
             kwargs["tags"] = {tag["key"]: tag["value"] for tag in kwargs.get("tags", [])}
+
             cfn_client = aws_stack.connect_to_service("cloudformation")
             stack_id = cfn_client.describe_stacks(StackName=stack_name)["Stacks"][0]["StackId"]
             kwargs["tags"].update(
@@ -162,7 +162,7 @@ class GatewayRestAPI(GenericBaseModel):
 
             result = client.create_rest_api(**kwargs)
 
-            body = props.get("body")
+            body = props.get("Body")
             if body:
                 # the default behavior for imports via CFn is basepath=ignore (validated against AWS)
                 api_params = {"basepath": "ignore"}
