@@ -130,7 +130,7 @@ class ServiceLifecycleHook:
         pass
 
     def on_after_inject(self):
-        """Hook triggered after a new state in injected."""
+        """Hook triggered after new state has been injected into the provider's store."""
         pass
 
     def on_exception(self):
