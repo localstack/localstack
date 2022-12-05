@@ -1,0 +1,69 @@
+{
+  "tests/integration/cloudformation/test_template_engine.py::TestTypes::test_implicit_type_conversion": {
+    "recorded-date": "12-08-2022, 16:14:04",
+    "recorded-content": {
+      "queue": {
+        "Attributes": {
+          "ApproximateNumberOfMessages": "0",
+          "ApproximateNumberOfMessagesDelayed": "0",
+          "ApproximateNumberOfMessagesNotVisible": "0",
+          "ContentBasedDeduplication": "false",
+          "CreatedTimestamp": "timestamp",
+          "DeduplicationScope": "queue",
+          "DelaySeconds": "2",
+          "FifoQueue": "true",
+          "FifoThroughputLimit": "perQueue",
+          "LastModifiedTimestamp": "timestamp",
+          "MaximumMessageSize": "262144",
+          "MessageRetentionPeriod": "345600",
+          "QueueArn": "arn:aws:sqs:<region>:111111111111:<resource:1>",
+          "ReceiveMessageWaitTimeSeconds": "0",
+          "SqsManagedSseEnabled": "false",
+          "VisibilityTimeout": "30"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/integration/cloudformation/test_template_engine.py::TestMacros::test_global_scope": {
+    "recorded-date": "05-12-2022, 16:13:58",
+    "recorded-content": {
+      "processed_template": {
+        "StagesAvailable": [
+          "Original",
+          "Processed"
+        ],
+        "TemplateBody": {
+          "Outputs": {
+            "ParameterName": {
+              "Value": {
+                "Ref": "Parameter"
+              }
+            }
+          },
+          "Parameters": {
+            "Substitution": {
+              "Type": "String"
+            }
+          },
+          "Resources": {
+            "Parameter": {
+              "Properties": {
+                "Type": "String",
+                "Value": "new-value"
+              },
+              "Type": "AWS::SSM::Parameter"
+            }
+          }
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  }
+}

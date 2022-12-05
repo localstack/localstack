@@ -1,0 +1,19 @@
+Parameters:
+  Substitution:
+    Type: String
+
+
+Resources:
+  Parameter:
+    Type: AWS::SSM::Parameter
+    Properties:
+      Value: "{Substitution}"
+      Type: String
+
+Outputs:
+  ParameterName:
+    Value:
+      Ref: Parameter
+
+Transform:
+  - SubstitutionMacro

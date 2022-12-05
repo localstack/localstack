@@ -4,6 +4,7 @@ import os
 
 import pytest
 
+from localstack.aws.api.lambda_ import Runtime
 from localstack.testing.aws.cloudformation_utils import load_template_raw
 from localstack.utils.aws import arns
 from localstack.utils.common import short_uid
@@ -437,3 +438,88 @@ class TestImportValues:
 
         # TODO support this method
         # assert cfn_client.list_imports(ExportName=export_name)["Imports"]
+
+
+class TestMacros:
+    @pytest.mark.aws_validated
+    def test_global_scope(
+        self, deploy_cfn_template, cfn_client, create_lambda_function, lambda_client, snapshot
+    ):
+        macro_function_path = os.path.join(
+            os.path.dirname(__file__), "../templates/macros/format_template.py"
+        )
+
+        func_name = f"test_lambda_{short_uid()}"
+        create_lambda_function(
+            func_name=func_name,
+            handler_file=macro_function_path,
+            runtime=Runtime.python3_8,
+            client=lambda_client,
+            timeout=1,
+        )
+
+        macro_name = "SubstitutionMacro"
+        deploy_cfn_template(
+            template_path=os.path.join(
+                os.path.dirname(__file__), "../templates/macro_resource.yml"
+            ),
+            parameters={"FunctionName": func_name, "MacroName": macro_name},
+        )
+
+        new_value = f"new-value-{short_uid()}"
+        stack = deploy_cfn_template(
+            template_path=os.path.join(
+                os.path.dirname(__file__), "../templates/transformation_global_parameter.yml"
+            ),
+            parameters={"Substitution": new_value},
+        )
+
+        processed_template = cfn_client.get_template(
+            StackName=stack.stack_name, TemplateStage="Processed"
+        )
+        snapshot.add_transformer(snapshot.transform.regex(new_value, "new-value"))
+        snapshot.match("processed_template", processed_template)
+
+    def test_snipped_scope(
+        self,
+        deploy_cfn_template,
+        cfn_client,
+        ssm_client,
+        create_lambda_function,
+        lambda_client,
+        snapshot,
+    ):
+        macro_function_path = os.path.join(
+            os.path.dirname(__file__), "../templates/macros/add_standard_attributes.py"
+        )
+
+        func_name = f"test_lambda_{short_uid()}"
+        create_lambda_function(
+            func_name=func_name,
+            handler_file=macro_function_path,
+            runtime=Runtime.python3_8,
+            client=lambda_client,
+            timeout=1,
+        )
+
+        macro_name = "ConvertTopicToFifo"
+        deploy_cfn_template(
+            template_path=os.path.join(
+                os.path.dirname(__file__), "../templates/macro_resource.yml"
+            ),
+            parameters={"FunctionName": func_name, "MacroName": macro_name},
+        )
+
+        topic_name = f"topic-{short_uid()}"
+        stack = deploy_cfn_template(
+            template_path=os.path.join(
+                os.path.dirname(__file__), "../templates/transformation_global_parameter.yml"
+            ),
+            parameters={"TopicName": topic_name},
+        )
+
+        processed_template = cfn_client.get_template(
+            StackName=stack.stack_name, TemplateStage="Processed"
+        )
+        snapshot.add_transformer(snapshot.transform.regex(topic_name, "topic-name"))
+        snapshot.match("processed_template", processed_template)
