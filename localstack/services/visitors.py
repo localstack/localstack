@@ -108,6 +108,13 @@ class ReflectionStateLocator:
         # needed for services like cognito-idp
         service_name: str = self.service.replace("-", "_")
 
+        def _visit_modules(_modules):
+            for _module, _attribute in _modules:
+                _attribute = _load_attribute_from_module(_module, _attribute)
+                if _attribute is not None:
+                    LOG.debug("Visiting attribute %s in module %s", _attribute, _module)
+                    visitor.visit(_attribute)
+
         match service_name:
             # lambda is a special case in package and module naming
             # the store attribute is `awslambda_stores` in `localstack.services.awslambda.lambda_models`
@@ -116,12 +123,13 @@ class ReflectionStateLocator:
                     ("localstack.services.awslambda.lambda_models", "awslambda_stores"),
                     ("moto.awslambda.models", "lambda_backends"),
                 ]
-                for _module, _attribute in modules:
-                    attribute = _load_attribute_from_module(_module, _attribute)
-                    if attribute is not None:
-                        LOG.debug("Visiting attribute %s in module %s", _attribute, _module)
-                        visitor.visit(attribute)
-
+                _visit_modules(modules)
+            case "apigatewayv2":
+                modules = [
+                    ("localstack_ext.services.apigateway.models", "apigatewayv2_stores"),
+                    ("moto.apigatewayv2.models", "apigatewayv2_backends"),
+                ]
+                _visit_modules(modules)
             case _:
                 # try to load AccountRegionBundle from predictable location
                 attribute_name = f"{service_name}_stores"
