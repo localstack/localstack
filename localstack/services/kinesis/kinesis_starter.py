@@ -1,7 +1,7 @@
 import logging
+import threading
 from typing import Dict, Optional
 
-from localstack import config
 from localstack.aws.accounts import get_aws_account_id
 from localstack.constants import DEFAULT_AWS_ACCOUNT_ID
 from localstack.services.infra import log_startup_message
@@ -11,7 +11,8 @@ from localstack.utils.serving import Server
 
 LOG = logging.getLogger(__name__)
 
-_server: Dict[str, Server] = {}  # server singleton keyed by account IDs
+_SERVERS: Dict[str, Server] = {}  # server singleton keyed by account IDs
+_LOCK = threading.Lock()
 
 
 def start_kinesis(
@@ -32,26 +33,25 @@ def start_kinesis(
     :param account_id: account ID to use for this instance of Kinesis-Mock
     :returns: A running Kinesis server instance
     """
-    global _server
+    global _SERVERS
 
-    if account_id is None:
-        account_id = get_aws_account_id()
+    account_id = account_id or get_aws_account_id()
 
-    if account_id not in _server:
-        # To support multi-accounts we use separate instance of Kinesis-Mock per account
-        # See https://github.com/etspaceman/kinesis-mock/issues/377
-        if not _server.get(account_id):
-            _server[account_id] = kinesis_mock_server.create_kinesis_mock_server(
-                account_id=account_id, persist_path=persist_path
-            )
+    with _LOCK:
+        if account_id not in _SERVERS:
+            # To support multi-accounts we use separate instance of Kinesis-Mock per account
+            # See https://github.com/etspaceman/kinesis-mock/issues/377
+            if not _SERVERS.get(account_id):
+                _SERVERS[account_id] = kinesis_mock_server.create_kinesis_mock_server(
+                    account_id=account_id, persist_path=persist_path
+                )
 
-        _server[account_id].start()
-        log_startup_message("Kinesis")
-        port = port or config.service_port("kinesis")
+            _SERVERS[account_id].start()
+            log_startup_message("Kinesis")
 
-        check_kinesis(account_id=account_id)
+            check_kinesis(account_id=account_id)
 
-    return _server[account_id]
+    return _SERVERS[account_id]
 
 
 def check_kinesis(
@@ -59,12 +59,12 @@ def check_kinesis(
 ):
     out = None
     if not expect_shutdown:
-        assert _server.get(account_id)
+        assert _SERVERS.get(account_id)
 
     try:
-        _server[account_id].wait_is_up()
+        _SERVERS[account_id].wait_is_up()
         out = aws_stack.connect_to_service(
-            service_name="kinesis", endpoint_url=_server[account_id].url
+            service_name="kinesis", endpoint_url=_SERVERS[account_id].url
         ).list_streams()
     except Exception:
         if print_error:
@@ -76,4 +76,4 @@ def check_kinesis(
 
 
 def get_server(account_id: str) -> Server:
-    return _server[account_id]
+    return _SERVERS[account_id]

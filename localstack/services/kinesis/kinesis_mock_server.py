@@ -31,11 +31,12 @@ class KinesisMockServer(Server):
         log_level: str = "INFO",
         data_dir: Optional[str] = None,
     ) -> None:
+        self._account_id = account_id
         self._latency = latency
         self._data_dir = data_dir
+        self._data_filename = f"{self._account_id}.json"
         self._bin_path = bin_path
         self._log_level = log_level
-        self._account_id = account_id
         super().__init__(port, host)
 
     def do_start_thread(self) -> FuncThread:
@@ -84,6 +85,7 @@ class KinesisMockServer(Server):
         if self._data_dir:
             env_vars["SHOULD_PERSIST_DATA"] = "true"
             env_vars["PERSIST_PATH"] = self._data_dir
+            env_vars["PERSIST_FILE_NAME"] = (self._data_filename,)
             env_vars["PERSIST_INTERVAL"] = config.KINESIS_MOCK_PERSIST_INTERVAL
 
         env_vars["LOG_LEVEL"] = self._log_level
