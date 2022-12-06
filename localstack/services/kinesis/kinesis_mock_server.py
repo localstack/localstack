@@ -30,9 +30,11 @@ class KinesisMockServer(Server):
         host: str = "localhost",
         log_level: str = "INFO",
         data_dir: Optional[str] = None,
+        initialize_streams: Optional[str] = None,
     ) -> None:
         self._account_id = account_id
         self._latency = latency
+        self._initialize_streams = initialize_streams
         self._data_dir = data_dir
         self._data_filename = f"{self._account_id}.json"
         self._bin_path = bin_path
@@ -89,6 +91,8 @@ class KinesisMockServer(Server):
             env_vars["PERSIST_INTERVAL"] = config.KINESIS_MOCK_PERSIST_INTERVAL
 
         env_vars["LOG_LEVEL"] = self._log_level
+        if self._initialize_streams:
+            env_vars["INITIALIZE_STREAMS"] = self._initialize_streams
 
         if self._bin_path.endswith(".jar"):
             cmd = ["java", "-XX:+UseG1GC", "-jar", self._bin_path]
@@ -130,12 +134,16 @@ def create_kinesis_mock_server(
         log_level = "INFO"
 
     latency = config.KINESIS_LATENCY + "ms"
+    initialize_streams = (
+        config.KINESIS_INITIALIZE_STREAMS if config.KINESIS_INITIALIZE_STREAMS else None
+    )
 
     server = KinesisMockServer(
         port=port,
         bin_path=kinesis_mock_bin_path,
         log_level=log_level,
         latency=latency,
+        initialize_streams=initialize_streams,
         data_dir=persist_path,
         account_id=account_id,
     )
