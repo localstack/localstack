@@ -5,11 +5,8 @@ def handler(event, context):
 
 
 def add_standard_attributes(fragment):
-    # add .fifo
-    if ".fifo" not in fragment["TopicName"]:
-        fragment["TopicName"] = f"{fragment['TopicName']}.fifo"
 
     fragment["FifoTopic"] = True
-    fragment["ContentBaseDeduplication"] = True
+    fragment["ContentBasedDeduplication"] = True
 
     return fragment

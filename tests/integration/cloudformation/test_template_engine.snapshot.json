@@ -65,5 +65,75 @@
         }
       }
     }
+  },
+  "tests/integration/cloudformation/test_template_engine.py::TestMacros::test_snipped_scope": {
+    "recorded-date": "06-12-2022, 09:44:49",
+    "recorded-content": {
+      "processed_template": {
+        "StagesAvailable": [
+          "Original",
+          "Processed"
+        ],
+        "TemplateBody": {
+          "Outputs": {
+            "TopicName": {
+              "Value": {
+                "Fn::GetAtt": [
+                  "Topic",
+                  "TopicName"
+                ]
+              }
+            }
+          },
+          "Parameters": {
+            "TopicName": {
+              "Type": "String"
+            }
+          },
+          "Resources": {
+            "Topic": {
+              "Properties": {
+                "ContentBasedDeduplication": true,
+                "FifoTopic": true,
+                "TopicName": {
+                  "Ref": "TopicName"
+                }
+              },
+              "Type": "AWS::SNS::Topic"
+            }
+          }
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/integration/cloudformation/test_template_engine.py::TestMacros::test_scope_order_and_parameters": {
+    "recorded-date": "06-12-2022, 15:30:14",
+    "recorded-content": {
+      "processed_template": {
+        "StagesAvailable": [
+          "Original",
+          "Processed"
+        ],
+        "TemplateBody": {
+          "Resources": {
+            "Parameter": {
+              "Properties": {
+                "Type": "String",
+                "Value": "snippet-transform global-transform <replace-this>"
+              },
+              "Type": "AWS::SSM::Parameter"
+            }
+          }
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
   }
 }

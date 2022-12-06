@@ -484,7 +484,6 @@ class TestMacros:
         self,
         deploy_cfn_template,
         cfn_client,
-        ssm_client,
         create_lambda_function,
         lambda_client,
         snapshot,
@@ -510,10 +509,10 @@ class TestMacros:
             parameters={"FunctionName": func_name, "MacroName": macro_name},
         )
 
-        topic_name = f"topic-{short_uid()}"
+        topic_name = f"topic-{short_uid()}.fifo"
         stack = deploy_cfn_template(
             template_path=os.path.join(
-                os.path.dirname(__file__), "../templates/transformation_global_parameter.yml"
+                os.path.dirname(__file__), "../templates/transformation_snippet_topic.yml"
             ),
             parameters={"TopicName": topic_name},
         )
@@ -522,4 +521,45 @@ class TestMacros:
             StackName=stack.stack_name, TemplateStage="Processed"
         )
         snapshot.add_transformer(snapshot.transform.regex(topic_name, "topic-name"))
+        snapshot.match("processed_template", processed_template)
+
+    def test_scope_order_and_parameters(
+        self,
+        deploy_cfn_template,
+        cfn_client,
+        create_lambda_function,
+        lambda_client,
+        snapshot,
+    ):
+        macro_function_path = os.path.join(
+            os.path.dirname(__file__), "../templates/macros/replace_string.py"
+        )
+
+        func_name = f"test_lambda_{short_uid()}"
+        create_lambda_function(
+            func_name=func_name,
+            handler_file=macro_function_path,
+            runtime=Runtime.python3_8,
+            client=lambda_client,
+            timeout=1,
+        )
+
+        macro_name = "ReplaceString"
+        deploy_cfn_template(
+            template_path=os.path.join(
+                os.path.dirname(__file__), "../templates/macro_resource.yml"
+            ),
+            parameters={"FunctionName": func_name, "MacroName": macro_name},
+        )
+
+        stack = deploy_cfn_template(
+            template_path=os.path.join(
+                os.path.dirname(__file__),
+                "../templates/transformation_multiple_scope_parameter.yml",
+            ),
+        )
+
+        processed_template = cfn_client.get_template(
+            StackName=stack.stack_name, TemplateStage="Processed"
+        )
         snapshot.match("processed_template", processed_template)

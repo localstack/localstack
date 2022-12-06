@@ -8,7 +8,7 @@ Resources:
     Properties:
       TopicName:
         Ref: TopicName
-      Fn::Transform: ConvertFifoToTopic
+      Fn::Transform: ConvertTopicToFifo
 
 Outputs:
   TopicName:
