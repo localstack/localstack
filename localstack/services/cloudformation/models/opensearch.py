@@ -6,7 +6,7 @@ from localstack.aws.api.opensearch import (
 from localstack.services.cloudformation.deployment_utils import remove_none_values
 from localstack.services.cloudformation.service_models import GenericBaseModel
 from localstack.utils.aws import arns, aws_stack
-from localstack.utils.collections import select_attributes
+from localstack.utils.collections import convert_to_typed_dict
 
 
 # OpenSearch still uses "es" ARNs
@@ -41,14 +41,8 @@ class OpenSearchDomain(GenericBaseModel):
     @staticmethod
     def get_deploy_templates():
         def _create_params(params, **kwargs):
-            # Tags handled outside of creation
-            attributes = [
-                attribute
-                for attribute in CreateDomainRequest.__annotations__.keys()
-                if "Tag" not in attribute
-            ]
-            result = select_attributes(params, attributes)
-            result = remove_none_values(result)
+            params = remove_none_values(params)
+            result = convert_to_typed_dict(CreateDomainRequest, params)
             cluster_config = result.get("ClusterConfig")
             if isinstance(cluster_config, dict):
                 # set defaults required for boto3 calls

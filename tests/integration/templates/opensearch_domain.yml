@@ -11,3 +11,5 @@ Resources:
       EngineVersion: OpenSearch_1.0
       ClusterConfig:
         InstanceType: 'm3.medium.search'
+        # test using string types instead of int
+        InstanceCount: "2"
