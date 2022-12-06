@@ -20,16 +20,14 @@ from typing import (
     TypeVar,
     Union,
     cast,
-    get_args,
-    get_origin,
 )
 
 import cachetools
 
 if sys.version_info >= (3, 8):
-    from typing import TypedDict
+    from typing import TypedDict, get_args, get_origin
 else:
-    from typing_extensions import TypedDict
+    from typing_extensions import TypedDict, get_args, get_origin
 
 
 LOG = logging.getLogger(__name__)
