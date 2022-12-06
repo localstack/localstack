@@ -23,7 +23,11 @@ from localstack.services.awslambda.lambda_utils import (
     get_main_endpoint_from_container,
 )
 from localstack.services.awslambda.packages import awslambda_runtime_package
-from localstack.utils.container_utils.container_client import ContainerConfiguration, VolumeMappings
+from localstack.utils.container_utils.container_client import (
+    ContainerConfiguration,
+    VolumeBind,
+    VolumeMappings,
+)
 from localstack.utils.docker_utils import DOCKER_CLIENT as CONTAINER_CLIENT
 from localstack.utils.strings import truncate
 
@@ -226,9 +230,10 @@ class DockerRuntimeExecutor(RuntimeExecutor):
                 if container_config.volumes is None:
                     container_config.volumes = VolumeMappings()
                 container_config.volumes.append(
-                    (
+                    VolumeBind(
                         str(self.function_version.config.code.get_unzipped_code_location()),
                         "/var/task",
+                        read_only=True,
                     )
                 )
             else:

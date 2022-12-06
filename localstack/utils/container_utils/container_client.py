@@ -284,7 +284,7 @@ class VolumeBind:
 
     host_dir: str
     container_dir: str
-    options: Optional[List[str]] = None
+    read_only: bool = False
 
     def to_str(self) -> str:
         args = []
@@ -297,8 +297,8 @@ class VolumeBind:
 
         args.append(self.container_dir)
 
-        if self.options:
-            args.append(self.options)
+        if self.read_only:
+            args.append("ro")
 
         return ":".join(args)
 
@@ -689,7 +689,7 @@ class ContainerClient(metaclass=ABCMeta):
         tty: bool = False,
         detach: bool = False,
         command: Optional[Union[List[str], str]] = None,
-        mount_volumes: Optional[List[SimpleVolumeBind]] = None,
+        mount_volumes: Optional[Union[VolumeMappings, List[SimpleVolumeBind]]] = None,
         ports: Optional[PortMappings] = None,
         env_vars: Optional[Dict[str, str]] = None,
         user: Optional[str] = None,
@@ -972,12 +972,22 @@ class Util:
 
     @staticmethod
     def convert_mount_list_to_dict(
-        mount_volumes: List[SimpleVolumeBind],
+        mount_volumes: List[SimpleVolumeBind] | VolumeMappings,
     ) -> Dict[str, Dict[str, str]]:
         """Converts a List of (host_path, container_path) tuples to a Dict suitable as volume argument for docker sdk"""
+
+        def _map_to_dict(paths: SimpleVolumeBind | VolumeBind):
+            if isinstance(paths, VolumeBind):
+                return str(paths.host_dir), {
+                    "bind": paths.container_dir,
+                    "mode": "ro" if paths.read_only else "rw",
+                }
+            else:
+                return str(paths[0]), {"bind": paths[1], "mode": "rw"}
+
         return dict(
             map(
-                lambda paths: (str(paths[0]), {"bind": paths[1], "mode": "rw"}),
+                _map_to_dict,
                 mount_volumes,
             )
         )
