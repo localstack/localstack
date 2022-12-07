@@ -305,8 +305,6 @@ class DockerRuntimeExecutor(RuntimeExecutor):
         lambda_hooks.prepare_docker_executor.run(function_version)
         if function_version.config.code:
             function_version.config.code.prepare_for_execution()
-            for layer in function_version.config.layers:
-                layer.code.prepare_for_execution()
             image_name = resolver.get_image_for_runtime(function_version.config.runtime)
             if image_name not in PULLED_IMAGES:
                 CONTAINER_CLIENT.pull_image(image_name)
