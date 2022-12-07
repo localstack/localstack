@@ -301,9 +301,9 @@
     }
   },
   "tests/integration/cloudformation/test_template_engine.py::TestMacros::test_validate_lambda_internals": {
-    "recorded-date": "07-12-2022, 15:19:42",
+    "recorded-date": "07-12-2022, 15:24:04",
     "recorded-content": {
-      "processed_template": {
+      "event": {
         "Event": {
           "accountId": "111111111111",
           "fragment": {

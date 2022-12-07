@@ -4,6 +4,7 @@ import os
 
 import botocore.exceptions
 import pytest
+import yaml
 
 from localstack.aws.api.lambda_ import Runtime
 from localstack.testing.aws.cloudformation_utils import load_template_raw
@@ -673,6 +674,48 @@ class TestMacros:
             StackName=stack.stack_name, TemplateStage="Processed"
         )
         snapshot.match(
-            "processed_template",
+            "event",
             processed_template["TemplateBody"]["Resources"]["Parameter"]["Properties"]["Value"],
         )
+
+    def test_to_validate_template_limit_for_macro(
+        self,
+        deploy_cfn_template,
+        cfn_client,
+        create_lambda_function,
+        lambda_client,
+        snapshot,
+    ):
+        macro_function_path = os.path.join(
+            os.path.dirname(__file__), "../templates/macros/format_template.py"
+        )
+
+        func_name = f"test_lambda_{short_uid()}"
+        create_lambda_function(
+            func_name=func_name,
+            handler_file=macro_function_path,
+            runtime=Runtime.python3_8,
+            client=lambda_client,
+            timeout=1,
+        )
+
+        macro_name = "FormatTemplate"
+        deploy_cfn_template(
+            template_path=os.path.join(
+                os.path.dirname(__file__), "../templates/macro_resource.yml"
+            ),
+            parameters={"FunctionName": func_name, "MacroName": macro_name},
+        )
+
+        template_dict = yaml.safe_load(
+            load_file(
+                os.path.join(
+                    os.path.dirname(__file__), "../templates/transformation_global_parameter.yml"
+                )
+            )
+        )
+
+        for n in range(0, 1000):
+            pass
+
+        print(template_dict)
