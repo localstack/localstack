@@ -1,4 +1,4 @@
-<a href="https://localstack.cloud/blog/2022-07-13-announcing-localstack-v1-general-availability/"><img src="https://raw.githubusercontent.com/localstack/localstack/master/.github/images/v1.3-release.svg"></a>
+<a href="https://discuss.localstack.cloud/t/localstack-release-v1-3-0/"><img src="https://raw.githubusercontent.com/localstack/localstack/master/.github/images/release.svg"></a>
 <p align="center">
   <img src="https://raw.githubusercontent.com/localstack/localstack/master/doc/localstack-readme-banner.svg" alt="LocalStack - A fully functional local cloud stack">
 </p>

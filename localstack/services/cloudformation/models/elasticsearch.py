@@ -1,7 +1,8 @@
+from localstack.aws.api.es import CreateElasticsearchDomainRequest
 from localstack.services.cloudformation.deployment_utils import remove_none_values
 from localstack.services.cloudformation.service_models import GenericBaseModel
 from localstack.utils.aws import arns, aws_stack
-from localstack.utils.common import select_attributes
+from localstack.utils.collections import convert_to_typed_dict
 
 
 def es_add_tags_params(params, **kwargs):
@@ -45,21 +46,7 @@ class ElasticsearchDomain(GenericBaseModel):
     @staticmethod
     def get_deploy_templates():
         def _create_params(params, **kwargs):
-            attributes = [
-                "AccessPolicies",
-                "AdvancedOptions",
-                "CognitoOptions",
-                "DomainName",
-                "EBSOptions",
-                "ElasticsearchClusterConfig",
-                "ElasticsearchVersion",
-                "EncryptionAtRestOptions",
-                "LogPublishingOptions",
-                "NodeToNodeEncryptionOptions",
-                "SnapshotOptions",
-                "VPCOptions",
-            ]
-            result = select_attributes(params, attributes)
+            result = convert_to_typed_dict(CreateElasticsearchDomainRequest, params)
             result = remove_none_values(result)
             cluster_config = result.get("ElasticsearchClusterConfig")
             if isinstance(cluster_config, dict):
