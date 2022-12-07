@@ -11,6 +11,7 @@ from pathlib import Path
 from threading import RLock
 from typing import TYPE_CHECKING, Dict, Optional
 
+from localstack import config
 from localstack.aws.api.lambda_ import (
     InvalidParameterValueException,
     InvocationType,
@@ -26,6 +27,7 @@ from localstack.services.awslambda.api_utils import (
 )
 from localstack.services.awslambda.invocation.lambda_models import (
     LAMBDA_LIMITS_CODE_SIZE_UNZIPPED_DEFAULT,
+    ArchiveCode,
     Function,
     FunctionVersion,
     HotReloadingCode,
@@ -380,6 +382,17 @@ def store_lambda_archive(
     )
 
 
+def create_hot_reloading_code(path: str) -> HotReloadingCode:
+    # TODO extract into other function
+    if not Path(path).is_absolute():
+        raise InvalidParameterValueException(
+            "When using hot reloading, the archive key has to be an absolute path! Your archive key: %s",
+            path,
+        )
+    # TODO fix types
+    return HotReloadingCode(host_path=path)
+
+
 def store_s3_bucket_archive(
     archive_bucket: str,
     archive_key: str,
@@ -387,7 +400,7 @@ def store_s3_bucket_archive(
     function_name: str,
     region_name: str,
     account_id: str,
-) -> S3Code:
+) -> ArchiveCode:
     """
     Takes the lambda archive stored in the given bucket and stores it in an internal s3 bucket
 
@@ -400,15 +413,8 @@ def store_s3_bucket_archive(
     :return: S3 Code object representing the archive stored in S3
     """
     # TODO change test-bucket-for-hot-reloading to actual bucket
-    if archive_bucket == "test-bucket-for-hot-reloading":
-        # TODO extract into other function
-        if not Path(archive_key).is_absolute():
-            raise InvalidParameterValueException(
-                "When using hot reloading, the archive key has to be an absolute path! Your archive key: %s",
-                archive_key,
-            )
-        # TODO fix types
-        return HotReloadingCode(host_path=archive_key)
+    if archive_bucket == config.BUCKET_MARKER_LOCAL:
+        return create_hot_reloading_code(path=archive_key)
     s3_client: "S3Client" = aws_stack.connect_to_service("s3")
     kwargs = {"VersionId": archive_version} if archive_version else {}
     archive_file = s3_client.get_object(Bucket=archive_bucket, Key=archive_key, **kwargs)[

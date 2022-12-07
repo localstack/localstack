@@ -22,7 +22,7 @@ from urllib.parse import urlparse
 
 from flask import Flask, Response, jsonify, request
 
-from localstack import config
+from localstack import config, constants
 from localstack.aws.accounts import get_aws_account_id
 from localstack.constants import APPLICATION_JSON, LOCALHOST_HOSTNAME
 from localstack.http import Request
@@ -239,6 +239,21 @@ def build_mapping_obj(data) -> Dict:
             )
         mapping["FilterCriteria"] = data.get("FilterCriteria")
     return mapping
+
+
+def is_hot_reloading(code: dict) -> bool:
+    bucket_name = code.get("S3Bucket")
+    if (
+        bucket_name == constants.OLD_DEFAULT_BUCKET_MARKER_LOCAL
+        and bucket_name != config.BUCKET_MARKER_LOCAL
+    ):
+        LOG.warning(
+            "Please note that using %s as local bucket marker is deprecated. Please use %s or set the config option 'BUCKET_MARKER_LOCAL'",
+            constants.OLD_DEFAULT_BUCKET_MARKER_LOCAL,
+            constants.DEFAULT_BUCKET_MARKER_LOCAL,
+        )
+        return True
+    return code.get("S3Bucket") == config.BUCKET_MARKER_LOCAL
 
 
 def format_timestamp(timestamp=None):
@@ -579,11 +594,11 @@ def set_archive_code(
     # get metadata
     lambda_arn = func_arn(lambda_name_or_arn)
     lambda_details = store.lambdas[lambda_arn]
-    is_local_mount = code.get("S3Bucket") == config.BUCKET_MARKER_LOCAL
+    is_local_mount = is_hot_reloading(code)
 
     if is_local_mount and config.LAMBDA_REMOTE_DOCKER:
-        msg = 'Please note that Lambda mounts (bucket name "%s") cannot be used with LAMBDA_REMOTE_DOCKER=1'
-        raise Exception(msg % config.BUCKET_MARKER_LOCAL)
+        msg = "Please note that Lambda mounts cannot be used with LAMBDA_REMOTE_DOCKER=1"
+        raise Exception(msg)
 
     # Stop/remove any containers that this arn uses.
     LAMBDA_EXECUTOR.cleanup(lambda_arn)
@@ -649,7 +664,7 @@ def store_and_get_lambda_code_archive(
     and return the Lambda CWD, file name, and zip bytes content. May optionally return None
     in case this is a Lambda with the special bucket marker __local__, used for code mounting."""
     code_passed = lambda_function.code
-    is_local_mount = code_passed.get("S3Bucket") == config.BUCKET_MARKER_LOCAL
+    is_local_mount = is_hot_reloading(code_passed)
     lambda_zip_dir = lambda_function.zip_dir
 
     if code_passed:
@@ -697,7 +712,7 @@ def do_set_function_code(lambda_function: LambdaFunction):
     lambda_environment = lambda_function.envvars
     handler_name = lambda_function.handler = lambda_function.handler or LAMBDA_DEFAULT_HANDLER
     code_passed = lambda_function.code
-    is_local_mount = code_passed.get("S3Bucket") == config.BUCKET_MARKER_LOCAL
+    is_local_mount = is_hot_reloading(code_passed)
 
     # cleanup any left-over Lambda executor instances
     LAMBDA_EXECUTOR.cleanup(arn)

@@ -40,7 +40,7 @@ class TestHotReloading:
     ):
         """Test hot reloading of lambda code"""
         function_name = f"test-hot-reloading-{short_uid()}"
-        hot_reloading_bucket = "test-bucket-for-hot-reloading"
+        hot_reloading_bucket = config.BUCKET_MARKER_LOCAL
         tmp_path = config.dirs.tmp
         hot_reloading_dir_path = os.path.join(tmp_path, f"hot-reload-{short_uid()}")
         mkdir(hot_reloading_dir_path)

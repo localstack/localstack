@@ -199,7 +199,9 @@ S3_STATIC_WEBSITE_HOSTNAME = "s3-website.%s" % LOCALHOST_HOSTNAME
 DEFAULT_DEVELOP_PORT = 5678
 
 # Default bucket name of the s3 bucket used for local lambda development
-DEFAULT_BUCKET_MARKER_LOCAL = "__local__"
+# This name should be accepted by all IaC tools, so should respect s3 bucket naming conventions
+DEFAULT_BUCKET_MARKER_LOCAL = "hot-reloading-bucket"
+OLD_DEFAULT_BUCKET_MARKER_LOCAL = "__local__"
 
 # user that starts the opensearch process if the current user is root
 OS_USER_OPENSEARCH = "localstack"

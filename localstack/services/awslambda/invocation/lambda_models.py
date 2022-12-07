@@ -4,6 +4,7 @@ import logging
 import shutil
 import tempfile
 import threading
+from abc import ABCMeta, abstractmethod
 from datetime import datetime
 from pathlib import Path
 from typing import IO, TYPE_CHECKING, Dict, Optional, TypedDict
@@ -93,8 +94,55 @@ class Invocation:
     invocation_type: InvocationType
 
 
+class ArchiveCode(metaclass=ABCMeta):
+    @abstractmethod
+    def generate_presigned_url(self, endpoint_url):
+        """
+        Generates a presigned url pointing to the code archive
+        """
+        pass
+
+    @abstractmethod
+    def is_hot_reloading(self):
+        """
+        Whether this code archive is for hot reloading.
+        This means it should mount the location from the host, and should instruct the runtimes to listen for changes
+
+        :return: True if this object represents hot reloading, False otherwise
+        """
+        pass
+
+    @abstractmethod
+    def get_unzipped_code_location(self):
+        """
+        Get the location of the unzipped archive on disk
+        """
+        pass
+
+    @abstractmethod
+    def prepare_for_execution(self):
+        """
+        Unzips the code archive to the proper destination on disk, if not already present
+        """
+        pass
+
+    @abstractmethod
+    def destroy_cached(self):
+        """
+        Destroys the code object on disk, if it was saved on disk before
+        """
+        pass
+
+    @abstractmethod
+    def destroy(self):
+        """
+        Deletes the code object from S3 and the unzipped version from disk
+        """
+        pass
+
+
 @dataclasses.dataclass(frozen=True)
-class S3Code:
+class S3Code(ArchiveCode):
     """
     Objects representing a code archive stored in an internal S3 bucket.
 
@@ -149,11 +197,11 @@ class S3Code:
             params["VersionId"] = self.s3_object_version
         return s3_client.generate_presigned_url("get_object", Params=params)
 
-    def has_to_be_mounted(self) -> bool:
+    def is_hot_reloading(self) -> bool:
         """
-        Whether this code archive has to be mounted (from the host)
+        Whether this code archive is hot reloading
 
-        :return: True if it must be mounted, False otherwise
+        :return: True if it must it represents hot reloading, False otherwise
         """
         return False
 
@@ -212,7 +260,7 @@ class S3Code:
 
 
 @dataclasses.dataclass(frozen=True)
-class HotReloadingCode:
+class HotReloadingCode(ArchiveCode):
     """
     Objects representing code which is mounted from a given directory from the host, for hot reloading
     """
@@ -227,11 +275,12 @@ class HotReloadingCode:
     def get_unzipped_code_location(self) -> Path:
         return Path(self.host_path)
 
-    def has_to_be_mounted(self) -> bool:
+    def is_hot_reloading(self) -> bool:
         """
-        Whether this code archive has to be mounted (from the host)
+        Whether this code archive is for hot reloading.
+        This means it should mount the location from the host, and should instruct the runtimes to listen for changes
 
-        :return: True if it must be mounted, False otherwise
+        :return: True if it represents hot reloading, False otherwise
         """
         return True
 
@@ -508,7 +557,7 @@ class LayerVersion:
     layer_arn: str
 
     version: int
-    code: S3Code
+    code: ArchiveCode
     license_info: str
     compatible_runtimes: list[Runtime]
     compatible_architectures: list[Architecture]
@@ -545,7 +594,7 @@ class VersionFunctionConfiguration:
     ephemeral_storage: LambdaEphemeralStorage
 
     tracing_config_mode: TracingMode
-    code: S3Code
+    code: ArchiveCode
     last_modified: str  # ISO string
     state: VersionState
 
