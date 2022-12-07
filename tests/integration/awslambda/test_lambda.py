@@ -37,6 +37,7 @@ FUNCTION_MAX_UNZIPPED_SIZE = 262144000
 THIS_FOLDER = os.path.dirname(os.path.realpath(__file__))
 TEST_LAMBDA_PYTHON = os.path.join(THIS_FOLDER, "functions/lambda_integration.py")
 TEST_LAMBDA_PYTHON_ECHO = os.path.join(THIS_FOLDER, "functions/lambda_echo.py")
+TEST_LAMBDA_PYTHON_ECHO_ZIP = os.path.join(THIS_FOLDER, "functions/echo.zip")
 TEST_LAMBDA_PYTHON_VERSION = os.path.join(THIS_FOLDER, "functions/lambda_python_version.py")
 TEST_LAMBDA_PYTHON_UNHANDLED_ERROR = os.path.join(
     THIS_FOLDER, "functions/lambda_unhandled_error.py"

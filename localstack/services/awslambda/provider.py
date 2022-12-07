@@ -1945,11 +1945,13 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
         reserved_concurrency_sum = 0
         for fn in state.functions.values():
             fn_count += 1
-            code_size_sum += (
-                fn.latest().config.code.code_size
-            )  # TODO: might need to check all versions and aliases for this?
+            for fn_version in fn.versions.values():
+                code_size_sum += fn_version.config.code.code_size
             if fn.reserved_concurrent_executions is not None:
                 reserved_concurrency_sum += fn.reserved_concurrent_executions
+        for layer in state.layers.values():
+            for layer_version in layer.layer_versions.values():
+                code_size_sum += layer_version.code.code_size
         return GetAccountSettingsResponse(
             AccountLimit=AccountLimit(
                 TotalCodeSize=settings.total_code_size,
