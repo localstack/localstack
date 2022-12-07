@@ -2936,16 +2936,6 @@ class TestLambdaAccountSettings:
             acc_settings4["AccountUsage"]["TotalCodeSize"]
             - acc_settings3["AccountUsage"]["TotalCodeSize"],
         )
-        # Exact differences (delta validated against AWS):
-        # TotalCodeSize:v0=0;v1=264(+264);v2=630(+366);v3=799(+169);v4=968(+169)
-        logging.debug(
-            f"TotalCodeSize:"
-            f'v0={acc_settings0["AccountUsage"]["TotalCodeSize"]};'
-            f'v1={acc_settings1["AccountUsage"]["TotalCodeSize"]}(+{acc_settings1["AccountUsage"]["TotalCodeSize"] - acc_settings0["AccountUsage"]["TotalCodeSize"]});'
-            f'v2={acc_settings2["AccountUsage"]["TotalCodeSize"]}(+{acc_settings2["AccountUsage"]["TotalCodeSize"] - acc_settings1["AccountUsage"]["TotalCodeSize"]});'
-            f'v3={acc_settings3["AccountUsage"]["TotalCodeSize"]}(+{acc_settings3["AccountUsage"]["TotalCodeSize"] - acc_settings2["AccountUsage"]["TotalCodeSize"]});'
-            f'v4={acc_settings4["AccountUsage"]["TotalCodeSize"]}(+{acc_settings4["AccountUsage"]["TotalCodeSize"] - acc_settings3["AccountUsage"]["TotalCodeSize"]})'
-        )
 
     @pytest.mark.aws_validated
     def test_account_settings_total_code_size_config_update(
@@ -3010,12 +3000,6 @@ class TestLambdaAccountSettings:
                 - acc_settings2["AccountUsage"]["TotalCodeSize"]
             )
             > 200,
-        )
-
-        logging.debug(
-            f'v1={acc_settings1["AccountUsage"]["TotalCodeSize"]}(+{acc_settings1["AccountUsage"]["TotalCodeSize"] - acc_settings0["AccountUsage"]["TotalCodeSize"]});'
-            f'v2={acc_settings2["AccountUsage"]["TotalCodeSize"]}(+{acc_settings2["AccountUsage"]["TotalCodeSize"] - acc_settings1["AccountUsage"]["TotalCodeSize"]});'
-            f'v3={acc_settings3["AccountUsage"]["TotalCodeSize"]}(+{acc_settings3["AccountUsage"]["TotalCodeSize"] - acc_settings2["AccountUsage"]["TotalCodeSize"]});'
         )
 
 
