@@ -8,11 +8,12 @@ from localstack.services.infra import log_startup_message
 from localstack.services.kinesis import kinesis_mock_server
 from localstack.utils.aws import aws_stack
 from localstack.utils.serving import Server
+from localstack.utils.sync import SynchronizedDefaultDict
 
 LOG = logging.getLogger(__name__)
 
 _SERVERS: Dict[str, Server] = {}  # server singleton keyed by account IDs
-_LOCK = threading.Lock()
+_LOCKS = SynchronizedDefaultDict(threading.RLock)
 
 
 def start_kinesis(
@@ -37,7 +38,7 @@ def start_kinesis(
 
     account_id = account_id or get_aws_account_id()
 
-    with _LOCK:
+    with _LOCKS[account_id]:
         if account_id not in _SERVERS:
             # To support multi-accounts we use separate instance of Kinesis-Mock per account
             # See https://github.com/etspaceman/kinesis-mock/issues/377
