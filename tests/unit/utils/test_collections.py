@@ -1,4 +1,4 @@
-from typing import Optional, TypedDict
+from typing import Optional, TypedDict, Union
 
 import pytest
 
@@ -7,6 +7,7 @@ from localstack.utils.collections import (
     HashableList,
     ImmutableDict,
     ImmutableList,
+    convert_to_typed_dict,
     select_from_typed_dict,
 )
 
@@ -108,3 +109,72 @@ def test_hashable_list():
     with pytest.raises(Exception) as exc:
         l1[0] = "foo"
     exc.match("does not support item assignment")
+
+
+def test_convert_to_typed_dict():
+    class TestTypedDict(TypedDict):
+        str_member: str
+        int_member: int
+        dict_member: dict
+
+    test_dict = {"str_member": 1, "int_member": "1", "dict_member": {"inner_member": 1}}
+
+    result = convert_to_typed_dict(TestTypedDict, test_dict)
+    assert isinstance(result, dict)
+    assert result["str_member"] == "1"
+    assert result["int_member"] == 1
+    assert result["dict_member"] == {"inner_member": 1}
+
+
+def test_convert_to_typed_dict_with_union():
+    class TestTypedDict(TypedDict):
+        union_member: Union[str, int]
+
+    test_dict = {"union_member": 1}
+
+    result = convert_to_typed_dict(TestTypedDict, test_dict)
+    assert isinstance(result, dict)
+    assert result["union_member"] == "1"
+
+
+def test_convert_to_typed_dict_with_optional():
+    class TestTypedDict(TypedDict):
+        optional_member: Optional[str]
+
+    test_dict = {"optional_member": 1}
+
+    result = convert_to_typed_dict(TestTypedDict, test_dict)
+    assert isinstance(result, dict)
+    assert result["optional_member"] == "1"
+
+
+def test_convert_to_typed_dict_with_strict_mode():
+    class ClassWithoutValueConstructor:
+        pass
+
+    class TestTypedDict(TypedDict):
+        non_convertable: ClassWithoutValueConstructor
+
+    test_dict = {"non_convertable": ClassWithoutValueConstructor()}
+
+    # ensure the strict conversion fails
+    with pytest.raises(TypeError):
+        convert_to_typed_dict(TestTypedDict, test_dict, strict=True)
+
+    # ensure the non-strict conversion contains the original values
+    result = convert_to_typed_dict(TestTypedDict, test_dict)
+    assert test_dict == result
+
+
+def test_convert_to_typed_dict_with_typed_subdict():
+    class InnerTypedDict(TypedDict):
+        str_member: str
+
+    class TestTypedDict(TypedDict):
+        subdict: InnerTypedDict
+
+    test_dict = {"subdict": {"str_member": 1}}
+
+    result = convert_to_typed_dict(TestTypedDict, test_dict)
+    assert isinstance(result, dict)
+    assert result["subdict"] == {"str_member": "1"}
