@@ -5,11 +5,18 @@ Resources:
       Value: "<replace-this>"
       Type: String
       Fn::Transform:
-        Name: ReplaceString
-        Parameters:
-          Input: "snippet-transform"
+        - Name: ReplaceString
+          Parameters:
+            Input: "snippet-transform"
+        - Name: ReplaceString
+          Parameters:
+            Input: "second-snippet-transform"
 
 Transform:
   - Name: ReplaceString
     Parameters:
       Input: "global-transform"
+
+  - Name: ReplaceString
+    Parameters:
+      Input: "second-global-transform"

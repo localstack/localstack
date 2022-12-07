@@ -2,12 +2,14 @@ import base64
 import json
 import os
 
+import botocore.exceptions
 import pytest
 
 from localstack.aws.api.lambda_ import Runtime
 from localstack.testing.aws.cloudformation_utils import load_template_raw
 from localstack.utils.aws import arns
 from localstack.utils.common import short_uid
+from localstack.utils.files import load_file
 from localstack.utils.sync import wait_until
 
 TMPL = """
@@ -480,6 +482,11 @@ class TestMacros:
         snapshot.add_transformer(snapshot.transform.regex(new_value, "new-value"))
         snapshot.match("processed_template", processed_template)
 
+    @pytest.mark.aws_validated
+    @pytest.mark.parametrize(
+        "template_to_transform",
+        ["transformation_snippet_topic.yml", "transformation_snippet_topic.json"],
+    )
     def test_snipped_scope(
         self,
         deploy_cfn_template,
@@ -487,6 +494,7 @@ class TestMacros:
         create_lambda_function,
         lambda_client,
         snapshot,
+        template_to_transform,
     ):
         macro_function_path = os.path.join(
             os.path.dirname(__file__), "../templates/macros/add_standard_attributes.py"
@@ -523,6 +531,7 @@ class TestMacros:
         snapshot.add_transformer(snapshot.transform.regex(topic_name, "topic-name"))
         snapshot.match("processed_template", processed_template)
 
+    @pytest.mark.aws_validated
     def test_scope_order_and_parameters(
         self,
         deploy_cfn_template,
@@ -563,3 +572,107 @@ class TestMacros:
             StackName=stack.stack_name, TemplateStage="Processed"
         )
         snapshot.match("processed_template", processed_template)
+
+    @pytest.mark.aws_validated
+    def test_capabilities_requirements(
+        self,
+        deploy_cfn_template,
+        cfn_client,
+        create_lambda_function,
+        lambda_client,
+        snapshot,
+        cleanup_stacks,
+    ):
+
+        macro_function_path = os.path.join(
+            os.path.dirname(__file__), "../templates/macros/add_role.py"
+        )
+
+        func_name = f"test_lambda_{short_uid()}"
+        create_lambda_function(
+            func_name=func_name,
+            handler_file=macro_function_path,
+            runtime=Runtime.python3_8,
+            client=lambda_client,
+            timeout=1,
+        )
+
+        macro_name = "AddRole"
+        deploy_cfn_template(
+            template_path=os.path.join(
+                os.path.dirname(__file__), "../templates/macro_resource.yml"
+            ),
+            parameters={"FunctionName": func_name, "MacroName": macro_name},
+        )
+
+        stack_name = f"stack-{short_uid()}"
+        args = {
+            "StackName": stack_name,
+            "TemplateBody": load_file(
+                os.path.join(
+                    os.path.dirname(__file__),
+                    "../templates/transformation_add_role.yml",
+                )
+            ),
+        }
+        with pytest.raises(botocore.exceptions.ClientError) as ex:
+            cfn_client.create_stack(**args)
+        snapshot.match("error", ex.value.response)
+
+        args["Capabilities"] = [
+            "CAPABILITY_AUTO_EXPAND",  # Required to allow macro to add a role to template
+            "CAPABILITY_NAMED_IAM",  # Required to allow CFn create added role
+        ]
+        cfn_client.create_stack(**args)
+        cfn_client.get_waiter("stack_create_complete").wait(StackName=stack_name)
+        processed_template = cfn_client.get_template(
+            StackName=stack_name, TemplateStage="Processed"
+        )
+        snapshot.add_transformer(snapshot.transform.key_value("RoleName", "role-name"))
+        snapshot.match("processed_template", processed_template)
+        cleanup_stacks([stack_name])
+
+    def test_validate_lambda_internals(
+        self,
+        deploy_cfn_template,
+        cfn_client,
+        create_lambda_function,
+        lambda_client,
+        snapshot,
+        cleanup_stacks,
+    ):
+        macro_function_path = os.path.join(
+            os.path.dirname(__file__), "../templates/macros/print_internals.py"
+        )
+
+        func_name = f"test_lambda_{short_uid()}"
+        create_lambda_function(
+            func_name=func_name,
+            handler_file=macro_function_path,
+            runtime=Runtime.python3_8,
+            client=lambda_client,
+            timeout=1,
+        )
+
+        macro_name = "PrintInternals"
+        deploy_cfn_template(
+            template_path=os.path.join(
+                os.path.dirname(__file__), "../templates/macro_resource.yml"
+            ),
+            parameters={"FunctionName": func_name, "MacroName": macro_name},
+        )
+
+        stack = deploy_cfn_template(
+            template_path=os.path.join(
+                os.path.dirname(__file__),
+                "../templates/transformation_print_internals.yml",
+            ),
+        )
+
+        processed_template = cfn_client.get_template(
+            StackName=stack.stack_name, TemplateStage="Processed"
+        )
+        snapshot.match(
+            "processed_template",
+            processed_template["TemplateBody"]["Resources"]["Parameter"]["Properties"]["Value"],
+        )

@@ -111,7 +111,7 @@
     }
   },
   "tests/integration/cloudformation/test_template_engine.py::TestMacros::test_scope_order_and_parameters": {
-    "recorded-date": "06-12-2022, 15:30:14",
+    "recorded-date": "07-12-2022, 09:08:26",
     "recorded-content": {
       "processed_template": {
         "StagesAvailable": [
@@ -123,7 +123,7 @@
             "Parameter": {
               "Properties": {
                 "Type": "String",
-                "Value": "snippet-transform global-transform <replace-this>"
+                "Value": "snippet-transform second-snippet-transform global-transform second-global-transform <replace-this>"
               },
               "Type": "AWS::SSM::Parameter"
             }
@@ -132,6 +132,198 @@
         "ResponseMetadata": {
           "HTTPHeaders": {},
           "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/integration/cloudformation/test_template_engine.py::TestMacros::test_snipped_scope[transformation_snippet_topic.yml]": {
+    "recorded-date": "07-12-2022, 09:25:53",
+    "recorded-content": {
+      "processed_template": {
+        "StagesAvailable": [
+          "Original",
+          "Processed"
+        ],
+        "TemplateBody": {
+          "Outputs": {
+            "TopicName": {
+              "Value": {
+                "Fn::GetAtt": [
+                  "Topic",
+                  "TopicName"
+                ]
+              }
+            }
+          },
+          "Parameters": {
+            "TopicName": {
+              "Type": "String"
+            }
+          },
+          "Resources": {
+            "Topic": {
+              "Properties": {
+                "ContentBasedDeduplication": true,
+                "FifoTopic": true,
+                "TopicName": {
+                  "Ref": "TopicName"
+                }
+              },
+              "Type": "AWS::SNS::Topic"
+            }
+          }
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/integration/cloudformation/test_template_engine.py::TestMacros::test_snipped_scope[transformation_snippet_topic.json]": {
+    "recorded-date": "07-12-2022, 09:26:37",
+    "recorded-content": {
+      "processed_template": {
+        "StagesAvailable": [
+          "Original",
+          "Processed"
+        ],
+        "TemplateBody": {
+          "Outputs": {
+            "TopicName": {
+              "Value": {
+                "Fn::GetAtt": [
+                  "Topic",
+                  "TopicName"
+                ]
+              }
+            }
+          },
+          "Parameters": {
+            "TopicName": {
+              "Type": "String"
+            }
+          },
+          "Resources": {
+            "Topic": {
+              "Properties": {
+                "ContentBasedDeduplication": true,
+                "FifoTopic": true,
+                "TopicName": {
+                  "Ref": "TopicName"
+                }
+              },
+              "Type": "AWS::SNS::Topic"
+            }
+          }
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/integration/cloudformation/test_template_engine.py::TestMacros::test_capabilities_requirements": {
+    "recorded-date": "07-12-2022, 11:47:31",
+    "recorded-content": {
+      "error": {
+        "Error": {
+          "Code": "InsufficientCapabilitiesException",
+          "Message": "Requires capabilities : [CAPABILITY_AUTO_EXPAND]",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "processed_template": {
+        "StagesAvailable": [
+          "Original",
+          "Processed"
+        ],
+        "TemplateBody": {
+          "Outputs": {
+            "ParameterName": {
+              "Value": {
+                "Ref": "Parameter"
+              }
+            }
+          },
+          "Resources": {
+            "Parameter": {
+              "Properties": {
+                "Type": "String",
+                "Value": "not-important"
+              },
+              "Type": "AWS::SSM::Parameter"
+            },
+            "Role": {
+              "Properties": {
+                "AssumeRolePolicyDocument": {
+                  "Statement": [
+                    {
+                      "Action": "sts:AssumeRole",
+                      "Effect": "Allow",
+                      "Principal": {
+                        "AWS": "*"
+                      }
+                    }
+                  ],
+                  "Version": "2012-10-17"
+                },
+                "ManagedPolicyArns": [
+                  {
+                    "Fn::Join": [
+                      "",
+                      [
+                        "arn:",
+                        {
+                          "Ref": "AWS::Partition"
+                        },
+                        ":iam::aws:policy/AdministratorAccess"
+                      ]
+                    ]
+                  }
+                ],
+                "RoleName": "<role-name:1>"
+              },
+              "Type": "AWS::IAM::Role"
+            }
+          }
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/integration/cloudformation/test_template_engine.py::TestMacros::test_validate_lambda_internals": {
+    "recorded-date": "07-12-2022, 15:19:42",
+    "recorded-content": {
+      "processed_template": {
+        "Event": {
+          "accountId": "111111111111",
+          "fragment": {
+            "Resources": {
+              "Parameter": {
+                "Type": "AWS::SSM::Parameter",
+                "Properties": {
+                  "Value": "<replace-this>",
+                  "Type": "String"
+                }
+              }
+            }
+          },
+          "transformId": "111111111111::PrintInternals",
+          "requestId": "<uuid:1>",
+          "region": "<region>",
+          "params": {
+            "Input": "test-input"
+          },
+          "templateParameterValues": {}
         }
       }
     }
