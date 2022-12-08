@@ -482,8 +482,7 @@ class TestAPIGateway:
             apigateway_client,
             restApiId=api_id,
             stageName="local",
-            patchOperations=[{"op": "replace", "path": "/cacheClusterEnabled",
-                              "value": "true"}],
+            patchOperations=[{"op": "replace", "path": "/cacheClusterEnabled", "value": "true"}],
         )
         aws_account_id = sts_client.get_caller_identity()["Account"]
         source_arn = f"arn:aws:execute-api:{region_name}:{aws_account_id}:{api_id}/*/*/test"
