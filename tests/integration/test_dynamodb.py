@@ -9,6 +9,7 @@ import pytest
 from boto3.dynamodb.conditions import Key
 from boto3.dynamodb.types import STRING
 
+from localstack.constants import TEST_AWS_SECRET_ACCESS_KEY
 from localstack.services.dynamodbstreams.dynamodbstreams_api import get_kinesis_stream_name
 from localstack.testing.snapshots.transformer import SortingTransformer
 from localstack.utils import testutil
@@ -794,10 +795,15 @@ class TestDynamoDB:
     @pytest.mark.only_localstack
     def test_dynamodb_with_kinesis_stream(self):
         dynamodb = aws_stack.create_external_boto_client("dynamodb")
-        kinesis = aws_stack.create_external_boto_client("kinesis")
+        # Create Kinesis stream in another account to test that integration works cross-account
+        kinesis = aws_stack.create_external_boto_client(
+            "kinesis",
+            aws_access_key_id="222244448888",
+            aws_secret_access_key=TEST_AWS_SECRET_ACCESS_KEY,
+        )
 
         # create kinesis datastream
-        stream_name = "kinesis_dest_stream"
+        stream_name = f"kinesis_dest_stream_{short_uid()}"
         kinesis.create_stream(StreamName=stream_name, ShardCount=1)
         # wait for the stream to be created
         sleep(1)
@@ -834,7 +840,9 @@ class TestDynamoDB:
 
         def _fetch_records():
             records = queries.kinesis_get_latest_records(
-                stream_name, shard_id=stream_description["Shards"][0]["ShardId"]
+                stream_name,
+                shard_id=stream_description["Shards"][0]["ShardId"],
+                client=kinesis,
             )
             assert len(records) == 3
             return records
@@ -879,7 +887,7 @@ class TestDynamoDB:
 
         # clean up
         delete_table(table_name)
-        kinesis.delete_stream(StreamName="kinesis_dest_stream")
+        kinesis.delete_stream(StreamName=stream_name)
 
     @pytest.mark.only_localstack
     def test_global_tables_version_2019(

@@ -26,14 +26,17 @@ class KinesisMockServer(Server):
         port: int,
         bin_path: str,
         latency: str,
+        account_id: str,
         host: str = "localhost",
         log_level: str = "INFO",
         data_dir: Optional[str] = None,
         initialize_streams: Optional[str] = None,
     ) -> None:
+        self._account_id = account_id
         self._latency = latency
         self._initialize_streams = initialize_streams
         self._data_dir = data_dir
+        self._data_filename = f"{self._account_id}.json"
         self._bin_path = bin_path
         self._log_level = log_level
         super().__init__(port, host)
@@ -58,7 +61,14 @@ class KinesisMockServer(Server):
         Helper method for creating kinesis mock invocation command
         :return: returns a tuple containing the command list and a dictionary with the environment variables
         """
-        env_vars = {"KINESIS_MOCK_PLAIN_PORT": self.port, "SHARD_LIMIT": config.KINESIS_SHARD_LIMIT}
+        env_vars = {
+            "KINESIS_MOCK_PLAIN_PORT": self.port,
+            # Each kinesis-mock instance listens to two ports - secure and insecure.
+            # LocalStack uses only one - the insecure one. Block the secure port to avoid conflicts.
+            "KINESIS_MOCK_TLS_PORT": get_free_tcp_port(),
+            "SHARD_LIMIT": config.KINESIS_SHARD_LIMIT,
+            "AWS_ACCOUNT_ID": self._account_id,
+        }
 
         latency_params = [
             "CREATE_STREAM_DURATION",
@@ -77,6 +87,7 @@ class KinesisMockServer(Server):
         if self._data_dir:
             env_vars["SHOULD_PERSIST_DATA"] = "true"
             env_vars["PERSIST_PATH"] = self._data_dir
+            env_vars["PERSIST_FILE_NAME"] = self._data_filename
             env_vars["PERSIST_INTERVAL"] = config.KINESIS_MOCK_PERSIST_INTERVAL
 
         env_vars["LOG_LEVEL"] = self._log_level
@@ -94,7 +105,9 @@ class KinesisMockServer(Server):
         LOG.info(line.rstrip())
 
 
-def create_kinesis_mock_server(port=None, persist_path: Optional[str] = None) -> KinesisMockServer:
+def create_kinesis_mock_server(
+    account_id: str, port=None, persist_path: Optional[str] = None
+) -> KinesisMockServer:
     """
     Creates a new Kinesis Mock server instance. Installs Kinesis Mock on the host first if necessary.
     Introspects on the host config to determine server configuration:
@@ -132,5 +145,6 @@ def create_kinesis_mock_server(port=None, persist_path: Optional[str] = None) ->
         latency=latency,
         initialize_streams=initialize_streams,
         data_dir=persist_path,
+        account_id=account_id,
     )
     return server

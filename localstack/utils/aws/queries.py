@@ -69,8 +69,8 @@ def get_apigateway_path_for_resource(
     )
 
 
-def kinesis_get_latest_records(stream_name, shard_id, count=10, env=None):
-    kinesis = connect_to_service("kinesis", env=env)
+def kinesis_get_latest_records(stream_name, shard_id, count=10, env=None, client=None):
+    kinesis = client or connect_to_service("kinesis", env=env)
     result = []
     response = kinesis.get_shard_iterator(
         StreamName=stream_name, ShardId=shard_id, ShardIteratorType="TRIM_HORIZON"
