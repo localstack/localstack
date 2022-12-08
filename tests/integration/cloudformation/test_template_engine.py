@@ -523,15 +523,19 @@ class TestMacros:
         topic_name = f"topic-{short_uid()}.fifo"
         stack = deploy_cfn_template(
             template_path=os.path.join(
-                os.path.dirname(__file__), "../templates/transformation_snippet_topic.yml"
+                os.path.dirname(__file__), "../templates/", template_to_transform
             ),
             parameters={"TopicName": topic_name},
         )
+        original_template = cfn_client.get_template(
+            StackName=stack.stack_name, TemplateStage="Original"
+        )
+        snapshot.add_transformer(snapshot.transform.regex(topic_name, "topic-name"))
+        snapshot.match("original_template", original_template)
 
         processed_template = cfn_client.get_template(
             StackName=stack.stack_name, TemplateStage="Processed"
         )
-        snapshot.add_transformer(snapshot.transform.regex(topic_name, "topic-name"))
         snapshot.match("processed_template", processed_template)
 
     @pytest.mark.aws_validated
@@ -617,6 +621,7 @@ class TestMacros:
         snapshot.match("processed_template", processed_template)
         cleanup_stacks([stack_name])
 
+    @pytest.mark.aws_validated
     def test_validate_lambda_internals(
         self,
         deploy_cfn_template,
@@ -654,6 +659,7 @@ class TestMacros:
             processed_template["TemplateBody"]["Resources"]["Parameter"]["Properties"]["Value"],
         )
 
+    @pytest.mark.aws_validated
     def test_to_validate_template_limit_for_macro(
         self,
         deploy_cfn_template,
@@ -697,6 +703,7 @@ class TestMacros:
         )
         snapshot.match("error_response", response)
 
+    @pytest.mark.aws_validated
     def test_error_pass_macro_as_reference(
         self,
         cfn_client,
@@ -715,6 +722,7 @@ class TestMacros:
             )
         snapshot.match("error", ex.value.response)
 
+    @pytest.mark.aws_validated
     def test_functions_and_references_during_transformation(
         self,
         deploy_cfn_template,

@@ -137,8 +137,19 @@
     }
   },
   "tests/integration/cloudformation/test_template_engine.py::TestMacros::test_snipped_scope[transformation_snippet_topic.yml]": {
-    "recorded-date": "07-12-2022, 09:25:53",
+    "recorded-date": "08-12-2022, 16:24:58",
     "recorded-content": {
+      "original_template": {
+        "StagesAvailable": [
+          "Original",
+          "Processed"
+        ],
+        "TemplateBody": "Parameters:\n  TopicName:\n    Type: String\n\nResources:\n  Topic:\n    Type: AWS::SNS::Topic\n    Properties:\n      TopicName:\n        Ref: TopicName\n      Fn::Transform: ConvertTopicToFifo\n\nOutputs:\n  TopicName:\n    Value:\n      Fn::GetAtt:\n        - Topic\n        - TopicName\n",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
       "processed_template": {
         "StagesAvailable": [
           "Original",
@@ -181,8 +192,46 @@
     }
   },
   "tests/integration/cloudformation/test_template_engine.py::TestMacros::test_snipped_scope[transformation_snippet_topic.json]": {
-    "recorded-date": "07-12-2022, 09:26:37",
+    "recorded-date": "08-12-2022, 16:25:43",
     "recorded-content": {
+      "original_template": {
+        "StagesAvailable": [
+          "Original",
+          "Processed"
+        ],
+        "TemplateBody": {
+          "Outputs": {
+            "TopicName": {
+              "Value": {
+                "Fn::GetAtt": [
+                  "Topic",
+                  "TopicName"
+                ]
+              }
+            }
+          },
+          "Parameters": {
+            "TopicName": {
+              "Type": "String"
+            }
+          },
+          "Resources": {
+            "Topic": {
+              "Properties": {
+                "Fn::Transform": "ConvertTopicToFifo",
+                "TopicName": {
+                  "Ref": "TopicName"
+                }
+              },
+              "Type": "AWS::SNS::Topic"
+            }
+          }
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
       "processed_template": {
         "StagesAvailable": [
           "Original",
