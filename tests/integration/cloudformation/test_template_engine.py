@@ -1,6 +1,7 @@
 import base64
 import json
 import os
+from copy import deepcopy
 
 import botocore.exceptions
 import pytest
@@ -714,8 +715,18 @@ class TestMacros:
                 )
             )
         )
-
         for n in range(0, 1000):
-            pass
+            template_dict["Resources"][f"Parameter{n}"] = deepcopy(
+                template_dict["Resources"]["Parameter"]
+            )
 
-        print(template_dict)
+        template = yaml.safe_dump(template_dict)
+
+        with pytest.raises(botocore.exceptions.ClientError) as ex:
+            deploy_cfn_template(template=template)
+
+        response = ex.value.response
+        response["Error"]["Message"] = response["Error"]["Message"].replace(
+            template, "<template-body>"
+        )
+        snapshot.match("error_response", response)

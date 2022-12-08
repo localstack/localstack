@@ -327,5 +327,21 @@
         }
       }
     }
+  },
+  "tests/integration/cloudformation/test_template_engine.py::TestMacros::test_to_validate_template_limit_for_macro": {
+    "recorded-date": "08-12-2022, 09:29:56",
+    "recorded-content": {
+      "error_response": {
+        "Error": {
+          "Code": "ValidationError",
+          "Message": "1 validation error detected: Value '<template-body>' at 'templateBody' failed to satisfy constraint: Member must have length less than or equal to 51200",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
   }
 }
