@@ -28,6 +28,7 @@ from localstack.constants import APPLICATION_JSON, LOCALHOST_HOSTNAME
 from localstack.http import Request
 from localstack.http import Response as HttpResponse
 from localstack.services.awslambda import lambda_executors
+from localstack.services.awslambda.api_utils import validate_lambda_runtime
 from localstack.services.awslambda.event_source_listeners.event_source_listener import (
     EventSourceListener,
 )
@@ -1210,6 +1211,11 @@ def create_function():
         lambda_function.description = data.get("Description", "")
         lambda_function.handler = data.get("Handler")
         lambda_function.runtime = data.get("Runtime")
+        runtime_validation_error = validate_lambda_runtime(lambda_function.runtime)
+        if runtime_validation_error:
+            return error_response(
+                runtime_validation_error, 400, error_type=INVALID_PARAMETER_VALUE_EXCEPTION
+            )
         try:
             lambda_function.envvars = data.get("Environment", {}).get("Variables", {})
         except InvalidEnvVars as e:
