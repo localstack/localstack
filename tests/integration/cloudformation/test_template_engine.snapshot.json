@@ -301,32 +301,8 @@
     }
   },
   "tests/integration/cloudformation/test_template_engine.py::TestMacros::test_validate_lambda_internals": {
-    "recorded-date": "07-12-2022, 15:24:04",
-    "recorded-content": {
-      "event": {
-        "Event": {
-          "accountId": "111111111111",
-          "fragment": {
-            "Resources": {
-              "Parameter": {
-                "Type": "AWS::SSM::Parameter",
-                "Properties": {
-                  "Value": "<replace-this>",
-                  "Type": "String"
-                }
-              }
-            }
-          },
-          "transformId": "111111111111::PrintInternals",
-          "requestId": "<uuid:1>",
-          "region": "<region>",
-          "params": {
-            "Input": "test-input"
-          },
-          "templateParameterValues": {}
-        }
-      }
-    }
+    "recorded-date": "08-12-2022, 15:02:05",
+    "recorded-content": {}
   },
   "tests/integration/cloudformation/test_template_engine.py::TestMacros::test_to_validate_template_limit_for_macro": {
     "recorded-date": "08-12-2022, 09:29:56",
@@ -340,6 +316,48 @@
         "ResponseMetadata": {
           "HTTPHeaders": {},
           "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/integration/cloudformation/test_template_engine.py::TestMacros::test_error_pass_macro_as_reference": {
+    "recorded-date": "08-12-2022, 11:03:51",
+    "recorded-content": {
+      "error": {
+        "Error": {
+          "Code": "ValidationError",
+          "Message": "Key Name of transform definition must be a string.",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/integration/cloudformation/test_template_engine.py::TestMacros::test_error_macro_param_as_reference": {
+    "recorded-date": "08-12-2022, 11:50:49",
+    "recorded-content": {}
+  },
+  "tests/integration/cloudformation/test_template_engine.py::TestMacros::test_functions_and_references_during_transformation": {
+    "recorded-date": "08-12-2022, 16:15:15",
+    "recorded-content": {
+      "event": {
+        "Params": {
+          "Input": "CreateStackInput"
+        },
+        "FunctionValue": {
+          "Fn::Join": [
+            " ",
+            [
+              "Hello",
+              "World"
+            ]
+          ]
+        },
+        "ValueOfRef": {
+          "Ref": "Substitution"
         }
       }
     }
