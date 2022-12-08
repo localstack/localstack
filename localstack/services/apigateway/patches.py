@@ -239,7 +239,7 @@ def apply_patches():
                     api_id, stage = api_stages[i].split(":")
                     api_stages[i] = {"apiId": api_id, "stage": stage}
 
-            return 200, {}, json.dumps(usage_plan)
+            return 200, {}, json.dumps(usage_plan.to_json())
         return apigateway_response_usage_plan_individual_orig(
             self, request, full_url, headers, *args, **kwargs
         )
