@@ -3,18 +3,21 @@ import json
 import logging
 import os
 from datetime import date, datetime, time, timezone
-from typing import Any, Dict, Optional, Protocol
+from typing import TYPE_CHECKING, Any, Dict, Optional
 
+from botocore.exceptions import ClientError
 from moto.ses import ses_backends
 from moto.ses.models import SESBackend
 
 from localstack import config
 from localstack.aws.api import RequestContext, handler
+from localstack.aws.api.core import CommonServiceException
 from localstack.aws.api.ses import (
     Address,
     AddressList,
     AmazonResourceName,
     CloneReceiptRuleSetResponse,
+    ConfigurationSetDoesNotExistException,
     ConfigurationSetName,
     CreateConfigurationSetEventDestinationResponse,
     DeleteConfigurationSetEventDestinationResponse,
@@ -22,10 +25,12 @@ from localstack.aws.api.ses import (
     DeleteTemplateResponse,
     Destination,
     EventDestination,
+    EventDestinationDoesNotExistException,
     EventDestinationName,
     GetIdentityVerificationAttributesResponse,
     IdentityList,
     IdentityVerificationAttributes,
+    InvalidSNSDestinationException,
     ListTemplatesResponse,
     MaxItems,
     Message,
@@ -52,6 +57,9 @@ from localstack.utils.aws import arns, aws_stack
 from localstack.utils.files import mkdir
 from localstack.utils.strings import long_uid, to_str
 from localstack.utils.time import timestamp, timestamp_millis
+
+if TYPE_CHECKING:
+    from mypy_boto3_sns import SNSClient
 
 LOGGER = logging.getLogger(__name__)
 
@@ -171,13 +179,22 @@ class SesProvider(SesApi, ServiceLifecycleHook):
         configuration_set_name: ConfigurationSetName,
         event_destination: EventDestination,
     ) -> CreateConfigurationSetEventDestinationResponse:
-        result = call_moto(context)
-
         # send SES test event if an SNS topic is attached
         sns_topic_arn = event_destination.get("SNSDestination", {}).get("TopicARN")
         if sns_topic_arn is not None:
             emitter = SNSEmitter(context)
             emitter.emit_create_configuration_set_event_destination_test_message(sns_topic_arn)
+
+        # only register the event destiation if emitting the message worked
+        try:
+            result = call_moto(context)
+        except CommonServiceException as e:
+            if e.code == "ConfigurationSetDoesNotExist":
+                raise ConfigurationSetDoesNotExistException(
+                    f"Configuration set <{configuration_set_name}> does not exist."
+                )
+            else:
+                raise
 
         return result
 
@@ -188,7 +205,13 @@ class SesProvider(SesApi, ServiceLifecycleHook):
         # not implemented in moto
         # TODO: contribute upstream?
         backend = get_ses_backend(context)
-        backend.config_set.pop(configuration_set_name, None)
+        try:
+            backend.config_set.pop(configuration_set_name)
+        except KeyError:
+            raise ConfigurationSetDoesNotExistException(
+                f"Configuration set <{configuration_set_name}> does not exist."
+            )
+
         return DeleteConfigurationSetResponse()
 
     @handler("DeleteConfigurationSetEventDestination")
@@ -201,7 +224,27 @@ class SesProvider(SesApi, ServiceLifecycleHook):
         # not implemented in moto
         # TODO: contribute upstream?
         backend = get_ses_backend(context)
-        backend.config_set_event_destination.pop(configuration_set_name, None)
+
+        # the configuration set must exist
+        if configuration_set_name not in backend.config_set:
+            raise ConfigurationSetDoesNotExistException(
+                f"Configuration set <{configuration_set_name}> does not exist."
+            )
+
+        # the event destination must exist
+        if configuration_set_name not in backend.config_set_event_destination:
+            raise EventDestinationDoesNotExistException(
+                f"No EventDestination found for {configuration_set_name}"
+            )
+
+        if event_destination_name in backend.event_destinations:
+            backend.event_destinations.pop(event_destination_name)
+        else:
+            # FIXME: inconsistent state
+            LOGGER.warning("inconsistent state encountered in ses backend")
+
+        backend.config_set_event_destination.pop(configuration_set_name)
+
         return DeleteConfigurationSetEventDestinationResponse()
 
     @handler("ListTemplates")
@@ -414,11 +457,6 @@ class SesProvider(SesApi, ServiceLifecycleHook):
         return CloneReceiptRuleSetResponse()
 
 
-class SNSClient(Protocol):
-    def publish(self, TopicArn: str, Message: str, Subject: Optional[str] = None):
-        ...
-
-
 @dataclasses.dataclass(frozen=True)
 class SNSPayload:
     message_id: str
@@ -437,6 +475,14 @@ class SNSEmitter:
         self, sns_topic_arn: str
     ) -> None:
         client = self._client_for_topic(sns_topic_arn)
+        # topic must exist
+        try:
+            client.get_topic_attributes(TopicArn=sns_topic_arn)
+        except ClientError as exc:
+            if "NotFound" in exc.response["Error"]["Code"]:
+                raise InvalidSNSDestinationException(f"SNS topic <{sns_topic_arn}> not found.")
+            raise
+
         client.publish(
             TopicArn=sns_topic_arn,
             Message="Successfully validated SNS topic for Amazon SES event publishing.",
@@ -465,11 +511,14 @@ class SNSEmitter:
             ] = f"arn:aws:ses:{self.context.region}:{self.context.account_id}:identity/{payload.sender_email}"
 
         client = self._client_for_topic(sns_topic_arn)
-        client.publish(
-            TopicArn=sns_topic_arn,
-            Message=json.dumps(event_payload),
-            Subject="Amazon SES Email Event Notification",
-        )
+        try:
+            client.publish(
+                TopicArn=sns_topic_arn,
+                Message=json.dumps(event_payload),
+                Subject="Amazon SES Email Event Notification",
+            )
+        except ClientError:
+            LOGGER.exception("sending SNS message")
 
     def emit_delivery_event(self, payload: SNSPayload, sns_topic_arn: str):
         now = datetime.now(tz=timezone.utc)
@@ -490,14 +539,17 @@ class SNSEmitter:
             },
         }
         client = self._client_for_topic(sns_topic_arn)
-        client.publish(
-            TopicArn=sns_topic_arn,
-            Message=json.dumps(event_payload),
-            Subject="Amazon SES Email Event Notification",
-        )
+        try:
+            client.publish(
+                TopicArn=sns_topic_arn,
+                Message=json.dumps(event_payload),
+                Subject="Amazon SES Email Event Notification",
+            )
+        except ClientError:
+            LOGGER.exception("sending SNS message")
 
     @staticmethod
-    def _client_for_topic(topic_arn: str) -> SNSClient:
+    def _client_for_topic(topic_arn: str) -> "SNSClient":
         arn_parameters = arns.parse_arn(topic_arn)
         region = arn_parameters["region"]
         access_key_id = arn_parameters["account"]
