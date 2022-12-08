@@ -61,6 +61,7 @@ from tests.integration.apigateway_fixtures import (
     get_rest_api_resources,
     put_rest_api,
     update_rest_api_deployment,
+    update_rest_api_stage,
 )
 
 from ..unit.test_apigateway import load_test_resource
@@ -477,6 +478,12 @@ class TestAPIGateway:
             apigateway_client, restApiId=api_id, stageName="local", deploymentId=deployment_id
         )
 
+        update_rest_api_stage(
+            apigateway_client,
+            restApiId=api_id,
+            stageName="local",
+            patchOperations=[{"op": "replace", "path": "/cacheClusterEnabled", "value": "true"}],
+        )
         aws_account_id = sts_client.get_caller_identity()["Account"]
         source_arn = f"arn:aws:execute-api:{region_name}:{aws_account_id}:{api_id}/*/*/test"
 
