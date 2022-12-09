@@ -27,7 +27,6 @@ from localstack.constants import (
     TEST_AWS_ACCESS_KEY_ID,
     TEST_AWS_SECRET_ACCESS_KEY,
 )
-from localstack.utils.http import make_http_request
 from localstack.utils.strings import is_string, is_string_or_bytes, to_str
 
 # set up logger
@@ -506,18 +505,3 @@ def mock_aws_request_headers(
     if internal:
         headers[HEADER_LOCALSTACK_ACCOUNT_ID] = get_aws_account_id()
     return headers
-
-
-# TODO: is this still useful?
-def dynamodb_get_item_raw(request):
-    headers = mock_aws_request_headers()
-    headers["X-Amz-Target"] = "DynamoDB_20120810.GetItem"
-    new_item = make_http_request(
-        url=config.service_url("dynamodb"),
-        method="POST",
-        data=json.dumps(request),
-        headers=headers,
-    )
-    new_item = new_item.text
-    new_item = new_item and json.loads(new_item)
-    return new_item
