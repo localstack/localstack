@@ -12,4 +12,9 @@ def handler(event, context):
         }
     )
 
-    return {"requestId": event["requestId"], "status": "success", "fragment": fragment}
+    return {
+        "requestId": event["requestId"],
+        "status": "success",
+        "fragment": fragment,
+        "errorMessage": "test-error message",
+    }

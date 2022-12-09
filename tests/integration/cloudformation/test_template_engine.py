@@ -83,7 +83,7 @@ def create_macro(
         timeout=1,
     )
 
-    deploy_cfn_template(
+    return deploy_cfn_template(
         template_path=os.path.join(os.path.dirname(__file__), "../templates/macro_resource.yml"),
         parameters={"FunctionName": func_name, "MacroName": macro_name},
     )
@@ -758,3 +758,61 @@ class TestMacros:
             "event",
             processed_template["TemplateBody"]["Resources"]["Parameter"]["Properties"]["Value"],
         )
+
+    @pytest.mark.parametrize(
+        "macro_function",
+        [
+            "return_unsuccessful_with_message.py",
+            "return_unsuccessful_without_message.py",
+            "return_invalid_template.py",
+        ],
+    )
+    def test_failed_state(
+        self,
+        deploy_cfn_template,
+        cfn_client,
+        create_lambda_function,
+        lambda_client,
+        snapshot,
+        cleanup_stacks,
+        macro_function,
+    ):
+        macro_function_path = os.path.join(
+            os.path.dirname(__file__), "../templates/macros/", macro_function
+        )
+
+        macro_name = "Unsuccessful"
+        create_macro(
+            macro_name,
+            macro_function_path,
+            deploy_cfn_template,
+            create_lambda_function,
+            lambda_client,
+        )
+
+        template = load_file(
+            os.path.join(
+                os.path.dirname(__file__),
+                "../templates/transformation_unsuccessful.yml",
+            )
+        )
+
+        stack_name = f"stack-{short_uid()}"
+        cfn_client.create_stack(
+            StackName=stack_name, Capabilities=["CAPABILITY_AUTO_EXPAND"], TemplateBody=template
+        )
+
+        with pytest.raises(botocore.exceptions.WaiterError):
+            cfn_client.get_waiter("stack_create_complete").wait(StackName=stack_name)
+
+        events = cfn_client.describe_stack_events(StackName=stack_name)["StackEvents"]
+
+        failed_events_by_policy = [
+            event
+            for event in events
+            if "ResourceStatusReason" in event and event["ResourceStatus"] == "ROLLBACK_IN_PROGRESS"
+        ]
+
+        snapshot.add_transformer(snapshot.transform.cloudformation_api())
+        snapshot.match("failed_description", failed_events_by_policy[0])
+        cleanup_stacks([stack_name])

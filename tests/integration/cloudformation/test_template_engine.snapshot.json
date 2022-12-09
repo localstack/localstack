@@ -410,5 +410,53 @@
         }
       }
     }
+  },
+  "tests/integration/cloudformation/test_template_engine.py::TestMacros::test_failed_state[return_unsuccessful_with_message.py]": {
+    "recorded-date": "09-12-2022, 11:26:05",
+    "recorded-content": {
+      "failed_description": {
+        "EventId": "<uuid:1>",
+        "LogicalResourceId": "<stack-name:1>",
+        "PhysicalResourceId": "arn:aws:cloudformation:<region>:111111111111:stack/<stack-name:1>/<resource:1>",
+        "ResourceStatus": "ROLLBACK_IN_PROGRESS",
+        "ResourceStatusReason": "Transform 111111111111::Unsuccessful failed with: failed because it is a test. Rollback requested by user.",
+        "ResourceType": "AWS::CloudFormation::Stack",
+        "StackId": "arn:aws:cloudformation:<region>:111111111111:stack/<stack-name:1>/<resource:1>",
+        "StackName": "<stack-name:1>",
+        "Timestamp": "timestamp"
+      }
+    }
+  },
+  "tests/integration/cloudformation/test_template_engine.py::TestMacros::test_failed_state[return_unsuccessful_without_message.py]": {
+    "recorded-date": "09-12-2022, 11:26:57",
+    "recorded-content": {
+      "failed_description": {
+        "EventId": "<uuid:1>",
+        "LogicalResourceId": "<stack-name:1>",
+        "PhysicalResourceId": "arn:aws:cloudformation:<region>:111111111111:stack/<stack-name:1>/<resource:1>",
+        "ResourceStatus": "ROLLBACK_IN_PROGRESS",
+        "ResourceStatusReason": "Transform 111111111111::Unsuccessful failed without an error message.. Rollback requested by user.",
+        "ResourceType": "AWS::CloudFormation::Stack",
+        "StackId": "arn:aws:cloudformation:<region>:111111111111:stack/<stack-name:1>/<resource:1>",
+        "StackName": "<stack-name:1>",
+        "Timestamp": "timestamp"
+      }
+    }
+  },
+  "tests/integration/cloudformation/test_template_engine.py::TestMacros::test_failed_state[return_invalid_template.py]": {
+    "recorded-date": "09-12-2022, 11:27:48",
+    "recorded-content": {
+      "failed_description": {
+        "EventId": "<uuid:1>",
+        "LogicalResourceId": "<stack-name:1>",
+        "PhysicalResourceId": "arn:aws:cloudformation:<region>:111111111111:stack/<stack-name:1>/<resource:1>",
+        "ResourceStatus": "ROLLBACK_IN_PROGRESS",
+        "ResourceStatusReason": "Template format error: unsupported structure.. Rollback requested by user.",
+        "ResourceType": "AWS::CloudFormation::Stack",
+        "StackId": "arn:aws:cloudformation:<region>:111111111111:stack/<stack-name:1>/<resource:1>",
+        "StackName": "<stack-name:1>",
+        "Timestamp": "timestamp"
+      }
+    }
   }
 }
