@@ -67,7 +67,7 @@ jobs:
       uses: actions/checkout@v3
       with:
         repository: hashicorp/terraform-provider-aws
-        ref: ${{ github.event.inputs.terraform-ref || 'v4.31.0' }}
+        ref: ${{ github.event.inputs.terraform-ref || 'v4.37.0' }}
         path: './terraform-provider-aws'
 
     - name: Set up Python 3.10.5
