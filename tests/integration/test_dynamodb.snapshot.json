@@ -366,7 +366,7 @@
       },
       "GetRecordsAfterUpdate": {
         "data": {
-          "B": "b'kA=='"
+          "B": "b'\\x90'"
         },
         "id": {
           "S": "id1"

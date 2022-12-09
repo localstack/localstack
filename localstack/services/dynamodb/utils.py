@@ -144,7 +144,7 @@ class ItemFinder:
                 return
 
         req = {"TableName": table_name, "Key": search_key}
-        existing_item = aws_stack.dynamodb_get_item_raw(req)
+        existing_item = ddb_client.get_item(**req)
         if not existing_item:
             return existing_item
         if "Item" not in existing_item:
