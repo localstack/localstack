@@ -8777,5 +8777,22 @@
         }
       }
     }
+  },
+  "tests/integration/awslambda/test_lambda_api.py::TestLambdaAccountSettings::test_account_settings_total_code_size": {
+    "recorded-date": "07-12-2022, 09:31:14",
+    "recorded-content": {
+      "total_code_size_diff_create_function": 276,
+      "total_code_size_diff_update_function": 276,
+      "total_code_size_diff_publish_layer": 169,
+      "total_code_size_diff_publish_layer_version": 169
+    }
+  },
+  "tests/integration/awslambda/test_lambda_api.py::TestLambdaAccountSettings::test_account_settings_total_code_size_config_update": {
+    "recorded-date": "07-12-2022, 09:32:59",
+    "recorded-content": {
+      "is_total_code_size_diff_create_function_more_than_200": true,
+      "total_code_size_diff_update_function_configuration": 0,
+      "is_total_code_size_diff_publish_version_after_config_update_more_than_200": true
+    }
   }
 }

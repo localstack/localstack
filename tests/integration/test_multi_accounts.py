@@ -166,3 +166,52 @@ class TestMultiAccounts:
         # Ensure items are inserted to correct namespace resource
         response = ddb_client3.describe_table(TableName=tab1)
         assert response["Table"]["ItemCount"] == 3
+
+    def test_multi_accounts_kinesis(self, client_factory):
+        """Test that multi-accounts work with external dependency, Kinesis Mock."""
+        account_id1 = "420420420420"
+        account_id2 = "133713371337"
+
+        kin_client1 = client_factory("kinesis", account_id1, region_name="ap-south-1")
+        kin_client2 = client_factory("kinesis", account_id1)
+        kin_client3 = client_factory("kinesis", account_id2)
+
+        stream_name = f"stream-{short_uid()}"
+
+        # In Kinesis, calls are forwarded to Kinesis Mock
+        # The assertions below test whether resources are correctly namespaced
+
+        kin_client1.create_stream(
+            StreamName=stream_name,
+        )
+        response1 = kin_client1.describe_stream(
+            StreamName=stream_name,
+        )
+        assert (
+            response1["StreamDescription"]["StreamARN"]
+            == f"arn:aws:kinesis:ap-south-1:{account_id1}:stream/{stream_name}"
+        )
+
+        # Create stream with the same name in a different region
+        kin_client2.create_stream(
+            StreamName=stream_name,
+        )
+        response2 = kin_client2.describe_stream(
+            StreamName=stream_name,
+        )
+        assert (
+            response2["StreamDescription"]["StreamARN"]
+            == f"arn:aws:kinesis:eu-central-1:{account_id1}:stream/{stream_name}"
+        )
+
+        # Create stream with the same name in a different account
+        kin_client3.create_stream(
+            StreamName=stream_name,
+        )
+        response3 = kin_client3.describe_stream(
+            StreamName=stream_name,
+        )
+        assert (
+            response3["StreamDescription"]["StreamARN"]
+            == f"arn:aws:kinesis:eu-central-1:{account_id2}:stream/{stream_name}"
+        )

@@ -44,29 +44,16 @@ def find_stream_for_consumer(consumer_arn):
     raise Exception("Unable to find stream for stream consumer %s" % consumer_arn)
 
 
-def find_consumer(consumer_arn="", consumer_name="", stream_arn=""):
-    store = KinesisProvider.get_store()
-    for consumer in store.stream_consumers:
-        if consumer_arn and consumer_arn == consumer.get("ConsumerARN"):
-            return consumer
-        elif consumer_name == consumer.get("ConsumerName") and stream_arn == consumer.get(
-            "StreamARN"
-        ):
-            return consumer
-
-
 class KinesisProvider(KinesisApi, ServiceLifecycleHook):
     @staticmethod
-    def get_store() -> KinesisStore:
-        return kinesis_stores[get_aws_account_id()][aws_stack.get_region()]
-
-    def on_before_start(self):
-        starter.start_kinesis()
-        starter.check_kinesis()
+    def get_store(account_id: str, region_name: str) -> KinesisStore:
+        return kinesis_stores[account_id][region_name]
 
     def get_forward_url(self):
         """Return the URL of the backend Kinesis server to forward requests to"""
-        return f"http://{LOCALHOST}:{starter.get_server().port}"
+        account_id = get_aws_account_id()
+        starter.start_kinesis(account_id=account_id)
+        return f"http://{LOCALHOST}:{starter.get_server(account_id).port}"
 
     def subscribe_to_shard(
         self,

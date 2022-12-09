@@ -265,8 +265,9 @@ def apply_patches():
         if isinstance(self, apigateway_models.Stage):
             bool_params = ["cacheClusterEnabled", "tracingEnabled"]
             for bool_param in bool_params:
-                if self.get(bool_param):
-                    self[bool_param] = str_to_bool(self.get(bool_param))
+                if getattr(self, camelcase_to_underscores(bool_param), None):
+                    value = getattr(self, camelcase_to_underscores(bool_param), None)
+                    setattr(self, camelcase_to_underscores(bool_param), str_to_bool(value))
         return self
 
     model_classes = [
@@ -355,10 +356,11 @@ def apply_patches():
             if value is None:
                 return value
             if value_type == bool:
-                return str(value) in ["true", "True"]
+                return str(value) in {"true", "True"}
             return value_type(value)
 
-        method_settings = self["methodSettings"] = self.get("methodSettings") or {}
+        method_settings = getattr(self, camelcase_to_underscores("methodSettings"), {})
+        setattr(self, camelcase_to_underscores("methodSettings"), method_settings)
         for operation in patch_operations:
             path = operation["path"]
             parts = path.strip("/").split("/")
@@ -366,7 +368,7 @@ def apply_patches():
                 if operation["op"] not in ["add", "replace"]:
                     continue
                 key1 = "/".join(parts[:-2])
-                setting_key = "%s/%s" % (parts[-2], parts[-1])
+                setting_key = f"{parts[-2]}/{parts[-1]}"
                 setting_name, setting_type = key_mappings.get(setting_key)
                 keys = [key1]
                 for key in keys:

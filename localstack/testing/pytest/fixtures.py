@@ -635,6 +635,24 @@ def sns_create_topic(sns_client):
 
 
 @pytest.fixture
+def sns_wait_for_topic_delete(sns_client):
+    def wait_for_topic_delete(topic_arn: str) -> None:
+        def wait():
+            try:
+                sns_client.get_topic_attributes(TopicArn=topic_arn)
+                return False
+            except Exception as e:
+                if "NotFound" in e.response["Error"]["Code"]:
+                    return True
+
+                raise
+
+        poll_condition(wait, timeout=30)
+
+    return wait_for_topic_delete
+
+
+@pytest.fixture
 def sns_subscription(sns_client):
     sub_arns = []
 
@@ -1807,11 +1825,31 @@ def ses_configuration_set_sns_event_destination(ses_client):
 
     yield factory
 
-    for (config_set_name, event_destination_name) in event_destinations:
+    for (created_config_set_name, created_event_destination_name) in event_destinations:
         ses_client.delete_configuration_set_event_destination(
-            ConfigurationSetName=config_set_name,
-            EventDestinationName=event_destination_name,
+            ConfigurationSetName=created_config_set_name,
+            EventDestinationName=created_event_destination_name,
         )
+
+
+@pytest.fixture
+def ses_email_template(ses_client):
+    template_names = []
+
+    def factory(name: str, contents: str, subject: str = f"Email template {short_uid()}"):
+        ses_client.create_template(
+            Template={
+                "TemplateName": name,
+                "SubjectPart": subject,
+                "TextPart": contents,
+            }
+        )
+        template_names.append(name)
+
+    yield factory
+
+    for template_name in template_names:
+        ses_client.delete_template(TemplateName=template_name)
 
 
 @pytest.fixture
