@@ -144,6 +144,9 @@ ELASTICMQ_JAR_URL = (
 )
 STEPFUNCTIONS_ZIP_URL = "https://s3.amazonaws.com/stepfunctionslocal/StepFunctionsLocal.zip"
 KMS_URL_PATTERN = "https://s3-eu-west-2.amazonaws.com/local-kms/3/local-kms_<arch>.bin"
+FFMPEG_STATIC_BIN_URL = (
+    "https://www.johnvansickle.com/ffmpeg/old-releases/ffmpeg-{version}-{arch}-static.tar.xz"
+)
 
 # API endpoint for analytics events
 API_ENDPOINT = os.environ.get("API_ENDPOINT") or "https://api.localstack.cloud/v1"

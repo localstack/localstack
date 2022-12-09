@@ -7,9 +7,6 @@ import wave
 from pathlib import Path
 from typing import Tuple
 from zipfile import ZipFile
-import platform
-import tarfile 
-import shutil
 
 from localstack import config
 from localstack.aws.api import RequestContext, handler
@@ -30,13 +27,15 @@ from localstack.aws.api.transcribe import (
     TranscriptionJobStatus,
     TranscriptionJobSummary,
 )
+from localstack.services.plugins import ServiceLifecycleHook
 from localstack.services.transcribe.models import TranscribeStore, transcribe_stores
+from localstack.services.transcribe.packages import ffmpeg_package
 from localstack.utils.aws import aws_stack
 from localstack.utils.files import new_tmp_file
 from localstack.utils.http import download
+from localstack.utils.run import run
 from localstack.utils.strings import short_uid
 from localstack.utils.threads import start_thread
-from localstack.utils.run import run
 
 LOG = logging.getLogger(__name__)
 
@@ -61,6 +60,16 @@ LANGUAGE_MODELS = {
 
 LANGUAGE_MODEL_DIR = Path(config.dirs.cache) / "vosk"
 
+# List of ffmpeg format names that correspond the supported formats by AWS
+# See https://docs.aws.amazon.com/transcribe/latest/dg/how-input.html
+SUPPORED_FORMAT_NAMES = (
+    "flac",
+    "mp3",
+    "mov,mp4,m4a,3gp,3g2,mj2",  # mp4
+    "ogg",
+    "webm",
+)
+
 os.environ["VOSK_MODEL_PATH"] = str(LANGUAGE_MODEL_DIR)
 
 # Vosk must be imported only after setting the required env vars
@@ -73,7 +82,9 @@ SetLogLevel(-1)
 _DL_LOCK = threading.Lock()
 
 
-class TranscribeProvider(TranscribeApi):
+class TranscribeProvider(TranscribeApi, ServiceLifecycleHook):
+    def on_before_start(self):
+        ffmpeg_package.install()
 
     #
     # Handlers
@@ -189,37 +200,6 @@ class TranscribeProvider(TranscribeApi):
 
             Path(model_zip_path).unlink()
 
-    @staticmethod
-    def check_and_download_ffmpeg():
-        """
-        Check if system already has ffmpeg installed. 
-        If can not find, this function will download statically linked build of ffmpeg to /bin/ffmpeg
-        """
-        try:
-            run("ffmpeg -version")
-        except Exception as exc:
-            if platform.uname()[4] == 'aarch64':
-                download_link = "https://johnvansickle.com/ffmpeg/releases/ffmpeg-release-arm64-static.tar.xz"
-            elif platform.uname()[4] == 'x86_64':
-                download_link = "https://johnvansickle.com/ffmpeg/releases/ffmpeg-release-amd64-static.tar.xz"
-            else:
-                raise("Can not find a suitable ffmpeg binary version for this system.")
-            file_path = new_tmp_file() + '.tar.xz'
-
-            LOG.debug("Downloading ffmpeg binary: %s", file_path)
-            download(download_link, file_path, verify_ssl=False)
-
-            with tarfile.open(file_path) as f:
-                for member in f.getmembers():
-                    if member.split('/')[-1] == 'ffmpeg':
-                        f.extract(member, '/tmp')
-            directory_list = os.listdir('/tmp')
-            for directory in directory_list:
-                if "ffmpeg-" in directory and "-static" in directory:
-                    ffmpeg_full_path = '/tmp/' + directory + '/ffmpeg'
-                    shutil.copy(ffmpeg_full_path, '/bin')
-                    break 
-        
     #
     # Threads
     #
@@ -243,28 +223,36 @@ class TranscribeProvider(TranscribeApi):
             bucket, _, key = s3_path.removeprefix("s3://").partition("/")
             s3_client.download_file(Bucket=bucket, Key=key, Filename=file_path)
 
+            ffmpeg_bin = ffmpeg_package.get_installer().get_ffmpeg_path()  # noqa
+            ffprobe_bin = ffmpeg_package.get_installer().get_ffprobe_path()  # noqa
+
+            # WIP
+
             # Check audio file type and convert to wav
             support_audio_list = [
                 "flac",
                 "mp3",
-                "mov,mp4,m4a,3gp,3g2,mj2", # ffprobe output of mp4 format
+                "mov,mp4,m4a,3gp,3g2,mj2",  # ffprobe output of mp4 format
                 "ogg",
                 "webm",
             ]
-            json_file_info = run(f"ffprobe -show_format -print_format json -hide_banner -v error {file_path}")
-            file_type = json_file_info.split("format_name")[1].split("\n")[0][4:-2] # Extract format from ffprobe
+            json_file_info = run(
+                f"ffprobe -show_format -print_format json -hide_banner -v error {file_path}"
+            )
+            file_type = json_file_info.split("format_name")[1].split("\n")[0][
+                4:-2
+            ]  # Extract format from ffprobe
 
             if file_type != "wav" and file_type in support_audio_list:
                 LOG.debug("Starting to convert audio to wav type: %s", job_name)
 
                 tmp_wav_file_path = new_tmp_file() + ".wav"
-                self.check_and_download_ffmpeg()
                 cmd = "ffmpeg -nostdin -loglevel quiet -y -i {} {}".format(
                     str(file_path), tmp_wav_file_path
                 )
                 run(cmd)
                 file_path = tmp_wav_file_path
-                if os.path.exists(file_path) == False:
+                if not os.path.exists(file_path):
                     raise ValueError("Audio file format conversion failed")
                 LOG.debug("Finishing conversion: %s", job_name)
 
