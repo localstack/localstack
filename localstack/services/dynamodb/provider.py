@@ -86,8 +86,7 @@ from localstack.aws.api.dynamodb import (
     UpdateTableOutput,
     UpdateTimeToLiveOutput,
 )
-from localstack.aws.forwarder import HttpFallbackDispatcher, get_request_forwarder_http
-from localstack.aws.proxy import AwsApiListener
+from localstack.aws.forwarder import get_request_forwarder_http
 from localstack.constants import AUTH_CREDENTIAL_REGEX, LOCALHOST, TEST_AWS_SECRET_ACCESS_KEY
 from localstack.http import Response
 from localstack.services.dynamodb import server
@@ -295,14 +294,6 @@ class SSEUtils:
 class ValidationException(CommonServiceException):
     def __init__(self, message: str):
         super().__init__(code="ValidationException", status_code=400, message=message)
-
-
-class DynamoDBApiListener(AwsApiListener):
-    def __init__(self, provider=None):
-        # TODO: remove once localstack-ext is refactored
-        provider = provider or DynamoDBProvider()
-        self.provider = provider
-        super().__init__("dynamodb", HttpFallbackDispatcher(provider, provider.get_forward_url))
 
 
 def get_store(account_id: str, region_name: str) -> DynamoDBStore:
