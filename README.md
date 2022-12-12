@@ -26,7 +26,7 @@
   <a href="#example">Example</a> •
   <a href="#running">Run</a> •
   <a href="#usage">Usage</a> •
-  <a href="#change-log">Changelog</a> •
+  <a href="#releases">Releases</a> •
   <a href="#contributing">Contributing</a>
   <br>–<br>
   <a href="https://docs.localstack.cloud" target="_blank">📖 Docs</a> •
@@ -133,9 +133,9 @@ To use LocalStack with a graphical user interface, you can use the following UI 
 * [Commandeer desktop app](https://getcommandeer.com)
 * [DynamoDB Admin Web UI](https://www.npmjs.com/package/dynamodb-admin)
 
-## Change Log
+## Releases
 
-Please refer to [GitHub releases](https://github.com/localstack/localstack/releases) to see the complete list of changes for each release.
+Please refer to [GitHub releases](https://github.com/localstack/localstack/releases) to see the complete list of changes for each release. For extended release notes, please refer to the [LocalStack Discuss](https://discuss.localstack.cloud/c/announcement/5).
 
 ## Contributing
 

@@ -1520,7 +1520,8 @@ class TestDynamoDB:
 
         # put item
         dynamodb_client.put_item(
-            TableName=table_name, Item={"id": {"S": "id1"}, "data": {"B": b"\x90"}}
+            TableName=table_name,
+            Item={PARTITION_KEY: {"S": "id1"}, "version": {"N": "1"}, "data": {"B": b"\x90"}},
         )
 
         # get item
@@ -1546,7 +1547,26 @@ class TestDynamoDB:
             "Records"
         ]
 
-        snapshot.match("GetRecords", records[0]["dynamodb"])
+        snapshot.match("GetRecords", records[0]["dynamodb"]["NewImage"])
+
+        # update item
+        dynamodb_client.update_item(
+            TableName=table_name,
+            Key={PARTITION_KEY: {"S": "id1"}},
+            UpdateExpression="SET version=:v",
+            ExpressionAttributeValues={":v": {"N": "2"}},
+        )
+
+        # get item and get_records again to check for consistency
+        item = dynamodb_client.get_item(TableName=table_name, Key={PARTITION_KEY: {"S": "id1"}})[
+            "Item"
+        ]
+        snapshot.match("GetItemAfterUpdate", item)
+
+        records = dynamodbstreams_client.get_records(ShardIterator=response["ShardIterator"])[
+            "Records"
+        ]
+        snapshot.match("GetRecordsAfterUpdate", records[1]["dynamodb"]["NewImage"])
 
 
 def delete_table(name):
