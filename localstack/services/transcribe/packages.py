@@ -1,5 +1,4 @@
 import os
-from functools import cache
 from typing import List
 
 from localstack.constants import FFMPEG_STATIC_BIN_URL
@@ -12,9 +11,8 @@ class FfmpegPackage(Package):
     def __init__(self):
         super().__init__(name="ffmpeg", default_version="4.4.1")
 
-    @cache
-    def get_installer(self) -> PackageInstaller:
-        return FfmpegPackageInstaller(self.default_version)
+    def _get_installer(self, version: str) -> PackageInstaller:
+        return FfmpegPackageInstaller(version)
 
     def get_versions(self) -> List[str]:
         return ["4.4.1"]

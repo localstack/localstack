@@ -132,12 +132,11 @@
         },
         "TranscriptionJobSummaries": {
           "CreationTime": "datetime",
-          "CompletionTime": "datetime",
           "LanguageCode": "en-GB",
           "OutputLocationType": "SERVICE_BUCKET",
           "StartTime": "datetime",
           "TranscriptionJobName": "<transcription-job:1>",
-          "TranscriptionJobStatus": "COMPLETED"
+          "TranscriptionJobStatus": "IN_PROGRESS"
         }
       }
     }

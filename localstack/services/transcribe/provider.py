@@ -62,12 +62,14 @@ LANGUAGE_MODEL_DIR = Path(config.dirs.cache) / "vosk"
 
 # List of ffmpeg format names that correspond the supported formats by AWS
 # See https://docs.aws.amazon.com/transcribe/latest/dg/how-input.html
-SUPPORED_FORMAT_NAMES = (
+SUPPORTED_FORMAT_NAMES = (
+    "amr",
     "flac",
     "mp3",
     "mov,mp4,m4a,3gp,3g2,mj2",  # mp4
     "ogg",
-    "webm",
+    "matroska,webm",
+    "wav",
 )
 
 os.environ["VOSK_MODEL_PATH"] = str(LANGUAGE_MODEL_DIR)
@@ -226,45 +228,32 @@ class TranscribeProvider(TranscribeApi, ServiceLifecycleHook):
             ffmpeg_bin = ffmpeg_package.get_installer().get_ffmpeg_path()  # noqa
             ffprobe_bin = ffmpeg_package.get_installer().get_ffprobe_path()  # noqa
 
-            # WIP
-
-            # Check audio file type and convert to wav
-            support_audio_list = [
-                "flac",
-                "mp3",
-                "mov,mp4,m4a,3gp,3g2,mj2",  # ffprobe output of mp4 format
-                "ogg",
-                "webm",
-            ]
-            json_file_info = run(
-                f"ffprobe -show_format -print_format json -hide_banner -v error {file_path}"
+            ffprobe_output = run(
+                f"{ffprobe_bin} -show_format -print_format json -hide_banner -v error {file_path}"
             )
-            file_type = json_file_info.split("format_name")[1].split("\n")[0][
-                4:-2
-            ]  # Extract format from ffprobe
+            # TODO check success
+            format = json.loads(ffprobe_output)["format"]["format_name"]
 
-            if file_type != "wav" and file_type in support_audio_list:
-                LOG.debug("Starting to convert audio to wav type: %s", job_name)
-
-                tmp_wav_file_path = new_tmp_file() + ".wav"
-                cmd = "ffmpeg -nostdin -loglevel quiet -y -i {} {}".format(
-                    str(file_path), tmp_wav_file_path
+            if format in SUPPORTED_FORMAT_NAMES:
+                wav_path = new_tmp_file(suffix=".wav")
+                LOG.debug("Transcoding media to wav")
+                run(
+                    f"{ffmpeg_bin} -y -nostdin -loglevel quiet -i '{file_path}' -ar 16000 -ac 1 '{wav_path}'"
                 )
-                run(cmd)
-                file_path = tmp_wav_file_path
-                if not os.path.exists(file_path):
-                    raise ValueError("Audio file format conversion failed")
-                LOG.debug("Finishing conversion: %s", job_name)
+                # TODO Check success
+            else:
+                failure_reason = f"Unsupported media format: {format}"
+                raise RuntimeError()
 
             # Check if file is valid wav
-            audio = wave.open(file_path, "rb")
+            audio = wave.open(wav_path, "rb")
             if (
                 audio.getnchannels() != 1
                 or audio.getsampwidth() != 2
                 or audio.getcomptype() != "NONE"
             ):
                 # Fail job
-                failure_reason = "Unsupport Audio file format"
+                failure_reason = "Audio file must be mono PCM WAV format"
                 raise RuntimeError()
 
             # Prepare transcriber

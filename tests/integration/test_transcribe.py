@@ -60,45 +60,42 @@ class TestTranscribe:
 
         snapshot.match("GetError", e_info.value.response)
 
-    @pytest.mark.skip_offline
-    @pytest.mark.aws_validated
-    @pytest.mark.skip_snapshot_verify(
-        paths=[
-            "$..TranscriptionJob..MediaSampleRateHertz",
-            "$..TranscriptionJob..Settings",
-            "$..Error..Code",
-        ]
-    )
-    def test_transcribe_support_variable_formats(
-        self, transcribe_client, transcribe_create_job, snapshot
-    ):
-
-        file_list = [
-            "files/en-gb.wav",
+    @pytest.mark.parametrize(
+        "media_file",
+        [
+            "files/en-gb.amr",
+            "files/en-gb.flac",
             "files/en-gb.mp3",
             "files/en-gb.mp4",
             "files/en-gb.ogg",
             "files/en-gb.webm",
-            "files/en-gb.flac",
-        ]
+        ],
+    )
+    def test_transcribe_supported_media_formats(
+        self, transcribe_client, transcribe_create_job, media_file
+    ):
+        file_path = os.path.join(BASEDIR, media_file)
+        job_name = transcribe_create_job(audio_file=file_path)
+        transcribe_client.get_transcription_job(TranscriptionJobName=job_name)
 
-        for file in file_list:
-            file_path = os.path.join(BASEDIR, file)
-            job_name = transcribe_create_job(audio_file=file_path)
-            transcribe_client.get_transcription_job(TranscriptionJobName=job_name)
+        # TODO refactor into fixture
+        def is_transcription_done():
+            transcription_status = transcribe_client.get_transcription_job(
+                TranscriptionJobName=job_name
+            )
+            return transcription_status["TranscriptionJob"]["TranscriptionJobStatus"] == "COMPLETED"
 
-            def is_transcription_done():
-                transcription_status = transcribe_client.get_transcription_job(
-                    TranscriptionJobName=job_name
-                )
-                return (
-                    transcription_status["TranscriptionJob"]["TranscriptionJobStatus"]
-                    == "COMPLETED"
-                )
+        assert poll_condition(
+            is_transcription_done,
+            timeout=30,
+            interval=2,
+        ), f"could not finish transcription job: {job_name} in time"
 
-            assert poll_condition(
-                is_transcription_done, timeout=100
-            ), f"could not finish transcription job: {job_name} in time"
+    # TODO
+    def test_transcribe_unsupported_media_format_failure(
+        self, transcribe_client, transcribe_create_job, media_file
+    ):
+        pass
 
     @pytest.mark.aws_validated
     @pytest.mark.skip_snapshot_verify(
