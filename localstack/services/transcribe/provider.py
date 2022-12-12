@@ -229,6 +229,7 @@ class TranscribeProvider(TranscribeApi, ServiceLifecycleHook):
             ffprobe_bin = ffmpeg_package.get_installer().get_ffprobe_path()
 
             LOG.debug("Determining media format")
+            # TODO set correct failure_reason if ffprobe execution fails
             ffprobe_output = run(
                 f"{ffprobe_bin} -show_format -print_format json -hide_banner -v error {file_path}"
             )
@@ -238,6 +239,7 @@ class TranscribeProvider(TranscribeApi, ServiceLifecycleHook):
             if format in SUPPORTED_FORMAT_NAMES:
                 wav_path = new_tmp_file(suffix=".wav")
                 LOG.debug("Transcoding media to wav")
+                # TODO set correct failure_reason if ffmpeg execution fails
                 run(
                     f"{ffmpeg_bin} -y -nostdin -loglevel quiet -i '{file_path}' -ar 16000 -ac 1 '{wav_path}'"
                 )
