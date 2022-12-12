@@ -9,7 +9,7 @@ from localstack import config
 from localstack.aws.api.lambda_ import Runtime
 from localstack.testing.aws.lambda_utils import is_old_provider
 from localstack.utils.docker_utils import get_host_path_for_path_in_docker
-from localstack.utils.files import load_file, mkdir
+from localstack.utils.files import load_file, mkdir, rm_rf
 from localstack.utils.strings import short_uid
 
 HOT_RELOADING_NODEJS_HANDLER = os.path.join(
@@ -28,6 +28,7 @@ class TestHotReloading:
             (Runtime.nodejs18_x, HOT_RELOADING_NODEJS_HANDLER, "handler.mjs"),
             (Runtime.python3_9, HOT_RELOADING_PYTHON_HANDLER, "handler.py"),
         ],
+        ids=["nodejs18.x", "python3.9"],
     )
     def test_hot_reloading(
         self,
@@ -37,6 +38,7 @@ class TestHotReloading:
         handler_file,
         handler_filename,
         lambda_su_role,
+        cleanups,
     ):
         """Test hot reloading of lambda code"""
         function_name = f"test-hot-reloading-{short_uid()}"
@@ -44,6 +46,7 @@ class TestHotReloading:
         tmp_path = config.dirs.tmp
         hot_reloading_dir_path = os.path.join(tmp_path, f"hot-reload-{short_uid()}")
         mkdir(hot_reloading_dir_path)
+        cleanups.append(lambda: rm_rf(hot_reloading_dir_path))
         function_content = load_file(handler_file)
         with open(os.path.join(hot_reloading_dir_path, handler_filename), mode="wt") as f:
             f.write(function_content)
@@ -76,3 +79,4 @@ class TestHotReloading:
         response_dict = json.loads(response["Payload"].read())
         assert response_dict["counter"] == 2
         assert response_dict["constant"] == "value2"
+        # TODO test subdirs
