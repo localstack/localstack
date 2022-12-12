@@ -7,7 +7,7 @@ import random
 import uuid
 from concurrent.futures import Executor, Future, ThreadPoolExecutor
 from hashlib import sha256
-from pathlib import Path
+from pathlib import PurePosixPath, PureWindowsPath
 from threading import RLock
 from typing import TYPE_CHECKING, Dict, Optional
 
@@ -384,12 +384,10 @@ def store_lambda_archive(
 
 def create_hot_reloading_code(path: str) -> HotReloadingCode:
     # TODO extract into other function
-    if not Path(path).is_absolute():
+    if not PurePosixPath(path).is_absolute() and not PureWindowsPath(path).is_absolute():
         raise InvalidParameterValueException(
-            "When using hot reloading, the archive key has to be an absolute path! Your archive key: %s",
-            path,
+            f"When using hot reloading, the archive key has to be an absolute path! Your archive key: {path}",
         )
-    # TODO fix types
     return HotReloadingCode(host_path=path)
 
 
@@ -412,7 +410,6 @@ def store_s3_bucket_archive(
     :param account_id: account id the archive should be stored for
     :return: S3 Code object representing the archive stored in S3
     """
-    # TODO change test-bucket-for-hot-reloading to actual bucket
     if archive_bucket == config.BUCKET_MARKER_LOCAL:
         return create_hot_reloading_code(path=archive_key)
     s3_client: "S3Client" = aws_stack.connect_to_service("s3")
