@@ -52,7 +52,7 @@ class SnsPublishContext:
 
 
 @dataclass
-class SnsBatchFifoPublishContext:
+class SnsBatchPublishContext:
     messages: List[SnsMessage]
     store: SnsStore
     request_headers: Dict[str, str]
@@ -230,8 +230,8 @@ class SqsTopicPublisher(BaseTopicPublisher):
         return message_attributes
 
 
-class SqsBatchFifoTopicPublisher(SqsTopicPublisher):
-    def _publish(self, context: SnsBatchFifoPublishContext, subscriber: SnsSubscription):
+class SqsBatchTopicPublisher(SqsTopicPublisher):
+    def _publish(self, context: SnsBatchPublishContext, subscriber: SnsSubscription):
         entries = []
         sqs_system_attrs = create_sqs_system_attributes(context.request_headers)
         # TODO: check ID, SNS rules are not the same as SQS, so maybe generate the entries ID
@@ -844,7 +844,8 @@ class PublishDispatcher:
         "lambda": LambdaTopicPublisher(),
         "firehose": FirehoseTopicPublisher(),
     }
-    fifo_batch_topic_notifier = SqsBatchFifoTopicPublisher()
+    batch_topic_notifiers = {"sqs": SqsBatchTopicPublisher()}
+    # fifo_batch_topic_notifier = SqsBatchFifoTopicPublisher()
     sms_notifier = SmsPhoneNumberPublisher()
     application_notifier = ApplicationEndpointPublisher()
 
@@ -884,27 +885,39 @@ class PublishDispatcher:
                 LOG.debug("Submitting task to the executor for notifier %s", notifier)
                 self.executor.submit(notifier.publish, context=ctx, subscriber=subscriber)
 
-    def publish_batch_to_fifo_topic(self, ctx: SnsBatchFifoPublishContext, topic_arn: str) -> None:
+    def publish_batch_to_topic(self, ctx: SnsBatchPublishContext, topic_arn: str) -> None:
         subscriptions = ctx.store.sns_subscriptions.get(topic_arn, [])
         for subscriber in subscriptions:
-            ctx.messages = [
-                message
-                for message in ctx.messages
-                if self._should_publish(ctx.store, message, subscriber)
-            ]
-            if not ctx.messages:
-                LOG.debug(
-                    "No messages match filter policy, not sending batch %s",
-                    self.fifo_batch_topic_notifier,
-                )
-                return
+            protocol = subscriber["Protocol"]
+            notifier = self.batch_topic_notifiers.get(protocol)
+            # does the notifier supports batching natively? for now, only SQS supports it
+            if notifier:
+                ctx.messages = [
+                    message
+                    for message in ctx.messages
+                    if self._should_publish(ctx.store, message, subscriber)
+                ]
+                if not ctx.messages:
+                    LOG.debug(
+                        "No messages match filter policy, not sending batch %s",
+                        notifier,
+                    )
+                    return
 
-            LOG.debug(
-                "Submitting task to the executor for notifier %s", self.fifo_batch_topic_notifier
-            )
-            self.executor.submit(
-                self.fifo_batch_topic_notifier.publish, context=ctx, subscriber=subscriber
-            )
+                LOG.debug("Submitting batch task to the executor for notifier %s", notifier)
+                self.executor.submit(notifier.publish, context=ctx, subscriber=subscriber)
+            else:
+                # if no batch support, fall back to sending them sequentially
+                notifier = self.topic_notifiers[subscriber["Protocol"]]
+                for message in ctx.messages:
+                    if self._should_publish(ctx.store, message, subscriber):
+                        individual_ctx = SnsPublishContext(
+                            message=message, store=ctx.store, request_headers=ctx.request_headers
+                        )
+                        LOG.debug("Submitting task to the executor for notifier %s", notifier)
+                        self.executor.submit(
+                            notifier.publish, context=individual_ctx, subscriber=subscriber
+                        )
 
     def publish_to_phone_number(self, ctx: SnsPublishContext, phone_number: str) -> None:
         LOG.debug("Submitting task to the executor for notifier %s", self.sms_notifier)

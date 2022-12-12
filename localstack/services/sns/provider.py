@@ -83,7 +83,7 @@ from localstack.services.sns import constants as sns_constants
 from localstack.services.sns.models import SnsMessage, SnsStore, SnsSubscription, sns_stores
 from localstack.services.sns.publisher import (
     PublishDispatcher,
-    SnsBatchFifoPublishContext,
+    SnsBatchPublishContext,
     SnsPublishContext,
 )
 from localstack.utils.aws import aws_stack
@@ -286,7 +286,7 @@ class SnsProvider(SnsApi, ServiceLifecycleHook):
                 "Two or more batch entries in the request have the same Id."
             )
 
-        if fifo_topic := ".fifo" in topic_arn:
+        if ".fifo" in topic_arn:
             if not all(["MessageGroupId" in entry for entry in publish_batch_request_entries]):
                 raise InvalidParameterException(
                     "Invalid parameter: The MessageGroupId parameter is required for FIFO topics"
@@ -323,37 +323,20 @@ class SnsProvider(SnsApi, ServiceLifecycleHook):
                     )
 
         # TODO: write AWS validated tests with FilterPolicy and batching
-        if fifo_topic:
-            message_contexts = []
-            for entry in publish_batch_request_entries:
-                msg_ctx = SnsMessage.from_batch_entry(entry)
-                message_contexts.append(msg_ctx)
-                response["Successful"].append({"Id": entry["Id"], "MessageId": msg_ctx.message_id})
-            publish_ctx = SnsBatchFifoPublishContext(
-                messages=message_contexts,
-                store=store,
-                request_headers=context.request.headers,
-            )
-            self._publisher.publish_batch_to_fifo_topic(publish_ctx, topic_arn)
+        # TODO: find a scenario where we can fail to send a message synchronously to be able to report it
+        # right now, it seems that AWS fails the whole publish if something is wrong in the format of 1 message
 
-        else:
-            for entry in publish_batch_request_entries:
-                publish_ctx = SnsPublishContext(
-                    message=SnsMessage.from_batch_entry(entry),
-                    store=store,
-                    request_headers=context.request.headers,
-                )
-
-                # TODO: find a scenario where we can fail to send a message synchronously to be able to report it
-                # right now, it seems that AWS fails the whole publish if something is wrong in the format of 1 message
-                try:
-                    self._publisher.publish_to_topic(publish_ctx, topic_arn)
-                    response["Successful"].append(
-                        {"Id": entry["Id"], "MessageId": publish_ctx.message.message_id}
-                    )
-                except Exception:
-                    LOG.exception("Error while batch publishing to %s: entry %s", topic_arn, entry)
-                    response["Failed"].append({"Id": entry["Id"]})
+        message_contexts = []
+        for entry in publish_batch_request_entries:
+            msg_ctx = SnsMessage.from_batch_entry(entry)
+            message_contexts.append(msg_ctx)
+            response["Successful"].append({"Id": entry["Id"], "MessageId": msg_ctx.message_id})
+        publish_ctx = SnsBatchPublishContext(
+            messages=message_contexts,
+            store=store,
+            request_headers=context.request.headers,
+        )
+        self._publisher.publish_batch_to_topic(publish_ctx, topic_arn)
 
         return PublishBatchResponse(**response)
 
