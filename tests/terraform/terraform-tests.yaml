@@ -36,6 +36,7 @@ route53:
     - TestAccRoute53Record_SetIdentifierRename_weighted
     - TestAccRoute53Record_empty
     - TestAccRoute53Record_longTXTrecord
+    - TestAccRoute53Record_Allow_doNotOverwrite
     - TestAccRoute53Record_Allow_overwrite
     - TestAccRoute53Zone_basic
     - TestAccRoute53Zone_disappears
