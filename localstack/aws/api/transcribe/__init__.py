@@ -53,6 +53,8 @@ class CLMLanguageCode(str):
     es_US = "es-US"
     en_GB = "en-GB"
     en_AU = "en-AU"
+    de_DE = "de-DE"
+    ja_JP = "ja-JP"
 
 
 class CallAnalyticsJobStatus(str):
