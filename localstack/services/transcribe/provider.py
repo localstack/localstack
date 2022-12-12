@@ -225,14 +225,15 @@ class TranscribeProvider(TranscribeApi, ServiceLifecycleHook):
             bucket, _, key = s3_path.removeprefix("s3://").partition("/")
             s3_client.download_file(Bucket=bucket, Key=key, Filename=file_path)
 
-            ffmpeg_bin = ffmpeg_package.get_installer().get_ffmpeg_path()  # noqa
-            ffprobe_bin = ffmpeg_package.get_installer().get_ffprobe_path()  # noqa
+            ffmpeg_bin = ffmpeg_package.get_installer().get_ffmpeg_path()
+            ffprobe_bin = ffmpeg_package.get_installer().get_ffprobe_path()
 
+            LOG.debug("Determining media format")
             ffprobe_output = run(
                 f"{ffprobe_bin} -show_format -print_format json -hide_banner -v error {file_path}"
             )
-            # TODO check success
             format = json.loads(ffprobe_output)["format"]["format_name"]
+            LOG.debug(f"Media format detected as: {format}")
 
             if format in SUPPORTED_FORMAT_NAMES:
                 wav_path = new_tmp_file(suffix=".wav")
@@ -240,7 +241,6 @@ class TranscribeProvider(TranscribeApi, ServiceLifecycleHook):
                 run(
                     f"{ffmpeg_bin} -y -nostdin -loglevel quiet -i '{file_path}' -ar 16000 -ac 1 '{wav_path}'"
                 )
-                # TODO Check success
             else:
                 failure_reason = f"Unsupported media format: {format}"
                 raise RuntimeError()
@@ -253,7 +253,9 @@ class TranscribeProvider(TranscribeApi, ServiceLifecycleHook):
                 or audio.getcomptype() != "NONE"
             ):
                 # Fail job
-                failure_reason = "Audio file must be mono PCM WAV format"
+                failure_reason = (
+                    "Audio file must be mono PCM WAV format. Transcoding may have failed. "
+                )
                 raise RuntimeError()
 
             # Prepare transcriber
