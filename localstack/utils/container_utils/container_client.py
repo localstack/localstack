@@ -972,7 +972,7 @@ class Util:
 
     @staticmethod
     def convert_mount_list_to_dict(
-        mount_volumes: List[SimpleVolumeBind] | VolumeMappings,
+        mount_volumes: Union[List[SimpleVolumeBind], VolumeMappings],
     ) -> Dict[str, Dict[str, str]]:
         """Converts a List of (host_path, container_path) tuples to a Dict suitable as volume argument for docker sdk"""
 

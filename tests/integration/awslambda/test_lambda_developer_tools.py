@@ -3,7 +3,6 @@ import os
 import time
 
 import pytest
-from integration.awslambda.test_lambda import THIS_FOLDER
 
 from localstack import config
 from localstack.aws.api.lambda_ import Runtime
@@ -11,6 +10,7 @@ from localstack.testing.aws.lambda_utils import is_old_provider
 from localstack.utils.docker_utils import get_host_path_for_path_in_docker
 from localstack.utils.files import load_file, mkdir, rm_rf
 from localstack.utils.strings import short_uid
+from tests.integration.awslambda.test_lambda import THIS_FOLDER
 
 HOT_RELOADING_NODEJS_HANDLER = os.path.join(
     THIS_FOLDER, "functions/hot-reloading/nodejs/handler.mjs"
