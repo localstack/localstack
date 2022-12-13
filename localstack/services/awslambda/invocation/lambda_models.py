@@ -580,10 +580,3 @@ class AccountSettings:
     code_size_zipped: int = LAMBDA_LIMITS_CODE_SIZE_ZIPPED_DEFAULT
     code_size_unzipped: int = LAMBDA_LIMITS_CODE_SIZE_UNZIPPED_DEFAULT
     concurrent_executions: int = LAMBDA_LIMITS_CONCURRENT_EXECUTIONS_DEFAULT
-
-
-@dataclasses.dataclass
-class AccountLimitUsage:
-    unreserved_concurrent_executions: int
-    total_code_size: int
-    function_count: int
