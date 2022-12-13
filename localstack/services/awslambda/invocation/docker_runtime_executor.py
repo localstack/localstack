@@ -29,8 +29,6 @@ from localstack.utils.strings import truncate
 
 LOG = logging.getLogger(__name__)
 
-RUNTIME_REGEX = r"(?P<runtime>[a-z]+)(?P<version>\d+(\.\d+)?(\.al2)?)(?:.*)"  # TODO: any reason this is still here?
-
 IMAGE_PREFIX = "public.ecr.aws/lambda/"
 # IMAGE_PREFIX = "amazon/aws-lambda-"
 
