@@ -1292,6 +1292,21 @@ class TestSqsProvider:
         snapshot.match("test_too_many_entries_in_batch_request", e.value.response)
 
     @pytest.mark.aws_validated
+    @pytest.mark.skip_snapshot_verify(paths=["$..Error.Detail"])
+    def test_invalid_batch_id(self, sqs_client, sqs_create_queue, snapshot):
+        queue_name = f"queue-{short_uid()}"
+        queue_url = sqs_create_queue(QueueName=queue_name)
+        message_batch = [
+            {
+                "Id": f"message:{(batch_id:=short_uid())}",
+                "MessageBody": f"messageBody-{batch_id}",
+            }
+        ]
+        with pytest.raises(ClientError) as e:
+            sqs_client.send_message_batch(QueueUrl=queue_url, Entries=message_batch)
+        snapshot.match("test_invalid_batch_id", e.value.response)
+
+    @pytest.mark.aws_validated
     def test_publish_get_delete_message_batch(self, sqs_client, sqs_create_queue):
         message_count = 10
         queue_name = f"queue-{short_uid()}"

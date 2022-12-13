@@ -1069,16 +1069,21 @@ class SqsProvider(SqsApi, ServiceLifecycleHook):
                     "WSDL for a list of valid actions. "
                 )
 
-    def _assert_batch(self, batch: List):
+    def _assert_batch(self, batch: List) -> None:
         if not batch:
             raise EmptyBatchRequest
         visited = set()
         for entry in batch:
-            # TODO: InvalidBatchEntryId
-            if entry["Id"] in visited:
+            entry_id = entry["Id"]
+            if not re.search(r"^[\w-]+$", entry_id) or len(entry_id) > 80:
+                raise InvalidBatchEntryId(
+                    "A batch entry id can only contain alphanumeric characters, hyphens and underscores. "
+                    "It can be at most 80 letters long."
+                )
+            if entry_id in visited:
                 raise BatchEntryIdsNotDistinct()
             else:
-                visited.add(entry["Id"])
+                visited.add(entry_id)
 
     def _assert_valid_batch_size(self, batch: List, max_message_size: int):
         batch_message_size = sum(

@@ -367,10 +367,6 @@ def _(shape: Shape, graph: ShapeGraph) -> Union[int, float, bool, bytes, date]:
     raise ValueError("unknown type %s" % shape.type_name)
 
 
-def is_cyclic_shape(shape: Shape) -> bool:
-    return True if shape_graph(shape).cycle else False
-
-
 def generate_response(operation: OperationModel):
     graph = shape_graph(operation.output_shape)
     response = generate_instance(graph.root, graph)

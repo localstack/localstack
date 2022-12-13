@@ -4,10 +4,10 @@ import logging
 import shutil
 import time
 from pathlib import Path
-from typing import Dict, Literal, Optional
+from typing import Callable, Dict, Literal, Optional
 
 from localstack import config
-from localstack.aws.api.lambda_ import PackageType
+from localstack.aws.api.lambda_ import PackageType, Runtime
 from localstack.services.awslambda import hooks as lambda_hooks
 from localstack.services.awslambda.invocation.executor_endpoint import (
     ExecutorEndpoint,
@@ -29,8 +29,6 @@ from localstack.utils.strings import truncate
 
 LOG = logging.getLogger(__name__)
 
-RUNTIME_REGEX = r"(?P<runtime>[a-z]+)(?P<version>\d+(\.\d+)?(\.al2)?)(?:.*)"
-
 IMAGE_PREFIX = "public.ecr.aws/lambda/"
 # IMAGE_PREFIX = "amazon/aws-lambda-"
 
@@ -50,11 +48,82 @@ def get_image_name_for_function(function_version: FunctionVersion) -> str:
     return f"localstack/lambda-{function_version.id.qualified_arn().replace(':', '_').replace('$', '_').lower()}"
 
 
-def get_image_for_runtime(runtime: str) -> str:
+def get_default_image_for_runtime(runtime: str) -> str:
     postfix = IMAGE_MAPPING.get(runtime)
     if not postfix:
         raise ValueError(f"Unsupported runtime {runtime}!")
     return f"{IMAGE_PREFIX}{postfix}"
+
+
+class RuntimeImageResolver:
+    """
+    Resolves Lambda runtimes to corresponding docker images
+    The default behavior resolves based on a prefix (including the repository) and a suffix (per runtime).
+
+    This can be customized via the LAMBDA_RUNTIME_IMAGE_MAPPING config in 2 distinct ways:
+
+    Option A: use a pattern string for the config variable that includes the "<runtime>" string
+        e.g. "myrepo/lambda:<runtime>-custom" would resolve the runtime "python3.9" to "myrepo/lambda:python3.9-custom"
+
+    Option B: use a JSON dict string for the config variable, mapping the runtime to the full image name & tag
+        e.g. {"python3.9": "myrepo/lambda:python3.9-custom", "python3.8": "myotherrepo/pylambda:3.8"}
+
+        Note that with Option B this will only apply to the runtimes included in the dict.
+        All other (non-included) runtimes will fall back to the default behavior.
+    """
+
+    _mapping: dict[Runtime, str]
+    _default_resolve_fn: Callable[[Runtime], str]
+
+    def __init__(
+        self, default_resolve_fn: Callable[[Runtime], str] = get_default_image_for_runtime
+    ):
+        self._mapping = dict()
+        self._default_resolve_fn = default_resolve_fn
+
+    def _resolve(self, runtime: Runtime, custom_image_mapping: str = "") -> str:
+        if runtime not in IMAGE_MAPPING:
+            raise ValueError(f"Unsupported runtime {runtime}")
+
+        if not custom_image_mapping:
+            return self._default_resolve_fn(runtime)
+
+        # Option A (pattern string that includes <runtime> to replace)
+        if "<runtime>" in custom_image_mapping:
+            return custom_image_mapping.replace("<runtime>", runtime)
+
+        # Option B (json dict mapping with fallback)
+        try:
+            mapping: dict = json.loads(custom_image_mapping)
+            # at this point we're loading the whole dict to avoid parsing multiple times
+            for k, v in mapping.items():
+                if k not in IMAGE_MAPPING:
+                    raise ValueError(
+                        f"Unsupported runtime ({runtime}) provided in LAMBDA_RUNTIME_IMAGE_MAPPING"
+                    )
+                self._mapping[k] = v
+
+            if runtime in self._mapping:
+                return self._mapping[runtime]
+
+            # fall back to default behavior if the runtime was not present in the custom config
+            return self._default_resolve_fn(runtime)
+
+        except Exception:
+            LOG.error(
+                f"Failed to load config from LAMBDA_RUNTIME_IMAGE_MAPPING={custom_image_mapping}"
+            )
+            raise  # TODO: validate config at start and prevent startup
+
+    def get_image_for_runtime(self, runtime: Runtime) -> str:
+        if runtime not in self._mapping:
+            resolved_image = self._resolve(runtime, config.LAMBDA_RUNTIME_IMAGE_MAPPING)
+            self._mapping[runtime] = resolved_image
+
+        return self._mapping[runtime]
+
+
+resolver = RuntimeImageResolver()
 
 
 def get_runtime_client_path() -> Path:
@@ -75,7 +144,7 @@ def prepare_image(target_path: Path, function_version: FunctionVersion) -> None:
     # create dockerfile
     docker_file_path = target_path / "Dockerfile"
     docker_file = LAMBDA_DOCKERFILE.format(
-        base_img=get_image_for_runtime(function_version.config.runtime),
+        base_img=resolver.get_image_for_runtime(function_version.config.runtime),
         rapid_entrypoint=RAPID_ENTRYPOINT,
     )
     with docker_file_path.open(mode="w") as f:
@@ -123,7 +192,7 @@ class DockerRuntimeExecutor(RuntimeExecutor):
         return (
             get_image_name_for_function(self.function_version)
             if config.LAMBDA_PREBUILD_IMAGES
-            else get_image_for_runtime(self.function_version.config.runtime)
+            else resolver.get_image_for_runtime(self.function_version.config.runtime)
         )
 
     def _build_executor_endpoint(self, service_endpoint: ServiceEndpoint) -> ExecutorEndpoint:
@@ -218,7 +287,7 @@ class DockerRuntimeExecutor(RuntimeExecutor):
             function_version.config.code.prepare_for_execution()
             for layer in function_version.config.layers:
                 layer.code.prepare_for_execution()
-            image_name = get_image_for_runtime(function_version.config.runtime)
+            image_name = resolver.get_image_for_runtime(function_version.config.runtime)
             if image_name not in PULLED_IMAGES:
                 CONTAINER_CLIENT.pull_image(image_name)
                 PULLED_IMAGES.add(image_name)
