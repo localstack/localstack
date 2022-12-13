@@ -79,4 +79,21 @@ class TestHotReloading:
         response_dict = json.loads(response["Payload"].read())
         assert response_dict["counter"] == 2
         assert response_dict["constant"] == "value2"
-        # TODO test subdirs
+
+        # test subdirs
+        test_folder = os.path.join(hot_reloading_dir_path, "test-folder")
+        mkdir(test_folder)
+        # make sure the creation of the folder triggered reload
+        time.sleep(0.6)
+        response = lambda_client.invoke(FunctionName=function_name, Payload=b"{}")
+        response_dict = json.loads(response["Payload"].read())
+        assert response_dict["counter"] == 1
+        assert response_dict["constant"] == "value2"
+        # now writing something in the new folder to check if it will reload
+        with open(os.path.join(test_folder, "test-file"), mode="wt") as f:
+            f.write("test-content")
+        time.sleep(0.6)
+        response = lambda_client.invoke(FunctionName=function_name, Payload=b"{}")
+        response_dict = json.loads(response["Payload"].read())
+        assert response_dict["counter"] == 1
+        assert response_dict["constant"] == "value2"
