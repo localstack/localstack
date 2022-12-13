@@ -4,7 +4,7 @@ import logging
 import shutil
 import time
 from pathlib import Path
-from typing import Dict, Literal, Optional
+from typing import Callable, Dict, Literal, Optional
 
 from localstack import config
 from localstack.aws.api.lambda_ import PackageType, Runtime
@@ -73,16 +73,20 @@ class RuntimeImageResolver:
     """
 
     _mapping: dict[Runtime, str]
+    _default_resolve_fn: Callable[[Runtime], str]
 
-    def __init__(self):
+    def __init__(
+        self, default_resolve_fn: Callable[[Runtime], str] = get_default_image_for_runtime
+    ):
         self._mapping = dict()
+        self._default_resolve_fn = default_resolve_fn
 
     def _resolve(self, runtime: Runtime, custom_image_mapping: str = "") -> str:
         if runtime not in IMAGE_MAPPING:
             raise ValueError(f"Unsupported runtime {runtime}")
 
         if not custom_image_mapping:
-            return get_default_image_for_runtime(runtime)
+            return self._default_resolve_fn(runtime)
 
         # Option A (pattern string that includes <runtime> to replace)
         if "<runtime>" in custom_image_mapping:
@@ -103,7 +107,7 @@ class RuntimeImageResolver:
                 return self._mapping[runtime]
 
             # fall back to default behavior if the runtime was not present in the custom config
-            return get_default_image_for_runtime(runtime)
+            return self._default_resolve_fn(runtime)
 
         except Exception:
             LOG.error(

@@ -37,3 +37,12 @@ def test_default_mapping():
     resolver = RuntimeImageResolver()
     resolved_image = resolver._resolve(Runtime.python3_9)
     assert "custom" not in resolved_image
+
+
+def test_custom_default_mapping():
+    def custom_default(a):
+        return f"custom-{a}"
+
+    resolver = RuntimeImageResolver(default_resolve_fn=custom_default)
+    resolved_image = resolver._resolve(Runtime.python3_9)
+    assert resolved_image == "custom-python3.9"
