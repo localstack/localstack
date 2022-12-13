@@ -630,6 +630,12 @@ LAMBDA_CONTAINER_REGISTRY = (
     os.environ.get("LAMBDA_CONTAINER_REGISTRY", "").strip() or DEFAULT_LAMBDA_CONTAINER_REGISTRY
 )
 
+# EXPERIMENTAL | Only applicable to new Lambda Provider
+# Allows two options to customize the resolution of Lambda runtime:
+#   1. pattern with <runtime> placeholder, e.g. "custom-repo/lambda-<runtime>:2022"
+#   2. json dict mapping the <runtime> to an image, e.g. '{"python3.9": "custom-repo/lambda-py:thon3.9"}'
+LAMBDA_RUNTIME_IMAGE_MAPPING = os.environ.get("LAMBDA_RUNTIME_IMAGE_MAPPING", "").strip()
+
 # whether to remove containers after Lambdas finished executing
 LAMBDA_REMOVE_CONTAINERS = (
     os.environ.get("LAMBDA_REMOVE_CONTAINERS", "").lower().strip() not in FALSE_STRINGS
@@ -749,6 +755,7 @@ CONFIG_ENV_VARS = [
     "LAMBDA_EXECUTOR",
     "LAMBDA_FALLBACK_URL",
     "LAMBDA_FORWARD_URL",
+    "LAMBDA_RUNTIME_IMAGE_MAPPING",
     "LAMBDA_JAVA_OPTS",
     "LAMBDA_REMOTE_DOCKER",
     "LAMBDA_REMOVE_CONTAINERS",
