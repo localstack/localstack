@@ -109,6 +109,30 @@ class Metric:
             ]
         )
 
+    def __eq__(self, other):
+        # ignore header in comparison, because timestamp will be different
+        if self.service != other.service:
+            return False
+        if self.operation != other.operation:
+            return False
+        if self.parameters != other.parameters:
+            return False
+        if self.response_code != other.response_code:
+            return False
+        if self.response_data != other.response_data:
+            return False
+        if self.exception != other.exception:
+            return False
+        if self.origin != other.origin:
+            return False
+        if self.xfail != other.xfail:
+            return False
+        if self.aws_validated != other.aws_validated:
+            return False
+        if self.node_id != other.node_id:
+            return False
+        return True
+
 
 class MetricHandler:
     metric_data: List[Metric] = []
@@ -159,21 +183,21 @@ class MetricHandler:
         parameters = ",".join(item.parameters_after_parse or [])
 
         response_data = response.data.decode("utf-8") if response.status_code >= 300 else ""
-
-        MetricHandler.metric_data.append(
-            Metric(
-                service=context.service_operation.service,
-                operation=context.service_operation.operation,
-                headers=context.request.headers,
-                parameters=parameters,
-                response_code=response.status_code,
-                response_data=response_data,
-                exception=context.service_exception.__class__.__name__
-                if context.service_exception
-                else "",
-                origin="internal" if is_internal else "external",
-            )
+        metric = Metric(
+            service=context.service_operation.service,
+            operation=context.service_operation.operation,
+            headers=context.request.headers,
+            parameters=parameters,
+            response_code=response.status_code,
+            response_data=response_data,
+            exception=context.service_exception.__class__.__name__
+            if context.service_exception
+            else "",
+            origin="internal" if is_internal else "external",
         )
+        # refrain from adding duplicates
+        if metric not in MetricHandler.metric_data:
+            MetricHandler.metric_data.append(metric)
 
         # cleanup
         del self.metrics_handler_items[context]

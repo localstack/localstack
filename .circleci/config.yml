@@ -366,6 +366,23 @@ jobs:
           path: scripts/pro/implementation_coverage_full.csv
           destination: pro/implementation_coverage_full.csv
 
+  tinybird-parity-analytics-upload:
+    executor: ubuntu-machine-amd64
+    working_directory: /tmp/workspace/repo
+    steps:
+      - attach_workspace:
+          at: /tmp/workspace
+      - run:
+          name: Upload data to tinybird
+          command: |
+            source .venv/bin/activate
+            METRIC_REPORT_FILE=$(find parity_metrics -type f -iname "metric-report-raw-data-all-*.csv")
+            TINYBIRD_PARITY_ANALYTICS_TOKEN=$TEST_LOCALSTACK_API_KEY \
+            METRIC_REPORT_PATH=$METRIC_REPORT_FILE \
+            COMMUNITY_IMPL_COV_PATH=scripts/implementation_coverage_full.csv \
+            PRO_IMPL_COV_PATH=scripts/pro/implementation_coverage_full.csv \
+            python -m scripts.tinybird.tinybird_upload
+
   docker-push:
     executor: ubuntu-machine-amd64
     working_directory: /tmp/workspace/repo
@@ -484,6 +501,9 @@ workflows:
             - collect-not-implemented-community
             - collect-not-implemented-pro
             - unit-tests
+      - tinybird-parity-analytics-upload:
+          requires:
+            - report
       - docker-push:
           filters:
             branches:
