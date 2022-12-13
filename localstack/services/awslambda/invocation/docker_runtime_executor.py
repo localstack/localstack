@@ -29,7 +29,7 @@ from localstack.utils.strings import truncate
 
 LOG = logging.getLogger(__name__)
 
-RUNTIME_REGEX = r"(?P<runtime>[a-z]+)(?P<version>\d+(\.\d+)?(\.al2)?)(?:.*)"
+RUNTIME_REGEX = r"(?P<runtime>[a-z]+)(?P<version>\d+(\.\d+)?(\.al2)?)(?:.*)"  # TODO: any reason this is still here?
 
 IMAGE_PREFIX = "public.ecr.aws/lambda/"
 # IMAGE_PREFIX = "amazon/aws-lambda-"
@@ -80,7 +80,7 @@ class RuntimeImageResolver:
         self._mapping = dict()
 
     def _resolve(self, runtime: Runtime, custom_image_mapping: str = "") -> str:
-        if runtime not in IMAGE_MAPPING.keys():
+        if runtime not in IMAGE_MAPPING:
             raise ValueError(f"Unsupported runtime {runtime}")
 
         if not custom_image_mapping:
@@ -95,6 +95,10 @@ class RuntimeImageResolver:
             mapping: dict = json.loads(custom_image_mapping)
             # at this point we're loading the whole dict to avoid parsing multiple times
             for k, v in mapping.items():
+                if k not in IMAGE_MAPPING:
+                    raise ValueError(
+                        f"Unsupported runtime ({runtime}) provided in LAMBDA_RUNTIME_IMAGE_MAPPING"
+                    )
                 self._mapping[k] = v
 
             if runtime in self._mapping:
