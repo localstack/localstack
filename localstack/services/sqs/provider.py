@@ -1074,7 +1074,8 @@ class SqsProvider(SqsApi, ServiceLifecycleHook):
             raise EmptyBatchRequest
         visited = set()
         for entry in batch:
-            if not re.search(r"^[\w-]+$", (entry_id := entry["Id"])) or len(entry_id) > 80:
+            entry_id = entry["Id"]
+            if not re.search(r"^[\w-]+$", entry_id) or len(entry_id) > 80:
                 raise InvalidBatchEntryId(
                     "A batch entry id can only contain alphanumeric characters, hyphens and underscores. "
                     "It can be at most 80 letters long."
