@@ -1,10 +1,13 @@
 import os
 from typing import List
 
-from localstack.constants import FFMPEG_STATIC_BIN_URL
 from localstack.packages import Package, PackageInstaller
 from localstack.packages.core import ArchiveDownloadAndExtractInstaller
 from localstack.utils.platform import get_arch
+
+FFMPEG_STATIC_BIN_URL = (
+    "https://www.johnvansickle.com/ffmpeg/old-releases/ffmpeg-{version}-{arch}-static.tar.xz"
+)
 
 
 class FfmpegPackage(Package):
