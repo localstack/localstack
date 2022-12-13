@@ -13,6 +13,7 @@ description: >
   Overview of the implemented AWS APIs in LocalStack
 aliases:
   - /localstack/coverage/
+hide_readingtime: true
 ---
 \n\n
 """
