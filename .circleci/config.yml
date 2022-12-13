@@ -365,6 +365,12 @@ jobs:
       - store_artifacts:
           path: scripts/pro/implementation_coverage_full.csv
           destination: pro/implementation_coverage_full.csv
+      - persist_to_workspace:
+          root:
+            /tmp/workspace
+          paths:
+            - repo/parity_metrics/*.csv
+
 
   tinybird-parity-analytics-upload:
     executor: ubuntu-machine-amd64
