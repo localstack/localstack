@@ -29,6 +29,7 @@ def convert_to_bool(input):
 
 
 def send_data_to_tinybird(data: list[str], data_name: str):
+    # print(f"example data:\n {data[0]}\n")
     token = os.environ.get("TINYBIRD_PARITY_ANALYTICS_TOKEN", "")
     if not token:
         print("missing ENV 'TINYBIRD_PARITY_ANALYTICS_TOKEN', no token defined. cannot send data")
@@ -43,7 +44,7 @@ def send_data_to_tinybird(data: list[str], data_name: str):
         },
         data=data_to_send,
     )
-    print(f"sent data to tinybird, status code: {r.status_code}:\n{r.text}\n")
+    print(f"sent data to tinybird, status code: {r.status_code}: {r.text}")
 
 
 def send_metadata_for_build(build_id: str, timestamp: str):
