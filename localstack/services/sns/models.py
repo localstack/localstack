@@ -89,7 +89,7 @@ class SnsStore(BaseStore):
     # maps topic ARN to topic's subscriptions
     sns_subscriptions: Dict[str, List[SnsSubscription]] = LocalAttribute(default=dict)
 
-    # maps subscription ARN to subscription status # todo: might be totally useless
+    # maps subscription ARN to subscription status
     subscription_status: Dict[str, Dict] = LocalAttribute(default=dict)
 
     # maps topic ARN to list of tags

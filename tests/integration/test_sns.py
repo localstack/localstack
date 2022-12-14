@@ -554,7 +554,6 @@ class TestSNSProvider:
 
     @pytest.mark.aws_validated
     def test_publish_non_existent_target(self, sns_client, sns_create_topic, snapshot):
-        # todo: fix test, the client id in the ARN is wrong so can't test against AWS
         topic_arn = sns_create_topic()["TopicArn"]
         account_id = parse_arn(topic_arn)["account"]
         with pytest.raises(ClientError) as ex:

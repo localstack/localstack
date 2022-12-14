@@ -1,3 +1,4 @@
+import abc
 import ast
 import base64
 import datetime
@@ -58,7 +59,7 @@ class SnsBatchPublishContext:
     request_headers: Dict[str, str]
 
 
-class BaseTopicPublisher:
+class TopicPublisher(abc.ABC):
     def publish(self, context: SnsPublishContext, subscriber: SnsSubscription):
         try:
             self._publish(context=context, subscriber=subscriber)
@@ -76,7 +77,7 @@ class BaseTopicPublisher:
         return create_sns_message_body(message_context, subscriber)
 
 
-class BaseEndpointPublisher:
+class EndpointPublisher(abc.ABC):
     def publish(self, context: SnsPublishContext, endpoint: str):
         try:
             self._publish(context=context, endpoint=endpoint)
@@ -94,7 +95,7 @@ class BaseEndpointPublisher:
         raise NotImplementedError
 
 
-class LambdaTopicPublisher(BaseTopicPublisher):
+class LambdaTopicPublisher(TopicPublisher):
     def _publish(self, context: SnsPublishContext, subscriber: SnsSubscription):
         try:
             lambda_client = aws_stack.connect_to_service(
@@ -161,7 +162,7 @@ class LambdaTopicPublisher(BaseTopicPublisher):
         return event
 
 
-class SqsTopicPublisher(BaseTopicPublisher):
+class SqsTopicPublisher(TopicPublisher):
     def _publish(self, context: SnsPublishContext, subscriber: SnsSubscription):
         message_context = context.message
         try:
@@ -305,7 +306,7 @@ class SqsBatchTopicPublisher(SqsTopicPublisher):
                 #  We should mark this subscription as "broken"
 
 
-class HttpTopicPublisher(BaseTopicPublisher):
+class HttpTopicPublisher(TopicPublisher):
     def _publish(self, context: SnsPublishContext, subscriber: SnsSubscription):
         message_context = context.message
         message_body = self.prepare_message(message_context, subscriber)
@@ -353,7 +354,7 @@ class HttpTopicPublisher(BaseTopicPublisher):
                 sns_error_to_dead_letter_queue(subscriber, message_body, str(exc))
 
 
-class EmailJsonTopicPublisher(BaseTopicPublisher):
+class EmailJsonTopicPublisher(TopicPublisher):
     def _publish(self, context: SnsPublishContext, subscriber: SnsSubscription):
         ses_client = aws_stack.connect_to_service("ses")
         if endpoint := subscriber.get("Endpoint"):
@@ -376,7 +377,7 @@ class EmailTopicPublisher(EmailJsonTopicPublisher):
         return message_context.message_content(subscriber["Protocol"])
 
 
-class ApplicationTopicPublisher(BaseTopicPublisher):
+class ApplicationTopicPublisher(TopicPublisher):
     def _publish(self, context: SnsPublishContext, subscriber: SnsSubscription):
         endpoint_arn = subscriber["Endpoint"]
         message = self.prepare_message(context.message, subscriber)
@@ -428,7 +429,7 @@ class ApplicationTopicPublisher(BaseTopicPublisher):
         )
 
 
-class SmsTopicPublisher(BaseTopicPublisher):
+class SmsTopicPublisher(TopicPublisher):
     def _publish(self, context: SnsPublishContext, subscriber: SnsSubscription):
         event = self.prepare_message(context.message, subscriber)
         context.store.sms_messages.append(event)
@@ -459,7 +460,7 @@ class SmsTopicPublisher(BaseTopicPublisher):
         }
 
 
-class FirehoseTopicPublisher(BaseTopicPublisher):
+class FirehoseTopicPublisher(TopicPublisher):
     def _publish(self, context: SnsPublishContext, subscriber: SnsSubscription):
         message_body = self.prepare_message(context.message, subscriber)
         try:
@@ -479,7 +480,7 @@ class FirehoseTopicPublisher(BaseTopicPublisher):
             # TODO check DLQ?
 
 
-class SmsPhoneNumberPublisher(BaseEndpointPublisher):
+class SmsPhoneNumberPublisher(EndpointPublisher):
     def _publish(self, context: SnsPublishContext, endpoint: str):
         event = self.prepare_message(context.message, endpoint)
         context.store.sms_messages.append(event)
@@ -500,7 +501,7 @@ class SmsPhoneNumberPublisher(BaseEndpointPublisher):
         }
 
 
-class ApplicationEndpointPublisher(BaseEndpointPublisher):
+class ApplicationEndpointPublisher(EndpointPublisher):
     def _publish(self, context: SnsPublishContext, endpoint: str):
         message = self.prepare_message(context.message, endpoint)
         cache = context.store.platform_endpoint_messages[endpoint] = (
@@ -787,19 +788,15 @@ class SubscriptionFilter:
         return False
 
     @staticmethod
-    def _is_number(x):
+    def _evaluate_numeric_condition(conditions, value):
         try:
-            float(x)
-            return True
+            # try if the value is numeric
+            value = float(value)
         except ValueError:
-            return False
-
-    def _evaluate_numeric_condition(self, conditions, value):
-        if not self._is_number(value):
+            # the value is not numeric, the condition is False
             return False
 
         for i in range(0, len(conditions), 2):
-            value = float(value)
             operator = conditions[i]
             operand = float(conditions[i + 1])
 
@@ -845,7 +842,6 @@ class PublishDispatcher:
         "firehose": FirehoseTopicPublisher(),
     }
     batch_topic_notifiers = {"sqs": SqsBatchTopicPublisher()}
-    # fifo_batch_topic_notifier = SqsBatchFifoTopicPublisher()
     sms_notifier = SmsPhoneNumberPublisher()
     application_notifier = ApplicationEndpointPublisher()
 
