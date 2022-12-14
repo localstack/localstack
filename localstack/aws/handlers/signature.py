@@ -13,6 +13,7 @@ from localstack.aws.api import CommonServiceException, RequestContext
 from localstack.aws.chain import Handler, HandlerChain
 from localstack.constants import DEFAULT_AWS_ACCOUNT_ID
 from localstack.http import Request, Response
+from localstack.http.request import restore_payload
 from localstack.utils.aws.aws_stack import is_internal_call_context
 from localstack.utils.strings import to_str
 
@@ -126,7 +127,7 @@ class SignatureValidator:
         request_dict = {
             "method": request.method,
             "url": request.url,
-            "body": request.get_data(),
+            "body": restore_payload(request),
             "headers": signed_headers,
             "context": {
                 "use_global_endpoint": True,
