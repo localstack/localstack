@@ -19,6 +19,10 @@ DATA_TO_KEEP: list[str] = [
 ]
 CONVERT_TO_BOOL: list[str] = ["xfail", "aws_validated", "snapshot"]
 
+DATA_SOURCE_RAW_TESTS = "tests_raw__v0"
+DATA_SOURCE_RAW_BUILDS = "tests_raw_builds__v0"
+DATA_SOURCE_IMPL_COVERAGAGE = "implementation_coverage__v0"
+
 
 def convert_to_bool(input):
     return True if input.lower() == "true" else False
@@ -72,7 +76,7 @@ def send_metadata_for_build(build_id: str, timestamp: str):
         "workflow_id": os.environ.get("CIRCLE_WORKFLOW_ID", ""),
     }
     data_to_send = [json.dumps(data)]
-    send_data_to_tinybird(data_to_send, data_name="tests_raw_builds")
+    send_data_to_tinybird(data_to_send, data_name=DATA_SOURCE_RAW_BUILDS)
 
 
 def send_metric_report(path: str, timestamp: str):
@@ -95,7 +99,6 @@ def send_metric_report(path: str, timestamp: str):
     """
     tmp: list[str] = []
     count: int = 0
-    data_name = "tests_raw"
     build_id = os.environ.get("CIRCLE_WORKFLOW_ID", "")
     send_metadata_for_build(build_id, timestamp)
     with open(path, "r") as csv_obj:
@@ -120,12 +123,12 @@ def send_metric_report(path: str, timestamp: str):
             tmp.append(json.dumps(row))
             if len(tmp) == 500:
                 # send data in batches
-                send_data_to_tinybird(tmp, data_name=data_name)
+                send_data_to_tinybird(tmp, data_name=DATA_SOURCE_RAW_TESTS)
                 tmp.clear()
 
         if tmp:
             # send last batch
-            send_data_to_tinybird(tmp, data_name=data_name)
+            send_data_to_tinybird(tmp, data_name=DATA_SOURCE_RAW_TESTS)
 
     print(f"---> processed {count} rows from community test coverage {path}")
 
@@ -133,9 +136,9 @@ def send_metric_report(path: str, timestamp: str):
 def send_implemented_coverage(file: str, timestamp: str, type: str):
     """
     SCHEMA >
-                `build_id` String `json:$.build_id`,
+        `build_id` String `json:$.build_id`,
         `timestamp` DateTime `json:$.timestamp`,
-                `ls_source` String `json:$.ls_source`,
+        `ls_source` String `json:$.ls_source`,
         `operation` String `json:$.operation`,
         `service` String `json:$.service`,
         `status_code` Int32 `json:$.status_code`,
@@ -144,7 +147,7 @@ def send_implemented_coverage(file: str, timestamp: str, type: str):
     """
     tmp: list[str] = []
     count: int = 0
-    data_name = "implementation_coverage"
+
     with open(file, "r") as csv_obj:
         reader_obj = csv.DictReader(csv_obj)
         for row in reader_obj:
@@ -164,12 +167,12 @@ def send_implemented_coverage(file: str, timestamp: str, type: str):
             tmp.append(json.dumps(row))
             if len(tmp) == 500:
                 # send data in batches
-                send_data_to_tinybird(tmp, data_name=data_name)
+                send_data_to_tinybird(tmp, data_name=DATA_SOURCE_IMPL_COVERAGAGE)
                 tmp.clear()
 
         if tmp:
             # send last batch
-            send_data_to_tinybird(tmp, data_name=data_name)
+            send_data_to_tinybird(tmp, data_name=DATA_SOURCE_IMPL_COVERAGAGE)
     print(f"---> processed {count} rows from {file} ({type})")
 
 
