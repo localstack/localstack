@@ -3188,7 +3188,7 @@
     }
   },
   "tests/integration/s3/test_s3.py::TestS3PresignedUrl::test_s3_put_presigned_url_with_different_headers[s3]": {
-    "recorded-date": "22-09-2022, 14:02:07",
+    "recorded-date": "14-12-2022, 18:56:23",
     "recorded-content": {
       "content-type-exception": {
         "Error": {
@@ -3203,16 +3203,26 @@
         },
         "StatusCode": 403
       },
-      "content-encoding-response": {
-        "StatusCode": 200
+      "content-type-response": {
+        "Error": {
+          "AWSAccessKeyId": "<a-w-s-access-key-id:1>",
+          "Code": "SignatureDoesNotMatch",
+          "HostId": "host-id",
+          "Message": "The request signature we calculated does not match the signature you provided. Check your key and signing method.",
+          "RequestId": "<request-id:2>",
+          "SignatureProvided": "<signature-provided:2>",
+          "StringToSign": "<string-to-sign>",
+          "StringToSignBytes": "<string-to-sign-bytes:2>"
+        },
+        "StatusCode": 403
       },
-      "missing-content-encoding-response": {
+      "wrong-content-encoding-response": {
         "StatusCode": 200
       }
     }
   },
   "tests/integration/s3/test_s3.py::TestS3PresignedUrl::test_s3_put_presigned_url_with_different_headers[s3v4]": {
-    "recorded-date": "22-09-2022, 14:02:12",
+    "recorded-date": "14-12-2022, 18:56:29",
     "recorded-content": {
       "content-type-exception": {
         "Error": {
@@ -3229,7 +3239,10 @@
         },
         "StatusCode": 403
       },
-      "content-encoding-response": {
+      "content-type-response": {
+        "StatusCode": 200
+      },
+      "wrong-content-encoding-response": {
         "Error": {
           "AWSAccessKeyId": "<a-w-s-access-key-id:1>",
           "CanonicalRequest": "<canonical-request>",
@@ -3238,21 +3251,6 @@
           "HostId": "host-id",
           "Message": "The request signature we calculated does not match the signature you provided. Check your key and signing method.",
           "RequestId": "<request-id:2>",
-          "SignatureProvided": "<signature-provided:2>",
-          "StringToSign": "<string-to-sign>",
-          "StringToSignBytes": "<string-to-sign-bytes:2>"
-        },
-        "StatusCode": 403
-      },
-      "missing-content-encoding-response": {
-        "Error": {
-          "AWSAccessKeyId": "<a-w-s-access-key-id:1>",
-          "CanonicalRequest": "<canonical-request>",
-          "CanonicalRequestBytes": "<canonical-request-bytes:2>",
-          "Code": "SignatureDoesNotMatch",
-          "HostId": "host-id",
-          "Message": "The request signature we calculated does not match the signature you provided. Check your key and signing method.",
-          "RequestId": "<request-id:3>",
           "SignatureProvided": "<signature-provided:2>",
           "StringToSign": "<string-to-sign>",
           "StringToSignBytes": "<string-to-sign-bytes:2>"

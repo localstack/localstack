@@ -98,7 +98,7 @@ class NotValidSigV4SignatureContext(TypedDict):
     canonical_request: str
 
 
-FindSigV4Result = Tuple[Union[str, None], Union[NotValidSigV4SignatureContext, None]]
+FindSigV4Result = Tuple[Union[bytes, None], Union[NotValidSigV4SignatureContext, None]]
 
 
 class HmacV1QueryAuthValidation(HmacV1QueryAuth):
@@ -128,15 +128,14 @@ class S3SigV4QueryAuthValidation(S3SigV4QueryAuth):
     Override the timestamp for signature calculation, to use received timestamp instead of adding a fixed Expired time
     """
 
-    def add_auth(self, request, timestamp):  # noqa
+    def add_auth(self, request) -> Tuple[bytes, str, str]:
         if self.credentials is None:  # noqa
             raise NoCredentialsError()
-        request.context["timestamp"] = timestamp
         canonical_request = self.canonical_request(request)
         string_to_sign = self.string_to_sign(request, canonical_request)
         signature = self.signature(string_to_sign, request)
 
-        return signature, canonical_request, signature
+        return signature, canonical_request, string_to_sign
 
 
 # we are taking advantages of the fact that non-attached members are not returned
@@ -316,6 +315,16 @@ def validate_presigned_url_s3(context: RequestContext) -> None:
         # TODO: test this in AWS??
         raise SignatureDoesNotMatch("Expires error?")
 
+    # Checking whether the url is expired or not
+    if expires < time.time():
+        if config.S3_SKIP_SIGNATURE_VALIDATION:
+            LOG.warning(
+                "Signature is expired, but not raising an error, as S3_SKIP_SIGNATURE_VALIDATION=1"
+            )
+        else:
+            ex: AccessDenied = create_access_denied_expired_sig_v2(expires=expires)
+            raise ex
+
     auth_signer = HmacV1QueryAuthValidation(credentials=credentials, expires=expires)
 
     pre_signature_request = _reverse_inject_signature_hmac_v1_query(context)
@@ -338,16 +347,6 @@ def validate_presigned_url_s3(context: RequestContext) -> None:
             ex: SignatureDoesNotMatch = create_signature_does_not_match_sig_v2(
                 request_signature=req_signature, string_to_sign=string_to_sign
             )
-            raise ex
-
-    # Checking whether the url is expired or not (maybe do it first?)
-    if expires < time.time():
-        if config.S3_SKIP_SIGNATURE_VALIDATION:
-            LOG.warning(
-                "Signature is expired, but not raising an error, as S3_SKIP_SIGNATURE_VALIDATION=1"
-            )
-        else:
-            ex: AccessDenied = create_access_denied_expired_sig_v2(expires=expires)
             raise ex
 
 
@@ -549,7 +548,7 @@ class S3SigV4SignatureContext:
             self._original_host = netloc
             self.path = context.request.path
 
-        self.aws_request = self._to_aws_request(self.request_url)
+        self.aws_request = self._get_aws_request()
 
     def update_host_port(self, new_host_port: str, original_host_port: str = None):
         """
@@ -564,18 +563,18 @@ class S3SigV4SignatureContext:
             updated_netloc = f"{self._original_host}{new_host_port}"
         self.host = updated_netloc
         self.signed_headers["host"] = updated_netloc
-        self.aws_request = self._to_aws_request(request_url=self.request_url)
+        self.aws_request = self._get_aws_request()
 
     @property
     def request_url(self) -> str:
         return f"{self.request.scheme}://{self.host}{self.path}?{self.request_query_string}"
 
-    def get_signature_data(self) -> Tuple[str, str, str]:
+    def get_signature_data(self) -> Tuple[bytes, str, str]:
         """
         Uses the signer to return the signature and the data used to calculate it
         :return: signature, canonical_request and string_to_sign
         """
-        return self.signer.add_auth(self.aws_request, self.signature_date)  # noqa
+        return self.signer.add_auth(self.aws_request)
 
     def _get_signed_headers_and_filtered_query_string(self) -> Tuple[Dict[str, str], str]:
         """
@@ -614,21 +613,21 @@ class S3SigV4SignatureContext:
         new_query_string = percent_encode_sequence(new_query_args)
         return signature_headers, new_query_string
 
-    def _to_aws_request(self, request_url: str) -> AWSRequest:
+    def _get_aws_request(self) -> AWSRequest:
         """
-        Creates and sets the AWSRequest needed for S3SigV4QueryAuth signer
-        :param request_url: the request_url used for the calculation
-        :return:
+        Creates and returns the AWSRequest needed for S3SigV4QueryAuth signer
+        :return: AWSRequest
         """
         request_dict = {
             "method": self._request_method,
-            "url": request_url,
+            "url": self.request_url,
             "body": b"",
             "headers": self.signed_headers,
             "context": {
                 "is_presign_request": True,
                 "use_global_endpoint": True,
                 "signing": {"bucket": self._bucket},
+                "timestamp": self.signature_date,
             },
         }
         return create_request_object(request_dict)
