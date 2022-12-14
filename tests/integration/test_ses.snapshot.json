@@ -1,6 +1,6 @@
 {
   "tests/integration/test_ses.py::TestSES::test_ses_sns_topic_integration_send_email": {
-    "recorded-date": "28-11-2022, 11:48:20",
+    "recorded-date": "14-12-2022, 17:29:13",
     "recorded-content": {
       "messages": [
         {
@@ -72,13 +72,16 @@
                   "SendEmail"
                 ],
                 "ses:configuration-set": [
-                  "config-set-b022b370"
+                  "config-set-88be5780"
                 ],
                 "ses:source-ip": [
                   "80.189.216.182"
                 ],
                 "ses:from-domain": [
                   "gmail.com"
+                ],
+                "custom-tag": [
+                  "tag-value"
                 ],
                 "ses:caller-identity": [
                   "localstack-testing"
@@ -151,7 +154,7 @@
                   "SendEmail"
                 ],
                 "ses:configuration-set": [
-                  "config-set-b022b370"
+                  "config-set-88be5780"
                 ],
                 "ses:source-ip": [
                   "80.189.216.182"
@@ -159,22 +162,25 @@
                 "ses:from-domain": [
                   "gmail.com"
                 ],
+                "custom-tag": [
+                  "tag-value"
+                ],
                 "ses:caller-identity": [
                   "localstack-testing"
                 ],
                 "ses:outgoing-ip": [
-                  "69.169.224.10"
+                  "69.169.224.8"
                 ]
               }
             },
             "delivery": {
               "timestamp": "date",
-              "processingTimeMillis": 623,
+              "processingTimeMillis": 1167,
               "recipients": [
                 "<recipient-email-address>"
               ],
-              "smtpResponse": "250 2.0.0 OK  1669636100 n20-20020a05600c501400b003cf484ba59dsi10504395wmr.122 - gsmtp",
-              "reportingMTA": "b224-10.smtp-out.<region>.amazonses.com"
+              "smtpResponse": "250 2.0.0 OK  1671038953 v10-20020adfa1ca000000b00241d1ecc8c6si1900057wrv.541 - gsmtp",
+              "reportingMTA": "b224-8.smtp-out.<region>.amazonses.com"
             }
           },
           "Timestamp": "date",
@@ -187,7 +193,7 @@
     }
   },
   "tests/integration/test_ses.py::TestSES::test_ses_sns_topic_integration_send_templated_email": {
-    "recorded-date": "28-11-2022, 11:48:15",
+    "recorded-date": "14-12-2022, 17:29:16",
     "recorded-content": {
       "messages": [
         {
@@ -245,13 +251,16 @@
                   "SendTemplatedEmail"
                 ],
                 "ses:configuration-set": [
-                  "config-set-8ed3500d"
+                  "config-set-c17e0219"
                 ],
                 "ses:source-ip": [
                   "80.189.216.182"
                 ],
                 "ses:from-domain": [
                   "gmail.com"
+                ],
+                "custom-tag": [
+                  "tag-value"
                 ],
                 "ses:caller-identity": [
                   "localstack-testing"
@@ -286,7 +295,7 @@
               "headers": [
                 {
                   "name": "Date",
-                  "value": "Mon, 28 Nov 2022 11:48:14 +0000"
+                  "value": "Wed, 14 Dec 2022 17:29:15 +0000"
                 },
                 {
                   "name": "From",
@@ -298,11 +307,11 @@
                 },
                 {
                   "name": "Message-ID",
-                  "value": "<1253528252.927764.1669636094798@ip-10-0-171-26.<region>.compute.internal>"
+                  "value": "<1786912680.12997.1671038955596@ip-10-0-189-31.<region>.compute.internal>"
                 },
                 {
                   "name": "Subject",
-                  "value": "Email template 30e6086e"
+                  "value": "Email template e16fc3f7"
                 },
                 {
                   "name": "MIME-Version",
@@ -321,19 +330,19 @@
                 "from": [
                   "<sender-email-address>"
                 ],
-                "date": "Mon, 28 Nov 2022 11:48:14 +0000",
+                "date": "Wed, 14 Dec 2022 17:29:15 +0000",
                 "to": [
                   "<recipient-email-address>"
                 ],
                 "messageId": "<message-id:1>",
-                "subject": "Email template 30e6086e"
+                "subject": "Email template e16fc3f7"
               },
               "tags": {
                 "ses:operation": [
                   "SendTemplatedEmail"
                 ],
                 "ses:configuration-set": [
-                  "config-set-8ed3500d"
+                  "config-set-c17e0219"
                 ],
                 "ses:source-ip": [
                   "80.189.216.182"
@@ -341,22 +350,25 @@
                 "ses:from-domain": [
                   "gmail.com"
                 ],
+                "custom-tag": [
+                  "tag-value"
+                ],
                 "ses:caller-identity": [
                   "localstack-testing"
                 ],
                 "ses:outgoing-ip": [
-                  "69.169.224.12"
+                  "69.169.224.10"
                 ]
               }
             },
             "delivery": {
               "timestamp": "date",
-              "processingTimeMillis": 776,
+              "processingTimeMillis": 800,
               "recipients": [
                 "<recipient-email-address>"
               ],
-              "smtpResponse": "250 2.0.0 OK  1669636095 g2-20020a5d64e2000000b0024165c0a6a1si8609938wri.49 - gsmtp",
-              "reportingMTA": "b224-12.smtp-out.<region>.amazonses.com"
+              "smtpResponse": "250 2.0.0 OK  1671038956 b13-20020adfde0d000000b0022ac0f59416si1880444wrm.732 - gsmtp",
+              "reportingMTA": "b224-10.smtp-out.<region>.amazonses.com"
             }
           },
           "Timestamp": "date",
@@ -369,7 +381,7 @@
     }
   },
   "tests/integration/test_ses.py::TestSES::test_ses_sns_topic_integration_send_raw_email": {
-    "recorded-date": "28-11-2022, 11:49:35",
+    "recorded-date": "14-12-2022, 17:29:18",
     "recorded-content": {
       "messages": [
         {
@@ -409,10 +421,13 @@
                   "SendRawEmail"
                 ],
                 "ses:configuration-set": [
-                  "config-set-0faf5da7"
+                  "config-set-20c4c21e"
                 ],
                 "ses:source-ip": [
                   "80.189.216.182"
+                ],
+                "custom-tag": [
+                  "tag-value"
                 ],
                 "ses:caller-identity": [
                   "localstack-testing"
@@ -453,27 +468,30 @@
                   "SendRawEmail"
                 ],
                 "ses:configuration-set": [
-                  "config-set-0faf5da7"
+                  "config-set-20c4c21e"
                 ],
                 "ses:source-ip": [
                   "80.189.216.182"
+                ],
+                "custom-tag": [
+                  "tag-value"
                 ],
                 "ses:caller-identity": [
                   "localstack-testing"
                 ],
                 "ses:outgoing-ip": [
-                  "69.169.224.11"
+                  "69.169.224.7"
                 ]
               }
             },
             "delivery": {
               "timestamp": "date",
-              "processingTimeMillis": 684,
+              "processingTimeMillis": 640,
               "recipients": [
                 "<recipient-email-address>"
               ],
-              "smtpResponse": "250 2.0.0 OK  1669636175 p4-20020a05600c358400b003c6f645db8bsi10597375wmq.192 - gsmtp",
-              "reportingMTA": "b224-11.smtp-out.<region>.amazonses.com"
+              "smtpResponse": "250 2.0.0 OK  1671038958 f20-20020a1c6a14000000b003cdb23b6e5dsi1483316wmc.28 - gsmtp",
+              "reportingMTA": "b224-7.smtp-out.<region>.amazonses.com"
             }
           },
           "Timestamp": "date",

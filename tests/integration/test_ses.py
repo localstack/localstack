@@ -317,11 +317,24 @@ class TestSES:
             Message=message,
             ConfigurationSetName=config_set_name,
             Source=sender_email_address,
+            Tags=[
+                {
+                    "Name": "custom-tag",
+                    "Value": "tag-value",
+                }
+            ],
         )
 
         messages = sqs_receive_num_messages(sqs_queue, 3)
         messages.sort(key=sort_mail_sqs_messages)
         snapshot.match("messages", messages)
+
+        # check the tags manually, since these will be annoying to transform
+        send_tags = json.loads(messages[1]["Message"])["mail"]["tags"]
+        assert send_tags["custom-tag"] == ["tag-value"]
+
+        delivery_tags = json.loads(messages[2]["Message"])["mail"]["tags"]
+        assert delivery_tags["custom-tag"] == ["tag-value"]
 
     @pytest.mark.only_localstack
     @pytest.mark.skip_snapshot_verify(
@@ -389,6 +402,12 @@ class TestSES:
             TemplateData=json.dumps({}),
             ConfigurationSetName=config_set_name,
             Source=sender_email_address,
+            Tags=[
+                {
+                    "Name": "custom-tag",
+                    "Value": "tag-value",
+                }
+            ],
         )
 
         messages = sqs_receive_num_messages(sqs_queue, 3)
@@ -455,11 +474,24 @@ class TestSES:
             },
             ConfigurationSetName=config_set_name,
             Source=sender_email_address,
+            Tags=[
+                {
+                    "Name": "custom-tag",
+                    "Value": "tag-value",
+                }
+            ],
         )
 
         messages = sqs_receive_num_messages(sqs_queue, 3)
         messages.sort(key=sort_mail_sqs_messages)
         snapshot.match("messages", messages)
+
+        # check the tags manually, since these will be annoying to transform
+        send_tags = json.loads(messages[1]["Message"])["mail"]["tags"]
+        assert send_tags["custom-tag"] == ["tag-value"]
+
+        delivery_tags = json.loads(messages[2]["Message"])["mail"]["tags"]
+        assert delivery_tags["custom-tag"] == ["tag-value"]
 
     def test_cannot_create_event_for_no_topic(
         self, ses_configuration_set, ses_client, snapshot, account_id
