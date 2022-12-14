@@ -93,7 +93,7 @@ class TestTranscribe:
             content = to_str(data["Body"].read())
             assert "hello my name is" in content
 
-        retry(_assert_transcript, retries=10, sleep=3)
+        retry(_assert_transcript, retries=30, sleep=2)
 
     def test_transcribe_unsupported_media_format_failure(
         self, transcribe_client, transcribe_create_job
