@@ -26,6 +26,9 @@ def parse_profile_argument(args) -> Optional[str]:
         if arg.startswith("--profile="):
             return arg[10:]
         if arg == "--profile":
-            return arg[i + 1]
+            try:
+                return arg[i + 1]
+            except KeyError:
+                return None
 
     return None
