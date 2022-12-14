@@ -2,9 +2,10 @@ import pytest
 import requests
 
 from localstack import config
+from localstack.aws.handlers.signature import get_secret_key_for_access_key_id
 from localstack.testing.aws.lambda_utils import is_new_provider
 from localstack.utils.aws import aws_stack
-from localstack.utils.strings import to_str
+from localstack.utils.strings import short_uid, to_str
 
 
 class TestCSRF:
@@ -115,3 +116,26 @@ class TestCSRF:
         assert not response.headers.get("access-control-allow-methods")
         assert not response.headers.get("access-control-allow-origin")
         assert not response.headers.get("access-control-allow-credentials")
+
+
+class TestSignatureHandler:
+    def test_get_secret_access_key_from_id(self, create_role, create_user, sts_client, iam_client):
+        role_name = f"test-role-{short_uid()}"
+        user_name = f"test-user-{short_uid()}"
+        # test assumed roles
+        role_arn = create_role(RoleName=role_name, AssumeRolePolicyDocument="{}")["Role"]["Arn"]
+        credentials = sts_client.assume_role(
+            RoleArn=role_arn, RoleSessionName=f"test-session-{short_uid()}"
+        )["Credentials"]
+        assert (
+            get_secret_key_for_access_key_id(credentials["AccessKeyId"])
+            == credentials["SecretAccessKey"]
+        )
+
+        # test for users
+        create_user(UserName=user_name)
+        credentials = iam_client.create_access_key(UserName=user_name)["AccessKey"]
+        assert (
+            get_secret_key_for_access_key_id(credentials["AccessKeyId"])
+            == credentials["SecretAccessKey"]
+        )
