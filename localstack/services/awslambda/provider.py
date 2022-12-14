@@ -1672,7 +1672,6 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
             resolved_fn.permissions[resolved_qualifier] = policy
         return AddPermissionResponse(Statement=json.dumps(permission_statement))
 
-    # TODO: test if get_policy works after removing all permissions
     def remove_permission(
         self,
         context: RequestContext,

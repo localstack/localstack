@@ -2302,6 +2302,7 @@ class TestLambdaPermissions:
             FunctionName=function_name,
             StatementId=sid,
         )
+        # get_policy raises an exception after removing all permissions
         with pytest.raises(lambda_client.exceptions.ResourceNotFoundException) as ctx:
             lambda_client.get_policy(FunctionName=function_name)
         snapshot.match("expect_exception_get_policy", ctx.value.response)
