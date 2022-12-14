@@ -76,7 +76,7 @@ class TestCommon:
 
     def test_now_utc(self):
         env = common.now_utc()
-        test = datetime.now(timezone.UTC).timestamp()
+        test = datetime.now(timezone.utc).timestamp()
         assert test == pytest.approx(env, 1)
 
     def test_is_number(self):
