@@ -667,7 +667,7 @@ class CmdDockerClient(ContainerClient):
         return cmd, env_file
 
     @staticmethod
-    def _map_to_volume_param(mount_volume: SimpleVolumeBind | VolumeBind) -> str:
+    def _map_to_volume_param(mount_volume: Union[SimpleVolumeBind, VolumeBind]) -> str:
         """
         Maps the mount volume, to a parameter for the -v docker cli argument.
 
