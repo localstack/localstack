@@ -682,6 +682,10 @@ KINESIS_INITIALIZE_STREAMS = os.environ.get("KINESIS_INITIALIZE_STREAMS", "").st
 # KMS provider - can be either "local-kms" or "moto"
 KMS_PROVIDER = (os.environ.get("KMS_PROVIDER") or "").strip() or "moto"
 
+# Signature verification
+SIGNATURE_STRICT_MODE = is_env_true("SIGNATURE_STRICT_MODE")
+SIGNATURE_VERIFICATION = is_env_not_false("SIGNATURE_VERIFICATION")
+
 # URL to a custom OpenSearch/Elasticsearch backend cluster. If this is set to a valid URL, then localstack will not
 # create OpenSearch/Elasticsearch cluster instances, but instead forward all domains to the given backend.
 OPENSEARCH_CUSTOM_BACKEND = (

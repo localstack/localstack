@@ -27,7 +27,6 @@ class LocalstackAwsGateway(Gateway):
                 handlers.preprocess_request,
                 handlers.parse_service_name,  # enforce_cors and content_decoder depend on the service name
                 handlers.enforce_cors,
-                handlers.signature_handler,
                 handlers.content_decoder,
                 handlers.serve_localstack_resources,  # try to serve internal resources in /_localstack first
                 handlers.serve_default_listeners,  # legacy proxy default listeners
@@ -37,6 +36,7 @@ class LocalstackAwsGateway(Gateway):
                 handlers.add_region_from_header,
                 handlers.add_account_id,
                 handlers.parse_service_request,
+                handlers.signature_handler,
                 metric_collector.record_parsed_request,
                 handlers.serve_custom_service_request_handlers,
                 load_service,  # once we have the service request we can make sure we load the service
