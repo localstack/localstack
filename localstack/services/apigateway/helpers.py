@@ -1,13 +1,12 @@
 import contextlib
-import datetime
 import json
 import logging
 import re
 import time
+from datetime import datetime, timezone
 from typing import Any, Callable, Dict, List, Optional, Tuple, Union
 from urllib import parse as urlparse
 
-import pytz
 from apispec import APISpec
 from botocore.utils import InvalidArnException
 from jsonpatch import apply_patch
@@ -802,9 +801,7 @@ def get_event_request_context(invocation_context: ApiInvocationContext):
         },
         "httpMethod": method,
         "protocol": "HTTP/1.1",
-        "requestTime": pytz.utc.localize(datetime.datetime.utcnow()).strftime(
-            REQUEST_TIME_DATE_FORMAT
-        ),
+        "requestTime": datetime.now(timezone.utc).strftime(REQUEST_TIME_DATE_FORMAT),
         "requestTimeEpoch": int(time.time() * 1000),
         "authorizer": {},
     }

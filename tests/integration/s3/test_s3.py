@@ -14,6 +14,7 @@ from io import BytesIO
 from operator import itemgetter
 from typing import TYPE_CHECKING
 from urllib.parse import SplitResult, parse_qs, quote, urlencode, urlparse, urlunsplit
+from zoneinfo import ZoneInfo
 
 import boto3 as boto3
 import pytest
@@ -23,7 +24,6 @@ from boto3.s3.transfer import KB, TransferConfig
 from botocore import UNSIGNED
 from botocore.client import Config
 from botocore.exceptions import ClientError
-from pytz import timezone
 
 from localstack import config, constants
 from localstack.config import LEGACY_S3_PROVIDER
@@ -1195,7 +1195,7 @@ class TestS3:
         # TODO: should we have a config var to not deleted immediately in the new provider? and schedule it?
         snapshot.add_transformer(snapshot.transform.s3_api())
         # put object
-        short_expire = datetime.datetime.now(timezone("GMT")) + datetime.timedelta(seconds=1)
+        short_expire = datetime.datetime.now(ZoneInfo("GMT")) + datetime.timedelta(seconds=1)
         object_key_expired = "key-object-expired"
         object_key_not_expired = "key-object-not-expired"
 
@@ -1209,7 +1209,7 @@ class TestS3:
         time.sleep(3)
         # head_object does not raise an error for now in LS
         response = s3_client.head_object(Bucket=s3_bucket, Key=object_key_expired)
-        assert response["Expires"] < datetime.datetime.now(timezone("GMT"))
+        assert response["Expires"] < datetime.datetime.now(ZoneInfo("GMT"))
         snapshot.match("head-object-expired", response)
 
         # try to fetch an object which is already expired
@@ -1223,13 +1223,13 @@ class TestS3:
             Bucket=s3_bucket,
             Key=object_key_not_expired,
             Body="foo",
-            Expires=datetime.datetime.now(timezone("GMT")) + datetime.timedelta(hours=1),
+            Expires=datetime.datetime.now(ZoneInfo("GMT")) + datetime.timedelta(hours=1),
         )
 
         # try to fetch has not been expired yet.
         resp = s3_client.get_object(Bucket=s3_bucket, Key=object_key_not_expired)
         assert "Expires" in resp
-        assert resp["Expires"] > datetime.datetime.now(timezone("GMT"))
+        assert resp["Expires"] > datetime.datetime.now(ZoneInfo("GMT"))
         snapshot.match("get-object-not-yet-expired", resp)
 
     @pytest.mark.aws_validated

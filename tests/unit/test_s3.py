@@ -1,9 +1,9 @@
 import datetime
 import unittest
+import zoneinfo
 from urllib.parse import urlparse
 
 import pytest
-import pytz
 from requests.models import Response
 
 from localstack.aws.api import RequestContext
@@ -259,8 +259,8 @@ class TestS3Utils:
 
     def test_is_expired_with_tz(self):
         offset = datetime.timedelta(seconds=5)
-        assert s3_utils.is_expired(datetime.datetime.now(tz=pytz.timezone("EST")) - offset)
-        assert not s3_utils.is_expired(datetime.datetime.now(tz=pytz.timezone("EST")) + offset)
+        assert s3_utils.is_expired(datetime.datetime.now(tz=zoneinfo.ZoneInfo("EST")) - offset)
+        assert not s3_utils.is_expired(datetime.datetime.now(tz=zoneinfo.ZoneInfo("EST")) + offset)
 
     def test_bucket_name(self):
         # array description : 'path', 'header', 'expected_ouput'
