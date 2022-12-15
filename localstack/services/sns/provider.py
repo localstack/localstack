@@ -625,8 +625,9 @@ class SnsProvider(SnsApi, ServiceLifecycleHook):
         elif phone_number:
             self._publisher.publish_to_phone_number(ctx=publish_ctx, phone_number=phone_number)
         else:
-            # TODO: beware if the subscription is FIFO, the order might not be guaranteed.
+            # beware if the subscription is FIFO, the order might not be guaranteed.
             # 2 quick call to this method in succession might not be executed in order in the executor?
+            # TODO: test how this behaves in a FIFO context with a lot of threads.
             self._publisher.publish_to_topic(publish_ctx, topic_arn or target_arn)
 
         return PublishResponse(MessageId=message_ctx.message_id)
