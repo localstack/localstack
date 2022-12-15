@@ -62,15 +62,15 @@ LANGUAGE_MODEL_DIR = Path(config.dirs.cache) / "vosk"
 
 # List of ffmpeg format names that correspond the supported formats by AWS
 # See https://docs.aws.amazon.com/transcribe/latest/dg/how-input.html
-SUPPORTED_FORMAT_NAMES = (
-    "amr",
-    "flac",
-    "mp3",
-    "mov,mp4,m4a,3gp,3g2,mj2",  # mp4
-    "ogg",
-    "matroska,webm",
-    "wav",
-)
+SUPPORTED_FORMAT_NAMES = {
+    "amr": MediaFormat.amr,
+    "flac": MediaFormat.flac,
+    "mp3": MediaFormat.mp3,
+    "mov,mp4,m4a,3gp,3g2,mj2": MediaFormat.mp4,
+    "ogg": MediaFormat.ogg,
+    "matroska,webm": MediaFormat.webm,
+    "wav": MediaFormat.wav,
+}
 
 os.environ["VOSK_MODEL_PATH"] = str(LANGUAGE_MODEL_DIR)
 
@@ -230,11 +230,19 @@ class TranscribeProvider(TranscribeApi, ServiceLifecycleHook):
 
             LOG.debug("Determining media format")
             # TODO set correct failure_reason if ffprobe execution fails
-            ffprobe_output = run(
-                f"{ffprobe_bin} -show_format -print_format json -hide_banner -v error {file_path}"
+            ffprobe_output = json.loads(
+                run(
+                    f"{ffprobe_bin} -show_streams -show_format -print_format json -hide_banner -v error {file_path}"
+                )
             )
-            format = json.loads(ffprobe_output)["format"]["format_name"]
+            format = ffprobe_output["format"]["format_name"]
             LOG.debug(f"Media format detected as: {format}")
+            job["MediaFormat"] = SUPPORTED_FORMAT_NAMES[format]
+
+            # Determine the sample rate of input audio if possible
+            if len(ffprobe_output["streams"]):
+                sample_rate = ffprobe_output["streams"][0]["sample_rate"]
+                job["MediaSampleRateHertz"] = int(sample_rate)
 
             if format in SUPPORTED_FORMAT_NAMES:
                 wav_path = new_tmp_file(suffix=".wav")

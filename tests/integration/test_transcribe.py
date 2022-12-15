@@ -27,7 +27,6 @@ class TestTranscribe:
     @pytest.mark.aws_validated
     @pytest.mark.skip_snapshot_verify(
         paths=[
-            "$..TranscriptionJob..MediaSampleRateHertz",
             "$..TranscriptionJob..Settings",
             "$..Error..Code",
         ]
