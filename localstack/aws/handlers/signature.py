@@ -77,9 +77,6 @@ class SignatureResource:
     Resource to list information about plux plugins.
     """
 
-    def __init__(self):
-        print("Inited!")
-
     def on_post(self, request):
         data = request.get_json(True, True)
         if not data:

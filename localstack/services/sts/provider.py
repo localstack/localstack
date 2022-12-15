@@ -12,5 +12,7 @@ class StsProvider(StsApi, ServiceLifecycleHook):
     def get_caller_identity(self, context: RequestContext) -> GetCallerIdentityResponse:
         result = call_moto(context)
         if "user/moto" in result["Arn"] and "sts" in result["Arn"]:
+            # User is probably root here
             result["Arn"] = f"arn:aws:iam::{result['Account']}:root"
+            result["UserId"] = result["Account"]
         return result
