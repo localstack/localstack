@@ -1,3 +1,4 @@
+import contextlib
 import dataclasses
 import json
 import logging
@@ -822,6 +823,8 @@ def route53_hosted_zone(route53_client):
 
 @pytest.fixture
 def transcribe_create_job(transcribe_client, s3_client, s3_bucket):
+    job_names = []
+
     def _create_job(audio_file: str, params: Optional[dict[str, Any]] = None) -> str:
         s3_key = "test-clip.wav"
 
@@ -843,9 +846,15 @@ def transcribe_create_job(transcribe_client, s3_client, s3_bucket):
 
         transcribe_client.start_transcription_job(**params)
 
+        job_names.append(params["TranscriptionJobName"])
+
         return params["TranscriptionJobName"]
 
     yield _create_job
+
+    for job_name in job_names:
+        with contextlib.suppress(ClientError):
+            transcribe_client.delete_transcription_job(TranscriptionJobName=job_name)
 
 
 @pytest.fixture
