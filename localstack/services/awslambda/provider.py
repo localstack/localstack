@@ -1392,6 +1392,7 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
     # TODO: qualifier both in function_name as ARN and in qualifier?
     # TODO: test for qualifier being a number (i.e. version)
     # TODO: test for conflicts between function_name as ARN and provided qualifier
+    # See get_permissions for qualifier handling
     def create_function_url_config(
         self,
         context: RequestContext,
@@ -1618,34 +1619,44 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
         function_name, qualifier = api_utils.get_name_and_qualifier(
             request.get("FunctionName"), request.get("Qualifier"), context.region
         )
+
+        # validate qualifier
+        if qualifier is not None:
+            if not api_utils.is_qualifier_expression(qualifier):
+                raise ValidationException(
+                    f"1 validation error detected: Value '{qualifier}' at 'qualifier' failed to satisfy constraint: "
+                    f"Member must satisfy regular expression pattern: (|[a-zA-Z0-9$_-]+)"
+                )
+            if qualifier == "$LATEST":
+                raise InvalidParameterValueException(
+                    "We currently do not support adding policies for $LATEST.", Type="User"
+                )
+
+        # retrieve function
         resolved_fn = state.functions.get(function_name)
-
-        if not resolved_fn:
-            fn_arn = api_utils.unqualified_lambda_arn(
-                function_name, context.account_id, context.region
-            )
-            raise ResourceNotFoundException(f"Function not found: {fn_arn}", Type="User")
-
-        resolved_qualifier = request.get("Qualifier", "$LATEST")
-
         resource = api_utils.unqualified_lambda_arn(
             function_name, context.account_id, context.region
         )
-        if api_utils.qualifier_is_alias(resolved_qualifier):
-            if resolved_qualifier not in resolved_fn.aliases:
-                raise ResourceNotFoundException("Where Alias???", Type="User")  # TODO: test
+        if not resolved_fn:
+            raise ResourceNotFoundException(f"Function not found: {resource}", Type="User")
+
+        # resolve qualifier
+        if qualifier is not None:
             resource = api_utils.qualified_lambda_arn(
-                function_name, resolved_qualifier, context.account_id, context.region
+                function_name, qualifier, context.account_id, context.region
             )
-        elif api_utils.qualifier_is_version(resolved_qualifier):
-            if resolved_qualifier not in resolved_fn.versions:
-                raise ResourceNotFoundException("Where Version???", Type="User")  # TODO: test
-            resource = api_utils.qualified_lambda_arn(
-                function_name, resolved_qualifier, context.account_id, context.region
-            )
-        elif resolved_qualifier != "$LATEST":
-            raise ResourceNotFoundException("Wrong format for qualifier?")
-        # TODO: is there a difference in the resulting policy when adding $LATEST manually?
+            if api_utils.qualifier_is_alias(qualifier):
+                if qualifier not in resolved_fn.aliases:
+                    raise ResourceNotFoundException(
+                        f"Cannot find alias arn: {resource}", Type="User"
+                    )
+            elif api_utils.qualifier_is_version(qualifier) or qualifier == "$LATEST":
+                if qualifier not in resolved_fn.versions:
+                    raise ResourceNotFoundException(f"Function not found: {resource}", Type="User")
+            else:
+                # matches qualifier pattern but invalid alias or version
+                raise ResourceNotFoundException(f"Function not found: {resource}", Type="User")
+        resolved_qualifier = qualifier or "$LATEST"
 
         # check for an already existing policy and any conflicts in existing statements
         existing_policy = resolved_fn.permissions.get(resolved_qualifier)
@@ -1654,6 +1665,7 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
                 # TODO: is this unique just in the policy or across all policies in region/account/function (?)
                 raise ResourceConflictException("Double Statement!")
 
+        # TODO: extend build_statement => see todos in there
         permission_statement = api_utils.build_statement(
             resource,
             request["StatementId"],

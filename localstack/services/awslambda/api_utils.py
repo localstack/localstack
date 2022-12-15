@@ -69,10 +69,14 @@ SIGNING_JOB_ARN_REGEX = re.compile(
 SIGNING_PROFILE_VERSION_ARN_REGEX = re.compile(
     r"arn:(aws[a-zA-Z0-9-]*):([a-zA-Z0-9\-])+:([a-z]{2}(-gov)?-[a-z]+-\d{1})?:(\d{12})?:(.*)"
 )
+# Combined pattern for alias and version based on AWS error using "(|[a-zA-Z0-9$_-]+)"
+QUALIFIER_REGEX = re.compile(r"(^[a-zA-Z0-9$_-]+$)")
 # Pattern for a version qualifier
 VERSION_REGEX = re.compile(r"^[0-9]+$")
 # Pattern for an alias qualifier
-ALIAS_REGEX = re.compile(r"(?!^[0-9]+$)([a-zA-Z0-9-_]+)")
+# Rules: https://docs.aws.amazon.com/lambda/latest/dg/API_CreateAlias.html#SSS-CreateAlias-request-Name
+# The original regex from AWS misses ^ and $ in the second regex, which allowed for partial substring matches
+ALIAS_REGEX = re.compile(r"(?!^[0-9]+)(^[a-zA-Z0-9-_]+$)")
 
 
 URL_CHAR_SET = string.ascii_lowercase + string.digits
@@ -138,6 +142,16 @@ def get_config_for_url(store: "LambdaStore", url_id: str) -> "Optional[FunctionU
             if fn_url_config.url_id == url_id:
                 return fn_url_config
     return None
+
+
+def is_qualifier_expression(qualifier: str) -> bool:
+    """Checks if a given qualifier is a syntactically accepted expression.
+    It is not necessarily a valid alias or version.
+
+    :param qualifier: Qualifier to check
+    :return True if syntactically accepted qualifier expression, false otherwise
+    """
+    return bool(QUALIFIER_REGEX.match(qualifier))
 
 
 def qualifier_is_version(qualifier: str) -> bool:

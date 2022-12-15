@@ -2178,11 +2178,35 @@ class TestLambdaPermissions:
         self, lambda_client, iam_client, create_lambda_function, account_id, snapshot
     ):
         function_name = f"lambda_func-{short_uid()}"
+        snapshot.add_transformer(snapshot.transform.regex(function_name, "<function-name>"))
         create_lambda_function(
             handler_file=TEST_LAMBDA_PYTHON_ECHO,
             func_name=function_name,
             runtime=Runtime.python3_9,
         )
+
+        # qualifier mismatch between specified Qualifier and derived ARN from FunctionName
+        with pytest.raises(lambda_client.exceptions.InvalidParameterValueException) as e:
+            lambda_client.add_permission(
+                FunctionName=f"{function_name}:alias-not-42",
+                Action="lambda:InvokeFunction",
+                StatementId="s3",
+                Principal="s3.amazonaws.com",
+                SourceArn=arns.s3_bucket_arn("test-bucket"),
+                Qualifier="42",
+            )
+        snapshot.match("add_permission_fn_qualifier_mismatch", e.value.response)
+
+        with pytest.raises(lambda_client.exceptions.InvalidParameterValueException) as e:
+            lambda_client.add_permission(
+                FunctionName=f"{function_name}:$LATEST",
+                Action="lambda:InvokeFunction",
+                StatementId="s3",
+                Principal="s3.amazonaws.com",
+                SourceArn=arns.s3_bucket_arn("test-bucket"),
+                Qualifier="$LATEST",
+            )
+        snapshot.match("add_permission_fn_qualifier_latest", e.value.response)
 
         with pytest.raises(lambda_client.exceptions.ResourceNotFoundException) as e:
             lambda_client.get_policy(FunctionName="doesnotexist")
@@ -2211,6 +2235,50 @@ class TestLambdaPermissions:
                 StatementId="s3",
             )
         snapshot.match("remove_permission_policy_doesnotexist", e.value.response)
+
+        with pytest.raises(lambda_client.exceptions.ResourceNotFoundException) as e:
+            lambda_client.add_permission(
+                FunctionName=f"{function_name}:alias-doesnotexist",
+                Action="lambda:InvokeFunction",
+                StatementId="s3",
+                Principal="s3.amazonaws.com",
+                SourceArn=arns.s3_bucket_arn("test-bucket"),
+            )
+        snapshot.match("add_permission_fn_alias_doesnotexist", e.value.response)
+
+        with pytest.raises(lambda_client.exceptions.ResourceNotFoundException) as e:
+            lambda_client.add_permission(
+                FunctionName=function_name,  # same behavior with version postfix :42
+                Action="lambda:InvokeFunction",
+                StatementId="s3",
+                Principal="s3.amazonaws.com",
+                SourceArn=arns.s3_bucket_arn("test-bucket"),
+                Qualifier="42",
+            )
+        snapshot.match("add_permission_fn_version_doesnotexist", e.value.response)
+
+        with pytest.raises(lambda_client.exceptions.ClientError) as e:
+            lambda_client.add_permission(
+                FunctionName=function_name,
+                Action="lambda:InvokeFunction",
+                StatementId="s3",
+                Principal="s3.amazonaws.com",
+                SourceArn=arns.s3_bucket_arn("test-bucket"),
+                Qualifier="invalid-qualifier-with-?-char",
+            )
+        snapshot.match("add_permission_fn_qualifier_invalid", e.value.response)
+
+        with pytest.raises(lambda_client.exceptions.ResourceNotFoundException) as e:
+            lambda_client.add_permission(
+                FunctionName=function_name,
+                Action="lambda:InvokeFunction",
+                StatementId="s3",
+                Principal="s3.amazonaws.com",
+                SourceArn=arns.s3_bucket_arn("test-bucket"),
+                # NOTE: $ is allowed here because "$LATEST" is a valid version
+                Qualifier="valid-with-$-but-doesnotexist",
+            )
+        snapshot.match("add_permission_fn_qualifier_valid_doesnotexist", e.value.response)
 
     @pytest.mark.aws_validated
     def test_add_lambda_permission_aws(

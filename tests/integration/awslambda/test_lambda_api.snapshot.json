@@ -6541,8 +6541,32 @@
     }
   },
   "tests/integration/awslambda/test_lambda_api.py::TestLambdaPermissions::test_permission_exceptions": {
-    "recorded-date": "04-10-2022, 11:26:44",
+    "recorded-date": "15-12-2022, 09:31:38",
     "recorded-content": {
+      "add_permission_fn_qualifier_mismatch": {
+        "Error": {
+          "Code": "InvalidParameterValueException",
+          "Message": "The derived qualifier from the function name does not match the specified qualifier."
+        },
+        "Type": "User",
+        "message": "The derived qualifier from the function name does not match the specified qualifier.",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "add_permission_fn_qualifier_latest": {
+        "Error": {
+          "Code": "InvalidParameterValueException",
+          "Message": "We currently do not support adding policies for $LATEST."
+        },
+        "Type": "User",
+        "message": "We currently do not support adding policies for $LATEST.",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
       "get_policy_fn_doesnotexist": {
         "Error": {
           "Code": "ResourceNotFoundException",
@@ -6585,6 +6609,52 @@
           "Message": "No policy is associated with the given resource."
         },
         "Message": "No policy is associated with the given resource.",
+        "Type": "User",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 404
+        }
+      },
+      "add_permission_fn_alias_doesnotexist": {
+        "Error": {
+          "Code": "ResourceNotFoundException",
+          "Message": "Cannot find alias arn: arn:aws:lambda:<region>:111111111111:function:<function-name>:alias-doesnotexist"
+        },
+        "Message": "Cannot find alias arn: arn:aws:lambda:<region>:111111111111:function:<function-name>:alias-doesnotexist",
+        "Type": "User",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 404
+        }
+      },
+      "add_permission_fn_version_doesnotexist": {
+        "Error": {
+          "Code": "ResourceNotFoundException",
+          "Message": "Function not found: arn:aws:lambda:<region>:111111111111:function:<function-name>:42"
+        },
+        "Message": "Function not found: arn:aws:lambda:<region>:111111111111:function:<function-name>:42",
+        "Type": "User",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 404
+        }
+      },
+      "add_permission_fn_qualifier_invalid": {
+        "Error": {
+          "Code": "ValidationException",
+          "Message": "1 validation error detected: Value 'invalid-qualifier-with-?-char' at 'qualifier' failed to satisfy constraint: Member must satisfy regular expression pattern: (|[a-zA-Z0-9$_-]+)"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "add_permission_fn_qualifier_valid_doesnotexist": {
+        "Error": {
+          "Code": "ResourceNotFoundException",
+          "Message": "Function not found: arn:aws:lambda:<region>:111111111111:function:<function-name>:valid-with-$-but-doesnotexist"
+        },
+        "Message": "Function not found: arn:aws:lambda:<region>:111111111111:function:<function-name>:valid-with-$-but-doesnotexist",
         "Type": "User",
         "ResponseMetadata": {
           "HTTPHeaders": {},
