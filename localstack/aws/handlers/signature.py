@@ -1,7 +1,9 @@
 import dataclasses
+import json
 import logging
 import re
 from datetime import datetime, timedelta, timezone
+from typing import Tuple
 
 from botocore.auth import SigV4Auth
 from botocore.awsrequest import AWSRequest, create_request_object
@@ -14,6 +16,7 @@ from localstack.aws.chain import Handler, HandlerChain
 from localstack.constants import DEFAULT_AWS_ACCOUNT_ID
 from localstack.http import Request, Response
 from localstack.http.request import restore_payload
+from localstack.runtime import hooks
 from localstack.utils.aws.aws_stack import is_internal_call_context
 from localstack.utils.strings import to_str
 
@@ -60,13 +63,46 @@ class SignatureHandler(Handler):
         self.signature_validator.verify_signature(context.request)
 
 
+def create_root_key_for_account(account: str) -> Tuple[str, str]:
+    from moto.iam.utils import generate_access_key_id_from_account_id, random_alphanumeric
+
+    access_key_id = generate_access_key_id_from_account_id(account_id=account, prefix="LKIA")
+    secret_access_key = random_alphanumeric(40)
+    ROOT_ACCESS_KEYS[access_key_id] = FakeAccessKey(secret_access_key)
+    return access_key_id, secret_access_key
+
+
+class SignatureResource:
+    """
+    Resource to list information about plux plugins.
+    """
+
+    def __init__(self):
+        print("Inited!")
+
+    def on_post(self, request):
+        data = request.get_json(True, True)
+        if not data:
+            return Response("invalid request", 400)
+        account = data.get("account")
+        password = data.get("password")
+        if not account or not password:
+            return Response("You have to include username and password", 400)
+        if password != "test123":
+            return Response("Wrong password", 400)
+
+        access_key_id, secret_access_key = create_root_key_for_account(account)
+        return Response(
+            json.dumps({"access_key_id": access_key_id, "secret_access_key": secret_access_key}),
+            201,
+        )
+
+
 class SignatureValidator:
     def verify_signature(self, request: Request):
         # TODO add query as well
         if "Authorization" not in request.headers:
-            raise InvalidSignatureException(
-                "No authorization header brah!"
-            )  # TODO correct exception
+            raise InvalidSignatureException("No authorization header!")  # TODO correct exception
         authorization_data = self.parse_authorization_header(request.headers["Authorization"])
         # TODO validate list (x-amz necessity for example)
         aws_request = self.create_aws_request(
@@ -229,12 +265,12 @@ class SigV4AuthValidator(SigV4Auth):
         # authorization header is removed first.
         self._modify_request_before_signing(request)
         canonical_request = self.canonical_request(request)
-        LOG.debug("Calculating signature using v4 auth.")
-        LOG.debug("CanonicalRequest:\n%s", canonical_request)
+        # LOG.debug("Calculating signature using v4 auth.")
+        # LOG.debug("CanonicalRequest:\n%s", canonical_request)
         string_to_sign = self.string_to_sign(request, canonical_request)
-        LOG.debug("StringToSign:\n%s", string_to_sign)
+        # LOG.debug("StringToSign:\n%s", string_to_sign)
         signature = self.signature(string_to_sign, request)
-        LOG.debug("Signature:\n%s", signature)
+        # LOG.debug("Signature:\n%s", signature)
         return to_str(signature)
 
 
@@ -243,14 +279,12 @@ class FakeAccessKey:
     secret_access_key: str
 
 
+@hooks.on_infra_ready(priority=10)
 def create_root_credentials():
-    from moto.iam.utils import generate_access_key_id_from_account_id, random_alphanumeric
 
     accounts = [DEFAULT_AWS_ACCOUNT_ID]
     for account in accounts:
-        access_key_id = generate_access_key_id_from_account_id(account_id=account, prefix="LKIA")
-        secret_access_key = random_alphanumeric(40)
-        ROOT_ACCESS_KEYS[access_key_id] = FakeAccessKey(secret_access_key)
+        access_key_id, secret_access_key = create_root_key_for_account(account)
         LOG.info("===================================================")
         LOG.info("")
         LOG.info("ACCOUNT: %s", account)
@@ -258,6 +292,3 @@ def create_root_credentials():
         LOG.info("AWS_SECRET_ACCESS_KEY=%s", secret_access_key)
         LOG.info("")
     LOG.info("===================================================")
-
-
-create_root_credentials()

@@ -9,6 +9,7 @@ import requests
 from werkzeug.exceptions import NotFound
 
 from localstack import config, constants
+from localstack.aws.handlers.signature import SignatureResource
 from localstack.deprecations import deprecated_endpoint
 from localstack.http import Request, Response, Router
 from localstack.http.adapters import RouterListener
@@ -276,6 +277,7 @@ class LocalstackResources(Router):
         self.add("/init", InitScriptsResource())
         self.add("/init/<stage>", InitScriptsStageResource())
         self.add("/cloudformation/deploy", CloudFormationUi())
+        self.add("/login", SignatureResource())
 
         if config.DEBUG:
             LOG.warning(

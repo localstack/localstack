@@ -684,7 +684,7 @@ KMS_PROVIDER = (os.environ.get("KMS_PROVIDER") or "").strip() or "moto"
 
 # Signature verification
 SIGNATURE_STRICT_MODE = is_env_true("SIGNATURE_STRICT_MODE")
-SIGNATURE_VERIFICATION = is_env_not_false("SIGNATURE_VERIFICATION")
+SIGNATURE_VERIFICATION = is_env_true("SIGNATURE_VERIFICATION")
 
 # URL to a custom OpenSearch/Elasticsearch backend cluster. If this is set to a valid URL, then localstack will not
 # create OpenSearch/Elasticsearch cluster instances, but instead forward all domains to the given backend.
