@@ -1495,7 +1495,7 @@ class TestAPIGateway:
         assert "/pets/{petId}" in paths
 
     @pytest.mark.parametrize(
-        "action", ["StartExecution", "StartSyncExecution", "DeleteStateMachine"]
+        "action", ["StartExecution", "DeleteStateMachine"]
     )
     def test_apigateway_with_step_function_integration(
         self,
