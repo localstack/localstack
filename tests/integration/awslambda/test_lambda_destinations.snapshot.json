@@ -385,5 +385,83 @@
         ]
       }
     }
+  },
+  "tests/integration/awslambda/test_lambda_destinations.py::TestLambdaDestinationSqs::test_retries": {
+    "recorded-date": "16-12-2022, 09:15:27",
+    "recorded-content": {
+      "queue_destination_payload": {
+        "Messages": [
+          {
+            "Attributes": {
+              "ApproximateFirstReceiveTimestamp": "timestamp",
+              "ApproximateReceiveCount": "2",
+              "SenderId": "<sender-id:1>",
+              "SentTimestamp": "timestamp"
+            },
+            "Body": {
+              "version": "1.0",
+              "timestamp": "date",
+              "requestContext": {
+                "requestId": "<uuid:1>",
+                "functionArn": "arn:aws:lambda:<region>:111111111111:function:<resource:1>:$LATEST",
+                "condition": "RetriesExhausted",
+                "approximateInvokeCount": 3
+              },
+              "requestPayload": {
+                "message": "<test-msg-id>"
+              },
+              "responseContext": {
+                "statusCode": 200,
+                "executedVersion": "$LATEST",
+                "functionError": "Unhandled"
+              },
+              "responsePayload": {
+                "errorMessage": "intentional failure",
+                "errorType": "Exception",
+                "stackTrace": [
+                  "  File \"/var/task/handler.py\", line 7, in handler\n    raise Exception(\"intentional failure\")\n"
+                ]
+              }
+            },
+            "MD5OfBody": "<md5-body>",
+            "MessageId": "<uuid:2>",
+            "ReceiptHandle": "<receipt-handle:1>"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/integration/awslambda/test_lambda_destinations.py::TestLambdaDestinationSqs::test_maxretryattempts": {
+    "recorded-date": "02-12-2022, 19:30:13",
+    "recorded-content": {
+      "single_retry_failure_message": {
+        "Attributes": {
+          "ApproximateFirstReceiveTimestamp": "1670001532239",
+          "ApproximateReceiveCount": "1",
+          "SenderId": "AROAZBN753QFFBYSL2J6R:awslambda_191_20221202171849093",
+          "SentTimestamp": "1670001529156"
+        },
+        "Body": "{\"version\":\"1.0\",\"timestamp\":\"2022-12-02T17:18:49.093Z\",\"requestContext\":{\"requestId\":\"8e95327f-8bc4-4493-accf-c109052ec885\",\"functionArn\":\"arn:aws:lambda:us-east-1:621562158090:function:retry-fn-6d6311b0:$LATEST\",\"condition\":\"EventAgeExceeded\",\"approximateInvokeCount\":1},\"requestPayload\":{\"message\": \"retry-msg-28662a45\"},\"responseContext\":{\"statusCode\":200,\"executedVersion\":\"$LATEST\",\"functionError\":\"Unhandled\"},\"responsePayload\":{\"errorMessage\": \"intentional failure\", \"errorType\": \"Exception\", \"stackTrace\": [\"  File \\\"/var/task/handler.py\\\", line 7, in handler\\n    raise Exception(\\\"intentional failure\\\")\\n\"]}}",
+        "MD5OfBody": "3c809fb7213ba761ea4cbbcc7230cd94",
+        "MessageId": "acd79599-5ccf-43c7-be78-9b76e34cf33e",
+        "ReceiptHandle": "AQEB/+6h3y6ydVtbcb0dn7O3W5QxLklDhqwYnenL6EBPQwe7RSJi3go/Kevm8dUb1TgDMGzduRKTaBNcgCBgsIwO8CyzvV1twctRTpcQp8+6zHm1p5lNyZsU6S9OXd1tuB0kT+LpScHwmv7KuNPAKPBQimmKNOGyJDUxJof0kFOYMUB0khDowR39VF3B+vgPvhKmdfud2Jw8KrifvlmRMdHtPRjuI0RaG44SuzqzCwpPkrIdprlvkpIq4gwFnyXfjcAbitwADkGd0NXg3HtruIj4kCvgy5qa0CfXIFCvNoHJOKexxsQP3RZS4hiTH1JjOerV6nhzA9u2SC6FTbya4cDK+IPW0D4PFZicqIwCSrg+dhyvJH7O2K/vmYoG1VVWMcGvPouLS54WBNIMX55xCVl0kw=="
+      },
+      "multi_retry_failure_message": {
+        "Attributes": {
+          "ApproximateFirstReceiveTimestamp": "1670001602050",
+          "ApproximateReceiveCount": "1",
+          "SenderId": "AROAZBN753QFFBYSL2J6R:awslambda_191_20221202171849093",
+          "SentTimestamp": "1670001599116"
+        },
+        "Body": "{\"version\":\"1.0\",\"timestamp\":\"2022-12-02T17:19:59.036Z\",\"requestContext\":{\"requestId\":\"026c0ddd-9e56-4473-b34e-bb44535e47f0\",\"functionArn\":\"arn:aws:lambda:us-east-1:621562158090:function:retry-fn-6d6311b0:$LATEST\",\"condition\":\"EventAgeExceeded\",\"approximateInvokeCount\":1},\"requestPayload\":{\"message\": \"retry-msg-28662a45\"}}",
+        "MD5OfBody": "3584dd5aa01879a33a6ce53f351716e6",
+        "MessageId": "481bd65f-b4b4-453a-abc0-867ee7223290",
+        "ReceiptHandle": "AQEB/pjjnBVRcRDBmwhBao5zQcIRjfAhNqQ45vMlGxpVnT9HNh0EOnqnIsMFqeRlLcTQ/Xxu4KPONsdIcFEeY6rQ7/rbH+Z876FGbs0QZ9dTE6mk23sjxGCx9z2G0zUVQkrjz15ymSi5I7mqvtCds3qhyGFC9TUG9p3odWLNWHnwIa7ijdHSNFG5IFvBGDdLhl2s9wC7DJCeMXAyQofjl4G30x7O2iSOzMnC9wbC+nqTsPlEOEif+0qj7smREQrH4oDukYKA6L2sEusUsrum39x6jJYaEO+TmtyvQNluV4cbaeCP1RN43kDXrGh8mH+JA3NdISrVp9zQ/SkA38A8aC0tWjsQe/a1q4+++ELtRh5xmI3vRQG6rPJQBpg6XsuQhZmKpsDF4Tx6eWKOJVbTLeTHIg=="
+      }
+    }
   }
 }

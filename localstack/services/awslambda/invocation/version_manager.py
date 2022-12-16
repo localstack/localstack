@@ -377,8 +377,6 @@ class LambdaVersionManager(ServiceEndpoint):
         if event_invoke_config is None:
             return
 
-        # TODO: we need more information about the invocation event
-
         if isinstance(invocation_result, InvocationResult):
             success_destination = event_invoke_config.destination_config.get("OnSuccess", {}).get(
                 "Destination"
@@ -412,6 +410,11 @@ class LambdaVersionManager(ServiceEndpoint):
 
             retry_attempts = event_invoke_config.maximum_retry_attempts
             previous_retry_attempts = original_invocation.invocation.retries
+            failure_cause = None
+
+            # TODO: if both max event age and retry attempts exceeded, which one "counts"?
+            #       current assumption: retry attempts is checked first
+
             if retry_attempts > 0 and retry_attempts > previous_retry_attempts:
 
                 # wait and then reschedule
@@ -438,6 +441,9 @@ class LambdaVersionManager(ServiceEndpoint):
                         invocation_id=original_invocation.invocation.invocation_id,
                     )
                     return
+                failure_cause = "EventAgeExceeded"
+            else:
+                failure_cause = "RetriesExhausted"
 
             if failure_destination is None:
                 return
@@ -449,14 +455,14 @@ class LambdaVersionManager(ServiceEndpoint):
                 "requestContext": {
                     "requestId": invocation_result.invocation_id,
                     "functionArn": self.function_version.qualified_arn,
-                    "condition": "RetriesExhausted",  # TODO we don't know that here
-                    "approximateInvokeCount": 1,
+                    "condition": failure_cause,
+                    "approximateInvokeCount": previous_retry_attempts + 1,
                 },
                 "requestPayload": json.loads(to_str(original_payload)),
                 "responseContext": {
                     "statusCode": 200,
                     "executedVersion": "$LATEST",
-                    "functionError": "Unhandled",  # TODO
+                    "functionError": "Unhandled",
                 },
                 "responsePayload": json.loads(to_str(invocation_result.payload)),
             }
