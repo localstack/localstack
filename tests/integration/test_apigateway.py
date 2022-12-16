@@ -1494,6 +1494,7 @@ class TestAPIGateway:
         assert "/pets" in paths
         assert "/pets/{petId}" in paths
 
+    @pytest.mark.aws_validated
     @pytest.mark.parametrize(
         "action", ["StartExecution", "DeleteStateMachine"]
     )
