@@ -2280,6 +2280,23 @@ class TestLambdaPermissions:
             )
         snapshot.match("add_permission_fn_qualifier_valid_doesnotexist", e.value.response)
 
+        lambda_client.add_permission(
+            FunctionName=function_name,
+            Action="lambda:InvokeFunction",
+            StatementId="s3",
+            Principal="s3.amazonaws.com",
+            SourceArn=arns.s3_bucket_arn("test-bucket"),
+        )
+        with pytest.raises(lambda_client.exceptions.ResourceConflictException) as e:
+            lambda_client.add_permission(
+                FunctionName=function_name,
+                Action="lambda:InvokeFunction",
+                StatementId="s3",
+                Principal="s3.amazonaws.com",
+                SourceArn=arns.s3_bucket_arn("test-bucket"),
+            )
+        snapshot.match("add_permission_conflicting_statement_id", e.value.response)
+
     @pytest.mark.aws_validated
     def test_add_lambda_permission_aws(
         self, lambda_client, iam_client, create_lambda_function, account_id, snapshot

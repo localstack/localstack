@@ -1661,9 +1661,13 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
         # check for an already existing policy and any conflicts in existing statements
         existing_policy = resolved_fn.permissions.get(resolved_qualifier)
         if existing_policy:
-            if request["StatementId"] in [s["Sid"] for s in existing_policy.policy.Statement]:
-                # TODO: is this unique just in the policy or across all policies in region/account/function (?)
-                raise ResourceConflictException("Double Statement!")
+            request_sid = request["StatementId"]
+            if request_sid in [s["Sid"] for s in existing_policy.policy.Statement]:
+                # function scope: sid needs to be unique per function
+                raise ResourceConflictException(
+                    f"The statement id ({request_sid}) provided already exists. Please provide a new statement id, or remove the existing statement.",
+                    Type="User",
+                )
 
         # TODO: extend build_statement => see todos in there
         permission_statement = api_utils.build_statement(

@@ -6541,7 +6541,7 @@
     }
   },
   "tests/integration/awslambda/test_lambda_api.py::TestLambdaPermissions::test_permission_exceptions": {
-    "recorded-date": "15-12-2022, 09:31:38",
+    "recorded-date": "16-12-2022, 14:36:14",
     "recorded-content": {
       "add_permission_fn_qualifier_mismatch": {
         "Error": {
@@ -6659,6 +6659,18 @@
         "ResponseMetadata": {
           "HTTPHeaders": {},
           "HTTPStatusCode": 404
+        }
+      },
+      "add_permission_conflicting_statement_id": {
+        "Error": {
+          "Code": "ResourceConflictException",
+          "Message": "The statement id (s3) provided already exists. Please provide a new statement id, or remove the existing statement."
+        },
+        "Type": "User",
+        "message": "The statement id (s3) provided already exists. Please provide a new statement id, or remove the existing statement.",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 409
         }
       }
     }
