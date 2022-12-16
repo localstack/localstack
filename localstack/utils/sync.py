@@ -4,17 +4,18 @@ import sys
 import threading
 import time
 from collections import defaultdict
-from typing import Callable, TypeVar
+from typing import TYPE_CHECKING, Callable, TypeVar
 
 if sys.version_info >= (3, 8):
     from typing import Literal
 else:
     from typing_extensions import Literal
 
-if sys.version_info >= (3, 10):
+if TYPE_CHECKING:
     from typing import ParamSpec
-else:
-    from typing_extensions import ParamSpec
+
+    P = ParamSpec("P")
+    T = TypeVar("T")
 
 
 class ShortCircuitWaitException(Exception):
@@ -56,11 +57,9 @@ def wait_until(
         return wait_until(fn, next_wait, max_retries, strategy, _retries + 1, _max_wait)
 
 
-P = ParamSpec("P")
-T = TypeVar("T")
-
-
-def retry(function: Callable[P, T], retries=3, sleep=1.0, sleep_before=0, **kwargs: P.kwargs) -> T:
+def retry(
+    function: "Callable[P, T]", retries=3, sleep=1.0, sleep_before=0, **kwargs: "P.kwargs"
+) -> "T":
     raise_error = None
     if sleep_before > 0:
         time.sleep(sleep_before)
