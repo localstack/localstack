@@ -138,7 +138,6 @@ from localstack.services.awslambda.invocation.lambda_models import (
     LAMBDA_LIMITS_CREATE_FUNCTION_REQUEST_SIZE,
     LAMBDA_LIMITS_MAX_FUNCTION_ENVVAR_SIZE_BYTES,
     LAMBDA_MINIMUM_UNRESERVED_CONCURRENCY,
-    AccountLimitUsage,
     AliasRoutingConfig,
     CodeSigningConfig,
     EventInvokeConfig,
@@ -1646,7 +1645,7 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
             )
         elif resolved_qualifier != "$LATEST":
             raise ResourceNotFoundException("Wrong format for qualifier?")
-        # TODO: is there a different int he resulting policy when adding $LATEST manually?
+        # TODO: is there a difference in the resulting policy when adding $LATEST manually?
 
         # check for an already existing policy and any conflicts in existing statements
         existing_policy = resolved_fn.permissions.get(resolved_qualifier)
@@ -2908,22 +2907,6 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
     # =======================================
     # (Reserved) function concurrency is scoped to the whole function
 
-    def _get_account_limit_usage(self, store: LambdaStore) -> AccountLimitUsage:
-        fn_count = code_size_sum = reserved_concurrency_sum = 0
-        for fn in store.functions.values():
-            fn_count += 1
-            code_size_sum += (
-                fn.latest().config.code.code_size
-            )  # TODO: might need to aggregate all versions and aliases for this?
-            if fn.reserved_concurrent_executions is not None:
-                reserved_concurrency_sum += fn.reserved_concurrent_executions
-        return AccountLimitUsage(
-            unreserved_concurrent_executions=store.settings.concurrent_executions
-            - reserved_concurrency_sum,
-            total_code_size=code_size_sum,
-            function_count=fn_count,
-        )
-
     def get_function_concurrency(
         self, context: RequestContext, function_name: FunctionName
     ) -> GetFunctionConcurrencyResponse:
@@ -2955,10 +2938,13 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
             )
             raise ResourceNotFoundException(f"Function not found: {fn_arn}", Type="User")
 
-        usage = self._get_account_limit_usage(state)
+        settings = self.get_account_settings(context)
+        unreserved_concurrent_executions = settings["AccountLimit"][
+            "UnreservedConcurrentExecutions"
+        ]
 
         if (
-            usage.unreserved_concurrent_executions - reserved_concurrent_executions
+            unreserved_concurrent_executions - reserved_concurrent_executions
         ) < LAMBDA_MINIMUM_UNRESERVED_CONCURRENCY:
             raise InvalidParameterValueException(
                 f"Specified ReservedConcurrentExecutions for function decreases account's UnreservedConcurrentExecution below its minimum value of [{LAMBDA_MINIMUM_UNRESERVED_CONCURRENCY}]."

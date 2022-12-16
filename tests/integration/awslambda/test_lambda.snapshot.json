@@ -2144,5 +2144,36 @@
         }
       }
     }
+  },
+  "tests/integration/awslambda/test_lambda.py::TestLambdaConcurrency::test_lambda_concurrency_crud": {
+    "recorded-date": "13-12-2022, 19:16:23",
+    "recorded-content": {
+      "get_function_concurrency_default": {
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "put_function_concurrency": {
+        "ReservedConcurrentExecutions": 0,
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "get_function_concurrency_updated": {
+        "ReservedConcurrentExecutions": 0,
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "get_function_concurrency_deleted": {
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
   }
 }
