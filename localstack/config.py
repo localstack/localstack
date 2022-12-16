@@ -553,7 +553,9 @@ LAMBDA_JAVA_OPTS = os.environ.get("LAMBDA_JAVA_OPTS", "").strip()
 KINESIS_SHARD_LIMIT = os.environ.get("KINESIS_SHARD_LIMIT", "").strip() or "100"
 
 # limit in which to kinesis-mock will start throwing exceptions
-KINESIS_ON_DEMAND_STREAM_COUNT_LIMIT = os.environ.get("KINESIS_ON_DEMAND_STREAM_COUNT_LIMIT", "").strip() or "10"
+KINESIS_ON_DEMAND_STREAM_COUNT_LIMIT = os.environ.get(
+    "KINESIS_ON_DEMAND_STREAM_COUNT_LIMIT", ""
+).strip() or "10"
 
 # delay in kinesis-mock response when making changes to streams
 KINESIS_LATENCY = os.environ.get("KINESIS_LATENCY", "").strip() or "500"
