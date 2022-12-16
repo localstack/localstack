@@ -55,6 +55,7 @@ Since the JAR files are platform-independent, you can use the layer digest of an
 
 class StepFunctionsLocalPackage(Package):
     version: str = "1.12.0"
+
     def __init__(self):
         super().__init__("StepFunctionsLocal", self.version)
 
