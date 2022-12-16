@@ -47,6 +47,8 @@ COPY code/ /var/task
 
 PULLED_IMAGES: set[str] = set()
 
+HOT_RELOADING_ENV_VARIABLE = "LOCALSTACK_HOT_RELOADING_PATHS"
+
 
 def get_image_name_for_function(function_version: FunctionVersion) -> str:
     return f"localstack/lambda-{function_version.id.qualified_arn().replace(':', '_').replace('$', '_').lower()}"
@@ -225,7 +227,7 @@ class DockerRuntimeExecutor(RuntimeExecutor):
         )
         if self.function_version.config.package_type == PackageType.Zip:
             if self.function_version.config.code.is_hot_reloading():
-                container_config.env_vars["LOCALSTACK_HOT_RELOADING_ENABLED"] = "1"
+                container_config.env_vars[HOT_RELOADING_ENV_VARIABLE] = "/var/task"
                 if container_config.volumes is None:
                     container_config.volumes = VolumeMappings()
                 container_config.volumes.append(
