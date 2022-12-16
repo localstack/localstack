@@ -566,7 +566,6 @@ def configure_container(container: LocalstackContainer):
         if value is not None:
             container.env_vars[env_var] = value
     container.env_vars["DOCKER_HOST"] = f"unix://{config.DOCKER_SOCK}"
-    container.env_vars["HOST_TMP_FOLDER"] = config.dirs.functions  # TODO: rename env var
 
     # TODO this is default now, remove once a considerate time is passed
     # to activate proper signal handling
@@ -597,6 +596,9 @@ def configure_volume_mounts(container: LocalstackContainer):
 
     # shared tmp folder
     container.volumes.add(VolumeBind(source_dirs.tmp, target_dirs.tmp))
+
+    # set the HOST_TMP_FOLDER for the legacy dirs / legacy lambda function mounting
+    container.env_vars["HOST_TMP_FOLDER"] = source_dirs.functions
 
     # data_dir mounting and environment variables
     if source_dirs.data:
