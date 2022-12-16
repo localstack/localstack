@@ -3206,6 +3206,7 @@ class TestS3PresignedUrl:
         )
         # Content-Type, Content-MD5 and Date are specific headers for SigV2 and are checked
         # others are not verified in the signature
+        # Manually set the content-type for it to be added to the signature
         presigned_url = presigned_client.generate_presigned_url(
             "put_object",
             Params={
@@ -3215,7 +3216,7 @@ class TestS3PresignedUrl:
             },
             ExpiresIn=10,
         )
-
+        # Use the pre-signed URL with the right ContentType
         response = requests.put(
             presigned_url,
             data="test_data",
@@ -3224,6 +3225,7 @@ class TestS3PresignedUrl:
         assert not response.content
         assert response.status_code == 200
 
+        # Use the pre-signed URL with the wrong ContentType
         response = requests.put(
             presigned_url,
             data="test_data",
@@ -3235,6 +3237,12 @@ class TestS3PresignedUrl:
         exception["StatusCode"] = response.status_code
         snapshot.match("content-type-exception", exception)
 
+        if signature_version == "s3":
+            # we sleep 1 second to allow the StringToSign value in the exception change between both call
+            # (timestamped value, to avoid the test being flaky)
+            time.sleep(1.1)
+
+        # regenerate a new pre-signed URL with no content-type specified
         presigned_url = presigned_client.generate_presigned_url(
             "put_object",
             Params={
@@ -3245,6 +3253,7 @@ class TestS3PresignedUrl:
             ExpiresIn=10,
         )
 
+        # send the pre-signed URL with the right ContentEncoding
         response = requests.put(
             presigned_url,
             data="test_data",
@@ -3253,24 +3262,37 @@ class TestS3PresignedUrl:
         assert not response.content
         assert response.status_code == 200
 
+        # send the pre-signed URL with the right ContentEncoding but a new ContentType
+        # should fail with SigV2 and succeed with SigV4
         response = requests.put(
             presigned_url,
             data="test_data",
-            headers={"Content-Encoding": "gzip"},
+            headers={"Content-Encoding": "identity", "Content-Type": "text/xml"},
         )
-        exception = xmltodict.parse(response.content) if response.content else {}
-        exception["StatusCode"] = response.status_code
-        snapshot.match("content-encoding-response", exception)
+        if not is_old_provider() and signature_version == "s3":
+            assert response.status_code == 403
+        else:
+            assert response.status_code == 200
 
-        # try without the headers (included in the query string with sigV2 but not sigV4)
+        exception = xmltodict.parse(response.content) if response.content else {}
+        exception["StatusCode"] = response.status_code
+        snapshot.match("content-type-response", exception)
+
+        # now send the pre-signed URL with the wrong ContentEncoding
+        # should succeed with SigV2 as only hard coded headers are checked
+        # but fail with SigV4 as Content-Encoding was part of the signed headers
         response = requests.put(
             presigned_url,
             data="test_data",
             headers={"Content-Encoding": "gzip"},
         )
+        if signature_version == "s3":
+            assert response.status_code == 200
+        else:
+            assert response.status_code == 403
         exception = xmltodict.parse(response.content) if response.content else {}
         exception["StatusCode"] = response.status_code
-        snapshot.match("missing-content-encoding-response", exception)
+        snapshot.match("wrong-content-encoding-response", exception)
 
     @pytest.mark.aws_validated
     def test_s3_put_presigned_url_same_header_and_qs_parameter(
@@ -3684,7 +3706,7 @@ class TestS3PresignedUrl:
         )
 
         url = _generate_presigned_url(client, {"Bucket": bucket_name, "Key": object_key}, expires=1)
-        time.sleep(1)
+        time.sleep(2)
         response = requests.get(url)
         assert response.status_code == 403
         exception = xmltodict.parse(response.content)
