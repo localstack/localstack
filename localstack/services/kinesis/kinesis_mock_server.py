@@ -67,7 +67,7 @@ class KinesisMockServer(Server):
             # LocalStack uses only one - the insecure one. Block the secure port to avoid conflicts.
             "KINESIS_MOCK_TLS_PORT": get_free_tcp_port(),
             "SHARD_LIMIT": config.KINESIS_SHARD_LIMIT,
-            "ON_DEMAND_STREAM_COUNT_LIMIT": config.ON_DEMAND_STREAM_COUNT_LIMIT,
+            "ON_DEMAND_STREAM_COUNT_LIMIT": config.KINESIS_ON_DEMAND_STREAM_COUNT_LIMIT,
             "AWS_ACCOUNT_ID": self._account_id,
         }
 
