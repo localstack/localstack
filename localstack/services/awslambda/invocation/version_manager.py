@@ -352,9 +352,6 @@ class LambdaVersionManager(ServiceEndpoint):
         original_invocation: RunningInvocation,
         original_payload: bytes,
     ) -> None:
-        """
-        TODO: handle this asynchronously, to not block the rest of the execution
-        """
         LOG.debug("Got event invocation with id %s", invocation_result.invocation_id)
 
         # 1. Handle DLQ routing
@@ -378,6 +375,7 @@ class LambdaVersionManager(ServiceEndpoint):
             return
 
         if isinstance(invocation_result, InvocationResult):
+            LOG.debug("Handling success destination for %s", self.function_arn)
             success_destination = event_invoke_config.destination_config.get("OnSuccess", {}).get(
                 "Destination"
             )
@@ -385,15 +383,18 @@ class LambdaVersionManager(ServiceEndpoint):
                 return
             destination_payload = {
                 "version": "1.0",
-                "timestamp": timestamp_millis(),  # TODO
+                "timestamp": timestamp_millis(),
                 "requestContext": {
                     "requestId": invocation_result.invocation_id,
                     "functionArn": self.function_version.qualified_arn,
                     "condition": "Success",
-                    "approximateInvokeCount": 1,
+                    "approximateInvokeCount": original_invocation.invocation.retries + 1,
                 },
                 "requestPayload": json.loads(to_str(original_payload)),
-                "responseContext": {"statusCode": 200, "executedVersion": "$LATEST"},
+                "responseContext": {
+                    "statusCode": 200,
+                    "executedVersion": self.function_version.id.qualifier,
+                },
                 "responsePayload": json.loads(to_str(invocation_result.payload or {})),
             }
 
@@ -403,44 +404,40 @@ class LambdaVersionManager(ServiceEndpoint):
             )
 
         elif isinstance(invocation_result, InvocationError):
+            LOG.debug("Handling error destination for %s", self.function_arn)
 
             failure_destination = event_invoke_config.destination_config.get("OnFailure", {}).get(
                 "Destination"
             )
 
-            retry_attempts = event_invoke_config.maximum_retry_attempts
+            max_retry_attempts = event_invoke_config.maximum_retry_attempts
             previous_retry_attempts = original_invocation.invocation.retries
-            failure_cause = None
 
-            # TODO: if both max event age and retry attempts exceeded, which one "counts"?
-            #       current assumption: retry attempts is checked first
-
-            if retry_attempts > 0 and retry_attempts > previous_retry_attempts:
-
-                # wait and then reschedule
-                # TODO: should actually not wait 60s if the time left is insufficient
-                # TODO: does this also apply before a DLQ?
-
+            if max_retry_attempts > 0 and max_retry_attempts > previous_retry_attempts:
                 delay_queue_invoke_seconds = config.LAMBDA_RETRY_BASE_DELAY_SECONDS * (
                     previous_retry_attempts + 1
                 )
-                time.sleep(delay_queue_invoke_seconds)
 
-                max_event_age_passed = (
+                time_passed = datetime.now() - original_invocation.invocation.invocation.invoke_time
+                enough_time_for_retry = (
                     event_invoke_config.maximum_event_age_in_seconds
-                    and (
-                        datetime.now() - original_invocation.invocation.invocation.invoke_time
-                    ).seconds
-                    > event_invoke_config.maximum_event_age_in_seconds
+                    and time_passed.seconds + delay_queue_invoke_seconds
+                    <= event_invoke_config.maximum_event_age_in_seconds
                 )
-                if not max_event_age_passed:
-                    # reschedule
+
+                if (
+                    event_invoke_config.maximum_event_age_in_seconds is None
+                    or enough_time_for_retry
+                ):
+                    time.sleep(delay_queue_invoke_seconds)
+                    LOG.debug("Retrying lambda invocation for %s", self.function_arn)
                     self.invoke(
                         invocation=original_invocation.invocation.invocation,
                         current_retry=previous_retry_attempts + 1,
                         invocation_id=original_invocation.invocation.invocation_id,
                     )
                     return
+
                 failure_cause = "EventAgeExceeded"
             else:
                 failure_cause = "RetriesExhausted"
@@ -448,10 +445,9 @@ class LambdaVersionManager(ServiceEndpoint):
             if failure_destination is None:
                 return
 
-            # TODO: add snapshot tests for different possible payloads
             destination_payload = {
                 "version": "1.0",
-                "timestamp": timestamp_millis(),  # TODO
+                "timestamp": timestamp_millis(),
                 "requestContext": {
                     "requestId": invocation_result.invocation_id,
                     "functionArn": self.function_version.qualified_arn,
@@ -461,7 +457,7 @@ class LambdaVersionManager(ServiceEndpoint):
                 "requestPayload": json.loads(to_str(original_payload)),
                 "responseContext": {
                     "statusCode": 200,
-                    "executedVersion": "$LATEST",
+                    "executedVersion": self.function_version.id.qualifier,
                     "functionError": "Unhandled",
                 },
                 "responsePayload": json.loads(to_str(invocation_result.payload)),
@@ -473,8 +469,6 @@ class LambdaVersionManager(ServiceEndpoint):
             )
         else:
             raise ValueError("Unknown type for invocation result received.")
-
-        # TODO make async to not block other executions
 
     def invocation_response(
         self, invoke_id: str, invocation_result: Union[InvocationResult, InvocationError]

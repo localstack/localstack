@@ -284,7 +284,7 @@ class TestLambdaDestinationSqs:
         assert len(request_ids) == 3  # gather invocation ID from all 3 invocations
         assert len(set(request_ids)) == 1  # all 3 are equal
 
-    @pytest.mark.skip_snapshot_verify(paths=["$..SenderId"])
+    @pytest.mark.skip_snapshot_verify(paths=["$..SenderId", "$..Body.requestContext.functionArn"])
     @pytest.mark.xfail(condition=is_old_provider(), reason="only works with new provider")
     @pytest.mark.aws_validated
     def test_maxeventage(
