@@ -200,8 +200,8 @@ DEFAULT_DEVELOP_PORT = 5678
 
 # Default bucket name of the s3 bucket used for local lambda development
 # This name should be accepted by all IaC tools, so should respect s3 bucket naming conventions
-DEFAULT_BUCKET_MARKER_LOCAL = "hot-reloading-bucket"
-OLD_DEFAULT_BUCKET_MARKER_LOCAL = "__local__"
+DEFAULT_BUCKET_MARKER_LOCAL = "hot-reload"
+LEGACY_DEFAULT_BUCKET_MARKER_LOCAL = "__local__"
 
 # user that starts the opensearch process if the current user is root
 OS_USER_OPENSEARCH = "localstack"

@@ -244,12 +244,12 @@ def build_mapping_obj(data) -> Dict:
 def is_hot_reloading(code: dict) -> bool:
     bucket_name = code.get("S3Bucket")
     if (
-        bucket_name == constants.OLD_DEFAULT_BUCKET_MARKER_LOCAL
+        bucket_name == constants.LEGACY_DEFAULT_BUCKET_MARKER_LOCAL
         and bucket_name != config.BUCKET_MARKER_LOCAL
     ):
         LOG.warning(
             "Please note that using %s as local bucket marker is deprecated. Please use %s or set the config option 'BUCKET_MARKER_LOCAL'",
-            constants.OLD_DEFAULT_BUCKET_MARKER_LOCAL,
+            constants.LEGACY_DEFAULT_BUCKET_MARKER_LOCAL,
             constants.DEFAULT_BUCKET_MARKER_LOCAL,
         )
         return True
@@ -597,8 +597,7 @@ def set_archive_code(
     is_local_mount = is_hot_reloading(code)
 
     if is_local_mount and config.LAMBDA_REMOTE_DOCKER:
-        msg = "Please note that Lambda mounts cannot be used with LAMBDA_REMOTE_DOCKER=1"
-        raise Exception(msg)
+        raise Exception("Please note that Lambda mounts cannot be used with LAMBDA_REMOTE_DOCKER=1")
 
     # Stop/remove any containers that this arn uses.
     LAMBDA_EXECUTOR.cleanup(lambda_arn)

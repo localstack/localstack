@@ -225,7 +225,6 @@ class DockerRuntimeExecutor(RuntimeExecutor):
         )
         if self.function_version.config.package_type == PackageType.Zip:
             if self.function_version.config.code.is_hot_reloading():
-                # this basically means hot reloading
                 container_config.env_vars["LOCALSTACK_HOT_RELOADING_ENABLED"] = "1"
                 if container_config.volumes is None:
                     container_config.volumes = VolumeMappings()
