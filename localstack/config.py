@@ -340,9 +340,9 @@ except ImportError:
     pass
 
 # default AWS region
-if "DEFAULT_REGION" not in os.environ:
-    os.environ["DEFAULT_REGION"] = os.environ.get("AWS_DEFAULT_REGION") or AWS_REGION_US_EAST_1
-DEFAULT_REGION = os.environ["DEFAULT_REGION"]
+DEFAULT_REGION = (
+    os.environ.get("DEFAULT_REGION") or os.environ.get("AWS_DEFAULT_REGION") or AWS_REGION_US_EAST_1
+)
 
 # expose services on a specific host externally
 HOSTNAME_EXTERNAL = os.environ.get("HOSTNAME_EXTERNAL", "").strip() or LOCALHOST
