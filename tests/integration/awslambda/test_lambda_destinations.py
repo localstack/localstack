@@ -287,7 +287,7 @@ class TestLambdaDestinationSqs:
     @pytest.mark.skip_snapshot_verify(paths=["$..SenderId"])
     @pytest.mark.xfail(condition=is_old_provider(), reason="only works with new provider")
     @pytest.mark.aws_validated
-    def test_maxretryattempts(
+    def test_maxeventage(
         self,
         lambda_client,
         snapshot,
@@ -304,7 +304,6 @@ class TestLambdaDestinationSqs:
 
         Noteworthy observation:
         * lambda doesn't even wait for the full 60s before the OnFailure destination / DLQ is triggered
-        * the runtime of this test is extremely unpredictable
 
         """
         snapshot.add_transformer(snapshot.transform.lambda_api())
@@ -364,7 +363,6 @@ class TestLambdaDestinationSqs:
 
         # lambda doesn't retry because the first delay already is 60s
         # invocation + 60s (1st delay) > 60s (configured max)
-        # TODO: is this predictable? / deterministic?
 
         def get_msg_from_q():
             msgs = sqs_client.receive_message(
@@ -381,38 +379,34 @@ class TestLambdaDestinationSqs:
             return msgs["Messages"][0]
 
         msg = retry(get_msg_from_q, retries=15, sleep=3)
-        snapshot.match("single_retry_failure_message", msg)
+        snapshot.match("no_retry_failure_message", msg)
 
-        # assert wait_until(msg_in_queue, strategy="linear", wait=3, max_retries=10)
         assert get_filtered_event_count() == 1
 
-        #
-        #
-        # # get msg from q for snapshot
-        # msg = sqs_client.receive_message(QueueUrl=queue_url, AttributeNames=["All"], VisibilityTimeout=0, WaitTimeSeconds=2, MaxNumberOfMessages=1)['Messages'][0]
-        # sqs_client.delete_message(QueueUrl=queue_url, ReceiptHandle=msg['ReceiptHandle'])
-        # snapshot.match("no_retry_queue_message", msg)
-        #
-        # # now we increase the max event age to give it a bit of a buffer for the actual lambda execution (60s + 30s buffer = 90s)
-        # # one retry should now be issued
-        # lambda_client.update_function_event_invoke_config(
-        #     FunctionName=fn_name, MaximumEventAgeInSeconds=90, MaximumRetryAttempts=2
-        # )
-        # lambda_client.get_waiter("function_updated_v2").wait(FunctionName=fn_name)
-        #
-        # lambda_client.invoke(
-        #     FunctionName=fn_name,
-        #     Payload=to_bytes(json.dumps({"message": message_id})),
-        #     InvocationType="Event",  # important, otherwise destinations won't be triggered
-        # )
-        #
-        # # assert wait_until(msg_in_queue, strategy="linear", wait=5, max_retries=20)
-        # assert get_filtered_event_count() == 3  # 2 (invoke + 1 retry) + 1 (from before)
-        # # TODO: why is this 2 vs. 3?
-        # # get msg from q for snapshot
-        # msg = sqs_client.receive_message(QueueUrl=queue_url, AttributeNames=["All"], VisibilityTimeout=2)['Messages'][0]
-        # sqs_client.delete_message(QueueUrl=queue_url, ReceiptHandle=msg['ReceiptHandle'])
-        # snapshot.match("with_retries_queue_message", msg)
+        # now we increase the max event age to give it a bit of a buffer for the actual lambda execution (60s + 30s buffer = 90s)
+        # one retry should now be attempted since there's enough time left
+        lambda_client.update_function_event_invoke_config(
+            FunctionName=fn_name, MaximumEventAgeInSeconds=90, MaximumRetryAttempts=2
+        )
+        lambda_client.get_waiter("function_updated_v2").wait(FunctionName=fn_name)
+
+        # deleting the log group, so we have a 'fresh' counter
+        # without it, the assertion later would need to accommodate for previous invocations
+        logs_client.delete_log_group(logGroupName=f"/aws/lambda/{fn_name}")
+
+        lambda_client.invoke(
+            FunctionName=fn_name,
+            Payload=to_bytes(json.dumps({"message": message_id})),
+            InvocationType="Event",  # important, otherwise destinations won't be triggered
+        )
+        time.sleep(
+            60
+        )  # absolute minimum wait time (time lambda waits between invoke and first retry)
+
+        msg_retried = retry(get_msg_from_q, retries=15, sleep=3)
+        snapshot.match("single_retry_failure_message", msg_retried)
+
+        assert get_filtered_event_count() == 2  # 2 attempts in total (1 retry)
 
 
 # class TestLambdaDestinationSns:
