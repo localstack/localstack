@@ -1634,28 +1634,24 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
 
         # retrieve function
         resolved_fn = state.functions.get(function_name)
-        resource = api_utils.unqualified_lambda_arn(
-            function_name, context.account_id, context.region
-        )
+        fn_arn = api_utils.unqualified_lambda_arn(function_name, context.account_id, context.region)
         if not resolved_fn:
-            raise ResourceNotFoundException(f"Function not found: {resource}", Type="User")
+            raise ResourceNotFoundException(f"Function not found: {fn_arn}", Type="User")
 
         # resolve qualifier
         if qualifier is not None:
-            resource = api_utils.qualified_lambda_arn(
+            fn_arn = api_utils.qualified_lambda_arn(
                 function_name, qualifier, context.account_id, context.region
             )
             if api_utils.qualifier_is_alias(qualifier):
                 if qualifier not in resolved_fn.aliases:
-                    raise ResourceNotFoundException(
-                        f"Cannot find alias arn: {resource}", Type="User"
-                    )
+                    raise ResourceNotFoundException(f"Cannot find alias arn: {fn_arn}", Type="User")
             elif api_utils.qualifier_is_version(qualifier) or qualifier == "$LATEST":
                 if qualifier not in resolved_fn.versions:
-                    raise ResourceNotFoundException(f"Function not found: {resource}", Type="User")
+                    raise ResourceNotFoundException(f"Function not found: {fn_arn}", Type="User")
             else:
                 # matches qualifier pattern but invalid alias or version
-                raise ResourceNotFoundException(f"Function not found: {resource}", Type="User")
+                raise ResourceNotFoundException(f"Function not found: {fn_arn}", Type="User")
         resolved_qualifier = qualifier or "$LATEST"
 
         # check for an already existing policy and any conflicts in existing statements
@@ -1663,7 +1659,7 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
         if existing_policy:
             request_sid = request["StatementId"]
             if request_sid in [s["Sid"] for s in existing_policy.policy.Statement]:
-                # function scope: sid needs to be unique per function
+                # function version scope: statement id needs to be unique per function version
                 raise ResourceConflictException(
                     f"The statement id ({request_sid}) provided already exists. Please provide a new statement id, or remove the existing statement.",
                     Type="User",
@@ -1671,7 +1667,7 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
 
         # TODO: extend build_statement => see todos in there
         permission_statement = api_utils.build_statement(
-            resource,
+            fn_arn,
             request["StatementId"],
             request["Action"],
             request["Principal"],
