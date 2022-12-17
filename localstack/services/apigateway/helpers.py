@@ -927,7 +927,7 @@ class OpenApiExporter:
     exporters: Dict[str, TypeExporter]
 
     def __init__(self):
-        self.exporters = {"swagger": self._swagger_export, "oas3": self._oas3_export}
+        self.exporters = {"swagger": self._swagger_export, "oas30": self._oas30_export}
         self.export_formats = {"application/json": "to_dict", "application/yaml": "to_yaml"}
 
     def export_api(
@@ -970,7 +970,7 @@ class OpenApiExporter:
 
         return getattr(spec, self.export_formats.get(export_format))()
 
-    def _oas3_export(self, api_id: str, stage: str, export_format: str) -> str:
+    def _oas30_export(self, api_id: str, stage: str, export_format: str) -> str:
         """
         https://github.com/OAI/OpenAPI-Specification/blob/main/versions/3.1.0.md
         """
