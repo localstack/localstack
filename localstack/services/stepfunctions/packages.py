@@ -54,11 +54,13 @@ Since the JAR files are platform-independent, you can use the layer digest of an
 
 
 class StepFunctionsLocalPackage(Package):
+    version: str = "1.12.0"
+
     def __init__(self):
-        super().__init__("StepFunctionsLocal", "1.7.9")
+        super().__init__("StepFunctionsLocal", self.version)
 
     def get_versions(self) -> List[str]:
-        return ["1.7.9"]
+        return [self.version]
 
     def _get_installer(self, version: str) -> PackageInstaller:
         return StepFunctionsLocalPackageInstaller("stepfunctions-local", version)
