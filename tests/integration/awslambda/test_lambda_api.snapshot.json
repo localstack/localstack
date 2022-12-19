@@ -8810,7 +8810,7 @@
     }
   },
   "tests/integration/awslambda/test_lambda_api.py::TestLambdaEventInvokeConfig::test_lambda_eventinvokeconfig_lifecycle": {
-    "recorded-date": "16-12-2022, 16:19:51",
+    "recorded-date": "19-12-2022, 14:17:11",
     "recorded-content": {
       "put_invokeconfig_retries_0": {
         "DestinationConfig": {
@@ -8879,6 +8879,20 @@
           "HTTPStatusCode": 200
         }
       },
+      "get_invokeconfig_latest": {
+        "DestinationConfig": {
+          "OnFailure": {},
+          "OnSuccess": {}
+        },
+        "FunctionArn": "arn:aws:lambda:<region>:111111111111:function:<function-name:1>:$LATEST",
+        "LastModified": "datetime",
+        "MaximumEventAgeInSeconds": 60,
+        "MaximumRetryAttempts": 1,
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
       "list_single_invokeconfig": {
         "FunctionEventInvokeConfigs": [
           {
@@ -8929,6 +8943,18 @@
         "ResponseMetadata": {
           "HTTPHeaders": {},
           "HTTPStatusCode": 201
+        }
+      },
+      "get_invokeconfig_postpublish": {
+        "Error": {
+          "Code": "ResourceNotFoundException",
+          "Message": "The function arn:aws:lambda:<region>:111111111111:function:<function-name:1>:1 doesn't have an EventInvokeConfig"
+        },
+        "Message": "The function arn:aws:lambda:<region>:111111111111:function:<function-name:1>:1 doesn't have an EventInvokeConfig",
+        "Type": "User",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 404
         }
       },
       "put_published_invokeconfig": {

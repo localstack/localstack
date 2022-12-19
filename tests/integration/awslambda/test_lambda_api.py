@@ -1462,6 +1462,11 @@ class TestLambdaEventInvokeConfig:
         )
         snapshot.match("get_invokeconfig", get_invokeconfig)
 
+        get_invokeconfig_latest = lambda_client.get_function_event_invoke_config(
+            FunctionName=function_name, Qualifier="$LATEST"
+        )
+        snapshot.match("get_invokeconfig_latest", get_invokeconfig_latest)
+
         list_single_invokeconfig = lambda_client.list_function_event_invoke_configs(
             FunctionName=function_name
         )
@@ -1470,6 +1475,12 @@ class TestLambdaEventInvokeConfig:
         # publish a version so we can have more than one entries for list ops
         publish_version_result = lambda_client.publish_version(FunctionName=function_name)
         snapshot.match("publish_version_result", publish_version_result)
+
+        with pytest.raises(lambda_client.exceptions.ResourceNotFoundException) as e:
+            lambda_client.get_function_event_invoke_config(
+                FunctionName=function_name, Qualifier=publish_version_result["Version"]
+            )
+        snapshot.match("get_invokeconfig_postpublish", e.value.response)
 
         put_published_invokeconfig = lambda_client.put_function_event_invoke_config(
             FunctionName=function_name,
