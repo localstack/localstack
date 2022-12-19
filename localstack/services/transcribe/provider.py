@@ -3,6 +3,7 @@ import json
 import logging
 import os
 import threading
+import traceback
 import wave
 from pathlib import Path
 from typing import Tuple
@@ -331,5 +332,7 @@ class TranscribeProvider(TranscribeApi, ServiceLifecycleHook):
         except Exception as exc:
             job["FailureReason"] = failure_reason or str(exc)
             job["TranscriptionJobStatus"] = TranscriptionJobStatus.FAILED
+
+            traceback.print_exception(type(exc), exc, exc.__traceback__)
 
             LOG.warning("Transcription job %s failed: %s", job_name, job["FailureReason"])
