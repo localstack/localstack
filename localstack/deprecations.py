@@ -189,7 +189,7 @@ def deprecated_endpoint(
     """
     Wrapper function which logs a warning (and a deprecation path) whenever a deprecated URL is invoked by a router.
 
-    :param endpoint: to wrap (log a warning whenevery it is invoked)
+    :param endpoint: to wrap (log a warning whenever it is invoked)
     :param previous_path: route path it is triggered by
     :param deprecation_version: version of LocalStack with which this endpoint is deprecated
     :param new_path: new route path which should be used instead

@@ -1,12 +1,14 @@
 import os
+from urllib.parse import urlparse
 
 import pytest
 from botocore.exceptions import ClientError
 
 from localstack.aws.api.transcribe import BadRequestException, NotFoundException
+from localstack.utils.files import new_tmp_file
 from localstack.utils.platform import get_arch
-from localstack.utils.strings import short_uid
-from localstack.utils.sync import poll_condition
+from localstack.utils.strings import short_uid, to_str
+from localstack.utils.sync import poll_condition, retry
 
 BASEDIR = os.path.abspath(os.path.dirname(__file__))
 
@@ -25,7 +27,6 @@ class TestTranscribe:
     @pytest.mark.aws_validated
     @pytest.mark.skip_snapshot_verify(
         paths=[
-            "$..TranscriptionJob..MediaSampleRateHertz",
             "$..TranscriptionJob..Settings",
             "$..Error..Code",
         ]
@@ -59,6 +60,54 @@ class TestTranscribe:
             transcribe_client.get_transcription_job(TranscriptionJobName=job_name)
 
         snapshot.match("GetError", e_info.value.response)
+
+    @pytest.mark.parametrize(
+        "media_file",
+        [
+            "files/en-gb.amr",
+            "files/en-gb.flac",
+            "files/en-gb.mp3",
+            "files/en-gb.mp4",
+            "files/en-gb.ogg",
+            "files/en-gb.webm",
+        ],
+    )
+    def test_transcribe_supported_media_formats(
+        self, s3_client, transcribe_client, transcribe_create_job, media_file
+    ):
+        file_path = os.path.join(BASEDIR, media_file)
+        job_name = transcribe_create_job(audio_file=file_path)
+
+        def _assert_transcript():
+            transcription_status = transcribe_client.get_transcription_job(
+                TranscriptionJobName=job_name
+            )
+            assert transcription_status["TranscriptionJob"]["TranscriptionJobStatus"] == "COMPLETED"
+            # Ensure transcript can be retrieved from S3
+            s3_uri = urlparse(
+                transcription_status["TranscriptionJob"]["Transcript"]["TranscriptFileUri"],
+                allow_fragments=False,
+            )
+            data = s3_client.get_object(Bucket=s3_uri.netloc, Key=s3_uri.path.removeprefix("/"))
+            content = to_str(data["Body"].read())
+            assert "hello my name is" in content
+
+        retry(_assert_transcript, retries=30, sleep=2)
+
+    def test_transcribe_unsupported_media_format_failure(
+        self, transcribe_client, transcribe_create_job
+    ):
+        # Ensure transcribing an empty file fails
+        file_path = new_tmp_file()
+        job_name = transcribe_create_job(audio_file=file_path)
+
+        def _assert_transcript():
+            transcription_status = transcribe_client.get_transcription_job(
+                TranscriptionJobName=job_name
+            )
+            assert transcription_status["TranscriptionJob"]["TranscriptionJobStatus"] == "FAILED"
+
+        retry(_assert_transcript, retries=10, sleep=3)
 
     @pytest.mark.aws_validated
     @pytest.mark.skip_snapshot_verify(

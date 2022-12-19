@@ -6,7 +6,7 @@ import threading
 
 from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
 
-from .files import TMP_FILES, load_file, new_tmp_file, save_file
+from .files import TMP_FILES, file_exists_not_empty, load_file, new_tmp_file, save_file
 from .strings import short_uid, to_bytes, to_str
 from .sync import synchronized
 
@@ -58,7 +58,7 @@ def generate_ssl_cert(
         save_file(cert_file_name, cert_content)
         return cert_file_name, key_file_name
 
-    if target_file and not overwrite and os.path.exists(target_file):
+    if target_file and not overwrite and file_exists_not_empty(target_file):
         try:
             cert_file_name, key_file_name = store_cert_key_files(target_file)
         except Exception as e:

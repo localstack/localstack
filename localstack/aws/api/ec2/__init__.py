@@ -2279,6 +2279,7 @@ class ResourceType(str):
     verified_access_policy = "verified-access-policy"
     verified_access_trust_provider = "verified-access-trust-provider"
     vpn_connection_device_type = "vpn-connection-device-type"
+    vpc_block_public_access_exclusion = "vpc-block-public-access-exclusion"
 
 
 class RootDeviceType(str):
@@ -9740,6 +9741,9 @@ class DescribeFpgaImagesRequest(ServiceRequest):
     MaxResults: Optional[DescribeFpgaImagesMaxResults]
 
 
+InstanceTypesList = List[String]
+
+
 class FpgaImageState(TypedDict, total=False):
     Code: Optional[FpgaImageStateCode]
     Message: Optional[String]
@@ -9768,6 +9772,7 @@ class FpgaImage(TypedDict, total=False):
     Tags: Optional[TagList]
     Public: Optional[Boolean]
     DataRetentionSupport: Optional[Boolean]
+    InstanceTypes: Optional[InstanceTypesList]
 
 
 FpgaImageList = List[FpgaImage]

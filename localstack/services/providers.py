@@ -417,4 +417,5 @@ def transcribe():
     return Service(
         "transcribe",
         listener=AwsApiListener("transcribe", MotoFallbackDispatcher(provider)),
+        lifecycle_hook=provider,
     )

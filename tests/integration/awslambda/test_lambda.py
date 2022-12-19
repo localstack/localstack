@@ -968,9 +968,36 @@ class TestLambdaFeatures:
         retry(check_logs, retries=15)
 
 
-@pytest.mark.skipif(not is_old_provider(), reason="Not yet implemented")
 @pytest.mark.skipif(condition=is_old_provider(), reason="not supported")
 class TestLambdaConcurrency:
+    @pytest.mark.aws_validated
+    def test_lambda_concurrency_crud(self, snapshot, create_lambda_function, lambda_client):
+        func_name = f"fn-concurrency-{short_uid()}"
+        create_lambda_function(
+            func_name=func_name,
+            handler_file=TEST_LAMBDA_PYTHON_ECHO,
+            runtime=Runtime.python3_9,
+        )
+
+        default_concurrency_result = lambda_client.get_function_concurrency(FunctionName=func_name)
+        snapshot.match("get_function_concurrency_default", default_concurrency_result)
+
+        # 0 should always succeed independent of the UnreservedConcurrentExecution limits
+        reserved_concurrency_result = lambda_client.put_function_concurrency(
+            FunctionName=func_name, ReservedConcurrentExecutions=0
+        )
+        snapshot.match("put_function_concurrency", reserved_concurrency_result)
+
+        updated_concurrency_result = lambda_client.get_function_concurrency(FunctionName=func_name)
+        snapshot.match("get_function_concurrency_updated", updated_concurrency_result)
+        assert updated_concurrency_result["ReservedConcurrentExecutions"] == 0
+
+        lambda_client.delete_function_concurrency(FunctionName=func_name)
+
+        deleted_concurrency_result = lambda_client.get_function_concurrency(FunctionName=func_name)
+        snapshot.match("get_function_concurrency_deleted", deleted_concurrency_result)
+
+    @pytest.mark.skipif(not is_old_provider(), reason="Not yet implemented")
     @pytest.mark.aws_validated
     def test_lambda_concurrency_block(self, snapshot, create_lambda_function, lambda_client):
         """
@@ -1022,7 +1049,7 @@ class TestLambdaConcurrency:
             )
         snapshot.match("invoke_latest_first_exc", e.value.response)
 
-        # but we can call the version with provisioned cocurrency
+        # but we can call the version with provisioned concurrency
         invoke_v1_after_block = lambda_client.invoke(
             FunctionName=func_name, Qualifier=v1, Payload=json.dumps({"hello": "world"})
         )
@@ -1035,6 +1062,7 @@ class TestLambdaConcurrency:
             )
         snapshot.match("invoke_latest_second_exc", e.value.response)
 
+    @pytest.mark.skipif(not is_old_provider(), reason="Not yet implemented")
     @pytest.mark.skipif(condition=is_aws(), reason="very slow (only execute when needed)")
     @pytest.mark.aws_validated
     def test_lambda_provisioned_concurrency_moves_with_alias(

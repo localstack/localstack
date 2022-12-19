@@ -799,13 +799,13 @@ def test_export_swagger_openapi(apigateway_client):
     assert all(k in spec_object.keys() for k in optional_keys)
 
 
-def test_export_oas3_openapi(apigateway_client):
+def test_export_oas30_openapi(apigateway_client):
     spec_file = load_file(TEST_IMPORT_PETSTORE_SWAGGER)
     response = apigateway_client.import_rest_api(failOnWarnings=True, body=spec_file)
     assert response.get("ResponseMetadata").get("HTTPStatusCode") == 201
 
     response = apigateway_client.get_export(
-        restApiId=response["id"], stageName="local", exportType="oas3"
+        restApiId=response["id"], stageName="local", exportType="oas30"
     )
     spec_object = json.loads(response["body"].read())
     # required keys

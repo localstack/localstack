@@ -23,7 +23,11 @@ from localstack.services.awslambda.lambda_utils import (
     get_main_endpoint_from_container,
 )
 from localstack.services.awslambda.packages import awslambda_runtime_package
-from localstack.utils.container_utils.container_client import ContainerConfiguration
+from localstack.utils.container_utils.container_client import (
+    ContainerConfiguration,
+    VolumeBind,
+    VolumeMappings,
+)
 from localstack.utils.docker_utils import DOCKER_CLIENT as CONTAINER_CLIENT
 from localstack.utils.strings import truncate
 
@@ -219,6 +223,26 @@ class DockerRuntimeExecutor(RuntimeExecutor):
             network=network,
             entrypoint=RAPID_ENTRYPOINT,
         )
+        if self.function_version.config.package_type == PackageType.Zip:
+            if self.function_version.config.code.is_hot_reloading():
+                container_config.env_vars["LOCALSTACK_HOT_RELOADING_ENABLED"] = "1"
+                if container_config.volumes is None:
+                    container_config.volumes = VolumeMappings()
+                container_config.volumes.append(
+                    VolumeBind(
+                        str(self.function_version.config.code.get_unzipped_code_location()),
+                        "/var/task",
+                        read_only=True,
+                    )
+                )
+            else:
+                container_config.copy_folders.append(
+                    (
+                        f"{str(self.function_version.config.code.get_unzipped_code_location())}/.",
+                        "/var/task",
+                    )
+                )
+
         lambda_hooks.start_docker_executor.run(container_config, self.function_version)
 
         if not container_config.image_name:
@@ -232,15 +256,10 @@ class DockerRuntimeExecutor(RuntimeExecutor):
             CONTAINER_CLIENT.copy_into_container(
                 self.id, str(get_runtime_client_path()), RAPID_ENTRYPOINT
             )
-        if self.function_version.config.package_type == PackageType.Zip:
-            if not config.LAMBDA_PREBUILD_IMAGES:
-                CONTAINER_CLIENT.copy_into_container(
-                    self.id,
-                    f"{str(self.function_version.config.code.get_unzipped_code_location())}/.",
-                    "/var/task",
-                )
-                for source, target in container_config.copy_folders:
-                    CONTAINER_CLIENT.copy_into_container(self.id, source, target)
+        if not config.LAMBDA_PREBUILD_IMAGES:
+            # copy_folders should be empty here if package type is not zip
+            for source, target in container_config.copy_folders:
+                CONTAINER_CLIENT.copy_into_container(self.id, source, target)
 
         CONTAINER_CLIENT.start_container(self.id)
         self.ip = CONTAINER_CLIENT.get_container_ipv4_for_network(
@@ -285,8 +304,6 @@ class DockerRuntimeExecutor(RuntimeExecutor):
         lambda_hooks.prepare_docker_executor.run(function_version)
         if function_version.config.code:
             function_version.config.code.prepare_for_execution()
-            for layer in function_version.config.layers:
-                layer.code.prepare_for_execution()
             image_name = resolver.get_image_for_runtime(function_version.config.runtime)
             if image_name not in PULLED_IMAGES:
                 CONTAINER_CLIENT.pull_image(image_name)

@@ -809,6 +809,10 @@ class SqsProvider(SqsApi, ServiceLifecycleHook):
             wait_time_seconds = queue.wait_time_seconds
 
         num = max_number_of_messages or 1
+        # backdoor to get all messages
+        if num == -1:
+            num = queue.visible.qsize()
+
         block = True if wait_time_seconds else False
         # collect messages
         messages = []
