@@ -45,9 +45,8 @@ def _setup_cli_debug():
 @click.option("--debug", is_flag=True, help="Enable CLI debugging mode")
 @click.option("--profile", type=str, help="Set the configuration profile")
 def localstack(debug, profile):
-    if profile:
-        os.environ["CONFIG_PROFILE"] = profile
-        config.CONFIG_PROFILE = profile
+    # --profile is read manually in localstack.cli.main because it needs to be read before localstack.config is read
+
     if debug:
         _setup_cli_debug()
 
