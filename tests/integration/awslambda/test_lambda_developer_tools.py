@@ -20,8 +20,8 @@ HOT_RELOADING_PYTHON_HANDLER = os.path.join(
 )
 
 
+@pytest.mark.skipif(condition=is_old_provider(), reason="Focussing on the new provider")
 class TestHotReloading:
-    @pytest.mark.skipif(condition=is_old_provider(), reason="Focussing on the new provider")
     @pytest.mark.parametrize(
         "runtime,handler_file,handler_filename",
         [
