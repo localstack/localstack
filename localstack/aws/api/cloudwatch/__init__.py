@@ -125,6 +125,10 @@ class ComparisonOperator(str):
     GreaterThanUpperThreshold = "GreaterThanUpperThreshold"
 
 
+class EvaluationState(str):
+    PARTIAL_DATA = "PARTIAL_DATA"
+
+
 class HistoryItemType(str):
     ConfigurationUpdate = "ConfigurationUpdate"
     StateUpdate = "StateUpdate"
@@ -539,6 +543,8 @@ class MetricAlarm(TypedDict, total=False):
     EvaluateLowSampleCountPercentile: Optional[EvaluateLowSampleCountPercentile]
     Metrics: Optional[MetricDataQueries]
     ThresholdMetricId: Optional[MetricId]
+    EvaluationState: Optional[EvaluationState]
+    StateTransitionedTimestamp: Optional[Timestamp]
 
 
 MetricAlarms = List[MetricAlarm]
