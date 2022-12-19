@@ -165,8 +165,10 @@ class HTTPRequestEventStreamAdapter:
             buf.clear()
             return arr
 
-        if len(buf) < size:
-            self._read_into(buf)
+        while len(buf) <= size:
+            _, more = self._read_into(buf)
+            if not more:
+                break
 
         copy = bytes(buf[:size])
         self._buffer = buf[size:]
