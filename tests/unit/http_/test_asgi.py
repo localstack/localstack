@@ -212,6 +212,20 @@ def test_multipart_post(serve_asgi_adapter):
     assert response.json() == {"foo": "bar", "baz": "ed"}
 
 
+def test_multipart_post_with_large_binary_file(serve_asgi_adapter):
+    @Request.application
+    def app(request: Request) -> Response:
+        assert request.mimetype == "multipart/form-data"
+        assert request.data == b""
+        result = {}
+        return Response(json.dumps(result), 200)
+
+    server = serve_asgi_adapter(app)
+
+    response = requests.post(server.url, files={"file": b"\x00" * 66000})
+    assert response.ok
+
+
 def test_utf8_path(serve_asgi_adapter):
     @Request.application
     def app(request: Request) -> Response:
