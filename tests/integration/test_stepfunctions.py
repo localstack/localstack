@@ -522,19 +522,14 @@ class TestStateMachine:
                 name=sm_name, definition=definition, roleArn=role_arn
             )
             assert result["ResponseMetadata"]["HTTPStatusCode"] == 200
+            cleanups.append(lambda: stepfunctions_client.delete_state_machine(stateMachineArn=result["stateMachineArn"]))
             results.append(result)
             stepfunctions_client.describe_state_machine(stateMachineArn=result["stateMachineArn"])
             stepfunctions_client.list_tags_for_resource(resourceArn=result["stateMachineArn"])
 
-        try:
-            num_machines = 30
-            parallelize(_create_sm, list(range(num_machines)), size=2)
-            assert len(results) == num_machines
-        finally:
-            for machine in results:
-                stepfunctions_client.delete_state_machine(
-                    stateMachineArn=machine["stateMachineArn"]
-                )
+        num_machines = 30
+        parallelize(_create_sm, list(range(num_machines)), size=2)
+        assert len(results) == num_machines
 
 
 TEST_STATE_MACHINE = {
