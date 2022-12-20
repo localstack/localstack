@@ -1,4 +1,5 @@
 import json
+import math
 import os
 import time
 from unittest.mock import patch
@@ -48,7 +49,6 @@ def _snapshot_transformers(snapshot):
 @pytest.mark.skip_snapshot_verify(
     paths=[
         "$..Records..eventID",
-        "$..Records..kinesis.encryptionType",
         "$..Records..kinesis.kinesisSchemaVersion",
         "$..BisectBatchOnFunctionError",
         "$..DestinationConfig",
@@ -121,6 +121,11 @@ class TestKinesisSource:
         events = retry(_send_and_receive_messages, retries=3)
         records = events[0]
         snapshot.match("kinesis_records", records)
+        # check if the timestamp has the correct format
+        timestamp = events[0]["Records"][0]["kinesis"]["approximateArrivalTimestamp"]
+        # check if the timestamp has same amount of numbers before the comma as the current timestamp
+        # this will fail in november 2286, if this code is still around by then, read this comment and update to 10
+        assert int(math.log10(timestamp)) == 9
 
     # FIXME remove usage of this config value with 2.0
     @patch.object(config, "SYNCHRONOUS_KINESIS_EVENTS", False)
