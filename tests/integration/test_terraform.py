@@ -143,6 +143,7 @@ class TestTerraform:
         assert function_mapping["EventSourceArn"] == queue_arn
 
     @pytest.mark.skip_offline
+    @pytest.mark.xfail(reason="flaky")
     def test_apigateway(self, apigateway_client):
         rest_apis = apigateway_client.get_rest_apis()
 
@@ -187,6 +188,7 @@ class TestTerraform:
         assert len(certs) == 1
 
     @pytest.mark.skip_offline
+    @pytest.mark.xfail(reason="flaky")
     def test_apigateway_escaped_policy(self, apigateway_client):
         rest_apis = apigateway_client.get_rest_apis()
 
