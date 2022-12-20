@@ -2211,7 +2211,8 @@ class TestSNSProvider:
         message = "test_dlq_after_sqs_endpoint_deleted"
         sns_client.publish(TopicArn=topic_arn, Message=message)
         # to avoid race condition, publish is async and the redrive policy can be in effect before the actual publish
-        time.sleep(1)
+        # there isn't a proper way to check that the message has been published before setting the RedrivePolicy
+        time.sleep(3)
 
         # check the subscription is still there after we deleted the queue
         subscriptions = sns_client.list_subscriptions_by_topic(TopicArn=topic_arn)
