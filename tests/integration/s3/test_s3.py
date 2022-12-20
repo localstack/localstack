@@ -2704,13 +2704,12 @@ class TestS3PresignedUrl:
         snapshot.match("get_object", response)
 
     @pytest.mark.aws_validated
-    @pytest.mark.xfail(
-        reason="failing sporadically with new HTTP gateway (only in CI)",
-    )
     def test_post_object_with_files(self, s3_client, s3_bucket):
         object_key = "test-presigned-post-key"
 
-        body = b"something body"
+        body = (
+            b"0" * 70_000
+        )  # make sure the payload size is large to force chunking in our internal implementation
 
         presigned_request = s3_client.generate_presigned_post(
             Bucket=s3_bucket,
