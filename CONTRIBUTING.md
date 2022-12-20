@@ -6,6 +6,7 @@ For pull requests, please stick to the following guidelines:
 
 * Add tests for any new features and bug fixes. Ideally, each PR should increase the test coverage.
 * Follow the existing code style. Run `make format` and `make lint` before checking in your code.
+  * This might involve previous runs of `make venv` and `make install`, in order to have proper local setup.
 * Put a reasonable amount of comments into the code.
 * Fork localstack on your GitHub user account, do your changes there and then create a PR against main localstack repository.
 * Separate unrelated changes into multiple pull requests.
