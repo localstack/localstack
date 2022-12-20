@@ -1492,7 +1492,7 @@
     "recorded-content": {}
   },
   "tests/integration/test_sns.py::TestSNSProvider::test_subscription_after_failure_to_deliver": {
-    "recorded-date": "10-08-2022, 17:04:52",
+    "recorded-date": "20-12-2022, 20:25:24",
     "recorded-content": {
       "subscriptions-attrs": {
         "Attributes": {
@@ -1503,6 +1503,7 @@
           "Protocol": "sqs",
           "RawMessageDelivery": "false",
           "SubscriptionArn": "arn:aws:sns:<region>:111111111111:<resource:3>:<resource:2>",
+          "SubscriptionPrincipal": "<sub-principal>",
           "TopicArn": "arn:aws:sns:<region>:111111111111:<resource:3>"
         },
         "ResponseMetadata": {
@@ -1535,10 +1536,6 @@
         }
       },
       "subscriptions": {
-        "ResponseMetadata": {
-          "HTTPHeaders": {},
-          "HTTPStatusCode": 200
-        },
         "Subscriptions": [
           {
             "Endpoint": "arn:aws:sqs:<region>:111111111111:<resource:1>",
@@ -1547,7 +1544,11 @@
             "SubscriptionArn": "arn:aws:sns:<region>:111111111111:<resource:3>:<resource:2>",
             "TopicArn": "arn:aws:sns:<region>:111111111111:<resource:3>"
           }
-        ]
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
       },
       "subscriptions-attrs-with-redrive": {
         "Attributes": {
@@ -1561,6 +1562,7 @@
             "deadLetterTargetArn": "arn:aws:sqs:<region>:111111111111:<resource:4>"
           },
           "SubscriptionArn": "arn:aws:sns:<region>:111111111111:<resource:3>:<resource:2>",
+          "SubscriptionPrincipal": "<sub-principal>",
           "TopicArn": "arn:aws:sns:<region>:111111111111:<resource:3>"
         },
         "ResponseMetadata": {
