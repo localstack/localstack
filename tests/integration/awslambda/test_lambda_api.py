@@ -2401,16 +2401,29 @@ class TestLambdaPermissions:
             FunctionName=function_name,
             StatementId=sid_2,
         )
-        policy = json.loads(
-            lambda_client.get_policy(
-                FunctionName=function_name,
-            )["Policy"]
+
+        policy_response_removal = lambda_client.get_policy(
+            FunctionName=function_name,
         )
-        snapshot.match("policy_after_removal", policy)
+        snapshot.match("policy_after_removal", policy_response_removal)
+
+        with pytest.raises(lambda_client.exceptions.PreconditionFailedException) as e:
+            lambda_client.remove_permission(
+                FunctionName=function_name,
+                StatementId=sid,
+                RevisionId=long_uid(),  # non-matching revision id
+            )
+        snapshot.match("expect_revision_error_remove_permission", e.value.response)
+
+        policy_response_removal_attempt = lambda_client.get_policy(
+            FunctionName=function_name,
+        )
+        snapshot.match("policy_after_removal_attempt", policy_response_removal_attempt)
 
         lambda_client.remove_permission(
             FunctionName=function_name,
             StatementId=sid,
+            RevisionId=policy_response_removal_attempt["RevisionId"],
         )
         # get_policy raises an exception after removing all permissions
         with pytest.raises(lambda_client.exceptions.ResourceNotFoundException) as ctx:
