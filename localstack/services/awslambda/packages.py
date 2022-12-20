@@ -101,10 +101,10 @@ URL_LOCALSTACK_FAT_JAR = (
 
 class AWSLambdaJavaPackage(Package):
     def __init__(self):
-        super().__init__("LambdaJavaLibs", "0.2.21")
+        super().__init__("LambdaJavaLibs", "0.2.22")
 
     def get_versions(self) -> List[str]:
-        return ["0.2.21"]
+        return ["0.2.22", "0.2.21"]
 
     def _get_installer(self, version: str) -> PackageInstaller:
         return AWSLambdaJavaPackageInstaller("lambda-java-libs", version)
