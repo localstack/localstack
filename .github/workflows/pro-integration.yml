@@ -186,7 +186,7 @@ jobs:
           # Remove the host tmp folder (might contain remnant files with different permissions)
           sudo rm -rf ../localstack/.filesystem/var/lib/localstack/tmp
           source .venv/bin/activate
-          python -m pytest --capture=no --reruns 2 --durations=10 --junitxml=target/reports/pytest.xml ../localstack/tests/integration/ -k TestTranscribe
+          python -m pytest --capture=no --reruns 2 --durations=10 --junitxml=target/reports/pytest.xml ../localstack/tests/integration/
       - name: Run Lambda Tests for lambda executor docker
         env:
           DEBUG: 0
