@@ -526,12 +526,15 @@ class TestStateMachine:
             stepfunctions_client.describe_state_machine(stateMachineArn=result["stateMachineArn"])
             stepfunctions_client.list_tags_for_resource(resourceArn=result["stateMachineArn"])
 
-        num_machines = 30
-        parallelize(_create_sm, list(range(num_machines)), size=2)
-        assert len(results) == num_machines
-
-        for machine in results:
-            stepfunctions_client.delete_state_machine(stateMachineArn=machine["stateMachineArn"])
+        try:
+            num_machines = 30
+            parallelize(_create_sm, list(range(num_machines)), size=2)
+            assert len(results) == num_machines
+        finally:
+            for machine in results:
+                stepfunctions_client.delete_state_machine(
+                    stateMachineArn=machine["stateMachineArn"]
+                )
 
 
 TEST_STATE_MACHINE = {
