@@ -2301,7 +2301,7 @@ class TestLambdaPermissions:
     def test_add_lambda_permission_aws(
         self, lambda_client, iam_client, create_lambda_function, account_id, snapshot
     ):
-        """Testing the add_permission call on lambda, by adding a new resource-based policy to a lambda function"""
+        """Testing the add_permission call on lambda, by adding new resource-based policies to a lambda function"""
 
         function_name = f"lambda_func-{short_uid()}"
         lambda_create_response = create_lambda_function(
@@ -2310,6 +2310,7 @@ class TestLambdaPermissions:
             runtime=Runtime.python3_9,
         )
         snapshot.match("create_lambda", lambda_create_response)
+
         # create lambda permission
         action = "lambda:InvokeFunction"
         sid = "s3"
@@ -2326,6 +2327,32 @@ class TestLambdaPermissions:
         # fetch lambda policy
         get_policy_result = lambda_client.get_policy(FunctionName=function_name)
         snapshot.match("get_policy", get_policy_result)
+
+        # publish version
+        fn_version_result = lambda_client.publish_version(FunctionName=function_name)
+        fn_version = fn_version_result["Version"]
+        get_policy_result_after_publishing = lambda_client.get_policy(FunctionName=function_name)
+        snapshot.match("get_policy_after_publishing_latest", get_policy_result_after_publishing)
+
+        # permissions apply per function unless providing a specific version or alias
+        with pytest.raises(lambda_client.exceptions.ResourceNotFoundException) as e:
+            lambda_client.get_policy(FunctionName=function_name, Qualifier=fn_version)
+        # TODO: fix parity issue in LS
+        snapshot.match("get_policy_after_publishing_new_version", e.value.response)
+
+        # create lambda permission with the same sid for specific function version
+        lambda_client.add_permission(
+            FunctionName=f"{function_name}:{fn_version}",  # version suffix matching Qualifier
+            Action=action,
+            StatementId=sid,
+            Principal=principal,
+            SourceArn=arns.s3_bucket_arn("test-bucket"),
+            Qualifier=fn_version,
+        )
+
+        get_policy_result_re_adding = lambda_client.get_policy(FunctionName=function_name)
+        # TODO: fix parity issue in LS
+        snapshot.match("get_policy_after_adding_to_new_version", get_policy_result_re_adding)
 
     @pytest.mark.skip_snapshot_verify(paths=["$..Message"], condition=is_old_provider)
     @pytest.mark.aws_validated
