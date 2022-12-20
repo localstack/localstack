@@ -4,6 +4,7 @@ import re
 from botocore.exceptions import ClientError
 
 from localstack.constants import S3_STATIC_WEBSITE_HOSTNAME, S3_VIRTUAL_HOSTNAME
+from localstack.services.cloudformation.cfn_utils import rename_params
 from localstack.services.cloudformation.deployment_utils import (
     PLACEHOLDER_RESOURCE_NAME,
     dump_json_params,
@@ -12,7 +13,6 @@ from localstack.services.cloudformation.deployment_utils import (
 from localstack.services.cloudformation.service_models import GenericBaseModel
 from localstack.services.s3 import s3_listener, s3_utils
 from localstack.utils.aws import arns, aws_stack
-from localstack.utils.cloudformation.cfn_utils import rename_params
 from localstack.utils.common import canonical_json, md5
 from localstack.utils.testutil import delete_all_s3_objects
 
