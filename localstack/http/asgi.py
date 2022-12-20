@@ -400,3 +400,30 @@ class ASGIAdapter:
                         await response.write(packet)
         finally:
             await response.close()
+
+
+def patch_werkzeug():
+    from werkzeug.wsgi import LimitedStream
+
+    from localstack.utils.patch import patch
+
+    @patch(LimitedStream.read, pass_target=False)
+    def _read(self, size: t.Optional[int] = None):
+        # FIXME: This is a bandaid for https://github.com/pallets/werkzeug/issues/2558 and should be removed once the
+        #  issue is fixed
+        if self._pos >= self.limit:
+            return self.on_exhausted()
+        if size is None or size == -1:
+            size = self.limit
+        to_read = min(self.limit - self._pos, size)
+        try:
+            read = self._read(to_read)
+        except (OSError, ValueError):
+            return self.on_disconnect()
+        if to_read and not len(read):  # this line is affected by the original code
+            return self.on_disconnect()
+        self._pos += len(read)
+        return read
+
+
+patch_werkzeug()
