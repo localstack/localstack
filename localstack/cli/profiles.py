@@ -10,7 +10,8 @@ def set_profile_from_sys_argv():
     Reads the --profile flag from sys.argv and then sets the 'CONFIG_PROFILE' os variable accordingly. This is later
     picked up by ``localstack.config``.
     """
-    if profile := parse_profile_argument(sys.argv):
+    profile = parse_profile_argument(sys.argv)
+    if profile:
         os.environ["CONFIG_PROFILE"] = profile.strip()
 
 
