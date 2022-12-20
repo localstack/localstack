@@ -1694,7 +1694,7 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
         function_name: FunctionName,
         statement_id: NamespacedStatementId,
         qualifier: Qualifier = None,
-        revision_id: String = None,  # TODO
+        revision_id: String = None,
     ) -> None:
         state = lambda_stores[context.account_id][context.region]
         function_name, qualifier = api_utils.get_name_and_qualifier(
@@ -1726,7 +1726,13 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
             raise ResourceNotFoundException(
                 f"Statement {statement_id} is not found in resource policy.", Type="User"
             )
+        if revision_id and function_permission.revision_id != revision_id:
+            raise PreconditionFailedException(
+                "The Revision Id provided does not match the latest Revision Id. Call the GetFunction/GetAlias API to retrieve the latest Revision Id",
+                Type="User",
+            )
         function_permission.policy.Statement.remove(statement)
+        function_permission.revision_id = FunctionResourcePolicy.new_revision_id()
 
         # remove the policy as a whole when there's no statement left in it
         if len(function_permission.policy.Statement) == 0:
