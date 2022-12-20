@@ -1420,9 +1420,110 @@ pytestmark = pytest.mark.skip_snapshot_verify(
 
 @pytest.mark.skipif(condition=is_old_provider(), reason="not supported")
 class TestLambdaEventInvokeConfig:
-    def test_lambda_eventinvokeconfig_exceptions(
-        self, lambda_client, create_lambda_function, snapshot, lambda_su_role, account_id
+    """TODO: add sqs & stream specific lifecycle snapshot tests"""
+
+    @pytest.mark.aws_validated
+    def test_lambda_eventinvokeconfig_lifecycle(
+        self, create_lambda_function, lambda_su_role, lambda_client, snapshot
     ):
+        function_name = f"fn-eventinvoke-{short_uid()}"
+        create_lambda_function(
+            handler_file=TEST_LAMBDA_PYTHON_ECHO,
+            func_name=function_name,
+            runtime=Runtime.python3_9,
+            role=lambda_su_role,
+        )
+
+        put_invokeconfig_retries_0 = lambda_client.put_function_event_invoke_config(
+            FunctionName=function_name,
+            MaximumRetryAttempts=0,
+        )
+        snapshot.match("put_invokeconfig_retries_0", put_invokeconfig_retries_0)
+
+        put_invokeconfig_eventage_60 = lambda_client.put_function_event_invoke_config(
+            FunctionName=function_name, MaximumEventAgeInSeconds=60
+        )
+        snapshot.match("put_invokeconfig_eventage_60", put_invokeconfig_eventage_60)
+
+        update_invokeconfig_eventage_nochange = lambda_client.update_function_event_invoke_config(
+            FunctionName=function_name, MaximumEventAgeInSeconds=60
+        )
+        snapshot.match(
+            "update_invokeconfig_eventage_nochange", update_invokeconfig_eventage_nochange
+        )
+
+        update_invokeconfig_retries = lambda_client.update_function_event_invoke_config(
+            FunctionName=function_name, MaximumRetryAttempts=1
+        )
+        snapshot.match("update_invokeconfig_retries", update_invokeconfig_retries)
+
+        get_invokeconfig = lambda_client.get_function_event_invoke_config(
+            FunctionName=function_name
+        )
+        snapshot.match("get_invokeconfig", get_invokeconfig)
+
+        get_invokeconfig_latest = lambda_client.get_function_event_invoke_config(
+            FunctionName=function_name, Qualifier="$LATEST"
+        )
+        snapshot.match("get_invokeconfig_latest", get_invokeconfig_latest)
+
+        list_single_invokeconfig = lambda_client.list_function_event_invoke_configs(
+            FunctionName=function_name
+        )
+        snapshot.match("list_single_invokeconfig", list_single_invokeconfig)
+
+        # publish a version so we can have more than one entries for list ops
+        publish_version_result = lambda_client.publish_version(FunctionName=function_name)
+        snapshot.match("publish_version_result", publish_version_result)
+
+        with pytest.raises(lambda_client.exceptions.ResourceNotFoundException) as e:
+            lambda_client.get_function_event_invoke_config(
+                FunctionName=function_name, Qualifier=publish_version_result["Version"]
+            )
+        snapshot.match("get_invokeconfig_postpublish", e.value.response)
+
+        put_published_invokeconfig = lambda_client.put_function_event_invoke_config(
+            FunctionName=function_name,
+            Qualifier=publish_version_result["Version"],
+            MaximumEventAgeInSeconds=120,
+        )
+        snapshot.match("put_published_invokeconfig", put_published_invokeconfig)
+
+        # list paging
+        list_paging_single = lambda_client.list_function_event_invoke_configs(
+            FunctionName=function_name, MaxItems=1
+        )
+        list_paging_nolimit = lambda_client.list_function_event_invoke_configs(
+            FunctionName=function_name
+        )
+        assert len(list_paging_single["FunctionEventInvokeConfigs"]) == 1
+        assert len(list_paging_nolimit["FunctionEventInvokeConfigs"]) == 2
+
+        all_arns = {a["FunctionArn"] for a in list_paging_nolimit["FunctionEventInvokeConfigs"]}
+
+        list_paging_remaining = lambda_client.list_function_event_invoke_configs(
+            FunctionName=function_name, Marker=list_paging_single["NextMarker"], MaxItems=1
+        )
+        assert len(list_paging_remaining["FunctionEventInvokeConfigs"]) == 1
+        assert all_arns == {
+            list_paging_single["FunctionEventInvokeConfigs"][0]["FunctionArn"],
+            list_paging_remaining["FunctionEventInvokeConfigs"][0]["FunctionArn"],
+        }
+
+        lambda_client.delete_function_event_invoke_config(FunctionName=function_name)
+        list_paging_nolimit_postdelete = lambda_client.list_function_event_invoke_configs(
+            FunctionName=function_name
+        )
+        snapshot.match("list_paging_nolimit_postdelete", list_paging_nolimit_postdelete)
+
+    @pytest.mark.aws_validated
+    def test_lambda_eventinvokeconfig_exceptions(
+        self, create_lambda_function, snapshot, lambda_su_role, account_id, create_boto_client
+    ):
+        """some parts could probably be split apart (e.g. overwriting with update)"""
+        lambda_client = create_boto_client(
+            "lambda", additional_config=Config(parameter_validation=False)
+        )
         snapshot.add_transformer(
             SortingTransformer(
                 key="FunctionEventInvokeConfigs", sorting_fn=lambda conf: conf["FunctionArn"]
@@ -1625,6 +1726,11 @@ class TestLambdaEventInvokeConfig:
                 MaximumRetryAttempts=1,
             )
         snapshot.match("put_shorthand_qualifier_mismatch_3", e.value.response)
+
+        put_maxevent_maxvalue_result = lambda_client.put_function_event_invoke_config(
+            FunctionName=function_name, MaximumRetryAttempts=2, MaximumEventAgeInSeconds=21600
+        )
+        snapshot.match("put_maxevent_maxvalue_result", put_maxevent_maxvalue_result)
 
         # Test overwrite existing values +  differences between put & update
         # first create a config with both values set, then overwrite it with only one value set

@@ -6,6 +6,7 @@ import logging
 import random
 import uuid
 from concurrent.futures import Executor, Future, ThreadPoolExecutor
+from datetime import datetime
 from hashlib import sha256
 from pathlib import PurePosixPath, PureWindowsPath
 from threading import RLock
@@ -233,6 +234,7 @@ class LambdaService:
                 invoked_arn=invoked_arn,
                 client_context=client_context,
                 invocation_type=invocation_type,
+                invoke_time=datetime.now(),
             )
         )
 

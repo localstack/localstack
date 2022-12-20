@@ -92,6 +92,7 @@ class Invocation:
     invoked_arn: str
     client_context: Optional[str]
     invocation_type: InvocationType
+    invoke_time: datetime
 
 
 class ArchiveCode(metaclass=ABCMeta):
