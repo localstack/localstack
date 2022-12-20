@@ -37,6 +37,17 @@ def create_template(ses_client):
         ses_client.delete_template(TemplateName=name)
 
 
+def sort_mail_sqs_messages(message):
+    if "Successfully validated" in message["Message"]:
+        return 0
+    elif json.loads(message["Message"])["eventType"] == "Send":
+        return 1
+    elif json.loads(message["Message"])["eventType"] == "Delivery":
+        return 2
+    else:
+        raise ValueError("bad")
+
+
 class TestSES:
     def test_list_templates(self, ses_client, create_template):
         create_template(Template=TEST_TEMPLATE_ATTRIBUTES)
@@ -309,19 +320,7 @@ class TestSES:
         )
 
         messages = sqs_receive_num_messages(sqs_queue, 3)
-        # the messages may arrive out of order so sort
-
-        def sort_fn(message):
-            if "Successfully validated" in message["Message"]:
-                return 0
-            elif json.loads(message["Message"])["eventType"] == "Send":
-                return 1
-            elif json.loads(message["Message"])["eventType"] == "Delivery":
-                return 2
-            else:
-                raise ValueError("bad")
-
-        messages.sort(key=sort_fn)
+        messages.sort(key=sort_mail_sqs_messages)
         snapshot.match("messages", messages)
 
     @pytest.mark.only_localstack
@@ -393,19 +392,7 @@ class TestSES:
         )
 
         messages = sqs_receive_num_messages(sqs_queue, 3)
-        # the messages may arrive out of order so sort
-
-        def sort_fn(message):
-            if "Successfully validated" in message["Message"]:
-                return 0
-            elif json.loads(message["Message"])["eventType"] == "Send":
-                return 1
-            elif json.loads(message["Message"])["eventType"] == "Delivery":
-                return 2
-            else:
-                raise ValueError("bad")
-
-        messages.sort(key=sort_fn)
+        messages.sort(key=sort_mail_sqs_messages)
         snapshot.match("messages", messages)
 
     @pytest.mark.only_localstack
@@ -471,6 +458,7 @@ class TestSES:
         )
 
         messages = sqs_receive_num_messages(sqs_queue, 3)
+        messages.sort(key=sort_mail_sqs_messages)
         snapshot.match("messages", messages)
 
     def test_cannot_create_event_for_no_topic(
