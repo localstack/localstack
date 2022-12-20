@@ -522,7 +522,11 @@ class TestStateMachine:
                 name=sm_name, definition=definition, roleArn=role_arn
             )
             assert result["ResponseMetadata"]["HTTPStatusCode"] == 200
-            cleanups.append(lambda: stepfunctions_client.delete_state_machine(stateMachineArn=result["stateMachineArn"]))
+            cleanups.append(
+                lambda: stepfunctions_client.delete_state_machine(
+                    stateMachineArn=result["stateMachineArn"]
+                )
+            )
             results.append(result)
             stepfunctions_client.describe_state_machine(stateMachineArn=result["stateMachineArn"])
             stepfunctions_client.list_tags_for_resource(resourceArn=result["stateMachineArn"])
