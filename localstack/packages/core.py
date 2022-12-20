@@ -104,7 +104,6 @@ class ArchiveDownloadAndExtractInstaller(ExecutableInstaller):
         mkdir(target_directory)
         download_url = self._get_download_url()
         archive_name = os.path.basename(download_url)
-        LOG.debug(f"Downloading and extracting package from {download_url}")
         download_and_extract(
             download_url,
             tmp_archive=os.path.join(config.dirs.tmp, archive_name),
