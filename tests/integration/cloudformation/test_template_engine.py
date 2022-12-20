@@ -471,6 +471,9 @@ class TestMacros:
     def test_global_scope(
         self, deploy_cfn_template, cfn_client, create_lambda_function, lambda_client, snapshot
     ):
+        """
+        This test validates the behaviour of a template deployment that includes a global transformation
+        """
 
         new_value = f"new-value-{short_uid()}"
         stack = deploy_cfn_template(
@@ -500,6 +503,10 @@ class TestMacros:
         snapshot,
         template_to_transform,
     ):
+        """
+        This test validates the behaviour of a template deployment that includes a snipped transformation also the
+        responses from the get_template with different template formats.
+        """
         macro_function_path = os.path.join(
             os.path.dirname(__file__), "../templates/macros/add_standard_attributes.py"
         )
@@ -548,6 +555,11 @@ class TestMacros:
         lambda_client,
         snapshot,
     ):
+        """
+        The test validates the order of execution of transformations and also asserts that any type of
+        transformation can receive inputs.
+        """
+
         macro_function_path = os.path.join(
             os.path.dirname(__file__), "../templates/macros/replace_string.py"
         )
@@ -582,6 +594,11 @@ class TestMacros:
         snapshot,
         cleanup_stacks,
     ):
+        """
+        The test validates that AWS will return an error about missing CAPABILITY_AUTOEXPAND when adding a
+        resource during the transformation, and it will ask for CAPABILITY_NAMED_IAM when the new resource is a
+        IAM role
+        """
 
         macro_function_path = os.path.join(
             os.path.dirname(__file__), "../templates/macros/add_role.py"
@@ -632,6 +649,9 @@ class TestMacros:
         snapshot,
         cleanup_stacks,
     ):
+        """
+        The test validates the content of the event pass into the macro lambda
+        """
         macro_function_path = os.path.join(
             os.path.dirname(__file__), "../templates/macros/print_internals.py"
         )
@@ -669,6 +689,9 @@ class TestMacros:
         lambda_client,
         snapshot,
     ):
+        """
+        The test validates the template max size that can be pass into the create_template
+        """
         macro_function_path = os.path.join(
             os.path.dirname(__file__), "../templates/macros/format_template.py"
         )
@@ -710,6 +733,11 @@ class TestMacros:
         cfn_client,
         snapshot,
     ):
+        """
+        This test shows that the CFn will reject any transformation name that has been specified as reference, for
+        example, a parameter.
+        """
+
         with pytest.raises(botocore.exceptions.ClientError) as ex:
             cfn_client.create_stack(
                 StackName=f"stack-{short_uid()}",
@@ -732,6 +760,9 @@ class TestMacros:
         lambda_client,
         snapshot,
     ):
+        """
+        This tests shows the state of instrinsic functions during the execution of the macro
+        """
         macro_function_path = os.path.join(
             os.path.dirname(__file__), "../templates/macros/print_references.py"
         )
@@ -778,6 +809,9 @@ class TestMacros:
         cleanup_stacks,
         macro_function,
     ):
+        """
+        This test shows the error responses for different negative responses from the macro lambda
+        """
         macro_function_path = os.path.join(
             os.path.dirname(__file__), "../templates/macros/", macro_function
         )
