@@ -326,6 +326,10 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
                 id=new_id,
             )
             function.versions[next_version] = new_version
+            if "$LATEST" in function.permissions:
+                function.permissions[
+                    "$LATEST"
+                ].revision_id = FunctionResourcePolicy.new_revision_id()
         return new_version, True
 
     def _publish_version_from_existing_version(
@@ -1677,7 +1681,7 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
         policy = existing_policy
         if not existing_policy:
             policy = FunctionResourcePolicy(
-                long_uid(), policy=ResourcePolicy(Version="2012-10-17", Id="default", Statement=[])
+                policy=ResourcePolicy(Version="2012-10-17", Id="default", Statement=[])
             )
         policy.policy.Statement.append(permission_statement)
         if not existing_policy:

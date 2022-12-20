@@ -2337,7 +2337,6 @@ class TestLambdaPermissions:
         # permissions apply per function unless providing a specific version or alias
         with pytest.raises(lambda_client.exceptions.ResourceNotFoundException) as e:
             lambda_client.get_policy(FunctionName=function_name, Qualifier=fn_version)
-        # TODO: fix parity issue in LS
         snapshot.match("get_policy_after_publishing_new_version", e.value.response)
 
         # create lambda permission with the same sid for specific function version
@@ -2351,7 +2350,6 @@ class TestLambdaPermissions:
         )
 
         get_policy_result_re_adding = lambda_client.get_policy(FunctionName=function_name)
-        # TODO: fix parity issue in LS
         snapshot.match("get_policy_after_adding_to_new_version", get_policy_result_re_adding)
 
     @pytest.mark.skip_snapshot_verify(paths=["$..Message"], condition=is_old_provider)
