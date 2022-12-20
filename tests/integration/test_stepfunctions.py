@@ -500,7 +500,7 @@ class TestStateMachine:
         cleanup(sm_arn, state_machines_before, stepfunctions_client)
         events.delete_event_bus(Name=bus_name)
 
-    def test_create_state_machines_in_parallel(self, stepfunctions_client):
+    def test_create_state_machines_in_parallel(self, stepfunctions_client, cleanups):
         """
         Perform a test that creates a series of state machines in parallel. Without concurrency control, using
         StepFunctions-Local, the following error is pretty consistently reproducible:
