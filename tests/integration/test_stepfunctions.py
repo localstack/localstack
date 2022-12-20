@@ -11,6 +11,7 @@ from localstack.utils.files import load_file
 from localstack.utils.json import clone
 from localstack.utils.strings import short_uid
 from localstack.utils.sync import ShortCircuitWaitException, retry, wait_until
+from localstack.utils.threads import parallelize
 
 from .awslambda.functions import lambda_environment
 from .awslambda.test_lambda import TEST_LAMBDA_ENV, TEST_LAMBDA_PYTHON_ECHO
@@ -498,6 +499,41 @@ class TestStateMachine:
         # clean up
         cleanup(sm_arn, state_machines_before, stepfunctions_client)
         events.delete_event_bus(Name=bus_name)
+
+    def test_create_state_machines_in_parallel(self, stepfunctions_client, cleanups):
+        """
+        Perform a test that creates a series of state machines in parallel. Without concurrency control, using
+        StepFunctions-Local, the following error is pretty consistently reproducible:
+
+        botocore.errorfactory.InvalidDefinition: An error occurred (InvalidDefinition) when calling the
+        CreateStateMachine operation: Invalid State Machine Definition: ''DUPLICATE_STATE_NAME: Duplicate State name:
+        MissingValue at /States/MissingValue', 'DUPLICATE_STATE_NAME: Duplicate State name: Add at /States/Add''
+        """
+        role_arn = arns.role_arn("sfn_role")
+        definition = clone(STATE_MACHINE_CHOICE)
+        lambda_arn_4 = arns.lambda_function_arn(TEST_LAMBDA_NAME_4)
+        definition["States"]["Add"]["Resource"] = lambda_arn_4
+        definition = json.dumps(definition)
+        results = []
+
+        def _create_sm(*_):
+            sm_name = f"sm-{short_uid()}"
+            result = stepfunctions_client.create_state_machine(
+                name=sm_name, definition=definition, roleArn=role_arn
+            )
+            assert result["ResponseMetadata"]["HTTPStatusCode"] == 200
+            cleanups.append(
+                lambda: stepfunctions_client.delete_state_machine(
+                    stateMachineArn=result["stateMachineArn"]
+                )
+            )
+            results.append(result)
+            stepfunctions_client.describe_state_machine(stateMachineArn=result["stateMachineArn"])
+            stepfunctions_client.list_tags_for_resource(resourceArn=result["stateMachineArn"])
+
+        num_machines = 30
+        parallelize(_create_sm, list(range(num_machines)), size=2)
+        assert len(results) == num_machines
 
 
 TEST_STATE_MACHINE = {

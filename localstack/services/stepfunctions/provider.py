@@ -1,3 +1,5 @@
+import threading
+
 from localstack import config
 from localstack.aws.api import RequestContext, handler
 from localstack.aws.api.stepfunctions import (
@@ -16,6 +18,9 @@ from localstack.services.stepfunctions.stepfunctions_starter import (
     start_stepfunctions,
     wait_for_stepfunctions,
 )
+
+# lock to avoid concurrency issues when creating state machines in parallel (required for StepFunctions-Local)
+CREATION_LOCK = threading.RLock()
 
 
 class StepFunctionsProvider(StepfunctionsApi, ServiceLifecycleHook):
@@ -38,8 +43,8 @@ class StepFunctionsProvider(StepfunctionsApi, ServiceLifecycleHook):
             request["loggingConfiguration"] = LoggingConfiguration(
                 level=LogLevel.OFF, includeExecutionData=False
             )
-        result = self.forward_request(context, request)
-        return result
+        with CREATION_LOCK:
+            return self.forward_request(context, request)
 
     @handler("DeleteStateMachine", expand=False)
     def delete_state_machine(
