@@ -41,7 +41,7 @@ class DynamoDBEventSourceListener(StreamEventSourceListener):
         for record in records:
             creation_time = record.get("dynamodb", {}).get("ApproximateCreationDateTime", None)
             if creation_time is not None:
-                record["dynamodb"]["ApproximateCreationDateTime"] = creation_time.timestamp() * 1000
+                record["dynamodb"]["ApproximateCreationDateTime"] = creation_time.timestamp()
             record_payloads.append(
                 {
                     "eventID": record["eventID"],

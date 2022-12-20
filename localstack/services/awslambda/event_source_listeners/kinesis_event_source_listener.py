@@ -49,9 +49,14 @@ class KinesisEventSourceListener(StreamEventSourceListener):
             # boto3 automatically decodes records in get_records(), so we must re-encode
             record_payload["data"] = to_str(base64.b64encode(record_payload["data"]))
             # convert datetime obj to timestamp
-            record_payload["approximateArrivalTimestamp"] = (
-                record_payload["approximateArrivalTimestamp"].timestamp() * 1000
-            )
+            # AWS requires millisecond precision, but the timestamp has to be in seconds with the milliseconds
+            # represented by the fraction part of the float
+            record_payload["approximateArrivalTimestamp"] = record_payload[
+                "approximateArrivalTimestamp"
+            ].timestamp()
+            # this record should not be present in the payload. Cannot be deserialized by dotnet lambdas, for example
+            # FIXME remove once it is clear if kinesis should not return this value in the first place
+            record_payload.pop("encryptionType", None)
             record_payloads.append(
                 {
                     "eventID": "{0}:{1}".format(shard_id, record_payload["sequenceNumber"]),

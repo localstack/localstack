@@ -1,4 +1,5 @@
 import json
+import math
 import time
 
 import pytest
@@ -165,6 +166,11 @@ class TestDynamoDBEventSourceMapping:
 
         event_logs = retry(_send_and_receive_events, retries=3)
         snapshot.match("event_logs", event_logs)
+        # check if the timestamp has the correct format
+        timestamp = event_logs[0]["Records"][0]["dynamodb"]["ApproximateCreationDateTime"]
+        # check if the timestamp has same amount of numbers before the comma as the current timestamp
+        # this will fail in november 2286, if this code is still around by then, read this comment and update to 10
+        assert int(math.log10(timestamp)) == 9
 
     @pytest.mark.aws_validated
     def test_disabled_dynamodb_event_source_mapping(
