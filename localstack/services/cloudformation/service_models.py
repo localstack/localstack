@@ -3,6 +3,7 @@ import logging
 # TODO: remove
 from moto.cloudformation.exceptions import UnformattedGetAttTemplateException
 
+from localstack import config
 from localstack.utils.aws import aws_stack
 from localstack.utils.common import camel_to_snake_case
 
@@ -187,9 +188,12 @@ class GenericBaseModel:
 
     @classmethod
     def resolve_refs_recursively(cls, stack_name, value, resources):
-        # TODO: restructure code to avoid circular import here
-        from localstack.services.cloudformation.provider import find_stack
-        from localstack.utils.cloudformation.template_deployer import resolve_refs_recursively
+        if config.CFN_ENABLE_RESOLVE_REFS_IN_MODELS:
+            # TODO: restructure code to avoid circular import here
+            from localstack.services.cloudformation.provider import find_stack
+            from localstack.utils.cloudformation.template_deployer import resolve_refs_recursively
 
-        stack = find_stack(stack_name)
-        return resolve_refs_recursively(stack, value)
+            stack = find_stack(stack_name)
+            return resolve_refs_recursively(stack, value)
+
+        return value

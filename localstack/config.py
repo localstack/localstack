@@ -720,11 +720,16 @@ OPENSEARCH_MULTI_CLUSTER = is_env_not_false("OPENSEARCH_MULTI_CLUSTER") or is_en
 # TODO remove fallback to LAMBDA_DOCKER_NETWORK with next minor version
 MAIN_DOCKER_NETWORK = os.environ.get("MAIN_DOCKER_NETWORK", "") or LAMBDA_DOCKER_NETWORK
 
+# EXPERIMENTAL/LEGACY. Use this flag to return to the legacy behavior of resolving references in the specific models
+CFN_ENABLE_RESOLVE_REFS_IN_MODELS = is_env_true("CFN_ENABLE_RESOLVE_REFS_IN_MODELS")
+
+
 # list of environment variable names used for configuration.
 # Make sure to keep this in sync with the above!
 # Note: do *not* include DATA_DIR in this list, as it is treated separately
 CONFIG_ENV_VARS = [
     "BUCKET_MARKER_LOCAL",
+    "CFN_ENABLE_RESOLVE_REFS_IN_MODELS",
     "CUSTOM_SSL_CERT_PATH",
     "DEBUG",
     "DEFAULT_REGION",
