@@ -1371,6 +1371,102 @@ class TestEvents:
             log_group_name=log_group_name,
         )
 
+    def test_put_events_to_default_eventbus_for_custom_eventbus(
+        self, events_client, sqs_client, sqs_create_queue, sqs_queue_arn
+    ):
+        default_bus_rule_name = f"default-bus-rule-{short_uid()}"
+        custom_bus_rule_name = f"custom-bus-rule-{short_uid()}"
+        default_bus_target_id = f"target-default-b-{short_uid()}"
+        custom_bus_target_id = f"target-custom-b-{short_uid()}"
+        custom_bus_name = f"eventbus-{short_uid()}"
+        fake_bucket_name = f"fake-bucket-{short_uid()}"
+
+        queue_url = sqs_create_queue()
+        queue_arn = sqs_queue_arn(queue_url)
+
+        custom_event_bus = events_client.create_event_bus(Name=custom_bus_name)
+        custom_event_bus_arn = custom_event_bus["EventBusArn"]
+
+        events_client.put_rule(
+            Name=default_bus_rule_name,
+            EventBusName="default",
+            EventPattern='{"detail-type":["Object Created"],"source":["aws.s3"]}',
+            State="ENABLED",
+        )
+
+        custom_bus_rule_event_pattern = {
+            "detail": {
+                "bucket": {"name": [fake_bucket_name]},
+                "object": {"key": [{"prefix": "delivery/"}]},
+            },
+            "detail-type": ["Object Created"],
+            "source": ["aws.s3"],
+        }
+
+        events_client.put_rule(
+            Name=custom_bus_rule_name,
+            EventBusName=custom_bus_name,
+            EventPattern=json.dumps(custom_bus_rule_event_pattern),
+            State="ENABLED",
+        )
+
+        events_client.put_targets(
+            Rule=default_bus_rule_name,
+            EventBusName="default",
+            Targets=[{"Id": default_bus_target_id, "Arn": custom_event_bus_arn}],
+        )
+
+        events_client.put_targets(
+            Rule=custom_bus_rule_name,
+            EventBusName=custom_bus_name,
+            Targets=[{"Id": custom_bus_target_id, "Arn": queue_arn}],
+        )
+        fake_s3_event = {
+            "Source": "aws.s3",
+            "DetailType": "Object Created",
+            "Detail": json.dumps(
+                {
+                    "version": "0",
+                    "bucket": {
+                        "name": fake_bucket_name,
+                    },
+                    "object": {
+                        "key": "delivery/test.txt",
+                        "size": 9,
+                        "etag": "2cc62706a09ea477faf28a0105f01fe9",
+                        "sequencer": "0062E99A88DC407460",
+                    },
+                    "request-id": "RKREYG1RN2X92YX6",
+                    "requester": "074255357339",
+                    "source-ip-address": "127.0.0.1",
+                    "reason": "PutObject",
+                }
+            ),
+        }
+
+        events_client.put_events(Entries=[fake_s3_event])
+
+        def get_message():
+            resp = sqs_client.receive_message(QueueUrl=queue_url, WaitTimeSeconds=1)
+            return resp["Messages"]
+
+        messages = retry(get_message, retries=3, sleep=0.5)
+        assert len(messages) == 1
+
+        received_event = json.loads(messages[0]["Body"])
+        print(received_event)
+
+        self.assert_valid_event(received_event)
+        assert received_event["detail"] == json.loads(fake_s3_event["Detail"])
+
+        # clean up
+        self.cleanup(
+            bus_name=custom_bus_name,
+            rule_name=custom_bus_rule_name,
+            target_ids=custom_bus_target_id,
+        )
+        self.cleanup(rule_name=default_bus_rule_name, target_ids=default_bus_target_id)
+
     def _get_queue_arn(self, queue_url, sqs_client):
         queue_attrs = sqs_client.get_queue_attributes(
             QueueUrl=queue_url, AttributeNames=["QueueArn"]
