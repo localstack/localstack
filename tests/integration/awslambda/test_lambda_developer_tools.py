@@ -99,6 +99,7 @@ class TestHotReloading:
         assert response_dict["constant"] == "value2"
 
 
+@pytest.mark.skipif(condition=is_old_provider(), reason="Focussing on the new provider")
 class TestDockerFlags:
     def test_additional_docker_flags(self, lambda_client, create_lambda_function, monkeypatch):
         env_value = short_uid()
