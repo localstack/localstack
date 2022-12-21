@@ -1710,7 +1710,13 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
         if qualifier is not None:
             self._validate_qualifier_expression(qualifier)
 
-        resolved_fn = self._get_function(function_name, context.account_id, context.region)
+        state = lambda_stores[context.account_id][context.region]
+        resolved_fn = state.functions.get(function_name)
+        if resolved_fn is None:
+            fn_arn = api_utils.unqualified_lambda_arn(
+                function_name, context.account_id, context.region
+            )
+            raise ResourceNotFoundException(f"No policy found for: {fn_arn}", Type="User")
 
         resolved_qualifier, _ = self._resolve_fn_qualifier(resolved_fn, qualifier)
         function_permission = resolved_fn.permissions.get(resolved_qualifier)
