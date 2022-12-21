@@ -2352,6 +2352,30 @@ class TestLambdaPermissions:
         get_policy_result_re_adding = lambda_client.get_policy(FunctionName=function_name)
         snapshot.match("get_policy_after_adding_to_new_version", get_policy_result_re_adding)
 
+        # create lambda permission with other sid and correct revision id
+        lambda_client.add_permission(
+            FunctionName=function_name,
+            Action=action,
+            StatementId=f"{sid}_2",
+            Principal=principal,
+            SourceArn=arns.s3_bucket_arn("test-bucket"),
+            RevisionId=get_policy_result_re_adding["RevisionId"],
+        )
+
+        get_policy_result_adding_2 = lambda_client.get_policy(FunctionName=function_name)
+        snapshot.match("get_policy_after_adding_2", get_policy_result_adding_2)
+
+        with pytest.raises(lambda_client.exceptions.PreconditionFailedException) as e:
+            lambda_client.add_permission(
+                FunctionName=function_name,
+                Action="lambda:InvokeFunction",
+                StatementId=f"{sid}_3",
+                Principal="s3.amazonaws.com",
+                SourceArn=arns.s3_bucket_arn("test-bucket"),
+                RevisionId=long_uid(),  # non-matching revision id
+            )
+        snapshot.match("expect_revision_error_add_permission", e.value.response)
+
     @pytest.mark.skip_snapshot_verify(paths=["$..Message"], condition=is_old_provider)
     @pytest.mark.aws_validated
     def test_remove_multi_permissions(self, lambda_client, create_lambda_function, snapshot):

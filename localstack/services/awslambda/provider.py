@@ -1661,6 +1661,12 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
         # check for an already existing policy and any conflicts in existing statements
         existing_policy = resolved_fn.permissions.get(resolved_qualifier)
         if existing_policy:
+            revision_id = request.get("RevisionId")
+            if revision_id and existing_policy.revision_id != revision_id:
+                raise PreconditionFailedException(
+                    "The Revision Id provided does not match the latest Revision Id. Call the GetFunction/GetAlias API to retrieve the latest Revision Id",
+                    Type="User",
+                )
             request_sid = request["StatementId"]
             if request_sid in [s["Sid"] for s in existing_policy.policy.Statement]:
                 # function version scope: statement id needs to be unique per function version
@@ -1679,7 +1685,9 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
             auth_type=request.get("FunctionUrlAuthType"),
         )
         policy = existing_policy
-        if not existing_policy:
+        if existing_policy:
+            policy.revision_id = FunctionResourcePolicy.new_revision_id()
+        else:
             policy = FunctionResourcePolicy(
                 policy=ResourcePolicy(Version="2012-10-17", Id="default", Statement=[])
             )
