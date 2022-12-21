@@ -224,6 +224,7 @@ class DockerRuntimeExecutor(RuntimeExecutor):
             env_vars=env_vars,
             network=network,
             entrypoint=RAPID_ENTRYPOINT,
+            additional_flags=config.LAMBDA_DOCKER_FLAGS,
         )
         if self.function_version.config.package_type == PackageType.Zip:
             if self.function_version.config.code.is_hot_reloading():

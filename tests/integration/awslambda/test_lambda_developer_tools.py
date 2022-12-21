@@ -9,8 +9,8 @@ from localstack.aws.api.lambda_ import Runtime
 from localstack.testing.aws.lambda_utils import is_old_provider
 from localstack.utils.docker_utils import get_host_path_for_path_in_docker
 from localstack.utils.files import load_file, mkdir, rm_rf
-from localstack.utils.strings import short_uid
-from tests.integration.awslambda.test_lambda import THIS_FOLDER
+from localstack.utils.strings import short_uid, to_str
+from tests.integration.awslambda.test_lambda import TEST_LAMBDA_ENV, THIS_FOLDER
 
 HOT_RELOADING_NODEJS_HANDLER = os.path.join(
     THIS_FOLDER, "functions/hot-reloading/nodejs/handler.mjs"
@@ -97,3 +97,22 @@ class TestHotReloading:
         response_dict = json.loads(response["Payload"].read())
         assert response_dict["counter"] == 1
         assert response_dict["constant"] == "value2"
+
+
+@pytest.mark.skipif(condition=is_old_provider(), reason="Focussing on the new provider")
+class TestDockerFlags:
+    def test_additional_docker_flags(self, lambda_client, create_lambda_function, monkeypatch):
+        env_value = short_uid()
+        monkeypatch.setattr(config, "LAMBDA_DOCKER_FLAGS", f"-e Hello={env_value}")
+        function_name = f"test-flags-{short_uid()}"
+
+        create_lambda_function(
+            handler_file=TEST_LAMBDA_ENV,
+            func_name=function_name,
+            runtime=Runtime.python3_9,
+        )
+        lambda_client.get_waiter("function_active_v2").wait(FunctionName=function_name)
+        result = lambda_client.invoke(FunctionName=function_name, Payload="{}")
+        result_data = result["Payload"].read()
+        result_data = json.loads(to_str(result_data))
+        assert {"Hello": env_value} == result_data
