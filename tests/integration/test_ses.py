@@ -1,7 +1,7 @@
 import json
 import os
 from datetime import date, datetime
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Optional, Tuple
 
 import pytest
 import requests
@@ -35,6 +35,38 @@ def create_template(ses_client):
 
     for name in created_template_names:
         ses_client.delete_template(TemplateName=name)
+
+
+@pytest.fixture
+def setup_email_addresses(ses_verify_identity):
+    """
+    If the test is running against AWS then assume the email addresses passed are already
+    verified, and passes the given email addresses through. Otherwise, it generates two random
+    email addresses and verifies them.
+    """
+
+    def inner(
+        sender_email_address: Optional[str] = None, recipient_email_address: Optional[str] = None
+    ) -> Tuple[str, str]:
+        if os.getenv("TEST_TARGET") == "AWS_CLOUD":
+            if sender_email_address is None:
+                raise ValueError(
+                    "sender_email_address must be specified to run this test against AWS"
+                )
+            if recipient_email_address is None:
+                raise ValueError(
+                    "recipient_email_address must be specified to run this test against AWS"
+                )
+        else:
+            # overwrite the given parameters with localstack specific ones
+            sender_email_address = f"sender-{short_uid()}@example.com"
+            recipient_email_address = f"recipient-{short_uid()}@example.com"
+            ses_verify_identity(sender_email_address)
+            ses_verify_identity(recipient_email_address)
+
+        return sender_email_address, recipient_email_address
+
+    return inner
 
 
 def sort_mail_sqs_messages(message):
@@ -242,6 +274,7 @@ class TestSES:
         assert [x["Name"] for x in rule_set["Rules"]] == rule_names
 
     @pytest.mark.only_localstack
+    @pytest.mark.aws_validated
     @pytest.mark.skip_snapshot_verify(
         paths=[
             "$..Message.delivery.processingTimeMillis",
@@ -250,7 +283,12 @@ class TestSES:
             "$..Message.mail.commonHeaders",
             "$..Message.mail.headers",
             "$..Message.mail.headersTruncated",
-            "$..Message.mail.tags",
+            "$..Message.mail.tags.'ses:caller-identity'",
+            "$..Message.mail.tags.'ses:configuration-set'",
+            "$..Message.mail.tags.'ses:from-domain'",
+            "$..Message.mail.tags.'ses:operation'",
+            "$..Message.mail.tags.'ses:outgoing-ip'",
+            "$..Message.mail.tags.'ses:source-ip'",
             "$..Message.mail.timestamp",
         ]
     )
@@ -262,17 +300,17 @@ class TestSES:
         sns_create_sqs_subscription,
         ses_configuration_set,
         ses_configuration_set_sns_event_destination,
-        ses_verify_identity,
         sqs_receive_num_messages,
+        setup_email_addresses,
         snapshot,
     ):
         """
         Repro for #7184 - test that this test is not runnable in the sandbox account since it
-        requires a
-        validated email address. We do not have support for this yet.
+        requires a validated email address. We do not have support for this yet.
         """
-        sender_email_address = f"repro-7184-{short_uid()}@example.com"
-        recipient_email_address = f"repro-7184-{short_uid()}@example.com"
+
+        # add your email addresses in here to verify against AWS
+        sender_email_address, recipient_email_address = setup_email_addresses()
 
         snapshot.add_transformers_list(
             [
@@ -282,9 +320,6 @@ class TestSES:
             ]
             + snapshot.transform.sns_api()
         )
-
-        ses_verify_identity(sender_email_address)
-        ses_verify_identity(recipient_email_address)
 
         # create queue to listen for SES -> SNS events
         topic_arn = sns_topic["Attributes"]["TopicArn"]
@@ -317,6 +352,12 @@ class TestSES:
             Message=message,
             ConfigurationSetName=config_set_name,
             Source=sender_email_address,
+            Tags=[
+                {
+                    "Name": "custom-tag",
+                    "Value": "tag-value",
+                }
+            ],
         )
 
         messages = sqs_receive_num_messages(sqs_queue, 3)
@@ -324,6 +365,7 @@ class TestSES:
         snapshot.match("messages", messages)
 
     @pytest.mark.only_localstack
+    @pytest.mark.aws_validated
     @pytest.mark.skip_snapshot_verify(
         paths=[
             "$..Message.delivery.processingTimeMillis",
@@ -332,7 +374,12 @@ class TestSES:
             "$..Message.mail.commonHeaders",
             "$..Message.mail.headers",
             "$..Message.mail.headersTruncated",
-            "$..Message.mail.tags",
+            "$..Message.mail.tags.'ses:caller-identity'",
+            "$..Message.mail.tags.'ses:configuration-set'",
+            "$..Message.mail.tags.'ses:from-domain'",
+            "$..Message.mail.tags.'ses:operation'",
+            "$..Message.mail.tags.'ses:outgoing-ip'",
+            "$..Message.mail.tags.'ses:source-ip'",
             "$..Message.mail.timestamp",
         ]
     )
@@ -342,15 +389,15 @@ class TestSES:
         ses_configuration_set,
         ses_configuration_set_sns_event_destination,
         ses_email_template,
-        ses_verify_identity,
         sns_create_sqs_subscription,
         sns_create_topic,
         sqs_queue,
         sqs_receive_num_messages,
+        setup_email_addresses,
         snapshot,
     ):
-        sender_email_address = f"repro-7184-{short_uid()}@example.com"
-        recipient_email_address = f"repro-7184-{short_uid()}@example.com"
+        # add your email addresses in here to verify against AWS
+        sender_email_address, recipient_email_address = setup_email_addresses()
 
         snapshot.add_transformers_list(
             [
@@ -360,9 +407,6 @@ class TestSES:
             ]
             + snapshot.transform.sns_api()
         )
-
-        ses_verify_identity(sender_email_address)
-        ses_verify_identity(recipient_email_address)
 
         template_name = f"template-{short_uid()}"
         ses_email_template(template_name, "Test template")
@@ -389,6 +433,12 @@ class TestSES:
             TemplateData=json.dumps({}),
             ConfigurationSetName=config_set_name,
             Source=sender_email_address,
+            Tags=[
+                {
+                    "Name": "custom-tag",
+                    "Value": "tag-value",
+                }
+            ],
         )
 
         messages = sqs_receive_num_messages(sqs_queue, 3)
@@ -396,6 +446,7 @@ class TestSES:
         snapshot.match("messages", messages)
 
     @pytest.mark.only_localstack
+    @pytest.mark.aws_validated
     @pytest.mark.skip_snapshot_verify(
         paths=[
             "$..Message.delivery.processingTimeMillis",
@@ -404,7 +455,12 @@ class TestSES:
             "$..Message.mail.commonHeaders",
             "$..Message.mail.headers",
             "$..Message.mail.headersTruncated",
-            "$..Message.mail.tags",
+            "$..Message.mail.tags.'ses:caller-identity'",
+            "$..Message.mail.tags.'ses:configuration-set'",
+            "$..Message.mail.tags.'ses:from-domain'",
+            "$..Message.mail.tags.'ses:operation'",
+            "$..Message.mail.tags.'ses:outgoing-ip'",
+            "$..Message.mail.tags.'ses:source-ip'",
             "$..Message.mail.timestamp",
         ]
     )
@@ -413,15 +469,15 @@ class TestSES:
         ses_client,
         ses_configuration_set,
         ses_configuration_set_sns_event_destination,
-        ses_verify_identity,
         sns_create_sqs_subscription,
         sns_create_topic,
         sqs_queue,
         sqs_receive_num_messages,
+        setup_email_addresses,
         snapshot,
     ):
-        sender_email_address = f"repro-7184-{short_uid()}@example.com"
-        recipient_email_address = f"repro-7184-{short_uid()}@example.com"
+        # add your email addresses in here to verify against AWS
+        sender_email_address, recipient_email_address = setup_email_addresses()
 
         snapshot.add_transformers_list(
             [
@@ -431,9 +487,6 @@ class TestSES:
             ]
             + snapshot.transform.sns_api()
         )
-
-        ses_verify_identity(sender_email_address)
-        ses_verify_identity(recipient_email_address)
 
         # create queue to listen for SES -> SNS events
         topic_arn = sns_create_topic()["TopicArn"]
@@ -455,6 +508,12 @@ class TestSES:
             },
             ConfigurationSetName=config_set_name,
             Source=sender_email_address,
+            Tags=[
+                {
+                    "Name": "custom-tag",
+                    "Value": "tag-value",
+                }
+            ],
         )
 
         messages = sqs_receive_num_messages(sqs_queue, 3)
@@ -513,16 +572,14 @@ class TestSES:
         sns_client,
         sns_topic,
         sns_wait_for_topic_delete,
-        ses_verify_identity,
         ses_configuration_set,
         sqs_receive_num_messages,
         ses_configuration_set_sns_event_destination,
+        setup_email_addresses,
         snapshot,
     ):
-        recipient_email_address = "recipient@example.com"
-        sender_email_address = "sender@example.com"
-        ses_verify_identity(sender_email_address)
-        ses_verify_identity(recipient_email_address)
+        # add your email addresses in here to verify against AWS
+        sender_email_address, recipient_email_address = setup_email_addresses()
 
         snapshot.add_transformers_list(
             [

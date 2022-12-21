@@ -2,6 +2,7 @@ import dataclasses
 import json
 import logging
 import os
+from collections import defaultdict
 from datetime import date, datetime, time, timezone
 from typing import TYPE_CHECKING, Any, Dict, Optional
 
@@ -317,6 +318,7 @@ class SesProvider(SesApi, ServiceLifecycleHook):
                 message_id=response["MessageId"],
                 sender_email=source,
                 destination_addresses=destination["ToAddresses"],
+                tags=tags,
             )
             emitter.emit_send_event(payload, sns_destination_arn)
             emitter.emit_delivery_event(payload, sns_destination_arn)
@@ -367,6 +369,7 @@ class SesProvider(SesApi, ServiceLifecycleHook):
                 message_id=response["MessageId"],
                 sender_email=source,
                 destination_addresses=destination["ToAddresses"],
+                tags=tags,
             )
             emitter.emit_send_event(payload, sns_destination_arn, emit_source_arn=False)
             emitter.emit_delivery_event(payload, sns_destination_arn)
@@ -425,6 +428,7 @@ class SesProvider(SesApi, ServiceLifecycleHook):
                 message_id=response["MessageId"],
                 sender_email=source,
                 destination_addresses=destinations,
+                tags=tags,
             )
             emitter.emit_send_event(payload, sns_destination_arn)
             emitter.emit_delivery_event(payload, sns_destination_arn)
@@ -462,6 +466,7 @@ class SNSPayload:
     message_id: str
     sender_email: Address
     destination_addresses: AddressList
+    tags: Optional[MessageTagList]
 
 
 class SNSEmitter:
@@ -493,6 +498,10 @@ class SNSEmitter:
     ):
         now = datetime.now(tz=timezone.utc)
 
+        tags = defaultdict(list)
+        for every in payload.tags or []:
+            tags[every["Name"]].append(every["Value"])
+
         event_payload = {
             "eventType": "Send",
             "mail": {
@@ -501,6 +510,7 @@ class SNSEmitter:
                 "sendingAccountId": self.context.account_id,
                 "destination": payload.destination_addresses,
                 "messageId": payload.message_id,
+                "tags": tags,
             },
             "send": {},
         }
@@ -523,6 +533,10 @@ class SNSEmitter:
     def emit_delivery_event(self, payload: SNSPayload, sns_topic_arn: str):
         now = datetime.now(tz=timezone.utc)
 
+        tags = defaultdict(list)
+        for every in payload.tags or []:
+            tags[every["Name"]].append(every["Value"])
+
         event_payload = {
             "eventType": "Delivery",
             "mail": {
@@ -532,6 +546,7 @@ class SNSEmitter:
                 "sendingAccountId": self.context.account_id,
                 "destination": payload.destination_addresses,
                 "messageId": payload.message_id,
+                "tags": tags,
             },
             "delivery": {
                 "recipients": payload.destination_addresses,
