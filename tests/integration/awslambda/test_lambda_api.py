@@ -2390,6 +2390,32 @@ class TestLambdaPermissions:
             )
         snapshot.match("add_permission_exception_revision_id", e.value.response)
 
+    @pytest.mark.skipif(condition=is_old_provider(), reason="not supported")
+    @pytest.mark.aws_validated
+    def test_add_lambda_permission_optional_fields(
+        self, lambda_client, iam_client, create_lambda_function, account_id, snapshot
+    ):
+        function_name = f"lambda_func-{short_uid()}"
+        create_lambda_function(
+            handler_file=TEST_LAMBDA_PYTHON_ECHO,
+            func_name=function_name,
+            runtime=Runtime.python3_9,
+        )
+
+        # create lambda permission
+        resp = lambda_client.add_permission(
+            FunctionName=function_name,
+            StatementId="urlPermission",
+            Action="lambda:InvokeFunctionUrl",
+            Principal="*",
+            # optional fields:
+            SourceArn=arns.s3_bucket_arn("test-bucket"),
+            SourceAccount=account_id,
+            PrincipalOrgID="o-1234567890",
+            FunctionUrlAuthType="NONE",
+        )
+        snapshot.match("add_permission_optional_fields", resp)
+
     @pytest.mark.skip_snapshot_verify(paths=["$..Message"], condition=is_old_provider)
     @pytest.mark.aws_validated
     def test_remove_multi_permissions(self, lambda_client, create_lambda_function, snapshot):

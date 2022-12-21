@@ -23,6 +23,7 @@ from localstack.aws.api.lambda_ import (
     Runtime,
     TracingConfig,
 )
+from localstack.utils.collections import merge_recursive
 
 if TYPE_CHECKING:
     from localstack.services.awslambda.invocation.lambda_models import (
@@ -231,8 +232,8 @@ def build_statement(
     action: str,
     principal: str,
     source_arn: Optional[str] = None,
-    source_account: Optional[str] = None,  # TODO: test & implement
-    principal_org_id: Optional[str] = None,  # TODO: test & implement
+    source_account: Optional[str] = None,
+    principal_org_id: Optional[str] = None,
     event_source_token: Optional[str] = None,  # TODO: test & implement
     auth_type: Optional[FunctionUrlAuthType] = None,
 ) -> dict[str, Any]:
@@ -249,11 +250,25 @@ def build_statement(
     else:
         statement["Principal"] = principal  # TODO: verify
 
-    if source_arn:
-        statement["Condition"] = {"ArnLike": {"AWS:SourceArn": source_arn}}
-
+    condition = dict()
     if auth_type:
-        statement["Condition"] = {"StringEquals": {"lambda:FunctionUrlAuthType": auth_type}}
+        update = {"StringEquals": {"lambda:FunctionUrlAuthType": auth_type}}
+        condition = merge_recursive(condition, update)
+
+    if principal_org_id:
+        update = {"StringEquals": {"aws:PrincipalOrgID": principal_org_id}}
+        condition = merge_recursive(condition, update)
+
+    if source_account:
+        update = {"StringEquals": {"AWS:SourceAccount": source_account}}
+        condition = merge_recursive(condition, update)
+
+    if source_arn:
+        update = {"ArnLike": {"AWS:SourceArn": source_arn}}
+        condition = merge_recursive(condition, update)
+
+    if condition:
+        statement["Condition"] = condition
 
     return statement
 

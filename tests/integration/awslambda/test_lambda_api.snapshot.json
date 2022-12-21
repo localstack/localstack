@@ -4107,7 +4107,7 @@
     }
   },
   "tests/integration/awslambda/test_lambda_api.py::TestLambdaPermissions::test_add_lambda_permission_aws": {
-    "recorded-date": "21-12-2022, 16:30:41",
+    "recorded-date": "21-12-2022, 17:09:07",
     "recorded-content": {
       "create_lambda": {
         "CreateEventSourceMappingResponse": null,
@@ -9325,6 +9325,34 @@
         "ResponseMetadata": {
           "HTTPHeaders": {},
           "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/integration/awslambda/test_lambda_api.py::TestLambdaPermissions::test_add_lambda_permission_optional_fields": {
+    "recorded-date": "21-12-2022, 18:39:42",
+    "recorded-content": {
+      "add_permission_optional_fields": {
+        "Statement": {
+          "Sid": "urlPermission",
+          "Effect": "Allow",
+          "Principal": "*",
+          "Action": "lambda:InvokeFunctionUrl",
+          "Resource": "arn:aws:lambda:<region>:111111111111:function:<resource:1>",
+          "Condition": {
+            "StringEquals": {
+              "lambda:FunctionUrlAuthType": "NONE",
+              "aws:PrincipalOrgID": "o-1234567890",
+              "AWS:SourceAccount": "111111111111"
+            },
+            "ArnLike": {
+              "AWS:SourceArn": "arn:aws:s3:::<resource:2>"
+            }
+          }
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 201
         }
       }
     }

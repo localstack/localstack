@@ -1682,6 +1682,8 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
             request["Action"],
             request["Principal"],
             source_arn=request.get("SourceArn"),
+            source_account=request.get("SourceAccount"),
+            principal_org_id=request.get("PrincipalOrgID"),
             auth_type=request.get("FunctionUrlAuthType"),
         )
         policy = existing_policy
