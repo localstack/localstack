@@ -2212,6 +2212,11 @@ class TestLambdaPermissions:
             lambda_client.get_policy(FunctionName="doesnotexist")
         snapshot.match("get_policy_fn_doesnotexist", e.value.response)
 
+        non_existing_version = "77"
+        with pytest.raises(lambda_client.exceptions.ResourceNotFoundException) as e:
+            lambda_client.get_policy(FunctionName=function_name, Qualifier=non_existing_version)
+        snapshot.match("get_policy_fn_version_doesnotexist", e.value.response)
+
         with pytest.raises(lambda_client.exceptions.ResourceNotFoundException) as e:
             lambda_client.add_permission(
                 FunctionName="doesnotexist",
@@ -2221,13 +2226,6 @@ class TestLambdaPermissions:
                 SourceArn=arns.s3_bucket_arn("test-bucket"),
             )
         snapshot.match("add_permission_fn_doesnotexist", e.value.response)
-
-        with pytest.raises(lambda_client.exceptions.ResourceNotFoundException) as e:
-            lambda_client.remove_permission(
-                FunctionName="doesnotexist",
-                StatementId="s3",
-            )
-        snapshot.match("remove_permission_fn_doesnotexist", e.value.response)
 
         with pytest.raises(lambda_client.exceptions.ResourceNotFoundException) as e:
             lambda_client.remove_permission(
@@ -2287,15 +2285,31 @@ class TestLambdaPermissions:
             Principal="s3.amazonaws.com",
             SourceArn=arns.s3_bucket_arn("test-bucket"),
         )
+
+        sid = "s3"
         with pytest.raises(lambda_client.exceptions.ResourceConflictException) as e:
             lambda_client.add_permission(
                 FunctionName=function_name,
                 Action="lambda:InvokeFunction",
-                StatementId="s3",
+                StatementId=sid,
                 Principal="s3.amazonaws.com",
                 SourceArn=arns.s3_bucket_arn("test-bucket"),
             )
         snapshot.match("add_permission_conflicting_statement_id", e.value.response)
+
+        with pytest.raises(lambda_client.exceptions.ResourceNotFoundException) as e:
+            lambda_client.remove_permission(
+                FunctionName="doesnotexist",
+                StatementId=sid,
+            )
+        snapshot.match("remove_permission_fn_doesnotexist", e.value.response)
+
+        non_existing_alias = "alias-doesnotexist"
+        with pytest.raises(lambda_client.exceptions.ResourceNotFoundException) as e:
+            lambda_client.remove_permission(
+                FunctionName=function_name, StatementId=sid, Qualifier=non_existing_alias
+            )
+        snapshot.match("remove_permission_fn_alias_doesnotexist", e.value.response)
 
     @pytest.mark.aws_validated
     def test_add_lambda_permission_aws(
@@ -2338,11 +2352,6 @@ class TestLambdaPermissions:
         with pytest.raises(lambda_client.exceptions.ResourceNotFoundException) as e:
             lambda_client.get_policy(FunctionName=function_name, Qualifier=fn_version)
         snapshot.match("get_policy_after_publishing_new_version", e.value.response)
-
-        non_existing_version = "77"
-        with pytest.raises(lambda_client.exceptions.ResourceNotFoundException) as e:
-            lambda_client.get_policy(FunctionName=function_name, Qualifier=non_existing_version)
-        snapshot.match("get_policy_exception_nonexisting_version", e.value.response)
 
         # create lambda permission with the same sid for specific function version
         lambda_client.add_permission(
@@ -2425,13 +2434,6 @@ class TestLambdaPermissions:
                 StatementId="non-existent",
             )
         snapshot.match("remove_permission_exception_nonexisting_sid", e.value.response)
-
-        non_existing_alias = "alias-doesnotexist"
-        with pytest.raises(lambda_client.exceptions.ResourceNotFoundException) as e:
-            lambda_client.remove_permission(
-                FunctionName=function_name, StatementId=sid_2, Qualifier=non_existing_alias
-            )
-        snapshot.match("remove_permission_exception_nonexisting_alias", e.value.response)
 
         lambda_client.remove_permission(
             FunctionName=function_name,

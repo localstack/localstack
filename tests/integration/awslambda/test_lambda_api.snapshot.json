@@ -4107,7 +4107,7 @@
     }
   },
   "tests/integration/awslambda/test_lambda_api.py::TestLambdaPermissions::test_add_lambda_permission_aws": {
-    "recorded-date": "21-12-2022, 13:56:25",
+    "recorded-date": "21-12-2022, 16:30:41",
     "recorded-content": {
       "create_lambda": {
         "CreateEventSourceMappingResponse": null,
@@ -4233,18 +4233,6 @@
           "HTTPStatusCode": 404
         }
       },
-      "get_policy_exception_nonexisting_version": {
-        "Error": {
-          "Code": "ResourceNotFoundException",
-          "Message": "The resource you requested does not exist."
-        },
-        "Message": "The resource you requested does not exist.",
-        "Type": "User",
-        "ResponseMetadata": {
-          "HTTPHeaders": {},
-          "HTTPStatusCode": 404
-        }
-      },
       "get_policy_after_adding_to_new_version": {
         "Policy": {
           "Version": "2012-10-17",
@@ -4328,7 +4316,7 @@
     }
   },
   "tests/integration/awslambda/test_lambda_api.py::TestLambdaPermissions::test_remove_multi_permissions": {
-    "recorded-date": "21-12-2022, 13:56:55",
+    "recorded-date": "21-12-2022, 16:41:22",
     "recorded-content": {
       "add_permission_1": {
         "Statement": {
@@ -4407,18 +4395,6 @@
           "Message": "Statement non-existent is not found in resource policy."
         },
         "Message": "Statement non-existent is not found in resource policy.",
-        "Type": "User",
-        "ResponseMetadata": {
-          "HTTPHeaders": {},
-          "HTTPStatusCode": 404
-        }
-      },
-      "remove_permission_exception_nonexisting_alias": {
-        "Error": {
-          "Code": "ResourceNotFoundException",
-          "Message": "Cannot find alias arn: arn:aws:lambda:<region>:111111111111:function:<resource:1>:alias-doesnotexist"
-        },
-        "Message": "Cannot find alias arn: arn:aws:lambda:<region>:111111111111:function:<resource:1>:alias-doesnotexist",
         "Type": "User",
         "ResponseMetadata": {
           "HTTPHeaders": {},
@@ -6799,7 +6775,7 @@
     }
   },
   "tests/integration/awslambda/test_lambda_api.py::TestLambdaPermissions::test_permission_exceptions": {
-    "recorded-date": "16-12-2022, 14:36:14",
+    "recorded-date": "21-12-2022, 16:40:42",
     "recorded-content": {
       "add_permission_fn_qualifier_mismatch": {
         "Error": {
@@ -6837,24 +6813,24 @@
           "HTTPStatusCode": 404
         }
       },
-      "add_permission_fn_doesnotexist": {
+      "get_policy_fn_version_doesnotexist": {
         "Error": {
           "Code": "ResourceNotFoundException",
-          "Message": "Function not found: arn:aws:lambda:<region>:111111111111:function:doesnotexist"
+          "Message": "The resource you requested does not exist."
         },
-        "Message": "Function not found: arn:aws:lambda:<region>:111111111111:function:doesnotexist",
+        "Message": "The resource you requested does not exist.",
         "Type": "User",
         "ResponseMetadata": {
           "HTTPHeaders": {},
           "HTTPStatusCode": 404
         }
       },
-      "remove_permission_fn_doesnotexist": {
+      "add_permission_fn_doesnotexist": {
         "Error": {
           "Code": "ResourceNotFoundException",
-          "Message": "No policy found for: arn:aws:lambda:<region>:111111111111:function:doesnotexist"
+          "Message": "Function not found: arn:aws:lambda:<region>:111111111111:function:doesnotexist"
         },
-        "Message": "No policy found for: arn:aws:lambda:<region>:111111111111:function:doesnotexist",
+        "Message": "Function not found: arn:aws:lambda:<region>:111111111111:function:doesnotexist",
         "Type": "User",
         "ResponseMetadata": {
           "HTTPHeaders": {},
@@ -6929,6 +6905,30 @@
         "ResponseMetadata": {
           "HTTPHeaders": {},
           "HTTPStatusCode": 409
+        }
+      },
+      "remove_permission_fn_doesnotexist": {
+        "Error": {
+          "Code": "ResourceNotFoundException",
+          "Message": "No policy found for: arn:aws:lambda:<region>:111111111111:function:doesnotexist"
+        },
+        "Message": "No policy found for: arn:aws:lambda:<region>:111111111111:function:doesnotexist",
+        "Type": "User",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 404
+        }
+      },
+      "remove_permission_fn_alias_doesnotexist": {
+        "Error": {
+          "Code": "ResourceNotFoundException",
+          "Message": "Cannot find alias arn: arn:aws:lambda:<region>:111111111111:function:<function-name>:alias-doesnotexist"
+        },
+        "Message": "Cannot find alias arn: arn:aws:lambda:<region>:111111111111:function:<function-name>:alias-doesnotexist",
+        "Type": "User",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 404
         }
       }
     }
