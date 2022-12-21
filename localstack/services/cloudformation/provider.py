@@ -65,15 +65,15 @@ from localstack.aws.api.cloudformation import (
     ValidateTemplateInput,
     ValidateTemplateOutput,
 )
-from localstack.services.cloudformation.stores import CloudFormationStore, cloudformation_stores
-from localstack.utils.aws import arns, aws_stack
-from localstack.utils.cloudformation import template_deployer, template_preparer
-from localstack.utils.cloudformation.template_deployer import NoStackUpdates
-from localstack.utils.cloudformation.template_preparer import (
+from localstack.services.cloudformation.engine import template_deployer, template_preparer
+from localstack.services.cloudformation.engine.template_deployer import NoStackUpdates
+from localstack.services.cloudformation.engine.template_preparer import (
     get_template_body,
     prepare_template_body,
     template_to_json,
 )
+from localstack.services.cloudformation.stores import CloudFormationStore, cloudformation_stores
+from localstack.utils.aws import arns, aws_stack
 from localstack.utils.collections import remove_attributes, select_attributes
 from localstack.utils.json import clone, clone_safe
 from localstack.utils.objects import recurse_object

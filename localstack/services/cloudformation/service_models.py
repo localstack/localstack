@@ -114,7 +114,7 @@ class GenericBaseModel:
     # ---------------------
 
     def fetch_and_update_state(self, *args, **kwargs):
-        from localstack.utils.cloudformation import template_deployer
+        from localstack.services.cloudformation.engine import template_deployer
 
         try:
             state = self.fetch_state(*args, **kwargs)
@@ -190,8 +190,10 @@ class GenericBaseModel:
     def resolve_refs_recursively(cls, stack_name, value, resources):
         if config.CFN_ENABLE_RESOLVE_REFS_IN_MODELS:
             # TODO: restructure code to avoid circular import here
+            from localstack.services.cloudformation.engine.template_deployer import (
+                resolve_refs_recursively,
+            )
             from localstack.services.cloudformation.provider import find_stack
-            from localstack.utils.cloudformation.template_deployer import resolve_refs_recursively
 
             stack = find_stack(stack_name)
             return resolve_refs_recursively(stack, value)

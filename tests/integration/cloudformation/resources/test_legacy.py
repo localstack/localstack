@@ -8,8 +8,8 @@ from botocore.exceptions import ClientError
 from botocore.parsers import ResponseParserError
 
 from localstack.aws.accounts import get_aws_account_id
+from localstack.services.cloudformation.engine import template_preparer
 from localstack.utils.aws import arns
-from localstack.utils.cloudformation import template_preparer
 from localstack.utils.common import load_file, short_uid
 from localstack.utils.testutil import create_zip_file, list_all_resources
 
