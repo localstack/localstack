@@ -4107,7 +4107,7 @@
     }
   },
   "tests/integration/awslambda/test_lambda_api.py::TestLambdaPermissions::test_add_lambda_permission_aws": {
-    "recorded-date": "21-12-2022, 17:09:07",
+    "recorded-date": "21-12-2022, 20:33:13",
     "recorded-content": {
       "create_lambda": {
         "CreateEventSourceMappingResponse": null,
@@ -4193,130 +4193,11 @@
           "HTTPHeaders": {},
           "HTTPStatusCode": 200
         }
-      },
-      "get_policy_after_publishing_latest": {
-        "Policy": {
-          "Version": "2012-10-17",
-          "Id": "default",
-          "Statement": [
-            {
-              "Sid": "s3",
-              "Effect": "Allow",
-              "Principal": {
-                "Service": "s3.amazonaws.com"
-              },
-              "Action": "lambda:InvokeFunction",
-              "Resource": "arn:aws:lambda:<region>:111111111111:function:<function-name:1>",
-              "Condition": {
-                "ArnLike": {
-                  "AWS:SourceArn": "arn:aws:s3:::<resource:2>"
-                }
-              }
-            }
-          ]
-        },
-        "RevisionId": "<uuid:3>",
-        "ResponseMetadata": {
-          "HTTPHeaders": {},
-          "HTTPStatusCode": 200
-        }
-      },
-      "get_policy_after_publishing_new_version": {
-        "Error": {
-          "Code": "ResourceNotFoundException",
-          "Message": "The resource you requested does not exist."
-        },
-        "Message": "The resource you requested does not exist.",
-        "Type": "User",
-        "ResponseMetadata": {
-          "HTTPHeaders": {},
-          "HTTPStatusCode": 404
-        }
-      },
-      "get_policy_after_adding_to_new_version": {
-        "Policy": {
-          "Version": "2012-10-17",
-          "Id": "default",
-          "Statement": [
-            {
-              "Sid": "s3",
-              "Effect": "Allow",
-              "Principal": {
-                "Service": "s3.amazonaws.com"
-              },
-              "Action": "lambda:InvokeFunction",
-              "Resource": "arn:aws:lambda:<region>:111111111111:function:<function-name:1>",
-              "Condition": {
-                "ArnLike": {
-                  "AWS:SourceArn": "arn:aws:s3:::<resource:2>"
-                }
-              }
-            }
-          ]
-        },
-        "RevisionId": "<uuid:3>",
-        "ResponseMetadata": {
-          "HTTPHeaders": {},
-          "HTTPStatusCode": 200
-        }
-      },
-      "get_policy_after_adding_2": {
-        "Policy": {
-          "Version": "2012-10-17",
-          "Id": "default",
-          "Statement": [
-            {
-              "Sid": "s3",
-              "Effect": "Allow",
-              "Principal": {
-                "Service": "s3.amazonaws.com"
-              },
-              "Action": "lambda:InvokeFunction",
-              "Resource": "arn:aws:lambda:<region>:111111111111:function:<function-name:1>",
-              "Condition": {
-                "ArnLike": {
-                  "AWS:SourceArn": "arn:aws:s3:::<resource:2>"
-                }
-              }
-            },
-            {
-              "Sid": "s3_2",
-              "Effect": "Allow",
-              "Principal": {
-                "Service": "s3.amazonaws.com"
-              },
-              "Action": "lambda:InvokeFunction",
-              "Resource": "arn:aws:lambda:<region>:111111111111:function:<function-name:1>",
-              "Condition": {
-                "ArnLike": {
-                  "AWS:SourceArn": "arn:aws:s3:::<resource:2>"
-                }
-              }
-            }
-          ]
-        },
-        "RevisionId": "<uuid:4>",
-        "ResponseMetadata": {
-          "HTTPHeaders": {},
-          "HTTPStatusCode": 200
-        }
-      },
-      "add_permission_exception_revision_id": {
-        "Error": {
-          "Code": "PreconditionFailedException",
-          "Message": "The Revision Id provided does not match the latest Revision Id. Call the GetFunction/GetAlias API to retrieve the latest Revision Id"
-        },
-        "Type": "User",
-        "message": "The Revision Id provided does not match the latest Revision Id. Call the GetFunction/GetAlias API to retrieve the latest Revision Id",
-        "ResponseMetadata": {
-          "HTTPHeaders": {},
-          "HTTPStatusCode": 412
-        }
       }
     }
   },
   "tests/integration/awslambda/test_lambda_api.py::TestLambdaPermissions::test_remove_multi_permissions": {
-    "recorded-date": "21-12-2022, 16:41:22",
+    "recorded-date": "21-12-2022, 20:36:23",
     "recorded-content": {
       "add_permission_1": {
         "Statement": {
@@ -6775,7 +6656,7 @@
     }
   },
   "tests/integration/awslambda/test_lambda_api.py::TestLambdaPermissions::test_permission_exceptions": {
-    "recorded-date": "21-12-2022, 16:40:42",
+    "recorded-date": "21-12-2022, 20:39:19",
     "recorded-content": {
       "add_permission_fn_qualifier_mismatch": {
         "Error": {
@@ -6895,6 +6776,18 @@
           "HTTPStatusCode": 404
         }
       },
+      "add_permission_exception_revision_id": {
+        "Error": {
+          "Code": "PreconditionFailedException",
+          "Message": "The Revision Id provided does not match the latest Revision Id. Call the GetFunction/GetAlias API to retrieve the latest Revision Id"
+        },
+        "Type": "User",
+        "message": "The Revision Id provided does not match the latest Revision Id. Call the GetFunction/GetAlias API to retrieve the latest Revision Id",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 412
+        }
+      },
       "add_permission_conflicting_statement_id": {
         "Error": {
           "Code": "ResourceConflictException",
@@ -6929,6 +6822,18 @@
         "ResponseMetadata": {
           "HTTPHeaders": {},
           "HTTPStatusCode": 404
+        }
+      },
+      "remove_permission_fn_revision_id_doesnotmatch": {
+        "Error": {
+          "Code": "PreconditionFailedException",
+          "Message": "The Revision Id provided does not match the latest Revision Id. Call the GetFunction/GetAlias API to retrieve the latest Revision Id"
+        },
+        "Type": "User",
+        "message": "The Revision Id provided does not match the latest Revision Id. Call the GetFunction/GetAlias API to retrieve the latest Revision Id",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 412
         }
       }
     }
@@ -9371,6 +9276,165 @@
         "ResponseMetadata": {
           "HTTPHeaders": {},
           "HTTPStatusCode": 201
+        }
+      }
+    }
+  },
+  "tests/integration/awslambda/test_lambda_api.py::TestLambdaPermissions::test_lambda_permission_versioning": {
+    "recorded-date": "21-12-2022, 20:35:15",
+    "recorded-content": {
+      "add_permission": {
+        "Statement": {
+          "Sid": "s3",
+          "Effect": "Allow",
+          "Principal": {
+            "Service": "s3.amazonaws.com"
+          },
+          "Action": "lambda:InvokeFunction",
+          "Resource": "arn:aws:lambda:<region>:111111111111:function:<resource:1>",
+          "Condition": {
+            "ArnLike": {
+              "AWS:SourceArn": "arn:aws:s3:::<resource:2>"
+            }
+          }
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 201
+        }
+      },
+      "get_policy": {
+        "Policy": {
+          "Version": "2012-10-17",
+          "Id": "default",
+          "Statement": [
+            {
+              "Sid": "s3",
+              "Effect": "Allow",
+              "Principal": {
+                "Service": "s3.amazonaws.com"
+              },
+              "Action": "lambda:InvokeFunction",
+              "Resource": "arn:aws:lambda:<region>:111111111111:function:<resource:1>",
+              "Condition": {
+                "ArnLike": {
+                  "AWS:SourceArn": "arn:aws:s3:::<resource:2>"
+                }
+              }
+            }
+          ]
+        },
+        "RevisionId": "<uuid:1>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "get_policy_after_publishing_latest": {
+        "Policy": {
+          "Version": "2012-10-17",
+          "Id": "default",
+          "Statement": [
+            {
+              "Sid": "s3",
+              "Effect": "Allow",
+              "Principal": {
+                "Service": "s3.amazonaws.com"
+              },
+              "Action": "lambda:InvokeFunction",
+              "Resource": "arn:aws:lambda:<region>:111111111111:function:<resource:1>",
+              "Condition": {
+                "ArnLike": {
+                  "AWS:SourceArn": "arn:aws:s3:::<resource:2>"
+                }
+              }
+            }
+          ]
+        },
+        "RevisionId": "<uuid:2>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "get_policy_after_publishing_new_version": {
+        "Error": {
+          "Code": "ResourceNotFoundException",
+          "Message": "The resource you requested does not exist."
+        },
+        "Message": "The resource you requested does not exist.",
+        "Type": "User",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 404
+        }
+      },
+      "get_policy_after_adding_to_new_version": {
+        "Policy": {
+          "Version": "2012-10-17",
+          "Id": "default",
+          "Statement": [
+            {
+              "Sid": "s3",
+              "Effect": "Allow",
+              "Principal": {
+                "Service": "s3.amazonaws.com"
+              },
+              "Action": "lambda:InvokeFunction",
+              "Resource": "arn:aws:lambda:<region>:111111111111:function:<resource:1>",
+              "Condition": {
+                "ArnLike": {
+                  "AWS:SourceArn": "arn:aws:s3:::<resource:2>"
+                }
+              }
+            }
+          ]
+        },
+        "RevisionId": "<uuid:2>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "get_policy_after_adding_2": {
+        "Policy": {
+          "Version": "2012-10-17",
+          "Id": "default",
+          "Statement": [
+            {
+              "Sid": "s3",
+              "Effect": "Allow",
+              "Principal": {
+                "Service": "s3.amazonaws.com"
+              },
+              "Action": "lambda:InvokeFunction",
+              "Resource": "arn:aws:lambda:<region>:111111111111:function:<resource:1>",
+              "Condition": {
+                "ArnLike": {
+                  "AWS:SourceArn": "arn:aws:s3:::<resource:2>"
+                }
+              }
+            },
+            {
+              "Sid": "s3_2",
+              "Effect": "Allow",
+              "Principal": {
+                "Service": "s3.amazonaws.com"
+              },
+              "Action": "lambda:InvokeFunction",
+              "Resource": "arn:aws:lambda:<region>:111111111111:function:<resource:1>",
+              "Condition": {
+                "ArnLike": {
+                  "AWS:SourceArn": "arn:aws:s3:::<resource:2>"
+                }
+              }
+            }
+          ]
+        },
+        "RevisionId": "<uuid:3>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
         }
       }
     }

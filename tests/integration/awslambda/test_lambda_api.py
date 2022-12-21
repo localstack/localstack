@@ -2278,6 +2278,17 @@ class TestLambdaPermissions:
             )
         snapshot.match("add_permission_fn_qualifier_valid_doesnotexist", e.value.response)
 
+        with pytest.raises(lambda_client.exceptions.PreconditionFailedException) as e:
+            lambda_client.add_permission(
+                FunctionName=function_name,
+                Action="lambda:InvokeFunction",
+                StatementId="s3",
+                Principal="s3.amazonaws.com",
+                SourceArn=arns.s3_bucket_arn("test-bucket"),
+                RevisionId=long_uid(),  # non-matching revision id
+            )
+        snapshot.match("add_permission_exception_revision_id", e.value.response)
+
         lambda_client.add_permission(
             FunctionName=function_name,
             Action="lambda:InvokeFunction",
@@ -2311,11 +2322,19 @@ class TestLambdaPermissions:
             )
         snapshot.match("remove_permission_fn_alias_doesnotexist", e.value.response)
 
+        with pytest.raises(lambda_client.exceptions.PreconditionFailedException) as e:
+            lambda_client.remove_permission(
+                FunctionName=function_name,
+                StatementId=sid,
+                RevisionId=long_uid(),  # non-matching revision id
+            )
+        snapshot.match("remove_permission_fn_revision_id_doesnotmatch", e.value.response)
+
     @pytest.mark.aws_validated
     def test_add_lambda_permission_aws(
         self, lambda_client, iam_client, create_lambda_function, account_id, snapshot
     ):
-        """Testing the add_permission call on lambda, by adding new resource-based policies to a lambda function"""
+        """Testing the add_permission call on lambda, by adding a new resource-based policy to a lambda function"""
 
         function_name = f"lambda_func-{short_uid()}"
         lambda_create_response = create_lambda_function(
@@ -2324,6 +2343,35 @@ class TestLambdaPermissions:
             runtime=Runtime.python3_9,
         )
         snapshot.match("create_lambda", lambda_create_response)
+        # create lambda permission
+        action = "lambda:InvokeFunction"
+        sid = "s3"
+        principal = "s3.amazonaws.com"
+        resp = lambda_client.add_permission(
+            FunctionName=function_name,
+            Action=action,
+            StatementId=sid,
+            Principal=principal,
+            SourceArn=arns.s3_bucket_arn("test-bucket"),
+        )
+        snapshot.match("add_permission", resp)
+
+        # fetch lambda policy
+        get_policy_result = lambda_client.get_policy(FunctionName=function_name)
+        snapshot.match("get_policy", get_policy_result)
+
+    @pytest.mark.skipif(condition=is_old_provider(), reason="not supported")
+    @pytest.mark.aws_validated
+    def test_lambda_permission_versioning(
+        self, lambda_client, iam_client, create_lambda_function, account_id, snapshot
+    ):
+        """Testing how lambda permissions behave when publishing different versions and using qualifiers"""
+        function_name = f"lambda_func-{short_uid()}"
+        create_lambda_function(
+            handler_file=TEST_LAMBDA_PYTHON_ECHO,
+            func_name=function_name,
+            runtime=Runtime.python3_9,
+        )
 
         # create lambda permission
         action = "lambda:InvokeFunction"
@@ -2378,17 +2426,6 @@ class TestLambdaPermissions:
 
         get_policy_result_adding_2 = lambda_client.get_policy(FunctionName=function_name)
         snapshot.match("get_policy_after_adding_2", get_policy_result_adding_2)
-
-        with pytest.raises(lambda_client.exceptions.PreconditionFailedException) as e:
-            lambda_client.add_permission(
-                FunctionName=function_name,
-                Action="lambda:InvokeFunction",
-                StatementId=f"{sid}_3",
-                Principal="s3.amazonaws.com",
-                SourceArn=arns.s3_bucket_arn("test-bucket"),
-                RevisionId=long_uid(),  # non-matching revision id
-            )
-        snapshot.match("add_permission_exception_revision_id", e.value.response)
 
     @pytest.mark.skipif(condition=is_old_provider(), reason="not supported")
     @pytest.mark.aws_validated
@@ -2483,14 +2520,6 @@ class TestLambdaPermissions:
             FunctionName=function_name,
         )
         snapshot.match("policy_after_removal", policy_response_removal)
-
-        with pytest.raises(lambda_client.exceptions.PreconditionFailedException) as e:
-            lambda_client.remove_permission(
-                FunctionName=function_name,
-                StatementId=sid,
-                RevisionId=long_uid(),  # non-matching revision id
-            )
-        snapshot.match("remove_permission_exception_revision_id", e.value.response)
 
         policy_response_removal_attempt = lambda_client.get_policy(
             FunctionName=function_name,
