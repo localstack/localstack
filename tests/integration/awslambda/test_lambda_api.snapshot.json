@@ -4562,20 +4562,8 @@
     }
   },
   "tests/integration/awslambda/test_lambda_api.py::TestLambdaUrl::test_url_config_lifecycle": {
-    "recorded-date": "30-09-2022, 15:33:00",
+    "recorded-date": "21-12-2022, 15:39:04",
     "recorded-content": {
-      "failed_creation": {
-        "Error": {
-          "Code": "ResourceNotFoundException",
-          "Message": "Function does not exist"
-        },
-        "Message": "Function does not exist",
-        "Type": "User",
-        "ResponseMetadata": {
-          "HTTPHeaders": {},
-          "HTTPStatusCode": 404
-        }
-      },
       "url_creation": {
         "AuthType": "NONE",
         "CreationTime": "date",
@@ -6375,7 +6363,7 @@
     }
   },
   "tests/integration/awslambda/test_lambda_api.py::TestLambdaUrl::test_url_config_exceptions": {
-    "recorded-date": "21-12-2022, 14:25:23",
+    "recorded-date": "21-12-2022, 15:38:38",
     "recorded-content": {
       "fn_version_result": {
         "Architectures": [
@@ -6500,6 +6488,16 @@
           "HTTPStatusCode": 400
         }
       },
+      "create_function_url_config_qualifier_latest": {
+        "Error": {
+          "Code": "ValidationException",
+          "Message": "1 validation error detected: Value '$LATEST' at 'qualifier' failed to satisfy constraint: Member must satisfy regular expression pattern: ((?!^\\d+$)^[0-9a-zA-Z-_]+$)"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
       "get_function_url_config_name_doesnotexist": {
         "Error": {
           "Code": "ResourceNotFoundException",
@@ -6573,6 +6571,16 @@
         },
         "Type": "User",
         "message": "The derived qualifier from the function name does not match the specified qualifier.",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "get_function_url_config_qualifier_latest": {
+        "Error": {
+          "Code": "ValidationException",
+          "Message": "1 validation error detected: Value '$LATEST' at 'qualifier' failed to satisfy constraint: Member must satisfy regular expression pattern: ((?!^\\d+$)^[0-9a-zA-Z-_]+$)"
+        },
         "ResponseMetadata": {
           "HTTPHeaders": {},
           "HTTPStatusCode": 400
@@ -6666,6 +6674,16 @@
           "HTTPStatusCode": 500
         }
       },
+      "delete_function_url_config_qualifier_latest": {
+        "Error": {
+          "Code": "ValidationException",
+          "Message": "1 validation error detected: Value '$LATEST' at 'qualifier' failed to satisfy constraint: Member must satisfy regular expression pattern: ((?!^\\d+$)^[0-9a-zA-Z-_]+$)"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
       "delete_function_url_config_config_doesnotexist": {
         "Error": {
           "Code": "ResourceNotFoundException",
@@ -6751,6 +6769,16 @@
         },
         "Type": "User",
         "message": "The derived qualifier from the function name does not match the specified qualifier.",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "update_function_url_config_qualifier_latest": {
+        "Error": {
+          "Code": "ValidationException",
+          "Message": "1 validation error detected: Value '$LATEST' at 'qualifier' failed to satisfy constraint: Member must satisfy regular expression pattern: ((?!^\\d+$)^[0-9a-zA-Z-_]+$)"
+        },
         "ResponseMetadata": {
           "HTTPHeaders": {},
           "HTTPStatusCode": 400

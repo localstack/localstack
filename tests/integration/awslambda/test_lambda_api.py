@@ -2598,6 +2598,14 @@ class TestLambdaUrl:
                 "SnapshotName": "qualifier_alias_doesnotmatch_arn",
                 "exc": lambda_client.exceptions.ClientError,
             },
+            {
+                "args": {
+                    "FunctionName": function_name,
+                    "Qualifier": "$LATEST",
+                },
+                "SnapshotName": "qualifier_latest",
+                "exc": lambda_client.exceptions.ClientError,
+            },
         ]
         config_doesnotexist_tests = [
             {
