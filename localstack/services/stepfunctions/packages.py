@@ -54,13 +54,20 @@ Since the JAR files are platform-independent, you can use the layer digest of an
 
 
 class StepFunctionsLocalPackage(Package):
-    version: str = "1.12.0"
+    """
+    NOTE: Do NOT update the version here! (It will also have no effect)
+
+    We are currently stuck on 1.7.9 since later versions introduced the generic aws-sdk Task,
+    which introduced additional 300MB+ to the jar file since it includes all AWS Java SDK libs.
+
+    This is blocked until our custom stepfunctions implementation is mature enough to replace it.
+    """
 
     def __init__(self):
-        super().__init__("StepFunctionsLocal", self.version)
+        super().__init__("StepFunctionsLocal", "1.7.9")
 
     def get_versions(self) -> List[str]:
-        return [self.version]
+        return ["1.7.9"]
 
     def _get_installer(self, version: str) -> PackageInstaller:
         return StepFunctionsLocalPackageInstaller("stepfunctions-local", version)
