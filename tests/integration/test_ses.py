@@ -274,6 +274,7 @@ class TestSES:
         assert [x["Name"] for x in rule_set["Rules"]] == rule_names
 
     @pytest.mark.only_localstack
+    @pytest.mark.aws_validated
     @pytest.mark.skip_snapshot_verify(
         paths=[
             "$..Message.delivery.processingTimeMillis",
@@ -282,7 +283,12 @@ class TestSES:
             "$..Message.mail.commonHeaders",
             "$..Message.mail.headers",
             "$..Message.mail.headersTruncated",
-            "$..Message.mail.tags",
+            "$..Message.mail.tags.'ses:caller-identity'",
+            "$..Message.mail.tags.'ses:configuration-set'",
+            "$..Message.mail.tags.'ses:from-domain'",
+            "$..Message.mail.tags.'ses:operation'",
+            "$..Message.mail.tags.'ses:outgoing-ip'",
+            "$..Message.mail.tags.'ses:source-ip'",
             "$..Message.mail.timestamp",
         ]
     )
@@ -358,14 +364,8 @@ class TestSES:
         messages.sort(key=sort_mail_sqs_messages)
         snapshot.match("messages", messages)
 
-        # check the tags manually, since these will be annoying to transform
-        send_tags = json.loads(messages[1]["Message"])["mail"]["tags"]
-        assert send_tags["custom-tag"] == ["tag-value"]
-
-        delivery_tags = json.loads(messages[2]["Message"])["mail"]["tags"]
-        assert delivery_tags["custom-tag"] == ["tag-value"]
-
-    # @pytest.mark.only_localstack
+    @pytest.mark.only_localstack
+    @pytest.mark.aws_validated
     @pytest.mark.skip_snapshot_verify(
         paths=[
             "$..Message.delivery.processingTimeMillis",
@@ -374,7 +374,12 @@ class TestSES:
             "$..Message.mail.commonHeaders",
             "$..Message.mail.headers",
             "$..Message.mail.headersTruncated",
-            "$..Message.mail.tags",
+            "$..Message.mail.tags.'ses:caller-identity'",
+            "$..Message.mail.tags.'ses:configuration-set'",
+            "$..Message.mail.tags.'ses:from-domain'",
+            "$..Message.mail.tags.'ses:operation'",
+            "$..Message.mail.tags.'ses:outgoing-ip'",
+            "$..Message.mail.tags.'ses:source-ip'",
             "$..Message.mail.timestamp",
         ]
     )
@@ -440,14 +445,8 @@ class TestSES:
         messages.sort(key=sort_mail_sqs_messages)
         snapshot.match("messages", messages)
 
-        # check the tags manually, since these will be annoying to transform
-        send_tags = json.loads(messages[1]["Message"])["mail"]["tags"]
-        assert send_tags["custom-tag"] == ["tag-value"]
-
-        delivery_tags = json.loads(messages[2]["Message"])["mail"]["tags"]
-        assert delivery_tags["custom-tag"] == ["tag-value"]
-
-    # @pytest.mark.only_localstack
+    @pytest.mark.only_localstack
+    @pytest.mark.aws_validated
     @pytest.mark.skip_snapshot_verify(
         paths=[
             "$..Message.delivery.processingTimeMillis",
@@ -456,7 +455,12 @@ class TestSES:
             "$..Message.mail.commonHeaders",
             "$..Message.mail.headers",
             "$..Message.mail.headersTruncated",
-            "$..Message.mail.tags",
+            "$..Message.mail.tags.'ses:caller-identity'",
+            "$..Message.mail.tags.'ses:configuration-set'",
+            "$..Message.mail.tags.'ses:from-domain'",
+            "$..Message.mail.tags.'ses:operation'",
+            "$..Message.mail.tags.'ses:outgoing-ip'",
+            "$..Message.mail.tags.'ses:source-ip'",
             "$..Message.mail.timestamp",
         ]
     )
@@ -515,13 +519,6 @@ class TestSES:
         messages = sqs_receive_num_messages(sqs_queue, 3)
         messages.sort(key=sort_mail_sqs_messages)
         snapshot.match("messages", messages)
-
-        # check the tags manually, since these will be annoying to transform
-        send_tags = json.loads(messages[1]["Message"])["mail"]["tags"]
-        assert send_tags["custom-tag"] == ["tag-value"]
-
-        delivery_tags = json.loads(messages[2]["Message"])["mail"]["tags"]
-        assert delivery_tags["custom-tag"] == ["tag-value"]
 
     def test_cannot_create_event_for_no_topic(
         self, ses_configuration_set, ses_client, snapshot, account_id
