@@ -9330,7 +9330,7 @@
     }
   },
   "tests/integration/awslambda/test_lambda_api.py::TestLambdaPermissions::test_add_lambda_permission_optional_fields": {
-    "recorded-date": "21-12-2022, 18:39:42",
+    "recorded-date": "21-12-2022, 19:02:40",
     "recorded-content": {
       "add_permission_optional_fields": {
         "Statement": {
@@ -9347,6 +9347,24 @@
             },
             "ArnLike": {
               "AWS:SourceArn": "arn:aws:s3:::<resource:2>"
+            }
+          }
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 201
+        }
+      },
+      "add_permission_alexa_skill": {
+        "Statement": {
+          "Sid": "alexaSkill",
+          "Effect": "Allow",
+          "Principal": "*",
+          "Action": "lambda:InvokeFunction",
+          "Resource": "arn:aws:lambda:<region>:111111111111:function:<resource:1>",
+          "Condition": {
+            "StringEquals": {
+              "lambda:EventSourceToken": "amzn1.ask.skill.xxxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
             }
           }
         },

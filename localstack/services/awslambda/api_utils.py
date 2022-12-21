@@ -234,7 +234,7 @@ def build_statement(
     source_arn: Optional[str] = None,
     source_account: Optional[str] = None,
     principal_org_id: Optional[str] = None,
-    event_source_token: Optional[str] = None,  # TODO: test & implement
+    event_source_token: Optional[str] = None,
     auth_type: Optional[FunctionUrlAuthType] = None,
 ) -> dict[str, Any]:
     statement = {
@@ -261,6 +261,10 @@ def build_statement(
 
     if source_account:
         update = {"StringEquals": {"AWS:SourceAccount": source_account}}
+        condition = merge_recursive(condition, update)
+
+    if event_source_token:
+        update = {"StringEquals": {"lambda:EventSourceToken": event_source_token}}
         condition = merge_recursive(condition, update)
 
     if source_arn:

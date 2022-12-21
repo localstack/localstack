@@ -2412,9 +2412,22 @@ class TestLambdaPermissions:
             SourceArn=arns.s3_bucket_arn("test-bucket"),
             SourceAccount=account_id,
             PrincipalOrgID="o-1234567890",
+            # "FunctionUrlAuthType is only supported for lambda:InvokeFunctionUrl action"
             FunctionUrlAuthType="NONE",
         )
         snapshot.match("add_permission_optional_fields", resp)
+
+        # create alexa skill lambda permission:
+        # https://developer.amazon.com/en-US/docs/alexa/custom-skills/host-a-custom-skill-as-an-aws-lambda-function.html
+        response = lambda_client.add_permission(
+            FunctionName=function_name,
+            StatementId="alexaSkill",
+            Action="lambda:InvokeFunction",
+            Principal="*",
+            # alexa skill token cannot be used together with source account and source arn
+            EventSourceToken="amzn1.ask.skill.xxxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx",
+        )
+        snapshot.match("add_permission_alexa_skill", response)
 
     @pytest.mark.skip_snapshot_verify(paths=["$..Message"], condition=is_old_provider)
     @pytest.mark.aws_validated

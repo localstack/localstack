@@ -1635,7 +1635,6 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
     # ============  Permissions  ============
     # =======================================
 
-    # TODO: add test for event_source_token (alexa smart home) and auth_type
     @handler("AddPermission", expand=False)
     def add_permission(
         self,
@@ -1675,7 +1674,6 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
                     Type="User",
                 )
 
-        # TODO: extend build_statement => see todos in there
         permission_statement = api_utils.build_statement(
             fn_arn,
             request["StatementId"],
@@ -1684,6 +1682,7 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
             source_arn=request.get("SourceArn"),
             source_account=request.get("SourceAccount"),
             principal_org_id=request.get("PrincipalOrgID"),
+            event_source_token=request.get("EventSourceToken"),
             auth_type=request.get("FunctionUrlAuthType"),
         )
         policy = existing_policy
