@@ -1436,8 +1436,6 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
         qualifier: FunctionUrlQualifier = None,
         cors: Cors = None,
     ) -> CreateFunctionUrlConfigResponse:
-        state = lambda_stores[context.account_id][context.region]
-
         function_name, qualifier = api_utils.get_name_and_qualifier(
             function_name, qualifier, context.region
         )
@@ -1449,9 +1447,7 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
             raise ValidationException(
                 f"1 validation error detected: Value '{qualifier}' at 'qualifier' failed to satisfy constraint: Member must satisfy regular expression pattern: (^\\$LATEST$)|((?!^[0-9]+$)([a-zA-Z0-9-_]+))"
             )
-        fn = state.functions.get(function_name)
-        if fn is None:
-            raise ResourceNotFoundException("Function does not exist", Type="User")
+        fn = self._get_function(function_name, context.account_id, context.region)
 
         url_config = fn.function_url_configs.get(qualifier or "$LATEST")
         if url_config:
@@ -1506,8 +1502,6 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
         function_name: FunctionName,
         qualifier: FunctionUrlQualifier = None,
     ) -> GetFunctionUrlConfigResponse:
-        state = lambda_stores[context.account_id][context.region]
-
         fn_name, qualifier = api_utils.get_name_and_qualifier(
             function_name, qualifier, context.region
         )
@@ -1521,11 +1515,7 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
                 f"1 validation error detected: Value '{qualifier}' at 'qualifier' failed to satisfy constraint: Member must satisfy regular expression pattern: (^\\$LATEST$)|((?!^[0-9]+$)([a-zA-Z0-9-_]+))"
             )
 
-        resolved_fn = state.functions.get(fn_name)
-        if not resolved_fn:
-            raise ResourceNotFoundException(
-                "The resource you requested does not exist.", Type="User"
-            )
+        resolved_fn = self._get_function(function_name, context.account_id, context.region)
 
         qualifier = qualifier or "$LATEST"
         url_config = resolved_fn.function_url_configs.get(qualifier)
@@ -1544,8 +1534,6 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
         auth_type: FunctionUrlAuthType = None,
         cors: Cors = None,
     ) -> UpdateFunctionUrlConfigResponse:
-        state = lambda_stores[context.account_id][context.region]
-
         function_name, qualifier = api_utils.get_name_and_qualifier(
             function_name, qualifier, context.region
         )
@@ -1558,9 +1546,7 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
                 f"1 validation error detected: Value '{qualifier}' at 'qualifier' failed to satisfy constraint: Member must satisfy regular expression pattern: (^\\$LATEST$)|((?!^[0-9]+$)([a-zA-Z0-9-_]+))"
             )
 
-        fn = state.functions.get(function_name)
-        if not fn:
-            raise ResourceNotFoundException("Function does not exist", Type="User")
+        fn = self._get_function(function_name, context.account_id, context.region)
 
         normalized_qualifier = qualifier or "$LATEST"
 
@@ -1600,8 +1586,6 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
         function_name: FunctionName,
         qualifier: FunctionUrlQualifier = None,
     ) -> None:
-        state = lambda_stores[context.account_id][context.region]
-
         function_name, qualifier = api_utils.get_name_and_qualifier(
             function_name, qualifier, context.region
         )
@@ -1613,11 +1597,7 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
             raise ValidationException(
                 f"1 validation error detected: Value '{qualifier}' at 'qualifier' failed to satisfy constraint: Member must satisfy regular expression pattern: (^\\$LATEST$)|((?!^[0-9]+$)([a-zA-Z0-9-_]+))"
             )
-        resolved_fn = state.functions.get(function_name)
-        if not resolved_fn:
-            raise ResourceNotFoundException(
-                "The resource you requested does not exist.", Type="User"
-            )
+        resolved_fn = self._get_function(function_name, context.account_id, context.region)
 
         qualifier = qualifier or "$LATEST"
         url_config = resolved_fn.function_url_configs.get(qualifier)
@@ -1635,12 +1615,8 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
         marker: String = None,
         max_items: MaxItems = None,
     ) -> ListFunctionUrlConfigsResponse:
-        state = lambda_stores[context.account_id][context.region]
-
         fn_name = api_utils.get_function_name(function_name, context.region)
-        resolved_fn = state.functions.get(fn_name)
-        if not resolved_fn:
-            raise ResourceNotFoundException("Function does not exist", Type="User")
+        resolved_fn = self._get_function(fn_name, context.account_id, context.region)
 
         url_configs = [
             api_utils.map_function_url_config(fn_conf)
