@@ -8,6 +8,7 @@ LOG = logging.getLogger(__name__)
 
 
 class CloudFormationStore(BaseStore):
+    # FIXME: use stack name as ID instead ?
     # maps stack ID to stack details
     stacks: Dict[str, Stack] = LocalAttribute(default=dict)
 

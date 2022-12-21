@@ -1340,7 +1340,7 @@ class TemplateDeployer:
         append_to_changeset=False,
         filter_unchanged_resources=False,
     ):
-        from localstack.services.cloudformation.provider import StackChangeSet
+        from localstack.services.cloudformation.engine.entities import StackChangeSet
 
         old_resources = existing_stack.template["Resources"]
         new_resources = new_stack.template["Resources"]
@@ -1414,7 +1414,7 @@ class TemplateDeployer:
         )
 
     def apply_changes_in_loop(self, changes, stack, action=None, new_stack=None):
-        from localstack.services.cloudformation.provider import StackChangeSet
+        from localstack.services.cloudformation.engine.entities import StackChangeSet
 
         def _run(*args):
             try:
