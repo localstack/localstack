@@ -6252,7 +6252,7 @@
     }
   },
   "tests/integration/awslambda/test_lambda_api.py::TestLambdaUrl::test_url_config_list_paging": {
-    "recorded-date": "04-10-2022, 10:28:09",
+    "recorded-date": "21-12-2022, 15:46:10",
     "recorded-content": {
       "fn_version_result": {
         "Architectures": [

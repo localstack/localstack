@@ -2678,7 +2678,7 @@ class TestLambdaUrl:
         )
         snapshot.match("url_config_fn", url_config_fn)
         url_config_alias = lambda_client.create_function_url_config(
-            FunctionName=function_name, Qualifier=alias_name, AuthType="NONE"
+            FunctionName=f"{function_name}:{alias_name}", Qualifier=alias_name, AuthType="NONE"
         )
         snapshot.match("url_config_alias", url_config_alias)
 
