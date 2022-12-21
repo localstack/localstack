@@ -6375,7 +6375,7 @@
     }
   },
   "tests/integration/awslambda/test_lambda_api.py::TestLambdaUrl::test_url_config_exceptions": {
-    "recorded-date": "04-10-2022, 10:09:32",
+    "recorded-date": "21-12-2022, 14:25:23",
     "recorded-content": {
       "fn_version_result": {
         "Architectures": [
@@ -6488,6 +6488,18 @@
           "HTTPStatusCode": 404
         }
       },
+      "create_function_url_config_qualifier_alias_doesnotmatch_arn": {
+        "Error": {
+          "Code": "InvalidParameterValueException",
+          "Message": "The derived qualifier from the function name does not match the specified qualifier."
+        },
+        "Type": "User",
+        "message": "The derived qualifier from the function name does not match the specified qualifier.",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
       "get_function_url_config_name_doesnotexist": {
         "Error": {
           "Code": "ResourceNotFoundException",
@@ -6552,6 +6564,18 @@
         "ResponseMetadata": {
           "HTTPHeaders": {},
           "HTTPStatusCode": 404
+        }
+      },
+      "get_function_url_config_qualifier_alias_doesnotmatch_arn": {
+        "Error": {
+          "Code": "InvalidParameterValueException",
+          "Message": "The derived qualifier from the function name does not match the specified qualifier."
+        },
+        "Type": "User",
+        "message": "The derived qualifier from the function name does not match the specified qualifier.",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
         }
       },
       "get_function_url_config_config_doesnotexist": {
@@ -6632,6 +6656,16 @@
           "HTTPStatusCode": 404
         }
       },
+      "delete_function_url_config_qualifier_alias_doesnotmatch_arn": {
+        "Error": {
+          "Code": "InternalFailure",
+          "Message": null
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 500
+        }
+      },
       "delete_function_url_config_config_doesnotexist": {
         "Error": {
           "Code": "ResourceNotFoundException",
@@ -6708,6 +6742,18 @@
         "ResponseMetadata": {
           "HTTPHeaders": {},
           "HTTPStatusCode": 404
+        }
+      },
+      "update_function_url_config_qualifier_alias_doesnotmatch_arn": {
+        "Error": {
+          "Code": "InvalidParameterValueException",
+          "Message": "The derived qualifier from the function name does not match the specified qualifier."
+        },
+        "Type": "User",
+        "message": "The derived qualifier from the function name does not match the specified qualifier.",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
         }
       },
       "update_function_url_config_config_doesnotexist": {

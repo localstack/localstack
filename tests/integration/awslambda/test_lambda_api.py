@@ -2507,6 +2507,16 @@ class TestLambdaPermissions:
 
 class TestLambdaUrl:
     @pytest.mark.skipif(condition=is_old_provider(), reason="not supported")
+    @pytest.mark.skip_snapshot_verify(
+        paths=[
+            # broken at AWS yielding InternalFailure
+            "delete_function_url_config_qualifier_alias_doesnotmatch_arn..Error.Code",
+            "delete_function_url_config_qualifier_alias_doesnotmatch_arn..Error.Message",
+            "delete_function_url_config_qualifier_alias_doesnotmatch_arn..ResponseMetadata.HTTPStatusCode",
+            "delete_function_url_config_qualifier_alias_doesnotmatch_arn..Type",
+            "delete_function_url_config_qualifier_alias_doesnotmatch_arn..message",
+        ]
+    )
     @pytest.mark.aws_validated
     def test_url_config_exceptions(self, lambda_client, create_lambda_function, snapshot):
         """
@@ -2579,6 +2589,14 @@ class TestLambdaUrl:
                 "args": {"FunctionName": function_name, "Qualifier": "v1"},
                 "SnapshotName": "qualifier_alias_doesnotexist",
                 "exc": lambda_client.exceptions.ResourceNotFoundException,
+            },
+            {
+                "args": {
+                    "FunctionName": f"{function_name}:{alias_name}-doesnotmatch",
+                    "Qualifier": alias_name,
+                },
+                "SnapshotName": "qualifier_alias_doesnotmatch_arn",
+                "exc": lambda_client.exceptions.ClientError,
             },
         ]
         config_doesnotexist_tests = [

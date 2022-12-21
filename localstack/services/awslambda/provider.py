@@ -1429,8 +1429,6 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
 
     # TODO: what happens if function state is not active?
     # TODO: qualifier both in function_name as ARN and in qualifier?
-    # TODO: test for qualifier being a number (i.e. version)
-    # TODO: test for conflicts between function_name as ARN and provided qualifier
     # See get_permissions for qualifier handling
     def create_function_url_config(
         self,
