@@ -4107,7 +4107,7 @@
     }
   },
   "tests/integration/awslambda/test_lambda_api.py::TestLambdaPermissions::test_add_lambda_permission_aws": {
-    "recorded-date": "21-12-2022, 10:09:01",
+    "recorded-date": "21-12-2022, 13:56:25",
     "recorded-content": {
       "create_lambda": {
         "CreateEventSourceMappingResponse": null,
@@ -4233,6 +4233,18 @@
           "HTTPStatusCode": 404
         }
       },
+      "get_policy_exception_nonexisting_version": {
+        "Error": {
+          "Code": "ResourceNotFoundException",
+          "Message": "The resource you requested does not exist."
+        },
+        "Message": "The resource you requested does not exist.",
+        "Type": "User",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 404
+        }
+      },
       "get_policy_after_adding_to_new_version": {
         "Policy": {
           "Version": "2012-10-17",
@@ -4301,7 +4313,7 @@
           "HTTPStatusCode": 200
         }
       },
-      "expect_revision_error_add_permission": {
+      "add_permission_exception_revision_id": {
         "Error": {
           "Code": "PreconditionFailedException",
           "Message": "The Revision Id provided does not match the latest Revision Id. Call the GetFunction/GetAlias API to retrieve the latest Revision Id"
@@ -4316,7 +4328,7 @@
     }
   },
   "tests/integration/awslambda/test_lambda_api.py::TestLambdaPermissions::test_remove_multi_permissions": {
-    "recorded-date": "20-12-2022, 12:16:55",
+    "recorded-date": "21-12-2022, 13:56:55",
     "recorded-content": {
       "add_permission_1": {
         "Statement": {
@@ -4389,12 +4401,24 @@
           "HTTPStatusCode": 200
         }
       },
-      "expect_error_remove_permission": {
+      "remove_permission_exception_nonexisting_sid": {
         "Error": {
           "Code": "ResourceNotFoundException",
           "Message": "Statement non-existent is not found in resource policy."
         },
         "Message": "Statement non-existent is not found in resource policy.",
+        "Type": "User",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 404
+        }
+      },
+      "remove_permission_exception_nonexisting_alias": {
+        "Error": {
+          "Code": "ResourceNotFoundException",
+          "Message": "Cannot find alias arn: arn:aws:lambda:<region>:111111111111:function:<resource:1>:alias-doesnotexist"
+        },
+        "Message": "Cannot find alias arn: arn:aws:lambda:<region>:111111111111:function:<resource:1>:alias-doesnotexist",
         "Type": "User",
         "ResponseMetadata": {
           "HTTPHeaders": {},
@@ -4423,7 +4447,7 @@
           "HTTPStatusCode": 200
         }
       },
-      "expect_revision_error_remove_permission": {
+      "remove_permission_exception_revision_id": {
         "Error": {
           "Code": "PreconditionFailedException",
           "Message": "The Revision Id provided does not match the latest Revision Id. Call the GetFunction/GetAlias API to retrieve the latest Revision Id"
@@ -4457,7 +4481,7 @@
           "HTTPStatusCode": 200
         }
       },
-      "expect_exception_get_policy": {
+      "get_policy_exception_removed_all": {
         "Error": {
           "Code": "ResourceNotFoundException",
           "Message": "The resource you requested does not exist."

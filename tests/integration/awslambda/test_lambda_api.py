@@ -2339,6 +2339,11 @@ class TestLambdaPermissions:
             lambda_client.get_policy(FunctionName=function_name, Qualifier=fn_version)
         snapshot.match("get_policy_after_publishing_new_version", e.value.response)
 
+        non_existing_version = "77"
+        with pytest.raises(lambda_client.exceptions.ResourceNotFoundException) as e:
+            lambda_client.get_policy(FunctionName=function_name, Qualifier=non_existing_version)
+        snapshot.match("get_policy_exception_nonexisting_version", e.value.response)
+
         # create lambda permission with the same sid for specific function version
         lambda_client.add_permission(
             FunctionName=f"{function_name}:{fn_version}",  # version suffix matching Qualifier
@@ -2374,7 +2379,7 @@ class TestLambdaPermissions:
                 SourceArn=arns.s3_bucket_arn("test-bucket"),
                 RevisionId=long_uid(),  # non-matching revision id
             )
-        snapshot.match("expect_revision_error_add_permission", e.value.response)
+        snapshot.match("add_permission_exception_revision_id", e.value.response)
 
     @pytest.mark.skip_snapshot_verify(paths=["$..Message"], condition=is_old_provider)
     @pytest.mark.aws_validated
@@ -2419,7 +2424,14 @@ class TestLambdaPermissions:
                 FunctionName=function_name,
                 StatementId="non-existent",
             )
-        snapshot.match("expect_error_remove_permission", e.value.response)
+        snapshot.match("remove_permission_exception_nonexisting_sid", e.value.response)
+
+        non_existing_alias = "alias-doesnotexist"
+        with pytest.raises(lambda_client.exceptions.ResourceNotFoundException) as e:
+            lambda_client.remove_permission(
+                FunctionName=function_name, StatementId=sid_2, Qualifier=non_existing_alias
+            )
+        snapshot.match("remove_permission_exception_nonexisting_alias", e.value.response)
 
         lambda_client.remove_permission(
             FunctionName=function_name,
@@ -2437,7 +2449,7 @@ class TestLambdaPermissions:
                 StatementId=sid,
                 RevisionId=long_uid(),  # non-matching revision id
             )
-        snapshot.match("expect_revision_error_remove_permission", e.value.response)
+        snapshot.match("remove_permission_exception_revision_id", e.value.response)
 
         policy_response_removal_attempt = lambda_client.get_policy(
             FunctionName=function_name,
@@ -2452,7 +2464,7 @@ class TestLambdaPermissions:
         # get_policy raises an exception after removing all permissions
         with pytest.raises(lambda_client.exceptions.ResourceNotFoundException) as ctx:
             lambda_client.get_policy(FunctionName=function_name)
-        snapshot.match("expect_exception_get_policy", ctx.value.response)
+        snapshot.match("get_policy_exception_removed_all", ctx.value.response)
 
     @pytest.mark.aws_validated
     def test_create_multiple_lambda_permissions(

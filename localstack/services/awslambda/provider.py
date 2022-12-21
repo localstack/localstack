@@ -246,6 +246,41 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
         # TODO what if version is missing?
         return version
 
+    @staticmethod
+    def _validate_qualifier_expression(qualifier: str) -> None:
+        if not api_utils.is_qualifier_expression(qualifier):
+            raise ValidationException(
+                f"1 validation error detected: Value '{qualifier}' at 'qualifier' failed to satisfy constraint: "
+                f"Member must satisfy regular expression pattern: (|[a-zA-Z0-9$_-]+)"
+            )
+
+    @staticmethod
+    def _resolve_fn_qualifier(resolved_fn: Function, qualifier: str | None) -> tuple[str, str]:
+        """Attempts to resolve a given qualifier and returns a qualifier that exists or
+        raises an appropriate ResourceNotFoundException.
+
+        :param resolved_fn: The resolved lambda function
+        :param qualifier: The qualifier to be resolved or None
+        :return: Tuple of (resolved qualifier, function arn either qualified or unqualified)"""
+        function_name = resolved_fn.function_name
+        # assuming function versions need to live in the same account and region
+        account_id = resolved_fn.latest().id.account
+        region = resolved_fn.latest().id.region
+        fn_arn = api_utils.unqualified_lambda_arn(function_name, account_id, region)
+        if qualifier is not None:
+            fn_arn = api_utils.qualified_lambda_arn(function_name, qualifier, account_id, region)
+            if api_utils.qualifier_is_alias(qualifier):
+                if qualifier not in resolved_fn.aliases:
+                    raise ResourceNotFoundException(f"Cannot find alias arn: {fn_arn}", Type="User")
+            elif api_utils.qualifier_is_version(qualifier) or qualifier == "$LATEST":
+                if qualifier not in resolved_fn.versions:
+                    raise ResourceNotFoundException(f"Function not found: {fn_arn}", Type="User")
+            else:
+                # matches qualifier pattern but invalid alias or version
+                raise ResourceNotFoundException(f"Function not found: {fn_arn}", Type="User")
+        resolved_qualifier = qualifier or "$LATEST"
+        return resolved_qualifier, fn_arn
+
     def _create_version_model(
         self,
         function_name: str,
@@ -1619,44 +1654,21 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
         context: RequestContext,
         request: AddPermissionRequest,
     ) -> AddPermissionResponse:
-        state = lambda_stores[context.account_id][context.region]
         function_name, qualifier = api_utils.get_name_and_qualifier(
             request.get("FunctionName"), request.get("Qualifier"), context.region
         )
 
         # validate qualifier
         if qualifier is not None:
-            if not api_utils.is_qualifier_expression(qualifier):
-                raise ValidationException(
-                    f"1 validation error detected: Value '{qualifier}' at 'qualifier' failed to satisfy constraint: "
-                    f"Member must satisfy regular expression pattern: (|[a-zA-Z0-9$_-]+)"
-                )
+            self._validate_qualifier_expression(qualifier)
             if qualifier == "$LATEST":
                 raise InvalidParameterValueException(
                     "We currently do not support adding policies for $LATEST.", Type="User"
                 )
 
-        # retrieve function
-        resolved_fn = state.functions.get(function_name)
-        fn_arn = api_utils.unqualified_lambda_arn(function_name, context.account_id, context.region)
-        if not resolved_fn:
-            raise ResourceNotFoundException(f"Function not found: {fn_arn}", Type="User")
+        resolved_fn = self._get_function(function_name, context.account_id, context.region)
 
-        # resolve qualifier
-        if qualifier is not None:
-            fn_arn = api_utils.qualified_lambda_arn(
-                function_name, qualifier, context.account_id, context.region
-            )
-            if api_utils.qualifier_is_alias(qualifier):
-                if qualifier not in resolved_fn.aliases:
-                    raise ResourceNotFoundException(f"Cannot find alias arn: {fn_arn}", Type="User")
-            elif api_utils.qualifier_is_version(qualifier) or qualifier == "$LATEST":
-                if qualifier not in resolved_fn.versions:
-                    raise ResourceNotFoundException(f"Function not found: {fn_arn}", Type="User")
-            else:
-                # matches qualifier pattern but invalid alias or version
-                raise ResourceNotFoundException(f"Function not found: {fn_arn}", Type="User")
-        resolved_qualifier = qualifier or "$LATEST"
+        resolved_qualifier, fn_arn = self._resolve_fn_qualifier(resolved_fn, qualifier)
 
         # check for an already existing policy and any conflicts in existing statements
         existing_policy = resolved_fn.permissions.get(resolved_qualifier)
@@ -1704,19 +1716,15 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
         qualifier: Qualifier = None,
         revision_id: String = None,
     ) -> None:
-        state = lambda_stores[context.account_id][context.region]
         function_name, qualifier = api_utils.get_name_and_qualifier(
             function_name, qualifier, context.region
         )
+        if qualifier is not None:
+            self._validate_qualifier_expression(qualifier)
 
-        resolved_fn = state.functions.get(function_name)
-        if resolved_fn is None:
-            fn_arn = api_utils.unqualified_lambda_arn(
-                function_name, context.account_id, context.region
-            )
-            raise ResourceNotFoundException(f"No policy found for: {fn_arn}", Type="User")
+        resolved_fn = self._get_function(function_name, context.account_id, context.region)
 
-        resolved_qualifier = qualifier or "$LATEST"
+        resolved_qualifier, _ = self._resolve_fn_qualifier(resolved_fn, qualifier)
         function_permission = resolved_fn.permissions.get(resolved_qualifier)
         if not function_permission:
             raise ResourceNotFoundException(
@@ -1752,15 +1760,14 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
         function_name: NamespacedFunctionName,
         qualifier: Qualifier = None,
     ) -> GetPolicyResponse:
-        state = lambda_stores[context.account_id][context.region]
         function_name, qualifier = api_utils.get_name_and_qualifier(
             function_name, qualifier, context.region
         )
 
-        resolved_fn = state.functions.get(function_name)
-        fn_arn = api_utils.unqualified_lambda_arn(function_name, context.account_id, context.region)
-        if resolved_fn is None:
-            raise ResourceNotFoundException(f"Function not found: {fn_arn}", Type="User")
+        if qualifier is not None:
+            self._validate_qualifier_expression(qualifier)
+
+        resolved_fn = self._get_function(function_name, context.account_id, context.region)
 
         resolved_qualifier = qualifier or "$LATEST"
         function_permission = resolved_fn.permissions.get(resolved_qualifier)
