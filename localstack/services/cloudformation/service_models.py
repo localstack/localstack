@@ -154,6 +154,7 @@ class GenericBaseModel:
         result.update(self.state or {})
         return result
 
+    # TODO: remove after -ext does not depend on this anymore
     @property
     def resource_id(self):
         """Return the logical resource ID of this resource (i.e., the ref. name within the stack's resources)."""

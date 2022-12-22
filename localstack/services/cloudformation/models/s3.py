@@ -27,7 +27,7 @@ class S3BucketPolicy(GenericBaseModel):
         return policy and md5(canonical_json(json.loads(policy)))
 
     def fetch_state(self, stack_name, resources):
-        bucket_name = self.props.get("Bucket") or self.resource_id
+        bucket_name = self.props.get("Bucket") or self.logical_resource_id
         bucket_name = self.resolve_refs_recursively(stack_name, bucket_name, resources)
         return aws_stack.connect_to_service("s3").get_bucket_policy(Bucket=bucket_name)
 
@@ -229,4 +229,4 @@ class S3Bucket(GenericBaseModel):
         return bucket_name
 
     def _get_bucket_name(self):
-        return self.props.get("BucketName") or self.resource_id
+        return self.props.get("BucketName") or self.logical_resource_id

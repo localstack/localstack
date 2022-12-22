@@ -82,7 +82,7 @@ class SQSQueue(GenericBaseModel):
         except Exception as e:
             if "NonExistentQueue" in str(e):
                 raise DependencyNotYetSatisfied(
-                    resource_ids=self.resource_id, message="Unable to get queue: %s" % e
+                    resource_ids=self.logical_resource_id, message="Unable to get queue: %s" % e
                 )
         if attribute == "Arn":
             return arns.sqs_queue_arn(props.get("QueueName"))
