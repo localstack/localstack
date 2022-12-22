@@ -5,7 +5,7 @@ DynamoDBLocal) from a service provider.
 from typing import Any, Callable, Mapping, Optional
 from urllib.parse import urlsplit
 
-from botocore.awsrequest import AWSPreparedRequest
+from botocore.awsrequest import AWSPreparedRequest, prepare_request_dict
 from botocore.config import Config as BotoConfig
 from werkzeug.datastructures import Headers
 
@@ -170,8 +170,19 @@ def create_aws_request_context(
     request_dict = client._convert_to_request_dict(
         parameters, operation, endpoint_url, context=request_context
     )
-    aws_request = client._endpoint.create_request(request_dict, operation)
 
+    if service_name == "s3" and (auth_path := request_dict.get("auth_path")):
+        request_dict["url_path"] = auth_path
+        # re-prepare the request dict (function called in _convert_to_request_dict)
+        # to use the correct url_path for s3
+        prepare_request_dict(
+            request_dict,
+            endpoint_url=endpoint_url,
+            user_agent=client._client_config.user_agent,
+            context=request_context,
+        )
+
+    aws_request: AWSPreparedRequest = client._endpoint.create_request(request_dict, operation)
     context = RequestContext()
     context.service = service
     context.operation = operation

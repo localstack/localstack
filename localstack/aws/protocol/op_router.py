@@ -1,4 +1,3 @@
-import logging
 import re
 from collections import defaultdict
 from typing import Any, AnyStr, Dict, List, Mapping, Match, NamedTuple, Optional, Tuple
@@ -11,8 +10,6 @@ from werkzeug.routing import Map, MapAdapter, PathConverter, Rule
 
 from localstack.http import Request
 from localstack.http.request import get_raw_path
-
-LOG = logging.getLogger(__name__)
 
 
 class GreedyPathConverter(PathConverter):
@@ -31,8 +28,11 @@ class _HttpOperation(NamedTuple):
 
     @staticmethod
     def from_operation(op: OperationModel) -> "_HttpOperation":
-        if "authPath" in op.http:
-            uri = op.http["authPath"].rstrip("/")
+        # following botocore update above 1.25, botocore will strip the bucket from the requestUri in the spec.
+        # it will then set the original requestUri to authPath. We need to use the original request if set, otherwise
+        # use the regular requestUri
+        if auth_path := op.http.get("authPath"):
+            uri = auth_path.rstrip("/")
         else:
             uri = op.http.get("requestUri")
 
@@ -233,15 +233,11 @@ def _create_service_map(service: ServiceModel) -> Map:
 
     rules = []
 
-    is_s3 = service.service_name == "s3"
-
     # group all operations by their path and method
     path_index: Dict[(str, str), List[_HttpOperation]] = defaultdict(list)
     for op in ops:
         http_op = _HttpOperation.from_operation(op)
         path_index[(http_op.path, http_op.method)].append(http_op)
-        if is_s3:
-            LOG.info("Operation %s -> HTTP op %s", op, http_op)
 
     # create a matching rule for each (path, method) combination
     for (path, method), ops in path_index.items():
@@ -254,14 +250,6 @@ def _create_service_map(service: ServiceModel) -> Map:
             op = ops[0]
             rules.append(_StrictMethodRule(string=rule_string, method=method, endpoint=op.operation))  # type: ignore
         else:
-            if is_s3:
-                LOG.info(
-                    "ambiguity: path: '%s', rule_string '%s', method '%s', ops: '%s'",
-                    path,
-                    rule_string,
-                    method,
-                    ops,
-                )
             # if there is an ambiguity with only the (path, method) combination,
             # a custom rule - which can use additional request metadata - needs to be used
             rules.append(_RequestMatchingRule(string=rule_string, method=method, operations=ops))
