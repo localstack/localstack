@@ -256,13 +256,13 @@ class IAMRole(GenericBaseModel):
                 dummy_resources = {
                     resource_id: {"Properties": {"RoleName": _states.get("RoleName")}}
                 }
-                self._pre_delete(resource_id, dummy_resources, None, None, None)
+                IAMRole._pre_delete(resource_id, dummy_resources, None, None, None)
                 client.delete_role(RoleName=_states.get("RoleName"))
                 role = client.create_role(
                     RoleName=props.get("RoleName"),
                     AssumeRolePolicyDocument=str(props_policy),
                 )
-                self._post_create(resource_id, resources, None, None, None)
+                IAMRole._post_create(resource_id, resources, None, None, None)
                 return role["Role"]
 
         return client.update_role(
@@ -325,6 +325,7 @@ class IAMRole(GenericBaseModel):
                 PolicyDocument=doc,
             )
 
+    @staticmethod
     def _pre_delete(resource_id, resources, resource_type, func, stack_name):
         """detach managed policies from role before deleting"""
         iam_client = aws_stack.connect_to_service("iam")
