@@ -54,6 +54,7 @@ from localstack.constants import TEST_AWS_SECRET_ACCESS_KEY
 from localstack.services.internal import get_internal_apis
 from localstack.services.moto import call_moto
 from localstack.services.plugins import ServiceLifecycleHook
+from localstack.services.ses.models import SentEmail, SentEmailBody
 from localstack.utils.aws import arns, aws_stack
 from localstack.utils.files import mkdir
 from localstack.utils.strings import long_uid, to_str
@@ -315,6 +316,8 @@ class SesProvider(SesApi, ServiceLifecycleHook):
 
         backend = get_ses_backend(context)
         emitter = SNSEmitter(context)
+        recipients = recipients_from_destination(destination)
+
         for event_destination in backend.config_set_event_destination.values():
             if not event_destination["Enabled"]:
                 continue
@@ -326,7 +329,7 @@ class SesProvider(SesApi, ServiceLifecycleHook):
             payload = SNSPayload(
                 message_id=response["MessageId"],
                 sender_email=source,
-                destination_addresses=recipients_from_destination(destination),
+                destination_addresses=recipients,
                 tags=tags,
             )
             emitter.emit_send_event(payload, sns_destination_arn)
@@ -336,12 +339,14 @@ class SesProvider(SesApi, ServiceLifecycleHook):
         html_part = message["Body"].get("Html", {}).get("Data")
 
         save_for_retrospection(
-            response["MessageId"],
-            context.region,
-            Source=source,
-            Destination=destination,
-            Subject=message["Subject"].get("Data"),
-            Body=dict(text_part=text_part, html_part=html_part),
+            SentEmail(
+                Id=response["MessageId"],
+                Region=context.region,
+                Destination=destination,
+                Source=source,
+                Subject=message["Subject"].get("Data"),
+                Body=SentEmailBody(text_part=text_part, html_part=html_part),
+            )
         )
 
         return response
@@ -366,6 +371,8 @@ class SesProvider(SesApi, ServiceLifecycleHook):
 
         backend = get_ses_backend(context)
         emitter = SNSEmitter(context)
+        recipients = (recipients_from_destination(destination),)
+
         for event_destination in backend.config_set_event_destination.values():
             if not event_destination["Enabled"]:
                 continue
@@ -377,19 +384,21 @@ class SesProvider(SesApi, ServiceLifecycleHook):
             payload = SNSPayload(
                 message_id=response["MessageId"],
                 sender_email=source,
-                destination_addresses=recipients_from_destination(destination),
+                destination_addresses=recipients,
                 tags=tags,
             )
             emitter.emit_send_event(payload, sns_destination_arn, emit_source_arn=False)
             emitter.emit_delivery_event(payload, sns_destination_arn)
 
         save_for_retrospection(
-            response["MessageId"],
-            context.region,
-            Source=source,
-            Template=template,
-            TemplateData=template_data,
-            Destination=destination,
+            SentEmail(
+                Id=response["MessageId"],
+                Region=context.region,
+                Source=source,
+                Template=template,
+                TemplateData=template_data,
+                Destination=destination,
+            )
         )
 
         return response
@@ -418,11 +427,11 @@ class SesProvider(SesApi, ServiceLifecycleHook):
                 LOGGER.warning("Source not specified. Rejecting message.")
                 raise MessageRejected()
 
-        if destinations is None:
-            destinations = []
+        destination = Destination(ToAddresses=destinations or [])
+        recipients = recipients_from_destination(destination)
 
         backend = get_ses_backend(context)
-        message = backend.send_raw_email(source, destinations, raw_data, context.region)
+        message = backend.send_raw_email(source, recipients, raw_data, context.region)
 
         emitter = SNSEmitter(context)
         for event_destination in backend.config_set_event_destination.values():
@@ -436,18 +445,20 @@ class SesProvider(SesApi, ServiceLifecycleHook):
             payload = SNSPayload(
                 message_id=response["MessageId"],
                 sender_email=source,
-                destination_addresses=destinations,
+                destination_addresses=recipients,
                 tags=tags,
             )
             emitter.emit_send_event(payload, sns_destination_arn)
             emitter.emit_delivery_event(payload, sns_destination_arn)
 
         save_for_retrospection(
-            message.id,
-            context.region,
-            Source=source or message.source,
-            Destination=destinations,
-            RawData=raw_data,
+            SentEmail(
+                Id=message.id,
+                Region=context.region,
+                Source=source or message.source,
+                Destination=destination,
+                RawData=raw_data,
+            )
         )
 
         return SendRawEmailResponse(MessageId=message.id)
