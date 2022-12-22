@@ -126,10 +126,6 @@ class GenericBaseModel:
             self.fetch_and_update_state(*args, **kwargs)
         return self.state
 
-    def set_resource_state(self, state):
-        """Set the deployment state of this resource."""
-        self.state = state or {}
-
     def update_state(self, details):
         """Update the deployment state of this resource (existing attributes will be overwritten)."""
         details = details or {}
