@@ -1,8 +1,5 @@
 import logging
 
-# TODO: remove
-from moto.cloudformation.exceptions import UnformattedGetAttTemplateException
-
 from localstack import config
 from localstack.utils.aws import aws_stack
 
@@ -105,8 +102,7 @@ class GenericBaseModel:
         props = self.props
         if attribute_name in props:
             return props.get(attribute_name)
-
-        raise UnformattedGetAttTemplateException()
+        return None
 
     # ---------------------
     # GENERIC UTIL METHODS
