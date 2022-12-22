@@ -275,9 +275,8 @@ class DockerRuntimeExecutor(RuntimeExecutor):
             container_name_or_id=self.id, container_network=network
         )
         if config.LAMBDA_ASF_DEV_PORT_EXPOSE:
-            self.executor_endpoint.container_address = "localhost"
-        else:
-            self.executor_endpoint.container_address = self.ip
+            self.ip = "127.0.0.1"
+        self.executor_endpoint.container_address = self.ip
 
     def stop(self) -> None:
         CONTAINER_CLIENT.stop_container(container_name=self.id, timeout=5)
