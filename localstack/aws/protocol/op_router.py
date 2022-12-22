@@ -31,7 +31,11 @@ class _HttpOperation(NamedTuple):
 
     @staticmethod
     def from_operation(op: OperationModel) -> "_HttpOperation":
-        uri = op.http.get("requestUri")
+        uri = (
+            op.http.get("requestUri")
+            if op.service_model.service_name != "s3"
+            else op.http.get("authPath")
+        )
         method = op.http.get("method")
         deprecated = op.deprecated
 
