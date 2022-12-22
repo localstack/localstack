@@ -49,15 +49,15 @@ LOG = logging.getLogger(__name__)
 # list of resource types that can be updated
 # TODO: make this a property of the model classes themselves
 UPDATEABLE_RESOURCES = [
-    "CDK::Metadata",
-    "Lambda::Function",
-    "Lambda::Permission",
-    "ApiGateway::Method",
-    "ApiGateway::UsagePlan",
-    "SSM::Parameter",
-    "StepFunctions::StateMachine",
-    "IAM::Role",
-    "EC2::Instance",
+    "AWS::CDK::Metadata",
+    "AWS::Lambda::Function",
+    "AWS::Lambda::Permission",
+    "AWS::ApiGateway::Method",
+    "AWS::ApiGateway::UsagePlan",
+    "AWS::SSM::Parameter",
+    "AWS::StepFunctions::StateMachine",
+    "AWS::IAM::Role",
+    "AWS::EC2::Instance",
 ]
 
 # list of static attribute references to be replaced in {'Fn::Sub': '...'} strings
@@ -87,12 +87,9 @@ def get_deployment_config(res_type):
         return resource_class.get_deploy_templates()
 
 
+# FIXME: still too many cases
 def get_resource_type(resource):
-    res_type = resource.get("ResourceType") or resource.get("Type") or ""
-    parts = res_type.split("::", 1)
-    if len(parts) == 1:
-        return parts[0]
-    return parts[1]
+    return resource.get("ResourceType") or resource.get("Type") or ""
 
 
 def get_service_name(resource):
@@ -814,7 +811,7 @@ def configure_resource_via_sdk(stack, resource_id, resource_type, func_details, 
 
     resource = resources[resource_id]
 
-    if resource_type == "EC2::Instance":
+    if resource_type == "AWS::EC2::Instance":
         if action_name == "create":
             func_details["boto_client"] = "resource"
 
@@ -1107,7 +1104,10 @@ class TemplateDeployer:
         if not self.is_deployable_resource(resource) or not self.is_deployed(resource):
             return False
         resource_type = get_resource_type(resource)
-        return resource_type in UPDATEABLE_RESOURCES
+        return (
+            resource_type in UPDATEABLE_RESOURCES
+            or resource_type.partition("AWS::")[-1] in UPDATEABLE_RESOURCES
+        )  # TODO: second case just a fall-back for now, delete when PRO is updated
 
     def all_resource_dependencies_satisfied(self, resource):
         unsatisfied = self.get_unsatisfied_dependencies(resource)
