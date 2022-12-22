@@ -4,7 +4,7 @@ import logging
 import os
 from collections import defaultdict
 from datetime import date, datetime, time, timezone
-from typing import TYPE_CHECKING, Any, Dict, Optional
+from typing import TYPE_CHECKING, Any, Dict, List, Optional
 
 from botocore.exceptions import ClientError
 from moto.ses import ses_backends
@@ -108,6 +108,15 @@ def save_for_retrospection(id: str, region: str, **kwargs: Dict[str, Any]):
         f.write(json.dumps(email, default=_serialize))
 
     LOGGER.debug("Email saved at: %s", path)
+
+
+def recipients_from_destination(destination: Destination) -> List[str]:
+    """Get list of recipient email addresses from a Destination object."""
+    return (
+        destination.get("ToAddresses", [])
+        + destination.get("CcAddresses", [])
+        + destination.get("BccAddresses", [])
+    )
 
 
 def get_ses_backend(context: RequestContext) -> SESBackend:
@@ -317,7 +326,7 @@ class SesProvider(SesApi, ServiceLifecycleHook):
             payload = SNSPayload(
                 message_id=response["MessageId"],
                 sender_email=source,
-                destination_addresses=destination["ToAddresses"],
+                destination_addresses=recipients_from_destination(destination),
                 tags=tags,
             )
             emitter.emit_send_event(payload, sns_destination_arn)
@@ -368,7 +377,7 @@ class SesProvider(SesApi, ServiceLifecycleHook):
             payload = SNSPayload(
                 message_id=response["MessageId"],
                 sender_email=source,
-                destination_addresses=destination["ToAddresses"],
+                destination_addresses=recipients_from_destination(destination),
                 tags=tags,
             )
             emitter.emit_send_event(payload, sns_destination_arn, emit_source_arn=False)
