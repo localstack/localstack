@@ -4,6 +4,9 @@ Parameters:
     Type: String
     Default: 'companyname-ci'
 
+  Ec2KeyPairName:
+    Type: String
+
   RegmonSnsTopicSendEmails:
     Default: false
     Type: String
@@ -85,7 +88,7 @@ Resources:
       InstanceType: "t3.small"
       # The following image is initialised in EC2 Pro provider init hook
       ImageId: ami-a33ac4f1069a
-      KeyName: key-pair-foo123
+      KeyName: !Ref Ec2KeyPairName
       IamInstanceProfile: !Ref InstanceProfile
       SecurityGroupIds:
       - Ref: PublicSG

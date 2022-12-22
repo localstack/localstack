@@ -20,6 +20,8 @@ class CloudFormationStack(GenericBaseModel):
         child_stack_name = self.props["StackName"]
         child_stack_name = self.resolve_refs_recursively(stack_name, child_stack_name, resources)
         result = client.describe_stacks(StackName=child_stack_name)
+        # probably not the best way to wait in a blocking manner here but the current implementation requires it
+        client.get_waiter("stack_create_complete").wait(StackName=child_stack_name)
         result = (result.get("Stacks") or [None])[0]
         return result
 
@@ -65,6 +67,7 @@ class CloudFormationStack(GenericBaseModel):
                 "StackName": nested_stack_name,
                 "TemplateURL": params.get("TemplateURL"),
                 "Parameters": stack_params,
+                # "Outputs":
             }
             return result
 

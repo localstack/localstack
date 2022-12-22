@@ -256,13 +256,13 @@ class IAMRole(GenericBaseModel):
                 dummy_resources = {
                     resource_id: {"Properties": {"RoleName": _states.get("RoleName")}}
                 }
-                self._pre_delete(resource_id, dummy_resources, None, None, None)
+                IAMRole._pre_delete(resource_id, dummy_resources, None, None, None)
                 client.delete_role(RoleName=_states.get("RoleName"))
                 role = client.create_role(
                     RoleName=props.get("RoleName"),
                     AssumeRolePolicyDocument=str(props_policy),
                 )
-                self._post_create(resource_id, resources, None, None, None)
+                IAMRole._post_create(resource_id, resources, None, None, None)
                 return role["Role"]
 
         return client.update_role(
@@ -277,16 +277,13 @@ class IAMRole(GenericBaseModel):
                 stack_name, resource["LogicalResourceId"]
             )
 
-    @staticmethod
-    def _post_create(resource_id, resources, resource_type, func, stack_name):
+    @classmethod
+    def _post_create(cls, resource_id, resources, resource_type, func, stack_name):
         """attaches managed policies from the template to the role"""
-        from localstack.services.cloudformation.engine.template_deployer import (
-            find_stack,
-            resolve_refs_recursively,
-        )
 
         iam = aws_stack.connect_to_service("iam")
         resource = resources[resource_id]
+        cls_resource = cls(resource)
         props = resource["Properties"]
         role_name = props["RoleName"]
 
@@ -294,9 +291,6 @@ class IAMRole(GenericBaseModel):
         policy_arns = props.get("ManagedPolicyArns", [])
         for arn in policy_arns:
             iam.attach_role_policy(RoleName=role_name, PolicyArn=arn)
-
-        # TODO: to be removed once we change the method signature to pass in the stack object directly!
-        stack = find_stack(stack_name)
 
         # add inline policies
         inline_policies = props.get("Policies", [])
@@ -316,7 +310,7 @@ class IAMRole(GenericBaseModel):
             # get policy document - make sure we're resolving references in the policy doc
             doc = dict(policy["PolicyDocument"])
             doc = remove_none_values(doc)
-            doc = resolve_refs_recursively(stack, doc)
+            doc = cls_resource.resolve_refs_recursively(stack_name, doc, resources)
 
             doc["Version"] = doc.get("Version") or IAM_POLICY_VERSION
             statements = ensure_list(doc["Statement"])
