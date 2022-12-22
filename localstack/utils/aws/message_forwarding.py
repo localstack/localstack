@@ -84,6 +84,7 @@ def send_event_to_target(
                         "Source": event.get("source"),
                         "DetailType": event.get("detail-type"),
                         "Detail": json.dumps(event.get("detail", {})),
+                        "Resources": event.get("resources", []),
                     }
                 ]
             )
