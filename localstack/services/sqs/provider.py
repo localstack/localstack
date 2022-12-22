@@ -1,4 +1,3 @@
-import base64
 import copy
 import hashlib
 import json
@@ -1131,7 +1130,7 @@ def _create_message_attribute_hash(message_attributes) -> Optional[str]:
             )
         elif attr_value.get("BinaryValue"):
             hash.update(bytearray([BINARY_TYPE_FIELD_INDEX]))
-            decoded_binary_value = base64.b64decode(attr_value.get("BinaryValue"))
+            decoded_binary_value = attr_value.get("BinaryValue")
             MotoMessage.update_binary_length_and_value(hash, decoded_binary_value)
         # string_list_value, binary_list_value type is not implemented, reserved for the future use.
         # See https://docs.aws.amazon.com/AWSSimpleQueueService/latest/APIReference/API_MessageAttributeValue.html
