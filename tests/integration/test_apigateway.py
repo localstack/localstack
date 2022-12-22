@@ -77,7 +77,7 @@ from .awslambda.test_lambda import (
     TEST_LAMBDA_PYTHON_ECHO,
 )
 
-STEP_FUCTIONS_ASSUME_ROLE_POLICY = {
+STEPFUNCTIONS_ASSUME_ROLE_POLICY = {
     "Version": "2012-10-17",
     "Statement": [
         {
@@ -219,7 +219,6 @@ class TestAPIGateway:
         assert response.ok
         assert response._content == b'{"echo": "foobar", "response": "mocked"}'
 
-    @pytest.mark.skip
     def test_api_gateway_kinesis_integration(self):
         # create target Kinesis stream
         stream = resource_util.create_kinesis_stream(self.TEST_STREAM_KINESIS_API_GW)
@@ -1526,7 +1525,7 @@ class TestAPIGateway:
         create_iam_role_with_policy(
             RoleName=role_name,
             PolicyName=f"sfn-role-policy-{short_uid()}",
-            RoleDefinition=STEP_FUCTIONS_ASSUME_ROLE_POLICY,
+            RoleDefinition=STEPFUNCTIONS_ASSUME_ROLE_POLICY,
             PolicyDefinition=APIGATEWAY_LAMBDA_POLICY,
         )
 

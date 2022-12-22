@@ -218,6 +218,7 @@ def test_render_template_values():
         ('{"foo": 123}', '{\\"foo\\": 123}'),
         ('{"foo"": 123}', '{\\"foo\\"\\": 123}'),
         (1, 1),
+        (None, None)
     )
     for string, expected in escape_tests:
         escaped = util.escapeJavaScript(string)

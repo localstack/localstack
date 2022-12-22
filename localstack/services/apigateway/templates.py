@@ -92,6 +92,9 @@ class VelocityUtilApiGateway(VelocityUtil):
         JSON dumps will escape the single quotes.
         https://docs.aws.amazon.com/apigateway/latest/developerguide/api-gateway-mapping-template-reference.html
         """
+        if not s:
+            return s
+
         # empty string escapes to empty object
         if isinstance(s, str) and len(s.strip()) == 0:
             return "{}"
