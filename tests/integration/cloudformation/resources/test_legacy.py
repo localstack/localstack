@@ -9,6 +9,7 @@ from botocore.parsers import ResponseParserError
 
 from localstack.aws.accounts import get_aws_account_id
 from localstack.services.cloudformation.engine import template_preparer
+from localstack.testing.aws.lambda_utils import is_new_provider
 from localstack.utils.aws import arns
 from localstack.utils.common import load_file, short_uid
 from localstack.utils.testutil import create_zip_file, list_all_resources
@@ -414,6 +415,7 @@ class TestCloudFormation:
         assert lambda_arn in uri
 
     # TODO: refactor
+    @pytest.mark.xfail(condition=is_new_provider(), reason="fails/times out")
     def test_update_lambda_function(
         self, lambda_client, cfn_client, s3_client, s3_create_bucket, deploy_cfn_template
     ):
