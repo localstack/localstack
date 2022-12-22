@@ -1,8 +1,11 @@
 import logging
-from typing import Dict
+from typing import Dict, Optional
 
+from localstack.aws.accounts import get_aws_account_id
 from localstack.aws.api.cloudformation import Stack, StackSet
+from localstack.services.cloudformation.engine.entities import StackChangeSet
 from localstack.services.stores import AccountRegionBundle, BaseStore, LocalAttribute
+from localstack.utils.aws import aws_stack
 
 LOG = logging.getLogger(__name__)
 
@@ -14,6 +17,8 @@ class CloudFormationStore(BaseStore):
 
     # maps stack set ID to stack set details
     stack_sets: Dict[str, StackSet] = LocalAttribute(default=dict)
+
+    # exports: Dict[str, str]
 
     @property
     def exports(self):
@@ -43,3 +48,39 @@ class CloudFormationStore(BaseStore):
 
 
 cloudformation_stores = AccountRegionBundle("cloudformation", CloudFormationStore)
+
+
+def get_cloudformation_store(
+    account_id: Optional[str] = None, region: Optional[str] = None
+) -> CloudFormationStore:
+    account_id = account_id or get_aws_account_id()
+    region = region or aws_stack.get_region()
+    return cloudformation_stores[account_id][region]
+
+
+def find_stack(stack_name: str) -> Stack | None:
+    state = get_cloudformation_store()
+    return (
+        [s for s in state.stacks.values() if stack_name in [s.stack_name, s.stack_id]] or [None]
+    )[0]
+
+
+def find_change_set(cs_name: str, stack_name: Optional[str] = None) -> Optional[StackChangeSet]:
+    state = get_cloudformation_store()
+    stack = find_stack(stack_name)
+    stacks = [stack] if stack else state.stacks.values()
+    result = [
+        cs
+        for s in stacks
+        for cs in s.change_sets
+        if cs_name in [cs.change_set_id, cs.change_set_name]
+    ]
+    return (result or [None])[0]
+
+
+def exports_map():
+    result = {}
+    store = get_cloudformation_store()
+    for export in store.exports:
+        result[export["Name"]] = export
+    return result

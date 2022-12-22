@@ -1,12 +1,15 @@
-from typing import Any, Dict, List
+import logging
+from typing import Any, Dict, List, Optional, TypedDict
 
-from localstack.services.cloudformation.provider import LOG, find_stack, get_cloudformation_store
+from localstack.aws.api.cloudformation import Capability, ChangeSetType, Parameter
 from localstack.utils.aws import arns, aws_stack
 from localstack.utils.collections import select_attributes
 from localstack.utils.json import clone_safe
 from localstack.utils.objects import recurse_object
 from localstack.utils.strings import long_uid, short_uid
 from localstack.utils.time import timestamp_millis
+
+LOG = logging.getLogger(__name__)
 
 
 class StackSet:
@@ -37,10 +40,33 @@ class StackInstance:
         self.stack = None
 
 
+class StackMetadata(TypedDict):
+    StackName: str
+    Capabilities: list[Capability]
+    ChangeSetName: Optional[str]
+    ChangSetType: Optional[ChangeSetType]
+    Parameters: list[Parameter]
+
+
+class StackTemplate(TypedDict):
+    StackName: str
+    ChangeSetName: Optional[str]
+    Outputs: dict
+    Resources: dict
+
+
 class Stack:
-    def __init__(self, metadata=None, template=None, template_body=None):
+    def __init__(
+        self,
+        metadata: Optional[StackMetadata] = None,
+        template: Optional[StackTemplate] = None,
+        template_body: Optional[str] = None,
+    ):
         if template is None:
             template = {}
+
+        self.resolved_outputs = list()  # TODO
+
         self.metadata = metadata or {}
         self.template = template or {}
         self.template_body = template_body
@@ -337,22 +363,16 @@ class Stack:
         """Returns the (mutable) dict of stack outputs."""
         return self.template.setdefault("Outputs", {})
 
-    @property
-    def exports_map(self):
-        result = {}
-        for export in get_cloudformation_store().exports:
-            result[export["Name"]] = export
-        return result
-
-    @property
-    def nested_stacks(self):
-        """Return a list of nested stacks that have been deployed by this stack."""
-        result = [
-            r for r in self.template_resources.values() if r["Type"] == "AWS::CloudFormation::Stack"
-        ]
-        result = [find_stack(r["Properties"].get("StackName")) for r in result]
-        result = [r for r in result if r]
-        return result
+    # FIXME: unused?
+    # @property
+    # def nested_stacks(self):
+    #     """Return a list of nested stacks that have been deployed by this stack."""
+    #     result = [
+    #         r for r in self.template_resources.values() if r["Type"] == "AWS::CloudFormation::Stack"
+    #     ]
+    #     result = [find_stack(r["Properties"].get("StackName")) for r in result]
+    #     result = [r for r in result if r]
+    #     return result
 
     @property
     def status(self):
@@ -378,8 +398,9 @@ class Stack:
         return Stack(metadata=dict(self.metadata), template=dict(self.template))
 
 
+# FIXME: remove inheritance
 class StackChangeSet(Stack):
-    def __init__(self, params=None, template=None):
+    def __init__(self, stack: Stack, params=None, template=None):
         if template is None:
             template = {}
         if params is None:
@@ -390,7 +411,7 @@ class StackChangeSet(Stack):
         if not self.metadata.get("ChangeSetId"):
             self.metadata["ChangeSetId"] = arns.cf_change_set_arn(name, change_set_id=short_uid())
 
-        stack = self.stack = find_stack(self.metadata["StackName"])
+        self.stack = stack
         self.metadata["StackId"] = stack.stack_id
         self.metadata["Status"] = "CREATE_PENDING"
 

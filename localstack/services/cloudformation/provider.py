@@ -3,9 +3,7 @@ import logging
 import re
 from collections import defaultdict
 from copy import deepcopy
-from typing import Optional
 
-from localstack.aws.accounts import get_aws_account_id
 from localstack.aws.api import CommonServiceException, RequestContext, handler
 from localstack.aws.api.cloudformation import (
     CallAs,
@@ -78,7 +76,11 @@ from localstack.services.cloudformation.engine.template_preparer import (
     prepare_template_body,
     template_to_json,
 )
-from localstack.services.cloudformation.stores import CloudFormationStore, cloudformation_stores
+from localstack.services.cloudformation.stores import (
+    find_change_set,
+    find_stack,
+    get_cloudformation_store,
+)
 from localstack.utils.aws import aws_stack
 from localstack.utils.collections import remove_attributes, select_attributes
 from localstack.utils.json import clone
@@ -94,38 +96,12 @@ ARN_STACK_REGEX = re.compile(
 )
 
 
-def get_cloudformation_store(account_id: str = None, region: str = None) -> CloudFormationStore:
-    return cloudformation_stores[account_id or get_aws_account_id()][
-        region or aws_stack.get_region()
-    ]
-
-
 def clone_stack_params(stack_params):
     try:
         return clone(stack_params)
     except Exception as e:
         LOG.info("Unable to clone stack parameters: %s", e)
         return stack_params
-
-
-def find_stack(stack_name: str) -> Optional[Stack]:
-    state = get_cloudformation_store()
-    return (
-        [s for s in state.stacks.values() if stack_name in [s.stack_name, s.stack_id]] or [None]
-    )[0]
-
-
-def find_change_set(cs_name: str, stack_name: Optional[str] = None) -> Optional[StackChangeSet]:
-    state = get_cloudformation_store()
-    stack = find_stack(stack_name)
-    stacks = [stack] if stack else state.stacks.values()
-    result = [
-        cs
-        for s in stacks
-        for cs in s.change_sets
-        if cs_name in [cs.change_set_id, cs.change_set_name]
-    ]
-    return (result or [None])[0]
 
 
 def stack_not_found_error(stack_name: str):
@@ -402,7 +378,7 @@ class CloudformationProvider(CloudformationApi):
             )
             raise ValidationError(msg)
 
-        change_set = StackChangeSet(req_params, template)
+        change_set = StackChangeSet(stack, req_params, template)
         # TODO: refactor the flow here
         deployer = template_deployer.TemplateDeployer(change_set)
         changes = deployer.construct_changes(
