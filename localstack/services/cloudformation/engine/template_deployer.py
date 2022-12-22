@@ -38,7 +38,6 @@ from localstack.services.cloudformation.models import *  # noqa: F401, isort:ski
 ACTION_CREATE = "create"
 ACTION_DELETE = "delete"
 AWS_URL_SUFFIX = "localhost.localstack.cloud"  # value is "amazonaws.com" in real AWS
-IAM_POLICY_VERSION = "2012-10-17"
 
 REGEX_OUTPUT_APIGATEWAY = re.compile(
     rf"^(https?://.+\.execute-api\.)(?:[^-]+-){{2,3}}\d\.(amazonaws\.com|{AWS_URL_SUFFIX})/?(.*)$"
@@ -76,23 +75,12 @@ class NoStackUpdates(Exception):
     pass
 
 
-def lambda_get_params():
-    return lambda params, **kwargs: params
-
-
-# maps resource types to functions and parameters for creation
-RESOURCE_TO_FUNCTION = {}
-
-
 # ---------------------
 # CF TEMPLATE HANDLING
 # ---------------------
 
 
 def get_deployment_config(res_type):
-    result = RESOURCE_TO_FUNCTION.get(res_type)
-    if result is not None:
-        return result
     canonical_type = canonical_resource_type(res_type)
     resource_class = RESOURCE_MODELS.get(canonical_type)
     if resource_class:
@@ -162,22 +150,6 @@ def get_client(resource: dict, func_config: dict):
     except Exception as e:
         LOG.warning('Unable to get client for "%s" API, skipping deployment: %s', service, e)
         return None
-
-
-def describe_stack_resource(stack_name, logical_resource_id):
-    client = aws_stack.connect_to_service("cloudformation")
-    try:
-        result = client.describe_stack_resource(
-            StackName=stack_name, LogicalResourceId=logical_resource_id
-        )
-        return result["StackResourceDetail"]
-    except Exception as e:
-        LOG.warning(
-            'Unable to get details for resource "%s" in CloudFormation stack "%s": %s',
-            logical_resource_id,
-            stack_name,
-            e,
-        )
 
 
 def retrieve_resource_details(resource_id, resource_status, stack):
@@ -848,7 +820,7 @@ def configure_resource_via_sdk(stack, resource_id, resource_type, func_details, 
 
     client = get_client(resource, func_details)
     function = getattr(client, func_details["function"])
-    params = func_details.get("parameters") or lambda_get_params()
+    params = func_details.get("parameters") or (lambda params, **kwargs: params)
     defaults = func_details.get("defaults", {})
     resource_props = resource["Properties"] = resource.get("Properties", {})
     resource_props = dict(resource_props)
