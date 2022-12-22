@@ -1398,7 +1398,6 @@ class TemplateDeployer:
             raise NoStackUpdates("No updates are to be performed.")
 
         # merge stack outputs and conditions
-        # TODO: ???
         existing_stack.outputs.update(new_stack.outputs)
         existing_stack.conditions.update(new_stack.conditions)
 
