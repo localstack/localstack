@@ -16,13 +16,21 @@ from moto.logs.models import logs_backends
 from localstack.aws.accounts import get_aws_account_id
 from localstack.aws.api import RequestContext
 from localstack.aws.api.logs import (
+    AmazonResourceName,
     InputLogEvents,
+    KmsKeyId,
+    ListTagsForResourceResponse,
+    ListTagsLogGroupResponse,
     LogGroupName,
     LogsApi,
     LogStreamName,
     PutLogEventsResponse,
     SequenceToken,
+    TagKeyList,
+    TagList,
+    Tags,
 )
+from localstack.services.logs.models import get_moto_logs_backend, logs_stores
 from localstack.services.moto import call_moto
 from localstack.services.plugins import ServiceLifecycleHook
 from localstack.utils.aws import arns, aws_stack
@@ -71,6 +79,104 @@ class LogsProvider(LogsApi, ServiceLifecycleHook):
                                 "Unable to put metric data for matching CloudWatch log events", e
                             )
         return call_moto(context)
+
+    def create_log_group(
+        self,
+        context: RequestContext,
+        log_group_name: LogGroupName,
+        kms_key_id: KmsKeyId = None,
+        tags: Tags = None,
+    ) -> None:
+        call_moto(context)
+        if tags:
+            resource_arn = arns.log_group_arn(
+                group_name=log_group_name, account_id=context.account_id, region_name=context.region
+            )
+            store = logs_stores[context.account_id][context.region]
+            store.TAGS.setdefault(resource_arn, {}).update(tags)
+
+    def list_tags_for_resource(
+        self, context: RequestContext, resource_arn: AmazonResourceName
+    ) -> ListTagsForResourceResponse:
+        self._check_resource_arn_tagging(resource_arn)
+        store = logs_stores[context.account_id][context.region]
+        tags = store.TAGS.get(resource_arn, {})
+        return ListTagsForResourceResponse(tags=tags)
+
+    def list_tags_log_group(
+        self, context: RequestContext, log_group_name: LogGroupName
+    ) -> ListTagsLogGroupResponse:
+        # deprecated implementation, new one: list_tags_for_resource
+        self._verify_log_group_exists(
+            group_name=log_group_name, account_id=context.account_id, region_name=context.region
+        )
+        resource_arn = arns.log_group_arn(
+            group_name=log_group_name, account_id=context.account_id, region_name=context.region
+        )
+        store = logs_stores[context.account_id][context.region]
+        tags = store.TAGS.get(resource_arn, {})
+        return ListTagsLogGroupResponse(tags=tags)
+
+    def untag_resource(
+        self, context: RequestContext, resource_arn: AmazonResourceName, tag_keys: TagKeyList
+    ) -> None:
+        self._check_resource_arn_tagging(resource_arn)
+        store = logs_stores[context.account_id][context.region]
+        tags_stored = store.TAGS.get(resource_arn, {})
+        for tag in tag_keys:
+            tags_stored.pop(tag, None)
+
+    def untag_log_group(
+        self, context: RequestContext, log_group_name: LogGroupName, tags: TagList
+    ) -> None:
+        # deprecated implementation -> new one: untag_resource
+        self._verify_log_group_exists(
+            group_name=log_group_name, account_id=context.account_id, region_name=context.region
+        )
+        resource_arn = arns.log_group_arn(
+            group_name=log_group_name, account_id=context.account_id, region_name=context.region
+        )
+        store = logs_stores[context.account_id][context.region]
+        tags_stored = store.TAGS.get(resource_arn, {})
+        for tag in tags:
+            tags_stored.pop(tag, None)
+
+    def tag_resource(
+        self, context: RequestContext, resource_arn: AmazonResourceName, tags: Tags
+    ) -> None:
+        self._check_resource_arn_tagging(resource_arn)
+        store = logs_stores[context.account_id][context.region]
+        store.TAGS.get(resource_arn, {}).update(tags or {})
+
+    def tag_log_group(
+        self, context: RequestContext, log_group_name: LogGroupName, tags: Tags
+    ) -> None:
+        # deprecated implementation -> new one: tag_resource
+        self._verify_log_group_exists(
+            group_name=log_group_name, account_id=context.account_id, region_name=context.region
+        )
+        resource_arn = arns.log_group_arn(
+            group_name=log_group_name, account_id=context.account_id, region_name=context.region
+        )
+        store = logs_stores[context.account_id][context.region]
+        store.TAGS.get(resource_arn, {}).update(tags or {})
+
+    def _verify_log_group_exists(self, group_name: LogGroupName, account_id: str, region_name: str):
+        store = get_moto_logs_backend(account_id, region_name)
+        if group_name not in store.groups:
+            raise ResourceNotFoundException()
+
+    def _check_resource_arn_tagging(self, resource_arn):
+        service = arns.extract_service_from_arn(resource_arn)
+        region = arns.extract_region_from_arn(resource_arn)
+        account = arns.extract_account_id_from_arn(resource_arn)
+
+        # AWS currently only supports tagging for Log Group and Destinations
+        # LS: we only verify if log group exists, and create tags for other resources
+        if service.lower().startswith("log-group:"):
+            self._verify_log_group_exists(
+                service.split(":")[-1], account_id=account, region_name=region
+            )
 
 
 def get_pattern_matcher(pattern: str) -> Callable[[str, Dict], bool]:
