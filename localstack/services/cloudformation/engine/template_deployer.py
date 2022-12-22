@@ -18,6 +18,7 @@ from localstack.services.cloudformation.deployment_utils import (
     remove_none_values,
 )
 from localstack.services.cloudformation.engine import template_preparer
+from localstack.services.cloudformation.engine.entities import StackChangeSet
 from localstack.services.cloudformation.service_models import (
     KEY_RESOURCE_STATE,
     DependencyNotYetSatisfied,
@@ -1333,8 +1334,6 @@ class TemplateDeployer:
         append_to_changeset=False,
         filter_unchanged_resources=False,
     ):
-        from localstack.services.cloudformation.engine.entities import StackChangeSet
-
         old_resources = existing_stack.template["Resources"]
         new_resources = new_stack.template["Resources"]
         deletes = [val for key, val in old_resources.items() if key not in new_resources]
@@ -1407,8 +1406,6 @@ class TemplateDeployer:
         )
 
     def apply_changes_in_loop(self, changes, stack, action=None, new_stack=None):
-        from localstack.services.cloudformation.engine.entities import StackChangeSet
-
         def _run(*args):
             try:
                 self.do_apply_changes_in_loop(changes, stack)
