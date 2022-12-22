@@ -646,9 +646,10 @@ LAMBDA_REMOVE_CONTAINERS = (
     os.environ.get("LAMBDA_REMOVE_CONTAINERS", "").lower().strip() not in FALSE_STRINGS
 )
 
-# only for LS developers: expose port when invoking lambdas in host mode for systems that cannot reach the container
-# via IPv4 (e.g., macOS https://docs.docker.com/desktop/networking/#i-cannot-ping-my-containers)
-LAMBDA_ASF_DEV_PORT_EXPOSE = is_env_true("LAMBDA_ASF_DEV_PORT_EXPOSE")
+# DEV | Only for LS developers. Only applicable to new Lambda provider.
+# whether to explicitly expose port in lambda container when invoking functions in host mode for systems that cannot
+# reach the container via its IPv4 (e.g., macOS https://docs.docker.com/desktop/networking/#i-cannot-ping-my-containers)
+LAMBDA_DEV_PORT_EXPOSE = is_env_true("LAMBDA_DEV_PORT_EXPOSE")
 
 # Adding Stepfunctions default port
 LOCAL_PORT_STEPFUNCTIONS = int(os.environ.get("LOCAL_PORT_STEPFUNCTIONS") or 8083)
@@ -782,7 +783,7 @@ CONFIG_ENV_VARS = [
     "LAMBDA_JAVA_OPTS",
     "LAMBDA_REMOTE_DOCKER",
     "LAMBDA_REMOVE_CONTAINERS",
-    "LAMBDA_ASF_DEV_PORT_EXPOSE",
+    "LAMBDA_DEV_PORT_EXPOSE",
     "LAMBDA_RUNTIME_EXECUTOR",
     "LAMBDA_RUNTIME_ENVIRONMENT_TIMEOUT",
     "LAMBDA_STAY_OPEN_MODE",
