@@ -30,6 +30,8 @@ def _collect_operations() -> Tuple[ServiceModel, OperationModel]:
                 "chime-sdk-media-pipelines",
                 "chime-sdk-meetings",
                 "chime-sdk-messaging",
+                "chime-sdk-voice",
+                "codecatalyst",
                 "connect",
                 "connect-contact-lens",
                 "greengrassv2",
@@ -40,6 +42,7 @@ def _collect_operations() -> Tuple[ServiceModel, OperationModel]:
                 "kinesis-video-archived-media",
                 "kinesis-video-media",
                 "kinesis-video-signaling",
+                "kinesis-video-webrtc-storage",
                 "kinesisvideo",
                 "lex-models",
                 "lex-runtime",
@@ -51,9 +54,11 @@ def _collect_operations() -> Tuple[ServiceModel, OperationModel]:
                 "pinpoint-sms-voice",
                 "sagemaker-edge",
                 "sagemaker-featurestore-runtime",
+                "sagemaker-metrics",
                 "sms-voice",
                 "sso",
                 "sso-oidc",
+                "workdocs",
             ]:
                 yield pytest.param(
                     service,
