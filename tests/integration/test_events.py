@@ -1451,6 +1451,9 @@ class TestEvents:
         )
 
     @pytest.mark.aws_validated
+    @pytest.mark.skip_snapshot_verify(
+        condition=lambda: config.LEGACY_S3_PROVIDER, path="$..Messages..Body.detail.object.etag"
+    )
     def test_put_events_to_default_eventbus_for_custom_eventbus(
         self,
         events_client,
