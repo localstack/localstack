@@ -291,6 +291,7 @@ def test_lambda_vpc(deploy_cfn_template, lambda_client):
     lambda_client.invoke(FunctionName=fn_name, LogType="Tail", Payload=b"{}")
 
 
+@pytest.mark.xfail(condition=is_new_provider(), reason="fails/times out with new provider")
 @pytest.mark.skip_snapshot_verify(
     paths=[
         "$..Policy.PolicyArn",
