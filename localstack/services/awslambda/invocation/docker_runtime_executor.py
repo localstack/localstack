@@ -211,9 +211,6 @@ class DockerRuntimeExecutor(RuntimeExecutor):
             self.id,
         )
         executor_endpoint = ExecutorEndpoint(self.id, service_endpoint=service_endpoint)
-        if config.LAMBDA_ASF_DEV_PORT_EXPOSE:
-            executor_endpoint.container_address = "localhost"
-            executor_endpoint.container_port = get_free_tcp_port()
         LOG.debug(
             "Finished creating service endpoint for function %s executor %s",
             self.function_version.qualified_arn,
@@ -256,6 +253,7 @@ class DockerRuntimeExecutor(RuntimeExecutor):
         if not container_config.image_name:
             container_config.image_name = self.get_image()
         if config.LAMBDA_ASF_DEV_PORT_EXPOSE:
+            self.executor_endpoint.container_port = get_free_tcp_port()
             if container_config.ports is None:
                 container_config.ports = PortMappings()
             container_config.ports.add(self.executor_endpoint.container_port, INVOCATION_PORT)
@@ -273,10 +271,12 @@ class DockerRuntimeExecutor(RuntimeExecutor):
                 CONTAINER_CLIENT.copy_into_container(self.id, source, target)
 
         CONTAINER_CLIENT.start_container(self.id)
-        if not config.LAMBDA_ASF_DEV_PORT_EXPOSE:
-            self.ip = CONTAINER_CLIENT.get_container_ipv4_for_network(
-                container_name_or_id=self.id, container_network=network
-            )
+        self.ip = CONTAINER_CLIENT.get_container_ipv4_for_network(
+            container_name_or_id=self.id, container_network=network
+        )
+        if config.LAMBDA_ASF_DEV_PORT_EXPOSE:
+            self.executor_endpoint.container_address = "localhost"
+        else:
             self.executor_endpoint.container_address = self.ip
 
     def stop(self) -> None:
