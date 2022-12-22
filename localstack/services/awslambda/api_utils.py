@@ -179,11 +179,7 @@ def function_name_qualifier_and_region_from_arn(arn: str) -> tuple[str, str | No
     :param arn: Given arn (or name)
     :return: tuple with (name, qualifier, region). Qualifier and region are none if missing
     """
-
-    try:
-        return FUNCTION_NAME_REGEX.match(arn).group("name", "qualifier", "region")
-    except Exception as e:
-        print(e)
+    return FUNCTION_NAME_REGEX.match(arn).group("name", "qualifier", "region")
 
 
 def get_name_and_qualifier(
