@@ -51,7 +51,6 @@ class VtlTemplate:
         # add extensions for common string functions below
 
         class ExtendedString(str):
-
             def trim(self, *args, **kwargs):
                 return ExtendedString(self.strip(*args, **kwargs))
 
