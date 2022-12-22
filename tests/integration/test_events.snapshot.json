@@ -1,0 +1,81 @@
+{
+  "tests/integration/test_events.py::TestEvents::test_put_events_to_default_eventbus_for_custom_eventbus": {
+    "recorded-date": "22-12-2022, 01:50:01",
+    "recorded-content": {
+      "create-custom-event-bus": {
+        "EventBusArn": "arn:aws:events:<region>:111111111111:event-bus/<resource:1>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "create-rule-1": {
+        "RuleArn": "arn:aws:events:<region>:111111111111:rule/<resource:2>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "create-rule-2": {
+        "RuleArn": "arn:aws:events:<region>:111111111111:rule/<resource:1>/<resource:3>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "put-target-1": {
+        "FailedEntries": [],
+        "FailedEntryCount": 0,
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "put-target-2": {
+        "FailedEntries": [],
+        "FailedEntryCount": 0,
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "get-events": {
+        "Messages": [
+          {
+            "Body": {
+              "version": "0",
+              "id": "<uuid:1>",
+              "detail-type": "Object Created",
+              "source": "aws.s3",
+              "account": "111111111111",
+              "time": "date",
+              "region": "<region>",
+              "resources": [
+                "arn:aws:s3:::<bucket-name:1>"
+              ],
+              "detail": {
+                "version": "0",
+                "bucket": {
+                  "name": "<bucket-name:1>"
+                },
+                "object": {
+                  "key": "<key-name:1>",
+                  "size": 4,
+                  "etag": "8d777f385d3dfec8815d20f7496026dc",
+                  "sequencer": "object-sequencer"
+                },
+                "request-id": "request-id",
+                "requester": "<requester>",
+                "source-ip-address": "<ip-address:1>",
+                "reason": "PutObject"
+              }
+            },
+            "MD5OfBody": "<m-d5-of-body:1>",
+            "MessageId": "<uuid:2>",
+            "ReceiptHandle": "<receipt-handle:1>"
+          }
+        ]
+      }
+    }
+  }
+}
