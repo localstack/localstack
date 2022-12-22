@@ -302,6 +302,8 @@ def _botocore_parser_integration_test(
 
     operation_model = service.operation_model(action)
     serialized_request = serializer.serialize_to_request(kwargs, operation_model)
+    if "auth_path" in serialized_request:
+        serialized_request["url_path"] = serialized_request["auth_path"]
     prepare_request_dict(serialized_request, "")
     split_url = urlsplit(serialized_request.get("url"))
     path = split_url.path
