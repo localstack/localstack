@@ -2,8 +2,7 @@ import logging
 from typing import Dict, Optional
 
 from localstack.aws.accounts import get_aws_account_id
-from localstack.aws.api.cloudformation import Stack, StackSet
-from localstack.services.cloudformation.engine.entities import StackChangeSet
+from localstack.services.cloudformation.engine.entities import Stack, StackChangeSet, StackSet
 from localstack.services.stores import AccountRegionBundle, BaseStore, LocalAttribute
 from localstack.utils.aws import aws_stack
 
@@ -25,7 +24,7 @@ class CloudFormationStore(BaseStore):
         exports = []
         output_keys = {}
         for stack_id, stack in self.stacks.items():
-            for output in stack.outputs_list():
+            for output in stack.resolved_outputs:
                 export_name = output.get("ExportName")
                 if not export_name:
                     continue
