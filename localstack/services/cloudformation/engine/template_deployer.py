@@ -3,7 +3,7 @@ import json
 import logging
 import re
 import traceback
-from typing import Dict, List, Optional
+from typing import Dict, List, Optional, Type
 
 import botocore
 
@@ -64,7 +64,7 @@ UPDATEABLE_RESOURCES = [
 STATIC_REFS = ["AWS::Region", "AWS::Partition", "AWS::StackName", "AWS::AccountId"]
 
 # maps resource type string to model class
-RESOURCE_MODELS = {
+RESOURCE_MODELS: dict[str, Type[GenericBaseModel]] = {
     model.cloudformation_type(): model for model in get_all_subclasses(GenericBaseModel)
 }
 
