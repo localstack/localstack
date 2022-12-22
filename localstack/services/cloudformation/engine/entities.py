@@ -123,7 +123,7 @@ class Stack:
         ]
         result = select_attributes(self.metadata, attrs)
         result["Tags"] = self.tags
-        outputs = self.outputs_list()
+        outputs = self.resolved_outputs
         if outputs:
             result["Outputs"] = outputs
         params = self.stack_parameters()
@@ -280,29 +280,6 @@ class Stack:
 
         result = set()
         recurse_object(self.resources, _collect)
-        return result
-
-    def outputs_list(self) -> List[Dict]:
-        """Returns a copy of the outputs of this stack."""
-        result = []
-        for k, details in self.outputs.items():
-            value = None
-            try:
-                # template_deployer.resolve_refs_recursively(self, details)  # FIXME
-                value = details["Value"]
-            except Exception as e:
-                LOG.debug("Unable to resolve references in stack outputs: %s - %s", details, e)
-            exports = details.get("Export") or {}
-            export = exports.get("Name")
-            # export = template_deployer.resolve_refs_recursively(self, export)  # FIXME
-            description = details.get("Description")
-            entry = {
-                "OutputKey": k,
-                "OutputValue": value,
-                "Description": description,
-                "ExportName": export,
-            }
-            result.append(entry)
         return result
 
     # TODO: check if metadata already populated/resolved and use it if possible (avoid unnecessary re-resolving)
