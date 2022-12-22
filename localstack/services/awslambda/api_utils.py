@@ -62,6 +62,8 @@ HANDLER_REGEX = re.compile(r"[^\s]+")
 KMS_KEY_ARN_REGEX = re.compile(r"(arn:(aws[a-zA-Z-]*)?:[a-z0-9-.]+:.*)|()")
 # Pattern for a valid IAM role assumed by a lambda function
 ROLE_REGEX = re.compile(r"arn:(aws[a-zA-Z-]*)?:iam::\d{12}:role/?[a-zA-Z_0-9+=,.@\-_/]+")
+# Pattern for a valid AWS account
+AWS_ACCOUNT_REGEX = re.compile(r"\d{12}")
 # Pattern for a signing job arn
 SIGNING_JOB_ARN_REGEX = re.compile(
     r"arn:(aws[a-zA-Z0-9-]*):([a-zA-Z0-9\-])+:([a-z]{2}(-gov)?-[a-z]+-\d{1})?:(\d{12})?:(.*)"
@@ -244,11 +246,24 @@ def build_statement(
         "Resource": resource_arn,
     }
 
-    if "." in principal:  # TODO: better matching
-        # assuming service principal
+    # See AWS service principals for comprehensive docs:
+    # https://docs.aws.amazon.com/IAM/latest/UserGuide/reference_policies_elements_principal.html
+    # TODO: validate against actual list of IAM-supported AWS services (e.g., lambda.amazonaws.com)
+    if principal.endswith(".amazonaws.com"):
         statement["Principal"] = {"Service": principal}
+    elif is_aws_account(principal):
+        statement["Principal"] = {"AWS": f"arn:aws:iam::{principal}:root"}
+    # TODO: potentially validate against IAM?
+    elif principal.startswith("arn:aws:iam:"):
+        statement["Principal"] = {"AWS": principal}
+    elif principal == "*":
+        statement["Principal"] = principal
+    # TODO: unclear whether above matching is complete?
     else:
-        statement["Principal"] = principal  # TODO: verify
+        raise InvalidParameterValueException(
+            "The provided principal was invalid. Please check the principal and try again.",
+            Type="User",
+        )
 
     condition = dict()
     if auth_type:
@@ -340,6 +355,16 @@ def is_role_arn(role_arn: str) -> bool:
     :return: Boolean indicating if input is a role arn
     """
     return bool(ROLE_REGEX.match(role_arn))
+
+
+def is_aws_account(aws_account: str) -> bool:
+    """
+    Returns true if the provided string is an AWS account, false otherwise
+
+    :param role_arn: Potential AWS account
+    :return: Boolean indicating if input is an AWS account
+    """
+    return bool(AWS_ACCOUNT_REGEX.match(aws_account))
 
 
 def format_lambda_date(date_to_format: datetime.datetime) -> str:
