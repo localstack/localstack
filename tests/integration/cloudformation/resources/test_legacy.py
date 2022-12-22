@@ -612,9 +612,22 @@ class TestCloudFormation:
 
     # TODO: refactor
     def test_deploy_stack_with_sub_select_and_sub_getaz(
-        self, cfn_client, sns_client, cloudwatch_client, ec2_client, iam_client, deploy_cfn_template
+        self,
+        cfn_client,
+        sns_client,
+        cloudwatch_client,
+        ec2_client,
+        iam_client,
+        deploy_cfn_template,
+        cleanups,
     ):
-        ec2_client.create_key_pair(KeyName="key-pair-foo123")
+        key_name = f"key-pair-foo123-{short_uid()}"
+        key_pair = ec2_client.create_key_pair(KeyName=key_name)
+        cleanups.append(
+            lambda: ec2_client.delete_key_pair(
+                KeyName=key_pair["KeyName"], KeyPairId=key_pair["KeyPairId"]
+            )
+        )
 
         # list resources before stack deployment
         metric_alarms = cloudwatch_client.describe_alarms().get("MetricAlarms", [])
@@ -622,7 +635,10 @@ class TestCloudFormation:
 
         # deploy stack
         deploy_cfn_template(
-            template_path=os.path.join(os.path.dirname(__file__), "../../templates/template28.yaml")
+            template_path=os.path.join(
+                os.path.dirname(__file__), "../../templates/template28.yaml"
+            ),
+            parameters={"Ec2KeyPairName": key_name},
         )
         exports = cfn_client.list_exports()["Exports"]
 
