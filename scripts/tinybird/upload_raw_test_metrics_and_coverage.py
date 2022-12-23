@@ -1,3 +1,74 @@
+""" Uploading to Tinybird of the metrics collected for a CircleCI run
+
+The upload includes:
+ * Test Data Raw
+ * Implemented/Not implemented Coverage (once for community, once for pro)
+
+## Test Data Raw
+
+Metric data that is collected during the integration test runs.
+
+### Data Collection
+All api calls are collected, and stored into a csv file.
+
+- In *CircleCI*, we collect data for the `docker-test-arm64` and `docker-test-amd64` jobs. As both are divided into two test runs, and contain the same tests, we only merge the test results from `docker-test-arm64` runs. The output is stored as an artifact in the `report` step, and is called `parity_metrics/metric-report-raw-data-all-amd64[date-time].csv`
+- In *Github*, the action `Integration Tests` collects the same data. The artifacts are stored as `parity-metric-ext-raw.zip` and contain a similar csv file.
+
+### Data Structure
+The following data is collected for each api call:
+
+- *service:* the name of the service
+- *operation*: the name of the operation
+- *request_headers*: the headers are send with the request
+- *parameters*: any parameters that were used for the operation, comma separated list; the value is not included
+- *response_code*: the http response code that followed the request
+- *response_data*: any data that was sent with the response
+- *exception*: name of the exception, in case one was triggered for this request
+- *origin*: indicates how the request was triggered, valid values are: `internal` and `external` . Internal means that the request was made from localstack, external means that it was triggered explicitly during the test.
+- *test_node_id*: the id of the test, pattern: <filename::classname::testname>
+- *xfail*: boolean string, indicates whether the test was marked with `xfail`
+- *aws_validated*: boolean string, indicates whether the test was marked with `aws_validated`
+- *snapshot*: boolean string, indicates whether the test was marked with `snapshot`
+- *snapshot_skipped_paths*: comma separated list of any paths that are skipped for snapshot test
+
+### Implemented/Not implemented Coverage
+In CircleCI, we have two jobs that test for implemented/not implemented APIs for each service. One job is running for LocalStack Community version, the other one for LocalStack Pro.
+We use an heuristic approach for the coverage, and the input for the parameters is non-deterministic, meaning that the classification of implemented/not implemented *could* change.
+Currently, the coverage is used to generate the [docs coverage page](https://docs.localstack.cloud/references/coverage/), which is updated once a week.
+In CircleCI, the `report` job stores the artifacts for `implementation_coverage_full.csv` (community and pro), and `implementation_coverage_aggregated.csv`.
+
+### Data Structure
+- *service:* name of the service
+- *operation*: name of the operation
+- *status_code*: status code returned for this call
+- *error_code*: the error code or exception returned by this call
+- *error_message*: detailed error message, if any was returned
+- *is_implemented*: boolean, indicating if the operation is assumed to be implemented
+
+### Relevant Data for Parity Dashboard
+
+From the above data structure, the following information is sent to the parity dashboard:
+*Test Data Raw* (tests_raw.datasource):
+service, operation, parameters, response_code, origin, test_node_id, xfail, aws-alidated, snapshot, snapshot_skipped_paths*
+
+*Coverage Data* (implementation_coverage.datasource):
+service, operation, status_code, error_code, is_implemented*
+
+Additionally, we add the following information:
+- *build_id*: the workflow-id (for CircleCI)
+- *timestamp*: a timestamp as string which will be the same for the CircleCI run
+- *ls_source*: “community” for the CircleCI run, “pro” for the Github action
+
+In order to get more metadata from the build, we also send some general information to tests_raw_builds.datasource:
+- *build_id:* the workflow-id (for CircleCI)
+- *timestamp:* a timestamp as string which will be the same for the CircleCI run
+- *branch:* env value from *`CIRCLE_BRANCH`*
+- *build_url:* env value from *`CIRCLE_BUILD_URL`*
+- *pull_requests:* env value from *`CIRCLE_PULL_REQUESTS`*
+- *build_num:* env value from *`CIRCLE_BUILD_NUM`*
+- *workflow_id:* env value from *`CIRCLE_WORKFLOW_ID`*
+"""
+
 import csv
 import datetime
 import json

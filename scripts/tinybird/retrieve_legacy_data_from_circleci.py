@@ -1,10 +1,20 @@
+"""Helper script to retrieve historical data and load into tinybird parity dashboard
+
+The script is intended to be run locally. It was executed once, to retrieve the data from the past successful master builds
+in order to get more data into the parity dashboard for a hackathon project.
+
+"""
+
 import datetime
 import http.client
 import json
 import os
 import urllib
 
-from scripts.tinybird.tinybird_upload import send_implemented_coverage, send_metric_report
+from scripts.tinybird.upload_raw_test_metrics_and_coverage import (
+    send_implemented_coverage,
+    send_metric_report,
+)
 
 PROJECT_SLUG = "github/localstack/localstack"
 MASTER_BRANCH = "master"
