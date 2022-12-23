@@ -1709,6 +1709,8 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
             event_source_token=request.get("EventSourceToken"),
             auth_type=request.get("FunctionUrlAuthType"),
         )
+        # TODO: test revision behavior for lambda in general (with versions, aliases, layers, etc).
+        #  It seems that it is the same as the revision id of a lambda (i.e., VersionFunctionConfiguration).
         policy = existing_policy
         if existing_policy:
             policy.revision_id = FunctionResourcePolicy.new_revision_id()
