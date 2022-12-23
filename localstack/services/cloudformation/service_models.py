@@ -67,7 +67,7 @@ class GenericBaseModel:
 
     # TODO: change the signature to pass in a Stack instance (instead of stack_name and resources)
     def fetch_state(self, stack_name, resources):
-        """Fetch the latest deployment state of this resource, or return None if not currently deployed."""
+        """Fetch the latest deployment state of this resource, or return None if not currently deployed (NOTE: THIS IS NOT ALWAYS TRUE)."""
         return None
 
     # TODO: change the signature to pass in a Stack instance (instead of stack_name and resources)
@@ -149,7 +149,7 @@ class GenericBaseModel:
         return self.resource_json.get("LogicalResourceId")
 
     @property
-    def props(self):
+    def props(self) -> dict:
         """Return a copy of (1) the resource properties (from the template), combined with
         (2) the current deployment state properties of the resource."""
         result = dict(self.properties)
@@ -158,7 +158,7 @@ class GenericBaseModel:
 
     # TODO: remove after -ext does not depend on this anymore
     @property
-    def resource_id(self):
+    def resource_id(self) -> str:
         """Return the logical resource ID of this resource (i.e., the ref. name within the stack's resources)."""
         return self.resource_json["LogicalResourceId"]
 
