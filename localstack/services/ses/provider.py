@@ -371,7 +371,7 @@ class SesProvider(SesApi, ServiceLifecycleHook):
 
         backend = get_ses_backend(context)
         emitter = SNSEmitter(context)
-        recipients = (recipients_from_destination(destination),)
+        recipients = recipients_from_destination(destination)
 
         for event_destination in backend.config_set_event_destination.values():
             if not event_destination["Enabled"]:
