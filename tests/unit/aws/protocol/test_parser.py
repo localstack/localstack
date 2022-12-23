@@ -302,9 +302,9 @@ def _botocore_parser_integration_test(
 
     operation_model = service.operation_model(action)
     serialized_request = serializer.serialize_to_request(kwargs, operation_model)
-    # following botocore update above 1.25, botocore will strip the bucket from the requestUri in the spec.
-    # it will then set the original requestUri to authPath, that we can retrieve in the serialized_request
-    # we need to check if the original path is there, otherwise use the provided one
+
+    # botocore >= 1.28 might modify the url path of the request dict (specifically for S3).
+    # It will then set the original url path as "auth_path". If the auth_path is set, we reset the url_path.
     if auth_path := serialized_request.get("auth_path"):
         serialized_request["url_path"] = auth_path
 

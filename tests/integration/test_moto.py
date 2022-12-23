@@ -81,34 +81,34 @@ def test_call_s3_with_streaming_trait(payload, monkeypatch):
     # In the absence of below patch, Moto and LocalStack uses difference AWS Account IDs causing the test to fail
     monkeypatch.setattr(localstack.aws.accounts, "DEFAULT_AWS_ACCOUNT_ID", DEFAULT_MOTO_ACCOUNT_ID)
 
-    def _call_moto_s3(action, params):
-        # we need to set the endpoint because moto will match the host to know if it's a path addressed or
-        # virtual host addressed bucket
-        # see moto.s3.responses.S3Response.subdomain_based_buckets
-        context = moto.create_aws_request_context(
-            "s3", action, params, endpoint_url="http://localstack.com"
-        )
-        return moto.call_moto(context)
-
     bucket_name = f"bucket-{short_uid()}"
     key_name = f"key-{short_uid()}"
 
     # create the bucket
-    _call_moto_s3("CreateBucket", {"Bucket": bucket_name})
+    moto.call_moto(moto.create_aws_request_context("s3", "CreateBucket", {"Bucket": bucket_name}))
 
-    _call_moto_s3("PutObject", {"Bucket": bucket_name, "Key": key_name, "Body": payload})
+    moto.call_moto(
+        moto.create_aws_request_context(
+            "s3", "PutObject", {"Bucket": bucket_name, "Key": key_name, "Body": payload}
+        )
+    )
 
     # check whether it was created/received correctly
-    response = _call_moto_s3("GetObject", {"Bucket": bucket_name, "Key": key_name})
-
+    response = moto.call_moto(
+        moto.create_aws_request_context("s3", "GetObject", {"Bucket": bucket_name, "Key": key_name})
+    )
     assert hasattr(
         response["Body"], "read"
     ), f"expected Body to be readable, was {type(response['Body'])}"
     assert response["Body"].read() == b"foobar"
 
     # cleanup
-    _call_moto_s3("DeleteObject", {"Bucket": bucket_name, "Key": key_name})
-    _call_moto_s3("DeleteBucket", {"Bucket": bucket_name})
+    moto.call_moto(
+        moto.create_aws_request_context(
+            "s3", "DeleteObject", {"Bucket": bucket_name, "Key": key_name}
+        )
+    )
+    moto.call_moto(moto.create_aws_request_context("s3", "DeleteBucket", {"Bucket": bucket_name}))
 
 
 def test_call_include_response_metadata():
@@ -299,12 +299,7 @@ def test_moto_fallback_dispatcher_error_handling(monkeypatch):
     dispatcher = MotoFallbackDispatcher(provider)
 
     def _dispatch(action, params):
-        # we need to set the endpoint because moto will match the host to know if it's a path addressed or
-        # virtual host addressed bucket
-        # see moto.s3.responses.S3Response.subdomain_based_buckets
-        context = moto.create_aws_request_context(
-            "s3", action, params, endpoint_url="http://localstack.com"
-        )
+        context = moto.create_aws_request_context("s3", action, params)
         return dispatcher[action](context, params)
 
     bucket_name = f"bucket-{short_uid()}"

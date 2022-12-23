@@ -164,17 +164,19 @@ def create_aws_request_context(
         "has_streaming_input": operation.has_streaming_input,
         "auth_type": operation.auth_type,
     }
-    # The endpoint URL is mandatory here, set a dummy if not given
+
+    # The endpoint URL is mandatory here, set a dummy if not given (doesn't _need_ to be localstack specific)
     if not endpoint_url:
-        endpoint_url = "http://dummy-endpoint.com/"
+        endpoint_url = "http://localhost.localstack.cloud"
     request_dict = client._convert_to_request_dict(
         parameters, operation, endpoint_url, context=request_context
     )
 
-    if service_name == "s3" and (auth_path := request_dict.get("auth_path")):
+    if auth_path := request_dict.get("auth_path"):
+        # botocore >= 1.28 might modify the url path of the request dict (specifically for S3).
+        # It will then set the original url path as "auth_path". If the auth_path is set, we reset the url_path.
+        # Afterwards the request needs to be prepared again.
         request_dict["url_path"] = auth_path
-        # re-prepare the request dict (function called in _convert_to_request_dict)
-        # to use the correct url_path for s3
         prepare_request_dict(
             request_dict,
             endpoint_url=endpoint_url,

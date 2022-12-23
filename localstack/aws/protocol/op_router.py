@@ -28,9 +28,9 @@ class _HttpOperation(NamedTuple):
 
     @staticmethod
     def from_operation(op: OperationModel) -> "_HttpOperation":
-        # following botocore update above 1.25, botocore will strip the bucket from the requestUri in the spec.
-        # it will then set the original requestUri to authPath. We need to use the original request if set, otherwise
-        # use the regular requestUri
+        # botocore >= 1.28 might modify the internal model (specifically for S3).
+        # It will modify the request URI and set the original value at "authPath".
+        # Use authPath if set, otherwise use the regular requestUri.
         if auth_path := op.http.get("authPath"):
             uri = auth_path.rstrip("/")
         else:
