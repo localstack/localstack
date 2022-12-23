@@ -3,7 +3,7 @@ import logging
 from xml.sax.saxutils import escape
 
 from moto.cloudwatch import cloudwatch_backends
-from moto.cloudwatch.models import CloudWatchBackend, FakeAlarm
+from moto.cloudwatch.models import CloudWatchBackend, FakeAlarm, MetricDatum
 
 from localstack.aws.accounts import get_aws_account_id
 from localstack.aws.api import CommonServiceException, RequestContext, handler
@@ -267,7 +267,8 @@ class CloudwatchProvider(CloudwatchApi, ServiceLifecycleHook):
         )
         backend = cloudwatch_backends[account_id][region]
         if backend:
-            result = backend.metric_data
+            result = [m for m in backend.metric_data if isinstance(m, MetricDatum)]
+            # TODO handle aggregated metrics as well (MetricAggregatedDatum)
         else:
             result = []
 
