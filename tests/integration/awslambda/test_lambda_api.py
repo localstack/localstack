@@ -2640,16 +2640,6 @@ class TestLambdaPermissions:
 
 class TestLambdaUrl:
     @pytest.mark.skipif(condition=is_old_provider(), reason="not supported")
-    @pytest.mark.skip_snapshot_verify(
-        paths=[
-            # broken at AWS yielding InternalFailure
-            "delete_function_url_config_qualifier_alias_doesnotmatch_arn..Error.Code",
-            "delete_function_url_config_qualifier_alias_doesnotmatch_arn..Error.Message",
-            "delete_function_url_config_qualifier_alias_doesnotmatch_arn..ResponseMetadata.HTTPStatusCode",
-            "delete_function_url_config_qualifier_alias_doesnotmatch_arn..Type",
-            "delete_function_url_config_qualifier_alias_doesnotmatch_arn..message",
-        ]
-    )
     @pytest.mark.aws_validated
     def test_url_config_exceptions(self, lambda_client, create_lambda_function, snapshot):
         """
@@ -2661,7 +2651,16 @@ class TestLambdaUrl:
         snapshot.add_transformer(
             SortingTransformer("FunctionUrlConfigs", sorting_fn=lambda x: x["FunctionArn"])
         )
-
+        # broken at AWS yielding InternalFailure but should return InvalidParameterValueException as in
+        # get_function_url_config_qualifier_alias_doesnotmatch_arn
+        snapshot.add_transformer(
+            snapshot.transform.jsonpath(
+                "delete_function_url_config_qualifier_alias_doesnotmatch_arn",
+                "<aws_internal_failure>",
+                reference_replacement=False,
+            ),
+            priority=-1,
+        )
         function_name = f"test-function-{short_uid()}"
         alias_name = "urlalias"
 

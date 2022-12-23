@@ -6220,7 +6220,7 @@
     }
   },
   "tests/integration/awslambda/test_lambda_api.py::TestLambdaUrl::test_url_config_exceptions": {
-    "recorded-date": "21-12-2022, 15:38:38",
+    "recorded-date": "23-12-2022, 16:10:57",
     "recorded-content": {
       "fn_version_result": {
         "Architectures": [
@@ -6521,16 +6521,7 @@
           "HTTPStatusCode": 404
         }
       },
-      "delete_function_url_config_qualifier_alias_doesnotmatch_arn": {
-        "Error": {
-          "Code": "InternalFailure",
-          "Message": null
-        },
-        "ResponseMetadata": {
-          "HTTPHeaders": {},
-          "HTTPStatusCode": 500
-        }
-      },
+      "delete_function_url_config_qualifier_alias_doesnotmatch_arn": "<aws_internal_failure>",
       "delete_function_url_config_qualifier_latest": {
         "Error": {
           "Code": "ValidationException",
