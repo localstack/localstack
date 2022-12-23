@@ -4,7 +4,6 @@ import re
 from collections import defaultdict
 from copy import deepcopy
 
-import localstack.services.cloudformation.api_utils
 from localstack.aws.api import CommonServiceException, RequestContext, handler
 from localstack.aws.api.cloudformation import (
     CallAs,
@@ -64,6 +63,7 @@ from localstack.aws.api.cloudformation import (
     ValidateTemplateInput,
     ValidateTemplateOutput,
 )
+from localstack.services.cloudformation import api_utils
 from localstack.services.cloudformation.engine import template_deployer, template_preparer
 from localstack.services.cloudformation.engine.entities import (
     Stack,
@@ -131,9 +131,7 @@ class CloudformationProvider(CloudformationApi):
     @handler("CreateStack", expand=False)
     def create_stack(self, context: RequestContext, request: CreateStackInput) -> CreateStackOutput:
         state = get_cloudformation_store()
-        localstack.services.cloudformation.api_utils.prepare_template_body(
-            request
-        )  # TODO: avoid mutating request directly
+        api_utils.prepare_template_body(request)  # TODO: avoid mutating request directly
         template = template_preparer.parse_template(request["TemplateBody"])
         stack_name = template["StackName"] = request.get("StackName")
         stack = Stack(request, template)  # TODO: proper body handling like in create_change_set
@@ -189,7 +187,7 @@ class CloudformationProvider(CloudformationApi):
         if not stack:
             return not_found_error(f'Unable to update non-existing stack "{stack_name}"')
 
-        localstack.services.cloudformation.api_utils.prepare_template_body(request)
+        api_utils.prepare_template_body(request)
         template = template_preparer.parse_template(request["TemplateBody"])
         new_stack = Stack(request, template)
         deployer = template_deployer.TemplateDeployer(stack)
@@ -286,7 +284,7 @@ class CloudformationProvider(CloudformationApi):
             if not stack:
                 return stack_not_found_error(stack_name)
         else:
-            localstack.services.cloudformation.api_utils.prepare_template_body(request)
+            api_utils.prepare_template_body(request)
             template = template_preparer.parse_template(request["TemplateBody"])
             request["StackName"] = "tmp-stack"
             stack = Stack(request, template)
@@ -333,7 +331,7 @@ class CloudformationProvider(CloudformationApi):
                 "Specify exactly one of 'TemplateBody' or 'TemplateUrl'"
             )  # TODO: check proper message
 
-        localstack.services.cloudformation.api_utils.prepare_template_body(
+        api_utils.prepare_template_body(
             req_params
         )  # TODO: function has too many unclear responsibilities
         if not template_body:
@@ -603,7 +601,7 @@ class CloudformationProvider(CloudformationApi):
     ) -> ValidateTemplateOutput:
         try:
             # TODO implement actual validation logic
-            template_body = localstack.services.cloudformation.api_utils.get_template_body(request)
+            template_body = api_utils.get_template_body(request)
             valid_template = json.loads(template_preparer.template_to_json(template_body))
 
             parameters = [
