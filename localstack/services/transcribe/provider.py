@@ -332,6 +332,4 @@ class TranscribeProvider(TranscribeApi, ServiceLifecycleHook):
             job["FailureReason"] = failure_reason or str(exc)
             job["TranscriptionJobStatus"] = TranscriptionJobStatus.FAILED
 
-            LOG.warning("Transcription job %s failed: %s", job_name, job["FailureReason"])
-
-            raise exc
+            LOG.exception("Transcription job %s failed: %s", job_name, job["FailureReason"])
