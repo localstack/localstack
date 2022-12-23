@@ -5,7 +5,6 @@ import re
 from urllib.parse import urlparse
 
 import boto3
-import moto.cloudformation.utils
 import yaml
 from requests.structures import CaseInsensitiveDict
 from samtranslator.translator.managed_policy_translator import ManagedPolicyLoader
@@ -113,9 +112,6 @@ def parse_template(template: str) -> dict:
     try:
         return json.loads(template)
     except Exception:
-        yaml.add_multi_constructor(
-            "", moto.cloudformation.utils.yaml_tag_constructor, Loader=NoDatesSafeLoader
-        )  # TODO: remove moto dependency here
         try:
             return clone_safe(yaml.safe_load(template))
         except Exception:
