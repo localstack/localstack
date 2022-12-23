@@ -2403,9 +2403,33 @@ class TestLambdaPermissions:
             SourceArn=arns.s3_bucket_arn("test-bucket"),
             Qualifier=fn_version,
         )
+        get_policy_result_alias = lambda_client.get_policy(
+            FunctionName=function_name, Qualifier=fn_version
+        )
+        snapshot.match("get_policy_version", get_policy_result_alias)
 
-        get_policy_result_re_adding = lambda_client.get_policy(FunctionName=function_name)
-        snapshot.match("get_policy_after_adding_to_new_version", get_policy_result_re_adding)
+        alias_name = "permission-alias"
+        lambda_client.create_alias(
+            FunctionName=function_name,
+            Name=alias_name,
+            FunctionVersion=fn_version,
+        )
+        # create lambda permission with the same sid for specific alias
+        lambda_client.add_permission(
+            FunctionName=f"{function_name}:{alias_name}",  # alias suffix matching Qualifier
+            Action=action,
+            StatementId=sid,
+            Principal=principal,
+            SourceArn=arns.s3_bucket_arn("test-bucket"),
+            Qualifier=alias_name,
+        )
+        get_policy_result_alias = lambda_client.get_policy(
+            FunctionName=function_name, Qualifier=alias_name
+        )
+        snapshot.match("get_policy_alias", get_policy_result_alias)
+
+        get_policy_result_alias = lambda_client.get_policy(FunctionName=function_name)
+        snapshot.match("get_policy_after_adding_to_new_version", get_policy_result_alias)
 
         # create lambda permission with other sid and correct revision id
         lambda_client.add_permission(
@@ -2414,7 +2438,7 @@ class TestLambdaPermissions:
             StatementId=f"{sid}_2",
             Principal=principal,
             SourceArn=arns.s3_bucket_arn("test-bucket"),
-            RevisionId=get_policy_result_re_adding["RevisionId"],
+            RevisionId=get_policy_result_alias["RevisionId"],
         )
 
         get_policy_result_adding_2 = lambda_client.get_policy(FunctionName=function_name)

@@ -1692,7 +1692,8 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
                 )
             request_sid = request["StatementId"]
             if request_sid in [s["Sid"] for s in existing_policy.policy.Statement]:
-                # function version scope: statement id needs to be unique per function version
+                # uniqueness scope: statement id needs to be unique per qualified function ($LATEST, version, or alias)
+                # Counterexample: the same sid can exist within $LATEST, version, and alias
                 raise ResourceConflictException(
                     f"The statement id ({request_sid}) provided already exists. Please provide a new statement id, or remove the existing statement.",
                     Type="User",
