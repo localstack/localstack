@@ -71,11 +71,6 @@ from localstack.services.cloudformation.engine.entities import (
     StackSet,
 )
 from localstack.services.cloudformation.engine.template_deployer import NoStackUpdates
-from localstack.services.cloudformation.engine.template_preparer import (
-    get_template_body,
-    prepare_template_body,
-    template_to_json,
-)
 from localstack.services.cloudformation.stores import (
     find_change_set,
     find_stack,
@@ -135,7 +130,7 @@ class CloudformationProvider(CloudformationApi):
     @handler("CreateStack", expand=False)
     def create_stack(self, context: RequestContext, request: CreateStackInput) -> CreateStackOutput:
         state = get_cloudformation_store()
-        template_deployer.prepare_template_body(request)  # TODO: avoid mutating request directly
+        template_preparer.prepare_template_body(request)  # TODO: avoid mutating request directly
         template = template_preparer.parse_template(request["TemplateBody"])
         stack_name = template["StackName"] = request.get("StackName")
         stack = Stack(request, template)  # TODO: proper body handling like in create_change_set
@@ -288,7 +283,7 @@ class CloudformationProvider(CloudformationApi):
             if not stack:
                 return stack_not_found_error(stack_name)
         else:
-            template_deployer.prepare_template_body(request)
+            template_preparer.prepare_template_body(request)
             template = template_preparer.parse_template(request["TemplateBody"])
             request["StackName"] = "tmp-stack"
             stack = Stack(request, template)
@@ -335,7 +330,9 @@ class CloudformationProvider(CloudformationApi):
                 "Specify exactly one of 'TemplateBody' or 'TemplateUrl'"
             )  # TODO: check proper message
 
-        prepare_template_body(req_params)  # TODO: function has too many unclear responsibilities
+        template_preparer.prepare_template_body(
+            req_params
+        )  # TODO: function has too many unclear responsibilities
         if not template_body:
             template_body = req_params[
                 "TemplateBody"
@@ -603,8 +600,8 @@ class CloudformationProvider(CloudformationApi):
     ) -> ValidateTemplateOutput:
         try:
             # TODO implement actual validation logic
-            template_body = get_template_body(request)
-            valid_template = json.loads(template_to_json(template_body))
+            template_body = template_preparer.get_template_body(request)
+            valid_template = json.loads(template_preparer.template_to_json(template_body))
 
             parameters = [
                 TemplateParameter(

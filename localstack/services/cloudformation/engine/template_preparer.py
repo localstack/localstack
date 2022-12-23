@@ -2,7 +2,6 @@ import json
 import logging
 import os
 import re
-from typing import Optional
 from urllib.parse import urlparse
 
 import boto3
@@ -32,7 +31,7 @@ NoDatesSafeLoader.yaml_implicit_resolvers = {
 policy_loader = None
 
 
-def _create_loader():
+def _create_loader() -> ManagedPolicyLoader:
     global policy_loader
     if not policy_loader:
         iam_client = aws_stack.connect_to_service("iam")
@@ -40,7 +39,8 @@ def _create_loader():
     return policy_loader
 
 
-def transform_template(req_data) -> Optional[str]:
+# FIXME: this should be a separate step
+def transform_template(req_data: dict) -> str | None:
     """only returns string when parsing SAM template, otherwise None"""
     template_body = get_template_body(req_data)
     parsed = parse_template(template_body)
@@ -60,7 +60,8 @@ def transform_template(req_data) -> Optional[str]:
                 os.environ["AWS_DEFAULT_REGION"] = region_before
 
 
-def prepare_template_body(req_data) -> str | bytes | None:  # TODO: mutating and returning
+# FIXME: don't operate on request dict directly
+def prepare_template_body(req_data: dict) -> str | bytes | None:  # TODO: mutating and returning
     template_url = req_data.get("TemplateURL")
     if template_url:
         req_data["TemplateURL"] = convert_s3_to_local_url(template_url)
@@ -76,7 +77,8 @@ def prepare_template_body(req_data) -> str | bytes | None:  # TODO: mutating and
     return modified_template_body
 
 
-def get_template_body(req_data):
+# FIXME: don't operate on request dict directly
+def get_template_body(req_data: dict) -> str:
     body = req_data.get("TemplateBody")
     if body:
         return body
@@ -107,7 +109,7 @@ def get_template_body(req_data):
     raise Exception("Unable to get template body from input: %s" % req_data)
 
 
-def parse_template(template):
+def parse_template(template: str) -> dict:
     try:
         return json.loads(template)
     except Exception:
@@ -124,12 +126,12 @@ def parse_template(template):
                 raise
 
 
-def template_to_json(template):
+def template_to_json(template) -> str:
     template = parse_template(template)
     return json.dumps(template)
 
 
-def is_local_service_url(url):
+def is_local_service_url(url: str) -> bool:
     if not url:
         return False
     candidates = (
@@ -144,7 +146,7 @@ def is_local_service_url(url):
     return "localhost" in host
 
 
-def convert_s3_to_local_url(url):
+def convert_s3_to_local_url(url: str) -> str:
     url_parsed = urlparse(url)
     path = url_parsed.path
 

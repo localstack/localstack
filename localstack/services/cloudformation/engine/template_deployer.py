@@ -3,7 +3,7 @@ import json
 import logging
 import re
 import traceback
-from typing import Dict, List, Optional, Type
+from typing import Dict, List, Optional, Type, Union
 
 import botocore
 
@@ -17,8 +17,7 @@ from localstack.services.cloudformation.deployment_utils import (
     is_none_or_empty_value,
     remove_none_values,
 )
-from localstack.services.cloudformation.engine import template_preparer
-from localstack.services.cloudformation.engine.entities import StackChangeSet
+from localstack.services.cloudformation.engine.entities import Stack, StackChangeSet
 from localstack.services.cloudformation.service_models import (
     KEY_RESOURCE_STATE,
     DependencyNotYetSatisfied,
@@ -440,8 +439,9 @@ def resolve_refs_recursively(stack, value):
 
 
 @prevent_stack_overflow(match_parameters=True)
-# TODO: move Stack model into separate file and add type hints here
-def _resolve_refs_recursively(stack, value):
+def _resolve_refs_recursively(
+    stack: Union[Stack, "TemplateDeployer"], value: dict | list | str | bytes | None
+):
     if isinstance(value, dict):
         keys_list = list(value.keys())
         stripped_fn_lower = keys_list[0].lower().split("::")[-1] if len(keys_list) == 1 else None
@@ -643,19 +643,7 @@ def evaluate_resource_condition(stack, resource):
     return True
 
 
-def get_stack_parameter(stack_name, parameter):
-    try:
-        client = aws_stack.connect_to_service("cloudformation")
-        stack = client.describe_stacks(StackName=stack_name)["Stacks"]
-    except Exception:
-        return None
-    stack = stack and stack[0]
-    if not stack:
-        return None
-    result = [p["ParameterValue"] for p in stack["Parameters"] if p["ParameterKey"] == parameter]
-    return (result or [None])[0]
-
-
+# FIXME: rework
 def update_resource(resource_id, stack):
     resources = stack.resources
     stack_name = stack.stack_name
@@ -739,21 +727,7 @@ def dump_resource_as_json(resource: Dict) -> str:
     return str(run_safe(lambda: json.dumps(json_safe(resource))) or resource)
 
 
-# TODO remove this method
-def prepare_template_body(req_data):
-    return template_preparer.prepare_template_body(req_data)
-
-
-def deploy_resource(stack, resource_id):
-    result = execute_resource_action(resource_id, stack, ACTION_CREATE)
-    return result
-
-
-def delete_resource(stack, resource_id):
-    return execute_resource_action(resource_id, stack, ACTION_DELETE)
-
-
-def execute_resource_action(resource_id: str, stack, action_name: str):
+def execute_resource_action(resource_id: str, stack: "TemplateDeployer", action_name: str):
     stack_name = stack.stack_name
     resources = stack.resources
 
@@ -1032,7 +1006,7 @@ class TemplateDeployer:
             self.stack.set_stack_status("CREATE_FAILED")
             raise
 
-    def apply_change_set(self, change_set):
+    def apply_change_set(self, change_set: StackChangeSet):
         action = (
             "UPDATE"
             if change_set.stack.status in {"CREATE_COMPLETE", "UPDATE_COMPLETE"}
@@ -1075,7 +1049,7 @@ class TemplateDeployer:
         for resource_id, resource in resources.items():
             # TODO: cache condition value in resource details on deployment and use cached value here
             if evaluate_resource_condition(self, resource):
-                delete_resource(self, resource_id)
+                execute_resource_action(resource_id, self, ACTION_DELETE)
                 self.stack.set_resource_status(resource_id, "DELETE_COMPLETE")
         # update status
         self.stack.set_stack_status("DELETE_COMPLETE")
@@ -1295,16 +1269,15 @@ class TemplateDeployer:
         #   Change Set Executions.
         old_stack.metadata["Parameters"] = [v for v in parameters.values() if v]
 
-    # TODO: fix circular import with provider.py when importing Stack here
     def construct_changes(
         self,
         existing_stack,
         new_stack,
         # TODO: remove initialize argument from here, and determine action based on resource status
-        initialize=False,
+        initialize: Optional[bool] = False,
         change_set_id=None,
-        append_to_changeset=False,
-        filter_unchanged_resources=False,
+        append_to_changeset: Optional[bool] = False,
+        filter_unchanged_resources: Optional[bool] = False,
     ):
         old_resources = existing_stack.template["Resources"]
         new_resources = new_stack.template["Resources"]
@@ -1334,11 +1307,11 @@ class TemplateDeployer:
 
     def apply_changes(
         self,
-        existing_stack,
-        new_stack,
-        change_set_id=None,
-        initialize=False,
-        action=None,
+        existing_stack: Stack,
+        new_stack: StackChangeSet,
+        change_set_id: Optional[str] = None,
+        initialize: Optional[bool] = False,
+        action: Optional[str] = None,
     ):
         old_resources = existing_stack.template["Resources"]
         new_resources = new_stack.template["Resources"]
@@ -1537,9 +1510,9 @@ class TemplateDeployer:
         # execute resource action
         result = None
         if action == "Add" or is_deployed is False:
-            result = deploy_resource(self, resource_id)
+            result = execute_resource_action(resource_id, self, ACTION_CREATE)
         elif action == "Remove":
-            result = delete_resource(self, resource_id)
+            result = execute_resource_action(resource_id, self, ACTION_DELETE)
         elif action == "Modify":
             result = update_resource(resource_id, stack=stack)
 
