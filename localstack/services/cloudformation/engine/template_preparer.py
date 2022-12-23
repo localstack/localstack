@@ -122,7 +122,7 @@ def parse_template(template: str) -> dict:
                 raise
 
 
-def template_to_json(template) -> str:
+def template_to_json(template: str) -> str:
     template = parse_template(template)
     return json.dumps(template)
 

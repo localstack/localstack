@@ -1,4 +1,5 @@
 import logging
+from typing import Optional, TypedDict
 
 from localstack import config
 from localstack.utils.aws import aws_stack
@@ -24,6 +25,11 @@ class DependencyNotYetSatisfied(Exception):
         self.resource_ids = resource_ids
 
 
+class ResourceJson(TypedDict):
+    Type: str
+    Properties: dict
+
+
 class GenericBaseModel:
     """Abstract base class representing a resource model class in LocalStack.
     This class keeps references to a combination of (1) the CF resource
@@ -34,7 +40,7 @@ class GenericBaseModel:
     e.g., fetching the latest deployment state, getting the resource name, etc.
     """
 
-    def __init__(self, resource_json, region_name=None, **params):
+    def __init__(self, resource_json: dict, region_name: Optional[str] = None, **params):
         # self.stack_name = stack_name # TODO: add stack name to params
         self.region_name = region_name or aws_stack.get_region()
         self.resource_json = resource_json
