@@ -18,11 +18,13 @@ from localstack.services.cloudformation.deployment_utils import (
     remove_none_values,
 )
 from localstack.services.cloudformation.engine import template_preparer
+from localstack.services.cloudformation.engine.entities import StackChangeSet
 from localstack.services.cloudformation.service_models import (
     KEY_RESOURCE_STATE,
     DependencyNotYetSatisfied,
     GenericBaseModel,
 )
+from localstack.services.cloudformation.stores import exports_map
 from localstack.utils.aws import aws_stack
 from localstack.utils.collections import merge_recursive
 from localstack.utils.functions import prevent_stack_overflow, run_safe
@@ -80,17 +82,6 @@ def lambda_get_params():
 
 # maps resource types to functions and parameters for creation
 RESOURCE_TO_FUNCTION = {}
-
-
-# ----------------
-# UTILITY METHODS
-# ----------------
-
-
-def find_stack(stack_name):
-    from localstack.services.cloudformation.provider import find_stack as api_find_stack
-
-    return api_find_stack(stack_name)
 
 
 # ---------------------
@@ -546,13 +537,14 @@ def _resolve_refs_recursively(stack, value):
 
         if stripped_fn_lower == "importvalue":
             import_value_key = resolve_refs_recursively(stack, value[keys_list[0]])
-            stack_export = stack.exports_map.get(import_value_key) or {}
+            exports = exports_map()
+            stack_export = exports.get(import_value_key) or {}
             if not stack_export.get("Value"):
                 LOG.info(
                     'Unable to find export "%s" in stack "%s", existing export names: %s',
                     import_value_key,
                     stack.stack_name,
-                    list(stack.exports_map.keys()),
+                    list(exports.keys()),
                 )
                 return None
             return stack_export["Value"]
@@ -976,7 +968,9 @@ def get_action_name_for_resource_change(res_change: str) -> str:
 
 
 # TODO: this shouldn't be called for stack parameters
-def determine_resource_physical_id(resource_id, stack=None, attribute=None):
+def determine_resource_physical_id(resource_id, stack=None, attribute: Optional[str] = None):
+    assert resource_id and isinstance(resource_id, str)
+
     resources = stack.resources
     stack_name = stack.stack_name
     resource = resources.get(resource_id, {})
@@ -1340,8 +1334,6 @@ class TemplateDeployer:
         append_to_changeset=False,
         filter_unchanged_resources=False,
     ):
-        from localstack.services.cloudformation.provider import StackChangeSet
-
         old_resources = existing_stack.template["Resources"]
         new_resources = new_stack.template["Resources"]
         deletes = [val for key, val in old_resources.items() if key not in new_resources]
@@ -1414,8 +1406,6 @@ class TemplateDeployer:
         )
 
     def apply_changes_in_loop(self, changes, stack, action=None, new_stack=None):
-        from localstack.services.cloudformation.provider import StackChangeSet
-
         def _run(*args):
             try:
                 self.do_apply_changes_in_loop(changes, stack)
@@ -1518,6 +1508,9 @@ class TemplateDeployer:
         for delete in deletes:
             stack.template["Resources"].pop(delete["ResourceChange"]["LogicalResourceId"], None)
 
+        # resolve outputs
+        stack.resolved_outputs = resolve_outputs(stack)
+
         return changes_done
 
     def prepare_should_deploy_change(self, resource_id, change, stack, new_resources):
@@ -1583,3 +1576,27 @@ class TemplateDeployer:
         self.update_resource_details(resource_id, result, stack=stack, action=stack_action)
 
         return result
+
+
+# FIXME: resolve_refs_recursively should not be needed, the resources themselves should have those values available already
+def resolve_outputs(stack) -> List[Dict]:
+    result = []
+    for k, details in stack.outputs.items():
+        value = None
+        try:
+            resolve_refs_recursively(stack, details)
+            value = details["Value"]
+        except Exception as e:
+            LOG.debug("Unable to resolve references in stack outputs: %s - %s", details, e)
+        exports = details.get("Export") or {}
+        export = exports.get("Name")
+        export = resolve_refs_recursively(stack, export)
+        description = details.get("Description")
+        entry = {
+            "OutputKey": k,
+            "OutputValue": value,
+            "Description": description,
+            "ExportName": export,
+        }
+        result.append(entry)
+    return result

@@ -83,7 +83,8 @@ def send_event_to_target(
                         "EventBusName": eventbus_name,
                         "Source": event.get("source"),
                         "DetailType": event.get("detail-type"),
-                        "Detail": event.get("detail"),
+                        "Detail": json.dumps(event.get("detail", {})),
+                        "Resources": event.get("resources", []),
                     }
                 ]
             )

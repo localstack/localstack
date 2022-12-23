@@ -1539,6 +1539,32 @@ class TestSqsProvider:
         assert messages[0]["MD5OfMessageAttributes"] == result_send["MD5OfMessageAttributes"]
 
     @pytest.mark.aws_validated
+    def test_send_message_with_binary_attributes(self, sqs_client, sqs_create_queue, snapshot):
+        # Old name: test_send_message_attributes
+        queue_name = f"queue-{short_uid()}"
+        queue_url = sqs_create_queue(QueueName=queue_name)
+
+        attributes = {
+            "attr1": {
+                "BinaryValue": b"traceparent\x1e00-774062d6c37081a5a0b9b5b88e30627c-2d2482211f6489da-01",
+                "DataType": "Binary",
+            },
+        }
+        result_send = sqs_client.send_message(
+            QueueUrl=queue_url, MessageBody="test", MessageAttributes=attributes
+        )
+
+        result_receive = sqs_client.receive_message(
+            QueueUrl=queue_url, MessageAttributeNames=["All"]
+        )
+        messages = result_receive["Messages"]
+        snapshot.match("binary-attrs-msg", result_receive)
+
+        assert messages[0]["MessageId"] == result_send["MessageId"]
+        assert messages[0]["MessageAttributes"] == attributes
+        assert messages[0]["MD5OfMessageAttributes"] == result_send["MD5OfMessageAttributes"]
+
+    @pytest.mark.aws_validated
     def test_sent_message_retains_attributes_after_receive(self, sqs_client, sqs_create_queue):
         # Old name: test_send_message_retains_attributes
         queue_name = f"queue-{short_uid()}"

@@ -6,8 +6,8 @@ from localstack.services.cloudformation.deployment_utils import (
     remove_none_values,
 )
 from localstack.services.cloudformation.engine import template_deployer, template_preparer
+from localstack.services.cloudformation.engine.entities import Stack
 from localstack.services.cloudformation.models.stepfunctions import _apply_substitutions
-from localstack.services.cloudformation.provider import Stack
 
 
 def test_resolve_references():
