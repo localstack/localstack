@@ -602,6 +602,7 @@ def resolve_placeholders_in_string(result, stack):
         if len(parts) == 1 and parts[0] in resources:
             resource_json = resources[parts[0]]
             resource_type = get_resource_type(resource_json)
+            # FIXME: ???
             result = extract_resource_attribute(
                 resource_type,
                 resource_json.get(KEY_RESOURCE_STATE, {}),
@@ -798,6 +799,7 @@ def configure_resource_via_sdk(stack, resource_id, resource_type, func_details, 
     resource_state = resource.get(KEY_RESOURCE_STATE, {})
 
     if callable(params):
+        # resolve parameter map via custom function
         params = params(
             resource_props,
             stack_name=stack_name,
@@ -866,6 +868,7 @@ def configure_resource_via_sdk(stack, resource_id, resource_type, func_details, 
         if param_value is not None:
             params[param_key] = resolve_refs_recursively(stack, param_value)
 
+    # FIXME: move this to a single place after template processing is finished
     # convert any moto account IDs (123456789012) in ARNs to our format (000000000000)
     params = fix_account_id_in_arns(params)
     # convert data types (e.g., boolean strings to bool)
@@ -914,20 +917,17 @@ def get_action_name_for_resource_change(res_change: str) -> str:
 def determine_resource_physical_id(resource_id, stack=None, attribute: Optional[str] = None):
     assert resource_id and isinstance(resource_id, str)
 
-    resources = stack.resources
-    stack_name = stack.stack_name
-    resource = resources.get(resource_id, {})
+    resource = stack.resources.get(resource_id)
     if not resource:
         return
     resource_type = get_resource_type(resource)
-    resource_type = re.sub("^AWS::", "", resource_type)
 
     # determine result from resource class
-    canonical_type = canonical_resource_type(resource_type)
+    canonical_type = canonical_resource_type(resource_type)  # FIXME: remove
     resource_class = RESOURCE_MODELS.get(canonical_type)
     if resource_class:
         resource_inst = resource_class(resource)
-        resource_inst.fetch_state_if_missing(stack_name=stack_name, resources=resources)
+        resource_inst.fetch_state_if_missing(stack_name=stack.stack_name, resources=stack.resources)
         result = resource_inst.get_physical_resource_id(attribute=attribute)
         if result:
             return result
@@ -1129,13 +1129,6 @@ class TemplateDeployer:
     # -----------------
     # DEPLOYMENT UTILS
     # -----------------
-
-    def add_default_resource_props(self, resources=None):
-        resources = resources or self.resources
-        for resource_id, resource in resources.items():
-            add_default_resource_props(
-                resource, self.stack_name, resource_id=resource_id, existing_resources=resources
-            )
 
     def init_resource_status(self, resources=None, stack=None, action="CREATE"):
         resources = resources or self.resources
