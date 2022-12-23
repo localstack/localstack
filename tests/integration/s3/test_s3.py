@@ -500,7 +500,6 @@ class TestS3:
             "$..HTTPHeaders.access-control-expose-headers",
             "$..HTTPHeaders.connection",
             "$..HTTPHeaders.content-md5",
-            "$..HTTPHeaders.x-amz-sdk-checksum-algorithm",
             "$..HTTPHeaders.x-amz-version-id",
             "$..HTTPHeaders.x-amzn-requestid",
             "$..HostId",
@@ -3939,12 +3938,6 @@ class TestS3Cors:
             "$..Last-Modified",
         ]
     )
-    @pytest.mark.skip_snapshot_verify(
-        condition=is_old_provider,
-        paths=[
-            "$..x-amz-sdk-checksum-algorithm",
-        ],
-    )
     def test_cors_with_allowed_origins(self, s3_client, s3_create_bucket, snapshot, monkeypatch):
         monkeypatch.setattr(config, "DISABLE_CUSTOM_CORS_S3", False)
         snapshot.add_transformer(self._get_cors_result_header_snapshot_transformer(snapshot))
@@ -4069,12 +4062,6 @@ class TestS3Cors:
             "$..Accept-Ranges",
             "$..raw-response-headers-2.Access-Control-Allow-Credentials",
         ]
-    )
-    @pytest.mark.skip_snapshot_verify(
-        condition=is_old_provider,
-        paths=[
-            "$..x-amz-sdk-checksum-algorithm",
-        ],
     )
     def test_cors_configurations(self, s3_client, s3_create_bucket, monkeypatch, snapshot):
         monkeypatch.setattr(config, "DISABLE_CUSTOM_CORS_S3", False)
