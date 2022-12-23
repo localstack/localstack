@@ -4,6 +4,7 @@ import os
 
 import boto3
 import yaml
+from moto.cloudformation.utils import yaml_tag_constructor
 from samtranslator.translator.transform import transform as transform_sam
 
 from localstack.services.cloudformation.engine.policy_loader import create_policy_loader
@@ -24,6 +25,8 @@ def parse_template(template: str) -> dict:
     try:
         return json.loads(template)
     except Exception:
+        # FIXME: removing this still breaks all short-hand intrinsic functions :|
+        yaml.add_multi_constructor("", yaml_tag_constructor, Loader=NoDatesSafeLoader)
         try:
             return clone_safe(yaml.safe_load(template))
         except Exception:
