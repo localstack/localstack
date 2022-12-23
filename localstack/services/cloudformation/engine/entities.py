@@ -340,17 +340,6 @@ class Stack:
         """Returns the (mutable) dict of stack outputs."""
         return self.template.setdefault("Outputs", {})
 
-    # FIXME: unused?
-    # @property
-    # def nested_stacks(self):
-    #     """Return a list of nested stacks that have been deployed by this stack."""
-    #     result = [
-    #         r for r in self.template_resources.values() if r["Type"] == "AWS::CloudFormation::Stack"
-    #     ]
-    #     result = [find_stack(r["Properties"].get("StackName")) for r in result]
-    #     result = [r for r in result if r]
-    #     return result
-
     @property
     def status(self):
         return self.metadata["StackStatus"]
