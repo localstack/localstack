@@ -454,6 +454,7 @@ class StepFunctionIntegration(BackendIntegration):
         )
 
         try:
+            # call method on step function client
             method = getattr(client, method_name)
         except AttributeError:
             msg = f"Invalid step function action: {method_name}"

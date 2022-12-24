@@ -45,6 +45,7 @@ from localstack.utils.aws import resources as resource_util
 from localstack.utils.common import clone, get_free_tcp_port, json_safe, load_file
 from localstack.utils.common import safe_requests as requests
 from localstack.utils.common import select_attributes, short_uid, to_str
+from localstack.utils.sync import retry
 from tests.integration.apigateway_fixtures import (
     _client,
     api_invoke_url,
@@ -76,6 +77,22 @@ from .awslambda.test_lambda import (
     TEST_LAMBDA_PYTHON_ECHO,
 )
 
+STEPFUNCTIONS_ASSUME_ROLE_POLICY = {
+    "Version": "2012-10-17",
+    "Statement": [
+        {
+            "Effect": "Allow",
+            "Principal": {"Service": "states.amazonaws.com"},
+            "Action": "sts:AssumeRole",
+        }
+    ],
+}
+
+APIGATEWAY_STEPFUNCTIONS_POLICY = {
+    "Version": "2012-10-17",
+    "Statement": [{"Effect": "Allow", "Action": "states:*", "Resource": "*"}],
+}
+
 APIGATEWAY_ASSUME_ROLE_POLICY = {
     "Statement": {
         "Sid": "",
@@ -86,7 +103,7 @@ APIGATEWAY_ASSUME_ROLE_POLICY = {
 }
 APIGATEWAY_LAMBDA_POLICY = {
     "Version": "2012-10-17",
-    "Statement": [{"Effect": "Allow", "Action": "lambda:InvokeFunction", "Resource": "*"}],
+    "Statement": [{"Effect": "Allow", "Action": "lambda:*", "Resource": "*"}],
 }
 
 THIS_FOLDER = os.path.dirname(os.path.realpath(__file__))
@@ -1476,11 +1493,41 @@ class TestAPIGateway:
         assert "/pets" in paths
         assert "/pets/{petId}" in paths
 
-    def test_step_function_integrations(
-        self, create_rest_apigw, apigateway_client, create_lambda_function
+    @pytest.mark.aws_validated
+    @pytest.mark.parametrize("action", ["StartExecution", "DeleteStateMachine"])
+    def test_apigateway_with_step_function_integration(
+        self,
+        action,
+        apigateway_client,
+        sts_client,
+        create_lambda_function,
+        create_rest_apigw,
+        stepfunctions_client,
+        create_iam_role_with_policy,
     ):
-        sfn_client = aws_stack.create_external_boto_client("stepfunctions")
-        lambda_client = aws_stack.create_external_boto_client("lambda")
+        region_name = apigateway_client._client_config.region_name
+        aws_account_id = sts_client.get_caller_identity()["Account"]
+
+        # create lambda
+        fn_name = f"lambda-sfn-apigw-{short_uid()}"
+        create_lambda_function(
+            handler_file=TEST_LAMBDA_PYTHON_ECHO,
+            func_name=fn_name,
+            runtime=Runtime.python3_9,
+        )
+        lambda_arn = arns.lambda_function_arn(
+            function_name=fn_name, account_id=aws_account_id, region_name=region_name
+        )
+
+        # create state machine and permissions for step function to invoke lambda
+        role_name = f"sfn_role-{short_uid()}"
+        role_arn = arns.role_arn(role_name, account_id=aws_account_id)
+        create_iam_role_with_policy(
+            RoleName=role_name,
+            PolicyName=f"sfn-role-policy-{short_uid()}",
+            RoleDefinition=STEPFUNCTIONS_ASSUME_ROLE_POLICY,
+            PolicyDefinition=APIGATEWAY_LAMBDA_POLICY,
+        )
 
         state_machine_name = f"test-{short_uid()}"
         state_machine_def = {
@@ -1490,144 +1537,115 @@ class TestAPIGateway:
                 "step1": {"Type": "Task", "Resource": "__tbd__", "End": True},
             },
         }
-
-        # create state machine
-        fn_name = f"sfn-apigw-{short_uid()}"
-        create_lambda_function(
-            handler_file=TEST_LAMBDA_PYTHON_ECHO,
-            func_name=fn_name,
-            runtime=Runtime.python3_9,
-        )
-        role_arn = arns.role_arn("sfn_role")
-
-        # create state machine definition
-        definition = clone(state_machine_def)
-        lambda_arn_1 = arns.lambda_function_arn(fn_name)
-        definition["States"]["step1"]["Resource"] = lambda_arn_1
-        definition = json.dumps(definition)
-
-        # create state machine
-        result = sfn_client.create_state_machine(
-            name=state_machine_name, definition=definition, roleArn=role_arn
+        state_machine_def["States"]["step1"]["Resource"] = lambda_arn
+        result = stepfunctions_client.create_state_machine(
+            name=state_machine_name,
+            definition=json.dumps(state_machine_def),
+            roleArn=role_arn,
+            type="EXPRESS",
         )
         sm_arn = result["stateMachineArn"]
 
-        # create REST API and method
-        rest_api, _, _ = create_rest_apigw(name="test", description="test")
-        resources = apigateway_client.get_resources(restApiId=rest_api)
-        root_resource_id = resources["items"][0]["id"]
+        # create REST API with integrations
+        rest_api, _, root_id = create_rest_apigw(
+            name=f"test-{short_uid()}", description="test-step-function-integration"
+        )
         apigateway_client.put_method(
             restApiId=rest_api,
-            resourceId=root_resource_id,
+            resourceId=root_id,
             httpMethod="POST",
             authorizationType="NONE",
         )
+        create_rest_api_method_response(
+            apigateway_client,
+            restApiId=rest_api,
+            resourceId=root_id,
+            httpMethod="POST",
+            statusCode="200",
+        )
 
-        def _prepare_method_integration(
-            integr_kwargs=None, resp_templates=None, action="StartExecution", overwrite=False
-        ):
-            if integr_kwargs is None:
-                integr_kwargs = {}
-            if resp_templates is None:
-                resp_templates = {}
-            if overwrite:
-                apigateway_client.delete_integration(
-                    restApiId=rest_api,
-                    resourceId=resources["items"][0]["id"],
-                    httpMethod="POST",
-                )
-            uri = f"arn:aws:apigateway:{aws_stack.get_region()}:states:action/{action}"
+        # give permission to api gateway to invoke step function
+        uri = f"arn:aws:apigateway:{region_name}:states:action/{action}"
+        assume_role_arn = create_iam_role_with_policy(
+            RoleName=f"role-apigw-{short_uid()}",
+            PolicyName=f"policy-apigw-{short_uid()}",
+            RoleDefinition=APIGATEWAY_ASSUME_ROLE_POLICY,
+            PolicyDefinition=APIGATEWAY_STEPFUNCTIONS_POLICY,
+        )
+
+        def _prepare_integration(request_template=None, response_template=None):
             apigateway_client.put_integration(
                 restApiId=rest_api,
-                resourceId=root_resource_id,
+                resourceId=root_id,
                 httpMethod="POST",
                 integrationHttpMethod="POST",
                 type="AWS",
                 uri=uri,
-                **integr_kwargs,
+                credentials=assume_role_arn,
+                requestTemplates=request_template,
             )
-            if resp_templates:
-                apigateway_client.put_integration_response(
-                    restApiId=rest_api,
-                    resourceId=root_resource_id,
-                    selectionPattern="",
-                    responseTemplates=resp_templates,
-                    httpMethod="POST",
-                    statusCode="200",
-                )
 
-        # STEP 1: test integration with request template
+            apigateway_client.put_integration_response(
+                restApiId=rest_api,
+                resourceId=root_id,
+                selectionPattern="",
+                responseTemplates=response_template,
+                httpMethod="POST",
+                statusCode="200",
+            )
 
-        _prepare_method_integration(
-            integr_kwargs={
-                "requestTemplates": {
+        test_data = {"test": "test-value"}
+        url = api_invoke_url(api_id=rest_api, stage="dev", path="/")
+        match action:
+            case "StartExecution":
+                req_template = {
                     "application/json": """
-                    #set($data = $util.escapeJavaScript($input.json('$')))
-                    {"input": $data, "stateMachineArn": "%s"}
-                    """
+                            #set($data = $util.escapeJavaScript($input.json('$')))
+                            {"input": "$data", "stateMachineArn": "%s"}
+                        """
                     % sm_arn
                 }
-            }
-        )
+                _prepare_integration(req_template, response_template={})
+                apigateway_client.create_deployment(restApiId=rest_api, stageName="dev")
+                # invoke stepfunction via API GW, assert results
 
-        # invoke stepfunction via API GW, assert results
-        apigateway_client.create_deployment(restApiId=rest_api, stageName="dev")
-        url = path_based_url(api_id=rest_api, stage_name="dev", path="/")
-        test_data = {"test": "test-value"}
-        resp = requests.post(url, data=json.dumps(test_data))
-        assert 200 == resp.status_code
-        assert "executionArn" in resp.content.decode()
-        assert "startDate" in resp.content.decode()
+                def _invoke_start_step_function():
+                    resp = requests.post(url, data=json.dumps(test_data))
+                    assert resp.ok
+                    content = json.loads(to_str(resp.content.decode()))
+                    assert "executionArn" in content
+                    assert "startDate" in content
 
-        # STEP 2: test integration without request template
+                retry(_invoke_start_step_function, retries=15, sleep=0.8)
 
-        _prepare_method_integration(overwrite=True)
+            case "StartSyncExecution":
+                resp_template = {APPLICATION_JSON: "$input.path('$.output')"}
+                _prepare_integration({}, resp_template)
+                apigateway_client.create_deployment(restApiId=rest_api, stageName="dev")
+                input_data = {
+                    "input": json.dumps(test_data),
+                    "name": "MyExecution",
+                    "stateMachineArn": sm_arn,
+                }
 
-        test_data_1 = {
-            "input": json.dumps(test_data),
-            "name": "MyExecution",
-            "stateMachineArn": sm_arn,
-        }
+                def _invoke_start_sync_step_function():
+                    input_data["name"] += "1"
+                    resp = requests.post(url, data=json.dumps(input_data))
+                    assert resp.ok
+                    content = json.loads(to_str(resp.content.decode()))
+                    assert test_data == content
 
-        # invoke stepfunction via API GW, assert results
-        resp = requests.post(url, data=json.dumps(test_data_1))
-        assert 200 == resp.status_code
-        assert "executionArn" in resp.content.decode()
-        assert "startDate" in resp.content.decode()
+                retry(_invoke_start_sync_step_function, retries=15, sleep=0.8)
 
-        # STEP 3: test integration with synchronous execution
+            case "DeleteStateMachine":
+                _prepare_integration({}, {})
+                apigateway_client.create_deployment(restApiId=rest_api, stageName="dev")
 
-        _prepare_method_integration(overwrite=True, action="StartSyncExecution")
+                def _invoke_step_function():
+                    resp = requests.post(url, data=json.dumps({"stateMachineArn": sm_arn}))
+                    assert resp.ok
 
-        # invoke stepfunction via API GW, assert results
-        test_data_1["name"] += "1"
-        resp = requests.post(url, data=json.dumps(test_data_1))
-        assert 200 == resp.status_code
-        content = json.loads(to_str(resp.content.decode()))
-        assert "SUCCEEDED" == content.get("status")
-        assert test_data == json.loads(content.get("output"))
-
-        # STEP 4: test integration with synchronous execution and response templates
-
-        resp_templates = {APPLICATION_JSON: "$input.path('$.output')"}
-        _prepare_method_integration(
-            resp_templates=resp_templates, overwrite=True, action="StartSyncExecution"
-        )
-
-        # invoke stepfunction via API GW, assert results
-        test_data_1["name"] += "2"
-        resp = requests.post(url, data=json.dumps(test_data_1))
-        assert 200 == resp.status_code
-        assert test_data == json.loads(to_str(resp.content.decode()))
-
-        _prepare_method_integration(overwrite=True, action="DeleteStateMachine")
-
-        # Remove state machine with API GW
-        resp = requests.post(url, data=json.dumps({"stateMachineArn": sm_arn}))
-        assert 200 == resp.status_code
-
-        # Clean up
-        lambda_client.delete_function(FunctionName=fn_name)
+                retry(_invoke_step_function, retries=15, sleep=0.8)
 
     def test_api_gateway_http_integration_with_path_request_parameter(
         self, apigateway_client, create_rest_apigw
