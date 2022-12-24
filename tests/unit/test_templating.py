@@ -151,7 +151,7 @@ class TestMessageTransformationApiGateway:
         result = ApiGatewayVtlTemplate().render_vtl(template, variables)
         result = re.sub(r"\s+", " ", result).strip()
         result = json.loads(result)
-        assert result == {"p0": True, "p1": {"test": "123"}, "p2": {"foo": "bar", "foo2": "False"}}
+        assert result == {"p0": True, "p1": {"test": "123"}, "p2": {"foo": "bar", "foo2": "false"}}
 
     def test_array_size(self):
         template = "#set($list = $input.path('$.records')) $list.size()"

@@ -10,7 +10,6 @@ from localstack.constants import APPLICATION_JSON
 from localstack.services.apigateway.context import ApiInvocationContext
 from localstack.utils.aws.templating import VelocityUtil, VtlTemplate
 from localstack.utils.json import extract_jsonpath, json_safe
-from localstack.utils.numbers import is_number
 from localstack.utils.strings import to_str
 
 LOG = logging.getLogger(__name__)
@@ -86,19 +85,22 @@ class VelocityUtilApiGateway(VelocityUtil):
     def urlDecode(self, s):
         return unquote_plus(s)
 
-    def escapeJavaScript(self, s):
+    def escapeJavaScript(self, obj: Any) -> str:
         """
-        Escapes a string that will turn any regular single quotes (') into escaped ones (\').
+        Converts the given object to a string and escapes any regular single quotes (') into escaped ones (\').
         JSON dumps will escape the single quotes.
         https://docs.aws.amazon.com/apigateway/latest/developerguide/api-gateway-mapping-template-reference.html
         """
-        if not s:
-            return s
-
-        # empty string escapes to empty object
-        if isinstance(s, str) and len(s.strip()) == 0:
-            return "{}"
-        return s if is_number(s) else json.dumps(s)[1:-1]
+        if obj is None:
+            return "null"
+        if isinstance(obj, str):
+            # empty string escapes to empty object
+            if len(obj.strip()) == 0:
+                return "{}"
+            return json.dumps(obj)[1:-1]
+        if obj in (True, False):
+            return str(obj).lower()
+        return str(obj)
 
 
 class VelocityInput:
