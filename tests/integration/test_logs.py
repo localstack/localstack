@@ -88,17 +88,56 @@ class TestCloudWatchLogs:
         )
         assert len(log_groups_after) == len(log_groups_before)
 
-    def test_list_tags_log_group(self, logs_client):
+    @pytest.mark.aws_validated
+    def test_list_tags_log_group(self, logs_client, snapshot):
         test_name = f"test-log-group-{short_uid()}"
-        logs_client.create_log_group(logGroupName=test_name, tags={"env": "testing1"})
+        try:
+            logs_client.create_log_group(logGroupName=test_name, tags={"env": "testing1"})
+            response = logs_client.list_tags_log_group(logGroupName=test_name)
+            snapshot.match("list_tags_after_create_log_group", response)
 
-        response = logs_client.list_tags_log_group(logGroupName=test_name)
-        assert response["ResponseMetadata"]["HTTPStatusCode"] == 200
-        assert "tags" in response
-        assert response["tags"]["env"] == "testing1"
+            # get group arn, to use the tag-resource api
+            log_group_arn = logs_client.describe_log_groups(logGroupNamePrefix=test_name)[
+                "logGroups"
+            ][0]["arn"].rstrip(":*")
 
-        # clean up
-        logs_client.delete_log_group(logGroupName=test_name)
+            # add a tag - new api
+            logs_client.tag_resource(
+                resourceArn=log_group_arn, tags={"test1": "val1", "test2": "val2"}
+            )
+
+            response = logs_client.list_tags_log_group(logGroupName=test_name)
+            response_2 = logs_client.list_tags_for_resource(resourceArn=log_group_arn)
+
+            snapshot.match("list_tags_log_group_after_tag_resource", response)
+            snapshot.match("list_tags_for_resource_after_tag_resource", response_2)
+            # values should be the same
+            assert response["tags"] == response_2["tags"]
+
+            # add a tag - old api
+            logs_client.tag_log_group(logGroupName=test_name, tags={"test3": "val3"})
+
+            response = logs_client.list_tags_log_group(logGroupName=test_name)
+            response_2 = logs_client.list_tags_for_resource(resourceArn=log_group_arn)
+
+            snapshot.match("list_tags_log_group_after_tag_log_group", response)
+            snapshot.match("list_tags_for_resource_after_tag_log_group", response_2)
+            assert response["tags"] == response_2["tags"]
+
+            # untag - use both apis
+            logs_client.untag_log_group(logGroupName=test_name, tags=["test3"])
+            logs_client.untag_resource(resourceArn=log_group_arn, tagKeys=["env", "test1"])
+
+            response = logs_client.list_tags_log_group(logGroupName=test_name)
+            response_2 = logs_client.list_tags_for_resource(resourceArn=log_group_arn)
+            snapshot.match("list_tags_log_group_after_untag", response)
+            snapshot.match("list_tags_for_resource_after_untag", response_2)
+
+            assert response["tags"] == response_2["tags"]
+
+        finally:
+            # clean up
+            logs_client.delete_log_group(logGroupName=test_name)
 
     def test_create_and_delete_log_stream(self, logs_client, logs_log_group):
         test_name = f"test-log-stream-{short_uid()}"

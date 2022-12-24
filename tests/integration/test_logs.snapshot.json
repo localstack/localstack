@@ -64,5 +64,83 @@
         }
       ]
     }
+  },
+  "tests/integration/test_logs.py::TestCloudWatchLogs::test_list_tags_log_group": {
+    "recorded-date": "22-12-2022, 17:46:54",
+    "recorded-content": {
+      "list_tags_after_create_log_group": {
+        "tags": {
+          "env": "testing1"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "list_tags_log_group_after_tag_resource": {
+        "tags": {
+          "env": "testing1",
+          "test1": "val1",
+          "test2": "val2"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "list_tags_for_resource_after_tag_resource": {
+        "tags": {
+          "env": "testing1",
+          "test1": "val1",
+          "test2": "val2"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "list_tags_log_group_after_tag_log_group": {
+        "tags": {
+          "env": "testing1",
+          "test1": "val1",
+          "test2": "val2",
+          "test3": "val3"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "list_tags_for_resource_after_tag_log_group": {
+        "tags": {
+          "env": "testing1",
+          "test1": "val1",
+          "test2": "val2",
+          "test3": "val3"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "list_tags_log_group_after_untag": {
+        "tags": {
+          "test2": "val2"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "list_tags_for_resource_after_untag": {
+        "tags": {
+          "test2": "val2"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
   }
 }
