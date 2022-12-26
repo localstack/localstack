@@ -76,28 +76,22 @@ EMAILS_ENDPOINT = "/ses"
 _EMAILS_ENDPOINT_REGISTERED = False
 
 
-def save_for_retrospection(id: str, region: str, **kwargs: Dict[str, Any]):
-    """Save a message for retrospection.
-
-    The email is saved to filesystem and is also made accessible via a service endpoint.
-
-    kwargs should consist of following keys related to the email:
-    - Body
-    - Destinations
-    - RawData
-    - Source
-    - Subject
-    - Template
-    - TemplateData
+def save_for_retrospection(sent_email: SentEmail):
     """
+    Save a message for retrospection.
+
+    The contents of the email is saved to filesystem. It can also be accessed via a service endpoint.
+    """
+    message_id = sent_email["Id"]
     ses_dir = os.path.join(config.dirs.data or config.dirs.tmp, "ses")
-
     mkdir(ses_dir)
-    path = os.path.join(ses_dir, id + ".json")
 
-    email = {"Id": id, "Timestamp": timestamp(), "Region": region, **kwargs}
+    path = os.path.join(ses_dir, message_id + ".json")
 
-    EMAILS[id] = email
+    if not sent_email.get("Timestamp"):
+        sent_email["Timestamp"] = timestamp()
+
+    EMAILS[message_id] = sent_email
 
     def _serialize(obj):
         """JSON serializer for timestamps."""
@@ -106,7 +100,7 @@ def save_for_retrospection(id: str, region: str, **kwargs: Dict[str, Any]):
         return obj.__dict__
 
     with open(path, "w") as f:
-        f.write(json.dumps(email, default=_serialize))
+        f.write(json.dumps(sent_email, default=_serialize))
 
     LOGGER.debug("Email saved at: %s", path)
 
