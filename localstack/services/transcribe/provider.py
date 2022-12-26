@@ -55,6 +55,7 @@ LANGUAGE_MODELS = {
     "hi-IN": "vosk-model-small-hi-0.22",
     "ja-JP": "vosk-model-small-ja-0.22",
     "fa-IR": "vosk-model-small-fa-0.5",
+    "vi-VN": "vosk-model-small-vn-0.3",
     "zh-CN": "vosk-model-small-cn-0.3",
 }
 
