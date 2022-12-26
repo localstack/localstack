@@ -421,11 +421,10 @@ class SesProvider(SesApi, ServiceLifecycleHook):
                 LOGGER.warning("Source not specified. Rejecting message.")
                 raise MessageRejected()
 
-        destination = Destination(ToAddresses=destinations or [])
-        recipients = recipients_from_destination(destination)
+        destinations = destinations or []
 
         backend = get_ses_backend(context)
-        message = backend.send_raw_email(source, recipients, raw_data, context.region)
+        message = backend.send_raw_email(source, destinations, raw_data, context.region)
 
         emitter = SNSEmitter(context)
         for event_destination in backend.config_set_event_destination.values():
@@ -439,7 +438,7 @@ class SesProvider(SesApi, ServiceLifecycleHook):
             payload = SNSPayload(
                 message_id=response["MessageId"],
                 sender_email=source,
-                destination_addresses=recipients,
+                destination_addresses=destinations,
                 tags=tags,
             )
             emitter.emit_send_event(payload, sns_destination_arn)
@@ -450,7 +449,6 @@ class SesProvider(SesApi, ServiceLifecycleHook):
                 Id=message.id,
                 Region=context.region,
                 Source=source or message.source,
-                Destination=destination,
                 RawData=raw_data,
             )
         )
