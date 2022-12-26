@@ -28,7 +28,14 @@ class _HttpOperation(NamedTuple):
 
     @staticmethod
     def from_operation(op: OperationModel) -> "_HttpOperation":
-        uri = op.http.get("requestUri")
+        # botocore >= 1.28 might modify the internal model (specifically for S3).
+        # It will modify the request URI and set the original value at "authPath".
+        # Use authPath if set, otherwise use the regular requestUri.
+        if auth_path := op.http.get("authPath"):
+            uri = auth_path.rstrip("/")
+        else:
+            uri = op.http.get("requestUri")
+
         method = op.http.get("method")
         deprecated = op.deprecated
 

@@ -30,6 +30,8 @@ def _collect_operations() -> Tuple[ServiceModel, OperationModel]:
                 "chime-sdk-media-pipelines",
                 "chime-sdk-meetings",
                 "chime-sdk-messaging",
+                "chime-sdk-voice",
+                "codecatalyst",
                 "connect",
                 "connect-contact-lens",
                 "greengrassv2",
@@ -40,6 +42,7 @@ def _collect_operations() -> Tuple[ServiceModel, OperationModel]:
                 "kinesis-video-archived-media",
                 "kinesis-video-media",
                 "kinesis-video-signaling",
+                "kinesis-video-webrtc-storage",
                 "kinesisvideo",
                 "lex-models",
                 "lex-runtime",
@@ -51,9 +54,11 @@ def _collect_operations() -> Tuple[ServiceModel, OperationModel]:
                 "pinpoint-sms-voice",
                 "sagemaker-edge",
                 "sagemaker-featurestore-runtime",
+                "sagemaker-metrics",
                 "sms-voice",
                 "sso",
                 "sso-oidc",
+                "workdocs",
             ]:
                 yield pytest.param(
                     service,
@@ -164,7 +169,11 @@ def test_service_router_works_for_every_service(
         "auth_type": operation.auth_type,
     }
     request_args = _create_dummy_request_args(operation)
-    request_dict = client._convert_to_request_dict(request_args, operation, request_context)
+
+    # The endpoint URL is mandatory here, just set a dummy (doesn't _need_ to be localstack specific)
+    request_dict = client._convert_to_request_dict(
+        request_args, operation, "http://localhost.localstack.cloud", request_context
+    )
     request_object = create_request_object(request_dict)
     client._request_signer.sign(operation.name, request_object)
     request: Request = _botocore_request_to_localstack_request(request_object)

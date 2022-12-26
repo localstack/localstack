@@ -10,6 +10,7 @@ from localstack import config
 from localstack.aws.api.lambda_ import PackageType, Runtime
 from localstack.services.awslambda import hooks as lambda_hooks
 from localstack.services.awslambda.invocation.executor_endpoint import (
+    INVOCATION_PORT,
     ExecutorEndpoint,
     ServiceEndpoint,
 )
@@ -25,10 +26,12 @@ from localstack.services.awslambda.lambda_utils import (
 from localstack.services.awslambda.packages import awslambda_runtime_package
 from localstack.utils.container_utils.container_client import (
     ContainerConfiguration,
+    PortMappings,
     VolumeBind,
     VolumeMappings,
 )
 from localstack.utils.docker_utils import DOCKER_CLIENT as CONTAINER_CLIENT
+from localstack.utils.net import get_free_tcp_port
 from localstack.utils.strings import truncate
 
 LOG = logging.getLogger(__name__)
@@ -250,7 +253,11 @@ class DockerRuntimeExecutor(RuntimeExecutor):
 
         if not container_config.image_name:
             container_config.image_name = self.get_image()
-
+        if config.LAMBDA_DEV_PORT_EXPOSE:
+            self.executor_endpoint.container_port = get_free_tcp_port()
+            if container_config.ports is None:
+                container_config.ports = PortMappings()
+            container_config.ports.add(self.executor_endpoint.container_port, INVOCATION_PORT)
         CONTAINER_CLIENT.create_container_from_config(container_config)
         if (
             not config.LAMBDA_PREBUILD_IMAGES
@@ -268,6 +275,8 @@ class DockerRuntimeExecutor(RuntimeExecutor):
         self.ip = CONTAINER_CLIENT.get_container_ipv4_for_network(
             container_name_or_id=self.id, container_network=network
         )
+        if config.LAMBDA_DEV_PORT_EXPOSE:
+            self.ip = "127.0.0.1"
         self.executor_endpoint.container_address = self.ip
 
     def stop(self) -> None:

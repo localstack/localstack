@@ -5,7 +5,7 @@ DynamoDBLocal) from a service provider.
 from typing import Any, Callable, Mapping, Optional
 from urllib.parse import urlsplit
 
-from botocore.awsrequest import AWSPreparedRequest
+from botocore.awsrequest import AWSPreparedRequest, prepare_request_dict
 from botocore.config import Config as BotoConfig
 from werkzeug.datastructures import Headers
 
@@ -164,9 +164,27 @@ def create_aws_request_context(
         "has_streaming_input": operation.has_streaming_input,
         "auth_type": operation.auth_type,
     }
-    request_dict = client._convert_to_request_dict(parameters, operation, context=request_context)
-    aws_request = client._endpoint.create_request(request_dict, operation)
 
+    # The endpoint URL is mandatory here, set a dummy if not given (doesn't _need_ to be localstack specific)
+    if not endpoint_url:
+        endpoint_url = "http://localhost.localstack.cloud"
+    request_dict = client._convert_to_request_dict(
+        parameters, operation, endpoint_url, context=request_context
+    )
+
+    if auth_path := request_dict.get("auth_path"):
+        # botocore >= 1.28 might modify the url path of the request dict (specifically for S3).
+        # It will then set the original url path as "auth_path". If the auth_path is set, we reset the url_path.
+        # Afterwards the request needs to be prepared again.
+        request_dict["url_path"] = auth_path
+        prepare_request_dict(
+            request_dict,
+            endpoint_url=endpoint_url,
+            user_agent=client._client_config.user_agent,
+            context=request_context,
+        )
+
+    aws_request: AWSPreparedRequest = client._endpoint.create_request(request_dict, operation)
     context = RequestContext()
     context.service = service
     context.operation = operation
