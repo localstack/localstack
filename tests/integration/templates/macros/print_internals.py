@@ -7,8 +7,6 @@ def handler(event, context):
     fragment["Resources"]["Parameter"]["Properties"]["Value"] = json.dumps(
         {
             "Event": event,
-            # TODO find a way to print context class
-            # "Context": vars(context)
         }
     )
 
