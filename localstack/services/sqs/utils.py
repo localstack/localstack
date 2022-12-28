@@ -30,15 +30,23 @@ def parse_queue_url(queue_url: str) -> Tuple[Optional[str], str, str]:
     :return: region (may be None), account_id, queue_name
     """
     url = urlparse(queue_url.rstrip("/"))
-    path_parts = url.path.split("/")
+    path_parts = url.path.lstrip("/").split("/")
     domain_parts = url.netloc.split(".")
+
+    if len(path_parts) != 2 and len(path_parts) != 4:
+        raise ValueError(f"Not a valid queue URL: {queue_url}")
 
     account_id, queue_name = path_parts[-2:]
 
-    if len(path_parts) > 1 and path_parts[1] == "queue":
+    if len(path_parts) == 4:
+        if path_parts[0] != "queue":
+            raise ValueError(f"Not a valid queue URL: {queue_url}")
         # SQS_ENDPOINT_STRATEGY == "path"
         region = path_parts[1]
     elif ".queue." in url.netloc:
+        if domain_parts[1] != "queue":
+            # .queue. should be on second position after the region
+            raise ValueError(f"Not a valid queue URL: {queue_url}")
         # SQS_ENDPOINT_STRATEGY == "domain"
         region = domain_parts[0]
     elif url.netloc.startswith("queue"):
