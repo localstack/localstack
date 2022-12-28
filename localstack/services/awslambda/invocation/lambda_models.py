@@ -433,8 +433,12 @@ class ResourcePolicy:
 
 @dataclasses.dataclass
 class FunctionResourcePolicy:
-    revision_id: str
+    revision_id: str = dataclasses.field(init=False, default_factory=long_uid)
     policy: ResourcePolicy  # TODO: do we have a typed IAM policy somewhere already?
+
+    @staticmethod
+    def new_revision_id() -> str:
+        return long_uid()
 
 
 @dataclasses.dataclass
@@ -630,7 +634,7 @@ class Function:
     versions: dict[str, FunctionVersion] = dataclasses.field(default_factory=dict)
     function_url_configs: dict[str, FunctionUrlConfig] = dataclasses.field(
         default_factory=dict
-    )  # key has to be $LATEST or alias name
+    )  # key is $LATEST, version, or alias
     permissions: dict[str, FunctionResourcePolicy] = dataclasses.field(
         default_factory=dict
     )  # key is $LATEST, version or alias
