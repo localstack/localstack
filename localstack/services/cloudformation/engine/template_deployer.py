@@ -112,25 +112,6 @@ def get_service_name(resource):
     return parts[1].lower()
 
 
-# FIXME: remove
-# def get_resource_name(resource):
-#     properties = resource.get("Properties") or {}
-#     name = properties.get("Name")
-#     if name:
-#         return name
-#
-#     # try to extract name via resource class
-#     res_type = canonical_resource_type(get_resource_type(resource))
-#     model_class = RESOURCE_MODELS.get(res_type)
-#     if model_class:
-#         instance = model_class(resource)
-#         name = instance.get_resource_name()
-#
-#     if not name:
-#         LOG.debug('Unable to extract name for resource type "%s"', res_type)
-#     return name
-
-
 def get_client(resource: dict, func_config: dict):
     resource_type = get_resource_type(resource)
     service = get_service_name(resource)
