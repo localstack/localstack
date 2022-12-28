@@ -12,7 +12,6 @@ from localstack.aws.accounts import get_aws_account_id
 from localstack.constants import FALSE_STRINGS
 from localstack.services.cloudformation.deployment_utils import (
     PLACEHOLDER_AWS_NO_VALUE,
-    PLACEHOLDER_RESOURCE_NAME,
     fix_boto_parameters_based_on_report,
     is_none_or_empty_value,
     remove_none_values,
@@ -113,22 +112,23 @@ def get_service_name(resource):
     return parts[1].lower()
 
 
-def get_resource_name(resource):
-    properties = resource.get("Properties") or {}
-    name = properties.get("Name")
-    if name:
-        return name
-
-    # try to extract name via resource class
-    res_type = canonical_resource_type(get_resource_type(resource))
-    model_class = RESOURCE_MODELS.get(res_type)
-    if model_class:
-        instance = model_class(resource)
-        name = instance.get_resource_name()
-
-    if not name:
-        LOG.debug('Unable to extract name for resource type "%s"', res_type)
-    return name
+# FIXME: remove
+# def get_resource_name(resource):
+#     properties = resource.get("Properties") or {}
+#     name = properties.get("Name")
+#     if name:
+#         return name
+#
+#     # try to extract name via resource class
+#     res_type = canonical_resource_type(get_resource_type(resource))
+#     model_class = RESOURCE_MODELS.get(res_type)
+#     if model_class:
+#         instance = model_class(resource)
+#         name = instance.get_resource_name()
+#
+#     if not name:
+#         LOG.debug('Unable to extract name for resource type "%s"', res_type)
+#     return name
 
 
 def get_client(resource: dict, func_config: dict):
@@ -823,38 +823,21 @@ def configure_resource_via_sdk(stack, resource_id, resource_type, func_details, 
             if not isinstance(prop_keys, list):
                 prop_keys = [prop_keys]
             for prop_key in prop_keys:
-                if prop_key == PLACEHOLDER_RESOURCE_NAME:
-                    params[param_key] = PLACEHOLDER_RESOURCE_NAME
+                if callable(prop_key):
+                    prop_value = prop_key(
+                        resource_props,
+                        stack_name=stack_name,
+                        resources=resources,
+                        resource_id=resource_id,
+                    )
                 else:
-                    if callable(prop_key):
-                        prop_value = prop_key(
-                            resource_props,
-                            stack_name=stack_name,
-                            resources=resources,
-                            resource_id=resource_id,
-                        )
-                    else:
-                        prop_value = resource_props.get(
-                            prop_key,
-                            resource.get(prop_key, resource_state.get(prop_key)),
-                        )
-                    if prop_value is not None:
-                        params[param_key] = prop_value
-                        break
-
-    # replace PLACEHOLDER_RESOURCE_NAME in params
-    resource_name_holder = {}
-
-    def fix_placeholders(o, **kwargs):
-        if isinstance(o, dict):
-            for k, v in o.items():
-                if v == PLACEHOLDER_RESOURCE_NAME:
-                    if "value" not in resource_name_holder:
-                        resource_name_holder["value"] = get_resource_name(resource) or resource_id
-                    o[k] = resource_name_holder["value"]
-        return o
-
-    recurse_object(params, fix_placeholders)
+                    prop_value = resource_props.get(
+                        prop_key,
+                        resource.get(prop_key, resource_state.get(prop_key)),
+                    )
+                if prop_value is not None:
+                    params[param_key] = prop_value
+                    break
 
     # assign default values if empty
     params = merge_recursive(defaults, params)

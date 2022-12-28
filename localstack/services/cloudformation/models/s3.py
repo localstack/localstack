@@ -6,7 +6,6 @@ from botocore.exceptions import ClientError
 from localstack.constants import S3_STATIC_WEBSITE_HOSTNAME, S3_VIRTUAL_HOSTNAME
 from localstack.services.cloudformation.cfn_utils import rename_params
 from localstack.services.cloudformation.deployment_utils import (
-    PLACEHOLDER_RESOURCE_NAME,
     dump_json_params,
     generate_default_name,
 )
@@ -49,9 +48,6 @@ class S3Bucket(GenericBaseModel):
     @staticmethod
     def cloudformation_type():
         return "AWS::S3::Bucket"
-
-    def get_resource_name(self):
-        return self.normalize_bucket_name(self.props.get("BucketName"))
 
     @staticmethod
     def normalize_bucket_name(bucket_name):
@@ -105,7 +101,7 @@ class S3Bucket(GenericBaseModel):
 
             # construct final result
             result = {
-                "Bucket": params.get("BucketName") or PLACEHOLDER_RESOURCE_NAME,
+                "Bucket": params.get("BucketName"),
                 "NotificationConfiguration": {
                     "LambdaFunctionConfigurations": lambda_configs,
                     "QueueConfigurations": queue_configs,

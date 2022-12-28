@@ -56,10 +56,6 @@ class GenericBaseModel:
     # ABSTRACT BASE METHODS
     # ----------------------
 
-    def get_resource_name(self):
-        """Return the name of this resource, based on its properties (to be overwritten by subclasses)"""
-        return None
-
     # TODO: this shouldn't have an attribute parameter
     def get_physical_resource_id(self, attribute=None, **kwargs):
         """Determine the physical resource ID (Ref) of this resource (to be overwritten by subclasses)"""

@@ -130,6 +130,8 @@ class InternalFailure(CommonServiceException):
 class CloudformationProvider(CloudformationApi):
     @handler("CreateStack", expand=False)
     def create_stack(self, context: RequestContext, request: CreateStackInput) -> CreateStackOutput:
+
+        # TODO: test what happens when both TemplateUrl and Body are specified
         state = get_cloudformation_store()
         api_utils.prepare_template_body(request)  # TODO: avoid mutating request directly
         template = template_preparer.parse_template(request["TemplateBody"])
