@@ -152,6 +152,7 @@ class TestSqsDeveloperEdpoints:
             == "AWS.SimpleQueueService.NonExistentQueue"
         )
 
+    @pytest.mark.only_localstack
     def test_list_messages_with_queue_url_in_path(self, sqs_client, sqs_create_queue):
         queue_url = sqs_create_queue()
 
