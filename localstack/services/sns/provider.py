@@ -1558,7 +1558,7 @@ def store_delivery_log(
     delivery["destination"] = (subscriber.get("Endpoint", ""),)
     delivery["dwellTimeMs"] = 200
     if not success:
-        delivery["attemps"] = 1
+        delivery["attempts"] = 1
 
     delivery_log = {
         "notification": {
