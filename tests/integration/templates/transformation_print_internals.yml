@@ -1,0 +1,11 @@
+Resources:
+  Parameter:
+    Type: AWS::SSM::Parameter
+    Properties:
+      Value: "<replace-this>"
+      Type: String
+
+Transform:
+  - Name: PrintInternals
+    Parameters:
+      Input: "test-input"
