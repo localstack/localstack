@@ -592,7 +592,7 @@ class TestMacros:
         create_lambda_function,
         lambda_client,
         snapshot,
-        cleanup_stacks,
+        cleanups,
     ):
         """
         The test validates that AWS will return an error about missing CAPABILITY_AUTOEXPAND when adding a
@@ -631,13 +631,13 @@ class TestMacros:
             "CAPABILITY_NAMED_IAM",  # Required to allow CFn create added role
         ]
         cfn_client.create_stack(**args)
+        cleanups.append(lambda: cfn_client.delete_stack(StackName=stack_name))
         cfn_client.get_waiter("stack_create_complete").wait(StackName=stack_name)
         processed_template = cfn_client.get_template(
             StackName=stack_name, TemplateStage="Processed"
         )
         snapshot.add_transformer(snapshot.transform.key_value("RoleName", "role-name"))
         snapshot.match("processed_template", processed_template)
-        cleanup_stacks([stack_name])
 
     @pytest.mark.aws_validated
     def test_validate_lambda_internals(
@@ -647,7 +647,6 @@ class TestMacros:
         create_lambda_function,
         lambda_client,
         snapshot,
-        cleanup_stacks,
     ):
         """
         The test validates the content of the event pass into the macro lambda
@@ -806,7 +805,7 @@ class TestMacros:
         create_lambda_function,
         lambda_client,
         snapshot,
-        cleanup_stacks,
+        cleanups,
         macro_function,
     ):
         """
@@ -836,6 +835,7 @@ class TestMacros:
         cfn_client.create_stack(
             StackName=stack_name, Capabilities=["CAPABILITY_AUTO_EXPAND"], TemplateBody=template
         )
+        cleanups.append(lambda: cfn_client.delete_stack(StackName=stack_name))
 
         with pytest.raises(botocore.exceptions.WaiterError):
             cfn_client.get_waiter("stack_create_complete").wait(StackName=stack_name)
@@ -850,4 +850,3 @@ class TestMacros:
 
         snapshot.add_transformer(snapshot.transform.cloudformation_api())
         snapshot.match("failed_description", failed_events_by_policy[0])
-        cleanup_stacks([stack_name])
