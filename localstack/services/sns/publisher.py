@@ -34,18 +34,14 @@ from localstack.utils.aws.arns import (
 from localstack.utils.aws.aws_responses import create_sqs_system_attributes
 from localstack.utils.aws.dead_letter_queue import sns_error_to_dead_letter_queue
 from localstack.utils.cloudwatch.cloudwatch_util import store_cloudwatch_logs
-from localstack.utils.json import json_safe
 from localstack.utils.objects import not_none_or
 from localstack.utils.strings import long_uid, md5, to_bytes
 from localstack.utils.time import timestamp_millis
 
 LOG = logging.getLogger(__name__)
 
-# future config flag
-PLATFORM_APPLICATION_REAL = False
 
-
-@dataclass(frozen=True)
+@dataclass
 class SnsPublishContext:
     message: SnsMessage
     store: SnsStore
@@ -60,6 +56,13 @@ class SnsBatchPublishContext:
 
 
 class TopicPublisher(abc.ABC):
+    """
+    The TopicPublisher is responsible for publishing SNS messages to a topic's subscription.
+    This is the base class implementing the basic logic.
+    Each subclass will need to implement `_publish` using the subscription's protocol logic and client.
+    Subclasses can override `prepare_message` if the format of the message is different.
+    """
+
     def publish(self, context: SnsPublishContext, subscriber: SnsSubscription):
         try:
             self._publish(context=context, subscriber=subscriber)
@@ -74,10 +77,26 @@ class TopicPublisher(abc.ABC):
         raise NotImplementedError
 
     def prepare_message(self, message_context: SnsMessage, subscriber: SnsSubscription) -> str:
+        """
+        Returns the message formatted in the base SNS message format. The base SNS message format is shared amongst
+        SQS, HTTP(S), email-json and Firehose.
+        See https://docs.aws.amazon.com/sns/latest/dg/sns-sqs-as-subscriber.html
+        :param message_context: the SnsMessage containing the message data
+        :param subscriber: the SNS subscription
+        :return: an formatted SNS message body in a JSON string
+        """
         return create_sns_message_body(message_context, subscriber)
 
 
 class EndpointPublisher(abc.ABC):
+    """
+    The TopicPublisher is responsible for publishing SNS messages directly to an endpoint.
+    SNS allows directly publishing to phone numbers and application endpoints.
+    This is the base class implementing the basic logic.
+    Each subclass will need to implement `_publish` and `prepare_message `using the subscription's protocol logic
+    and client.
+    """
+
     def publish(self, context: SnsPublishContext, endpoint: str):
         try:
             self._publish(context=context, endpoint=endpoint)
@@ -96,6 +115,12 @@ class EndpointPublisher(abc.ABC):
 
 
 class LambdaTopicPublisher(TopicPublisher):
+    """
+    The Lambda publisher is responsible for invoking a subscribed lambda function to process the SNS message using
+    `Lambda.invoke` with the formatted message as Payload.
+    See: https://docs.aws.amazon.com/lambda/latest/dg/with-sns.html
+    """
+
     def _publish(self, context: SnsPublishContext, subscriber: SnsSubscription):
         try:
             lambda_client = aws_stack.connect_to_service(
@@ -104,7 +129,7 @@ class LambdaTopicPublisher(TopicPublisher):
             event = self.prepare_message(context.message, subscriber)
             inv_result = lambda_client.invoke(
                 FunctionName=subscriber["Endpoint"],
-                Payload=to_bytes(json.dumps(event)),
+                Payload=to_bytes(event),
                 InvocationType=InvocationType.RequestResponse
                 if config.SYNCHRONOUS_SNS_EVENTS
                 else InvocationType.Event,  # DEPRECATED
@@ -129,11 +154,15 @@ class LambdaTopicPublisher(TopicPublisher):
             )
             sns_error_to_dead_letter_queue(subscriber, message_body, str(exc))
 
-    def prepare_message(self, message_context: SnsMessage, subscriber: SnsSubscription):
+    def prepare_message(self, message_context: SnsMessage, subscriber: SnsSubscription) -> str:
+        """
+        You can see Lambda SNS Event format here: https://docs.aws.amazon.com/lambda/latest/dg/with-sns.html
+        :param message_context: the SnsMessage containing the message data
+        :param subscriber: the SNS subscription
+        :return: an SNS message body formatted as a lambda Event in a JSON string
+        """
         external_url = external_service_url("sns")
         unsubscribe_url = create_unsubscribe_url(external_url, subscriber["SubscriptionArn"])
-        # see the format here https://docs.aws.amazon.com/lambda/latest/dg/with-sns.html
-        # issue with sdk to serialize the attribute inside lambda
         message_attributes = prepare_message_attributes(message_context.message_attributes)
         event = {
             "Records": [
@@ -159,10 +188,16 @@ class LambdaTopicPublisher(TopicPublisher):
                 }
             ]
         }
-        return event
+        return json.dumps(event)
 
 
 class SqsTopicPublisher(TopicPublisher):
+    """
+    The SQS publisher is responsible for publishing the SNS message to a subscribed SQS queue using `SQS.send_message`.
+    For integrations and the format of message, see:
+    https://docs.aws.amazon.com/sns/latest/dg/sns-sqs-as-subscriber.html
+    """
+
     def _publish(self, context: SnsPublishContext, subscriber: SnsSubscription):
         message_context = context.message
         try:
@@ -171,7 +206,7 @@ class SqsTopicPublisher(TopicPublisher):
                 subscriber, message_context.message_attributes
             )
         except Exception:
-            LOG.exception("An internal error occurred while trying to send the message to SQS")
+            LOG.exception("An internal error occurred while trying to format the message for SQS")
             return
         try:
             queue_url = sqs_queue_url_for_arn(subscriber["Endpoint"])
@@ -232,6 +267,14 @@ class SqsTopicPublisher(TopicPublisher):
 
 
 class SqsBatchTopicPublisher(SqsTopicPublisher):
+    """
+    The SQS Batch publisher is responsible for publishing batched SNS messages to a subscribed SQS queue using
+    `SQS.send_message_batch`. This allows to make use of SQS batching capabilities.
+    See https://docs.aws.amazon.com/sns/latest/dg/sns-batch-api-actions.html
+    https://docs.aws.amazon.com/sns/latest/api/API_PublishBatch.html
+    https://docs.aws.amazon.com/AWSSimpleQueueService/latest/APIReference/API_SendMessageBatch.html
+    """
+
     def _publish(self, context: SnsBatchPublishContext, subscriber: SnsSubscription):
         entries = []
         sqs_system_attrs = create_sqs_system_attributes(context.request_headers)
@@ -307,6 +350,12 @@ class SqsBatchTopicPublisher(SqsTopicPublisher):
 
 
 class HttpTopicPublisher(TopicPublisher):
+    """
+    The HTTP(S) publisher is responsible for publishing the SNS message to an external HTTP(S) endpoint which subscribed
+    to the topic. It will create an HTTP POST request to be sent to the endpoint.
+    See https://docs.aws.amazon.com/sns/latest/dg/sns-http-https-endpoint-as-subscriber.html
+    """
+
     def _publish(self, context: SnsPublishContext, subscriber: SnsSubscription):
         message_context = context.message
         message_body = self.prepare_message(message_context, subscriber)
@@ -355,6 +404,15 @@ class HttpTopicPublisher(TopicPublisher):
 
 
 class EmailJsonTopicPublisher(TopicPublisher):
+    """
+    The email-json publisher is responsible for publishing the SNS message to a subscribed email address.
+    The format of the message will be JSON-encoded, and "is meant for applications to programmatically process emails".
+    There is not a lot of AWS documentation on SNS emails.
+    See https://docs.aws.amazon.com/sns/latest/dg/sns-email-notifications.html
+    But it is mentioned several times in the SNS FAQ (especially in #Transports section):
+    https://aws.amazon.com/sns/faqs/
+    """
+
     def _publish(self, context: SnsPublishContext, subscriber: SnsSubscription):
         ses_client = aws_stack.connect_to_service("ses")
         if endpoint := subscriber.get("Endpoint"):
@@ -373,11 +431,30 @@ class EmailJsonTopicPublisher(TopicPublisher):
 
 
 class EmailTopicPublisher(EmailJsonTopicPublisher):
+    """
+    The email publisher is responsible for publishing the SNS message to a subscribed email address.
+    The format of the message will be text-based, and "is meant for end-users/consumers and notifications are regular,
+     text-based messages which are easily readable."
+    See https://docs.aws.amazon.com/sns/latest/dg/sns-email-notifications.html
+    """
+
     def prepare_message(self, message_context: SnsMessage, subscriber: SnsSubscription):
         return message_context.message_content(subscriber["Protocol"])
 
 
 class ApplicationTopicPublisher(TopicPublisher):
+    """
+    The application publisher is responsible for publishing the SNS message to a subscribed SNS application endpoint.
+    The SNS application endpoint represents a mobile app and device.
+    The application endpoint can be of different types, represented in `SnsApplicationPlatforms`.
+    This is not directly implemented yet in LocalStack, we save the message to be retrieved later from an internal
+    endpoint.
+    The `LEGACY_SNS_GCM_PUBLISHING` flag allows direct publishing to the GCM platform, with some caveats:
+    - It always publishes if the platform is GCM, and raises an exception if the credentials are wrong.
+    - the Platform Application should be validated before and not while publishing
+    See https://docs.aws.amazon.com/sns/latest/dg/sns-mobile-application-as-subscriber.html
+    """
+
     def _publish(self, context: SnsPublishContext, subscriber: SnsSubscription):
         endpoint_arn = subscriber["Endpoint"]
         message = self.prepare_message(context.message, subscriber)
@@ -392,30 +469,25 @@ class ApplicationTopicPublisher(TopicPublisher):
         ):
             self._legacy_publish_to_gcm(context, endpoint_arn)
 
-        if PLATFORM_APPLICATION_REAL:
-            raise NotImplementedError
-            # TODO: rewrite the platform application publishing logic
-            #  will need to validate credentials when creating platform app earlier, need thorough testing
+        # TODO: rewrite the platform application publishing logic
+        #  will need to validate credentials when creating platform app earlier, need thorough testing
 
         store_delivery_log(context.message, subscriber, success=True)
 
     def prepare_message(
         self, message_context: SnsMessage, subscriber: SnsSubscription
     ) -> Union[str, Dict]:
-        if not PLATFORM_APPLICATION_REAL:
-            endpoint_arn = subscriber["Endpoint"]
-            platform_type = get_platform_type_from_endpoint_arn(endpoint_arn)
-            return {
-                "TargetArn": endpoint_arn,
-                "TopicArn": subscriber["TopicArn"],
-                "SubscriptionArn": subscriber["SubscriptionArn"],
-                "Message": message_context.message_content(protocol=platform_type),
-                "MessageAttributes": message_context.message_attributes,
-                "MessageStructure": message_context.message_structure,
-                "Subject": message_context.subject,
-            }
-        else:
-            raise NotImplementedError
+        endpoint_arn = subscriber["Endpoint"]
+        platform_type = get_platform_type_from_endpoint_arn(endpoint_arn)
+        return {
+            "TargetArn": endpoint_arn,
+            "TopicArn": subscriber["TopicArn"],
+            "SubscriptionArn": subscriber["SubscriptionArn"],
+            "Message": message_context.message_content(protocol=platform_type),
+            "MessageAttributes": message_context.message_attributes,
+            "MessageStructure": message_context.message_structure,
+            "Subject": message_context.subject,
+        }
 
     @staticmethod
     def _legacy_publish_to_gcm(context: SnsPublishContext, endpoint: str):
@@ -430,6 +502,12 @@ class ApplicationTopicPublisher(TopicPublisher):
 
 
 class SmsTopicPublisher(TopicPublisher):
+    """
+    The SMS publisher is responsible for publishing the SNS message to a subscribed phone number.
+    This is not directly implemented yet in LocalStack, we only save the message.
+    # TODO: create an internal endpoint to retrieve SMS.
+    """
+
     def _publish(self, context: SnsPublishContext, subscriber: SnsSubscription):
         event = self.prepare_message(context.message, subscriber)
         context.store.sms_messages.append(event)
@@ -461,6 +539,13 @@ class SmsTopicPublisher(TopicPublisher):
 
 
 class FirehoseTopicPublisher(TopicPublisher):
+    """
+    The Firehose publisher is responsible for publishing the SNS message to a subscribed Firehose delivery stream.
+    This allows you to "fan out Amazon SNS notifications to Amazon Simple Storage Service (Amazon S3), Amazon Redshift,
+    Amazon OpenSearch Service (OpenSearch Service), and to third-party service providers."
+    See https://docs.aws.amazon.com/sns/latest/dg/sns-firehose-as-subscriber.html
+    """
+
     def _publish(self, context: SnsPublishContext, subscriber: SnsSubscription):
         message_body = self.prepare_message(context.message, subscriber)
         try:
@@ -481,6 +566,11 @@ class FirehoseTopicPublisher(TopicPublisher):
 
 
 class SmsPhoneNumberPublisher(EndpointPublisher):
+    """
+    The SMS publisher is responsible for publishing the SNS message directly to a phone number.
+    This is not directly implemented yet in LocalStack, we only save the message.
+    """
+
     def _publish(self, context: SnsPublishContext, endpoint: str):
         event = self.prepare_message(context.message, endpoint)
         context.store.sms_messages.append(event)
@@ -502,6 +592,12 @@ class SmsPhoneNumberPublisher(EndpointPublisher):
 
 
 class ApplicationEndpointPublisher(EndpointPublisher):
+    """
+    The application publisher is responsible for publishing the SNS message directly to a registered SNS application
+    endpoint, without it being subscribed to a topic.
+    See `ApplicationTopicPublisher` for more information about Application Endpoint publishing.
+    """
+
     def _publish(self, context: SnsPublishContext, endpoint: str):
         message = self.prepare_message(context.message, endpoint)
         cache = context.store.platform_endpoint_messages[endpoint] = (
@@ -515,29 +611,24 @@ class ApplicationEndpointPublisher(EndpointPublisher):
         ):
             self._legacy_publish_to_gcm(context, endpoint)
 
-        if PLATFORM_APPLICATION_REAL:
-            raise NotImplementedError
-            # TODO: rewrite the platform application publishing logic
-            #  will need to validate credentials when creating platform app earlier, need thorough testing
+        # TODO: rewrite the platform application publishing logic
+        #  will need to validate credentials when creating platform app earlier, need thorough testing
 
         # TODO: see about delivery log for individual endpoint message, need credentials for testing
         # store_delivery_log(subscriber, context, success=True)
 
     def prepare_message(self, message_context: SnsMessage, endpoint: str) -> Union[str, Dict]:
         platform_type = get_platform_type_from_endpoint_arn(endpoint)
-        if not PLATFORM_APPLICATION_REAL:
-            return {
-                "TargetArn": endpoint,
-                "TopicArn": "",
-                "SubscriptionArn": "",
-                "Message": message_context.message_content(protocol=platform_type),
-                "MessageAttributes": message_context.message_attributes,
-                "MessageStructure": message_context.message_structure,
-                "Subject": message_context.subject,
-                "MessageId": message_context.message_id,
-            }
-        else:
-            raise NotImplementedError
+        return {
+            "TargetArn": endpoint,
+            "TopicArn": "",
+            "SubscriptionArn": "",
+            "Message": message_context.message_content(protocol=platform_type),
+            "MessageAttributes": message_context.message_attributes,
+            "MessageStructure": message_context.message_structure,
+            "Subject": message_context.subject,
+            "MessageId": message_context.message_id,
+        }
 
     @staticmethod
     def _legacy_publish_to_gcm(context: SnsPublishContext, endpoint: str):
@@ -717,7 +808,7 @@ def store_delivery_log(
         "status": "SUCCESS" if success else "FAILURE",
     }
 
-    log_output = json.dumps(json_safe(delivery_log))
+    log_output = json.dumps(delivery_log)
 
     return store_cloudwatch_logs(log_group_name, log_stream_name, log_output, invocation_time)
 
@@ -829,10 +920,14 @@ class SubscriptionFilter:
 
 
 class PublishDispatcher:
-    _http_publisher = HttpTopicPublisher()
+    """
+    The PublishDispatcher is responsible for dispatching the publishing of SNS messages asynchronously to worker
+    threads via a `ThreadPoolExecutor`, depending on the SNS subscriber protocol and filter policy.
+    """
+
     topic_notifiers = {
-        "http": _http_publisher,
-        "https": _http_publisher,
+        "http": HttpTopicPublisher(),
+        "https": HttpTopicPublisher(),
         "email": EmailTopicPublisher(),
         "email-json": EmailJsonTopicPublisher(),
         "sms": SmsTopicPublisher(),
@@ -878,7 +973,14 @@ class PublishDispatcher:
         for subscriber in subscriptions:
             if self._should_publish(ctx.store, ctx.message, subscriber):
                 notifier = self.topic_notifiers[subscriber["Protocol"]]
-                LOG.debug("Submitting task to the executor for notifier %s", notifier)
+                LOG.debug(
+                    "Topic '%s' publishing '%s' to subscribed '%s' with protocol '%s' (subscription '%s')",
+                    topic_arn,
+                    ctx.message.message_id,
+                    subscriber.get("Endpoint"),
+                    subscriber["Protocol"],
+                    subscriber["SubscriptionArn"],
+                )
                 self.executor.submit(notifier.publish, context=ctx, subscriber=subscriber)
 
     def publish_batch_to_topic(self, ctx: SnsBatchPublishContext, topic_arn: str) -> None:
@@ -888,6 +990,7 @@ class PublishDispatcher:
             notifier = self.batch_topic_notifiers.get(protocol)
             # does the notifier supports batching natively? for now, only SQS supports it
             if notifier:
+                messages_amount_before_filtering = len(ctx.messages)
                 ctx.messages = [
                     message
                     for message in ctx.messages
@@ -895,12 +998,29 @@ class PublishDispatcher:
                 ]
                 if not ctx.messages:
                     LOG.debug(
-                        "No messages match filter policy, not sending batch %s",
-                        notifier,
+                        "No messages match filter policy, not publishing batch from topic '%s' to subscription '%s'",
+                        topic_arn,
+                        subscriber["SubscriptionArn"],
                     )
                     return
 
-                LOG.debug("Submitting batch task to the executor for notifier %s", notifier)
+                messages_amount = len(ctx.messages)
+                if messages_amount != messages_amount_before_filtering:
+                    LOG.debug(
+                        "After applying subscription filter, %s out of %s message(s) to be sent to '%s'",
+                        messages_amount,
+                        messages_amount_before_filtering,
+                        subscriber["SubscriptionArn"],
+                    )
+
+                LOG.debug(
+                    "Topic '%s' batch publishing %s messages to subscribed '%s' with protocol '%s' (subscription '%s')",
+                    topic_arn,
+                    messages_amount,
+                    subscriber.get("Endpoint"),
+                    subscriber["Protocol"],
+                    subscriber["SubscriptionArn"],
+                )
                 self.executor.submit(notifier.publish, context=ctx, subscriber=subscriber)
             else:
                 # if no batch support, fall back to sending them sequentially
@@ -910,17 +1030,32 @@ class PublishDispatcher:
                         individual_ctx = SnsPublishContext(
                             message=message, store=ctx.store, request_headers=ctx.request_headers
                         )
-                        LOG.debug("Submitting task to the executor for notifier %s", notifier)
+                        LOG.debug(
+                            "Topic '%s' batch publishing '%s' to subscribed '%s' with protocol '%s' (subscription '%s')",
+                            topic_arn,
+                            individual_ctx.message.message_id,
+                            subscriber.get("Endpoint"),
+                            subscriber["Protocol"],
+                            subscriber["SubscriptionArn"],
+                        )
                         self.executor.submit(
                             notifier.publish, context=individual_ctx, subscriber=subscriber
                         )
 
     def publish_to_phone_number(self, ctx: SnsPublishContext, phone_number: str) -> None:
-        LOG.debug("Submitting task to the executor for notifier %s", self.sms_notifier)
+        LOG.debug(
+            "Publishing '%s' to phone number '%s' with protocol 'sms'",
+            ctx.message.message_id,
+            phone_number,
+        )
         self.executor.submit(self.sms_notifier.publish, context=ctx, endpoint=phone_number)
 
     def publish_to_application_endpoint(self, ctx: SnsPublishContext, endpoint_arn: str) -> None:
-        LOG.debug("Submitting task to the executor for notifier %s", self.application_notifier)
+        LOG.debug(
+            "Publishing '%s' to application endpoint '%s'",
+            ctx.message.message_id,
+            endpoint_arn,
+        )
         self.executor.submit(self.application_notifier.publish, context=ctx, endpoint=endpoint_arn)
 
     def publish_to_topic_subscriber(
@@ -930,7 +1065,7 @@ class PublishDispatcher:
         This allows us to publish specific HTTP(S) messages specific to those endpoints, namely
         `SubscriptionConfirmation` and `UnsubscribeConfirmation`. Those are "topic" messages in shape, but are sent
         only to the endpoint subscribing or unsubscribing.
-        This only used internally.
+        This is only used internally.
         Note: might be needed for multi account SQS and Lambda `SubscriptionConfirmation`
         :param ctx: SnsPublishContext
         :param topic_arn: the topic of the subscriber
@@ -941,6 +1076,14 @@ class PublishDispatcher:
         for subscriber in subscriptions:
             if subscriber["SubscriptionArn"] == subscription_arn:
                 notifier = self.topic_notifiers[subscriber["Protocol"]]
-                LOG.debug("Submitting task  to the executor for notifier %s", notifier)
+                LOG.debug(
+                    "Topic '%s' publishing '%s' to subscribed '%s' with protocol '%s' (Id='%s', Subscription='%s')",
+                    topic_arn,
+                    ctx.message.type,
+                    subscription_arn,
+                    subscriber["Protocol"],
+                    ctx.message.message_id,
+                    subscriber.get("Endpoint"),
+                )
                 self.executor.submit(notifier.publish, context=ctx, subscriber=subscriber)
                 return
