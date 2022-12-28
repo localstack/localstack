@@ -796,6 +796,7 @@ class TestMacros:
             "return_unsuccessful_with_message.py",
             "return_unsuccessful_without_message.py",
             "return_invalid_template.py",
+            "raise_error.py",
         ],
     )
     def test_failed_state(

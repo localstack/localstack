@@ -412,7 +412,7 @@
     }
   },
   "tests/integration/cloudformation/test_template_engine.py::TestMacros::test_failed_state[return_unsuccessful_with_message.py]": {
-    "recorded-date": "09-12-2022, 11:26:05",
+    "recorded-date": "28-12-2022, 09:52:00",
     "recorded-content": {
       "failed_description": {
         "EventId": "<uuid:1>",
@@ -428,7 +428,7 @@
     }
   },
   "tests/integration/cloudformation/test_template_engine.py::TestMacros::test_failed_state[return_unsuccessful_without_message.py]": {
-    "recorded-date": "09-12-2022, 11:26:57",
+    "recorded-date": "28-12-2022, 09:52:50",
     "recorded-content": {
       "failed_description": {
         "EventId": "<uuid:1>",
@@ -444,7 +444,7 @@
     }
   },
   "tests/integration/cloudformation/test_template_engine.py::TestMacros::test_failed_state[return_invalid_template.py]": {
-    "recorded-date": "09-12-2022, 11:27:48",
+    "recorded-date": "28-12-2022, 09:53:49",
     "recorded-content": {
       "failed_description": {
         "EventId": "<uuid:1>",
@@ -452,6 +452,22 @@
         "PhysicalResourceId": "arn:aws:cloudformation:<region>:111111111111:stack/<stack-name:1>/<resource:1>",
         "ResourceStatus": "ROLLBACK_IN_PROGRESS",
         "ResourceStatusReason": "Template format error: unsupported structure.. Rollback requested by user.",
+        "ResourceType": "AWS::CloudFormation::Stack",
+        "StackId": "arn:aws:cloudformation:<region>:111111111111:stack/<stack-name:1>/<resource:1>",
+        "StackName": "<stack-name:1>",
+        "Timestamp": "timestamp"
+      }
+    }
+  },
+  "tests/integration/cloudformation/test_template_engine.py::TestMacros::test_failed_state[raise_error.py]": {
+    "recorded-date": "28-12-2022, 09:54:39",
+    "recorded-content": {
+      "failed_description": {
+        "EventId": "<uuid:1>",
+        "LogicalResourceId": "<stack-name:1>",
+        "PhysicalResourceId": "arn:aws:cloudformation:<region>:111111111111:stack/<stack-name:1>/<resource:1>",
+        "ResourceStatus": "ROLLBACK_IN_PROGRESS",
+        "ResourceStatusReason": "Received malformed response from transform 111111111111::Unsuccessful. Rollback requested by user.",
         "ResourceType": "AWS::CloudFormation::Stack",
         "StackId": "arn:aws:cloudformation:<region>:111111111111:stack/<stack-name:1>/<resource:1>",
         "StackName": "<stack-name:1>",
