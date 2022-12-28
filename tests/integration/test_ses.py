@@ -121,12 +121,19 @@ class TestSES:
 
     def test_send_email_can_retrospect(self, ses_client):
         # Test that sent emails can be retrospected through saved file and API access
-        data_dir = config.dirs.data or config.dirs.tmp
+
+        def _read_message_from_filesystem(message_id: str) -> dict:
+            """Given a message ID, read the message from filesystem and deserialise it."""
+            data_dir = config.dirs.data or config.dirs.tmp
+            with open(os.path.join(data_dir, "ses", message_id + ".json"), "r") as f:
+                message = f.read()
+            return json.loads(message)
+
         email = f"user-{short_uid()}@example.com"
         ses_client.verify_email_address(EmailAddress=email)
 
-        # Send a regular message and a raw message
-        message = ses_client.send_email(
+        # Send a regular message
+        message1 = ses_client.send_email(
             Source=email,
             Message={
                 "Subject": {
@@ -145,28 +152,44 @@ class TestSES:
                 "ToAddresses": ["success@example.com"],
             },
         )
-        message_id = message["MessageId"]
+        message1_id = message1["MessageId"]
 
+        # Ensure saved message
+        contents1 = _read_message_from_filesystem(message1_id)
+        assert contents1["Id"] == message1_id
+        assert contents1["Timestamp"]
+        assert contents1["Region"]
+        assert contents1["Source"] == email
+        assert contents1["Destination"] == {"ToAddresses": ["success@example.com"]}
+        assert contents1["Subject"] == "A_SUBJECT"
+        assert contents1["Body"] == {"text_part": "A_MESSAGE", "html_part": "A_HTML"}
+        assert "RawData" not in contents1
+
+        # Send a raw message
         raw_message_data = f"From: {email}\nTo: recipient@example.com\nSubject: test\n\nThis is the message body.\n\n"
-        ses_client.send_raw_email(RawMessage={"Data": raw_message_data})
+        message2 = ses_client.send_raw_email(RawMessage={"Data": raw_message_data})
+        message2_id = message2["MessageId"]
 
-        # Ensure the message is saved to filesystem for retrospection
-        with open(os.path.join(data_dir, "ses", message_id + ".json"), "r") as f:
-            message = f.read()
+        # Ensure saved raw message
+        contents2 = _read_message_from_filesystem(message2_id)
+        assert contents2["Id"] == message2_id
+        assert contents2["Timestamp"]
+        assert contents2["Region"]
+        assert contents2["Source"] == email
+        assert contents2["RawData"] == raw_message_data
+        assert "Destination" not in contents2
+        assert "Subject" not in contents2
+        assert "Body" not in contents2
 
-        contents = json.loads(message)
-
-        assert email == contents["Source"]
-        assert "A_SUBJECT" == contents["Subject"]
-        assert {"text_part": "A_MESSAGE", "html_part": "A_HTML"} == contents["Body"]
-        assert ["success@example.com"] == contents["Destination"]["ToAddresses"]
-
+        # Ensure all sent messages can be retrieved using the API endpoint
         emails_url = config.get_edge_url() + INTERNAL_RESOURCE_PATH + EMAILS_ENDPOINT
         api_contents = requests.get(emails_url).json()
         api_contents = {msg["Id"]: msg for msg in api_contents["messages"]}
         assert len(api_contents) >= 1
-        assert message_id in api_contents
-        assert api_contents[message_id] == contents
+        assert message1_id in api_contents
+        assert message2_id in api_contents
+        assert api_contents[message1_id] == contents1
+        assert api_contents[message2_id] == contents2
 
         # Ensure messages can be filtered by email source via the REST endpoint
         emails_url = (

@@ -54,6 +54,7 @@ from localstack.constants import TEST_AWS_SECRET_ACCESS_KEY
 from localstack.services.internal import get_internal_apis
 from localstack.services.moto import call_moto
 from localstack.services.plugins import ServiceLifecycleHook
+from localstack.services.ses.models import SentEmail, SentEmailBody
 from localstack.utils.aws import arns, aws_stack
 from localstack.utils.files import mkdir
 from localstack.utils.strings import long_uid, to_str
@@ -75,28 +76,22 @@ EMAILS_ENDPOINT = "/ses"
 _EMAILS_ENDPOINT_REGISTERED = False
 
 
-def save_for_retrospection(id: str, region: str, **kwargs: Dict[str, Any]):
-    """Save a message for retrospection.
-
-    The email is saved to filesystem and is also made accessible via a service endpoint.
-
-    kwargs should consist of following keys related to the email:
-    - Body
-    - Destinations
-    - RawData
-    - Source
-    - Subject
-    - Template
-    - TemplateData
+def save_for_retrospection(sent_email: SentEmail):
     """
+    Save a message for retrospection.
+
+    The contents of the email is saved to filesystem. It can also be accessed via a service endpoint.
+    """
+    message_id = sent_email["Id"]
     ses_dir = os.path.join(config.dirs.data or config.dirs.tmp, "ses")
-
     mkdir(ses_dir)
-    path = os.path.join(ses_dir, id + ".json")
 
-    email = {"Id": id, "Timestamp": timestamp(), "Region": region, **kwargs}
+    path = os.path.join(ses_dir, message_id + ".json")
 
-    EMAILS[id] = email
+    if not sent_email.get("Timestamp"):
+        sent_email["Timestamp"] = timestamp()
+
+    EMAILS[message_id] = sent_email
 
     def _serialize(obj):
         """JSON serializer for timestamps."""
@@ -105,7 +100,7 @@ def save_for_retrospection(id: str, region: str, **kwargs: Dict[str, Any]):
         return obj.__dict__
 
     with open(path, "w") as f:
-        f.write(json.dumps(email, default=_serialize))
+        f.write(json.dumps(sent_email, default=_serialize))
 
     LOGGER.debug("Email saved at: %s", path)
 
@@ -315,6 +310,8 @@ class SesProvider(SesApi, ServiceLifecycleHook):
 
         backend = get_ses_backend(context)
         emitter = SNSEmitter(context)
+        recipients = recipients_from_destination(destination)
+
         for event_destination in backend.config_set_event_destination.values():
             if not event_destination["Enabled"]:
                 continue
@@ -326,7 +323,7 @@ class SesProvider(SesApi, ServiceLifecycleHook):
             payload = SNSPayload(
                 message_id=response["MessageId"],
                 sender_email=source,
-                destination_addresses=recipients_from_destination(destination),
+                destination_addresses=recipients,
                 tags=tags,
             )
             emitter.emit_send_event(payload, sns_destination_arn)
@@ -336,12 +333,14 @@ class SesProvider(SesApi, ServiceLifecycleHook):
         html_part = message["Body"].get("Html", {}).get("Data")
 
         save_for_retrospection(
-            response["MessageId"],
-            context.region,
-            Source=source,
-            Destination=destination,
-            Subject=message["Subject"].get("Data"),
-            Body=dict(text_part=text_part, html_part=html_part),
+            SentEmail(
+                Id=response["MessageId"],
+                Region=context.region,
+                Destination=destination,
+                Source=source,
+                Subject=message["Subject"].get("Data"),
+                Body=SentEmailBody(text_part=text_part, html_part=html_part),
+            )
         )
 
         return response
@@ -366,6 +365,8 @@ class SesProvider(SesApi, ServiceLifecycleHook):
 
         backend = get_ses_backend(context)
         emitter = SNSEmitter(context)
+        recipients = recipients_from_destination(destination)
+
         for event_destination in backend.config_set_event_destination.values():
             if not event_destination["Enabled"]:
                 continue
@@ -377,19 +378,21 @@ class SesProvider(SesApi, ServiceLifecycleHook):
             payload = SNSPayload(
                 message_id=response["MessageId"],
                 sender_email=source,
-                destination_addresses=recipients_from_destination(destination),
+                destination_addresses=recipients,
                 tags=tags,
             )
             emitter.emit_send_event(payload, sns_destination_arn, emit_source_arn=False)
             emitter.emit_delivery_event(payload, sns_destination_arn)
 
         save_for_retrospection(
-            response["MessageId"],
-            context.region,
-            Source=source,
-            Template=template,
-            TemplateData=template_data,
-            Destination=destination,
+            SentEmail(
+                Id=response["MessageId"],
+                Region=context.region,
+                Source=source,
+                Template=template,
+                TemplateData=template_data,
+                Destination=destination,
+            )
         )
 
         return response
@@ -418,8 +421,7 @@ class SesProvider(SesApi, ServiceLifecycleHook):
                 LOGGER.warning("Source not specified. Rejecting message.")
                 raise MessageRejected()
 
-        if destinations is None:
-            destinations = []
+        destinations = destinations or []
 
         backend = get_ses_backend(context)
         message = backend.send_raw_email(source, destinations, raw_data, context.region)
@@ -443,11 +445,12 @@ class SesProvider(SesApi, ServiceLifecycleHook):
             emitter.emit_delivery_event(payload, sns_destination_arn)
 
         save_for_retrospection(
-            message.id,
-            context.region,
-            Source=source or message.source,
-            Destination=destinations,
-            RawData=raw_data,
+            SentEmail(
+                Id=message.id,
+                Region=context.region,
+                Source=source or message.source,
+                RawData=raw_data,
+            )
         )
 
         return SendRawEmailResponse(MessageId=message.id)
