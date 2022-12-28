@@ -690,7 +690,7 @@ class TestMacros:
         snapshot,
     ):
         """
-        The test validates the template max size that can be pass into the create_template
+        The test validates the max size of a template that can be passed into the macro function
         """
         macro_function_path = os.path.join(
             os.path.dirname(__file__), "../templates/macros/format_template.py"
