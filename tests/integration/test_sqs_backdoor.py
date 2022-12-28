@@ -1,10 +1,10 @@
-import boto3
 import pytest
 import requests
 import xmltodict
 from botocore.exceptions import ClientError
 
 from localstack.services.sqs.utils import parse_queue_url
+from localstack.utils.aws import aws_stack
 
 
 def _parse_message_attributes(xml) -> list[dict]:
@@ -60,8 +60,11 @@ class TestSqsDeveloperEdpoints:
         sqs_client.send_message(QueueUrl=queue_url, MessageBody="message-2")
 
         # use the developer endpoint as boto client URL
-        client = boto3.client("sqs", endpoint_url="http://localhost:4566/_aws/sqs/messages")
-        response = client.receive_message(QueueUrl=queue_url)
+        client = aws_stack.connect_to_service(
+            "sqs", endpoint_url="http://localhost:4566/_aws/sqs/messages"
+        )
+        # max messages is ignored
+        response = client.receive_message(QueueUrl=queue_url, MaxNumberOfMessages=1)
 
         assert len(response["Messages"]) == 2
 
@@ -74,7 +77,9 @@ class TestSqsDeveloperEdpoints:
     def test_list_messages_with_invalid_action_raises_error(self, sqs_client, sqs_create_queue):
         queue_url = sqs_create_queue()
 
-        client = boto3.client("sqs", endpoint_url="http://localhost:4566/_aws/sqs/messages")
+        client = aws_stack.connect_to_service(
+            "sqs", endpoint_url="http://localhost:4566/_aws/sqs/messages"
+        )
 
         with pytest.raises(ClientError) as e:
             client.send_message(QueueUrl=queue_url, MessageBody="foobar")
