@@ -62,7 +62,9 @@ from localstack.aws.api.dynamodb import (
     QueryInput,
     QueryOutput,
     RegionName,
+    ReplicaDescription,
     ReplicaList,
+    ReplicaStatus,
     ReplicaUpdateList,
     ResourceArnString,
     ResourceInUseException,
@@ -106,6 +108,7 @@ from localstack.services.edge import ROUTER
 from localstack.services.plugins import ServiceLifecycleHook
 from localstack.utils.aws import arns, aws_stack
 from localstack.utils.aws.arns import extract_account_id_from_arn, extract_region_from_arn
+from localstack.utils.aws.aws_stack import get_valid_regions_for_service
 from localstack.utils.collections import select_attributes
 from localstack.utils.common import short_uid, to_bytes
 from localstack.utils.json import BytesEncoder, canonical_json
@@ -511,7 +514,7 @@ class DynamoDBProvider(DynamodbApi, ServiceLifecycleHook):
         if (
             global_table_region
             and not self.table_exists(context.account_id, global_table_region, table_name)
-        ) or not self.table_exists(context.account_id, context.region, table_name):
+        ) and not self.table_exists(context.account_id, context.region, table_name):
             raise ResourceNotFoundException("Cannot do operations on a non-existent table")
 
         result = self._forward_request(context=context, region=global_table_region)
@@ -521,14 +524,23 @@ class DynamoDBProvider(DynamodbApi, ServiceLifecycleHook):
         if table_props:
             result.get("Table", {}).update(table_props)
 
-        replicas: Dict = get_store(context.account_id, context.region).REPLICA_UPDATES.get(
-            table_name
-        )
-        if replicas and replicas.get(context.region):
-            regions = replicas.get(context.region)
-            result.get("Table", {}).update(
-                {"Replicas": [{"RegionName": region} for region in regions]}
-            )
+        replicas: dict[str, set[str]] = get_store(
+            context.account_id, context.region
+        ).REPLICA_UPDATES.get(table_name, {})
+        replica_description_list = []
+        for source_region, replicated_regions in replicas.items():
+            if source_region != context.region:
+                replica_description_list.append(
+                    ReplicaDescription(RegionName=source_region, ReplicaStatus=ReplicaStatus.ACTIVE)
+                )
+            for replicated_region in replicated_regions:
+                if replicated_region != context.region:
+                    replica_description_list.append(
+                        ReplicaDescription(
+                            RegionName=replicated_region, ReplicaStatus=ReplicaStatus.ACTIVE
+                        )
+                    )
+        result.get("Table", {}).update({"Replicas": replica_description_list})
 
         # update only TableId and SSEDescription if present
         table_definitions = get_store(context.account_id, context.region).table_definitions.get(
@@ -587,6 +599,9 @@ class DynamoDBProvider(DynamodbApi, ServiceLifecycleHook):
                     for key, details in repl_update.items():
                         # target region
                         region = details.get("RegionName")
+                        # Check if region is valid
+                        if region not in get_valid_regions_for_service("dynamodb"):
+                            raise ValidationException(f"Region {region} is not supported")
                         match key:
                             case "Create":
                                 table_replicas[original_region].add(region)
@@ -615,7 +630,16 @@ class DynamoDBProvider(DynamodbApi, ServiceLifecycleHook):
         exclusive_start_table_name: TableName = None,
         limit: ListTablesInputLimit = None,
     ) -> ListTablesOutput:
-        return self.forward_request(context)
+        response = self.forward_request(context)
+
+        # Add replicated tables
+        replicas = get_store(context.account_id, context.region).REPLICA_UPDATES
+        for replicated_table, replications in replicas.items():
+            for original_region, replicated_regions in replications.items():
+                if context.region in replicated_regions:
+                    response["TableNames"].append(replicated_table)
+
+        return response
 
     @handler("PutItem", expand=False)
     def put_item(self, context: RequestContext, put_item_input: PutItemInput) -> PutItemOutput:
@@ -1165,7 +1189,7 @@ class DynamoDBProvider(DynamodbApi, ServiceLifecycleHook):
         return region_name
 
     @staticmethod
-    def table_exists(account_id: str, region_name: str, table_name: str):
+    def table_exists(account_id: str, region_name: str, table_name: str) -> bool:
         region_name = DynamoDBProvider.ddb_region_name(region_name)
 
         client = aws_stack.connect_to_service(
