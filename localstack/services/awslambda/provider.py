@@ -361,6 +361,8 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
                 id=new_id,
             )
             function.versions[next_version] = new_version
+            # Any Lambda permission for $LATEST (if existing) receives a new revision id upon publishing a new version.
+            # TODO: test revision id behavior for versions, permissions, etc because it seems they share the same revid
             if "$LATEST" in function.permissions:
                 function.permissions[
                     "$LATEST"
