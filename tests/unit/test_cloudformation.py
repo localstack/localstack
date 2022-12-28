@@ -1,7 +1,7 @@
 import re
 from typing import Dict
 
-import localstack.services.cloudformation.api_utils
+from localstack.services.cloudformation.api_utils import is_local_service_url
 from localstack.services.cloudformation.deployment_utils import (
     PLACEHOLDER_AWS_NO_VALUE,
     remove_none_values,
@@ -53,9 +53,9 @@ def test_is_local_service_url():
         "http://mybucket.s3.us-east-1.amazonaws.com",
     ]
     for url in local_urls:
-        assert localstack.services.cloudformation.api_utils.is_local_service_url(url)
+        assert is_local_service_url(url)
     for url in remote_urls:
-        assert not localstack.services.cloudformation.api_utils.is_local_service_url(url)
+        assert not is_local_service_url(url)
 
 
 def test_apply_substitutions():
