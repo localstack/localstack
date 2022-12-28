@@ -25,7 +25,7 @@ class SFNActivity(GenericBaseModel):
 
     @staticmethod
     def get_deploy_templates():
-        def _store_arn(result, resource_id, resources):
+        def _store_arn(result, resource_id, resources, resource_type):
             resources[resource_id]["PhysicalResourceId"] = result["activityArn"]
 
         return {
