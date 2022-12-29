@@ -87,6 +87,8 @@ from localstack.utils.time import now
 
 LOG = logging.getLogger(__name__)
 
+MAX_NUMBER_OF_MESSAGES = 10
+
 
 def assert_queue_name(queue_name: str, fifo: bool = False):
     if queue_name.endswith(".fifo"):
@@ -808,6 +810,13 @@ class SqsProvider(SqsApi, ServiceLifecycleHook):
             wait_time_seconds = queue.wait_time_seconds
 
         num = max_number_of_messages or 1
+
+        if num < 1 or num > MAX_NUMBER_OF_MESSAGES:
+            raise InvalidParameterValue(
+                f"Value {num} for parameter MaxNumberOfMessages is invalid. "
+                f"Reason: Must be between 1 and 10, if provided."
+            )
+
         # backdoor to get all messages
         if num == -1:
             num = queue.visible.qsize()

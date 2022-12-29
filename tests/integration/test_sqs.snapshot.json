@@ -634,5 +634,22 @@
         }
       }
     }
+  },
+  "tests/integration/test_sqs.py::TestSqsProvider::test_send_receive_max_number_of_messages": {
+    "recorded-date": "29-12-2022, 08:55:47",
+    "recorded-content": {
+      "send_max_number_of_messages": {
+        "Error": {
+          "Code": "InvalidParameterValue",
+          "Detail": null,
+          "Message": "Value 11 for parameter MaxNumberOfMessages is invalid. Reason: Must be between 1 and 10, if provided.",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
   }
 }
