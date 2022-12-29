@@ -63,6 +63,7 @@ from localstack.aws.api.sqs import (
     TooManyEntriesInBatchRequest,
 )
 from localstack.aws.spec import load_service
+from localstack.config import SQS_DISABLE_MAX_NUMBER_OF_MESSAGE_LIMIT
 from localstack.services.plugins import ServiceLifecycleHook
 from localstack.services.sqs import constants as sqs_constants
 from localstack.services.sqs.exceptions import InvalidParameterValue
@@ -811,15 +812,16 @@ class SqsProvider(SqsApi, ServiceLifecycleHook):
 
         num = max_number_of_messages or 1
 
-        if num < 1 or num > MAX_NUMBER_OF_MESSAGES:
+        # backdoor to get all messages
+        if num == -1:
+            num = queue.visible.qsize()
+        elif (
+            num < 1 or num > MAX_NUMBER_OF_MESSAGES
+        ) and not SQS_DISABLE_MAX_NUMBER_OF_MESSAGE_LIMIT:
             raise InvalidParameterValue(
                 f"Value {num} for parameter MaxNumberOfMessages is invalid. "
                 f"Reason: Must be between 1 and 10, if provided."
             )
-
-        # backdoor to get all messages
-        if num == -1:
-            num = queue.visible.qsize()
 
         block = True if wait_time_seconds else False
         # collect messages
