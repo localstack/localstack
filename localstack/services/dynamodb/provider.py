@@ -305,21 +305,6 @@ def get_store(account_id: str, region_name: str) -> DynamoDBStore:
     return dynamodb_stores[account_id][region_name]
 
 
-def find_global_table_region(context: RequestContext, table_name: str) -> str | None:
-    """
-    Check if the table is a Version 2019.11.21 table.
-
-    :param context: request context
-    :param table_name: the name of the table
-    :return: the original region; `None` if this is not a global table
-    """
-    replicas = get_store(context.account_id, context.region).REPLICA_UPDATES.get(table_name)
-    if not replicas:
-        return None
-    original_region = list(replicas.keys())[0]
-    return original_region if context.region in replicas[original_region] else None
-
-
 @contextmanager
 def modify_context_region(context: RequestContext, region: str):
     """
@@ -509,30 +494,27 @@ class DynamoDBProvider(DynamodbApi, ServiceLifecycleHook):
         return self.forward_request(context)
 
     def describe_table(self, context: RequestContext, table_name: TableName) -> DescribeTableOutput:
-        global_table_region = find_global_table_region(context, table_name)
-        # Check if table exists, to avoid error log output from DynamoDBLocal
-        if (
-            global_table_region
-            and not self.table_exists(context.account_id, global_table_region, table_name)
-        ) and not self.table_exists(context.account_id, context.region, table_name):
-            raise ResourceNotFoundException("Cannot do operations on a non-existent table")
+        global_table_region = self.get_global_table_region(context, table_name)
 
         result = self._forward_request(context=context, region=global_table_region)
 
-        # update response with additional props
+        # Update table properties from LocalStack stores
         table_props = get_store(context.account_id, context.region).table_properties.get(table_name)
         if table_props:
             result.get("Table", {}).update(table_props)
 
+        # Update replication details
         replicas: dict[str, set[str]] = get_store(
             context.account_id, context.region
         ).REPLICA_UPDATES.get(table_name, {})
+
         replica_description_list = []
         for source_region, replicated_regions in replicas.items():
-            if source_region != context.region:
-                replica_description_list.append(
-                    ReplicaDescription(RegionName=source_region, ReplicaStatus=ReplicaStatus.ACTIVE)
-                )
+            # Contrary to AWS, we show all regions including the current context region where a replica exists
+            # This is due to the limitation of internal request forwarding mechanism for global tables
+            replica_description_list.append(
+                ReplicaDescription(RegionName=source_region, ReplicaStatus=ReplicaStatus.ACTIVE)
+            )
             for replicated_region in replicated_regions:
                 if replicated_region != context.region:
                     replica_description_list.append(
@@ -561,63 +543,63 @@ class DynamoDBProvider(DynamodbApi, ServiceLifecycleHook):
     def update_table(
         self, context: RequestContext, update_table_input: UpdateTableInput
     ) -> UpdateTableOutput:
+        table_name = update_table_input.get("TableName")
+        global_table_region = self.get_global_table_region(context, table_name)
+
         try:
-            # forward request to backend
-            result = self.forward_request(context)
-        except CommonServiceException as e:
-            is_no_update_error = (
-                e.code == "ValidationException" and "Nothing to update" in e.message
-            )
-            if not is_no_update_error or not list(
-                {"TableClass", "ReplicaUpdates"} & set(update_table_input.keys())
-            ):
+            result = self._forward_request(context=context, region=global_table_region)
+        except CommonServiceException as exc:
+            # DynamoDBLocal refuses to update certain table params and raises.
+            # But we still need to update this info in LocalStack stores
+            if not (exc.code == "ValidationException" and exc.message == "Nothing to update"):
                 raise
 
-            table_name = update_table_input.get("TableName")
-
-            if update_table_input.get("TableClass"):
+            if table_class := update_table_input.get("TableClass"):
                 table_definitions = get_store(
                     context.account_id, context.region
                 ).table_definitions.setdefault(table_name, {})
-                table_definitions["TableClass"] = update_table_input.get("TableClass")
+                table_definitions["TableClass"] = table_class
 
-            if update_table_input.get("ReplicaUpdates"):
-                # update local table props (replicas)
-                table_properties: Dict = get_store(
-                    context.account_id, context.region
-                ).REPLICA_UPDATES
-                table_properties[table_name] = table_replicas = (
-                    table_properties.get(table_name) or {}
-                )
+            if replica_updates := update_table_input.get("ReplicaUpdates"):
+                store = get_store(context.account_id, global_table_region)
 
-                # get dict of replicas for the table => {original_region: {regions}}
-                original_region = context.region
-                table_replicas[original_region] = region_replicas = (
-                    table_replicas.get(original_region) or set()
-                )
-                for repl_update in update_table_input["ReplicaUpdates"]:
-                    for key, details in repl_update.items():
-                        # target region
-                        region = details.get("RegionName")
-                        # Check if region is valid
-                        if region not in get_valid_regions_for_service("dynamodb"):
-                            raise ValidationException(f"Region {region} is not supported")
+                # Dict with source region to set of replicated regions
+                replicas: dict[str, set(str)] = store.REPLICA_UPDATES.get(table_name, {})
+                replicas.setdefault(global_table_region, set())
+
+                for replica_update in replica_updates:
+                    for key, details in replica_update.items():
+                        # Replicated region
+                        target_region = details.get("RegionName")
+
+                        # Check if replicated region is valid
+                        if target_region not in get_valid_regions_for_service("dynamodb"):
+                            raise ValidationException(f"Region {target_region} is not supported")
+
                         match key:
                             case "Create":
-                                table_replicas[original_region].add(region)
-                            case "Update":
-                                table_replicas[original_region] = set(
-                                    [r for r in region_replicas if r == region]
-                                )
+                                if target_region in replicas[global_table_region]:
+                                    raise ValidationException(
+                                        f"Failed to create a the new replica of table with name: '{table_name}' because one or more replicas already existed as tables."
+                                    )
+                                replicas[global_table_region].add(target_region)
                             case "Delete":
-                                table_replicas[original_region] = set(
-                                    [r for r in region_replicas if r != region]
-                                )
+                                try:
+                                    replicas[global_table_region].remove(target_region)
+                                except KeyError:
+                                    raise ValidationException(
+                                        "Update global table operation failed because one or more replicas were not part of the global table."
+                                    )
+
+                store.REPLICA_UPDATES[table_name] = replicas
+
             # update response content
-            schema = SchemaExtractor.get_table_schema(table_name)
+            schema = SchemaExtractor.get_table_schema(
+                table_name, context.account_id, global_table_region
+            )
             return UpdateTableOutput(TableDescription=schema["Table"])
 
-        if "StreamSpecification" in update_table_input:
+        if update_table_input.get("StreamSpecification"):
             create_dynamodb_stream(
                 update_table_input, result["TableDescription"].get("LatestStreamLabel")
             )
@@ -643,14 +625,15 @@ class DynamoDBProvider(DynamodbApi, ServiceLifecycleHook):
 
     @handler("PutItem", expand=False)
     def put_item(self, context: RequestContext, put_item_input: PutItemInput) -> PutItemOutput:
-        global_table_region = find_global_table_region(context, put_item_input.get("TableName"))
+        table_name = put_item_input.get("TableName")
+        global_table_region = self.get_global_table_region(context, table_name)
+
+        result = self._forward_request(context=context, region=global_table_region)
+
         existing_item = None
-        table_name = put_item_input["TableName"]
         event_sources_or_streams_enabled = has_event_sources_or_streams_enabled(table_name)
         if event_sources_or_streams_enabled:
             existing_item = ItemFinder.find_existing_item(put_item_input)
-
-        result = self._forward_request(context=context, region=global_table_region)
 
         # Since this operation makes use of global table region, we need to use the same region for all
         # calls made via the inter-service client. This is taken care of by passing the account ID and
@@ -766,7 +749,8 @@ class DynamoDBProvider(DynamodbApi, ServiceLifecycleHook):
 
     @handler("GetItem", expand=False)
     def get_item(self, context: RequestContext, get_item_input: GetItemInput) -> GetItemOutput:
-        global_table_region = find_global_table_region(context, get_item_input.get("TableName"))
+        table_name = get_item_input.get("TableName")
+        global_table_region = self.get_global_table_region(context, table_name)
         result = self._forward_request(context=context, region=global_table_region)
         self.fix_consumed_capacity(get_item_input, result)
         return result
@@ -1204,6 +1188,22 @@ class DynamoDBProvider(DynamodbApi, ServiceLifecycleHook):
         # except client.exceptions.ResourceNotFoundException:
         #     return False
         # return True
+
+    @staticmethod
+    def get_global_table_region(context: RequestContext, table_name: str) -> str | None:
+        """
+        Return the table region considering that it might be a replicated table and that it exists within DDBLocal.
+        """
+        replicas = get_store(context.account_id, context.region).REPLICA_UPDATES.get(table_name)
+        if replicas:
+            global_table_region = list(replicas.keys())[0]
+            if DynamoDBProvider.table_exists(context.account_id, global_table_region, table_name):
+                return global_table_region
+        else:
+            if DynamoDBProvider.table_exists(context.account_id, context.region, table_name):
+                return context.region
+
+        raise ResourceNotFoundException("Cannot do operations on a non-existent table")
 
     @staticmethod
     def prepare_request_headers(headers: Dict, account_id: str, region_name: str):
