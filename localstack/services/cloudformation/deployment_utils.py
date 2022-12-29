@@ -8,7 +8,6 @@ from localstack.utils import common
 from localstack.utils.common import select_attributes, short_uid
 
 # placeholders
-PLACEHOLDER_RESOURCE_NAME = "__resource_name__"
 PLACEHOLDER_AWS_NO_VALUE = "__aws_no_value__"
 
 

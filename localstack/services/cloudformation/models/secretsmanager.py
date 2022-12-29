@@ -29,7 +29,7 @@ class SecretsManagerSecret(GenericBaseModel):
         return super(SecretsManagerSecret, self).get_cfn_attribute(attribute_name)
 
     def fetch_state(self, stack_name, resources):
-        secret_name = self.props.get("Name") or self.resource_id
+        secret_name = self.props.get("Name") or self.logical_resource_id
         secret_name = self.resolve_refs_recursively(stack_name, secret_name, resources)
         result = aws_stack.connect_to_service("secretsmanager").describe_secret(
             SecretId=secret_name
