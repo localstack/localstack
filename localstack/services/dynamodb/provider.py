@@ -372,12 +372,25 @@ class DynamoDBProvider(DynamodbApi, ServiceLifecycleHook):
         # update x-amz-crc32 header required by some clients
         response.headers["x-amz-crc32"] = crc32(response.data) & 0xFFFFFFFF
 
+    def _forward_request(self, context: RequestContext, region: str | None) -> ServiceResponse:
+        """
+        Modify the context region and then forward request to DynamoDB Local.
+
+        This is used for operations impacted by global tables. In LocalStack, a single copy of global table
+        is kept, and any requests to replicated tables are forwarded to this original table.
+        """
+        if region:
+            with modify_context_region(context, region):
+                return self.forward_request(context)
+        return self.forward_request(context)
+
     def forward_request(
         self, context: RequestContext, service_request: ServiceRequest = None
     ) -> ServiceResponse:
-        # check rate limiting for this request and raise an error, if provisioned throughput is exceeded
+        """
+        Forward a request to DynamoDB Local.
+        """
         self.check_provisioned_throughput(context.operation.name)
-        # note: modifying headers in-place here before forwarding the request
         self.prepare_request_headers(
             context.request.headers, account_id=context.account_id, region_name=context.region
         )
@@ -407,6 +420,10 @@ class DynamoDBProvider(DynamodbApi, ServiceLifecycleHook):
         )
         return Response(result.content, headers=dict(result.headers), status=result.status_code)
 
+    #
+    # Table ops
+    #
+
     @handler("CreateTable", expand=False)
     def create_table(
         self,
@@ -425,7 +442,6 @@ class DynamoDBProvider(DynamodbApi, ServiceLifecycleHook):
                 "specified when BillingMode is PAY_PER_REQUEST"
             )
 
-        # forward request to backend
         result = self.forward_request(context)
 
         table_description = result["TableDescription"]
@@ -476,7 +492,6 @@ class DynamoDBProvider(DynamodbApi, ServiceLifecycleHook):
         if not self.table_exists(context.account_id, context.region, table_name):
             raise ResourceNotFoundException("Cannot do operations on a non-existent table")
 
-        # forward request to backend
         result = self.forward_request(context)
 
         table_arn = result.get("TableDescription", {}).get("TableArn")
@@ -485,13 +500,6 @@ class DynamoDBProvider(DynamodbApi, ServiceLifecycleHook):
         get_store(context.account_id, context.region).TABLE_TAGS.pop(table_arn, None)
 
         return result
-
-    def _forward_request(self, context: RequestContext, region: str | None) -> ServiceResponse:
-        """This helper is used to modify the request context for operations that make use of a global table region."""
-        if region:
-            with modify_context_region(context, region):
-                return self.forward_request(context)
-        return self.forward_request(context)
 
     def describe_table(self, context: RequestContext, table_name: TableName) -> DescribeTableOutput:
         global_table_region = self.get_global_table_region(context, table_name)
@@ -543,7 +551,7 @@ class DynamoDBProvider(DynamodbApi, ServiceLifecycleHook):
     def update_table(
         self, context: RequestContext, update_table_input: UpdateTableInput
     ) -> UpdateTableOutput:
-        table_name = update_table_input.get("TableName")
+        table_name = update_table_input["TableName"]
         global_table_region = self.get_global_table_region(context, table_name)
 
         try:
@@ -623,9 +631,13 @@ class DynamoDBProvider(DynamodbApi, ServiceLifecycleHook):
 
         return response
 
+    #
+    # Item ops
+    #
+
     @handler("PutItem", expand=False)
     def put_item(self, context: RequestContext, put_item_input: PutItemInput) -> PutItemOutput:
-        table_name = put_item_input.get("TableName")
+        table_name = put_item_input["TableName"]
         global_table_region = self.get_global_table_region(context, table_name)
 
         result = self._forward_request(context=context, region=global_table_region)
@@ -677,13 +689,14 @@ class DynamoDBProvider(DynamodbApi, ServiceLifecycleHook):
         context: RequestContext,
         delete_item_input: DeleteItemInput,
     ) -> DeleteItemOutput:
-        existing_item = None
         table_name = delete_item_input["TableName"]
+        global_table_region = self.get_global_table_region(context, table_name)
+
+        existing_item = None
         if has_event_sources_or_streams_enabled(table_name):
             existing_item = ItemFinder.find_existing_item(delete_item_input)
 
-        # forward request to backend
-        result = self.forward_request(context)
+        result = self._forward_request(context=context, region=global_table_region)
 
         # determine and forward stream record
         if existing_item:
@@ -715,14 +728,15 @@ class DynamoDBProvider(DynamodbApi, ServiceLifecycleHook):
         context: RequestContext,
         update_item_input: UpdateItemInput,
     ) -> UpdateItemOutput:
-        existing_item = None
         table_name = update_item_input["TableName"]
+        global_table_region = self.get_global_table_region(context, table_name)
+
+        existing_item = None
         event_sources_or_streams_enabled = has_event_sources_or_streams_enabled(table_name)
         if event_sources_or_streams_enabled:
             existing_item = ItemFinder.find_existing_item(update_item_input)
 
-        # forward request to backend
-        result = self.forward_request(context)
+        result = self._forward_request(context=context, region=global_table_region)
 
         # construct and forward stream record
         if event_sources_or_streams_enabled:
@@ -749,11 +763,15 @@ class DynamoDBProvider(DynamodbApi, ServiceLifecycleHook):
 
     @handler("GetItem", expand=False)
     def get_item(self, context: RequestContext, get_item_input: GetItemInput) -> GetItemOutput:
-        table_name = get_item_input.get("TableName")
+        table_name = get_item_input["TableName"]
         global_table_region = self.get_global_table_region(context, table_name)
         result = self._forward_request(context=context, region=global_table_region)
         self.fix_consumed_capacity(get_item_input, result)
         return result
+
+    #
+    # Queries
+    #
 
     @handler("Query", expand=False)
     def query(self, context: RequestContext, query_input: QueryInput) -> QueryOutput:
@@ -774,12 +792,17 @@ class DynamoDBProvider(DynamodbApi, ServiceLifecycleHook):
     def scan(self, context: RequestContext, scan_input: ScanInput) -> ScanOutput:
         return self.forward_request(context)
 
+    #
+    # Batch ops
+    #
+
     @handler("BatchWriteItem", expand=False)
     def batch_write_item(
         self,
         context: RequestContext,
         batch_write_item_input: BatchWriteItemInput,
     ) -> BatchWriteItemOutput:
+        # TODO@viren add global table support
         existing_items = []
         unprocessed_put_items = []
         unprocessed_delete_items = []
@@ -798,7 +821,6 @@ class DynamoDBProvider(DynamodbApi, ServiceLifecycleHook):
                             item = ItemFinder.find_existing_item(inner_request, table_name)
                             existing_items.append(item)
 
-        # forward request to backend
         result = self.forward_request(context)
 
         # determine and forward stream records
@@ -845,6 +867,10 @@ class DynamoDBProvider(DynamodbApi, ServiceLifecycleHook):
     ) -> BatchGetItemOutput:
         return self.forward_request(context)
 
+    #
+    # Transactions
+    #
+
     @handler("TransactWriteItems", expand=False)
     def transact_write_items(
         self,
@@ -865,7 +891,6 @@ class DynamoDBProvider(DynamodbApi, ServiceLifecycleHook):
             # IdempotentParameterMismatchException error if a client token is provided
             context.request.data = to_bytes(canonical_json(json.loads(context.request.data)))
 
-        # forward request to backend
         result = self.forward_request(context)
 
         # determine and forward stream records
@@ -918,7 +943,6 @@ class DynamoDBProvider(DynamodbApi, ServiceLifecycleHook):
             # TODO: find a mechanism to hook into the PartiQL update mechanism of DynamoDB Local directly!
             existing_items = ItemFinder.list_existing_items_for_statement(statement)
 
-        # forward request to backend
         result = self.forward_request(context)
 
         # construct and forward stream record
@@ -930,6 +954,10 @@ class DynamoDBProvider(DynamodbApi, ServiceLifecycleHook):
             self.forward_stream_records(records, table_name=table_name)
 
         return result
+
+    #
+    # Tags
+    #
 
     def tag_resource(
         self, context: RequestContext, resource_arn: ResourceArnString, tags: TagList
@@ -961,6 +989,10 @@ class DynamoDBProvider(DynamodbApi, ServiceLifecycleHook):
         ]
         return ListTagsOfResourceOutput(Tags=result)
 
+    #
+    # TTLs
+    #
+
     def describe_time_to_live(
         self, context: RequestContext, table_name: TableName
     ) -> DescribeTimeToLiveOutput:
@@ -990,6 +1022,10 @@ class DynamoDBProvider(DynamodbApi, ServiceLifecycleHook):
         backend = get_store(context.account_id, context.region)
         backend.ttl_specifications[table_name] = time_to_live_specification
         return UpdateTimeToLiveOutput(TimeToLiveSpecification=time_to_live_specification)
+
+    #
+    # Global tables
+    #
 
     def create_global_table(
         self, context: RequestContext, global_table_name: TableName, replication_group: ReplicaList
@@ -1057,6 +1093,10 @@ class DynamoDBProvider(DynamodbApi, ServiceLifecycleHook):
                 }
                 details["ReplicationGroup"].append(new_group)
         return UpdateGlobalTableOutput(GlobalTableDescription=details)
+
+    #
+    # Kinesis Streaming
+    #
 
     def enable_kinesis_streaming_destination(
         self, context: RequestContext, table_name: TableName, stream_arn: StreamArn
@@ -1150,6 +1190,10 @@ class DynamoDBProvider(DynamodbApi, ServiceLifecycleHook):
             KinesisDataStreamDestinations=stream_destinations, TableName=table_name
         )
 
+    #
+    # Helpers
+    #
+
     @staticmethod
     def ddb_access_key(account_id: str, region_name: str) -> str:
         """
@@ -1183,16 +1227,15 @@ class DynamoDBProvider(DynamodbApi, ServiceLifecycleHook):
             region_name=region_name,
         )
         return dynamodb_table_exists(table_name, client)
-        # try:
-        #     client.describe_table(TableName=table_name)
-        # except client.exceptions.ResourceNotFoundException:
-        #     return False
-        # return True
 
     @staticmethod
-    def get_global_table_region(context: RequestContext, table_name: str) -> str | None:
+    def get_global_table_region(context: RequestContext, table_name: str) -> str:
         """
         Return the table region considering that it might be a replicated table and that it exists within DDBLocal.
+        :param context: request context
+        :param table_name: table name
+        :return: region
+        :raise: ResourceNotFoundException if table does not exist in DynamoDB Local
         """
         replicas = get_store(context.account_id, context.region).REPLICA_UPDATES.get(table_name)
         if replicas:
@@ -1237,7 +1280,9 @@ class DynamoDBProvider(DynamodbApi, ServiceLifecycleHook):
             }
 
     def fix_table_arn(self, arn: str) -> str:
-        """Set the correct account ID and region in ARNs returned by DynamoDB local."""
+        """
+        Set the correct account ID and region in ARNs returned by DynamoDB Local.
+        """
         return arn.replace(":ddblocal:", f":{aws_stack.get_region()}:").replace(
             ":000000000000:", f":{get_aws_account_id()}:"
         )
@@ -1416,6 +1461,9 @@ class DynamoDBProvider(DynamodbApi, ServiceLifecycleHook):
         }
 
     def check_provisioned_throughput(self, action):
+        """
+        Check rate limiting for an API operation and raise an error if provisioned throughput is exceeded.
+        """
         if self.should_throttle(action):
             message = (
                 "The level of configured provisioned throughput for the table was exceeded. "
