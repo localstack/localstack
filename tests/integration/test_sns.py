@@ -2985,3 +2985,248 @@ class TestSNSProvider:
             MessageStructure="json",
         )
         snapshot.match("duplicate-json-keys", resp)
+
+    @pytest.mark.aws_validated
+    @pytest.mark.skip_snapshot_verify(paths=["$..Attributes.SubscriptionPrincipal"])
+    def test_set_subscription_filter_policy_scope(
+        self,
+        sns_client,
+        sqs_client,
+        sqs_create_queue,
+        sns_create_topic,
+        sns_create_sqs_subscription,
+        snapshot,
+    ):
+        topic_arn = sns_create_topic()["TopicArn"]
+        queue_url = sqs_create_queue()
+        subscription = sns_create_sqs_subscription(topic_arn=topic_arn, queue_url=queue_url)
+        subscription_arn = subscription["SubscriptionArn"]
+
+        # we fetch the default subscription attributes
+        # note: the FilterPolicyScope is not present in the response
+        subscription_attrs = sns_client.get_subscription_attributes(
+            SubscriptionArn=subscription_arn
+        )
+        snapshot.match("sub-attrs-default", subscription_attrs)
+
+        sns_client.set_subscription_attributes(
+            SubscriptionArn=subscription_arn,
+            AttributeName="FilterPolicyScope",
+            AttributeValue="MessageBody",
+        )
+
+        # we fetch the subscription attributes after setting the FilterPolicyScope
+        # note: the FilterPolicyScope is still not present in the response
+        subscription_attrs = sns_client.get_subscription_attributes(
+            SubscriptionArn=subscription_arn
+        )
+        snapshot.match("sub-attrs-filter-scope-body", subscription_attrs)
+
+        # we try to set random values to the FilterPolicyScope
+        with pytest.raises(ClientError) as e:
+            sns_client.set_subscription_attributes(
+                SubscriptionArn=subscription_arn,
+                AttributeName="FilterPolicyScope",
+                AttributeValue="RandomValue",
+            )
+
+        snapshot.match("sub-attrs-filter-scope-error", e.value.response)
+
+        # we try to set a FilterPolicy to see if it will show the FilterPolicyScope in the attributes
+        sns_client.set_subscription_attributes(
+            SubscriptionArn=subscription_arn,
+            AttributeName="FilterPolicy",
+            AttributeValue=json.dumps({"attr": ["match-this"]}),
+        )
+        # the FilterPolicyScope is now present in the attributes
+        subscription_attrs = sns_client.get_subscription_attributes(
+            SubscriptionArn=subscription_arn
+        )
+        snapshot.match("sub-attrs-after-setting-policy", subscription_attrs)
+
+    @pytest.mark.aws_validated
+    @pytest.mark.skip_snapshot_verify(paths=["$..Attributes.SubscriptionPrincipal"])
+    def test_sub_filter_policy_nested_property(
+        self,
+        sns_client,
+        sqs_client,
+        sqs_create_queue,
+        sns_create_topic,
+        sns_create_sqs_subscription,
+        snapshot,
+    ):
+        topic_arn = sns_create_topic()["TopicArn"]
+        queue_url = sqs_create_queue()
+        subscription = sns_create_sqs_subscription(topic_arn=topic_arn, queue_url=queue_url)
+        subscription_arn = subscription["SubscriptionArn"]
+
+        # see https://aws.amazon.com/blogs/compute/introducing-payload-based-message-filtering-for-amazon-sns/
+        nested_filter_policy = {"object": {"key": [{"prefix": "auto-"}]}}
+        with pytest.raises(ClientError) as e:
+            sns_client.set_subscription_attributes(
+                SubscriptionArn=subscription_arn,
+                AttributeName="FilterPolicy",
+                AttributeValue=json.dumps(nested_filter_policy),
+            )
+        snapshot.match("sub-filter-policy-nested-error", e.value.response)
+
+        sns_client.set_subscription_attributes(
+            SubscriptionArn=subscription_arn,
+            AttributeName="FilterPolicyScope",
+            AttributeValue="MessageBody",
+        )
+
+        sns_client.set_subscription_attributes(
+            SubscriptionArn=subscription_arn,
+            AttributeName="FilterPolicy",
+            AttributeValue=json.dumps(nested_filter_policy),
+        )
+
+        # the FilterPolicyScope is now present in the attributes
+        subscription_attrs = sns_client.get_subscription_attributes(
+            SubscriptionArn=subscription_arn
+        )
+        snapshot.match("sub-attrs-after-setting-nested-policy", subscription_attrs)
+
+    @pytest.mark.aws_validated
+    def test_sub_filter_policy_nested_property_constraints(
+        self,
+        sns_client,
+        sqs_client,
+        sqs_create_queue,
+        sns_create_topic,
+        sns_create_sqs_subscription,
+        snapshot,
+    ):
+        # https://docs.aws.amazon.com/sns/latest/dg/subscription-filter-policy-constraints.html
+        topic_arn = sns_create_topic()["TopicArn"]
+        queue_url = sqs_create_queue()
+        subscription = sns_create_sqs_subscription(topic_arn=topic_arn, queue_url=queue_url)
+        subscription_arn = subscription["SubscriptionArn"]
+
+        sns_client.set_subscription_attributes(
+            SubscriptionArn=subscription_arn,
+            AttributeName="FilterPolicyScope",
+            AttributeValue="MessageBody",
+        )
+
+        nested_filter_policy = {
+            "key_a": {
+                "key_b": {"key_c": ["value_one", "value_two", "value_three", "value_four"]},
+            },
+            "key_d": {"key_e": ["value_one", "value_two", "value_three"]},
+            "key_f": ["value_one", "value_two", "value_three"],
+        }
+        # The first array has four values in a three-level nested key, and the second has three values in a two-level
+        # nested key. The total combination is calculated as follows:
+        # 3 x 4 x 2 x 3 x 1 x 3 = 216
+        # Max is supposed to be 100 but is actually 150
+        with pytest.raises(ClientError) as e:
+            sns_client.set_subscription_attributes(
+                SubscriptionArn=subscription_arn,
+                AttributeName="FilterPolicy",
+                AttributeValue=json.dumps(nested_filter_policy),
+            )
+        snapshot.match("sub-filter-policy-nested-error-too-many-combinations", e.value.response)
+
+        flat_filter_policy = {
+            "key_a": ["value_one"],
+            "key_b": ["value_two"],
+            "key_c": ["value_three"],
+            "key_d": ["value_four"],
+            "key_e": ["value_five"],
+            "key_f": ["value_six"],
+        }
+        # A filter policy can have a maximum of five attribute names. For a nested policy, only parent keys are counted.
+        with pytest.raises(ClientError) as e:
+            sns_client.set_subscription_attributes(
+                SubscriptionArn=subscription_arn,
+                AttributeName="FilterPolicy",
+                AttributeValue=json.dumps(flat_filter_policy),
+            )
+        snapshot.match("sub-filter-policy-max-attr-keys", e.value.response)
+
+    @pytest.mark.parametrize("raw_message_delivery", [True, False])
+    def test_filter_policy_on_message_body(
+        self,
+        sns_client,
+        sqs_client,
+        sqs_create_queue,
+        sns_create_topic,
+        sns_create_sqs_subscription,
+        snapshot,
+        raw_message_delivery,
+    ):
+
+        topic_arn = sns_create_topic()["TopicArn"]
+        queue_url = sqs_create_queue()
+        subscription = sns_create_sqs_subscription(topic_arn=topic_arn, queue_url=queue_url)
+        subscription_arn = subscription["SubscriptionArn"]
+        # see https://aws.amazon.com/blogs/compute/introducing-payload-based-message-filtering-for-amazon-sns/
+        nested_filter_policy = {"object": {"key": [{"prefix": "auto-"}]}}
+
+        sns_client.set_subscription_attributes(
+            SubscriptionArn=subscription_arn,
+            AttributeName="FilterPolicyScope",
+            AttributeValue="MessageBody",
+        )
+
+        sns_client.set_subscription_attributes(
+            SubscriptionArn=subscription_arn,
+            AttributeName="FilterPolicy",
+            AttributeValue=json.dumps(nested_filter_policy),
+        )
+
+        if raw_message_delivery:
+            sns_client.set_subscription_attributes(
+                SubscriptionArn=subscription_arn,
+                AttributeName="RawMessageDelivery",
+                AttributeValue="true",
+            )
+
+        response = sqs_client.receive_message(
+            QueueUrl=queue_url, VisibilityTimeout=0, WaitTimeSeconds=1
+        )
+        snapshot.match("recv-init", response)
+        # assert there are no messages in the queue
+        assert "Messages" not in response
+
+        # publish message that satisfies the filter policy, assert that message is received
+        message = {"object": {"key": "auto-test"}}
+        sns_client.publish(
+            TopicArn=topic_arn,
+            Message=json.dumps(message),
+        )
+
+        response = sqs_client.receive_message(
+            QueueUrl=queue_url, VisibilityTimeout=0, WaitTimeSeconds=4
+        )
+        snapshot.match("recv-passed-msg", response)
+        receipt_handle = response["Messages"][0]["ReceiptHandle"]
+        sqs_client.delete_message(QueueUrl=queue_url, ReceiptHandle=receipt_handle)
+
+        # publish message that does not satisfy the filter policy, assert that message is not received
+        message = {"object": {"key": "test-auto"}}
+        sns_client.publish(
+            TopicArn=topic_arn,
+            Message=json.dumps(message),
+        )
+
+        response = sqs_client.receive_message(
+            QueueUrl=queue_url, VisibilityTimeout=0, WaitTimeSeconds=4
+        )
+        # assert there are no messages in the queue
+        assert "Messages" not in response
+
+        # publish message that does not satisfy the filter policy as it's not even JSON
+        message = "Regular string message"
+        sns_client.publish(
+            TopicArn=topic_arn,
+            Message=json.dumps(message),
+        )
+
+        response = sqs_client.receive_message(
+            QueueUrl=queue_url, VisibilityTimeout=0, WaitTimeSeconds=4
+        )
+        # assert there are no messages in the queue
+        assert "Messages" not in response

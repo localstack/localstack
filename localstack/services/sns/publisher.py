@@ -868,8 +868,7 @@ class SubscriptionFilter:
         if not filter_policy:
             return True
 
-        for criteria in filter_policy:
-            conditions = filter_policy.get(criteria)
+        for criteria, conditions in filter_policy.items():
             attribute = message_attributes.get(criteria)
 
             if not self._evaluate_filter_policy_conditions(
@@ -878,6 +877,28 @@ class SubscriptionFilter:
                 return False
 
         return True
+
+    # def check_filter_policy_on_message_body(self, filter_policy, message_body):
+    #     if not filter_policy:
+    #         return True
+    #
+    #     try:
+    #         body = json.loads(message_body)
+    #     except json.JSONDecodeError:
+    #         # Filter policies for the message body assume that the message payload is a well-formed JSON object.
+    #         # See https://docs.aws.amazon.com/sns/latest/dg/sns-message-filtering.html
+    #         return False
+    #
+    #     for criteria in filter_policy:
+    #         conditions = filter_policy.get(criteria)
+    #         attribute = message_attributes.get(criteria)
+    #
+    #         if not self._evaluate_filter_policy_conditions(
+    #             conditions, attribute, message_attributes, criteria
+    #         ):
+    #             return False
+    #
+    #     return True
 
     def _evaluate_filter_policy_conditions(
         self, conditions, attribute, message_attributes, criteria
