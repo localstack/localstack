@@ -3120,7 +3120,6 @@ class TestSNSProvider:
         # The first array has four values in a three-level nested key, and the second has three values in a two-level
         # nested key. The total combination is calculated as follows:
         # 3 x 4 x 2 x 3 x 1 x 3 = 216
-        # Max is supposed to be 100 but is actually 150
         with pytest.raises(ClientError) as e:
             sns_client.set_subscription_attributes(
                 SubscriptionArn=subscription_arn,
@@ -3146,6 +3145,7 @@ class TestSNSProvider:
             )
         snapshot.match("sub-filter-policy-max-attr-keys", e.value.response)
 
+    @pytest.mark.aws_validated
     @pytest.mark.parametrize("raw_message_delivery", [True, False])
     def test_filter_policy_on_message_body(
         self,
@@ -3199,34 +3199,43 @@ class TestSNSProvider:
         )
 
         response = sqs_client.receive_message(
-            QueueUrl=queue_url, VisibilityTimeout=0, WaitTimeSeconds=4
+            QueueUrl=queue_url, VisibilityTimeout=0, WaitTimeSeconds=2
         )
         snapshot.match("recv-passed-msg", response)
         receipt_handle = response["Messages"][0]["ReceiptHandle"]
         sqs_client.delete_message(QueueUrl=queue_url, ReceiptHandle=receipt_handle)
 
-        # publish message that does not satisfy the filter policy, assert that message is not received
-        message = {"object": {"key": "test-auto"}}
-        sns_client.publish(
-            TopicArn=topic_arn,
-            Message=json.dumps(message),
-        )
+        # publish messages that do not satisfy the filter policy, assert those messages are not received
+        messages = [
+            {"object": {"key": "test-auto"}},
+            {"object": {"test": "auto-test"}},
+            {"test": "auto-test"},
+        ]
+        for message in messages:
+            sns_client.publish(
+                TopicArn=topic_arn,
+                Message=json.dumps(message),
+            )
 
         response = sqs_client.receive_message(
-            QueueUrl=queue_url, VisibilityTimeout=0, WaitTimeSeconds=4
+            QueueUrl=queue_url, VisibilityTimeout=0, WaitTimeSeconds=2
         )
         # assert there are no messages in the queue
         assert "Messages" not in response
 
-        # publish message that does not satisfy the filter policy as it's not even JSON
+        # publish message that does not satisfy the filter policy as it's not even JSON, or not a JSON object
         message = "Regular string message"
         sns_client.publish(
             TopicArn=topic_arn,
-            Message=json.dumps(message),
+            Message=message,
+        )
+        sns_client.publish(
+            TopicArn=topic_arn,
+            Message=json.dumps(message),  # send it JSON encoded, but not an object
         )
 
         response = sqs_client.receive_message(
-            QueueUrl=queue_url, VisibilityTimeout=0, WaitTimeSeconds=4
+            QueueUrl=queue_url, VisibilityTimeout=0, WaitTimeSeconds=2
         )
         # assert there are no messages in the queue
         assert "Messages" not in response

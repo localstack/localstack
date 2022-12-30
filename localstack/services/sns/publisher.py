@@ -864,46 +864,58 @@ def create_unsubscribe_url(external_url, subscription_arn):
 
 
 class SubscriptionFilter:
-    def check_filter_policy_on_message_attributes(self, filter_policy, message_attributes):
-        if not filter_policy:
-            return True
-
+    def check_filter_policy_on_message_attributes(
+        self, filter_policy: Dict, message_attributes: Dict
+    ):
         for criteria, conditions in filter_policy.items():
-            attribute = message_attributes.get(criteria)
-
-            if not self._evaluate_filter_policy_conditions(
-                conditions, attribute, message_attributes, criteria
+            if not self._evaluate_filter_policy_conditions_on_attribute(
+                conditions,
+                message_attributes.get(criteria),
+                field_exists=criteria in message_attributes,
             ):
                 return False
 
         return True
 
-    # def check_filter_policy_on_message_body(self, filter_policy, message_body):
-    #     if not filter_policy:
-    #         return True
-    #
-    #     try:
-    #         body = json.loads(message_body)
-    #     except json.JSONDecodeError:
-    #         # Filter policies for the message body assume that the message payload is a well-formed JSON object.
-    #         # See https://docs.aws.amazon.com/sns/latest/dg/sns-message-filtering.html
-    #         return False
-    #
-    #     for criteria in filter_policy:
-    #         conditions = filter_policy.get(criteria)
-    #         attribute = message_attributes.get(criteria)
-    #
-    #         if not self._evaluate_filter_policy_conditions(
-    #             conditions, attribute, message_attributes, criteria
-    #         ):
-    #             return False
-    #
-    #     return True
+    def check_filter_policy_on_message_body(self, filter_policy: dict, message_body: str):
+        try:
+            body = json.loads(message_body)
+            if not isinstance(body, dict):
+                return False
+        except json.JSONDecodeError:
+            # Filter policies for the message body assume that the message payload is a well-formed JSON object.
+            # See https://docs.aws.amazon.com/sns/latest/dg/sns-message-filtering.html
+            return False
 
-    def _evaluate_filter_policy_conditions(
-        self, conditions, attribute, message_attributes, criteria
+        return self._evaluate_nested_filter_policy_on_dict(filter_policy, payload=body)
+
+    def _evaluate_nested_filter_policy_on_dict(self, filter_policy, payload: dict) -> bool:
+        """
+        This method evaluate the filter policy recursively, while still being able to validate the `exists` condition.
+        It will go down the filter policy level at the same time as the payload.
+        :param filter_policy:
+        :param payload:
+        :return:
+        """
+        for criteria, conditions in filter_policy.items():
+            if not isinstance(conditions, list):
+                print(criteria, conditions, payload)
+                return self._evaluate_nested_filter_policy_on_dict(
+                    conditions, payload.get(criteria, {})
+                )
+
+            for condition in conditions:
+                if not self._evaluate_condition(
+                    payload.get(criteria), condition, field_exists=criteria in payload
+                ):
+                    return False
+
+        return True
+
+    def _evaluate_filter_policy_conditions_on_attribute(
+        self, conditions, attribute, field_exists: bool
     ):
-        if type(conditions) is not list:
+        if not isinstance(conditions, list):
             conditions = [conditions]
 
         tpe = attribute.get("DataType") or attribute.get("Type") if attribute else None
@@ -912,33 +924,40 @@ class SubscriptionFilter:
             values = ast.literal_eval(val)
             for value in values:
                 for condition in conditions:
-                    if self._evaluate_condition(value, condition, message_attributes, criteria):
+                    if self._evaluate_condition(value, condition, field_exists):
                         return True
         else:
             for condition in conditions:
                 value = val or None
-                if self._evaluate_condition(value, condition, message_attributes, criteria):
+                if self._evaluate_condition(value, condition, field_exists):
                     return True
 
         return False
 
-    def _evaluate_condition(self, value, condition, message_attributes, criteria):
+    def _evaluate_filter_policy_conditions_on_field(self, conditions, value, field_exists: bool):
+        for condition in conditions:
+            if self._evaluate_condition(value, condition, field_exists):
+                return True
+
+        return False
+
+    def _evaluate_condition(self, value, condition, field_exists: bool):
         if type(condition) is not dict:
             return value == condition
-        elif condition.get("exists") is not None:
-            return self._evaluate_exists_condition(
-                condition.get("exists"), message_attributes, criteria
-            )
+        elif (must_exist := condition.get("exists")) is not None:
+            # if must_exists is True then field_exists must be True
+            # if must_exists is False then fields_exists must be False
+            # we can use the XOR operator
+            return must_exist ^ field_exists
         elif value is None:
             # the remaining conditions require the value to not be None
             return False
-        elif condition.get("anything-but"):
-            return value not in condition.get("anything-but")
-        elif condition.get("prefix"):
-            prefix = condition.get("prefix")
+        elif anything_but := condition.get("anything-but"):
+            return value not in anything_but
+        elif prefix := (condition.get("prefix")):
             return value.startswith(prefix)
-        elif condition.get("numeric"):
-            return self._evaluate_numeric_condition(condition.get("numeric"), value)
+        elif numeric_condition := condition.get("numeric"):
+            return self._evaluate_numeric_condition(numeric_condition, value)
         return False
 
     @staticmethod
@@ -971,15 +990,6 @@ class SubscriptionFilter:
                     return False
 
         return True
-
-    @staticmethod
-    def _evaluate_exists_condition(conditions, message_attributes, criteria):
-        # support for exists: false was added in april 2021
-        # https://aws.amazon.com/about-aws/whats-new/2021/04/amazon-sns-grows-the-set-of-message-filtering-operators/
-        if conditions:
-            return message_attributes.get(criteria) is not None
-        else:
-            return message_attributes.get(criteria) is None
 
 
 class PublishDispatcher:
@@ -1028,8 +1038,10 @@ class PublishDispatcher:
                     filter_policy=filter_policy, message_attributes=message_ctx.message_attributes
                 )
             case "MessageBody":
-                # TODO: not implemented yet
-                return True
+                return self.subscription_filter.check_filter_policy_on_message_body(
+                    filter_policy=filter_policy,
+                    message_body=message_ctx.message_content(subscriber["Protocol"]),
+                )
 
     def publish_to_topic(self, ctx: SnsPublishContext, topic_arn: str) -> None:
         subscriptions = ctx.store.sns_subscriptions.get(topic_arn, [])
