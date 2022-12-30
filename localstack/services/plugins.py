@@ -137,29 +137,6 @@ class ServiceLifecycleHook:
         pass
 
 
-class BackendStateLifecycle(abc.ABC):
-    """
-    Interface that supports the retrieval, injection and restore of the backend for services.
-    """
-
-    @abc.abstractmethod
-    def retrieve_state(self, **kwargs):
-        """Retrieves the backend of a service"""
-
-    @abc.abstractmethod
-    def inject_state(self, **kwargs):
-        """Injects a backend for a service"""
-
-    @abc.abstractmethod
-    def reset_state(self):
-        """Resets a backend for a service"""
-
-    @abc.abstractmethod
-    def on_after_reset(self):
-        """Performed after the reset of a service"""
-        pass
-
-
 class Service:
     def __init__(
         self,
@@ -170,7 +147,6 @@ class Service:
         active=False,
         stop=None,
         lifecycle_hook: ServiceLifecycleHook = None,
-        backend_state_lifecycle: BackendStateLifecycle = None,
     ):
         self.plugin_name = name
         self.start_function = start
@@ -179,7 +155,6 @@ class Service:
         self.default_active = active
         self.stop_function = stop
         self.lifecycle_hook = lifecycle_hook or ServiceLifecycleHook()
-        self.backend_state_lifecycle = backend_state_lifecycle
         call_safe(self.lifecycle_hook.on_after_init)
 
     def start(self, asynchronous):
