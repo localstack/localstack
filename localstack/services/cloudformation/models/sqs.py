@@ -4,7 +4,6 @@ import logging
 from botocore.exceptions import ClientError
 
 from localstack.services.cloudformation.deployment_utils import (
-    PLACEHOLDER_RESOURCE_NAME,
     generate_default_name,
     params_list_to_dict,
     params_select_attributes,
@@ -71,9 +70,6 @@ class SQSQueue(GenericBaseModel):
     def cloudformation_type(cls):
         return "AWS::SQS::Queue"
 
-    def get_resource_name(self):
-        return self.props.get("QueueName")
-
     def get_physical_resource_id(self, attribute=None, **kwargs):
         queue_url = None
         props = self.props
@@ -82,7 +78,7 @@ class SQSQueue(GenericBaseModel):
         except Exception as e:
             if "NonExistentQueue" in str(e):
                 raise DependencyNotYetSatisfied(
-                    resource_ids=self.resource_id, message="Unable to get queue: %s" % e
+                    resource_ids=self.logical_resource_id, message="Unable to get queue: %s" % e
                 )
         if attribute == "Arn":
             return arns.sqs_queue_arn(props.get("QueueName"))
@@ -133,7 +129,7 @@ class SQSQueue(GenericBaseModel):
             "create": {
                 "function": "create_queue",
                 "parameters": {
-                    "QueueName": ["QueueName", PLACEHOLDER_RESOURCE_NAME],
+                    "QueueName": "QueueName",
                     "Attributes": params_select_attributes(
                         "ContentBasedDeduplication",
                         "DelaySeconds",

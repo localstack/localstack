@@ -15,9 +15,8 @@ LOG = logging.getLogger(__name__)
 class StackSet:
     """A stack set contains multiple stack instances."""
 
-    def __init__(self, metadata=None):
-        if metadata is None:
-            metadata = {}
+    # FIXME: confusing name. metadata is the complete incoming request object
+    def __init__(self, metadata: dict):
         self.metadata = metadata
         # list of stack instances
         self.stack_instances = []
@@ -32,9 +31,8 @@ class StackSet:
 class StackInstance:
     """A stack instance belongs to a stack set and is specific to a region / account ID."""
 
-    def __init__(self, metadata=None):
-        if metadata is None:
-            metadata = {}
+    # FIXME: confusing name. metadata is the complete incoming request object
+    def __init__(self, metadata: dict):
         self.metadata = metadata
         # reference to the deployed stack belonging to this stack instance
         self.stack = None
@@ -339,17 +337,6 @@ class Stack:
     def outputs(self):
         """Returns the (mutable) dict of stack outputs."""
         return self.template.setdefault("Outputs", {})
-
-    # FIXME: unused?
-    # @property
-    # def nested_stacks(self):
-    #     """Return a list of nested stacks that have been deployed by this stack."""
-    #     result = [
-    #         r for r in self.template_resources.values() if r["Type"] == "AWS::CloudFormation::Stack"
-    #     ]
-    #     result = [find_stack(r["Properties"].get("StackName")) for r in result]
-    #     result = [r for r in result if r]
-    #     return result
 
     @property
     def status(self):
