@@ -188,12 +188,6 @@ class TestSNSProvider:
         snapshot.match("exception", e.value.response)
 
     @pytest.mark.aws_validated
-    @pytest.mark.skip_snapshot_verify(
-        paths=[
-            "$..Attributes.Owner",
-            "$..Attributes.ConfirmationWasAuthenticated",
-        ]
-    )
     def test_attribute_raw_subscribe(
         self,
         sqs_client,
@@ -247,13 +241,6 @@ class TestSNSProvider:
         snapshot.match("messages-response", response)
 
     @pytest.mark.aws_validated
-    @pytest.mark.skip_snapshot_verify(
-        paths=[
-            "$..Attributes.Owner",
-            "$..Attributes.ConfirmationWasAuthenticated",
-            "$..Attributes.RawMessageDelivery",
-        ]
-    )
     def test_filter_policy(
         self,
         sns_client,
@@ -321,14 +308,6 @@ class TestSNSProvider:
         assert num_msgs_2 == num_msgs_1
 
     @pytest.mark.aws_validated
-    @pytest.mark.skip_snapshot_verify(
-        paths=[
-            "$..Attributes.Owner",
-            "$..Attributes.ConfirmationWasAuthenticated",
-            "$..Attributes.RawMessageDelivery",  # todo: fix me (not added to response if false)
-            "$..Attributes.sqs_queue_url",  # todo: fix me: added by moto? illegal?
-        ]
-    )
     def test_exists_filter_policy(
         self,
         sns_client,
@@ -453,13 +432,6 @@ class TestSNSProvider:
         assert num_msgs_4 == num_msgs_3
 
     @pytest.mark.aws_validated
-    @pytest.mark.skip_snapshot_verify(
-        paths=[
-            "$..Attributes.Owner",
-            "$..Attributes.ConfirmationWasAuthenticated",
-            "$..Attributes.RawMessageDelivery",
-        ]
-    )
     def test_subscribe_sqs_queue(
         self,
         sns_client,
@@ -632,13 +604,6 @@ class TestSNSProvider:
         retry(check_subscription, retries=PUBLICATION_RETRIES, sleep=PUBLICATION_TIMEOUT)
 
     @pytest.mark.aws_validated
-    @pytest.mark.skip_snapshot_verify(
-        paths=[
-            "$..Owner",
-            "$..ConfirmationWasAuthenticated",
-            "$..RawMessageDelivery",
-        ]
-    )
     def test_sqs_topic_subscription_confirmation(
         self, sns_client, sns_create_topic, sqs_create_queue, sns_create_sqs_subscription, snapshot
     ):
@@ -801,13 +766,6 @@ class TestSNSProvider:
         assert json.loads(message["Message"])["message"] == "test_redrive_policy"
 
     @pytest.mark.aws_validated
-    @pytest.mark.skip_snapshot_verify(
-        paths=[
-            "$..Owner",
-            "$..ConfirmationWasAuthenticated",
-            "$..RawMessageDelivery",
-        ]
-    )
     def test_redrive_policy_lambda_subscription(
         self,
         sns_client,
@@ -1171,13 +1129,6 @@ class TestSNSProvider:
         snapshot.match("wrong-endpoint", e.value.response)
 
     @pytest.mark.aws_validated
-    @pytest.mark.skip_snapshot_verify(
-        paths=[
-            "$..Attributes.Owner",
-            "$..Attributes.ConfirmationWasAuthenticated",
-            "$..Attributes.sqs_queue_url",
-        ]
-    )
     def test_publish_sqs_from_sns(
         self,
         sns_client,
@@ -1251,12 +1202,6 @@ class TestSNSProvider:
         }
 
     @pytest.mark.aws_validated
-    @pytest.mark.skip_snapshot_verify(
-        paths=[
-            "$..Attributes.Owner",
-            "$..Attributes.ConfirmationWasAuthenticated",
-        ]
-    )
     def test_publish_batch_messages_from_sns_to_sqs(
         self,
         sns_client,
@@ -1365,8 +1310,6 @@ class TestSNSProvider:
     @pytest.mark.aws_validated
     @pytest.mark.skip_snapshot_verify(
         paths=[
-            "$.sub-attrs-raw-true.Attributes.Owner",
-            "$.sub-attrs-raw-true.Attributes.ConfirmationWasAuthenticated",
             "$.topic-attrs.Attributes.DeliveryPolicy",
             "$.topic-attrs.Attributes.EffectiveDeliveryPolicy",
             "$.topic-attrs.Attributes.Policy.Statement..Action",  # SNS:Receive is added by moto but not returned in AWS
@@ -1500,8 +1443,6 @@ class TestSNSProvider:
     @pytest.mark.aws_validated
     @pytest.mark.skip_snapshot_verify(
         paths=[
-            "$.sub-attrs-raw-true.Attributes.Owner",
-            "$.sub-attrs-raw-true.Attributes.ConfirmationWasAuthenticated",
             "$.topic-attrs.Attributes.DeliveryPolicy",
             "$.topic-attrs.Attributes.EffectiveDeliveryPolicy",
             "$.topic-attrs.Attributes.Policy.Statement..Action",  # SNS:Receive is added by moto but not returned in AWS
@@ -1654,12 +1595,6 @@ class TestSNSProvider:
         snapshot.match("messages-in-dlq", {"Messages": messages})
 
     @pytest.mark.aws_validated
-    @pytest.mark.skip_snapshot_verify(
-        paths=[
-            "$..Attributes.Owner",
-            "$..Attributes.ConfirmationWasAuthenticated",
-        ]
-    )
     def test_publish_batch_exceptions(
         self,
         sns_client,
@@ -1790,14 +1725,6 @@ class TestSNSProvider:
         snapshot.match("topic-1", topic1)
 
     @pytest.mark.aws_validated
-    @pytest.mark.skip_snapshot_verify(
-        paths=[
-            "$..Attributes.Owner",
-            "$..Attributes.ConfirmationWasAuthenticated",
-            "$..Attributes.RawMessageDelivery",
-            "$..Subscriptions..Owner",
-        ]
-    )
     def test_not_found_error_on_set_subscription_attributes(
         self,
         sns_client,
@@ -1807,7 +1734,6 @@ class TestSNSProvider:
         sns_subscription,
         snapshot,
     ):
-
         topic_arn = sns_create_topic()["TopicArn"]
         queue_url = sqs_create_queue()
         queue_arn = sqs_queue_arn(queue_url)
@@ -2450,12 +2376,7 @@ class TestSNSProvider:
     @pytest.mark.aws_validated
     @pytest.mark.skip_snapshot_verify(
         paths=[
-            "$..Attributes.Owner",
-            "$..Attributes.ConfirmationWasAuthenticated",
-            "$..Attributes.SubscriptionPrincipal",
-            "$..Attributes.RawMessageDelivery",
-            "$..Attributes.sqs_queue_url",
-            "$..Subscriptions..Owner",
+            "$..Attributes.SubscriptionPrincipal"
         ]
     )
     def test_subscription_after_failure_to_deliver(

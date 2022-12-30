@@ -947,8 +947,8 @@ class SubscriptionFilter:
         elif (must_exist := condition.get("exists")) is not None:
             # if must_exists is True then field_exists must be True
             # if must_exists is False then fields_exists must be False
-            # we can use the XOR operator
-            return must_exist ^ field_exists
+            # we can use the XNOR operator
+            return not must_exist ^ field_exists
         elif value is None:
             # the remaining conditions require the value to not be None
             return False
