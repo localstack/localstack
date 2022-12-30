@@ -14,6 +14,7 @@ from localstack.aws.accounts import get_aws_account_id
 from localstack.aws.api.lambda_ import Runtime
 from localstack.services.sqs.constants import DEFAULT_MAXIMUM_MESSAGE_SIZE
 from localstack.services.sqs.models import sqs_stores
+from localstack.services.sqs.provider import MAX_NUMBER_OF_MESSAGES
 from localstack.testing.snapshots.transformer import GenericTransformer
 from localstack.utils.aws import arns, aws_stack
 from localstack.utils.common import poll_condition, retry, short_uid, to_str
@@ -206,6 +207,20 @@ class TestSqsProvider:
         assert message["Body"] == "message"
         assert message["MessageId"] == send_result["MessageId"]
         assert message["MD5OfBody"] == send_result["MD5OfMessageBody"]
+
+    @pytest.mark.aws_validated
+    @pytest.mark.skip_snapshot_verify(paths=["$..Error.Detail"])
+    def test_send_receive_max_number_of_messages(self, sqs_client, sqs_queue, snapshot):
+        queue_url = sqs_queue
+        send_result = sqs_client.send_message(QueueUrl=queue_url, MessageBody="message")
+        assert send_result["MessageId"]
+
+        with pytest.raises(ClientError) as e:
+            sqs_client.receive_message(
+                QueueUrl=queue_url, MaxNumberOfMessages=MAX_NUMBER_OF_MESSAGES + 1
+            )
+
+        snapshot.match("send_max_number_of_messages", e.value.response)
 
     @pytest.mark.aws_validated
     def test_receive_message_attributes_timestamp_types(self, sqs_client, sqs_queue):
