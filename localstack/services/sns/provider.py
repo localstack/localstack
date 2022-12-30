@@ -685,7 +685,7 @@ class SnsProvider(SnsApi, ServiceLifecycleHook):
                     SubscriptionArn=existing_topic_subscription["SubscriptionArn"]
                 )
         if filter_policy:
-            store.subscription_filter_policy = json.loads(filter_policy)
+            store.subscription_filter_policy[subscription_arn] = json.loads(filter_policy)
 
         subscription = {
             # http://docs.aws.amazon.com/cli/latest/reference/sns/get-subscription-attributes.html

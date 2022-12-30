@@ -90,7 +90,7 @@ class TopicPublisher(abc.ABC):
 
 class EndpointPublisher(abc.ABC):
     """
-    The TopicPublisher is responsible for publishing SNS messages directly to an endpoint.
+    The EndpointPublisher is responsible for publishing SNS messages directly to an endpoint.
     SNS allows directly publishing to phone numbers and application endpoints.
     This is the base class implementing the basic logic.
     Each subclass will need to implement `_publish` and `prepare_message `using the subscription's protocol logic
