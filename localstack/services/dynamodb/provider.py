@@ -488,11 +488,13 @@ class DynamoDBProvider(DynamodbApi, ServiceLifecycleHook):
         return result
 
     def delete_table(self, context: RequestContext, table_name: TableName) -> DeleteTableOutput:
-        # Check if table exists, to avoid error log output from DynamoDBLocal
-        if not self.table_exists(context.account_id, context.region, table_name):
-            raise ResourceNotFoundException("Cannot do operations on a non-existent table")
+        global_table_region = self.get_global_table_region(context, table_name)
 
-        result = self.forward_request(context)
+        if global_table_region != context.region:
+            # TODO@viren Remove the replica only
+            pass
+
+        result = self._forward_request(context=context, region=global_table_region)
 
         table_arn = result.get("TableDescription", {}).get("TableArn")
         table_arn = self.fix_table_arn(table_arn)
@@ -511,10 +513,10 @@ class DynamoDBProvider(DynamodbApi, ServiceLifecycleHook):
         if table_props:
             result.get("Table", {}).update(table_props)
 
+        store = get_store(context.account_id, context.region)
+
         # Update replication details
-        replicas: dict[str, set[str]] = get_store(
-            context.account_id, context.region
-        ).REPLICA_UPDATES.get(table_name, {})
+        replicas: dict[str, set[str]] = store.REPLICA_UPDATES.get(table_name, {})
 
         replica_description_list = []
         for source_region, replicated_regions in replicas.items():
@@ -524,12 +526,11 @@ class DynamoDBProvider(DynamodbApi, ServiceLifecycleHook):
                 ReplicaDescription(RegionName=source_region, ReplicaStatus=ReplicaStatus.ACTIVE)
             )
             for replicated_region in replicated_regions:
-                if replicated_region != context.region:
-                    replica_description_list.append(
-                        ReplicaDescription(
-                            RegionName=replicated_region, ReplicaStatus=ReplicaStatus.ACTIVE
-                        )
+                replica_description_list.append(
+                    ReplicaDescription(
+                        RegionName=replicated_region, ReplicaStatus=ReplicaStatus.ACTIVE
                     )
+                )
         result.get("Table", {}).update({"Replicas": replica_description_list})
 
         # update only TableId and SSEDescription if present
@@ -594,6 +595,9 @@ class DynamoDBProvider(DynamodbApi, ServiceLifecycleHook):
                             case "Delete":
                                 try:
                                     replicas[global_table_region].remove(target_region)
+                                    if len(replicas[global_table_region]) == 0:
+                                        # Removing the set indicates that replication is disabled
+                                        replicas.pop(global_table_region)
                                 except KeyError:
                                     raise ValidationException(
                                         "Update global table operation failed because one or more replicas were not part of the global table."
@@ -607,6 +611,7 @@ class DynamoDBProvider(DynamodbApi, ServiceLifecycleHook):
             )
             return UpdateTableOutput(TableDescription=schema["Table"])
 
+        # TODO@viren DDB streams must also be created for replicas
         if update_table_input.get("StreamSpecification"):
             create_dynamodb_stream(
                 update_table_input, result["TableDescription"].get("LatestStreamLabel")
