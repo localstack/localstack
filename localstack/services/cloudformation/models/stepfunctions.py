@@ -2,10 +2,7 @@ import logging
 import re
 from typing import Dict
 
-from localstack.services.cloudformation.deployment_utils import (
-    PLACEHOLDER_RESOURCE_NAME,
-    generate_default_name,
-)
+from localstack.services.cloudformation.deployment_utils import generate_default_name
 from localstack.services.cloudformation.service_models import GenericBaseModel
 from localstack.utils.aws import aws_stack
 from localstack.utils.common import to_str
@@ -34,7 +31,7 @@ class SFNActivity(GenericBaseModel):
         return {
             "create": {
                 "function": "create_activity",
-                "parameters": {"name": ["Name", PLACEHOLDER_RESOURCE_NAME], "tags": "Tags"},
+                "parameters": {"name": "Name", "tags": "Tags"},
                 "result_handler": _store_arn,
             },
             "delete": {
@@ -49,14 +46,11 @@ class SFNStateMachine(GenericBaseModel):
     def cloudformation_type():
         return "AWS::StepFunctions::StateMachine"
 
-    def get_resource_name(self):
-        return self.props.get("StateMachineName")
-
     def get_physical_resource_id(self, attribute=None, **kwargs):
         return self.props.get("stateMachineArn")
 
     def fetch_state(self, stack_name, resources):
-        sm_name = self.props.get("StateMachineName") or self.resource_id
+        sm_name = self.props.get("StateMachineName") or self.logical_resource_id
         sm_name = self.resolve_refs_recursively(stack_name, sm_name, resources)
         sfn_client = aws_stack.connect_to_service("stepfunctions")
         state_machines = sfn_client.list_state_machines()["stateMachines"]
@@ -107,7 +101,7 @@ class SFNStateMachine(GenericBaseModel):
                 return definition_str
 
             return {
-                "name": params.get("StateMachineName", PLACEHOLDER_RESOURCE_NAME),
+                "name": params.get("StateMachineName"),
                 "definition": _get_definition(params),
                 "roleArn": params.get("RoleArn"),
                 "type": params.get("StateMachineType", None),

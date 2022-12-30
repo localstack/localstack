@@ -146,6 +146,7 @@ InstanceEventId = str
 InstanceEventWindowCronExpression = str
 InstanceEventWindowId = str
 InstanceId = str
+InstanceIdForResolver = str
 InstanceStorageFlag = bool
 Integer = int
 IntegerWithConstraints = int
@@ -272,6 +273,7 @@ VerifiedAccessInstanceId = str
 VerifiedAccessTrustProviderId = str
 VersionDescription = str
 VolumeId = str
+VolumeIdWithResolver = str
 VpcCidrAssociationId = str
 VpcEndpointId = str
 VpcEndpointServiceId = str
@@ -9953,6 +9955,8 @@ class DescribeImagesRequest(ServiceRequest):
     Owners: Optional[OwnerStringList]
     IncludeDeprecated: Optional[Boolean]
     DryRun: Optional[Boolean]
+    MaxResults: Optional[Integer]
+    NextToken: Optional[String]
 
 
 class Image(TypedDict, total=False):
@@ -9993,6 +9997,7 @@ ImageList = List[Image]
 
 class DescribeImagesResult(TypedDict, total=False):
     Images: Optional[ImageList]
+    NextToken: Optional[String]
 
 
 ImportTaskIdList = List[ImportImageTaskId]
@@ -13079,8 +13084,8 @@ class DetachVerifiedAccessTrustProviderResult(TypedDict, total=False):
 class DetachVolumeRequest(ServiceRequest):
     Device: Optional[String]
     Force: Optional[Boolean]
-    InstanceId: Optional[InstanceId]
-    VolumeId: VolumeId
+    InstanceId: Optional[InstanceIdForResolver]
+    VolumeId: VolumeIdWithResolver
     DryRun: Optional[Boolean]
 
 
@@ -19373,6 +19378,8 @@ class Ec2Api:
         owners: OwnerStringList = None,
         include_deprecated: Boolean = None,
         dry_run: Boolean = None,
+        max_results: Integer = None,
+        next_token: String = None,
     ) -> DescribeImagesResult:
         raise NotImplementedError
 
@@ -20607,10 +20614,10 @@ class Ec2Api:
     def detach_volume(
         self,
         context: RequestContext,
-        volume_id: VolumeId,
+        volume_id: VolumeIdWithResolver,
         device: String = None,
         force: Boolean = None,
-        instance_id: InstanceId = None,
+        instance_id: InstanceIdForResolver = None,
         dry_run: Boolean = None,
     ) -> VolumeAttachment:
         raise NotImplementedError

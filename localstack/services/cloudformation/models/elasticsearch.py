@@ -41,7 +41,7 @@ class ElasticsearchDomain(GenericBaseModel):
         )
 
     def _domain_name(self):
-        return self.props.get("DomainName") or self.resource_id
+        return self.props.get("DomainName") or self.logical_resource_id
 
     @staticmethod
     def get_deploy_templates():

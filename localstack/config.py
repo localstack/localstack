@@ -597,6 +597,9 @@ SQS_PORT_EXTERNAL = int(os.environ.get("SQS_PORT_EXTERNAL") or 0)
 # Strategy used when creating SQS queue urls. can be "off", "domain", or "path"
 SQS_ENDPOINT_STRATEGY = os.environ.get("SQS_ENDPOINT_STRATEGY", "") or "off"
 
+# Disable the check for MaxNumberOfMessage in SQS ReceiveMessage
+SQS_DISABLE_MAX_NUMBER_OF_MESSAGE_LIMIT = is_env_true("SQS_DISABLE_MAX_NUMBER_OF_MESSAGE_LIMIT")
+
 # host under which the LocalStack services are available from Lambda Docker containers
 HOSTNAME_FROM_LAMBDA = os.environ.get("HOSTNAME_FROM_LAMBDA", "").strip()
 

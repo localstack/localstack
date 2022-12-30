@@ -3,7 +3,7 @@ import json
 import logging
 import re
 import traceback
-from typing import Dict, List, Optional
+from typing import Dict, List, Optional, Type, Union
 
 import botocore
 
@@ -12,13 +12,11 @@ from localstack.aws.accounts import get_aws_account_id
 from localstack.constants import FALSE_STRINGS
 from localstack.services.cloudformation.deployment_utils import (
     PLACEHOLDER_AWS_NO_VALUE,
-    PLACEHOLDER_RESOURCE_NAME,
     fix_boto_parameters_based_on_report,
     is_none_or_empty_value,
     remove_none_values,
 )
-from localstack.services.cloudformation.engine import template_preparer
-from localstack.services.cloudformation.engine.entities import StackChangeSet
+from localstack.services.cloudformation.engine.entities import Stack, StackChangeSet
 from localstack.services.cloudformation.service_models import (
     KEY_RESOURCE_STATE,
     DependencyNotYetSatisfied,
@@ -38,7 +36,6 @@ from localstack.services.cloudformation.models import *  # noqa: F401, isort:ski
 ACTION_CREATE = "create"
 ACTION_DELETE = "delete"
 AWS_URL_SUFFIX = "localhost.localstack.cloud"  # value is "amazonaws.com" in real AWS
-IAM_POLICY_VERSION = "2012-10-17"
 
 REGEX_OUTPUT_APIGATEWAY = re.compile(
     rf"^(https?://.+\.execute-api\.)(?:[^-]+-){{2,3}}\d\.(amazonaws\.com|{AWS_URL_SUFFIX})/?(.*)$"
@@ -50,22 +47,22 @@ LOG = logging.getLogger(__name__)
 # list of resource types that can be updated
 # TODO: make this a property of the model classes themselves
 UPDATEABLE_RESOURCES = [
-    "CDK::Metadata",
-    "Lambda::Function",
-    "Lambda::Permission",
-    "ApiGateway::Method",
-    "ApiGateway::UsagePlan",
-    "SSM::Parameter",
-    "StepFunctions::StateMachine",
-    "IAM::Role",
-    "EC2::Instance",
+    "AWS::CDK::Metadata",
+    "AWS::Lambda::Function",
+    "AWS::Lambda::Permission",
+    "AWS::ApiGateway::Method",
+    "AWS::ApiGateway::UsagePlan",
+    "AWS::SSM::Parameter",
+    "AWS::StepFunctions::StateMachine",
+    "AWS::IAM::Role",
+    "AWS::EC2::Instance",
 ]
 
 # list of static attribute references to be replaced in {'Fn::Sub': '...'} strings
 STATIC_REFS = ["AWS::Region", "AWS::Partition", "AWS::StackName", "AWS::AccountId"]
 
 # maps resource type string to model class
-RESOURCE_MODELS = {
+RESOURCE_MODELS: dict[str, Type[GenericBaseModel]] = {
     model.cloudformation_type(): model for model in get_all_subclasses(GenericBaseModel)
 }
 
@@ -76,35 +73,21 @@ class NoStackUpdates(Exception):
     pass
 
 
-def lambda_get_params():
-    return lambda params, **kwargs: params
-
-
-# maps resource types to functions and parameters for creation
-RESOURCE_TO_FUNCTION = {}
-
-
 # ---------------------
 # CF TEMPLATE HANDLING
 # ---------------------
 
 
 def get_deployment_config(res_type):
-    result = RESOURCE_TO_FUNCTION.get(res_type)
-    if result is not None:
-        return result
     canonical_type = canonical_resource_type(res_type)
     resource_class = RESOURCE_MODELS.get(canonical_type)
     if resource_class:
         return resource_class.get_deploy_templates()
 
 
+# FIXME: still too many cases
 def get_resource_type(resource):
-    res_type = resource.get("ResourceType") or resource.get("Type") or ""
-    parts = res_type.split("::", 1)
-    if len(parts) == 1:
-        return parts[0]
-    return parts[1]
+    return resource.get("ResourceType") or resource.get("Type") or ""
 
 
 def get_service_name(resource):
@@ -129,24 +112,6 @@ def get_service_name(resource):
     return parts[1].lower()
 
 
-def get_resource_name(resource):
-    properties = resource.get("Properties") or {}
-    name = properties.get("Name")
-    if name:
-        return name
-
-    # try to extract name via resource class
-    res_type = canonical_resource_type(get_resource_type(resource))
-    model_class = RESOURCE_MODELS.get(res_type)
-    if model_class:
-        instance = model_class(resource)
-        name = instance.get_resource_name()
-
-    if not name:
-        LOG.debug('Unable to extract name for resource type "%s"', res_type)
-    return name
-
-
 def get_client(resource: dict, func_config: dict):
     resource_type = get_resource_type(resource)
     service = get_service_name(resource)
@@ -162,22 +127,6 @@ def get_client(resource: dict, func_config: dict):
     except Exception as e:
         LOG.warning('Unable to get client for "%s" API, skipping deployment: %s', service, e)
         return None
-
-
-def describe_stack_resource(stack_name, logical_resource_id):
-    client = aws_stack.connect_to_service("cloudformation")
-    try:
-        result = client.describe_stack_resource(
-            StackName=stack_name, LogicalResourceId=logical_resource_id
-        )
-        return result["StackResourceDetail"]
-    except Exception as e:
-        LOG.warning(
-            'Unable to get details for resource "%s" in CloudFormation stack "%s": %s',
-            logical_resource_id,
-            stack_name,
-            e,
-        )
 
 
 def retrieve_resource_details(resource_id, resource_status, stack):
@@ -471,8 +420,9 @@ def resolve_refs_recursively(stack, value):
 
 
 @prevent_stack_overflow(match_parameters=True)
-# TODO: move Stack model into separate file and add type hints here
-def _resolve_refs_recursively(stack, value):
+def _resolve_refs_recursively(
+    stack: Union[Stack, "TemplateDeployer"], value: dict | list | str | bytes | None
+):
     if isinstance(value, dict):
         keys_list = list(value.keys())
         stripped_fn_lower = keys_list[0].lower().split("::")[-1] if len(keys_list) == 1 else None
@@ -633,6 +583,7 @@ def resolve_placeholders_in_string(result, stack):
         if len(parts) == 1 and parts[0] in resources:
             resource_json = resources[parts[0]]
             resource_type = get_resource_type(resource_json)
+            # FIXME: ???
             result = extract_resource_attribute(
                 resource_type,
                 resource_json.get(KEY_RESOURCE_STATE, {}),
@@ -674,19 +625,7 @@ def evaluate_resource_condition(stack, resource):
     return True
 
 
-def get_stack_parameter(stack_name, parameter):
-    try:
-        client = aws_stack.connect_to_service("cloudformation")
-        stack = client.describe_stacks(StackName=stack_name)["Stacks"]
-    except Exception:
-        return None
-    stack = stack and stack[0]
-    if not stack:
-        return None
-    result = [p["ParameterValue"] for p in stack["Parameters"] if p["ParameterKey"] == parameter]
-    return (result or [None])[0]
-
-
+# FIXME: rework
 def update_resource(resource_id, stack):
     resources = stack.resources
     stack_name = stack.stack_name
@@ -770,21 +709,7 @@ def dump_resource_as_json(resource: Dict) -> str:
     return str(run_safe(lambda: json.dumps(json_safe(resource))) or resource)
 
 
-# TODO remove this method
-def prepare_template_body(req_data):
-    return template_preparer.prepare_template_body(req_data)
-
-
-def deploy_resource(stack, resource_id):
-    result = execute_resource_action(resource_id, stack, ACTION_CREATE)
-    return result
-
-
-def delete_resource(stack, resource_id):
-    return execute_resource_action(resource_id, stack, ACTION_DELETE)
-
-
-def execute_resource_action(resource_id: str, stack, action_name: str):
+def execute_resource_action(resource_id: str, stack: "TemplateDeployer", action_name: str):
     stack_name = stack.stack_name
     resources = stack.resources
 
@@ -842,19 +767,20 @@ def configure_resource_via_sdk(stack, resource_id, resource_type, func_details, 
 
     resource = resources[resource_id]
 
-    if resource_type == "EC2::Instance":
+    if resource_type == "AWS::EC2::Instance":
         if action_name == "create":
             func_details["boto_client"] = "resource"
 
     client = get_client(resource, func_details)
     function = getattr(client, func_details["function"])
-    params = func_details.get("parameters") or lambda_get_params()
+    params = func_details.get("parameters") or (lambda params, **kwargs: params)
     defaults = func_details.get("defaults", {})
     resource_props = resource["Properties"] = resource.get("Properties", {})
     resource_props = dict(resource_props)
     resource_state = resource.get(KEY_RESOURCE_STATE, {})
 
     if callable(params):
+        # resolve parameter map via custom function
         params = params(
             resource_props,
             stack_name=stack_name,
@@ -878,38 +804,21 @@ def configure_resource_via_sdk(stack, resource_id, resource_type, func_details, 
             if not isinstance(prop_keys, list):
                 prop_keys = [prop_keys]
             for prop_key in prop_keys:
-                if prop_key == PLACEHOLDER_RESOURCE_NAME:
-                    params[param_key] = PLACEHOLDER_RESOURCE_NAME
+                if callable(prop_key):
+                    prop_value = prop_key(
+                        resource_props,
+                        stack_name=stack_name,
+                        resources=resources,
+                        resource_id=resource_id,
+                    )
                 else:
-                    if callable(prop_key):
-                        prop_value = prop_key(
-                            resource_props,
-                            stack_name=stack_name,
-                            resources=resources,
-                            resource_id=resource_id,
-                        )
-                    else:
-                        prop_value = resource_props.get(
-                            prop_key,
-                            resource.get(prop_key, resource_state.get(prop_key)),
-                        )
-                    if prop_value is not None:
-                        params[param_key] = prop_value
-                        break
-
-    # replace PLACEHOLDER_RESOURCE_NAME in params
-    resource_name_holder = {}
-
-    def fix_placeholders(o, **kwargs):
-        if isinstance(o, dict):
-            for k, v in o.items():
-                if v == PLACEHOLDER_RESOURCE_NAME:
-                    if "value" not in resource_name_holder:
-                        resource_name_holder["value"] = get_resource_name(resource) or resource_id
-                    o[k] = resource_name_holder["value"]
-        return o
-
-    recurse_object(params, fix_placeholders)
+                    prop_value = resource_props.get(
+                        prop_key,
+                        resource.get(prop_key, resource_state.get(prop_key)),
+                    )
+                if prop_value is not None:
+                    params[param_key] = prop_value
+                    break
 
     # assign default values if empty
     params = merge_recursive(defaults, params)
@@ -923,6 +832,7 @@ def configure_resource_via_sdk(stack, resource_id, resource_type, func_details, 
         if param_value is not None:
             params[param_key] = resolve_refs_recursively(stack, param_value)
 
+    # FIXME: move this to a single place after template processing is finished
     # convert any moto account IDs (123456789012) in ARNs to our format (000000000000)
     params = fix_account_id_in_arns(params)
     # convert data types (e.g., boolean strings to bool)
@@ -971,20 +881,17 @@ def get_action_name_for_resource_change(res_change: str) -> str:
 def determine_resource_physical_id(resource_id, stack=None, attribute: Optional[str] = None):
     assert resource_id and isinstance(resource_id, str)
 
-    resources = stack.resources
-    stack_name = stack.stack_name
-    resource = resources.get(resource_id, {})
+    resource = stack.resources.get(resource_id)
     if not resource:
         return
     resource_type = get_resource_type(resource)
-    resource_type = re.sub("^AWS::", "", resource_type)
 
     # determine result from resource class
-    canonical_type = canonical_resource_type(resource_type)
+    canonical_type = canonical_resource_type(resource_type)  # FIXME: remove
     resource_class = RESOURCE_MODELS.get(canonical_type)
     if resource_class:
         resource_inst = resource_class(resource)
-        resource_inst.fetch_state_if_missing(stack_name=stack_name, resources=resources)
+        resource_inst.fetch_state_if_missing(stack_name=stack.stack_name, resources=stack.resources)
         result = resource_inst.get_physical_resource_id(attribute=attribute)
         if result:
             return result
@@ -1063,7 +970,7 @@ class TemplateDeployer:
             self.stack.set_stack_status("CREATE_FAILED")
             raise
 
-    def apply_change_set(self, change_set):
+    def apply_change_set(self, change_set: StackChangeSet):
         action = (
             "UPDATE"
             if change_set.stack.status in {"CREATE_COMPLETE", "UPDATE_COMPLETE"}
@@ -1106,7 +1013,7 @@ class TemplateDeployer:
         for resource_id, resource in resources.items():
             # TODO: cache condition value in resource details on deployment and use cached value here
             if evaluate_resource_condition(self, resource):
-                delete_resource(self, resource_id)
+                execute_resource_action(resource_id, self, ACTION_DELETE)
                 self.stack.set_resource_status(resource_id, "DELETE_COMPLETE")
         # update status
         self.stack.set_stack_status("DELETE_COMPLETE")
@@ -1135,7 +1042,10 @@ class TemplateDeployer:
         if not self.is_deployable_resource(resource) or not self.is_deployed(resource):
             return False
         resource_type = get_resource_type(resource)
-        return resource_type in UPDATEABLE_RESOURCES
+        return (
+            resource_type in UPDATEABLE_RESOURCES
+            or resource_type.partition("AWS::")[-1] in UPDATEABLE_RESOURCES
+        )  # TODO: second case just a fall-back for now, delete when PRO is updated
 
     def all_resource_dependencies_satisfied(self, resource):
         unsatisfied = self.get_unsatisfied_dependencies(resource)
@@ -1183,13 +1093,6 @@ class TemplateDeployer:
     # -----------------
     # DEPLOYMENT UTILS
     # -----------------
-
-    def add_default_resource_props(self, resources=None):
-        resources = resources or self.resources
-        for resource_id, resource in resources.items():
-            add_default_resource_props(
-                resource, self.stack_name, resource_id=resource_id, existing_resources=resources
-            )
 
     def init_resource_status(self, resources=None, stack=None, action="CREATE"):
         resources = resources or self.resources
@@ -1323,16 +1226,15 @@ class TemplateDeployer:
         #   Change Set Executions.
         old_stack.metadata["Parameters"] = [v for v in parameters.values() if v]
 
-    # TODO: fix circular import with provider.py when importing Stack here
     def construct_changes(
         self,
         existing_stack,
         new_stack,
         # TODO: remove initialize argument from here, and determine action based on resource status
-        initialize=False,
+        initialize: Optional[bool] = False,
         change_set_id=None,
-        append_to_changeset=False,
-        filter_unchanged_resources=False,
+        append_to_changeset: Optional[bool] = False,
+        filter_unchanged_resources: Optional[bool] = False,
     ):
         old_resources = existing_stack.template["Resources"]
         new_resources = new_stack.template["Resources"]
@@ -1362,11 +1264,11 @@ class TemplateDeployer:
 
     def apply_changes(
         self,
-        existing_stack,
-        new_stack,
-        change_set_id=None,
-        initialize=False,
-        action=None,
+        existing_stack: Stack,
+        new_stack: StackChangeSet,
+        change_set_id: Optional[str] = None,
+        initialize: Optional[bool] = False,
+        action: Optional[str] = None,
     ):
         old_resources = existing_stack.template["Resources"]
         new_resources = new_stack.template["Resources"]
@@ -1565,9 +1467,9 @@ class TemplateDeployer:
         # execute resource action
         result = None
         if action == "Add" or is_deployed is False:
-            result = deploy_resource(self, resource_id)
+            result = execute_resource_action(resource_id, self, ACTION_CREATE)
         elif action == "Remove":
-            result = delete_resource(self, resource_id)
+            result = execute_resource_action(resource_id, self, ACTION_DELETE)
         elif action == "Modify":
             result = update_resource(resource_id, stack=stack)
 

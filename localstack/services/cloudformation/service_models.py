@@ -1,11 +1,8 @@
 import logging
-
-# TODO: remove
-from moto.cloudformation.exceptions import UnformattedGetAttTemplateException
+from typing import Optional, TypedDict
 
 from localstack import config
 from localstack.utils.aws import aws_stack
-from localstack.utils.common import camel_to_snake_case
 
 LOG = logging.getLogger(__name__)
 
@@ -28,6 +25,11 @@ class DependencyNotYetSatisfied(Exception):
         self.resource_ids = resource_ids
 
 
+class ResourceJson(TypedDict):
+    Type: str
+    Properties: dict
+
+
 class GenericBaseModel:
     """Abstract base class representing a resource model class in LocalStack.
     This class keeps references to a combination of (1) the CF resource
@@ -38,7 +40,7 @@ class GenericBaseModel:
     e.g., fetching the latest deployment state, getting the resource name, etc.
     """
 
-    def __init__(self, resource_json, region_name=None, **params):
+    def __init__(self, resource_json: dict, region_name: Optional[str] = None, **params):
         # self.stack_name = stack_name # TODO: add stack name to params
         self.region_name = region_name or aws_stack.get_region()
         self.resource_json = resource_json
@@ -54,10 +56,6 @@ class GenericBaseModel:
     # ABSTRACT BASE METHODS
     # ----------------------
 
-    def get_resource_name(self):
-        """Return the name of this resource, based on its properties (to be overwritten by subclasses)"""
-        return None
-
     # TODO: this shouldn't have an attribute parameter
     def get_physical_resource_id(self, attribute=None, **kwargs):
         """Determine the physical resource ID (Ref) of this resource (to be overwritten by subclasses)"""
@@ -65,7 +63,7 @@ class GenericBaseModel:
 
     # TODO: change the signature to pass in a Stack instance (instead of stack_name and resources)
     def fetch_state(self, stack_name, resources):
-        """Fetch the latest deployment state of this resource, or return None if not currently deployed."""
+        """Fetch the latest deployment state of this resource, or return None if not currently deployed (NOTE: THIS IS NOT ALWAYS TRUE)."""
         return None
 
     # TODO: change the signature to pass in a Stack instance (instead of stack_name and resources)
@@ -106,8 +104,7 @@ class GenericBaseModel:
         props = self.props
         if attribute_name in props:
             return props.get(attribute_name)
-
-        raise UnformattedGetAttTemplateException()
+        return None
 
     # ---------------------
     # GENERIC UTIL METHODS
@@ -131,10 +128,6 @@ class GenericBaseModel:
             self.fetch_and_update_state(*args, **kwargs)
         return self.state
 
-    def set_resource_state(self, state):
-        """Set the deployment state of this resource."""
-        self.state = state or {}
-
     def update_state(self, details):
         """Update the deployment state of this resource (existing attributes will be overwritten)."""
         details = details or {}
@@ -152,39 +145,18 @@ class GenericBaseModel:
         return self.resource_json.get("LogicalResourceId")
 
     @property
-    def props(self):
+    def props(self) -> dict:
         """Return a copy of (1) the resource properties (from the template), combined with
         (2) the current deployment state properties of the resource."""
         result = dict(self.properties)
         result.update(self.state or {})
         return result
 
+    # TODO: remove after -ext does not depend on this anymore
     @property
-    def resource_id(self):
+    def resource_id(self) -> str:
         """Return the logical resource ID of this resource (i.e., the ref. name within the stack's resources)."""
         return self.resource_json["LogicalResourceId"]
-
-    @classmethod
-    def update_from_cloudformation_json(
-        cls, original_resource, new_resource_name, cloudformation_json, region_name
-    ):
-        props = cloudformation_json.get("Properties", {})
-        for key, val in props.items():
-            snake_key = camel_to_snake_case(key)
-            lower_key = key.lower()
-            for candidate in [key, lower_key, snake_key]:
-                if hasattr(original_resource, candidate) or candidate == snake_key:
-                    setattr(original_resource, candidate, val)
-                    break
-        return original_resource
-
-    @classmethod
-    def create_from_cloudformation_json(cls, resource_name, resource_json, region_name):
-        return cls(
-            resource_name=resource_name,
-            resource_json=resource_json,
-            region_name=region_name,
-        )
 
     @classmethod
     def resolve_refs_recursively(cls, stack_name, value, resources):

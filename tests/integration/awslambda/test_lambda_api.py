@@ -2178,15 +2178,56 @@ class TestLambdaPermissions:
         self, lambda_client, iam_client, create_lambda_function, account_id, snapshot
     ):
         function_name = f"lambda_func-{short_uid()}"
+        snapshot.add_transformer(snapshot.transform.regex(function_name, "<function-name>"))
         create_lambda_function(
             handler_file=TEST_LAMBDA_PYTHON_ECHO,
             func_name=function_name,
             runtime=Runtime.python3_9,
         )
 
+        # qualifier mismatch between specified Qualifier and derived ARN from FunctionName
+        with pytest.raises(lambda_client.exceptions.InvalidParameterValueException) as e:
+            lambda_client.add_permission(
+                FunctionName=f"{function_name}:alias-not-42",
+                Action="lambda:InvokeFunction",
+                StatementId="s3",
+                Principal="s3.amazonaws.com",
+                SourceArn=arns.s3_bucket_arn("test-bucket"),
+                Qualifier="42",
+            )
+        snapshot.match("add_permission_fn_qualifier_mismatch", e.value.response)
+
+        with pytest.raises(lambda_client.exceptions.InvalidParameterValueException) as e:
+            lambda_client.add_permission(
+                FunctionName=f"{function_name}:$LATEST",
+                Action="lambda:InvokeFunction",
+                StatementId="s3",
+                Principal="s3.amazonaws.com",
+                SourceArn=arns.s3_bucket_arn("test-bucket"),
+                Qualifier="$LATEST",
+            )
+        snapshot.match("add_permission_fn_qualifier_latest", e.value.response)
+
+        with pytest.raises(lambda_client.exceptions.InvalidParameterValueException) as e:
+            lambda_client.add_permission(
+                FunctionName=function_name,
+                Action="lambda:InvokeFunction",
+                StatementId="lambda",
+                Principal="invalid.nonaws.com",
+                # TODO: implement AWS principle matching based on explicit list
+                # Principal="invalid.amazonaws.com",
+                SourceAccount=account_id,
+            )
+        snapshot.match("add_permission_principal_invalid", e.value.response)
+
         with pytest.raises(lambda_client.exceptions.ResourceNotFoundException) as e:
             lambda_client.get_policy(FunctionName="doesnotexist")
         snapshot.match("get_policy_fn_doesnotexist", e.value.response)
+
+        non_existing_version = "77"
+        with pytest.raises(lambda_client.exceptions.ResourceNotFoundException) as e:
+            lambda_client.get_policy(FunctionName=function_name, Qualifier=non_existing_version)
+        snapshot.match("get_policy_fn_version_doesnotexist", e.value.response)
 
         with pytest.raises(lambda_client.exceptions.ResourceNotFoundException) as e:
             lambda_client.add_permission(
@@ -2200,17 +2241,87 @@ class TestLambdaPermissions:
 
         with pytest.raises(lambda_client.exceptions.ResourceNotFoundException) as e:
             lambda_client.remove_permission(
-                FunctionName="doesnotexist",
-                StatementId="s3",
-            )
-        snapshot.match("remove_permission_fn_doesnotexist", e.value.response)
-
-        with pytest.raises(lambda_client.exceptions.ResourceNotFoundException) as e:
-            lambda_client.remove_permission(
                 FunctionName=function_name,
                 StatementId="s3",
             )
         snapshot.match("remove_permission_policy_doesnotexist", e.value.response)
+
+        with pytest.raises(lambda_client.exceptions.ResourceNotFoundException) as e:
+            lambda_client.add_permission(
+                FunctionName=f"{function_name}:alias-doesnotexist",
+                Action="lambda:InvokeFunction",
+                StatementId="s3",
+                Principal="s3.amazonaws.com",
+                SourceArn=arns.s3_bucket_arn("test-bucket"),
+            )
+        snapshot.match("add_permission_fn_alias_doesnotexist", e.value.response)
+
+        with pytest.raises(lambda_client.exceptions.ResourceNotFoundException) as e:
+            lambda_client.add_permission(
+                FunctionName=function_name,  # same behavior with version postfix :42
+                Action="lambda:InvokeFunction",
+                StatementId="s3",
+                Principal="s3.amazonaws.com",
+                SourceArn=arns.s3_bucket_arn("test-bucket"),
+                Qualifier="42",
+            )
+        snapshot.match("add_permission_fn_version_doesnotexist", e.value.response)
+
+        with pytest.raises(lambda_client.exceptions.ClientError) as e:
+            lambda_client.add_permission(
+                FunctionName=function_name,
+                Action="lambda:InvokeFunction",
+                StatementId="s3",
+                Principal="s3.amazonaws.com",
+                SourceArn=arns.s3_bucket_arn("test-bucket"),
+                Qualifier="invalid-qualifier-with-?-char",
+            )
+        snapshot.match("add_permission_fn_qualifier_invalid", e.value.response)
+
+        with pytest.raises(lambda_client.exceptions.ResourceNotFoundException) as e:
+            lambda_client.add_permission(
+                FunctionName=function_name,
+                Action="lambda:InvokeFunction",
+                StatementId="s3",
+                Principal="s3.amazonaws.com",
+                SourceArn=arns.s3_bucket_arn("test-bucket"),
+                # NOTE: $ is allowed here because "$LATEST" is a valid version
+                Qualifier="valid-with-$-but-doesnotexist",
+            )
+        snapshot.match("add_permission_fn_qualifier_valid_doesnotexist", e.value.response)
+
+        lambda_client.add_permission(
+            FunctionName=function_name,
+            Action="lambda:InvokeFunction",
+            StatementId="s3",
+            Principal="s3.amazonaws.com",
+            SourceArn=arns.s3_bucket_arn("test-bucket"),
+        )
+
+        sid = "s3"
+        with pytest.raises(lambda_client.exceptions.ResourceConflictException) as e:
+            lambda_client.add_permission(
+                FunctionName=function_name,
+                Action="lambda:InvokeFunction",
+                StatementId=sid,
+                Principal="s3.amazonaws.com",
+                SourceArn=arns.s3_bucket_arn("test-bucket"),
+            )
+        snapshot.match("add_permission_conflicting_statement_id", e.value.response)
+
+        with pytest.raises(lambda_client.exceptions.ResourceNotFoundException) as e:
+            lambda_client.remove_permission(
+                FunctionName="doesnotexist",
+                StatementId=sid,
+            )
+        snapshot.match("remove_permission_fn_doesnotexist", e.value.response)
+
+        non_existing_alias = "alias-doesnotexist"
+        with pytest.raises(lambda_client.exceptions.ResourceNotFoundException) as e:
+            lambda_client.remove_permission(
+                FunctionName=function_name, StatementId=sid, Qualifier=non_existing_alias
+            )
+        snapshot.match("remove_permission_fn_alias_doesnotexist", e.value.response)
 
     @pytest.mark.aws_validated
     def test_add_lambda_permission_aws(
@@ -2241,6 +2352,182 @@ class TestLambdaPermissions:
         # fetch lambda policy
         get_policy_result = lambda_client.get_policy(FunctionName=function_name)
         snapshot.match("get_policy", get_policy_result)
+
+    @pytest.mark.skipif(condition=is_old_provider(), reason="not supported")
+    @pytest.mark.aws_validated
+    def test_lambda_permission_fn_versioning(
+        self, lambda_client, iam_client, create_lambda_function, account_id, snapshot
+    ):
+        """Testing how lambda permissions behave when publishing different function versions and using qualifiers"""
+        function_name = f"lambda_func-{short_uid()}"
+        create_lambda_function(
+            handler_file=TEST_LAMBDA_PYTHON_ECHO,
+            func_name=function_name,
+            runtime=Runtime.python3_9,
+        )
+
+        # create lambda permission
+        action = "lambda:InvokeFunction"
+        sid = "s3"
+        principal = "s3.amazonaws.com"
+        resp = lambda_client.add_permission(
+            FunctionName=function_name,
+            Action=action,
+            StatementId=sid,
+            Principal=principal,
+            SourceArn=arns.s3_bucket_arn("test-bucket"),
+        )
+        snapshot.match("add_permission", resp)
+
+        # fetch lambda policy
+        get_policy_result = lambda_client.get_policy(FunctionName=function_name)
+        snapshot.match("get_policy", get_policy_result)
+
+        # publish version
+        fn_version_result = lambda_client.publish_version(FunctionName=function_name)
+        fn_version = fn_version_result["Version"]
+        get_policy_result_after_publishing = lambda_client.get_policy(FunctionName=function_name)
+        snapshot.match("get_policy_after_publishing_latest", get_policy_result_after_publishing)
+
+        # permissions apply per function unless providing a specific version or alias
+        with pytest.raises(lambda_client.exceptions.ResourceNotFoundException) as e:
+            lambda_client.get_policy(FunctionName=function_name, Qualifier=fn_version)
+        snapshot.match("get_policy_after_publishing_new_version", e.value.response)
+
+        # create lambda permission with the same sid for specific function version
+        lambda_client.add_permission(
+            FunctionName=f"{function_name}:{fn_version}",  # version suffix matching Qualifier
+            Action=action,
+            StatementId=sid,
+            Principal=principal,
+            SourceArn=arns.s3_bucket_arn("test-bucket"),
+            Qualifier=fn_version,
+        )
+        get_policy_result_alias = lambda_client.get_policy(
+            FunctionName=function_name, Qualifier=fn_version
+        )
+        snapshot.match("get_policy_version", get_policy_result_alias)
+
+        alias_name = "permission-alias"
+        lambda_client.create_alias(
+            FunctionName=function_name,
+            Name=alias_name,
+            FunctionVersion=fn_version,
+        )
+        # create lambda permission with the same sid for specific alias
+        lambda_client.add_permission(
+            FunctionName=f"{function_name}:{alias_name}",  # alias suffix matching Qualifier
+            Action=action,
+            StatementId=sid,
+            Principal=principal,
+            SourceArn=arns.s3_bucket_arn("test-bucket"),
+            Qualifier=alias_name,
+        )
+        get_policy_result_alias = lambda_client.get_policy(
+            FunctionName=function_name, Qualifier=alias_name
+        )
+        snapshot.match("get_policy_alias", get_policy_result_alias)
+
+        get_policy_result_alias = lambda_client.get_policy(FunctionName=function_name)
+        snapshot.match("get_policy_after_adding_to_new_version", get_policy_result_alias)
+
+        # create lambda permission with other sid and correct revision id
+        lambda_client.add_permission(
+            FunctionName=function_name,
+            Action=action,
+            StatementId=f"{sid}_2",
+            Principal=principal,
+            SourceArn=arns.s3_bucket_arn("test-bucket"),
+            RevisionId=get_policy_result_alias["RevisionId"],
+        )
+
+        get_policy_result_adding_2 = lambda_client.get_policy(FunctionName=function_name)
+        snapshot.match("get_policy_after_adding_2", get_policy_result_adding_2)
+
+    @pytest.mark.skipif(condition=is_old_provider(), reason="not supported")
+    @pytest.mark.aws_validated
+    def test_add_lambda_permission_fields(
+        self, lambda_client, iam_client, create_lambda_function, account_id, sts_client, snapshot
+    ):
+        # prevent resource transformer from matching the LS default username "root", which collides with other resources
+        snapshot.add_transformer(
+            snapshot.transform.jsonpath(
+                "add_permission_principal_arn..Statement.Principal.AWS",
+                "<user_arn>",
+                reference_replacement=False,
+            ),
+            priority=-1,
+        )
+
+        function_name = f"lambda_func-{short_uid()}"
+        create_lambda_function(
+            handler_file=TEST_LAMBDA_PYTHON_ECHO,
+            func_name=function_name,
+            runtime=Runtime.python3_9,
+        )
+
+        resp = lambda_client.add_permission(
+            FunctionName=function_name,
+            Action="lambda:InvokeFunction",
+            StatementId="wilcard",
+            Principal="*",
+            SourceAccount=account_id,
+        )
+        snapshot.match("add_permission_principal_wildcard", resp)
+
+        resp = lambda_client.add_permission(
+            FunctionName=function_name,
+            Action="lambda:InvokeFunction",
+            StatementId="lambda",
+            Principal="lambda.amazonaws.com",
+            SourceAccount=account_id,
+        )
+        snapshot.match("add_permission_principal_service", resp)
+
+        resp = lambda_client.add_permission(
+            FunctionName=function_name,
+            Action="lambda:InvokeFunction",
+            StatementId="account-id",
+            Principal=account_id,
+        )
+        snapshot.match("add_permission_principal_account", resp)
+
+        user_arn = sts_client.get_caller_identity()["Arn"]
+        resp = lambda_client.add_permission(
+            FunctionName=function_name,
+            Action="lambda:InvokeFunction",
+            StatementId="user-arn",
+            Principal=user_arn,
+            SourceAccount=account_id,
+        )
+        snapshot.match("add_permission_principal_arn", resp)
+        assert json.loads(resp["Statement"])["Principal"]["AWS"] == user_arn
+
+        resp = lambda_client.add_permission(
+            FunctionName=function_name,
+            StatementId="urlPermission",
+            Action="lambda:InvokeFunctionUrl",
+            Principal="*",
+            # optional fields:
+            SourceArn=arns.s3_bucket_arn("test-bucket"),
+            SourceAccount=account_id,
+            PrincipalOrgID="o-1234567890",
+            # "FunctionUrlAuthType is only supported for lambda:InvokeFunctionUrl action"
+            FunctionUrlAuthType="NONE",
+        )
+        snapshot.match("add_permission_optional_fields", resp)
+
+        # create alexa skill lambda permission:
+        # https://developer.amazon.com/en-US/docs/alexa/custom-skills/host-a-custom-skill-as-an-aws-lambda-function.html#use-aws-cli
+        response = lambda_client.add_permission(
+            FunctionName=function_name,
+            StatementId="alexaSkill",
+            Action="lambda:InvokeFunction",
+            Principal="*",
+            # alexa skill token cannot be used together with source account and source arn
+            EventSourceToken="amzn1.ask.skill.xxxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx",
+        )
+        snapshot.match("add_permission_alexa_skill", response)
 
     @pytest.mark.skip_snapshot_verify(paths=["$..Message"], condition=is_old_provider)
     @pytest.mark.aws_validated
@@ -2285,26 +2572,32 @@ class TestLambdaPermissions:
                 FunctionName=function_name,
                 StatementId="non-existent",
             )
-        snapshot.match("expect_error_remove_permission", e.value.response)
+        snapshot.match("remove_permission_exception_nonexisting_sid", e.value.response)
 
         lambda_client.remove_permission(
             FunctionName=function_name,
             StatementId=sid_2,
         )
-        policy = json.loads(
-            lambda_client.get_policy(
-                FunctionName=function_name,
-            )["Policy"]
+
+        policy_response_removal = lambda_client.get_policy(
+            FunctionName=function_name,
         )
-        snapshot.match("policy_after_removal", policy)
+        snapshot.match("policy_after_removal", policy_response_removal)
+
+        policy_response_removal_attempt = lambda_client.get_policy(
+            FunctionName=function_name,
+        )
+        snapshot.match("policy_after_removal_attempt", policy_response_removal_attempt)
 
         lambda_client.remove_permission(
             FunctionName=function_name,
             StatementId=sid,
+            RevisionId=policy_response_removal_attempt["RevisionId"],
         )
+        # get_policy raises an exception after removing all permissions
         with pytest.raises(lambda_client.exceptions.ResourceNotFoundException) as ctx:
             lambda_client.get_policy(FunctionName=function_name)
-        snapshot.match("expect_exception_get_policy", ctx.value.response)
+        snapshot.match("get_policy_exception_removed_all", ctx.value.response)
 
     @pytest.mark.aws_validated
     def test_create_multiple_lambda_permissions(
@@ -2358,7 +2651,16 @@ class TestLambdaUrl:
         snapshot.add_transformer(
             SortingTransformer("FunctionUrlConfigs", sorting_fn=lambda x: x["FunctionArn"])
         )
-
+        # broken at AWS yielding InternalFailure but should return InvalidParameterValueException as in
+        # get_function_url_config_qualifier_alias_doesnotmatch_arn
+        snapshot.add_transformer(
+            snapshot.transform.jsonpath(
+                "delete_function_url_config_qualifier_alias_doesnotmatch_arn",
+                "<aws_internal_failure>",
+                reference_replacement=False,
+            ),
+            priority=-1,
+        )
         function_name = f"test-function-{short_uid()}"
         alias_name = "urlalias"
 
@@ -2419,6 +2721,22 @@ class TestLambdaUrl:
                 "args": {"FunctionName": function_name, "Qualifier": "v1"},
                 "SnapshotName": "qualifier_alias_doesnotexist",
                 "exc": lambda_client.exceptions.ResourceNotFoundException,
+            },
+            {
+                "args": {
+                    "FunctionName": f"{function_name}:{alias_name}-doesnotmatch",
+                    "Qualifier": alias_name,
+                },
+                "SnapshotName": "qualifier_alias_doesnotmatch_arn",
+                "exc": lambda_client.exceptions.ClientError,
+            },
+            {
+                "args": {
+                    "FunctionName": function_name,
+                    "Qualifier": "$LATEST",
+                },
+                "SnapshotName": "qualifier_latest",
+                "exc": lambda_client.exceptions.ClientError,
             },
         ]
         config_doesnotexist_tests = [
@@ -2492,7 +2810,7 @@ class TestLambdaUrl:
         )
         snapshot.match("url_config_fn", url_config_fn)
         url_config_alias = lambda_client.create_function_url_config(
-            FunctionName=function_name, Qualifier=alias_name, AuthType="NONE"
+            FunctionName=f"{function_name}:{alias_name}", Qualifier=alias_name, AuthType="NONE"
         )
         snapshot.match("url_config_alias", url_config_alias)
 
