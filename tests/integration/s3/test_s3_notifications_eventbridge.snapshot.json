@@ -1,6 +1,6 @@
 {
   "tests/integration/s3/test_s3_notifications_eventbridge.py::TestS3NotificationsToEventBridge::test_object_created_put": {
-    "recorded-date": "20-09-2022, 13:06:06",
+    "recorded-date": "31-12-2022, 00:54:03",
     "recorded-content": {
       "object_deleted": {
         "account": "111111111111",
@@ -56,6 +56,118 @@
         "source": "aws.s3",
         "time": "date",
         "version": "0"
+      }
+    }
+  },
+  "tests/integration/s3/test_s3_notifications_eventbridge.py::TestS3NotificationsToEventBridge::test_object_put_acl": {
+    "recorded-date": "31-12-2022, 00:41:34",
+    "recorded-content": {
+      "messages": {
+        "messages": [
+          {
+            "account": "111111111111",
+            "detail": {
+              "bucket": {
+                "name": "<bucket-name:1>"
+              },
+              "object": {
+                "etag": "437b930db84b8079c2dd804a71936b5f",
+                "key": "<key-name:1>",
+                "sequencer": "object-sequencer",
+                "size": 9
+              },
+              "reason": "PutObject",
+              "request-id": "request-id",
+              "requester": "<requester>",
+              "source-ip-address": "<ip-address:1>",
+              "version": "0"
+            },
+            "detail-type": "Object Created",
+            "id": "<uuid:1>",
+            "region": "<region>",
+            "resources": [
+              "arn:aws:s3:::<bucket-name:1>"
+            ],
+            "source": "aws.s3",
+            "time": "date",
+            "version": "0"
+          },
+          {
+            "account": "111111111111",
+            "detail": {
+              "bucket": {
+                "name": "<bucket-name:1>"
+              },
+              "object": {
+                "etag": "437b930db84b8079c2dd804a71936b5f",
+                "key": "<key-name:1>"
+              },
+              "request-id": "request-id",
+              "requester": "<requester>",
+              "source-ip-address": "<ip-address:1>",
+              "version": "0"
+            },
+            "detail-type": "Object ACL Updated",
+            "id": "<uuid:2>",
+            "region": "<region>",
+            "resources": [
+              "arn:aws:s3:::<bucket-name:1>"
+            ],
+            "source": "aws.s3",
+            "time": "date",
+            "version": "0"
+          },
+          {
+            "account": "111111111111",
+            "detail": {
+              "bucket": {
+                "name": "<bucket-name:1>"
+              },
+              "object": {
+                "etag": "437b930db84b8079c2dd804a71936b5f",
+                "key": "<key-name:1>"
+              },
+              "request-id": "request-id",
+              "requester": "<requester>",
+              "source-ip-address": "<ip-address:1>",
+              "version": "0"
+            },
+            "detail-type": "Object ACL Updated",
+            "id": "<uuid:3>",
+            "region": "<region>",
+            "resources": [
+              "arn:aws:s3:::<bucket-name:1>"
+            ],
+            "source": "aws.s3",
+            "time": "date",
+            "version": "0"
+          },
+          {
+            "account": "111111111111",
+            "detail": {
+              "bucket": {
+                "name": "<bucket-name:1>"
+              },
+              "object": {
+                "etag": "437b930db84b8079c2dd804a71936b5f",
+                "key": "<key-name:1>"
+              },
+              "request-id": "request-id",
+              "requester": "<requester>",
+              "source-ip-address": "<ip-address:1>",
+              "version": "0"
+            },
+            "detail-type": "Object ACL Updated",
+            "id": "<uuid:4>",
+            "region": "<region>",
+            "resources": [
+              "arn:aws:s3:::<bucket-name:1>"
+            ],
+            "source": "aws.s3",
+            "time": "date",
+            "version": "0"
+          }
+        ]
       }
     }
   }
