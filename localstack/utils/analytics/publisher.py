@@ -24,6 +24,9 @@ class Publisher(abc.ABC):
     def publish(self, events: List[Event]):
         raise NotImplementedError
 
+    def close(self):
+        pass
+
 
 class AnalyticsClientPublisher(Publisher):
     client: AnalyticsClient
@@ -34,6 +37,9 @@ class AnalyticsClientPublisher(Publisher):
 
     def publish(self, events: List[Event]):
         self.client.append_events(events)
+
+    def close(self):
+        self.client.close()
 
 
 class Printer(Publisher):
@@ -139,6 +145,7 @@ class PublisherBuffer(EventHandler):
         finally:
             self._stopped.set()
             flush_scheduler.stop()
+            self._publisher.close()
             if config.DEBUG_ANALYTICS:
                 LOG.debug("Exit analytics publisher")
 
