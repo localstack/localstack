@@ -42,7 +42,7 @@ concurrency:
 jobs:
   run-integration-tests:
     runs-on: ubuntu-latest
-    timeout-minutes: 100
+    timeout-minutes: 110
     defaults:
       run:
         working-directory: localstack-ext
