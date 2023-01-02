@@ -64,6 +64,17 @@ class TopicPublisher(abc.ABC):
     """
 
     def publish(self, context: SnsPublishContext, subscriber: SnsSubscription):
+        """
+        This function wraps the underlying call to the actual publishing. This allows us to catch any uncaught
+        exception and log it properly. This method is passed to the ThreadPoolExecutor, which would swallow the
+        exception. This is a convenient way of doing it, but not something the abstract class should take care.
+        Discussion here: https://github.com/localstack/localstack/pull/7267#discussion_r1056873437
+        # TODO: move this out of the base class
+        :param context: the SnsPublishContext created by the caller, containing the necessary data to publish the
+        message
+        :param subscriber: the subscription data
+        :return:
+        """
         try:
             self._publish(context=context, subscriber=subscriber)
         except Exception:
@@ -74,6 +85,13 @@ class TopicPublisher(abc.ABC):
             return
 
     def _publish(self, context: SnsPublishContext, subscriber: SnsSubscription):
+        """
+        Base method for publishing the message. It is up to the child class to implement its way to publish the message
+        :param context: the SnsPublishContext created by the caller, containing the necessary data to publish the
+        message
+        :param subscriber: the subscription data
+        :return:
+        """
         raise NotImplementedError
 
     def prepare_message(self, message_context: SnsMessage, subscriber: SnsSubscription) -> str:
@@ -83,7 +101,7 @@ class TopicPublisher(abc.ABC):
         See https://docs.aws.amazon.com/sns/latest/dg/sns-sqs-as-subscriber.html
         :param message_context: the SnsMessage containing the message data
         :param subscriber: the SNS subscription
-        :return: an formatted SNS message body in a JSON string
+        :return: formatted SNS message body in a JSON string
         """
         return create_sns_message_body(message_context, subscriber)
 
@@ -98,6 +116,17 @@ class EndpointPublisher(abc.ABC):
     """
 
     def publish(self, context: SnsPublishContext, endpoint: str):
+        """
+        This function wraps the underlying call to the actual publishing. This allows us to catch any uncaught
+        exception and log it properly. This method is passed to the ThreadPoolExecutor, which would swallow the
+        exception. This is a convenient way of doing it, but not something the abstract class should take care.
+        Discussion here: https://github.com/localstack/localstack/pull/7267#discussion_r1056873437
+        # TODO: move this out of the base class
+        :param context: the SnsPublishContext created by the caller, containing the necessary data to publish the
+        message
+        :param endpoint: the endpoint where the message should be published
+        :return:
+        """
         try:
             self._publish(context=context, endpoint=endpoint)
         except Exception:
@@ -108,9 +137,22 @@ class EndpointPublisher(abc.ABC):
             return
 
     def _publish(self, context: SnsPublishContext, endpoint: str):
+        """
+        Base method for publishing the message. It is up to the child class to implement its way to publish the message
+        :param context: the SnsPublishContext created by the caller, containing the necessary data to publish the
+        message
+        :param endpoint: the endpoint where the message should be published
+        :return:
+        """
         raise NotImplementedError
 
-    def prepare_message(self, context: SnsPublishContext, endpoint: str) -> str:
+    def prepare_message(self, message_context: SnsMessage, endpoint: str) -> str:
+        """
+        Base method to format the message. It is up to the child class to implement it.
+        :param message_context: the SnsMessage containing the message data
+        :param endpoint: the endpoint where the message should be published
+        :return: the formatted message
+        """
         raise NotImplementedError
 
 
