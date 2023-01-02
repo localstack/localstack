@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 import json
 import re
 from datetime import datetime
@@ -899,6 +898,7 @@ class TestDynamoDB:
         dynamodb_us_east_1 = create_boto_client("dynamodb", region_name="us-east-1")
         dynamodb_eu_west_1 = create_boto_client("dynamodb", region_name="eu-west-1")
         dynamodb_ap_south_1 = create_boto_client("dynamodb", region_name="ap-south-1")
+        dynamodb_sa_east_1 = create_boto_client("dynamodb", region_name="sa-east-1")
 
         # Create table in AP
         table_name = f"table-{short_uid()}"
@@ -917,23 +917,34 @@ class TestDynamoDB:
         cleanups.append(lambda: dynamodb_ap_south_1.delete_table(TableName=table_name))
         dynamodb_wait_for_table_active(table_name=table_name, client=dynamodb_ap_south_1)
 
-        # Replicate table in US
+        # Replicate table in US and EU
         dynamodb_ap_south_1.update_table(
             TableName=table_name, ReplicaUpdates=[{"Create": {"RegionName": "us-east-1"}}]
         )
-
-        # Replicate table in EU
         dynamodb_ap_south_1.update_table(
             TableName=table_name, ReplicaUpdates=[{"Create": {"RegionName": "eu-west-1"}}]
         )
 
         # Ensure all replicas can be described
         response = dynamodb_ap_south_1.describe_table(TableName=table_name)
-        assert len(response["Table"]["Replicas"]) == 2
-        # TODO
+        assert len(response["Table"]["Replicas"]) == 3
+        response = dynamodb_us_east_1.describe_table(TableName=table_name)
+        assert len(response["Table"]["Replicas"]) == 3
+        response = dynamodb_eu_west_1.describe_table(TableName=table_name)
+        assert len(response["Table"]["Replicas"]) == 3
+        with pytest.raises(Exception) as exc:
+            dynamodb_sa_east_1.describe_table(TableName=table_name)
+        exc.match("ResourceNotFoundException")
 
         # Ensure replicas can be listed everywhere
-        # TODO
+        response = dynamodb_ap_south_1.list_tables()
+        assert table_name in response["TableNames"]
+        response = dynamodb_us_east_1.list_tables()
+        assert table_name in response["TableNames"]
+        response = dynamodb_eu_west_1.list_tables()
+        assert table_name in response["TableNames"]
+        response = dynamodb_sa_east_1.list_tables()
+        assert table_name not in response["TableNames"]
 
         # Put item in AP
         dynamodb_ap_south_1.put_item(
@@ -953,7 +964,7 @@ class TestDynamoDB:
         )["Item"]
         assert item_eu_west
 
-        # Delete US replica
+        # Delete EU replica
         dynamodb_ap_south_1.update_table(
             TableName=table_name, ReplicaUpdates=[{"Delete": {"RegionName": "eu-west-1"}}]
         )
@@ -964,9 +975,18 @@ class TestDynamoDB:
             )
         ctx.match("ResourceNotFoundException")
 
-        # Ensure replica can be deleted everywhere
+        # Ensure replica details are updated in other regions
+        response = dynamodb_us_east_1.describe_table(TableName=table_name)
+        assert len(response["Table"]["Replicas"]) == 2
+        response = dynamodb_ap_south_1.describe_table(TableName=table_name)
+        assert len(response["Table"]["Replicas"]) == 2
 
-        # TODO@viren what should happen when a replicated table is deleted?
+        # Ensure removing the last replica disables global table
+        dynamodb_us_east_1.update_table(
+            TableName=table_name, ReplicaUpdates=[{"Delete": {"RegionName": "us-east-1"}}]
+        )
+        response = dynamodb_ap_south_1.describe_table(TableName=table_name)
+        assert len(response["Table"]["Replicas"]) == 0
 
     @pytest.mark.only_localstack
     def test_global_tables(self):

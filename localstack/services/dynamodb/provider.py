@@ -1245,7 +1245,13 @@ class DynamoDBProvider(DynamodbApi, ServiceLifecycleHook):
         replicas = get_store(context.account_id, context.region).REPLICA_UPDATES.get(table_name)
         if replicas:
             global_table_region = list(replicas.keys())[0]
-            if DynamoDBProvider.table_exists(context.account_id, global_table_region, table_name):
+            replicated_at = replicas[global_table_region]
+            # Ensure that a replica exists in the current context region, and that the table exists in DDB Local
+            if (
+                context.region == global_table_region or context.region in replicated_at
+            ) and DynamoDBProvider.table_exists(
+                context.account_id, global_table_region, table_name
+            ):
                 return global_table_region
         else:
             if DynamoDBProvider.table_exists(context.account_id, context.region, table_name):
