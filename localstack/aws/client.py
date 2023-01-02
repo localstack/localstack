@@ -4,17 +4,18 @@ import io
 import json
 import logging
 from datetime import datetime
-from typing import TYPE_CHECKING, Dict, Iterable, Optional
+from typing import TYPE_CHECKING, Any, Dict, Iterable, Optional
 
 from boto3 import Session
 from botocore.awsrequest import AWSPreparedRequest
 from botocore.client import BaseClient
-from botocore.config import Config
+from botocore.config import Config as BotoConfig
 from botocore.model import OperationModel
 from botocore.parsers import ResponseParser, ResponseParserFactory
 from werkzeug import Response
 
 from localstack.aws.api import CommonServiceException, ServiceException, ServiceResponse
+from localstack.constants import INTERNAL_AWS_ACCESS_KEY_ID, INTERNAL_AWS_SECRET_ACCESS_KEY
 from localstack.runtime import hooks
 from localstack.utils.aws.aws_stack import extract_region_from_arn
 from localstack.utils.patch import patch
@@ -232,77 +233,116 @@ def raise_service_exception(response: Response, parsed_response: Dict) -> None:
         raise service_exception
 
 
+#
+# Internal AWS client
+#
+
+"""
+The internal AWS client API provides the means to perform cross-service communication within LocalStack.
+Any additional information LocalStack might need for the purpose of policy enforcement is sent as a
+data transfer object. This is a serialised dict object sent in the request header.
+"""
+
+LOCALSTACK_DATA_HEADER = "x-localstack-data"
+"""Request header which contains the data transfer object."""
+
+
+def LocalStackData(TypedDict):
+    source_arn: str
+    source_service: str  # eg. 'ec2.amazonaws.com'
+
+
+def Credentials(TypedDict):
+    aws_access_key_id: str
+    aws_secret_access_key: str
+    aws_session_token: str
+
+
 @dataclasses.dataclass(frozen=True)
 class ClientOptions:
+    """This object holds configuration options for the internal AWS client."""
+
     aws_region: Optional[str] = None
-    endpoint_url: Optional[str] = None
-    verify_ssl: Optional[bool] = True
-    use_ssl: Optional[bool] = True
+    endpoint_url: Optional[str] = None  # TODO@viren should the default endpoint be used here?
+    verify_ssl: bool = True
+    use_ssl: bool = True
     aws_access_key_id: Optional[str] = None
     aws_secret_access_key: Optional[str] = None
     aws_session_token: Optional[str] = None
-    boto_config: Optional[Config] = dataclasses.field(default_factory=Config)
-    # TODO typing
-    localstack_data: dict[str, str] = dataclasses.field(default_factory=dict)
+    boto_config: Optional[BotoConfig] = dataclasses.field(default_factory=BotoConfig)
+    localstack_data: dict[str, Any] = dataclasses.field(default_factory=LocalStackData)
 
 
 class ClientFactory:
-    """
-    Client Factory to build boto clients for AWS services.
-
-    Usage:
-
-    """
+    """Factory to build the internal AWS client."""
 
     # TODO migrate to immutable clientfactory instances
     client_options: ClientOptions
     session: Session
 
-    def __init__(self, client_options=None):
+    def __init__(self, client_options: ClientOptions = None):
         self.client_options = client_options or ClientOptions()
         self.session = Session()
 
-    def endpoint(self, endpoint: str) -> "ClientFactory":
+    def with_endpoint(self, endpoint: str) -> "ClientFactory":
+        """Override the API endpoint."""
         return ClientFactory(
             client_options=dataclasses.replace(self.client_options, endpoint_url=endpoint)
         )
 
-    def source_arn(self, arn: str) -> "ClientFactory":
+    def with_source_arn(self, arn: str) -> "ClientFactory":
+        """TODO"""
         return ClientFactory(
             client_options=dataclasses.replace(
                 self.client_options,
-                localstack_data=self.client_options.localstack_data | {"source_arn": arn},
+                localstack_data=self.client_options.localstack_data
+                | LocalStackData(source_arn=arn),
             )
         )
 
-    def target_arn(self, arn: str) -> "ClientFactory":
+    def with_target_arn(self, arn: str) -> "ClientFactory":
+        """TODO"""
         region = extract_region_from_arn(arn)
         return ClientFactory(
             client_options=dataclasses.replace(self.client_options, aws_region=region)
         )
 
-    def source_service_principal(self, source_service: str) -> "ClientFactory":
+    def with_source_service_principal(self, source_service: str) -> "ClientFactory":
+        """TODO"""
         return ClientFactory(
             client_options=dataclasses.replace(
                 self.client_options,
                 localstack_data=self.client_options.localstack_data
-                | {"source_service": f"{source_service}.amazonaws.com"},
+                | LocalStackData(source_service=f"{source_service}.amazonaws.com"),
             )
         )
 
-    def credentials(self, credentials: Dict[str, str]) -> "ClientFactory":
-        return ClientFactory(client_options=dataclasses.replace(self.client_options, **credentials))
-
-    def default_credentials(self) -> "ClientFactory":
-        return self.credentials(
-            {"aws_access_key_id": "some-access-key-id", "aws_secret_access_key": "some-secret-key"}
+    def with_credentials(
+        self, aws_access_key_id: str, aws_secret_access_key: str
+    ) -> "ClientFactory":
+        """TODO"""
+        return ClientFactory(
+            client_options=dataclasses.replace(
+                self.client_options,
+                aws_access_key_id=aws_access_key_id,
+                aws_secret_access_key=aws_secret_access_key,
+            )
         )
 
-    def environment_credentials(self) -> "ClientFactory":
+    def with_default_credentials(self) -> "ClientFactory":
+        """TODO"""
+        return self.credentials(
+            aws_access_key_id=INTERNAL_AWS_ACCESS_KEY_ID,
+            aws_secret_access_key=INTERNAL_AWS_SECRET_ACCESS_KEY,
+        )
+
+    def with_env_credentials(self) -> "ClientFactory":
+        """TODO"""
         # TODO wrong output format of session.get_credentials()
         return self.credentials(self.session.get_credentials())
 
-    def boto_config(self, config: Config) -> "ClientFactory":
+    def with_boto_config(self, config: BotoConfig) -> "ClientFactory":
+        """TODO"""
         return ClientFactory(
             client_options=dataclasses.replace(
                 self.client_options, boto_config=self.client_options.boto_config.merge(config)
@@ -310,9 +350,13 @@ class ClientFactory:
         )
 
     def build(self, service: str) -> BaseClient:
+        """TODO"""
         assert self.client_options.aws_access_key_id
         assert self.client_options.aws_secret_access_key
-        # TODO: performance :(
+
+        # TODO: creating a boto client is very intensive. In old aws_stack, we cache clients based on
+        # [service_name, client, env, region, endpoint_url, config, internal, kwargs]
+        # Come up with an appropriate solution here
         client = self.session.client(
             service_name=service,
             config=self.client_options.boto_config,
@@ -320,11 +364,18 @@ class ClientFactory:
         )
 
         def event_handler(request: AWSPreparedRequest, **_):
-            request.headers["x-localstack-data"] = json.dumps(self.client_options.localstack_data)
+            # Send a compact JSON representation as DTO
+            request.headers[LOCALSTACK_DATA_HEADER] = json.dumps(
+                self.client_options.localstack_data, separators=(",", ":")
+            )
 
         client.meta.events.register("before-send.*.*", handler=event_handler)
 
         return client
+
+    #
+    # Convenience helpers
+    #
 
     def sqs(self) -> "SQSClient":
         return self.build("sqs")
