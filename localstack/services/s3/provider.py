@@ -742,10 +742,10 @@ class S3Provider(S3Api, ServiceLifecycleHook):
         key = get_key_from_moto_bucket(
             get_bucket_from_moto(moto_backend, bucket=request["Bucket"]), key=request["Key"]
         )
-        acl = key.acl.to_config_dict()
+        acl = key.acl
 
         response: PutObjectOutput = call_moto(context)
-        new_acl = key.acl.to_config_dict()
+        new_acl = key.acl
 
         if acl != new_acl:
             self._notify(context)
