@@ -2374,11 +2374,7 @@ class TestSNSProvider:
         assert ex.value.response["Error"]["Code"] == "InvalidParameter"
 
     @pytest.mark.aws_validated
-    @pytest.mark.skip_snapshot_verify(
-        paths=[
-            "$..Attributes.SubscriptionPrincipal"
-        ]
-    )
+    @pytest.mark.skip_snapshot_verify(paths=["$..Attributes.SubscriptionPrincipal"])
     def test_subscription_after_failure_to_deliver(
         self,
         sns_client,
@@ -3084,7 +3080,13 @@ class TestSNSProvider:
         subscription = sns_create_sqs_subscription(topic_arn=topic_arn, queue_url=queue_url)
         subscription_arn = subscription["SubscriptionArn"]
         # see https://aws.amazon.com/blogs/compute/introducing-payload-based-message-filtering-for-amazon-sns/
-        nested_filter_policy = {"object": {"key": [{"prefix": "auto-"}]}}
+        nested_filter_policy = {
+            "object": {
+                "key": [{"prefix": "auto-"}],
+                "nested_key": [{"exists": False}],
+            },
+            "test": [{"exists": False}],
+        }
 
         sns_client.set_subscription_attributes(
             SubscriptionArn=subscription_arn,
@@ -3129,6 +3131,8 @@ class TestSNSProvider:
         # publish messages that do not satisfy the filter policy, assert those messages are not received
         messages = [
             {"object": {"key": "test-auto"}},
+            {"object": {"key": "auto-test"}, "test": "just-exists"},
+            {"object": {"key": "auto-test", "nested_key": "just-exists"}},
             {"object": {"test": "auto-test"}},
             {"test": "auto-test"},
         ]
@@ -3139,7 +3143,7 @@ class TestSNSProvider:
             )
 
         response = sqs_client.receive_message(
-            QueueUrl=queue_url, VisibilityTimeout=0, WaitTimeSeconds=2
+            QueueUrl=queue_url, VisibilityTimeout=0, WaitTimeSeconds=5 if is_aws_cloud() else 2
         )
         # assert there are no messages in the queue
         assert "Messages" not in response

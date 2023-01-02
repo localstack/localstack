@@ -436,21 +436,22 @@ class SnsProvider(SnsApi, ServiceLifecycleHook):
     ) -> CreateEndpointResponse:
         # TODO: support mobile app events
         # see https://docs.aws.amazon.com/sns/latest/dg/application-event-notifications.html
-        result = None
         try:
-            result = call_moto(context)
-        except CommonServiceException:
+            result: CreateEndpointResponse = call_moto(context)
+        except CommonServiceException as e:
             # TODO: this was unclear in the old provider, check against aws and moto
-            moto_sns_backend = sns_backends[context.account_id][context.region]
-            for e in moto_sns_backend.platform_endpoints.values():
-                if e.token == token:
-                    if custom_user_data and custom_user_data != e.custom_user_data:
-                        # TODO: check error against aws
-                        raise CommonServiceException(
-                            code="DuplicateEndpoint",
-                            message=f"Endpoint already exist for token: {token} with different attributes",
-                        )
-        return CreateEndpointResponse(**result)
+            if "DuplicateEndpoint" in e.code:
+                moto_sns_backend = sns_backends[context.account_id][context.region]
+                for e in moto_sns_backend.platform_endpoints.values():
+                    if e.token == token:
+                        if custom_user_data and custom_user_data != e.custom_user_data:
+                            # TODO: check error against aws
+                            raise CommonServiceException(
+                                code="DuplicateEndpoint",
+                                message=f"Endpoint already exist for token: {token} with different attributes",
+                            )
+            raise
+        return result
 
     def unsubscribe(self, context: RequestContext, subscription_arn: subscriptionARN) -> None:
         call_moto(context)
@@ -491,7 +492,6 @@ class SnsProvider(SnsApi, ServiceLifecycleHook):
         sub = get_subscription_by_arn(subscription_arn)
         if not sub:
             raise NotFoundException(f"Subscription with arn {subscription_arn} not found")
-        # todo fix some attributes by moto see snapshot
         removed_attrs = ["sqs_queue_url"]
         if "FilterPolicyScope" in sub and "FilterPolicy" not in sub:
             removed_attrs.append("FilterPolicyScope")
@@ -802,13 +802,13 @@ def validate_subscription_attribute(
     attribute_name: str, attribute_value: str, topic_arn: str
 ) -> None:
     """
-    Validate the subscription attribute to be set.
-    See: ?????? TODO:
+    Validate the subscription attribute to be set. See:
+    https://docs.aws.amazon.com/sns/latest/api/API_SetSubscriptionAttributes.html
     :param attribute_name: the subscription attribute name, must be in VALID_SUBSCRIPTION_ATTR_NAME
     :param attribute_value: the subscription attribute value
-    :param topic_arn:
+    :param topic_arn: the topic_arn of the subscription, needed to know if it is FIFO
     :raises InvalidParameterException
-    :return: the decoded attribute value if JSON encoded, or the string value
+    :return:
     """
     if attribute_name not in sns_constants.VALID_SUBSCRIPTION_ATTR_NAME:
         raise InvalidParameterException("Invalid parameter: AttributeName")
@@ -820,7 +820,6 @@ def validate_subscription_attribute(
             raise InvalidParameterException(
                 "Invalid parameter: FilterPolicy: failed to parse JSON."
             )
-        # TODO: validate the FilterPolicy? currently done by moto
     elif attribute_name == "FilterPolicyScope":
         if attribute_value not in ("MessageAttributes", "MessageBody"):
             raise InvalidParameterException(

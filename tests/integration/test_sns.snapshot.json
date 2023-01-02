@@ -2860,7 +2860,7 @@
     }
   },
   "tests/integration/test_sns.py::TestSNSProvider::test_filter_policy_on_message_body[True]": {
-    "recorded-date": "30-12-2022, 19:10:16",
+    "recorded-date": "02-01-2023, 20:03:47",
     "recorded-content": {
       "recv-init": {
         "ResponseMetadata": {
@@ -2889,7 +2889,7 @@
     }
   },
   "tests/integration/test_sns.py::TestSNSProvider::test_filter_policy_on_message_body[False]": {
-    "recorded-date": "30-12-2022, 19:10:28",
+    "recorded-date": "02-01-2023, 20:03:59",
     "recorded-content": {
       "recv-init": {
         "ResponseMetadata": {

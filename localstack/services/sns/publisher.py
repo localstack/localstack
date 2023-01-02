@@ -892,23 +892,52 @@ class SubscriptionFilter:
     def _evaluate_nested_filter_policy_on_dict(self, filter_policy, payload: dict) -> bool:
         """
         This method evaluate the filter policy recursively, while still being able to validate the `exists` condition.
-        It will go down the filter policy level at the same time as the payload.
-        :param filter_policy:
-        :param payload:
-        :return:
+        Example:
+        nested_filter_policy = {
+            "object": {
+                "key": [{"prefix": "auto-"}],
+                "nested_key": [{"exists": False}],
+            },
+            "test": [{"exists": False}],
+        }
+        payload = {
+            "object": {
+                "key": "auto-test",
+            }
+        }
+        This function then iterates on top level keys of the filter policy: ("object", "test")
+        The value of "object" is a dict, we need to evaluate this level of the filter policy.
+        We pass the nested property values (the dict) as well as the values of the payload's field to the recursive
+        function, to evaluate the conditions on the same level of depth.
+        We then these parameters:
+        filter_policy = {
+            "key": [{"prefix": "auto-"}],
+            "nested_key": [{"exists": False}],
+        }
+        payload = {
+            "key": "auto-test",
+        }
+        We can now properly evaluate the conditions on the same level of depth in the dict object.
+        As it passes the filter policy, we then continue to evaluate the top keys, going back to "test".
+        :param filter_policy: a dict, starting at the FilterPolicy
+        :param payload: a dict, starting at the MessageBody
+        :return: True if the payload respect the filter policy, otherwise False
         """
-        for criteria, conditions in filter_policy.items():
-            if not isinstance(conditions, list):
-                print(criteria, conditions, payload)
-                return self._evaluate_nested_filter_policy_on_dict(
-                    conditions, payload.get(criteria, {})
-                )
-
-            for condition in conditions:
-                if not self._evaluate_condition(
-                    payload.get(criteria), condition, field_exists=criteria in payload
+        for field_name, values in filter_policy.items():
+            # if values is not a dict, then it's a nested property
+            if not isinstance(values, list):
+                if not self._evaluate_nested_filter_policy_on_dict(
+                    values, payload.get(field_name, {})
                 ):
                     return False
+            else:
+                # else, values represents the list of conditions of the filter policy
+                for condition in values:
+                    print(condition)
+                    if not self._evaluate_condition(
+                        payload.get(field_name), condition, field_exists=field_name in payload
+                    ):
+                        return False
 
         return True
 
