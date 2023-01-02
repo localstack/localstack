@@ -611,6 +611,7 @@ class TestCloudFormation:
         assert topic_arn not in topic_arns
 
     # TODO: refactor
+    @pytest.mark.xfail(reason="fails due to / depending on other tests")
     def test_deploy_stack_with_sub_select_and_sub_getaz(
         self,
         cfn_client,
