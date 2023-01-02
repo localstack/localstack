@@ -490,9 +490,8 @@ class DynamoDBProvider(DynamodbApi, ServiceLifecycleHook):
     def delete_table(self, context: RequestContext, table_name: TableName) -> DeleteTableOutput:
         global_table_region = self.get_global_table_region(context, table_name)
 
-        if global_table_region != context.region:
-            # TODO@viren Remove the replica only
-            pass
+        # Limitation note: On AWS, for a replicated table, if the source table is deleted, the replicated tables continue to exist.
+        # This is not the case for LocalStack, where all replicated tables will also be removed if source is deleted.
 
         result = self._forward_request(context=context, region=global_table_region)
 
@@ -611,7 +610,7 @@ class DynamoDBProvider(DynamodbApi, ServiceLifecycleHook):
             )
             return UpdateTableOutput(TableDescription=schema["Table"])
 
-        # TODO@viren DDB streams must also be created for replicas
+        # TODO: DDB streams must also be created for replicas
         if update_table_input.get("StreamSpecification"):
             create_dynamodb_stream(
                 update_table_input, result["TableDescription"].get("LatestStreamLabel")
@@ -807,7 +806,7 @@ class DynamoDBProvider(DynamodbApi, ServiceLifecycleHook):
         context: RequestContext,
         batch_write_item_input: BatchWriteItemInput,
     ) -> BatchWriteItemOutput:
-        # TODO@viren add global table support
+        # TODO: add global table support
         existing_items = []
         unprocessed_put_items = []
         unprocessed_delete_items = []
@@ -870,6 +869,7 @@ class DynamoDBProvider(DynamodbApi, ServiceLifecycleHook):
         request_items: BatchGetRequestMap,
         return_consumed_capacity: ReturnConsumedCapacity = None,
     ) -> BatchGetItemOutput:
+        # TODO: add global table support
         return self.forward_request(context)
 
     #
