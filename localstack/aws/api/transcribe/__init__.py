@@ -107,6 +107,8 @@ class LanguageCode(str):
     th_TH = "th-TH"
     en_ZA = "en-ZA"
     en_NZ = "en-NZ"
+    vi_VN = "vi-VN"
+    sv_SE = "sv-SE"
 
 
 class MediaFormat(str):

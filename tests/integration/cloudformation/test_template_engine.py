@@ -1,12 +1,17 @@
 import base64
 import json
 import os
+from copy import deepcopy
 
+import botocore.exceptions
 import pytest
+import yaml
 
+from localstack.aws.api.lambda_ import Runtime
 from localstack.testing.aws.cloudformation_utils import load_template_raw
 from localstack.utils.aws import arns
 from localstack.utils.common import short_uid
+from localstack.utils.files import load_file
 from localstack.utils.sync import wait_until
 
 TMPL = """
@@ -61,6 +66,27 @@ Outputs:
   MessageQueueUrl2:
     Value: !Ref MessageQueue
 """
+
+
+def create_macro(
+    macro_name, function_path, deploy_cfn_template, create_lambda_function, lambda_client
+):
+
+    macro_function_path = function_path
+
+    func_name = f"test_lambda_{short_uid()}"
+    create_lambda_function(
+        func_name=func_name,
+        handler_file=macro_function_path,
+        runtime=Runtime.python3_8,
+        client=lambda_client,
+        timeout=1,
+    )
+
+    return deploy_cfn_template(
+        template_path=os.path.join(os.path.dirname(__file__), "../templates/macro_resource.yml"),
+        parameters={"FunctionName": func_name, "MacroName": macro_name},
+    )
 
 
 class TestTypes:
@@ -437,3 +463,391 @@ class TestImportValues:
 
         # TODO support this method
         # assert cfn_client.list_imports(ExportName=export_name)["Imports"]
+
+
+@pytest.mark.xfail(reason="Macros not yet supported")
+class TestMacros:
+    @pytest.mark.aws_validated
+    def test_global_scope(
+        self, deploy_cfn_template, cfn_client, create_lambda_function, lambda_client, snapshot
+    ):
+        """
+        This test validates the behaviour of a template deployment that includes a global transformation
+        """
+
+        new_value = f"new-value-{short_uid()}"
+        stack = deploy_cfn_template(
+            template_path=os.path.join(
+                os.path.dirname(__file__), "../templates/transformation_global_parameter.yml"
+            ),
+            parameters={"Substitution": new_value},
+        )
+
+        processed_template = cfn_client.get_template(
+            StackName=stack.stack_name, TemplateStage="Processed"
+        )
+        snapshot.add_transformer(snapshot.transform.regex(new_value, "new-value"))
+        snapshot.match("processed_template", processed_template)
+
+    @pytest.mark.aws_validated
+    @pytest.mark.parametrize(
+        "template_to_transform",
+        ["transformation_snippet_topic.yml", "transformation_snippet_topic.json"],
+    )
+    def test_snipped_scope(
+        self,
+        deploy_cfn_template,
+        cfn_client,
+        create_lambda_function,
+        lambda_client,
+        snapshot,
+        template_to_transform,
+    ):
+        """
+        This test validates the behaviour of a template deployment that includes a snipped transformation also the
+        responses from the get_template with different template formats.
+        """
+        macro_function_path = os.path.join(
+            os.path.dirname(__file__), "../templates/macros/add_standard_attributes.py"
+        )
+
+        func_name = f"test_lambda_{short_uid()}"
+        create_lambda_function(
+            func_name=func_name,
+            handler_file=macro_function_path,
+            runtime=Runtime.python3_8,
+            client=lambda_client,
+            timeout=1,
+        )
+
+        macro_name = "ConvertTopicToFifo"
+        deploy_cfn_template(
+            template_path=os.path.join(
+                os.path.dirname(__file__), "../templates/macro_resource.yml"
+            ),
+            parameters={"FunctionName": func_name, "MacroName": macro_name},
+        )
+
+        topic_name = f"topic-{short_uid()}.fifo"
+        stack = deploy_cfn_template(
+            template_path=os.path.join(
+                os.path.dirname(__file__), "../templates/", template_to_transform
+            ),
+            parameters={"TopicName": topic_name},
+        )
+        original_template = cfn_client.get_template(
+            StackName=stack.stack_name, TemplateStage="Original"
+        )
+        snapshot.add_transformer(snapshot.transform.regex(topic_name, "topic-name"))
+        snapshot.match("original_template", original_template)
+
+        processed_template = cfn_client.get_template(
+            StackName=stack.stack_name, TemplateStage="Processed"
+        )
+        snapshot.match("processed_template", processed_template)
+
+    @pytest.mark.aws_validated
+    def test_scope_order_and_parameters(
+        self,
+        deploy_cfn_template,
+        cfn_client,
+        create_lambda_function,
+        lambda_client,
+        snapshot,
+    ):
+        """
+        The test validates the order of execution of transformations and also asserts that any type of
+        transformation can receive inputs.
+        """
+
+        macro_function_path = os.path.join(
+            os.path.dirname(__file__), "../templates/macros/replace_string.py"
+        )
+        macro_name = "ReplaceString"
+        create_macro(
+            macro_name,
+            macro_function_path,
+            deploy_cfn_template,
+            create_lambda_function,
+            lambda_client,
+        )
+
+        stack = deploy_cfn_template(
+            template_path=os.path.join(
+                os.path.dirname(__file__),
+                "../templates/transformation_multiple_scope_parameter.yml",
+            ),
+        )
+
+        processed_template = cfn_client.get_template(
+            StackName=stack.stack_name, TemplateStage="Processed"
+        )
+        snapshot.match("processed_template", processed_template)
+
+    @pytest.mark.aws_validated
+    def test_capabilities_requirements(
+        self,
+        deploy_cfn_template,
+        cfn_client,
+        create_lambda_function,
+        lambda_client,
+        snapshot,
+        cleanups,
+    ):
+        """
+        The test validates that AWS will return an error about missing CAPABILITY_AUTOEXPAND when adding a
+        resource during the transformation, and it will ask for CAPABILITY_NAMED_IAM when the new resource is a
+        IAM role
+        """
+
+        macro_function_path = os.path.join(
+            os.path.dirname(__file__), "../templates/macros/add_role.py"
+        )
+        macro_name = "AddRole"
+        create_macro(
+            macro_name,
+            macro_function_path,
+            deploy_cfn_template,
+            create_lambda_function,
+            lambda_client,
+        )
+
+        stack_name = f"stack-{short_uid()}"
+        args = {
+            "StackName": stack_name,
+            "TemplateBody": load_file(
+                os.path.join(
+                    os.path.dirname(__file__),
+                    "../templates/transformation_add_role.yml",
+                )
+            ),
+        }
+        with pytest.raises(botocore.exceptions.ClientError) as ex:
+            cfn_client.create_stack(**args)
+        snapshot.match("error", ex.value.response)
+
+        args["Capabilities"] = [
+            "CAPABILITY_AUTO_EXPAND",  # Required to allow macro to add a role to template
+            "CAPABILITY_NAMED_IAM",  # Required to allow CFn create added role
+        ]
+        cfn_client.create_stack(**args)
+        cleanups.append(lambda: cfn_client.delete_stack(StackName=stack_name))
+        cfn_client.get_waiter("stack_create_complete").wait(StackName=stack_name)
+        processed_template = cfn_client.get_template(
+            StackName=stack_name, TemplateStage="Processed"
+        )
+        snapshot.add_transformer(snapshot.transform.key_value("RoleName", "role-name"))
+        snapshot.match("processed_template", processed_template)
+
+    @pytest.mark.aws_validated
+    def test_validate_lambda_internals(
+        self,
+        deploy_cfn_template,
+        cfn_client,
+        create_lambda_function,
+        lambda_client,
+        snapshot,
+    ):
+        """
+        The test validates the content of the event pass into the macro lambda
+        """
+        macro_function_path = os.path.join(
+            os.path.dirname(__file__), "../templates/macros/print_internals.py"
+        )
+
+        macro_name = "PrintInternals"
+        create_macro(
+            macro_name,
+            macro_function_path,
+            deploy_cfn_template,
+            create_lambda_function,
+            lambda_client,
+        )
+
+        stack = deploy_cfn_template(
+            template_path=os.path.join(
+                os.path.dirname(__file__),
+                "../templates/transformation_print_internals.yml",
+            ),
+        )
+
+        processed_template = cfn_client.get_template(
+            StackName=stack.stack_name, TemplateStage="Processed"
+        )
+        snapshot.match(
+            "event",
+            processed_template["TemplateBody"]["Resources"]["Parameter"]["Properties"]["Value"],
+        )
+
+    @pytest.mark.aws_validated
+    def test_to_validate_template_limit_for_macro(
+        self,
+        deploy_cfn_template,
+        cfn_client,
+        create_lambda_function,
+        lambda_client,
+        snapshot,
+    ):
+        """
+        The test validates the max size of a template that can be passed into the macro function
+        """
+        macro_function_path = os.path.join(
+            os.path.dirname(__file__), "../templates/macros/format_template.py"
+        )
+        macro_name = "FormatTemplate"
+        create_macro(
+            macro_name,
+            macro_function_path,
+            deploy_cfn_template,
+            create_lambda_function,
+            lambda_client,
+        )
+
+        template_dict = yaml.safe_load(
+            load_file(
+                os.path.join(
+                    os.path.dirname(__file__), "../templates/transformation_global_parameter.yml"
+                )
+            )
+        )
+        for n in range(0, 1000):
+            template_dict["Resources"][f"Parameter{n}"] = deepcopy(
+                template_dict["Resources"]["Parameter"]
+            )
+
+        template = yaml.safe_dump(template_dict)
+
+        with pytest.raises(botocore.exceptions.ClientError) as ex:
+            deploy_cfn_template(template=template)
+
+        response = ex.value.response
+        response["Error"]["Message"] = response["Error"]["Message"].replace(
+            template, "<template-body>"
+        )
+        snapshot.match("error_response", response)
+
+    @pytest.mark.aws_validated
+    def test_error_pass_macro_as_reference(
+        self,
+        cfn_client,
+        snapshot,
+    ):
+        """
+        This test shows that the CFn will reject any transformation name that has been specified as reference, for
+        example, a parameter.
+        """
+
+        with pytest.raises(botocore.exceptions.ClientError) as ex:
+            cfn_client.create_stack(
+                StackName=f"stack-{short_uid()}",
+                TemplateBody=load_file(
+                    os.path.join(
+                        os.path.dirname(__file__),
+                        "../templates/transformation_macro_as_reference.yml",
+                    )
+                ),
+                Parameters=[{"ParameterKey": "MacroName", "ParameterValue": "NonExistent"}],
+            )
+        snapshot.match("error", ex.value.response)
+
+    @pytest.mark.aws_validated
+    def test_functions_and_references_during_transformation(
+        self,
+        deploy_cfn_template,
+        cfn_client,
+        create_lambda_function,
+        lambda_client,
+        snapshot,
+    ):
+        """
+        This tests shows the state of instrinsic functions during the execution of the macro
+        """
+        macro_function_path = os.path.join(
+            os.path.dirname(__file__), "../templates/macros/print_references.py"
+        )
+        macro_name = "PrintReferences"
+        create_macro(
+            macro_name,
+            macro_function_path,
+            deploy_cfn_template,
+            create_lambda_function,
+            lambda_client,
+        )
+
+        stack = deploy_cfn_template(
+            template_path=os.path.join(
+                os.path.dirname(__file__),
+                "../templates/transformation_macro_params_as_reference.yml",
+            ),
+            parameters={"MacroInput": "CreateStackInput"},
+        )
+
+        processed_template = cfn_client.get_template(
+            StackName=stack.stack_name, TemplateStage="Processed"
+        )
+        snapshot.match(
+            "event",
+            processed_template["TemplateBody"]["Resources"]["Parameter"]["Properties"]["Value"],
+        )
+
+    @pytest.mark.parametrize(
+        "macro_function",
+        [
+            "return_unsuccessful_with_message.py",
+            "return_unsuccessful_without_message.py",
+            "return_invalid_template.py",
+            "raise_error.py",
+        ],
+    )
+    def test_failed_state(
+        self,
+        deploy_cfn_template,
+        cfn_client,
+        create_lambda_function,
+        lambda_client,
+        snapshot,
+        cleanups,
+        macro_function,
+    ):
+        """
+        This test shows the error responses for different negative responses from the macro lambda
+        """
+        macro_function_path = os.path.join(
+            os.path.dirname(__file__), "../templates/macros/", macro_function
+        )
+
+        macro_name = "Unsuccessful"
+        create_macro(
+            macro_name,
+            macro_function_path,
+            deploy_cfn_template,
+            create_lambda_function,
+            lambda_client,
+        )
+
+        template = load_file(
+            os.path.join(
+                os.path.dirname(__file__),
+                "../templates/transformation_unsuccessful.yml",
+            )
+        )
+
+        stack_name = f"stack-{short_uid()}"
+        cfn_client.create_stack(
+            StackName=stack_name, Capabilities=["CAPABILITY_AUTO_EXPAND"], TemplateBody=template
+        )
+        cleanups.append(lambda: cfn_client.delete_stack(StackName=stack_name))
+
+        with pytest.raises(botocore.exceptions.WaiterError):
+            cfn_client.get_waiter("stack_create_complete").wait(StackName=stack_name)
+
+        events = cfn_client.describe_stack_events(StackName=stack_name)["StackEvents"]
+
+        failed_events_by_policy = [
+            event
+            for event in events
+            if "ResourceStatusReason" in event and event["ResourceStatus"] == "ROLLBACK_IN_PROGRESS"
+        ]
+
+        snapshot.add_transformer(snapshot.transform.cloudformation_api())
+        snapshot.match("failed_description", failed_events_by_policy[0])

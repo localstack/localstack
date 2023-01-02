@@ -8,7 +8,6 @@ from botocore.exceptions import ClientError
 from localstack.services.awslambda.lambda_api import IAM_POLICY_VERSION
 from localstack.services.cloudformation.deployment_utils import (
     PLACEHOLDER_AWS_NO_VALUE,
-    PLACEHOLDER_RESOURCE_NAME,
     dump_json_params,
     generate_default_name,
     param_defaults,
@@ -73,9 +72,6 @@ class IAMUser(GenericBaseModel):
         return "AWS::IAM::User"
 
     def get_physical_resource_id(self, attribute=None, **kwargs):
-        return self.props.get("UserName")
-
-    def get_resource_name(self):
         return self.props.get("UserName")
 
     def fetch_state(self, stack_name, resources):
@@ -223,9 +219,6 @@ class IAMRole(GenericBaseModel):
     @staticmethod
     def cloudformation_type():
         return "AWS::IAM::Role"
-
-    def get_resource_name(self):
-        return self.props.get("RoleName")
 
     def get_physical_resource_id(self, attribute=None, **kwargs):
         role_name = self.properties.get("RoleName")
@@ -385,7 +378,7 @@ class IAMRole(GenericBaseModel):
                             ),
                             "AssumeRolePolicyDocument",
                         ),
-                        {"RoleName": PLACEHOLDER_RESOURCE_NAME},
+                        {"RoleName": "RoleName"},
                     ),
                 },
                 {"function": IAMRole._post_create},
@@ -604,9 +597,6 @@ class IAMGroup(GenericBaseModel):
         return "AWS::IAM::Group"
 
     def get_physical_resource_id(self, attribute=None, **kwargs):
-        return self.props.get("GroupName")
-
-    def get_resource_name(self):
         return self.props.get("GroupName")
 
     def fetch_state(self, stack_name, resources):
