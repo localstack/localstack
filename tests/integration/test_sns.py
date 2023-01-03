@@ -18,9 +18,11 @@ from localstack import config
 from localstack.aws.accounts import get_aws_account_id
 from localstack.aws.api.lambda_ import Runtime
 from localstack.services.awslambda.lambda_utils import LAMBDA_RUNTIME_PYTHON37
-from localstack.services.sns.provider import PLATFORM_ENDPOINT_MSGS_ENDPOINT, SnsProvider
+from localstack.services.sns.constants import PLATFORM_ENDPOINT_MSGS_ENDPOINT
+from localstack.services.sns.provider import SnsProvider
 from localstack.testing.aws.util import is_aws_cloud
 from localstack.utils import testutil
+from localstack.utils.aws.arns import parse_arn
 from localstack.utils.net import wait_for_port_closed, wait_for_port_open
 from localstack.utils.strings import short_uid, to_str
 from localstack.utils.sync import poll_condition, retry
@@ -560,16 +562,16 @@ class TestSNSProvider:
         assert "MessageId" in response
         assert response["ResponseMetadata"]["HTTPStatusCode"] == 200
 
-    @pytest.mark.only_localstack
-    def test_publish_non_existent_target(self, sns_client):
-        # todo: fix test, the client id in the ARN is wrong so can't test against AWS
+    @pytest.mark.aws_validated
+    def test_publish_non_existent_target(self, sns_client, sns_create_topic, snapshot):
+        topic_arn = sns_create_topic()["TopicArn"]
+        account_id = parse_arn(topic_arn)["account"]
         with pytest.raises(ClientError) as ex:
             sns_client.publish(
-                TargetArn="arn:aws:sns:us-east-1:000000000000:endpoint/APNS/abcdef/0f7d5971-aa8b-4bd5-b585-0826e9f93a66",
+                TargetArn=f"arn:aws:sns:us-east-1:{account_id}:endpoint/APNS/abcdef/0f7d5971-aa8b-4bd5-b585-0826e9f93a66",
                 Message="This is a push notification",
             )
-
-        assert ex.value.response["Error"]["Code"] == "InvalidClientTokenId"
+        snapshot.match("non-existent-endpoint", ex.value.response)
 
     @pytest.mark.aws_validated
     def test_tags(self, sns_client, sns_create_topic, snapshot):
@@ -798,7 +800,7 @@ class TestSNSProvider:
         assert message["Type"] == "Notification"
         assert json.loads(message["Message"])["message"] == "test_redrive_policy"
 
-    @pytest.mark.aws_validated  # snaphot ok
+    @pytest.mark.aws_validated
     @pytest.mark.skip_snapshot_verify(
         paths=[
             "$..Owner",
@@ -1149,6 +1151,26 @@ class TestSNSProvider:
         retry(check_messages, sleep=0.5)
 
     @pytest.mark.aws_validated
+    def test_publish_wrong_phone_format(
+        self, sns_client, sns_create_topic, sns_subscription, snapshot
+    ):
+        message = "Good news everyone!"
+        with pytest.raises(ClientError) as e:
+            sns_client.publish(Message=message, PhoneNumber="+1a234")
+
+        snapshot.match("invalid-number", e.value.response)
+
+        with pytest.raises(ClientError) as e:
+            sns_client.publish(Message=message, PhoneNumber="NAA+15551234567")
+
+        snapshot.match("wrong-format", e.value.response)
+
+        topic_arn = sns_create_topic()["TopicArn"]
+        with pytest.raises(ClientError) as e:
+            sns_subscription(TopicArn=topic_arn, Protocol="sms", Endpoint="NAA+15551234567")
+        snapshot.match("wrong-endpoint", e.value.response)
+
+    @pytest.mark.aws_validated
     @pytest.mark.skip_snapshot_verify(
         paths=[
             "$..Attributes.Owner",
@@ -1300,9 +1322,11 @@ class TestSNSProvider:
                 MessageAttributeNames=["All"],
                 AttributeNames=["All"],
             )
-
             for message in sqs_response["Messages"]:
                 if message["MessageId"] in message_ids_received:
+                    sqs_client.delete_message(
+                        QueueUrl=queue_url, ReceiptHandle=message["ReceiptHandle"]
+                    )
                     continue
 
                 message_ids_received.add(message["MessageId"])
@@ -1476,6 +1500,162 @@ class TestSNSProvider:
     @pytest.mark.aws_validated
     @pytest.mark.skip_snapshot_verify(
         paths=[
+            "$.sub-attrs-raw-true.Attributes.Owner",
+            "$.sub-attrs-raw-true.Attributes.ConfirmationWasAuthenticated",
+            "$.topic-attrs.Attributes.DeliveryPolicy",
+            "$.topic-attrs.Attributes.EffectiveDeliveryPolicy",
+            "$.topic-attrs.Attributes.Policy.Statement..Action",  # SNS:Receive is added by moto but not returned in AWS
+            "$..Messages..Attributes.SequenceNumber",
+            "$..Successful..SequenceNumber",  # not added, need to be managed by SNS, different from SQS received
+        ]
+    )
+    @pytest.mark.parametrize("raw_message_delivery", [True, False])
+    @pytest.mark.xfail(reason="DLQ behaviour for FIFO topic does not work yet")
+    def test_publish_fifo_batch_messages_to_dlq(
+        self,
+        sns_client,
+        sns_create_topic,
+        sqs_client,
+        sqs_create_queue,
+        sqs_queue_arn,
+        sns_create_sqs_subscription,
+        sns_allow_topic_sqs_queue,
+        snapshot,
+        raw_message_delivery,
+    ):
+
+        # the hash isn't the same because of the Binary attributes (maybe decoding order?)
+        snapshot.add_transformer(
+            snapshot.transform.key_value(
+                "MD5OfMessageAttributes",
+                value_replacement="<md5-hash>",
+                reference_replacement=False,
+            )
+        )
+
+        topic_name = f"topic-{short_uid()}.fifo"
+        queue_name = f"queue-{short_uid()}.fifo"
+        dlq_name = f"dlq-{short_uid()}.fifo"
+
+        topic_arn = sns_create_topic(
+            Name=topic_name,
+            Attributes={"FifoTopic": "true"},
+        )["TopicArn"]
+
+        response = sns_client.get_topic_attributes(TopicArn=topic_arn)
+        snapshot.match("topic-attrs", response)
+
+        queue_url = sqs_create_queue(
+            QueueName=queue_name,
+            Attributes={"FifoQueue": "true"},
+        )
+
+        subscription = sns_create_sqs_subscription(topic_arn=topic_arn, queue_url=queue_url)
+        subscription_arn = subscription["SubscriptionArn"]
+
+        if raw_message_delivery:
+            sns_client.set_subscription_attributes(
+                SubscriptionArn=subscription_arn,
+                AttributeName="RawMessageDelivery",
+                AttributeValue="true",
+            )
+
+        dlq_url = sqs_create_queue(
+            QueueName=dlq_name,
+            Attributes={"FifoQueue": "true"},
+        )
+        dlq_arn = sqs_queue_arn(dlq_url)
+
+        sns_client.set_subscription_attributes(
+            SubscriptionArn=subscription["SubscriptionArn"],
+            AttributeName="RedrivePolicy",
+            AttributeValue=json.dumps({"deadLetterTargetArn": dlq_arn}),
+        )
+
+        sns_allow_topic_sqs_queue(
+            sqs_queue_url=dlq_url,
+            sqs_queue_arn=dlq_arn,
+            sns_topic_arn=topic_arn,
+        )
+
+        sqs_client.delete_queue(QueueUrl=queue_url)
+
+        message_group_id = "complexMessageGroupId"
+        publish_batch_request_entries = [
+            {
+                "Id": "1",
+                "MessageGroupId": message_group_id,
+                "Message": "Test Message with two attributes",
+                "Subject": "Subject",
+                "MessageAttributes": {
+                    "attr1": {"DataType": "Number", "StringValue": "99.12"},
+                    "attr2": {"DataType": "Number", "StringValue": "109.12"},
+                },
+                "MessageDeduplicationId": "MessageDeduplicationId-1",
+            },
+            {
+                "Id": "2",
+                "MessageGroupId": message_group_id,
+                "Message": "Test Message with one attribute",
+                "Subject": "Subject",
+                "MessageAttributes": {"attr1": {"DataType": "Number", "StringValue": "19.12"}},
+                "MessageDeduplicationId": "MessageDeduplicationId-2",
+            },
+            {
+                "Id": "3",
+                "MessageGroupId": message_group_id,
+                "Message": "Test Message without attribute",
+                "Subject": "Subject",
+                "MessageDeduplicationId": "MessageDeduplicationId-3",
+            },
+        ]
+
+        publish_batch_response = sns_client.publish_batch(
+            TopicArn=topic_arn,
+            PublishBatchRequestEntries=publish_batch_request_entries,
+        )
+
+        snapshot.match("publish-batch-response-fifo", publish_batch_response)
+
+        assert "Successful" in publish_batch_response
+        assert "Failed" in publish_batch_response
+
+        for successful_resp in publish_batch_response["Successful"]:
+            assert "Id" in successful_resp
+            assert "MessageId" in successful_resp
+
+        message_ids_received = set()
+        messages = []
+
+        def get_messages_from_dlq():
+            # due to the random nature of receiving SQS messages, we need to consolidate a single object to match
+            # MaxNumberOfMessages could return less than 3 messages
+            sqs_response = sqs_client.receive_message(
+                QueueUrl=dlq_url,
+                MessageAttributeNames=["All"],
+                AttributeNames=["All"],
+                MaxNumberOfMessages=10,
+                WaitTimeSeconds=1,
+                VisibilityTimeout=1,
+            )
+
+            for message in sqs_response["Messages"]:
+                LOG.debug("Message received %s", message)
+                if message["MessageId"] in message_ids_received:
+                    continue
+
+                message_ids_received.add(message["MessageId"])
+                messages.append(message)
+                sqs_client.delete_message(QueueUrl=dlq_url, ReceiptHandle=message["ReceiptHandle"])
+
+            assert len(messages) == 3
+
+        retry(get_messages_from_dlq, retries=5, sleep=1)
+        snapshot.match("messages-in-dlq", {"Messages": messages})
+
+    @pytest.mark.aws_validated
+    @pytest.mark.skip_snapshot_verify(
+        paths=[
             "$..Attributes.Owner",
             "$..Attributes.ConfirmationWasAuthenticated",
         ]
@@ -1539,8 +1719,32 @@ class TestSNSProvider:
 
         # todo add test and implement behaviour for ContentBasedDeduplication or MessageDeduplicationId
 
+    @pytest.mark.aws_validated
+    def test_subscribe_to_sqs_with_queue_url(
+        self,
+        sns_client,
+        sns_create_topic,
+        sqs_client,
+        sqs_create_queue,
+        sns_subscription,
+        snapshot,
+    ):
+        topic = sns_create_topic()
+        topic_arn = topic["TopicArn"]
+        queue_url = sqs_create_queue()
+        with pytest.raises(ClientError) as e:
+            sns_subscription(TopicArn=topic_arn, Protocol="sqs", Endpoint=queue_url)
+        snapshot.match("sub-queue-url", e.value.response)
+
+    @pytest.mark.aws_validated
     def test_publish_sqs_from_sns_with_xray_propagation(
-        self, sns_client, sns_create_topic, sqs_client, sqs_create_queue, sns_subscription
+        self,
+        sns_client,
+        sns_create_topic,
+        sqs_client,
+        sqs_create_queue,
+        sns_create_sqs_subscription,
+        snapshot,
     ):
         def add_xray_header(request, **kwargs):
             request.headers[
@@ -1553,8 +1757,7 @@ class TestSNSProvider:
             topic = sns_create_topic()
             topic_arn = topic["TopicArn"]
             queue_url = sqs_create_queue()
-
-            sns_subscription(TopicArn=topic_arn, Protocol="sqs", Endpoint=queue_url)
+            sns_create_sqs_subscription(topic_arn=topic_arn, queue_url=queue_url)
             sns_client.publish(TargetArn=topic_arn, Message="X-Ray propagation test msg")
 
             response = sqs_client.receive_message(
@@ -1568,8 +1771,7 @@ class TestSNSProvider:
 
             assert len(response["Messages"]) == 1
             message = response["Messages"][0]
-            assert "Attributes" in message
-            assert "AWSTraceHeader" in message["Attributes"]
+            snapshot.match("xray-msg", message)
             assert (
                 message["Attributes"]["AWSTraceHeader"]
                 == "Root=1-3152b799-8954dae64eda91bc9a23a7e8;Parent=7fa8c0f79203be72;Sampled=1"
@@ -1647,7 +1849,7 @@ class TestSNSProvider:
     @pytest.mark.aws_validated
     @pytest.mark.skip_snapshot_verify(
         paths=[
-            "$..Messages..Body.SignatureVersion",  # apparently, messages are not signed in fifo topics
+            "$..Messages..Body.SignatureVersion",  # TODO: apparently, messages are not signed in fifo topics
             "$..Messages..Body.Signature",
             "$..Messages..Body.SigningCertURL",
             "$..Messages..Body.SequenceNumber",
@@ -1721,11 +1923,13 @@ class TestSNSProvider:
         sqs_client,
         sns_create_topic,
         sqs_create_queue,
+        sqs_queue_arn,
         sns_create_sqs_subscription,
         snapshot,
     ):
         topic_name = f"topic-{short_uid()}"
         fifo_topic_name = f"topic-{short_uid()}.fifo"
+        queue_name = f"queue-{short_uid()}"
         fifo_queue_name = f"queue-{short_uid()}.fifo"
 
         topic_arn = sns_create_topic(Name=topic_name)["TopicArn"]
@@ -1738,11 +1942,30 @@ class TestSNSProvider:
             QueueName=fifo_queue_name, Attributes={"FifoQueue": "true"}
         )
 
+        queue_url = sqs_create_queue(QueueName=queue_name)
+
         with pytest.raises(ClientError) as e:
             sns_create_sqs_subscription(topic_arn=topic_arn, queue_url=fifo_queue_url)
 
         assert e.match("standard SNS topic")
         snapshot.match("not-fifo-topic", e.value.response)
+
+        with pytest.raises(ClientError) as e:
+            sns_create_sqs_subscription(topic_arn=fifo_topic_arn, queue_url=queue_url)
+        snapshot.match("not-fifo-queue", e.value.response)
+
+        subscription = sns_create_sqs_subscription(
+            topic_arn=fifo_topic_arn, queue_url=fifo_queue_url
+        )
+        queue_arn = sqs_queue_arn(queue_url=queue_url)
+
+        with pytest.raises(ClientError) as e:
+            sns_client.set_subscription_attributes(
+                SubscriptionArn=subscription["SubscriptionArn"],
+                AttributeName="RedrivePolicy",
+                AttributeValue=json.dumps({"deadLetterTargetArn": queue_arn}),
+            )
+        snapshot.match("regular-queue-for-dlq-of-fifo-topic", e.value.response)
 
         with pytest.raises(ClientError) as e:
             sns_client.publish(TopicArn=fifo_topic_arn, Message="test")
@@ -1768,6 +1991,62 @@ class TestSNSProvider:
             sns_client.publish(TopicArn=topic_arn, Message="test", MessageGroupId=short_uid())
         assert e.match("MessageGroupId")
         snapshot.match("no-msg-group-id-regular-topic", e.value.response)
+
+    @pytest.mark.aws_validated
+    @pytest.mark.skip_snapshot_verify(
+        paths=[
+            "$.invalid-json-redrive-policy.Error.Message",  # message contains java trace in AWS
+            "$.invalid-json-filter-policy.Error.Message",  # message contains java trace in AWS
+        ]
+    )
+    def test_validate_set_sub_attributes(
+        self,
+        sns_client,
+        sqs_client,
+        sns_create_topic,
+        sqs_create_queue,
+        sqs_queue_arn,
+        sns_create_sqs_subscription,
+        snapshot,
+    ):
+        topic_name = f"topic-{short_uid()}"
+        queue_name = f"queue-{short_uid()}"
+        topic_arn = sns_create_topic(Name=topic_name)["TopicArn"]
+        queue_url = sqs_create_queue(QueueName=queue_name)
+        subscription = sns_create_sqs_subscription(topic_arn=topic_arn, queue_url=queue_url)
+        sub_arn = subscription["SubscriptionArn"]
+
+        with pytest.raises(ClientError) as e:
+            sns_client.set_subscription_attributes(
+                SubscriptionArn=sub_arn,
+                AttributeName="FakeAttribute",
+                AttributeValue="test-value",
+            )
+        snapshot.match("fake-attribute", e.value.response)
+
+        with pytest.raises(ClientError) as e:
+            sns_client.set_subscription_attributes(
+                SubscriptionArn=sub_arn,
+                AttributeName="RedrivePolicy",
+                AttributeValue=json.dumps({"deadLetterTargetArn": "fake-arn"}),
+            )
+        snapshot.match("fake-arn-redrive-policy", e.value.response)
+
+        with pytest.raises(ClientError) as e:
+            sns_client.set_subscription_attributes(
+                SubscriptionArn=sub_arn,
+                AttributeName="RedrivePolicy",
+                AttributeValue="{invalidjson}",
+            )
+        snapshot.match("invalid-json-redrive-policy", e.value.response)
+
+        with pytest.raises(ClientError) as e:
+            sns_client.set_subscription_attributes(
+                SubscriptionArn=sub_arn,
+                AttributeName="FilterPolicy",
+                AttributeValue="{invalidjson}",
+            )
+        snapshot.match("invalid-json-filter-policy", e.value.response)
 
     @pytest.mark.aws_validated
     def test_empty_sns_message(
@@ -2141,18 +2420,22 @@ class TestSNSProvider:
         assert e.value.response["ResponseMetadata"]["HTTPStatusCode"] == 400
 
     @pytest.mark.only_localstack  # needs real credentials for GCM/FCM
+    @pytest.mark.xfail(reason="Need to implement credentials validation when creating platform")
     def test_publish_to_gcm(self, sns_client, sns_create_platform_application):
         key = "mock_server_key"
         token = "mock_token"
 
-        platform_app_arn = sns_create_platform_application(
+        response = sns_create_platform_application(
             Name="firebase", Platform="GCM", Attributes={"PlatformCredential": key}
-        )["PlatformApplicationArn"]
+        )
 
-        endpoint_arn = sns_client.create_platform_endpoint(
+        platform_app_arn = response["PlatformApplicationArn"]
+
+        response = sns_client.create_platform_endpoint(
             PlatformApplicationArn=platform_app_arn,
             Token=token,
-        )["EndpointArn"]
+        )
+        endpoint_arn = response["EndpointArn"]
 
         message = {
             "GCM": '{ "notification": {"title": "Title of notification", "body": "It works" } }'
@@ -2162,7 +2445,6 @@ class TestSNSProvider:
             sns_client.publish(
                 TargetArn=endpoint_arn, MessageStructure="json", Message=json.dumps(message)
             )
-
         assert ex.value.response["Error"]["Code"] == "InvalidParameter"
 
     @pytest.mark.aws_validated
@@ -2458,7 +2740,7 @@ class TestSNSProvider:
         application_platform_name = f"app-platform-{short_uid()}"
 
         app_arn = sns_create_platform_application(
-            Name=application_platform_name, Platform="p1", Attributes={}
+            Name=application_platform_name, Platform="APNS", Attributes={}
         )["PlatformApplicationArn"]
 
         endpoint_arn = sns_client.create_platform_endpoint(
@@ -2477,13 +2759,12 @@ class TestSNSProvider:
 
         # example message from
         # https://docs.aws.amazon.com/sns/latest/dg/sns-send-custom-platform-specific-payloads-mobile-devices.html
-        message = json.dumps({"APNS_PLATFORM": json.dumps({"aps": {"content-available": 1}})})
-        message_for_topic = json.dumps(
-            {
-                "default": "This is the default message which must be present when publishing a message to a topic.",
-                "APNS_PLATFORM": json.dumps({"aps": {"content-available": 1}}),
-            },
-        )
+        message = json.dumps({"APNS": json.dumps({"aps": {"content-available": 1}})})
+        message_for_topic = {
+            "default": "This is the default message which must be present when publishing a message to a topic.",
+            "APNS": json.dumps({"aps": {"content-available": 1}}),
+        }
+        message_for_topic_string = json.dumps(message_for_topic)
         message_attributes = {
             "AWS.SNS.MOBILE.APNS.TOPIC": {
                 "DataType": "String",
@@ -2501,7 +2782,7 @@ class TestSNSProvider:
         # publish to a topic which has a platform subscribed to it
         sns_client.publish(
             TopicArn=topic_arn,
-            Message=message_for_topic,
+            Message=message_for_topic_string,
             MessageAttributes=message_attributes,
             MessageStructure="json",
         )
@@ -2527,9 +2808,10 @@ class TestSNSProvider:
         assert len(api_platform_endpoints_msgs[endpoint_arn]) == 1
         assert len(api_platform_endpoints_msgs[endpoint_arn_2]) == 1
         assert api_contents["region"] == "us-east-1"
-        # TODO: current implementation does not dispatch depending on platform type, we will have the message
-        # for all platforms
-        assert api_platform_endpoints_msgs[endpoint_arn][0]["Message"] == message_for_topic
+
+        assert api_platform_endpoints_msgs[endpoint_arn][0]["Message"] == json.dumps(
+            message_for_topic["APNS"]
+        )
         assert (
             api_platform_endpoints_msgs[endpoint_arn][0]["MessageAttributes"] == message_attributes
         )
@@ -2564,7 +2846,6 @@ class TestSNSProvider:
         assert not msg_with_region["platform_endpoint_messages"]
 
     @pytest.mark.only_localstack
-    @pytest.mark.xfail(reason="Behaviour not yet implemented")
     def test_publish_to_platform_endpoint_is_dispatched(
         self, sns_client, sns_create_topic, sns_subscription, sns_create_platform_application
     ):
@@ -2616,8 +2897,8 @@ class TestSNSProvider:
         retry(check_message, retries=PUBLICATION_RETRIES, sleep=PUBLICATION_TIMEOUT)
 
         # each endpoint should only receive the message that was directed to them
-        assert platform_endpoint_msgs[endpoints_arn["GCM"]][0]["Message"][0] == message["GCM"]
-        assert platform_endpoint_msgs[endpoints_arn["APNS"]][0]["Message"][0] == message["APNS"]
+        assert platform_endpoint_msgs[endpoints_arn["GCM"]][0]["Message"] == message["GCM"]
+        assert platform_endpoint_msgs[endpoints_arn["APNS"]][0]["Message"] == message["APNS"]
 
     @pytest.mark.aws_validated
     def test_message_attributes_prefixes(
@@ -2668,3 +2949,39 @@ class TestSNSProvider:
             },
         )
         snapshot.match("publish-ok-2", response)
+
+    @pytest.mark.aws_validated
+    def test_message_structure_json_exc(self, sns_client, sns_create_topic, snapshot):
+        topic_arn = sns_create_topic()["TopicArn"]
+        # TODO: add batch
+
+        # missing `default` key for the JSON
+        with pytest.raises(ClientError) as e:
+            message = json.dumps({"sqs": "Test message"})
+            sns_client.publish(
+                TopicArn=topic_arn,
+                Message=message,
+                MessageStructure="json",
+            )
+        snapshot.match("missing-default-key", e.value.response)
+
+        # invalid JSON
+        with pytest.raises(ClientError) as e:
+            message = '{"default": "This is a default message"} }'
+            sns_client.publish(
+                TopicArn=topic_arn,
+                Message=message,
+                MessageStructure="json",
+            )
+        snapshot.match("invalid-json", e.value.response)
+
+        # duplicate keys: from SNS docs, should fail but does work
+        # https://docs.aws.amazon.com/sns/latest/api/API_Publish.html
+        # `Duplicate keys are not allowed.`
+        message = '{"default": "This is a default message", "default": "Duplicate"}'
+        resp = sns_client.publish(
+            TopicArn=topic_arn,
+            Message=message,
+            MessageStructure="json",
+        )
+        snapshot.match("duplicate-json-keys", resp)
