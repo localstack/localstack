@@ -573,8 +573,8 @@ class FifoQueue(SqsQueue):
 
         # Check if we have information about when this message was sent so we can keep it in order
         # when putting it back into the queue
-        if 'Attributes' in message and 'SentTimestamp' in message['Attributes']:
-            message_timestamp = message['Attributes']['SentTimestamp']
+        if "Attributes" in message and "SentTimestamp" in message["Attributes"]:
+            message_timestamp = message["Attributes"]["SentTimestamp"]
 
         fifo_message = SqsMessage(
             message_timestamp,
