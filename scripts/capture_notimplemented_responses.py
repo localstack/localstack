@@ -191,7 +191,7 @@ def run_script(services: list[str], path: None):
         )
         aggregated_w = csv.DictWriter(
             aggregatefile,
-            fieldnames=["service", "operation", "implemented_count", "full_count", "percentage"],
+            fieldnames=["service", "implemented_count", "full_count", "percentage"],
         )
 
         full_w.writeheader()
@@ -232,7 +232,6 @@ def run_script(services: list[str], path: None):
             aggregated_w.writerow(
                 {
                     "service": response["service"],
-                    "operation": response["operation"],
                     "implemented_count": implemented_count,
                     "full_count": all_count,
                     "percentage": f"{implemented_percentage * 100:.1f}",
