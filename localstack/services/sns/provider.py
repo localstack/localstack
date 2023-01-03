@@ -170,9 +170,8 @@ def publish_message(
         )
         return message_id
 
-    LOG.debug("Publishing message to TopicArn: %s | Message: %s", topic_arn, message)
-    start_thread(
-        lambda _: message_to_subscribers(
+    def send_message_to_subscribers():
+        message_to_subscribers(
             message_id,
             message,
             topic_arn,
@@ -182,9 +181,19 @@ def publish_message(
             subscription_arn,
             skip_checks,
             message_attributes,
-        ),
-        name="sns-message_to_subscribers",
-    )
+        )
+
+    LOG.debug("Publishing message to TopicArn: %s | Message: %s", topic_arn, message)
+    if topic_arn and ".fifo" in topic_arn:
+        # FIFO topics need to be processed sequentially
+        # Note: this adds significant delay to publishing messages to FIFO topics,
+        # but it is necessary to ensure FIFO message ordering
+        send_message_to_subscribers()
+    else:
+        start_thread(
+            send_message_to_subscribers,
+            name="sns-message_to_subscribers",
+        )
 
     return message_id
 
