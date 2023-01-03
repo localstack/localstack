@@ -38,6 +38,16 @@ PUBLICATION_RETRIES = 4
 @pytest.fixture(autouse=True)
 def sns_snapshot_transformer(snapshot):
     snapshot.add_transformer(snapshot.transform.sns_api())
+    # FIXME: AWS added a new field to subscriptions responses. It has an ARN in the response, which creates
+    # a <resource:id> that we're missing. Regenerate all snapshots without this transformer once this is implemented.
+    snapshot.add_transformer(
+        snapshot.transform.key_value(
+            "SubscriptionPrincipal",
+            value_replacement="<sub-principal>",
+            reference_replacement=False,
+        ),
+        priority=-1,
+    )
 
 
 @pytest.fixture
@@ -2160,6 +2170,7 @@ class TestSNSProvider:
         paths=[
             "$..Attributes.Owner",
             "$..Attributes.ConfirmationWasAuthenticated",
+            "$..Attributes.SubscriptionPrincipal",
             "$..Attributes.RawMessageDelivery",
             "$..Attributes.sqs_queue_url",
             "$..Subscriptions..Owner",
@@ -2175,6 +2186,7 @@ class TestSNSProvider:
         sqs_queue_exists,
         sns_create_sqs_subscription,
         sns_allow_topic_sqs_queue,
+        sqs_receive_num_messages,
         snapshot,
     ):
         topic_arn = sns_create_topic()["TopicArn"]
@@ -2207,16 +2219,35 @@ class TestSNSProvider:
         )
 
         sqs_client.delete_queue(QueueUrl=queue_url)
+
+        # setting up a second queue to be able to poll and know approximately when the message on the deleted queue
+        # have been published
+        queue_test_url = sqs_create_queue()
+        test_subscription = sns_create_sqs_subscription(
+            topic_arn=topic_arn, queue_url=queue_test_url
+        )
+        test_subscription_arn = test_subscription["SubscriptionArn"]
         # try to send a message before setting a DLQ
         message = "test_dlq_after_sqs_endpoint_deleted"
         sns_client.publish(TopicArn=topic_arn, Message=message)
+
         # to avoid race condition, publish is async and the redrive policy can be in effect before the actual publish
+        # we wait until the 2nd subscription received the message
+        poll_condition(
+            lambda: sqs_receive_num_messages(
+                queue_url=queue_test_url, expected_messages=1, max_iterations=2
+            ),
+            timeout=10,
+        )
+        sns_client.unsubscribe(SubscriptionArn=test_subscription_arn)
+        # we still wait a bit to be sure the message is well published
         time.sleep(1)
 
         # check the subscription is still there after we deleted the queue
         subscriptions = sns_client.list_subscriptions_by_topic(TopicArn=topic_arn)
         snapshot.match("subscriptions", subscriptions)
 
+        # set the RedrivePolicy with a DLQ. Subsequent failing messages to the subscription should go there
         sns_client.set_subscription_attributes(
             SubscriptionArn=subscription_arn,
             AttributeName="RedrivePolicy",
