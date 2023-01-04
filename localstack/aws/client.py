@@ -17,7 +17,7 @@ from werkzeug import Response
 from localstack.aws.api import CommonServiceException, ServiceException, ServiceResponse
 from localstack.constants import INTERNAL_AWS_ACCESS_KEY_ID, INTERNAL_AWS_SECRET_ACCESS_KEY
 from localstack.runtime import hooks
-from localstack.utils.aws.aws_stack import extract_region_from_arn
+from localstack.utils.aws.arns import extract_region_from_arn
 from localstack.utils.patch import patch
 
 if TYPE_CHECKING:
@@ -238,9 +238,12 @@ def raise_service_exception(response: Response, parsed_response: Dict) -> None:
 #
 
 """
-The internal AWS client API provides the means to perform cross-service communication within LocalStack.
-Any additional information LocalStack might need for the purpose of policy enforcement is sent as a
-data transfer object. This is a serialised dict object sent in the request header.
+The internal AWS client API provides the means to perform cross-service
+communication within LocalStack.
+
+Any additional information LocalStack might need for the purpose of policy
+enforcement is sent as a data transfer object. This is a serialised dict object
+sent in the request header.
 """
 
 LOCALSTACK_DATA_HEADER = "x-localstack-data"
