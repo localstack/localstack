@@ -80,7 +80,13 @@ from localstack.services.edge import ROUTER
 from localstack.services.moto import call_moto
 from localstack.services.plugins import ServiceLifecycleHook
 from localstack.services.sns import constants as sns_constants
-from localstack.services.sns.models import SnsMessage, SnsStore, SnsSubscription, sns_stores
+from localstack.services.sns.models import (
+    MessageGroupIdSequencer,
+    SnsMessage,
+    SnsStore,
+    SnsSubscription,
+    sns_stores,
+)
 from localstack.services.sns.publisher import (
     PublishDispatcher,
     SnsBatchPublishContext,
@@ -109,6 +115,14 @@ class SnsProvider(SnsApi, ServiceLifecycleHook):
     @staticmethod
     def get_store() -> SnsStore:
         return sns_stores[get_aws_account_id()][aws_stack.get_region()]
+
+    @staticmethod
+    def _get_sequence_number(store, topic_arn, message_group_id):
+        sequencer_key = f"{topic_arn}-{message_group_id}"
+        if not (sequencer := store.topic_message_group_id_sequencer.get(sequencer_key)):
+            sequencer = MessageGroupIdSequencer()
+            store.topic_message_group_id_sequencer[sequencer_key] = sequencer
+        return sequencer.get_next_number()
 
     def add_permission(
         self,
@@ -614,9 +628,12 @@ class SnsProvider(SnsApi, ServiceLifecycleHook):
             message_structure=message_structure,
             subject=subject,
         )
+
         publish_ctx = SnsPublishContext(
             message=message_ctx, store=store, request_headers=context.request.headers
         )
+
+        response = PublishResponse(MessageId=message_ctx.message_id)
 
         if is_endpoint_publish:
             self._publisher.publish_to_application_endpoint(
@@ -625,12 +642,17 @@ class SnsProvider(SnsApi, ServiceLifecycleHook):
         elif phone_number:
             self._publisher.publish_to_phone_number(ctx=publish_ctx, phone_number=phone_number)
         else:
-            # beware if the subscription is FIFO, the order might not be guaranteed.
-            # 2 quick call to this method in succession might not be executed in order in the executor?
-            # TODO: test how this behaves in a FIFO context with a lot of threads.
-            self._publisher.publish_to_topic(publish_ctx, topic_arn or target_arn)
+            topic_arn = topic_arn or target_arn
+            if topic_arn.endswith(".fifo"):
+                sequence_number = self._get_sequence_number(store, topic_arn, message_group_id)
+                message_ctx.sequence_number = sequence_number
+                response["SequenceNumber"] = sequence_number
 
-        return PublishResponse(MessageId=message_ctx.message_id)
+                self._publisher.publish_to_fifo_topic(publish_ctx, topic_arn)
+            else:
+                self._publisher.publish_to_topic(publish_ctx, topic_arn)
+
+        return response
 
     def subscribe(
         self,
@@ -761,6 +783,7 @@ class SnsProvider(SnsApi, ServiceLifecycleHook):
         call_moto(context)
         store = self.get_store()
         store.sns_subscriptions.pop(topic_arn, None)
+        store.fifo_topic_locking.pop(topic_arn, None)
         store.sns_tags.pop(topic_arn, None)
 
     def create_topic(
@@ -782,6 +805,8 @@ class SnsProvider(SnsApi, ServiceLifecycleHook):
         if tags:
             self.tag_resource(context=context, resource_arn=topic_arn, tags=tags)
         store.sns_subscriptions[topic_arn] = store.sns_subscriptions.get(topic_arn) or []
+        if topic_arn.endswith(".fifo"):
+            store.fifo_topic_locking[topic_arn] = store.fifo_topic_locking.get(topic_arn) or {}
         return CreateTopicResponse(TopicArn=topic_arn)
 
 

@@ -8,7 +8,7 @@ import time
 import traceback
 from concurrent.futures import ThreadPoolExecutor
 from dataclasses import dataclass
-from typing import Dict, List, Tuple, Union
+from typing import Dict, List, Optional, Tuple, Union
 
 import requests
 
@@ -19,6 +19,7 @@ from localstack.aws.api.sqs import MessageBodyAttributeMap
 from localstack.config import external_service_url
 from localstack.services.sns import constants as sns_constants
 from localstack.services.sns.models import (
+    FifoMessageGroupIdLock,
     SnsApplicationPlatforms,
     SnsMessage,
     SnsStore,
@@ -306,6 +307,52 @@ class SqsTopicPublisher(TopicPublisher):
                 message_attributes[key] = attribute
 
         return message_attributes
+
+
+class SqsFifoTopicPublisher(SqsTopicPublisher):
+    # TODO: this will inherit from a FIFO topic publisher, and that base class will implement the locking, at least
+    # the base methods?
+    def _publish(self, context: SnsPublishContext, subscriber: SnsSubscription):
+        sequencing_lock = self._get_lock(context, subscriber)
+        if sequencing_lock is None:
+            return super()._publish(context, subscriber)
+        try:
+            sequencing_lock.wait_for_sequence(context.message.sequence_number)
+            super()._publish(context, subscriber)
+        finally:
+            sequencing_lock.pop()
+
+    @staticmethod
+    def _get_lock(
+        context: SnsPublishContext, subscriber: SnsSubscription
+    ) -> Optional[FifoMessageGroupIdLock]:
+        lock_key = f"{subscriber['Endpoint']}-{context.message.message_group_id}"
+        topic_arn = subscriber["TopicArn"]
+        fifo_topic_locks = context.store.fifo_topic_locking
+        if topic_arn not in fifo_topic_locks:
+            return None
+
+        if not (lock := fifo_topic_locks[topic_arn].get(lock_key)):
+            lock = FifoMessageGroupIdLock()
+            fifo_topic_locks[topic_arn][lock_key] = lock
+
+        return lock
+
+    def enqueue_message_sequence(self, context: SnsPublishContext, subscriber: SnsSubscription):
+        lock = self._get_lock(context, subscriber)
+        if not lock:
+            # raise TopicNotExist? race condition between first check and publishing?
+            raise Exception
+        lock.append(context.message.sequence_number)
+
+    def pop_message_sequence(self, context: SnsPublishContext, subscriber: SnsSubscription):
+        # to maybe dodge deadlock in case we fail to submit? to see
+        lock = self._get_lock(context, subscriber)
+        if not lock:
+            # raise TopicNotExist? race condition between first check and publishing?
+            raise Exception
+        lock.wait_for_sequence(sequence_number=context.message.sequence_number)
+        lock.pop()
 
 
 class SqsBatchTopicPublisher(SqsTopicPublisher):
@@ -979,6 +1026,7 @@ class PublishDispatcher:
         "firehose": FirehoseTopicPublisher(),
     }
     batch_topic_notifiers = {"sqs": SqsBatchTopicPublisher()}
+    fifo_topic_notifiers = {"sqs": SqsFifoTopicPublisher()}
     sms_notifier = SmsPhoneNumberPublisher()
     application_notifier = ApplicationEndpointPublisher()
 
@@ -1024,6 +1072,26 @@ class PublishDispatcher:
                     subscriber["SubscriptionArn"],
                 )
                 self.executor.submit(notifier.publish, context=ctx, subscriber=subscriber)
+
+    def publish_to_fifo_topic(self, ctx: SnsPublishContext, topic_arn: str) -> None:
+        subscriptions = ctx.store.sns_subscriptions.get(topic_arn, [])
+        for subscriber in subscriptions:
+            if self._should_publish(ctx.store, ctx.message, subscriber):
+                notifier: SqsFifoTopicPublisher = self.fifo_topic_notifiers[subscriber["Protocol"]]
+                notifier.enqueue_message_sequence(ctx, subscriber)
+                try:
+                    LOG.debug(
+                        "Topic '%s' publishing '%s' to subscribed '%s' with protocol '%s' (subscription '%s')",
+                        topic_arn,
+                        ctx.message.message_id,
+                        subscriber.get("Endpoint"),
+                        subscriber["Protocol"],
+                        subscriber["SubscriptionArn"],
+                    )
+                    self.executor.submit(notifier.publish, context=ctx, subscriber=subscriber)
+                except Exception:
+                    notifier.pop_message_sequence(ctx, subscriber)
+                    raise
 
     def publish_batch_to_topic(self, ctx: SnsBatchPublishContext, topic_arn: str) -> None:
         subscriptions = ctx.store.sns_subscriptions.get(topic_arn, [])

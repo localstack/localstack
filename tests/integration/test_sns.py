@@ -1917,6 +1917,57 @@ class TestSNSProvider:
         snapshot.match("messages", response)
 
     @pytest.mark.aws_validated
+    @pytest.mark.skip_snapshot_verify(
+        paths=[
+            "$..Messages..Body.SignatureVersion",  # TODO: apparently, messages are not signed in fifo topics
+            "$..Messages..Body.Signature",
+            "$..Messages..Body.SigningCertURL",
+            "$..Messages..Body.SequenceNumber",
+            "$..Messages..Attributes.SequenceNumber",
+        ]
+    )
+    def test_message_to_fifo_topic_sequence_number(
+        self,
+        sns_client,
+        sqs_client,
+        sns_create_topic,
+        sqs_create_queue,
+        sns_create_sqs_subscription,
+        snapshot,
+    ):
+        topic_name = f"topic-{short_uid()}.fifo"
+        queue_name = f"queue-{short_uid()}.fifo"
+        topic_attributes = {"FifoTopic": "true"}
+        queue_attributes = {"FifoQueue": "true"}
+
+        topic_arn = sns_create_topic(
+            Name=topic_name,
+            Attributes=topic_attributes,
+        )["TopicArn"]
+        queue_url = sqs_create_queue(
+            QueueName=queue_name,
+            Attributes=queue_attributes,
+        )
+        sns_create_sqs_subscription(topic_arn=topic_arn, queue_url=queue_url)
+
+        message = "Test"
+        publish_resp = sns_client.publish(
+            TopicArn=topic_arn,
+            Message=message,
+            MessageGroupId="message-group-id-1",
+            MessageDeduplicationId="message-deduplication-id-1",
+        )
+        snapshot.match("publish", publish_resp)
+
+        response = sqs_client.receive_message(
+            QueueUrl=queue_url,
+            VisibilityTimeout=0,
+            WaitTimeSeconds=10,
+            AttributeNames=["All"],
+        )
+        snapshot.match("messages", response)
+
+    @pytest.mark.aws_validated
     def test_validations_for_fifo(
         self,
         sns_client,

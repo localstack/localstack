@@ -2742,5 +2742,49 @@
         }
       }
     }
+  },
+  "tests/integration/test_sns.py::TestSNSProvider::test_message_to_fifo_topic_sequence_number": {
+    "recorded-date": "04-01-2023, 01:37:21",
+    "recorded-content": {
+      "publish": {
+        "MessageId": "<uuid:1>",
+        "SequenceNumber": "<sequence-number:1>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "messages": {
+        "Messages": [
+          {
+            "Attributes": {
+              "ApproximateFirstReceiveTimestamp": "timestamp",
+              "ApproximateReceiveCount": "1",
+              "MessageDeduplicationId": "message-deduplication-id-1",
+              "MessageGroupId": "message-group-id-1",
+              "SenderId": "<sender-id>",
+              "SentTimestamp": "timestamp",
+              "SequenceNumber": "<sequence-number:2>"
+            },
+            "Body": {
+              "Type": "Notification",
+              "MessageId": "<uuid:1>",
+              "SequenceNumber": "<sequence-number:1>",
+              "TopicArn": "arn:aws:sns:<region>:111111111111:<resource:1>",
+              "Message": "Test",
+              "Timestamp": "date",
+              "UnsubscribeURL": "<unsubscribe-domain>/?Action=Unsubscribe&SubscriptionArn=arn:aws:sns:<region>:111111111111:<resource:1>:<resource:2>"
+            },
+            "MD5OfBody": "<md5-hash>",
+            "MessageId": "<uuid:2>",
+            "ReceiptHandle": "<receipt-handle:1>"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
   }
 }
