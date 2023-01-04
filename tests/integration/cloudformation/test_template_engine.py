@@ -465,7 +465,7 @@ class TestImportValues:
         # assert cfn_client.list_imports(ExportName=export_name)["Imports"]
 
 
-@pytest.mark.xfail(reason="Macros not yet supported")
+@pytest.mark.skip(reason="Macros not yet supported")
 class TestMacros:
     @pytest.mark.aws_validated
     def test_global_scope(
