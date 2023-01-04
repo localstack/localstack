@@ -184,7 +184,7 @@ def check_not_found_exception(e, resource_type, resource, resource_status=None):
     markers_hit = [m for m in markers if m in str(e)]
     if not markers_hit:
         LOG.warning(
-            "Unexpected error retrieving details for resource type %s: Exception: %s - %s - status: %s",
+            "Unexpected error processing resource type %s: Exception: %s - %s - status: %s",
             resource_type,
             str(e),
             resource,

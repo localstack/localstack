@@ -29,6 +29,7 @@ from localstack.aws.api.cloudformation import (
     DescribeStackSetOutput,
     DescribeStacksOutput,
     DisableRollback,
+    EnableTerminationProtection,
     ExecuteChangeSetOutput,
     ExecutionStatus,
     ExportName,
@@ -60,6 +61,7 @@ from localstack.aws.api.cloudformation import (
     UpdateStackOutput,
     UpdateStackSetInput,
     UpdateStackSetOutput,
+    UpdateTerminationProtectionOutput,
     ValidateTemplateInput,
     ValidateTemplateOutput,
 )
@@ -307,6 +309,18 @@ class CloudformationProvider(CloudformationApi):
         # these do not appear in the output
         result.pop("Capabilities", None)
         return result
+
+    def update_termination_protection(
+        self,
+        context: RequestContext,
+        enable_termination_protection: EnableTerminationProtection,
+        stack_name: StackNameOrId,
+    ) -> UpdateTerminationProtectionOutput:
+        stack = find_stack(stack_name)
+        if not stack:
+            raise ValidationError(f"Stack '{stack_name}' does not exist.")
+        stack.metadata["EnableTerminationProtection"] = enable_termination_protection
+        return UpdateTerminationProtectionOutput(StackId=stack.stack_id)
 
     @handler("CreateChangeSet", expand=False)
     def create_change_set(
