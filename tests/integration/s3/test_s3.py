@@ -778,7 +778,7 @@ class TestS3:
         snapshot.match("exc", e.value.response)
 
     @pytest.mark.aws_validated
-    def test_create_bucket_via_host_name(self, s3_vhost_client, s3_client):
+    def test_create_bucket_via_host_name(self, s3_vhost_client):
         # TODO check redirection (happens in AWS because of region name), should it happen in LS?
         # https://docs.aws.amazon.com/AmazonS3/latest/userguide/VirtualHosting.html#VirtualHostingBackwardsCompatibility
         bucket_name = f"test-{short_uid()}"
@@ -1916,6 +1916,7 @@ class TestS3:
         endpoint_url = _endpoint_url()
         # this will represent a ListBuckets call, calling the base endpoint
         resp = s3_http_client.get(endpoint_url)
+        assert resp.ok
         assert resp.ok
         assert b"<Bucket" in resp.content
 
