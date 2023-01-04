@@ -975,6 +975,15 @@ class TestDynamoDB:
             )
         ctx.match("ResourceNotFoundException")
 
+        # Ensure deleting a non-existent replica raises
+        with pytest.raises(Exception) as exc:
+            dynamodb_ap_south_1.update_table(
+                TableName=table_name, ReplicaUpdates=[{"Delete": {"RegionName": "eu-west-1"}}]
+            )
+        exc.match(
+            "Update global table operation failed because one or more replicas were not part of the global table"
+        )
+
         # Ensure replica details are updated in other regions
         response = dynamodb_us_east_1.describe_table(TableName=table_name)
         assert len(response["Table"]["Replicas"]) == 2
