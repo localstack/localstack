@@ -501,3 +501,28 @@ def test_updating_an_updated_stack_sets_status(deploy_cfn_template, cfn_client, 
 
     res = cfn_client.describe_stacks(StackName=stack.stack_name)
     snapshot.match("describe-result", res)
+
+
+@pytest.mark.aws_validated
+def test_update_termination_protection(deploy_cfn_template, cfn_client, sns_client, snapshot):
+    snapshot.add_transformer(snapshot.transform.cloudformation_api())
+    snapshot.add_transformer(snapshot.transform.key_value("ParameterValue", "parameter-value"))
+
+    # create stack
+    api_name = f"test_{short_uid()}"
+    template_path = os.path.join(os.path.dirname(__file__), "../../templates/simple_api.yaml")
+    stack = deploy_cfn_template(template_path=template_path, parameters={"ApiName": api_name})
+
+    # update termination protection (true)
+    cfn_client.update_termination_protection(
+        EnableTerminationProtection=True, StackName=stack.stack_name
+    )
+    res = cfn_client.describe_stacks(StackName=stack.stack_name)
+    snapshot.match("describe-stack-1", res)
+
+    # update termination protection (false)
+    cfn_client.update_termination_protection(
+        EnableTerminationProtection=False, StackName=stack.stack_name
+    )
+    res = cfn_client.describe_stacks(StackName=stack.stack_name)
+    snapshot.match("describe-stack-2", res)
