@@ -59,6 +59,7 @@ def test_globalindex_read_write_provisioned_throughput_dynamodb_table(
     paths=[
         "$..Table.ProvisionedThroughput.LastDecreaseDateTime",
         "$..Table.ProvisionedThroughput.LastIncreaseDateTime",
+        "$..Table.Replicas",
     ]
 )
 def test_default_name_for_table(deploy_cfn_template, dynamodb_client, snapshot):

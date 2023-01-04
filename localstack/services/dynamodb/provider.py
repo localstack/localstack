@@ -642,14 +642,16 @@ class DynamoDBProvider(DynamodbApi, ServiceLifecycleHook):
     @handler("PutItem", expand=False)
     def put_item(self, context: RequestContext, put_item_input: PutItemInput) -> PutItemOutput:
         table_name = put_item_input["TableName"]
-        global_table_region = self.get_global_table_region(context, table_name)
-
-        result = self._forward_request(context=context, region=global_table_region)
 
         existing_item = None
         event_sources_or_streams_enabled = has_event_sources_or_streams_enabled(table_name)
         if event_sources_or_streams_enabled:
-            existing_item = ItemFinder.find_existing_item(put_item_input)
+            existing_item = ItemFinder.find_existing_item(
+                put_item_input, account_id=context.account_id, region_name=context.region
+            )
+
+        global_table_region = self.get_global_table_region(context, table_name)
+        result = self._forward_request(context=context, region=global_table_region)
 
         # Since this operation makes use of global table region, we need to use the same region for all
         # calls made via the inter-service client. This is taken care of by passing the account ID and
