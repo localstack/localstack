@@ -246,9 +246,13 @@ class SecurityGroup(GenericBaseModel):
     def get_physical_resource_id(self, attribute=None, **kwargs):
         if self.physical_resource_id:
             return self.physical_resource_id
-        if attribute in REF_ID_ATTRS:
-            props = self.props
-            return props.get("GroupId") or props.get("GroupName")
+        # see docs: "[...] Ref returns the resource ID. For SGs without a VPC, Ref returns the resource name."
+        props = self.props
+        if not props.get("GroupId"):
+            return
+        if not props.get("VpcId"):
+            return props.get("GroupName")
+        return props.get("GroupId")
 
     @staticmethod
     def add_defaults(resource, stack_name: str):

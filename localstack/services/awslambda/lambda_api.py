@@ -22,7 +22,7 @@ from urllib.parse import urlparse
 
 from flask import Flask, Response, jsonify, request
 
-from localstack import config
+from localstack import config, constants
 from localstack.aws.accounts import get_aws_account_id
 from localstack.constants import APPLICATION_JSON, LOCALHOST_HOSTNAME
 from localstack.http import Request
@@ -55,10 +55,10 @@ from localstack.services.awslambda.lambda_utils import (
 )
 from localstack.services.awslambda.packages import awslambda_go_runtime_package
 from localstack.utils.archives import unzip
-from localstack.utils.aws import aws_stack
+from localstack.utils.aws import arns, aws_stack, resources
+from localstack.utils.aws.arns import extract_region_from_arn
 from localstack.utils.aws.aws_models import CodeSigningConfig, InvalidEnvVars, LambdaFunction
 from localstack.utils.aws.aws_responses import ResourceNotFoundException
-from localstack.utils.aws.aws_stack import extract_region_from_arn
 from localstack.utils.common import get_unzipped_size, is_zip_file
 from localstack.utils.container_networking import get_main_container_name
 from localstack.utils.docker_utils import DOCKER_CLIENT
@@ -166,12 +166,12 @@ def func_arn(function_name, remove_qualifier=True):
     parts = function_name.split(":function:")
     if remove_qualifier and len(parts) > 1:
         function_name = "%s:function:%s" % (parts[0], parts[1].split(":")[0])
-    return aws_stack.lambda_function_arn(function_name)
+    return arns.lambda_function_arn(function_name)
 
 
 def func_qualifier(function_name, qualifier=None):
     store = get_awslambda_store_for_arn(function_name)
-    arn = aws_stack.lambda_function_arn(function_name)
+    arn = arns.lambda_function_arn(function_name)
     details = store.lambdas.get(arn)
     if not details:
         return details
@@ -239,6 +239,21 @@ def build_mapping_obj(data) -> Dict:
             )
         mapping["FilterCriteria"] = data.get("FilterCriteria")
     return mapping
+
+
+def is_hot_reloading(code: dict) -> bool:
+    bucket_name = code.get("S3Bucket")
+    if (
+        bucket_name == constants.LEGACY_DEFAULT_BUCKET_MARKER_LOCAL
+        and bucket_name != config.BUCKET_MARKER_LOCAL
+    ):
+        LOG.warning(
+            "Please note that using %s as local bucket marker is deprecated. Please use %s or set the config option 'BUCKET_MARKER_LOCAL'",
+            constants.LEGACY_DEFAULT_BUCKET_MARKER_LOCAL,
+            constants.DEFAULT_BUCKET_MARKER_LOCAL,
+        )
+        return True
+    return code.get("S3Bucket") == config.BUCKET_MARKER_LOCAL
 
 
 def format_timestamp(timestamp=None):
@@ -424,7 +439,7 @@ def run_lambda(
         sys.stdout = stream
         sys.stderr = stream
     try:
-        func_arn = aws_stack.fix_arn(func_arn)
+        func_arn = arns.fix_arn(func_arn)
         lambda_function = store.lambdas.get(func_arn)
         if not lambda_function:
             region_name = extract_region_from_arn(func_arn)
@@ -579,11 +594,10 @@ def set_archive_code(
     # get metadata
     lambda_arn = func_arn(lambda_name_or_arn)
     lambda_details = store.lambdas[lambda_arn]
-    is_local_mount = code.get("S3Bucket") == config.BUCKET_MARKER_LOCAL
+    is_local_mount = is_hot_reloading(code)
 
     if is_local_mount and config.LAMBDA_REMOTE_DOCKER:
-        msg = 'Please note that Lambda mounts (bucket name "%s") cannot be used with LAMBDA_REMOTE_DOCKER=1'
-        raise Exception(msg % config.BUCKET_MARKER_LOCAL)
+        raise Exception("Please note that Lambda mounts cannot be used with LAMBDA_REMOTE_DOCKER=1")
 
     # Stop/remove any containers that this arn uses.
     LAMBDA_EXECUTOR.cleanup(lambda_arn)
@@ -649,7 +663,7 @@ def store_and_get_lambda_code_archive(
     and return the Lambda CWD, file name, and zip bytes content. May optionally return None
     in case this is a Lambda with the special bucket marker __local__, used for code mounting."""
     code_passed = lambda_function.code
-    is_local_mount = code_passed.get("S3Bucket") == config.BUCKET_MARKER_LOCAL
+    is_local_mount = is_hot_reloading(code_passed)
     lambda_zip_dir = lambda_function.zip_dir
 
     if code_passed:
@@ -697,7 +711,7 @@ def do_set_function_code(lambda_function: LambdaFunction):
     lambda_environment = lambda_function.envvars
     handler_name = lambda_function.handler = lambda_function.handler or LAMBDA_DEFAULT_HANDLER
     code_passed = lambda_function.code
-    is_local_mount = code_passed.get("S3Bucket") == config.BUCKET_MARKER_LOCAL
+    is_local_mount = is_hot_reloading(code_passed)
 
     # cleanup any left-over Lambda executor instances
     LAMBDA_EXECUTOR.cleanup(arn)
@@ -888,7 +902,7 @@ def forward_to_fallback_url(func_arn, data):
     if not config.LAMBDA_FALLBACK_URL:
         return
 
-    lambda_name = aws_stack.lambda_function_name(func_arn)
+    lambda_name = arns.lambda_function_name(func_arn)
     if config.LAMBDA_FALLBACK_URL.startswith("dynamodb://"):
         table_name = urlparse(config.LAMBDA_FALLBACK_URL.replace("dynamodb://", "http://")).netloc
         dynamodb = aws_stack.connect_to_service("dynamodb")
@@ -898,7 +912,7 @@ def forward_to_fallback_url(func_arn, data):
             "payload": {"S": data},
             "function_name": {"S": lambda_name},
         }
-        aws_stack.create_dynamodb_table(table_name, partition_key="id")
+        resources.create_dynamodb_table(table_name, partition_key="id")
         dynamodb.put_item(TableName=table_name, Item=item)
         return ""
     if re.match(r"^https?://.+", config.LAMBDA_FALLBACK_URL):
@@ -940,9 +954,7 @@ def get_lambda_policy(function, qualifier=None):
         docs.append(doc)
 
     # find policy by name
-    policy_name = get_lambda_policy_name(
-        aws_stack.lambda_function_name(function), qualifier=qualifier
-    )
+    policy_name = get_lambda_policy_name(arns.lambda_function_name(function), qualifier=qualifier)
     policy = [d for d in docs if d["PolicyName"] == policy_name]
     if policy:
         return policy[0]
@@ -2262,7 +2274,7 @@ def create_code_signing_config():
     signing_profile_version_arns = data.get("AllowedPublishers").get("SigningProfileVersionArns")
 
     code_signing_id = "csc-%s" % long_uid().replace("-", "")[0:17]
-    arn = aws_stack.code_signing_arn(code_signing_id)
+    arn = arns.code_signing_arn(code_signing_id)
 
     store.code_signing_configs[arn] = CodeSigningConfig(
         arn, code_signing_id, signing_profile_version_arns

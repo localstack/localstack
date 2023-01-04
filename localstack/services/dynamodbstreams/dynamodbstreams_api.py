@@ -9,7 +9,7 @@ from bson.json_util import dumps
 from localstack.aws.accounts import get_aws_account_id
 from localstack.aws.api.dynamodbstreams import StreamStatus, StreamViewType
 from localstack.services.dynamodbstreams.models import DynamoDbStreamsStore, dynamodbstreams_stores
-from localstack.utils.aws import aws_stack
+from localstack.utils.aws import arns, aws_stack, resources
 from localstack.utils.common import now_utc
 
 DDB_KINESIS_STREAM_NAME_PREFIX = "__ddb_stream_"
@@ -41,10 +41,10 @@ def add_dynamodb_stream(
         store = get_dynamodbstreams_store()
         # create kinesis stream as a backend
         stream_name = get_kinesis_stream_name(table_name)
-        aws_stack.create_kinesis_stream(stream_name)
+        resources.create_kinesis_stream(stream_name)
         latest_stream_label = latest_stream_label or "latest"
         stream = {
-            "StreamArn": aws_stack.dynamodb_stream_arn(
+            "StreamArn": arns.dynamodb_stream_arn(
                 table_name=table_name, latest_stream_label=latest_stream_label
             ),
             "TableName": table_name,

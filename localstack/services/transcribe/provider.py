@@ -27,10 +27,13 @@ from localstack.aws.api.transcribe import (
     TranscriptionJobStatus,
     TranscriptionJobSummary,
 )
+from localstack.services.plugins import ServiceLifecycleHook
 from localstack.services.transcribe.models import TranscribeStore, transcribe_stores
+from localstack.services.transcribe.packages import ffmpeg_package
 from localstack.utils.aws import aws_stack
 from localstack.utils.files import new_tmp_file
 from localstack.utils.http import download
+from localstack.utils.run import run
 from localstack.utils.strings import short_uid
 from localstack.utils.threads import start_thread
 
@@ -52,10 +55,23 @@ LANGUAGE_MODELS = {
     "hi-IN": "vosk-model-small-hi-0.22",
     "ja-JP": "vosk-model-small-ja-0.22",
     "fa-IR": "vosk-model-small-fa-0.5",
+    "vi-VN": "vosk-model-small-vn-0.3",
     "zh-CN": "vosk-model-small-cn-0.3",
 }
 
 LANGUAGE_MODEL_DIR = Path(config.dirs.cache) / "vosk"
+
+# List of ffmpeg format names that correspond the supported formats by AWS
+# See https://docs.aws.amazon.com/transcribe/latest/dg/how-input.html
+SUPPORTED_FORMAT_NAMES = {
+    "amr": MediaFormat.amr,
+    "flac": MediaFormat.flac,
+    "mp3": MediaFormat.mp3,
+    "mov,mp4,m4a,3gp,3g2,mj2": MediaFormat.mp4,
+    "ogg": MediaFormat.ogg,
+    "matroska,webm": MediaFormat.webm,
+    "wav": MediaFormat.wav,
+}
 
 os.environ["VOSK_MODEL_PATH"] = str(LANGUAGE_MODEL_DIR)
 
@@ -69,7 +85,9 @@ SetLogLevel(-1)
 _DL_LOCK = threading.Lock()
 
 
-class TranscribeProvider(TranscribeApi):
+class TranscribeProvider(TranscribeApi, ServiceLifecycleHook):
+    def on_before_start(self):
+        ffmpeg_package.install()
 
     #
     # Handlers
@@ -208,15 +226,47 @@ class TranscribeProvider(TranscribeApi):
             bucket, _, key = s3_path.removeprefix("s3://").partition("/")
             s3_client.download_file(Bucket=bucket, Key=key, Filename=file_path)
 
+            ffmpeg_bin = ffmpeg_package.get_installer().get_ffmpeg_path()
+            ffprobe_bin = ffmpeg_package.get_installer().get_ffprobe_path()
+
+            LOG.debug("Determining media format")
+            # TODO set correct failure_reason if ffprobe execution fails
+            ffprobe_output = json.loads(
+                run(
+                    f"{ffprobe_bin} -show_streams -show_format -print_format json -hide_banner -v error {file_path}"
+                )
+            )
+            format = ffprobe_output["format"]["format_name"]
+            LOG.debug(f"Media format detected as: {format}")
+            job["MediaFormat"] = SUPPORTED_FORMAT_NAMES[format]
+
+            # Determine the sample rate of input audio if possible
+            if len(ffprobe_output["streams"]):
+                sample_rate = ffprobe_output["streams"][0]["sample_rate"]
+                job["MediaSampleRateHertz"] = int(sample_rate)
+
+            if format in SUPPORTED_FORMAT_NAMES:
+                wav_path = new_tmp_file(suffix=".wav")
+                LOG.debug("Transcoding media to wav")
+                # TODO set correct failure_reason if ffmpeg execution fails
+                run(
+                    f"{ffmpeg_bin} -y -nostdin -loglevel quiet -i '{file_path}' -ar 16000 -ac 1 '{wav_path}'"
+                )
+            else:
+                failure_reason = f"Unsupported media format: {format}"
+                raise RuntimeError()
+
             # Check if file is valid wav
-            audio = wave.open(file_path, "rb")
+            audio = wave.open(wav_path, "rb")
             if (
                 audio.getnchannels() != 1
                 or audio.getsampwidth() != 2
                 or audio.getcomptype() != "NONE"
             ):
                 # Fail job
-                failure_reason = "Audio file must be mono PCM WAV format"
+                failure_reason = (
+                    "Audio file must be mono PCM WAV format. Transcoding may have failed. "
+                )
                 raise RuntimeError()
 
             # Prepare transcriber
@@ -283,4 +333,4 @@ class TranscribeProvider(TranscribeApi):
             job["FailureReason"] = failure_reason or str(exc)
             job["TranscriptionJobStatus"] = TranscriptionJobStatus.FAILED
 
-            LOG.warning("Transcription job %s failed: %s", job_name, job["FailureReason"])
+            LOG.exception("Transcription job %s failed: %s", job_name, job["FailureReason"])

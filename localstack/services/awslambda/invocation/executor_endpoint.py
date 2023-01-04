@@ -29,6 +29,7 @@ class InvokeSendError(Exception):
 class ExecutorEndpoint:
     service_endpoint: ServiceEndpoint
     container_address: str
+    container_port: int
     rules: list[Rule]
     endpoint_id: str
     router: Router
@@ -38,9 +39,11 @@ class ExecutorEndpoint:
         endpoint_id: str,
         service_endpoint: ServiceEndpoint,
         container_address: Optional[str] = None,
+        container_port: Optional[int] = INVOCATION_PORT,
     ) -> None:
         self.service_endpoint = service_endpoint
         self.container_address = container_address
+        self.container_port = container_port
         self.rules = []
         self.endpoint_id = endpoint_id
         self.router = ROUTER
@@ -118,7 +121,7 @@ class ExecutorEndpoint:
     def invoke(self, payload: Dict[str, str]) -> None:
         if not self.container_address:
             raise ValueError("Container address not set, but got an invoke.")
-        invocation_url = f"http://{self.container_address}:{INVOCATION_PORT}/invoke"
+        invocation_url = f"http://{self.container_address}:{self.container_port}/invoke"
         response = requests.post(url=invocation_url, json=payload)
         if not response.ok:
             raise InvokeSendError(

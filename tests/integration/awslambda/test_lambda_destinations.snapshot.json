@@ -242,13 +242,16 @@
     }
   },
   "tests/integration/awslambda/test_lambda_destinations.py::TestLambdaDLQ::test_dead_letter_queue": {
-    "recorded-date": "01-09-2022, 09:57:06",
+    "recorded-date": "23-11-2022, 21:22:49",
     "recorded-content": {
       "create_lambda_with_dlq": {
         "CreateEventSourceMappingResponse": null,
         "CreateFunctionResponse": {
+          "Architectures": [
+            "x86_64"
+          ],
           "CodeSha256": "<code-sha256:1>",
-          "CodeSize": 17481634,
+          "CodeSize": "<code-size>",
           "DeadLetterConfig": {
             "TargetArn": "arn:aws:sqs:<region>:111111111111:<resource:1>"
           },
@@ -265,10 +268,6 @@
           "LastModified": "date",
           "MemorySize": 128,
           "PackageType": "Zip",
-          "ResponseMetadata": {
-            "HTTPHeaders": {},
-            "HTTPStatusCode": 201
-          },
           "RevisionId": "<uuid:1>",
           "Role": "arn:aws:iam::111111111111:role/<resource:2>",
           "Runtime": "python3.9",
@@ -279,7 +278,11 @@
           "TracingConfig": {
             "Mode": "PassThrough"
           },
-          "Version": "$LATEST"
+          "Version": "$LATEST",
+          "ResponseMetadata": {
+            "HTTPHeaders": {},
+            "HTTPStatusCode": 201
+          }
         }
       },
       "receive_result": {
@@ -314,8 +317,11 @@
         }
       },
       "delete_dlq": {
+        "Architectures": [
+          "x86_64"
+        ],
         "CodeSha256": "<code-sha256:1>",
-        "CodeSize": 17481634,
+        "CodeSize": "<code-size>",
         "DeadLetterConfig": {
           "TargetArn": "arn:aws:sqs:<region>:111111111111:<resource:1>"
         },
@@ -335,10 +341,6 @@
         "LastUpdateStatusReasonCode": "Creating",
         "MemorySize": 128,
         "PackageType": "Zip",
-        "ResponseMetadata": {
-          "HTTPHeaders": {},
-          "HTTPStatusCode": 200
-        },
         "RevisionId": "<uuid:3>",
         "Role": "arn:aws:iam::111111111111:role/<resource:2>",
         "Runtime": "python3.9",
@@ -347,7 +349,11 @@
         "TracingConfig": {
           "Mode": "PassThrough"
         },
-        "Version": "$LATEST"
+        "Version": "$LATEST",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
       },
       "invoke_result": {
         "ExecutedVersion": "$LATEST",
@@ -361,14 +367,14 @@
             "  File \"/var/task/handler.py\", line 54, in handler\n    raise Exception(\"Test exception (this is intentional)\")\n"
           ]
         },
+        "StatusCode": 200,
         "ResponseMetadata": {
           "HTTPHeaders": {},
           "HTTPStatusCode": 200
-        },
-        "StatusCode": 200
+        }
       },
       "log_result": {
-        "log_result": [
+        "result": [
           "START RequestId: <uuid:4> Version: $LATEST",
           "Lambda log message - print function",
           "[INFO]\tdate\t<uuid:4>\tLambda log message - logging module",
@@ -377,6 +383,132 @@
           "\u00a0\u00a0File \"/var/task/handler.py\", line 54, in handler",
           "\u00a0\u00a0\u00a0\u00a0raise Exception(\"Test exception (this is intentional)\")END RequestId: <uuid:4>"
         ]
+      }
+    }
+  },
+  "tests/integration/awslambda/test_lambda_destinations.py::TestLambdaDestinationSqs::test_retries": {
+    "recorded-date": "16-12-2022, 09:15:27",
+    "recorded-content": {
+      "queue_destination_payload": {
+        "Messages": [
+          {
+            "Attributes": {
+              "ApproximateFirstReceiveTimestamp": "timestamp",
+              "ApproximateReceiveCount": "2",
+              "SenderId": "<sender-id:1>",
+              "SentTimestamp": "timestamp"
+            },
+            "Body": {
+              "version": "1.0",
+              "timestamp": "date",
+              "requestContext": {
+                "requestId": "<uuid:1>",
+                "functionArn": "arn:aws:lambda:<region>:111111111111:function:<resource:1>:$LATEST",
+                "condition": "RetriesExhausted",
+                "approximateInvokeCount": 3
+              },
+              "requestPayload": {
+                "message": "<test-msg-id>"
+              },
+              "responseContext": {
+                "statusCode": 200,
+                "executedVersion": "$LATEST",
+                "functionError": "Unhandled"
+              },
+              "responsePayload": {
+                "errorMessage": "intentional failure",
+                "errorType": "Exception",
+                "stackTrace": [
+                  "  File \"/var/task/handler.py\", line 7, in handler\n    raise Exception(\"intentional failure\")\n"
+                ]
+              }
+            },
+            "MD5OfBody": "<md5-body>",
+            "MessageId": "<uuid:2>",
+            "ReceiptHandle": "<receipt-handle:1>"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/integration/awslambda/test_lambda_destinations.py::TestLambdaDestinationSqs::test_maxeventage": {
+    "recorded-date": "16-12-2022, 11:42:55",
+    "recorded-content": {
+      "no_retry_failure_message": {
+        "Attributes": {
+          "ApproximateFirstReceiveTimestamp": "timestamp",
+          "ApproximateReceiveCount": "1",
+          "SenderId": "<sender-id:1>",
+          "SentTimestamp": "timestamp"
+        },
+        "Body": {
+          "version": "1.0",
+          "timestamp": "date",
+          "requestContext": {
+            "requestId": "<uuid:1>",
+            "functionArn": "arn:aws:lambda:<region>:111111111111:function:<resource:1>:$LATEST",
+            "condition": "EventAgeExceeded",
+            "approximateInvokeCount": 1
+          },
+          "requestPayload": {
+            "message": "<test-msg-id>"
+          },
+          "responseContext": {
+            "statusCode": 200,
+            "executedVersion": "$LATEST",
+            "functionError": "Unhandled"
+          },
+          "responsePayload": {
+            "errorMessage": "intentional failure",
+            "errorType": "Exception",
+            "stackTrace": [
+              "  File \"/var/task/handler.py\", line 7, in handler\n    raise Exception(\"intentional failure\")\n"
+            ]
+          }
+        },
+        "MD5OfBody": "<md5-body>",
+        "MessageId": "<uuid:2>",
+        "ReceiptHandle": "<receipt-handle:1>"
+      },
+      "single_retry_failure_message": {
+        "Attributes": {
+          "ApproximateFirstReceiveTimestamp": "timestamp",
+          "ApproximateReceiveCount": "1",
+          "SenderId": "<sender-id:2>",
+          "SentTimestamp": "timestamp"
+        },
+        "Body": {
+          "version": "1.0",
+          "timestamp": "date",
+          "requestContext": {
+            "requestId": "<uuid:3>",
+            "functionArn": "arn:aws:lambda:<region>:111111111111:function:<resource:1>:$LATEST",
+            "condition": "EventAgeExceeded",
+            "approximateInvokeCount": 2
+          },
+          "requestPayload": {
+            "message": "<test-msg-id>"
+          },
+          "responseContext": {
+            "statusCode": 200,
+            "executedVersion": "$LATEST",
+            "functionError": "Unhandled"
+          },
+          "responsePayload": {
+            "errorMessage": "intentional failure",
+            "errorType": "Exception",
+            "stackTrace": [
+              "  File \"/var/task/handler.py\", line 7, in handler\n    raise Exception(\"intentional failure\")\n"
+            ]
+          }
+        },
+        "MD5OfBody": "<md5-body>",
+        "MessageId": "<uuid:4>",
+        "ReceiptHandle": "<receipt-handle:2>"
       }
     }
   }

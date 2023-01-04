@@ -591,5 +591,65 @@
         }
       }
     }
+  },
+  "tests/integration/test_sqs.py::TestSqsProvider::test_invalid_batch_id": {
+    "recorded-date": "12-12-2022, 21:57:35",
+    "recorded-content": {
+      "test_invalid_batch_id": {
+        "Error": {
+          "Code": "AWS.SimpleQueueService.InvalidBatchEntryId",
+          "Detail": null,
+          "Message": "A batch entry id can only contain alphanumeric characters, hyphens and underscores. It can be at most 80 letters long.",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/integration/test_sqs.py::TestSqsProvider::test_send_message_with_binary_attributes": {
+    "recorded-date": "22-12-2022, 16:28:53",
+    "recorded-content": {
+      "binary-attrs-msg": {
+        "Messages": [
+          {
+            "Body": "test",
+            "MD5OfBody": "098f6bcd4621d373cade4e832627b4f6",
+            "MD5OfMessageAttributes": "8cbe4db156db8a94db8b801b7addb984",
+            "MessageAttributes": {
+              "attr1": {
+                "BinaryValue": "b'traceparent\\x1e00-774062d6c37081a5a0b9b5b88e30627c-2d2482211f6489da-01'",
+                "DataType": "Binary"
+              }
+            },
+            "MessageId": "<uuid:1>",
+            "ReceiptHandle": "<receipt-handle:1>"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/integration/test_sqs.py::TestSqsProvider::test_send_receive_max_number_of_messages": {
+    "recorded-date": "29-12-2022, 08:55:47",
+    "recorded-content": {
+      "send_max_number_of_messages": {
+        "Error": {
+          "Code": "InvalidParameterValue",
+          "Detail": null,
+          "Message": "Value 11 for parameter MaxNumberOfMessages is invalid. Reason: Must be between 1 and 10, if provided.",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
   }
 }

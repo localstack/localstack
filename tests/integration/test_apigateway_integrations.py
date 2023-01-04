@@ -5,7 +5,7 @@ import requests
 
 from localstack.services.apigateway.helpers import path_based_url
 from localstack.services.awslambda.lambda_utils import LAMBDA_RUNTIME_PYTHON39
-from localstack.utils.aws import aws_stack
+from localstack.utils.aws import arns, aws_stack
 from localstack.utils.strings import short_uid
 from localstack.utils.sync import retry
 from localstack.utils.testutil import create_lambda_function
@@ -56,7 +56,7 @@ def test_lambda_aws_integration(apigateway_client, create_rest_apigw):
         handler="lambda_hello_world.handler",
         runtime=LAMBDA_RUNTIME_PYTHON39,
     )
-    lambda_arn = aws_stack.lambda_function_arn(fn_name)
+    lambda_arn = arns.lambda_function_arn(fn_name)
 
     api_id, _, root = create_rest_apigw(name="aws lambda api")
     resource_id, _ = create_rest_resource(

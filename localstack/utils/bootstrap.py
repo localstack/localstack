@@ -315,15 +315,6 @@ def validate_localstack_config(name):
 
     # docker-compose file validation cases
 
-    if (
-        docker_env.get("PORT_WEB_UI") not in ["${PORT_WEB_UI- }", None, ""]
-        and image_name == "localstack/localstack"
-    ):
-        warns.append(
-            '"PORT_WEB_UI" Web UI is now deprecated, '
-            'and requires to use the "localstack/localstack-full" image.'
-        )
-
     if (main_container not in container_name) and not docker_env.get("MAIN_CONTAINER_NAME"):
         warns.append(
             'Please use "container_name: %s" or add "MAIN_CONTAINER_NAME" in "environment".'
@@ -357,7 +348,14 @@ def get_docker_image_to_start():
     if not image_name:
         image_name = constants.DOCKER_IMAGE_NAME
         if os.environ.get("USE_LIGHT_IMAGE") in constants.FALSE_STRINGS:
+            # FIXME deprecated - remove with 2.0
+            LOG.warning(
+                "USE_LIGHT_IMAGE is deprecated (since 1.3.0) and will be removed in upcoming releases of LocalStack! "
+                "The localstack/localstack-full image is deprecated. Please remove this environment variable."
+            )
             image_name = constants.DOCKER_IMAGE_NAME_FULL
+        if is_api_key_configured():
+            image_name = constants.DOCKER_IMAGE_NAME_PRO
     return image_name
 
 
@@ -568,7 +566,6 @@ def configure_container(container: LocalstackContainer):
         if value is not None:
             container.env_vars[env_var] = value
     container.env_vars["DOCKER_HOST"] = f"unix://{config.DOCKER_SOCK}"
-    container.env_vars["HOST_TMP_FOLDER"] = config.dirs.functions  # TODO: rename env var
 
     # TODO this is default now, remove once a considerate time is passed
     # to activate proper signal handling
@@ -599,6 +596,9 @@ def configure_volume_mounts(container: LocalstackContainer):
 
     # shared tmp folder
     container.volumes.add(VolumeBind(source_dirs.tmp, target_dirs.tmp))
+
+    # set the HOST_TMP_FOLDER for the legacy dirs / legacy lambda function mounting
+    container.env_vars["HOST_TMP_FOLDER"] = source_dirs.functions
 
     # data_dir mounting and environment variables
     if source_dirs.data:

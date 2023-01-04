@@ -1,21 +1,6 @@
 import pytest
-from pytest import fixture
 
-from localstack.services.stores import (
-    AccountRegionBundle,
-    BaseStore,
-    CrossRegionAttribute,
-    LocalAttribute,
-)
-
-
-@fixture
-def sample_stores() -> AccountRegionBundle:
-    class SampleStore(BaseStore):
-        CROSS_REGION_ATTR = CrossRegionAttribute(default=list)
-        region_specific_attr = LocalAttribute(default=list)
-
-    return AccountRegionBundle("zzz", SampleStore, validate=False)
+from localstack.services.stores import AccountRegionBundle, BaseStore
 
 
 class TestStores:

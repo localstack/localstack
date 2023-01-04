@@ -25,8 +25,8 @@ from localstack.services.apigateway.templates import (
 from localstack.services.stepfunctions.stepfunctions_utils import await_sfn_execution_result
 from localstack.utils import common
 from localstack.utils.aws import aws_stack
+from localstack.utils.aws.arns import extract_region_from_arn
 from localstack.utils.aws.aws_responses import LambdaResponse, requests_response
-from localstack.utils.aws.aws_stack import extract_region_from_arn
 from localstack.utils.collections import remove_attributes
 from localstack.utils.common import make_http_request, to_str
 from localstack.utils.http import canonicalize_headers, parse_request_data
@@ -454,6 +454,7 @@ class StepFunctionIntegration(BackendIntegration):
         )
 
         try:
+            # call method on step function client
             method = getattr(client, method_name)
         except AttributeError:
             msg = f"Invalid step function action: {method_name}"

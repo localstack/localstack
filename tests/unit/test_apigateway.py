@@ -195,7 +195,7 @@ class ApiGatewayPathsTest(unittest.TestCase):
         self.assertFalse(validator.is_request_valid())
 
     def _mock_client(self):
-        return Mock(boto3.client("apigateway", region_name=config.DEFAULT_REGION))
+        return Mock(boto3.client("apigateway", region_name=config.AWS_REGION_US_EAST_1))
 
 
 def test_render_template_values():
@@ -208,24 +208,21 @@ def test_render_template_values():
     assert decoded == "x=a b"
 
     escape_tests = (
-        ("it's", '"it\'s"'),
-        ("0010", "10"),
+        ("it's", "it's"),
+        ("0010", "0010"),
         ("true", "true"),
-        ("True", '"True"'),
+        ("True", "True"),
         ("1.021", "1.021"),
-        ("'''", "\"'''\""),
-        ('""', '""'),
-        ('"""', '"\\"\\"\\""'),
-        ('{"foo": 123}', '{"foo": 123}'),
-        ('{"foo"": 123}', '"{\\"foo\\"\\": 123}"'),
+        ('""', '\\"\\"'),
+        ('"""', '\\"\\"\\"'),
+        ('{"foo": 123}', '{\\"foo\\": 123}'),
+        ('{"foo"": 123}', '{\\"foo\\"\\": 123}'),
         (1, "1"),
-        (True, "true"),
+        (None, "null"),
     )
     for string, expected in escape_tests:
         escaped = util.escapeJavaScript(string)
         assert escaped == expected
-        # we should be able to json.loads in all of the cases!
-        json.loads(escaped)
 
 
 class TestJSONPatch(unittest.TestCase):
@@ -271,7 +268,7 @@ class TestApplyTemplate(unittest.TestCase):
 
         rendered_request = RequestTemplates().render(api_context=api_context)
 
-        self.assertEqual('"foobar"', rendered_request)
+        self.assertEqual('\\"foobar\\"', rendered_request)
 
     def test_apply_template_no_json_payload(self):
         api_context = ApiInvocationContext(

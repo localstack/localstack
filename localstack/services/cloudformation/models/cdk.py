@@ -23,6 +23,9 @@ class CDKMetadata(GenericBaseModel):
             resource["Properties"].get("PhysicalResourceId") or f"cdk-meta-{short_uid()}"
         )
 
+    def update_resource(self, new_resource, stack_name, resources):
+        return True
+
     @staticmethod
     def get_deploy_templates():
         def _no_op(*args, **kwargs):

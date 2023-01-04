@@ -2,6 +2,7 @@ import pytest
 import requests
 
 from localstack import config
+from localstack.testing.aws.lambda_utils import is_new_provider
 from localstack.utils.aws import aws_stack
 from localstack.utils.strings import to_str
 
@@ -79,6 +80,7 @@ class TestCSRF:
         )
         assert result.status_code == 403
 
+    @pytest.mark.skipif(condition=is_new_provider(), reason="invalid API behavior")
     def test_disable_cors_checks(self, monkeypatch):
         """Test DISABLE_CORS_CHECKS=1 (most permissive setting)"""
         headers = {"Origin": "https://invalid.localstack.cloud"}

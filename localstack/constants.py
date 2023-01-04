@@ -77,6 +77,7 @@ PATH_USER_REQUEST = "_user_request_"
 
 # name of LocalStack Docker image
 DOCKER_IMAGE_NAME = "localstack/localstack"
+DOCKER_IMAGE_NAME_PRO = "localstack/localstack-pro"
 DOCKER_IMAGE_NAME_FULL = "localstack/localstack-full"
 
 # backdoor API path used to retrieve or update config variables
@@ -144,7 +145,6 @@ ELASTICMQ_JAR_URL = (
 STEPFUNCTIONS_ZIP_URL = "https://s3.amazonaws.com/stepfunctionslocal/StepFunctionsLocal.zip"
 KMS_URL_PATTERN = "https://s3-eu-west-2.amazonaws.com/local-kms/3/local-kms_<arch>.bin"
 
-
 # API endpoint for analytics events
 API_ENDPOINT = os.environ.get("API_ENDPOINT") or "https://api.localstack.cloud/v1"
 # new analytics API endpoint
@@ -199,10 +199,19 @@ S3_STATIC_WEBSITE_HOSTNAME = "s3-website.%s" % LOCALHOST_HOSTNAME
 DEFAULT_DEVELOP_PORT = 5678
 
 # Default bucket name of the s3 bucket used for local lambda development
-DEFAULT_BUCKET_MARKER_LOCAL = "__local__"
+# This name should be accepted by all IaC tools, so should respect s3 bucket naming conventions
+DEFAULT_BUCKET_MARKER_LOCAL = "hot-reload"
+LEGACY_DEFAULT_BUCKET_MARKER_LOCAL = "__local__"
 
 # user that starts the opensearch process if the current user is root
 OS_USER_OPENSEARCH = "localstack"
 
 # output string that indicates that the stack is ready
 READY_MARKER_OUTPUT = "Ready."
+
+# Regex for `Credential` field in the Authorization header in AWS signature version v4
+# The format is as follows:
+#   Credential=<access-key-id>/<date>/<region-name>/<service-name>/aws4_request
+# eg.
+#   Credential=AKIAIOSFODNN7EXAMPLE/20130524/us-east-1/s3/aws4_request
+AUTH_CREDENTIAL_REGEX = r"Credential=(?P<access_key_id>[a-zA-Z0-9-_.]{1,})/(?P<date>\d{8})/(?P<region_name>[a-z0-9-]{1,})/(?P<service_name>[a-z0-9]{1,})/"

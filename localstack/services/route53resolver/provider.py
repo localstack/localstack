@@ -4,6 +4,7 @@ from moto.ec2.models import ec2_backends
 from moto.route53resolver.models import Route53ResolverBackend as MotoRoute53ResolverBackend
 from moto.route53resolver.models import route53resolver_backends
 
+import localstack.services.route53resolver.utils
 from localstack.aws.api import RequestContext
 from localstack.aws.api.route53resolver import (
     Action,
@@ -91,8 +92,8 @@ from localstack.services.route53resolver.utils import (
     validate_mutation_protection,
     validate_priority,
 )
-from localstack.utils.aws import aws_stack
-from localstack.utils.aws.aws_stack import extract_account_id_from_arn, extract_region_from_arn
+from localstack.utils.aws import arns
+from localstack.utils.aws.arns import extract_account_id_from_arn, extract_region_from_arn
 from localstack.utils.collections import select_from_typed_dict
 from localstack.utils.patch import patch
 
@@ -112,7 +113,7 @@ class Route53ResolverProvider(Route53ResolverApi):
         """Create a Firewall Rule Group."""
         store = self.get_store(context.account_id, context.region)
         id = get_route53_resolver_firewall_rule_group_id()
-        arn = aws_stack.get_route53_resolver_firewall_rule_group_arn(id)
+        arn = arns.get_route53_resolver_firewall_rule_group_arn(id)
         firewall_rule_group = FirewallRuleGroup(
             Id=id,
             Arn=arn,
@@ -174,7 +175,7 @@ class Route53ResolverProvider(Route53ResolverApi):
         """Create a Firewall Domain List."""
         store = self.get_store(context.account_id, context.region)
         id = get_route53_resolver_firewall_domain_list_id()
-        arn = aws_stack.get_route53_resolver_firewall_domain_list_arn(id)
+        arn = arns.get_route53_resolver_firewall_domain_list_arn(id)
         firewall_domain_list = FirewallDomainList(
             Id=id,
             Arn=arn,
@@ -253,7 +254,7 @@ class Route53ResolverProvider(Route53ResolverApi):
                         firewall_domains.remove(domain)
                     else:
                         raise ValidationException(
-                            f"[RSLVR-02502] The following domains don't exist in the DNS Firewall domain list '{firewall_domain_list_id}'. You can't delete a domain that isn't in a domain list. Example unknown domain: '{domain}'. Trace Id: '{aws_stack.get_trace_id()}'"
+                            f"[RSLVR-02502] The following domains don't exist in the DNS Firewall domain list '{firewall_domain_list_id}'. You can't delete a domain that isn't in a domain list. Example unknown domain: '{domain}'. Trace Id: '{localstack.services.route53resolver.utils.get_trace_id()}'"
                         )
 
         if operation == FirewallDomainUpdateOperation.REPLACE:
@@ -352,7 +353,7 @@ class Route53ResolverProvider(Route53ResolverApi):
             firewall_rules.append(FirewallRule(firewall_rule))
         if len(firewall_rules) == 0:
             raise ResourceNotFoundException(
-                f"Can't find the resource with ID '{firewall_rule_group_id}'. Trace Id: '{aws_stack.get_trace_id()}'"
+                f"Can't find the resource with ID '{firewall_rule_group_id}'. Trace Id: '{localstack.services.route53resolver.utils.get_trace_id()}'"
             )
         return ListFirewallRulesResponse(
             FirewallRules=firewall_rules,
@@ -418,11 +419,11 @@ class Route53ResolverProvider(Route53ResolverApi):
                 == firewall_rule_group_id
             ):
                 raise ValidationException(
-                    f"[RSLVR-02302] This DNS Firewall rule group can't be associated to a VPC: '{vpc_id}'. It is already associated to VPC '{firewall_rule_group_id}'. Try again with another VPC or DNS Firewall rule group. Trace Id: '{aws_stack.get_trace_id()}'"
+                    f"[RSLVR-02302] This DNS Firewall rule group can't be associated to a VPC: '{vpc_id}'. It is already associated to VPC '{firewall_rule_group_id}'. Try again with another VPC or DNS Firewall rule group. Trace Id: '{localstack.services.route53resolver.utils.get_trace_id()}'"
                 )
 
         id = get_route53_resolver_firewall_rule_group_association_id()
-        arn = aws_stack.get_route53_resolver_firewall_rule_group_associations_arn(id)
+        arn = arns.get_route53_resolver_firewall_rule_group_associations_arn(id)
 
         firewall_rule_group_association = FirewallRuleGroupAssociation(
             Id=id,
@@ -509,7 +510,7 @@ class Route53ResolverProvider(Route53ResolverApi):
         store = self.get_store(context.account_id, context.region)
         validate_destination_arn(destination_arn)
         id = get_resolver_query_log_config_id()
-        arn = aws_stack.get_resolver_query_log_config_arn(id)
+        arn = arns.get_resolver_query_log_config_arn(id)
         resolver_query_log_config: ResolverQueryLogConfig = ResolverQueryLogConfig(
             Id=id,
             Arn=arn,

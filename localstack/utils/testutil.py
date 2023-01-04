@@ -10,6 +10,10 @@ import time
 from contextlib import contextmanager
 from typing import Any, Callable, Dict, List, Optional, Tuple
 
+from localstack.testing.aws.util import is_aws_cloud
+from localstack.utils.aws import arns
+from localstack.utils.aws import resources as resource_utils
+
 try:
     from typing import Literal
 except ImportError:
@@ -20,7 +24,7 @@ import requests
 
 from localstack import config
 from localstack.aws.accounts import get_aws_account_id
-from localstack.constants import LOCALSTACK_ROOT_FOLDER, LOCALSTACK_VENV_FOLDER
+from localstack.constants import LOCALHOST_HOSTNAME, LOCALSTACK_ROOT_FOLDER, LOCALSTACK_VENV_FOLDER
 from localstack.services.awslambda.lambda_api import LAMBDA_TEST_ROLE
 from localstack.services.awslambda.lambda_utils import (
     LAMBDA_DEFAULT_HANDLER,
@@ -119,7 +123,7 @@ def create_lambda_archive(
         return result
 
 
-def delete_lambda_function(name, region_name: str = None):
+def delete_lambda_function(name, region_name: str = None):  # TODO: remove all occurrences
     client = aws_stack.connect_to_service("lambda", region_name=region_name)
     client.delete_function(FunctionName=name)
 
@@ -230,7 +234,7 @@ def create_lambda_function(
     lambda_code = {"ZipFile": zip_file}
     if len(zip_file) > MAX_LAMBDA_ARCHIVE_UPLOAD_SIZE:
         s3 = aws_stack.connect_to_service("s3")
-        aws_stack.get_or_create_bucket(LAMBDA_ASSETS_BUCKET_NAME)
+        resource_utils.get_or_create_bucket(LAMBDA_ASSETS_BUCKET_NAME)
         asset_key = f"{short_uid()}.zip"
         s3.upload_fileobj(
             Fileobj=io.BytesIO(zip_file), Bucket=LAMBDA_ASSETS_BUCKET_NAME, Key=asset_key
@@ -302,7 +306,7 @@ def connect_api_gateway_to_http_with_lambda_proxy(
                 "integrations": [{"type": "AWS_PROXY", "uri": target_uri, "httpMethod": int_meth}],
             }
         )
-    return aws_stack.create_api_gateway(
+    return resource_utils.create_api_gateway(
         name=gateway_name,
         resources=resources,
         stage_name=stage_name,
@@ -331,8 +335,8 @@ def create_lambda_api_gateway_integration(
     # create Lambda
     zip_file = create_lambda_archive(handler_file, get_content=True, runtime=runtime)
     create_lambda_function(func_name=func_name, zip_file=zip_file, runtime=runtime)
-    func_arn = aws_stack.lambda_function_arn(func_name)
-    target_arn = aws_stack.apigateway_invocations_arn(func_arn)
+    func_arn = arns.lambda_function_arn(func_name)
+    target_arn = arns.apigateway_invocations_arn(func_arn)
 
     # connect API GW to Lambda
     result = connect_api_gateway_to_http_with_lambda_proxy(
@@ -692,9 +696,24 @@ def list_all_resources(
 
 
 def response_arn_matches_partition(client, response_arn: str) -> bool:
-    parsed_arn = aws_stack.parse_arn(response_arn)
+    parsed_arn = arns.parse_arn(response_arn)
     return (
         client.meta.partition
         == boto3.session.Session().get_partition_for_region(parsed_arn["region"])
         and client.meta.partition == parsed_arn["partition"]
     )
+
+
+def upload_file_to_bucket(s3_client, bucket_name, file_path, file_name=None):
+    key = file_name or f"file-{short_uid()}"
+
+    s3_client.upload_file(
+        file_path,
+        Bucket=bucket_name,
+        Key=key,
+    )
+
+    domain = "amazonaws.com" if is_aws_cloud() else f"{LOCALHOST_HOSTNAME}:{config.EDGE_PORT}"
+    url = f"https://{bucket_name}.s3.{domain}/{key}"
+
+    return {"Bucket": bucket_name, "Key": key, "Url": url}

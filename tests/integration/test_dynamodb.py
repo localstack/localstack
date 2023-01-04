@@ -9,15 +9,13 @@ import pytest
 from boto3.dynamodb.conditions import Key
 from boto3.dynamodb.types import STRING
 
-from localstack.services.awslambda.lambda_utils import LAMBDA_RUNTIME_PYTHON36
+from localstack.constants import TEST_AWS_SECRET_ACCESS_KEY
 from localstack.services.dynamodbstreams.dynamodbstreams_api import get_kinesis_stream_name
 from localstack.testing.snapshots.transformer import SortingTransformer
 from localstack.utils import testutil
-from localstack.utils.aws import aws_stack
+from localstack.utils.aws import arns, aws_stack, queries, resources
 from localstack.utils.common import json_safe, long_uid, retry, short_uid
-from localstack.utils.testutil import check_expected_lambda_log_events_length
 
-from .awslambda.test_lambda import TEST_LAMBDA_PYTHON_ECHO
 from .test_kinesis import get_shard_iterator
 
 PARTITION_KEY = "id"
@@ -45,7 +43,7 @@ def transcribe_snapshot_transformer(snapshot):
 class TestDynamoDB:
     @pytest.mark.only_localstack
     def test_non_ascii_chars(self, dynamodb):
-        aws_stack.create_dynamodb_table(TEST_DDB_TABLE_NAME, partition_key=PARTITION_KEY)
+        resources.create_dynamodb_table(TEST_DDB_TABLE_NAME, partition_key=PARTITION_KEY)
         table = dynamodb.Table(TEST_DDB_TABLE_NAME)
 
         # write some items containing non-ASCII characters
@@ -70,7 +68,7 @@ class TestDynamoDB:
 
     @pytest.mark.only_localstack
     def test_large_data_download(self, dynamodb):
-        aws_stack.create_dynamodb_table(TEST_DDB_TABLE_NAME_2, partition_key=PARTITION_KEY)
+        resources.create_dynamodb_table(TEST_DDB_TABLE_NAME_2, partition_key=PARTITION_KEY)
         table = dynamodb.Table(TEST_DDB_TABLE_NAME_2)
 
         # Create a large amount of items
@@ -88,7 +86,7 @@ class TestDynamoDB:
 
     @pytest.mark.only_localstack
     def test_time_to_live(self, dynamodb):
-        aws_stack.create_dynamodb_table(TEST_DDB_TABLE_NAME_3, partition_key=PARTITION_KEY)
+        resources.create_dynamodb_table(TEST_DDB_TABLE_NAME_3, partition_key=PARTITION_KEY)
         table = dynamodb.Table(TEST_DDB_TABLE_NAME_3)
 
         # Insert some items to the table
@@ -188,7 +186,7 @@ class TestDynamoDB:
         ddbstreams = aws_stack.create_external_boto_client("dynamodbstreams")
         kinesis = aws_stack.create_external_boto_client("kinesis")
         table_name = f"ddb-{short_uid()}"
-        aws_stack.create_dynamodb_table(
+        resources.create_dynamodb_table(
             table_name,
             partition_key=PARTITION_KEY,
             stream_view_type="NEW_AND_OLD_IMAGES",
@@ -227,7 +225,7 @@ class TestDynamoDB:
     @pytest.mark.only_localstack
     def test_multiple_update_expressions(self, dynamodb):
         dynamodb_client = aws_stack.create_external_boto_client("dynamodb")
-        aws_stack.create_dynamodb_table(TEST_DDB_TABLE_NAME, partition_key=PARTITION_KEY)
+        resources.create_dynamodb_table(TEST_DDB_TABLE_NAME, partition_key=PARTITION_KEY)
         table = dynamodb.Table(TEST_DDB_TABLE_NAME)
 
         item_id = short_uid()
@@ -431,7 +429,7 @@ class TestDynamoDB:
 
     @pytest.mark.aws_validated
     def test_return_values_in_put_item(self, dynamodb, dynamodb_client, snapshot):
-        aws_stack.create_dynamodb_table(
+        resources.create_dynamodb_table(
             TEST_DDB_TABLE_NAME, partition_key=PARTITION_KEY, client=dynamodb_client
         )
         table = dynamodb.Table(TEST_DDB_TABLE_NAME)
@@ -473,7 +471,7 @@ class TestDynamoDB:
     @pytest.mark.aws_validated
     def test_empty_and_binary_values(self, dynamodb, dynamodb_client, snapshot):
         table_name = f"table-{short_uid()}"
-        aws_stack.create_dynamodb_table(
+        resources.create_dynamodb_table(
             table_name=table_name, partition_key=PARTITION_KEY, client=dynamodb_client
         )
         table = dynamodb.Table(table_name)
@@ -797,10 +795,15 @@ class TestDynamoDB:
     @pytest.mark.only_localstack
     def test_dynamodb_with_kinesis_stream(self):
         dynamodb = aws_stack.create_external_boto_client("dynamodb")
-        kinesis = aws_stack.create_external_boto_client("kinesis")
+        # Create Kinesis stream in another account to test that integration works cross-account
+        kinesis = aws_stack.create_external_boto_client(
+            "kinesis",
+            aws_access_key_id="222244448888",
+            aws_secret_access_key=TEST_AWS_SECRET_ACCESS_KEY,
+        )
 
         # create kinesis datastream
-        stream_name = "kinesis_dest_stream"
+        stream_name = f"kinesis_dest_stream_{short_uid()}"
         kinesis.create_stream(StreamName=stream_name, ShardCount=1)
         # wait for the stream to be created
         sleep(1)
@@ -836,8 +839,10 @@ class TestDynamoDB:
         dynamodb.delete_item(TableName=table_name, Key={"Username": {"S": "Fred"}})
 
         def _fetch_records():
-            records = aws_stack.kinesis_get_latest_records(
-                stream_name, shard_id=stream_description["Shards"][0]["ShardId"]
+            records = queries.kinesis_get_latest_records(
+                stream_name,
+                shard_id=stream_description["Shards"][0]["ShardId"],
+                client=kinesis,
             )
             assert len(records) == 3
             return records
@@ -882,7 +887,7 @@ class TestDynamoDB:
 
         # clean up
         delete_table(table_name)
-        kinesis.delete_stream(StreamName="kinesis_dest_stream")
+        kinesis.delete_stream(StreamName=stream_name)
 
     @pytest.mark.only_localstack
     def test_global_tables_version_2019(
@@ -952,7 +957,7 @@ class TestDynamoDB:
 
     @pytest.mark.only_localstack
     def test_global_tables(self):
-        aws_stack.create_dynamodb_table(TEST_DDB_TABLE_NAME, partition_key=PARTITION_KEY)
+        resources.create_dynamodb_table(TEST_DDB_TABLE_NAME, partition_key=PARTITION_KEY)
         dynamodb = aws_stack.create_external_boto_client("dynamodb")
 
         # create global table
@@ -1292,61 +1297,6 @@ class TestDynamoDB:
             )
         assert ctx.match("ResourceNotFoundException")
 
-    @pytest.mark.only_localstack
-    def test_dynamodb_stream_to_lambda(
-        self, lambda_client, dynamodb_resource, dynamodb_create_table, wait_for_stream_ready
-    ):
-        table_name = "ddb-table-%s" % short_uid()
-        function_name = "func-%s" % short_uid()
-        partition_key = "SK"
-
-        dynamodb_create_table(
-            table_name=table_name,
-            partition_key=partition_key,
-            stream_view_type="NEW_AND_OLD_IMAGES",
-        )
-        table = dynamodb_resource.Table(table_name)
-        latest_stream_arn = table.latest_stream_arn
-        stream_name = get_kinesis_stream_name(table_name)
-
-        wait_for_stream_ready(stream_name)
-
-        testutil.create_lambda_function(
-            handler_file=TEST_LAMBDA_PYTHON_ECHO,
-            func_name=function_name,
-            runtime=LAMBDA_RUNTIME_PYTHON36,
-        )
-
-        mapping_uuid = lambda_client.create_event_source_mapping(
-            EventSourceArn=latest_stream_arn,
-            FunctionName=function_name,
-            StartingPosition="TRIM_HORIZON",
-        )["UUID"]
-
-        item = {"SK": short_uid(), "Name": "name-{}".format(short_uid())}
-
-        table.put_item(Item=item)
-
-        events = retry(
-            check_expected_lambda_log_events_length,
-            retries=10,
-            sleep=1,
-            function_name=function_name,
-            expected_length=1,
-            regex_filter=r"Records",
-        )
-
-        assert len(events) == 1
-        assert len(events[0]["Records"]) == 1
-
-        dynamodb_event = events[0]["Records"][0]["dynamodb"]
-        assert dynamodb_event["StreamViewType"] == "NEW_AND_OLD_IMAGES"
-        assert dynamodb_event["Keys"] == {"SK": {"S": item["SK"]}}
-        assert dynamodb_event["NewImage"]["Name"] == {"S": item["Name"]}
-        assert "SequenceNumber" in dynamodb_event
-
-        lambda_client.delete_event_source_mapping(UUID=mapping_uuid)
-
     @pytest.mark.aws_validated
     def test_dynamodb_pay_per_request(self, dynamodb_create_table_with_parameters, snapshot):
         table_name = f"ddb-table-{short_uid()}"
@@ -1369,7 +1319,7 @@ class TestDynamoDB:
 
         kms_master_key_id = long_uid()
         sse_specification = {"Enabled": True, "SSEType": "KMS", "KMSMasterKeyId": kms_master_key_id}
-        kms_master_key_arn = aws_stack.kms_key_arn(kms_master_key_id)
+        kms_master_key_arn = arns.kms_key_arn(kms_master_key_id)
 
         result = dynamodb_create_table_with_parameters(
             TableName=table_name,
@@ -1570,7 +1520,8 @@ class TestDynamoDB:
 
         # put item
         dynamodb_client.put_item(
-            TableName=table_name, Item={"id": {"S": "id1"}, "data": {"B": b"\x90"}}
+            TableName=table_name,
+            Item={PARTITION_KEY: {"S": "id1"}, "version": {"N": "1"}, "data": {"B": b"\x90"}},
         )
 
         # get item
@@ -1596,7 +1547,26 @@ class TestDynamoDB:
             "Records"
         ]
 
-        snapshot.match("GetRecords", records[0]["dynamodb"])
+        snapshot.match("GetRecords", records[0]["dynamodb"]["NewImage"])
+
+        # update item
+        dynamodb_client.update_item(
+            TableName=table_name,
+            Key={PARTITION_KEY: {"S": "id1"}},
+            UpdateExpression="SET version=:v",
+            ExpressionAttributeValues={":v": {"N": "2"}},
+        )
+
+        # get item and get_records again to check for consistency
+        item = dynamodb_client.get_item(TableName=table_name, Key={PARTITION_KEY: {"S": "id1"}})[
+            "Item"
+        ]
+        snapshot.match("GetItemAfterUpdate", item)
+
+        records = dynamodbstreams_client.get_records(ShardIterator=response["ShardIterator"])[
+            "Records"
+        ]
+        snapshot.match("GetRecordsAfterUpdate", records[1]["dynamodb"]["NewImage"])
 
 
 def delete_table(name):

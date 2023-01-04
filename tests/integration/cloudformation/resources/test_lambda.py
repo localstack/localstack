@@ -4,7 +4,7 @@ import os
 
 import pytest
 
-from localstack.aws.api.lambda_ import InvocationType
+from localstack.aws.api.lambda_ import InvocationType, State
 from localstack.testing.aws.lambda_utils import is_new_provider, is_old_provider
 from localstack.testing.snapshots.transformer import SortingTransformer
 from localstack.utils.common import short_uid
@@ -231,6 +231,11 @@ def test_lambda_version(deploy_cfn_template, cfn_client, lambda_client, snapshot
         max_wait=240,
     )
 
+    invoke_result = lambda_client.invoke(
+        FunctionName=deployment.outputs["FunctionName"], Payload=b"{}"
+    )
+    assert 200 <= invoke_result["StatusCode"] < 300
+
     stack_resources = cfn_client.describe_stack_resources(StackName=deployment.stack_id)
     snapshot.match("stack_resources", stack_resources)
 
@@ -243,6 +248,85 @@ def test_lambda_version(deploy_cfn_template, cfn_client, lambda_client, snapshot
 
     snapshot.match("versions_by_fn", versions_by_fn)
     snapshot.match("get_function_version", get_function_version)
+
+
+@pytest.mark.aws_validated
+def test_lambda_cfn_run(deploy_cfn_template, lambda_client):
+    """
+    simply deploys a lambda and immediately invokes it
+    """
+    deployment = deploy_cfn_template(
+        template_path=os.path.join(
+            os.path.dirname(__file__), "../../templates/cfn_lambda_simple.yaml"
+        ),
+        max_wait=120,
+    )
+    fn_name = deployment.outputs["FunctionName"]
+    assert (
+        lambda_client.get_function(FunctionName=fn_name)["Configuration"]["State"] == State.Active
+    )
+    lambda_client.invoke(FunctionName=fn_name, LogType="Tail", Payload=b"{}")
+
+
+@pytest.mark.skip(reason="broken/notimplemented")
+@pytest.mark.aws_validated
+def test_lambda_vpc(deploy_cfn_template, lambda_client):
+    """
+    this test showcases a very long-running deployment of a fairly straight forward lambda function
+    cloudformation will poll get_function until the active state has been reached
+    """
+    fn_name = f"vpc-lambda-fn-{short_uid()}"
+    deploy_cfn_template(
+        template_path=os.path.join(
+            os.path.dirname(__file__), "../../templates/cfn_lambda_vpc.yaml"
+        ),
+        parameters={
+            "FunctionNameParam": fn_name,
+        },
+        max_wait=600,
+    )
+    assert (
+        lambda_client.get_function(FunctionName=fn_name)["Configuration"]["State"] == State.Active
+    )
+    lambda_client.invoke(FunctionName=fn_name, LogType="Tail", Payload=b"{}")
+
+
+@pytest.mark.xfail(condition=is_new_provider(), reason="fails/times out with new provider")
+@pytest.mark.skip_snapshot_verify(
+    paths=[
+        "$..Policy.PolicyArn",
+        "$..Policy.PolicyName",
+        "$..Policy.Statement..Resource",
+        "$..Policy.Statement..Sid",
+        "$..RevisionId",
+    ]
+)
+def test_update_lambda_permissions(deploy_cfn_template, lambda_client, sts_client):
+    stack = deploy_cfn_template(
+        template_path=os.path.join(
+            os.path.dirname(__file__), "../../templates/cfn_lambda_permission.yml"
+        )
+    )
+
+    new_principal = sts_client.get_caller_identity()["Account"]
+
+    deploy_cfn_template(
+        is_update=True,
+        stack_name=stack.stack_name,
+        parameters={"PrincipalForPermission": new_principal},
+        template_path=os.path.join(
+            os.path.dirname(__file__), "../../templates/cfn_lambda_permission.yml"
+        ),
+    )
+
+    policy = lambda_client.get_policy(FunctionName=stack.outputs["FunctionName"])
+
+    # The behaviour of thi principal acocunt setting changes with aws or lambda providers
+    principal = json.loads(policy["Policy"])["Statement"][0]["Principal"]
+    if isinstance(principal, dict):
+        principal = principal.get("AWS") or principal.get("Service", "")
+
+    assert new_principal in principal
 
 
 class TestCfnLambdaIntegrations:

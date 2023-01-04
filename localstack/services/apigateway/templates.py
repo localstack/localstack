@@ -10,7 +10,6 @@ from localstack.constants import APPLICATION_JSON
 from localstack.services.apigateway.context import ApiInvocationContext
 from localstack.utils.aws.templating import VelocityUtil, VtlTemplate
 from localstack.utils.json import extract_jsonpath, json_safe
-from localstack.utils.numbers import is_number, to_number
 from localstack.utils.strings import to_str
 
 LOG = logging.getLogger(__name__)
@@ -86,17 +85,22 @@ class VelocityUtilApiGateway(VelocityUtil):
     def urlDecode(self, s):
         return unquote_plus(s)
 
-    def escapeJavaScript(self, s):
-        try:
-            return json.dumps(json.loads(s))
-        except Exception:
-            primitive_types = (str, int, bool, float, type(None))
-            s = s if isinstance(s, primitive_types) else str(s)
-        if str(s).strip() in {"true", "false"}:
-            s = bool(s)
-        elif s not in [True, False] and is_number(s):
-            s = to_number(s)
-        return json.dumps(s)
+    def escapeJavaScript(self, obj: Any) -> str:
+        """
+        Converts the given object to a string and escapes any regular single quotes (') into escaped ones (\').
+        JSON dumps will escape the single quotes.
+        https://docs.aws.amazon.com/apigateway/latest/developerguide/api-gateway-mapping-template-reference.html
+        """
+        if obj is None:
+            return "null"
+        if isinstance(obj, str):
+            # empty string escapes to empty object
+            if len(obj.strip()) == 0:
+                return "{}"
+            return json.dumps(obj)[1:-1]
+        if obj in (True, False):
+            return str(obj).lower()
+        return str(obj)
 
 
 class VelocityInput:
@@ -215,7 +219,7 @@ class ResponseTemplates(Templates):
     def render(self, api_context: ApiInvocationContext, **kwargs) -> Union[bytes, str]:
         # XXX: keep backwards compatibility until we migrate all integrations to this new classes
         # api_context contains a response object that we want slowly remove from it
-        data = kwargs["response"] if "response" in kwargs else ""
+        data = kwargs.get("response", "")
         response = data or api_context.response
         integration = api_context.integration
         # we set context data with the response content because later on we use context data as

@@ -9,7 +9,7 @@ from boto3.s3.transfer import KB, TransferConfig
 from botocore.exceptions import ClientError
 
 from localstack.config import LEGACY_S3_PROVIDER
-from localstack.utils.aws import aws_stack
+from localstack.utils.aws import arns
 from localstack.utils.strings import short_uid
 from localstack.utils.sync import poll_condition, retry
 
@@ -53,7 +53,7 @@ def get_queue_arn(sqs_client, queue_url: str) -> str:
 def set_policy_for_queue(sqs_client, queue_url, bucket_name):
     queue_arn = get_queue_arn(sqs_client, queue_url)
     assert queue_arn
-    bucket_arn = aws_stack.s3_bucket_arn(bucket_name)
+    bucket_arn = arns.s3_bucket_arn(bucket_name)
 
     policy = {
         "Version": "2012-10-17",
@@ -888,7 +888,7 @@ class TestS3NotificationsToSQS:
         # set valid but not-existing queue
         config["QueueConfigurations"][0][
             "QueueArn"
-        ] = f"{aws_stack.sqs_queue_arn('my-queue', account_id=account_id)}"
+        ] = f"{arns.sqs_queue_arn('my-queue', account_id=account_id)}"
         with pytest.raises(ClientError) as e:
             s3_client.put_bucket_notification_configuration(
                 Bucket=bucket_name,

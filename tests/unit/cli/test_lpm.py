@@ -21,22 +21,22 @@ def test_list(runner, monkeypatch):
 
     result = runner.invoke(cli, ["list"])
     assert result.exit_code == 0
-    assert "elasticmq/community" in result.output
+    assert "kinesis-mock/community" in result.output
 
 
 @pytest.mark.skip_offline
 def test_install_with_non_existing_package_fails(runner):
-    result = runner.invoke(cli, ["install", "elasticmq", "funny"])
+    result = runner.invoke(cli, ["install", "kinesis-mock", "funny"])
     assert result.exit_code == 1
     assert "unable to locate installer for package funny" in result.output
 
 
 @pytest.mark.skip_offline
 def test_install_with_non_existing_version_fails(runner):
-    result = runner.invoke(cli, ["install", "elasticmq", "--version", "non-existing-version"])
+    result = runner.invoke(cli, ["install", "kinesis-mock", "--version", "non-existing-version"])
     assert result.exit_code == 1
     assert (
-        "unable to locate installer for package elasticmq and version non-existing-version"
+        "unable to locate installer for package kinesis-mock and version non-existing-version"
         in result.output
     )
 
@@ -96,8 +96,8 @@ def test_install_failure_returns_non_zero_exit_code(runner, monkeypatch):
 
 @pytest.mark.skip_offline
 def test_install_with_package(runner):
-    from localstack.services.sqs.legacy.packages import elasticmq_package
+    from localstack.services.kinesis.packages import kinesismock_package
 
-    result = runner.invoke(cli, ["install", "elasticmq"])
+    result = runner.invoke(cli, ["install", "kinesis-mock"])
     assert result.exit_code == 0
-    assert os.path.exists(elasticmq_package.get_installed_dir())
+    assert os.path.exists(kinesismock_package.get_installed_dir())

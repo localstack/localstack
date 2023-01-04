@@ -53,6 +53,8 @@ class CLMLanguageCode(str):
     es_US = "es-US"
     en_GB = "en-GB"
     en_AU = "en-AU"
+    de_DE = "de-DE"
+    ja_JP = "ja-JP"
 
 
 class CallAnalyticsJobStatus(str):
@@ -60,6 +62,11 @@ class CallAnalyticsJobStatus(str):
     IN_PROGRESS = "IN_PROGRESS"
     FAILED = "FAILED"
     COMPLETED = "COMPLETED"
+
+
+class InputType(str):
+    REAL_TIME = "REAL_TIME"
+    POST_CALL = "POST_CALL"
 
 
 class LanguageCode(str):
@@ -100,6 +107,8 @@ class LanguageCode(str):
     th_TH = "th-TH"
     en_ZA = "en-ZA"
     en_NZ = "en-NZ"
+    vi_VN = "vi-VN"
+    sv_SE = "sv-SE"
 
 
 class MediaFormat(str):
@@ -379,6 +388,7 @@ class CategoryProperties(TypedDict, total=False):
     Rules: Optional[RuleList]
     CreateTime: Optional[DateTime]
     LastUpdateTime: Optional[DateTime]
+    InputType: Optional[InputType]
 
 
 CategoryPropertiesList = List[CategoryProperties]
@@ -387,6 +397,7 @@ CategoryPropertiesList = List[CategoryProperties]
 class CreateCallAnalyticsCategoryRequest(ServiceRequest):
     CategoryName: CategoryName
     Rules: RuleList
+    InputType: Optional[InputType]
 
 
 class CreateCallAnalyticsCategoryResponse(TypedDict, total=False):
@@ -958,6 +969,7 @@ class UntagResourceResponse(TypedDict, total=False):
 class UpdateCallAnalyticsCategoryRequest(ServiceRequest):
     CategoryName: CategoryName
     Rules: RuleList
+    InputType: Optional[InputType]
 
 
 class UpdateCallAnalyticsCategoryResponse(TypedDict, total=False):
@@ -1010,7 +1022,11 @@ class TranscribeApi:
 
     @handler("CreateCallAnalyticsCategory")
     def create_call_analytics_category(
-        self, context: RequestContext, category_name: CategoryName, rules: RuleList
+        self,
+        context: RequestContext,
+        category_name: CategoryName,
+        rules: RuleList,
+        input_type: InputType = None,
     ) -> CreateCallAnalyticsCategoryResponse:
         raise NotImplementedError
 
@@ -1301,7 +1317,11 @@ class TranscribeApi:
 
     @handler("UpdateCallAnalyticsCategory")
     def update_call_analytics_category(
-        self, context: RequestContext, category_name: CategoryName, rules: RuleList
+        self,
+        context: RequestContext,
+        category_name: CategoryName,
+        rules: RuleList,
+        input_type: InputType = None,
     ) -> UpdateCallAnalyticsCategoryResponse:
         raise NotImplementedError
 

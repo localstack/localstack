@@ -9,13 +9,13 @@ from moto.events.models import events_backends
 
 from localstack.services.apigateway.helpers import extract_query_string_params
 from localstack.utils import collections
-from localstack.utils.aws.aws_stack import (
-    connect_to_service,
+from localstack.utils.aws.arns import (
     extract_account_id_from_arn,
     extract_region_from_arn,
     firehose_name,
     get_sqs_queue_url,
 )
+from localstack.utils.aws.aws_stack import connect_to_service
 from localstack.utils.http import add_path_parameters_to_url, add_query_params_to_url
 from localstack.utils.http import safe_requests as requests
 from localstack.utils.strings import to_bytes, to_str
@@ -83,7 +83,8 @@ def send_event_to_target(
                         "EventBusName": eventbus_name,
                         "Source": event.get("source"),
                         "DetailType": event.get("detail-type"),
-                        "Detail": event.get("detail"),
+                        "Detail": json.dumps(event.get("detail", {})),
+                        "Resources": event.get("resources", []),
                     }
                 ]
             )

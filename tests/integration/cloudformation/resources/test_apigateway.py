@@ -6,6 +6,7 @@ import requests
 
 from localstack import constants
 from localstack.utils.common import short_uid
+from localstack.utils.files import load_file
 from localstack.utils.run import to_str
 from localstack.utils.testutil import create_zip_file
 from tests.integration.apigateway_fixtures import api_invoke_url
@@ -191,17 +192,30 @@ def test_cfn_with_apigateway_resources(deploy_cfn_template, apigateway_client):
     assert not apis
 
 
-# TODO: rework
+@pytest.mark.skip_snapshot_verify(
+    paths=[
+        "$..binaryMediaTypes",
+        "$..version",
+        "$..methodIntegration.cacheNamespace",
+        "$..methodIntegration.connectionType",
+        "$..methodIntegration.passthroughBehavior",
+        "$..methodIntegration.requestTemplates",
+        "$..methodIntegration.timeoutInMillis",
+        "$..methodResponses",
+        "$..requestModels",
+        "$..requestParameters",
+    ]
+)
 def test_cfn_deploy_apigateway_integration(
-    deploy_cfn_template, s3_client, cfn_client, apigateway_client
+    deploy_cfn_template, s3_client, s3_create_bucket, cfn_client, apigateway_client, snapshot
 ):
-    bucket_name = "hofund-local-deployment"
+    bucket_name = f"hofund-local-deployment-{short_uid()}"
     key_name = "serverless/hofund/local/1599143878432/authorizer.zip"
     package_path = os.path.join(
         os.path.dirname(__file__), "../../awslambda/functions/lambda_echo.js"
     )
 
-    s3_client.create_bucket(Bucket=bucket_name, ACL="public-read")
+    s3_create_bucket(Bucket=bucket_name, ACL="public-read")
     s3_client.put_object(
         Bucket=bucket_name,
         Key=key_name,
@@ -210,17 +224,25 @@ def test_cfn_deploy_apigateway_integration(
 
     stack = deploy_cfn_template(
         template_path=os.path.join(
-            os.path.dirname(__file__), "../../templates/apigateway_integration.json"
-        )
+            os.path.dirname(__file__), "../../templates/apigateway_integration.yml"
+        ),
+        parameters={"CodeBucket": bucket_name, "CodeKey": key_name},
+        max_wait=120,
     )
-    stack_resources = cfn_client.list_stack_resources(StackName=stack.stack_name)[
-        "StackResourceSummaries"
-    ]
-    rest_apis = [
-        res for res in stack_resources if res["ResourceType"] == "AWS::ApiGateway::RestApi"
-    ]
-    rs = apigateway_client.get_rest_api(restApiId=rest_apis[0]["PhysicalResourceId"])
-    assert rs["name"] == "ApiGatewayRestApi"
+
+    snapshot.add_transformer(snapshot.transform.cloudformation_api())
+    snapshot.add_transformer(snapshot.transform.apigateway_api())
+    snapshot.add_transformer(snapshot.transform.regex(stack.stack_name, "stack-name"))
+
+    rest_api_id = stack.outputs["RestApiId"]
+    rest_api = apigateway_client.get_rest_api(restApiId=rest_api_id)
+    snapshot.match("rest_api", rest_api)
+
+    resource_id = stack.outputs["ResourceId"]
+    method = apigateway_client.get_method(
+        restApiId=rest_api_id, resourceId=resource_id, httpMethod="GET"
+    )
+    snapshot.match("method", method)
 
 
 def test_cfn_apigateway_rest_api(deploy_cfn_template, apigateway_client):
@@ -249,3 +271,47 @@ def test_cfn_apigateway_rest_api(deploy_cfn_template, apigateway_client):
 
     apis = [item for item in rs["items"] if item["name"] == "DemoApi_dev"]
     assert not apis
+
+
+@pytest.mark.aws_validated
+def test_account(deploy_cfn_template, apigateway_client, cfn_client):
+    stack = deploy_cfn_template(
+        template_path=os.path.join(
+            os.path.dirname(__file__), "../../templates/apigateway_account.yml"
+        )
+    )
+
+    account_info = apigateway_client.get_account()
+    assert account_info["cloudwatchRoleArn"] == stack.outputs["RoleArn"]
+
+    # Assert that after deletion of stack, the apigw account is not updated
+    stack.destroy()
+    cfn_client.get_waiter("stack_delete_complete").wait(StackName=stack.stack_name)
+    account_info = apigateway_client.get_account()
+    assert account_info["cloudwatchRoleArn"] == stack.outputs["RoleArn"]
+
+
+@pytest.mark.aws_validated
+def test_update_usage_plan(deploy_cfn_template, cfn_client, apigateway_client):
+    rest_api_name = f"api-{short_uid()}"
+    stack = deploy_cfn_template(
+        template_path=os.path.join(
+            os.path.dirname(__file__), "../../templates/apigateway_usage_plan.yml"
+        ),
+        parameters={"QuotaLimit": "5000", "RestApiName": rest_api_name},
+    )
+
+    deploy_cfn_template(
+        is_update=True,
+        stack_name=stack.stack_name,
+        template=load_file(
+            os.path.join(os.path.dirname(__file__), "../../templates/apigateway_usage_plan.yml")
+        ),
+        parameters={"QuotaLimit": "7000", "RestApiName": rest_api_name},
+    )
+
+    cfn_client.get_waiter("stack_update_complete").wait(StackName=stack.stack_name)
+
+    usage_plan = apigateway_client.get_usage_plan(usagePlanId=stack.outputs["UsagePlanId"])
+
+    assert 7000 == usage_plan["quota"]["limit"]

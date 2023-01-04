@@ -9,7 +9,7 @@ from localstack.utils.platform import get_arch
 
 LAMBDA_RUNTIME_INIT_URL = "https://github.com/localstack/lambda-runtime-init/releases/download/{version}/aws-lambda-rie-{arch}"
 
-LAMBDA_RUNTIME_DEFAULT_VERSION = "v0.1.6-pre"
+LAMBDA_RUNTIME_DEFAULT_VERSION = "v0.1.8-pre"
 
 # GO Lambda runtime
 GO_RUNTIME_VERSION = "0.4.0"
@@ -21,7 +21,15 @@ class AWSLambdaRuntimePackage(Package):
         super().__init__(name="AwsLambda", default_version=default_version)
 
     def get_versions(self) -> List[str]:
-        return ["v0.1.6-pre", "v0.1.5-pre", "v0.1.4-pre", "v0.1.1-pre", "v0.1-pre"]
+        return [
+            "v0.1.8-pre",
+            "v0.1.7-pre",
+            "v0.1.6-pre",
+            "v0.1.5-pre",
+            "v0.1.4-pre",
+            "v0.1.1-pre",
+            "v0.1-pre",
+        ]
 
     def _get_installer(self, version: str) -> PackageInstaller:
         return AWSLambdaRuntimePackageInstaller(name="awslambda-runtime", version=version)
@@ -93,10 +101,10 @@ URL_LOCALSTACK_FAT_JAR = (
 
 class AWSLambdaJavaPackage(Package):
     def __init__(self):
-        super().__init__("LambdaJavaLibs", "0.2.21")
+        super().__init__("LambdaJavaLibs", "0.2.22")
 
     def get_versions(self) -> List[str]:
-        return ["0.2.21"]
+        return ["0.2.22", "0.2.21"]
 
     def _get_installer(self, version: str) -> PackageInstaller:
         return AWSLambdaJavaPackageInstaller("lambda-java-libs", version)

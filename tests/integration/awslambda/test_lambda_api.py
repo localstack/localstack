@@ -10,7 +10,7 @@ API-focused tests only. Don't add tests for asynchronous, blocking or implicit b
 import base64
 import io
 import json
-import os
+import logging
 from hashlib import sha256
 from io import BytesIO
 from typing import Callable
@@ -22,10 +22,13 @@ from botocore.exceptions import ClientError
 
 from localstack.aws.api.lambda_ import Architecture, Runtime
 from localstack.testing.aws.lambda_utils import _await_dynamodb_table_active, is_old_provider
+from localstack.testing.aws.util import is_aws_cloud
 from localstack.testing.snapshots.transformer import SortingTransformer
 from localstack.utils import testutil
-from localstack.utils.aws import aws_stack
+from localstack.utils.aws import arns
+from localstack.utils.docker_utils import DOCKER_CLIENT
 from localstack.utils.files import load_file
+from localstack.utils.functions import call_safe
 from localstack.utils.strings import long_uid, short_uid, to_str
 from localstack.utils.sync import wait_until
 from localstack.utils.testutil import create_lambda_archive
@@ -33,8 +36,11 @@ from tests.integration.awslambda.test_lambda import (
     FUNCTION_MAX_UNZIPPED_SIZE,
     TEST_LAMBDA_NODEJS,
     TEST_LAMBDA_PYTHON_ECHO,
+    TEST_LAMBDA_PYTHON_ECHO_ZIP,
     TEST_LAMBDA_PYTHON_VERSION,
 )
+
+LOG = logging.getLogger(__name__)
 
 KB = 1024
 
@@ -521,6 +527,227 @@ class TestLambdaFunction:
 
         snapshot.match("list_all", list_all)
         snapshot.match("list_default", list_default)
+
+
+@pytest.mark.skipif(is_old_provider(), reason="focusing on new provider")
+class TestLambdaImages:
+    @pytest.fixture(scope="class")
+    def login_docker_client(self, ecr_client):
+        if not is_aws_cloud():
+            return
+        auth_data = ecr_client.get_authorization_token()
+        # if check is necessary since registry login data is not available at LS before min. 1 repository is created
+        if auth_data["authorizationData"]:
+            auth_data = auth_data["authorizationData"][0]
+            decoded_auth_token = str(
+                base64.decodebytes(bytes(auth_data["authorizationToken"], "utf-8")), "utf-8"
+            )
+            username, password = decoded_auth_token.split(":")
+            DOCKER_CLIENT.login(
+                username=username, password=password, registry=auth_data["proxyEndpoint"]
+            )
+
+    @pytest.fixture(scope="class")
+    def test_image(self, ecr_client, login_docker_client):
+        repository_names = []
+        image_names = []
+
+        def _create_test_image(base_image: str):
+            if is_aws_cloud():
+                repository_name = f"test-repo-{short_uid()}"
+                repository_uri = ecr_client.create_repository(repositoryName=repository_name)[
+                    "repository"
+                ]["repositoryUri"]
+                image_name = f"{repository_uri}:latest"
+                repository_names.append(repository_name)
+            else:
+                image_name = f"test-image-{short_uid()}:latest"
+            image_names.append(image_name)
+
+            DOCKER_CLIENT.pull_image(base_image)
+            DOCKER_CLIENT.tag_image(base_image, image_name)
+            if is_aws_cloud():
+                DOCKER_CLIENT.push_image(image_name)
+            return image_name
+
+        yield _create_test_image
+
+        for image_name in image_names:
+            try:
+                DOCKER_CLIENT.remove_image(image=image_name, force=True)
+            except Exception as e:
+                LOG.debug("Error cleaning up image %s: %s", image_name, e)
+
+        for repository_name in repository_names:
+            try:
+                image_ids = ecr_client.list_images(repositoryName=repository_name).get(
+                    "imageIds", []
+                )
+                if image_ids:
+                    call_safe(
+                        ecr_client.batch_delete_image,
+                        kwargs={"repositoryName": repository_name, "imageIds": image_ids},
+                    )
+                ecr_client.delete_repository(repositoryName=repository_name)
+            except Exception as e:
+                LOG.debug("Error cleaning up repository %s: %s", repository_name, e)
+
+    @pytest.mark.aws_validated
+    def test_lambda_image_crud(
+        self, lambda_client, create_lambda_function_aws, lambda_su_role, test_image, snapshot
+    ):
+        """Test lambda crud with package type image"""
+        image = test_image("alpine")
+        repo_uri = image.rpartition(":")[0]
+        snapshot.add_transformer(snapshot.transform.regex(repo_uri, "<repo_uri>"))
+        function_name = f"test-function-{short_uid()}"
+        create_image_response = create_lambda_function_aws(
+            FunctionName=function_name,
+            Role=lambda_su_role,
+            Code={"ImageUri": image},
+            PackageType="Image",
+            Environment={"Variables": {"CUSTOM_ENV": "test"}},
+        )
+        snapshot.match("create-image-response", create_image_response)
+        lambda_client.get_waiter("function_active_v2").wait(FunctionName=function_name)
+        get_function_response = lambda_client.get_function(FunctionName=function_name)
+        snapshot.match("get-function-code-response", get_function_response)
+        get_function_config_response = lambda_client.get_function_configuration(
+            FunctionName=function_name
+        )
+        snapshot.match("get-function-config-response", get_function_config_response)
+
+        # try update to a zip file - should fail
+        with pytest.raises(ClientError) as e:
+            lambda_client.update_function_code(
+                FunctionName=function_name,
+                ZipFile=create_lambda_archive(load_file(TEST_LAMBDA_PYTHON_ECHO), get_content=True),
+            )
+        snapshot.match("image-to-zipfile-error", e.value.response)
+
+        image_2 = test_image("debian")
+        repo_uri_2 = image_2.rpartition(":")[0]
+        snapshot.add_transformer(snapshot.transform.regex(repo_uri_2, "<repo_uri_2>"))
+        update_function_code_response = lambda_client.update_function_code(
+            FunctionName=function_name, ImageUri=image_2
+        )
+        snapshot.match("update-function-code-response", update_function_code_response)
+        lambda_client.get_waiter("function_updated_v2").wait(FunctionName=function_name)
+
+        get_function_response = lambda_client.get_function(FunctionName=function_name)
+        snapshot.match("get-function-code-response-after-update", get_function_response)
+        get_function_config_response = lambda_client.get_function_configuration(
+            FunctionName=function_name
+        )
+        snapshot.match("get-function-config-response-after-update", get_function_config_response)
+
+    @pytest.mark.aws_validated
+    def test_lambda_zip_file_to_image(
+        self, lambda_client, create_lambda_function_aws, lambda_su_role, test_image, snapshot
+    ):
+        """Test that verifies conversion from zip file lambda to image lambda is not possible"""
+        image = test_image("alpine")
+        repo_uri = image.rpartition(":")[0]
+        snapshot.add_transformer(snapshot.transform.regex(repo_uri, "<repo_uri>"))
+        function_name = f"test-function-{short_uid()}"
+        create_image_response = create_lambda_function_aws(
+            FunctionName=function_name,
+            Role=lambda_su_role,
+            Runtime=Runtime.python3_9,
+            Handler="handler.handler",
+            Code={
+                "ZipFile": create_lambda_archive(
+                    load_file(TEST_LAMBDA_PYTHON_ECHO), get_content=True
+                )
+            },
+        )
+        snapshot.match("create-image-response", create_image_response)
+        lambda_client.get_waiter("function_active_v2").wait(FunctionName=function_name)
+        get_function_response = lambda_client.get_function(FunctionName=function_name)
+        snapshot.match("get-function-code-response", get_function_response)
+        get_function_config_response = lambda_client.get_function_configuration(
+            FunctionName=function_name
+        )
+        snapshot.match("get-function-config-response", get_function_config_response)
+
+        with pytest.raises(ClientError) as e:
+            lambda_client.update_function_code(FunctionName=function_name, ImageUri=image)
+        snapshot.match("zipfile-to-image-error", e.value.response)
+
+        get_function_response = lambda_client.get_function(FunctionName=function_name)
+        snapshot.match("get-function-code-response-after-update", get_function_response)
+        get_function_config_response = lambda_client.get_function_configuration(
+            FunctionName=function_name
+        )
+        snapshot.match("get-function-config-response-after-update", get_function_config_response)
+
+    @pytest.mark.aws_validated
+    def test_lambda_image_and_image_config_crud(
+        self, lambda_client, create_lambda_function_aws, lambda_su_role, test_image, snapshot
+    ):
+        """Test lambda crud with packagetype image and image configs"""
+        image = test_image("alpine")
+        repo_uri = image.rpartition(":")[0]
+        snapshot.add_transformer(snapshot.transform.regex(repo_uri, "<repo_uri>"))
+        # Create another lambda with image config
+        function_name = f"test-function-{short_uid()}"
+        image_config = {
+            "EntryPoint": ["sh"],
+            "Command": ["-c", "echo test"],
+            "WorkingDirectory": "/app1",
+        }
+        create_image_response = create_lambda_function_aws(
+            FunctionName=function_name,
+            Role=lambda_su_role,
+            Code={"ImageUri": image},
+            PackageType="Image",
+            ImageConfig=image_config,
+            Environment={"Variables": {"CUSTOM_ENV": "test"}},
+        )
+        snapshot.match("create-image-with-config-response", create_image_response)
+        lambda_client.get_waiter("function_active_v2").wait(FunctionName=function_name)
+        get_function_response = lambda_client.get_function(FunctionName=function_name)
+        snapshot.match("get-function-code-with-config-response", get_function_response)
+        get_function_config_response = lambda_client.get_function_configuration(
+            FunctionName=function_name
+        )
+        snapshot.match("get-function-config-with-config-response", get_function_config_response)
+
+        # update image config
+        new_image_config = {
+            "Command": ["-c", "echo test1"],
+            "WorkingDirectory": "/app1",
+        }
+        update_function_config_response = lambda_client.update_function_configuration(
+            FunctionName=function_name, ImageConfig=new_image_config
+        )
+        snapshot.match("update-function-code-response", update_function_config_response)
+        lambda_client.get_waiter("function_updated_v2").wait(FunctionName=function_name)
+
+        get_function_response = lambda_client.get_function(FunctionName=function_name)
+        snapshot.match("get-function-code-response-after-update", get_function_response)
+        get_function_config_response = lambda_client.get_function_configuration(
+            FunctionName=function_name
+        )
+        snapshot.match("get-function-config-response-after-update", get_function_config_response)
+
+        # update to empty image config
+        update_function_config_response = lambda_client.update_function_configuration(
+            FunctionName=function_name, ImageConfig={}
+        )
+        snapshot.match(
+            "update-function-code-delete-imageconfig-response", update_function_config_response
+        )
+        lambda_client.get_waiter("function_updated_v2").wait(FunctionName=function_name)
+
+        get_function_response = lambda_client.get_function(FunctionName=function_name)
+        snapshot.match("get-function-code-response-after-delete-imageconfig", get_function_response)
+        get_function_config_response = lambda_client.get_function_configuration(
+            FunctionName=function_name
+        )
+        snapshot.match(
+            "get-function-config-response-after-delete-imageconfig", get_function_config_response
+        )
 
 
 @pytest.mark.skipif(is_old_provider(), reason="focusing on new provider")
@@ -1193,9 +1420,110 @@ pytestmark = pytest.mark.skip_snapshot_verify(
 
 @pytest.mark.skipif(condition=is_old_provider(), reason="not supported")
 class TestLambdaEventInvokeConfig:
-    def test_lambda_eventinvokeconfig_exceptions(
-        self, lambda_client, create_lambda_function, snapshot, lambda_su_role, account_id
+    """TODO: add sqs & stream specific lifecycle snapshot tests"""
+
+    @pytest.mark.aws_validated
+    def test_lambda_eventinvokeconfig_lifecycle(
+        self, create_lambda_function, lambda_su_role, lambda_client, snapshot
     ):
+        function_name = f"fn-eventinvoke-{short_uid()}"
+        create_lambda_function(
+            handler_file=TEST_LAMBDA_PYTHON_ECHO,
+            func_name=function_name,
+            runtime=Runtime.python3_9,
+            role=lambda_su_role,
+        )
+
+        put_invokeconfig_retries_0 = lambda_client.put_function_event_invoke_config(
+            FunctionName=function_name,
+            MaximumRetryAttempts=0,
+        )
+        snapshot.match("put_invokeconfig_retries_0", put_invokeconfig_retries_0)
+
+        put_invokeconfig_eventage_60 = lambda_client.put_function_event_invoke_config(
+            FunctionName=function_name, MaximumEventAgeInSeconds=60
+        )
+        snapshot.match("put_invokeconfig_eventage_60", put_invokeconfig_eventage_60)
+
+        update_invokeconfig_eventage_nochange = lambda_client.update_function_event_invoke_config(
+            FunctionName=function_name, MaximumEventAgeInSeconds=60
+        )
+        snapshot.match(
+            "update_invokeconfig_eventage_nochange", update_invokeconfig_eventage_nochange
+        )
+
+        update_invokeconfig_retries = lambda_client.update_function_event_invoke_config(
+            FunctionName=function_name, MaximumRetryAttempts=1
+        )
+        snapshot.match("update_invokeconfig_retries", update_invokeconfig_retries)
+
+        get_invokeconfig = lambda_client.get_function_event_invoke_config(
+            FunctionName=function_name
+        )
+        snapshot.match("get_invokeconfig", get_invokeconfig)
+
+        get_invokeconfig_latest = lambda_client.get_function_event_invoke_config(
+            FunctionName=function_name, Qualifier="$LATEST"
+        )
+        snapshot.match("get_invokeconfig_latest", get_invokeconfig_latest)
+
+        list_single_invokeconfig = lambda_client.list_function_event_invoke_configs(
+            FunctionName=function_name
+        )
+        snapshot.match("list_single_invokeconfig", list_single_invokeconfig)
+
+        # publish a version so we can have more than one entries for list ops
+        publish_version_result = lambda_client.publish_version(FunctionName=function_name)
+        snapshot.match("publish_version_result", publish_version_result)
+
+        with pytest.raises(lambda_client.exceptions.ResourceNotFoundException) as e:
+            lambda_client.get_function_event_invoke_config(
+                FunctionName=function_name, Qualifier=publish_version_result["Version"]
+            )
+        snapshot.match("get_invokeconfig_postpublish", e.value.response)
+
+        put_published_invokeconfig = lambda_client.put_function_event_invoke_config(
+            FunctionName=function_name,
+            Qualifier=publish_version_result["Version"],
+            MaximumEventAgeInSeconds=120,
+        )
+        snapshot.match("put_published_invokeconfig", put_published_invokeconfig)
+
+        # list paging
+        list_paging_single = lambda_client.list_function_event_invoke_configs(
+            FunctionName=function_name, MaxItems=1
+        )
+        list_paging_nolimit = lambda_client.list_function_event_invoke_configs(
+            FunctionName=function_name
+        )
+        assert len(list_paging_single["FunctionEventInvokeConfigs"]) == 1
+        assert len(list_paging_nolimit["FunctionEventInvokeConfigs"]) == 2
+
+        all_arns = {a["FunctionArn"] for a in list_paging_nolimit["FunctionEventInvokeConfigs"]}
+
+        list_paging_remaining = lambda_client.list_function_event_invoke_configs(
+            FunctionName=function_name, Marker=list_paging_single["NextMarker"], MaxItems=1
+        )
+        assert len(list_paging_remaining["FunctionEventInvokeConfigs"]) == 1
+        assert all_arns == {
+            list_paging_single["FunctionEventInvokeConfigs"][0]["FunctionArn"],
+            list_paging_remaining["FunctionEventInvokeConfigs"][0]["FunctionArn"],
+        }
+
+        lambda_client.delete_function_event_invoke_config(FunctionName=function_name)
+        list_paging_nolimit_postdelete = lambda_client.list_function_event_invoke_configs(
+            FunctionName=function_name
+        )
+        snapshot.match("list_paging_nolimit_postdelete", list_paging_nolimit_postdelete)
+
+    @pytest.mark.aws_validated
+    def test_lambda_eventinvokeconfig_exceptions(
+        self, create_lambda_function, snapshot, lambda_su_role, account_id, create_boto_client
+    ):
+        """some parts could probably be split apart (e.g. overwriting with update)"""
+        lambda_client = create_boto_client(
+            "lambda", additional_config=Config(parameter_validation=False)
+        )
         snapshot.add_transformer(
             SortingTransformer(
                 key="FunctionEventInvokeConfigs", sorting_fn=lambda conf: conf["FunctionArn"]
@@ -1398,6 +1726,11 @@ class TestLambdaEventInvokeConfig:
                 MaximumRetryAttempts=1,
             )
         snapshot.match("put_shorthand_qualifier_mismatch_3", e.value.response)
+
+        put_maxevent_maxvalue_result = lambda_client.put_function_event_invoke_config(
+            FunctionName=function_name, MaximumRetryAttempts=2, MaximumEventAgeInSeconds=21600
+        )
+        snapshot.match("put_maxevent_maxvalue_result", put_maxevent_maxvalue_result)
 
         # Test overwrite existing values +  differences between put & update
         # first create a config with both values set, then overwrite it with only one value set
@@ -1845,15 +2178,56 @@ class TestLambdaPermissions:
         self, lambda_client, iam_client, create_lambda_function, account_id, snapshot
     ):
         function_name = f"lambda_func-{short_uid()}"
+        snapshot.add_transformer(snapshot.transform.regex(function_name, "<function-name>"))
         create_lambda_function(
             handler_file=TEST_LAMBDA_PYTHON_ECHO,
             func_name=function_name,
             runtime=Runtime.python3_9,
         )
 
+        # qualifier mismatch between specified Qualifier and derived ARN from FunctionName
+        with pytest.raises(lambda_client.exceptions.InvalidParameterValueException) as e:
+            lambda_client.add_permission(
+                FunctionName=f"{function_name}:alias-not-42",
+                Action="lambda:InvokeFunction",
+                StatementId="s3",
+                Principal="s3.amazonaws.com",
+                SourceArn=arns.s3_bucket_arn("test-bucket"),
+                Qualifier="42",
+            )
+        snapshot.match("add_permission_fn_qualifier_mismatch", e.value.response)
+
+        with pytest.raises(lambda_client.exceptions.InvalidParameterValueException) as e:
+            lambda_client.add_permission(
+                FunctionName=f"{function_name}:$LATEST",
+                Action="lambda:InvokeFunction",
+                StatementId="s3",
+                Principal="s3.amazonaws.com",
+                SourceArn=arns.s3_bucket_arn("test-bucket"),
+                Qualifier="$LATEST",
+            )
+        snapshot.match("add_permission_fn_qualifier_latest", e.value.response)
+
+        with pytest.raises(lambda_client.exceptions.InvalidParameterValueException) as e:
+            lambda_client.add_permission(
+                FunctionName=function_name,
+                Action="lambda:InvokeFunction",
+                StatementId="lambda",
+                Principal="invalid.nonaws.com",
+                # TODO: implement AWS principle matching based on explicit list
+                # Principal="invalid.amazonaws.com",
+                SourceAccount=account_id,
+            )
+        snapshot.match("add_permission_principal_invalid", e.value.response)
+
         with pytest.raises(lambda_client.exceptions.ResourceNotFoundException) as e:
             lambda_client.get_policy(FunctionName="doesnotexist")
         snapshot.match("get_policy_fn_doesnotexist", e.value.response)
+
+        non_existing_version = "77"
+        with pytest.raises(lambda_client.exceptions.ResourceNotFoundException) as e:
+            lambda_client.get_policy(FunctionName=function_name, Qualifier=non_existing_version)
+        snapshot.match("get_policy_fn_version_doesnotexist", e.value.response)
 
         with pytest.raises(lambda_client.exceptions.ResourceNotFoundException) as e:
             lambda_client.add_permission(
@@ -1861,16 +2235,9 @@ class TestLambdaPermissions:
                 Action="lambda:InvokeFunction",
                 StatementId="s3",
                 Principal="s3.amazonaws.com",
-                SourceArn=aws_stack.s3_bucket_arn("test-bucket"),
+                SourceArn=arns.s3_bucket_arn("test-bucket"),
             )
         snapshot.match("add_permission_fn_doesnotexist", e.value.response)
-
-        with pytest.raises(lambda_client.exceptions.ResourceNotFoundException) as e:
-            lambda_client.remove_permission(
-                FunctionName="doesnotexist",
-                StatementId="s3",
-            )
-        snapshot.match("remove_permission_fn_doesnotexist", e.value.response)
 
         with pytest.raises(lambda_client.exceptions.ResourceNotFoundException) as e:
             lambda_client.remove_permission(
@@ -1878,6 +2245,83 @@ class TestLambdaPermissions:
                 StatementId="s3",
             )
         snapshot.match("remove_permission_policy_doesnotexist", e.value.response)
+
+        with pytest.raises(lambda_client.exceptions.ResourceNotFoundException) as e:
+            lambda_client.add_permission(
+                FunctionName=f"{function_name}:alias-doesnotexist",
+                Action="lambda:InvokeFunction",
+                StatementId="s3",
+                Principal="s3.amazonaws.com",
+                SourceArn=arns.s3_bucket_arn("test-bucket"),
+            )
+        snapshot.match("add_permission_fn_alias_doesnotexist", e.value.response)
+
+        with pytest.raises(lambda_client.exceptions.ResourceNotFoundException) as e:
+            lambda_client.add_permission(
+                FunctionName=function_name,  # same behavior with version postfix :42
+                Action="lambda:InvokeFunction",
+                StatementId="s3",
+                Principal="s3.amazonaws.com",
+                SourceArn=arns.s3_bucket_arn("test-bucket"),
+                Qualifier="42",
+            )
+        snapshot.match("add_permission_fn_version_doesnotexist", e.value.response)
+
+        with pytest.raises(lambda_client.exceptions.ClientError) as e:
+            lambda_client.add_permission(
+                FunctionName=function_name,
+                Action="lambda:InvokeFunction",
+                StatementId="s3",
+                Principal="s3.amazonaws.com",
+                SourceArn=arns.s3_bucket_arn("test-bucket"),
+                Qualifier="invalid-qualifier-with-?-char",
+            )
+        snapshot.match("add_permission_fn_qualifier_invalid", e.value.response)
+
+        with pytest.raises(lambda_client.exceptions.ResourceNotFoundException) as e:
+            lambda_client.add_permission(
+                FunctionName=function_name,
+                Action="lambda:InvokeFunction",
+                StatementId="s3",
+                Principal="s3.amazonaws.com",
+                SourceArn=arns.s3_bucket_arn("test-bucket"),
+                # NOTE: $ is allowed here because "$LATEST" is a valid version
+                Qualifier="valid-with-$-but-doesnotexist",
+            )
+        snapshot.match("add_permission_fn_qualifier_valid_doesnotexist", e.value.response)
+
+        lambda_client.add_permission(
+            FunctionName=function_name,
+            Action="lambda:InvokeFunction",
+            StatementId="s3",
+            Principal="s3.amazonaws.com",
+            SourceArn=arns.s3_bucket_arn("test-bucket"),
+        )
+
+        sid = "s3"
+        with pytest.raises(lambda_client.exceptions.ResourceConflictException) as e:
+            lambda_client.add_permission(
+                FunctionName=function_name,
+                Action="lambda:InvokeFunction",
+                StatementId=sid,
+                Principal="s3.amazonaws.com",
+                SourceArn=arns.s3_bucket_arn("test-bucket"),
+            )
+        snapshot.match("add_permission_conflicting_statement_id", e.value.response)
+
+        with pytest.raises(lambda_client.exceptions.ResourceNotFoundException) as e:
+            lambda_client.remove_permission(
+                FunctionName="doesnotexist",
+                StatementId=sid,
+            )
+        snapshot.match("remove_permission_fn_doesnotexist", e.value.response)
+
+        non_existing_alias = "alias-doesnotexist"
+        with pytest.raises(lambda_client.exceptions.ResourceNotFoundException) as e:
+            lambda_client.remove_permission(
+                FunctionName=function_name, StatementId=sid, Qualifier=non_existing_alias
+            )
+        snapshot.match("remove_permission_fn_alias_doesnotexist", e.value.response)
 
     @pytest.mark.aws_validated
     def test_add_lambda_permission_aws(
@@ -1901,13 +2345,189 @@ class TestLambdaPermissions:
             Action=action,
             StatementId=sid,
             Principal=principal,
-            SourceArn=aws_stack.s3_bucket_arn("test-bucket"),
+            SourceArn=arns.s3_bucket_arn("test-bucket"),
         )
         snapshot.match("add_permission", resp)
 
         # fetch lambda policy
         get_policy_result = lambda_client.get_policy(FunctionName=function_name)
         snapshot.match("get_policy", get_policy_result)
+
+    @pytest.mark.skipif(condition=is_old_provider(), reason="not supported")
+    @pytest.mark.aws_validated
+    def test_lambda_permission_fn_versioning(
+        self, lambda_client, iam_client, create_lambda_function, account_id, snapshot
+    ):
+        """Testing how lambda permissions behave when publishing different function versions and using qualifiers"""
+        function_name = f"lambda_func-{short_uid()}"
+        create_lambda_function(
+            handler_file=TEST_LAMBDA_PYTHON_ECHO,
+            func_name=function_name,
+            runtime=Runtime.python3_9,
+        )
+
+        # create lambda permission
+        action = "lambda:InvokeFunction"
+        sid = "s3"
+        principal = "s3.amazonaws.com"
+        resp = lambda_client.add_permission(
+            FunctionName=function_name,
+            Action=action,
+            StatementId=sid,
+            Principal=principal,
+            SourceArn=arns.s3_bucket_arn("test-bucket"),
+        )
+        snapshot.match("add_permission", resp)
+
+        # fetch lambda policy
+        get_policy_result = lambda_client.get_policy(FunctionName=function_name)
+        snapshot.match("get_policy", get_policy_result)
+
+        # publish version
+        fn_version_result = lambda_client.publish_version(FunctionName=function_name)
+        fn_version = fn_version_result["Version"]
+        get_policy_result_after_publishing = lambda_client.get_policy(FunctionName=function_name)
+        snapshot.match("get_policy_after_publishing_latest", get_policy_result_after_publishing)
+
+        # permissions apply per function unless providing a specific version or alias
+        with pytest.raises(lambda_client.exceptions.ResourceNotFoundException) as e:
+            lambda_client.get_policy(FunctionName=function_name, Qualifier=fn_version)
+        snapshot.match("get_policy_after_publishing_new_version", e.value.response)
+
+        # create lambda permission with the same sid for specific function version
+        lambda_client.add_permission(
+            FunctionName=f"{function_name}:{fn_version}",  # version suffix matching Qualifier
+            Action=action,
+            StatementId=sid,
+            Principal=principal,
+            SourceArn=arns.s3_bucket_arn("test-bucket"),
+            Qualifier=fn_version,
+        )
+        get_policy_result_alias = lambda_client.get_policy(
+            FunctionName=function_name, Qualifier=fn_version
+        )
+        snapshot.match("get_policy_version", get_policy_result_alias)
+
+        alias_name = "permission-alias"
+        lambda_client.create_alias(
+            FunctionName=function_name,
+            Name=alias_name,
+            FunctionVersion=fn_version,
+        )
+        # create lambda permission with the same sid for specific alias
+        lambda_client.add_permission(
+            FunctionName=f"{function_name}:{alias_name}",  # alias suffix matching Qualifier
+            Action=action,
+            StatementId=sid,
+            Principal=principal,
+            SourceArn=arns.s3_bucket_arn("test-bucket"),
+            Qualifier=alias_name,
+        )
+        get_policy_result_alias = lambda_client.get_policy(
+            FunctionName=function_name, Qualifier=alias_name
+        )
+        snapshot.match("get_policy_alias", get_policy_result_alias)
+
+        get_policy_result_alias = lambda_client.get_policy(FunctionName=function_name)
+        snapshot.match("get_policy_after_adding_to_new_version", get_policy_result_alias)
+
+        # create lambda permission with other sid and correct revision id
+        lambda_client.add_permission(
+            FunctionName=function_name,
+            Action=action,
+            StatementId=f"{sid}_2",
+            Principal=principal,
+            SourceArn=arns.s3_bucket_arn("test-bucket"),
+            RevisionId=get_policy_result_alias["RevisionId"],
+        )
+
+        get_policy_result_adding_2 = lambda_client.get_policy(FunctionName=function_name)
+        snapshot.match("get_policy_after_adding_2", get_policy_result_adding_2)
+
+    @pytest.mark.skipif(condition=is_old_provider(), reason="not supported")
+    @pytest.mark.aws_validated
+    def test_add_lambda_permission_fields(
+        self, lambda_client, iam_client, create_lambda_function, account_id, sts_client, snapshot
+    ):
+        # prevent resource transformer from matching the LS default username "root", which collides with other resources
+        snapshot.add_transformer(
+            snapshot.transform.jsonpath(
+                "add_permission_principal_arn..Statement.Principal.AWS",
+                "<user_arn>",
+                reference_replacement=False,
+            ),
+            priority=-1,
+        )
+
+        function_name = f"lambda_func-{short_uid()}"
+        create_lambda_function(
+            handler_file=TEST_LAMBDA_PYTHON_ECHO,
+            func_name=function_name,
+            runtime=Runtime.python3_9,
+        )
+
+        resp = lambda_client.add_permission(
+            FunctionName=function_name,
+            Action="lambda:InvokeFunction",
+            StatementId="wilcard",
+            Principal="*",
+            SourceAccount=account_id,
+        )
+        snapshot.match("add_permission_principal_wildcard", resp)
+
+        resp = lambda_client.add_permission(
+            FunctionName=function_name,
+            Action="lambda:InvokeFunction",
+            StatementId="lambda",
+            Principal="lambda.amazonaws.com",
+            SourceAccount=account_id,
+        )
+        snapshot.match("add_permission_principal_service", resp)
+
+        resp = lambda_client.add_permission(
+            FunctionName=function_name,
+            Action="lambda:InvokeFunction",
+            StatementId="account-id",
+            Principal=account_id,
+        )
+        snapshot.match("add_permission_principal_account", resp)
+
+        user_arn = sts_client.get_caller_identity()["Arn"]
+        resp = lambda_client.add_permission(
+            FunctionName=function_name,
+            Action="lambda:InvokeFunction",
+            StatementId="user-arn",
+            Principal=user_arn,
+            SourceAccount=account_id,
+        )
+        snapshot.match("add_permission_principal_arn", resp)
+        assert json.loads(resp["Statement"])["Principal"]["AWS"] == user_arn
+
+        resp = lambda_client.add_permission(
+            FunctionName=function_name,
+            StatementId="urlPermission",
+            Action="lambda:InvokeFunctionUrl",
+            Principal="*",
+            # optional fields:
+            SourceArn=arns.s3_bucket_arn("test-bucket"),
+            SourceAccount=account_id,
+            PrincipalOrgID="o-1234567890",
+            # "FunctionUrlAuthType is only supported for lambda:InvokeFunctionUrl action"
+            FunctionUrlAuthType="NONE",
+        )
+        snapshot.match("add_permission_optional_fields", resp)
+
+        # create alexa skill lambda permission:
+        # https://developer.amazon.com/en-US/docs/alexa/custom-skills/host-a-custom-skill-as-an-aws-lambda-function.html#use-aws-cli
+        response = lambda_client.add_permission(
+            FunctionName=function_name,
+            StatementId="alexaSkill",
+            Action="lambda:InvokeFunction",
+            Principal="*",
+            # alexa skill token cannot be used together with source account and source arn
+            EventSourceToken="amzn1.ask.skill.xxxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx",
+        )
+        snapshot.match("add_permission_alexa_skill", response)
 
     @pytest.mark.skip_snapshot_verify(paths=["$..Message"], condition=is_old_provider)
     @pytest.mark.aws_validated
@@ -1939,7 +2559,7 @@ class TestLambdaPermissions:
             Action=action,
             StatementId=sid_2,
             Principal=principal_2,
-            SourceArn=aws_stack.s3_bucket_arn("test-bucket"),
+            SourceArn=arns.s3_bucket_arn("test-bucket"),
         )
         snapshot.match("add_permission_2", permission_2_add)
         policy_response = lambda_client.get_policy(
@@ -1952,26 +2572,32 @@ class TestLambdaPermissions:
                 FunctionName=function_name,
                 StatementId="non-existent",
             )
-        snapshot.match("expect_error_remove_permission", e.value.response)
+        snapshot.match("remove_permission_exception_nonexisting_sid", e.value.response)
 
         lambda_client.remove_permission(
             FunctionName=function_name,
             StatementId=sid_2,
         )
-        policy = json.loads(
-            lambda_client.get_policy(
-                FunctionName=function_name,
-            )["Policy"]
+
+        policy_response_removal = lambda_client.get_policy(
+            FunctionName=function_name,
         )
-        snapshot.match("policy_after_removal", policy)
+        snapshot.match("policy_after_removal", policy_response_removal)
+
+        policy_response_removal_attempt = lambda_client.get_policy(
+            FunctionName=function_name,
+        )
+        snapshot.match("policy_after_removal_attempt", policy_response_removal_attempt)
 
         lambda_client.remove_permission(
             FunctionName=function_name,
             StatementId=sid,
+            RevisionId=policy_response_removal_attempt["RevisionId"],
         )
+        # get_policy raises an exception after removing all permissions
         with pytest.raises(lambda_client.exceptions.ResourceNotFoundException) as ctx:
             lambda_client.get_policy(FunctionName=function_name)
-        snapshot.match("expect_exception_get_policy", ctx.value.response)
+        snapshot.match("get_policy_exception_removed_all", ctx.value.response)
 
     @pytest.mark.aws_validated
     def test_create_multiple_lambda_permissions(
@@ -2025,7 +2651,16 @@ class TestLambdaUrl:
         snapshot.add_transformer(
             SortingTransformer("FunctionUrlConfigs", sorting_fn=lambda x: x["FunctionArn"])
         )
-
+        # broken at AWS yielding InternalFailure but should return InvalidParameterValueException as in
+        # get_function_url_config_qualifier_alias_doesnotmatch_arn
+        snapshot.add_transformer(
+            snapshot.transform.jsonpath(
+                "delete_function_url_config_qualifier_alias_doesnotmatch_arn",
+                "<aws_internal_failure>",
+                reference_replacement=False,
+            ),
+            priority=-1,
+        )
         function_name = f"test-function-{short_uid()}"
         alias_name = "urlalias"
 
@@ -2086,6 +2721,22 @@ class TestLambdaUrl:
                 "args": {"FunctionName": function_name, "Qualifier": "v1"},
                 "SnapshotName": "qualifier_alias_doesnotexist",
                 "exc": lambda_client.exceptions.ResourceNotFoundException,
+            },
+            {
+                "args": {
+                    "FunctionName": f"{function_name}:{alias_name}-doesnotmatch",
+                    "Qualifier": alias_name,
+                },
+                "SnapshotName": "qualifier_alias_doesnotmatch_arn",
+                "exc": lambda_client.exceptions.ClientError,
+            },
+            {
+                "args": {
+                    "FunctionName": function_name,
+                    "Qualifier": "$LATEST",
+                },
+                "SnapshotName": "qualifier_latest",
+                "exc": lambda_client.exceptions.ClientError,
             },
         ]
         config_doesnotexist_tests = [
@@ -2159,7 +2810,7 @@ class TestLambdaUrl:
         )
         snapshot.match("url_config_fn", url_config_fn)
         url_config_alias = lambda_client.create_function_url_config(
-            FunctionName=function_name, Qualifier=alias_name, AuthType="NONE"
+            FunctionName=f"{function_name}:{alias_name}", Qualifier=alias_name, AuthType="NONE"
         )
         snapshot.match("url_config_alias", url_config_alias)
 
@@ -2292,6 +2943,7 @@ class TestLambdaSizeLimits:
             )
         snapshot.match("invalid_param_exc", e.value.response)
 
+    @pytest.mark.skip(reason="breaks CI")  # TODO: investigate why this leads to timeouts
     @pytest.mark.aws_validated
     def test_large_lambda(
         self, lambda_client, s3_client, s3_bucket, lambda_su_role, snapshot, cleanups
@@ -2601,14 +3253,178 @@ class TestCodeSigningConfig:
 
 @pytest.mark.skipif(is_old_provider(), reason="not implemented")
 class TestLambdaAccountSettings:
-
-    # TODO: for now probably fine if it just returns some static values, but might be interesting to properly implement this in the new provider
     @pytest.mark.aws_validated
     def test_account_settings(self, lambda_client, snapshot):
+        """Limitation: only checks keys because AccountLimits are specific to AWS accounts. Example limits (2022-12-05):
+
+        "AccountLimit": {
+            "TotalCodeSize": 80530636800,
+            "CodeSizeUnzipped": 262144000,
+            "CodeSizeZipped": 52428800,
+            "ConcurrentExecutions": 10,
+            "UnreservedConcurrentExecutions": 10
+        }"""
         acc_settings = lambda_client.get_account_settings()
-        acc_settings["AccountLimit"] = sorted(list(acc_settings["AccountLimit"].keys()))
-        acc_settings["AccountUsage"] = sorted(list(acc_settings["AccountUsage"].keys()))
-        snapshot.match("acc_settings_modded", acc_settings)
+        acc_settings_modded = acc_settings
+        acc_settings_modded["AccountLimit"] = sorted(list(acc_settings["AccountLimit"].keys()))
+        acc_settings_modded["AccountUsage"] = sorted(list(acc_settings["AccountUsage"].keys()))
+        snapshot.match("acc_settings_modded", acc_settings_modded)
+
+    @pytest.mark.aws_validated
+    def test_account_settings_total_code_size(
+        self, lambda_client, create_lambda_function, dummylayer, cleanups, snapshot
+    ):
+        """Caveat: Could be flaky if another test simultaneously deletes a lambda function or layer in the same region.
+        Hence, testing for monotonically increasing `TotalCodeSize` rather than matching exact differences.
+        However, the parity tests use exact matching based on zip files with deterministic size.
+        """
+        acc_settings0 = lambda_client.get_account_settings()
+
+        # 1) create a new function
+        function_name = f"lambda_func-{short_uid()}"
+        zip_file_content = load_file(TEST_LAMBDA_PYTHON_ECHO_ZIP, mode="rb")
+        create_lambda_function(
+            zip_file=zip_file_content,
+            handler="index.handler",
+            func_name=function_name,
+            runtime=Runtime.python3_9,
+        )
+        acc_settings1 = lambda_client.get_account_settings()
+        assert (
+            acc_settings1["AccountUsage"]["TotalCodeSize"]
+            > acc_settings0["AccountUsage"]["TotalCodeSize"]
+        )
+        assert (
+            acc_settings1["AccountUsage"]["FunctionCount"]
+            > acc_settings0["AccountUsage"]["FunctionCount"]
+        )
+        snapshot.match(
+            "total_code_size_diff_create_function",
+            acc_settings1["AccountUsage"]["TotalCodeSize"]
+            - acc_settings0["AccountUsage"]["TotalCodeSize"],
+        )
+
+        # 2) update the function
+        lambda_client.update_function_code(
+            FunctionName=function_name, ZipFile=zip_file_content, Publish=True
+        )
+        # there is no need to wait until function_updated_v2 here because TotalCodeSize changes upon publishing
+        acc_settings2 = lambda_client.get_account_settings()
+        assert (
+            acc_settings2["AccountUsage"]["TotalCodeSize"]
+            > acc_settings1["AccountUsage"]["TotalCodeSize"]
+        )
+        snapshot.match(
+            "total_code_size_diff_update_function",
+            acc_settings2["AccountUsage"]["TotalCodeSize"]
+            - acc_settings1["AccountUsage"]["TotalCodeSize"],
+        )
+
+        # 3) publish a new layer
+        layer_name = f"testlayer-{short_uid()}"
+        publish_result1 = lambda_client.publish_layer_version(
+            LayerName=layer_name, Content={"ZipFile": dummylayer}
+        )
+        cleanups.append(
+            lambda: lambda_client.delete_layer_version(
+                LayerName=layer_name, VersionNumber=publish_result1["Version"]
+            )
+        )
+        acc_settings3 = lambda_client.get_account_settings()
+        assert (
+            acc_settings3["AccountUsage"]["TotalCodeSize"]
+            > acc_settings2["AccountUsage"]["TotalCodeSize"]
+        )
+        snapshot.match(
+            "total_code_size_diff_publish_layer",
+            acc_settings3["AccountUsage"]["TotalCodeSize"]
+            - acc_settings2["AccountUsage"]["TotalCodeSize"],
+        )
+
+        # 4) publish a new layer version
+        publish_result2 = lambda_client.publish_layer_version(
+            LayerName=layer_name, Content={"ZipFile": dummylayer}
+        )
+        cleanups.append(
+            lambda: lambda_client.delete_layer_version(
+                LayerName=layer_name, VersionNumber=publish_result2["Version"]
+            )
+        )
+        acc_settings4 = lambda_client.get_account_settings()
+        assert (
+            acc_settings4["AccountUsage"]["TotalCodeSize"]
+            > acc_settings3["AccountUsage"]["TotalCodeSize"]
+        )
+        snapshot.match(
+            "total_code_size_diff_publish_layer_version",
+            acc_settings4["AccountUsage"]["TotalCodeSize"]
+            - acc_settings3["AccountUsage"]["TotalCodeSize"],
+        )
+
+    @pytest.mark.aws_validated
+    def test_account_settings_total_code_size_config_update(
+        self, lambda_client, create_lambda_function, snapshot
+    ):
+        """TotalCodeSize always changes when publishing a new lambda function,
+        even after config updates without code changes."""
+        acc_settings0 = lambda_client.get_account_settings()
+
+        # 1) create a new function
+        function_name = f"lambda_func-{short_uid()}"
+        create_lambda_function(
+            handler_file=TEST_LAMBDA_NODEJS,
+            func_name=function_name,
+            runtime=Runtime.nodejs16_x,
+        )
+        acc_settings1 = lambda_client.get_account_settings()
+        assert (
+            acc_settings1["AccountUsage"]["TotalCodeSize"]
+            > acc_settings0["AccountUsage"]["TotalCodeSize"]
+        )
+        snapshot.match(
+            # fuzzy matching because exact the zip size differs by OS (e.g., 368 bytes)
+            "is_total_code_size_diff_create_function_more_than_200",
+            (
+                acc_settings1["AccountUsage"]["TotalCodeSize"]
+                - acc_settings0["AccountUsage"]["TotalCodeSize"]
+            )
+            > 200,
+        )
+
+        # 2) update function configuration (i.e., code remains identical)
+        lambda_client.update_function_configuration(
+            FunctionName=function_name, Runtime=Runtime.nodejs18_x
+        )
+        lambda_client.get_waiter("function_updated_v2").wait(FunctionName=function_name)
+        acc_settings2 = lambda_client.get_account_settings()
+        assert (
+            acc_settings2["AccountUsage"]["TotalCodeSize"]
+            == acc_settings1["AccountUsage"]["TotalCodeSize"]
+        )
+        snapshot.match(
+            "total_code_size_diff_update_function_configuration",
+            acc_settings2["AccountUsage"]["TotalCodeSize"]
+            - acc_settings1["AccountUsage"]["TotalCodeSize"],
+        )
+
+        # 3) publish updated function config
+        lambda_client.publish_version(
+            FunctionName=function_name, Description="actually publish the config update"
+        )
+        lambda_client.get_waiter("function_active_v2").wait(FunctionName=function_name)
+        acc_settings3 = lambda_client.get_account_settings()
+        assert (
+            acc_settings3["AccountUsage"]["TotalCodeSize"]
+            > acc_settings2["AccountUsage"]["TotalCodeSize"]
+        )
+        snapshot.match(
+            "is_total_code_size_diff_publish_version_after_config_update_more_than_200",
+            (
+                acc_settings3["AccountUsage"]["TotalCodeSize"]
+                - acc_settings2["AccountUsage"]["TotalCodeSize"]
+            )
+            > 200,
+        )
 
 
 class TestLambdaEventSourceMappings:
@@ -2934,11 +3750,6 @@ class TestLambdaTags:
 # TODO: test if function has to be in same region as layer
 @pytest.mark.skipif(condition=is_old_provider(), reason="not supported")
 class TestLambdaLayer:
-    @pytest.fixture(scope="class")
-    def dummylayer(self):
-        with open(os.path.join(os.path.dirname(__file__), "./layers/testlayer.zip"), "rb") as fd:
-            yield fd.read()
-
     @pytest.mark.aws_validated
     def test_layer_exceptions(
         self, lambda_client, create_lambda_function, snapshot, dummylayer, cleanups

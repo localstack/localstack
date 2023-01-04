@@ -8,7 +8,6 @@ from botocore.exceptions import ClientError
 from localstack.services.awslambda.lambda_api import IAM_POLICY_VERSION
 from localstack.services.cloudformation.deployment_utils import (
     PLACEHOLDER_AWS_NO_VALUE,
-    PLACEHOLDER_RESOURCE_NAME,
     dump_json_params,
     generate_default_name,
     param_defaults,
@@ -17,7 +16,7 @@ from localstack.services.cloudformation.deployment_utils import (
 )
 from localstack.services.cloudformation.service_models import GenericBaseModel
 from localstack.services.iam.provider import SERVICE_LINKED_ROLE_PATH_PREFIX
-from localstack.utils.aws import aws_stack
+from localstack.utils.aws import arns, aws_stack
 from localstack.utils.common import ensure_list
 from localstack.utils.functions import call_safe
 
@@ -30,7 +29,7 @@ class IAMManagedPolicy(GenericBaseModel):
         return "AWS::IAM::ManagedPolicy"
 
     def get_physical_resource_id(self, attribute=None, **kwargs):
-        return aws_stack.policy_arn(self.props["ManagedPolicyName"])
+        return arns.policy_arn(self.props["ManagedPolicyName"])
 
     def fetch_state(self, stack_name, resources):
         return IAMPolicy.get_policy_state(self, stack_name, resources, managed_policy=True)
@@ -73,9 +72,6 @@ class IAMUser(GenericBaseModel):
         return "AWS::IAM::User"
 
     def get_physical_resource_id(self, attribute=None, **kwargs):
-        return self.props.get("UserName")
-
-    def get_resource_name(self):
         return self.props.get("UserName")
 
     def fetch_state(self, stack_name, resources):
@@ -224,15 +220,12 @@ class IAMRole(GenericBaseModel):
     def cloudformation_type():
         return "AWS::IAM::Role"
 
-    def get_resource_name(self):
-        return self.props.get("RoleName")
-
     def get_physical_resource_id(self, attribute=None, **kwargs):
         role_name = self.properties.get("RoleName")
         if not role_name:
             return role_name
         if attribute == "Arn":
-            return aws_stack.role_arn(role_name)
+            return arns.role_arn(role_name)
         return role_name
 
     def fetch_state(self, stack_name, resources):
@@ -256,13 +249,13 @@ class IAMRole(GenericBaseModel):
                 dummy_resources = {
                     resource_id: {"Properties": {"RoleName": _states.get("RoleName")}}
                 }
-                self._pre_delete(resource_id, dummy_resources, None, None, None)
+                IAMRole._pre_delete(resource_id, dummy_resources, None, None, None)
                 client.delete_role(RoleName=_states.get("RoleName"))
                 role = client.create_role(
                     RoleName=props.get("RoleName"),
                     AssumeRolePolicyDocument=str(props_policy),
                 )
-                self._post_create(resource_id, resources, None, None, None)
+                IAMRole._post_create(resource_id, resources, None, None, None)
                 return role["Role"]
 
         return client.update_role(
@@ -277,16 +270,13 @@ class IAMRole(GenericBaseModel):
                 stack_name, resource["LogicalResourceId"]
             )
 
-    @staticmethod
-    def _post_create(resource_id, resources, resource_type, func, stack_name):
+    @classmethod
+    def _post_create(cls, resource_id, resources, resource_type, func, stack_name):
         """attaches managed policies from the template to the role"""
-        from localstack.utils.cloudformation.template_deployer import (
-            find_stack,
-            resolve_refs_recursively,
-        )
 
         iam = aws_stack.connect_to_service("iam")
         resource = resources[resource_id]
+        cls_resource = cls(resource)
         props = resource["Properties"]
         role_name = props["RoleName"]
 
@@ -294,9 +284,6 @@ class IAMRole(GenericBaseModel):
         policy_arns = props.get("ManagedPolicyArns", [])
         for arn in policy_arns:
             iam.attach_role_policy(RoleName=role_name, PolicyArn=arn)
-
-        # TODO: to be removed once we change the method signature to pass in the stack object directly!
-        stack = find_stack(stack_name)
 
         # add inline policies
         inline_policies = props.get("Policies", [])
@@ -316,7 +303,7 @@ class IAMRole(GenericBaseModel):
             # get policy document - make sure we're resolving references in the policy doc
             doc = dict(policy["PolicyDocument"])
             doc = remove_none_values(doc)
-            doc = resolve_refs_recursively(stack, doc)
+            doc = cls_resource.resolve_refs_recursively(stack_name, doc, resources)
 
             doc["Version"] = doc.get("Version") or IAM_POLICY_VERSION
             statements = ensure_list(doc["Statement"])
@@ -391,7 +378,7 @@ class IAMRole(GenericBaseModel):
                             ),
                             "AssumeRolePolicyDocument",
                         ),
-                        {"RoleName": PLACEHOLDER_RESOURCE_NAME},
+                        {"RoleName": "RoleName"},
                     ),
                 },
                 {"function": IAMRole._post_create},
@@ -470,7 +457,7 @@ class IAMPolicy(GenericBaseModel):
                 )
 
         def _delete_params(params, *args, **kwargs):
-            return {"PolicyArn": aws_stack.policy_arn(params["PolicyName"])}
+            return {"PolicyArn": arns.policy_arn(params["PolicyName"])}
 
         return {
             "create": {
@@ -494,7 +481,7 @@ class IAMPolicy(GenericBaseModel):
         users = props.get("Users", [])
         groups = props.get("Groups", [])
         if managed_policy:
-            result["policy"] = iam.get_policy(PolicyArn=aws_stack.policy_arn(policy_name))
+            result["policy"] = iam.get_policy(PolicyArn=arns.policy_arn(policy_name))
         for role in roles:
             role = obj.resolve_refs_recursively(stack_name, role, resources)
             policies = (
@@ -610,9 +597,6 @@ class IAMGroup(GenericBaseModel):
         return "AWS::IAM::Group"
 
     def get_physical_resource_id(self, attribute=None, **kwargs):
-        return self.props.get("GroupName")
-
-    def get_resource_name(self):
         return self.props.get("GroupName")
 
     def fetch_state(self, stack_name, resources):

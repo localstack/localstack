@@ -31,7 +31,6 @@ from localstack.services.apigateway.templates import (
     ResponseTemplates,
     VtlTemplate,
 )
-from localstack.services.kinesis import kinesis_listener
 from localstack.utils import common
 from localstack.utils.aws import aws_stack
 from localstack.utils.aws.aws_responses import request_response_stream, requests_response
@@ -339,11 +338,11 @@ def invoke_rest_api_integration_backend(invocation_context: ApiInvocationContext
     elif integration_type == "AWS":
         if "kinesis:action/" in uri:
             if uri.endswith("kinesis:action/PutRecord"):
-                target = kinesis_listener.ACTION_PUT_RECORD
+                target = "Kinesis_20131202.PutRecord"
             elif uri.endswith("kinesis:action/PutRecords"):
-                target = kinesis_listener.ACTION_PUT_RECORDS
+                target = "Kinesis_20131202.PutRecords"
             elif uri.endswith("kinesis:action/ListStreams"):
-                target = kinesis_listener.ACTION_LIST_STREAMS
+                target = "Kinesis_20131202.ListStreams"
             else:
                 LOG.info(
                     f"Unexpected API Gateway integration URI '{uri}' for integration type {integration_type}",

@@ -1,4 +1,5 @@
 import json
+import math
 import os
 import time
 from unittest.mock import patch
@@ -48,7 +49,6 @@ def _snapshot_transformers(snapshot):
 @pytest.mark.skip_snapshot_verify(
     paths=[
         "$..Records..eventID",
-        "$..Records..kinesis.encryptionType",
         "$..Records..kinesis.kinesisSchemaVersion",
         "$..BisectBatchOnFunctionError",
         "$..DestinationConfig",
@@ -121,7 +121,13 @@ class TestKinesisSource:
         events = retry(_send_and_receive_messages, retries=3)
         records = events[0]
         snapshot.match("kinesis_records", records)
+        # check if the timestamp has the correct format
+        timestamp = events[0]["Records"][0]["kinesis"]["approximateArrivalTimestamp"]
+        # check if the timestamp has same amount of numbers before the comma as the current timestamp
+        # this will fail in november 2286, if this code is still around by then, read this comment and update to 10
+        assert int(math.log10(timestamp)) == 9
 
+    # FIXME remove usage of this config value with 2.0
     @patch.object(config, "SYNCHRONOUS_KINESIS_EVENTS", False)
     @pytest.mark.aws_validated
     @pytest.mark.skipif(
@@ -337,15 +343,18 @@ class TestKinesisSource:
             "$..Messages..Body.KinesisBatchInfo.shardId",
             "$..Messages..Body.KinesisBatchInfo.streamArn",
             "$..Messages..Body.requestContext.approximateInvokeCount",
-            "$..Messages..Body.requestContext.functionArn",
             "$..Messages..Body.responseContext.statusCode",
+        ],
+    )
+    @pytest.mark.skip_snapshot_verify(
+        paths=[
+            "$..Messages..Body.requestContext.functionArn",
             # destination config arn missing, which leads to those having wrong resource ids
             "$..EventSourceArn",
             "$..FunctionArn",
         ],
         condition=is_old_provider,
     )
-    @pytest.mark.skipif(condition=is_new_provider(), reason="destinations not yet implemented")
     @pytest.mark.aws_validated
     def test_kinesis_event_source_mapping_with_on_failure_destination_config(
         self,

@@ -10,7 +10,7 @@ from dateutil.tz import tzutc
 
 from localstack import config
 from localstack.services.cloudwatch.provider import PATH_GET_RAW_METRICS
-from localstack.utils.aws import aws_stack
+from localstack.utils.aws import arns, aws_stack
 from localstack.utils.common import retry, short_uid, to_str
 from localstack.utils.sync import poll_condition
 
@@ -50,6 +50,44 @@ class TestCloudwatch:
         rs = cloudwatch_client.list_metrics(Namespace=namespace, MetricName=metric_name)
         assert 1 == len(rs["Metrics"])
         assert namespace == rs["Metrics"][0]["Namespace"]
+
+    @pytest.mark.aws_validated
+    def test_put_metric_data_values_list(self, cloudwatch_client, snapshot):
+        metric_name = "test-metric"
+        namespace = f"ns-{short_uid()}"
+        utc_now = datetime.utcnow().replace(tzinfo=timezone.utc)
+        snapshot.add_transformer(
+            snapshot.transform.key_value("Timestamp", reference_replacement=False)
+        )
+
+        cloudwatch_client.put_metric_data(
+            Namespace=namespace,
+            MetricData=[
+                {
+                    "MetricName": metric_name,
+                    "Timestamp": utc_now,
+                    "Values": [1.0, 10.0],
+                    "Counts": [2, 4],
+                    "Unit": "Count",
+                }
+            ],
+        )
+
+        def get_stats() -> int:
+            global stats
+            stats = cloudwatch_client.get_metric_statistics(
+                Namespace=namespace,
+                MetricName=metric_name,
+                StartTime=utc_now - timedelta(seconds=60),
+                EndTime=utc_now + timedelta(seconds=60),
+                Period=60,
+                Statistics=["SampleCount", "Sum", "Maximum"],
+            )
+            datapoints = stats["Datapoints"]
+            return len(datapoints)
+
+        assert poll_condition(lambda: get_stats() >= 1, timeout=10)
+        snapshot.match("get_metric_statistics", stats)
 
     def test_put_metric_data_gzip(self, cloudwatch_client):
         metric_name = "test-metric"
@@ -241,7 +279,7 @@ class TestCloudwatch:
             ComparisonOperator="GreaterThanThreshold",
         )
         assert 200 == response["ResponseMetadata"]["HTTPStatusCode"]
-        alarm_arn = aws_stack.cloudwatch_alarm_arn(alarm_name)
+        alarm_arn = arns.cloudwatch_alarm_arn(alarm_name)
 
         tags = [{"Key": "tag1", "Value": "foo"}, {"Key": "tag2", "Value": "bar"}]
         response = cloudwatch_client.tag_resource(ResourceARN=alarm_arn, Tags=tags)
@@ -297,7 +335,7 @@ class TestCloudwatch:
         results = cloudwatch_client.list_metrics(Namespace="AWS/EC2")["Metrics"]
         assert 2 == len(results)
 
-    def test_put_metric_alarm_escape_character(self, cloudwatch_client):
+    def test_put_metric_alarm_escape_character(self, cloudwatch_client, cleanups):
         cloudwatch_client.put_metric_alarm(
             AlarmName="cpu-mon",
             AlarmDescription="<",
@@ -310,10 +348,10 @@ class TestCloudwatch:
             EvaluationPeriods=1,
             AlarmActions=["arn:aws:sns:us-east-1:111122223333:MyTopic"],
         )
+        cleanups.append(lambda: cloudwatch_client.delete_alarms(AlarmNames=["cpu-mon"]))
 
-        result = cloudwatch_client.describe_alarms()
+        result = cloudwatch_client.describe_alarms(AlarmNames=["cpu-mon"])
         assert result.get("MetricAlarms")[0]["AlarmDescription"] == "<"
-        cloudwatch_client.delete_alarms(AlarmNames=["cpu-mon"])
 
     def test_set_alarm(
         self, sns_client, cloudwatch_client, sqs_client, sns_create_topic, sqs_create_queue
@@ -740,7 +778,7 @@ class TestCloudwatch:
         sqs_arn = sqs_client.get_queue_attributes(QueueUrl=sqs_url, AttributeNames=["QueueArn"])[
             "Attributes"
         ]["QueueArn"]
-        queue_name = aws_stack.sqs_queue_name(sqs_arn)
+        queue_name = arns.sqs_queue_name(sqs_arn)
         # this should trigger the metric "NumberOfEmptyReceives"
         sqs_client.receive_message(QueueUrl=sqs_url)
 

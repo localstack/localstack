@@ -1,0 +1,29 @@
+{
+  "tests/integration/cloudformation/api/test_get_template_summary.py::test_get_template_summary": {
+    "recorded-date": "30-11-2022, 14:27:17",
+    "recorded-content": {
+      "template-summary": {
+        "Parameters": [],
+        "ResourceIdentifierSummaries": [
+          {
+            "LogicalResourceIds": [
+              "topic123"
+            ],
+            "ResourceIdentifiers": [
+              "TopicArn"
+            ],
+            "ResourceType": "AWS::SNS::Topic"
+          }
+        ],
+        "ResourceTypes": [
+          "AWS::SNS::Topic"
+        ],
+        "Version": "2010-09-09",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  }
+}

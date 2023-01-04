@@ -14,6 +14,7 @@ from io import BytesIO
 from operator import itemgetter
 from typing import TYPE_CHECKING
 from urllib.parse import SplitResult, parse_qs, quote, urlencode, urlparse, urlunsplit
+from zoneinfo import ZoneInfo
 
 import boto3 as boto3
 import pytest
@@ -23,7 +24,6 @@ from boto3.s3.transfer import KB, TransferConfig
 from botocore import UNSIGNED
 from botocore.client import Config
 from botocore.exceptions import ClientError
-from pytz import timezone
 
 from localstack import config, constants
 from localstack.config import LEGACY_S3_PROVIDER
@@ -856,9 +856,8 @@ class TestS3:
         snapshot.match("head-object", response)
 
     @pytest.mark.aws_validated
-    @pytest.mark.xfail(
-        condition=LEGACY_S3_PROVIDER,
-        reason="see https://github.com/localstack/localstack/issues/6553",
+    @pytest.mark.skip_snapshot_verify(
+        condition=is_old_provider, paths=["$..ContentLanguage", "$..Error.RequestID"]
     )
     def test_get_object_after_deleted_in_versioned_bucket(
         self, s3_client, s3_bucket, s3_resource, snapshot
@@ -1195,7 +1194,7 @@ class TestS3:
         # TODO: should we have a config var to not deleted immediately in the new provider? and schedule it?
         snapshot.add_transformer(snapshot.transform.s3_api())
         # put object
-        short_expire = datetime.datetime.now(timezone("GMT")) + datetime.timedelta(seconds=1)
+        short_expire = datetime.datetime.now(ZoneInfo("GMT")) + datetime.timedelta(seconds=1)
         object_key_expired = "key-object-expired"
         object_key_not_expired = "key-object-not-expired"
 
@@ -1209,7 +1208,7 @@ class TestS3:
         time.sleep(3)
         # head_object does not raise an error for now in LS
         response = s3_client.head_object(Bucket=s3_bucket, Key=object_key_expired)
-        assert response["Expires"] < datetime.datetime.now(timezone("GMT"))
+        assert response["Expires"] < datetime.datetime.now(ZoneInfo("GMT"))
         snapshot.match("head-object-expired", response)
 
         # try to fetch an object which is already expired
@@ -1223,13 +1222,13 @@ class TestS3:
             Bucket=s3_bucket,
             Key=object_key_not_expired,
             Body="foo",
-            Expires=datetime.datetime.now(timezone("GMT")) + datetime.timedelta(hours=1),
+            Expires=datetime.datetime.now(ZoneInfo("GMT")) + datetime.timedelta(hours=1),
         )
 
         # try to fetch has not been expired yet.
         resp = s3_client.get_object(Bucket=s3_bucket, Key=object_key_not_expired)
         assert "Expires" in resp
-        assert resp["Expires"] > datetime.datetime.now(timezone("GMT"))
+        assert resp["Expires"] > datetime.datetime.now(ZoneInfo("GMT"))
         snapshot.match("get-object-not-yet-expired", resp)
 
     @pytest.mark.aws_validated
@@ -2710,7 +2709,9 @@ class TestS3PresignedUrl:
     def test_post_object_with_files(self, s3_client, s3_bucket):
         object_key = "test-presigned-post-key"
 
-        body = b"something body"
+        body = (
+            b"0" * 70_000
+        )  # make sure the payload size is large to force chunking in our internal implementation
 
         presigned_request = s3_client.generate_presigned_post(
             Bucket=s3_bucket,
@@ -3206,6 +3207,7 @@ class TestS3PresignedUrl:
         )
         # Content-Type, Content-MD5 and Date are specific headers for SigV2 and are checked
         # others are not verified in the signature
+        # Manually set the content-type for it to be added to the signature
         presigned_url = presigned_client.generate_presigned_url(
             "put_object",
             Params={
@@ -3215,7 +3217,7 @@ class TestS3PresignedUrl:
             },
             ExpiresIn=10,
         )
-
+        # Use the pre-signed URL with the right ContentType
         response = requests.put(
             presigned_url,
             data="test_data",
@@ -3224,6 +3226,7 @@ class TestS3PresignedUrl:
         assert not response.content
         assert response.status_code == 200
 
+        # Use the pre-signed URL with the wrong ContentType
         response = requests.put(
             presigned_url,
             data="test_data",
@@ -3235,6 +3238,12 @@ class TestS3PresignedUrl:
         exception["StatusCode"] = response.status_code
         snapshot.match("content-type-exception", exception)
 
+        if signature_version == "s3":
+            # we sleep 1 second to allow the StringToSign value in the exception change between both call
+            # (timestamped value, to avoid the test being flaky)
+            time.sleep(1.1)
+
+        # regenerate a new pre-signed URL with no content-type specified
         presigned_url = presigned_client.generate_presigned_url(
             "put_object",
             Params={
@@ -3245,6 +3254,7 @@ class TestS3PresignedUrl:
             ExpiresIn=10,
         )
 
+        # send the pre-signed URL with the right ContentEncoding
         response = requests.put(
             presigned_url,
             data="test_data",
@@ -3253,24 +3263,37 @@ class TestS3PresignedUrl:
         assert not response.content
         assert response.status_code == 200
 
+        # send the pre-signed URL with the right ContentEncoding but a new ContentType
+        # should fail with SigV2 and succeed with SigV4
         response = requests.put(
             presigned_url,
             data="test_data",
-            headers={"Content-Encoding": "gzip"},
+            headers={"Content-Encoding": "identity", "Content-Type": "text/xml"},
         )
-        exception = xmltodict.parse(response.content) if response.content else {}
-        exception["StatusCode"] = response.status_code
-        snapshot.match("content-encoding-response", exception)
+        if not is_old_provider() and signature_version == "s3":
+            assert response.status_code == 403
+        else:
+            assert response.status_code == 200
 
-        # try without the headers (included in the query string with sigV2 but not sigV4)
+        exception = xmltodict.parse(response.content) if response.content else {}
+        exception["StatusCode"] = response.status_code
+        snapshot.match("content-type-response", exception)
+
+        # now send the pre-signed URL with the wrong ContentEncoding
+        # should succeed with SigV2 as only hard coded headers are checked
+        # but fail with SigV4 as Content-Encoding was part of the signed headers
         response = requests.put(
             presigned_url,
             data="test_data",
             headers={"Content-Encoding": "gzip"},
         )
+        if signature_version == "s3":
+            assert response.status_code == 200
+        else:
+            assert response.status_code == 403
         exception = xmltodict.parse(response.content) if response.content else {}
         exception["StatusCode"] = response.status_code
-        snapshot.match("missing-content-encoding-response", exception)
+        snapshot.match("wrong-content-encoding-response", exception)
 
     @pytest.mark.aws_validated
     def test_s3_put_presigned_url_same_header_and_qs_parameter(
@@ -3684,7 +3707,7 @@ class TestS3PresignedUrl:
         )
 
         url = _generate_presigned_url(client, {"Bucket": bucket_name, "Key": object_key}, expires=1)
-        time.sleep(1)
+        time.sleep(2)
         response = requests.get(url)
         assert response.status_code == 403
         exception = xmltodict.parse(response.content)
@@ -5106,7 +5129,7 @@ def _s3_client_custom_config(conf: Config, endpoint_url: str = None):
 
 def _endpoint_url(region: str = "", localstack_host: str = None) -> str:
     if not region:
-        region = config.DEFAULT_REGION
+        region = config.AWS_REGION_US_EAST_1
     if os.environ.get("TEST_TARGET") == "AWS_CLOUD":
         if region == "us-east-1":
             return "https://s3.amazonaws.com"
@@ -5124,14 +5147,14 @@ def _bucket_url(bucket_name: str, region: str = "", localstack_host: str = None)
 def _website_bucket_url(bucket_name: str):
     # TODO depending on region the syntax of the website vary (dot vs dash before region)
     if os.environ.get("TEST_TARGET") == "AWS_CLOUD":
-        region = config.DEFAULT_REGION
+        region = config.AWS_REGION_US_EAST_1
         return f"http://{bucket_name}.s3-website-{region}.amazonaws.com"
     return _bucket_url_vhost(bucket_name, localstack_host=constants.S3_STATIC_WEBSITE_HOSTNAME)
 
 
 def _bucket_url_vhost(bucket_name: str, region: str = "", localstack_host: str = None) -> str:
     if not region:
-        region = config.DEFAULT_REGION
+        region = config.AWS_REGION_US_EAST_1
     if os.environ.get("TEST_TARGET") == "AWS_CLOUD":
         if region == "us-east-1":
             return f"https://{bucket_name}.s3.amazonaws.com"

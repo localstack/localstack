@@ -193,7 +193,12 @@ def download_and_extract(archive_url, target_dir, retries=0, sleep=3, tmp_archiv
                 time.sleep(sleep)
     if ext == ".zip":
         unzip(tmp_archive, target_dir)
-    elif ext in [".bz2", ".gz", ".tgz"]:
+    elif ext in (
+        ".bz2",
+        ".gz",
+        ".tgz",
+        ".xz",
+    ):
         untar(tmp_archive, target_dir)
     else:
         raise Exception(f"Unsupported archive format: {ext}")

@@ -1,0 +1,246 @@
+{
+  "tests/integration/cloudformation/api/test_stack_policies.py::TestStackPolicy::test_empty_policy": {
+    "recorded-date": "10-11-2022, 12:40:34",
+    "recorded-content": {
+      "policy": {
+        "StackPolicyBody": {},
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/integration/cloudformation/api/test_stack_policies.py::TestStackPolicy::test_invalid_policy": {
+    "recorded-date": "14-11-2022, 15:13:18",
+    "recorded-content": {
+      "error": {
+        "Code": "ValidationError",
+        "Message": "Error validating stack policy: Invalid stack policy",
+        "Type": "Sender"
+      }
+    }
+  },
+  "tests/integration/cloudformation/api/test_stack_policies.py::TestStackPolicy::test_policy_lifecycle": {
+    "recorded-date": "15-11-2022, 16:02:20",
+    "recorded-content": {
+      "initial_policy": {
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "policy": {
+        "StackPolicyBody": {
+          "Statement": [
+            {
+              "Effect": "Allow",
+              "Action": "Update:*",
+              "Principal": "*",
+              "Resource": "*"
+            }
+          ]
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "policy_updated": {
+        "StackPolicyBody": {
+          "Statement": [
+            {
+              "Effect": "Deny",
+              "Action": "Update:*",
+              "Principal": "*",
+              "Resource": "*"
+            }
+          ]
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "policy_deleted": {
+        "StackPolicyBody": {},
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/integration/cloudformation/api/test_stack_policies.py::TestStackPolicy::test_set_policy_with_url": {
+    "recorded-date": "11-11-2022, 13:58:17",
+    "recorded-content": {
+      "policy": {
+        "StackPolicyBody": {
+          "Statement": [
+            {
+              "Effect": "Allow",
+              "Action": "Update:*",
+              "Principal": "*",
+              "Resource": "*"
+            }
+          ]
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/integration/cloudformation/api/test_stack_policies.py::TestStackPolicy::test_set_invalid_policy_with_url": {
+    "recorded-date": "11-11-2022, 14:07:44",
+    "recorded-content": {
+      "error": {
+        "Error": {
+          "Code": "ValidationError",
+          "Message": "Error validating stack policy: Invalid stack policy",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/integration/cloudformation/api/test_stack_policies.py::TestStackPolicy::test_set_policy_both_policy_and_url": {
+    "recorded-date": "11-11-2022, 14:19:19",
+    "recorded-content": {
+      "error": {
+        "Error": {
+          "Code": "ValidationError",
+          "Message": "You cannot specify both StackPolicyURL and StackPolicyBody",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/integration/cloudformation/api/test_stack_policies.py::TestStackPolicy::test_set_empty_policy_with_url": {
+    "recorded-date": "11-11-2022, 14:25:18",
+    "recorded-content": {
+      "policy": {
+        "StackPolicyBody": {},
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/integration/cloudformation/api/test_stack_policies.py::TestStackPolicy::test_not_json_policy": {
+    "recorded-date": "21-11-2022, 15:48:27",
+    "recorded-content": {
+      "error": {
+        "Error": {
+          "Code": "ValidationError",
+          "Message": "Error validating stack policy: Invalid stack policy",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/integration/cloudformation/api/test_stack_policies.py::TestStackPolicy::test_different_principal_attribute": {
+    "recorded-date": "16-11-2022, 11:01:36",
+    "recorded-content": {
+      "error": {
+        "Code": "ValidationError",
+        "Message": "Error validating stack policy: Invalid stack policy",
+        "Type": "Sender"
+      }
+    }
+  },
+  "tests/integration/cloudformation/api/test_stack_policies.py::TestStackPolicy::test_different_action_attribute": {
+    "recorded-date": "21-11-2022, 15:44:16",
+    "recorded-content": {
+      "error": {
+        "Error": {
+          "Code": "ValidationError",
+          "Message": "Error validating stack policy: Invalid stack policy",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/integration/cloudformation/api/test_stack_policies.py::TestStackPolicy::test_create_stack_with_policy": {
+    "recorded-date": "16-11-2022, 15:42:23",
+    "recorded-content": {
+      "policy": {
+        "StackPolicyBody": {
+          "Statement": [
+            {
+              "Effect": "Allow",
+              "Action": "Update:*",
+              "Principal": "*",
+              "Resource": "*"
+            }
+          ]
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/integration/cloudformation/api/test_stack_policies.py::TestStackPolicy::test_set_policy_with_update_operation": {
+    "recorded-date": "17-11-2022, 11:04:31",
+    "recorded-content": {
+      "policy": {
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "policy_after_update": {
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/integration/cloudformation/api/test_stack_policies.py::TestStackPolicy::test_policy_during_update": {
+    "recorded-date": "17-11-2022, 11:09:28",
+    "recorded-content": {
+      "policy_during_update": {
+        "StackPolicyBody": {
+          "Statement": [
+            {
+              "Effect": "Deny",
+              "Action": "Update:*",
+              "Principal": "*",
+              "Resource": "*"
+            }
+          ]
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "policy_after_update": {
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  }
+}

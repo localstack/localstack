@@ -1,66 +1,71 @@
 import logging
-from typing import Optional
+import threading
+from typing import Dict, Optional
 
-from localstack import config
-from localstack.services.infra import log_startup_message, start_proxy_for_service
-from localstack.services.kinesis import kinesalite_server, kinesis_mock_server
-from localstack.services.plugins import SERVICE_PLUGINS
+from localstack.aws.accounts import get_aws_account_id
+from localstack.constants import DEFAULT_AWS_ACCOUNT_ID
+from localstack.services.infra import log_startup_message
+from localstack.services.kinesis import kinesis_mock_server
 from localstack.utils.aws import aws_stack
 from localstack.utils.serving import Server
+from localstack.utils.sync import SynchronizedDefaultDict
 
 LOG = logging.getLogger(__name__)
-_server: Optional[Server] = None  # server singleton
+
+_SERVERS: Dict[str, Server] = {}  # server singleton keyed by account IDs
+_LOCKS = SynchronizedDefaultDict(threading.RLock)
 
 
 def start_kinesis(
-    port=None, update_listener=None, asynchronous=None, persist_path: Optional[str] = None
+    port=None,
+    update_listener=None,
+    asynchronous=None,
+    persist_path: Optional[str] = None,
+    account_id=None,
 ) -> Server:
     """
-    Creates a singleton of a Kinesis server and starts it on a new thread. Uses either Kinesis Mock or Kinesalite
-    based on value of config.KINESIS_PROVIDER
+    Creates a singleton of a Kinesis server and starts it on a new thread. Uses Kinesis Mock
 
     :param persist_path: path to persist data to
     :param port: port to run server on. Selects an arbitrary available port if None.
     :param update_listener: an update listener instance for server proxy
     :param asynchronous: currently unused but required by localstack.services.plugins.Service.start().
     TODO: either make use of this param or refactor Service.start() to not pass it.
+    :param account_id: account ID to use for this instance of Kinesis-Mock
     :returns: A running Kinesis server instance
-    :raises: ValueError: Value of config.KINESIS_PROVIDER is not recognized as one of "kinesis-mock" or "kinesalite"
     """
-    global _server
-    if not _server:
-        if config.KINESIS_PROVIDER == "kinesis-mock":
-            _server = kinesis_mock_server.create_kinesis_mock_server(persist_path=persist_path)
-        elif config.KINESIS_PROVIDER == "kinesalite":
-            _server = kinesalite_server.create_kinesalite_server(persist_path=persist_path)
-        else:
-            raise ValueError('Unsupported Kinesis provider "%s"' % config.KINESIS_PROVIDER)
+    global _SERVERS
 
-    _server.start()
-    log_startup_message("Kinesis")
-    port = port or config.service_port("kinesis")
+    account_id = account_id or get_aws_account_id()
 
-    # TODO: flip back to "!= kinesis:asf" to be sure we have the old control path when merging
-    if SERVICE_PLUGINS.get("kinesis").name() == "kinesis:legacy":
-        start_proxy_for_service(
-            "kinesis",
-            port,
-            backend_port=_server.port,
-            update_listener=update_listener,
-        )
+    with _LOCKS[account_id]:
+        if account_id not in _SERVERS:
+            # To support multi-accounts we use separate instance of Kinesis-Mock per account
+            # See https://github.com/etspaceman/kinesis-mock/issues/377
+            if not _SERVERS.get(account_id):
+                _SERVERS[account_id] = kinesis_mock_server.create_kinesis_mock_server(
+                    account_id=account_id, persist_path=persist_path
+                )
 
-    return _server
+            _SERVERS[account_id].start()
+            log_startup_message("Kinesis")
+
+            check_kinesis(account_id=account_id)
+
+    return _SERVERS[account_id]
 
 
-def check_kinesis(expect_shutdown=False, print_error=False):
+def check_kinesis(
+    expect_shutdown=False, print_error=False, account_id: str = DEFAULT_AWS_ACCOUNT_ID
+):
     out = None
     if not expect_shutdown:
-        assert _server
+        assert _SERVERS.get(account_id)
 
     try:
-        _server.wait_is_up()
+        _SERVERS[account_id].wait_is_up()
         out = aws_stack.connect_to_service(
-            service_name="kinesis", endpoint_url=_server.url
+            service_name="kinesis", endpoint_url=_SERVERS[account_id].url
         ).list_streams()
     except Exception:
         if print_error:
@@ -71,17 +76,5 @@ def check_kinesis(expect_shutdown=False, print_error=False):
         assert out is not None and isinstance(out.get("StreamNames"), list)
 
 
-def is_kinesis_running() -> bool:
-    """
-    Checks if there is a currently running Kinesis server instance.
-    Currently, used by localstack_ext/utils/cloud_pods.py
-    :returns: True is there is a running Kinesis server instance, False otherwise
-    """
-    global _server
-    if _server is None:
-        return False
-    return _server.is_running()
-
-
-def get_server():
-    return _server
+def get_server(account_id: str) -> Server:
+    return _SERVERS[account_id]

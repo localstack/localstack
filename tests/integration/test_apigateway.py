@@ -17,6 +17,7 @@ from requests.structures import CaseInsensitiveDict
 
 from localstack import config
 from localstack.aws.accounts import get_aws_account_id
+from localstack.aws.api.lambda_ import Runtime
 from localstack.aws.handlers import cors
 from localstack.config import get_edge_url
 from localstack.constants import (
@@ -36,19 +37,15 @@ from localstack.services.apigateway.helpers import (
     path_based_url,
 )
 from localstack.services.awslambda.lambda_api import add_event_source, use_docker
-from localstack.services.awslambda.lambda_utils import (
-    LAMBDA_RUNTIME_NODEJS12X,
-    LAMBDA_RUNTIME_NODEJS14X,
-    LAMBDA_RUNTIME_PYTHON36,
-    LAMBDA_RUNTIME_PYTHON39,
-)
 from localstack.services.generic_proxy import ProxyListener
 from localstack.services.infra import start_proxy
 from localstack.utils import testutil
-from localstack.utils.aws import aws_stack
+from localstack.utils.aws import arns, aws_stack, queries
+from localstack.utils.aws import resources as resource_util
 from localstack.utils.common import clone, get_free_tcp_port, json_safe, load_file
 from localstack.utils.common import safe_requests as requests
 from localstack.utils.common import select_attributes, short_uid, to_str
+from localstack.utils.sync import retry
 from tests.integration.apigateway_fixtures import (
     _client,
     api_invoke_url,
@@ -65,6 +62,7 @@ from tests.integration.apigateway_fixtures import (
     get_rest_api_resources,
     put_rest_api,
     update_rest_api_deployment,
+    update_rest_api_stage,
 )
 
 from ..unit.test_apigateway import load_test_resource
@@ -79,6 +77,22 @@ from .awslambda.test_lambda import (
     TEST_LAMBDA_PYTHON_ECHO,
 )
 
+STEPFUNCTIONS_ASSUME_ROLE_POLICY = {
+    "Version": "2012-10-17",
+    "Statement": [
+        {
+            "Effect": "Allow",
+            "Principal": {"Service": "states.amazonaws.com"},
+            "Action": "sts:AssumeRole",
+        }
+    ],
+}
+
+APIGATEWAY_STEPFUNCTIONS_POLICY = {
+    "Version": "2012-10-17",
+    "Statement": [{"Effect": "Allow", "Action": "states:*", "Resource": "*"}],
+}
+
 APIGATEWAY_ASSUME_ROLE_POLICY = {
     "Statement": {
         "Sid": "",
@@ -89,7 +103,7 @@ APIGATEWAY_ASSUME_ROLE_POLICY = {
 }
 APIGATEWAY_LAMBDA_POLICY = {
     "Version": "2012-10-17",
-    "Statement": [{"Effect": "Allow", "Action": "lambda:InvokeFunction", "Resource": "*"}],
+    "Statement": [{"Effect": "Allow", "Action": "lambda:*", "Resource": "*"}],
 }
 
 THIS_FOLDER = os.path.dirname(os.path.realpath(__file__))
@@ -183,7 +197,10 @@ class TestAPIGateway:
         assert "Invalid API identifier specified" in e.value.response["Error"]["Message"]
         assert "foobar" in e.value.response["Error"]["Message"]
 
-    def test_create_rest_api_with_custom_id(self, apigateway_client, create_rest_apigw):
+    @pytest.mark.parametrize("url_function", [path_based_url, host_based_url])
+    def test_create_rest_api_with_custom_id(
+        self, apigateway_client, create_rest_apigw, url_function
+    ):
         apigw_name = f"gw-{short_uid()}"
         test_id = "testId123"
         api_id, name, _ = create_rest_apigw(name=apigw_name, tags={TAG_KEY_CUSTOM_ID: test_id})
@@ -193,9 +210,18 @@ class TestAPIGateway:
         assert test_id == api_id
         assert apigw_name == name
 
+        spec_file = load_file(TEST_IMPORT_MOCK_INTEGRATION)
+        apigateway_client.put_rest_api(restApiId=test_id, body=spec_file, mode="overwrite")
+
+        url = url_function(test_id, stage_name="latest", path="/echo/foobar")
+        response = requests.get(url)
+
+        assert response.ok
+        assert response._content == b'{"echo": "foobar", "response": "mocked"}'
+
     def test_api_gateway_kinesis_integration(self):
         # create target Kinesis stream
-        stream = aws_stack.create_kinesis_stream(self.TEST_STREAM_KINESIS_API_GW)
+        stream = resource_util.create_kinesis_stream(self.TEST_STREAM_KINESIS_API_GW)
         stream.wait_for()
 
         # create API Gateway and connect it to the target stream
@@ -236,7 +262,7 @@ class TestAPIGateway:
     def test_api_gateway_sqs_integration_with_event_source(self):
         # create target SQS stream
         queue_name = f"queue-{short_uid()}"
-        queue_url = aws_stack.create_sqs_queue(queue_name)["QueueUrl"]
+        queue_url = resource_util.create_sqs_queue(queue_name)["QueueUrl"]
 
         # create API Gateway and connect it to the target queue
         result = connect_api_gateway_to_sqs(
@@ -250,7 +276,7 @@ class TestAPIGateway:
         self.create_lambda_function(self.TEST_LAMBDA_SQS_HANDLER_NAME)
         event_source_data = {
             "FunctionName": self.TEST_LAMBDA_SQS_HANDLER_NAME,
-            "EventSourceArn": aws_stack.sqs_queue_arn(queue_name),
+            "EventSourceArn": arns.sqs_queue_arn(queue_name),
             "Enabled": True,
         }
         add_event_source(event_source_data)
@@ -283,7 +309,7 @@ class TestAPIGateway:
     def test_api_gateway_sqs_integration(self):
         # create target SQS stream
         queue_name = f"queue-{short_uid()}"
-        aws_stack.create_sqs_queue(queue_name)
+        resource_util.create_sqs_queue(queue_name)
 
         # create API Gateway and connect it to the target queue
         result = connect_api_gateway_to_sqs(
@@ -304,7 +330,7 @@ class TestAPIGateway:
         result = requests.post(url, data=json.dumps(test_data))
         assert 200 == result.status_code
 
-        messages = aws_stack.sqs_receive_message(queue_name)["Messages"]
+        messages = queries.sqs_receive_message(queue_name)["Messages"]
         assert 1 == len(messages)
         assert test_data == json.loads(base64.b64decode(messages[0]["Body"]))
 
@@ -361,9 +387,9 @@ class TestAPIGateway:
         create_lambda_function(
             func_name=fn_name,
             handler_file=TEST_LAMBDA_AWS_PROXY,
-            runtime=LAMBDA_RUNTIME_PYTHON39,
+            runtime=Runtime.python3_9,
         )
-        lambda_arn = aws_stack.lambda_function_arn(fn_name)
+        lambda_arn = arns.lambda_function_arn(fn_name)
 
         api_id, _, root = create_rest_apigw(name="aws lambda api")
         resource_id, _ = create_rest_resource(
@@ -411,7 +437,7 @@ class TestAPIGateway:
         create_lambda_function(
             func_name=fn_name,
             handler_file=TEST_LAMBDA_PYTHON_ECHO,
-            runtime=LAMBDA_RUNTIME_PYTHON39,
+            runtime=Runtime.python3_9,
         )
         lambda_arn = lambda_client.get_function(FunctionName=fn_name)["Configuration"][
             "FunctionArn"
@@ -469,6 +495,12 @@ class TestAPIGateway:
             apigateway_client, restApiId=api_id, stageName="local", deploymentId=deployment_id
         )
 
+        update_rest_api_stage(
+            apigateway_client,
+            restApiId=api_id,
+            stageName="local",
+            patchOperations=[{"op": "replace", "path": "/cacheClusterEnabled", "value": "true"}],
+        )
         aws_account_id = sts_client.get_caller_identity()["Account"]
         source_arn = f"arn:aws:execute-api:{region_name}:{aws_account_id}:{api_id}/*/*/test"
 
@@ -630,7 +662,7 @@ class TestAPIGateway:
         """
         self.create_lambda_function(fn_name)
         # create API Gateway and connect it to the Lambda proxy backend
-        lambda_uri = aws_stack.lambda_function_arn(fn_name)
+        lambda_uri = arns.lambda_function_arn(fn_name)
         invocation_uri = "arn:aws:apigateway:%s:lambda:path/2015-03-31/functions/%s/invocations"
         target_uri = invocation_uri % (aws_stack.get_region(), lambda_uri)
 
@@ -741,15 +773,17 @@ class TestAPIGateway:
             self.API_PATH_LAMBDA_PROXY_BACKEND_ANY_METHOD_WITH_PATH_PARAM,
         )
 
-    def test_api_gateway_lambda_asynchronous_invocation(self, apigateway_client, create_rest_apigw):
+    def test_api_gateway_lambda_asynchronous_invocation(
+        self, apigateway_client, create_rest_apigw, create_lambda_function
+    ):
         api_gateway_name = f"api_gateway_{short_uid()}"
         rest_api_id, _, _ = create_rest_apigw(name=api_gateway_name)
 
         fn_name = f"test-{short_uid()}"
-        testutil.create_lambda_function(
-            handler_file=TEST_LAMBDA_NODEJS, func_name=fn_name, runtime=LAMBDA_RUNTIME_NODEJS12X
+        create_lambda_function(
+            handler_file=TEST_LAMBDA_NODEJS, func_name=fn_name, runtime=Runtime.nodejs16_x
         )
-        lambda_arn = aws_stack.lambda_function_arn(fn_name)
+        lambda_arn = arns.lambda_function_arn(fn_name)
 
         spec_file = load_file(TEST_IMPORT_REST_API_ASYNC_LAMBDA)
         spec_file = spec_file.replace("${lambda_invocation_arn}", lambda_arn)
@@ -818,8 +852,8 @@ class TestAPIGateway:
         # create Lambda function
         lambda_name = f"apigw-lambda-{short_uid()}"
         self.create_lambda_function(lambda_name)
-        lambda_uri = aws_stack.lambda_function_arn(lambda_name)
-        target_uri = aws_stack.apigateway_invocations_arn(lambda_uri)
+        lambda_uri = arns.lambda_function_arn(lambda_name)
+        target_uri = arns.apigateway_invocations_arn(lambda_uri)
 
         # create REST API
         api_id, _, _ = create_rest_apigw(name="test-api", description="")
@@ -853,7 +887,6 @@ class TestAPIGateway:
             "uri",
             "cacheNamespace",
             "timeoutInMillis",
-            "contentHandling",
             "requestParameters",
         ]
         assert 201 == rs["ResponseMetadata"]["HTTPStatusCode"]
@@ -912,11 +945,11 @@ class TestAPIGateway:
         create_lambda_function(
             func_name=lambda_name,
             zip_file=testutil.create_zip_file(TEST_LAMBDA_NODEJS_APIGW_502, get_content=True),
-            runtime=LAMBDA_RUNTIME_NODEJS14X,
+            runtime=Runtime.nodejs16_x,
             handler="apigw_502.handler",
         )
 
-        lambda_uri = aws_stack.lambda_function_arn(lambda_name)
+        lambda_uri = arns.lambda_function_arn(lambda_name)
         target_uri = f"arn:aws:apigateway:{aws_stack.get_region()}:lambda:path/2015-03-31/functions/{lambda_uri}/invocations"
         result = testutil.connect_api_gateway_to_http_with_lambda_proxy(
             "test_gateway",
@@ -946,8 +979,8 @@ class TestAPIGateway:
         self.create_lambda_function(fn_name)
 
         # create API Gateway and connect it to the Lambda proxy backend
-        lambda_uri = aws_stack.lambda_function_arn(fn_name)
-        target_uri = aws_stack.apigateway_invocations_arn(lambda_uri)
+        lambda_uri = arns.lambda_function_arn(fn_name)
+        target_uri = arns.apigateway_invocations_arn(lambda_uri)
 
         result = testutil.connect_api_gateway_to_http_with_lambda_proxy(
             "test_gateway3",
@@ -979,7 +1012,7 @@ class TestAPIGateway:
         # create Lambda function
         lambda_name = f"apigw-lambda-{short_uid()}"
         self.create_lambda_function(lambda_name)
-        lambda_uri = aws_stack.lambda_function_arn(lambda_name)
+        lambda_uri = arns.lambda_function_arn(lambda_name)
 
         # create REST API
         api_id, _, _ = create_rest_apigw(name="test-api", description="")
@@ -1460,9 +1493,41 @@ class TestAPIGateway:
         assert "/pets" in paths
         assert "/pets/{petId}" in paths
 
-    def test_step_function_integrations(self, create_rest_apigw, apigateway_client):
-        sfn_client = aws_stack.create_external_boto_client("stepfunctions")
-        lambda_client = aws_stack.create_external_boto_client("lambda")
+    @pytest.mark.aws_validated
+    @pytest.mark.parametrize("action", ["StartExecution", "DeleteStateMachine"])
+    def test_apigateway_with_step_function_integration(
+        self,
+        action,
+        apigateway_client,
+        sts_client,
+        create_lambda_function,
+        create_rest_apigw,
+        stepfunctions_client,
+        create_iam_role_with_policy,
+    ):
+        region_name = apigateway_client._client_config.region_name
+        aws_account_id = sts_client.get_caller_identity()["Account"]
+
+        # create lambda
+        fn_name = f"lambda-sfn-apigw-{short_uid()}"
+        create_lambda_function(
+            handler_file=TEST_LAMBDA_PYTHON_ECHO,
+            func_name=fn_name,
+            runtime=Runtime.python3_9,
+        )
+        lambda_arn = arns.lambda_function_arn(
+            function_name=fn_name, account_id=aws_account_id, region_name=region_name
+        )
+
+        # create state machine and permissions for step function to invoke lambda
+        role_name = f"sfn_role-{short_uid()}"
+        role_arn = arns.role_arn(role_name, account_id=aws_account_id)
+        create_iam_role_with_policy(
+            RoleName=role_name,
+            PolicyName=f"sfn-role-policy-{short_uid()}",
+            RoleDefinition=STEPFUNCTIONS_ASSUME_ROLE_POLICY,
+            PolicyDefinition=APIGATEWAY_LAMBDA_POLICY,
+        )
 
         state_machine_name = f"test-{short_uid()}"
         state_machine_def = {
@@ -1472,144 +1537,115 @@ class TestAPIGateway:
                 "step1": {"Type": "Task", "Resource": "__tbd__", "End": True},
             },
         }
-
-        # create state machine
-        fn_name = f"sfn-apigw-{short_uid()}"
-        testutil.create_lambda_function(
-            handler_file=TEST_LAMBDA_PYTHON_ECHO,
-            func_name=fn_name,
-            runtime=LAMBDA_RUNTIME_PYTHON36,
-        )
-        role_arn = aws_stack.role_arn("sfn_role")
-
-        # create state machine definition
-        definition = clone(state_machine_def)
-        lambda_arn_1 = aws_stack.lambda_function_arn(fn_name)
-        definition["States"]["step1"]["Resource"] = lambda_arn_1
-        definition = json.dumps(definition)
-
-        # create state machine
-        result = sfn_client.create_state_machine(
-            name=state_machine_name, definition=definition, roleArn=role_arn
+        state_machine_def["States"]["step1"]["Resource"] = lambda_arn
+        result = stepfunctions_client.create_state_machine(
+            name=state_machine_name,
+            definition=json.dumps(state_machine_def),
+            roleArn=role_arn,
+            type="EXPRESS",
         )
         sm_arn = result["stateMachineArn"]
 
-        # create REST API and method
-        rest_api, _, _ = create_rest_apigw(name="test", description="test")
-        resources = apigateway_client.get_resources(restApiId=rest_api)
-        root_resource_id = resources["items"][0]["id"]
+        # create REST API with integrations
+        rest_api, _, root_id = create_rest_apigw(
+            name=f"test-{short_uid()}", description="test-step-function-integration"
+        )
         apigateway_client.put_method(
             restApiId=rest_api,
-            resourceId=root_resource_id,
+            resourceId=root_id,
             httpMethod="POST",
             authorizationType="NONE",
         )
+        create_rest_api_method_response(
+            apigateway_client,
+            restApiId=rest_api,
+            resourceId=root_id,
+            httpMethod="POST",
+            statusCode="200",
+        )
 
-        def _prepare_method_integration(
-            integr_kwargs=None, resp_templates=None, action="StartExecution", overwrite=False
-        ):
-            if integr_kwargs is None:
-                integr_kwargs = {}
-            if resp_templates is None:
-                resp_templates = {}
-            if overwrite:
-                apigateway_client.delete_integration(
-                    restApiId=rest_api,
-                    resourceId=resources["items"][0]["id"],
-                    httpMethod="POST",
-                )
-            uri = f"arn:aws:apigateway:{aws_stack.get_region()}:states:action/{action}"
+        # give permission to api gateway to invoke step function
+        uri = f"arn:aws:apigateway:{region_name}:states:action/{action}"
+        assume_role_arn = create_iam_role_with_policy(
+            RoleName=f"role-apigw-{short_uid()}",
+            PolicyName=f"policy-apigw-{short_uid()}",
+            RoleDefinition=APIGATEWAY_ASSUME_ROLE_POLICY,
+            PolicyDefinition=APIGATEWAY_STEPFUNCTIONS_POLICY,
+        )
+
+        def _prepare_integration(request_template=None, response_template=None):
             apigateway_client.put_integration(
                 restApiId=rest_api,
-                resourceId=root_resource_id,
+                resourceId=root_id,
                 httpMethod="POST",
                 integrationHttpMethod="POST",
                 type="AWS",
                 uri=uri,
-                **integr_kwargs,
+                credentials=assume_role_arn,
+                requestTemplates=request_template,
             )
-            if resp_templates:
-                apigateway_client.put_integration_response(
-                    restApiId=rest_api,
-                    resourceId=root_resource_id,
-                    selectionPattern="",
-                    responseTemplates=resp_templates,
-                    httpMethod="POST",
-                    statusCode="200",
-                )
 
-        # STEP 1: test integration with request template
+            apigateway_client.put_integration_response(
+                restApiId=rest_api,
+                resourceId=root_id,
+                selectionPattern="",
+                responseTemplates=response_template,
+                httpMethod="POST",
+                statusCode="200",
+            )
 
-        _prepare_method_integration(
-            integr_kwargs={
-                "requestTemplates": {
+        test_data = {"test": "test-value"}
+        url = api_invoke_url(api_id=rest_api, stage="dev", path="/")
+        match action:
+            case "StartExecution":
+                req_template = {
                     "application/json": """
-                    #set($data = $util.escapeJavaScript($input.json('$')))
-                    {"input": $data, "stateMachineArn": "%s"}
-                    """
+                            #set($data = $util.escapeJavaScript($input.json('$')))
+                            {"input": "$data", "stateMachineArn": "%s"}
+                        """
                     % sm_arn
                 }
-            }
-        )
+                _prepare_integration(req_template, response_template={})
+                apigateway_client.create_deployment(restApiId=rest_api, stageName="dev")
+                # invoke stepfunction via API GW, assert results
 
-        # invoke stepfunction via API GW, assert results
-        apigateway_client.create_deployment(restApiId=rest_api, stageName="dev")
-        url = path_based_url(api_id=rest_api, stage_name="dev", path="/")
-        test_data = {"test": "test-value"}
-        resp = requests.post(url, data=json.dumps(test_data))
-        assert 200 == resp.status_code
-        assert "executionArn" in resp.content.decode()
-        assert "startDate" in resp.content.decode()
+                def _invoke_start_step_function():
+                    resp = requests.post(url, data=json.dumps(test_data))
+                    assert resp.ok
+                    content = json.loads(to_str(resp.content.decode()))
+                    assert "executionArn" in content
+                    assert "startDate" in content
 
-        # STEP 2: test integration without request template
+                retry(_invoke_start_step_function, retries=15, sleep=0.8)
 
-        _prepare_method_integration(overwrite=True)
+            case "StartSyncExecution":
+                resp_template = {APPLICATION_JSON: "$input.path('$.output')"}
+                _prepare_integration({}, resp_template)
+                apigateway_client.create_deployment(restApiId=rest_api, stageName="dev")
+                input_data = {
+                    "input": json.dumps(test_data),
+                    "name": "MyExecution",
+                    "stateMachineArn": sm_arn,
+                }
 
-        test_data_1 = {
-            "input": json.dumps(test_data),
-            "name": "MyExecution",
-            "stateMachineArn": sm_arn,
-        }
+                def _invoke_start_sync_step_function():
+                    input_data["name"] += "1"
+                    resp = requests.post(url, data=json.dumps(input_data))
+                    assert resp.ok
+                    content = json.loads(to_str(resp.content.decode()))
+                    assert test_data == content
 
-        # invoke stepfunction via API GW, assert results
-        resp = requests.post(url, data=json.dumps(test_data_1))
-        assert 200 == resp.status_code
-        assert "executionArn" in resp.content.decode()
-        assert "startDate" in resp.content.decode()
+                retry(_invoke_start_sync_step_function, retries=15, sleep=0.8)
 
-        # STEP 3: test integration with synchronous execution
+            case "DeleteStateMachine":
+                _prepare_integration({}, {})
+                apigateway_client.create_deployment(restApiId=rest_api, stageName="dev")
 
-        _prepare_method_integration(overwrite=True, action="StartSyncExecution")
+                def _invoke_step_function():
+                    resp = requests.post(url, data=json.dumps({"stateMachineArn": sm_arn}))
+                    assert resp.ok
 
-        # invoke stepfunction via API GW, assert results
-        test_data_1["name"] += "1"
-        resp = requests.post(url, data=json.dumps(test_data_1))
-        assert 200 == resp.status_code
-        content = json.loads(to_str(resp.content.decode()))
-        assert "SUCCEEDED" == content.get("status")
-        assert test_data == json.loads(content.get("output"))
-
-        # STEP 4: test integration with synchronous execution and response templates
-
-        resp_templates = {APPLICATION_JSON: "$input.path('$.output')"}
-        _prepare_method_integration(
-            resp_templates=resp_templates, overwrite=True, action="StartSyncExecution"
-        )
-
-        # invoke stepfunction via API GW, assert results
-        test_data_1["name"] += "2"
-        resp = requests.post(url, data=json.dumps(test_data_1))
-        assert 200 == resp.status_code
-        assert test_data == json.loads(to_str(resp.content.decode()))
-
-        _prepare_method_integration(overwrite=True, action="DeleteStateMachine")
-
-        # Remove state machine with API GW
-        resp = requests.post(url, data=json.dumps({"stateMachineArn": sm_arn}))
-        assert 200 == resp.status_code
-
-        # Clean up
-        lambda_client.delete_function(FunctionName=fn_name)
+                retry(_invoke_step_function, retries=15, sleep=0.8)
 
     def test_api_gateway_http_integration_with_path_request_parameter(
         self, apigateway_client, create_rest_apigw
@@ -1702,7 +1738,7 @@ class TestAPIGateway:
         api_id, _, _ = create_rest_apigw(name=apigateway_name)
 
         try:
-            aws_stack.get_or_create_bucket(bucket_name)
+            resource_util.get_or_create_bucket(bucket_name)
             s3_client.put_object(
                 Bucket=bucket_name,
                 Key=object_name,
@@ -1739,7 +1775,7 @@ class TestAPIGateway:
 
         url = path_based_url(api_id=api_id, stage_name=self.TEST_STAGE_NAME, path="/")
         result = requests.options(url)
-        assert result.status_code < 400
+        assert result.ok
         assert "Origin" == result.headers.get("vary")
         assert "POST,OPTIONS" == result.headers.get("Access-Control-Allow-Methods")
 
@@ -1773,11 +1809,11 @@ class TestAPIGateway:
             zip_file=testutil.create_zip_file(
                 TEST_LAMBDA_NODEJS_APIGW_INTEGRATION, get_content=True
             ),
-            runtime=LAMBDA_RUNTIME_NODEJS14X,
+            runtime=Runtime.nodejs16_x,
             handler="apigw_integration.handler",
         )
 
-        lambda_uri = aws_stack.lambda_function_arn(lambda_name)
+        lambda_uri = arns.lambda_function_arn(lambda_name)
         target_uri = f"arn:aws:apigateway:{aws_stack.get_region()}:lambda:path/2015-03-31/functions/{lambda_uri}/invocations"
         result = testutil.connect_api_gateway_to_http_with_lambda_proxy(
             "test_gateway",
@@ -1806,7 +1842,7 @@ class TestAPIGateway:
         )
 
         test_role = "test-s3-role"
-        role_arn = aws_stack.role_arn(role_name=test_role)
+        role_arn = arns.role_arn(role_name=test_role)
         resources = apigw_client.get_resources(restApiId=api_id)
         # using the root resource '/' directly for this test
         root_resource_id = resources["items"][0]["id"]
@@ -1865,7 +1901,7 @@ class TestAPIGateway:
                 },
             ]
         }
-        return aws_stack.create_api_gateway(
+        return resource_util.create_api_gateway(
             name=gateway_name, resources=resources, stage_name=self.TEST_STAGE_NAME
         )
 
@@ -1897,7 +1933,7 @@ class TestAPIGateway:
             }
             for method in methods
         ]
-        return aws_stack.create_api_gateway(
+        return resource_util.create_api_gateway(
             name=gateway_name, resources=resources, stage_name=self.TEST_STAGE_NAME
         )
 
@@ -1906,16 +1942,18 @@ class TestAPIGateway:
         testutil.create_lambda_function(
             handler_file=TEST_LAMBDA_PYTHON, libs=TEST_LAMBDA_LIBS, func_name=fn_name
         )
-
-    def test_apigw_test_invoke_method_api(self, apigateway_client, create_rest_apigw):
         lambda_client = aws_stack.create_external_boto_client("lambda")
+        lambda_client.get_waiter("function_active_v2").wait(FunctionName=fn_name)
 
+    def test_apigw_test_invoke_method_api(
+        self, apigateway_client, create_rest_apigw, create_lambda_function
+    ):
         # create test Lambda
         fn_name = f"test-{short_uid()}"
-        testutil.create_lambda_function(
-            handler_file=TEST_LAMBDA_NODEJS, func_name=fn_name, runtime=LAMBDA_RUNTIME_NODEJS12X
+        create_lambda_function(
+            handler_file=TEST_LAMBDA_NODEJS, func_name=fn_name, runtime=Runtime.nodejs16_x
         )
-        lambda_arn_1 = aws_stack.lambda_function_arn(fn_name)
+        lambda_arn_1 = arns.lambda_function_arn(fn_name)
 
         # create REST API and test resource
         rest_api_id, _, _ = create_rest_apigw(name="test", description="test")
@@ -1967,9 +2005,6 @@ class TestAPIGateway:
         assert "response from" in json.loads(response.get("body")).get("body")
         assert "val123" in json.loads(response.get("body")).get("body")
 
-        # Clean up
-        lambda_client.delete_function(FunctionName=fn_name)
-
     @staticmethod
     def start_http_backend(test_port):
         # test listener for target HTTP backend
@@ -2005,7 +2040,7 @@ class TestAPIGateway:
 
         kwargs = {}
         if integration_type == "AWS_PROXY":
-            aws_stack.create_dynamodb_table("MusicCollection", partition_key="id")
+            resource_util.create_dynamodb_table("MusicCollection", partition_key="id")
             kwargs[
                 "uri"
             ] = "arn:aws:apigateway:us-east-1:dynamodb:action/PutItem&Table=MusicCollection"
@@ -2131,32 +2166,30 @@ def test_import_swagger_api(apigateway_client):
     methods = {kk[0] for k, v in resource_methods.items() for kk in v.items()}
     assert methods == {"POST", "OPTIONS", "GET"}
 
-    assert resource_methods.get("/").get("GET")["methodResponses"] == {
-        "200": {
-            "statusCode": "200",
-            "responseModels": None,
-            "responseParameters": {"method.response.header.Content-Type": "'text/html'"},
-        }
+    response_resource = resource_methods.get("/").get("GET").method_responses.get("200")
+    assert response_resource.to_json() == {
+        "statusCode": "200",
+        "responseModels": None,
+        "responseParameters": {"method.response.header.Content-Type": "'text/html'"},
     }
 
-    assert resource_methods.get("pets").get("GET")["methodResponses"] == {
-        "200": {
-            "responseModels": {
-                "application/json": {
-                    "items": {
-                        "properties": {
-                            "id": {"type": "integer"},
-                            "price": {"type": "number"},
-                            "type": {"type": "string"},
-                        },
-                        "type": "object",
+    method_response_resource = resource_methods.get("pets").get("GET").method_responses.get("200")
+    assert method_response_resource.to_json() == {
+        "responseModels": {
+            "application/json": {
+                "items": {
+                    "properties": {
+                        "id": {"type": "integer"},
+                        "price": {"type": "number"},
+                        "type": {"type": "string"},
                     },
-                    "type": "array",
-                }
-            },
-            "responseParameters": {"method.response.header.Access-Control-Allow-Origin": "'*'"},
-            "statusCode": "200",
-        }
+                    "type": "object",
+                },
+                "type": "array",
+            }
+        },
+        "responseParameters": {"method.response.header.Access-Control-Allow-Origin": "'*'"},
+        "statusCode": "200",
     }
 
 
@@ -2198,7 +2231,7 @@ def test_apigateway_rust_lambda(
     apigateway_client.put_method_response(
         restApiId=rest_api_id, resourceId=root_resource_id, httpMethod="GET", statusCode="200"
     )
-    lambda_target_uri = aws_stack.apigateway_invocations_arn(
+    lambda_target_uri = arns.apigateway_invocations_arn(
         lambda_uri=lambda_arn, region_name=apigateway_client.meta.region_name
     )
     apigateway_client.put_integration(
@@ -2263,17 +2296,25 @@ def test_rest_api_multi_region(method, url_function):
     testutil.create_lambda_function(
         handler_file=TEST_LAMBDA_NODEJS,
         func_name=lambda_name,
-        runtime=LAMBDA_RUNTIME_NODEJS14X,
+        runtime=Runtime.nodejs16_x,
         region_name="eu-west-1",
     )
     testutil.create_lambda_function(
         handler_file=TEST_LAMBDA_NODEJS,
         func_name=lambda_name,
-        runtime=LAMBDA_RUNTIME_NODEJS14X,
+        runtime=Runtime.nodejs16_x,
         region_name="us-west-1",
     )
-    lambda_eu_arn = aws_stack.lambda_function_arn(lambda_name, region_name="eu-west-1")
-    uri_eu = aws_stack.apigateway_invocations_arn(lambda_eu_arn, region_name="eu-west-1")
+    lambda_eu_west_1_client = aws_stack.create_external_boto_client(
+        "lambda", region_name="eu-west-1"
+    )
+    lambda_us_west_1_client = aws_stack.create_external_boto_client(
+        "lambda", region_name="us-west-1"
+    )
+    lambda_eu_west_1_client.get_waiter("function_active_v2").wait(FunctionName=lambda_name)
+    lambda_us_west_1_client.get_waiter("function_active_v2").wait(FunctionName=lambda_name)
+    lambda_eu_arn = arns.lambda_function_arn(lambda_name, region_name="eu-west-1")
+    uri_eu = arns.apigateway_invocations_arn(lambda_eu_arn, region_name="eu-west-1")
 
     integration_uri, _ = create_rest_api_integration(
         apigateway_client_eu,
@@ -2285,8 +2326,8 @@ def test_rest_api_multi_region(method, url_function):
         uri=uri_eu,
     )
 
-    lambda_us_arn = aws_stack.lambda_function_arn(lambda_name, region_name="us-west-1")
-    uri_us = aws_stack.apigateway_invocations_arn(lambda_us_arn, region_name="us-west-1")
+    lambda_us_arn = arns.lambda_function_arn(lambda_name, region_name="us-west-1")
+    uri_us = arns.apigateway_invocations_arn(lambda_us_arn, region_name="us-west-1")
 
     integration_uri, _ = create_rest_api_integration(
         apigateway_client_us,
@@ -2374,8 +2415,10 @@ def test_tag_api(apigateway_client, create_rest_apigw):
     tags = {"foo": "bar"}
 
     # add resource tags
-    api_id, _, _ = create_rest_apigw(name=api_name)
-    api_arn = aws_stack.apigateway_restapi_arn(api_id=api_id)
+    api_id, _, _ = create_rest_apigw(name=api_name, tags={TAG_KEY_CUSTOM_ID: "c0stIOm1d"})
+    assert api_id == "c0stIOm1d"
+
+    api_arn = arns.apigateway_restapi_arn(api_id=api_id)
     apigateway_client.tag_resource(resourceArn=api_arn, tags=tags)
 
     # receive and assert tags

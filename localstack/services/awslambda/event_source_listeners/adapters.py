@@ -236,8 +236,11 @@ class EventSourceAsfAdapter(EventSourceAdapter):
             for region in lambda_stores[account_id]:
                 state = lambda_stores[account_id][region]
                 for esm in state.event_source_mappings.values():
-                    if event_source_arn_matches(
-                        mapped=esm.get("EventSourceArn"), searched=source_arn
+                    if (
+                        event_source_arn_matches(
+                            mapped=esm.get("EventSourceArn"), searched=source_arn
+                        )
+                        and esm.get("State", "") == "Enabled"
                     ):
                         results.append(esm.copy())
         return results

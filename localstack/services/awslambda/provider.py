@@ -3,6 +3,7 @@ import dataclasses
 import datetime
 import json
 import logging
+import os
 import threading
 import time
 from typing import IO
@@ -137,7 +138,6 @@ from localstack.services.awslambda.invocation.lambda_models import (
     LAMBDA_LIMITS_CREATE_FUNCTION_REQUEST_SIZE,
     LAMBDA_LIMITS_MAX_FUNCTION_ENVVAR_SIZE_BYTES,
     LAMBDA_MINIMUM_UNRESERVED_CONCURRENCY,
-    AccountLimitUsage,
     AliasRoutingConfig,
     CodeSigningConfig,
     EventInvokeConfig,
@@ -145,6 +145,7 @@ from localstack.services.awslambda.invocation.lambda_models import (
     FunctionResourcePolicy,
     FunctionUrlConfig,
     FunctionVersion,
+    ImageConfig,
     InvocationError,
     LambdaEphemeralStorage,
     Layer,
@@ -164,6 +165,7 @@ from localstack.services.awslambda.invocation.lambda_models import (
 )
 from localstack.services.awslambda.invocation.lambda_service import (
     LambdaService,
+    create_image_code,
     destroy_code_if_not_used,
     lambda_stores,
     store_lambda_archive,
@@ -174,7 +176,9 @@ from localstack.services.awslambda.lambda_utils import validate_filters
 from localstack.services.awslambda.urlrouter import FunctionUrlRouter
 from localstack.services.edge import ROUTER
 from localstack.services.plugins import ServiceLifecycleHook
+from localstack.utils.aws import aws_stack
 from localstack.utils.collections import PaginatedList
+from localstack.utils.files import load_file
 from localstack.utils.strings import get_random_hex, long_uid, short_uid, to_bytes, to_str
 
 LOG = logging.getLogger(__name__)
@@ -241,6 +245,41 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
             )
         # TODO what if version is missing?
         return version
+
+    @staticmethod
+    def _validate_qualifier_expression(qualifier: str) -> None:
+        if not api_utils.is_qualifier_expression(qualifier):
+            raise ValidationException(
+                f"1 validation error detected: Value '{qualifier}' at 'qualifier' failed to satisfy constraint: "
+                f"Member must satisfy regular expression pattern: (|[a-zA-Z0-9$_-]+)"
+            )
+
+    @staticmethod
+    def _resolve_fn_qualifier(resolved_fn: Function, qualifier: str | None) -> tuple[str, str]:
+        """Attempts to resolve a given qualifier and returns a qualifier that exists or
+        raises an appropriate ResourceNotFoundException.
+
+        :param resolved_fn: The resolved lambda function
+        :param qualifier: The qualifier to be resolved or None
+        :return: Tuple of (resolved qualifier, function arn either qualified or unqualified)"""
+        function_name = resolved_fn.function_name
+        # assuming function versions need to live in the same account and region
+        account_id = resolved_fn.latest().id.account
+        region = resolved_fn.latest().id.region
+        fn_arn = api_utils.unqualified_lambda_arn(function_name, account_id, region)
+        if qualifier is not None:
+            fn_arn = api_utils.qualified_lambda_arn(function_name, qualifier, account_id, region)
+            if api_utils.qualifier_is_alias(qualifier):
+                if qualifier not in resolved_fn.aliases:
+                    raise ResourceNotFoundException(f"Cannot find alias arn: {fn_arn}", Type="User")
+            elif api_utils.qualifier_is_version(qualifier) or qualifier == "$LATEST":
+                if qualifier not in resolved_fn.versions:
+                    raise ResourceNotFoundException(f"Function not found: {fn_arn}", Type="User")
+            else:
+                # matches qualifier pattern but invalid alias or version
+                raise ResourceNotFoundException(f"Function not found: {fn_arn}", Type="User")
+        resolved_qualifier = qualifier or "$LATEST"
+        return resolved_qualifier, fn_arn
 
     def _create_version_model(
         self,
@@ -322,6 +361,12 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
                 id=new_id,
             )
             function.versions[next_version] = new_version
+            # Any Lambda permission for $LATEST (if existing) receives a new revision id upon publishing a new version.
+            # TODO: test revision id behavior for versions, permissions, etc because it seems they share the same revid
+            if "$LATEST" in function.permissions:
+                function.permissions[
+                    "$LATEST"
+                ].revision_id = FunctionResourcePolicy.new_revision_id()
         return new_version, True
 
     def _publish_version_from_existing_version(
@@ -495,8 +540,10 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
             )
             # save function code to s3
             code = None
+            image = None
+            image_config = None
+            request_code = request.get("Code")
             if package_type == PackageType.Zip:
-                request_code = request["Code"]
                 # TODO verify if correct combination of code is set
                 if zip_file := request_code.get("ZipFile"):
                     code = store_lambda_archive(
@@ -518,6 +565,18 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
                     )
                 else:
                     raise ServiceException("Gotta have s3 bucket or zip file")
+            elif package_type == PackageType.Image:
+                image = request_code.get("ImageUri")
+                if not image:
+                    raise ServiceException("Gotta have an image when package type is image")
+                image = create_image_code(image_uri=image)
+
+                image_config_req = request.get("ImageConfig", {})
+                image_config = ImageConfig(
+                    command=image_config_req.get("Command"),
+                    entrypoint=image_config_req.get("EntryPoint"),
+                    working_directory=image_config_req.get("WorkingDirectory"),
+                )
 
             version = FunctionVersion(
                 id=arn,
@@ -526,15 +585,16 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
                     description=request.get("Description", ""),
                     role=request["Role"],
                     timeout=request.get("Timeout", LAMBDA_DEFAULT_TIMEOUT),
-                    runtime=request["Runtime"],
+                    runtime=request.get("Runtime"),
                     memory_size=request.get("MemorySize", LAMBDA_DEFAULT_MEMORY_SIZE),
-                    handler=request["Handler"],
-                    package_type=PackageType.Zip,  # TODO
+                    handler=request.get("Handler"),
+                    package_type=package_type,
                     reserved_concurrent_executions=0,
                     environment=env_vars,
                     architectures=request.get("Architectures") or ["x86_64"],  # TODO
                     tracing_config_mode=TracingMode.PassThrough,  # TODO
-                    image_config=None,  # TODO
+                    image=image,
+                    image_config=image_config,
                     code=code,
                     layers=self.map_layers(layers),
                     internal_revision=short_uid(),
@@ -630,6 +690,14 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
                 self._validate_layers(new_layers)
             replace_kwargs["layers"] = self.map_layers(new_layers)
 
+        if "ImageConfig" in request:
+            new_image_config = request["ImageConfig"]
+            replace_kwargs["image_config"] = ImageConfig(
+                command=new_image_config.get("Command"),
+                entrypoint=new_image_config.get("EntryPoint"),
+                working_directory=new_image_config.get("WorkingDirectory"),
+            )
+
         new_latest_version = dataclasses.replace(
             latest_version,
             config=dataclasses.replace(
@@ -667,6 +735,20 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
             )
         function = state.functions[function_name]
         # TODO verify if correct combination of code is set
+        image = None
+        if (
+            request.get("ZipFile") or request.get("S3Bucket")
+        ) and function.latest().config.package_type == PackageType.Image:
+            raise InvalidParameterValueException(
+                "Please provide ImageUri when updating a function with packageType Image.",
+                Type="User",
+            )
+        elif request.get("ImageUri") and function.latest().config.package_type == PackageType.Zip:
+            raise InvalidParameterValueException(
+                "Please don't provide ImageUri when updating a function with packageType Zip.",
+                Type="User",
+            )
+
         if zip_file := request.get("ZipFile"):
             code = store_lambda_archive(
                 archive_file=zip_file,
@@ -685,13 +767,16 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
                 region_name=context.region,
                 account_id=context.account_id,
             )
+        elif image := request.get("ImageUri"):
+            code = None
+            image = create_image_code(image_uri=image)
         else:
-            raise ServiceException("Gotta have s3 bucket or zip file")
+            raise ServiceException("Gotta have s3 bucket or zip file or image")
 
         old_function_version = function.versions.get("$LATEST")
+        replace_kwargs = {"code": code} if code else {"image": image}
         config = dataclasses.replace(
             old_function_version.config,
-            code=code,
             internal_revision=short_uid(),
             last_modified=api_utils.generate_lambda_date(),
             last_update=UpdateStatus(
@@ -699,6 +784,7 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
                 code="Creating",
                 reason="The function is being created.",
             ),
+            **replace_kwargs,
         )
         function_version = dataclasses.replace(old_function_version, config=config)
         function.versions["$LATEST"] = function_version
@@ -753,7 +839,8 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
             for version in function.versions.values():
                 self.lambda_service.stop_version(qualified_arn=version.id.qualified_arn())
                 # we can safely destroy the code here
-                version.config.code.destroy()
+                if version.config.code:
+                    version.config.code.destroy()
 
     def list_functions(
         self,
@@ -816,12 +903,21 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
         if tags:
             additional_fields["Tags"] = tags
         # TODO what if no version?
-        code = version.config.code
+        code_location = None
+        if code := version.config.code:
+            code_location = FunctionCodeLocation(
+                Location=code.generate_presigned_url(), RepositoryType="S3"
+            )
+        elif image := version.config.image:
+            code_location = FunctionCodeLocation(
+                ImageUri=image.image_uri,
+                RepositoryType=image.repository_type,
+                ResolvedImageUri=image.resolved_image_uri,
+            )
+
         return GetFunctionResponse(
             Configuration=api_utils.map_config_out(version, return_qualified_arn=bool(qualifier)),
-            Code=FunctionCodeLocation(
-                Location=code.generate_presigned_url(), RepositoryType="S3"
-            ),  # TODO
+            Code=code_location,  # TODO
             **additional_fields
             # Concurrency={},  # TODO
         )
@@ -857,9 +953,35 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
         function_name, qualifier = api_utils.get_name_and_qualifier(
             function_name, qualifier, context.region
         )
-        self._get_function(
-            function_name=function_name, account_id=context.account_id, region=context.region
-        )
+        try:
+            self._get_function(
+                function_name=function_name, account_id=context.account_id, region=context.region
+            )
+        except ResourceNotFoundException:
+            # remove this block when AWS updates the stepfunctions image to support aws-sdk invocations
+            if "localstack-internal-awssdk" in function_name:
+                # init aws-sdk stepfunctions task handler
+                from localstack.services.stepfunctions.packages import stepfunctions_local_package
+
+                code = load_file(
+                    os.path.join(
+                        stepfunctions_local_package.get_installed_dir(),
+                        "localstack-internal-awssdk",
+                        "awssdk.zip",
+                    ),
+                    mode="rb",
+                )
+                lambda_client = aws_stack.connect_to_service("lambda")
+                lambda_client.create_function(
+                    FunctionName="localstack-internal-awssdk",
+                    Runtime=Runtime.nodejs16_x,
+                    Handler="index.handler",
+                    Code={"ZipFile": code},
+                    Role="arn:aws:iam::{account_id}:role/lambda-test-role".format(
+                        account_id=context.account_id
+                    ),  # TODO: proper role
+                )
+
         time_before = time.perf_counter()
         result = self.lambda_service.invoke(
             function_name=function_name,
@@ -1286,7 +1408,16 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
         max_items: MaxListItems = None,
     ) -> ListEventSourceMappingsResponse:
         state = lambda_stores[context.account_id][context.region]
-        esms = PaginatedList(state.event_source_mappings.values())
+
+        esms = state.event_source_mappings.values()
+
+        if event_source_arn:  # TODO: validate pattern
+            esms = [e for e in esms if e["EventSourceArn"] == event_source_arn]
+
+        if function_name:
+            esms = [e for e in esms if function_name in e["FunctionArn"]]
+
+        esms = PaginatedList(esms)
         page, token = esms.get_page(
             lambda x: x["UUID"],
             marker,
@@ -1299,9 +1430,6 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
     # =======================================
 
     # TODO: what happens if function state is not active?
-    # TODO: qualifier both in function_name as ARN and in qualifier?
-    # TODO: test for qualifier being a number (i.e. version)
-    # TODO: test for conflicts between function_name as ARN and provided qualifier
     def create_function_url_config(
         self,
         context: RequestContext,
@@ -1315,6 +1443,10 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
         function_name, qualifier = api_utils.get_name_and_qualifier(
             function_name, qualifier, context.region
         )
+        if qualifier == "$LATEST":
+            raise ValidationException(
+                "1 validation error detected: Value '$LATEST' at 'qualifier' failed to satisfy constraint: Member must satisfy regular expression pattern: ((?!^\\d+$)^[0-9a-zA-Z-_]+$)"
+            )
         if qualifier and api_utils.qualifier_is_version(qualifier):
             raise ValidationException(
                 f"1 validation error detected: Value '{qualifier}' at 'qualifier' failed to satisfy constraint: Member must satisfy regular expression pattern: (^\\$LATEST$)|((?!^[0-9]+$)([a-zA-Z0-9-_]+))"
@@ -1382,6 +1514,10 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
             function_name, qualifier, context.region
         )
 
+        if qualifier == "$LATEST":
+            raise ValidationException(
+                "1 validation error detected: Value '$LATEST' at 'qualifier' failed to satisfy constraint: Member must satisfy regular expression pattern: ((?!^\\d+$)^[0-9a-zA-Z-_]+$)"
+            )
         if qualifier and api_utils.qualifier_is_version(qualifier):
             raise ValidationException(
                 f"1 validation error detected: Value '{qualifier}' at 'qualifier' failed to satisfy constraint: Member must satisfy regular expression pattern: (^\\$LATEST$)|((?!^[0-9]+$)([a-zA-Z0-9-_]+))"
@@ -1415,6 +1551,10 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
         function_name, qualifier = api_utils.get_name_and_qualifier(
             function_name, qualifier, context.region
         )
+        if qualifier == "$LATEST":
+            raise ValidationException(
+                "1 validation error detected: Value '$LATEST' at 'qualifier' failed to satisfy constraint: Member must satisfy regular expression pattern: ((?!^\\d+$)^[0-9a-zA-Z-_]+$)"
+            )
         if qualifier and api_utils.qualifier_is_version(qualifier):
             raise ValidationException(
                 f"1 validation error detected: Value '{qualifier}' at 'qualifier' failed to satisfy constraint: Member must satisfy regular expression pattern: (^\\$LATEST$)|((?!^[0-9]+$)([a-zA-Z0-9-_]+))"
@@ -1467,6 +1607,10 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
         function_name, qualifier = api_utils.get_name_and_qualifier(
             function_name, qualifier, context.region
         )
+        if qualifier == "$LATEST":
+            raise ValidationException(
+                "1 validation error detected: Value '$LATEST' at 'qualifier' failed to satisfy constraint: Member must satisfy regular expression pattern: ((?!^\\d+$)^[0-9a-zA-Z-_]+$)"
+            )
         if qualifier and api_utils.qualifier_is_version(qualifier):
             raise ValidationException(
                 f"1 validation error detected: Value '{qualifier}' at 'qualifier' failed to satisfy constraint: Member must satisfy regular expression pattern: (^\\$LATEST$)|((?!^[0-9]+$)([a-zA-Z0-9-_]+))"
@@ -1517,85 +1661,86 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
     # ============  Permissions  ============
     # =======================================
 
-    # TODO: add test for event_source_token (alexa smart home) and auth_type
     @handler("AddPermission", expand=False)
     def add_permission(
         self,
         context: RequestContext,
         request: AddPermissionRequest,
     ) -> AddPermissionResponse:
-        state = lambda_stores[context.account_id][context.region]
         function_name, qualifier = api_utils.get_name_and_qualifier(
             request.get("FunctionName"), request.get("Qualifier"), context.region
         )
-        resolved_fn = state.functions.get(function_name)
 
-        if not resolved_fn:
-            fn_arn = api_utils.unqualified_lambda_arn(
-                function_name, context.account_id, context.region
-            )
-            raise ResourceNotFoundException(f"Function not found: {fn_arn}", Type="User")
+        # validate qualifier
+        if qualifier is not None:
+            self._validate_qualifier_expression(qualifier)
+            if qualifier == "$LATEST":
+                raise InvalidParameterValueException(
+                    "We currently do not support adding policies for $LATEST.", Type="User"
+                )
 
-        resolved_qualifier = request.get("Qualifier", "$LATEST")
+        resolved_fn = self._get_function(function_name, context.account_id, context.region)
 
-        resource = api_utils.unqualified_lambda_arn(
-            function_name, context.account_id, context.region
-        )
-        if api_utils.qualifier_is_alias(resolved_qualifier):
-            if resolved_qualifier not in resolved_fn.aliases:
-                raise ResourceNotFoundException("Where Alias???", Type="User")  # TODO: test
-            resource = api_utils.qualified_lambda_arn(
-                function_name, resolved_qualifier, context.account_id, context.region
-            )
-        elif api_utils.qualifier_is_version(resolved_qualifier):
-            if resolved_qualifier not in resolved_fn.versions:
-                raise ResourceNotFoundException("Where Version???", Type="User")  # TODO: test
-            resource = api_utils.qualified_lambda_arn(
-                function_name, resolved_qualifier, context.account_id, context.region
-            )
-        elif resolved_qualifier != "$LATEST":
-            raise ResourceNotFoundException("Wrong format for qualifier?")
-        # TODO: is there a different int he resulting policy when adding $LATEST manually?
+        resolved_qualifier, fn_arn = self._resolve_fn_qualifier(resolved_fn, qualifier)
 
         # check for an already existing policy and any conflicts in existing statements
         existing_policy = resolved_fn.permissions.get(resolved_qualifier)
         if existing_policy:
-            if request["StatementId"] in [s["Sid"] for s in existing_policy.policy.Statement]:
-                # TODO: is this unique just in the policy or across all policies in region/account/function (?)
-                raise ResourceConflictException("Double Statement!")
+            revision_id = request.get("RevisionId")
+            if revision_id and existing_policy.revision_id != revision_id:
+                raise PreconditionFailedException(
+                    "The Revision Id provided does not match the latest Revision Id. Call the GetFunction/GetAlias API to retrieve the latest Revision Id",
+                    Type="User",
+                )
+            request_sid = request["StatementId"]
+            if request_sid in [s["Sid"] for s in existing_policy.policy.Statement]:
+                # uniqueness scope: statement id needs to be unique per qualified function ($LATEST, version, or alias)
+                # Counterexample: the same sid can exist within $LATEST, version, and alias
+                raise ResourceConflictException(
+                    f"The statement id ({request_sid}) provided already exists. Please provide a new statement id, or remove the existing statement.",
+                    Type="User",
+                )
 
         permission_statement = api_utils.build_statement(
-            resource,
+            fn_arn,
             request["StatementId"],
             request["Action"],
             request["Principal"],
             source_arn=request.get("SourceArn"),
+            source_account=request.get("SourceAccount"),
+            principal_org_id=request.get("PrincipalOrgID"),
+            event_source_token=request.get("EventSourceToken"),
             auth_type=request.get("FunctionUrlAuthType"),
         )
+        # TODO: test revision behavior for lambda in general (with versions, aliases, layers, etc).
+        #  It seems that it is the same as the revision id of a lambda (i.e., VersionFunctionConfiguration).
         policy = existing_policy
-        if not existing_policy:
+        if existing_policy:
+            policy.revision_id = FunctionResourcePolicy.new_revision_id()
+        else:
             policy = FunctionResourcePolicy(
-                long_uid(), policy=ResourcePolicy(Version="2012-10-17", Id="default", Statement=[])
+                policy=ResourcePolicy(Version="2012-10-17", Id="default", Statement=[])
             )
         policy.policy.Statement.append(permission_statement)
         if not existing_policy:
             resolved_fn.permissions[resolved_qualifier] = policy
         return AddPermissionResponse(Statement=json.dumps(permission_statement))
 
-    # TODO: test if get_policy works after removing all permissions
     def remove_permission(
         self,
         context: RequestContext,
         function_name: FunctionName,
         statement_id: NamespacedStatementId,
         qualifier: Qualifier = None,
-        revision_id: String = None,  # TODO
+        revision_id: String = None,
     ) -> None:
-        state = lambda_stores[context.account_id][context.region]
         function_name, qualifier = api_utils.get_name_and_qualifier(
             function_name, qualifier, context.region
         )
+        if qualifier is not None:
+            self._validate_qualifier_expression(qualifier)
 
+        state = lambda_stores[context.account_id][context.region]
         resolved_fn = state.functions.get(function_name)
         if resolved_fn is None:
             fn_arn = api_utils.unqualified_lambda_arn(
@@ -1603,7 +1748,7 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
             )
             raise ResourceNotFoundException(f"No policy found for: {fn_arn}", Type="User")
 
-        resolved_qualifier = qualifier or "$LATEST"
+        resolved_qualifier, _ = self._resolve_fn_qualifier(resolved_fn, qualifier)
         function_permission = resolved_fn.permissions.get(resolved_qualifier)
         if not function_permission:
             raise ResourceNotFoundException(
@@ -1621,7 +1766,13 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
             raise ResourceNotFoundException(
                 f"Statement {statement_id} is not found in resource policy.", Type="User"
             )
+        if revision_id and function_permission.revision_id != revision_id:
+            raise PreconditionFailedException(
+                "The Revision Id provided does not match the latest Revision Id. Call the GetFunction/GetAlias API to retrieve the latest Revision Id",
+                Type="User",
+            )
         function_permission.policy.Statement.remove(statement)
+        function_permission.revision_id = FunctionResourcePolicy.new_revision_id()
 
         # remove the policy as a whole when there's no statement left in it
         if len(function_permission.policy.Statement) == 0:
@@ -1633,15 +1784,14 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
         function_name: NamespacedFunctionName,
         qualifier: Qualifier = None,
     ) -> GetPolicyResponse:
-        state = lambda_stores[context.account_id][context.region]
         function_name, qualifier = api_utils.get_name_and_qualifier(
             function_name, qualifier, context.region
         )
 
-        resolved_fn = state.functions.get(function_name)
-        fn_arn = api_utils.unqualified_lambda_arn(function_name, context.account_id, context.region)
-        if resolved_fn is None:
-            raise ResourceNotFoundException(f"Function not found: {fn_arn}", Type="User")
+        if qualifier is not None:
+            self._validate_qualifier_expression(qualifier)
+
+        resolved_fn = self._get_function(function_name, context.account_id, context.region)
 
         resolved_qualifier = qualifier or "$LATEST"
         function_permission = resolved_fn.permissions.get(resolved_qualifier)
@@ -1854,11 +2004,13 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
         reserved_concurrency_sum = 0
         for fn in state.functions.values():
             fn_count += 1
-            code_size_sum += (
-                fn.latest().config.code.code_size
-            )  # TODO: might need to check all versions and aliases for this?
+            for fn_version in fn.versions.values():
+                code_size_sum += fn_version.config.code.code_size
             if fn.reserved_concurrent_executions is not None:
                 reserved_concurrency_sum += fn.reserved_concurrent_executions
+        for layer in state.layers.values():
+            for layer_version in layer.layer_versions.values():
+                code_size_sum += layer_version.code.code_size
         return GetAccountSettingsResponse(
             AccountLimit=AccountLimit(
                 TotalCodeSize=settings.total_code_size,
@@ -2307,7 +2459,7 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
 
         event_invoke_configs = PaginatedList(event_invoke_configs)
         page, token = event_invoke_configs.get_page(
-            lambda x: x,
+            lambda x: x["FunctionArn"],
             marker,
             max_items,
         )
@@ -2815,22 +2967,6 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
     # =======================================
     # (Reserved) function concurrency is scoped to the whole function
 
-    def _get_account_limit_usage(self, store: LambdaStore) -> AccountLimitUsage:
-        fn_count = code_size_sum = reserved_concurrency_sum = 0
-        for fn in store.functions.values():
-            fn_count += 1
-            code_size_sum += (
-                fn.latest().config.code.code_size
-            )  # TODO: might need to aggregate all versions and aliases for this?
-            if fn.reserved_concurrent_executions is not None:
-                reserved_concurrency_sum += fn.reserved_concurrent_executions
-        return AccountLimitUsage(
-            unreserved_concurrent_executions=store.settings.concurrent_executions
-            - reserved_concurrency_sum,
-            total_code_size=code_size_sum,
-            function_count=fn_count,
-        )
-
     def get_function_concurrency(
         self, context: RequestContext, function_name: FunctionName
     ) -> GetFunctionConcurrencyResponse:
@@ -2862,10 +2998,13 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
             )
             raise ResourceNotFoundException(f"Function not found: {fn_arn}", Type="User")
 
-        usage = self._get_account_limit_usage(state)
+        settings = self.get_account_settings(context)
+        unreserved_concurrent_executions = settings["AccountLimit"][
+            "UnreservedConcurrentExecutions"
+        ]
 
         if (
-            usage.unreserved_concurrent_executions - reserved_concurrent_executions
+            unreserved_concurrent_executions - reserved_concurrent_executions
         ) < LAMBDA_MINIMUM_UNRESERVED_CONCURRENCY:
             raise InvalidParameterValueException(
                 f"Specified ReservedConcurrentExecutions for function decreases account's UnreservedConcurrentExecution below its minimum value of [{LAMBDA_MINIMUM_UNRESERVED_CONCURRENCY}]."

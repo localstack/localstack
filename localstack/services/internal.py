@@ -9,6 +9,7 @@ import requests
 from werkzeug.exceptions import NotFound
 
 from localstack import config, constants
+from localstack.deprecations import deprecated_endpoint
 from localstack.http import Request, Response, Router
 from localstack.http.adapters import RouterListener
 from localstack.http.dispatcher import resource_dispatcher
@@ -17,8 +18,29 @@ from localstack.utils.collections import merge_recursive
 from localstack.utils.files import load_file
 from localstack.utils.functions import call_safe
 from localstack.utils.json import parse_json_or_yaml
+from localstack.utils.server.http2_server import HTTP_METHODS
 
 LOG = logging.getLogger(__name__)
+
+
+class DeprecatedResource:
+    """
+    Resource class which wraps a given resource in the deprecated_endpoint (i.e. logs deprecation warnings on every
+    invocation).
+    """
+
+    def __init__(self, resource, previous_path: str, deprecation_version: str, new_path: str):
+        for http_method in HTTP_METHODS:
+            fn_name = f"on_{http_method.lower()}"
+            fn = getattr(resource, fn_name, None)
+            if fn:
+                wrapped = deprecated_endpoint(
+                    fn,
+                    previous_path=previous_path,
+                    deprecation_version=deprecation_version,
+                    new_path=new_path,
+                )
+                setattr(self, fn_name, wrapped)
 
 
 class HealthResource:
@@ -62,6 +84,9 @@ class HealthResource:
         result = merge_recursive({"services": services}, result)
         result["version"] = constants.VERSION
         return result
+
+    def on_head(self, _request: Request):
+        return Response("ok", 200)
 
     def on_put(self, request: Request):
         data = request.get_json(True, True) or {}
@@ -238,8 +263,16 @@ class LocalstackResources(Router):
         health_resource = HealthResource(SERVICE_PLUGINS)
         plugins_resource = PluginsResource()
 
-        # two special routes for legacy support (before `/_localstack` was introduced)
-        super().add("/health", health_resource)
+        # special route for legacy support (before `/_localstack` was introduced)
+        super().add(
+            "/health",
+            DeprecatedResource(
+                health_resource,
+                previous_path="/health",
+                deprecation_version="1.3.0",
+                new_path="/_localstack/health",
+            ),
+        )
 
         self.add("/health", health_resource)
         self.add("/plugins", plugins_resource)

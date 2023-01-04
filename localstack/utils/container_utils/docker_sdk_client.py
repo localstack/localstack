@@ -679,3 +679,10 @@ class SdkDockerClient(ContainerClient):
             raise NoSuchContainer(container_name_or_id)
         except APIError as e:
             raise ContainerException() from e
+
+    def login(self, username: str, password: str, registry: Optional[str] = None) -> None:
+        LOG.debug("Docker login for %s", username)
+        try:
+            self.client().login(username, password=password, registry=registry, reauth=True)
+        except APIError as e:
+            raise ContainerException() from e

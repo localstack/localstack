@@ -14,6 +14,8 @@ from localstack.aws.api.lambda_ import (
     EphemeralStorage,
     FunctionConfiguration,
     FunctionUrlAuthType,
+    ImageConfig,
+    ImageConfigResponse,
     InvalidParameterValueException,
     LayerVersionContentOutput,
     PublishLayerVersionResponse,
@@ -21,6 +23,7 @@ from localstack.aws.api.lambda_ import (
     Runtime,
     TracingConfig,
 )
+from localstack.utils.collections import merge_recursive
 
 if TYPE_CHECKING:
     from localstack.services.awslambda.invocation.lambda_models import (
@@ -59,6 +62,8 @@ HANDLER_REGEX = re.compile(r"[^\s]+")
 KMS_KEY_ARN_REGEX = re.compile(r"(arn:(aws[a-zA-Z-]*)?:[a-z0-9-.]+:.*)|()")
 # Pattern for a valid IAM role assumed by a lambda function
 ROLE_REGEX = re.compile(r"arn:(aws[a-zA-Z-]*)?:iam::\d{12}:role/?[a-zA-Z_0-9+=,.@\-_/]+")
+# Pattern for a valid AWS account
+AWS_ACCOUNT_REGEX = re.compile(r"\d{12}")
 # Pattern for a signing job arn
 SIGNING_JOB_ARN_REGEX = re.compile(
     r"arn:(aws[a-zA-Z0-9-]*):([a-zA-Z0-9\-])+:([a-z]{2}(-gov)?-[a-z]+-\d{1})?:(\d{12})?:(.*)"
@@ -67,10 +72,14 @@ SIGNING_JOB_ARN_REGEX = re.compile(
 SIGNING_PROFILE_VERSION_ARN_REGEX = re.compile(
     r"arn:(aws[a-zA-Z0-9-]*):([a-zA-Z0-9\-])+:([a-z]{2}(-gov)?-[a-z]+-\d{1})?:(\d{12})?:(.*)"
 )
+# Combined pattern for alias and version based on AWS error using "(|[a-zA-Z0-9$_-]+)"
+QUALIFIER_REGEX = re.compile(r"(^[a-zA-Z0-9$_-]+$)")
 # Pattern for a version qualifier
 VERSION_REGEX = re.compile(r"^[0-9]+$")
 # Pattern for an alias qualifier
-ALIAS_REGEX = re.compile(r"(?!^[0-9]+$)([a-zA-Z0-9-_]+)")
+# Rules: https://docs.aws.amazon.com/lambda/latest/dg/API_CreateAlias.html#SSS-CreateAlias-request-Name
+# The original regex from AWS misses ^ and $ in the second regex, which allowed for partial substring matches
+ALIAS_REGEX = re.compile(r"(?!^[0-9]+)(^[a-zA-Z0-9-_]+$)")
 
 
 URL_CHAR_SET = string.ascii_lowercase + string.digits
@@ -136,6 +145,16 @@ def get_config_for_url(store: "LambdaStore", url_id: str) -> "Optional[FunctionU
             if fn_url_config.url_id == url_id:
                 return fn_url_config
     return None
+
+
+def is_qualifier_expression(qualifier: str) -> bool:
+    """Checks if a given qualifier is a syntactically accepted expression.
+    It is not necessarily a valid alias or version.
+
+    :param qualifier: Qualifier to check
+    :return True if syntactically accepted qualifier expression, false otherwise
+    """
+    return bool(QUALIFIER_REGEX.match(qualifier))
 
 
 def qualifier_is_version(qualifier: str) -> bool:
@@ -215,9 +234,9 @@ def build_statement(
     action: str,
     principal: str,
     source_arn: Optional[str] = None,
-    source_account: Optional[str] = None,  # TODO: test & implement
-    principal_org_id: Optional[str] = None,  # TODO: test & implement
-    event_source_token: Optional[str] = None,  # TODO: test & implement
+    source_account: Optional[str] = None,
+    principal_org_id: Optional[str] = None,
+    event_source_token: Optional[str] = None,
     auth_type: Optional[FunctionUrlAuthType] = None,
 ) -> dict[str, Any]:
     statement = {
@@ -227,17 +246,48 @@ def build_statement(
         "Resource": resource_arn,
     }
 
-    if "." in principal:  # TODO: better matching
-        # assuming service principal
+    # See AWS service principals for comprehensive docs:
+    # https://docs.aws.amazon.com/IAM/latest/UserGuide/reference_policies_elements_principal.html
+    # TODO: validate against actual list of IAM-supported AWS services (e.g., lambda.amazonaws.com)
+    if principal.endswith(".amazonaws.com"):
         statement["Principal"] = {"Service": principal}
+    elif is_aws_account(principal):
+        statement["Principal"] = {"AWS": f"arn:aws:iam::{principal}:root"}
+    # TODO: potentially validate against IAM?
+    elif principal.startswith("arn:aws:iam:"):
+        statement["Principal"] = {"AWS": principal}
+    elif principal == "*":
+        statement["Principal"] = principal
+    # TODO: unclear whether above matching is complete?
     else:
-        statement["Principal"] = principal  # TODO: verify
+        raise InvalidParameterValueException(
+            "The provided principal was invalid. Please check the principal and try again.",
+            Type="User",
+        )
+
+    condition = dict()
+    if auth_type:
+        update = {"StringEquals": {"lambda:FunctionUrlAuthType": auth_type}}
+        condition = merge_recursive(condition, update)
+
+    if principal_org_id:
+        update = {"StringEquals": {"aws:PrincipalOrgID": principal_org_id}}
+        condition = merge_recursive(condition, update)
+
+    if source_account:
+        update = {"StringEquals": {"AWS:SourceAccount": source_account}}
+        condition = merge_recursive(condition, update)
+
+    if event_source_token:
+        update = {"StringEquals": {"lambda:EventSourceToken": event_source_token}}
+        condition = merge_recursive(condition, update)
 
     if source_arn:
-        statement["Condition"] = {"ArnLike": {"AWS:SourceArn": source_arn}}
+        update = {"ArnLike": {"AWS:SourceArn": source_arn}}
+        condition = merge_recursive(condition, update)
 
-    if auth_type:
-        statement["Condition"] = {"StringEquals": {"lambda:FunctionUrlAuthType": auth_type}}
+    if condition:
+        statement["Condition"] = condition
 
     return statement
 
@@ -307,6 +357,16 @@ def is_role_arn(role_arn: str) -> bool:
     return bool(ROLE_REGEX.match(role_arn))
 
 
+def is_aws_account(aws_account: str) -> bool:
+    """
+    Returns true if the provided string is an AWS account, false otherwise
+
+    :param role_arn: Potential AWS account
+    :return: Boolean indicating if input is an AWS account
+    """
+    return bool(AWS_ACCOUNT_REGEX.match(aws_account))
+
+
 def format_lambda_date(date_to_format: datetime.datetime) -> str:
     """Format a given datetime to a string generated with the lambda date format"""
     return date_to_format.strftime(LAMBDA_DATE_FORMAT)
@@ -374,6 +434,22 @@ def map_config_out(
             {"Arn": layer.layer_version_arn, "CodeSize": layer.code.code_size}
             for layer in version.config.layers
         ]
+    if version.config.image_config:
+        image_config = ImageConfig()
+        if version.config.image_config.command:
+            image_config["Command"] = version.config.image_config.command
+        if version.config.image_config.entrypoint:
+            image_config["EntryPoint"] = version.config.image_config.entrypoint
+        if version.config.image_config.working_directory:
+            image_config["WorkingDirectory"] = version.config.image_config.working_directory
+        if image_config:
+            optional_kwargs["ImageConfigResponse"] = ImageConfigResponse(ImageConfig=image_config)
+    if version.config.code:
+        optional_kwargs["CodeSize"] = version.config.code.code_size
+        optional_kwargs["CodeSha256"] = version.config.code.code_sha256
+    elif version.config.image:
+        optional_kwargs["CodeSize"] = 0
+        optional_kwargs["CodeSha256"] = version.config.image.code_sha256
 
     func_conf = FunctionConfiguration(
         RevisionId=version.config.revision_id,
@@ -388,8 +464,6 @@ def map_config_out(
         Timeout=version.config.timeout,
         Runtime=version.config.runtime,
         Handler=version.config.handler,
-        CodeSize=version.config.code.code_size,
-        CodeSha256=version.config.code.code_sha256,
         MemorySize=version.config.memory_size,
         PackageType=version.config.package_type,
         TracingConfig=TracingConfig(Mode=version.config.tracing_config_mode),

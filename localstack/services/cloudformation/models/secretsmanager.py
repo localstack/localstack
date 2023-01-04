@@ -9,7 +9,7 @@ from localstack.services.cloudformation.service_models import (
     REF_ID_ATTRS,
     GenericBaseModel,
 )
-from localstack.utils.aws import aws_stack
+from localstack.utils.aws import arns, aws_stack
 from localstack.utils.common import select_attributes
 
 LOG = logging.getLogger(__name__)
@@ -29,7 +29,7 @@ class SecretsManagerSecret(GenericBaseModel):
         return super(SecretsManagerSecret, self).get_cfn_attribute(attribute_name)
 
     def fetch_state(self, stack_name, resources):
-        secret_name = self.props.get("Name") or self.resource_id
+        secret_name = self.props.get("Name") or self.logical_resource_id
         secret_name = self.resolve_refs_recursively(stack_name, secret_name, resources)
         result = aws_stack.connect_to_service("secretsmanager").describe_secret(
             SecretId=secret_name
@@ -130,7 +130,7 @@ class SecretsManagerSecretTargetAttachment(GenericBaseModel):
         return "AWS::SecretsManager::SecretTargetAttachment"
 
     def get_physical_resource_id(self, attribute, **kwargs):
-        return aws_stack.secretsmanager_secret_arn(self.props.get("SecretId"))
+        return arns.secretsmanager_secret_arn(self.props.get("SecretId"))
 
     def fetch_state(self, stack_name, resources):
         # TODO implement?
@@ -143,7 +143,7 @@ class SecretsManagerRotationSchedule(GenericBaseModel):
         return "AWS::SecretsManager::RotationSchedule"
 
     def get_physical_resource_id(self, attribute, **kwargs):
-        return aws_stack.secretsmanager_secret_arn(self.props.get("SecretId"))
+        return arns.secretsmanager_secret_arn(self.props.get("SecretId"))
 
     def fetch_state(self, stack_name, resources):
         # TODO implement?
@@ -156,7 +156,7 @@ class SecretsManagerResourcePolicy(GenericBaseModel):
         return "AWS::SecretsManager::ResourcePolicy"
 
     def get_physical_resource_id(self, attribute, **kwargs):
-        return aws_stack.secretsmanager_secret_arn(self.props.get("SecretId"))
+        return arns.secretsmanager_secret_arn(self.props.get("SecretId"))
 
     def fetch_state(self, stack_name, resources):
         secret_id = self.resolve_refs_recursively(stack_name, self.props.get("SecretId"), resources)

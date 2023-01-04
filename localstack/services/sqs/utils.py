@@ -2,13 +2,15 @@ import base64
 import itertools
 import re
 import time
+from typing import Optional, Tuple
+from urllib.parse import urlparse
 
 from moto.sqs.exceptions import MessageAttributesInvalid
 from moto.sqs.models import TRANSPORT_TYPE_ENCODINGS, Message
 
 from localstack.aws.accounts import get_aws_account_id
 from localstack.aws.api.sqs import ReceiptHandleIsInvalid
-from localstack.utils.aws.aws_stack import parse_arn
+from localstack.utils.aws.arns import parse_arn
 from localstack.utils.common import clone
 from localstack.utils.objects import singleton_factory
 from localstack.utils.strings import long_uid
@@ -18,6 +20,42 @@ from localstack.utils.urls import path_from_url
 def is_sqs_queue_url(url):
     path = path_from_url(url).partition("?")[0]
     return re.match(r"^/(queue|%s)/[a-zA-Z0-9_-]+(.fifo)?$" % get_aws_account_id(), path)
+
+
+def parse_queue_url(queue_url: str) -> Tuple[Optional[str], str, str]:
+    """
+    Parses an SQS Queue URL and returns a triple of region, account_id, and queue_name.
+
+    :param queue_url: the queue URL
+    :return: region (may be None), account_id, queue_name
+    """
+    url = urlparse(queue_url.rstrip("/"))
+    path_parts = url.path.lstrip("/").split("/")
+    domain_parts = url.netloc.split(".")
+
+    if len(path_parts) != 2 and len(path_parts) != 4:
+        raise ValueError(f"Not a valid queue URL: {queue_url}")
+
+    account_id, queue_name = path_parts[-2:]
+
+    if len(path_parts) == 4:
+        if path_parts[0] != "queue":
+            raise ValueError(f"Not a valid queue URL: {queue_url}")
+        # SQS_ENDPOINT_STRATEGY == "path"
+        region = path_parts[1]
+    elif ".queue." in url.netloc:
+        if domain_parts[1] != "queue":
+            # .queue. should be on second position after the region
+            raise ValueError(f"Not a valid queue URL: {queue_url}")
+        # SQS_ENDPOINT_STRATEGY == "domain"
+        region = domain_parts[0]
+    elif url.netloc.startswith("queue"):
+        # SQS_ENDPOINT_STRATEGY == "domain" (with default region)
+        region = "us-east-1"
+    else:
+        region = None
+
+    return region, account_id, queue_name
 
 
 def parse_message_attributes(

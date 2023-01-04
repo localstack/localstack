@@ -6,7 +6,7 @@ from botocore.exceptions import ClientError
 
 from localstack.config import LEGACY_S3_PROVIDER
 from localstack.testing.aws.lambda_utils import _await_dynamodb_table_active
-from localstack.utils.aws import aws_stack
+from localstack.utils.aws import arns
 from localstack.utils.http import safe_requests as requests
 from localstack.utils.strings import short_uid
 from localstack.utils.sync import retry
@@ -253,7 +253,7 @@ class TestS3NotificationsToLambda:
         # set valid but not-existing lambda
         config["LambdaFunctionConfigurations"][0][
             "LambdaFunctionArn"
-        ] = f"{aws_stack.lambda_function_arn('my-lambda', account_id=account_id)}"
+        ] = f"{arns.lambda_function_arn('my-lambda', account_id=account_id)}"
         with pytest.raises(ClientError) as e:
             s3_client.put_bucket_notification_configuration(
                 Bucket=bucket_name,

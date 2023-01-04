@@ -1,6 +1,7 @@
 from datetime import datetime
 
-from localstack.utils.aws.aws_stack import create_external_boto_client, get_sqs_queue_url
+from localstack.utils.aws.arns import get_sqs_queue_url
+from localstack.utils.aws.aws_stack import create_external_boto_client
 
 QUEUE_NAME = "test-perf-3610"
 NUM_MESSAGES = 300

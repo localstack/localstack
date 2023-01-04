@@ -5,15 +5,15 @@ from localstack.aws.api.opensearch import (
 )
 from localstack.services.cloudformation.deployment_utils import remove_none_values
 from localstack.services.cloudformation.service_models import GenericBaseModel
-from localstack.utils.aws import aws_stack
-from localstack.utils.collections import select_attributes
+from localstack.utils.aws import arns, aws_stack
+from localstack.utils.collections import convert_to_typed_dict
 
 
 # OpenSearch still uses "es" ARNs
 # See examples in:
 # https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-opensearchservice-domain.html
 def opensearch_add_tags_params(params, **kwargs):
-    es_arn = aws_stack.es_domain_arn(params.get("DomainName"))
+    es_arn = arns.es_domain_arn(params.get("DomainName"))
     tags = params.get("Tags", [])
     return {"ARN": es_arn, "TagList": tags}
 
@@ -27,7 +27,7 @@ class OpenSearchDomain(GenericBaseModel):
         domain_name = self._domain_name()
         if attribute == "Arn":
             # As mentioned above, OpenSearch still uses "es" ARNs
-            return aws_stack.elasticsearch_domain_arn(domain_name)
+            return arns.elasticsearch_domain_arn(domain_name)
         return domain_name
 
     def fetch_state(self, stack_name, resources):
@@ -36,19 +36,13 @@ class OpenSearchDomain(GenericBaseModel):
         return aws_stack.connect_to_service("opensearch").describe_domain(DomainName=domain_name)
 
     def _domain_name(self):
-        return self.props.get("DomainName") or self.resource_id
+        return self.props.get("DomainName") or self.logical_resource_id
 
     @staticmethod
     def get_deploy_templates():
         def _create_params(params, **kwargs):
-            # Tags handled outside of creation
-            attributes = [
-                attribute
-                for attribute in CreateDomainRequest.__annotations__.keys()
-                if "Tag" not in attribute
-            ]
-            result = select_attributes(params, attributes)
-            result = remove_none_values(result)
+            params = remove_none_values(params)
+            result = convert_to_typed_dict(CreateDomainRequest, params)
             cluster_config = result.get("ClusterConfig")
             if isinstance(cluster_config, dict):
                 # set defaults required for boto3 calls

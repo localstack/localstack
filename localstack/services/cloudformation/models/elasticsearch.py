@@ -1,11 +1,12 @@
+from localstack.aws.api.es import CreateElasticsearchDomainRequest
 from localstack.services.cloudformation.deployment_utils import remove_none_values
 from localstack.services.cloudformation.service_models import GenericBaseModel
-from localstack.utils.aws import aws_stack
-from localstack.utils.common import select_attributes
+from localstack.utils.aws import arns, aws_stack
+from localstack.utils.collections import convert_to_typed_dict
 
 
 def es_add_tags_params(params, **kwargs):
-    es_arn = aws_stack.es_domain_arn(params.get("DomainName"))
+    es_arn = arns.es_domain_arn(params.get("DomainName"))
     tags = params.get("Tags", [])
     return {"ARN": es_arn, "TagList": tags}
 
@@ -18,13 +19,13 @@ class ElasticsearchDomain(GenericBaseModel):
     def get_physical_resource_id(self, attribute=None, **kwargs):
         domain_name = self._domain_name()
         if attribute == "Arn":
-            return aws_stack.elasticsearch_domain_arn(domain_name)
+            return arns.elasticsearch_domain_arn(domain_name)
         return domain_name
 
     def get_cfn_attribute(self, attribute_name):
         if attribute_name == "DomainArn":
             domain_name = self._domain_name()
-            return aws_stack.elasticsearch_domain_arn(domain_name)
+            return arns.elasticsearch_domain_arn(domain_name)
         if attribute_name == "DomainEndpoint":
             domain_status = self.props.get("DomainStatus", {})
             result = domain_status.get("Endpoint")
@@ -40,26 +41,12 @@ class ElasticsearchDomain(GenericBaseModel):
         )
 
     def _domain_name(self):
-        return self.props.get("DomainName") or self.resource_id
+        return self.props.get("DomainName") or self.logical_resource_id
 
     @staticmethod
     def get_deploy_templates():
         def _create_params(params, **kwargs):
-            attributes = [
-                "AccessPolicies",
-                "AdvancedOptions",
-                "CognitoOptions",
-                "DomainName",
-                "EBSOptions",
-                "ElasticsearchClusterConfig",
-                "ElasticsearchVersion",
-                "EncryptionAtRestOptions",
-                "LogPublishingOptions",
-                "NodeToNodeEncryptionOptions",
-                "SnapshotOptions",
-                "VPCOptions",
-            ]
-            result = select_attributes(params, attributes)
+            result = convert_to_typed_dict(CreateElasticsearchDomainRequest, params)
             result = remove_none_values(result)
             cluster_config = result.get("ElasticsearchClusterConfig")
             if isinstance(cluster_config, dict):

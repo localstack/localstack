@@ -33,7 +33,7 @@ STATUS_CONNECTION_ERROR = 903
 
 # TODO: will only include available services
 # generate with e.g. http http://localhost:4566/health | jq ".services | keys[]" | pbcopy
-response = requests.get("http://localhost:4566/health").content.decode("utf-8")
+response = requests.get("http://localhost:4566/_localstack/health").content.decode("utf-8")
 latest_services_pro = [k for k in json.loads(response).get("services").keys()]
 
 exclude_services = {"azure"}
@@ -191,7 +191,7 @@ def run_script(services: list[str], path: None):
         )
         aggregated_w = csv.DictWriter(
             aggregatefile,
-            fieldnames=["service", "operation", "implemented_count", "full_count", "percentage"],
+            fieldnames=["service", "implemented_count", "full_count", "percentage"],
         )
 
         full_w.writeheader()
@@ -232,7 +232,6 @@ def run_script(services: list[str], path: None):
             aggregated_w.writerow(
                 {
                     "service": response["service"],
-                    "operation": response["operation"],
                     "implemented_count": implemented_count,
                     "full_count": all_count,
                     "percentage": f"{implemented_percentage * 100:.1f}",

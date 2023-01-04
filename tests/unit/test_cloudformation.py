@@ -1,13 +1,14 @@
 import re
 from typing import Dict
 
+from localstack.services.cloudformation.api_utils import is_local_service_url
 from localstack.services.cloudformation.deployment_utils import (
     PLACEHOLDER_AWS_NO_VALUE,
     remove_none_values,
 )
+from localstack.services.cloudformation.engine import template_deployer
+from localstack.services.cloudformation.engine.entities import Stack
 from localstack.services.cloudformation.models.stepfunctions import _apply_substitutions
-from localstack.services.cloudformation.provider import Stack
-from localstack.utils.cloudformation import template_deployer, template_preparer
 
 
 def test_resolve_references():
@@ -52,9 +53,9 @@ def test_is_local_service_url():
         "http://mybucket.s3.us-east-1.amazonaws.com",
     ]
     for url in local_urls:
-        assert template_preparer.is_local_service_url(url)
+        assert is_local_service_url(url)
     for url in remote_urls:
-        assert not template_preparer.is_local_service_url(url)
+        assert not is_local_service_url(url)
 
 
 def test_apply_substitutions():

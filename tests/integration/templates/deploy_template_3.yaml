@@ -66,6 +66,8 @@ Resources:
         ProvisionedThroughput:
           ReadCapacityUnits: 5
           WriteCapacityUnits: 5
+        ContributorInsightsSpecification:
+          Enabled: True
 Outputs:
   Name:
     Value:

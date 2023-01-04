@@ -14,7 +14,7 @@ Resources:
     Properties:
       DomainName: !Ref "DomainName"
       ElasticsearchClusterConfig:
-        InstanceCount: 1
+        InstanceCount: "1"
         InstanceType: 'm5.large.elasticsearch'
         ZoneAwarenessEnabled: false
         # remaining required attributes (DedicatedMasterType, WarmType) should get filled in by template deployer

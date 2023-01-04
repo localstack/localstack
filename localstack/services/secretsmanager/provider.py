@@ -63,7 +63,7 @@ from localstack.aws.api.secretsmanager import (
     ValidateResourcePolicyResponse,
 )
 from localstack.services.moto import call_moto, call_moto_with_request
-from localstack.utils.aws import aws_stack
+from localstack.utils.aws import arns, aws_stack
 from localstack.utils.patch import patch
 from localstack.utils.strings import short_uid
 from localstack.utils.time import today_no_time
@@ -109,7 +109,7 @@ class SecretsmanagerProvider(SecretsmanagerApi):
         # If secret ARN ends with "-<randomId>" this is removed from the request for upstream compatibility.
         t_secret_id = secret_id
         if secret_id and re.match(r"^arn:", secret_id):
-            arn = aws_stack.parse_arn(secret_id)
+            arn = arns.parse_arn(secret_id)
             aws_region = aws_stack.get_region()
             if arn["region"] != aws_region:
                 LOG.info(f'Expected request region "{aws_region}" for secret "{secret_id}"')
@@ -672,7 +672,7 @@ def get_arn_binding_for(account_id, region, secret_id):
     k = get_arn_binding_key_for(region, secret_id)
     if k not in SECRET_ARN_STORAGE:
         id_string = short_uid()[:6]
-        arn = aws_stack.secretsmanager_secret_arn(
+        arn = arns.secretsmanager_secret_arn(
             secret_id, account_id=account_id, region_name=region, random_suffix=id_string
         )
         SECRET_ARN_STORAGE[k] = arn

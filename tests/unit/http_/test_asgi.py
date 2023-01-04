@@ -212,6 +212,32 @@ def test_multipart_post(serve_asgi_adapter):
     assert response.json() == {"foo": "bar", "baz": "ed"}
 
 
+def test_multipart_post_large_payload(serve_asgi_adapter):
+    @Request.application
+    def app(request: Request) -> Response:
+        try:
+            assert request.mimetype == "multipart/form-data"
+
+            result = {}
+            for k, file_storage in request.files.items():
+                result[k] = len(file_storage.stream.read())
+
+            return Response(json.dumps(result), 200)
+        except Exception:
+            LOG.exception("error")
+            raise
+
+    server = serve_asgi_adapter(app)
+
+    payload = (
+        "\0" * 70_000
+    )  # there's a chunk size of 65536 configured in werkzeug which is what we're testing here
+
+    response = requests.post(server.url, files={"file": payload})
+    assert response.ok
+    assert response.json() == {"file": 70_000}
+
+
 def test_utf8_path(serve_asgi_adapter):
     @Request.application
     def app(request: Request) -> Response:

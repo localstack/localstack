@@ -340,9 +340,9 @@ except ImportError:
     pass
 
 # default AWS region
-if "DEFAULT_REGION" not in os.environ:
-    os.environ["DEFAULT_REGION"] = os.environ.get("AWS_DEFAULT_REGION") or AWS_REGION_US_EAST_1
-DEFAULT_REGION = os.environ["DEFAULT_REGION"]
+DEFAULT_REGION = (
+    os.environ.get("DEFAULT_REGION") or os.environ.get("AWS_DEFAULT_REGION") or AWS_REGION_US_EAST_1
+)
 
 # expose services on a specific host externally
 HOSTNAME_EXTERNAL = os.environ.get("HOSTNAME_EXTERNAL", "").strip() or LOCALHOST
@@ -398,9 +398,6 @@ LEGACY_EDGE_PROXY = is_env_true("LEGACY_EDGE_PROXY")
 # whether legacy s3 is enabled
 # TODO change when asf becomes default: os.environ.get("PROVIDER_OVERRIDE_S3", "") == 'legacy'
 LEGACY_S3_PROVIDER = os.environ.get("PROVIDER_OVERRIDE_S3", "") not in ("asf", "asf_pro")
-
-# whether to use the legacy installers in LPM or enable the new package-based installers (with versions and targets)
-LEGACY_LPM_INSTALLERS = is_env_not_false("LEGACY_LPM_INSTALLERS")
 
 # Whether to report internal failures as 500 or 501 errors.
 FAIL_FAST = is_env_true("FAIL_FAST")
@@ -552,17 +549,19 @@ EXTERNAL_SERVICE_PORTS_END = int(
 # java options to Lambda
 LAMBDA_JAVA_OPTS = os.environ.get("LAMBDA_JAVA_OPTS", "").strip()
 
-# limit in which to kinesalite will start throwing exceptions
+# limit in which to kinesis-mock will start throwing exceptions
 KINESIS_SHARD_LIMIT = os.environ.get("KINESIS_SHARD_LIMIT", "").strip() or "100"
 
-# delay in kinesalite response when making changes to streams
+# limit in which to kinesis-mock will start throwing exceptions
+KINESIS_ON_DEMAND_STREAM_COUNT_LIMIT = (
+    os.environ.get("KINESIS_ON_DEMAND_STREAM_COUNT_LIMIT", "").strip() or "10"
+)
+
+# delay in kinesis-mock response when making changes to streams
 KINESIS_LATENCY = os.environ.get("KINESIS_LATENCY", "").strip() or "500"
 
 # Delay between data persistence (in seconds)
 KINESIS_MOCK_PERSIST_INTERVAL = os.environ.get("KINESIS_MOCK_PERSIST_INTERVAL", "").strip() or "5s"
-
-# Kinesis provider - either "kinesis-mock" or "kinesalite" (deprecated, kinesalite support will be removed)
-KINESIS_PROVIDER = os.environ.get("KINESIS_PROVIDER") or "kinesis-mock"
 
 # Whether or not to handle lambda event sources as synchronous invocations
 SYNCHRONOUS_SNS_EVENTS = is_env_true("SYNCHRONOUS_SNS_EVENTS")  # DEPRECATED
@@ -597,6 +596,9 @@ SQS_PORT_EXTERNAL = int(os.environ.get("SQS_PORT_EXTERNAL") or 0)
 
 # Strategy used when creating SQS queue urls. can be "off", "domain", or "path"
 SQS_ENDPOINT_STRATEGY = os.environ.get("SQS_ENDPOINT_STRATEGY", "") or "off"
+
+# Disable the check for MaxNumberOfMessage in SQS ReceiveMessage
+SQS_DISABLE_MAX_NUMBER_OF_MESSAGE_LIMIT = is_env_true("SQS_DISABLE_MAX_NUMBER_OF_MESSAGE_LIMIT")
 
 # host under which the LocalStack services are available from Lambda Docker containers
 HOSTNAME_FROM_LAMBDA = os.environ.get("HOSTNAME_FROM_LAMBDA", "").strip()
@@ -636,10 +638,21 @@ LAMBDA_CONTAINER_REGISTRY = (
     os.environ.get("LAMBDA_CONTAINER_REGISTRY", "").strip() or DEFAULT_LAMBDA_CONTAINER_REGISTRY
 )
 
+# EXPERIMENTAL | Only applicable to new Lambda Provider
+# Allows two options to customize the resolution of Lambda runtime:
+#   1. pattern with <runtime> placeholder, e.g. "custom-repo/lambda-<runtime>:2022"
+#   2. json dict mapping the <runtime> to an image, e.g. '{"python3.9": "custom-repo/lambda-py:thon3.9"}'
+LAMBDA_RUNTIME_IMAGE_MAPPING = os.environ.get("LAMBDA_RUNTIME_IMAGE_MAPPING", "").strip()
+
 # whether to remove containers after Lambdas finished executing
 LAMBDA_REMOVE_CONTAINERS = (
     os.environ.get("LAMBDA_REMOVE_CONTAINERS", "").lower().strip() not in FALSE_STRINGS
 )
+
+# DEV | Only for LS developers. Only applicable to new Lambda provider.
+# whether to explicitly expose port in lambda container when invoking functions in host mode for systems that cannot
+# reach the container via its IPv4 (e.g., macOS https://docs.docker.com/desktop/networking/#i-cannot-ping-my-containers)
+LAMBDA_DEV_PORT_EXPOSE = is_env_true("LAMBDA_DEV_PORT_EXPOSE")
 
 # Adding Stepfunctions default port
 LOCAL_PORT_STEPFUNCTIONS = int(os.environ.get("LOCAL_PORT_STEPFUNCTIONS") or 8083)
@@ -674,8 +687,16 @@ LAMBDA_STAY_OPEN_MODE = is_in_docker and is_env_not_false("LAMBDA_STAY_OPEN_MODE
 # truncate output string slices value
 LAMBDA_TRUNCATE_STDOUT = int(os.getenv("LAMBDA_TRUNCATE_STDOUT") or 2000)
 
+# sets an alternative base delay in seconds for async retries (only applicable to ASF Lambda provider)
+# defaults to 60s (behavior on AWS)
+# the first retry will be 1x LAMBDA_RETRY_BASE_DELAY_SECONDS, the second one 2x LAMBDA_RETRY_BASE_DELAY_SECONDS
+# e.g. LAMBDA_RETRY_BASE_DELAY_SECONDS=30.
+#   The delay between the initial invocation and first retry will be 30s.
+#   The delay between the first retry and the second retry will be 60s
+LAMBDA_RETRY_BASE_DELAY_SECONDS = int(os.getenv("LAMBDA_RETRY_BASE_DELAY") or 60)
+
 # A comma-delimited string of stream names and its corresponding shard count to
-# initialize during startup.
+# initialize during startup (DEPRECATED).
 # For example: "my-first-stream:1,my-other-stream:2,my-last-stream:1"
 KINESIS_INITIALIZE_STREAMS = os.environ.get("KINESIS_INITIALIZE_STREAMS", "").strip()
 
@@ -704,14 +725,22 @@ OPENSEARCH_MULTI_CLUSTER = is_env_not_false("OPENSEARCH_MULTI_CLUSTER") or is_en
     "ES_MULTI_CLUSTER"
 )
 
+# Whether to really publish to GCM while using SNS Platform Application (needs credentials)
+LEGACY_SNS_GCM_PUBLISHING = is_env_true("LEGACY_SNS_GCM_PUBLISHING")
+
 # TODO remove fallback to LAMBDA_DOCKER_NETWORK with next minor version
 MAIN_DOCKER_NETWORK = os.environ.get("MAIN_DOCKER_NETWORK", "") or LAMBDA_DOCKER_NETWORK
+
+# EXPERIMENTAL/LEGACY. Use this flag to return to the legacy behavior of resolving references in the specific models
+CFN_ENABLE_RESOLVE_REFS_IN_MODELS = is_env_true("CFN_ENABLE_RESOLVE_REFS_IN_MODELS")
+
 
 # list of environment variable names used for configuration.
 # Make sure to keep this in sync with the above!
 # Note: do *not* include DATA_DIR in this list, as it is treated separately
 CONFIG_ENV_VARS = [
     "BUCKET_MARKER_LOCAL",
+    "CFN_ENABLE_RESOLVE_REFS_IN_MODELS",
     "CUSTOM_SSL_CERT_PATH",
     "DEBUG",
     "DEFAULT_REGION",
@@ -747,6 +776,7 @@ CONFIG_ENV_VARS = [
     "KINESIS_ERROR_PROBABILITY",
     "KINESIS_INITIALIZE_STREAMS",
     "KINESIS_MOCK_PERSIST_INTERVAL",
+    "KINESIS_ON_DEMAND_STREAM_COUNT_LIMIT",
     "LAMBDA_CODE_EXTRACT_TIME",
     "LAMBDA_CONTAINER_REGISTRY",
     "LAMBDA_DOCKER_DNS",
@@ -755,16 +785,20 @@ CONFIG_ENV_VARS = [
     "LAMBDA_EXECUTOR",
     "LAMBDA_FALLBACK_URL",
     "LAMBDA_FORWARD_URL",
+    "LAMBDA_RUNTIME_IMAGE_MAPPING",
     "LAMBDA_JAVA_OPTS",
     "LAMBDA_REMOTE_DOCKER",
     "LAMBDA_REMOVE_CONTAINERS",
+    "LAMBDA_DEV_PORT_EXPOSE",
     "LAMBDA_RUNTIME_EXECUTOR",
     "LAMBDA_RUNTIME_ENVIRONMENT_TIMEOUT",
     "LAMBDA_STAY_OPEN_MODE",
     "LAMBDA_TRUNCATE_STDOUT",
+    "LAMBDA_RETRY_BASE_DELAY_SECONDS",
     "LEGACY_DIRECTORIES",
     "LEGACY_DOCKER_CLIENT",
     "LEGACY_EDGE_PROXY",
+    "LEGACY_SNS_GCM_PUBLISHING",
     "LOCALSTACK_API_KEY",
     "LOCALSTACK_HOSTNAME",
     "LOG_LICENSE_ISSUES",

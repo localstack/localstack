@@ -1,5 +1,6 @@
 from typing import Dict
 
+import localstack.services.route53resolver.utils
 from localstack.aws.api.route53resolver import (
     FirewallConfig,
     FirewallDomainList,
@@ -14,7 +15,6 @@ from localstack.aws.api.route53resolver import (
 )
 from localstack.services.route53resolver.utils import get_firewall_config_id, validate_vpc
 from localstack.services.stores import AccountRegionBundle, BaseStore, LocalAttribute
-from localstack.utils.aws import aws_stack
 
 
 class Route53ResolverStore(BaseStore):
@@ -37,7 +37,7 @@ class Route53ResolverStore(BaseStore):
         firewall_rule_group = self.firewall_rule_groups.get(id)
         if not firewall_rule_group:
             raise ResourceNotFoundException(
-                f"Can't find the resource with ID '{id}'. Trace Id: '{aws_stack.get_trace_id()}'"
+                f"Can't find the resource with ID '{id}'. Trace Id: '{localstack.services.route53resolver.utils.get_trace_id()}'"
             )
         return firewall_rule_group
 
@@ -55,7 +55,7 @@ class Route53ResolverStore(BaseStore):
         firewall_rule_group_association = self.firewall_rule_group_associations.get(id)
         if not firewall_rule_group_association:
             raise ResourceNotFoundException(
-                f"[RSLVR-02025] Can't find the resource with ID '{id}'. Trace Id: '{aws_stack.get_trace_id()}'"
+                f"[RSLVR-02025] Can't find the resource with ID '{id}'. Trace Id: '{localstack.services.route53resolver.utils.get_trace_id()}'"
             )
         return self.firewall_rule_group_associations.get(id)
 
@@ -80,7 +80,7 @@ class Route53ResolverStore(BaseStore):
         firewall_domain_list = self.firewall_domain_lists.get(id)
         if not firewall_domain_list:
             raise ResourceNotFoundException(
-                f"Can't find the resource with ID '{id}'. Trace Id: '{aws_stack.get_trace_id()}'"
+                f"Can't find the resource with ID '{id}'. Trace Id: '{localstack.services.route53resolver.utils.get_trace_id()}'"
             )
         return firewall_domain_list
 
@@ -100,7 +100,7 @@ class Route53ResolverStore(BaseStore):
         )
         if not firewall_rule:
             raise ResourceNotFoundException(
-                f"Can't find the resource with ID '{firewall_rule_group_id}'. Trace Id: '{aws_stack.get_trace_id()}'"
+                f"Can't find the resource with ID '{firewall_rule_group_id}'. Trace Id: '{localstack.services.route53resolver.utils.get_trace_id()}'"
             )
         return firewall_rule
 
@@ -118,7 +118,7 @@ class Route53ResolverStore(BaseStore):
         resolver_query_log_config = self.resolver_query_log_configs.get(id)
         if not resolver_query_log_config:
             raise ResourceNotFoundException(
-                f"[RSLVR-01601] The specified query logging configuration doesn't exist. Trace Id: '{aws_stack.get_trace_id()}'"
+                f"[RSLVR-01601] The specified query logging configuration doesn't exist. Trace Id: '{localstack.services.route53resolver.utils.get_trace_id()}'"
             )
         return resolver_query_log_config
 
@@ -136,7 +136,7 @@ class Route53ResolverStore(BaseStore):
         resolver_query_log_config_association = self.resolver_query_log_config_associations.get(id)
         if not resolver_query_log_config_association:
             raise ResourceNotFoundException(
-                f"[RSLVR-01601] The specified query logging configuration doesn't exist. Trace Id: '{aws_stack.get_trace_id()}'"
+                f"[RSLVR-01601] The specified query logging configuration doesn't exist. Trace Id: '{localstack.services.route53resolver.utils.get_trace_id()}'"
             )
         return resolver_query_log_config_association
 
@@ -152,7 +152,7 @@ class Route53ResolverStore(BaseStore):
                 and association.get("ResourceId") == resource_id
             ):
                 raise ResourceNotFoundException(
-                    f"[RSLVR-01602] The specified query logging configuration association doesn't exist. Trace Id: '{aws_stack.get_trace_id()}'"
+                    f"[RSLVR-01602] The specified query logging configuration association doesn't exist. Trace Id: '{localstack.services.route53resolver.utils.get_trace_id()}'"
                 )
             association["Status"] = "DELETING"
             association_id = association.get("Id")

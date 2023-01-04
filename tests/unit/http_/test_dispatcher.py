@@ -22,17 +22,24 @@ class TestResourceDispatcher:
                 requests.append(req)
                 return {"ok": "POST"}
 
-        router.add("/health", TestResource())
+            def on_head(self, req):
+                requests.append(req)
+                return "HEAD/OK"
 
-        request1 = Request("GET", "/health")
-        request2 = Request("POST", "/health")
+        router.add("/_localstack/health", TestResource())
+
+        request1 = Request("GET", "/_localstack/health")
+        request2 = Request("POST", "/_localstack/health")
+        request3 = Request("HEAD", "/_localstack/health")
         assert router.dispatch(request1).get_data(True) == "GET/OK"
         assert router.dispatch(request1).get_data(True) == "GET/OK"
         assert router.dispatch(request2).json == {"ok": "POST"}
-        assert len(requests) == 3
+        assert router.dispatch(request3).get_data(True) == "HEAD/OK"
+        assert len(requests) == 4
         assert requests[0] is request1
         assert requests[1] is request1
         assert requests[2] is request2
+        assert requests[3] is request3
 
     def test_dispatch_to_non_existing_method_raises_exception(self):
         router = Router(dispatcher=resource_dispatcher(pass_response=False))
@@ -41,11 +48,11 @@ class TestResourceDispatcher:
             def on_post(self, request):
                 return "POST/OK"
 
-        router.add("/health", TestResource())
+        router.add("/_localstack/health", TestResource())
 
         with pytest.raises(MethodNotAllowed):
-            assert router.dispatch(Request("GET", "/health"))
-        assert router.dispatch(Request("POST", "/health")).get_data(True) == "POST/OK"
+            assert router.dispatch(Request("GET", "/_localstack/health"))
+        assert router.dispatch(Request("POST", "/_localstack/health")).get_data(True) == "POST/OK"
 
     def test_dispatcher_with_pass_response(self):
         router = Router(dispatcher=resource_dispatcher(pass_response=True))
@@ -57,9 +64,9 @@ class TestResourceDispatcher:
             def on_post(self, req, resp):
                 resp.set_data("POST/OK")
 
-        router.add("/health", TestResource())
-        assert router.dispatch(Request("GET", "/health")).json == {"message": "GET/OK"}
-        assert router.dispatch(Request("POST", "/health")).get_data(True) == "POST/OK"
+        router.add("/_localstack/health", TestResource())
+        assert router.dispatch(Request("GET", "/_localstack/health")).json == {"message": "GET/OK"}
+        assert router.dispatch(Request("POST", "/_localstack/health")).get_data(True) == "POST/OK"
 
 
 class TestHandlerDispatcher:

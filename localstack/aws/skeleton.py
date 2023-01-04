@@ -203,7 +203,7 @@ class Skeleton:
         service_name = operation.service_model.service_name
         message = (
             f"API action '{action_name}' for service '{service_name}' not yet implemented or pro feature"
-            f" - check https://docs.localstack.cloud/aws/feature-coverage for further information"
+            f" - check https://docs.localstack.cloud/user-guide/aws/feature-coverage for further information"
         )
         LOG.info(message)
         error = CommonServiceException("InternalFailure", message, status_code=501)

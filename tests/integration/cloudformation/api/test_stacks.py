@@ -426,3 +426,78 @@ def test_prevent_resource_deletion(deploy_cfn_template, cfn_client, sns_client, 
     cfn_client.delete_stack(StackName=stack.stack_name)
 
     sns_client.get_topic_attributes(TopicArn=stack.outputs["TopicArn"])
+
+
+@pytest.mark.aws_validated
+@pytest.mark.skip_snapshot_verify(
+    paths=[
+        # parameters may be out of order
+        "$..Stacks..Parameters",
+    ]
+)
+def test_updating_an_updated_stack_sets_status(deploy_cfn_template, cfn_client, snapshot):
+    """
+    The status of a stack that has been updated twice should be "UPDATE_COMPLETE"
+    """
+    snapshot.add_transformer(snapshot.transform.cloudformation_api())
+
+    # need multiple templates to support updates to the stack
+    template_1 = load_file(
+        os.path.join(os.path.dirname(__file__), "../../templates/stack_update_1.yaml")
+    )
+    template_2 = load_file(
+        os.path.join(os.path.dirname(__file__), "../../templates/stack_update_2.yaml")
+    )
+    template_3 = load_file(
+        os.path.join(os.path.dirname(__file__), "../../templates/stack_update_3.yaml")
+    )
+
+    topic_1_name = f"topic-1-{short_uid()}"
+    topic_2_name = f"topic-2-{short_uid()}"
+    topic_3_name = f"topic-3-{short_uid()}"
+    snapshot.add_transformers_list(
+        [
+            snapshot.transform.regex(topic_1_name, "topic-1"),
+            snapshot.transform.regex(topic_2_name, "topic-2"),
+            snapshot.transform.regex(topic_3_name, "topic-3"),
+        ]
+    )
+
+    parameters = {
+        "Topic1Name": topic_1_name,
+        "Topic2Name": topic_2_name,
+        "Topic3Name": topic_3_name,
+    }
+
+    def wait_for(waiter_type: str) -> None:
+        cfn_client.get_waiter(waiter_type).wait(
+            StackName=stack.stack_name,
+            WaiterConfig={
+                "Delay": 5,
+                "MaxAttempts": 5,
+            },
+        )
+
+    stack = deploy_cfn_template(template=template_1, parameters=parameters)
+    wait_for("stack_create_complete")
+
+    # update the stack
+    deploy_cfn_template(
+        template=template_2,
+        is_update=True,
+        stack_name=stack.stack_name,
+        parameters=parameters,
+    )
+    wait_for("stack_update_complete")
+
+    # update the stack again
+    deploy_cfn_template(
+        template=template_3,
+        is_update=True,
+        stack_name=stack.stack_name,
+        parameters=parameters,
+    )
+    wait_for("stack_update_complete")
+
+    res = cfn_client.describe_stacks(StackName=stack.stack_name)
+    snapshot.match("describe-result", res)

@@ -6,10 +6,13 @@ import logging
 import random
 import uuid
 from concurrent.futures import Executor, Future, ThreadPoolExecutor
+from datetime import datetime
 from hashlib import sha256
+from pathlib import PurePosixPath, PureWindowsPath
 from threading import RLock
 from typing import TYPE_CHECKING, Dict, Optional
 
+from localstack import config
 from localstack.aws.api.lambda_ import (
     InvalidParameterValueException,
     InvocationType,
@@ -25,8 +28,11 @@ from localstack.services.awslambda.api_utils import (
 )
 from localstack.services.awslambda.invocation.lambda_models import (
     LAMBDA_LIMITS_CODE_SIZE_UNZIPPED_DEFAULT,
+    ArchiveCode,
     Function,
     FunctionVersion,
+    HotReloadingCode,
+    ImageCode,
     Invocation,
     InvocationResult,
     S3Code,
@@ -37,6 +43,8 @@ from localstack.services.awslambda.invocation.models import lambda_stores
 from localstack.services.awslambda.invocation.version_manager import LambdaVersionManager
 from localstack.utils.archives import get_unzipped_size, is_zip_file
 from localstack.utils.aws import aws_stack
+from localstack.utils.container_utils.container_client import ContainerException
+from localstack.utils.docker_utils import DOCKER_CLIENT as CONTAINER_CLIENT
 from localstack.utils.strings import to_str
 
 if TYPE_CHECKING:
@@ -85,8 +93,8 @@ class LambdaService:
         """
         LOG.debug("Stopping version %s", qualified_arn)
         version_manager = self.lambda_running_versions.pop(
-            qualified_arn
-        ) or self.lambda_starting_versions.pop(qualified_arn)
+            qualified_arn, self.lambda_starting_versions.pop(qualified_arn, None)
+        )
         if not version_manager:
             raise ValueError(f"Unable to find version manager for {qualified_arn}")
         self.task_executor.submit(version_manager.stop)
@@ -182,6 +190,12 @@ class LambdaService:
         qualifier = qualifier or "$LATEST"
         state = lambda_stores[account_id][region]
         function = state.functions.get(function_name)
+
+        if function is None:
+            raise ResourceNotFoundException(
+                f"Function not found: {invoked_arn}", Type="User"
+            )  # TODO: test
+
         if qualifier_is_alias(qualifier):
             alias = function.aliases.get(qualifier)
             if not alias:
@@ -220,6 +234,7 @@ class LambdaService:
                 invoked_arn=invoked_arn,
                 client_context=client_context,
                 invocation_type=invocation_type,
+                invoke_time=datetime.now(),
             )
         )
 
@@ -369,6 +384,15 @@ def store_lambda_archive(
     )
 
 
+def create_hot_reloading_code(path: str) -> HotReloadingCode:
+    # TODO extract into other function
+    if not PurePosixPath(path).is_absolute() and not PureWindowsPath(path).is_absolute():
+        raise InvalidParameterValueException(
+            f"When using hot reloading, the archive key has to be an absolute path! Your archive key: {path}",
+        )
+    return HotReloadingCode(host_path=path)
+
+
 def store_s3_bucket_archive(
     archive_bucket: str,
     archive_key: str,
@@ -376,7 +400,7 @@ def store_s3_bucket_archive(
     function_name: str,
     region_name: str,
     account_id: str,
-) -> S3Code:
+) -> ArchiveCode:
     """
     Takes the lambda archive stored in the given bucket and stores it in an internal s3 bucket
 
@@ -388,6 +412,8 @@ def store_s3_bucket_archive(
     :param account_id: account id the archive should be stored for
     :return: S3 Code object representing the archive stored in S3
     """
+    if archive_bucket == config.BUCKET_MARKER_LOCAL:
+        return create_hot_reloading_code(path=archive_key)
     s3_client: "S3Client" = aws_stack.connect_to_service("s3")
     kwargs = {"VersionId": archive_version} if archive_version else {}
     archive_file = s3_client.get_object(Bucket=archive_bucket, Key=archive_key, **kwargs)[
@@ -396,3 +422,26 @@ def store_s3_bucket_archive(
     return store_lambda_archive(
         archive_file, function_name=function_name, region_name=region_name, account_id=account_id
     )
+
+
+def create_image_code(image_uri: str) -> ImageCode:
+    """
+    Creates an image code by inspecting the provided image
+
+    :param image_uri: Image URI of the image to inspect
+    :return: Image code object
+    """
+    code_sha256 = "<cannot-find-image>"
+    try:
+        CONTAINER_CLIENT.pull_image(docker_image=image_uri)
+    except ContainerException:
+        LOG.debug("Cannot pull image %s. Maybe only available locally?", image_uri)
+    try:
+        code_sha256 = CONTAINER_CLIENT.inspect_image(image_name=image_uri)["RepoDigests"][
+            0
+        ].rpartition(":")[2]
+    except Exception as e:
+        LOG.debug(
+            "Cannot inspect image %s. Is this image and/or docker available: %s", image_uri, e
+        )
+    return ImageCode(image_uri=image_uri, code_sha256=code_sha256, repository_type="ECR")

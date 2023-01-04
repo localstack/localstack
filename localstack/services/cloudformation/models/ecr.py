@@ -2,7 +2,7 @@ import datetime
 import logging
 
 from localstack.services.cloudformation.service_models import GenericBaseModel
-from localstack.utils.aws import aws_stack
+from localstack.utils.aws import arns
 
 LOG = logging.getLogger(__name__)
 
@@ -23,13 +23,13 @@ class ECRRepository(GenericBaseModel):
 
     def get_physical_resource_id(self, attribute, **kwargs):
         repo_name = self.props.get("RepositoryName")
-        return aws_stack.get_ecr_repository_arn(repo_name)
+        return arns.get_ecr_repository_arn(repo_name)
 
     def fetch_state(self, stack_name, resources):
         repo_name = default_repos_per_stack.get(stack_name)
         if repo_name:
             return {
-                "repositoryArn": aws_stack.get_ecr_repository_arn(repo_name),
+                "repositoryArn": arns.get_ecr_repository_arn(repo_name),
                 "registryId": "000000000000",
                 "repositoryName": repo_name,
                 "repositoryUri": "http://localhost:4566",

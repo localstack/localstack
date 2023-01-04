@@ -1,13 +1,12 @@
 import contextlib
-import datetime
 import json
 import logging
 import re
 import time
+from datetime import datetime, timezone
 from typing import Any, Callable, Dict, List, Optional, Tuple, Union
 from urllib import parse as urlparse
 
-import pytz
 from apispec import APISpec
 from botocore.utils import InvalidArnException
 from jsonpatch import apply_patch
@@ -27,9 +26,10 @@ from localstack.constants import (
 from localstack.services.apigateway.context import ApiInvocationContext
 from localstack.services.apigateway.models import ApiGatewayStore, apigateway_stores
 from localstack.utils import common
-from localstack.utils.aws import aws_stack
+from localstack.utils.aws import aws_stack, queries
+from localstack.utils.aws import resources as resource_utils
+from localstack.utils.aws.arns import parse_arn
 from localstack.utils.aws.aws_responses import requests_error_response_json, requests_response
-from localstack.utils.aws.aws_stack import parse_arn
 from localstack.utils.aws.request_context import MARKER_APIGW_REQUEST_REGION, THREAD_LOCAL
 from localstack.utils.strings import long_uid
 from localstack.utils.time import TIMESTAMP_FORMAT_TZ, timestamp
@@ -393,7 +393,7 @@ def get_rest_api_paths(rest_api_id, region_name=None):
         path = resource.get("path")
         # TODO: check if this is still required in the general case (can we rely on "path" being
         #  present?)
-        path = path or aws_stack.get_apigateway_path_for_resource(
+        path = path or queries.get_apigateway_path_for_resource(
             rest_api_id, resource["id"], region_name=region_name
         )
         resource_map[path] = resource
@@ -483,7 +483,7 @@ def connect_api_gateway_to_sqs(gateway_name, stage_name, queue_arn, path, region
             ],
         }
     ]
-    return aws_stack.create_api_gateway(
+    return resource_utils.create_api_gateway(
         name=gateway_name,
         resources=resources,
         stage_name=stage_name,
@@ -604,7 +604,7 @@ def import_api_from_openapi_spec(rest_api: RestAPI, body: Dict, query_params: Di
                         or 300,
                     )
                     if authorizer:
-                        authorizers.update({security_scheme_name: authorizer})
+                        authorizers[security_scheme_name] = authorizer
                     return authorizer
 
     def get_or_create_path(abs_path: str, base_path: str):
@@ -654,7 +654,7 @@ def import_api_from_openapi_spec(rest_api: RestAPI, body: Dict, query_params: Di
 
             method_integration = field_schema.get("x-amazon-apigateway-integration", {})
             method_resource = create_method_resource(resource, field, field_schema)
-            method_resource["requestParameters"] = method_integration.get("requestParameters")
+            method_resource.request_parameters = method_integration.get("requestParameters")
             responses = field_schema.get("responses", {})
             for status_code in responses:
                 response_model = None
@@ -688,9 +688,10 @@ def import_api_from_openapi_spec(rest_api: RestAPI, body: Dict, query_params: Di
                 response_templates=method_integration.get("responses", {})
                 .get("default", {})
                 .get("responseTemplates", None),
+                response_parameters=None,
                 content_handling=None,
             )
-            resource.resource_methods[field]["methodIntegration"] = integration
+            resource.resource_methods[field].method_integration = integration
 
         rest_api.resources[child_id] = resource
         return resource
@@ -699,9 +700,9 @@ def import_api_from_openapi_spec(rest_api: RestAPI, body: Dict, query_params: Di
         return (
             child.add_method(
                 method,
-                authorization_type=authorizer.get("type"),
+                authorization_type=authorizer.type,
                 api_key_required=None,
-                authorizer_id=authorizer.get("id"),
+                authorizer_id=authorizer.id,
             )
             if (authorizer := create_authorizer(method_schema))
             else child.add_method(method, None, None)
@@ -709,7 +710,10 @@ def import_api_from_openapi_spec(rest_api: RestAPI, body: Dict, query_params: Di
 
     if definitions := resolved_schema.get("definitions", {}):
         for name, model in definitions.items():
-            rest_api.add_model(name=name, schema=model, content_type=APPLICATION_JSON)
+            # TODO: validate if description is required
+            rest_api.add_model(
+                name=name, description="", schema=model, content_type=APPLICATION_JSON
+            )
 
     # determine base path
     basepath_mode = (query_params.get("basepath") or ["prepend"])[0]
@@ -797,9 +801,7 @@ def get_event_request_context(invocation_context: ApiInvocationContext):
         },
         "httpMethod": method,
         "protocol": "HTTP/1.1",
-        "requestTime": pytz.utc.localize(datetime.datetime.utcnow()).strftime(
-            REQUEST_TIME_DATE_FORMAT
-        ),
+        "requestTime": datetime.now(timezone.utc).strftime(REQUEST_TIME_DATE_FORMAT),
         "requestTimeEpoch": int(time.time() * 1000),
         "authorizer": {},
     }
@@ -882,10 +884,11 @@ def get_api_account_id_and_region(api_id: str) -> Tuple[Optional[str], Optional[
     """Return the region name for the given REST API ID"""
     for account_id, account in apigateway_backends.items():
         for region_name, region in account.items():
-            if api_id in region.apis:
-                return (account_id, region_name)
-
-    return (None, None)
+            # compare low case keys to avoid case sensitivity issues
+            for key in region.apis.keys():
+                if key.lower() == api_id.lower():
+                    return account_id, region_name
+    return None, None
 
 
 def extract_api_id_from_hostname_in_url(hostname: str) -> str:
@@ -924,7 +927,7 @@ class OpenApiExporter:
     exporters: Dict[str, TypeExporter]
 
     def __init__(self):
-        self.exporters = {"swagger": self._swagger_export, "oas3": self._oas3_export}
+        self.exporters = {"swagger": self._swagger_export, "oas30": self._oas30_export}
         self.export_formats = {"application/json": "to_dict", "application/yaml": "to_yaml"}
 
     def export_api(
@@ -967,7 +970,7 @@ class OpenApiExporter:
 
         return getattr(spec, self.export_formats.get(export_format))()
 
-    def _oas3_export(self, api_id: str, stage: str, export_format: str) -> str:
+    def _oas30_export(self, api_id: str, stage: str, export_format: str) -> str:
         """
         https://github.com/OAI/OpenAPI-Specification/blob/main/versions/3.1.0.md
         """

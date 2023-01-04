@@ -4,6 +4,7 @@ import logging
 import shutil
 import tempfile
 import threading
+from abc import ABCMeta, abstractmethod
 from datetime import datetime
 from pathlib import Path
 from typing import IO, TYPE_CHECKING, Dict, Optional, TypedDict
@@ -39,23 +40,42 @@ LOG = logging.getLogger(__name__)
 
 
 # To add support for a new runtime, just add it here with the accompanying image postfix
+# IMAGE_MAPPING = {
+#     "python3.7": "python:3.7@sha256:be668898a538d5258e006e1920f86f31cab8000dfa68b3be78d5ef67ad15a417",
+#     "python3.8": "python:3.8@sha256:b3402a5f5e9535ba4787a1fd6b0ee39738dee18bdff861a0589571ba74122d35",
+#     "python3.9": "python:3.9@sha256:5b3585b121e6fb9707abb52c1f99cbab51939fee0769752ab6c641f20f479cf6",
+#     "nodejs12.x": "nodejs:12@sha256:1389b8cc6bbd321f22b0218233da11bd49382bbee7689dba41c7377c12df65a5",
+#     "nodejs14.x": "nodejs:14@sha256:aa3286c61b6c3f97219da3e9fa39d97f9586672c64c958cb5b980268afdfb554",
+#     "nodejs16.x": "nodejs:16@sha256:c7714124a782801cb7080fd6abddf9354a2ee89642571cb9222bb7541d3df558",
+#     "nodejs18.x": "nodejs:18@sha256:f3c7ebb522417c8212d765b504e8078f99be78d41f82f3a08b7261e183ce4ed6",
+#     "ruby2.7": "ruby:2.7@sha256:7959af1381eede0984dccd526b264cc071088c90b35e21bab41ac9a1bc680d08",
+#     "java8": "java:8@sha256:38d6ac020eedd32b80f5421ed81c979cb1290f4f5b5a3349659c6fd26965bfad",
+#     "java8.al2": "java:8.al2@sha256:78bf037be151c628f8b984e13dc39905d3a06af3385400dced40793c4315b8eb",
+#     "java11": "java:11@sha256:041883130bb9e9c3ef3abb7c3aabde7b3e00ea7612a4d56419357447be6f5418",
+#     "dotnetcore3.1": "dotnet:core3.1@sha256:2cbcc59fe28f7f523674c3a62f1cfd3f522c2ac30da9da2b50789f7f51e1a38b",
+#     "dotnet6": "dotnet:6@sha256:b83e2db700979654befb1516e9242bf55fef999aed58b6368169f6414ce4804a",
+#     "go1.x": "go:1@sha256:de9d915ed2b93b8bd96490927c65d88a98b3aa2a21248d97b398a1a1d1614a6c",
+#     "provided": "provided:alami@sha256:3c00defa5bebd696c572ba48274c711ac9720f7f783cc30d52ba2f9f9309aeca",
+#     "provided.al2": "provided:al2@sha256:da60c549923523e27e618501c1ae434dc8246a4a98688405186426cc363a4c11",
+# }
+
 IMAGE_MAPPING = {
-    "python3.7": "python:3.7@sha256:be668898a538d5258e006e1920f86f31cab8000dfa68b3be78d5ef67ad15a417",
-    "python3.8": "python:3.8@sha256:b3402a5f5e9535ba4787a1fd6b0ee39738dee18bdff861a0589571ba74122d35",
-    "python3.9": "python:3.9@sha256:5b3585b121e6fb9707abb52c1f99cbab51939fee0769752ab6c641f20f479cf6",
-    "nodejs12.x": "nodejs:12@sha256:1389b8cc6bbd321f22b0218233da11bd49382bbee7689dba41c7377c12df65a5",
-    "nodejs14.x": "nodejs:14@sha256:aa3286c61b6c3f97219da3e9fa39d97f9586672c64c958cb5b980268afdfb554",
-    "nodejs16.x": "nodejs:16@sha256:c7714124a782801cb7080fd6abddf9354a2ee89642571cb9222bb7541d3df558",
-    "nodejs18.x": "nodejs:18@sha256:f3c7ebb522417c8212d765b504e8078f99be78d41f82f3a08b7261e183ce4ed6",
-    "ruby2.7": "ruby:2.7@sha256:7959af1381eede0984dccd526b264cc071088c90b35e21bab41ac9a1bc680d08",
-    "java8": "java:8@sha256:38d6ac020eedd32b80f5421ed81c979cb1290f4f5b5a3349659c6fd26965bfad",
-    "java8.al2": "java:8.al2@sha256:78bf037be151c628f8b984e13dc39905d3a06af3385400dced40793c4315b8eb",
-    "java11": "java:11@sha256:041883130bb9e9c3ef3abb7c3aabde7b3e00ea7612a4d56419357447be6f5418",
-    "dotnetcore3.1": "dotnet:core3.1@sha256:2cbcc59fe28f7f523674c3a62f1cfd3f522c2ac30da9da2b50789f7f51e1a38b",
-    "dotnet6": "dotnet:6@sha256:b83e2db700979654befb1516e9242bf55fef999aed58b6368169f6414ce4804a",
-    "go1.x": "go:1@sha256:de9d915ed2b93b8bd96490927c65d88a98b3aa2a21248d97b398a1a1d1614a6c",
-    "provided": "provided:alami@sha256:3c00defa5bebd696c572ba48274c711ac9720f7f783cc30d52ba2f9f9309aeca",
-    "provided.al2": "provided:al2@sha256:da60c549923523e27e618501c1ae434dc8246a4a98688405186426cc363a4c11",
+    "python3.7": "python:3.7",
+    "python3.8": "python:3.8",
+    "python3.9": "python:3.9",
+    "nodejs12.x": "nodejs:12",
+    "nodejs14.x": "nodejs:14",
+    "nodejs16.x": "nodejs:16",
+    "nodejs18.x": "nodejs:18",
+    "ruby2.7": "ruby:2.7",
+    "java8": "java:8",
+    "java8.al2": "java:8.al2",
+    "java11": "java:11",
+    "dotnetcore3.1": "dotnet:core3.1",
+    "dotnet6": "dotnet:6",
+    "go1.x": "go:1",
+    "provided": "provided:alami",
+    "provided.al2": "provided:al2",
 }
 
 
@@ -72,10 +92,58 @@ class Invocation:
     invoked_arn: str
     client_context: Optional[str]
     invocation_type: InvocationType
+    invoke_time: datetime
+
+
+class ArchiveCode(metaclass=ABCMeta):
+    @abstractmethod
+    def generate_presigned_url(self, endpoint_url):
+        """
+        Generates a presigned url pointing to the code archive
+        """
+        pass
+
+    @abstractmethod
+    def is_hot_reloading(self):
+        """
+        Whether this code archive is for hot reloading.
+        This means it should mount the location from the host, and should instruct the runtimes to listen for changes
+
+        :return: True if this object represents hot reloading, False otherwise
+        """
+        pass
+
+    @abstractmethod
+    def get_unzipped_code_location(self):
+        """
+        Get the location of the unzipped archive on disk
+        """
+        pass
+
+    @abstractmethod
+    def prepare_for_execution(self):
+        """
+        Unzips the code archive to the proper destination on disk, if not already present
+        """
+        pass
+
+    @abstractmethod
+    def destroy_cached(self):
+        """
+        Destroys the code object on disk, if it was saved on disk before
+        """
+        pass
+
+    @abstractmethod
+    def destroy(self):
+        """
+        Deletes the code object from S3 and the unzipped version from disk
+        """
+        pass
 
 
 @dataclasses.dataclass(frozen=True)
-class S3Code:
+class S3Code(ArchiveCode):
     """
     Objects representing a code archive stored in an internal S3 bucket.
 
@@ -129,6 +197,14 @@ class S3Code:
         if self.s3_object_version:
             params["VersionId"] = self.s3_object_version
         return s3_client.generate_presigned_url("get_object", Params=params)
+
+    def is_hot_reloading(self) -> bool:
+        """
+        Whether this code archive is hot reloading
+
+        :return: True if it must it represents hot reloading, False otherwise
+        """
+        return False
 
     def get_unzipped_code_location(self) -> Path:
         """
@@ -184,6 +260,58 @@ class S3Code:
             )
 
 
+@dataclasses.dataclass(frozen=True)
+class HotReloadingCode(ArchiveCode):
+    """
+    Objects representing code which is mounted from a given directory from the host, for hot reloading
+    """
+
+    host_path: str
+    code_sha256: str = "hot-reloading-hash-not-available"
+    code_size: int = 0
+
+    def generate_presigned_url(self, endpoint_url: str | None = None) -> str:
+        return f"Code location: {self.host_path}"
+
+    def get_unzipped_code_location(self) -> Path:
+        return Path(self.host_path)
+
+    def is_hot_reloading(self) -> bool:
+        """
+        Whether this code archive is for hot reloading.
+        This means it should mount the location from the host, and should instruct the runtimes to listen for changes
+
+        :return: True if it represents hot reloading, False otherwise
+        """
+        return True
+
+    def prepare_for_execution(self) -> None:
+        pass
+
+    def destroy_cached(self) -> None:
+        """
+        Destroys the code object on disk, if it was saved on disk before
+        """
+        pass
+
+    def destroy(self) -> None:
+        """
+        Deletes the code object from S3 and the unzipped version from disk
+        """
+        pass
+
+
+@dataclasses.dataclass(frozen=True)
+class ImageCode:
+    image_uri: str
+    repository_type: str
+    code_sha256: str
+
+    @property
+    def resolved_image_uri(self):
+        return f"{self.image_uri.rpartition(':')[0]}@sha256:{self.code_sha256}"
+
+
 @dataclasses.dataclass
 class DeadLetterConfig:
     target_arn: str
@@ -195,7 +323,7 @@ class FileSystemConfig:
     local_mount_path: str
 
 
-@dataclasses.dataclass
+@dataclasses.dataclass(frozen=True)
 class ImageConfig:
     working_directory: str
     command: list[str] = dataclasses.field(default_factory=list)
@@ -305,8 +433,12 @@ class ResourcePolicy:
 
 @dataclasses.dataclass
 class FunctionResourcePolicy:
-    revision_id: str
+    revision_id: str = dataclasses.field(init=False, default_factory=long_uid)
     policy: ResourcePolicy  # TODO: do we have a typed IAM policy somewhere already?
+
+    @staticmethod
+    def new_revision_id() -> str:
+        return long_uid()
 
 
 @dataclasses.dataclass
@@ -430,7 +562,7 @@ class LayerVersion:
     layer_arn: str
 
     version: int
-    code: S3Code
+    code: ArchiveCode
     license_info: str
     compatible_runtimes: list[Runtime]
     compatible_architectures: list[Architecture]
@@ -467,10 +599,11 @@ class VersionFunctionConfiguration:
     ephemeral_storage: LambdaEphemeralStorage
 
     tracing_config_mode: TracingMode
-    code: S3Code
+    code: ArchiveCode
     last_modified: str  # ISO string
     state: VersionState
 
+    image: Optional[ImageCode] = None
     image_config: Optional[ImageConfig] = None
     last_update: Optional[UpdateStatus] = None
     revision_id: str = dataclasses.field(init=False, default_factory=long_uid)
@@ -501,7 +634,7 @@ class Function:
     versions: dict[str, FunctionVersion] = dataclasses.field(default_factory=dict)
     function_url_configs: dict[str, FunctionUrlConfig] = dataclasses.field(
         default_factory=dict
-    )  # key has to be $LATEST or alias name
+    )  # key is $LATEST, version, or alias
     permissions: dict[str, FunctionResourcePolicy] = dataclasses.field(
         default_factory=dict
     )  # key is $LATEST, version or alias
@@ -549,10 +682,3 @@ class AccountSettings:
     code_size_zipped: int = LAMBDA_LIMITS_CODE_SIZE_ZIPPED_DEFAULT
     code_size_unzipped: int = LAMBDA_LIMITS_CODE_SIZE_UNZIPPED_DEFAULT
     concurrent_executions: int = LAMBDA_LIMITS_CONCURRENT_EXECUTIONS_DEFAULT
-
-
-@dataclasses.dataclass
-class AccountLimitUsage:
-    unreserved_concurrent_executions: int
-    total_code_size: int
-    function_count: int

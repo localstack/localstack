@@ -3,8 +3,9 @@ import json
 import logging
 import queue
 import threading
+import time
 import uuid
-from concurrent.futures import Future
+from concurrent.futures import Future, ThreadPoolExecutor
 from datetime import datetime
 from queue import Queue
 from threading import Thread
@@ -132,6 +133,8 @@ class LambdaVersionManager(ServiceEndpoint):
     # TODO not sure about this backlink, maybe a callback is better?
     lambda_service: "LambdaService"
 
+    destination_execution_pool: ThreadPoolExecutor
+
     def __init__(
         self,
         function_arn: str,
@@ -150,6 +153,9 @@ class LambdaVersionManager(ServiceEndpoint):
         self.shutdown_event = threading.Event()
         self.state = None
         self.log_handler = LogHandler()
+        self.destination_execution_pool = ThreadPoolExecutor(
+            thread_name_prefix=f"lambda-destination-processor-{function_version.id.function_name}"
+        )
 
     def start(self) -> None:
         try:
@@ -183,6 +189,10 @@ class LambdaVersionManager(ServiceEndpoint):
             state=State.Inactive, code=StateReasonCode.Idle, reason="Shutting down"
         )
         self.shutdown_event.set()
+        self.destination_execution_pool.shutdown(
+            cancel_futures=True
+        )  # TODO: give it a grace period waiting, otherwise fail
+
         self.queued_invocations.put(QUEUE_SHUTDOWN)
         self.available_environments.put(QUEUE_SHUTDOWN)
         if self.invocation_thread:
@@ -286,12 +296,16 @@ class LambdaVersionManager(ServiceEndpoint):
             except Exception as e:
                 queued_invocation.result_future.set_exception(e)
 
-    def invoke(self, *, invocation: Invocation) -> Future[InvocationResult] | None:
+    def invoke(
+        self, *, invocation: Invocation, current_retry: int = 0, invocation_id: str | None = None
+    ) -> Future[InvocationResult] | None:
         future = Future() if invocation.invocation_type == "RequestResponse" else None
+        if invocation_id is None:
+            invocation_id = str(uuid.uuid4())
         invocation_storage = QueuedInvocation(
-            invocation_id=str(uuid.uuid4()),
+            invocation_id=invocation_id,
             result_future=future,
-            retries=1,
+            retries=current_retry,
             invocation=invocation,
         )
         self.queued_invocations.put(invocation_storage)
@@ -333,11 +347,11 @@ class LambdaVersionManager(ServiceEndpoint):
             )
 
     def process_event_destinations(
-        self, invocation_result: InvocationResult | InvocationError, original_payload: bytes
+        self,
+        invocation_result: InvocationResult | InvocationError,
+        original_invocation: RunningInvocation,
+        original_payload: bytes,
     ) -> None:
-        """
-        TODO: handle this asynchronously, to not block the rest of the execution
-        """
         LOG.debug("Got event invocation with id %s", invocation_result.invocation_id)
 
         # 1. Handle DLQ routing
@@ -360,9 +374,8 @@ class LambdaVersionManager(ServiceEndpoint):
         if event_invoke_config is None:
             return
 
-        # TODO: we need more information about the invocation event
-
         if isinstance(invocation_result, InvocationResult):
+            LOG.debug("Handling success destination for %s", self.function_arn)
             success_destination = event_invoke_config.destination_config.get("OnSuccess", {}).get(
                 "Destination"
             )
@@ -370,15 +383,18 @@ class LambdaVersionManager(ServiceEndpoint):
                 return
             destination_payload = {
                 "version": "1.0",
-                "timestamp": timestamp_millis(),  # TODO
+                "timestamp": timestamp_millis(),
                 "requestContext": {
                     "requestId": invocation_result.invocation_id,
                     "functionArn": self.function_version.qualified_arn,
                     "condition": "Success",
-                    "approximateInvokeCount": 1,
+                    "approximateInvokeCount": original_invocation.invocation.retries + 1,
                 },
                 "requestPayload": json.loads(to_str(original_payload)),
-                "responseContext": {"statusCode": 200, "executedVersion": "$LATEST"},
+                "responseContext": {
+                    "statusCode": 200,
+                    "executedVersion": self.function_version.id.qualifier,
+                },
                 "responsePayload": json.loads(to_str(invocation_result.payload or {})),
             }
 
@@ -388,25 +404,61 @@ class LambdaVersionManager(ServiceEndpoint):
             )
 
         elif isinstance(invocation_result, InvocationError):
+            LOG.debug("Handling error destination for %s", self.function_arn)
+
             failure_destination = event_invoke_config.destination_config.get("OnFailure", {}).get(
                 "Destination"
             )
+
+            max_retry_attempts = event_invoke_config.maximum_retry_attempts
+            previous_retry_attempts = original_invocation.invocation.retries
+
+            if max_retry_attempts > 0 and max_retry_attempts > previous_retry_attempts:
+                delay_queue_invoke_seconds = config.LAMBDA_RETRY_BASE_DELAY_SECONDS * (
+                    previous_retry_attempts + 1
+                )
+
+                time_passed = datetime.now() - original_invocation.invocation.invocation.invoke_time
+                enough_time_for_retry = (
+                    event_invoke_config.maximum_event_age_in_seconds
+                    and time_passed.seconds + delay_queue_invoke_seconds
+                    <= event_invoke_config.maximum_event_age_in_seconds
+                )
+
+                if (
+                    event_invoke_config.maximum_event_age_in_seconds is None
+                    or enough_time_for_retry
+                ):
+                    time.sleep(delay_queue_invoke_seconds)
+                    LOG.debug("Retrying lambda invocation for %s", self.function_arn)
+                    self.invoke(
+                        invocation=original_invocation.invocation.invocation,
+                        current_retry=previous_retry_attempts + 1,
+                        invocation_id=original_invocation.invocation.invocation_id,
+                    )
+                    return
+
+                failure_cause = "EventAgeExceeded"
+            else:
+                failure_cause = "RetriesExhausted"
+
             if failure_destination is None:
                 return
+
             destination_payload = {
                 "version": "1.0",
-                "timestamp": timestamp_millis(),  # TODO
+                "timestamp": timestamp_millis(),
                 "requestContext": {
                     "requestId": invocation_result.invocation_id,
                     "functionArn": self.function_version.qualified_arn,
-                    "condition": "RetriesExhausted",  # TODO we don't know that here
-                    "approximateInvokeCount": 1,
+                    "condition": failure_cause,
+                    "approximateInvokeCount": previous_retry_attempts + 1,
                 },
                 "requestPayload": json.loads(to_str(original_payload)),
                 "responseContext": {
                     "statusCode": 200,
-                    "executedVersion": "$LATEST",
-                    "functionError": "Unhandled",  # TODO
+                    "executedVersion": self.function_version.id.qualifier,
+                    "functionError": "Unhandled",
                 },
                 "responsePayload": json.loads(to_str(invocation_result.payload)),
             }
@@ -417,8 +469,6 @@ class LambdaVersionManager(ServiceEndpoint):
             )
         else:
             raise ValueError("Unknown type for invocation result received.")
-
-        # TODO make async to not block other executions
 
     def invocation_response(
         self, invoke_id: str, invocation_result: Union[InvocationResult, InvocationError]
@@ -432,18 +482,22 @@ class LambdaVersionManager(ServiceEndpoint):
             invocation_result.logs = running_invocation.logs
         invocation_result.executed_version = self.function_version.id.qualifier
         executor = running_invocation.executor
+
         if running_invocation.invocation.invocation.invocation_type == "RequestResponse":
             running_invocation.invocation.result_future.set_result(invocation_result)
         else:
-            self.process_event_destinations(
+            self.destination_execution_pool.submit(
+                self.process_event_destinations,
                 invocation_result=invocation_result,
+                original_invocation=running_invocation,
                 original_payload=running_invocation.invocation.invocation.payload,
             )
+
+        self.store_logs(invocation_result=invocation_result, executor=executor)
 
         # mark executor available again
         executor.invocation_done()
         self.available_environments.put(executor)
-        self.store_logs(invocation_result=invocation_result, executor=executor)
 
     # Service Endpoint implementation
     def invocation_result(self, invoke_id: str, invocation_result: InvocationResult) -> None:

@@ -1,4 +1,4 @@
-<a href="https://localstack.cloud/blog/2022-07-13-announcing-localstack-v1-general-availability/"><img src="https://raw.githubusercontent.com/localstack/localstack/master/.github/images/v1-release.svg"></a>
+<a href="https://discuss.localstack.cloud/t/localstack-release-v1-3-0/"><img src="https://raw.githubusercontent.com/localstack/localstack/master/.github/images/release.svg"></a>
 <p align="center">
   <img src="https://raw.githubusercontent.com/localstack/localstack/master/doc/localstack-readme-banner.svg" alt="LocalStack - A fully functional local cloud stack">
 </p>
@@ -26,13 +26,12 @@
   <a href="#example">Example</a> •
   <a href="#running">Run</a> •
   <a href="#usage">Usage</a> •
-  <a href="#change-log">Changelog</a> •
+  <a href="#releases">Releases</a> •
   <a href="#contributing">Contributing</a>
   <br>–<br>
   <a href="https://docs.localstack.cloud" target="_blank">📖 Docs</a> •
   <a href="https://app.localstack.cloud" target="_blank">💻 Pro version</a> •
-  <a href="https://docs.localstack.cloud/aws/feature-coverage/" target="_blank">☑️ Feature coverage</a> •
-  <a href="#announcements">📢 Announcements</a>
+  <a href="https://docs.localstack.cloud/user-guide/aws/feature-coverage/" target="_blank">☑️ Feature coverage</a>
 </p>
 
 ---
@@ -41,9 +40,9 @@
 
 [LocalStack 💻](https://localstack.cloud) is a cloud service emulator that runs in a single container on your laptop or in your CI environment. With LocalStack, you can run your AWS applications or Lambdas entirely on your local machine without connecting to a remote cloud provider! Whether you are testing complex CDK applications or Terraform configurations, or just beginning to learn about AWS services, LocalStack helps speed up and simplify your testing and development workflow.
 
-LocalStack supports a growing number of AWS services, like AWS Lambda, S3, Dynamodb, Kinesis, SQS, SNS, and **many** more! The [**Pro version** of LocalStack](https://localstack.cloud/pricing) supports additional APIs and advanced features. You can find a comprehensive list of supported APIs on our [☑️ Feature Coverage](https://docs.localstack.cloud/aws/feature-coverage/) page.
+LocalStack supports a growing number of AWS services, like AWS Lambda, S3, Dynamodb, Kinesis, SQS, SNS, and **many** more! The [**Pro version** of LocalStack](https://localstack.cloud/pricing) supports additional APIs and advanced features. You can find a comprehensive list of supported APIs on our [☑️ Feature Coverage](https://docs.localstack.cloud/user-guide/aws/feature-coverage/) page.
 
-LocalStack also provides additional features to make your life as a cloud developer easier! Check out LocalStack's [Cloud Developer Tools](https://docs.localstack.cloud/tools/) for more information.
+LocalStack also provides additional features to make your life as a cloud developer easier! Check out LocalStack's [Cloud Developer Tools](https://docs.localstack.cloud/user-guide/tools/) for more information.
 
 ## Requirements
 
@@ -76,7 +75,7 @@ Start LocalStack inside a Docker container by running:
   / /___/ /_/ / /__/ /_/ / /___/ / /_/ /_/ / /__/ ,<
  /_____/\____/\___/\__,_/_//____/\__/\__,_/\___/_/|_|
 
- 💻 LocalStack CLI 1.0.0
+ 💻 LocalStack CLI 1.3.0
 
 [20:22:20] starting LocalStack in Docker mode 🐳
 [20:22:21] detaching
@@ -107,26 +106,26 @@ To use SQS, a fully managed distributed message queuing service, on LocalStack, 
 }
 ```
 
-Learn more about [LocalStack AWS services](https://docs.localstack.cloud/aws/) and using them with LocalStack's `awslocal` CLI.
+Learn more about [LocalStack AWS services](https://docs.localstack.cloud/user-guide/aws/feature-coverage/) and using them with LocalStack's `awslocal` CLI.
 
 ## Running
 
 You can run LocalStack through the following options:
 
-- [LocalStack CLI](https://docs.localstack.cloud/get-started/#localstack-cli)
-- [Docker](https://docs.localstack.cloud/get-started/#docker)
-- [Docker Compose](https://docs.localstack.cloud/get-started/#docker-compose)
-- [Helm](https://docs.localstack.cloud/get-started/#helm)
+- [LocalStack CLI](https://docs.localstack.cloud/getting-started/installation/#localstack-cli)
+- [Docker](https://docs.localstack.cloud/getting-started/installation/#docker)
+- [Docker Compose](https://docs.localstack.cloud/getting-started/installation/#docker-compose)
+- [Helm](https://docs.localstack.cloud/getting-started/installation/#helm)
 
 ## Usage
 
 To start using LocalStack, check out our documentation on [docs.localstack.cloud](https://docs.localstack.cloud).
 
-- [LocalStack Configuration](https://docs.localstack.cloud/localstack/configuration/)
-- [LocalStack in CI](https://docs.localstack.cloud/ci/)
-- [LocalStack Integrations](https://docs.localstack.cloud/integrations/)
-- [LocalStack Tools](https://docs.localstack.cloud/tools/)
-- [Understanding LocalStack](https://docs.localstack.cloud/localstack/)
+- [LocalStack Configuration](https://docs.localstack.cloud/references/configuration/)
+- [LocalStack in CI](https://docs.localstack.cloud/user-guide/ci/)
+- [LocalStack Integrations](https://docs.localstack.cloud/user-guide/integrations/)
+- [LocalStack Tools](https://docs.localstack.cloud/user-guide/tools/)
+- [Understanding LocalStack](https://docs.localstack.cloud/references/)
 - [Troubleshoot](doc/troubleshoot/README.md)
 
 To use LocalStack with a graphical user interface, you can use the following UI clients:
@@ -134,17 +133,16 @@ To use LocalStack with a graphical user interface, you can use the following UI 
 * [Commandeer desktop app](https://getcommandeer.com)
 * [DynamoDB Admin Web UI](https://www.npmjs.com/package/dynamodb-admin)
 
-## Change Log
+## Releases
 
-Please refer to [GitHub releases](https://github.com/localstack/localstack/releases) to see the complete list of changes for each release.
+Please refer to [GitHub releases](https://github.com/localstack/localstack/releases) to see the complete list of changes for each release. For extended release notes, please refer to the [LocalStack Discuss](https://discuss.localstack.cloud/c/announcement/5).
 
 ## Contributing
 
 If you are interested in contributing to LocalStack:
 
 - Start by reading our [contributing guide](CONTRIBUTING.md).
-- Check out our [developer guide](https://docs.localstack.cloud/developer-guide/).
-- Look through our [roadmap](https://roadmap.localstack.cloud/).
+- Check out our [developer guide](https://docs.localstack.cloud/contributing/).
 - Navigate our codebase and [open issues](https://github.com/localstack/localstack/issues).
 
 We are thankful for all the contributions and feedback we receive.
