@@ -110,15 +110,17 @@ class SchemaExtractor:
 
 class ItemFinder:
     @staticmethod
-    def find_existing_item(put_item: Dict, table_name=None) -> Optional[Dict]:
+    def find_existing_item(
+        put_item: Dict, table_name: str = None, account_id: str = None, region_name: str = None
+    ) -> Optional[Dict]:
         from localstack.services.dynamodb.provider import ValidationException
 
         table_name = table_name or put_item["TableName"]
         ddb_client = aws_stack.connect_to_service(
             "dynamodb",
-            aws_access_key_id=get_aws_account_id(),
+            aws_access_key_id=account_id or get_aws_account_id(),
             aws_secret_access_key=TEST_AWS_SECRET_ACCESS_KEY,
-            region_name=aws_stack.get_region(),
+            region_name=region_name or aws_stack.get_region(),
         )
 
         search_key = {}
