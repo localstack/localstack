@@ -2924,7 +2924,7 @@
     }
   },
   "tests/integration/test_sns.py::TestSNSProvider::test_sub_filter_policy_nested_property_constraints": {
-    "recorded-date": "30-12-2022, 19:34:24",
+    "recorded-date": "04-01-2023, 17:41:42",
     "recorded-content": {
       "sub-filter-policy-nested-error-too-many-combinations": {
         "Error": {
@@ -2941,6 +2941,17 @@
         "Error": {
           "Code": "InvalidParameter",
           "Message": "Invalid parameter: FilterPolicy: Filter policy can not have more than 5 keys",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "sub-filter-policy-rule-no-list": {
+        "Error": {
+          "Code": "InvalidParameter",
+          "Message": "Invalid parameter: FilterPolicy: \"key_a\" must be an object or an array\n at [Source: (String)\"{\"key_a\":\"value_one\"}\"; line: 1, column: 11]",
           "Type": "Sender"
         },
         "ResponseMetadata": {

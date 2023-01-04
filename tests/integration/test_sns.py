@@ -3062,6 +3062,16 @@ class TestSNSProvider:
             )
         snapshot.match("sub-filter-policy-max-attr-keys", e.value.response)
 
+        flat_filter_policy = {"key_a": "value_one"}
+        # Rules should be contained in a list
+        with pytest.raises(ClientError) as e:
+            sns_client.set_subscription_attributes(
+                SubscriptionArn=subscription_arn,
+                AttributeName="FilterPolicy",
+                AttributeValue=json.dumps(flat_filter_policy),
+            )
+        snapshot.match("sub-filter-policy-rule-no-list", e.value.response)
+
     @pytest.mark.aws_validated
     @pytest.mark.parametrize("raw_message_delivery", [True, False])
     def test_filter_policy_on_message_body(
