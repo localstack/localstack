@@ -351,6 +351,15 @@ jobs:
           command: |
             source .venv/bin/activate
             python -m scripts.metric_aggregator . amd64
+      - run:
+          name: Upload test metrics and implemented coverage data to tinybird
+          command: |
+            source .venv/bin/activate
+            METRIC_REPORT_FILE=$(find parity_metrics -type f -iname "metric-report-raw-data-all-*.csv")
+            METRIC_REPORT_PATH=$METRIC_REPORT_FILE \
+            COMMUNITY_IMPL_COV_PATH=scripts/implementation_coverage_full.csv \
+            PRO_IMPL_COV_PATH=scripts/pro/implementation_coverage_full.csv \
+            python -m scripts.tinybird.upload_raw_test_metrics_and_coverage
       - store_artifacts:
           path: parity_metrics/
       - store_artifacts:

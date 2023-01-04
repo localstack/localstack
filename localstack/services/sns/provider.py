@@ -1,29 +1,15 @@
-import ast
-import asyncio
-import base64
-import datetime
 import json
 import logging
-import re
-import time
-import traceback
-import uuid
-from string import ascii_letters, digits
 from typing import Dict, List
 
-import botocore.exceptions
-import requests as requests
-from flask import Response as FlaskResponse
+from botocore.utils import InvalidArnException
 from moto.sns import sns_backends
 from moto.sns.exceptions import DuplicateSnsEndpointError
 from moto.sns.models import MAXIMUM_MESSAGE_LENGTH
-from requests.models import Response as RequestsResponse
+from moto.sns.utils import is_e164
 
-from localstack import config
 from localstack.aws.accounts import get_aws_account_id
-from localstack.aws.api import RequestContext
-from localstack.aws.api.core import CommonServiceException
-from localstack.aws.api.lambda_ import InvocationType
+from localstack.aws.api import CommonServiceException, RequestContext
 from localstack.aws.api.sns import (
     ActionsList,
     AmazonResourceName,
@@ -83,212 +69,39 @@ from localstack.aws.api.sns import (
     attributeValue,
     authenticateOnUnsubscribe,
     boolean,
-    endpoint,
-    label,
-    message,
     messageStructure,
     nextToken,
-    protocol,
-    string,
-    subject,
     subscriptionARN,
-    token,
     topicARN,
     topicName,
 )
-from localstack.config import external_service_url
 from localstack.http import Request, Response, Router, route
 from localstack.services.edge import ROUTER
 from localstack.services.moto import call_moto
 from localstack.services.plugins import ServiceLifecycleHook
-from localstack.services.sns.models import SnsStore, sns_stores
-from localstack.utils.aws import arns, aws_stack
-from localstack.utils.aws.arns import extract_region_from_arn
-from localstack.utils.aws.aws_responses import create_sqs_system_attributes
-from localstack.utils.aws.dead_letter_queue import sns_error_to_dead_letter_queue
-from localstack.utils.cloudwatch.cloudwatch_util import store_cloudwatch_logs
-from localstack.utils.json import json_safe
-from localstack.utils.objects import not_none_or
-from localstack.utils.strings import long_uid, md5, short_uid, to_bytes
-from localstack.utils.threads import start_thread
-from localstack.utils.time import timestamp_millis
-
-SNS_PROTOCOLS = [
-    "http",
-    "https",
-    "email",
-    "email-json",
-    "sms",
-    "sqs",
-    "application",
-    "lambda",
-    "firehose",
-]
-
-# Endpoint to access all the PlatformEndpoint sent Messages
-PLATFORM_ENDPOINT_MSGS_ENDPOINT = "/_aws/sns/platform-endpoint-messages"
+from localstack.services.sns import constants as sns_constants
+from localstack.services.sns.models import SnsMessage, SnsStore, SnsSubscription, sns_stores
+from localstack.services.sns.publisher import (
+    PublishDispatcher,
+    SnsBatchPublishContext,
+    SnsPublishContext,
+)
+from localstack.utils.aws import aws_stack
+from localstack.utils.aws.arns import parse_arn
+from localstack.utils.strings import short_uid
 
 # set up logger
 LOG = logging.getLogger(__name__)
 
-GCM_URL = "https://fcm.googleapis.com/fcm/send"
-
-MSG_ATTR_NAME_REGEX = re.compile(r"^(?!\.)(?!.*\.$)(?!.*\.\.)[a-zA-Z0-9_\-.]+$")
-ATTR_TYPE_REGEX = re.compile(r"^(String|Number|Binary)\..+$")
-VALID_MSG_ATTR_NAME_CHARS = set(ascii_letters + digits + "." + "-" + "_")
-
-
-def publish_message(
-    topic_arn, req_data, headers, subscription_arn=None, skip_checks=False, message_attributes=None
-):
-    store = SnsProvider.get_store()
-    message = req_data["Message"][0]
-    message_id = str(uuid.uuid4())
-    message_attributes = message_attributes or {}
-
-    target_arn = req_data.get("TargetArn")
-    if target_arn and ":endpoint/" in target_arn:
-        cache = store.platform_endpoint_messages[target_arn] = (
-            store.platform_endpoint_messages.get(target_arn) or []
-        )
-        cache.append(req_data)
-        platform_app, endpoint_attributes = get_attributes_for_application_endpoint(target_arn)
-        message_structure = req_data.get("MessageStructure", [None])[0]
-        LOG.debug("Publishing message to Endpoint: %s | Message: %s", target_arn, message)
-        # TODO: should probably store the delivery logs
-        # https://docs.aws.amazon.com/sns/latest/dg/sns-msg-status.html
-
-        start_thread(
-            lambda _: message_to_endpoint(
-                target_arn,
-                message,
-                message_structure,
-                endpoint_attributes,
-                platform_app,
-            ),
-            name="sns-message_to_endpoint",
-        )
-        return message_id
-
-    LOG.debug("Publishing message to TopicArn: %s | Message: %s", topic_arn, message)
-    start_thread(
-        lambda _: message_to_subscribers(
-            message_id,
-            message,
-            topic_arn,
-            # TODO: check
-            req_data,
-            headers,
-            subscription_arn,
-            skip_checks,
-            message_attributes,
-        ),
-        name="sns-message_to_subscribers",
-    )
-
-    return message_id
-
-
-def get_attributes_for_application_endpoint(target_arn):
-    sns_client = aws_stack.connect_to_service("sns")
-    app_name = target_arn.split("/")[-2]
-
-    endpoint_attributes = None
-    try:
-        endpoint_attributes = sns_client.get_endpoint_attributes(EndpointArn=target_arn)[
-            "Attributes"
-        ]
-    except botocore.exceptions.ClientError:
-        LOG.warning(f"Missing attributes for endpoint: {target_arn}")
-    if not endpoint_attributes:
-        raise CommonServiceException(
-            message="No account found for the given parameters",
-            code="InvalidClientTokenId",
-            status_code=403,
-        )
-
-    platform_apps = sns_client.list_platform_applications()["PlatformApplications"]
-    app = None
-    try:
-        app = [x for x in platform_apps if app_name in x["PlatformApplicationArn"]][0]
-    except IndexError:
-        LOG.warning(f"Missing application: {target_arn}")
-
-    if not app:
-        raise CommonServiceException(
-            message="No account found for the given parameters",
-            code="InvalidClientTokenId",
-            status_code=403,
-        )
-
-    # Validate parameters
-    if "app/GCM/" in app["PlatformApplicationArn"]:
-        validate_gcm_parameters(app, endpoint_attributes)
-
-    return app, endpoint_attributes
-
-
-def message_to_endpoint(target_arn, message, structure, endpoint_attributes, platform_app):
-    if structure == "json":
-        message = json.loads(message)
-
-    platform_name = target_arn.split("/")[-3]
-
-    response = None
-    if platform_name == "GCM":
-        response = send_message_to_GCM(
-            platform_app["Attributes"], endpoint_attributes, message["GCM"]
-        )
-
-    if response is None:
-        LOG.warning("Platform not implemented yet")
-    elif response.status_code != 200:
-        LOG.warning(
-            f"Platform {platform_name} returned response {response.status_code} with content {response.content}"
-        )
-
-
-def validate_gcm_parameters(platform_app: Dict, endpoint_attributes: Dict):
-    server_key = platform_app["Attributes"].get("PlatformCredential", "")
-    if not server_key:
-        raise InvalidParameterException(
-            "Invalid parameter: Attributes Reason: Invalid value for attribute: PlatformCredential: cannot be empty"
-        )
-    headers = {"Authorization": f"key={server_key}", "Content-type": "application/json"}
-    response = requests.post(
-        GCM_URL,
-        headers=headers,
-        data='{"registration_ids":["ABC"]}',
-    )
-
-    if response.status_code == 401:
-        raise InvalidParameterException(
-            "Invalid parameter: Attributes Reason: Platform credentials are invalid"
-        )
-
-    if not endpoint_attributes.get("Token"):
-        raise InvalidParameterException(
-            "Invalid parameter: Attributes Reason: Invalid value for attribute: Token: cannot be empty"
-        )
-
-
-def send_message_to_GCM(app_attributes, endpoint_attributes, message):
-    server_key = app_attributes.get("PlatformCredential", "")
-    token = endpoint_attributes.get("Token", "")
-    data = json.loads(message)
-
-    data["to"] = token
-    headers = {"Authorization": f"key={server_key}", "Content-type": "application/json"}
-
-    response = requests.post(
-        GCM_URL,
-        headers=headers,
-        data=json.dumps(data),
-    )
-    return response
-
 
 class SnsProvider(SnsApi, ServiceLifecycleHook):
+    def __init__(self) -> None:
+        super().__init__()
+        self._publisher = PublishDispatcher()
+
+    def on_before_stop(self):
+        self._publisher.shutdown()
+
     def on_after_init(self):
         # Allow sent platform endpoint messages to be retrieved from the SNS endpoint
         register_sns_api_resource(ROUTER)
@@ -301,7 +114,7 @@ class SnsProvider(SnsApi, ServiceLifecycleHook):
         self,
         context: RequestContext,
         topic_arn: topicARN,
-        label: label,
+        label: String,
         aws_account_id: DelegatesList,
         action_name: ActionsList,
     ) -> None:
@@ -338,6 +151,7 @@ class SnsProvider(SnsApi, ServiceLifecycleHook):
         self, context: RequestContext, platform_application_arn: String
     ) -> GetPlatformApplicationAttributesResponse:
         moto_response = call_moto(context)
+        # TODO: filter response to not include credentials
         return GetPlatformApplicationAttributesResponse(**moto_response)
 
     def get_sms_attributes(
@@ -368,7 +182,7 @@ class SnsProvider(SnsApi, ServiceLifecycleHook):
         return ListOriginationNumbersResult(**moto_response)
 
     def list_phone_numbers_opted_out(
-        self, context: RequestContext, next_token: string = None
+        self, context: RequestContext, next_token: String = None
     ) -> ListPhoneNumbersOptedOutResponse:
         moto_response = call_moto(context)
         return ListPhoneNumbersOptedOutResponse(**moto_response)
@@ -403,7 +217,9 @@ class SnsProvider(SnsApi, ServiceLifecycleHook):
         call_moto(context)
         return OptInPhoneNumberResponse()
 
-    def remove_permission(self, context: RequestContext, topic_arn: topicARN, label: label) -> None:
+    def remove_permission(
+        self, context: RequestContext, topic_arn: topicARN, label: String
+    ) -> None:
         call_moto(context)
 
     def set_endpoint_attributes(
@@ -458,13 +274,19 @@ class SnsProvider(SnsApi, ServiceLifecycleHook):
                 "The batch request contains more entries than permissible."
             )
 
+        store = self.get_store()
+        if topic_arn not in store.sns_subscriptions:
+            raise NotFoundException(
+                "Topic does not exist",
+            )
+
         ids = [entry["Id"] for entry in publish_batch_request_entries]
         if len(set(ids)) != len(publish_batch_request_entries):
             raise BatchEntryIdsNotDistinctException(
                 "Two or more batch entries in the request have the same Id."
             )
 
-        if topic_arn and ".fifo" in topic_arn:
+        if ".fifo" in topic_arn:
             if not all(["MessageGroupId" in entry for entry in publish_batch_request_entries]):
                 raise InvalidParameterException(
                     "Invalid parameter: The MessageGroupId parameter is required for FIFO topics"
@@ -478,41 +300,43 @@ class SnsProvider(SnsApi, ServiceLifecycleHook):
                         "Invalid parameter: The topic should either have ContentBasedDeduplication enabled or MessageDeduplicationId provided explicitly",
                     )
 
-        store = self.get_store()
-        if topic_arn not in store.sns_subscriptions:
-            raise NotFoundException(
-                "Topic does not exist",
-            )
-
+        # TODO: implement SNS MessageDeduplicationId and ContentDeduplication checks
         response = {"Successful": [], "Failed": []}
         for entry in publish_batch_request_entries:
-            message_id = str(uuid.uuid4())
-            data = {}
-            data["TopicArn"] = [topic_arn]
-            data["Message"] = [entry["Message"]]
-            data["Subject"] = [entry.get("Subject")]
-            if ".fifo" in topic_arn:
-                data["MessageGroupId"] = [entry.get("MessageGroupId")]
-                data["MessageDeduplicationId"] = [entry.get("MessageDeduplicationId")]
-            # TODO: implement SNS MessageDeduplicationId and ContentDeduplication checks
-
             message_attributes = entry.get("MessageAttributes", {})
             if message_attributes:
                 # if a message contains non-valid message attributes
                 # will fail for the first non-valid message encountered, and raise ParameterValueInvalid
                 validate_message_attributes(message_attributes)
-            try:
-                message_to_subscribers(
-                    message_id,
-                    entry["Message"],
-                    topic_arn,
-                    data,
-                    context.request.headers,
-                    message_attributes=message_attributes,
-                )
-                response["Successful"].append({"Id": entry["Id"], "MessageId": message_id})
-            except Exception:
-                response["Failed"].append({"Id": entry["Id"]})
+
+            # TODO: WRITE AWS VALIDATED
+            if entry.get("MessageStructure") == "json":
+                try:
+                    message = json.loads(entry.get("Message"))
+                    if "default" not in message:
+                        raise InvalidParameterException(
+                            "Invalid parameter: Message Structure - No default entry in JSON message body"
+                        )
+                except json.JSONDecodeError:
+                    raise InvalidParameterException(
+                        "Invalid parameter: Message Structure - JSON message body failed to parse"
+                    )
+
+        # TODO: write AWS validated tests with FilterPolicy and batching
+        # TODO: find a scenario where we can fail to send a message synchronously to be able to report it
+        # right now, it seems that AWS fails the whole publish if something is wrong in the format of 1 message
+
+        message_contexts = []
+        for entry in publish_batch_request_entries:
+            msg_ctx = SnsMessage.from_batch_entry(entry)
+            message_contexts.append(msg_ctx)
+            response["Successful"].append({"Id": entry["Id"], "MessageId": msg_ctx.message_id})
+        publish_ctx = SnsBatchPublishContext(
+            messages=message_contexts,
+            store=store,
+            request_headers=context.request.headers,
+        )
+        self._publisher.publish_batch_to_topic(publish_ctx, topic_arn)
 
         return PublishBatchResponse(**response)
 
@@ -526,17 +350,60 @@ class SnsProvider(SnsApi, ServiceLifecycleHook):
         sub = get_subscription_by_arn(subscription_arn)
         if not sub:
             raise NotFoundException("Subscription does not exist")
+
+        if attribute_name not in sns_constants.VALID_SUBSCRIPTION_ATTR_NAME:
+            raise InvalidParameterException("Invalid parameter: AttributeName")
+
+        if attribute_name == "FilterPolicy":
+            store = self.get_store()
+            try:
+                filter_policy = json.loads(attribute_value or "{}")
+            except json.JSONDecodeError:
+                raise InvalidParameterException(
+                    "Invalid parameter: FilterPolicy: failed to parse JSON."
+                )
+            store.subscription_filter_policy[subscription_arn] = filter_policy
+            pass
+        elif attribute_name == "RawMessageDelivery":
+            # TODO: only for SQS and https(s) subs, + firehose
+            pass
+
+        elif attribute_name == "RedrivePolicy":
+            try:
+                dlq_target_arn = json.loads(attribute_value).get("deadLetterTargetArn", "")
+            except json.JSONDecodeError:
+                raise InvalidParameterException(
+                    "Invalid parameter: RedrivePolicy: failed to parse JSON."
+                )
+            try:
+                parsed_arn = parse_arn(dlq_target_arn)
+            except InvalidArnException:
+                raise InvalidParameterException(
+                    "Invalid parameter: RedrivePolicy: deadLetterTargetArn is an invalid arn"
+                )
+
+            if sub["TopicArn"].endswith(".fifo"):
+                if (
+                    not parsed_arn["resource"].endswith(".fifo")
+                    or "sqs" not in parsed_arn["service"]
+                ):
+                    raise InvalidParameterException(
+                        "Invalid parameter: RedrivePolicy: must use a FIFO queue as DLQ for a FIFO topic"
+                    )
+
         sub[attribute_name] = attribute_value
 
     def confirm_subscription(
         self,
         context: RequestContext,
         topic_arn: topicARN,
-        token: token,
+        token: String,
         authenticate_on_unsubscribe: authenticateOnUnsubscribe = None,
     ) -> ConfirmSubscriptionResponse:
         store = self.get_store()
         sub_arn = None
+        # TODO: this is false, we validate only one sub and not all for topic
+        #  WRITE AWS VALIDATED TEST FOR IT
         for k, v in store.subscription_status.items():
             if v.get("Token") == token and v["TopicArn"] == topic_arn:
                 v["Status"] = "Subscribed"
@@ -602,8 +469,9 @@ class SnsProvider(SnsApi, ServiceLifecycleHook):
                 if e.token == token:
                     if custom_user_data and custom_user_data != e.custom_user_data:
                         # TODO: check error against aws
-                        raise DuplicateSnsEndpointError(
-                            f"Endpoint already exist for token: {token} with different attributes"
+                        raise CommonServiceException(
+                            code="DuplicateEndpoint",
+                            message=f"Endpoint already exist for token: {token} with different attributes",
                         )
         return CreateEndpointResponse(**result)
 
@@ -611,42 +479,26 @@ class SnsProvider(SnsApi, ServiceLifecycleHook):
         call_moto(context)
         store = self.get_store()
 
-        def should_be_kept(current_subscription, target_subscription_arn):
+        def should_be_kept(current_subscription: SnsSubscription, target_subscription_arn: str):
             if current_subscription["SubscriptionArn"] != target_subscription_arn:
                 return True
 
             if current_subscription["Protocol"] in ["http", "https"]:
-                external_url = external_service_url("sns")
+                # TODO: actually validate this (re)subscribe behaviour somehow (localhost.run?)
+                #  we might need to save the sub token in the store
                 subscription_token = short_uid()
-                message_id = long_uid()
-                subscription_url = create_subscribe_url(
-                    external_url, current_subscription["TopicArn"], subscription_token
+                message_ctx = SnsMessage(
+                    type="UnsubscribeConfirmation",
+                    token=subscription_token,
+                    message=f"You have chosen to deactivate subscription {target_subscription_arn}.\nTo cancel this operation and restore the subscription, visit the SubscribeURL included in this message.",
                 )
-                message = {
-                    "Type": ["UnsubscribeConfirmation"],
-                    "MessageId": [message_id],
-                    "Token": [subscription_token],
-                    "TopicArn": [current_subscription["TopicArn"]],
-                    "Message": [
-                        "You have chosen to deactivate subscription %s.\nTo cancel this operation and restore the subscription, visit the SubscribeURL included in this message."
-                        % target_subscription_arn
-                    ],
-                    "SubscribeURL": [subscription_url],
-                    "Timestamp": [datetime.datetime.utcnow().timestamp()],
-                }
-
-                headers = {
-                    "x-amz-sns-message-type": "UnsubscribeConfirmation",
-                    "x-amz-sns-message-id": message_id,
-                    "x-amz-sns-topic-arn": current_subscription["TopicArn"],
-                    "x-amz-sns-subscription-arn": target_subscription_arn,
-                }
-                publish_message(
-                    current_subscription["TopicArn"],
-                    message,
-                    headers,
-                    subscription_arn,
-                    skip_checks=True,
+                publish_ctx = SnsPublishContext(
+                    message=message_ctx, store=store, request_headers=context.request.headers
+                )
+                self._publisher.publish_to_topic_subscriber(
+                    publish_ctx,
+                    topic_arn=current_subscription["TopicArn"],
+                    subscription_arn=target_subscription_arn,
                 )
 
             return False
@@ -674,21 +526,27 @@ class SnsProvider(SnsApi, ServiceLifecycleHook):
     def publish(
         self,
         context: RequestContext,
-        message: message,
+        message: String,
         topic_arn: topicARN = None,
         target_arn: String = None,
         phone_number: String = None,
-        subject: subject = None,
+        subject: String = None,
         message_structure: messageStructure = None,
         message_attributes: MessageAttributeMap = None,
         message_deduplication_id: String = None,
         message_group_id: String = None,
     ) -> PublishResponse:
-        # We do not want the request to be forwarded to SNS backend
         if subject == "":
             raise InvalidParameterException("Invalid parameter: Subject")
         if not message or all(not m for m in message):
             raise InvalidParameterException("Invalid parameter: Empty message")
+
+        # TODO: check for topic + target + phone number at the same time?
+        # TODO: more validation on phone, it might be opted out?
+        if phone_number and not is_e164(phone_number):
+            raise InvalidParameterException(
+                f"Invalid parameter: PhoneNumber Reason: {phone_number} is not valid to publish to"
+            )
 
         if len(message) > MAXIMUM_MESSAGE_LENGTH:
             raise InvalidParameterException("Invalid parameter: Message too long")
@@ -713,51 +571,80 @@ class SnsProvider(SnsApi, ServiceLifecycleHook):
             raise InvalidParameterException(
                 "Invalid parameter: MessageGroupId Reason: The request includes MessageGroupId parameter that is not valid for this topic type"
             )
+        is_endpoint_publish = target_arn and ":endpoint/" in target_arn
+        if message_structure == "json":
+            try:
+                message = json.loads(message)
+                # TODO: check no default key for direct TargetArn endpoint publish, need credentials
+                # see example: https://docs.aws.amazon.com/sns/latest/dg/sns-send-custom-platform-specific-payloads-mobile-devices.html
+                if "default" not in message and not is_endpoint_publish:
+                    raise InvalidParameterException(
+                        "Invalid parameter: Message Structure - No default entry in JSON message body"
+                    )
+            except json.JSONDecodeError:
+                raise InvalidParameterException(
+                    "Invalid parameter: Message Structure - JSON message body failed to parse"
+                )
 
         if message_attributes:
             validate_message_attributes(message_attributes)
 
         store = self.get_store()
 
-        # No need to create a topic to send SMS or single push notifications with SNS
-        # but we can't mock a sending so we only return that it went well
-        if not phone_number and not target_arn:
-            if topic_arn not in store.sns_subscriptions:
-                raise NotFoundException(
-                    "Topic does not exist",
-                )
-        # Legacy format to easily leverage existing publishing code
-        # added parameters parsed by ASF. TODO: check/remove
-        req_data = {
-            "Action": ["Publish"],
-            "TopicArn": [topic_arn],
-            "TargetArn": target_arn,
-            "Message": [message],
-            "MessageAttributes": [message_attributes],
-            "MessageDeduplicationId": [message_deduplication_id],
-            "MessageGroupId": [message_group_id],
-            "MessageStructure": [message_structure],
-            "PhoneNumber": [phone_number],
-            "Subject": [subject],
-        }
-        message_id = publish_message(
-            topic_arn, req_data, context.request.headers, message_attributes=message_attributes
+        if not phone_number:
+            if is_endpoint_publish:
+                moto_sns_backend = sns_backends[context.account_id][context.region]
+                if target_arn not in moto_sns_backend.platform_endpoints:
+                    raise InvalidParameterException(
+                        "Invalid parameter: TargetArn Reason: No endpoint found for the target arn specified"
+                    )
+            else:
+                topic = topic_arn or target_arn
+                if topic not in store.sns_subscriptions:
+                    raise NotFoundException(
+                        "Topic does not exist",
+                    )
+
+        message_ctx = SnsMessage(
+            type="Notification",
+            message=message,
+            message_attributes=message_attributes,
+            message_deduplication_id=message_deduplication_id,
+            message_group_id=message_group_id,
+            message_structure=message_structure,
+            subject=subject,
         )
-        return PublishResponse(MessageId=message_id)
+        publish_ctx = SnsPublishContext(
+            message=message_ctx, store=store, request_headers=context.request.headers
+        )
+
+        if is_endpoint_publish:
+            self._publisher.publish_to_application_endpoint(
+                ctx=publish_ctx, endpoint_arn=target_arn
+            )
+        elif phone_number:
+            self._publisher.publish_to_phone_number(ctx=publish_ctx, phone_number=phone_number)
+        else:
+            # beware if the subscription is FIFO, the order might not be guaranteed.
+            # 2 quick call to this method in succession might not be executed in order in the executor?
+            # TODO: test how this behaves in a FIFO context with a lot of threads.
+            self._publisher.publish_to_topic(publish_ctx, topic_arn or target_arn)
+
+        return PublishResponse(MessageId=message_ctx.message_id)
 
     def subscribe(
         self,
         context: RequestContext,
         topic_arn: topicARN,
-        protocol: protocol,
-        endpoint: endpoint = None,
+        protocol: String,
+        endpoint: String = None,
         attributes: SubscriptionAttributesMap = None,
         return_subscription_arn: boolean = None,
     ) -> SubscribeResponse:
         if not endpoint:
             # TODO: check AWS behaviour (because endpoint is optional)
             raise NotFoundException("Endpoint not specified in subscription")
-        if protocol not in SNS_PROTOCOLS:
+        if protocol not in sns_constants.SNS_PROTOCOLS:
             raise InvalidParameterException(
                 f"Invalid parameter: Amazon SNS does not support this protocol string: {protocol}"
             )
@@ -765,10 +652,24 @@ class SnsProvider(SnsApi, ServiceLifecycleHook):
             raise InvalidParameterException(
                 "Invalid parameter: Endpoint must match the specified protocol"
             )
+        elif protocol == "sms" and not is_e164(endpoint):
+            raise InvalidParameterException(f"Invalid SMS endpoint: {endpoint}")
+
+        elif protocol == "sqs":
+            try:
+                parse_arn(endpoint)
+            except InvalidArnException:
+                raise InvalidParameterException("Invalid parameter: SQS endpoint ARN")
+
         if ".fifo" in endpoint and ".fifo" not in topic_arn:
             raise InvalidParameterException(
                 "Invalid parameter: Invalid parameter: Endpoint Reason: FIFO SQS Queues can not be subscribed to standard SNS topics"
             )
+        elif ".fifo" in topic_arn and ".fifo" not in endpoint:
+            raise InvalidParameterException(
+                "Invalid parameter: Invalid parameter: Endpoint Reason: Please use FIFO SQS queue"
+            )
+
         moto_response = call_moto(context)
         subscription_arn = moto_response.get("SubscriptionArn")
         filter_policy = moto_response.get("FilterPolicy")
@@ -783,6 +684,8 @@ class SnsProvider(SnsApi, ServiceLifecycleHook):
                 return SubscribeResponse(
                     SubscriptionArn=existing_topic_subscription["SubscriptionArn"]
                 )
+        if filter_policy:
+            store.subscription_filter_policy[subscription_arn] = json.loads(filter_policy)
 
         subscription = {
             # http://docs.aws.amazon.com/cli/latest/reference/sns/get-subscription-attributes.html
@@ -806,18 +709,19 @@ class SnsProvider(SnsApi, ServiceLifecycleHook):
         )
         # Send out confirmation message for HTTP(S), fix for https://github.com/localstack/localstack/issues/881
         if protocol in ["http", "https"]:
-            external_url = external_service_url("sns")
-            subscription["UnsubscribeURL"] = create_unsubscribe_url(external_url, subscription_arn)
-            confirmation = {
-                "Type": ["SubscriptionConfirmation"],
-                "Token": [subscription_token],
-                "Message": [
-                    f"You have chosen to subscribe to the topic {topic_arn}.\n"
-                    + "To confirm the subscription, visit the SubscribeURL included in this message."
-                ],
-                "SubscribeURL": [create_subscribe_url(external_url, topic_arn, subscription_token)],
-            }
-            publish_message(topic_arn, confirmation, {}, subscription_arn, skip_checks=True)
+            message_ctx = SnsMessage(
+                type="SubscriptionConfirmation",
+                token=subscription_token,
+                message=f"You have chosen to subscribe to the topic {topic_arn}.\nTo confirm the subscription, visit the SubscribeURL included in this message.",
+            )
+            publish_ctx = SnsPublishContext(
+                message=message_ctx, store=store, request_headers=context.request.headers
+            )
+            self._publisher.publish_to_topic_subscriber(
+                ctx=publish_ctx,
+                topic_arn=topic_arn,
+                subscription_arn=subscription_arn,
+            )
         elif protocol in ["sqs", "lambda"]:
             # Auto-confirm sqs and lambda subscriptions for now
             # TODO: revisit for multi-account
@@ -827,7 +731,6 @@ class SnsProvider(SnsApi, ServiceLifecycleHook):
     def tag_resource(
         self, context: RequestContext, resource_arn: AmazonResourceName, tags: TagList
     ) -> TagResourceResponse:
-        # TODO: can this be used to tag any resource when using AWS?
         # each tag key must be unique
         # https://docs.aws.amazon.com/general/latest/gr/aws_tagging.html#tag-best-practices
         unique_tag_keys = {tag["Key"] for tag in tags}
@@ -866,6 +769,7 @@ class SnsProvider(SnsApi, ServiceLifecycleHook):
         name: topicName,
         attributes: TopicAttributesMap = None,
         tags: TagList = None,
+        data_protection_policy: attributeValue = None,
     ) -> CreateTopicResponse:
         moto_response = call_moto(context)
         store = self.get_store()
@@ -881,425 +785,14 @@ class SnsProvider(SnsApi, ServiceLifecycleHook):
         return CreateTopicResponse(TopicArn=topic_arn)
 
 
-def message_to_subscribers(
-    message_id,
-    message,
-    topic_arn,
-    req_data,
-    headers,
-    subscription_arn=None,
-    skip_checks=False,
-    message_attributes=None,
-):
-    # AWS allows using TargetArn to publish to a topic, for backward compatibility
-    if not topic_arn:
-        topic_arn = req_data.get("TargetArn")
-    store = SnsProvider.get_store()
-    subscriptions = store.sns_subscriptions.get(topic_arn, [])
-
-    async def wait_for_messages_sent():
-        subs = [
-            message_to_subscriber(
-                message_id,
-                message,
-                topic_arn,
-                req_data,
-                headers,
-                subscription_arn,
-                skip_checks,
-                store,
-                subscriber,
-                subscriptions,
-                message_attributes,
-            )
-            for subscriber in list(subscriptions)
-        ]
-        if subs:
-            await asyncio.wait(subs)
-
-    asyncio.run(wait_for_messages_sent())
-
-
-async def message_to_subscriber(
-    message_id,
-    message,
-    topic_arn,
-    req_data,
-    headers,
-    subscription_arn,
-    skip_checks,
-    store,
-    subscriber,
-    subscriptions,
-    message_attributes,
-):
-    if subscription_arn not in [None, subscriber["SubscriptionArn"]]:
-        return
-
-    filter_policy = json.loads(subscriber.get("FilterPolicy") or "{}")
-
-    if not skip_checks and not check_filter_policy(filter_policy, message_attributes):
-        LOG.info(
-            "SNS filter policy %s does not match attributes %s", filter_policy, message_attributes
-        )
-        return
-    # todo: Message attributes are sent only when the message structure is String, not JSON.
-    if subscriber["Protocol"] == "sms":
-        event = {
-            "topic_arn": topic_arn,
-            "endpoint": subscriber["Endpoint"],
-            "message_content": req_data["Message"][0],
-        }
-        store.sms_messages.append(event)
-        LOG.info(
-            "Delivering SMS message to %s: %s",
-            subscriber["Endpoint"],
-            req_data["Message"][0],
-        )
-
-        # MOCK DATA
-        delivery = {
-            "phoneCarrier": "Mock Carrier",
-            "mnc": 270,
-            "priceInUSD": 0.00645,
-            "smsType": "Transactional",
-            "mcc": 310,
-            "providerResponse": "Message has been accepted by phone carrier",
-            "dwellTimeMsUntilDeviceAck": 200,
-        }
-        store_delivery_log(subscriber, True, message, message_id, delivery)
-        return
-
-    elif subscriber["Protocol"] == "sqs":
-        queue_url = None
-        message_body = create_sns_message_body(subscriber, req_data, message_id, message_attributes)
-        try:
-            endpoint = subscriber["Endpoint"]
-
-            if "sqs_queue_url" in subscriber:
-                queue_url = subscriber.get("sqs_queue_url")
-            elif "://" in endpoint:
-                queue_url = endpoint
-            else:
-                queue_url = arns.get_sqs_queue_url(endpoint)
-                subscriber["sqs_queue_url"] = queue_url
-
-            message_group_id = req_data.get("MessageGroupId", [""])[0]
-
-            message_deduplication_id = req_data.get("MessageDeduplicationId", [""])[0]
-
-            sqs_client = aws_stack.connect_to_service("sqs")
-
-            kwargs = {}
-            if message_group_id:
-                kwargs["MessageGroupId"] = message_group_id
-            if message_deduplication_id:
-                kwargs["MessageDeduplicationId"] = message_deduplication_id
-
-            sqs_client.send_message(
-                QueueUrl=queue_url,
-                MessageBody=message_body,
-                MessageAttributes=create_sqs_message_attributes(subscriber, message_attributes),
-                MessageSystemAttributes=create_sqs_system_attributes(headers),
-                **kwargs,
-            )
-            store_delivery_log(subscriber, True, message, message_id)
-        except Exception as exc:
-            LOG.info("Unable to forward SNS message to SQS: %s %s", exc, traceback.format_exc())
-            store_delivery_log(subscriber, False, message, message_id)
-
-            if is_raw_message_delivery(subscriber):
-                msg_attrs = create_sqs_message_attributes(subscriber, message_attributes)
-            else:
-                msg_attrs = {}
-
-            sns_error_to_dead_letter_queue(subscriber, message_body, str(exc), msg_attrs=msg_attrs)
-            if "NonExistentQueue" in str(exc):
-                LOG.debug("The SQS queue endpoint does not exist anymore")
-                # todo: if the queue got deleted, even if we recreate a queue with the same name/url
-                #  AWS won't send to it anymore. Would need to unsub/resub.
-                #  We should mark this subscription as "broken"
-        return
-
-    elif subscriber["Protocol"] == "lambda":
-        try:
-            external_url = external_service_url("sns")
-            unsubscribe_url = create_unsubscribe_url(external_url, subscriber["SubscriptionArn"])
-            response = process_sns_notification_to_lambda(
-                subscriber["Endpoint"],
-                topic_arn,
-                subscriber["SubscriptionArn"],
-                message,
-                message_id,
-                # see the format here
-                # https://docs.aws.amazon.com/lambda/latest/dg/with-sns.html
-                # issue with sdk to serialize the attribute inside lambda
-                prepare_message_attributes(message_attributes),
-                unsubscribe_url,
-                subject=req_data.get("Subject")[0],
-            )
-
-            if response is not None:
-                delivery = {
-                    "statusCode": response[0],
-                    "providerResponse": response[1],
-                }
-                store_delivery_log(subscriber, True, message, message_id, delivery)
-
-            # TODO: Check if it can be removed
-            if isinstance(response, RequestsResponse):
-                response.raise_for_status()
-            elif isinstance(response, FlaskResponse):
-                if response.status_code >= 400:
-                    raise Exception(
-                        "Error response (code %s): %s" % (response.status_code, response.data)
-                    )
-        except Exception as exc:
-            LOG.info(
-                "Unable to run Lambda function on SNS message: %s %s", exc, traceback.format_exc()
-            )
-            store_delivery_log(subscriber, False, message, message_id)
-            message_body = create_sns_message_body(
-                subscriber, req_data, message_id, message_attributes
-            )
-            sns_error_to_dead_letter_queue(subscriber, message_body, str(exc))
-        return
-
-    elif subscriber["Protocol"] in ["http", "https"]:
-        msg_type = (req_data.get("Type") or ["Notification"])[0]
-        try:
-            message_body = create_sns_message_body(
-                subscriber, req_data, message_id, message_attributes
-            )
-        except Exception:
-            return
-        try:
-            message_headers = {
-                "Content-Type": "text/plain",
-                # AWS headers according to
-                # https://docs.aws.amazon.com/sns/latest/dg/sns-message-and-json-formats.html#http-header
-                "x-amz-sns-message-type": msg_type,
-                "x-amz-sns-message-id": message_id,
-                "x-amz-sns-topic-arn": subscriber["TopicArn"],
-                "User-Agent": "Amazon Simple Notification Service Agent",
-            }
-            if msg_type != "SubscriptionConfirmation":
-                # while testing, never had those from AWS but the docs above states it should be there
-                message_headers["x-amz-sns-subscription-arn"] = subscriber["SubscriptionArn"]
-
-            # When raw message delivery is enabled, x-amz-sns-rawdelivery needs to be set to 'true'
-            # indicating that the message has been published without JSON formatting.
-            # https://docs.aws.amazon.com/sns/latest/dg/sns-large-payload-raw-message-delivery.html
-            elif msg_type == "Notification" and is_raw_message_delivery(subscriber):
-                message_headers["x-amz-sns-rawdelivery"] = "true"
-
-            response = requests.post(
-                subscriber["Endpoint"],
-                headers=message_headers,
-                data=message_body,
-                verify=False,
-            )
-
-            delivery = {
-                "statusCode": response.status_code,
-                "providerResponse": response.content.decode("utf-8"),
-            }
-            store_delivery_log(subscriber, True, message, message_id, delivery)
-
-            response.raise_for_status()
-        except Exception as exc:
-            LOG.info(
-                "Received error on sending SNS message, putting to DLQ (if configured): %s", exc
-            )
-            store_delivery_log(subscriber, False, message, message_id)
-            # AWS doesn't send to the DLQ if there's an error trying to deliver a UnsubscribeConfirmation msg
-            if msg_type != "UnsubscribeConfirmation":
-                sns_error_to_dead_letter_queue(subscriber, message_body, str(exc))
-        return
-
-    elif subscriber["Protocol"] == "application":
-        try:
-            sns_client = aws_stack.connect_to_service("sns")
-            publish_kwargs = {
-                "TargetArn": subscriber["Endpoint"],
-                "Message": message,
-                "MessageAttributes": message_attributes,
-            }
-            # only valid value for MessageStructure is json, we cannot set it to nothing
-            if (msg_structure := req_data.get("MessageStructure")) and msg_structure[0] == "json":
-                publish_kwargs["MessageStructure"] = "json"
-
-            sns_client.publish(**publish_kwargs)
-            store_delivery_log(subscriber, True, message, message_id)
-        except Exception as exc:
-            LOG.warning(
-                "Unable to forward SNS message to SNS platform app: %s %s",
-                exc,
-                traceback.format_exc(),
-            )
-            store_delivery_log(subscriber, False, message, message_id)
-            message_body = create_sns_message_body(subscriber, req_data, message_id)
-            sns_error_to_dead_letter_queue(subscriber, message_body, str(exc))
-        return
-
-    elif subscriber["Protocol"] in ["email", "email-json"]:
-        ses_client = aws_stack.connect_to_service("ses")
-        if subscriber.get("Endpoint"):
-            ses_client.verify_email_address(EmailAddress=subscriber.get("Endpoint"))
-            ses_client.verify_email_address(EmailAddress="admin@localstack.com")
-
-            ses_client.send_email(
-                Source="admin@localstack.com",
-                Message={
-                    "Body": {
-                        "Text": {
-                            "Data": create_sns_message_body(
-                                subscriber=subscriber, req_data=req_data, message_id=message_id
-                            )
-                            if subscriber["Protocol"] == "email-json"
-                            else message
-                        }
-                    },
-                    "Subject": {"Data": "SNS-Subscriber-Endpoint"},
-                },
-                Destination={"ToAddresses": [subscriber.get("Endpoint")]},
-            )
-            store_delivery_log(subscriber, True, message, message_id)
-    elif subscriber["Protocol"] == "firehose":
-        firehose_client = aws_stack.connect_to_service("firehose")
-        endpoint = subscriber["Endpoint"]
-        sns_body = create_sns_message_body(
-            subscriber=subscriber, req_data=req_data, message_id=message_id
-        )
-        if endpoint:
-            delivery_stream = arns.extract_resource_from_arn(endpoint).split("/")[1]
-            firehose_client.put_record(
-                DeliveryStreamName=delivery_stream, Record={"Data": to_bytes(sns_body)}
-            )
-            store_delivery_log(subscriber, True, message, message_id)
-        return
-    else:
-        LOG.warning('Unexpected protocol "%s" for SNS subscription', subscriber["Protocol"])
-
-
-def process_sns_notification_to_lambda(
-    func_arn,
-    topic_arn,
-    subscription_arn,
-    message,
-    message_id,
-    message_attributes,
-    unsubscribe_url,
-    subject="",
-) -> tuple[int, bytes] | None:
-    """
-    Process the SNS notification to lambda
-
-    :param func_arn: Arn of the target function
-    :param topic_arn: Arn of the topic invoking the function
-    :param subscription_arn: Arn of the subscription
-    :param message: SNS message
-    :param message_id: SNS message id
-    :param message_attributes: SNS message attributes
-    :param unsubscribe_url: Unsubscribe url
-    :param subject: SNS message subject
-    :return: Tuple (status code, payload) if synchronous call, None otherwise
-    """
-    event = {
-        "Records": [
-            {
-                "EventSource": "aws:sns",
-                "EventVersion": "1.0",
-                "EventSubscriptionArn": subscription_arn,
-                "Sns": {
-                    "Type": "Notification",
-                    "MessageId": message_id,
-                    "TopicArn": topic_arn,
-                    "Subject": subject,
-                    "Message": message,
-                    "Timestamp": timestamp_millis(),
-                    "SignatureVersion": "1",
-                    # TODO Add a more sophisticated solution with an actual signature
-                    # Hardcoded
-                    "Signature": "EXAMPLEpH+..",
-                    "SigningCertUrl": "https://sns.us-east-1.amazonaws.com/SimpleNotificationService-0000000000000000000000.pem",
-                    "UnsubscribeUrl": unsubscribe_url,
-                    "MessageAttributes": message_attributes,
-                },
-            }
-        ]
-    }
-    lambda_client = aws_stack.connect_to_service(
-        "lambda", region_name=extract_region_from_arn(func_arn)
-    )
-    inv_result = lambda_client.invoke(
-        FunctionName=func_arn,
-        Payload=to_bytes(json.dumps(event)),
-        InvocationType=InvocationType.RequestResponse
-        if config.SYNCHRONOUS_SNS_EVENTS
-        else InvocationType.Event,  # DEPRECATED
-    )
-    status_code = inv_result.get("StatusCode")
-    payload = inv_result.get("Payload")
-    if payload:
-        return status_code, payload.read()
-    return None
-
-
 def get_subscription_by_arn(sub_arn):
     store = SnsProvider.get_store()
     # TODO maintain separate map instead of traversing all items
+    # how to deprecate the store without breaking pods/persistence
     for key, subscriptions in store.sns_subscriptions.items():
         for sub in subscriptions:
             if sub["SubscriptionArn"] == sub_arn:
                 return sub
-
-
-def create_sns_message_body(
-    subscriber, req_data, message_id=None, message_attributes: MessageAttributeMap = None
-) -> str:
-    message = req_data["Message"][0]
-    message_type = req_data.get("Type", ["Notification"])[0]
-    protocol = subscriber["Protocol"]
-
-    if req_data.get("MessageStructure") == ["json"]:
-        message = json.loads(message)
-        try:
-            message = message.get(protocol, message["default"])
-        except KeyError:
-            raise Exception("Unable to find 'default' key in message payload")
-
-    if message_type == "Notification" and is_raw_message_delivery(subscriber):
-        return message
-
-    external_url = external_service_url("sns")
-
-    data = {
-        "Type": message_type,
-        "MessageId": message_id,
-        "TopicArn": subscriber["TopicArn"],
-        "Message": message,
-        "Timestamp": timestamp_millis(),
-        "SignatureVersion": "1",
-        # TODO Add a more sophisticated solution with an actual signature
-        #  check KMS for providing real cert and how to serve them
-        # Hardcoded
-        "Signature": "EXAMPLEpH+..",
-        "SigningCertURL": "https://sns.us-east-1.amazonaws.com/SimpleNotificationService-0000000000000000000000.pem",
-    }
-
-    if message_type == "Notification":
-        unsubscribe_url = create_unsubscribe_url(external_url, subscriber["SubscriptionArn"])
-        data["UnsubscribeURL"] = unsubscribe_url
-
-    for key in ["Subject", "SubscribeURL", "Token"]:
-        if req_data.get(key) and req_data[key][0]:
-            data[key] = req_data[key][0]
-
-    if message_attributes:
-        data["MessageAttributes"] = prepare_message_attributes(message_attributes)
-
-    return json.dumps(data)
 
 
 def _get_tags(topic_arn):
@@ -1312,55 +805,6 @@ def _get_tags(topic_arn):
 
 def is_raw_message_delivery(susbcriber):
     return susbcriber.get("RawMessageDelivery") in ("true", True, "True")
-
-
-def create_sqs_message_attributes(subscriber, attributes):
-    message_attributes = {}
-    if not is_raw_message_delivery(subscriber):
-        return message_attributes
-
-    for key, value in attributes.items():
-        # TODO: check if naming differs between ASF and QueryParameters, if not remove .get("Type") and .get("Value")
-        if value.get("Type") or value.get("DataType"):
-            tpe = value.get("Type") or value.get("DataType")
-            attribute = {"DataType": tpe}
-            if tpe == "Binary":
-                val = value.get("BinaryValue") or value.get("Value")
-                attribute["BinaryValue"] = base64.b64decode(to_bytes(val))
-                # base64 decoding might already have happened, in which decode fails.
-                # If decode fails, fallback to whatever is in there.
-                if not attribute["BinaryValue"]:
-                    attribute["BinaryValue"] = val
-
-            else:
-                val = value.get("StringValue") or value.get("Value", "")
-                attribute["StringValue"] = str(val)
-
-            message_attributes[key] = attribute
-
-    return message_attributes
-
-
-def prepare_message_attributes(message_attributes: MessageAttributeMap):
-    attributes = {}
-    if not message_attributes:
-        return attributes
-    # todo: Number type is not supported for Lambda subscriptions, passed as String
-    #  do conversion here
-    for attr_name, attr in message_attributes.items():
-        data_type = attr["DataType"]
-        if data_type == "Binary":
-            # binary payload in base64 encoded by AWS, UTF-8 for JSON
-            # https://docs.aws.amazon.com/sns/latest/api/API_MessageAttributeValue.html
-            val = base64.b64encode(attr["BinaryValue"]).decode()
-        else:
-            val = attr.get("StringValue")
-
-        attributes[attr_name] = {
-            "Type": data_type,
-            "Value": val,
-        }
-    return attributes
 
 
 def validate_message_attributes(message_attributes: MessageAttributeMap) -> None:
@@ -1380,11 +824,15 @@ def validate_message_attributes(message_attributes: MessageAttributeMap) -> None
         validate_message_attribute_name(attr_name)
         # `DataType` is a required field for MessageAttributeValue
         data_type = attr["DataType"]
-        if data_type not in ("String", "Number", "Binary") and not ATTR_TYPE_REGEX.match(data_type):
+        if data_type not in (
+            "String",
+            "Number",
+            "Binary",
+        ) and not sns_constants.ATTR_TYPE_REGEX.match(data_type):
             raise InvalidParameterValueException(
                 f"The message attribute '{attr_name}' has an invalid message attribute type, the set of supported type prefixes is Binary, Number, and String."
             )
-        value_key_data_type = "Binary" if data_type == "Binary" else "String"
+        value_key_data_type = "Binary" if data_type.startswith("Binary") else "String"
         value_key = f"{value_key_data_type}Value"
         if value_key not in attr:
             raise InvalidParameterValueException(
@@ -1403,7 +851,7 @@ def validate_message_attribute_name(name: str) -> None:
     :param name: message attribute name
     :raises InvalidParameterValueException: if the name does not conform to the spec
     """
-    if not MSG_ATTR_NAME_REGEX.match(name):
+    if not sns_constants.MSG_ATTR_NAME_REGEX.match(name):
         # find the proper exception
         if name[0] == ".":
             raise InvalidParameterValueException(
@@ -1415,7 +863,7 @@ def validate_message_attribute_name(name: str) -> None:
             )
 
         for idx, char in enumerate(name):
-            if char not in VALID_MSG_ATTR_NAME_CHARS:
+            if char not in sns_constants.VALID_MSG_ATTR_NAME_CHARS:
                 # change prefix from 0x to #x, without capitalizing the x
                 hex_char = "#x" + hex(ord(char)).upper()[2:]
                 raise InvalidParameterValueException(
@@ -1426,145 +874,6 @@ def validate_message_attribute_name(name: str) -> None:
                 raise InvalidParameterValueException(
                     "Message attribute name can not have successive '.' character."
                 )
-
-
-def create_subscribe_url(external_url, topic_arn, subscription_token):
-    return f"{external_url}/?Action=ConfirmSubscription&TopicArn={topic_arn}&Token={subscription_token}"
-
-
-def create_unsubscribe_url(external_url, subscription_arn):
-    return f"{external_url}/?Action=Unsubscribe&SubscriptionArn={subscription_arn}"
-
-
-def is_number(x):
-    try:
-        float(x)
-        return True
-    except ValueError:
-        return False
-
-
-def evaluate_numeric_condition(conditions, value):
-    if not is_number(value):
-        return False
-
-    for i in range(0, len(conditions), 2):
-        value = float(value)
-        operator = conditions[i]
-        operand = float(conditions[i + 1])
-
-        if operator == "=":
-            if value != operand:
-                return False
-        elif operator == ">":
-            if value <= operand:
-                return False
-        elif operator == "<":
-            if value >= operand:
-                return False
-        elif operator == ">=":
-            if value < operand:
-                return False
-        elif operator == "<=":
-            if value > operand:
-                return False
-
-    return True
-
-
-def evaluate_exists_condition(conditions, message_attributes, criteria):
-    # support for exists: false was added in april 2021
-    # https://aws.amazon.com/about-aws/whats-new/2021/04/amazon-sns-grows-the-set-of-message-filtering-operators/
-    if conditions:
-        return message_attributes.get(criteria) is not None
-    else:
-        return message_attributes.get(criteria) is None
-
-
-def evaluate_condition(value, condition, message_attributes, criteria):
-    if type(condition) is not dict:
-        return value == condition
-    elif condition.get("exists") is not None:
-        return evaluate_exists_condition(condition.get("exists"), message_attributes, criteria)
-    elif value is None:
-        # the remaining conditions require the value to not be None
-        return False
-    elif condition.get("anything-but"):
-        return value not in condition.get("anything-but")
-    elif condition.get("prefix"):
-        prefix = condition.get("prefix")
-        return value.startswith(prefix)
-    elif condition.get("numeric"):
-        return evaluate_numeric_condition(condition.get("numeric"), value)
-    return False
-
-
-def check_filter_policy(filter_policy, message_attributes):
-    if not filter_policy:
-        return True
-
-    for criteria in filter_policy:
-        conditions = filter_policy.get(criteria)
-        attribute = message_attributes.get(criteria)
-
-        if (
-            evaluate_filter_policy_conditions(conditions, attribute, message_attributes, criteria)
-            is False
-        ):
-            return False
-
-    return True
-
-
-def evaluate_filter_policy_conditions(conditions, attribute, message_attributes, criteria):
-    if type(conditions) is not list:
-        conditions = [conditions]
-
-    tpe = attribute.get("DataType") or attribute.get("Type") if attribute else None
-    val = attribute.get("StringValue") or attribute.get("Value") if attribute else None
-    if attribute is not None and tpe == "String.Array":
-        values = ast.literal_eval(val)
-        for value in values:
-            for condition in conditions:
-                if evaluate_condition(value, condition, message_attributes, criteria):
-                    return True
-    else:
-        for condition in conditions:
-            value = val or None
-            if evaluate_condition(value, condition, message_attributes, criteria):
-                return True
-
-    return False
-
-
-def store_delivery_log(
-    subscriber: dict, success: bool, message: str, message_id: str, delivery: dict = None
-):
-    log_group_name = subscriber.get("TopicArn", "").replace("arn:aws:", "").replace(":", "/")
-    log_stream_name = long_uid()
-    invocation_time = int(time.time() * 1000)
-
-    delivery = not_none_or(delivery, {})
-    delivery["deliveryId"] = (long_uid(),)
-    delivery["destination"] = (subscriber.get("Endpoint", ""),)
-    delivery["dwellTimeMs"] = 200
-    if not success:
-        delivery["attemps"] = 1
-
-    delivery_log = {
-        "notification": {
-            "messageMD5Sum": md5(message),
-            "messageId": message_id,
-            "topicArn": subscriber.get("TopicArn"),
-            "timestamp": datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S.%f%z"),
-        },
-        "delivery": delivery,
-        "status": "SUCCESS" if success else "FAILURE",
-    }
-
-    log_output = json.dumps(json_safe(delivery_log))
-
-    return store_cloudwatch_logs(log_group_name, log_stream_name, log_output, invocation_time)
 
 
 def extract_tags(topic_arn, tags, is_create_topic_request, store):
@@ -1582,17 +891,6 @@ def extract_tags(topic_arn, tags, is_create_topic_request, store):
     return True
 
 
-def unsubscribe_sqs_queue(queue_url):
-    """Called upon deletion of an SQS queue, to remove the queue from subscriptions"""
-    store = SnsProvider.get_store()
-    for topic_arn, subscriptions in store.sns_subscriptions.items():
-        subscriptions = store.sns_subscriptions.get(topic_arn, [])
-        for subscriber in list(subscriptions):
-            sub_url = subscriber.get("sqs_queue_url") or subscriber["Endpoint"]
-            if queue_url == sub_url:
-                subscriptions.remove(subscriber)
-
-
 def register_sns_api_resource(router: Router):
     """Register the platform endpointmessages retrospection endpoint as an internal LocalStack endpoint."""
     router.add_route_endpoints(SNSServicePlatformEndpointMessagesApiResource())
@@ -1605,16 +903,17 @@ def _format_platform_endpoint_messages(sent_messages: List[Dict[str, str]]):
     """
     validated_keys = [
         "TargetArn",
-        "Message",
+        "TopicArn",
         "Message",
         "MessageAttributes",
         "MessageStructure",
         "Subject",
+        "MessageId",
     ]
     formatted_messages = []
     for sent_message in sent_messages:
         msg = {
-            key: value[0] if isinstance(value, list) else value
+            key: value if key != "Message" else json.dumps(value)
             for key, value in sent_message.items()
             if key in validated_keys
         }
@@ -1637,7 +936,7 @@ class SNSServicePlatformEndpointMessagesApiResource:
     - DELETE param `endpointArn`: will delete saved messages for `endpointArn`
     """
 
-    @route(PLATFORM_ENDPOINT_MSGS_ENDPOINT, methods=["GET"])
+    @route(sns_constants.PLATFORM_ENDPOINT_MSGS_ENDPOINT, methods=["GET"])
     def on_get(self, request: Request):
         account_id = request.args.get("accountId", get_aws_account_id())
         region = request.args.get("region", "us-east-1")
@@ -1660,7 +959,7 @@ class SNSServicePlatformEndpointMessagesApiResource:
             "region": region,
         }
 
-    @route(PLATFORM_ENDPOINT_MSGS_ENDPOINT, methods=["DELETE"])
+    @route(sns_constants.PLATFORM_ENDPOINT_MSGS_ENDPOINT, methods=["DELETE"])
     def on_delete(self, request: Request) -> Response:
         account_id = request.args.get("accountId", get_aws_account_id())
         region = request.args.get("region", "us-east-1")

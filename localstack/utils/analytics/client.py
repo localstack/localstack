@@ -38,6 +38,10 @@ class AnalyticsClient:
         self.endpoint_events = self.api + "/events"
 
         self.localstack_session_id = get_session_id()
+        self.session = requests.Session()
+
+    def close(self):
+        self.session.close()
 
     def start_session(self, metadata: ClientMetadata) -> SessionResponse:
         # FIXME: re-using Event as request object this way is kind of a hack
@@ -45,7 +49,7 @@ class AnalyticsClient:
             "session", EventMetadata(self.localstack_session_id, str(now())), payload=metadata
         )
 
-        response = requests.post(
+        response = self.session.post(
             self.endpoint_session,
             headers=self._create_headers(),
             json=request.asdict(),
@@ -81,7 +85,7 @@ class AnalyticsClient:
             LOG.debug("posting to %s events %s", endpoint, docs)
 
         # FIXME: fault tolerance/timeouts
-        response = requests.post(
+        response = self.session.post(
             endpoint, json={"events": docs}, headers=headers, proxies=get_proxies()
         )
 
