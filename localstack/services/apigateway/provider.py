@@ -160,8 +160,7 @@ class ApigatewayProvider(ApigatewayApi, ServiceLifecycleHook):
         authorizer = find_api_subentity_by_id(rest_api_id, authorizer_id, "authorizers")
         if authorizer is None:
             raise NotFoundException(f"Authorizer not found: {authorizer_id}")
-        result = to_authorizer_response_json(rest_api_id, authorizer)
-        return result
+        return to_authorizer_response_json(rest_api_id, authorizer)
 
     def delete_authorizer(
         self, context: RequestContext, rest_api_id: String, authorizer_id: String
