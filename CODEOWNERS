@@ -129,11 +129,11 @@
 /tests/integration/test_route53.py @giograno
 
 # S3
-/localstack/aws/api/s3/ @bentsku macnev2013
-/localstack/services/s3/ @bentsku macnev2013
-/localstack/services/cloudformation/models/s3.py @bentsku macnev2013
-/tests/integration/test_s3.py @bentsku macnev2013
-/tests/unit/test_s3.py @bentsku macnev2013
+/localstack/aws/api/s3/ @bentsku @macnev2013
+/localstack/services/s3/ @bentsku @macnev2013
+/localstack/services/cloudformation/models/s3.py @bentsku @macnev2013
+/tests/integration/test_s3.py @bentsku @macnev2013
+/tests/unit/test_s3.py @bentsku @macnev2013
 
 # Secretsmanager
 /localstack/aws/api/secretsmanager/ @dominikschubert
