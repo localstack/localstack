@@ -1,6 +1,7 @@
 import base64
 import dataclasses
 import datetime
+import glob
 import json
 import logging
 import os
@@ -178,7 +179,7 @@ from localstack.services.edge import ROUTER
 from localstack.services.plugins import ServiceLifecycleHook
 from localstack.utils.aws import aws_stack
 from localstack.utils.collections import PaginatedList
-from localstack.utils.files import load_file
+from localstack.utils.files import load_file, rm_rf
 from localstack.utils.strings import get_random_hex, long_uid, short_uid, to_bytes, to_str
 
 LOG = logging.getLogger(__name__)
@@ -207,6 +208,15 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
     def on_before_stop(self) -> None:
         # TODO: should probably unregister routes?
         self.lambda_service.stop()
+
+    def on_after_reset(self):
+        def _rm_dirs(path: str):
+            lambda_directories = glob.glob(path)
+            [rm_rf(lambda_directory) for lambda_directory in lambda_directories]
+
+        _rm_dirs(f"{config.dirs.tmp}/zipfile.*")
+        _rm_dirs(f"{config.dirs.tmp}/layer.*")
+        _rm_dirs(f"{config.dirs.tmp}/lambda")
 
     @staticmethod
     def _get_function(function_name: str, account_id: str, region: str):

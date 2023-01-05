@@ -1,18 +1,25 @@
 import logging
 import os
+import threading
 from typing import List, Optional
 
 from localstack import config
+from localstack import config as localstack_config
 from localstack.config import is_env_true
 from localstack.services.dynamodb.packages import dynamodblocal_package
 from localstack.utils.aws import aws_stack
 from localstack.utils.bootstrap import is_api_key_configured
 from localstack.utils.common import TMP_THREADS, ShellCommandThread, get_free_tcp_port, mkdir
 from localstack.utils.files import rm_rf
+from localstack.utils.functions import run_safe
+from localstack.utils.net import wait_for_port_closed
 from localstack.utils.persistence import is_persistence_enabled
-from localstack.utils.run import FuncThread
+from localstack.utils.run import FuncThread, run
 from localstack.utils.serving import Server
-from localstack.utils.sync import retry
+from localstack.utils.sync import retry, synchronized
+
+# lock used to synchronize the external process restart
+RESTART_LOCK = threading.RLock()
 
 LOG = logging.getLogger(__name__)
 
@@ -168,6 +175,43 @@ def start_dynamodb(port=None, db_path=None, clean_db_path=False):
     _server.start()
 
     return _server
+
+
+@synchronized(lock=RESTART_LOCK)
+def restart_dynamodb(db_path=None, clean_db_path=False):
+    global _server
+    import psutil
+
+    ddb_server = _server
+    if ddb_server:
+        server_port = ddb_server.port
+        ddb_server._thread.auto_restart = False
+        ddb_server.shutdown()
+        ddb_server.join(timeout=10)
+        try:
+            wait_for_port_closed(server_port, sleep_time=0.8, retries=10)
+        except Exception:
+            LOG.warning(
+                "DynamoDB server port %s (%s) unexpectedly still open; running processes: %s",
+                server_port,
+                ddb_server._thread,
+                run(["ps", "aux"]),
+            )
+
+            # attempt to terminate/kill the process manually
+            server_pid = ddb_server._thread.process.pid
+            LOG.info("Attempting to kill DynamoDB process %s", server_pid)
+            process = psutil.Process(server_pid)
+            run_safe(process.terminate)
+            run_safe(process.kill)
+            wait_for_port_closed(server_port, sleep_time=0.5, retries=8)
+
+        _server = None
+
+    db_path = db_path or f"{localstack_config.dirs.data}/dynamodb"
+    LOG.debug("Restarting DynamoDB process ...")
+    start_dynamodb(db_path=db_path, clean_db_path=clean_db_path)
+    wait_for_dynamodb()
 
 
 def get_server():

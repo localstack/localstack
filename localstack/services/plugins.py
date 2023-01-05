@@ -133,6 +133,10 @@ class ServiceLifecycleHook:
         """Hook triggered after new state has been injected into the provider's store."""
         pass
 
+    def on_after_reset(self):
+        """Hook triggered after the state container has been reset."""
+        pass
+
     def on_exception(self):
         pass
 

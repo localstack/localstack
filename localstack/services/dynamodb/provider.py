@@ -93,7 +93,12 @@ from localstack.constants import AUTH_CREDENTIAL_REGEX, LOCALHOST, TEST_AWS_SECR
 from localstack.http import Response
 from localstack.services.dynamodb import server
 from localstack.services.dynamodb.models import DynamoDBStore, dynamodb_stores
-from localstack.services.dynamodb.server import start_dynamodb, wait_for_dynamodb
+from localstack.services.dynamodb.server import (
+    check_dynamodb,
+    restart_dynamodb,
+    start_dynamodb,
+    wait_for_dynamodb,
+)
 from localstack.services.dynamodb.utils import (
     ItemFinder,
     ItemSet,
@@ -113,6 +118,7 @@ from localstack.utils.collections import select_attributes
 from localstack.utils.common import short_uid, to_bytes
 from localstack.utils.json import BytesEncoder, canonical_json
 from localstack.utils.strings import long_uid, to_str
+from localstack.utils.sync import retry
 from localstack.utils.threads import start_worker_thread
 
 # set up logger
@@ -403,6 +409,13 @@ class DynamoDBProvider(DynamodbApi, ServiceLifecycleHook):
     def on_before_start(self):
         start_dynamodb()
         wait_for_dynamodb()
+
+    def on_after_reset(self):
+        restart_dynamodb(clean_db_path=True)
+        retry(check_dynamodb, sleep=1, retries=10)
+
+    def on_after_inject(self):
+        restart_dynamodb()
 
     def handle_shell_ui_redirect(self, request: werkzeug.Request) -> Response:
         headers = {"Refresh": f"0; url={config.service_url('dynamodb')}/shell/index.html"}

@@ -2,6 +2,8 @@ import logging
 import time
 from random import random
 
+from localstack_ext.services.kinesis.persistence import shutdown_kinesis
+
 import localstack.services.kinesis.kinesis_starter as starter
 from localstack import config
 from localstack.aws.accounts import get_aws_account_id
@@ -48,6 +50,9 @@ class KinesisProvider(KinesisApi, ServiceLifecycleHook):
     @staticmethod
     def get_store(account_id: str, region_name: str) -> KinesisStore:
         return kinesis_stores[account_id][region_name]
+
+    def on_after_reset(self):
+        shutdown_kinesis(reset_state=True)
 
     def get_forward_url(self):
         """Return the URL of the backend Kinesis server to forward requests to"""
