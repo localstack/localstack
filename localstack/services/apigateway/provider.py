@@ -54,7 +54,7 @@ from localstack.services.apigateway.router_asf import ApigatewayRouter, to_invoc
 from localstack.services.edge import ROUTER
 from localstack.services.moto import call_moto
 from localstack.services.plugins import ServiceLifecycleHook
-from localstack.utils.collections import PaginatedList, ensure_list
+from localstack.utils.collections import PaginatedList, ensure_list, select_from_typed_dict
 from localstack.utils.json import parse_json_or_yaml
 from localstack.utils.strings import short_uid, str_to_bool, to_str
 from localstack.utils.time import now_utc
@@ -748,32 +748,46 @@ def normalize_authorizer(data):
 
 
 def to_authorizer_response_json(api_id, data):
-    return to_response_json("authorizer", data, api_id=api_id)
+    result = to_response_json("authorizer", data, api_id=api_id)
+    result = select_from_typed_dict(Authorizer, result)
+    return result
 
 
 def to_validator_response_json(api_id, data):
-    return to_response_json("validator", data, api_id=api_id)
+    result = to_response_json("validator", data, api_id=api_id)
+    result = select_from_typed_dict(RequestValidator, result)
+    return result
 
 
 def to_documentation_part_response_json(api_id, data):
-    return to_response_json("documentationpart", data, api_id=api_id)
+    result = to_response_json("documentationpart", data, api_id=api_id)
+    result = select_from_typed_dict(DocumentationPart, result)
+    return result
 
 
 def to_base_mapping_response_json(domain_name, base_path, data):
     self_link = "/domainnames/%s/basepathmappings/%s" % (domain_name, base_path)
-    return to_response_json("basepathmapping", data, self_link=self_link)
+    result = to_response_json("basepathmapping", data, self_link=self_link)
+    result = select_from_typed_dict(BasePathMapping, result)
+    return result
 
 
 def to_account_response_json(data):
-    return to_response_json("account", data, self_link="/account")
+    result = to_response_json("account", data, self_link="/account")
+    result = select_from_typed_dict(Account, result)
+    return result
 
 
 def to_vpc_link_response_json(data):
-    return to_response_json("vpclink", data)
+    result = to_response_json("vpclink", data)
+    result = select_from_typed_dict(VpcLink, result)
+    return result
 
 
 def to_client_cert_response_json(data):
-    return to_response_json("clientcertificate", data, id_attr="clientCertificateId")
+    result = to_response_json("clientcertificate", data, id_attr="clientCertificateId")
+    result = select_from_typed_dict(ClientCertificate, result)
+    return result
 
 
 def to_response_json(model_type, data, api_id=None, self_link=None, id_attr=None):
@@ -785,6 +799,9 @@ def to_response_json(model_type, data, api_id=None, self_link=None, id_attr=None
         self_link = "/%ss/%s" % (model_type, data[id_attr])
         if api_id:
             self_link = "/restapis/%s/%s" % (api_id, self_link)
+    # TODO: check if this is still required - "_links" are listed in the sample responses in the docs, but
+    #  recent parity tests indicate that this field is not returned by real AWS...
+    # https://docs.aws.amazon.com/apigateway/latest/api/API_GetAuthorizers.html#API_GetAuthorizers_Example_1_Response
     if "_links" not in result:
         result["_links"] = {}
     result["_links"]["self"] = {"href": self_link}
