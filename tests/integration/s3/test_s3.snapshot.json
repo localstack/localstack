@@ -294,7 +294,7 @@
     "recorded-content": {
       "expected_error": {
         "Error": {
-          "BucketName": "does-not-exist-7a2b1426",
+          "BucketName": "does-not-exist-localstack-test",
           "Code": "NoSuchBucket",
           "Message": "The specified bucket does not exist"
         },

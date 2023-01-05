@@ -637,7 +637,7 @@ class TestS3:
     @pytest.mark.skip_snapshot_verify(condition=is_old_provider, path="$..RequestID")
     def test_delete_bucket_no_such_bucket(self, s3_client, snapshot):
         with pytest.raises(ClientError) as e:
-            s3_client.delete_bucket(Bucket=f"does-not-exist-{short_uid()}")
+            s3_client.delete_bucket(Bucket="does-not-exist-localstack-test")
 
         snapshot.match("expected_error", e.value.response)
 
