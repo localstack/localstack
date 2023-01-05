@@ -480,7 +480,7 @@ class TestS3UtilsAsf:
     # region is optional in localstack
     # the requested has been forwarded by the router, and S3_VIRTUAL_HOST_FORWARDED_HEADER has been added with the
     # original host header
-    def test_uses_host_address(self):
+    def test_forwarded_from_virtual_host_addressed_request(self):
         host_header = s3_utils_asf.S3_VIRTUAL_HOST_FORWARDED_HEADER
         addresses = [
             ({host_header: f"https://aws.{LOCALHOST}:4566"}, False),
@@ -511,7 +511,10 @@ class TestS3UtilsAsf:
             ({host_header: "s3.eu-west-1.amazonaws.com"}, False),
         ]
         for headers, expected_result in addresses:
-            assert s3_utils_asf.uses_host_addressing(headers) == expected_result
+            assert (
+                s3_utils_asf.forwarded_from_virtual_host_addressed_request(headers)
+                == expected_result
+            )
 
     def test_is_valid_canonical_id(self):
         canonical_ids = [

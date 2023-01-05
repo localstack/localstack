@@ -31,7 +31,7 @@ from localstack.services.s3.utils import (
     S3_VIRTUAL_HOST_FORWARDED_HEADER,
     _create_invalid_argument_exc,
     capitalize_header_name_from_snake_case,
-    uses_host_addressing,
+    forwarded_from_virtual_host_addressed_request,
 )
 from localstack.utils.strings import to_bytes
 
@@ -534,7 +534,7 @@ class S3SigV4SignatureContext:
         self.signed_headers = sig_headers
         self.request_query_string = qs
 
-        if uses_host_addressing(self._headers):
+        if forwarded_from_virtual_host_addressed_request(self._headers):
             netloc = self._headers.get(S3_VIRTUAL_HOST_FORWARDED_HEADER)
             self.host = netloc
             self._original_host = netloc

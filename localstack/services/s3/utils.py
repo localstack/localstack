@@ -147,7 +147,7 @@ def is_valid_canonical_id(canonical_id: str) -> bool:
         return False
 
 
-def uses_host_addressing(headers: Dict[str, str]) -> bool:
+def forwarded_from_virtual_host_addressed_request(headers: Dict[str, str]) -> bool:
     """
     Determines if the request was forwarded from a v-host addressing style into a path one
     """

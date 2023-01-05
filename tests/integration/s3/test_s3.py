@@ -22,6 +22,7 @@ import requests
 import xmltodict
 from boto3.s3.transfer import KB, TransferConfig
 from botocore import UNSIGNED
+from botocore.auth import SigV4Auth
 from botocore.client import Config
 from botocore.exceptions import ClientError
 
@@ -1903,6 +1904,26 @@ class TestS3:
         response = requests.get(download_url)
         assert response.status_code == 200
         assert to_str(response.content) == content
+
+    @pytest.mark.only_localstack
+    def test_s3_hostname_with_subdomain(self, aws_http_client_factory):
+        """
+        This particular test validates the fix for localstack#7424
+        Moto would still validate with the `host` header if buckets where subdomain based even though in the new ASF
+        provider, every request was forwarded by the VirtualHost proxy.
+        """
+        s3_http_client = aws_http_client_factory("s3", signer_factory=SigV4Auth)
+        endpoint_url = _endpoint_url()
+        # this will represent a ListBuckets call, calling the base endpoint
+        resp = s3_http_client.get(endpoint_url)
+        assert resp.ok
+        assert resp.ok
+        assert b"<Bucket" in resp.content
+
+        # the same ListBuckets call, but with subdomain based `host` header
+        resp = s3_http_client.get(endpoint_url, headers={"host": "aws.test.local"})
+        assert resp.ok
+        assert b"<Bucket" in resp.content
 
     @pytest.mark.skip_offline
     @pytest.mark.aws_validated
