@@ -1921,8 +1921,8 @@ class TestSNSProvider:
     @pytest.mark.aws_validated
     @pytest.mark.skip_snapshot_verify(
         paths=[
-            "$.invalid-json-redrive-policy.Error.Message",  # message contains java trace in AWS
-            "$.invalid-json-filter-policy.Error.Message",  # message contains java trace in AWS
+            "$.invalid-json-redrive-policy.Error.Message",  # message contains java trace in AWS, assert instead
+            "$.invalid-json-filter-policy.Error.Message",  # message contains java trace in AWS, assert instead
         ]
     )
     def test_validate_set_sub_attributes(
@@ -1965,6 +1965,10 @@ class TestSNSProvider:
                 AttributeValue="{invalidjson}",
             )
         snapshot.match("invalid-json-redrive-policy", e.value.response)
+        assert (
+            e.value.response["Error"]["Message"]
+            == "Invalid parameter: RedrivePolicy: failed to parse JSON."
+        )
 
         with pytest.raises(ClientError) as e:
             sns_client.set_subscription_attributes(
@@ -1973,6 +1977,10 @@ class TestSNSProvider:
                 AttributeValue="{invalidjson}",
             )
         snapshot.match("invalid-json-filter-policy", e.value.response)
+        assert (
+            e.value.response["Error"]["Message"]
+            == "Invalid parameter: FilterPolicy: failed to parse JSON."
+        )
 
     @pytest.mark.aws_validated
     def test_empty_sns_message(
@@ -3006,6 +3014,11 @@ class TestSNSProvider:
         snapshot.match("sub-attrs-after-setting-nested-policy", subscription_attrs)
 
     @pytest.mark.aws_validated
+    @pytest.mark.skip_snapshot_verify(
+        paths=[
+            "$.sub-filter-policy-rule-no-list.Error.Message",  # message contains java trace in AWS, assert instead
+        ]
+    )
     def test_sub_filter_policy_nested_property_constraints(
         self,
         sns_client,
@@ -3071,6 +3084,10 @@ class TestSNSProvider:
                 AttributeValue=json.dumps(flat_filter_policy),
             )
         snapshot.match("sub-filter-policy-rule-no-list", e.value.response)
+        assert (
+            e.value.response["Error"]["Message"]
+            == 'Invalid parameter: FilterPolicy: "key_a" must be an object or an array'
+        )
 
     @pytest.mark.aws_validated
     @pytest.mark.parametrize("raw_message_delivery", [True, False])
