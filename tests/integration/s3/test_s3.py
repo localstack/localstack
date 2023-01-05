@@ -1176,6 +1176,47 @@ class TestS3:
             s3_client.put_bucket_acl(Bucket=s3_bucket, AccessControlPolicy=acp)
         snapshot.match("put-bucket-acp-acl-6", e.value.response)
 
+        # test setting empty ACP
+        with pytest.raises(ClientError) as e:
+            s3_client.put_bucket_acl(Bucket=s3_bucket, AccessControlPolicy={})
+
+        snapshot.match("put-bucket-empty-acp", e.value.response)
+
+        # test setting nothing
+        with pytest.raises(ClientError) as e:
+            s3_client.put_bucket_acl(Bucket=s3_bucket)
+
+        snapshot.match("put-bucket-empty", e.value.response)
+
+        # test setting two different kind of valid ACL
+        with pytest.raises(ClientError) as e:
+            s3_client.put_bucket_acl(
+                Bucket=s3_bucket,
+                ACL="private",
+                GrantRead='uri="http://acs.amazonaws.com/groups/s3/LogDelivery"',
+            )
+
+        snapshot.match("put-bucket-two-type-acl", e.value.response)
+
+        # test setting again two different kind of valid ACL
+        acp = {
+            "Owner": owner,
+            "Grants": [
+                {
+                    "Grantee": {"ID": owner["ID"], "Type": "CanonicalUser"},
+                    "Permission": "FULL_CONTROL",
+                },
+            ],
+        }
+        with pytest.raises(ClientError) as e:
+            s3_client.put_bucket_acl(
+                Bucket=s3_bucket,
+                ACL="private",
+                AccessControlPolicy=acp,
+            )
+
+        snapshot.match("put-bucket-two-type-acl-acp", e.value.response)
+
     @pytest.mark.aws_validated
     @pytest.mark.skip_snapshot_verify(paths=["$..Restore"])
     @pytest.mark.skip_snapshot_verify(

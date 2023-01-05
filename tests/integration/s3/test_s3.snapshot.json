@@ -2487,7 +2487,7 @@
     }
   },
   "tests/integration/s3/test_s3.py::TestS3::test_s3_bucket_acl_exceptions": {
-    "recorded-date": "14-09-2022, 21:40:39",
+    "recorded-date": "05-01-2023, 21:45:06",
     "recorded-content": {
       "put-bucket-canned-acl": {
         "Error": {
@@ -2597,6 +2597,47 @@
         "Error": {
           "Code": "MalformedACLError",
           "Message": "The XML you provided was not well-formed or did not validate against our published schema"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "put-bucket-empty-acp": {
+        "Error": {
+          "Code": "MalformedACLError",
+          "Message": "The XML you provided was not well-formed or did not validate against our published schema"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "put-bucket-empty": {
+        "Error": {
+          "Code": "MissingSecurityHeader",
+          "Message": "Your request was missing a required header",
+          "MissingHeaderName": "x-amz-acl"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "put-bucket-two-type-acl": {
+        "Error": {
+          "Code": "InvalidRequest",
+          "Message": "Specifying both Canned ACLs and Header Grants is not allowed"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "put-bucket-two-type-acl-acp": {
+        "Error": {
+          "Code": "UnexpectedContent",
+          "Message": "This request does not support content"
         },
         "ResponseMetadata": {
           "HTTPHeaders": {},

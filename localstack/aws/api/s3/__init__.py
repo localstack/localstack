@@ -179,6 +179,7 @@ CanonicalRequestBytes = str
 X_Amz_Expires = int
 HttpMethod = str
 ResourceType = str
+MissingHeaderName = str
 
 
 class AnalyticsS3ExportFileFormat(str):
@@ -730,6 +731,13 @@ class NoSuchCORSConfiguration(ServiceException):
     sender_fault: bool = False
     status_code: int = 404
     BucketName: Optional[BucketName]
+
+
+class MissingSecurityHeader(ServiceException):
+    code: str = "MissingSecurityHeader"
+    sender_fault: bool = False
+    status_code: int = 400
+    MissingHeaderName: Optional[MissingHeaderName]
 
 
 AbortDate = datetime
