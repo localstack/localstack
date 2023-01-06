@@ -878,6 +878,7 @@ class TestLambdaVersions:
         )
         snapshot.match("list_versions_result_end", list_versions_result_end)
 
+    # TODO: consider moving to revision tests?!
     @pytest.mark.aws_validated
     def test_publish_with_wrong_revisionid(
         self, lambda_client, create_lambda_function_aws, lambda_su_role, snapshot
@@ -1294,6 +1295,79 @@ class TestLambdaAlias:
                 Name="non-existent",
             )
         snapshot.match("alias_does_not_exist_esc", e.value.response)
+
+
+@pytest.mark.skipif(condition=is_old_provider(), reason="not supported")
+class TestLambdaRevisions:
+    def test_function_revisions(self, lambda_client, create_lambda_function, snapshot):
+        """Tests basic revision id checks for creating and updating functions"""
+        function_name = f"fn-{short_uid()}"
+        zip_file_content = load_file(TEST_LAMBDA_PYTHON_ECHO_ZIP, mode="rb")
+
+        # rev1: create function
+        # The fixture waits until the function is not in Pending state anymore
+        create_function_response = create_lambda_function(
+            func_name=function_name,
+            zip_file=zip_file_content,
+            handler="index.handler",
+            runtime=Runtime.python3_9,
+        )
+        snapshot.match("create_function_response_rev1", create_function_response)
+        rev1_create_function = create_function_response["CreateFunctionResponse"]["RevisionId"]
+
+        # rev2: created function becomes active
+        get_function_response_rev2 = lambda_client.get_function(FunctionName=function_name)
+        snapshot.match("get_function_response_rev2", get_function_response_rev2)
+        rev2_active_state = get_function_response_rev2["Configuration"]["RevisionId"]
+        # State change from Pending to Active causes revision id change!
+        # Lambda function states: https://docs.aws.amazon.com/lambda/latest/dg/functions-states.html
+        assert rev1_create_function != rev2_active_state
+
+        with pytest.raises(lambda_client.exceptions.PreconditionFailedException) as e:
+            lambda_client.update_function_code(
+                FunctionName=function_name,
+                ZipFile=zip_file_content,
+                RevisionId="wrong",
+            )
+        snapshot.match("update_function_revision_id_exception", e.value.response)
+
+        # rev3: update function code
+        update_fn_code_response = lambda_client.update_function_code(
+            FunctionName=function_name,
+            ZipFile=zip_file_content,
+            RevisionId=rev2_active_state,
+        )
+        snapshot.match("update_function_code_response_rev3", update_fn_code_response)
+        rev3_update_fn_code = update_fn_code_response["RevisionId"]
+        assert rev2_active_state != rev3_update_fn_code
+
+        # rev4: function code update completed
+        lambda_client.get_waiter("function_updated_v2").wait(FunctionName=function_name)
+        get_function_response_rev4 = lambda_client.get_function(FunctionName=function_name)
+        snapshot.match("get_function_response_rev4", get_function_response_rev4)
+        rev4_fn_code_updated = get_function_response_rev4["Configuration"]["RevisionId"]
+        assert rev3_update_fn_code != rev4_fn_code_updated
+
+        with pytest.raises(lambda_client.exceptions.PreconditionFailedException) as e:
+            lambda_client.update_function_configuration(
+                FunctionName=function_name, Runtime=Runtime.python3_8, RevisionId="wrong"
+            )
+        snapshot.match("update_function_configuration_revision_id_exception", e.value.response)
+
+        # rev5: update function configuration
+        update_fn_config_response = lambda_client.update_function_configuration(
+            FunctionName=function_name, Runtime=Runtime.python3_8, RevisionId=rev4_fn_code_updated
+        )
+        snapshot.match("update_function_configuration_response_rev5", update_fn_config_response)
+        rev5_fn_config_update = update_fn_config_response["RevisionId"]
+        assert rev4_fn_code_updated != rev5_fn_config_update
+
+        # rev6: function configuration updated completed
+        lambda_client.get_waiter("function_updated_v2").wait(FunctionName=function_name)
+        get_function_response_rev6 = lambda_client.get_function(FunctionName=function_name)
+        snapshot.match("get_function_response_rev6", get_function_response_rev6)
+        rev6_fn_config_updated = get_function_response_rev6["Configuration"]["RevisionId"]
+        assert rev5_fn_config_update != rev6_fn_config_updated
 
 
 @pytest.mark.skipif(is_old_provider(), reason="focusing on new provider")
