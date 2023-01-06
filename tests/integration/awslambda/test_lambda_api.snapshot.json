@@ -10289,8 +10289,8 @@
       }
     }
   },
-  "tests/integration/awslambda/test_lambda_api.py::TestLambdaRevisions::test_function_revisions_version": {
-    "recorded-date": "06-01-2023, 21:16:06",
+  "tests/integration/awslambda/test_lambda_api.py::TestLambdaRevisions::test_function_revisions_version_and_alias": {
+    "recorded-date": "06-01-2023, 21:55:36",
     "recorded-content": {
       "publish_version_revision_id_exception": {
         "Error": {
@@ -10340,6 +10340,40 @@
         "ResponseMetadata": {
           "HTTPHeaders": {},
           "HTTPStatusCode": 201
+        }
+      },
+      "create_alias_response_rev5a": {
+        "AliasArn": "arn:aws:lambda:<region>:111111111111:function:<function-name:1>:revision_alias",
+        "Description": "",
+        "FunctionVersion": "1",
+        "Name": "revision_alias",
+        "RevisionId": "<uuid:2>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 201
+        }
+      },
+      "update_alias_revision_id_exception": {
+        "Error": {
+          "Code": "PreconditionFailedException",
+          "Message": "The Revision Id provided does not match the latest Revision Id. Call the GetFunction/GetAlias API to retrieve the latest Revision Id"
+        },
+        "Type": "User",
+        "message": "The Revision Id provided does not match the latest Revision Id. Call the GetFunction/GetAlias API to retrieve the latest Revision Id",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 412
+        }
+      },
+      "update_alias_response_rev6a": {
+        "AliasArn": "arn:aws:lambda:<region>:111111111111:function:<function-name:1>:revision_alias",
+        "Description": "something changed",
+        "FunctionVersion": "1",
+        "Name": "revision_alias",
+        "RevisionId": "<uuid:3>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
         }
       }
     }

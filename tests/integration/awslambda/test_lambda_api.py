@@ -1369,8 +1369,10 @@ class TestLambdaRevisions:
         rev6_fn_config_update_done = get_function_response_rev6["Configuration"]["RevisionId"]
         assert rev5_fn_config_update != rev6_fn_config_update_done
 
-    def test_function_revisions_version(self, create_lambda_function, lambda_client, snapshot):
-        """Tests revision id lifecycle for publishing function versions"""
+    def test_function_revisions_version_and_alias(
+        self, create_lambda_function, lambda_client, snapshot
+    ):
+        """Tests revision id lifecycle for 1) publishing function versions and 2) creating and updating aliases"""
         # rev1: create function
         function_name = f"fn-{short_uid()}"
         create_lambda_function(
@@ -1388,11 +1390,11 @@ class TestLambdaRevisions:
         snapshot.match("publish_version_revision_id_exception", e.value.response)
 
         # rev3: publish version
-        publish_response = lambda_client.publish_version(
+        fn_version_response = lambda_client.publish_version(
             FunctionName=function_name, RevisionId=rev2_active_state
         )
-        snapshot.match("publish_version_response", publish_response)
-        rev3_publish_version = publish_response["RevisionId"]
+        snapshot.match("publish_version_response", fn_version_response)
+        rev3_publish_version = fn_version_response["RevisionId"]
         assert rev2_active_state != rev3_publish_version
 
         # rev4: published version becomes active
@@ -1400,6 +1402,36 @@ class TestLambdaRevisions:
         get_function_response_rev4 = lambda_client.get_function(FunctionName=function_name)
         rev4_publish_version_done = get_function_response_rev4["Configuration"]["RevisionId"]
         assert rev3_publish_version != rev4_publish_version_done
+
+        # rev5a: create alias
+        alias_name = "revision_alias"
+        create_alias_response = lambda_client.create_alias(
+            FunctionName=function_name,
+            Name=alias_name,
+            FunctionVersion=fn_version_response["Version"],
+        )
+        snapshot.match("create_alias_response_rev5a", create_alias_response)
+        rev5a_create_alias = create_alias_response["RevisionId"]
+        assert rev4_publish_version_done != rev5a_create_alias
+
+        with pytest.raises(lambda_client.exceptions.PreconditionFailedException) as e:
+            update_alias_response = lambda_client.update_alias(
+                FunctionName=function_name,
+                Name=alias_name,
+                RevisionId="wrong",
+            )
+        snapshot.match("update_alias_revision_id_exception", e.value.response)
+
+        # rev6a: update alias
+        update_alias_response = lambda_client.update_alias(
+            FunctionName=function_name,
+            Name=alias_name,
+            Description="something changed",
+            RevisionId=rev5a_create_alias,
+        )
+        snapshot.match("update_alias_response_rev6a", update_alias_response)
+        rev6a_update_alias = update_alias_response["RevisionId"]
+        assert rev5a_create_alias != rev6a_update_alias
 
 
 @pytest.mark.skipif(is_old_provider(), reason="focusing on new provider")
