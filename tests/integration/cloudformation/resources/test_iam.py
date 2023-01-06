@@ -107,7 +107,7 @@ def test_iam_username_defaultname(deploy_cfn_template, iam_client, snapshot):
 
 
 @pytest.mark.aws_validated
-def test_iam_user_access_key(deploy_cfn_template, iam_client, snapshot):
+def test_iam_user_access_key(deploy_cfn_template, cfn_client, iam_client, snapshot):
     snapshot.add_transformers_list(
         [
             snapshot.transform.key_value("AccessKeyId", "key-id"),
@@ -128,6 +128,48 @@ def test_iam_user_access_key(deploy_cfn_template, iam_client, snapshot):
 
     keys = iam_client.list_access_keys(UserName=user_name)["AccessKeyMetadata"]
     snapshot.match("access_key", keys[0])
+
+    # Update Status
+    deploy_cfn_template(
+        stack_name=stack.stack_name,
+        is_update=True,
+        template_path=os.path.join(
+            os.path.dirname(__file__), "../../templates/iam_access_key.yaml"
+        ),
+        parameters={"UserName": user_name, "Status": "Inactive"},
+    )
+    keys = iam_client.list_access_keys(UserName=user_name)["AccessKeyMetadata"]
+    snapshot.match("access_key_updated", keys[0])
+
+    # UPDATE_COMPLETE_CLEANUP_IN_PROGRESS can prevent the next update so it's better to make sure the update is complete
+    cfn_client.get_waiter("stack_update_complete").wait(StackName=stack.stack_name)
+
+    # Update Serial
+    deploy_cfn_template(
+        stack_name=stack.stack_name,
+        is_update=True,
+        template_path=os.path.join(
+            os.path.dirname(__file__), "../../templates/iam_access_key.yaml"
+        ),
+        parameters={"UserName": user_name, "Status": "Inactive", "Serial": "2"},
+    )
+    keys = iam_client.list_access_keys(UserName=user_name)["AccessKeyMetadata"]
+    snapshot.match("access_key_serial_updated", keys[0])
+
+    cfn_client.get_waiter("stack_update_complete").wait(StackName=stack.stack_name)
+
+    # Update User
+    user_name = f"{user_name}-updated"
+    deploy_cfn_template(
+        stack_name=stack.stack_name,
+        is_update=True,
+        template_path=os.path.join(
+            os.path.dirname(__file__), "../../templates/iam_access_key.yaml"
+        ),
+        parameters={"UserName": user_name, "Status": "Inactive", "Serial": "2"},
+    )
+    keys = iam_client.list_access_keys(UserName=user_name)["AccessKeyMetadata"]
+    snapshot.match("access_key_user_updated", keys[0])
 
 
 @pytest.mark.aws_validated

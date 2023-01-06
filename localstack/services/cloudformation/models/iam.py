@@ -204,9 +204,12 @@ class IAMAccessKey(GenericBaseModel):
         # if the serial value is increased, the key must be rotated
         # also if the username is different probably we should have another key
         if new_serial > old_serial or new_user_name != old_user_name:
-            access_key_id = client.create_access_key(UserName=new_user_name,)[
-                "AccessKey"
-            ]["AccessKeyId"]
+            new_access_key_id = client.create_access_key(UserName=new_user_name)["AccessKey"][
+                "AccessKeyId"
+            ]
+
+            client.delete_access_key(UserName=old_user_name, AccessKeyId=access_key_id)
+            access_key_id = new_access_key_id
 
             self.physical_resource_id = access_key_id
             resources[self.resource_id] = access_key_id
