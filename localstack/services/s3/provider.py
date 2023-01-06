@@ -1371,6 +1371,14 @@ def apply_moto_patches():
         if val := resp_headers.get(bucket_key_enabled, ""):
             resp_headers[bucket_key_enabled] = str(val).lower()
 
+        # KMS key should be returned in ARN format
+        # the key should be in the same region as the bucket
+        # the owner can change but multi-account is not currently supported in S3
+        # FIXME: implement key validation while setting the key
+        if kms_key_id := resp_headers.get("x-amz-server-side-encryption-aws-kms-key-id"):
+            kms_key_id = f"arn:aws:kms:{self.region}:{self.current_account}:key/{kms_key_id}"
+            resp_headers["x-amz-server-side-encryption-aws-kms-key-id"] = kms_key_id
+
         return status_code, resp_headers, key_value
 
     @patch(moto_s3_responses.S3Response._bucket_response_head)

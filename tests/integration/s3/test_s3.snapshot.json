@@ -5607,5 +5607,249 @@
         }
       }
     }
+  },
+  "tests/integration/s3/test_s3.py::TestS3::test_s3_multipart_upload_sse": {
+    "recorded-date": "06-01-2023, 12:33:21",
+    "recorded-content": {
+      "multi-sse-create-multipart": {
+        "Bucket": "<bucket>",
+        "BucketKeyEnabled": true,
+        "Key": "test-sse-field-multipart",
+        "SSEKMSKeyId": "arn:aws:kms:<region>:111111111111:key/<SSEKMSKeyId:1>",
+        "ServerSideEncryption": "aws:kms",
+        "UploadId": "<upload-id:1>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "multi-sse-upload-part": {
+        "BucketKeyEnabled": true,
+        "ETag": "\"e5b777bd84e33bb0c7d7b62a6cca337e\"",
+        "SSEKMSKeyId": "arn:aws:kms:<region>:111111111111:key/<SSEKMSKeyId:1>",
+        "ServerSideEncryption": "aws:kms",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "multi-sse-compete-multipart": {
+        "Bucket": "<bucket>",
+        "BucketKeyEnabled": true,
+        "ETag": "\"971d087b5588546cc61a5baa8477e1ae-1\"",
+        "Key": "test-sse-field-multipart",
+        "Location": "<location:1>",
+        "SSEKMSKeyId": "arn:aws:kms:<region>:111111111111:key/<SSEKMSKeyId:1>",
+        "ServerSideEncryption": "aws:kms",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "get-obj": {
+        "AcceptRanges": "bytes",
+        "Body": "test-sse",
+        "BucketKeyEnabled": true,
+        "ContentLength": 8,
+        "ContentType": "binary/octet-stream",
+        "ETag": "\"971d087b5588546cc61a5baa8477e1ae-1\"",
+        "LastModified": "datetime",
+        "Metadata": {},
+        "SSEKMSKeyId": "arn:aws:kms:<region>:111111111111:key/<SSEKMSKeyId:1>",
+        "ServerSideEncryption": "aws:kms",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/integration/s3/test_s3.py::TestS3::test_s3_sse_bucket_key_default": {
+    "recorded-date": "06-01-2023, 15:30:19",
+    "recorded-content": {
+      "put-obj-default-before-setting": {
+        "ETag": "\"42832cdec7083e70a9cd6f2d5852e004\"",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "get-obj-default-before-setting": {
+        "AcceptRanges": "bytes",
+        "Body": "test-sse",
+        "ContentLength": 8,
+        "ContentType": "binary/octet-stream",
+        "ETag": "\"42832cdec7083e70a9cd6f2d5852e004\"",
+        "LastModified": "datetime",
+        "Metadata": {},
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "put-bucket-encryption": {
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "get-bucket-encryption": {
+        "ServerSideEncryptionConfiguration": {
+          "Rules": [
+            {
+              "ApplyServerSideEncryptionByDefault": {
+                "KMSMasterKeyID": "<SSEKMSKeyId:1>",
+                "SSEAlgorithm": "aws:kms"
+              },
+              "BucketKeyEnabled": true
+            }
+          ]
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "get-obj-default-after-setting": {
+        "AcceptRanges": "bytes",
+        "Body": "test-sse",
+        "ContentLength": 8,
+        "ContentType": "binary/octet-stream",
+        "ETag": "\"42832cdec7083e70a9cd6f2d5852e004\"",
+        "LastModified": "datetime",
+        "Metadata": {},
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "put-obj-after-setting": {
+        "BucketKeyEnabled": true,
+        "ETag": "\"705e009dee3d80005d93ac26ae992116\"",
+        "SSEKMSKeyId": "arn:aws:kms:<region>:111111111111:key/<SSEKMSKeyId:1>",
+        "ServerSideEncryption": "aws:kms",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "get-obj-after-setting": {
+        "AcceptRanges": "bytes",
+        "Body": "test-sse",
+        "BucketKeyEnabled": true,
+        "ContentLength": 8,
+        "ContentType": "binary/octet-stream",
+        "ETag": "\"705e009dee3d80005d93ac26ae992116\"",
+        "LastModified": "datetime",
+        "Metadata": {},
+        "SSEKMSKeyId": "arn:aws:kms:<region>:111111111111:key/<SSEKMSKeyId:1>",
+        "ServerSideEncryption": "aws:kms",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/integration/s3/test_s3.py::TestS3::test_s3_sse_default_kms_key": {
+    "recorded-date": "06-01-2023, 16:15:07",
+    "recorded-content": {
+      "put-obj-default-kms-s3-key": {
+        "ETag": "\"5a9df639fe71cea30139a29bfbad7b73\"",
+        "SSEKMSKeyId": "arn:aws:kms:<region>:111111111111:key/<SSEKMSKeyId:1>",
+        "ServerSideEncryption": "aws:kms",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "get-obj-default-kms-s3-key": {
+        "AcceptRanges": "bytes",
+        "Body": "test-sse",
+        "ContentLength": 8,
+        "ContentType": "binary/octet-stream",
+        "ETag": "\"5a9df639fe71cea30139a29bfbad7b73\"",
+        "LastModified": "datetime",
+        "Metadata": {},
+        "SSEKMSKeyId": "arn:aws:kms:<region>:111111111111:key/<SSEKMSKeyId:1>",
+        "ServerSideEncryption": "aws:kms",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "put-obj-default-kms-s3-key-bucket-2": {
+        "ETag": "\"825a1c84ed161aae720bc0c4c358af89\"",
+        "SSEKMSKeyId": "arn:aws:kms:<region>:111111111111:key/<SSEKMSKeyId:1>",
+        "ServerSideEncryption": "aws:kms",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "get-obj-default-kms-s3-key-bucket-2": {
+        "AcceptRanges": "bytes",
+        "Body": "test-sse",
+        "ContentLength": 8,
+        "ContentType": "binary/octet-stream",
+        "ETag": "\"825a1c84ed161aae720bc0c4c358af89\"",
+        "LastModified": "datetime",
+        "Metadata": {},
+        "SSEKMSKeyId": "arn:aws:kms:<region>:111111111111:key/<SSEKMSKeyId:1>",
+        "ServerSideEncryption": "aws:kms",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "put-bucket-encryption-default-kms-s3-key": {
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "get-bucket-encryption-default-kms-s3-key": {
+        "ServerSideEncryptionConfiguration": {
+          "Rules": [
+            {
+              "ApplyServerSideEncryptionByDefault": {
+                "SSEAlgorithm": "aws:kms"
+              },
+              "BucketKeyEnabled": true
+            }
+          ]
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "put-obj-default-kms-s3-key-from-bucket": {
+        "BucketKeyEnabled": true,
+        "ETag": "\"0e2f89c81bb2533221b4662f12094f0c\"",
+        "SSEKMSKeyId": "arn:aws:kms:<region>:111111111111:key/<SSEKMSKeyId:1>",
+        "ServerSideEncryption": "aws:kms",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "get-obj-default-kms-s3-key-from-bucket": {
+        "AcceptRanges": "bytes",
+        "Body": "test-sse",
+        "BucketKeyEnabled": true,
+        "ContentLength": 8,
+        "ContentType": "binary/octet-stream",
+        "ETag": "\"0e2f89c81bb2533221b4662f12094f0c\"",
+        "LastModified": "datetime",
+        "Metadata": {},
+        "SSEKMSKeyId": "arn:aws:kms:<region>:111111111111:key/<SSEKMSKeyId:1>",
+        "ServerSideEncryption": "aws:kms",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
   }
 }
