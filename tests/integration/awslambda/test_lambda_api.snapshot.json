@@ -10007,7 +10007,7 @@
     }
   },
   "tests/integration/awslambda/test_lambda_api.py::TestLambdaRevisions::test_function_revisions_basic": {
-    "recorded-date": "06-01-2023, 21:15:39",
+    "recorded-date": "06-01-2023, 22:19:13",
     "recorded-content": {
       "create_function_response_rev1": {
         "CreateEventSourceMappingResponse": null,
@@ -10095,7 +10095,7 @@
           "HTTPStatusCode": 200
         }
       },
-      "update_function_revision_id_exception": {
+      "update_function_revision_exception": {
         "Error": {
           "Code": "PreconditionFailedException",
           "Message": "The Revision Id provided does not match the latest Revision Id. Call the GetFunction/GetAlias API to retrieve the latest Revision Id"
@@ -10191,7 +10191,7 @@
           "HTTPStatusCode": 200
         }
       },
-      "update_function_configuration_revision_id_exception": {
+      "update_function_configuration_revision_exception": {
         "Error": {
           "Code": "PreconditionFailedException",
           "Message": "The Revision Id provided does not match the latest Revision Id. Call the GetFunction/GetAlias API to retrieve the latest Revision Id"
@@ -10290,9 +10290,9 @@
     }
   },
   "tests/integration/awslambda/test_lambda_api.py::TestLambdaRevisions::test_function_revisions_version_and_alias": {
-    "recorded-date": "06-01-2023, 21:55:36",
+    "recorded-date": "06-01-2023, 22:19:32",
     "recorded-content": {
-      "publish_version_revision_id_exception": {
+      "publish_version_revision_exception": {
         "Error": {
           "Code": "PreconditionFailedException",
           "Message": "The Revision Id provided does not match the latest Revision Id. Call the GetFunction/GetAlias API to retrieve the latest Revision Id"
@@ -10353,7 +10353,7 @@
           "HTTPStatusCode": 201
         }
       },
-      "update_alias_revision_id_exception": {
+      "update_alias_revision_exception": {
         "Error": {
           "Code": "PreconditionFailedException",
           "Message": "The Revision Id provided does not match the latest Revision Id. Call the GetFunction/GetAlias API to retrieve the latest Revision Id"
@@ -10374,6 +10374,78 @@
         "ResponseMetadata": {
           "HTTPHeaders": {},
           "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/integration/awslambda/test_lambda_api.py::TestLambdaRevisions::test_function_revisions_permissions": {
+    "recorded-date": "06-01-2023, 22:30:27",
+    "recorded-content": {
+      "add_permission_revision_exception": {
+        "Error": {
+          "Code": "PreconditionFailedException",
+          "Message": "The Revision Id provided does not match the latest Revision Id. Call the GetFunction/GetAlias API to retrieve the latest Revision Id"
+        },
+        "Type": "User",
+        "message": "The Revision Id provided does not match the latest Revision Id. Call the GetFunction/GetAlias API to retrieve the latest Revision Id",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 412
+        }
+      },
+      "add_permission_response": {
+        "Statement": {
+          "Sid": "s3",
+          "Effect": "Allow",
+          "Principal": {
+            "Service": "s3.amazonaws.com"
+          },
+          "Action": "lambda:InvokeFunction",
+          "Resource": "arn:aws:lambda:<region>:111111111111:function:<resource:1>"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 201
+        }
+      },
+      "get_policy_response_rev3": {
+        "Policy": {
+          "Version": "2012-10-17",
+          "Id": "default",
+          "Statement": [
+            {
+              "Sid": "s3",
+              "Effect": "Allow",
+              "Principal": {
+                "Service": "s3.amazonaws.com"
+              },
+              "Action": "lambda:InvokeFunction",
+              "Resource": "arn:aws:lambda:<region>:111111111111:function:<resource:1>"
+            }
+          ]
+        },
+        "RevisionId": "<uuid:1>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "remove_permission_revision_exception": {
+        "Error": {
+          "Code": "PreconditionFailedException",
+          "Message": "The Revision Id provided does not match the latest Revision Id. Call the GetFunction/GetAlias API to retrieve the latest Revision Id"
+        },
+        "Type": "User",
+        "message": "The Revision Id provided does not match the latest Revision Id. Call the GetFunction/GetAlias API to retrieve the latest Revision Id",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 412
+        }
+      },
+      "remove_permission_response": {
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 204
         }
       }
     }
