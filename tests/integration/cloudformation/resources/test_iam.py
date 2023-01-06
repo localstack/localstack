@@ -136,40 +136,10 @@ def test_iam_user_access_key(deploy_cfn_template, cfn_client, iam_client, snapsh
         template_path=os.path.join(
             os.path.dirname(__file__), "../../templates/iam_access_key.yaml"
         ),
-        parameters={"UserName": user_name, "Status": "Inactive"},
+        parameters={"UserName": user_name, "Status": "Inactive", "Serial": "2"},
     )
     keys = iam_client.list_access_keys(UserName=user_name)["AccessKeyMetadata"]
     snapshot.match("access_key_updated", keys[0])
-
-    # UPDATE_COMPLETE_CLEANUP_IN_PROGRESS can prevent the next update so it's better to make sure the update is complete
-    cfn_client.get_waiter("stack_update_complete").wait(StackName=stack.stack_name)
-
-    # Update Serial
-    deploy_cfn_template(
-        stack_name=stack.stack_name,
-        is_update=True,
-        template_path=os.path.join(
-            os.path.dirname(__file__), "../../templates/iam_access_key.yaml"
-        ),
-        parameters={"UserName": user_name, "Status": "Inactive", "Serial": "2"},
-    )
-    keys = iam_client.list_access_keys(UserName=user_name)["AccessKeyMetadata"]
-    snapshot.match("access_key_serial_updated", keys[0])
-
-    cfn_client.get_waiter("stack_update_complete").wait(StackName=stack.stack_name)
-
-    # Update User
-    user_name = f"{user_name}-updated"
-    deploy_cfn_template(
-        stack_name=stack.stack_name,
-        is_update=True,
-        template_path=os.path.join(
-            os.path.dirname(__file__), "../../templates/iam_access_key.yaml"
-        ),
-        parameters={"UserName": user_name, "Status": "Inactive", "Serial": "2"},
-    )
-    keys = iam_client.list_access_keys(UserName=user_name)["AccessKeyMetadata"]
-    snapshot.match("access_key_user_updated", keys[0])
 
 
 @pytest.mark.aws_validated

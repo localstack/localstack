@@ -188,41 +188,13 @@ class IAMAccessKey(GenericBaseModel):
 
     def update_resource(self, new_resource, stack_name, resources):
         access_key_id = self.get_physical_resource_id()
-
         new_props = new_resource["Properties"]
+        user_name = new_props.get("UserName")
+        status = new_props.get("Status")
 
-        old_user_name = self.props.get("UserName")
-        new_user_name = new_props.get("UserName")
-
-        new_serial = new_props.get("Serial", 0)
-        old_serial = self.props.get("Serial", 0)
-
-        new_status = new_props.get("Status", "Active")
-        old_status = self.props.get("Status", "Active")
-
-        client = aws_stack.connect_to_service("iam")
-        # if the serial value is increased, the key must be rotated
-        # also if the username is different probably we should have another key
-        if new_serial > old_serial or new_user_name != old_user_name:
-            new_access_key_id = client.create_access_key(UserName=new_user_name)["AccessKey"][
-                "AccessKeyId"
-            ]
-
-            client.delete_access_key(UserName=old_user_name, AccessKeyId=access_key_id)
-            access_key_id = new_access_key_id
-
-            self.physical_resource_id = access_key_id
-            resources[self.resource_id] = access_key_id
-
-        if new_status != old_status:
-            client.update_access_key(
-                UserName=new_user_name, AccessKeyId=access_key_id, Status=new_status
-            )
-
-        keys = aws_stack.connect_to_service("iam").list_access_keys(UserName=new_user_name)[
-            "AccessKeyMetadata"
-        ]
-        return [key for key in keys if key["AccessKeyId"] == access_key_id][0]
+        aws_stack.connect_to_service("iam").update_access_key(
+            UserName=user_name, AccessKeyId=access_key_id, Status=status
+        )
 
     @staticmethod
     def get_deploy_templates():

@@ -20,10 +20,10 @@ Resources:
     Properties:
       UserName: 
         Ref: UserName
-      Status:
-        Ref: Status
       Serial:
         Ref: Serial
+      Status:
+        Ref: Status
     DependsOn: User
 
 Outputs:

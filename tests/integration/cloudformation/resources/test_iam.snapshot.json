@@ -1,6 +1,6 @@
 {
   "tests/integration/cloudformation/resources/test_iam.py::test_iam_user_access_key": {
-    "recorded-date": "06-01-2023, 11:35:35",
+    "recorded-date": "06-01-2023, 11:55:42",
     "recorded-content": {
       "key_outputs": {
         "AccessKeyId": "<key-id:1>",
@@ -23,12 +23,6 @@
         "CreateDate": "datetime",
         "Status": "Inactive",
         "UserName": "<user-name:1>"
-      },
-      "access_key_user_updated": {
-        "AccessKeyId": "<key-id:3>",
-        "CreateDate": "datetime",
-        "Status": "Inactive",
-        "UserName": "<user-name:1>-updated"
       }
     }
   }
