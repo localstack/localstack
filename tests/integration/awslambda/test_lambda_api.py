@@ -1299,8 +1299,8 @@ class TestLambdaAlias:
 
 @pytest.mark.skipif(condition=is_old_provider(), reason="not supported")
 class TestLambdaRevisions:
-    def test_function_revisions(self, lambda_client, create_lambda_function, snapshot):
-        """Tests basic revision id checks for creating and updating functions"""
+    def test_function_revisions_basic(self, lambda_client, create_lambda_function, snapshot):
+        """Tests basic revision id lifecycle for creating and updating functions"""
         function_name = f"fn-{short_uid()}"
         zip_file_content = load_file(TEST_LAMBDA_PYTHON_ECHO_ZIP, mode="rb")
 
@@ -1366,8 +1366,40 @@ class TestLambdaRevisions:
         lambda_client.get_waiter("function_updated_v2").wait(FunctionName=function_name)
         get_function_response_rev6 = lambda_client.get_function(FunctionName=function_name)
         snapshot.match("get_function_response_rev6", get_function_response_rev6)
-        rev6_fn_config_updated = get_function_response_rev6["Configuration"]["RevisionId"]
-        assert rev5_fn_config_update != rev6_fn_config_updated
+        rev6_fn_config_update_done = get_function_response_rev6["Configuration"]["RevisionId"]
+        assert rev5_fn_config_update != rev6_fn_config_update_done
+
+    def test_function_revisions_version(self, create_lambda_function, lambda_client, snapshot):
+        """Tests revision id lifecycle for publishing function versions"""
+        # rev1: create function
+        function_name = f"fn-{short_uid()}"
+        create_lambda_function(
+            func_name=function_name,
+            handler_file=TEST_LAMBDA_PYTHON_ECHO,
+            runtime=Runtime.python3_9,
+        )
+
+        # rev2: created function becomes active
+        get_function_response_rev2 = lambda_client.get_function(FunctionName=function_name)
+        rev2_active_state = get_function_response_rev2["Configuration"]["RevisionId"]
+
+        with pytest.raises(lambda_client.exceptions.PreconditionFailedException) as e:
+            lambda_client.publish_version(FunctionName=function_name, RevisionId="wrong")
+        snapshot.match("publish_version_revision_id_exception", e.value.response)
+
+        # rev3: publish version
+        publish_response = lambda_client.publish_version(
+            FunctionName=function_name, RevisionId=rev2_active_state
+        )
+        snapshot.match("publish_version_response", publish_response)
+        rev3_publish_version = publish_response["RevisionId"]
+        assert rev2_active_state != rev3_publish_version
+
+        # rev4: published version becomes active
+        lambda_client.get_waiter("published_version_active").wait(FunctionName=function_name)
+        get_function_response_rev4 = lambda_client.get_function(FunctionName=function_name)
+        rev4_publish_version_done = get_function_response_rev4["Configuration"]["RevisionId"]
+        assert rev3_publish_version != rev4_publish_version_done
 
 
 @pytest.mark.skipif(is_old_provider(), reason="focusing on new provider")
