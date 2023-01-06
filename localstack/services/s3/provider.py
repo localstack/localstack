@@ -24,6 +24,8 @@ from localstack.aws.api.s3 import (
     CORSConfiguration,
     CreateBucketOutput,
     CreateBucketRequest,
+    CreateMultipartUploadOutput,
+    CreateMultipartUploadRequest,
     Delete,
     DeleteObjectOutput,
     DeleteObjectRequest,
@@ -111,6 +113,7 @@ from localstack.services.s3.utils import (
     is_canned_acl_bucket_valid,
     is_key_expired,
     is_valid_canonical_id,
+    validate_kms_key_id,
     verify_checksum,
 )
 from localstack.services.s3.website_hosting import register_website_hosting_routes
@@ -179,6 +182,7 @@ class S3Provider(S3Api, ServiceLifecycleHook):
         register_website_hosting_routes(router=ROUTER)
         register_custom_handlers()
         # registering of virtual host routes happens with the hook on_infra_ready in virtual_host.py
+        # create a AWS managed KMS key at start and save it in the store for persistence?
 
     def __init__(self) -> None:
         super().__init__()
@@ -342,12 +346,16 @@ class S3Provider(S3Api, ServiceLifecycleHook):
         if checksum_algorithm := request.get("ChecksumAlgorithm"):
             verify_checksum(checksum_algorithm, context.request.data, request)
 
+        moto_backend = get_moto_s3_backend(context)
+        bucket = get_bucket_from_moto(moto_backend, bucket=request["Bucket"])
+
+        if not config.S3_SKIP_KMS_KEY_VALIDATION and (sse_kms_key_id := request.get("SSEKMSKeyId")):
+            validate_kms_key_id(sse_kms_key_id, bucket)
+
         response: PutObjectOutput = call_moto(context)
 
         # moto interprets the Expires in query string for presigned URL as an Expires header and use it for the object
         # we set it to the correctly parsed value in Request, else we remove it from moto metadata
-        moto_backend = get_moto_s3_backend(context)
-        bucket = get_bucket_from_moto(moto_backend, bucket=request["Bucket"])
         key_object = get_key_from_moto_bucket(bucket, key=request["Key"])
         if expires := request.get("Expires"):
             key_object.set_expiry(expires)
@@ -365,6 +373,11 @@ class S3Provider(S3Api, ServiceLifecycleHook):
         context: RequestContext,
         request: CopyObjectRequest,
     ) -> CopyObjectOutput:
+        if not config.S3_SKIP_KMS_KEY_VALIDATION and (sse_kms_key_id := request.get("SSEKMSKeyId")):
+            moto_backend = get_moto_s3_backend(context)
+            bucket = get_bucket_from_moto(moto_backend, bucket=request["Bucket"])
+            validate_kms_key_id(sse_kms_key_id, bucket)
+
         response: CopyObjectOutput = call_moto(context)
         self._notify(context)
         return response
@@ -421,6 +434,20 @@ class S3Provider(S3Api, ServiceLifecycleHook):
         #  For a successful deletion, the action does not return any information about the delete in the response body.
         result.pop("Deleted", "")
         return result
+
+    @handler("CreateMultipartUpload", expand=False)
+    def create_multipart_upload(
+        self,
+        context: RequestContext,
+        request: CreateMultipartUploadRequest,
+    ) -> CreateMultipartUploadOutput:
+        if not config.S3_SKIP_KMS_KEY_VALIDATION and (sse_kms_key_id := request.get("SSEKMSKeyId")):
+            moto_backend = get_moto_s3_backend(context)
+            bucket = get_bucket_from_moto(moto_backend, bucket=request["Bucket"])
+            validate_kms_key_id(sse_kms_key_id, bucket)
+
+        response: CreateMultipartUploadOutput = call_moto(context)
+        return response
 
     @handler("CompleteMultipartUpload", expand=False)
     def complete_multipart_upload(

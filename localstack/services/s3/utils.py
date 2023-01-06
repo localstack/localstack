@@ -3,10 +3,12 @@ import re
 from typing import Dict, Union
 
 import moto.s3.models as moto_s3_models
+from botocore.exceptions import ClientError
+from botocore.utils import InvalidArnException
 from moto.s3.exceptions import MissingBucket
-from moto.s3.models import FakeDeleteMarker, FakeKey
+from moto.s3.models import FakeBucket, FakeDeleteMarker, FakeKey
 
-from localstack.aws.api import ServiceException
+from localstack.aws.api import CommonServiceException, ServiceException
 from localstack.aws.api.s3 import (
     BucketCannedACL,
     BucketName,
@@ -18,6 +20,8 @@ from localstack.aws.api.s3 import (
     ObjectKey,
     Permission,
 )
+from localstack.utils.aws import aws_stack
+from localstack.utils.aws.arns import parse_arn
 from localstack.utils.strings import checksum_crc32, checksum_crc32c, hash_sha1, hash_sha256
 
 checksum_keys = ["ChecksumSHA1", "ChecksumSHA256", "ChecksumCRC32", "ChecksumCRC32C"]
@@ -196,3 +200,30 @@ def _create_invalid_argument_exc(
 
 def capitalize_header_name_from_snake_case(header_name: str) -> str:
     return "-".join([part.capitalize() for part in header_name.split("-")])
+
+
+def validate_kms_key_id(kms_key: str, bucket: FakeBucket):
+    """
+    Validate that the KMS key used to encrypt the object is valid
+    :param kms_key: the KMS key id or ARN
+    :param bucket: the targeted bucket
+    :raise
+    :return:
+    """
+    try:
+        arn = parse_arn(kms_key)
+        region_name = arn["region"]
+        if region_name != bucket.region_name:
+            raise
+        # multi account unsupported yet
+    except InvalidArnException:
+        pass
+    kms_client = aws_stack.create_external_boto_client("kms")
+    try:
+        kms_client.describe_key(KeyId=kms_key)
+    except ClientError as e:
+        if e.response["Error"]["Code"] == "NotFoundException":
+            raise CommonServiceException(
+                code="KMS.NotFoundException", message=f"Invalid keyId {kms_key}"
+            )
+        raise

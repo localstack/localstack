@@ -664,6 +664,8 @@ WINDOWS_DOCKER_MOUNT_PREFIX = os.environ.get("WINDOWS_DOCKER_MOUNT_PREFIX", "/ho
 
 # whether to skip S3 presign URL signature validation (TODO: currently enabled, until all issues are resolved)
 S3_SKIP_SIGNATURE_VALIDATION = is_env_not_false("S3_SKIP_SIGNATURE_VALIDATION")
+# whether to skip S3 validation of provided KMS key
+S3_SKIP_KMS_KEY_VALIDATION = is_env_not_false("S3_SKIP_KMS_KEY_VALIDATION")
 
 # user-defined lambda executor mode
 LAMBDA_EXECUTOR = os.environ.get("LAMBDA_EXECUTOR", "").strip()
@@ -810,6 +812,7 @@ CONFIG_ENV_VARS = [
     "PERSISTENCE",
     "REQUESTS_CA_BUNDLE",
     "S3_SKIP_SIGNATURE_VALIDATION",
+    "S3_SKIP_KMS_KEY_VALIDATION",
     "SERVICES",
     "SKIP_INFRA_DOWNLOADS",
     "SKIP_SSL_CERT_DOWNLOAD",

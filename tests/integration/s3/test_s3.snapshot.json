@@ -4007,5 +4007,40 @@
         }
       }
     }
+  },
+  "tests/integration/s3/test_s3.py::TestS3::test_s3_sse_validate_kms_key": {
+    "recorded-date": "06-01-2023, 17:51:31",
+    "recorded-content": {
+      "put-obj-wrong-kms-key": {
+        "Error": {
+          "Code": "KMS.NotFoundException",
+          "Message": "Invalid keyId fake-key-id"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "create-multipart-wrong-kms-key": {
+        "Error": {
+          "Code": "KMS.NotFoundException",
+          "Message": "Invalid keyId fake-key-id"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "copy-obj-wrong-kms-key": {
+        "Error": {
+          "Code": "KMS.NotFoundException",
+          "Message": "Invalid keyId fake-key-id"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
   }
 }
