@@ -77,9 +77,15 @@ class SchemaExtractor:
         ).table_definitions
         table_def = table_definitions.get(table_name)
         if not table_def:
-            raise ResourceNotFoundException(
-                f"Unknown table: {table_name} not found in {table_definitions.keys()}"
+            # Try fetching from the backend in case table_definitions has been reset
+            schema = cls.get_table_schema(
+                table_name=table_name, account_id=account_id, region_name=region_name
             )
+            if not schema:
+                raise ResourceNotFoundException(f"Unknown table: {table_name} not found")
+            # Save the schema in the cache
+            table_definitions[table_name] = schema["Table"]
+            table_def = table_definitions[table_name]
         return table_def["KeySchema"]
 
     @classmethod

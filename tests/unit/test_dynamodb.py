@@ -1,5 +1,8 @@
-from localstack.services.dynamodb.provider import DynamoDBProvider
-from localstack.services.dynamodb.utils import ItemSet
+from unittest.mock import patch
+
+from localstack.aws.accounts import get_aws_account_id
+from localstack.services.dynamodb.provider import DynamoDBProvider, get_store
+from localstack.services.dynamodb.utils import ItemSet, SchemaExtractor
 from localstack.utils.aws import aws_stack
 
 
@@ -44,3 +47,31 @@ def test_lookup_via_item_set():
             assert item_set.find_item(item) == item
         for item in items:
             assert not item_set.find_item({**item, "id": {"S": item["id"]["S"] + "-new"}})
+
+
+@patch("localstack.services.dynamodb.utils.SchemaExtractor.get_table_schema")
+def test_get_key_schema_without_table_definition(mock_get_table_schema):
+    schema_extractor = SchemaExtractor()
+
+    key_schema = [{"AttributeName": "id", "KeyType": "HASH"}]
+    attr_definitions = [
+        {"AttributeName": "Artist", "AttributeType": "S"},
+        {"AttributeName": "SongTitle", "AttributeType": "S"},
+    ]
+    table_name = "nonexistent_table"
+
+    mock_get_table_schema.return_value = {
+        "Table": {"KeySchema": key_schema, "AttributeDefinitions": attr_definitions}
+    }
+
+    schema = schema_extractor.get_key_schema(table_name)
+
+    # Assert output is expected from the get_table_schema (fallback)
+    assert schema == key_schema
+    # Assert table_definitions has new table entry (cache)
+    dynamodb_store = get_store(account_id=get_aws_account_id(), region_name=aws_stack.get_region())
+    assert table_name in dynamodb_store.table_definitions
+    # Assert table_definitions has the correct content
+    assert (
+        dynamodb_store.table_definitions[table_name] == mock_get_table_schema.return_value["Table"]
+    )
