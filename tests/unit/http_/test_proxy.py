@@ -19,7 +19,7 @@ def router_server(serve_asgi_adapter) -> Tuple[Router, HypercornServer]:
     both the router and the server.
     """
     router = Router(dispatcher=handler_dispatcher())
-    app = Request.application(router.dispatch)
+    app = WerkzeugRequest.application(router.dispatch)
     return router, serve_asgi_adapter(app)
 
 
@@ -197,7 +197,7 @@ def test_forward_files_and_form_data_proxy_consumes_data(
     the request is forwarded correctly. not using httpserver here because it consumes werkzeug data incorrectly (it
     calls ``request.get_data()``)."""
 
-    @Request.application
+    @WerkzeugRequest.application
     def _backend_handler(request: WerkzeugRequest):
         data = {
             "data": request.data.decode("utf-8"),
@@ -210,7 +210,7 @@ def test_forward_files_and_form_data_proxy_consumes_data(
         }
         return Response(json.dumps(data), mimetype="application/json")
 
-    @Request.application
+    @WerkzeugRequest.application
     def _proxy_handler(request: WerkzeugRequest):
         # heuristic to check whether the stream has been consumed
         assert getattr(request, "_cached_data", None) is None, "data has already been cached"
