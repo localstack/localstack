@@ -1,3 +1,4 @@
+import io
 import json
 import logging
 from copy import deepcopy
@@ -118,18 +119,14 @@ class ApigatewayProvider(ApigatewayApi, ServiceLifecycleHook):
     def put_rest_api(self, context: RequestContext, request: PutRestApiRequest) -> RestApi:
         account_id = context.account_id
         region_name = context.region
-
         rest_api = apigw_models.apigateway_backends[account_id][region_name].apis.get(
             request["restApiId"]
         )
+        body_data = request["body"].read()
 
-        body = json.loads(request["body"].read())
+        openapi_spec = parse_json_or_yaml(to_str(body_data))
         rest_api = import_api_from_openapi_spec(
-            rest_api,
-            body,
-            {
-                "mode": request.get("mode"),
-            },
+            rest_api, openapi_spec, context.request.values.to_dict()
         )
 
         return to_rest_api_response_json(rest_api.to_dict())
@@ -667,14 +664,13 @@ class ApigatewayProvider(ApigatewayApi, ServiceLifecycleHook):
             CreateRestApiRequest(name=openapi_spec.get("info").get("title")),
         )
 
-        return _call_moto(
+        return self.put_rest_api(
             context,
-            "PutRestApi",
             PutRestApiRequest(
                 restApiId=response.get("id"),
                 failOnWarnings=str_to_bool(fail_on_warnings) or False,
                 parameters=parameters or {},
-                body=body_data,
+                body=io.BytesIO(body_data),
             ),
         )
 

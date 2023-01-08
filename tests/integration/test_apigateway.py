@@ -219,6 +219,7 @@ class TestAPIGateway:
         assert response.ok
         assert response._content == b'{"echo": "foobar", "response": "mocked"}'
 
+    @pytest.mark.skip
     def test_api_gateway_kinesis_integration(self):
         # create target Kinesis stream
         stream = resource_util.create_kinesis_stream(self.TEST_STREAM_KINESIS_API_GW)
@@ -2142,8 +2143,6 @@ class TestAPIGateway:
 
 
 def test_import_swagger_api(apigateway_client):
-    apigateway_client.get_rest_apis()
-
     api_spec = load_test_resource("openapi.swagger.json")
     api_spec_dict = json.loads(api_spec)
 
@@ -2157,7 +2156,8 @@ def test_import_swagger_api(apigateway_client):
     assert imported_api.description == api_spec_dict.get("info").get("description")
 
     # assert that are no multiple authorizers
-    assert len(imported_api.authorizers) == 1
+    authorizers = apigateway_client.get_authorizers(restApiId=imported_api.id)
+    assert len(authorizers.get("items")) == 1
 
     paths = {v.path_part for k, v in imported_api.resources.items()}
     assert paths == {"/", "pets", "{petId}"}

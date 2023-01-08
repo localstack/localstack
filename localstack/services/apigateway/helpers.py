@@ -723,7 +723,7 @@ def import_api_from_openapi_spec(rest_api: RestAPI, body: Dict, query_params: Di
             )
 
     # determine base path
-    basepath_mode = (query_params.get("basepath") or ["prepend"])[0]
+    basepath_mode = query_params.get("basepath") or "prepend"
     base_path = ""
     if basepath_mode == "prepend":
         base_path = resolved_schema.get("basePath") or ""
