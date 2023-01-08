@@ -567,6 +567,8 @@ def import_api_from_openapi_spec(rest_api: RestAPI, body: Dict, query_params: Di
     # authorizers map to avoid duplication
     authorizers = {}
 
+    region_details = get_apigateway_store()
+
     def create_authorizer(path_payload: dict) -> Authorizer:
         if "security" not in path_payload:
             return None
@@ -584,8 +586,9 @@ def import_api_from_openapi_spec(rest_api: RestAPI, body: Dict, query_params: Di
 
                     if authorizers.get(security_scheme_name):
                         return authorizers.get(security_scheme_name)
-                    authorizer = rest_api.create_authorizer(
-                        create_resource_id(),
+
+                    authorizer = Authorizer(
+                        authorizer_id=create_resource_id(),
                         name=security_scheme_name,
                         authorizer_type=aws_apigateway_authorizer.get("type"),
                         provider_arns=None,
@@ -603,7 +606,11 @@ def import_api_from_openapi_spec(rest_api: RestAPI, body: Dict, query_params: Di
                         )
                         or 300,
                     )
+
                     if authorizer:
+                        region_details.authorizers.setdefault(rest_api.id, []).append(
+                            authorizer.to_json()
+                        )
                         authorizers[security_scheme_name] = authorizer
                     return authorizer
 

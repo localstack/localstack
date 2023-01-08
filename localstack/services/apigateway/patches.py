@@ -396,7 +396,6 @@ def apply_patches():
     APIGatewayResponse.restapis_individual = apigateway_response_restapis_individual
     apigateway_response_resource_individual_orig = APIGatewayResponse.resource_individual
     APIGatewayResponse.resource_individual = apigateway_response_resource_individual
-    apigateway_models.APIGatewayBackend.put_rest_api = apigateway_models_backend_put_rest_api
 
     if not hasattr(apigateway_models.APIGatewayBackend, "update_deployment"):
         apigateway_models.APIGatewayBackend.update_deployment = backend_update_deployment

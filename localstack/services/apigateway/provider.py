@@ -3,6 +3,8 @@ import logging
 from copy import deepcopy
 from typing import IO
 
+from moto.apigateway import models as apigw_models
+
 from localstack.aws.api import RequestContext, ServiceRequest, handler
 from localstack.aws.api.apigateway import (
     Account,
@@ -47,6 +49,7 @@ from localstack.services.apigateway.helpers import (
     apply_json_patch_safe,
     find_api_subentity_by_id,
     get_apigateway_store,
+    import_api_from_openapi_spec,
 )
 from localstack.services.apigateway.invocations import invoke_rest_api_from_request
 from localstack.services.apigateway.patches import apply_patches
@@ -110,6 +113,26 @@ class ApigatewayProvider(ApigatewayApi, ServiceLifecycleHook):
         if result.get("version") == "V1":
             result.pop("version")
         return result
+
+    @handler("PutRestApi", expand=False)
+    def put_rest_api(self, context: RequestContext, request: PutRestApiRequest) -> RestApi:
+        account_id = context.account_id
+        region_name = context.region
+
+        rest_api = apigw_models.apigateway_backends[account_id][region_name].apis.get(
+            request["restApiId"]
+        )
+
+        body = json.loads(request["body"].read())
+        rest_api = import_api_from_openapi_spec(
+            rest_api,
+            body,
+            {
+                "mode": request.get("mode"),
+            },
+        )
+
+        return to_rest_api_response_json(rest_api.to_dict())
 
     def delete_rest_api(self, context: RequestContext, rest_api_id: String) -> None:
         try:
@@ -787,6 +810,12 @@ def to_vpc_link_response_json(data):
 def to_client_cert_response_json(data):
     result = to_response_json("clientcertificate", data, id_attr="clientCertificateId")
     result = select_from_typed_dict(ClientCertificate, result)
+    return result
+
+
+def to_rest_api_response_json(data):
+    result = to_response_json("restapi", data)
+    result = select_from_typed_dict(RestApi, result)
     return result
 
 
