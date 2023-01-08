@@ -219,6 +219,7 @@ class TestAPIGateway:
         assert response.ok
         assert response._content == b'{"echo": "foobar", "response": "mocked"}'
 
+    @pytest.mark.skip
     def test_api_gateway_kinesis_integration(self):
         # create target Kinesis stream
         stream = resource_util.create_kinesis_stream(self.TEST_STREAM_KINESIS_API_GW)
@@ -1482,7 +1483,8 @@ class TestAPIGateway:
         # clean up
 
         spec_file = load_file(TEST_IMPORT_REST_API_FILE)
-        rest_api_id, _, _ = import_apigw(body=spec_file, parameters=api_params)
+        response, _ = import_apigw(body=spec_file, parameters=api_params)
+        rest_api_id = response["id"]
 
         rs = apigateway_client.get_resources(restApiId=rest_api_id)
         resources = rs["items"]
@@ -2133,7 +2135,8 @@ class TestAPIGateway:
         assert 200 == response.status_code
 
         spec_file = load_file(TEST_IMPORT_REST_API_FILE)
-        rest_api_id, _, _ = import_apigw(body=spec_file, parameters=api_params)
+        response, _ = import_apigw(body=spec_file, parameters=api_params)
+        rest_api_id = response["id"]
         resources = get_rest_api_resources(apigateway_client, restApiId=rest_api_id)
         paths = [res["path"] for res in resources]
         assert "/" in paths

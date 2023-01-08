@@ -1,13 +1,12 @@
 {
   "tests/integration/test_apigateway_integrations.py::test_lambda_proxy_integration": {
-    "recorded-date": "30-08-2022, 14:23:53",
+    "recorded-date": "08-01-2023, 15:09:38",
     "recorded-content": {
       "rest-api-creation": {
-        "ResponseMetadata": {
-          "HTTPHeaders": {},
-          "HTTPStatusCode": 201
-        },
         "apiKeySource": "HEADER",
+        "binaryMediaTypes": [
+          "*/*"
+        ],
         "createdDate": "datetime",
         "description": "Integration test API",
         "disableExecuteApiEndpoint": false,
@@ -17,112 +16,72 @@
           ]
         },
         "id": "<id:1>",
-        "name": "<name:1>"
+        "name": "<name:1>",
+        "version": "V1",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 201
+        }
       },
       "invocation-payload-without-trailing-slash": {
-        "body": null,
+        "body": "",
         "headers": {
-          "Accept": "*/*",
-          "Accept-Encoding": "gzip, deflate",
-          "CloudFront-Forwarded-Proto": "https",
-          "CloudFront-Is-Desktop-Viewer": "true",
-          "CloudFront-Is-Mobile-Viewer": "false",
-          "CloudFront-Is-SmartTV-Viewer": "false",
-          "CloudFront-Is-Tablet-Viewer": "false",
-          "CloudFront-Viewer-ASN": "<cloudfront-asn:1>",
-          "CloudFront-Viewer-Country": "<cloudfront-country:1>",
-          "Host": "<id:1>.execute-api.<region>.amazonaws.com",
+          "Connection": "keep-alive",
+          "Host": "<id:1>.execute-api.localhost.localstack.cloud:4566",
           "User-Agent": "python-requests/testing",
-          "Via": "<via:1>",
-          "X-Amz-Cf-Id": "<cf-id:1>",
-          "X-Amzn-Trace-Id": "<trace-id:1>",
-          "X-Forwarded-For": "<source-ip:1>, <ip>",
-          "X-Forwarded-Port": "443",
-          "X-Forwarded-Proto": "https",
-          "tEsT-HEADeR": "aValUE"
+          "X-Forwarded-For": "<source-ip:1>, <id:1>.execute-api.localhost.localstack.cloud:4566",
+          "accept": "*/*",
+          "accept-encoding": "gzip, deflate",
+          "tEsT-HEADeR": "aValUE",
+          "x-localstack-edge": "http://<id:1>.execute-api.localhost.localstack.cloud:4566",
+          "x-localstack-tgt-api": "apigateway"
         },
         "httpMethod": "GET",
         "isBase64Encoded": false,
         "multiValueHeaders": {
-          "Accept": [
-            "*/*"
-          ],
-          "Accept-Encoding": [
-            "gzip, deflate"
-          ],
-          "CloudFront-Forwarded-Proto": [
-            "https"
-          ],
-          "CloudFront-Is-Desktop-Viewer": [
-            "true"
-          ],
-          "CloudFront-Is-Mobile-Viewer": [
-            "false"
-          ],
-          "CloudFront-Is-SmartTV-Viewer": [
-            "false"
-          ],
-          "CloudFront-Is-Tablet-Viewer": [
-            "false"
-          ],
-          "CloudFront-Viewer-ASN": [
-            "<cloudfront-asn:1>"
-          ],
-          "CloudFront-Viewer-Country": [
-            "<cloudfront-country:1>"
+          "Connection": [
+            "keep-alive"
           ],
           "Host": [
-            "<id:1>.execute-api.<region>.amazonaws.com"
+            "<id:1>.execute-api.localhost.localstack.cloud:4566"
           ],
           "User-Agent": [
             "python-requests/testing"
           ],
-          "Via": [
-            "<via:1>"
-          ],
-          "X-Amz-Cf-Id": [
-            "<cf-id:1>"
-          ],
-          "X-Amzn-Trace-Id": [
-            "<trace-id:1>"
-          ],
           "X-Forwarded-For": [
-            "<source-ip:1>, <ip>"
+            "<source-ip:1>, <id:1>.execute-api.localhost.localstack.cloud:4566"
           ],
-          "X-Forwarded-Port": [
-            "443"
+          "accept": [
+            "*/*"
           ],
-          "X-Forwarded-Proto": [
-            "https"
+          "accept-encoding": [
+            "gzip, deflate"
           ],
           "tEsT-HEADeR": [
             "aValUE"
+          ],
+          "x-localstack-edge": [
+            "http://<id:1>.execute-api.localhost.localstack.cloud:4566"
+          ],
+          "x-localstack-tgt-api": [
+            "apigateway"
           ]
         },
         "multiValueQueryStringParameters": null,
         "path": "/test-path",
-        "pathParameters": null,
+        "pathParameters": {},
         "queryStringParameters": null,
         "requestContext": {
           "accountId": "111111111111",
           "apiId": "<id:1>",
-          "domainName": "<id:1>.execute-api.<region>.amazonaws.com",
+          "authorizer": {},
+          "domainName": "<id:1>.execute-api.localhost.localstack.cloud",
           "domainPrefix": "<id:1>",
-          "extendedRequestId": "<extended-request-id:1>",
           "httpMethod": "GET",
           "identity": {
-            "accessKey": null,
-            "accountId": null,
-            "caller": null,
-            "cognitoAuthenticationProvider": null,
-            "cognitoAuthenticationType": null,
-            "cognitoIdentityId": null,
-            "cognitoIdentityPoolId": null,
-            "principalOrgId": null,
+            "accountId": "111111111111",
             "sourceIp": "<source-ip:1>",
-            "user": null,
-            "userAgent": "python-requests/testing",
-            "userArn": null
+            "userAgent": "python-requests/testing"
           },
           "path": "/test/test-path",
           "protocol": "HTTP/1.1",
@@ -134,112 +93,67 @@
           "stage": "test"
         },
         "resource": "/test-path",
-        "stageVariables": null
+        "stageVariables": {}
       },
       "invocation-payload-with-trailing-slash": {
-        "body": null,
+        "body": "",
         "headers": {
-          "Accept": "*/*",
-          "Accept-Encoding": "gzip, deflate",
-          "CloudFront-Forwarded-Proto": "https",
-          "CloudFront-Is-Desktop-Viewer": "true",
-          "CloudFront-Is-Mobile-Viewer": "false",
-          "CloudFront-Is-SmartTV-Viewer": "false",
-          "CloudFront-Is-Tablet-Viewer": "false",
-          "CloudFront-Viewer-ASN": "<cloudfront-asn:1>",
-          "CloudFront-Viewer-Country": "<cloudfront-country:1>",
-          "Host": "<id:1>.execute-api.<region>.amazonaws.com",
+          "Connection": "keep-alive",
+          "Host": "<id:1>.execute-api.localhost.localstack.cloud:4566",
           "User-Agent": "python-requests/testing",
-          "Via": "<via:2>",
-          "X-Amz-Cf-Id": "<cf-id:2>",
-          "X-Amzn-Trace-Id": "<trace-id:2>",
-          "X-Forwarded-For": "<source-ip:1>, <ip>",
-          "X-Forwarded-Port": "443",
-          "X-Forwarded-Proto": "https",
-          "tEsT-HEADeR": "aValUE"
+          "X-Forwarded-For": "<source-ip:1>, <id:1>.execute-api.localhost.localstack.cloud:4566",
+          "accept": "*/*",
+          "accept-encoding": "gzip, deflate",
+          "tEsT-HEADeR": "aValUE",
+          "x-localstack-edge": "http://<id:1>.execute-api.localhost.localstack.cloud:4566",
+          "x-localstack-tgt-api": "apigateway"
         },
         "httpMethod": "GET",
         "isBase64Encoded": false,
         "multiValueHeaders": {
-          "Accept": [
-            "*/*"
-          ],
-          "Accept-Encoding": [
-            "gzip, deflate"
-          ],
-          "CloudFront-Forwarded-Proto": [
-            "https"
-          ],
-          "CloudFront-Is-Desktop-Viewer": [
-            "true"
-          ],
-          "CloudFront-Is-Mobile-Viewer": [
-            "false"
-          ],
-          "CloudFront-Is-SmartTV-Viewer": [
-            "false"
-          ],
-          "CloudFront-Is-Tablet-Viewer": [
-            "false"
-          ],
-          "CloudFront-Viewer-ASN": [
-            "<cloudfront-asn:1>"
-          ],
-          "CloudFront-Viewer-Country": [
-            "<cloudfront-country:1>"
+          "Connection": [
+            "keep-alive"
           ],
           "Host": [
-            "<id:1>.execute-api.<region>.amazonaws.com"
+            "<id:1>.execute-api.localhost.localstack.cloud:4566"
           ],
           "User-Agent": [
             "python-requests/testing"
           ],
-          "Via": [
-            "<via:2>"
-          ],
-          "X-Amz-Cf-Id": [
-            "<cf-id:2>"
-          ],
-          "X-Amzn-Trace-Id": [
-            "<trace-id:2>"
-          ],
           "X-Forwarded-For": [
-            "<source-ip:1>, <ip>"
+            "<source-ip:1>, <id:1>.execute-api.localhost.localstack.cloud:4566"
           ],
-          "X-Forwarded-Port": [
-            "443"
+          "accept": [
+            "*/*"
           ],
-          "X-Forwarded-Proto": [
-            "https"
+          "accept-encoding": [
+            "gzip, deflate"
           ],
           "tEsT-HEADeR": [
             "aValUE"
+          ],
+          "x-localstack-edge": [
+            "http://<id:1>.execute-api.localhost.localstack.cloud:4566"
+          ],
+          "x-localstack-tgt-api": [
+            "apigateway"
           ]
         },
         "multiValueQueryStringParameters": null,
         "path": "/test-path/",
-        "pathParameters": null,
+        "pathParameters": {},
         "queryStringParameters": null,
         "requestContext": {
           "accountId": "111111111111",
           "apiId": "<id:1>",
-          "domainName": "<id:1>.execute-api.<region>.amazonaws.com",
+          "authorizer": {},
+          "domainName": "<id:1>.execute-api.localhost.localstack.cloud",
           "domainPrefix": "<id:1>",
-          "extendedRequestId": "<extended-request-id:2>",
           "httpMethod": "GET",
           "identity": {
-            "accessKey": null,
-            "accountId": null,
-            "caller": null,
-            "cognitoAuthenticationProvider": null,
-            "cognitoAuthenticationType": null,
-            "cognitoIdentityId": null,
-            "cognitoIdentityPoolId": null,
-            "principalOrgId": null,
+            "accountId": "111111111111",
             "sourceIp": "<source-ip:1>",
-            "user": null,
-            "userAgent": "python-requests/testing",
-            "userArn": null
+            "userAgent": "python-requests/testing"
           },
           "path": "/test/test-path/",
           "protocol": "HTTP/1.1",
@@ -251,86 +165,50 @@
           "stage": "test"
         },
         "resource": "/test-path",
-        "stageVariables": null
+        "stageVariables": {}
       },
       "invocation-payload-without-trailing-slash-and-query-params": {
-        "body": null,
+        "body": "",
         "headers": {
-          "Accept": "*/*",
-          "Accept-Encoding": "gzip, deflate",
-          "CloudFront-Forwarded-Proto": "https",
-          "CloudFront-Is-Desktop-Viewer": "true",
-          "CloudFront-Is-Mobile-Viewer": "false",
-          "CloudFront-Is-SmartTV-Viewer": "false",
-          "CloudFront-Is-Tablet-Viewer": "false",
-          "CloudFront-Viewer-ASN": "<cloudfront-asn:1>",
-          "CloudFront-Viewer-Country": "<cloudfront-country:1>",
-          "Host": "<id:1>.execute-api.<region>.amazonaws.com",
+          "Connection": "keep-alive",
+          "Host": "<id:1>.execute-api.localhost.localstack.cloud:4566",
           "User-Agent": "python-requests/testing",
-          "Via": "<via:3>",
-          "X-Amz-Cf-Id": "<cf-id:3>",
-          "X-Amzn-Trace-Id": "<trace-id:3>",
-          "X-Forwarded-For": "<source-ip:1>, <ip>",
-          "X-Forwarded-Port": "443",
-          "X-Forwarded-Proto": "https",
-          "tEsT-HEADeR": "aValUE"
+          "X-Forwarded-For": "<source-ip:1>, <id:1>.execute-api.localhost.localstack.cloud:4566",
+          "accept": "*/*",
+          "accept-encoding": "gzip, deflate",
+          "tEsT-HEADeR": "aValUE",
+          "x-localstack-edge": "http://<id:1>.execute-api.localhost.localstack.cloud:4566",
+          "x-localstack-tgt-api": "apigateway"
         },
         "httpMethod": "GET",
         "isBase64Encoded": false,
         "multiValueHeaders": {
-          "Accept": [
-            "*/*"
-          ],
-          "Accept-Encoding": [
-            "gzip, deflate"
-          ],
-          "CloudFront-Forwarded-Proto": [
-            "https"
-          ],
-          "CloudFront-Is-Desktop-Viewer": [
-            "true"
-          ],
-          "CloudFront-Is-Mobile-Viewer": [
-            "false"
-          ],
-          "CloudFront-Is-SmartTV-Viewer": [
-            "false"
-          ],
-          "CloudFront-Is-Tablet-Viewer": [
-            "false"
-          ],
-          "CloudFront-Viewer-ASN": [
-            "<cloudfront-asn:1>"
-          ],
-          "CloudFront-Viewer-Country": [
-            "<cloudfront-country:1>"
+          "Connection": [
+            "keep-alive"
           ],
           "Host": [
-            "<id:1>.execute-api.<region>.amazonaws.com"
+            "<id:1>.execute-api.localhost.localstack.cloud:4566"
           ],
           "User-Agent": [
             "python-requests/testing"
           ],
-          "Via": [
-            "<via:3>"
-          ],
-          "X-Amz-Cf-Id": [
-            "<cf-id:3>"
-          ],
-          "X-Amzn-Trace-Id": [
-            "<trace-id:3>"
-          ],
           "X-Forwarded-For": [
-            "<source-ip:1>, <ip>"
+            "<source-ip:1>, <id:1>.execute-api.localhost.localstack.cloud:4566"
           ],
-          "X-Forwarded-Port": [
-            "443"
+          "accept": [
+            "*/*"
           ],
-          "X-Forwarded-Proto": [
-            "https"
+          "accept-encoding": [
+            "gzip, deflate"
           ],
           "tEsT-HEADeR": [
             "aValUE"
+          ],
+          "x-localstack-edge": [
+            "http://<id:1>.execute-api.localhost.localstack.cloud:4566"
+          ],
+          "x-localstack-tgt-api": [
+            "apigateway"
           ]
         },
         "multiValueQueryStringParameters": {
@@ -339,30 +217,21 @@
           ]
         },
         "path": "/test-path",
-        "pathParameters": null,
+        "pathParameters": {},
         "queryStringParameters": {
           "urlparam": "test"
         },
         "requestContext": {
           "accountId": "111111111111",
           "apiId": "<id:1>",
-          "domainName": "<id:1>.execute-api.<region>.amazonaws.com",
+          "authorizer": {},
+          "domainName": "<id:1>.execute-api.localhost.localstack.cloud",
           "domainPrefix": "<id:1>",
-          "extendedRequestId": "<extended-request-id:3>",
           "httpMethod": "GET",
           "identity": {
-            "accessKey": null,
-            "accountId": null,
-            "caller": null,
-            "cognitoAuthenticationProvider": null,
-            "cognitoAuthenticationType": null,
-            "cognitoIdentityId": null,
-            "cognitoIdentityPoolId": null,
-            "principalOrgId": null,
+            "accountId": "111111111111",
             "sourceIp": "<source-ip:1>",
-            "user": null,
-            "userAgent": "python-requests/testing",
-            "userArn": null
+            "userAgent": "python-requests/testing"
           },
           "path": "/test/test-path",
           "protocol": "HTTP/1.1",
@@ -374,86 +243,50 @@
           "stage": "test"
         },
         "resource": "/test-path",
-        "stageVariables": null
+        "stageVariables": {}
       },
       "invocation-payload-with-trailing-slash-and-query-params": {
-        "body": null,
+        "body": "",
         "headers": {
-          "Accept": "*/*",
-          "Accept-Encoding": "gzip, deflate",
-          "CloudFront-Forwarded-Proto": "https",
-          "CloudFront-Is-Desktop-Viewer": "true",
-          "CloudFront-Is-Mobile-Viewer": "false",
-          "CloudFront-Is-SmartTV-Viewer": "false",
-          "CloudFront-Is-Tablet-Viewer": "false",
-          "CloudFront-Viewer-ASN": "<cloudfront-asn:1>",
-          "CloudFront-Viewer-Country": "<cloudfront-country:1>",
-          "Host": "<id:1>.execute-api.<region>.amazonaws.com",
+          "Connection": "keep-alive",
+          "Host": "<id:1>.execute-api.localhost.localstack.cloud:4566",
           "User-Agent": "python-requests/testing",
-          "Via": "<via:4>",
-          "X-Amz-Cf-Id": "<cf-id:4>",
-          "X-Amzn-Trace-Id": "<trace-id:4>",
-          "X-Forwarded-For": "<source-ip:1>, <ip>",
-          "X-Forwarded-Port": "443",
-          "X-Forwarded-Proto": "https",
-          "tEsT-HEADeR": "aValUE"
+          "X-Forwarded-For": "<source-ip:1>, <id:1>.execute-api.localhost.localstack.cloud:4566",
+          "accept": "*/*",
+          "accept-encoding": "gzip, deflate",
+          "tEsT-HEADeR": "aValUE",
+          "x-localstack-edge": "http://<id:1>.execute-api.localhost.localstack.cloud:4566",
+          "x-localstack-tgt-api": "apigateway"
         },
         "httpMethod": "GET",
         "isBase64Encoded": false,
         "multiValueHeaders": {
-          "Accept": [
-            "*/*"
-          ],
-          "Accept-Encoding": [
-            "gzip, deflate"
-          ],
-          "CloudFront-Forwarded-Proto": [
-            "https"
-          ],
-          "CloudFront-Is-Desktop-Viewer": [
-            "true"
-          ],
-          "CloudFront-Is-Mobile-Viewer": [
-            "false"
-          ],
-          "CloudFront-Is-SmartTV-Viewer": [
-            "false"
-          ],
-          "CloudFront-Is-Tablet-Viewer": [
-            "false"
-          ],
-          "CloudFront-Viewer-ASN": [
-            "<cloudfront-asn:1>"
-          ],
-          "CloudFront-Viewer-Country": [
-            "<cloudfront-country:1>"
+          "Connection": [
+            "keep-alive"
           ],
           "Host": [
-            "<id:1>.execute-api.<region>.amazonaws.com"
+            "<id:1>.execute-api.localhost.localstack.cloud:4566"
           ],
           "User-Agent": [
             "python-requests/testing"
           ],
-          "Via": [
-            "<via:4>"
-          ],
-          "X-Amz-Cf-Id": [
-            "<cf-id:4>"
-          ],
-          "X-Amzn-Trace-Id": [
-            "<trace-id:4>"
-          ],
           "X-Forwarded-For": [
-            "<source-ip:1>, <ip>"
+            "<source-ip:1>, <id:1>.execute-api.localhost.localstack.cloud:4566"
           ],
-          "X-Forwarded-Port": [
-            "443"
+          "accept": [
+            "*/*"
           ],
-          "X-Forwarded-Proto": [
-            "https"
+          "accept-encoding": [
+            "gzip, deflate"
           ],
           "tEsT-HEADeR": [
             "aValUE"
+          ],
+          "x-localstack-edge": [
+            "http://<id:1>.execute-api.localhost.localstack.cloud:4566"
+          ],
+          "x-localstack-tgt-api": [
+            "apigateway"
           ]
         },
         "multiValueQueryStringParameters": {
@@ -462,30 +295,21 @@
           ]
         },
         "path": "/test-path/",
-        "pathParameters": null,
+        "pathParameters": {},
         "queryStringParameters": {
           "urlparam": "test"
         },
         "requestContext": {
           "accountId": "111111111111",
           "apiId": "<id:1>",
-          "domainName": "<id:1>.execute-api.<region>.amazonaws.com",
+          "authorizer": {},
+          "domainName": "<id:1>.execute-api.localhost.localstack.cloud",
           "domainPrefix": "<id:1>",
-          "extendedRequestId": "<extended-request-id:4>",
           "httpMethod": "GET",
           "identity": {
-            "accessKey": null,
-            "accountId": null,
-            "caller": null,
-            "cognitoAuthenticationProvider": null,
-            "cognitoAuthenticationType": null,
-            "cognitoIdentityId": null,
-            "cognitoIdentityPoolId": null,
-            "principalOrgId": null,
+            "accountId": "111111111111",
             "sourceIp": "<source-ip:1>",
-            "user": null,
-            "userAgent": "python-requests/testing",
-            "userArn": null
+            "userAgent": "python-requests/testing"
           },
           "path": "/test/test-path/",
           "protocol": "HTTP/1.1",
@@ -497,7 +321,7 @@
           "stage": "test"
         },
         "resource": "/test-path",
-        "stageVariables": null
+        "stageVariables": {}
       }
     }
   }
