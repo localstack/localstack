@@ -27,7 +27,6 @@ from localstack.utils import common
 from localstack.utils.aws import aws_stack
 from localstack.utils.aws.arns import extract_region_from_arn
 from localstack.utils.aws.aws_responses import LambdaResponse, requests_response
-from localstack.utils.aws.aws_stack import extract_region_from_arn
 from localstack.utils.aws.templating import VtlTemplate
 from localstack.utils.collections import remove_attributes
 from localstack.utils.common import make_http_request, to_str
