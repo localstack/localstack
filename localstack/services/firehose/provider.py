@@ -255,6 +255,10 @@ class FirehoseProvider(FirehoseApi):
             LOG.warning(
                 "Delivery stream contains a redshift destination (which is currently not supported)."
             )
+        if amazon_open_search_serverless_destination_configuration:
+            LOG.warning(
+                "Delivery stream contains a opensearch serverless destination (which is currently not supported)."
+            )
 
         stream = DeliveryStreamDescription(
             DeliveryStreamName=delivery_stream_name,
