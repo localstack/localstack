@@ -477,6 +477,17 @@ def invoke_rest_api_integration_backend(invocation_context: ApiInvocationContext
                 table.put_item(Item=event_data)
                 response = requests_response(event_data)
                 return response
+        if uri.startswith("arn:aws:apigateway:") and ".appsync-api:" in uri:
+            # arn:aws:apigateway:us-east-1:appsyncid.appsync-api:path/graphql
+            uri_parts = uri.split(':')
+            app_sync_id = uri_parts[-2].replace('.appsync-api', '')
+            appsync_client = aws_stack.connect_to_resource("appsync")
+            api_data = appsync_client.get_graphql_api(apiId=app_sync_id)
+            endpoint = api_data['graphqlApi']['uris']['GRAPHQL']
+            result = common.make_http_request(
+                endpoint, method="POST", headers=headers, data=data
+            )
+            return result
         else:
             raise Exception(
                 'API Gateway action uri "%s", integration type %s not yet implemented'
