@@ -9,24 +9,21 @@ import pytest
 from pytest_httpserver import HTTPServer
 from werkzeug import Request, Response
 
-from localstack.utils.common import (
+from localstack.utils.collections import is_none_or_empty
+from localstack.utils.crypto import (
     PEM_CERT_END,
     PEM_CERT_START,
     PEM_KEY_END_REGEX,
     PEM_KEY_START_REGEX,
-    FileListener,
-    FileMappedDocument,
-    download,
     generate_ssl_cert,
-    is_none_or_empty,
-    load_file,
-    new_tmp_file,
-    poll_condition,
-    rm_rf,
-    run,
-    synchronized,
 )
+from localstack.utils.files import load_file, new_tmp_file, rm_rf
+from localstack.utils.http import download
+from localstack.utils.json import FileMappedDocument
 from localstack.utils.net import wait_for_port_closed, wait_for_port_open
+from localstack.utils.run import run
+from localstack.utils.sync import poll_condition, synchronized
+from localstack.utils.tail import FileListener
 
 
 class SynchronizedTest(unittest.TestCase):
