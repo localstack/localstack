@@ -2668,18 +2668,25 @@ class TestS3:
     def test_s3_sse_validate_kms_key(
         self,
         s3_client,
-        s3_bucket,
+        s3_create_bucket,
+        kms_create_key,
         monkeypatch,
         snapshot,
     ):
         data = b"test-sse"
+        bucket_name = f"bucket-test-kms-{short_uid()}"
+        s3_create_bucket(
+            Bucket=bucket_name, CreateBucketConfiguration={"LocationConstraint": "us-west-2"}
+        )
+        # create key in a different region than the bucket
+        key_id = kms_create_key(region="us-east-1")["Arn"]
 
         # test whether the validation is skipped when not disabling the validation
         if not is_aws_cloud():
             key_name = "test-sse-validate-kms-key-no-check"
             response = s3_client.put_object(
-                Bucket=s3_bucket,
-                Key="test-sse-validate-kms-key-no-check",
+                Bucket=bucket_name,
+                Key=key_name,
                 Body=data,
                 ServerSideEncryption="aws:kms",
                 SSEKMSKeyId="fake-key-id",
@@ -2687,7 +2694,7 @@ class TestS3:
             assert response["ResponseMetadata"]["HTTPStatusCode"] == 200
 
             response = s3_client.create_multipart_upload(
-                Bucket=s3_bucket,
+                Bucket=bucket_name,
                 Key="multipart-test-sse-validate-kms-key-no-check",
                 ServerSideEncryption="aws:kms",
                 SSEKMSKeyId="fake-key-id",
@@ -2695,11 +2702,20 @@ class TestS3:
             assert response["ResponseMetadata"]["HTTPStatusCode"] == 200
 
             response = s3_client.copy_object(
-                Bucket=s3_bucket,
+                Bucket=bucket_name,
                 Key="copy-test-sse-validate-kms-key-no-check",
-                CopySource={"Bucket": s3_bucket, "Key": key_name},
+                CopySource={"Bucket": bucket_name, "Key": key_name},
                 ServerSideEncryption="aws:kms",
                 SSEKMSKeyId="fake-key-id",
+            )
+            assert response["ResponseMetadata"]["HTTPStatusCode"] == 200
+
+            response = s3_client.put_object(
+                Bucket=bucket_name,
+                Key="test-sse-validate-kms-key-no-check-region",
+                Body=data,
+                ServerSideEncryption="aws:kms",
+                SSEKMSKeyId=key_id,
             )
             assert response["ResponseMetadata"]["HTTPStatusCode"] == 200
 
@@ -2708,17 +2724,27 @@ class TestS3:
         monkeypatch.setattr(config, "S3_SKIP_KMS_KEY_VALIDATION", False)
         with pytest.raises(ClientError) as e:
             s3_client.put_object(
-                Bucket=s3_bucket,
-                Key=key_name,
+                Bucket=bucket_name,
+                Key="test-sse-validate-kms-key-no-check-region",
                 Body=data,
                 ServerSideEncryption="aws:kms",
                 SSEKMSKeyId="fake-key-id",
+            )
+        snapshot.match("put-obj-different-region-kms-key", e.value.response)
+
+        with pytest.raises(ClientError) as e:
+            s3_client.put_object(
+                Bucket=bucket_name,
+                Key=key_name,
+                Body=data,
+                ServerSideEncryption="aws:kms",
+                SSEKMSKeyId=key_id,
             )
         snapshot.match("put-obj-wrong-kms-key", e.value.response)
 
         with pytest.raises(ClientError) as e:
             s3_client.create_multipart_upload(
-                Bucket=s3_bucket,
+                Bucket=bucket_name,
                 Key="multipart-test-sse-validate-kms-key-no-check",
                 ServerSideEncryption="aws:kms",
                 SSEKMSKeyId="fake-key-id",
@@ -2727,12 +2753,12 @@ class TestS3:
 
         # create a object to be copied
         src_key = "key-to-be-copied"
-        s3_client.put_object(Bucket=s3_bucket, Key=src_key, Body=b"test-data")
+        s3_client.put_object(Bucket=bucket_name, Key=src_key, Body=b"test-data")
         with pytest.raises(ClientError) as e:
             s3_client.copy_object(
-                Bucket=s3_bucket,
+                Bucket=bucket_name,
                 Key="copy-test-sse-validate-kms-key-no-check",
-                CopySource={"Bucket": s3_bucket, "Key": src_key},
+                CopySource={"Bucket": bucket_name, "Key": src_key},
                 ServerSideEncryption="aws:kms",
                 SSEKMSKeyId="fake-key-id",
             )

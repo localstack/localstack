@@ -4009,12 +4009,22 @@
     }
   },
   "tests/integration/s3/test_s3.py::TestS3::test_s3_sse_validate_kms_key": {
-    "recorded-date": "06-01-2023, 17:51:31",
+    "recorded-date": "09-01-2023, 11:20:50",
     "recorded-content": {
-      "put-obj-wrong-kms-key": {
+      "put-obj-different-region-kms-key": {
         "Error": {
           "Code": "KMS.NotFoundException",
           "Message": "Invalid keyId fake-key-id"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "put-obj-wrong-kms-key": {
+        "Error": {
+          "Code": "KMS.NotFoundException",
+          "Message": "Invalid arn <region>"
         },
         "ResponseMetadata": {
           "HTTPHeaders": {},

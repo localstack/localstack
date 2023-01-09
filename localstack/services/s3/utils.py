@@ -214,7 +214,9 @@ def validate_kms_key_id(kms_key: str, bucket: FakeBucket):
         arn = parse_arn(kms_key)
         region_name = arn["region"]
         if region_name != bucket.region_name:
-            raise
+            raise CommonServiceException(
+                code="KMS.NotFoundException", message=f"Invalid arn {region_name}"
+            )
         # multi account unsupported yet
     except InvalidArnException:
         pass
