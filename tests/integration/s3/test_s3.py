@@ -2673,13 +2673,16 @@ class TestS3:
         monkeypatch,
         snapshot,
     ):
+        snapshot.add_transformer(snapshot.transform.key_value("Description"))
         data = b"test-sse"
         bucket_name = f"bucket-test-kms-{short_uid()}"
         s3_create_bucket(
             Bucket=bucket_name, CreateBucketConfiguration={"LocationConstraint": "us-west-2"}
         )
         # create key in a different region than the bucket
-        key_id = kms_create_key(region="us-east-1")["Arn"]
+        kms_key = kms_create_key(region="us-east-1")
+        # snapshot the KMS key to save the UUID for replacement in Error message.
+        snapshot.match("create-kms-key", kms_key)
 
         # test whether the validation is skipped when not disabling the validation
         if not is_aws_cloud():
@@ -2710,27 +2713,20 @@ class TestS3:
             )
             assert response["ResponseMetadata"]["HTTPStatusCode"] == 200
 
-            response = s3_client.put_object(
-                Bucket=bucket_name,
-                Key="test-sse-validate-kms-key-no-check-region",
-                Body=data,
-                ServerSideEncryption="aws:kms",
-                SSEKMSKeyId=key_id,
-            )
-            assert response["ResponseMetadata"]["HTTPStatusCode"] == 200
-
         key_name = "test-sse-validate-kms-key"
+        fake_key_uuid = "134f2428-cec1-4b25-a1ae-9048164dba47"
+
         # activating the validation, for AWS parity
         monkeypatch.setattr(config, "S3_SKIP_KMS_KEY_VALIDATION", False)
         with pytest.raises(ClientError) as e:
             s3_client.put_object(
                 Bucket=bucket_name,
-                Key="test-sse-validate-kms-key-no-check-region",
+                Key=key_name,
                 Body=data,
                 ServerSideEncryption="aws:kms",
                 SSEKMSKeyId="fake-key-id",
             )
-        snapshot.match("put-obj-different-region-kms-key", e.value.response)
+        snapshot.match("put-obj-wrong-kms-key", e.value.response)
 
         with pytest.raises(ClientError) as e:
             s3_client.put_object(
@@ -2738,9 +2734,45 @@ class TestS3:
                 Key=key_name,
                 Body=data,
                 ServerSideEncryption="aws:kms",
-                SSEKMSKeyId=key_id,
+                SSEKMSKeyId=fake_key_uuid,
             )
-        snapshot.match("put-obj-wrong-kms-key", e.value.response)
+        snapshot.match("put-obj-wrong-kms-key-real-uuid", e.value.response)
+
+        # we create a wrong arn but with the right region to test error message
+        wrong_id_arn = (
+            kms_key["Arn"]
+            .replace("us-east-1", "us-west-2")
+            .replace(kms_key["KeyId"], fake_key_uuid)
+        )
+        with pytest.raises(ClientError) as e:
+            s3_client.put_object(
+                Bucket=bucket_name,
+                Key=key_name,
+                Body=data,
+                ServerSideEncryption="aws:kms",
+                SSEKMSKeyId=wrong_id_arn,
+            )
+        snapshot.match("put-obj-wrong-kms-key-real-uuid-arn", e.value.response)
+
+        with pytest.raises(ClientError) as e:
+            s3_client.put_object(
+                Bucket=bucket_name,
+                Key="test-sse-validate-kms-key-no-check-region",
+                Body=data,
+                ServerSideEncryption="aws:kms",
+                SSEKMSKeyId=kms_key["Arn"],
+            )
+        snapshot.match("put-obj-different-region-kms-key", e.value.response)
+
+        with pytest.raises(ClientError) as e:
+            s3_client.put_object(
+                Bucket=bucket_name,
+                Key="test-sse-validate-kms-key-different-region-no-arn",
+                Body=data,
+                ServerSideEncryption="aws:kms",
+                SSEKMSKeyId=kms_key["KeyId"],
+            )
+        snapshot.match("put-obj-different-region-kms-key-no-arn", e.value.response)
 
         with pytest.raises(ClientError) as e:
             s3_client.create_multipart_upload(

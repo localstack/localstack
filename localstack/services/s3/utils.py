@@ -43,6 +43,10 @@ S3_VIRTUAL_HOSTNAME_REGEX = (  # path based refs have at least valid bucket expr
     REGION_REGEX, REGION_REGEX, PORT_REGEX
 )
 
+PATTERN_UUID = re.compile(
+    r"[a-fA-F0-9]{8}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{12}"
+)
+
 S3_VIRTUAL_HOST_FORWARDED_HEADER = "x-s3-vhost-forwarded-for"
 
 VALID_CANNED_ACLS_BUCKET = {
@@ -211,21 +215,44 @@ def validate_kms_key_id(kms_key: str, bucket: FakeBucket):
     :return:
     """
     try:
-        arn = parse_arn(kms_key)
-        region_name = arn["region"]
-        if region_name != bucket.region_name:
+        parsed_arn = parse_arn(kms_key)
+        key_region = parsed_arn["region"]
+        key_id = parsed_arn["resource"].split("/")[1]
+        if key_region != bucket.region_name:
             raise CommonServiceException(
-                code="KMS.NotFoundException", message=f"Invalid arn {region_name}"
+                code="KMS.NotFoundException", message=f"Invalid arn {key_region}"
             )
-        # multi account unsupported yet
+
     except InvalidArnException:
-        pass
+        # if it fails, the passed ID is a UUID with no region data
+        key_id = kms_key
+        # recreate the ARN manually with the bucket region and bucket owner
+        # if the KMS key is cross-account, user should provide an ARN and not a KeyId
+        kms_key = f"arn:aws:kms:{bucket.region_name}:{bucket.account_id}:key/{key_id}"
+
+    # we validate the Key Id is a valid one
+    if not PATTERN_UUID.match(key_id):
+        raise CommonServiceException(
+            code="KMS.NotFoundException", message=f"Invalid keyId {key_id}"
+        )
+    # create KMS ARN with the same region as bucket to try to fetch the key details
     kms_client = aws_stack.create_external_boto_client("kms")
     try:
-        kms_client.describe_key(KeyId=kms_key)
+        kms_key_data = kms_client.describe_key(KeyId=kms_key)
+        # FIXME: bug in our KMS implementation, remove once fixed
+        # even if you pass a full ARN, it can return a Key from a different region
+        # maybe we can make use of KMS error message to return the S3 error
+        parsed_arn = parse_arn(kms_key_data["KeyMetadata"]["Arn"])
+        key_region = parsed_arn["region"]
+        if key_region != bucket.region_name:
+            raise CommonServiceException(
+                code="KMS.NotFoundException",
+                message=f"Key '{kms_key}' does not exist",
+            )
+
     except ClientError as e:
         if e.response["Error"]["Code"] == "NotFoundException":
             raise CommonServiceException(
-                code="KMS.NotFoundException", message=f"Invalid keyId {kms_key}"
+                code="KMS.NotFoundException", message=f"Key '{kms_key}' does not exist"
             )
         raise
