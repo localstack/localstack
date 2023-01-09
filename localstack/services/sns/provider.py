@@ -1,5 +1,7 @@
 import json
 import logging
+import re
+from contextlib import contextmanager
 from typing import Dict, List
 
 from botocore.utils import InvalidArnException
@@ -75,6 +77,7 @@ from localstack.aws.api.sns import (
     topicARN,
     topicName,
 )
+from localstack.constants import AUTH_CREDENTIAL_REGEX
 from localstack.http import Request, Response, Router, route
 from localstack.services.edge import ROUTER
 from localstack.services.moto import call_moto
@@ -87,7 +90,7 @@ from localstack.services.sns.publisher import (
     SnsPublishContext,
 )
 from localstack.utils.aws import aws_stack
-from localstack.utils.aws.arns import parse_arn
+from localstack.utils.aws.arns import extract_region_from_arn, parse_arn
 from localstack.utils.strings import short_uid
 
 # set up logger
@@ -109,6 +112,28 @@ class SnsProvider(SnsApi, ServiceLifecycleHook):
     @staticmethod
     def get_store() -> SnsStore:
         return sns_stores[get_aws_account_id()][aws_stack.get_region()]
+
+    @staticmethod
+    @contextmanager
+    def modify_context_region_with_arn_region(context: RequestContext, arn: str):
+        # TODO@viren this is pretty similar to DynamoDB's `modify_context_request()`
+        original_region = context.region
+        original_auth_header = context.request.headers.get("Authorization")
+
+        arn_region = extract_region_from_arn(arn)
+        context.region = arn_region
+
+        context.request.headers["Authorization"] = re.sub(
+            AUTH_CREDENTIAL_REGEX,
+            rf"Credential=\1/\2/{arn_region}/\4/",
+            original_auth_header or "",
+            flags=re.IGNORECASE,
+        )
+
+        yield context
+
+        context.region = original_region
+        context.request.headers["Authorization"] = original_auth_header
 
     def add_permission(
         self,
@@ -248,7 +273,8 @@ class SnsProvider(SnsApi, ServiceLifecycleHook):
         attribute_name: attributeName,
         attribute_value: attributeValue = None,
     ) -> None:
-        call_moto(context)
+        with self.modify_context_region_with_arn_region(context, topic_arn):
+            call_moto(context)
 
     def verify_sms_sandbox_phone_number(
         self, context: RequestContext, phone_number: PhoneNumberString, one_time_password: OTPCode
@@ -259,7 +285,8 @@ class SnsProvider(SnsApi, ServiceLifecycleHook):
     def get_topic_attributes(
         self, context: RequestContext, topic_arn: topicARN
     ) -> GetTopicAttributesResponse:
-        moto_response = call_moto(context)
+        with self.modify_context_region_with_arn_region(context, topic_arn):
+            moto_response = call_moto(context)
         # todo fix some attributes by moto, see snapshot
         return GetTopicAttributesResponse(**moto_response)
 
@@ -275,7 +302,7 @@ class SnsProvider(SnsApi, ServiceLifecycleHook):
             )
 
         store = self.get_store()
-        if topic_arn not in store.sns_subscriptions:
+        if topic_arn not in store.SNS_SUBSCRIPTIONS:
             raise NotFoundException(
                 "Topic does not exist",
             )
@@ -362,7 +389,7 @@ class SnsProvider(SnsApi, ServiceLifecycleHook):
                 raise InvalidParameterException(
                     "Invalid parameter: FilterPolicy: failed to parse JSON."
                 )
-            store.subscription_filter_policy[subscription_arn] = filter_policy
+            store.SUBSCRIPTION_FILTER_POLICY[subscription_arn] = filter_policy
             pass
         elif attribute_name == "RawMessageDelivery":
             # TODO: only for SQS and https(s) subs, + firehose
@@ -404,11 +431,11 @@ class SnsProvider(SnsApi, ServiceLifecycleHook):
         sub_arn = None
         # TODO: this is false, we validate only one sub and not all for topic
         #  WRITE AWS VALIDATED TEST FOR IT
-        for k, v in store.subscription_status.items():
+        for k, v in store.SUBSCRIPTION_STATUS.items():
             if v.get("Token") == token and v["TopicArn"] == topic_arn:
                 v["Status"] = "Subscribed"
                 sub_arn = k
-        for k, v in store.sns_subscriptions.items():
+        for k, v in store.SNS_SUBSCRIPTIONS.items():
             for i in v:
                 if i["TopicArn"] == topic_arn:
                     i["PendingConfirmation"] = "false"
@@ -420,7 +447,7 @@ class SnsProvider(SnsApi, ServiceLifecycleHook):
     ) -> UntagResourceResponse:
         call_moto(context)
         store = self.get_store()
-        store.sns_tags[resource_arn] = [
+        store.SNS_TAGS[resource_arn] = [
             t for t in _get_tags(resource_arn) if t["Key"] not in tag_keys
         ]
         return UntagResourceResponse()
@@ -503,8 +530,8 @@ class SnsProvider(SnsApi, ServiceLifecycleHook):
 
             return False
 
-        for topic_arn, existing_subs in store.sns_subscriptions.items():
-            store.sns_subscriptions[topic_arn] = [
+        for topic_arn, existing_subs in store.SNS_SUBSCRIPTIONS.items():
+            store.SNS_SUBSCRIPTIONS[topic_arn] = [
                 sub for sub in existing_subs if should_be_kept(sub, subscription_arn)
             ]
 
@@ -600,7 +627,7 @@ class SnsProvider(SnsApi, ServiceLifecycleHook):
                     )
             else:
                 topic = topic_arn or target_arn
-                if topic not in store.sns_subscriptions:
+                if topic not in store.SNS_SUBSCRIPTIONS:
                     raise NotFoundException(
                         "Topic does not exist",
                     )
@@ -674,8 +701,8 @@ class SnsProvider(SnsApi, ServiceLifecycleHook):
         subscription_arn = moto_response.get("SubscriptionArn")
         filter_policy = moto_response.get("FilterPolicy")
         store = self.get_store()
-        topic_subs = store.sns_subscriptions[topic_arn] = (
-            store.sns_subscriptions.get(topic_arn) or []
+        topic_subs = store.SNS_SUBSCRIPTIONS[topic_arn] = (
+            store.SNS_SUBSCRIPTIONS.get(topic_arn) or []
         )
         # An endpoint may only be subscribed to a topic once. Subsequent
         # subscribe calls do nothing (subscribe is idempotent).
@@ -685,7 +712,7 @@ class SnsProvider(SnsApi, ServiceLifecycleHook):
                     SubscriptionArn=existing_topic_subscription["SubscriptionArn"]
                 )
         if filter_policy:
-            store.subscription_filter_policy[subscription_arn] = json.loads(filter_policy)
+            store.SUBSCRIPTION_FILTER_POLICY[subscription_arn] = json.loads(filter_policy)
 
         subscription = {
             # http://docs.aws.amazon.com/cli/latest/reference/sns/get-subscription-attributes.html
@@ -700,11 +727,11 @@ class SnsProvider(SnsApi, ServiceLifecycleHook):
             subscription.update(attributes)
         topic_subs.append(subscription)
 
-        if subscription_arn not in store.subscription_status:
-            store.subscription_status[subscription_arn] = {}
+        if subscription_arn not in store.SUBSCRIPTION_STATUS:
+            store.SUBSCRIPTION_STATUS[subscription_arn] = {}
 
         subscription_token = short_uid()
-        store.subscription_status[subscription_arn].update(
+        store.SUBSCRIPTION_STATUS[subscription_arn].update(
             {"TopicArn": topic_arn, "Token": subscription_token, "Status": "Not Subscribed"}
         )
         # Send out confirmation message for HTTP(S), fix for https://github.com/localstack/localstack/issues/881
@@ -739,7 +766,7 @@ class SnsProvider(SnsApi, ServiceLifecycleHook):
 
         call_moto(context)
         store = self.get_store()
-        existing_tags = store.sns_tags.get(resource_arn, [])
+        existing_tags = store.SNS_TAGS.get(resource_arn, [])
 
         def existing_tag_index(item):
             for idx, tag in enumerate(existing_tags):
@@ -754,14 +781,15 @@ class SnsProvider(SnsApi, ServiceLifecycleHook):
             else:
                 existing_tags[existing_index] = item
 
-        store.sns_tags[resource_arn] = existing_tags
+        store.SNS_TAGS[resource_arn] = existing_tags
         return TagResourceResponse()
 
     def delete_topic(self, context: RequestContext, topic_arn: topicARN) -> None:
-        call_moto(context)
+        with self.modify_context_region_with_arn_region(context, topic_arn):
+            call_moto(context)
         store = self.get_store()
-        store.sns_subscriptions.pop(topic_arn, None)
-        store.sns_tags.pop(topic_arn, None)
+        store.SNS_SUBSCRIPTIONS.pop(topic_arn, None)
+        store.SNS_TAGS.pop(topic_arn, None)
 
     def create_topic(
         self,
@@ -781,7 +809,7 @@ class SnsProvider(SnsApi, ServiceLifecycleHook):
             )
         if tags:
             self.tag_resource(context=context, resource_arn=topic_arn, tags=tags)
-        store.sns_subscriptions[topic_arn] = store.sns_subscriptions.get(topic_arn) or []
+        store.SNS_SUBSCRIPTIONS[topic_arn] = store.SNS_SUBSCRIPTIONS.get(topic_arn) or []
         return CreateTopicResponse(TopicArn=topic_arn)
 
 
@@ -789,7 +817,7 @@ def get_subscription_by_arn(sub_arn):
     store = SnsProvider.get_store()
     # TODO maintain separate map instead of traversing all items
     # how to deprecate the store without breaking pods/persistence
-    for key, subscriptions in store.sns_subscriptions.items():
+    for key, subscriptions in store.SNS_SUBSCRIPTIONS.items():
         for sub in subscriptions:
             if sub["SubscriptionArn"] == sub_arn:
                 return sub
@@ -797,10 +825,10 @@ def get_subscription_by_arn(sub_arn):
 
 def _get_tags(topic_arn):
     store = SnsProvider.get_store()
-    if topic_arn not in store.sns_tags:
-        store.sns_tags[topic_arn] = []
+    if topic_arn not in store.SNS_TAGS:
+        store.SNS_TAGS[topic_arn] = []
 
-    return store.sns_tags[topic_arn]
+    return store.SNS_TAGS[topic_arn]
 
 
 def is_raw_message_delivery(susbcriber):
@@ -877,8 +905,8 @@ def validate_message_attribute_name(name: str) -> None:
 
 
 def extract_tags(topic_arn, tags, is_create_topic_request, store):
-    existing_tags = list(store.sns_tags.get(topic_arn, []))
-    existing_sub = store.sns_subscriptions.get(topic_arn, None)
+    existing_tags = list(store.SNS_TAGS.get(topic_arn, []))
+    existing_sub = store.SNS_SUBSCRIPTIONS.get(topic_arn, None)
     # if this is none there is nothing to check
     if existing_sub is not None:
         if tags is None:

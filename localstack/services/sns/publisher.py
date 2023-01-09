@@ -997,7 +997,7 @@ class PublishDispatcher:
         Validate that the message should be relayed to the subscriber, depending on the filter policy
         """
         subscriber_arn = subscriber["SubscriptionArn"]
-        filter_policy = store.subscription_filter_policy.get(subscriber_arn)
+        filter_policy = store.SUBSCRIPTION_FILTER_POLICY.get(subscriber_arn)
         if not filter_policy:
             return True
         # default value is `MessageAttributes`
@@ -1011,7 +1011,7 @@ class PublishDispatcher:
                 return True
 
     def publish_to_topic(self, ctx: SnsPublishContext, topic_arn: str) -> None:
-        subscriptions = ctx.store.sns_subscriptions.get(topic_arn, [])
+        subscriptions = ctx.store.SNS_SUBSCRIPTIONS.get(topic_arn, [])
         for subscriber in subscriptions:
             if self._should_publish(ctx.store, ctx.message, subscriber):
                 notifier = self.topic_notifiers[subscriber["Protocol"]]
@@ -1026,7 +1026,7 @@ class PublishDispatcher:
                 self.executor.submit(notifier.publish, context=ctx, subscriber=subscriber)
 
     def publish_batch_to_topic(self, ctx: SnsBatchPublishContext, topic_arn: str) -> None:
-        subscriptions = ctx.store.sns_subscriptions.get(topic_arn, [])
+        subscriptions = ctx.store.SNS_SUBSCRIPTIONS.get(topic_arn, [])
         for subscriber in subscriptions:
             protocol = subscriber["Protocol"]
             notifier = self.batch_topic_notifiers.get(protocol)
@@ -1114,7 +1114,7 @@ class PublishDispatcher:
         :param subscription_arn: the ARN of the subscriber
         :return: None
         """
-        subscriptions: List[SnsSubscription] = ctx.store.sns_subscriptions.get(topic_arn, [])
+        subscriptions: List[SnsSubscription] = ctx.store.SNS_SUBSCRIPTIONS.get(topic_arn, [])
         for subscriber in subscriptions:
             if subscriber["SubscriptionArn"] == subscription_arn:
                 notifier = self.topic_notifiers[subscriber["Protocol"]]

@@ -7,7 +7,12 @@ from localstack.aws.api.sns import (
     subscriptionARN,
     topicARN,
 )
-from localstack.services.stores import AccountRegionBundle, BaseStore, LocalAttribute
+from localstack.services.stores import (
+    AccountRegionBundle,
+    BaseStore,
+    CrossAccountAttribute,
+    LocalAttribute,
+)
 from localstack.utils.strings import long_uid
 
 SnsProtocols = Literal[
@@ -87,22 +92,22 @@ class SnsSubscription(TypedDict):
 
 class SnsStore(BaseStore):
     # maps topic ARN to topic's subscriptions
-    sns_subscriptions: Dict[str, List[SnsSubscription]] = LocalAttribute(default=dict)
+    SNS_SUBSCRIPTIONS: Dict[topicARN, List[SnsSubscription]] = CrossAccountAttribute(default=dict)
 
     # maps subscription ARN to subscription status
-    subscription_status: Dict[str, Dict] = LocalAttribute(default=dict)
+    SUBSCRIPTION_STATUS: Dict[topicARN, Dict] = CrossAccountAttribute(default=dict)
 
     # maps topic ARN to list of tags
-    sns_tags: Dict[str, List[Dict]] = LocalAttribute(default=dict)
+    SNS_TAGS: Dict[topicARN, List[Dict]] = CrossAccountAttribute(default=dict)
+
+    # filter policy are stored as JSON string in subscriptions, store the decoded result Dict
+    SUBSCRIPTION_FILTER_POLICY: Dict[subscriptionARN, Dict] = CrossAccountAttribute(default=dict)
 
     # cache of topic ARN to platform endpoint messages (used primarily for testing)
-    platform_endpoint_messages: Dict[str, List[Dict]] = LocalAttribute(default=dict)
+    platform_endpoint_messages: Dict[topicARN, List[Dict]] = LocalAttribute(default=dict)
 
     # list of sent SMS messages - TODO: expose via internal API
     sms_messages: List[Dict] = LocalAttribute(default=list)
-
-    # filter policy are stored as JSON string in subscriptions, store the decoded result Dict
-    subscription_filter_policy: Dict[subscriptionARN, Dict] = LocalAttribute(default=dict)
 
 
 sns_stores = AccountRegionBundle("sns", SnsStore)

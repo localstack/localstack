@@ -622,7 +622,7 @@ class TestSNSProvider:
 
         def check_subscription():
             subscription_arn = subscription["SubscriptionArn"]
-            subscription_obj = sns_backend.subscription_status[subscription_arn]
+            subscription_obj = sns_backend.SUBSCRIPTION_STATUS[subscription_arn]
             assert subscription_obj["Status"] == "Not Subscribed"
 
             _token = subscription_obj["Token"]
