@@ -311,7 +311,7 @@ class AccountRegionBundle(dict, Generic[BaseStoreType]):
         """
         # For safety, clear all referenced region bundles, if any
         for region_bundle in self.values():
-            region_bundle.reset()
+            region_bundle.reset(_reset_universal=True)
 
         self._universal.clear()
 
