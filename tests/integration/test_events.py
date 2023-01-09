@@ -15,19 +15,9 @@ from werkzeug import Request, Response
 from localstack import config
 from localstack.aws.api.lambda_ import Runtime
 from localstack.services.events.provider import _get_events_tmp_dir
-from localstack.services.generic_proxy import ProxyListener
-from localstack.services.infra import start_proxy
 from localstack.testing.aws.util import is_aws_cloud
 from localstack.utils.aws import arns, aws_stack, resources
-from localstack.utils.common import (
-    get_free_tcp_port,
-    get_service_protocol,
-    load_file,
-    retry,
-    short_uid,
-    to_str,
-    wait_for_port_open,
-)
+from localstack.utils.common import load_file, retry, short_uid, to_str, wait_for_port_open
 from localstack.utils.net import wait_for_port_closed
 from localstack.utils.sync import poll_condition
 from localstack.utils.testutil import check_expected_lambda_log_events_length
@@ -592,126 +582,129 @@ class TestEvents:
         self.cleanup(rule_name=rule_name)
 
     def test_scheduled_expression_events(
-        self, stepfunctions_client, sns_client, sqs_client, events_client, sns_subscription
+        self,
+        stepfunctions_client,
+        sns_create_topic,
+        sqs_client,
+        sqs_create_queue,
+        sqs_queue_arn,
+        events_client,
+        sns_subscription,
     ):
-        class HttpEndpointListener(ProxyListener):
-            def forward_request(self, method, path, data, headers):
-                event = json.loads(to_str(data))
-                events.append(event)
-                return 200
+        with HTTPServer() as server:
+            server.expect_request("").respond_with_data(b"", 200)
+            http_endpoint = server.url_for("/")
+            wait_for_port_open(server.port)
 
-        local_port = get_free_tcp_port()
-        proxy = start_proxy(local_port, update_listener=HttpEndpointListener())
-        wait_for_port_open(local_port)
+            topic_name = f"topic-{short_uid()}"
+            queue_name = f"queue-{short_uid()}"
+            fifo_queue_name = f"queue-{short_uid()}.fifo"
+            rule_name = f"rule-{short_uid()}"
+            sm_role_arn = arns.role_arn("sfn_role")
+            sm_name = f"state-machine-{short_uid()}"
+            topic_target_id = f"target-{short_uid()}"
+            sm_target_id = f"target-{short_uid()}"
+            queue_target_id = f"target-{short_uid()}"
+            fifo_queue_target_id = f"target-{short_uid()}"
 
-        topic_name = "topic-{}".format(short_uid())
-        queue_name = "queue-{}".format(short_uid())
-        fifo_queue_name = "queue-{}.fifo".format(short_uid())
-        rule_name = "rule-{}".format(short_uid())
-        endpoint = "{}://{}:{}".format(
-            get_service_protocol(), config.LOCALSTACK_HOSTNAME, local_port
-        )
-        sm_role_arn = arns.role_arn("sfn_role")
-        sm_name = "state-machine-{}".format(short_uid())
-        topic_target_id = "target-{}".format(short_uid())
-        sm_target_id = "target-{}".format(short_uid())
-        queue_target_id = "target-{}".format(short_uid())
-        fifo_queue_target_id = "target-{}".format(short_uid())
-
-        events = []
-        state_machine_definition = """
-        {
-            "StartAt": "Hello",
-            "States": {
-                "Hello": {
-                    "Type": "Pass",
-                    "Result": "World",
-                    "End": true
+            state_machine_definition = """
+            {
+                "StartAt": "Hello",
+                "States": {
+                    "Hello": {
+                        "Type": "Pass",
+                        "Result": "World",
+                        "End": true
+                    }
                 }
             }
-        }
-        """
+            """
 
-        state_machine_arn = stepfunctions_client.create_state_machine(
-            name=sm_name, definition=state_machine_definition, roleArn=sm_role_arn
-        )["stateMachineArn"]
+            state_machine_arn = stepfunctions_client.create_state_machine(
+                name=sm_name, definition=state_machine_definition, roleArn=sm_role_arn
+            )["stateMachineArn"]
 
-        topic_arn = sns_client.create_topic(Name=topic_name)["TopicArn"]
-        sns_subscription(TopicArn=topic_arn, Protocol="http", Endpoint=endpoint)
+            topic_arn = sns_create_topic(Name=topic_name)["TopicArn"]
+            sns_subscription(TopicArn=topic_arn, Protocol="http", Endpoint=http_endpoint)
 
-        queue_url = sqs_client.create_queue(QueueName=queue_name)["QueueUrl"]
-        fifo_queue_url = sqs_client.create_queue(
-            QueueName=fifo_queue_name,
-            Attributes={"FifoQueue": "true", "ContentBasedDeduplication": "true"},
-        )["QueueUrl"]
-        queue_arn = arns.sqs_queue_arn(queue_name)
-        fifo_queue_arn = arns.sqs_queue_arn(fifo_queue_name)
+            queue_url = sqs_create_queue(QueueName=queue_name)
+            fifo_queue_url = sqs_create_queue(
+                QueueName=fifo_queue_name,
+                Attributes={"FifoQueue": "true", "ContentBasedDeduplication": "true"},
+            )
 
-        event = {"env": "testing"}
+            queue_arn = arns.sqs_queue_arn(queue_name)
+            fifo_queue_arn = arns.sqs_queue_arn(fifo_queue_name)
 
-        events_client.put_rule(Name=rule_name, ScheduleExpression="rate(1 minutes)")
+            event = {"env": "testing"}
+            event_json = json.dumps(event)
 
-        events_client.put_targets(
-            Rule=rule_name,
-            Targets=[
-                {"Id": topic_target_id, "Arn": topic_arn, "Input": json.dumps(event)},
-                {
-                    "Id": sm_target_id,
-                    "Arn": state_machine_arn,
-                    "Input": json.dumps(event),
-                },
-                {"Id": queue_target_id, "Arn": queue_arn, "Input": json.dumps(event)},
-                {
-                    "Id": fifo_queue_target_id,
-                    "Arn": fifo_queue_arn,
-                    "Input": json.dumps(event),
-                    "SqsParameters": {"MessageGroupId": "123"},
-                },
-            ],
-        )
+            events_client.put_rule(Name=rule_name, ScheduleExpression="rate(1 minutes)")
 
-        def received(q_urls):
-            # state machine got executed
-            executions = stepfunctions_client.list_executions(stateMachineArn=state_machine_arn)[
-                "executions"
-            ]
-            assert len(executions) >= 1
+            events_client.put_targets(
+                Rule=rule_name,
+                Targets=[
+                    {"Id": topic_target_id, "Arn": topic_arn, "Input": event_json},
+                    {
+                        "Id": sm_target_id,
+                        "Arn": state_machine_arn,
+                        "Input": event_json,
+                    },
+                    {"Id": queue_target_id, "Arn": queue_arn, "Input": event_json},
+                    {
+                        "Id": fifo_queue_target_id,
+                        "Arn": fifo_queue_arn,
+                        "Input": event_json,
+                        "SqsParameters": {"MessageGroupId": "123"},
+                    },
+                ],
+            )
 
-            # http endpoint got events
-            assert len(events) >= 2
-            notifications = [
-                event["Message"] for event in events if event["Type"] == "Notification"
-            ]
-            assert len(notifications) >= 1
+            def received(q_urls):
+                # state machine got executed
+                executions = stepfunctions_client.list_executions(
+                    stateMachineArn=state_machine_arn
+                )["executions"]
+                assert len(executions) >= 1
 
-            # get state machine execution detail
-            execution_arn = executions[0]["executionArn"]
-            execution_input = stepfunctions_client.describe_execution(executionArn=execution_arn)[
-                "input"
-            ]
+                # http endpoint got events
+                assert len(server.log) >= 2
+                notifications = [
+                    sns_event["Message"]
+                    for request, _ in server.log
+                    if (
+                        (sns_event := request.get_json(force=True))
+                        and sns_event["Type"] == "Notification"
+                    )
+                ]
+                assert len(notifications) >= 1
 
-            all_msgs = []
-            # get message from queue
-            for url in q_urls:
-                msgs = sqs_client.receive_message(QueueUrl=url).get("Messages", [])
-                assert len(msgs) >= 1
-                all_msgs.append(msgs[0])
+                # get state machine execution detail
+                execution_arn = executions[0]["executionArn"]
+                _execution_input = stepfunctions_client.describe_execution(
+                    executionArn=execution_arn
+                )["input"]
 
-            return execution_input, notifications[0], all_msgs
+                all_msgs = []
+                # get message from queue and fifo_queue
+                for url in q_urls:
+                    msgs = sqs_client.receive_message(QueueUrl=url).get("Messages", [])
+                    assert len(msgs) >= 1
+                    all_msgs.append(msgs[0])
 
-        execution_input, notification, msgs_received = retry(
-            received, retries=5, sleep=15, q_urls=[queue_url, fifo_queue_url]
-        )
-        assert json.loads(notification) == event
-        assert json.loads(execution_input) == event
-        for msg_received in msgs_received:
-            assert json.loads(msg_received["Body"]) == event
+                return _execution_input, notifications[0], all_msgs
+
+            execution_input, notification, msgs_received = retry(
+                received, retries=5, sleep=15, q_urls=[queue_url, fifo_queue_url]
+            )
+            assert json.loads(notification) == event
+            assert json.loads(execution_input) == event
+            for msg_received in msgs_received:
+                assert json.loads(msg_received["Body"]) == event
 
         # clean up
-        proxy.stop()
         target_ids = [topic_target_id, sm_target_id, queue_target_id, fifo_queue_target_id]
         self.cleanup(None, rule_name, target_ids=target_ids, queue_url=queue_url)
-        sns_client.delete_topic(TopicArn=topic_arn)
         stepfunctions_client.delete_state_machine(stateMachineArn=state_machine_arn)
 
     @pytest.mark.parametrize("auth", API_DESTINATION_AUTHS)
