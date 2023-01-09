@@ -185,7 +185,10 @@ class Templates:
                 "params": {
                     "path": api_context.path_params,
                     "querystring": api_context.query_params(),
-                    "header": api_context.headers,
+                    # Sometimes we get a werkzeug.datastructures.Headers object, sometimes a dict
+                    # depending on the request. We need to convert to a dict to be able to render
+                    # the template.
+                    "header": dict(api_context.headers),
                 },
             },
         }
