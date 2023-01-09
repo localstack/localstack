@@ -648,24 +648,32 @@ class ApigatewayProvider(ApigatewayApi, ServiceLifecycleHook):
         fail_on_warnings: Boolean = None,
         parameters: MapOfStringToString = None,
     ) -> RestApi:
+
         body_data = body.read()
 
+        # create rest api
         openapi_spec = parse_json_or_yaml(to_str(body_data))
-        response = _call_moto(
+        create_api_request = CreateRestApiRequest(name=openapi_spec.get("info").get("title"))
+        create_api_context = create_custom_context(
             context,
             "CreateRestApi",
-            CreateRestApiRequest(name=openapi_spec.get("info").get("title")),
+            create_api_request,
         )
+        response = self.create_rest_api(create_api_context, create_api_request)
 
-        return self.put_rest_api(
-            context,
-            PutRestApiRequest(
-                restApiId=response.get("id"),
-                failOnWarnings=str_to_bool(fail_on_warnings) or False,
-                parameters=parameters or {},
-                body=io.BytesIO(body_data),
-            ),
+        # put rest api
+        put_api_request = PutRestApiRequest(
+            restApiId=response.get("id"),
+            failOnWarnings=str_to_bool(fail_on_warnings) or False,
+            parameters=parameters or {},
+            body=io.BytesIO(body_data),
         )
+        put_api_context = create_custom_context(
+            context,
+            "PutRestApi",
+            put_api_request,
+        )
+        return self.put_rest_api(put_api_context, put_api_request)
 
     def delete_integration(
         self, context: RequestContext, rest_api_id: String, resource_id: String, http_method: String
@@ -730,6 +738,20 @@ class ApigatewayProvider(ApigatewayApi, ServiceLifecycleHook):
 # ---------------
 
 
+def create_custom_context(
+    context: RequestContext, action: str, parameters: ServiceRequest
+) -> RequestContext:
+    ctx = create_aws_request_context(
+        service_name=context.service.service_name,
+        action=action,
+        parameters=parameters,
+        region=context.region,
+    )
+    ctx.request.headers.update(context.request.headers)
+    ctx.account_id = context.account_id
+    return ctx
+
+
 def _call_moto(context: RequestContext, operation_name: str, parameters: ServiceRequest):
     """
     Not necessarily the pattern we want to follow in the future, but this makes possible to nest
@@ -737,14 +759,11 @@ def _call_moto(context: RequestContext, operation_name: str, parameters: Service
 
     Ripped :call_moto_with_request: from moto.py but applicable to any operation (operation_name).
     """
-    local_context = create_aws_request_context(
-        service_name=context.service.service_name,
+    local_context = create_custom_context(
+        context=context,
         action=operation_name,
         parameters=parameters,
-        region=context.region,
     )
-
-    local_context.request.headers.update(context.request.headers)
     return call_moto(local_context)
 
 
