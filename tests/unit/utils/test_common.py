@@ -6,8 +6,9 @@ import unittest
 from unittest.mock import MagicMock
 
 import pytest
+from pytest_httpserver import HTTPServer
+from werkzeug import Request, Response
 
-from localstack.services.generic_proxy import ProxyListener, start_proxy_server
 from localstack.utils.common import (
     PEM_CERT_END,
     PEM_CERT_START,
@@ -17,7 +18,6 @@ from localstack.utils.common import (
     FileMappedDocument,
     download,
     generate_ssl_cert,
-    get_free_tcp_port,
     is_none_or_empty,
     load_file,
     new_tmp_file,
@@ -26,6 +26,7 @@ from localstack.utils.common import (
     run,
     synchronized,
 )
+from localstack.utils.net import wait_for_port_closed, wait_for_port_open
 
 
 class SynchronizedTest(unittest.TestCase):
@@ -263,21 +264,22 @@ def test_generate_ssl_cert():
 
 
 def test_download_with_timeout():
-    class DownloadListener(ProxyListener):
-        def forward_request(self, method, path, data, headers):
-            if path == "/sleep":
-                time.sleep(2)
-            return {}
+    def _handler(_: Request) -> Response:
+        time.sleep(2)
+        return Response(b"", status=200)
 
-    port = get_free_tcp_port()
-    proxy = start_proxy_server(port, update_listener=DownloadListener())
+    with HTTPServer() as server:
+        tmp_file = new_tmp_file()
+        server.expect_request("/").respond_with_data(b"tmp_file", status=200)
+        server.expect_request("/sleep").respond_with_handler(_handler)
+        http_endpoint = server.url_for("/")
+        wait_for_port_open(server.port)
 
-    tmp_file = new_tmp_file()
-    download(f"http://localhost:{port}/", tmp_file)
-    assert load_file(tmp_file) == "{}"
-    with pytest.raises(TimeoutError):
-        download(f"http://localhost:{port}/sleep", tmp_file, timeout=1)
+        download(http_endpoint, tmp_file)
+        assert load_file(tmp_file) == "tmp_file"
+        with pytest.raises(TimeoutError):
+            download(f"{http_endpoint}/sleep", tmp_file, timeout=1)
 
     # clean up
-    proxy.stop()
     rm_rf(tmp_file)
+    wait_for_port_closed(server.port)
