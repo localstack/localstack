@@ -176,6 +176,13 @@ class Request(WerkzeugRequest):
                 headers[h] = self.headers[h]
         self.headers = headers
 
+    @classmethod
+    def application(cls, *args):
+        # werkzeug's application decorator assumes its Request constructor signature, which our Request doesn't support.
+        # using ``application`` from our request therefore creates runtime errors. this makes sure no one runs into
+        # these problems. if we want to support it, we need to create compatibility with werkzeug's Request constructor
+        raise NotImplementedError
+
 
 def get_raw_path(request) -> str:
     """
