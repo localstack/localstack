@@ -17,9 +17,10 @@ from localstack.aws.api.lambda_ import Runtime
 from localstack.services.events.provider import _get_events_tmp_dir
 from localstack.testing.aws.util import is_aws_cloud
 from localstack.utils.aws import arns, aws_stack, resources
-from localstack.utils.common import load_file, retry, short_uid, to_str, wait_for_port_open
-from localstack.utils.net import wait_for_port_closed
-from localstack.utils.sync import poll_condition
+from localstack.utils.files import load_file
+from localstack.utils.net import wait_for_port_closed, wait_for_port_open
+from localstack.utils.strings import short_uid, to_str
+from localstack.utils.sync import poll_condition, retry
 from localstack.utils.testutil import check_expected_lambda_log_events_length
 
 from .awslambda.test_lambda import TEST_LAMBDA_PYTHON_ECHO
@@ -706,6 +707,7 @@ class TestEvents:
         target_ids = [topic_target_id, sm_target_id, queue_target_id, fifo_queue_target_id]
         self.cleanup(None, rule_name, target_ids=target_ids, queue_url=queue_url)
         stepfunctions_client.delete_state_machine(stateMachineArn=state_machine_arn)
+        wait_for_port_closed(server.port)
 
     @pytest.mark.parametrize("auth", API_DESTINATION_AUTHS)
     def test_api_destinations(self, events_client, auth):

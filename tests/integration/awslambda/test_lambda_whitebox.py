@@ -19,9 +19,11 @@ from localstack.services.awslambda.lambda_utils import LAMBDA_RUNTIME_PYTHON39
 from localstack.testing.aws.lambda_utils import is_new_provider
 from localstack.utils import testutil
 from localstack.utils.aws import aws_stack
-from localstack.utils.common import load_file, retry, run_safe, short_uid, to_bytes, to_str
+from localstack.utils.files import load_file
+from localstack.utils.functions import run_safe
 from localstack.utils.net import wait_for_port_closed, wait_for_port_open
-from localstack.utils.sync import poll_condition
+from localstack.utils.strings import short_uid, to_bytes, to_str
+from localstack.utils.sync import poll_condition, retry
 from localstack.utils.testutil import create_lambda_archive
 
 from .test_lambda import (
