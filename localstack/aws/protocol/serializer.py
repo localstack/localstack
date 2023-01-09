@@ -1561,7 +1561,7 @@ def aws_response_serializer(service: str, operation: str):
                     CommonServiceException(
                         "InternalError", f"An internal error occurred: {e}", status_code=500
                     ),
-                    operation,
+                    operation_model,
                     request.headers,
                 )
 
