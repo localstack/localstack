@@ -1,6 +1,6 @@
 {
   "tests/integration/apigateway/test_apigateway_api.py::test_import_rest_api": {
-    "recorded-date": "08-01-2023, 15:43:50",
+    "recorded-date": "09-01-2023, 20:54:43",
     "recorded-content": {
       "import_rest_api": {
         "apiKeySource": "HEADER",
