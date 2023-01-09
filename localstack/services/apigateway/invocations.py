@@ -481,9 +481,7 @@ def invoke_rest_api_integration_backend(invocation_context: ApiInvocationContext
             # arn:aws:apigateway:us-east-1:appsyncid.appsync-api:path/graphql
             uri_parts = uri.split(':')
             app_sync_id = uri_parts[-2].replace('.appsync-api', '')
-            appsync_client = aws_stack.connect_to_resource("appsync")
-            api_data = appsync_client.get_graphql_api(apiId=app_sync_id)
-            endpoint = api_data['graphqlApi']['uris']['GRAPHQL']
+            endpoint = f'http://localhost:4566/graphql/{app_sync_id}'
             result = common.make_http_request(
                 endpoint, method="POST", headers=headers, data=data
             )
