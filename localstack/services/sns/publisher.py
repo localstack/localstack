@@ -909,7 +909,7 @@ class SubscriptionFilter:
         The value of "object" is a dict, we need to evaluate this level of the filter policy.
         We pass the nested property values (the dict) as well as the values of the payload's field to the recursive
         function, to evaluate the conditions on the same level of depth.
-        We then these parameters:
+        We now have these parameters to the function:
         filter_policy = {
             "key": [{"prefix": "auto-"}],
             "nested_key": [{"exists": False}],
@@ -933,7 +933,6 @@ class SubscriptionFilter:
             else:
                 # else, values represents the list of conditions of the filter policy
                 for condition in values:
-                    print(condition)
                     if not self._evaluate_condition(
                         payload.get(field_name), condition, field_exists=field_name in payload
                     ):
@@ -976,8 +975,7 @@ class SubscriptionFilter:
         elif (must_exist := condition.get("exists")) is not None:
             # if must_exists is True then field_exists must be True
             # if must_exists is False then fields_exists must be False
-            # we can use the XNOR operator
-            return not must_exist ^ field_exists
+            return must_exist == field_exists
         elif value is None:
             # the remaining conditions require the value to not be None
             return False
