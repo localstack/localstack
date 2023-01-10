@@ -90,7 +90,11 @@ from localstack.services.sns.publisher import (
     SnsPublishContext,
 )
 from localstack.utils.aws import aws_stack
-from localstack.utils.aws.arns import extract_region_from_arn, parse_arn
+from localstack.utils.aws.arns import (
+    extract_account_id_from_arn,
+    extract_region_from_arn,
+    parse_arn,
+)
 from localstack.utils.strings import short_uid
 
 # set up logger
@@ -115,23 +119,32 @@ class SnsProvider(SnsApi, ServiceLifecycleHook):
 
     @staticmethod
     @contextmanager
-    def modify_context_region_with_arn_region(context: RequestContext, arn: str):
+    def modify_context_with_arn(context: RequestContext, arn: str):
         # TODO@viren this is pretty similar to DynamoDB's `modify_context_request()`
+        original_account_id = context.account_id
         original_region = context.region
         original_auth_header = context.request.headers.get("Authorization")
 
         arn_region = extract_region_from_arn(arn)
         context.region = arn_region
 
+        arn_account_id = extract_account_id_from_arn(arn)
+        context.account_id = arn_account_id
+
         context.request.headers["Authorization"] = re.sub(
             AUTH_CREDENTIAL_REGEX,
-            rf"Credential=\1/\2/{arn_region}/\4/",
+            rf"Credential={arn_account_id}/\2/{arn_region}/\4/",
             original_auth_header or "",
             flags=re.IGNORECASE,
         )
 
+        # TODO@viren:THis header is currently added in handler chain
+        # consider moving it to `call_moto()`
+        context.request.headers["x-moto-account-id"] = arn_account_id
+
         yield context
 
+        context.account_id = original_account_id
         context.region = original_region
         context.request.headers["Authorization"] = original_auth_header
 
@@ -273,7 +286,7 @@ class SnsProvider(SnsApi, ServiceLifecycleHook):
         attribute_name: attributeName,
         attribute_value: attributeValue = None,
     ) -> None:
-        with self.modify_context_region_with_arn_region(context, topic_arn):
+        with self.modify_context_with_arn(context, topic_arn):
             call_moto(context)
 
     def verify_sms_sandbox_phone_number(
@@ -285,7 +298,7 @@ class SnsProvider(SnsApi, ServiceLifecycleHook):
     def get_topic_attributes(
         self, context: RequestContext, topic_arn: topicARN
     ) -> GetTopicAttributesResponse:
-        with self.modify_context_region_with_arn_region(context, topic_arn):
+        with self.modify_context_with_arn(context, topic_arn):
             moto_response = call_moto(context)
         # todo fix some attributes by moto, see snapshot
         return GetTopicAttributesResponse(**moto_response)
@@ -785,7 +798,7 @@ class SnsProvider(SnsApi, ServiceLifecycleHook):
         return TagResourceResponse()
 
     def delete_topic(self, context: RequestContext, topic_arn: topicARN) -> None:
-        with self.modify_context_region_with_arn_region(context, topic_arn):
+        with self.modify_context_with_arn(context, topic_arn):
             call_moto(context)
         store = self.get_store()
         store.SNS_SUBSCRIPTIONS.pop(topic_arn, None)
