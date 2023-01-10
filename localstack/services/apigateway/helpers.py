@@ -735,6 +735,9 @@ def import_api_from_openapi_spec(rest_api: RestAPI, body: Dict, query_params: Di
     for path in resolved_schema.get("paths", {}):
         get_or_create_path(base_path + path, base_path=base_path)
 
+    # binary types
+    rest_api.binaryMediaTypes = resolved_schema.get("x-amazon-apigateway-binary-media-types", [])
+
     policy = resolved_schema.get("x-amazon-apigateway-policy")
     if policy:
         policy = json.dumps(policy) if isinstance(policy, dict) else str(policy)

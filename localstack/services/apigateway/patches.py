@@ -405,9 +405,6 @@ def apply_patches():
         if not self.tags:
             resp["tags"] = None
 
-        if not self.binaryMediaTypes:
-            resp["binaryMediaTypes"] = ["*/*"]
-
         for attr in REST_API_ATTRIBUTES:
             if attr not in resp:
                 resp[attr] = getattr(self, camelcase_to_underscores(attr), None)
