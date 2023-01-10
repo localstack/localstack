@@ -108,11 +108,11 @@ class ApigatewayProvider(ApigatewayApi, ServiceLifecycleHook):
     def create_rest_api(self, context: RequestContext, request: CreateRestApiRequest) -> RestApi:
         result = call_moto(context)
         if not result.get("binaryMediaTypes"):
-            result.pop("binaryMediaTypes")
+            result.pop("binaryMediaTypes", None)
         if not result.get("tags"):
-            result.pop("tags")
+            result.pop("tags", None)
         if result.get("version") == "V1":
-            result.pop("version")
+            result.pop("version", None)
         return result
 
     @handler("PutRestApi", expand=False)

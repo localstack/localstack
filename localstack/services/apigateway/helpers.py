@@ -564,6 +564,7 @@ def import_api_from_openapi_spec(rest_api: RestAPI, body: Dict, query_params: Di
 
     # Remove default root, then add paths from API spec
     rest_api.resources = {}
+    rest_api.tags = {}
     # authorizers map to avoid duplication
     authorizers = {}
 

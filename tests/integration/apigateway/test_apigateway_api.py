@@ -1,5 +1,10 @@
+import os
+
 from localstack.utils.files import load_file
-from tests.integration.apigateway import OPENAPI_SPEC_PULUMI_JSON
+
+# parent directory of this file
+PARENT_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+OPENAPI_SPEC_PULUMI_JSON = os.path.join(PARENT_DIR, "files", "openapi.spec.pulumi.json")
 
 
 def test_import_rest_api(import_apigw, snapshot):
