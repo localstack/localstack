@@ -121,6 +121,21 @@ class TestSqsDeveloperEdpoints:
         assert "SentTimestamp" in attributes
 
     @pytest.mark.only_localstack
+    def test_list_messages_without_queue_url(self, sqs_client):
+        # makes sure the service is loaded when running the test individually
+        sqs_client.list_queues()
+
+        response = requests.get(
+            "http://localhost:4566/_aws/sqs/messages",
+            headers={"Accept": "application/json"},
+        )
+        assert not response.ok
+        assert (
+            response.json()["ErrorResponse"]["Error"]["Code"]
+            == "AWS.SimpleQueueService.NonExistentQueue"
+        ), f"not a json {response.text}"
+
+    @pytest.mark.only_localstack
     def test_list_messages_with_invalid_queue_url(self, sqs_client):
         # makes sure the service is loaded when running the test individually
         sqs_client.list_queues()
