@@ -135,6 +135,14 @@ def _resource(service):
     return aws_stack.connect_to_resource_external(service, config=config)
 
 
+@pytest.fixture
+def client_factory():
+    def _client_factory(service: str, aws_access_key_id: str, region_name: str = "eu-central-1"):
+        return _client(service, region_name=region_name, aws_access_key_id=aws_access_key_id)
+
+    yield _client_factory
+
+
 @pytest.fixture(scope="class")
 def create_boto_client():
     return _client

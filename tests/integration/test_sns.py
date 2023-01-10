@@ -2985,3 +2985,18 @@ class TestSNSProvider:
             MessageStructure="json",
         )
         snapshot.match("duplicate-json-keys", resp)
+
+    def test_sns_cross_account_access(self, client_factory):
+        # Ensure a topic can be retrieved from any region and account ID
+        sns_client1 = client_factory(
+            "sns", aws_access_key_id="424242424242", region_name="eu-central-1"
+        )
+        sns_client2 = client_factory(
+            "sns", aws_access_key_id="100010001000", region_name="ap-south-1"
+        )
+
+        topic_name = f"topic-{short_uid()}"
+
+        topic_arn = sns_client1.create_topic(Name=topic_name)["TopicArn"]
+
+        assert sns_client2.get_topic_attributes(TopicArn=topic_arn)

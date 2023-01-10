@@ -121,6 +121,7 @@ class SnsProvider(SnsApi, ServiceLifecycleHook):
     @contextmanager
     def modify_context_with_arn(context: RequestContext, arn: str):
         # TODO@viren this is pretty similar to DynamoDB's `modify_context_request()`
+        # TODO@viren maybe we can make this `call_moto_with_arn_context`
         original_account_id = context.account_id
         original_region = context.region
         original_auth_header = context.request.headers.get("Authorization")
