@@ -691,7 +691,7 @@ class TestLambdaPermissions:
         create_lambda_function(
             func_name=function_name,
             zip_file=testutil.create_zip_file(TEST_LAMBDA_URL, get_content=True),
-            runtime=Runtime.nodejs14_x,
+            runtime=Runtime.nodejs18_x,
             handler="lambda_url.handler",
         )
         url_config = lambda_client.create_function_url_config(
