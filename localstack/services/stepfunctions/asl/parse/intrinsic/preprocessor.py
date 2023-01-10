@@ -1,13 +1,12 @@
 from typing import Optional
 
-from antlr4.tree.Tree import TerminalNodeImpl
-from localstack.services.stepfunctions.asl.antlr.gen.ASLIntrinsicLexer import ASLIntrinsicLexer
-from localstack.services.stepfunctions.asl.antlr.gen.ASLIntrinsicParser import (
-    ASLIntrinsicParser,
-)
-from localstack.services.stepfunctions.asl.antlr.gen.ASLIntrinsicParserVisitor import (
+from antlr4.localstack.services.stepfunctions.asl.antlr.ASLIntrinsicLexer import ASLIntrinsicLexer
+from antlr4.localstack.services.stepfunctions.asl.antlr.ASLIntrinsicParser import ASLIntrinsicParser
+from antlr4.localstack.services.stepfunctions.asl.antlr.ASLIntrinsicParserVisitor import (
     ASLIntrinsicParserVisitor,
 )
+from antlr4.tree.Tree import TerminalNodeImpl
+
 from localstack.services.stepfunctions.asl.antlt4utils.antlr4utils import Antlr4Utils
 from localstack.services.stepfunctions.asl.component.intrinsic.component import Component
 from localstack.services.stepfunctions.asl.component.intrinsic.member import (

@@ -348,10 +348,7 @@ def stepfunctions():
     from localstack.services.stepfunctions.provider import StepfunctionsProvider
 
     provider = StepfunctionsProvider()
-    return Service(
-        "stepfunctions",
-        listener=AwsApiListener("stepfunctions", provider),
-    )
+    return Service("stepfunctions", listener=AwsApiListener("stepfunctions", provider))
 
 
 @aws_provider()

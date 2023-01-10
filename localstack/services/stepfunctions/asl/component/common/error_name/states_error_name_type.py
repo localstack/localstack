@@ -3,7 +3,7 @@ from __future__ import annotations
 from enum import Enum
 from typing import Final
 
-from localstack.services.stepfunctions.asl.antlr.gen.ASLLexer import ASLLexer
+from antlr4.localstack.services.stepfunctions.asl.antlr.ASLLexer import ASLLexer
 
 
 class StatesErrorNameType(Enum):

@@ -1,10 +1,9 @@
 import abc
 
 from antlr4 import CommonTokenStream, InputStream
-from localstack.services.stepfunctions.asl.antlr.gen.ASLIntrinsicLexer import ASLIntrinsicLexer
-from localstack.services.stepfunctions.asl.antlr.gen.ASLIntrinsicParser import (
-    ASLIntrinsicParser,
-)
+from antlr4.localstack.services.stepfunctions.asl.antlr.ASLIntrinsicLexer import ASLIntrinsicLexer
+from antlr4.localstack.services.stepfunctions.asl.antlr.ASLIntrinsicParser import ASLIntrinsicParser
+
 from localstack.services.stepfunctions.asl.component.intrinsic.program import Program
 from localstack.services.stepfunctions.asl.parse.intrinsic.preprocessor import Preprocessor
 

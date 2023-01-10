@@ -4,7 +4,8 @@ import abc
 from enum import Enum
 from typing import Final
 
-from localstack.services.stepfunctions.asl.antlr.gen.ASLLexer import ASLLexer
+from antlr4.localstack.services.stepfunctions.asl.antlr.ASLLexer import ASLLexer
+
 from localstack.services.stepfunctions.asl.component.state.state_choice.choice_rule import (
     ChoiceRule,
 )
