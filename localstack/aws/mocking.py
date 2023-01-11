@@ -127,6 +127,8 @@ def shape_graph(root: Shape) -> ShapeGraph:
 
 
 def sanitize_pattern(pattern: str) -> str:
+    if pattern == "^(https|s3)://([^/]+)/?(.*)$":
+        pattern = "^(https|s3)://(\\w+)$"
     pattern = pattern.replace("\\p{XDigit}", "[A-Fa-f0-9]")
     pattern = pattern.replace("\\p{P}", "[.,;]")
     pattern = pattern.replace("\\p{Punct}", "[.,;]")
@@ -327,7 +329,7 @@ def _(shape: StringShape, graph: ShapeGraph) -> str:
 
     pattern = shape.metadata.get("pattern")
 
-    if not pattern or pattern in [".*", "^.*$", ".+"]:
+    if not pattern or pattern in [".*", "^.*$", ".+", "\\p{ASCII}*"]:
         if min_len <= 6 and max_len >= 6:
             # pick a random six-letter word, to spice things up. this will be the case most of the time.
             return random.choice(words)
