@@ -710,19 +710,15 @@ def sns_allow_topic_sqs_queue(sqs_client):
 
 
 @pytest.fixture
-def sns_create_sqs_subscription(sns_client, sqs_client, sns_allow_topic_sqs_queue):
+def sns_create_sqs_subscription(sns_client, sqs_client, sns_allow_topic_sqs_queue, sqs_queue_arn):
     subscriptions = []
 
-    def _factory(topic_arn: str, queue_url: str) -> Dict[str, str]:
-        queue_arn = sqs_client.get_queue_attributes(
-            QueueUrl=queue_url, AttributeNames=["QueueArn"]
-        )["Attributes"]["QueueArn"]
+    def _factory(topic_arn: str, queue_url: str, **kwargs) -> Dict[str, str]:
+        queue_arn = sqs_queue_arn(queue_url=queue_url)
 
         # connect sns topic to sqs
         subscription = sns_client.subscribe(
-            TopicArn=topic_arn,
-            Protocol="sqs",
-            Endpoint=queue_arn,
+            TopicArn=topic_arn, Protocol="sqs", Endpoint=queue_arn, **kwargs
         )
         subscription_arn = subscription["SubscriptionArn"]
 
