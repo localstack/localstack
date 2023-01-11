@@ -15,6 +15,8 @@ import requests
 from localstack.aws.accounts import get_aws_account_id
 from localstack.aws.api import RequestContext
 from localstack.aws.api.firehose import (
+    AmazonOpenSearchServerlessDestinationConfiguration,
+    AmazonOpenSearchServerlessDestinationUpdate,
     AmazonopensearchserviceDestinationConfiguration,
     AmazonopensearchserviceDestinationUpdate,
     BooleanObject,
@@ -201,6 +203,7 @@ class FirehoseProvider(FirehoseApi):
         splunk_destination_configuration: SplunkDestinationConfiguration = None,
         http_endpoint_destination_configuration: HttpEndpointDestinationConfiguration = None,
         tags: TagDeliveryStreamInputTagList = None,
+        amazon_open_search_serverless_destination_configuration: AmazonOpenSearchServerlessDestinationConfiguration = None,
     ) -> CreateDeliveryStreamOutput:
         store = self.get_store()
 
@@ -251,6 +254,10 @@ class FirehoseProvider(FirehoseApi):
         if redshift_destination_configuration:
             LOG.warning(
                 "Delivery stream contains a redshift destination (which is currently not supported)."
+            )
+        if amazon_open_search_serverless_destination_configuration:
+            LOG.warning(
+                "Delivery stream contains a opensearch serverless destination (which is currently not supported)."
             )
 
         stream = DeliveryStreamDescription(
@@ -425,6 +432,7 @@ class FirehoseProvider(FirehoseApi):
         amazonopensearchservice_destination_update: AmazonopensearchserviceDestinationUpdate = None,
         splunk_destination_update: SplunkDestinationUpdate = None,
         http_endpoint_destination_update: HttpEndpointDestinationUpdate = None,
+        amazon_open_search_serverless_destination_update: AmazonOpenSearchServerlessDestinationUpdate = None,
     ) -> UpdateDestinationOutput:
         delivery_stream_description = _get_description_or_raise_not_found(
             context, delivery_stream_name

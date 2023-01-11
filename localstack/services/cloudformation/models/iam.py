@@ -171,9 +171,11 @@ class IAMAccessKey(GenericBaseModel):
         return "AWS::IAM::AccessKey"
 
     def get_physical_resource_id(self, attribute=None, **kwargs):
-        if attribute == "SecretAccessKey":
-            return self.props("SecretAccessKey")
         return self.physical_resource_id
+
+    def get_cfn_attribute(self, attribute_name):
+        if attribute_name == "SecretAccessKey":
+            return self.props("SecretAccessKey")
 
     def fetch_state(self, stack_name, resources):
         user_name = self.resolve_refs_recursively(stack_name, self.props.get("UserName"), resources)
@@ -183,6 +185,16 @@ class IAMAccessKey(GenericBaseModel):
                 "AccessKeyMetadata"
             ]
             return [key for key in keys if key["AccessKeyId"] == access_key_id][0]
+
+    def update_resource(self, new_resource, stack_name, resources):
+        access_key_id = self.get_physical_resource_id()
+        new_props = new_resource["Properties"]
+        user_name = new_props.get("UserName")
+        status = new_props.get("Status")
+
+        aws_stack.connect_to_service("iam").update_access_key(
+            UserName=user_name, AccessKeyId=access_key_id, Status=status
+        )
 
     @staticmethod
     def get_deploy_templates():
@@ -200,15 +212,23 @@ class IAMAccessKey(GenericBaseModel):
                     raise
 
         def _store_key_id(result, resource_id, resources, resource_type):
-            resources[resource_id]["PhysicalResourceId"] = result["AccessKey"]["AccessKeyId"]
+            access_key_id = result["AccessKey"]["AccessKeyId"]
+            resources[resource_id]["PhysicalResourceId"] = access_key_id
             resources[resource_id]["Properties"]["SecretAccessKey"] = result["AccessKey"][
                 "SecretAccessKey"
             ]
+            status = resources[resource_id]["Properties"].get("Status", "Active")
+            if status == "Inactive":
+                user_name = resources[resource_id]["Properties"]["UserName"]
+                client = aws_stack.connect_to_service("iam")
+                client.update_access_key(
+                    UserName=user_name, AccessKeyId=access_key_id, Status="Inactive"
+                )
 
         return {
             "create": {
                 "function": "create_access_key",
-                "parameters": ["UserName", "Serial", "Status"],
+                "parameters": ["UserName"],
                 "result_handler": _store_key_id,
             },
             "delete": {"function": _delete},

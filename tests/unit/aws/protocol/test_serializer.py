@@ -38,11 +38,12 @@ from localstack.aws.protocol.serializer import (
     ProtocolSerializerError,
     QueryResponseSerializer,
     UnknownSerializerError,
+    aws_response_serializer,
     create_serializer,
 )
 from localstack.aws.spec import load_service
 from localstack.constants import APPLICATION_AMZ_CBOR_1_1
-from localstack.http.response import Response
+from localstack.http import Request, Response
 from localstack.utils.common import to_str
 
 _skip_assert = {}
@@ -1813,3 +1814,121 @@ def test_json_protocol_cbor_serialization(headers_dict):
     assert result.content_type == "application/cbor"
     parsed_data = cbor2.loads(result.data)
     assert parsed_data == response_data
+
+
+class TestAwsResponseSerializerDecorator:
+    def test_query_internal_error(self):
+        @aws_response_serializer("sqs", "ListQueues")
+        def fn(request: Request):
+            raise ValueError("oh noes!")
+
+        response = fn(Request("POST", "/", body="Action=ListQueues"))
+        assert response.status_code == 500
+        assert b"<Code>InternalError</Code>" in response.data
+
+    def test_query_service_error(self):
+        @aws_response_serializer("sqs", "ListQueues")
+        def fn(request: Request):
+            raise UnsupportedOperation("Operation not supported.")
+
+        response = fn(Request("POST", "/", body="Action=ListQueues"))
+        assert response.status_code == 400
+        assert b"<Code>AWS.SimpleQueueService.UnsupportedOperation</Code>" in response.data
+        assert b"<Message>Operation not supported.</Message>" in response.data
+
+    def test_query_valid_response(self):
+        @aws_response_serializer("sqs", "ListQueues")
+        def fn(request: Request):
+            from localstack.aws.api.sqs import ListQueuesResult
+
+            return ListQueuesResult(
+                QueueUrls=[
+                    "https://localhost:4566/000000000000/my-queue-1",
+                    "https://localhost:4566/000000000000/my-queue-2",
+                ]
+            )
+
+        response = fn(Request("POST", "/", body="Action=ListQueues"))
+        assert response.status_code == 200
+        assert (
+            b"<QueueUrl>https://localhost:4566/000000000000/my-queue-1</QueueUrl>" in response.data
+        )
+        assert (
+            b"<QueueUrl>https://localhost:4566/000000000000/my-queue-2</QueueUrl>" in response.data
+        )
+
+    def test_query_valid_response_content_negotiation(self):
+        # this test verifies that request header values are passed correctly to perform content negotation
+        @aws_response_serializer("sqs", "ListQueues")
+        def fn(request: Request):
+            from localstack.aws.api.sqs import ListQueuesResult
+
+            return ListQueuesResult(
+                QueueUrls=[
+                    "https://localhost:4566/000000000000/my-queue-1",
+                    "https://localhost:4566/000000000000/my-queue-2",
+                ]
+            )
+
+        response = fn(
+            Request("POST", "/", body="Action=ListQueues", headers={"Accept": "application/json"})
+        )
+        assert response.status_code == 200
+        assert response.json["ListQueuesResponse"]["ListQueuesResult"] == {
+            "QueueUrl": [
+                "https://localhost:4566/000000000000/my-queue-1",
+                "https://localhost:4566/000000000000/my-queue-2",
+            ]
+        }
+
+    def test_return_invalid_none_type_causes_internal_error(self):
+        @aws_response_serializer("sqs", "ListQueues")
+        def fn(request: Request):
+            return None
+
+        response = fn(Request("POST", "/", body="Action=ListQueues"))
+        assert response.status_code == 500
+        assert b"<Code>InternalError</Code>" in response.data
+
+    def test_response_pass_through(self):
+        # returning a response directly will forego the serializer
+        @aws_response_serializer("sqs", "ListQueues")
+        def fn(request: Request):
+            return Response(b"ok", status=201)
+
+        response = fn(Request("POST", "/", body="Action=ListQueues"))
+        assert response.status_code == 201
+        assert response.data == b"ok"
+
+    def test_invoke_using_kwargs(self):
+        @aws_response_serializer("sqs", "ListQueues")
+        def fn(request: Request):
+            return Response(b"ok", status=201)
+
+        response = fn(request=Request("POST", "/", body="Action=ListQueues"))
+        assert response.status_code == 201
+        assert response.data == b"ok"
+
+    def test_invoke_on_bound_method(self):
+        class MyHandler:
+            @aws_response_serializer("sqs", "ListQueues")
+            def handle(self, request: Request):
+                from localstack.aws.api.sqs import ListQueuesResult
+
+                return ListQueuesResult(
+                    QueueUrls=[
+                        "https://localhost:4566/000000000000/my-queue-1",
+                        "https://localhost:4566/000000000000/my-queue-2",
+                    ]
+                )
+
+        response = MyHandler().handle(
+            Request("POST", "/", body="Action=ListQueues", headers={"Accept": "application/json"})
+        )
+        assert response.status_code == 200
+        assert response.json["ListQueuesResponse"]["ListQueuesResult"] == {
+            "QueueUrl": [
+                "https://localhost:4566/000000000000/my-queue-1",
+                "https://localhost:4566/000000000000/my-queue-2",
+            ]
+        }

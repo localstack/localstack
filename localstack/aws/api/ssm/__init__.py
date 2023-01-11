@@ -288,6 +288,7 @@ RegistrationMetadataKey = str
 RegistrationMetadataValue = str
 RegistrationsCount = int
 RemainingCount = int
+RequireType = str
 ResourceArnString = str
 ResourceCount = int
 ResourceCountByStatus = str
@@ -608,6 +609,7 @@ class DocumentType(str):
     ProblemAnalysisTemplate = "ProblemAnalysisTemplate"
     CloudFormation = "CloudFormation"
     ConformancePackTemplate = "ConformancePackTemplate"
+    QuickSetup = "QuickSetup"
 
 
 class ExecutionMode(str):
@@ -2598,6 +2600,8 @@ class CreateAssociationResult(TypedDict, total=False):
 class DocumentRequires(TypedDict, total=False):
     Name: DocumentARN
     Version: Optional[DocumentVersion]
+    RequireType: Optional[RequireType]
+    VersionName: Optional[DocumentVersionName]
 
 
 DocumentRequiresList = List[DocumentRequires]

@@ -2175,5 +2175,13 @@
         }
       }
     }
+  },
+  "tests/integration/awslambda/test_lambda.py::TestLambdaPermissions::test_lambda_permission_url_invocation": {
+    "recorded-date": "10-01-2023, 09:11:18",
+    "recorded-content": {
+      "lambda_url_invocation_missing_permission": {
+        "Message": "Forbidden"
+      }
+    }
   }
 }

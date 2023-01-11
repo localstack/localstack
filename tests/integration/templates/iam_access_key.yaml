@@ -1,6 +1,12 @@
 Parameters:
   UserName:
     Type: String
+  Status:
+    Type: String
+    Default: Active
+  Serial:
+    Type: String
+    Default: 1
 
 Resources:
   User:
@@ -14,6 +20,10 @@ Resources:
     Properties:
       UserName: 
         Ref: UserName
+      Serial:
+        Ref: Serial
+      Status:
+        Ref: Status
     DependsOn: User
 
 Outputs:
