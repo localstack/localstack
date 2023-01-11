@@ -1,0 +1,27 @@
+{
+  "tests/integration/apigateway/test_apigateway_api.py::test_import_rest_api": {
+    "recorded-date": "10-01-2023, 20:08:25",
+    "recorded-content": {
+      "import_rest_api": {
+        "apiKeySource": "HEADER",
+        "binaryMediaTypes": [
+          "*/*"
+        ],
+        "createdDate": "datetime",
+        "disableExecuteApiEndpoint": false,
+        "endpointConfiguration": {
+          "types": [
+            "EDGE"
+          ]
+        },
+        "id": "<id:1>",
+        "name": "<name:1>",
+        "version": "1.0",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 201
+        }
+      }
+    }
+  }
+}

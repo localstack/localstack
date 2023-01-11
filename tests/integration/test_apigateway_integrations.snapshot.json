@@ -1,12 +1,8 @@
 {
   "tests/integration/test_apigateway_integrations.py::test_lambda_proxy_integration": {
-    "recorded-date": "30-08-2022, 14:23:53",
+    "recorded-date": "09-01-2023, 20:50:16",
     "recorded-content": {
       "rest-api-creation": {
-        "ResponseMetadata": {
-          "HTTPHeaders": {},
-          "HTTPStatusCode": 201
-        },
         "apiKeySource": "HEADER",
         "createdDate": "datetime",
         "description": "Integration test API",
@@ -17,7 +13,11 @@
           ]
         },
         "id": "<id:1>",
-        "name": "<name:1>"
+        "name": "<name:1>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 201
+        }
       },
       "invocation-payload-without-trailing-slash": {
         "body": null,

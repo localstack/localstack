@@ -556,6 +556,7 @@ def import_api_from_openapi_spec(rest_api: RestAPI, body: Dict, query_params: Di
     # 1. validate the "mode" property of the spec document, "merge" or "overwrite"
     # 2. validate the document type, "swagger" or "openapi"
 
+    rest_api.version = resolved_schema.get("info", {}).get("version")
     # XXX for some reason this makes cf tests fail that's why is commented.
     # test_cfn_handle_serverless_api_resource
     # rest_api.name = resolved_schema.get("info", {}).get("title")
@@ -563,9 +564,11 @@ def import_api_from_openapi_spec(rest_api: RestAPI, body: Dict, query_params: Di
 
     # Remove default root, then add paths from API spec
     rest_api.resources = {}
-
+    rest_api.tags = {}
     # authorizers map to avoid duplication
     authorizers = {}
+
+    region_details = get_apigateway_store()
 
     def create_authorizer(path_payload: dict) -> Authorizer:
         if "security" not in path_payload:
@@ -584,8 +587,9 @@ def import_api_from_openapi_spec(rest_api: RestAPI, body: Dict, query_params: Di
 
                     if authorizers.get(security_scheme_name):
                         return authorizers.get(security_scheme_name)
-                    authorizer = rest_api.create_authorizer(
-                        create_resource_id(),
+
+                    authorizer = Authorizer(
+                        authorizer_id=create_resource_id(),
                         name=security_scheme_name,
                         authorizer_type=aws_apigateway_authorizer.get("type"),
                         provider_arns=None,
@@ -603,7 +607,11 @@ def import_api_from_openapi_spec(rest_api: RestAPI, body: Dict, query_params: Di
                         )
                         or 300,
                     )
+
                     if authorizer:
+                        region_details.authorizers.setdefault(rest_api.id, []).append(
+                            authorizer.to_json()
+                        )
                         authorizers[security_scheme_name] = authorizer
                     return authorizer
 
@@ -716,7 +724,7 @@ def import_api_from_openapi_spec(rest_api: RestAPI, body: Dict, query_params: Di
             )
 
     # determine base path
-    basepath_mode = (query_params.get("basepath") or ["prepend"])[0]
+    basepath_mode = query_params.get("basepath") or "prepend"
     base_path = ""
     if basepath_mode == "prepend":
         base_path = resolved_schema.get("basePath") or ""
@@ -726,6 +734,9 @@ def import_api_from_openapi_spec(rest_api: RestAPI, body: Dict, query_params: Di
 
     for path in resolved_schema.get("paths", {}):
         get_or_create_path(base_path + path, base_path=base_path)
+
+    # binary types
+    rest_api.binaryMediaTypes = resolved_schema.get("x-amazon-apigateway-binary-media-types", [])
 
     policy = resolved_schema.get("x-amazon-apigateway-policy")
     if policy:

@@ -13,11 +13,7 @@ from moto.core.utils import camelcase_to_underscores
 
 from localstack.aws.accounts import get_aws_account_id
 from localstack.aws.api.apigateway import NotFoundException
-from localstack.services.apigateway.helpers import (
-    TAG_KEY_CUSTOM_ID,
-    apply_json_patch_safe,
-    import_api_from_openapi_spec,
-)
+from localstack.services.apigateway.helpers import TAG_KEY_CUSTOM_ID, apply_json_patch_safe
 from localstack.utils.collections import ensure_list
 from localstack.utils.common import DelSafeDict, str_to_bool, to_str
 from localstack.utils.json import parse_json_or_yaml
@@ -51,12 +47,6 @@ def apply_patches():
 
     apigateway_models_Stage_init_orig = apigateway_models.Stage.__init__
     apigateway_models.Stage.__init__ = apigateway_models_Stage_init
-
-    def apigateway_models_backend_put_rest_api(
-        self, function_id: str, body: Dict, query_params: Dict
-    ):
-        rest_api = self.get_rest_api(function_id)
-        return import_api_from_openapi_spec(rest_api, body, query_params)
 
     def _patch_api_gateway_entity(self, entity: Dict) -> Optional[Tuple[int, Dict, str]]:
         not_supported_attributes = ["/id", "/region_name", "/create_date"]
@@ -396,7 +386,6 @@ def apply_patches():
     APIGatewayResponse.restapis_individual = apigateway_response_restapis_individual
     apigateway_response_resource_individual_orig = APIGatewayResponse.resource_individual
     APIGatewayResponse.resource_individual = apigateway_response_resource_individual
-    apigateway_models.APIGatewayBackend.put_rest_api = apigateway_models_backend_put_rest_api
 
     if not hasattr(apigateway_models.APIGatewayBackend, "update_deployment"):
         apigateway_models.APIGatewayBackend.update_deployment = backend_update_deployment
@@ -412,6 +401,10 @@ def apply_patches():
             resp["policy"] = json.dumps(json.dumps(json.loads(self.policy), separators=(",", ":")))[
                 1:-1
             ]
+
+        if not self.tags:
+            resp["tags"] = None
+
         for attr in REST_API_ATTRIBUTES:
             if attr not in resp:
                 resp[attr] = getattr(self, camelcase_to_underscores(attr), None)

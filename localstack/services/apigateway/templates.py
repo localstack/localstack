@@ -61,7 +61,7 @@ class VelocityUtilApiGateway(VelocityUtil):
     """
     Simple class to mimic the behavior of variable '$util' in AWS API Gateway integration
     velocity templates.
-    See: http://docs.aws.amazon.com/apigateway/latest/developerguide/api-gateway-mapping-template-reference.html
+    See: https://docs.aws.amazon.com/apigateway/latest/developerguide/api-gateway-mapping-template-reference.html
     """
 
     def base64Encode(self, s):
