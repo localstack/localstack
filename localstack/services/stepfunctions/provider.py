@@ -40,7 +40,7 @@ from localstack.utils.aws.arns import state_machine_arn as aws_stack_state_machi
 from localstack.utils.aws.arns import state_machine_arn as aws_stack_stepfunctions_activity_arn
 
 
-class StepfunctionsProvider(StepfunctionsApi):
+class StepFunctionsProvider(StepfunctionsApi):
     @staticmethod
     def get_store() -> SFNStore:
         return sfn_stores[get_aws_account_id()][aws_stack.get_region()]

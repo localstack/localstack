@@ -345,9 +345,9 @@ def events():
 
 @aws_provider()
 def stepfunctions():
-    from localstack.services.stepfunctions.provider import StepfunctionsProvider
+    from localstack.services.stepfunctions.provider import StepFunctionsProvider
 
-    provider = StepfunctionsProvider()
+    provider = StepFunctionsProvider()
     return Service("stepfunctions", listener=AwsApiListener("stepfunctions", provider))
 
 
