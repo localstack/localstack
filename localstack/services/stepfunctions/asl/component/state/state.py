@@ -19,7 +19,7 @@ from localstack.services.stepfunctions.asl.component.state.state_continue_with i
 )
 from localstack.services.stepfunctions.asl.component.state.state_props import StateProps
 from localstack.services.stepfunctions.asl.component.state.state_type import StateType
-from localstack.services.stepfunctions.asl.eval.contextobject.contex_object import State, Task
+from localstack.services.stepfunctions.asl.eval.contextobject.contex_object import State
 from localstack.services.stepfunctions.asl.eval.environment import Environment
 
 LOG = logging.getLogger(__name__)

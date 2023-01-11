@@ -15,7 +15,7 @@ class PayloadBindingPath(PayloadBinding):
     @classmethod
     def from_raw(cls, string_dollar: str, string_path: str):
         field: str = string_dollar[:-2]
-        return cls(field=field[:-2], path=string_path)
+        return cls(field=field, path=string_path)
 
     def _eval_val(self, env: Environment) -> Any:
         value = JSONPathUtils.extract_json(self.path, env.inp)

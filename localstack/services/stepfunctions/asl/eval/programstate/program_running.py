@@ -12,7 +12,7 @@ class ProgramRunning(ProgramState):
     def next_state_name(self) -> str:
         next_state_name = self._next_state_name
         if next_state_name is None:
-            raise RuntimeError(f"Could not retrieve NextState from uninitialised ProgramState.")
+            raise RuntimeError("Could not retrieve NextState from uninitialised ProgramState.")
         return next_state_name
 
     @next_state_name.setter

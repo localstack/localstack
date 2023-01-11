@@ -72,7 +72,7 @@ class ExecutionState(CommonStateField, abc.ABC):
                 self._eval_state(env)
             case RetryOutcome.CannotRetry:
                 # TODO: error type.
-                raise RuntimeError(f"Reached maximum Retry attempts.")
+                raise RuntimeError("Reached maximum Retry attempts.")
             case RetryOutcome.NoRetrier:
                 raise RuntimeError(f"No Retriers when dealing with exception '{ex}'.")
 

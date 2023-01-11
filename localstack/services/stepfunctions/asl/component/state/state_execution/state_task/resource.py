@@ -37,8 +37,8 @@ class Resource(Component, abc.ABC):
     @staticmethod
     def from_resource_arn(arn: str) -> Resource:
         resource_arn: ResourceARN = Resource.parse_resource_arn(arn)
-        match (resource_arn["service"], resource_arn["task_type"]):
-            case ("lambda", "function"):
+        match resource_arn["service"], resource_arn["task_type"]:
+            case "lambda", "function":
                 return LambdaResource(
                     resource_arn=arn,
                     partition=resource_arn["partition"],
@@ -46,7 +46,7 @@ class Resource(Component, abc.ABC):
                     account=resource_arn["account"],
                     function_name=resource_arn["name"],
                 )
-            case ("states", "activity"):
+            case "states", "activity":
                 return ActivityResource(
                     resource_arn=arn,
                     partition=resource_arn["partition"],
@@ -54,13 +54,13 @@ class Resource(Component, abc.ABC):
                     account=resource_arn["account"],
                     name=resource_arn["name"],
                 )
-            case ("states", service_name):
+            case "states", service_name:
                 return ServiceResource(
                     resource_arn=arn,
                     partition=resource_arn["partition"],
                     region=resource_arn["region"],
                     account=resource_arn["account"],
-                    service_name=service_name,
+                    service_name=service_name,  # noqa
                     api_name=resource_arn["name"],
                 )
 

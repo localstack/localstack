@@ -28,4 +28,4 @@ class StateTaskService(StateTask, abc.ABC):
 
                 return StateTaskServiceLambda()
             case unknown:
-                raise NotImplementedError(f"Unsupported service: '{unknown}'.")
+                raise NotImplementedError(f"Unsupported service: '{unknown}'.")  # noqa

@@ -152,7 +152,7 @@ class Execution:
         # TODO: timeout to force timeout?
         exec_worker: Optional[ExecutionWorker] = self.exec_worker
         if not exec_worker:
-            raise RuntimeError(f"No running executions.")
+            raise RuntimeError("No running executions.")
         self.exec_status = ExecutionStatus.ABORTED  # TODO: what state?
         self.stop_date = stop_date
         exec_worker.stop(stop_date=stop_date, cause=cause, error=error)

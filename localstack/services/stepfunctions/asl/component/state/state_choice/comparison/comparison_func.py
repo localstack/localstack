@@ -73,7 +73,7 @@ class ComparisonFunc(ComparisonStmt):
                 self._is_present(env)
             # TODO: add other operators.
             case x:
-                raise NotImplementedError(f"ComparisonFunc '{x}' is not supported yet.")
+                raise NotImplementedError(f"ComparisonFunc '{x}' is not supported yet.")  # noqa
 
     @staticmethod
     def _is_null(env: Environment, value: json) -> None:

@@ -30,7 +30,7 @@ class ProgramWorker:
 
     def eval(self, program: Program, env_frame: Environment, latch: CountDownLatch):
         if self._worker_thread is not None:
-            raise RuntimeError(f"Call to ProgramWorker.eval whilst another job is running.")
+            raise RuntimeError("Call to ProgramWorker.eval whilst another job is running.")
         self.env_frame = env_frame
         self._worker_thread = threading.Thread(target=self._worker_routine, args=(program, latch))
         self._worker_thread.start()

@@ -94,7 +94,7 @@ class Environment:
                 for frame in self._frames:
                     frame.set_stop(stop_date=stop_date, cause=cause, error=error)
             else:
-                raise RuntimeError(f"Cannot stop non running ProgramState.")
+                raise RuntimeError("Cannot stop non running ProgramState.")
 
     def open_frame(self) -> Environment:
         with self._state_mutex:

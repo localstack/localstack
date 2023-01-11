@@ -181,34 +181,20 @@ from localstack.services.stepfunctions.asl.parse.typed_props import TypedProps
 
 class Preprocessor(ASLParserVisitor):
     @staticmethod
-    def _inner_string_of(
-        parse_tree: ParseTree, on_missing: Optional[Exception] = None
-    ) -> Optional[str]:
-        kos: Optional[ParserRuleContext] = Antlr4Utils.is_production(parse_tree)
-        if kos is None:
-            if on_missing:
-                raise on_missing
-            return None
-        inner_str = kos.getText()
+    def _inner_string_of(parse_tree: ParseTree) -> Optional[str]:
+        pt = Antlr4Utils.is_production(parse_tree) or Antlr4Utils.is_terminal(parse_tree)
+        inner_str = pt.getText()
         if inner_str.startswith('"') and inner_str.endswith('"'):
             inner_str = inner_str[1:-1]
         return inner_str
 
     def visitComment_decl(self, ctx: ASLParser.Comment_declContext) -> Comment:
-        inner_str = self._inner_string_of(
-            parse_tree=ctx.keyword_or_string(),
-            on_missing=ValueError(
-                f"Could not derive Comment from declaration context '{ctx.getText()}'."
-            ),
-        )
+        inner_str = self._inner_string_of(parse_tree=ctx.keyword_or_string())
         return Comment(comment=inner_str)
 
     def visitStartat_decl(self, ctx: ASLParser.Startat_declContext) -> StartAt:
         inner_str = self._inner_string_of(
             parse_tree=ctx.keyword_or_string(),
-            on_missing=ValueError(
-                f"Could not derive StartAt from declaration context '{ctx.getText()}'."
-            ),
         )
         return StartAt(start_at_name=inner_str)
 
@@ -231,12 +217,7 @@ class Preprocessor(ASLParserVisitor):
         return StateType(state_type)
 
     def visitResource_decl(self, ctx: ASLParser.Resource_declContext) -> Resource:
-        inner_str = self._inner_string_of(
-            parse_tree=ctx.keyword_or_string(),
-            on_missing=ValueError(
-                f"Could not derive Resource from declaration context '{ctx.getText()}'."
-            ),
-        )
+        inner_str = self._inner_string_of(parse_tree=ctx.keyword_or_string())
         return Resource.from_resource_arn(inner_str)
 
     def visitEnd_decl(self, ctx: ASLParser.End_declContext) -> End:
@@ -249,39 +230,19 @@ class Preprocessor(ASLParserVisitor):
         return End(is_end=is_end)
 
     def visitNext_decl(self, ctx: ASLParser.Next_declContext) -> Next:
-        inner_str = self._inner_string_of(
-            parse_tree=ctx.keyword_or_string(),
-            on_missing=ValueError(
-                f"Could not derive Next from declaration context '{ctx.getText()}'."
-            ),
-        )
+        inner_str = self._inner_string_of(parse_tree=ctx.keyword_or_string())
         return Next(name=inner_str)
 
     def visitResult_path_decl(self, ctx: ASLParser.Result_path_declContext) -> ResultPath:
-        inner_str = self._inner_string_of(
-            parse_tree=ctx.keyword_or_string(),
-            on_missing=ValueError(
-                f"Could not derive ResultPath from declaration context '{ctx.getText()}'."
-            ),
-        )
+        inner_str = self._inner_string_of(parse_tree=ctx.keyword_or_string())
         return ResultPath(result_path_src=inner_str)
 
     def visitInput_path_decl(self, ctx: ASLParser.Input_path_declContext) -> InputPath:
-        inner_str = self._inner_string_of(
-            parse_tree=ctx.keyword_or_string(),
-            on_missing=ValueError(
-                f"Could not derive ResultPath from declaration context '{ctx.getText()}'."
-            ),
-        )
+        inner_str = self._inner_string_of(parse_tree=ctx.keyword_or_string())
         return InputPath(input_path_src=inner_str)
 
     def visitOutput_path_decl(self, ctx: ASLParser.Output_path_declContext):
-        inner_str = self._inner_string_of(
-            parse_tree=ctx.keyword_or_string(),
-            on_missing=ValueError(
-                f"Could not derive OutputPath from declaration context '{ctx.getText()}'."
-            ),
-        )
+        inner_str = self._inner_string_of(parse_tree=ctx.keyword_or_string())
         return OutputPath(output_path=inner_str)
 
     def visitResult_decl(self, ctx: ASLParser.Result_declContext) -> Result:
@@ -316,12 +277,7 @@ class Preprocessor(ASLParserVisitor):
         return state_props
 
     def visitState_decl(self, ctx: ASLParser.State_declContext) -> CommonStateField:
-        state_name = self._inner_string_of(
-            parse_tree=ctx.state_name(),
-            on_missing=ValueError(
-                f"Could not derive StartAt from declaration context '{ctx.getText()}'."
-            ),
-        )
+        state_name = self._inner_string_of(parse_tree=ctx.state_name())
         state_props: StateProps = self.visit(ctx.state_decl_body())
         state_props.name = state_name
         return self._common_state_field_of(state_props=state_props)
@@ -333,7 +289,7 @@ class Preprocessor(ASLParserVisitor):
             case StateType.Task:
                 resource: Resource = state_props.get(Resource)
                 if not resource:
-                    raise ValueError(f"No Resource declaration in State Task.")
+                    raise ValueError("No Resource declaration in State Task.")
                 if isinstance(resource, LambdaResource):
                     state = StateTaskLambda()
                 elif isinstance(resource, ServiceResource):
@@ -357,21 +313,16 @@ class Preprocessor(ASLParserVisitor):
             case StateType.Parallel:
                 state = StateParallel()
             case None:
-                raise TypeError(f"No Type declaration for State in context.")
+                raise TypeError("No Type declaration for State in context.")
             case unknown:
                 raise TypeError(
-                    f"Unknown StateType value '{unknown}' in StateProps object in context."
+                    f"Unknown StateType value '{unknown}' in StateProps object in context."  # noqa
                 )
         state.from_state_props(state_props)
         return state
 
     def visitVariable_decl(self, ctx: ASLParser.Variable_declContext) -> Variable:
-        value: str = self._inner_string_of(
-            parse_tree=ctx.keyword_or_string(),
-            on_missing=ValueError(
-                f"Could not derive Variable from declaration context '{ctx.getText()}'."
-            ),
-        )
+        value: str = self._inner_string_of(parse_tree=ctx.keyword_or_string())
         return Variable(value=value)
 
     def visitComparison_op(
@@ -380,7 +331,7 @@ class Preprocessor(ASLParserVisitor):
         try:
             operator_type: int = ctx.children[0].symbol.type
             return ComparisonFunc.ComparisonOperator(operator_type)
-        except Exception as _:
+        except Exception:
             raise ValueError(f"Could not derive ComparisonOperator from context '{ctx.getText()}'.")
 
     def visitComparison_func(self, ctx: ASLParser.Comparison_funcContext) -> ComparisonFunc:
@@ -393,12 +344,7 @@ class Preprocessor(ASLParserVisitor):
         return ComparisonFunc(operator=comparison_op, value=json_obj)
 
     def visitDefault_decl(self, ctx: ASLParser.Default_declContext) -> DefaultDecl:
-        state_name = self._inner_string_of(
-            parse_tree=ctx.keyword_or_string(),
-            on_missing=ValueError(
-                f"Could not derive StartAt from declaration context '{ctx.getText()}'."
-            ),
-        )
+        state_name = self._inner_string_of(parse_tree=ctx.keyword_or_string())
         return DefaultDecl(state_name=state_name)
 
     def visitComparison(self, ctx: ASLParser.ComparisonContext) -> Comparison:
@@ -481,42 +427,22 @@ class Preprocessor(ASLParserVisitor):
         return ChoicesDecl(rules=rules)
 
     def visitError_decl(self, ctx: ASLParser.Error_declContext) -> ErrorDecl:
-        error = self._inner_string_of(
-            parse_tree=ctx.keyword_or_string(),
-            on_missing=ValueError(
-                f"Could not derive ErrorDecl from declaration context '{ctx.getText()}'."
-            ),
-        )
+        error = self._inner_string_of(parse_tree=ctx.keyword_or_string())
         return ErrorDecl(error=error)
 
     def visitCause_decl(self, ctx: ASLParser.Cause_declContext) -> CauseDecl:
-        cause = self._inner_string_of(
-            parse_tree=ctx.keyword_or_string(),
-            on_missing=ValueError(
-                f"Could not derive CauseDecl from declaration context '{ctx.getText()}'."
-            ),
-        )
+        cause = self._inner_string_of(parse_tree=ctx.keyword_or_string())
         return CauseDecl(cause=cause)
 
     def visitSeconds_decl(self, ctx: ASLParser.Seconds_declContext) -> Seconds:
         return Seconds(seconds=int(ctx.INT().getText()))
 
     def visitSeconds_path_decl(self, ctx: ASLParser.Seconds_path_declContext) -> SecondsPath:
-        path = self._inner_string_of(
-            parse_tree=ctx.keyword_or_string(),
-            on_missing=ValueError(
-                f"Could not derive SecondsPath from declaration context '{ctx.getText()}'."
-            ),
-        )
+        path = self._inner_string_of(parse_tree=ctx.keyword_or_string())
         return SecondsPath(path=path)
 
     def visitItems_path_decl(self, ctx: ASLParser.Items_path_declContext) -> ItemsPath:
-        path = self._inner_string_of(
-            parse_tree=ctx.keyword_or_string(),
-            on_missing=ValueError(
-                f"Could not derive ItemsPath from declaration context '{ctx.getText()}'."
-            ),
-        )
+        path = self._inner_string_of(parse_tree=ctx.keyword_or_string())
         return ItemsPath(items_path_src=path)
 
     def visitMax_concurrency_decl(
@@ -532,22 +458,12 @@ class Preprocessor(ASLParserVisitor):
         return ctx.children[0].symbol.type
 
     def visitTimestamp_decl(self, ctx: ASLParser.Seconds_path_declContext) -> Timestamp:
-        timestamp_str = self._inner_string_of(
-            parse_tree=ctx.keyword_or_string(),
-            on_missing=ValueError(
-                f"Could not derive Timestamp from declaration context '{ctx.getText()}'."
-            ),
-        )
+        timestamp_str = self._inner_string_of(parse_tree=ctx.keyword_or_string())
         timestamp = Timestamp.parse_timestamp(timestamp_str)
         return Timestamp(timestamp=timestamp)
 
     def visitTimestamp_path_decl(self, ctx: ASLParser.Timestamp_path_declContext) -> TimestampPath:
-        path = self._inner_string_of(
-            parse_tree=ctx.keyword_or_string(),
-            on_missing=ValueError(
-                f"Could not derive TimestampPath from declaration context '{ctx.getText()}'."
-            ),
-        )
+        path = self._inner_string_of(parse_tree=ctx.keyword_or_string())
         return TimestampPath(path=path)
 
     def visitProcessor_config_decl(
@@ -611,12 +527,7 @@ class Preprocessor(ASLParserVisitor):
             return self.visit(prc)
 
         # Case CustomErrorName.
-        error_name = self._inner_string_of(
-            parse_tree=ctx.keyword_or_string(),
-            on_missing=ValueError(
-                f"Could not derive TimestampPath from declaration context '{ctx.getText()}'."
-            ),
-        )
+        error_name = self._inner_string_of(parse_tree=ctx.keyword_or_string())
         return CustomErrorName(error_name=error_name)
 
     def visitStates_error_name(self, ctx: ASLParser.States_error_nameContext) -> StatesErrorName:
@@ -675,46 +586,21 @@ class Preprocessor(ASLParserVisitor):
         return PayloadValueNull()
 
     def visitPayload_value_str(self, ctx: ASLParser.Payload_value_strContext) -> PayloadValueStr:
-        str_val = self._inner_string_of(
-            parse_tree=ctx.keyword_or_string(),
-            on_missing=ValueError(
-                f"Could not derive string literal from declaration context '{ctx.getText()}'."
-            ),
-        )
+        str_val = self._inner_string_of(parse_tree=ctx.keyword_or_string())
         return PayloadValueStr(val=str_val)
 
     def visitPayload_binding_path(
         self, ctx: ASLParser.Payload_binding_pathContext
     ) -> PayloadBindingPath:
-        string_dollar: str = self._inner_string_of(
-            parse_tree=ctx.STRINGDOLLAR(),
-            on_missing=ValueError(
-                f"Could not derive string literal from declaration context '{ctx.getText()}'."
-            ),
-        )
-        string_path: str = self._inner_string_of(
-            parse_tree=ctx.STRINGPATH(),
-            on_missing=ValueError(
-                f"Could not derive path literal from declaration context '{ctx.getText()}'."
-            ),
-        )
+        string_dollar: str = self._inner_string_of(parse_tree=ctx.STRINGDOLLAR())
+        string_path: str = self._inner_string_of(parse_tree=ctx.STRINGPATH())
         return PayloadBindingPath.from_raw(string_dollar=string_dollar, string_path=string_path)
 
     def visitPayload_binding_path_context_obj(
         self, ctx: ASLParser.Payload_binding_path_context_objContext
     ) -> PayloadBindingPathContextObj:
-        string_dollar: str = self._inner_string_of(
-            parse_tree=ctx.STRINGDOLLAR(),
-            on_missing=ValueError(
-                f"Could not derive string literal from declaration context '{ctx.getText()}'."
-            ),
-        )
-        string_path_context_obj: str = self._inner_string_of(
-            parse_tree=ctx.STRINGPATHCONTEXTOBJ(),
-            on_missing=ValueError(
-                f"Could not derive path literal from declaration context '{ctx.getText()}'."
-            ),
-        )
+        string_dollar: str = self._inner_string_of(parse_tree=ctx.STRINGDOLLAR())
+        string_path_context_obj: str = self._inner_string_of(parse_tree=ctx.STRINGPATHCONTEXTOBJ())
         return PayloadBindingPathContextObj.from_raw(
             string_dollar=string_dollar, string_path_context_obj=string_path_context_obj
         )
@@ -722,18 +608,8 @@ class Preprocessor(ASLParserVisitor):
     def visitPayload_binding_intrinsic_func(
         self, ctx: ASLParser.Payload_binding_intrinsic_funcContext
     ) -> PayloadBindingIntrinsicFunc:
-        string_dollar: str = self._inner_string_of(
-            parse_tree=ctx.STRINGDOLLAR(),
-            on_missing=ValueError(
-                f"Could not derive string literal from declaration context '{ctx.getText()}'."
-            ),
-        )
-        intrinsic_func: str = self._inner_string_of(
-            parse_tree=ctx.intrinsic_func(),
-            on_missing=ValueError(
-                f"Could not derive intrinsic function literal from declaration context '{ctx.getText()}'."
-            ),
-        )
+        string_dollar: str = self._inner_string_of(parse_tree=ctx.STRINGDOLLAR())
+        intrinsic_func: str = self._inner_string_of(parse_tree=ctx.intrinsic_func())
         return PayloadBindingIntrinsicFunc.from_raw(
             string_dollar=string_dollar, intrinsic_func=intrinsic_func
         )
@@ -741,12 +617,7 @@ class Preprocessor(ASLParserVisitor):
     def visitPayload_binding_value(
         self, ctx: ASLParser.Payload_binding_valueContext
     ) -> PayloadBindingValue:
-        field: str = self._inner_string_of(
-            parse_tree=ctx.keyword_or_string(),
-            on_missing=ValueError(
-                f"Could not derive string literal from declaration context '{ctx.getText()}'."
-            ),
-        )
+        field: str = self._inner_string_of(parse_tree=ctx.keyword_or_string())
         value: PayloadValue = self.visit(ctx.payload_value_decl())
         return PayloadBindingValue(field=field, value=value)
 
