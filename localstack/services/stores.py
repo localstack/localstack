@@ -208,7 +208,6 @@ class RegionBundle(dict, Generic[BaseStoreType]):
         self.service_name = service_name
         self.validate = validate
         self.lock = lock or RLock()
-        self._universal = universal
 
         self.valid_regions = get_valid_regions_for_service(service_name)
 
@@ -216,6 +215,11 @@ class RegionBundle(dict, Generic[BaseStoreType]):
         # a region level (hence in RegionBundle). A ref is passed to every store
         # intialised in this region so that backref is possible.
         self._global = {}
+
+        # Keeps track of all cross-account attributes. This dict is maintained at
+        # the account level (ie. AccountRegionBundle). A ref is passed down from
+        # AccountRegionBundle to RegionBundle to individual stores to enable backref.
+        self._universal = universal
 
     def __getitem__(self, region_name) -> BaseStoreType:
         if self.validate and region_name not in self.valid_regions:
@@ -242,7 +246,15 @@ class RegionBundle(dict, Generic[BaseStoreType]):
         """
         Clear all store data.
 
-        This only deletes the data held in the stores. All instantiated stores are retained.
+        This only deletes the data held in the stores. All instantiated stores
+        are retained. This includes data shared by all stores in this account
+        and marked by the CrossRegionAttribute descriptor.
+
+        Data marked by CrossAccountAttribute descriptor is only cleared when
+        `_reset_universal` is set. Note that this escapes the logical boundary of
+        the account associated with this RegionBundle and affects *all* accounts.
+        Hence this argument is not intended for public use and is only used when
+        invoking this method from AccountRegionBundle.
         """
         # For safety, clear data in all referenced store instances, if any
         for store_inst in self.values():
