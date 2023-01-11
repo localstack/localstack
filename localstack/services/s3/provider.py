@@ -54,6 +54,7 @@ from localstack.aws.api.s3 import (
     ListObjectsRequest,
     ListObjectsV2Output,
     ListObjectsV2Request,
+    MissingSecurityHeader,
     NoSuchBucket,
     NoSuchKey,
     NoSuchLifecycleConfiguration,
@@ -145,6 +146,11 @@ class MalformedACLError(CommonServiceException):
 class InvalidRequest(CommonServiceException):
     def __init__(self, message=None):
         super().__init__("InvalidRequest", status_code=400, message=message)
+
+
+class UnexpectedContent(CommonServiceException):
+    def __init__(self, message=None):
+        super().__init__("UnexpectedContent", status_code=400, message=message)
 
 
 def get_full_default_bucket_location(bucket_name):
@@ -647,7 +653,7 @@ class S3Provider(S3Api, ServiceLifecycleHook):
         context: RequestContext,
         request: PutBucketAclRequest,
     ) -> None:
-        validate_bucket_canned_acl(request.get("ACL"))
+        canned_acl = request.get("ACL")
 
         grant_keys = [
             "GrantFullControl",
@@ -656,11 +662,33 @@ class S3Provider(S3Api, ServiceLifecycleHook):
             "GrantWrite",
             "GrantWriteACP",
         ]
-        for key in grant_keys:
-            if grantees_values := request.get(key, ""):  # noqa
+        present_headers = [
+            (key, grant_header) for key in grant_keys if (grant_header := request.get(key))
+        ]
+        # FIXME: this is very dirty, but the parser does not differentiate between an empty body and an empty XML node
+        # errors are different depending on that data, so we need to access the context. Modifying the parser for this
+        # use case seems dangerous
+        is_acp_in_body = context.request.data
+
+        if not (canned_acl or present_headers or is_acp_in_body):
+            raise MissingSecurityHeader(
+                "Your request was missing a required header", MissingHeaderName="x-amz-acl"
+            )
+
+        elif canned_acl and present_headers:
+            raise InvalidRequest("Specifying both Canned ACLs and Header Grants is not allowed")
+
+        elif (canned_acl or present_headers) and is_acp_in_body:
+            raise UnexpectedContent("This request does not support content")
+
+        if canned_acl:
+            validate_bucket_canned_acl(canned_acl)
+
+        elif present_headers:
+            for key, grantees_values in present_headers:
                 validate_grantee_in_headers(key, grantees_values)
 
-        if acp := request.get("AccessControlPolicy"):
+        elif acp := request.get("AccessControlPolicy"):
             validate_acl_acp(acp)
 
         call_moto(context)
@@ -887,7 +915,7 @@ def validate_grantee_in_headers(grant: str, grantees: str) -> None:
 
 
 def validate_acl_acp(acp: AccessControlPolicy) -> None:
-    if "Owner" not in acp or "Grants" not in acp:
+    if acp is None or "Owner" not in acp or "Grants" not in acp:
         raise MalformedACLError(
             "The XML you provided was not well-formed or did not validate against our published schema"
         )
