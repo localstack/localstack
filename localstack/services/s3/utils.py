@@ -20,7 +20,7 @@ from localstack.aws.api.s3 import (
     ObjectKey,
     Permission,
 )
-from localstack.utils.aws import aws_stack
+from localstack.utils.aws import arns, aws_stack
 from localstack.utils.aws.arns import parse_arn
 from localstack.utils.strings import checksum_crc32, checksum_crc32c, hash_sha1, hash_sha256
 
@@ -228,7 +228,9 @@ def validate_kms_key_id(kms_key: str, bucket: FakeBucket):
         key_id = kms_key
         # recreate the ARN manually with the bucket region and bucket owner
         # if the KMS key is cross-account, user should provide an ARN and not a KeyId
-        kms_key = f"arn:aws:kms:{bucket.region_name}:{bucket.account_id}:key/{key_id}"
+        kms_key = arns.kms_key_arn(
+            key_id=key_id, account_id=bucket.account_id, region_name=bucket.region_name
+        )
 
     # we validate the Key Id is a valid one
     if not PATTERN_UUID.match(key_id):
