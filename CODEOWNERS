@@ -30,6 +30,10 @@
 # HTTP framework
 /localstack/http/ @thrau
 
+# Stores
+/localstack/services/stores.py @viren-nadkarni
+/tests/unit/test_stores.py @viren-nadkarni
+
 # Dockerfile
 /Dockerfile @alexrashed
 /Dockerfile.rh @alexrashed

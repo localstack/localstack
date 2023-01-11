@@ -26,6 +26,7 @@ from localstack.constants import TEST_AWS_ACCESS_KEY_ID, TEST_AWS_SECRET_ACCESS_
 from localstack.services.stores import (
     AccountRegionBundle,
     BaseStore,
+    CrossAccountAttribute,
     CrossRegionAttribute,
     LocalAttribute,
 )
@@ -1916,6 +1917,7 @@ def pytest_collection_modifyitems(config: Config, items: list[Item]):
 @pytest.fixture
 def sample_stores() -> AccountRegionBundle:
     class SampleStore(BaseStore):
+        CROSS_ACCOUNT_ATTR = CrossAccountAttribute(default=list)
         CROSS_REGION_ATTR = CrossRegionAttribute(default=list)
         region_specific_attr = LocalAttribute(default=list)
 
