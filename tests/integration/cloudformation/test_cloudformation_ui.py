@@ -15,4 +15,5 @@ class TestCloudFormationUi:
         # we simply test that the UI is available at the right path and that it returns HTML.
         assert response.ok
         assert "content-type" in response.headers
-        assert b"Localstack" in response.content
+        # this is a bit fragile but assert that the file returned contains at least something related to the UI
+        assert b"LocalStack" in response.content
