@@ -158,21 +158,6 @@ class TestKMS:
         snapshot.match("describe-key-with-invalid-uuid-mrk", e.value.response)
 
     @pytest.mark.aws_validated
-    def test_schedule_and_cancel_key_deletion(self, kms_client, kms_create_key):
-        key_id = kms_create_key()["KeyId"]
-        kms_client.schedule_key_deletion(KeyId=key_id)
-        result = kms_client.describe_key(KeyId=key_id)
-        assert result["KeyMetadata"]["Enabled"] is False
-        assert result["KeyMetadata"]["KeyState"] == "PendingDeletion"
-        assert result["KeyMetadata"]["DeletionDate"]
-
-        kms_client.cancel_key_deletion(KeyId=key_id)
-        result = kms_client.describe_key(KeyId=key_id)
-        assert result["KeyMetadata"]["Enabled"] is False
-        assert result["KeyMetadata"]["KeyState"] == "Disabled"
-        assert not result["KeyMetadata"].get("DeletionDate")
-
-    @pytest.mark.aws_validated
     def test_list_keys(self, kms_client, kms_create_key):
         created_key = kms_create_key()
         next_token = None
@@ -187,6 +172,21 @@ class TestKMS:
             if "nextToken" not in response:
                 break
             next_token = response["nextToken"]
+
+    @pytest.mark.aws_validated
+    def test_schedule_and_cancel_key_deletion(self, kms_client, kms_create_key):
+        key_id = kms_create_key()["KeyId"]
+        kms_client.schedule_key_deletion(KeyId=key_id)
+        result = kms_client.describe_key(KeyId=key_id)
+        assert result["KeyMetadata"]["Enabled"] is False
+        assert result["KeyMetadata"]["KeyState"] == "PendingDeletion"
+        assert result["KeyMetadata"]["DeletionDate"]
+
+        kms_client.cancel_key_deletion(KeyId=key_id)
+        result = kms_client.describe_key(KeyId=key_id)
+        assert result["KeyMetadata"]["Enabled"] is False
+        assert result["KeyMetadata"]["KeyState"] == "Disabled"
+        assert not result["KeyMetadata"].get("DeletionDate")
 
     @pytest.mark.aws_validated
     def test_disable_and_enable_key(self, kms_client, kms_create_key):
