@@ -21,7 +21,7 @@ from localstack.utils import testutil
 from localstack.utils.aws import aws_stack
 from localstack.utils.files import load_file
 from localstack.utils.functions import run_safe
-from localstack.utils.net import wait_for_port_closed, wait_for_port_open
+from localstack.utils.net import wait_for_port_open
 from localstack.utils.strings import short_uid, to_bytes, to_str
 from localstack.utils.sync import poll_condition, retry
 from localstack.utils.testutil import create_lambda_archive
@@ -88,69 +88,65 @@ class TestLambdaFallbackUrl(unittest.TestCase):
         items_after = num_items()
         self.assertEqual(items_before + 3, items_after)
 
-    def test_forward_to_fallback_url_http(self):
+    def test_forward_to_fallback_url_http(self, httpserver: HTTPServer):
         lambda_client = aws_stack.create_external_boto_client("lambda")
         lambda_result = {"result": "test123"}
 
         def _handler(_request: Request):
             return Response(json.dumps(lambda_result), mimetype="application/json")
 
-        with HTTPServer() as server:
+        httpserver.expect_request("").respond_with_handler(_handler)
+        http_endpoint = httpserver.url_for("/")
+        wait_for_port_open(httpserver.port)
 
-            server.expect_request("").respond_with_handler(_handler)
-            http_endpoint = server.url_for("/")
-            wait_for_port_open(server.port)
+        # test 1: forward to LAMBDA_FALLBACK_URL
+        self._run_forward_to_fallback_url(http_endpoint)
 
-            # test 1: forward to LAMBDA_FALLBACK_URL
-            self._run_forward_to_fallback_url(http_endpoint)
+        poll_condition(lambda: len(httpserver.log) >= 3, timeout=10)
 
-            poll_condition(lambda: len(server.log) >= 3, timeout=10)
+        for request, _ in httpserver.log:
+            # event = request.get_json(force=True)
+            self.assertIn("non-existing-lambda", request.headers["lambda-function-name"])
 
-            for request, _ in server.log:
-                # event = request.get_json(force=True)
-                self.assertIn("non-existing-lambda", request.headers["lambda-function-name"])
+        self.assertEqual(3, len(httpserver.log))
+        httpserver.clear_log()
 
-            self.assertEqual(3, len(server.log))
-            server.clear_log()
+        lambda_name = f"test-{short_uid()}"
+        try:
+            # create test Lambda
+            testutil.create_lambda_function(
+                handler_file=TEST_LAMBDA_PYTHON,
+                func_name=lambda_name,
+                libs=TEST_LAMBDA_LIBS,
+            )
+            lambda_client.get_waiter("function_active_v2").wait(FunctionName=lambda_name)
 
-            try:
-                # create test Lambda
-                lambda_name = f"test-{short_uid()}"
-                testutil.create_lambda_function(
-                    handler_file=TEST_LAMBDA_PYTHON,
-                    func_name=lambda_name,
-                    libs=TEST_LAMBDA_LIBS,
-                )
-                lambda_client.get_waiter("function_active_v2").wait(FunctionName=lambda_name)
+            # test 2: forward to LAMBDA_FORWARD_URL
+            inv_results = self._run_forward_to_fallback_url(
+                http_endpoint, lambda_name=lambda_name, fallback=False
+            )
 
-                # test 2: forward to LAMBDA_FORWARD_URL
-                inv_results = self._run_forward_to_fallback_url(
-                    http_endpoint, lambda_name=lambda_name, fallback=False
-                )
+            poll_condition(lambda: len(httpserver.log) >= 3, timeout=10)
 
-                poll_condition(lambda: len(server.log) >= 3, timeout=10)
+            for request, _ in httpserver.log:
+                event = request.get_json(force=True)
+                headers = request.headers
+                self.assertIn("/lambda/", headers["Authorization"])
+                self.assertEqual("POST", request.method)
+                self.assertIn(f"/functions/{lambda_name}/invocations", request.path)
+                self.assertTrue(headers.get("X-Amz-Client-Context"))
+                self.assertEqual("RequestResponse", headers.get("X-Amz-Invocation-Type"))
+                self.assertEqual({"foo": "bar"}, event)
 
-                for request, _ in server.log:
-                    event = request.get_json(force=True)
-                    headers = request.headers
-                    self.assertIn("/lambda/", headers["Authorization"])
-                    self.assertEqual("POST", request.method)
-                    self.assertIn(f"/functions/{lambda_name}/invocations", request.path)
-                    self.assertTrue(headers.get("X-Amz-Client-Context"))
-                    self.assertEqual("RequestResponse", headers.get("X-Amz-Invocation-Type"))
-                    self.assertEqual({"foo": "bar"}, event)
+            self.assertEqual(3, len(httpserver.log))
+            httpserver.clear_log()
 
-                self.assertEqual(3, len(server.log))
-                server.clear_log()
-
-                # assert result payload matches
-                response_payload = inv_results[0]["Payload"].read()
-                self.assertEqual(lambda_result, json.loads(response_payload))
-            finally:
-                # clean up / shutdown
-                lambda_client.delete_function(FunctionName=lambda_name)
-
-        wait_for_port_closed(server.port)
+            # assert result payload matches
+            response_payload = inv_results[0]["Payload"].read()
+            self.assertEqual(lambda_result, json.loads(response_payload))
+        finally:
+            # clean up / shutdown
+            lambda_client.delete_function(FunctionName=lambda_name)
 
     def test_adding_fallback_function_name_in_headers(self):
         lambda_client = aws_stack.create_external_boto_client("lambda")

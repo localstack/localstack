@@ -18,7 +18,7 @@ from localstack.services.events.provider import _get_events_tmp_dir
 from localstack.testing.aws.util import is_aws_cloud
 from localstack.utils.aws import arns, aws_stack, resources
 from localstack.utils.files import load_file
-from localstack.utils.net import wait_for_port_closed, wait_for_port_open
+from localstack.utils.net import wait_for_port_open
 from localstack.utils.strings import short_uid, to_str
 from localstack.utils.sync import poll_condition, retry
 from localstack.utils.testutil import check_expected_lambda_log_events_length
@@ -591,126 +591,125 @@ class TestEvents:
         sqs_queue_arn,
         events_client,
         sns_subscription,
+        httpserver: HTTPServer,
     ):
-        with HTTPServer() as server:
-            server.expect_request("").respond_with_data(b"", 200)
-            http_endpoint = server.url_for("/")
-            wait_for_port_open(server.port)
+        httpserver.expect_request("").respond_with_data(b"", 200)
+        http_endpoint = httpserver.url_for("/")
+        wait_for_port_open(httpserver.port)
 
-            topic_name = f"topic-{short_uid()}"
-            queue_name = f"queue-{short_uid()}"
-            fifo_queue_name = f"queue-{short_uid()}.fifo"
-            rule_name = f"rule-{short_uid()}"
-            sm_role_arn = arns.role_arn("sfn_role")
-            sm_name = f"state-machine-{short_uid()}"
-            topic_target_id = f"target-{short_uid()}"
-            sm_target_id = f"target-{short_uid()}"
-            queue_target_id = f"target-{short_uid()}"
-            fifo_queue_target_id = f"target-{short_uid()}"
+        topic_name = f"topic-{short_uid()}"
+        queue_name = f"queue-{short_uid()}"
+        fifo_queue_name = f"queue-{short_uid()}.fifo"
+        rule_name = f"rule-{short_uid()}"
+        sm_role_arn = arns.role_arn("sfn_role")
+        sm_name = f"state-machine-{short_uid()}"
+        topic_target_id = f"target-{short_uid()}"
+        sm_target_id = f"target-{short_uid()}"
+        queue_target_id = f"target-{short_uid()}"
+        fifo_queue_target_id = f"target-{short_uid()}"
 
-            state_machine_definition = """
-            {
-                "StartAt": "Hello",
-                "States": {
-                    "Hello": {
-                        "Type": "Pass",
-                        "Result": "World",
-                        "End": true
-                    }
+        state_machine_definition = """
+        {
+            "StartAt": "Hello",
+            "States": {
+                "Hello": {
+                    "Type": "Pass",
+                    "Result": "World",
+                    "End": true
                 }
             }
-            """
+        }
+        """
 
-            state_machine_arn = stepfunctions_client.create_state_machine(
-                name=sm_name, definition=state_machine_definition, roleArn=sm_role_arn
-            )["stateMachineArn"]
+        state_machine_arn = stepfunctions_client.create_state_machine(
+            name=sm_name, definition=state_machine_definition, roleArn=sm_role_arn
+        )["stateMachineArn"]
 
-            topic_arn = sns_create_topic(Name=topic_name)["TopicArn"]
-            sns_subscription(TopicArn=topic_arn, Protocol="http", Endpoint=http_endpoint)
+        topic_arn = sns_create_topic(Name=topic_name)["TopicArn"]
+        sns_subscription(TopicArn=topic_arn, Protocol="http", Endpoint=http_endpoint)
 
-            queue_url = sqs_create_queue(QueueName=queue_name)
-            fifo_queue_url = sqs_create_queue(
-                QueueName=fifo_queue_name,
-                Attributes={"FifoQueue": "true", "ContentBasedDeduplication": "true"},
-            )
+        queue_url = sqs_create_queue(QueueName=queue_name)
+        fifo_queue_url = sqs_create_queue(
+            QueueName=fifo_queue_name,
+            Attributes={"FifoQueue": "true", "ContentBasedDeduplication": "true"},
+        )
 
-            queue_arn = arns.sqs_queue_arn(queue_name)
-            fifo_queue_arn = arns.sqs_queue_arn(fifo_queue_name)
+        queue_arn = arns.sqs_queue_arn(queue_name)
+        fifo_queue_arn = arns.sqs_queue_arn(fifo_queue_name)
 
-            event = {"env": "testing"}
-            event_json = json.dumps(event)
+        event = {"env": "testing"}
+        event_json = json.dumps(event)
 
-            events_client.put_rule(Name=rule_name, ScheduleExpression="rate(1 minutes)")
+        events_client.put_rule(Name=rule_name, ScheduleExpression="rate(1 minutes)")
 
-            events_client.put_targets(
-                Rule=rule_name,
-                Targets=[
-                    {"Id": topic_target_id, "Arn": topic_arn, "Input": event_json},
-                    {
-                        "Id": sm_target_id,
-                        "Arn": state_machine_arn,
-                        "Input": event_json,
-                    },
-                    {"Id": queue_target_id, "Arn": queue_arn, "Input": event_json},
-                    {
-                        "Id": fifo_queue_target_id,
-                        "Arn": fifo_queue_arn,
-                        "Input": event_json,
-                        "SqsParameters": {"MessageGroupId": "123"},
-                    },
-                ],
-            )
+        events_client.put_targets(
+            Rule=rule_name,
+            Targets=[
+                {"Id": topic_target_id, "Arn": topic_arn, "Input": event_json},
+                {
+                    "Id": sm_target_id,
+                    "Arn": state_machine_arn,
+                    "Input": event_json,
+                },
+                {"Id": queue_target_id, "Arn": queue_arn, "Input": event_json},
+                {
+                    "Id": fifo_queue_target_id,
+                    "Arn": fifo_queue_arn,
+                    "Input": event_json,
+                    "SqsParameters": {"MessageGroupId": "123"},
+                },
+            ],
+        )
 
-            def received(q_urls):
-                # state machine got executed
-                executions = stepfunctions_client.list_executions(
-                    stateMachineArn=state_machine_arn
-                )["executions"]
-                assert len(executions) >= 1
+        def received(q_urls):
+            # state machine got executed
+            executions = stepfunctions_client.list_executions(stateMachineArn=state_machine_arn)[
+                "executions"
+            ]
+            assert len(executions) >= 1
 
-                # http endpoint got events
-                assert len(server.log) >= 2
-                notifications = [
-                    sns_event["Message"]
-                    for request, _ in server.log
-                    if (
-                        (sns_event := request.get_json(force=True))
-                        and sns_event["Type"] == "Notification"
-                    )
-                ]
-                assert len(notifications) >= 1
+            # http endpoint got events
+            assert len(httpserver.log) >= 2
+            notifications = [
+                sns_event["Message"]
+                for request, _ in httpserver.log
+                if (
+                    (sns_event := request.get_json(force=True))
+                    and sns_event["Type"] == "Notification"
+                )
+            ]
+            assert len(notifications) >= 1
 
-                # get state machine execution detail
-                execution_arn = executions[0]["executionArn"]
-                _execution_input = stepfunctions_client.describe_execution(
-                    executionArn=execution_arn
-                )["input"]
+            # get state machine execution detail
+            execution_arn = executions[0]["executionArn"]
+            _execution_input = stepfunctions_client.describe_execution(executionArn=execution_arn)[
+                "input"
+            ]
 
-                all_msgs = []
-                # get message from queue and fifo_queue
-                for url in q_urls:
-                    msgs = sqs_client.receive_message(QueueUrl=url).get("Messages", [])
-                    assert len(msgs) >= 1
-                    all_msgs.append(msgs[0])
+            all_msgs = []
+            # get message from queue and fifo_queue
+            for url in q_urls:
+                msgs = sqs_client.receive_message(QueueUrl=url).get("Messages", [])
+                assert len(msgs) >= 1
+                all_msgs.append(msgs[0])
 
-                return _execution_input, notifications[0], all_msgs
+            return _execution_input, notifications[0], all_msgs
 
-            execution_input, notification, msgs_received = retry(
-                received, retries=5, sleep=15, q_urls=[queue_url, fifo_queue_url]
-            )
-            assert json.loads(notification) == event
-            assert json.loads(execution_input) == event
-            for msg_received in msgs_received:
-                assert json.loads(msg_received["Body"]) == event
+        execution_input, notification, msgs_received = retry(
+            received, retries=5, sleep=15, q_urls=[queue_url, fifo_queue_url]
+        )
+        assert json.loads(notification) == event
+        assert json.loads(execution_input) == event
+        for msg_received in msgs_received:
+            assert json.loads(msg_received["Body"]) == event
 
         # clean up
         target_ids = [topic_target_id, sm_target_id, queue_target_id, fifo_queue_target_id]
         self.cleanup(None, rule_name, target_ids=target_ids, queue_url=queue_url)
         stepfunctions_client.delete_state_machine(stateMachineArn=state_machine_arn)
-        wait_for_port_closed(server.port)
 
     @pytest.mark.parametrize("auth", API_DESTINATION_AUTHS)
-    def test_api_destinations(self, events_client, auth):
+    def test_api_destinations(self, events_client, httpserver: HTTPServer, auth):
         token = short_uid()
         bearer = f"Bearer {token}"
 
@@ -726,153 +725,147 @@ class TestEvents:
                 mimetype="application/json",
             )
 
-        with HTTPServer() as server:
+        httpserver.expect_request("").respond_with_handler(_handler)
+        http_endpoint = httpserver.url_for("/")
+        wait_for_port_open(httpserver.port)
 
-            server.expect_request("").respond_with_handler(_handler)
-            http_endpoint = server.url_for("/")
-            wait_for_port_open(server.port)
+        if auth.get("type") == "OAUTH_CLIENT_CREDENTIALS":
+            auth["parameters"]["AuthorizationEndpoint"] = http_endpoint
 
-            if auth.get("type") == "OAUTH_CLIENT_CREDENTIALS":
-                auth["parameters"]["AuthorizationEndpoint"] = http_endpoint
-
-            connection_name = f"c-{short_uid()}"
-            connection_arn = events_client.create_connection(
-                Name=connection_name,
-                AuthorizationType=auth.get("type"),
-                AuthParameters={
-                    auth.get("key"): auth.get("parameters"),
-                    "InvocationHttpParameters": {
-                        "BodyParameters": [
-                            {
-                                "Key": "connection_body_param",
-                                "Value": "value",
-                                "IsValueSecret": False,
-                            },
-                        ],
-                        "HeaderParameters": [
-                            {
-                                "Key": "connection_header_param",
-                                "Value": "value",
-                                "IsValueSecret": False,
-                            },
-                            {
-                                "Key": "overwritten_header",
-                                "Value": "original",
-                                "IsValueSecret": False,
-                            },
-                        ],
-                        "QueryStringParameters": [
-                            {
-                                "Key": "connection_query_param",
-                                "Value": "value",
-                                "IsValueSecret": False,
-                            },
-                            {
-                                "Key": "overwritten_query",
-                                "Value": "original",
-                                "IsValueSecret": False,
-                            },
-                        ],
-                    },
-                },
-            )["ConnectionArn"]
-
-            # create api destination
-            dest_name = f"d-{short_uid()}"
-            result = events_client.create_api_destination(
-                Name=dest_name,
-                ConnectionArn=connection_arn,
-                InvocationEndpoint=http_endpoint,
-                HttpMethod="POST",
-            )
-
-            # create rule and target
-            rule_name = f"r-{short_uid()}"
-            target_id = f"target-{short_uid}"
-            pattern = json.dumps({"source": ["source-123"], "detail-type": ["type-123"]})
-            events_client.put_rule(Name=rule_name, EventPattern=pattern)
-            events_client.put_targets(
-                Rule=rule_name,
-                Targets=[
-                    {
-                        "Id": target_id,
-                        "Arn": result["ApiDestinationArn"],
-                        "Input": '{"target_value":"value"}',
-                        "HttpParameters": {
-                            "PathParameterValues": ["target_path"],
-                            "HeaderParameters": {
-                                "target_header": "target_header_value",
-                                "overwritten_header": "changed",
-                            },
-                            "QueryStringParameters": {
-                                "target_query": "t_query",
-                                "overwritten_query": "changed",
-                            },
+        connection_name = f"c-{short_uid()}"
+        connection_arn = events_client.create_connection(
+            Name=connection_name,
+            AuthorizationType=auth.get("type"),
+            AuthParameters={
+                auth.get("key"): auth.get("parameters"),
+                "InvocationHttpParameters": {
+                    "BodyParameters": [
+                        {
+                            "Key": "connection_body_param",
+                            "Value": "value",
+                            "IsValueSecret": False,
                         },
-                    }
-                ],
-            )
+                    ],
+                    "HeaderParameters": [
+                        {
+                            "Key": "connection_header_param",
+                            "Value": "value",
+                            "IsValueSecret": False,
+                        },
+                        {
+                            "Key": "overwritten_header",
+                            "Value": "original",
+                            "IsValueSecret": False,
+                        },
+                    ],
+                    "QueryStringParameters": [
+                        {
+                            "Key": "connection_query_param",
+                            "Value": "value",
+                            "IsValueSecret": False,
+                        },
+                        {
+                            "Key": "overwritten_query",
+                            "Value": "original",
+                            "IsValueSecret": False,
+                        },
+                    ],
+                },
+            },
+        )["ConnectionArn"]
 
-            entries = [
+        # create api destination
+        dest_name = f"d-{short_uid()}"
+        result = events_client.create_api_destination(
+            Name=dest_name,
+            ConnectionArn=connection_arn,
+            InvocationEndpoint=http_endpoint,
+            HttpMethod="POST",
+        )
+
+        # create rule and target
+        rule_name = f"r-{short_uid()}"
+        target_id = f"target-{short_uid}"
+        pattern = json.dumps({"source": ["source-123"], "detail-type": ["type-123"]})
+        events_client.put_rule(Name=rule_name, EventPattern=pattern)
+        events_client.put_targets(
+            Rule=rule_name,
+            Targets=[
                 {
-                    "Source": "source-123",
-                    "DetailType": "type-123",
-                    "Detail": '{"i": 0}',
+                    "Id": target_id,
+                    "Arn": result["ApiDestinationArn"],
+                    "Input": '{"target_value":"value"}',
+                    "HttpParameters": {
+                        "PathParameterValues": ["target_path"],
+                        "HeaderParameters": {
+                            "target_header": "target_header_value",
+                            "overwritten_header": "changed",
+                        },
+                        "QueryStringParameters": {
+                            "target_query": "t_query",
+                            "overwritten_query": "changed",
+                        },
+                    },
                 }
-            ]
-            events_client.put_events(Entries=entries)
+            ],
+        )
 
-            # clean up
-            events_client.delete_connection(Name=connection_name)
-            events_client.delete_api_destination(Name=dest_name)
-            self.cleanup(rule_name=rule_name, target_ids=target_id)
+        entries = [
+            {
+                "Source": "source-123",
+                "DetailType": "type-123",
+                "Detail": '{"i": 0}',
+            }
+        ]
+        events_client.put_events(Entries=entries)
 
-            to_recv = 2 if auth["type"] == "OAUTH_CLIENT_CREDENTIALS" else 1
-            poll_condition(lambda: len(server.log) >= to_recv, timeout=5)
+        # clean up
+        events_client.delete_connection(Name=connection_name)
+        events_client.delete_api_destination(Name=dest_name)
+        self.cleanup(rule_name=rule_name, target_ids=target_id)
 
-            event_request, _ = server.log[-1]
-            event = event_request.get_json(force=True)
-            headers = event_request.headers
-            query_args = event_request.args
+        to_recv = 2 if auth["type"] == "OAUTH_CLIENT_CREDENTIALS" else 1
+        poll_condition(lambda: len(httpserver.log) >= to_recv, timeout=5)
 
-            # Connection data validation
-            assert event["connection_body_param"] == "value"
-            assert headers["Connection_Header_Param"] == "value"
-            assert query_args["connection_query_param"] == "value"
+        event_request, _ = httpserver.log[-1]
+        event = event_request.get_json(force=True)
+        headers = event_request.headers
+        query_args = event_request.args
 
-            # Target parameters validation
-            assert "/target_path" in event_request.path
-            assert event["target_value"] == "value"
-            assert headers["Target_Header"] == "target_header_value"
-            assert query_args["target_query"] == "t_query"
+        # Connection data validation
+        assert event["connection_body_param"] == "value"
+        assert headers["Connection_Header_Param"] == "value"
+        assert query_args["connection_query_param"] == "value"
 
-            # connection/target overwrite test
-            assert headers["Overwritten_Header"] == "original"
-            assert query_args["overwritten_query"] == "original"
+        # Target parameters validation
+        assert "/target_path" in event_request.path
+        assert event["target_value"] == "value"
+        assert headers["Target_Header"] == "target_header_value"
+        assert query_args["target_query"] == "t_query"
 
-            # Auth validation
-            match auth["type"]:
-                case "BASIC":
-                    user_pass = to_str(base64.b64encode(b"user:pass"))
-                    assert headers["Authorization"] == f"Basic {user_pass}"
-                case "API_KEY":
-                    assert headers["Api"] == "apikey_secret"
+        # connection/target overwrite test
+        assert headers["Overwritten_Header"] == "original"
+        assert query_args["overwritten_query"] == "original"
 
-                case "OAUTH_CLIENT_CREDENTIALS":
-                    assert headers["Authorization"] == bearer
+        # Auth validation
+        match auth["type"]:
+            case "BASIC":
+                user_pass = to_str(base64.b64encode(b"user:pass"))
+                assert headers["Authorization"] == f"Basic {user_pass}"
+            case "API_KEY":
+                assert headers["Api"] == "apikey_secret"
 
-                    oauth_request, _ = server.log[0]
-                    oauth_login = oauth_request.get_json(force=True)
-                    # Oauth login validation
-                    assert oauth_login["client_id"] == "id"
-                    assert oauth_login["client_secret"] == "password"
-                    assert oauth_login["oauthbody"] == "value1"
-                    assert oauth_request.headers["oauthheader"] == "value2"
-                    assert oauth_request.args["oauthquery"] == "value3"
+            case "OAUTH_CLIENT_CREDENTIALS":
+                assert headers["Authorization"] == bearer
 
-            server.clear_log()
-
-        wait_for_port_closed(server.port)
+                oauth_request, _ = httpserver.log[0]
+                oauth_login = oauth_request.get_json(force=True)
+                # Oauth login validation
+                assert oauth_login["client_id"] == "id"
+                assert oauth_login["client_secret"] == "password"
+                assert oauth_login["oauthbody"] == "value1"
+                assert oauth_request.headers["oauthheader"] == "value2"
+                assert oauth_request.args["oauthquery"] == "value3"
 
     def test_create_connection_validations(self, events_client):
         connection_name = "This should fail with two errors 123467890123412341234123412341234"
