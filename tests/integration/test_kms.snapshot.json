@@ -211,7 +211,7 @@
     }
   },
   "tests/integration/test_kms.py::TestKMS::test_get_key_invalid_uuid": {
-    "recorded-date": "09-01-2023, 15:56:54",
+    "recorded-date": "11-01-2023, 12:54:13",
     "recorded-content": {
       "describe-key-with-invalid-uuid": {
         "Error": {
@@ -219,6 +219,17 @@
           "Message": "Invalid keyId fake-key-id"
         },
         "message": "Invalid keyId fake-key-id",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "describe-key-with-invalid-uuid-2": {
+        "Error": {
+          "Code": "NotFoundException",
+          "Message": "Invalid keyId 134f2428cec14b25a1ae9048164dba47"
+        },
+        "message": "Invalid keyId 134f2428cec14b25a1ae9048164dba47",
         "ResponseMetadata": {
           "HTTPHeaders": {},
           "HTTPStatusCode": 400

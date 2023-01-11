@@ -145,6 +145,12 @@ class TestKMS:
             kms_client.describe_key(KeyId="fake-key-id")
         snapshot.match("describe-key-with-invalid-uuid", e.value.response)
 
+        # this UUID is valid for python
+        # "134f2428cec14b25a1ae9048164dba47"
+        with pytest.raises(ClientError) as e:
+            kms_client.describe_key(KeyId="134f2428cec14b25a1ae9048164dba47")
+        snapshot.match("describe-key-with-invalid-uuid-2", e.value.response)
+
         # valid MultiRegionKey KeyId format
         # "mrk-e4b2ea8ffcd4461e9821c9b9521a8896"
         with pytest.raises(ClientError) as e:
