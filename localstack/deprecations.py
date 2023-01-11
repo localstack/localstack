@@ -135,6 +135,12 @@ DEPRECATIONS = [
         "1.3.0",
         "This feature will not be suppored in the future. Please remove this environment variable.",
     ),
+    # Since 1.4.0 - The Edge Forwarding is only used for legacy HTTPS proxying and will be removed
+    EnvVarDeprecation(
+        "EDGE_FORWARD_URL",
+        "1.4.0",
+        "This feature will not be suppored in the future. Please remove this environment variable.",
+    ),
 ]
 
 
