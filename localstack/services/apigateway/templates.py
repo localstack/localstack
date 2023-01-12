@@ -61,7 +61,7 @@ class VelocityUtilApiGateway(VelocityUtil):
     """
     Simple class to mimic the behavior of variable '$util' in AWS API Gateway integration
     velocity templates.
-    See: http://docs.aws.amazon.com/apigateway/latest/developerguide/api-gateway-mapping-template-reference.html
+    See: https://docs.aws.amazon.com/apigateway/latest/developerguide/api-gateway-mapping-template-reference.html
     """
 
     def base64Encode(self, s):
@@ -185,7 +185,10 @@ class Templates:
                 "params": {
                     "path": api_context.path_params,
                     "querystring": api_context.query_params(),
-                    "header": api_context.headers,
+                    # Sometimes we get a werkzeug.datastructures.Headers object, sometimes a dict
+                    # depending on the request. We need to convert to a dict to be able to render
+                    # the template.
+                    "header": dict(api_context.headers),
                 },
             },
         }

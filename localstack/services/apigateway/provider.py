@@ -1,7 +1,10 @@
+import io
 import json
 import logging
 from copy import deepcopy
 from typing import IO
+
+from moto.apigateway import models as apigw_models
 
 from localstack.aws.api import RequestContext, ServiceRequest, handler
 from localstack.aws.api.apigateway import (
@@ -47,6 +50,7 @@ from localstack.services.apigateway.helpers import (
     apply_json_patch_safe,
     find_api_subentity_by_id,
     get_apigateway_store,
+    import_api_from_openapi_spec,
 )
 from localstack.services.apigateway.invocations import invoke_rest_api_from_request
 from localstack.services.apigateway.patches import apply_patches
@@ -104,12 +108,28 @@ class ApigatewayProvider(ApigatewayApi, ServiceLifecycleHook):
     def create_rest_api(self, context: RequestContext, request: CreateRestApiRequest) -> RestApi:
         result = call_moto(context)
         if not result.get("binaryMediaTypes"):
-            result.pop("binaryMediaTypes")
+            result.pop("binaryMediaTypes", None)
         if not result.get("tags"):
-            result.pop("tags")
+            result.pop("tags", None)
         if result.get("version") == "V1":
-            result.pop("version")
+            result.pop("version", None)
         return result
+
+    @handler("PutRestApi", expand=False)
+    def put_rest_api(self, context: RequestContext, request: PutRestApiRequest) -> RestApi:
+        account_id = context.account_id
+        region_name = context.region
+        rest_api = apigw_models.apigateway_backends[account_id][region_name].apis.get(
+            request["restApiId"]
+        )
+        body_data = request["body"].read()
+
+        openapi_spec = parse_json_or_yaml(to_str(body_data))
+        rest_api = import_api_from_openapi_spec(
+            rest_api, openapi_spec, context.request.values.to_dict()
+        )
+
+        return to_rest_api_response_json(rest_api.to_dict())
 
     def delete_rest_api(self, context: RequestContext, rest_api_id: String) -> None:
         try:
@@ -635,25 +655,32 @@ class ApigatewayProvider(ApigatewayApi, ServiceLifecycleHook):
         fail_on_warnings: Boolean = None,
         parameters: MapOfStringToString = None,
     ) -> RestApi:
+
         body_data = body.read()
 
+        # create rest api
         openapi_spec = parse_json_or_yaml(to_str(body_data))
-        response = _call_moto(
+        create_api_request = CreateRestApiRequest(name=openapi_spec.get("info").get("title"))
+        create_api_context = create_custom_context(
             context,
             "CreateRestApi",
-            CreateRestApiRequest(name=openapi_spec.get("info").get("title")),
+            create_api_request,
         )
+        response = self.create_rest_api(create_api_context, create_api_request)
 
-        return _call_moto(
+        # put rest api
+        put_api_request = PutRestApiRequest(
+            restApiId=response.get("id"),
+            failOnWarnings=str_to_bool(fail_on_warnings) or False,
+            parameters=parameters or {},
+            body=io.BytesIO(body_data),
+        )
+        put_api_context = create_custom_context(
             context,
             "PutRestApi",
-            PutRestApiRequest(
-                restApiId=response.get("id"),
-                failOnWarnings=str_to_bool(fail_on_warnings) or False,
-                parameters=parameters or {},
-                body=body_data,
-            ),
+            put_api_request,
         )
+        return self.put_rest_api(put_api_context, put_api_request)
 
     def delete_integration(
         self, context: RequestContext, rest_api_id: String, resource_id: String, http_method: String
@@ -718,6 +745,20 @@ class ApigatewayProvider(ApigatewayApi, ServiceLifecycleHook):
 # ---------------
 
 
+def create_custom_context(
+    context: RequestContext, action: str, parameters: ServiceRequest
+) -> RequestContext:
+    ctx = create_aws_request_context(
+        service_name=context.service.service_name,
+        action=action,
+        parameters=parameters,
+        region=context.region,
+    )
+    ctx.request.headers.update(context.request.headers)
+    ctx.account_id = context.account_id
+    return ctx
+
+
 def _call_moto(context: RequestContext, operation_name: str, parameters: ServiceRequest):
     """
     Not necessarily the pattern we want to follow in the future, but this makes possible to nest
@@ -725,14 +766,11 @@ def _call_moto(context: RequestContext, operation_name: str, parameters: Service
 
     Ripped :call_moto_with_request: from moto.py but applicable to any operation (operation_name).
     """
-    local_context = create_aws_request_context(
-        service_name=context.service.service_name,
+    local_context = create_custom_context(
+        context=context,
         action=operation_name,
         parameters=parameters,
-        region=context.region,
     )
-
-    local_context.request.headers.update(context.request.headers)
     return call_moto(local_context)
 
 
@@ -787,6 +825,12 @@ def to_vpc_link_response_json(data):
 def to_client_cert_response_json(data):
     result = to_response_json("clientcertificate", data, id_attr="clientCertificateId")
     result = select_from_typed_dict(ClientCertificate, result)
+    return result
+
+
+def to_rest_api_response_json(data):
+    result = to_response_json("restapi", data)
+    result = select_from_typed_dict(RestApi, result)
     return result
 
 

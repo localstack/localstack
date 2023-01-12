@@ -713,6 +713,30 @@
         "documentation": "<p>The CORS configuration does not exist</p>",
         "exception": true
       }
+    },
+    {
+      "op": "add",
+      "path": "/shapes/MissingSecurityHeader",
+      "value": {
+        "type": "structure",
+        "members": {
+          "MissingHeaderName": {
+            "shape": "MissingHeaderName"
+          }
+        },
+        "error": {
+          "httpStatusCode": 400
+        },
+        "documentation": "<p>Your request was missing a required header</p>",
+        "exception": true
+      }
+    },
+    {
+      "op": "add",
+      "path": "/shapes/MissingHeaderName",
+      "value": {
+        "type": "string"
+      }
     }
   ]
 }
