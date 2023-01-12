@@ -378,10 +378,13 @@ class ClientFactory:
 
     def with_env_credentials(self) -> "ClientFactory":
         """
-        Use AWS credentials from the environment.
+        Use AWS credentials from the following locations:
+        - Environment variables
+        - Credentials file `~/.aws/credentials`
+        - Config file `~/.aws/config`
         """
-        # TODO wrong output format of session.get_credentials()
-        return self.credentials(self.session.get_credentials())
+        credentials = self.session.get_credentials()
+        return self.with_credentials(credentials.access_key, credentials.secret_key)
 
     def with_boto_config(self, config: BotoConfig) -> "ClientFactory":
         """
