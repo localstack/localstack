@@ -165,6 +165,7 @@ class LambdaVersionManager(ServiceEndpoint):
             self.log_handler.start_subscriber()
             get_runtime_executor().prepare_version(self.function_version)
 
+            # TODO: check if code + reason should be set here as well? Do waiters return this?
             self.state = VersionState(state=State.Active)
             LOG.debug(
                 f"Lambda '{self.function_arn}' (id {self.function_version.config.internal_revision}) changed to active"

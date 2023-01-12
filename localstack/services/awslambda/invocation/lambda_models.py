@@ -433,12 +433,11 @@ class ResourcePolicy:
 
 @dataclasses.dataclass
 class FunctionResourcePolicy:
-    revision_id: str = dataclasses.field(init=False, default_factory=long_uid)
-    policy: ResourcePolicy  # TODO: do we have a typed IAM policy somewhere already?
-
-    @staticmethod
-    def new_revision_id() -> str:
-        return long_uid()
+    # TODO: do we have a typed IAM policy somewhere already?
+    # Something like this? localstack_ext.services.iam.policy_engine.models.PolicyDocument
+    # TODO: Can we add a typed PolicyDocument instead?
+    # TODO: Could we store the policy directly in VersionFunctionConfiguration and VersionAlias?
+    policy: ResourcePolicy
 
 
 @dataclasses.dataclass

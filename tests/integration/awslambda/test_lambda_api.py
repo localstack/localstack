@@ -1441,6 +1441,7 @@ class TestLambdaRevisions:
         rev6a_update_alias = update_alias_response["RevisionId"]
         assert rev5a_create_alias != rev6a_update_alias
 
+    @pytest.mark.aws_validated
     def test_function_revisions_permissions(self, create_lambda_function, lambda_client, snapshot):
         """Tests revision id lifecycle for adding and removing permissions"""
         # rev1: create function
@@ -1457,7 +1458,7 @@ class TestLambdaRevisions:
 
         sid = "s3"
         with pytest.raises(lambda_client.exceptions.PreconditionFailedException) as e:
-            add_permission_response = lambda_client.add_permission(
+            lambda_client.add_permission(
                 FunctionName=function_name,
                 StatementId=sid,
                 Action="lambda:InvokeFunction",

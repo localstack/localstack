@@ -293,6 +293,8 @@ class LambdaService:
                 return
 
         # TODO is it necessary to get the version again? Should be locked for modification anyway
+        # Without updating the new state, the function would not change to active, last_update would be missing, and
+        # the revision id would not be updated.
         state = lambda_stores[function_version.id.account][function_version.id.region]
         function = state.functions[function_version.id.function_name]
         current_version = function.versions[function_version.id.qualifier]
