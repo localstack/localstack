@@ -31,9 +31,10 @@ c = Console()
 STATUS_TIMEOUT_ERROR = 901
 STATUS_PARSING_ERROR = 902
 STATUS_CONNECTION_ERROR = 903
+# dict of operations that should be skipped for a service, currently only contains s3.PostObject (which we added for internal use)
+PHANTOM_OPERATIONS = {"s3": ["PostObject"]}
 
-# TODO: will only include available services
-# generate with e.g. http http://localhost:4566/health | jq ".services | keys[]" | pbcopy
+# will only include available services
 response = requests.get("http://localhost:4566/_localstack/health").content.decode("utf-8")
 latest_services_pro = [k for k in json.loads(response).get("services").keys()]
 
@@ -58,15 +59,15 @@ def simulate_call(service: str, op: str) -> RowEntry:
         config=botocore.config.Config(
             parameter_validation=False,
             retries={"max_attempts": 0, "total_max_attempts": 1},
-            connect_timeout=60,
-            read_timeout=60,
+            connect_timeout=90,
+            read_timeout=120,
             inject_host_prefix=False,
         ),
     )
 
     service_model = service_models.get(service)
     op_model = service_model.operation_model(op)
-    parameters = generate_request(op_model)  # should be generate_parameters I guess
+    parameters = generate_request(op_model) or {}
     result = _make_api_call(client, service, op, parameters)
     error_msg = result.get("error_message", "")
     if result.get("error_code", "") == "InternalError":
@@ -77,8 +78,13 @@ def simulate_call(service: str, op: str) -> RowEntry:
         ):
             # parsing errors might be due to invalid parameter values
             # try to re-create params
-            logging.debug("ProtocolParserError detected: re-running request with new parameters")
-            parameters = generate_request(op_model)  # should be generate_parameters I guess
+            logging.debug(
+                "ProtocolParserError detected, old parameters used: %s\nre-running request %s.%s with new parameters",
+                parameters,
+                service,
+                op,
+            )
+            parameters = generate_request(op_model) or {}
             result = _make_api_call(client, service, op, parameters)
         else:
             while "TypeError" in error_msg and "got an unexpected keyword argument" in error_msg:
@@ -105,10 +111,12 @@ def simulate_call(service: str, op: str) -> RowEntry:
     elif result.get("status_code") in [0, 901, 902, 903]:
         # something went wrong, we do not know exactly what/why - just try again one more time
         logging.debug(
-            "Detected invalid status code %i. Re-running request with new parameters",
+            "Detected invalid status code %i for %s.%s. Re-running request with new parameters",
             result.get("status_code"),
+            service,
+            op,
         )
-        parameters = generate_request(op_model)  # should be generate_parameters I guess
+        parameters = generate_request(op_model) or {}  # should be generate_parameters I guess
         result = _make_api_call(client, service, op, parameters)
     return result
 
@@ -123,21 +131,24 @@ def _make_api_call(client, service: str, op: str, parameters: Optional[Instance]
         result["error_code"] = ce.response.get("Error", {}).get("Code", "Unknown?")
         result["error_message"] = ce.response.get("Error", {}).get("Message", "Unknown?")
     except (ReadTimeoutError, ConnectTimeoutError) as e:
-        logging.warning("Reached timeout. Assuming it is implemented.")
+        logging.warning("Reached timeout for %s.%s. Assuming it is implemented.", service, op)
         logging.exception(e)
         result["status_code"] = STATUS_TIMEOUT_ERROR
     except EndpointConnectionError as e:
         # TODO: investigate further;for now assuming not implemented
-        logging.warning("Connection failed. Assuming it is not implemented.")
+        logging.warning("Connection failed for %s.%s. Assuming it is not implemented.", service, op)
         logging.exception(e)
         result["status_code"] = STATUS_CONNECTION_ERROR
     except ResponseParserError as e:
         # TODO: this is actually a bit tricky and might have to be handled on a service by service basis again
-        logging.warning("Parsing issue. Assuming it isn't implemented.")
+        logging.warning("Parsing issue for %s.%s. Assuming it isn't implemented.", service, op)
         logging.exception(e)
+        logging.warning("%s.%s: used parameters %s", service, op, parameters)
         result["status_code"] = STATUS_PARSING_ERROR
     except Exception as e:
+        logging.warining("Unknown Exception for %s.%s", service, op)
         logging.exception(e)
+        logging.warning("%s.%s: used parameters %s", service, op, parameters)
     return result
 
 
@@ -158,14 +169,6 @@ def map_to_notimplemented(row: RowEntry) -> bool:
         #  timeout issue, interpreted as implemented until there's a better heuristic
         return False
     if row["status_code"] == STATUS_CONNECTION_ERROR:
-        # affected services:
-        # lakeformation, GetQueryStat
-        # lakeformation, GetQueryStatistics
-        # lakeformation, GetWorkUnitResults
-        # lakeformation, GetWorkUnits
-        # lakeformation, StartQueryPlanning
-        # servicediscovery, DiscoverInstances
-        # stepfunctions, StartSyncExecution
         return True
     if (
         row["service"] == "cloudfront"
@@ -182,7 +185,6 @@ def map_to_notimplemented(row: RowEntry) -> bool:
         row["service"]
         in [
             "route53",
-            # "s3", -> for s3 404 not found is returned in some case when the bucket does not exist
             "s3control",
         ]
         and row["status_code"] == 404
@@ -251,6 +253,8 @@ def run_script(services: list[str], path: None):
         for service_name in services:
             service = service_models.get(service_name)
             for op_name in service.operation_names:
+                if op_name in PHANTOM_OPERATIONS.get(service_name, []):
+                    continue
                 total_count += 1
 
         time_start = time.perf_counter_ns()
@@ -260,6 +264,8 @@ def run_script(services: list[str], path: None):
             c.print(f"\n=====  {service_name} =====")
             service = service_models.get(service_name)
             for op_name in service.operation_names:
+                if op_name in PHANTOM_OPERATIONS.get(service_name, []):
+                    continue
                 counter += 1
                 c.print(
                     f"{100 * counter/total_count:3.1f}% | Calling endpoint {counter:4.0f}/{total_count}: {service_name}.{op_name}"
