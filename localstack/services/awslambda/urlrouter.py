@@ -178,20 +178,32 @@ def lambda_result_to_response(result: InvocationResult):
         }
     )
 
-    parsed_result = json.loads(to_str(result.payload))
+    original_payload = to_str(result.payload)
+    parsed_result = json.loads(original_payload)
 
-    if isinstance(parsed_result.get("headers"), dict):
-        response.headers.update(parsed_result.get("headers"))
+    # patch to fix whitespaces
+    # TODO: check if this is a downstream issue of invocation result serialization
+    original_payload = json.dumps(parsed_result, separators=(",", ":"))
 
-    if "body" not in parsed_result:
-        response.data = json.dumps(parsed_result)
-    elif isinstance(parsed_result.get("body"), dict):
-        response.data = json.dumps(parsed_result.get("body"))
-    elif parsed_result.get("isBase64Encoded", False):
-        body_bytes = to_bytes(to_str(parsed_result.get("body", "")))
-        decoded_body_bytes = base64.b64decode(body_bytes)
-        response.data = decoded_body_bytes
+    if isinstance(parsed_result, str):
+        # a string is a special case here and is returned as-is
+        response.data = parsed_result
+    elif isinstance(parsed_result, dict):
+        # if it's a dict it might be a proper response
+        if isinstance(parsed_result.get("headers"), dict):
+            response.headers.update(parsed_result.get("headers"))
+        if "body" not in parsed_result:
+            # TODO: test if providing a status code but no body actually works
+            response.data = original_payload
+        elif isinstance(parsed_result.get("body"), dict):
+            response.data = json.dumps(parsed_result.get("body"))
+        elif parsed_result.get("isBase64Encoded", False):
+            body_bytes = to_bytes(to_str(parsed_result.get("body", "")))
+            decoded_body_bytes = base64.b64decode(body_bytes)
+            response.data = decoded_body_bytes
+        else:
+            response.data = parsed_result.get("body")
     else:
-        response.data = parsed_result.get("body")
+        response.data = original_payload
 
     return response
