@@ -1376,6 +1376,7 @@ class TestLambdaRevisions:
         rev6_fn_config_update_done = get_function_response_rev6["Configuration"]["RevisionId"]
         assert rev5_fn_config_update != rev6_fn_config_update_done
 
+    @pytest.mark.aws_validated
     def test_function_revisions_version_and_alias(
         self, create_lambda_function, lambda_client, snapshot
     ):
@@ -1422,7 +1423,7 @@ class TestLambdaRevisions:
         assert rev4_publish_version_done != rev5a_create_alias
 
         with pytest.raises(lambda_client.exceptions.PreconditionFailedException) as e:
-            update_alias_response = lambda_client.update_alias(
+            lambda_client.update_alias(
                 FunctionName=function_name,
                 Name=alias_name,
                 RevisionId="wrong",

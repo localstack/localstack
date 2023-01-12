@@ -1240,7 +1240,11 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
         if not (alias := function.aliases.get(name)):
             raise ValueError("Alias not found")  # TODO proper exception
         if revision_id and alias.revision_id != revision_id:
-            raise ValueError("Wrong revision id")  # TODO proper exception
+            raise PreconditionFailedException(
+                "The Revision Id provided does not match the latest Revision Id. "
+                "Call the GetFunction/GetAlias API to retrieve the latest Revision Id",
+                Type="User",
+            )
         changes = {}
         if function_version is not None:
             changes |= {"function_version": function_version}
