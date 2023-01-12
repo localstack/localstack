@@ -933,7 +933,9 @@ def kms_create_key(create_boto_client):
 
     for region, key_id in key_ids:
         try:
-            create_boto_client("kms", region).schedule_key_deletion(KeyId=key_id)
+            create_boto_client("kms", region).schedule_key_deletion(
+                KeyId=key_id, PendingWindowInDays=7
+            )
         except Exception as e:
             exception_message = str(e)
             # Some tests schedule their keys for deletion themselves.
@@ -957,7 +959,9 @@ def kms_replicate_key(create_boto_client):
 
     for region_to, key_id in key_ids:
         try:
-            create_boto_client("kms", region_to).schedule_key_deletion(KeyId=key_id)
+            create_boto_client("kms", region_to).schedule_key_deletion(
+                KeyId=key_id, PendingWindowInDays=7
+            )
         except Exception as e:
             LOG.debug("error cleaning up KMS key %s: %s", key_id, e)
 

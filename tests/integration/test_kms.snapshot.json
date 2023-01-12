@@ -73,5 +73,321 @@
     "recorded-content": {
       "result_length": 1024
     }
+  },
+  "tests/integration/test_kms.py::TestKMS::test_create_key": {
+    "recorded-date": "09-01-2023, 13:36:36",
+    "recorded-content": {
+      "describe-key": {
+        "AWSAccountId": "111111111111",
+        "Arn": "arn:aws:kms:<region>:111111111111:key/<uuid:1>",
+        "CreationDate": "datetime",
+        "CustomerMasterKeySpec": "SYMMETRIC_DEFAULT",
+        "Description": "test key 123",
+        "Enabled": true,
+        "EncryptionAlgorithms": [
+          "SYMMETRIC_DEFAULT"
+        ],
+        "KeyId": "<uuid:1>",
+        "KeyManager": "CUSTOMER",
+        "KeySpec": "SYMMETRIC_DEFAULT",
+        "KeyState": "Enabled",
+        "KeyUsage": "ENCRYPT_DECRYPT",
+        "MultiRegion": false,
+        "Origin": "AWS_KMS"
+      }
+    }
+  },
+  "tests/integration/test_kms.py::TestKMS::test_get_key_in_different_region": {
+    "recorded-date": "09-01-2023, 13:54:42",
+    "recorded-content": {
+      "describe-key-diff-region-with-id": {
+        "Error": {
+          "Code": "NotFoundException",
+          "Message": "Key 'arn:aws:kms:<region>:111111111111:key/<uuid:1>' does not exist"
+        },
+        "message": "Key 'arn:aws:kms:<region>:111111111111:key/<uuid:1>' does not exist",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "describe-key-diff-region-with-arn": {
+        "Error": {
+          "Code": "NotFoundException",
+          "Message": "Invalid arn us-west-2"
+        },
+        "message": "Invalid arn us-west-2",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "describe-key-same-specific-region-with-id": {
+        "KeyMetadata": {
+          "AWSAccountId": "111111111111",
+          "Arn": "arn:aws:kms:us-west-2:111111111111:key/<uuid:1>",
+          "CreationDate": "datetime",
+          "CustomerMasterKeySpec": "SYMMETRIC_DEFAULT",
+          "Description": "test key 123",
+          "Enabled": true,
+          "EncryptionAlgorithms": [
+            "SYMMETRIC_DEFAULT"
+          ],
+          "KeyId": "<uuid:1>",
+          "KeyManager": "CUSTOMER",
+          "KeySpec": "SYMMETRIC_DEFAULT",
+          "KeyState": "Enabled",
+          "KeyUsage": "ENCRYPT_DECRYPT",
+          "MultiRegion": false,
+          "Origin": "AWS_KMS"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "describe-key-same-specific-region-with-arn": {
+        "KeyMetadata": {
+          "AWSAccountId": "111111111111",
+          "Arn": "arn:aws:kms:us-west-2:111111111111:key/<uuid:1>",
+          "CreationDate": "datetime",
+          "CustomerMasterKeySpec": "SYMMETRIC_DEFAULT",
+          "Description": "test key 123",
+          "Enabled": true,
+          "EncryptionAlgorithms": [
+            "SYMMETRIC_DEFAULT"
+          ],
+          "KeyId": "<uuid:1>",
+          "KeyManager": "CUSTOMER",
+          "KeySpec": "SYMMETRIC_DEFAULT",
+          "KeyState": "Enabled",
+          "KeyUsage": "ENCRYPT_DECRYPT",
+          "MultiRegion": false,
+          "Origin": "AWS_KMS"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/integration/test_kms.py::TestKMS::test_get_key_does_not_exist": {
+    "recorded-date": "09-01-2023, 16:37:43",
+    "recorded-content": {
+      "describe-nonexistent-key-with-id": {
+        "Error": {
+          "Code": "NotFoundException",
+          "Message": "Key 'arn:aws:kms:<region>:111111111111:key/134f2428-cec1-4b25-a1ae-9048164dba47' does not exist"
+        },
+        "message": "Key 'arn:aws:kms:<region>:111111111111:key/134f2428-cec1-4b25-a1ae-9048164dba47' does not exist",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "describe-nonexistent-with-arn": {
+        "Error": {
+          "Code": "NotFoundException",
+          "Message": "Key 'arn:aws:kms:<region>:111111111111:key/134f2428-cec1-4b25-a1ae-9048164dba47' does not exist"
+        },
+        "message": "Key 'arn:aws:kms:<region>:111111111111:key/134f2428-cec1-4b25-a1ae-9048164dba47' does not exist",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "describe-key-with-valid-id-mrk": {
+        "Error": {
+          "Code": "NotFoundException",
+          "Message": "Key 'arn:aws:kms:<region>:111111111111:key/mrk-d3b95762d3b95762d3b95762d3b95762' does not exist"
+        },
+        "message": "Key 'arn:aws:kms:<region>:111111111111:key/mrk-d3b95762d3b95762d3b95762d3b95762' does not exist",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/integration/test_kms.py::TestKMS::test_get_key_invalid_uuid": {
+    "recorded-date": "11-01-2023, 12:54:13",
+    "recorded-content": {
+      "describe-key-with-invalid-uuid": {
+        "Error": {
+          "Code": "NotFoundException",
+          "Message": "Invalid keyId fake-key-id"
+        },
+        "message": "Invalid keyId fake-key-id",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "describe-key-with-invalid-uuid-2": {
+        "Error": {
+          "Code": "NotFoundException",
+          "Message": "Invalid keyId 134f2428cec14b25a1ae9048164dba47"
+        },
+        "message": "Invalid keyId 134f2428cec14b25a1ae9048164dba47",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "describe-key-with-invalid-uuid-mrk": {
+        "Error": {
+          "Code": "NotFoundException",
+          "Message": "Invalid keyId mrk-fake-key-id"
+        },
+        "message": "Invalid keyId mrk-fake-key-id",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/integration/test_kms.py::TestKMS::test_replicate_key": {
+    "recorded-date": "09-01-2023, 16:38:58",
+    "recorded-content": {
+      "describe-key-from-different-region": {
+        "Error": {
+          "Code": "NotFoundException",
+          "Message": "Key 'arn:aws:kms:us-west-1:111111111111:key/<key-id:1>' does not exist"
+        },
+        "message": "Key 'arn:aws:kms:us-west-1:111111111111:key/<key-id:1>' does not exist",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "replicate-key": {
+        "ReplicaKeyMetadata": {
+          "AWSAccountId": "111111111111",
+          "Arn": "arn:aws:kms:us-west-1:111111111111:key/<key-id:1>",
+          "CreationDate": "datetime",
+          "CustomerMasterKeySpec": "SYMMETRIC_DEFAULT",
+          "Description": "",
+          "Enabled": false,
+          "EncryptionAlgorithms": [
+            "SYMMETRIC_DEFAULT"
+          ],
+          "KeyId": "<key-id:1>",
+          "KeyManager": "CUSTOMER",
+          "KeySpec": "SYMMETRIC_DEFAULT",
+          "KeyState": "Creating",
+          "KeyUsage": "ENCRYPT_DECRYPT",
+          "MultiRegion": true,
+          "MultiRegionConfiguration": {
+            "MultiRegionKeyType": "REPLICA",
+            "PrimaryKey": {
+              "Arn": "arn:aws:kms:<region>:111111111111:key/<key-id:1>",
+              "Region": "<region>"
+            },
+            "ReplicaKeys": [
+              {
+                "Arn": "arn:aws:kms:us-west-1:111111111111:key/<key-id:1>",
+                "Region": "us-west-1"
+              }
+            ]
+          },
+          "Origin": "AWS_KMS"
+        },
+        "ReplicaPolicy": {
+          "Version": "2012-10-17",
+          "Id": "key-default-1",
+          "Statement": [
+            {
+              "Sid": "Enable IAM User Permissions",
+              "Effect": "Allow",
+              "Principal": {
+                "AWS": "arn:aws:iam::111111111111:root"
+              },
+              "Action": "kms:*",
+              "Resource": "*"
+            }
+          ]
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "describe-key-from-region": {
+        "KeyMetadata": {
+          "AWSAccountId": "111111111111",
+          "Arn": "arn:aws:kms:<region>:111111111111:key/<key-id:1>",
+          "CreationDate": "datetime",
+          "CustomerMasterKeySpec": "SYMMETRIC_DEFAULT",
+          "Description": "test replicated key",
+          "Enabled": true,
+          "EncryptionAlgorithms": [
+            "SYMMETRIC_DEFAULT"
+          ],
+          "KeyId": "<key-id:1>",
+          "KeyManager": "CUSTOMER",
+          "KeySpec": "SYMMETRIC_DEFAULT",
+          "KeyState": "Enabled",
+          "KeyUsage": "ENCRYPT_DECRYPT",
+          "MultiRegion": true,
+          "MultiRegionConfiguration": {
+            "MultiRegionKeyType": "PRIMARY",
+            "PrimaryKey": {
+              "Arn": "arn:aws:kms:<region>:111111111111:key/<key-id:1>",
+              "Region": "<region>"
+            },
+            "ReplicaKeys": [
+              {
+                "Arn": "arn:aws:kms:us-west-1:111111111111:key/<key-id:1>",
+                "Region": "us-west-1"
+              }
+            ]
+          },
+          "Origin": "AWS_KMS"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "describe-replicated-key": {
+        "KeyMetadata": {
+          "AWSAccountId": "111111111111",
+          "Arn": "arn:aws:kms:us-west-1:111111111111:key/<key-id:1>",
+          "CreationDate": "datetime",
+          "CustomerMasterKeySpec": "SYMMETRIC_DEFAULT",
+          "Description": "",
+          "Enabled": false,
+          "EncryptionAlgorithms": [
+            "SYMMETRIC_DEFAULT"
+          ],
+          "KeyId": "<key-id:1>",
+          "KeyManager": "CUSTOMER",
+          "KeySpec": "SYMMETRIC_DEFAULT",
+          "KeyState": "Creating",
+          "KeyUsage": "ENCRYPT_DECRYPT",
+          "MultiRegion": true,
+          "MultiRegionConfiguration": {
+            "MultiRegionKeyType": "REPLICA",
+            "PrimaryKey": {
+              "Arn": "arn:aws:kms:<region>:111111111111:key/<key-id:1>",
+              "Region": "<region>"
+            },
+            "ReplicaKeys": [
+              {
+                "Arn": "arn:aws:kms:us-west-1:111111111111:key/<key-id:1>",
+                "Region": "us-west-1"
+              }
+            ]
+          },
+          "Origin": "AWS_KMS"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
   }
 }
