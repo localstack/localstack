@@ -259,23 +259,23 @@ def test_generate_ssl_cert():
     rm_rf(key_file_name)
 
 
-def test_download_with_timeout(httpserver: HTTPServer):
+def test_download_with_timeout():
     def _handler(_: Request) -> Response:
         time.sleep(2)
         return Response(b"", status=200)
 
     tmp_file = new_tmp_file()
-    httpserver.expect_request("/").respond_with_data(b"tmp_file", status=200)
-    httpserver.expect_request("/sleep").respond_with_handler(_handler)
-    http_endpoint = httpserver.url_for("/")
+    # it seems this test is not properly cleaning up for other unit tests, this step is normally not necessary
+    # we should use the fixture `httpserver` instead of HTTPServer directly
+    with HTTPServer() as server:
+        server.expect_request("/").respond_with_data(b"tmp_file", status=200)
+        server.expect_request("/sleep").respond_with_handler(_handler)
+        http_endpoint = server.url_for("/")
 
-    download(http_endpoint, tmp_file)
-    assert load_file(tmp_file) == "tmp_file"
-    with pytest.raises(TimeoutError):
-        download(f"{http_endpoint}/sleep", tmp_file, timeout=1)
+        download(http_endpoint, tmp_file)
+        assert load_file(tmp_file) == "tmp_file"
+        with pytest.raises(TimeoutError):
+            download(f"{http_endpoint}/sleep", tmp_file, timeout=1)
 
     # clean up
     rm_rf(tmp_file)
-    # it seems this test is not properly cleaning up for other unit tests, this step is normally not necessary,
-    # the fixture should take care of it
-    httpserver.clear()
