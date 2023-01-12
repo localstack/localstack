@@ -734,6 +734,15 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
                 Type="User",
             )
         function = state.functions[function_name]
+
+        revision_id = request.get("RevisionId")
+        if revision_id and revision_id != function.latest().config.revision_id:
+            raise PreconditionFailedException(
+                "The Revision Id provided does not match the latest Revision Id. "
+                "Call the GetFunction/GetAlias API to retrieve the latest Revision Id",
+                Type="User",
+            )
+
         # TODO verify if correct combination of code is set
         image = None
         if (
