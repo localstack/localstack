@@ -8,7 +8,6 @@ from pytest_httpserver import HTTPServer
 from localstack import config
 from localstack.utils.aws import arns, aws_stack
 from localstack.utils.aws.arns import lambda_function_arn
-from localstack.utils.net import wait_for_port_open
 from localstack.utils.strings import short_uid, to_bytes, to_str
 from localstack.utils.sync import poll_condition, retry
 
@@ -38,7 +37,6 @@ def test_firehose_http(
 ):
     httpserver.expect_request("").respond_with_data(b"", 200)
     http_endpoint = httpserver.url_for("/")
-    wait_for_port_open(httpserver.port)
     if lambda_processor_enabled:
         # create processor func
         func_name = f"proc-{short_uid()}"

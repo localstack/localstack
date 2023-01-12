@@ -21,7 +21,6 @@ from localstack.utils import testutil
 from localstack.utils.aws import aws_stack
 from localstack.utils.files import load_file
 from localstack.utils.functions import run_safe
-from localstack.utils.net import wait_for_port_closed, wait_for_port_open
 from localstack.utils.strings import short_uid, to_bytes, to_str
 from localstack.utils.sync import poll_condition, retry
 from localstack.utils.testutil import create_lambda_archive
@@ -95,11 +94,11 @@ class TestLambdaFallbackUrl(unittest.TestCase):
         def _handler(_request: Request):
             return Response(json.dumps(lambda_result), mimetype="application/json")
 
+        # using pytest HTTPServer instead of the fixture because this test is still based on unittest
         with HTTPServer() as server:
 
             server.expect_request("").respond_with_handler(_handler)
             http_endpoint = server.url_for("/")
-            wait_for_port_open(server.port)
 
             # test 1: forward to LAMBDA_FALLBACK_URL
             self._run_forward_to_fallback_url(http_endpoint)
@@ -149,8 +148,6 @@ class TestLambdaFallbackUrl(unittest.TestCase):
             finally:
                 # clean up / shutdown
                 lambda_client.delete_function(FunctionName=lambda_name)
-
-        wait_for_port_closed(server.port)
 
     def test_adding_fallback_function_name_in_headers(self):
         lambda_client = aws_stack.create_external_boto_client("lambda")

@@ -18,7 +18,6 @@ from localstack.services.events.provider import _get_events_tmp_dir
 from localstack.testing.aws.util import is_aws_cloud
 from localstack.utils.aws import arns, aws_stack, resources
 from localstack.utils.files import load_file
-from localstack.utils.net import wait_for_port_open
 from localstack.utils.strings import short_uid, to_str
 from localstack.utils.sync import poll_condition, retry
 from localstack.utils.testutil import check_expected_lambda_log_events_length
@@ -595,7 +594,6 @@ class TestEvents:
     ):
         httpserver.expect_request("").respond_with_data(b"", 200)
         http_endpoint = httpserver.url_for("/")
-        wait_for_port_open(httpserver.port)
 
         topic_name = f"topic-{short_uid()}"
         queue_name = f"queue-{short_uid()}"
@@ -727,7 +725,6 @@ class TestEvents:
 
         httpserver.expect_request("").respond_with_handler(_handler)
         http_endpoint = httpserver.url_for("/")
-        wait_for_port_open(httpserver.port)
 
         if auth.get("type") == "OAUTH_CLIENT_CREDENTIALS":
             auth["parameters"]["AuthorizationEndpoint"] = http_endpoint
