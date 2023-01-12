@@ -864,25 +864,86 @@ def create_unsubscribe_url(external_url, subscription_arn):
 
 
 class SubscriptionFilter:
-    def check_filter_policy_on_message_attributes(self, filter_policy, message_attributes):
-        if not filter_policy:
-            return True
-
-        for criteria in filter_policy:
-            conditions = filter_policy.get(criteria)
-            attribute = message_attributes.get(criteria)
-
-            if not self._evaluate_filter_policy_conditions(
-                conditions, attribute, message_attributes, criteria
+    def check_filter_policy_on_message_attributes(
+        self, filter_policy: Dict, message_attributes: Dict
+    ):
+        for criteria, conditions in filter_policy.items():
+            if not self._evaluate_filter_policy_conditions_on_attribute(
+                conditions,
+                message_attributes.get(criteria),
+                field_exists=criteria in message_attributes,
             ):
                 return False
 
         return True
 
-    def _evaluate_filter_policy_conditions(
-        self, conditions, attribute, message_attributes, criteria
+    def check_filter_policy_on_message_body(self, filter_policy: dict, message_body: str):
+        try:
+            body = json.loads(message_body)
+            if not isinstance(body, dict):
+                return False
+        except json.JSONDecodeError:
+            # Filter policies for the message body assume that the message payload is a well-formed JSON object.
+            # See https://docs.aws.amazon.com/sns/latest/dg/sns-message-filtering.html
+            return False
+
+        return self._evaluate_nested_filter_policy_on_dict(filter_policy, payload=body)
+
+    def _evaluate_nested_filter_policy_on_dict(self, filter_policy, payload: dict) -> bool:
+        """
+        This method evaluate the filter policy recursively, while still being able to validate the `exists` condition.
+        Example:
+        nested_filter_policy = {
+            "object": {
+                "key": [{"prefix": "auto-"}],
+                "nested_key": [{"exists": False}],
+            },
+            "test": [{"exists": False}],
+        }
+        payload = {
+            "object": {
+                "key": "auto-test",
+            }
+        }
+        This function then iterates on top level keys of the filter policy: ("object", "test")
+        The value of "object" is a dict, we need to evaluate this level of the filter policy.
+        We pass the nested property values (the dict) as well as the values of the payload's field to the recursive
+        function, to evaluate the conditions on the same level of depth.
+        We now have these parameters to the function:
+        filter_policy = {
+            "key": [{"prefix": "auto-"}],
+            "nested_key": [{"exists": False}],
+        }
+        payload = {
+            "key": "auto-test",
+        }
+        We can now properly evaluate the conditions on the same level of depth in the dict object.
+        As it passes the filter policy, we then continue to evaluate the top keys, going back to "test".
+        :param filter_policy: a dict, starting at the FilterPolicy
+        :param payload: a dict, starting at the MessageBody
+        :return: True if the payload respect the filter policy, otherwise False
+        """
+        for field_name, values in filter_policy.items():
+            # if values is not a dict, then it's a nested property
+            if not isinstance(values, list):
+                if not self._evaluate_nested_filter_policy_on_dict(
+                    values, payload.get(field_name, {})
+                ):
+                    return False
+            else:
+                # else, values represents the list of conditions of the filter policy
+                for condition in values:
+                    if not self._evaluate_condition(
+                        payload.get(field_name), condition, field_exists=field_name in payload
+                    ):
+                        return False
+
+        return True
+
+    def _evaluate_filter_policy_conditions_on_attribute(
+        self, conditions, attribute, field_exists: bool
     ):
-        if type(conditions) is not list:
+        if not isinstance(conditions, list):
             conditions = [conditions]
 
         tpe = attribute.get("DataType") or attribute.get("Type") if attribute else None
@@ -891,33 +952,39 @@ class SubscriptionFilter:
             values = ast.literal_eval(val)
             for value in values:
                 for condition in conditions:
-                    if self._evaluate_condition(value, condition, message_attributes, criteria):
+                    if self._evaluate_condition(value, condition, field_exists):
                         return True
         else:
             for condition in conditions:
                 value = val or None
-                if self._evaluate_condition(value, condition, message_attributes, criteria):
+                if self._evaluate_condition(value, condition, field_exists):
                     return True
 
         return False
 
-    def _evaluate_condition(self, value, condition, message_attributes, criteria):
-        if type(condition) is not dict:
+    def _evaluate_filter_policy_conditions_on_field(self, conditions, value, field_exists: bool):
+        for condition in conditions:
+            if self._evaluate_condition(value, condition, field_exists):
+                return True
+
+        return False
+
+    def _evaluate_condition(self, value, condition, field_exists: bool):
+        if not isinstance(condition, dict):
             return value == condition
-        elif condition.get("exists") is not None:
-            return self._evaluate_exists_condition(
-                condition.get("exists"), message_attributes, criteria
-            )
+        elif (must_exist := condition.get("exists")) is not None:
+            # if must_exists is True then field_exists must be True
+            # if must_exists is False then fields_exists must be False
+            return must_exist == field_exists
         elif value is None:
             # the remaining conditions require the value to not be None
             return False
-        elif condition.get("anything-but"):
-            return value not in condition.get("anything-but")
-        elif condition.get("prefix"):
-            prefix = condition.get("prefix")
+        elif anything_but := condition.get("anything-but"):
+            return value not in anything_but
+        elif prefix := (condition.get("prefix")):
             return value.startswith(prefix)
-        elif condition.get("numeric"):
-            return self._evaluate_numeric_condition(condition.get("numeric"), value)
+        elif numeric_condition := condition.get("numeric"):
+            return self._evaluate_numeric_condition(numeric_condition, value)
         return False
 
     @staticmethod
@@ -950,15 +1017,6 @@ class SubscriptionFilter:
                     return False
 
         return True
-
-    @staticmethod
-    def _evaluate_exists_condition(conditions, message_attributes, criteria):
-        # support for exists: false was added in april 2021
-        # https://aws.amazon.com/about-aws/whats-new/2021/04/amazon-sns-grows-the-set-of-message-filtering-operators/
-        if conditions:
-            return message_attributes.get(criteria) is not None
-        else:
-            return message_attributes.get(criteria) is None
 
 
 class PublishDispatcher:
@@ -1007,8 +1065,10 @@ class PublishDispatcher:
                     filter_policy=filter_policy, message_attributes=message_ctx.message_attributes
                 )
             case "MessageBody":
-                # TODO: not implemented yet
-                return True
+                return self.subscription_filter.check_filter_policy_on_message_body(
+                    filter_policy=filter_policy,
+                    message_body=message_ctx.message_content(subscriber["Protocol"]),
+                )
 
     def publish_to_topic(self, ctx: SnsPublishContext, topic_arn: str) -> None:
         subscriptions = ctx.store.sns_subscriptions.get(topic_arn, [])

@@ -4,7 +4,6 @@ from typing import Dict, List
 
 from botocore.utils import InvalidArnException
 from moto.sns import sns_backends
-from moto.sns.exceptions import DuplicateSnsEndpointError
 from moto.sns.models import MAXIMUM_MESSAGE_LENGTH
 from moto.sns.utils import is_e164
 
@@ -351,45 +350,22 @@ class SnsProvider(SnsApi, ServiceLifecycleHook):
         if not sub:
             raise NotFoundException("Subscription does not exist")
 
-        if attribute_name not in sns_constants.VALID_SUBSCRIPTION_ATTR_NAME:
-            raise InvalidParameterException("Invalid parameter: AttributeName")
+        validate_subscription_attribute(
+            attribute_name=attribute_name,
+            attribute_value=attribute_value,
+            topic_arn=sub["TopicArn"],
+        )
+        try:
+            call_moto(context)
+        except CommonServiceException as e:
+            # Moto errors don't send the "Type": "Sender" field in their SNS exception
+            if e.code == "InvalidParameter":
+                raise InvalidParameterException(e.message)
+            raise
 
         if attribute_name == "FilterPolicy":
             store = self.get_store()
-            try:
-                filter_policy = json.loads(attribute_value or "{}")
-            except json.JSONDecodeError:
-                raise InvalidParameterException(
-                    "Invalid parameter: FilterPolicy: failed to parse JSON."
-                )
-            store.subscription_filter_policy[subscription_arn] = filter_policy
-            pass
-        elif attribute_name == "RawMessageDelivery":
-            # TODO: only for SQS and https(s) subs, + firehose
-            pass
-
-        elif attribute_name == "RedrivePolicy":
-            try:
-                dlq_target_arn = json.loads(attribute_value).get("deadLetterTargetArn", "")
-            except json.JSONDecodeError:
-                raise InvalidParameterException(
-                    "Invalid parameter: RedrivePolicy: failed to parse JSON."
-                )
-            try:
-                parsed_arn = parse_arn(dlq_target_arn)
-            except InvalidArnException:
-                raise InvalidParameterException(
-                    "Invalid parameter: RedrivePolicy: deadLetterTargetArn is an invalid arn"
-                )
-
-            if sub["TopicArn"].endswith(".fifo"):
-                if (
-                    not parsed_arn["resource"].endswith(".fifo")
-                    or "sqs" not in parsed_arn["service"]
-                ):
-                    raise InvalidParameterException(
-                        "Invalid parameter: RedrivePolicy: must use a FIFO queue as DLQ for a FIFO topic"
-                    )
+            store.subscription_filter_policy[subscription_arn] = json.loads(attribute_value)
 
         sub[attribute_name] = attribute_value
 
@@ -412,6 +388,7 @@ class SnsProvider(SnsApi, ServiceLifecycleHook):
             for i in v:
                 if i["TopicArn"] == topic_arn:
                     i["PendingConfirmation"] = "false"
+                    i["ConfirmationWasAuthenticated"] = "true"
 
         return ConfirmSubscriptionResponse(SubscriptionArn=sub_arn)
 
@@ -459,21 +436,22 @@ class SnsProvider(SnsApi, ServiceLifecycleHook):
     ) -> CreateEndpointResponse:
         # TODO: support mobile app events
         # see https://docs.aws.amazon.com/sns/latest/dg/application-event-notifications.html
-        result = None
         try:
-            result = call_moto(context)
-        except DuplicateSnsEndpointError:
+            result: CreateEndpointResponse = call_moto(context)
+        except CommonServiceException as e:
             # TODO: this was unclear in the old provider, check against aws and moto
-            moto_sns_backend = sns_backends[context.account_id][context.region]
-            for e in moto_sns_backend.platform_endpoints.values():
-                if e.token == token:
-                    if custom_user_data and custom_user_data != e.custom_user_data:
-                        # TODO: check error against aws
-                        raise CommonServiceException(
-                            code="DuplicateEndpoint",
-                            message=f"Endpoint already exist for token: {token} with different attributes",
-                        )
-        return CreateEndpointResponse(**result)
+            if "DuplicateEndpoint" in e.code:
+                moto_sns_backend = sns_backends[context.account_id][context.region]
+                for e in moto_sns_backend.platform_endpoints.values():
+                    if e.token == token:
+                        if custom_user_data and custom_user_data != e.custom_user_data:
+                            # TODO: check error against aws
+                            raise CommonServiceException(
+                                code="DuplicateEndpoint",
+                                message=f"Endpoint already exist for token: {token} with different attributes",
+                            )
+            raise
+        return result
 
     def unsubscribe(self, context: RequestContext, subscription_arn: subscriptionARN) -> None:
         call_moto(context)
@@ -514,8 +492,12 @@ class SnsProvider(SnsApi, ServiceLifecycleHook):
         sub = get_subscription_by_arn(subscription_arn)
         if not sub:
             raise NotFoundException(f"Subscription with arn {subscription_arn} not found")
-        # todo fix some attributes by moto see snapshot
-        return GetSubscriptionAttributesResponse(Attributes=sub)
+        removed_attrs = ["sqs_queue_url"]
+        if "FilterPolicyScope" in sub and "FilterPolicy" not in sub:
+            removed_attrs.append("FilterPolicyScope")
+
+        attributes = {k: v for k, v in sub.items() if k not in removed_attrs}
+        return GetSubscriptionAttributesResponse(Attributes=attributes)
 
     def list_subscriptions(
         self, context: RequestContext, next_token: nextToken = None
@@ -669,10 +651,15 @@ class SnsProvider(SnsApi, ServiceLifecycleHook):
             raise InvalidParameterException(
                 "Invalid parameter: Invalid parameter: Endpoint Reason: Please use FIFO SQS queue"
             )
+        if attributes:
+            for attr_name, attr_value in attributes.items():
+                validate_subscription_attribute(
+                    attribute_name=attr_name, attribute_value=attr_value, topic_arn=topic_arn
+                )
 
         moto_response = call_moto(context)
         subscription_arn = moto_response.get("SubscriptionArn")
-        filter_policy = moto_response.get("FilterPolicy")
+
         store = self.get_store()
         topic_subs = store.sns_subscriptions[topic_arn] = (
             store.sns_subscriptions.get(topic_arn) or []
@@ -684,8 +671,6 @@ class SnsProvider(SnsApi, ServiceLifecycleHook):
                 return SubscribeResponse(
                     SubscriptionArn=existing_topic_subscription["SubscriptionArn"]
                 )
-        if filter_policy:
-            store.subscription_filter_policy[subscription_arn] = json.loads(filter_policy)
 
         subscription = {
             # http://docs.aws.amazon.com/cli/latest/reference/sns/get-subscription-attributes.html
@@ -693,11 +678,17 @@ class SnsProvider(SnsApi, ServiceLifecycleHook):
             "Endpoint": endpoint,
             "Protocol": protocol,
             "SubscriptionArn": subscription_arn,
-            "FilterPolicy": filter_policy,
             "PendingConfirmation": "true",
+            "Owner": context.account_id,
+            "RawMessageDelivery": "false",  # default value, will be overriden if set
         }
         if attributes:
             subscription.update(attributes)
+            if "FilterPolicy" in attributes:
+                store.subscription_filter_policy[subscription_arn] = json.loads(
+                    attributes["FilterPolicy"]
+                )
+
         topic_subs.append(subscription)
 
         if subscription_arn not in store.subscription_status:
@@ -805,6 +796,58 @@ def _get_tags(topic_arn):
 
 def is_raw_message_delivery(susbcriber):
     return susbcriber.get("RawMessageDelivery") in ("true", True, "True")
+
+
+def validate_subscription_attribute(
+    attribute_name: str, attribute_value: str, topic_arn: str
+) -> None:
+    """
+    Validate the subscription attribute to be set. See:
+    https://docs.aws.amazon.com/sns/latest/api/API_SetSubscriptionAttributes.html
+    :param attribute_name: the subscription attribute name, must be in VALID_SUBSCRIPTION_ATTR_NAME
+    :param attribute_value: the subscription attribute value
+    :param topic_arn: the topic_arn of the subscription, needed to know if it is FIFO
+    :raises InvalidParameterException
+    :return:
+    """
+    if attribute_name not in sns_constants.VALID_SUBSCRIPTION_ATTR_NAME:
+        raise InvalidParameterException("Invalid parameter: AttributeName")
+
+    if attribute_name == "FilterPolicy":
+        try:
+            json.loads(attribute_value or "{}")
+        except json.JSONDecodeError:
+            raise InvalidParameterException(
+                "Invalid parameter: FilterPolicy: failed to parse JSON."
+            )
+    elif attribute_name == "FilterPolicyScope":
+        if attribute_value not in ("MessageAttributes", "MessageBody"):
+            raise InvalidParameterException(
+                f"Invalid parameter: FilterPolicyScope: Invalid value [{attribute_value}]. Please use either MessageBody or MessageAttributes"
+            )
+    elif attribute_name == "RawMessageDelivery":
+        # TODO: only for SQS and https(s) subs, + firehose
+        return
+
+    elif attribute_name == "RedrivePolicy":
+        try:
+            dlq_target_arn = json.loads(attribute_value).get("deadLetterTargetArn", "")
+        except json.JSONDecodeError:
+            raise InvalidParameterException(
+                "Invalid parameter: RedrivePolicy: failed to parse JSON."
+            )
+        try:
+            parsed_arn = parse_arn(dlq_target_arn)
+        except InvalidArnException:
+            raise InvalidParameterException(
+                "Invalid parameter: RedrivePolicy: deadLetterTargetArn is an invalid arn"
+            )
+
+        if topic_arn.endswith(".fifo"):
+            if not parsed_arn["resource"].endswith(".fifo") or "sqs" not in parsed_arn["service"]:
+                raise InvalidParameterException(
+                    "Invalid parameter: RedrivePolicy: must use a FIFO queue as DLQ for a FIFO topic"
+                )
 
 
 def validate_message_attributes(message_attributes: MessageAttributeMap) -> None:

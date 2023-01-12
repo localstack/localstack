@@ -7,6 +7,7 @@ import subprocess
 import sys
 import threading
 from typing import Dict
+from urllib.parse import urlparse
 
 from requests.models import Response
 
@@ -37,6 +38,7 @@ from localstack.utils.http import safe_requests as requests
 from localstack.utils.net import is_port_open
 from localstack.utils.run import is_root, run
 from localstack.utils.server.http2_server import HTTPErrorResponse
+from localstack.utils.server.proxy_server import start_tcp_proxy
 from localstack.utils.strings import to_bytes, truncate
 from localstack.utils.sync import sleep_forever
 from localstack.utils.threads import TMP_THREADS, start_thread
@@ -336,7 +338,6 @@ def is_trace_logging_enabled(headers) -> bool:
 
 def do_start_edge(bind_address, port, use_ssl, asynchronous=False):
     start_dns_server(asynchronous=True)
-
     if config.LEGACY_EDGE_PROXY:
         serve = do_start_edge_proxy
     else:
@@ -388,11 +389,13 @@ def ensure_can_use_sudo():
         run("sudo -v", stdin=True)
 
 
-def start_component(component: str, port=None, use_ssl=True, asynchronous=False):
+def start_component(component: str, port=None):
     if component == "edge":
-        return start_edge(port=port, use_ssl=use_ssl, asynchronous=asynchronous)
+        return start_edge(port=port)
     if component == "dns":
-        return start_dns_server(asynchronous=asynchronous)
+        return start_dns_server()
+    if component == "proxy":
+        return start_proxy(port=port)
     raise Exception("Unexpected component name '%s' received during start up" % component)
 
 
@@ -427,6 +430,35 @@ def start_dns_server(asynchronous=False):
         pass
 
 
+def start_proxy(port, asynchronous=False):
+    """
+    Starts a TCP proxy to perform a low-level forwarding of incoming requests.
+    The proxy's source port (given as method argument) is bound to the EDGE_BIND_HOST.
+    The target IP is always 127.0.0.1.
+    The target port is parsed from the EDGE_FORWARD_URL (for compatibility with the legacy edge proxy forwarding).
+    All other parts of the EDGE_FORWARD_URL are _not_ used anymore.
+
+    :param port: source port
+    :param asynchronous: False if the function should join the proxy thread and block until it terminates.
+    :return: created thread executing the proxy
+    """
+    destination_port = urlparse(config.EDGE_FORWARD_URL).port
+    if not destination_port or destination_port < 1 or destination_port > 65535:
+        raise ValueError("EDGE_FORWARD_URL does not contain a valid port.")
+
+    src = f"{config.EDGE_BIND_HOST}:{port}"
+    dst = f"{config.LOCALHOST_IP}:{destination_port}"
+
+    LOG.debug("Starting Local TCP Proxy: %s -> %s", src, dst)
+    proxy = start_thread(
+        lambda *args, **kwargs: start_tcp_proxy(src=src, dst=dst, handler=None, **kwargs),
+        name="edge-tcp-proxy",
+    )
+    if not asynchronous:
+        proxy.join()
+    return proxy
+
+
 def start_edge(port=None, use_ssl=True, asynchronous=False):
     if not port:
         port = config.EDGE_PORT
@@ -454,7 +486,13 @@ def start_edge(port=None, use_ssl=True, asynchronous=False):
     # register a signal handler to terminate the sudo process later on
     TMP_THREADS.append(Terminator())
 
-    return run_process_as_sudo("edge", port, asynchronous=asynchronous)
+    # start the TCP proxy
+    env_vars = {
+        "DEBUG": os.environ.get("DEBUG", ""),
+        "EDGE_FORWARD_URL": config.get_edge_url(),
+        "EDGE_BIND_HOST": config.EDGE_BIND_HOST,
+    }
+    return run_process_as_sudo("proxy", port, env_vars=env_vars, asynchronous=asynchronous)
 
 
 def run_process_as_sudo(component, port, asynchronous=False, env_vars=None):
@@ -468,10 +506,6 @@ def run_process_as_sudo(component, port, asynchronous=False, env_vars=None):
     # prepare environment
     env_vars = env_vars or {}
     env_vars["PYTHONPATH"] = f".:{LOCALSTACK_ROOT_FOLDER}"
-    # FIXME the edge proxy forwarding is not yet supported for the new HTTP gateway
-    env_vars["LEGACY_EDGE_PROXY"] = 1
-    env_vars["EDGE_FORWARD_URL"] = config.get_edge_url()
-    env_vars["EDGE_BIND_HOST"] = config.EDGE_BIND_HOST
     env_vars_str = env_vars_to_string(env_vars)
 
     # start the process as sudo

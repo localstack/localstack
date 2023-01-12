@@ -680,6 +680,33 @@ class TestLambdaURL:
         assert result.status_code == 502
 
 
+@pytest.mark.skip(reason="Not yet implemented")
+class TestLambdaPermissions:
+    @pytest.mark.aws_validated
+    def test_lambda_permission_url_invocation(
+        self, create_lambda_function, lambda_client, snapshot
+    ):
+
+        function_name = f"test-function-{short_uid()}"
+        create_lambda_function(
+            func_name=function_name,
+            zip_file=testutil.create_zip_file(TEST_LAMBDA_URL, get_content=True),
+            runtime=Runtime.nodejs18_x,
+            handler="lambda_url.handler",
+        )
+        url_config = lambda_client.create_function_url_config(
+            FunctionName=function_name,
+            AuthType="NONE",
+        )
+
+        # Intentionally missing add_permission for invoking lambda function
+
+        url = url_config["FunctionUrl"]
+        result = safe_requests.post(url, data="text", headers={"Content-Type": "text/plain"})
+        assert result.status_code == 403
+        snapshot.match("lambda_url_invocation_missing_permission", result.text)
+
+
 class TestLambdaFeatures:
     @pytest.fixture(
         params=[("python3.9", TEST_LAMBDA_PYTHON_ECHO), ("nodejs16.x", TEST_LAMBDA_NODEJS_ECHO)],

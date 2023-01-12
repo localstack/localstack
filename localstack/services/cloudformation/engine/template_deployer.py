@@ -55,6 +55,7 @@ UPDATEABLE_RESOURCES = [
     "AWS::SSM::Parameter",
     "AWS::StepFunctions::StateMachine",
     "AWS::IAM::Role",
+    "AWS::IAM::AccessKey",
     "AWS::EC2::Instance",
 ]
 
