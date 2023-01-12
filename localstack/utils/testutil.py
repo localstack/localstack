@@ -197,7 +197,8 @@ def create_lambda_function(
     region_name=None,
     **kwargs,
 ):
-    """Utility method to create a new function via the Lambda API"""
+    """Utility method to create a new function via the Lambda API
+    CAVEAT: Does NOT wait until the function is ready/active. The fixture create_lambda_function waits until ready."""
     if envvars is None:
         envvars = {}
     if tags is None:
