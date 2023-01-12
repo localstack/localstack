@@ -217,7 +217,7 @@ def validate_kms_key_id(kms_key: str, bucket: FakeBucket):
     try:
         parsed_arn = parse_arn(kms_key)
         key_region = parsed_arn["region"]
-        key_id = parsed_arn["resource"].split("/")[1]
+        # the KMS key should be in the same region as the bucket, we can raise an exception without calling KMS
         if key_region != bucket.region_name:
             raise CommonServiceException(
                 code="KMS.NotFoundException", message=f"Invalid arn {key_region}"
@@ -232,29 +232,13 @@ def validate_kms_key_id(kms_key: str, bucket: FakeBucket):
             key_id=key_id, account_id=bucket.account_id, region_name=bucket.region_name
         )
 
-    # we validate the Key Id is a valid one
-    if not PATTERN_UUID.match(key_id):
-        raise CommonServiceException(
-            code="KMS.NotFoundException", message=f"Invalid keyId {key_id}"
-        )
-    # create KMS ARN with the same region as bucket to try to fetch the key details
-    kms_client = aws_stack.create_external_boto_client("kms")
+    # the KMS key should be in the same region as the bucket, create the client in the bucket region
+    kms_client = aws_stack.connect_to_service("kms", region_name=bucket.region_name)
     try:
-        kms_key_data = kms_client.describe_key(KeyId=kms_key)
-        # FIXME: bug in our KMS implementation, remove once fixed
-        # even if you pass a full ARN, it can return a Key from a different region
-        # maybe we can make use of KMS error message to return the S3 error
-        parsed_arn = parse_arn(kms_key_data["KeyMetadata"]["Arn"])
-        key_region = parsed_arn["region"]
-        if key_region != bucket.region_name:
-            raise CommonServiceException(
-                code="KMS.NotFoundException",
-                message=f"Key '{kms_key}' does not exist",
-            )
-
+        kms_client.describe_key(KeyId=kms_key)
     except ClientError as e:
         if e.response["Error"]["Code"] == "NotFoundException":
             raise CommonServiceException(
-                code="KMS.NotFoundException", message=f"Key '{kms_key}' does not exist"
+                code="KMS.NotFoundException", message=e.response["Error"]["Message"]
             )
         raise
