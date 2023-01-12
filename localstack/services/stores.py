@@ -208,7 +208,6 @@ class RegionBundle(dict, Generic[BaseStoreType]):
         self.service_name = service_name
         self.validate = validate
         self.lock = lock or RLock()
-        self._universal = universal
 
         self.valid_regions = get_valid_regions_for_service(service_name)
 
