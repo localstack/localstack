@@ -77,6 +77,7 @@ def simulate_call(service: str, op: str) -> RowEntry:
         ):
             # parsing errors might be due to invalid parameter values
             # try to re-create params
+            logging.debug("ProtocolParserError detected: re-running request with new parameters")
             parameters = generate_request(op_model)  # should be generate_parameters I guess
             result = _make_api_call(client, service, op, parameters)
         else:
@@ -101,6 +102,14 @@ def simulate_call(service: str, op: str) -> RowEntry:
                 else:
                     # no match
                     break
+    elif result.get("status_code") in [0, 901, 902, 903]:
+        # something went wrong, we do not know exactly what/why - just try again one more time
+        logging.debug(
+            "Detected invalid status code %i. Re-running request with new parameters",
+            result.get("status_code"),
+        )
+        parameters = generate_request(op_model)  # should be generate_parameters I guess
+        result = _make_api_call(client, service, op, parameters)
     return result
 
 
@@ -115,15 +124,17 @@ def _make_api_call(client, service: str, op: str, parameters: Optional[Instance]
         result["error_message"] = ce.response.get("Error", {}).get("Message", "Unknown?")
     except (ReadTimeoutError, ConnectTimeoutError) as e:
         logging.warning("Reached timeout. Assuming it is implemented.")
-        logging.error(e)
+        logging.exception(e)
         result["status_code"] = STATUS_TIMEOUT_ERROR
-    except EndpointConnectionError:
+    except EndpointConnectionError as e:
         # TODO: investigate further;for now assuming not implemented
         logging.warning("Connection failed. Assuming it is not implemented.")
+        logging.exception(e)
         result["status_code"] = STATUS_CONNECTION_ERROR
-    except ResponseParserError:
+    except ResponseParserError as e:
         # TODO: this is actually a bit tricky and might have to be handled on a service by service basis again
         logging.warning("Parsing issue. Assuming it isn't implemented.")
+        logging.exception(e)
         result["status_code"] = STATUS_PARSING_ERROR
     except Exception as e:
         logging.exception(e)
