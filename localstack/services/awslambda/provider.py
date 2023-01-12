@@ -645,6 +645,14 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
         latest_version = function.latest()
         latest_version_config = latest_version.config
 
+        revision_id = request.get("RevisionId")
+        if revision_id and revision_id != latest_version.config.revision_id:
+            raise PreconditionFailedException(
+                "The Revision Id provided does not match the latest Revision Id. "
+                "Call the GetFunction/GetAlias API to retrieve the latest Revision Id",
+                Type="User",
+            )
+
         replace_kwargs = {}
         if "EphemeralStorage" in request:
             replace_kwargs["ephemeral_storage"] = LambdaEphemeralStorage(
