@@ -5,6 +5,7 @@ import os
 import pytest
 
 from localstack.services.events.provider import TEST_EVENTS_CACHE
+from localstack.services.stepfunctions.stepfunctions_utils import is_new_provider
 from localstack.utils import testutil
 from localstack.utils.aws import arns, aws_stack
 from localstack.utils.files import load_file
@@ -42,8 +43,7 @@ STATE_MACHINE_MAP = {
     "States": {
         "ExampleMapState": {
             "Type": "Map",
-            "ItemProcessor": {
-                "ProcessorConfig": {"Mode": "INLINE"},
+            "Iterator": {
                 "StartAt": "CallLambda",
                 "States": {"CallLambda": {"Type": "Task", "Resource": "__tbd__", "End": True}},
             },
@@ -271,6 +271,11 @@ def get_machine_arn(sm_name, sfn_client):
     return [m["stateMachineArn"] for m in state_machines if m["name"] == sm_name][0]
 
 
+pytestmark = pytest.mark.skipif(
+    condition=is_new_provider(), reason="Test suite only for legacy provider."
+)
+
+
 @pytest.mark.usefixtures("setup_and_tear_down")
 class TestStateMachine:
     def test_create_choice_state_machine(self, stepfunctions_client):
@@ -319,7 +324,7 @@ class TestStateMachine:
         role_arn = arns.role_arn("sfn_role")
         definition = clone(STATE_MACHINE_MAP)
         lambda_arn_3 = arns.lambda_function_arn(TEST_LAMBDA_NAME_3)
-        definition["States"]["ExampleMapState"]["ItemProcessor"]["States"]["CallLambda"][
+        definition["States"]["ExampleMapState"]["Iterator"]["States"]["CallLambda"][
             "Resource"
         ] = lambda_arn_3
         definition = json.dumps(definition)
@@ -385,6 +390,9 @@ class TestStateMachine:
         cleanup(sm_arn, state_machines_before, stepfunctions_client)
 
     def test_try_catch_state_machine(self, stepfunctions_client):
+        if os.environ.get("AWS_DEFAULT_REGION") != "us-east-1":
+            pytest.skip("skipping non us-east-1 temporarily")
+
         state_machines_before = stepfunctions_client.list_state_machines()["stateMachines"]
 
         # create state machine
@@ -417,7 +425,6 @@ class TestStateMachine:
         # clean up
         cleanup(sm_arn, state_machines_before, stepfunctions_client)
 
-    @pytest.mark.skip("Intrinsic Functions not yet supported.")
     def test_intrinsic_functions(self, stepfunctions_client):
         if os.environ.get("AWS_DEFAULT_REGION") != "us-east-1":
             pytest.skip("skipping non us-east-1 temporarily")
@@ -459,7 +466,6 @@ class TestStateMachine:
         # clean up
         cleanup(sm_arn, state_machines_before, stepfunctions_client)
 
-    @pytest.mark.skip("Accurate events reporting not yet supported.")
     def test_events_state_machine(self, stepfunctions_client):
         events = aws_stack.create_external_boto_client("events")
         state_machines_before = stepfunctions_client.list_state_machines()["stateMachines"]
@@ -529,8 +535,7 @@ class TestStateMachine:
             )
             results.append(result)
             stepfunctions_client.describe_state_machine(stateMachineArn=result["stateMachineArn"])
-            # TODO: implement list_tags_for_resource
-            # stepfunctions_client.list_tags_for_resource(resourceArn=result["stateMachineArn"])
+            stepfunctions_client.list_tags_for_resource(resourceArn=result["stateMachineArn"])
 
         num_machines = 30
         parallelize(_create_sm, list(range(num_machines)), size=2)
@@ -586,7 +591,6 @@ STS_ROLE_POLICY_DOC = {
 }
 
 
-@pytest.mark.skip("Investigate error around states:startExecution.sync")
 @pytest.mark.parametrize("region_name", ("us-east-1", "us-east-2", "eu-west-1", "eu-central-1"))
 @pytest.mark.parametrize("statemachine_definition", (TEST_STATE_MACHINE_3,))  # TODO: add sync2 test
 def test_multiregion_nested(region_name, statemachine_definition):
@@ -660,9 +664,7 @@ def test_default_logging_configuration(iam_client, create_state_machine, stepfun
             stateMachineArn=result["stateMachineArn"]
         )
         assert result["ResponseMetadata"]["HTTPStatusCode"] == 200
-
-        # TODO: add support for loggingConfiguration.
-        # assert result["loggingConfiguration"] == {"level": "OFF", "includeExecutionData": False}
+        assert result["loggingConfiguration"] == {"level": "OFF", "includeExecutionData": False}
     finally:
         iam_client.delete_role(RoleName=role_name)
 
@@ -735,13 +737,10 @@ def test_aws_sdk_task(stepfunctions_client, iam_client, sns_client):
             )
             output = describe_result["output"]
             assert topic_name in output
-
-            # TODO: implement stepfunction's 'describe_state_machine_for_execution'.
-            # result = stepfunctions_client.describe_state_machine_for_execution(
-            #     executionArn=result["executionArn"]
-            # )
-            # assert result["stateMachineArn"] == machine_arn
-
+            result = stepfunctions_client.describe_state_machine_for_execution(
+                executionArn=result["executionArn"]
+            )
+            assert result["stateMachineArn"] == machine_arn
             topic_arn = json.loads(describe_result["output"])["TopicArn"]
             topics = sns_client.list_topics()
             assert topic_arn in [t["TopicArn"] for t in topics["Topics"]]
@@ -755,56 +754,3 @@ def test_aws_sdk_task(stepfunctions_client, iam_client, sns_client):
         iam_client.delete_role(RoleName=role_name)
         iam_client.delete_policy(PolicyArn=policy["Policy"]["Arn"])
         stepfunctions_client.delete_state_machine(stateMachineArn=machine_arn)
-
-
-def test_run_aws_sdk_secrets_manager(stepfunctions_client):
-    state_machines_before = stepfunctions_client.list_state_machines()["stateMachines"]
-
-    # create state machine
-    role_arn = arns.role_arn("sfn_role")
-    definition = {
-        "StartAt": "StateCreateSecret",
-        "States": {
-            "StateCreateSecret": {
-                "Type": "Task",
-                "Resource": "arn:aws:states:::aws-sdk:secretsmanager:CreateSecret",
-                "Parameters": {
-                    "Name": "MyTestDatabaseSecret",
-                    "Description": "My test database secret created with the CLI",
-                    "SecretString": "Something",
-                },
-                "Next": "StateGetSecretValue",
-            },
-            "StateGetSecretValue": {
-                "Type": "Task",
-                "Resource": "arn:aws:states:::aws-sdk:secretsmanager:GetSecretValue",
-                "Parameters": {
-                    "SecretId": "MyTestDatabaseSecret",
-                },
-                "End": True,
-            },
-        },
-    }
-    definition = json.dumps(definition)
-    sm_name = f"basic-{short_uid()}"
-    stepfunctions_client.create_state_machine(name=sm_name, definition=definition, roleArn=role_arn)
-
-    # assert that the SM has been created
-    assert_machine_created(state_machines_before, stepfunctions_client)
-
-    # run state machine
-    sm_arn = get_machine_arn(sm_name, stepfunctions_client)
-    result = stepfunctions_client.start_execution(stateMachineArn=sm_arn)
-    assert result.get("executionArn")
-
-    def check_invocations():
-        # assert that the result is correct
-        result = _get_execution_results(sm_arn, stepfunctions_client)
-        assert result["SecretString"] == "Something"
-        return True
-
-    # assert that the lambda has been invoked by the SM execution
-    wait_until(check_invocations, max_retries=3, strategy="linear", wait=3.0)
-
-    # clean up
-    cleanup(sm_arn, state_machines_before, stepfunctions_client)

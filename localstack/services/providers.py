@@ -343,9 +343,23 @@ def events():
     )
 
 
-@aws_provider()
 def stepfunctions():
     from localstack.services.stepfunctions.provider import StepFunctionsProvider
+
+    provider = StepFunctionsProvider()
+    listener = AwsApiListener(
+        "stepfunctions", HttpFallbackDispatcher(provider, provider.get_forward_url)
+    )
+    return Service(
+        "stepfunctions",
+        listener=listener,
+        lifecycle_hook=provider,
+    )
+
+
+@aws_provider(api="stepfunctions", name="v2")
+def stepfunctions_v2():
+    from localstack.services.stepfunctions.provider_v2 import StepFunctionsProvider
 
     provider = StepFunctionsProvider()
     return Service("stepfunctions", listener=AwsApiListener("stepfunctions", provider))
