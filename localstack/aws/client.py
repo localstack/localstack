@@ -376,15 +376,6 @@ class ClientFactory:
             )
         )
 
-    def with_default_credentials(self) -> "ClientFactory":
-        """
-        Use LocalStack default AWS credentials.
-        """
-        return self.with_credentials(
-            aws_access_key_id=INTERNAL_AWS_ACCESS_KEY_ID,
-            aws_secret_access_key=INTERNAL_AWS_SECRET_ACCESS_KEY,
-        )
-
     def with_env_credentials(self) -> "ClientFactory":
         """
         Use AWS credentials from the environment.
@@ -406,9 +397,10 @@ class ClientFactory:
         """
         Finalise the client.
         """
-        assert self.client_options.aws_access_key_id, "Access key ID is not set"
-        assert self.client_options.aws_secret_access_key, "Secret access key is not set"
-
+        aws_access_key_id = self.client_options.aws_access_key_id or INTERNAL_AWS_ACCESS_KEY_ID
+        aws_secret_access_key = (
+            self.client_options.aws_secret_access_key or INTERNAL_AWS_SECRET_ACCESS_KEY
+        )
         endpoint_url = self.client_options.endpoint_url or get_local_service_url(service)
 
         # TODO@viren: creating a boto client is very intensive. In old aws_stack, we cache clients based on
@@ -417,8 +409,8 @@ class ClientFactory:
         client = self.session.client(
             service_name=service,
             config=self.client_options.boto_config,
-            aws_access_key_id=self.client_options.aws_access_key_id,
-            aws_secret_access_key=self.client_options.aws_secret_access_key,
+            aws_access_key_id=aws_access_key_id,
+            aws_secret_access_key=aws_secret_access_key,
             endpoint_url=endpoint_url,
         )
 
