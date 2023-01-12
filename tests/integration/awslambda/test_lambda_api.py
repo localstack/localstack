@@ -1298,7 +1298,14 @@ class TestLambdaAlias:
 
 
 @pytest.mark.skipif(condition=is_old_provider(), reason="not supported")
+@pytest.mark.skip_snapshot_verify(
+    paths=[
+        # new Lambda feature: https://docs.aws.amazon.com/lambda/latest/dg/snapstart.html
+        "$..SnapStart"
+    ]
+)
 class TestLambdaRevisions:
+    @pytest.mark.aws_validated
     def test_function_revisions_basic(self, lambda_client, create_lambda_function, snapshot):
         """Tests basic revision id lifecycle for creating and updating functions"""
         function_name = f"fn-{short_uid()}"
