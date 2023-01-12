@@ -194,6 +194,8 @@ class RequestParser(abc.ABC):
     TIMESTAMP_FORMAT = "iso8601"
     # The default timestamp format for header fields
     HEADER_TIMESTAMP_FORMAT = "rfc822"
+    # The default timestamp format for query fields
+    QUERY_TIMESTAMP_FORMAT = "iso8601"
 
     def __init__(self, service: ServiceModel) -> None:
         super().__init__()
@@ -297,6 +299,8 @@ class RequestParser(abc.ABC):
         timestamp_format = shape.serialization.get("timestampFormat")
         if not timestamp_format and shape.serialization.get("location") == "header":
             timestamp_format = self.HEADER_TIMESTAMP_FORMAT
+        elif not timestamp_format and shape.serialization.get("location") == "querystring":
+            timestamp_format = self.QUERY_TIMESTAMP_FORMAT
         return self._convert_str_to_timestamp(node, timestamp_format)
 
     @_text_content
