@@ -281,6 +281,14 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
         resolved_qualifier = qualifier or "$LATEST"
         return resolved_qualifier, fn_arn
 
+    @staticmethod
+    def _function_revision_id(resolved_fn: Function, resolved_qualifier: str) -> str:
+        if api_utils.qualifier_is_alias(resolved_qualifier):
+            return resolved_fn.aliases[resolved_qualifier].config.revision_id
+        # Assumes that a non-alias is a version
+        else:
+            return resolved_fn.versions[resolved_qualifier].config.revision_id
+
     def _create_version_model(
         self,
         function_name: str,
@@ -1700,13 +1708,7 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
         # TODO: test for alias
         revision_id = request.get("RevisionId")
         if revision_id:
-            # TODO: create helper method for fn_revision_id(qualifier) or simplify model
-            fn_revision_id = None
-            if api_utils.qualifier_is_alias(resolved_qualifier):
-                fn_revision_id = resolved_fn.aliases[resolved_qualifier].config.revision_id
-            # Assumes that a non-alias is a version
-            else:
-                fn_revision_id = resolved_fn.versions[resolved_qualifier].config.revision_id
+            fn_revision_id = self._function_revision_id(resolved_fn, resolved_qualifier)
             if revision_id != fn_revision_id:
                 raise PreconditionFailedException(
                     "The Revision Id provided does not match the latest Revision Id. "
@@ -1809,16 +1811,7 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
             raise ResourceNotFoundException(
                 f"Statement {statement_id} is not found in resource policy.", Type="User"
             )
-        # TODO: extract helper or simplify model
-        fn_revision_id = None
-        if api_utils.qualifier_is_alias(resolved_qualifier):
-            latest_alias = resolved_fn.aliases[resolved_qualifier]
-            fn_revision_id = latest_alias.config.revision_id
-        # Assumes that a non-alias is a version
-        else:
-            latest_version = resolved_fn.versions[resolved_qualifier]
-            fn_revision_id = latest_version.config.revision_id
-
+        fn_revision_id = self._function_revision_id(resolved_fn, resolved_qualifier)
         if revision_id and revision_id != fn_revision_id:
             raise PreconditionFailedException(
                 "The Revision Id provided does not match the latest Revision Id. "
