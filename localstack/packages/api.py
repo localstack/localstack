@@ -24,7 +24,12 @@ class PackageException(Exception):
 class NoSuchVersionException(PackageException):
     """Exception indicating that a requested installer version is not available / supported."""
 
-    pass
+    def __init__(self, package: str = None, version: str = None):
+        """Pass either `requested_version` or `message` to format the printed output of this exception"""
+        message = "Unable to find requested version"
+        if package and version:
+            message += f"Unable to find requested version '{version}' for package '{package}'"
+        super().__init__(message)
 
 
 class InstallTarget(Enum):
@@ -205,7 +210,7 @@ class Package(abc.ABC):
         if not version:
             return self.get_installer(self.default_version)
         if version not in self.get_versions():
-            raise NoSuchVersionException()
+            raise NoSuchVersionException(package=self.name, version=version)
         return self._get_installer(version)
 
     def get_versions(self) -> List[str]:
