@@ -1753,9 +1753,7 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
         # TODO: does that need a `with function.lock`? => single .replace would facilitate this
         if api_utils.qualifier_is_alias(resolved_qualifier):
             latest_alias = resolved_fn.aliases[resolved_qualifier]
-            resolved_fn.aliases[resolved_qualifier] = dataclasses.replace(
-                latest_alias, config=dataclasses.replace(latest_alias.config)
-            )
+            resolved_fn.aliases[resolved_qualifier] = dataclasses.replace(latest_alias)
         # Assumes that a non-alias is a version
         else:
             latest_version = resolved_fn.versions[resolved_qualifier]
@@ -1818,9 +1816,7 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
         # TODO: does that need a `with function.lock`? => single .replace would facilitate this
         if api_utils.qualifier_is_alias(resolved_qualifier):
             latest_alias = resolved_fn.aliases[resolved_qualifier]
-            resolved_fn.aliases[resolved_qualifier] = dataclasses.replace(
-                latest_alias, config=dataclasses.replace(latest_alias.config)
-            )
+            resolved_fn.aliases[resolved_qualifier] = dataclasses.replace(latest_alias)
         # Assumes that a non-alias is a version
         else:
             latest_version = resolved_fn.versions[resolved_qualifier]
@@ -1857,7 +1853,7 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
         fn_revision_id = None
         if api_utils.qualifier_is_alias(resolved_qualifier):
             latest_alias = resolved_fn.aliases[resolved_qualifier]
-            fn_revision_id = latest_alias.config.revision_id
+            fn_revision_id = latest_alias.revision_id
         # Assumes that a non-alias is a version
         else:
             latest_version = resolved_fn.versions[resolved_qualifier]
