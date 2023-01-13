@@ -50,12 +50,11 @@ from localstack.aws.api.ses import (
     VerificationAttributes,
     VerificationStatus,
 )
-from localstack.constants import TEST_AWS_SECRET_ACCESS_KEY
+from localstack.aws.connect import connect_to
 from localstack.services.internal import get_internal_apis
 from localstack.services.moto import call_moto
 from localstack.services.plugins import ServiceLifecycleHook
 from localstack.services.ses.models import SentEmail, SentEmailBody
-from localstack.utils.aws import arns, aws_stack
 from localstack.utils.files import mkdir
 from localstack.utils.strings import long_uid, to_str
 from localstack.utils.time import timestamp, timestamp_millis
@@ -577,13 +576,4 @@ class SNSEmitter:
 
     @staticmethod
     def _client_for_topic(topic_arn: str) -> "SNSClient":
-        arn_parameters = arns.parse_arn(topic_arn)
-        region = arn_parameters["region"]
-        access_key_id = arn_parameters["account"]
-
-        return aws_stack.connect_to_service(
-            "sns",
-            region_name=region,
-            aws_access_key_id=access_key_id,
-            aws_secret_access_key=TEST_AWS_SECRET_ACCESS_KEY,
-        )
+        return connect_to("sns", target_arn=topic_arn, source_service="ses")

@@ -45,6 +45,9 @@ BIND_HOST = "0.0.0.0"
 # Fallback Account ID if not available in the client request
 DEFAULT_AWS_ACCOUNT_ID = "000000000000"
 
+# Fallback Account ID for internal calls
+INTERNAL_AWS_ACCOUNT_ID = "000012210000"
+
 # AWS user account ID used for tests - TODO move to config.py
 if "TEST_AWS_ACCOUNT_ID" not in os.environ:
     os.environ["TEST_AWS_ACCOUNT_ID"] = DEFAULT_AWS_ACCOUNT_ID

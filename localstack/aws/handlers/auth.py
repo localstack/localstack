@@ -5,7 +5,11 @@ from localstack.aws.accounts import (
     set_aws_access_key_id,
     set_aws_account_id,
 )
-from localstack.constants import TEST_AWS_ACCESS_KEY_ID
+from localstack.constants import (
+    INTERNAL_AWS_ACCESS_KEY_ID,
+    INTERNAL_AWS_ACCOUNT_ID,
+    TEST_AWS_ACCESS_KEY_ID,
+)
 from localstack.http import Response
 from localstack.utils.aws.aws_stack import extract_access_key_id_from_auth_header
 
@@ -45,7 +49,17 @@ class AccountIdEnricher(Handler):
         set_aws_access_key_id(access_key_id)
 
         # Obtain the account ID and save it in the request context
-        context.account_id = get_account_id_from_access_key_id(access_key_id)
+        if access_key_id == INTERNAL_AWS_ACCESS_KEY_ID:
+            # For internal calls, a special account ID is used for request context
+            # Cross account calls don't have the same auth flows as user-originating calls
+            # which means there is no true Account ID.
+            # The invocations of `get_aws_account_id()` used to resolve the stores must not break.
+            # We don't use the DEFAULT_AWS_ACCOUNT_ID either to help identify bugs.
+            # If correctly implemented with CrossAccountAttribute and ARNs, the provider
+            # will work with this internal AWS account ID.
+            context.account_id = INTERNAL_AWS_ACCOUNT_ID
+        else:
+            context.account_id = get_account_id_from_access_key_id(access_key_id)
 
         # Save the same account ID in the thread context
         set_aws_account_id(context.account_id)
