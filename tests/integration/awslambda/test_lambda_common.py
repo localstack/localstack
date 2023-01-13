@@ -6,6 +6,7 @@ import zipfile
 import pytest
 
 from localstack.testing.aws.lambda_utils import is_old_provider
+from localstack.testing.pytest.fixtures import is_pro_enabled
 from localstack.testing.snapshots.transformer import KeyValueBasedTransformer
 from localstack.utils.files import cp_r
 from localstack.utils.strings import short_uid, to_bytes, to_str
@@ -225,3 +226,23 @@ class TestLambdaRuntimesCommon:
         assert "ctx" in invocation_result_payload
         assert "packages" in invocation_result_payload
         assert invocation_result_payload["environment"]["WRAPPER_VAR"] == test_value
+
+
+@pytest.mark.whitebox
+class TestLambdaCallingLocalstack:
+    @pytest.mark.multiruntime(
+        scenario="endpointinjection",
+        runtimes=["nodejs12.x", "nodejs14.x", "nodejs16.x", "python3.8", "python3.9"],
+    )
+    def test_calling_localstack_from_lambda(self, lambda_client, multiruntime_lambda, tmp_path):
+
+        create_function_result = multiruntime_lambda.create_function(
+            MemorySize=1024,
+            Environment={"Variables": {"CONFIGURE_CLIENT": "0" if is_pro_enabled() else "1"}},
+        )
+
+        invocation_result = lambda_client.invoke(
+            FunctionName=create_function_result["FunctionName"],
+            Payload=b"{}",
+        )
+        assert "FunctionError" not in invocation_result
