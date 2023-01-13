@@ -1322,7 +1322,7 @@ class TestLambdaRevisions:
         snapshot.match("create_function_response_rev1", create_function_response)
         rev1_create_function = create_function_response["CreateFunctionResponse"]["RevisionId"]
 
-        # rev2: created function becomes active
+        # rev2: created function becomes active (the fixture does the waiting)
         get_function_response_rev2 = lambda_client.get_function(FunctionName=function_name)
         snapshot.match("get_function_response_rev2", get_function_response_rev2)
         rev2_active_state = get_function_response_rev2["Configuration"]["RevisionId"]
