@@ -1,12 +1,15 @@
+require 'aws-sdk'  # v2: require 'aws-sdk'
+
+def setup_client(should_configure)
+  if should_configure
+    return Aws::SQS::Client.new(region: 'us-east-1', endpoint: "http://#{ENV['LOCALSTACK_HOSTNAME']}:#{ENV['EDGE_PORT']}", credentials: Aws::Credentials.new('test', 'test'))
+  else
+    return Aws::SQS::Client.new(region: 'us-east-1', credentials: Aws::Credentials.new('test', 'test'))
+  end
+end
+
 def handler(event:, context:)
-    {"environment" => ENV.to_h, "ctx" => {
-            "function_name" => context.function_name,
-            "function_version" => context.function_version,
-            "invoked_function_arn" => context.invoked_function_arn,
-            "memory_limit_in_mb" => context.memory_limit_in_mb,
-            "aws_request_id" => context.aws_request_id,
-            "log_group_name" => context.log_group_name,
-            "log_stream_name" => context.log_stream_name,
-            "remaining_time_in_millis" => context.get_remaining_time_in_millis()
-    }, "packages" => []}
+  sqs_client = setup_client(ENV["CONFIGURE_CLIENT"] == "1")
+  sqs_client.list_queues()
+  return "ok"
 end

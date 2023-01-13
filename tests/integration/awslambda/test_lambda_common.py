@@ -1,12 +1,12 @@
 import json
 import logging
+import os
 import time
 import zipfile
 
 import pytest
 
 from localstack.testing.aws.lambda_utils import is_old_provider
-from localstack.testing.pytest.fixtures import is_pro_enabled
 from localstack.testing.snapshots.transformer import KeyValueBasedTransformer
 from localstack.utils.files import cp_r
 from localstack.utils.strings import short_uid, to_bytes, to_str
@@ -232,13 +232,17 @@ class TestLambdaRuntimesCommon:
 class TestLambdaCallingLocalstack:
     @pytest.mark.multiruntime(
         scenario="endpointinjection",
-        runtimes=["nodejs12.x", "nodejs14.x", "nodejs16.x", "python3.8", "python3.9"],
+        runtimes=["nodejs12.x", "nodejs14.x", "nodejs16.x", "python3.8", "python3.9", "ruby"],
     )
     def test_calling_localstack_from_lambda(self, lambda_client, multiruntime_lambda, tmp_path):
 
         create_function_result = multiruntime_lambda.create_function(
             MemorySize=1024,
-            Environment={"Variables": {"CONFIGURE_CLIENT": "0" if is_pro_enabled() else "1"}},
+            Environment={
+                "Variables": {
+                    "CONFIGURE_CLIENT": "0" if "LOCALSTACK_API_KEY" in os.environ else "1"
+                }
+            },
         )
 
         invocation_result = lambda_client.invoke(
