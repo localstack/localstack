@@ -232,7 +232,15 @@ class TestLambdaRuntimesCommon:
 class TestLambdaCallingLocalstack:
     @pytest.mark.multiruntime(
         scenario="endpointinjection",
-        runtimes=["nodejs12.x", "nodejs14.x", "nodejs16.x", "python3.8", "python3.9", "ruby"],
+        runtimes=[
+            "nodejs12.x",
+            "nodejs14.x",
+            "nodejs16.x",
+            "python3.8",
+            "python3.9",
+            "ruby",
+            "go1.x",
+        ],
     )
     def test_calling_localstack_from_lambda(self, lambda_client, multiruntime_lambda, tmp_path):
 

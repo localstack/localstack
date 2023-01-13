@@ -3,36 +3,39 @@ package main
 import (
 	"context"
 	"github.com/aws/aws-lambda-go/lambda"
-	"github.com/aws/aws-lambda-go/lambdacontext"
+	"github.com/aws/aws-sdk-go/aws"
+	"github.com/aws/aws-sdk-go/aws/credentials"
+	"github.com/aws/aws-sdk-go/aws/session"
+	"github.com/aws/aws-sdk-go/service/sqs"
 	"os"
-	"strconv"
-	"strings"
 )
 
-type ReturnValue struct {
-	Environment map[string]string `json:"environment"`
-	Ctx         map[string]string `json:"ctx"`
-	Packages    []string          `json:"packages"`
+func getConfig() *aws.Config {
+	shouldConfigure := os.Getenv("CONFIGURE_CLIENT")
+	if shouldConfigure == "1" {
+	    endpointUrl := "http://" + os.Getenv("LOCALSTACK_HOSTNAME") + ":" + os.Getenv("EDGE_PORT")
+		return &aws.Config{
+			Region:      aws.String("us-east-1"),
+			Credentials: credentials.NewStaticCredentials("test", "test", ""),
+			Endpoint:    aws.String(endpointUrl),
+		}
+	}
+	return &aws.Config{
+		Region:      aws.String("us-east-1"),
+		Credentials: credentials.NewStaticCredentials("test", "test", ""),
+	}
 }
 
-func HandleRequest(context context.Context, event map[string]string) (ReturnValue, error) {
-	environment := make(map[string]string)
-	for _, e := range os.Environ() {
-		pair := strings.SplitN(e, "=", 2)
-		environment[pair[0]] = pair[1]
-	}
-	lc, _ := lambdacontext.FromContext(context)
-	ctx := map[string]string{
-		"function_name":        lambdacontext.FunctionName,
-		"function_version":     lambdacontext.FunctionVersion,
-		"invoked_function_arn": lc.InvokedFunctionArn,
-		"memory_limit_in_mb":   strconv.Itoa(lambdacontext.MemoryLimitInMB),
-		"aws_request_id":       lc.AwsRequestID,
-		"log_group_name":       lambdacontext.LogGroupName,
-		"log_stream_name":      lambdacontext.LogStreamName,
+func HandleRequest(context context.Context, event map[string]string) (string, error) {
+	sess := session.Must(session.NewSession(getConfig()))
+	svc := sqs.New(sess)
+	input := &sqs.ListQueuesInput{}
+	_, err := svc.ListQueues(input)
+	if err != nil {
+		return "fail", err
 	}
 
-	return ReturnValue{Environment: environment, Ctx: ctx, Packages: []string{}}, nil
+	return "ok", nil
 }
 
 func main() {
