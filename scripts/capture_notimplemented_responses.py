@@ -4,6 +4,7 @@ import logging
 import re
 import sys
 import time
+import traceback
 from datetime import timedelta
 from pathlib import Path
 from typing import Optional, TypedDict
@@ -72,6 +73,9 @@ def simulate_call(service: str, op: str) -> RowEntry:
     error_msg = result.get("error_message", "")
     if result.get("error_code", "") == "InternalError":
         # some deeper investigation necessary, check for some common errors here and retry
+        if service == "apigateway" and "Unexpected HTTP method" in error_msg:
+            # moto currently raises exception in some requests, if the http method is not supported, meaning it is not implemented
+            result["error_code"] = 501  # reflect that this is not implemented
         if (
             "localstack.aws.protocol.parser.ProtocolParserError: Unable to parse request (not well-formed (invalid token)"
             in error_msg
@@ -134,21 +138,25 @@ def _make_api_call(client, service: str, op: str, parameters: Optional[Instance]
         logging.warning("Reached timeout for %s.%s. Assuming it is implemented.", service, op)
         logging.exception(e)
         result["status_code"] = STATUS_TIMEOUT_ERROR
+        result["error_message"] = traceback.format_exception(e)
     except EndpointConnectionError as e:
         # TODO: investigate further;for now assuming not implemented
         logging.warning("Connection failed for %s.%s. Assuming it is not implemented.", service, op)
         logging.exception(e)
         result["status_code"] = STATUS_CONNECTION_ERROR
+        result["error_message"] = traceback.format_exception(e)
     except ResponseParserError as e:
         # TODO: this is actually a bit tricky and might have to be handled on a service by service basis again
         logging.warning("Parsing issue for %s.%s. Assuming it isn't implemented.", service, op)
         logging.exception(e)
         logging.warning("%s.%s: used parameters %s", service, op, parameters)
         result["status_code"] = STATUS_PARSING_ERROR
+        result["error_message"] = traceback.format_exception(e)
     except Exception as e:
-        logging.warining("Unknown Exception for %s.%s", service, op)
+        logging.warning("Unknown Exception for %s.%s", service, op)
         logging.exception(e)
         logging.warning("%s.%s: used parameters %s", service, op, parameters)
+        result["error_message"] = traceback.format_exception(e)
     return result
 
 
