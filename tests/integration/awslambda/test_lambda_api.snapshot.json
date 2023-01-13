@@ -9496,7 +9496,7 @@
     }
   },
   "tests/integration/awslambda/test_lambda_api.py::TestLambdaPermissions::test_lambda_permission_fn_versioning": {
-    "recorded-date": "23-12-2022, 13:23:23",
+    "recorded-date": "13-01-2023, 18:37:09",
     "recorded-content": {
       "add_permission": {
         "Statement": {
@@ -9506,10 +9506,10 @@
             "Service": "s3.amazonaws.com"
           },
           "Action": "lambda:InvokeFunction",
-          "Resource": "arn:aws:lambda:<region>:111111111111:function:<resource:1>",
+          "Resource": "arn:aws:lambda:<region>:111111111111:function:<function-name:1>",
           "Condition": {
             "ArnLike": {
-              "AWS:SourceArn": "arn:aws:s3:::<resource:2>"
+              "AWS:SourceArn": "arn:aws:s3:::<resource:1>"
             }
           }
         },
@@ -9530,16 +9530,98 @@
                 "Service": "s3.amazonaws.com"
               },
               "Action": "lambda:InvokeFunction",
-              "Resource": "arn:aws:lambda:<region>:111111111111:function:<resource:1>",
+              "Resource": "arn:aws:lambda:<region>:111111111111:function:<function-name:1>",
               "Condition": {
                 "ArnLike": {
-                  "AWS:SourceArn": "arn:aws:s3:::<resource:2>"
+                  "AWS:SourceArn": "arn:aws:s3:::<resource:1>"
                 }
               }
             }
           ]
         },
         "RevisionId": "<uuid:1>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "publish_version_result": {
+        "Architectures": [
+          "x86_64"
+        ],
+        "CodeSha256": "<code-sha256:1>",
+        "CodeSize": "<code-size>",
+        "Description": "",
+        "Environment": {
+          "Variables": {}
+        },
+        "EphemeralStorage": {
+          "Size": 512
+        },
+        "FunctionArn": "arn:aws:lambda:<region>:111111111111:function:<function-name:1>:1",
+        "FunctionName": "<function-name:1>",
+        "Handler": "handler.handler",
+        "LastModified": "date",
+        "LastUpdateStatus": "Successful",
+        "MemorySize": 128,
+        "PackageType": "Zip",
+        "RevisionId": "<uuid:2>",
+        "Role": "arn:aws:iam::111111111111:role/<resource:3>",
+        "Runtime": "python3.9",
+        "SnapStart": {
+          "ApplyOn": "None",
+          "OptimizationStatus": "Off"
+        },
+        "State": "Active",
+        "Timeout": 30,
+        "TracingConfig": {
+          "Mode": "PassThrough"
+        },
+        "Version": "1",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 201
+        }
+      },
+      "get_function_result_after_publishing": {
+        "Code": {
+          "Location": "<location>",
+          "RepositoryType": "S3"
+        },
+        "Configuration": {
+          "Architectures": [
+            "x86_64"
+          ],
+          "CodeSha256": "<code-sha256:1>",
+          "CodeSize": "<code-size>",
+          "Description": "",
+          "Environment": {
+            "Variables": {}
+          },
+          "EphemeralStorage": {
+            "Size": 512
+          },
+          "FunctionArn": "arn:aws:lambda:<region>:111111111111:function:<function-name:1>",
+          "FunctionName": "<function-name:1>",
+          "Handler": "handler.handler",
+          "LastModified": "date",
+          "LastUpdateStatus": "Successful",
+          "MemorySize": 128,
+          "PackageType": "Zip",
+          "RevisionId": "<uuid:3>",
+          "Role": "arn:aws:iam::111111111111:role/<resource:3>",
+          "Runtime": "python3.9",
+          "SnapStart": {
+            "ApplyOn": "None",
+            "OptimizationStatus": "Off"
+          },
+          "State": "Active",
+          "Timeout": 30,
+          "TracingConfig": {
+            "Mode": "PassThrough"
+          },
+          "Version": "$LATEST"
+        },
         "ResponseMetadata": {
           "HTTPHeaders": {},
           "HTTPStatusCode": 200
@@ -9557,16 +9639,16 @@
                 "Service": "s3.amazonaws.com"
               },
               "Action": "lambda:InvokeFunction",
-              "Resource": "arn:aws:lambda:<region>:111111111111:function:<resource:1>",
+              "Resource": "arn:aws:lambda:<region>:111111111111:function:<function-name:1>",
               "Condition": {
                 "ArnLike": {
-                  "AWS:SourceArn": "arn:aws:s3:::<resource:2>"
+                  "AWS:SourceArn": "arn:aws:s3:::<resource:1>"
                 }
               }
             }
           ]
         },
-        "RevisionId": "<uuid:2>",
+        "RevisionId": "<uuid:3>",
         "ResponseMetadata": {
           "HTTPHeaders": {},
           "HTTPStatusCode": 200
@@ -9596,16 +9678,16 @@
                 "Service": "s3.amazonaws.com"
               },
               "Action": "lambda:InvokeFunction",
-              "Resource": "arn:aws:lambda:<region>:111111111111:function:<resource:1>:1",
+              "Resource": "arn:aws:lambda:<region>:111111111111:function:<function-name:1>:1",
               "Condition": {
                 "ArnLike": {
-                  "AWS:SourceArn": "arn:aws:s3:::<resource:2>"
+                  "AWS:SourceArn": "arn:aws:s3:::<resource:1>"
                 }
               }
             }
           ]
         },
-        "RevisionId": "<uuid:3>",
+        "RevisionId": "<uuid:4>",
         "ResponseMetadata": {
           "HTTPHeaders": {},
           "HTTPStatusCode": 200
@@ -9623,16 +9705,16 @@
                 "Service": "s3.amazonaws.com"
               },
               "Action": "lambda:InvokeFunction",
-              "Resource": "arn:aws:lambda:<region>:111111111111:function:<resource:1>:permission-alias",
+              "Resource": "arn:aws:lambda:<region>:111111111111:function:<function-name:1>:permission-alias",
               "Condition": {
                 "ArnLike": {
-                  "AWS:SourceArn": "arn:aws:s3:::<resource:2>"
+                  "AWS:SourceArn": "arn:aws:s3:::<resource:1>"
                 }
               }
             }
           ]
         },
-        "RevisionId": "<uuid:4>",
+        "RevisionId": "<uuid:5>",
         "ResponseMetadata": {
           "HTTPHeaders": {},
           "HTTPStatusCode": 200
@@ -9650,16 +9732,16 @@
                 "Service": "s3.amazonaws.com"
               },
               "Action": "lambda:InvokeFunction",
-              "Resource": "arn:aws:lambda:<region>:111111111111:function:<resource:1>",
+              "Resource": "arn:aws:lambda:<region>:111111111111:function:<function-name:1>",
               "Condition": {
                 "ArnLike": {
-                  "AWS:SourceArn": "arn:aws:s3:::<resource:2>"
+                  "AWS:SourceArn": "arn:aws:s3:::<resource:1>"
                 }
               }
             }
           ]
         },
-        "RevisionId": "<uuid:2>",
+        "RevisionId": "<uuid:3>",
         "ResponseMetadata": {
           "HTTPHeaders": {},
           "HTTPStatusCode": 200
@@ -9677,10 +9759,10 @@
                 "Service": "s3.amazonaws.com"
               },
               "Action": "lambda:InvokeFunction",
-              "Resource": "arn:aws:lambda:<region>:111111111111:function:<resource:1>",
+              "Resource": "arn:aws:lambda:<region>:111111111111:function:<function-name:1>",
               "Condition": {
                 "ArnLike": {
-                  "AWS:SourceArn": "arn:aws:s3:::<resource:2>"
+                  "AWS:SourceArn": "arn:aws:s3:::<resource:1>"
                 }
               }
             },
@@ -9691,16 +9773,16 @@
                 "Service": "s3.amazonaws.com"
               },
               "Action": "lambda:InvokeFunction",
-              "Resource": "arn:aws:lambda:<region>:111111111111:function:<resource:1>",
+              "Resource": "arn:aws:lambda:<region>:111111111111:function:<function-name:1>",
               "Condition": {
                 "ArnLike": {
-                  "AWS:SourceArn": "arn:aws:s3:::<resource:2>"
+                  "AWS:SourceArn": "arn:aws:s3:::<resource:1>"
                 }
               }
             }
           ]
         },
-        "RevisionId": "<uuid:5>",
+        "RevisionId": "<uuid:6>",
         "ResponseMetadata": {
           "HTTPHeaders": {},
           "HTTPStatusCode": 200
@@ -10290,8 +10372,94 @@
     }
   },
   "tests/integration/awslambda/test_lambda_api.py::TestLambdaRevisions::test_function_revisions_version_and_alias": {
-    "recorded-date": "06-01-2023, 22:19:32",
+    "recorded-date": "13-01-2023, 18:36:42",
     "recorded-content": {
+      "create_function_response_rev1": {
+        "CreateEventSourceMappingResponse": null,
+        "CreateFunctionResponse": {
+          "Architectures": [
+            "x86_64"
+          ],
+          "CodeSha256": "<code-sha256:1>",
+          "CodeSize": "<code-size>",
+          "Description": "",
+          "Environment": {
+            "Variables": {}
+          },
+          "EphemeralStorage": {
+            "Size": 512
+          },
+          "FunctionArn": "arn:aws:lambda:<region>:111111111111:function:<function-name:1>",
+          "FunctionName": "<function-name:1>",
+          "Handler": "handler.handler",
+          "LastModified": "date",
+          "MemorySize": 128,
+          "PackageType": "Zip",
+          "RevisionId": "<uuid:1>",
+          "Role": "arn:aws:iam::111111111111:role/<resource:1>",
+          "Runtime": "python3.9",
+          "SnapStart": {
+            "ApplyOn": "None",
+            "OptimizationStatus": "Off"
+          },
+          "State": "Pending",
+          "StateReason": "The function is being created.",
+          "StateReasonCode": "Creating",
+          "Timeout": 30,
+          "TracingConfig": {
+            "Mode": "PassThrough"
+          },
+          "Version": "$LATEST",
+          "ResponseMetadata": {
+            "HTTPHeaders": {},
+            "HTTPStatusCode": 201
+          }
+        }
+      },
+      "get_function_active_rev2": {
+        "Code": {
+          "Location": "<location>",
+          "RepositoryType": "S3"
+        },
+        "Configuration": {
+          "Architectures": [
+            "x86_64"
+          ],
+          "CodeSha256": "<code-sha256:1>",
+          "CodeSize": "<code-size>",
+          "Description": "",
+          "Environment": {
+            "Variables": {}
+          },
+          "EphemeralStorage": {
+            "Size": 512
+          },
+          "FunctionArn": "arn:aws:lambda:<region>:111111111111:function:<function-name:1>",
+          "FunctionName": "<function-name:1>",
+          "Handler": "handler.handler",
+          "LastModified": "date",
+          "LastUpdateStatus": "Successful",
+          "MemorySize": 128,
+          "PackageType": "Zip",
+          "RevisionId": "<uuid:2>",
+          "Role": "arn:aws:iam::111111111111:role/<resource:1>",
+          "Runtime": "python3.9",
+          "SnapStart": {
+            "ApplyOn": "None",
+            "OptimizationStatus": "Off"
+          },
+          "State": "Active",
+          "Timeout": 30,
+          "TracingConfig": {
+            "Mode": "PassThrough"
+          },
+          "Version": "$LATEST"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
       "publish_version_revision_exception": {
         "Error": {
           "Code": "PreconditionFailedException",
@@ -10304,7 +10472,7 @@
           "HTTPStatusCode": 412
         }
       },
-      "publish_version_response": {
+      "publish_version_response_rev_v1": {
         "Architectures": [
           "x86_64"
         ],
@@ -10324,8 +10492,8 @@
         "LastUpdateStatus": "Successful",
         "MemorySize": 128,
         "PackageType": "Zip",
-        "RevisionId": "<uuid:1>",
-        "Role": "arn:aws:iam::111111111111:role/<resource:2>",
+        "RevisionId": "<uuid:3>",
+        "Role": "arn:aws:iam::111111111111:role/<resource:1>",
         "Runtime": "python3.9",
         "SnapStart": {
           "ApplyOn": "None",
@@ -10342,15 +10510,191 @@
           "HTTPStatusCode": 201
         }
       },
-      "create_alias_response_rev5a": {
+      "get_function_published_version_rev_v2": {
+        "Code": {
+          "Location": "<location>",
+          "RepositoryType": "S3"
+        },
+        "Configuration": {
+          "Architectures": [
+            "x86_64"
+          ],
+          "CodeSha256": "<code-sha256:1>",
+          "CodeSize": "<code-size>",
+          "Description": "",
+          "Environment": {
+            "Variables": {}
+          },
+          "EphemeralStorage": {
+            "Size": 512
+          },
+          "FunctionArn": "arn:aws:lambda:<region>:111111111111:function:<function-name:1>:1",
+          "FunctionName": "<function-name:1>",
+          "Handler": "handler.handler",
+          "LastModified": "date",
+          "LastUpdateStatus": "Successful",
+          "MemorySize": 128,
+          "PackageType": "Zip",
+          "RevisionId": "<uuid:3>",
+          "Role": "arn:aws:iam::111111111111:role/<resource:1>",
+          "Runtime": "python3.9",
+          "SnapStart": {
+            "ApplyOn": "None",
+            "OptimizationStatus": "Off"
+          },
+          "State": "Active",
+          "Timeout": 30,
+          "TracingConfig": {
+            "Mode": "PassThrough"
+          },
+          "Version": "1"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "get_function_latest_rev3": {
+        "Code": {
+          "Location": "<location>",
+          "RepositoryType": "S3"
+        },
+        "Configuration": {
+          "Architectures": [
+            "x86_64"
+          ],
+          "CodeSha256": "<code-sha256:1>",
+          "CodeSize": "<code-size>",
+          "Description": "",
+          "Environment": {
+            "Variables": {}
+          },
+          "EphemeralStorage": {
+            "Size": 512
+          },
+          "FunctionArn": "arn:aws:lambda:<region>:111111111111:function:<function-name:1>",
+          "FunctionName": "<function-name:1>",
+          "Handler": "handler.handler",
+          "LastModified": "date",
+          "LastUpdateStatus": "Successful",
+          "MemorySize": 128,
+          "PackageType": "Zip",
+          "RevisionId": "<uuid:4>",
+          "Role": "arn:aws:iam::111111111111:role/<resource:1>",
+          "Runtime": "python3.9",
+          "SnapStart": {
+            "ApplyOn": "None",
+            "OptimizationStatus": "Off"
+          },
+          "State": "Active",
+          "Timeout": 30,
+          "TracingConfig": {
+            "Mode": "PassThrough"
+          },
+          "Version": "$LATEST"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "create_alias_response_rev_a1": {
         "AliasArn": "arn:aws:lambda:<region>:111111111111:function:<function-name:1>:revision_alias",
         "Description": "",
         "FunctionVersion": "1",
         "Name": "revision_alias",
-        "RevisionId": "<uuid:2>",
+        "RevisionId": "<uuid:5>",
         "ResponseMetadata": {
           "HTTPHeaders": {},
           "HTTPStatusCode": 201
+        }
+      },
+      "get_function_latest_rev4": {
+        "Code": {
+          "Location": "<location>",
+          "RepositoryType": "S3"
+        },
+        "Configuration": {
+          "Architectures": [
+            "x86_64"
+          ],
+          "CodeSha256": "<code-sha256:1>",
+          "CodeSize": "<code-size>",
+          "Description": "",
+          "Environment": {
+            "Variables": {}
+          },
+          "EphemeralStorage": {
+            "Size": 512
+          },
+          "FunctionArn": "arn:aws:lambda:<region>:111111111111:function:<function-name:1>",
+          "FunctionName": "<function-name:1>",
+          "Handler": "handler.handler",
+          "LastModified": "date",
+          "LastUpdateStatus": "Successful",
+          "MemorySize": 128,
+          "PackageType": "Zip",
+          "RevisionId": "<uuid:4>",
+          "Role": "arn:aws:iam::111111111111:role/<resource:1>",
+          "Runtime": "python3.9",
+          "SnapStart": {
+            "ApplyOn": "None",
+            "OptimizationStatus": "Off"
+          },
+          "State": "Active",
+          "Timeout": 30,
+          "TracingConfig": {
+            "Mode": "PassThrough"
+          },
+          "Version": "$LATEST"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "get_function_published_version_rev_v3": {
+        "Code": {
+          "Location": "<location>",
+          "RepositoryType": "S3"
+        },
+        "Configuration": {
+          "Architectures": [
+            "x86_64"
+          ],
+          "CodeSha256": "<code-sha256:1>",
+          "CodeSize": "<code-size>",
+          "Description": "",
+          "Environment": {
+            "Variables": {}
+          },
+          "EphemeralStorage": {
+            "Size": 512
+          },
+          "FunctionArn": "arn:aws:lambda:<region>:111111111111:function:<function-name:1>:1",
+          "FunctionName": "<function-name:1>",
+          "Handler": "handler.handler",
+          "LastModified": "date",
+          "LastUpdateStatus": "Successful",
+          "MemorySize": 128,
+          "PackageType": "Zip",
+          "RevisionId": "<uuid:3>",
+          "Role": "arn:aws:iam::111111111111:role/<resource:1>",
+          "Runtime": "python3.9",
+          "SnapStart": {
+            "ApplyOn": "None",
+            "OptimizationStatus": "Off"
+          },
+          "State": "Active",
+          "Timeout": 30,
+          "TracingConfig": {
+            "Mode": "PassThrough"
+          },
+          "Version": "1"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
         }
       },
       "update_alias_revision_exception": {
@@ -10365,12 +10709,12 @@
           "HTTPStatusCode": 412
         }
       },
-      "update_alias_response_rev6a": {
+      "update_alias_response_rev_a2": {
         "AliasArn": "arn:aws:lambda:<region>:111111111111:function:<function-name:1>:revision_alias",
         "Description": "something changed",
         "FunctionVersion": "1",
         "Name": "revision_alias",
-        "RevisionId": "<uuid:3>",
+        "RevisionId": "<uuid:6>",
         "ResponseMetadata": {
           "HTTPHeaders": {},
           "HTTPStatusCode": 200
