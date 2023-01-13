@@ -878,43 +878,6 @@ class TestLambdaVersions:
         )
         snapshot.match("list_versions_result_end", list_versions_result_end)
 
-    # TODO: consider moving to revision tests?!
-    @pytest.mark.aws_validated
-    def test_publish_with_wrong_revisionid(
-        self, lambda_client, create_lambda_function_aws, lambda_su_role, snapshot
-    ):
-        function_name = f"fn-{short_uid()}"
-        create_response = create_lambda_function_aws(
-            FunctionName=function_name,
-            Handler="index.handler",
-            Code={
-                "ZipFile": create_lambda_archive(
-                    load_file(TEST_LAMBDA_PYTHON_ECHO), get_content=True
-                )
-            },
-            PackageType="Zip",
-            Role=lambda_su_role,
-            Runtime=Runtime.python3_9,
-        )
-        snapshot.match("create_response", create_response)
-
-        get_fn_response = lambda_client.get_function(FunctionName=function_name)
-        snapshot.match("get_fn_response", get_fn_response)
-
-        # state change causes rev id change!
-        assert create_response["RevisionId"] != get_fn_response["Configuration"]["RevisionId"]
-
-        # publish_versions fails for the wrong revision id
-        with pytest.raises(lambda_client.exceptions.PreconditionFailedException) as e:
-            lambda_client.publish_version(FunctionName=function_name, RevisionId="doesntexist")
-        snapshot.match("publish_wrong_revisionid_exc", e.value.response)
-
-        # but with the proper rev id, it should work
-        publish_result = lambda_client.publish_version(
-            FunctionName=function_name, RevisionId=get_fn_response["Configuration"]["RevisionId"]
-        )
-        snapshot.match("publish_result", publish_result)
-
     @pytest.mark.aws_validated
     def test_publish_with_wrong_sha256(
         self, lambda_client, create_lambda_function_aws, lambda_su_role, snapshot
