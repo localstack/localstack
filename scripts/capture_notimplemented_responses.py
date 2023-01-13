@@ -98,11 +98,19 @@ def simulate_call(service: str, op: str) -> RowEntry:
                 if match:
                     keyword = match.groups()[0]
                     if argument := next(
-                        (arg for arg in list(parameters.keys()) if keyword == arg.casefold()), None
+                        (
+                            arg
+                            for arg in list(parameters.keys())
+                            if keyword.replace("_", "") == arg.casefold()
+                        ),
+                        None,
                     ):
-                        logging.debug(
-                            "Got 'TypeError' with unexpected keyword argument %s. Re-trying without keyword..",
+                        logging.warning(
+                            "Got 'TypeError' with unexpected keyword argument: '%s' for %s.%s. "
+                            "Re-trying without keyword ...",
                             keyword,
+                            service,
+                            op,
                         )
                         parameters.pop(argument)
                         result = _make_api_call(client, service, op, parameters)
