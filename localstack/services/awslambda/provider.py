@@ -404,6 +404,11 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
         self.lambda_service.publish_version(new_version)
         state = lambda_stores[account_id][region]
         function = state.functions.get(function_name)
+        # TODO: re-evaluate data model to prevent this dirty hack just for bumping the revision id
+        latest_version = function.versions["$LATEST"]
+        function.versions["$LATEST"] = dataclasses.replace(
+            latest_version, config=dataclasses.replace(latest_version.config)
+        )
         return function.versions.get(new_version.id.qualifier)
 
     def _publish_version_with_changes(
@@ -1748,8 +1753,8 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
         if not existing_policy:
             resolved_fn.permissions[resolved_qualifier] = new_policy
 
-        # TODO: fix model to simplify more natural revision update rather than this thirty hack
-        # dirty hack for changed revision id, should reevaluate model to prevent this:
+        # Update revision id of alias or version
+        # TODO: re-evaluate data model to prevent this dirty hack just for bumping the revision id
         # TODO: does that need a `with function.lock`? => single .replace would facilitate this
         if api_utils.qualifier_is_alias(resolved_qualifier):
             latest_alias = resolved_fn.aliases[resolved_qualifier]
@@ -1811,8 +1816,8 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
             )
         function_permission.policy.Statement.remove(statement)
 
-        # TODO: fix model to simplify more natural revision update rather than this thirty hack
-        # dirty hack for changed revision id, should reevaluate model to prevent this:
+        # Update revision id for alias or version
+        # TODO: re-evaluate data model to prevent this dirty hack just for bumping the revision id
         # TODO: does that need a `with function.lock`? => single .replace would facilitate this
         if api_utils.qualifier_is_alias(resolved_qualifier):
             latest_alias = resolved_fn.aliases[resolved_qualifier]
