@@ -240,6 +240,8 @@ class TestLambdaCallingLocalstack:
             "python3.9",
             "ruby",
             "go1.x",
+            "java8.al2",
+            "java11",
         ],
     )
     def test_calling_localstack_from_lambda(self, lambda_client, multiruntime_lambda, tmp_path):

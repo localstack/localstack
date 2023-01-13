@@ -2,36 +2,38 @@ package echo;
 
 import com.amazonaws.services.lambda.runtime.Context;
 import com.amazonaws.services.lambda.runtime.RequestHandler;
+import software.amazon.awssdk.regions.Region;
+import software.amazon.awssdk.services.sqs.SqsClient;
+import software.amazon.awssdk.services.sqs.model.ListQueuesRequest;
 
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
 
-class ReturnValue {
-    public Map<String, String> environment;
-    public Map<String, String> ctx;
-    public List<String> packages;
+import java.net.URI;
+import java.util.*;
 
-    public ReturnValue(Context context) {
-        this.environment = System.getenv();
-        this.ctx = new HashMap<>();
-        this.ctx.put("function_name", context.getFunctionName());
-        this.ctx.put("function_version", context.getFunctionVersion());
-        this.ctx.put("invoked_function_arn", context.getInvokedFunctionArn());
-        this.ctx.put("memory_limit_in_mb", Integer.toString(context.getMemoryLimitInMB()));
-        this.ctx.put("aws_request_id", context.getAwsRequestId());
-        this.ctx.put("log_group_name", context.getLogGroupName());
-        this.ctx.put("log_stream_name", context.getLogStreamName());
-        this.ctx.put("remaining_time_in_millis", Integer.toString(context.getRemainingTimeInMillis()));
-        this.packages = new ArrayList<>();
+public class Handler implements RequestHandler<Map<String, String>, String> {
+
+    private SqsClient getSqsClient() {
+        if (Objects.equals(System.getenv("CONFIGURE_CLIENT"), "1")) {
+            String endpointUrl = "http://" + System.getenv("LOCALSTACK_HOSTNAME") + ":" + System.getenv("EDGE_PORT");
+            URI uri = URI.create(endpointUrl);
+            return SqsClient.builder()
+                    .region(Region.US_EAST_1)
+                    .endpointOverride(uri)
+                    .build();
+        } else {
+            return SqsClient.builder().region(Region.US_EAST_1).build();
+        }
     }
-}
 
-public class Handler implements RequestHandler<Map<String, String>, ReturnValue> {
 
-    public ReturnValue handleRequest(Map<String, String> event, Context context) {
-        return new ReturnValue(context);
+    public String handleRequest(Map<String, String> event, Context context) {
+        try (
+                SqsClient sqsClient = this.getSqsClient()
+        ) {
+            sqsClient.listQueues(ListQueuesRequest.builder().build());
+        }
+
+        return "ok";
     }
 }
