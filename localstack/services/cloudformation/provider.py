@@ -310,6 +310,8 @@ class CloudformationProvider(CloudformationApi):
             for key, values in id_summaries.items()
         ]
         result["Version"] = stack.template.get("AWSTemplateFormatVersion", "2010-09-09")
+        # these do not appear in the output
+        result.pop("Capabilities", None)
 
         return select_from_typed_dict(GetTemplateSummaryOutput, result)
 
