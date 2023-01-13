@@ -5,7 +5,7 @@ import requests
 from localstack.constants import VERSION
 from localstack.http import Request
 from localstack.services.generic_proxy import ProxyListener
-from localstack.services.internal import HealthResource, LocalstackResourceHandler
+from localstack.services.internal import CloudFormationUi, HealthResource, LocalstackResourceHandler
 from localstack.services.plugins import ServiceManager, ServiceState
 from localstack.utils.testutil import proxy_server
 
@@ -68,6 +68,15 @@ class TestHealthResource:
         }
 
 
+class TestCloudFormationUiResource:
+    def test_get(self):
+        resource = CloudFormationUi()
+        response = resource.on_get(Request("GET", "/", body=b"None"))
+        assert response.status == "200 OK"
+        assert "</html>" in response.get_data(as_text=True), "deploy UI did not render HTML"
+        assert "text/html" in response.headers.get("content-type", "")
+
+
 class TestLocalstackResourceHandlerIntegration:
     def test_health(self, monkeypatch):
         with proxy_server(LocalstackResourceHandler()) as url:
@@ -80,14 +89,6 @@ class TestLocalstackResourceHandlerIntegration:
             response = requests.get(f"{url}/_localstack/health")
             assert response.ok
             assert "services" in response.json()
-
-    def test_cloudformation_ui(self):
-        with proxy_server(LocalstackResourceHandler()) as url:
-            # make sure it renders
-            response = requests.get(f"{url}/_localstack/cloudformation/deploy")
-            assert response.ok
-            assert "</html>" in response.text, "deploy UI did not render HTML"
-            assert "text/html" in response.headers.get("content-type", "")
 
     def test_fallthrough(self):
         class RaiseError(ProxyListener):
