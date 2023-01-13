@@ -193,7 +193,7 @@ class ConnectFactory:
 
         def _handler(request: AWSPreparedRequest, **_):
             data = localstack_data | LocalStackData(
-                current_time=datetime.utcnow(timezone.utc).isoformat()
+                current_time=datetime.now(timezone.utc).isoformat()
             )
 
             # Use a compact JSON representation of DTO
