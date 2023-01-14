@@ -4100,5 +4100,41 @@
         }
       }
     }
+  },
+  "tests/integration/s3/test_s3.py::TestS3::test_complete_multipart_parts_order": {
+    "recorded-date": "14-01-2023, 13:07:10",
+    "recorded-content": {
+      "complete-multipart-unordered": {
+        "Error": {
+          "Code": "InvalidPartOrder",
+          "Message": "The list of parts was not in ascending order. Parts must be ordered by part number.",
+          "UploadId": "<upload-id:1>"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "complete-multipart-ordered": {
+        "Bucket": "bucket",
+        "ETag": "\"c7cb0938a47e31f70cf07028d22e6913-3\"",
+        "Key": "test-order-parts",
+        "Location": "<location:1>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "complete-multipart-with-step-2": {
+        "Bucket": "bucket",
+        "ETag": "\"c7cb0938a47e31f70cf07028d22e6913-3\"",
+        "Key": "key-sequence-with-step-2",
+        "Location": "<location:2>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
   }
 }

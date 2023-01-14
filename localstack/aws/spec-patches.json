@@ -737,6 +737,23 @@
       "value": {
         "type": "string"
       }
+    },
+    {
+      "op": "add",
+      "path": "/shapes/InvalidPartOrder",
+      "value": {
+        "type": "structure",
+        "members": {
+          "UploadId": {
+            "shape": "MultipartUploadId"
+          }
+        },
+        "error": {
+          "httpStatusCode": 400
+        },
+        "documentation": "<p>The list of parts was not in ascending order. Parts must be ordered by part number.</p>",
+        "exception": true
+      }
     }
   ]
 }
