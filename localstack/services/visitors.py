@@ -130,6 +130,12 @@ class ReflectionStateLocator:
                     ("moto.apigatewayv2.models", "apigatewayv2_backends"),
                 ]
                 _visit_modules(modules)
+            case "cloudformation":
+                modules = [
+                    ("localstack.services.cloudformation.stores", "cloudformation_stores"),
+                    ("moto.cloudformation.models", "cloudformation_backends"),
+                ]
+                _visit_modules(modules)
             case _:
                 # try to load AccountRegionBundle from predictable location
                 attribute_name = f"{service_name}_stores"
