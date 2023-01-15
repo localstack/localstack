@@ -482,9 +482,7 @@ def invoke_rest_api_integration_backend(invocation_context: ApiInvocationContext
             uri_parts = uri.split(":")
             app_sync_id = uri_parts[-2].replace(".appsync-api", "")
             url = urljoin(config.service_url("appsync"), f"graphql/{app_sync_id}")
-            result = common.make_http_request(
-                url, method="POST", headers=headers, data=data
-            )
+            result = common.make_http_request(url, method="POST", headers=headers, data=data)
             return result
         else:
             raise Exception(
