@@ -2797,6 +2797,9 @@ class TestS3:
         snapshot.match("copy-obj-wrong-kms-key", e.value.response)
 
     @pytest.mark.aws_validated
+    @pytest.mark.xfail(
+        condition=LEGACY_S3_PROVIDER, reason="Validation not implemented in legacy provider"
+    )
     def test_complete_multipart_parts_order(self, s3_client, s3_bucket, snapshot):
         snapshot.add_transformer(
             [
