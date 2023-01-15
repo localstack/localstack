@@ -267,13 +267,17 @@ class TestImports:
 
 
 class TestSsmParameters:
+    @pytest.mark.aws_validated
     def test_create_stack_with_ssm_parameters(
-        self, cfn_client, ssm_client, sns_client, deploy_cfn_template
+        self, cfn_client, create_parameter, sns_client, deploy_cfn_template, snapshot
     ):
+        snapshot.add_transformer(snapshot.transform.cloudformation_api())
+        snapshot.add_transformer(snapshot.transform.key_value("ParameterValue"))
+        snapshot.add_transformer(snapshot.transform.key_value("ResolvedValue"))
+
         parameter_name = f"ls-param-{short_uid()}"
         parameter_value = f"ls-param-value-{short_uid()}"
-        parameter_logical_id = "parameter123"
-        ssm_client.put_parameter(Name=parameter_name, Value=parameter_value, Type="String")
+        create_parameter(Name=parameter_name, Value=parameter_value, Type="String")
         stack = deploy_cfn_template(
             template_path=os.path.join(
                 os.path.dirname(__file__), "../templates/dynamicparameter_ssm_string.yaml"
@@ -282,14 +286,16 @@ class TestSsmParameters:
         )
 
         stack_description = cfn_client.describe_stacks(StackName=stack.stack_name)["Stacks"][0]
-        assert stack_description is not None
-        assert stack_description["Parameters"][0]["ParameterKey"] == parameter_logical_id
-        assert stack_description["Parameters"][0]["ParameterValue"] == parameter_name
-        assert stack_description["Parameters"][0]["ResolvedValue"] == parameter_value
+        snapshot.match("stack-details", stack_description)
 
         topics = sns_client.list_topics()
         topic_arns = [t["TopicArn"] for t in topics["Topics"]]
-        assert any(parameter_value in t for t in topic_arns)
+
+        matching = [arn for arn in topic_arns if parameter_value in arn]
+        assert len(matching) == 1
+
+        tags = sns_client.list_tags_for_resource(ResourceArn=matching[0])
+        snapshot.match("topic-tags", tags)
 
     def test_resolve_ssm(
         self,
