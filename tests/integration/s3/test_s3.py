@@ -2661,6 +2661,141 @@ class TestS3:
         assert len(proxied_response.headers["server"].split(",")) == 1
         assert len(proxied_response.headers["date"].split(",")) == 2  # coma in the date
 
+    @pytest.mark.aws_validated
+    @pytest.mark.xfail(
+        condition=LEGACY_S3_PROVIDER, reason="Validation not implemented in legacy provider"
+    )
+    def test_s3_sse_validate_kms_key(
+        self,
+        s3_client,
+        s3_create_bucket,
+        kms_create_key,
+        monkeypatch,
+        snapshot,
+    ):
+        snapshot.add_transformer(snapshot.transform.key_value("Description"))
+        data = b"test-sse"
+        bucket_name = f"bucket-test-kms-{short_uid()}"
+        s3_create_bucket(
+            Bucket=bucket_name, CreateBucketConfiguration={"LocationConstraint": "us-west-2"}
+        )
+        # create key in a different region than the bucket
+        kms_key = kms_create_key(region="us-east-1")
+        # snapshot the KMS key to save the UUID for replacement in Error message.
+        snapshot.match("create-kms-key", kms_key)
+
+        # test whether the validation is skipped when not disabling the validation
+        if not is_aws_cloud():
+            key_name = "test-sse-validate-kms-key-no-check"
+            response = s3_client.put_object(
+                Bucket=bucket_name,
+                Key=key_name,
+                Body=data,
+                ServerSideEncryption="aws:kms",
+                SSEKMSKeyId="fake-key-id",
+            )
+            assert response["ResponseMetadata"]["HTTPStatusCode"] == 200
+
+            response = s3_client.create_multipart_upload(
+                Bucket=bucket_name,
+                Key="multipart-test-sse-validate-kms-key-no-check",
+                ServerSideEncryption="aws:kms",
+                SSEKMSKeyId="fake-key-id",
+            )
+            assert response["ResponseMetadata"]["HTTPStatusCode"] == 200
+
+            response = s3_client.copy_object(
+                Bucket=bucket_name,
+                Key="copy-test-sse-validate-kms-key-no-check",
+                CopySource={"Bucket": bucket_name, "Key": key_name},
+                ServerSideEncryption="aws:kms",
+                SSEKMSKeyId="fake-key-id",
+            )
+            assert response["ResponseMetadata"]["HTTPStatusCode"] == 200
+
+        key_name = "test-sse-validate-kms-key"
+        fake_key_uuid = "134f2428-cec1-4b25-a1ae-9048164dba47"
+
+        # activating the validation, for AWS parity
+        monkeypatch.setattr(config, "S3_SKIP_KMS_KEY_VALIDATION", False)
+        with pytest.raises(ClientError) as e:
+            s3_client.put_object(
+                Bucket=bucket_name,
+                Key=key_name,
+                Body=data,
+                ServerSideEncryption="aws:kms",
+                SSEKMSKeyId="fake-key-id",
+            )
+        snapshot.match("put-obj-wrong-kms-key", e.value.response)
+
+        with pytest.raises(ClientError) as e:
+            s3_client.put_object(
+                Bucket=bucket_name,
+                Key=key_name,
+                Body=data,
+                ServerSideEncryption="aws:kms",
+                SSEKMSKeyId=fake_key_uuid,
+            )
+        snapshot.match("put-obj-wrong-kms-key-real-uuid", e.value.response)
+
+        # we create a wrong arn but with the right region to test error message
+        wrong_id_arn = (
+            kms_key["Arn"]
+            .replace("us-east-1", "us-west-2")
+            .replace(kms_key["KeyId"], fake_key_uuid)
+        )
+        with pytest.raises(ClientError) as e:
+            s3_client.put_object(
+                Bucket=bucket_name,
+                Key=key_name,
+                Body=data,
+                ServerSideEncryption="aws:kms",
+                SSEKMSKeyId=wrong_id_arn,
+            )
+        snapshot.match("put-obj-wrong-kms-key-real-uuid-arn", e.value.response)
+
+        with pytest.raises(ClientError) as e:
+            s3_client.put_object(
+                Bucket=bucket_name,
+                Key="test-sse-validate-kms-key-no-check-region",
+                Body=data,
+                ServerSideEncryption="aws:kms",
+                SSEKMSKeyId=kms_key["Arn"],
+            )
+        snapshot.match("put-obj-different-region-kms-key", e.value.response)
+
+        with pytest.raises(ClientError) as e:
+            s3_client.put_object(
+                Bucket=bucket_name,
+                Key="test-sse-validate-kms-key-different-region-no-arn",
+                Body=data,
+                ServerSideEncryption="aws:kms",
+                SSEKMSKeyId=kms_key["KeyId"],
+            )
+        snapshot.match("put-obj-different-region-kms-key-no-arn", e.value.response)
+
+        with pytest.raises(ClientError) as e:
+            s3_client.create_multipart_upload(
+                Bucket=bucket_name,
+                Key="multipart-test-sse-validate-kms-key-no-check",
+                ServerSideEncryption="aws:kms",
+                SSEKMSKeyId="fake-key-id",
+            )
+        snapshot.match("create-multipart-wrong-kms-key", e.value.response)
+
+        # create a object to be copied
+        src_key = "key-to-be-copied"
+        s3_client.put_object(Bucket=bucket_name, Key=src_key, Body=b"test-data")
+        with pytest.raises(ClientError) as e:
+            s3_client.copy_object(
+                Bucket=bucket_name,
+                Key="copy-test-sse-validate-kms-key-no-check",
+                CopySource={"Bucket": bucket_name, "Key": src_key},
+                ServerSideEncryption="aws:kms",
+                SSEKMSKeyId="fake-key-id",
+            )
+        snapshot.match("copy-obj-wrong-kms-key", e.value.response)
+
 
 class TestS3TerraformRawRequests:
     @pytest.mark.only_localstack

@@ -6,26 +6,23 @@ import unittest
 from unittest.mock import MagicMock
 
 import pytest
+from pytest_httpserver import HTTPServer
+from werkzeug import Request, Response
 
-from localstack.services.generic_proxy import ProxyListener, start_proxy_server
-from localstack.utils.common import (
+from localstack.utils.collections import is_none_or_empty
+from localstack.utils.crypto import (
     PEM_CERT_END,
     PEM_CERT_START,
     PEM_KEY_END_REGEX,
     PEM_KEY_START_REGEX,
-    FileListener,
-    FileMappedDocument,
-    download,
     generate_ssl_cert,
-    get_free_tcp_port,
-    is_none_or_empty,
-    load_file,
-    new_tmp_file,
-    poll_condition,
-    rm_rf,
-    run,
-    synchronized,
 )
+from localstack.utils.files import load_file, new_tmp_file, rm_rf
+from localstack.utils.http import download
+from localstack.utils.json import FileMappedDocument
+from localstack.utils.run import run
+from localstack.utils.sync import poll_condition, synchronized
+from localstack.utils.tail import FileListener
 
 
 class SynchronizedTest(unittest.TestCase):
@@ -263,21 +260,22 @@ def test_generate_ssl_cert():
 
 
 def test_download_with_timeout():
-    class DownloadListener(ProxyListener):
-        def forward_request(self, method, path, data, headers):
-            if path == "/sleep":
-                time.sleep(2)
-            return {}
-
-    port = get_free_tcp_port()
-    proxy = start_proxy_server(port, update_listener=DownloadListener())
+    def _handler(_: Request) -> Response:
+        time.sleep(2)
+        return Response(b"", status=200)
 
     tmp_file = new_tmp_file()
-    download(f"http://localhost:{port}/", tmp_file)
-    assert load_file(tmp_file) == "{}"
-    with pytest.raises(TimeoutError):
-        download(f"http://localhost:{port}/sleep", tmp_file, timeout=1)
+    # it seems this test is not properly cleaning up for other unit tests, this step is normally not necessary
+    # we should use the fixture `httpserver` instead of HTTPServer directly
+    with HTTPServer() as server:
+        server.expect_request("/").respond_with_data(b"tmp_file", status=200)
+        server.expect_request("/sleep").respond_with_handler(_handler)
+        http_endpoint = server.url_for("/")
+
+        download(http_endpoint, tmp_file)
+        assert load_file(tmp_file) == "tmp_file"
+        with pytest.raises(TimeoutError):
+            download(f"{http_endpoint}/sleep", tmp_file, timeout=1)
 
     # clean up
-    proxy.stop()
     rm_rf(tmp_file)

@@ -9,26 +9,17 @@ from typing import Dict, List, Tuple
 
 import pytest
 from botocore.exceptions import ClientError
+from pytest_httpserver import HTTPServer
+from werkzeug import Request, Response
 
 from localstack import config
 from localstack.aws.api.lambda_ import Runtime
-from localstack.services.apigateway.helpers import extract_query_string_params
 from localstack.services.events.provider import _get_events_tmp_dir
-from localstack.services.generic_proxy import ProxyListener
-from localstack.services.infra import start_proxy
 from localstack.testing.aws.util import is_aws_cloud
 from localstack.utils.aws import arns, aws_stack, resources
-from localstack.utils.aws.aws_responses import requests_response
-from localstack.utils.common import (
-    get_free_tcp_port,
-    get_service_protocol,
-    load_file,
-    retry,
-    short_uid,
-    to_str,
-    wait_for_port_open,
-)
-from localstack.utils.sync import poll_condition
+from localstack.utils.files import load_file
+from localstack.utils.strings import short_uid, to_str
+from localstack.utils.sync import poll_condition, retry
 from localstack.utils.testutil import check_expected_lambda_log_events_length
 
 from .awslambda.test_lambda import TEST_LAMBDA_PYTHON_ECHO
@@ -591,33 +582,30 @@ class TestEvents:
         self.cleanup(rule_name=rule_name)
 
     def test_scheduled_expression_events(
-        self, stepfunctions_client, sns_client, sqs_client, events_client, sns_subscription
+        self,
+        stepfunctions_client,
+        sns_create_topic,
+        sqs_client,
+        sqs_create_queue,
+        sqs_queue_arn,
+        events_client,
+        sns_subscription,
+        httpserver: HTTPServer,
     ):
-        class HttpEndpointListener(ProxyListener):
-            def forward_request(self, method, path, data, headers):
-                event = json.loads(to_str(data))
-                events.append(event)
-                return 200
+        httpserver.expect_request("").respond_with_data(b"", 200)
+        http_endpoint = httpserver.url_for("/")
 
-        local_port = get_free_tcp_port()
-        proxy = start_proxy(local_port, update_listener=HttpEndpointListener())
-        wait_for_port_open(local_port)
-
-        topic_name = "topic-{}".format(short_uid())
-        queue_name = "queue-{}".format(short_uid())
-        fifo_queue_name = "queue-{}.fifo".format(short_uid())
-        rule_name = "rule-{}".format(short_uid())
-        endpoint = "{}://{}:{}".format(
-            get_service_protocol(), config.LOCALSTACK_HOSTNAME, local_port
-        )
+        topic_name = f"topic-{short_uid()}"
+        queue_name = f"queue-{short_uid()}"
+        fifo_queue_name = f"queue-{short_uid()}.fifo"
+        rule_name = f"rule-{short_uid()}"
         sm_role_arn = arns.role_arn("sfn_role")
-        sm_name = "state-machine-{}".format(short_uid())
-        topic_target_id = "target-{}".format(short_uid())
-        sm_target_id = "target-{}".format(short_uid())
-        queue_target_id = "target-{}".format(short_uid())
-        fifo_queue_target_id = "target-{}".format(short_uid())
+        sm_name = f"state-machine-{short_uid()}"
+        topic_target_id = f"target-{short_uid()}"
+        sm_target_id = f"target-{short_uid()}"
+        queue_target_id = f"target-{short_uid()}"
+        fifo_queue_target_id = f"target-{short_uid()}"
 
-        events = []
         state_machine_definition = """
         {
             "StartAt": "Hello",
@@ -635,35 +623,37 @@ class TestEvents:
             name=sm_name, definition=state_machine_definition, roleArn=sm_role_arn
         )["stateMachineArn"]
 
-        topic_arn = sns_client.create_topic(Name=topic_name)["TopicArn"]
-        sns_subscription(TopicArn=topic_arn, Protocol="http", Endpoint=endpoint)
+        topic_arn = sns_create_topic(Name=topic_name)["TopicArn"]
+        sns_subscription(TopicArn=topic_arn, Protocol="http", Endpoint=http_endpoint)
 
-        queue_url = sqs_client.create_queue(QueueName=queue_name)["QueueUrl"]
-        fifo_queue_url = sqs_client.create_queue(
+        queue_url = sqs_create_queue(QueueName=queue_name)
+        fifo_queue_url = sqs_create_queue(
             QueueName=fifo_queue_name,
             Attributes={"FifoQueue": "true", "ContentBasedDeduplication": "true"},
-        )["QueueUrl"]
+        )
+
         queue_arn = arns.sqs_queue_arn(queue_name)
         fifo_queue_arn = arns.sqs_queue_arn(fifo_queue_name)
 
         event = {"env": "testing"}
+        event_json = json.dumps(event)
 
         events_client.put_rule(Name=rule_name, ScheduleExpression="rate(1 minutes)")
 
         events_client.put_targets(
             Rule=rule_name,
             Targets=[
-                {"Id": topic_target_id, "Arn": topic_arn, "Input": json.dumps(event)},
+                {"Id": topic_target_id, "Arn": topic_arn, "Input": event_json},
                 {
                     "Id": sm_target_id,
                     "Arn": state_machine_arn,
-                    "Input": json.dumps(event),
+                    "Input": event_json,
                 },
-                {"Id": queue_target_id, "Arn": queue_arn, "Input": json.dumps(event)},
+                {"Id": queue_target_id, "Arn": queue_arn, "Input": event_json},
                 {
                     "Id": fifo_queue_target_id,
                     "Arn": fifo_queue_arn,
-                    "Input": json.dumps(event),
+                    "Input": event_json,
                     "SqsParameters": {"MessageGroupId": "123"},
                 },
             ],
@@ -677,26 +667,31 @@ class TestEvents:
             assert len(executions) >= 1
 
             # http endpoint got events
-            assert len(events) >= 2
+            assert len(httpserver.log) >= 2
             notifications = [
-                event["Message"] for event in events if event["Type"] == "Notification"
+                sns_event["Message"]
+                for request, _ in httpserver.log
+                if (
+                    (sns_event := request.get_json(force=True))
+                    and sns_event["Type"] == "Notification"
+                )
             ]
             assert len(notifications) >= 1
 
             # get state machine execution detail
             execution_arn = executions[0]["executionArn"]
-            execution_input = stepfunctions_client.describe_execution(executionArn=execution_arn)[
+            _execution_input = stepfunctions_client.describe_execution(executionArn=execution_arn)[
                 "input"
             ]
 
             all_msgs = []
-            # get message from queue
+            # get message from queue and fifo_queue
             for url in q_urls:
                 msgs = sqs_client.receive_message(QueueUrl=url).get("Messages", [])
                 assert len(msgs) >= 1
                 all_msgs.append(msgs[0])
 
-            return execution_input, notifications[0], all_msgs
+            return _execution_input, notifications[0], all_msgs
 
         execution_input, notification, msgs_received = retry(
             received, retries=5, sleep=15, q_urls=[queue_url, fifo_queue_url]
@@ -707,60 +702,32 @@ class TestEvents:
             assert json.loads(msg_received["Body"]) == event
 
         # clean up
-        proxy.stop()
         target_ids = [topic_target_id, sm_target_id, queue_target_id, fifo_queue_target_id]
         self.cleanup(None, rule_name, target_ids=target_ids, queue_url=queue_url)
-        sns_client.delete_topic(TopicArn=topic_arn)
         stepfunctions_client.delete_state_machine(stateMachineArn=state_machine_arn)
 
     @pytest.mark.parametrize("auth", API_DESTINATION_AUTHS)
-    def test_api_destinations(self, events_client, auth):
+    def test_api_destinations(self, events_client, httpserver: HTTPServer, auth):
         token = short_uid()
         bearer = f"Bearer {token}"
 
-        class HttpEndpointListener(ProxyListener):
-            def forward_request(self, method, path, data, headers):
-                event = json.loads(to_str(data))
-                data_received.update(event)
-
-                request_split = extract_query_string_params(path)
-                paths_list.append(request_split[0])
-                query_params_received.update(request_split[1])
-
-                headers_received.update(headers)
-
-                if "client_id" in event:
-                    oauth_data.update(
-                        {
-                            "client_id": event.get("client_id"),
-                            "client_secret": event.get("client_secret"),
-                            "header_value": headers.get("oauthheader"),
-                            "body_value": event.get("oauthbody"),
-                            "path": path,
-                        }
-                    )
-
-                return requests_response(
+        def _handler(_request: Request):
+            return Response(
+                json.dumps(
                     {
                         "access_token": token,
                         "token_type": "Bearer",
                         "expires_in": 86400,
                     }
-                )
+                ),
+                mimetype="application/json",
+            )
 
-        data_received = {}
-        query_params_received = {}
-        paths_list = []
-        headers_received = {}
-        oauth_data = {}
-
-        local_port = get_free_tcp_port()
-        proxy = start_proxy(local_port, update_listener=HttpEndpointListener())
-        wait_for_port_open(local_port)
-        url = f"http://localhost:{local_port}"
+        httpserver.expect_request("").respond_with_handler(_handler)
+        http_endpoint = httpserver.url_for("/")
 
         if auth.get("type") == "OAUTH_CLIENT_CREDENTIALS":
-            auth["parameters"]["AuthorizationEndpoint"] = url
+            auth["parameters"]["AuthorizationEndpoint"] = http_endpoint
 
         connection_name = f"c-{short_uid()}"
         connection_arn = events_client.create_connection(
@@ -809,7 +776,7 @@ class TestEvents:
         result = events_client.create_api_destination(
             Name=dest_name,
             ConnectionArn=connection_arn,
-            InvocationEndpoint=url,
+            InvocationEndpoint=http_endpoint,
             HttpMethod="POST",
         )
 
@@ -854,44 +821,48 @@ class TestEvents:
         events_client.delete_api_destination(Name=dest_name)
         self.cleanup(rule_name=rule_name, target_ids=target_id)
 
-        # assert that all events have been received in the HTTP server listener
-        user_pass = to_str(base64.b64encode(b"user:pass"))
+        to_recv = 2 if auth["type"] == "OAUTH_CLIENT_CREDENTIALS" else 1
+        poll_condition(lambda: len(httpserver.log) >= to_recv, timeout=5)
 
-        def check():
-            # Connection data validation
-            assert data_received.get("connection_body_param") == "value"
-            assert headers_received.get("Connection_Header_Param") == "value"
-            assert query_params_received.get("connection_query_param") == "value"
+        event_request, _ = httpserver.log[-1]
+        event = event_request.get_json(force=True)
+        headers = event_request.headers
+        query_args = event_request.args
 
-            # Target parameters validation
-            assert "/target_path" in paths_list
-            assert data_received.get("target_value") == "value"
-            assert headers_received.get("Target_Header") == "target_header_value"
-            assert query_params_received.get("target_query") == "t_query"
+        # Connection data validation
+        assert event["connection_body_param"] == "value"
+        assert headers["Connection_Header_Param"] == "value"
+        assert query_args["connection_query_param"] == "value"
 
-            # connection/target overwrite test
-            assert headers_received.get("Overwritten_Header") == "original"
-            assert query_params_received.get("overwritten_query") == "original"
+        # Target parameters validation
+        assert "/target_path" in event_request.path
+        assert event["target_value"] == "value"
+        assert headers["Target_Header"] == "target_header_value"
+        assert query_args["target_query"] == "t_query"
 
-            # Auth validation
-            if auth.get("type") == "BASIC":
-                assert headers_received.get("Authorization") == f"Basic {user_pass}"
-            if auth.get("type") == "API_KEY":
-                assert headers_received.get("Api") == "apikey_secret"
-            if auth.get("type") == "OAUTH_CLIENT_CREDENTIALS":
-                assert headers_received.get("Authorization") == bearer
+        # connection/target overwrite test
+        assert headers["Overwritten_Header"] == "original"
+        assert query_args["overwritten_query"] == "original"
 
+        # Auth validation
+        match auth["type"]:
+            case "BASIC":
+                user_pass = to_str(base64.b64encode(b"user:pass"))
+                assert headers["Authorization"] == f"Basic {user_pass}"
+            case "API_KEY":
+                assert headers["Api"] == "apikey_secret"
+
+            case "OAUTH_CLIENT_CREDENTIALS":
+                assert headers["Authorization"] == bearer
+
+                oauth_request, _ = httpserver.log[0]
+                oauth_login = oauth_request.get_json(force=True)
                 # Oauth login validation
-                assert oauth_data.get("client_id") == "id"
-                assert oauth_data.get("client_secret") == "password"
-                assert oauth_data.get("header_value") == "value2"
-                assert oauth_data.get("body_value") == "value1"
-                assert "oauthquery=value3" in oauth_data.get("path")
-
-        retry(check, sleep=0.5, retries=5)
-
-        # clean up
-        proxy.stop()
+                assert oauth_login["client_id"] == "id"
+                assert oauth_login["client_secret"] == "password"
+                assert oauth_login["oauthbody"] == "value1"
+                assert oauth_request.headers["oauthheader"] == "value2"
+                assert oauth_request.args["oauthquery"] == "value3"
 
     def test_create_connection_validations(self, events_client):
         connection_name = "This should fail with two errors 123467890123412341234123412341234"

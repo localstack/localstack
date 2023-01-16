@@ -12,8 +12,9 @@ import xmltodict
 from botocore.exceptions import ClientError
 from jsonpatch import apply_patch
 from moto.apigateway import apigateway_backends
-from requests.models import Response
+from pytest_httpserver import HTTPServer
 from requests.structures import CaseInsensitiveDict
+from werkzeug import Request, Response
 
 from localstack import config
 from localstack.aws.accounts import get_aws_account_id
@@ -22,7 +23,6 @@ from localstack.aws.handlers import cors
 from localstack.config import get_edge_url
 from localstack.constants import (
     APPLICATION_JSON,
-    HEADER_LOCALSTACK_REQUEST_URL,
     LOCALHOST_HOSTNAME,
     TEST_AWS_ACCOUNT_ID,
     TEST_AWS_REGION_NAME,
@@ -37,14 +37,14 @@ from localstack.services.apigateway.helpers import (
     path_based_url,
 )
 from localstack.services.awslambda.lambda_api import add_event_source, use_docker
-from localstack.services.generic_proxy import ProxyListener
-from localstack.services.infra import start_proxy
 from localstack.utils import testutil
 from localstack.utils.aws import arns, aws_stack, queries
 from localstack.utils.aws import resources as resource_util
-from localstack.utils.common import clone, get_free_tcp_port, json_safe, load_file
-from localstack.utils.common import safe_requests as requests
-from localstack.utils.common import select_attributes, short_uid, to_str
+from localstack.utils.collections import select_attributes
+from localstack.utils.files import load_file
+from localstack.utils.http import safe_requests as requests
+from localstack.utils.json import clone, json_safe
+from localstack.utils.strings import short_uid, to_str
 from localstack.utils.sync import retry
 from tests.integration.apigateway_fixtures import (
     _client,
@@ -124,6 +124,23 @@ ApiGatewayLambdaProxyIntegrationTestResult = namedtuple(
         "path_with_replace",
     ],
 )
+
+
+@pytest.fixture(scope="function")
+def echo_http_server(httpserver: HTTPServer):
+    def _echo(request: Request) -> Response:
+        result = {
+            "data": request.data or "{}",
+            "headers": dict(request.headers),
+            "request_url": request.url,
+        }
+        response_body = json.dumps(json_safe(result))
+        return Response(response_body, status=200)
+
+    httpserver.expect_request("").respond_with_handler(_echo)
+    http_endpoint = httpserver.url_for("/")
+
+    yield http_endpoint
 
 
 class TestAPIGateway:
@@ -520,14 +537,11 @@ class TestAPIGateway:
         assert response.headers["Access-Control-Allow-Origin"] == "*"
 
     @pytest.mark.parametrize("int_type", ["custom", "proxy"])
-    def test_api_gateway_http_integrations(self, int_type, monkeypatch):
+    def test_api_gateway_http_integrations(self, int_type, echo_http_server, monkeypatch):
         monkeypatch.setattr(config, "DISABLE_CUSTOM_CORS_APIGATEWAY", False)
 
-        test_port = get_free_tcp_port()
-        backend_url = "http://localhost:%s%s" % (test_port, self.API_PATH_HTTP_BACKEND)
-
-        # start test HTTP backend
-        proxy = self.start_http_backend(test_port)
+        backend_base_url = echo_http_server
+        backend_url = f"{backend_base_url}/{self.API_PATH_HTTP_BACKEND}"
 
         # create API Gateway and connect it to the HTTP_PROXY/HTTP backend
         result = self.connect_api_gateway_to_http(
@@ -573,9 +587,6 @@ class TestAPIGateway:
         expected = custom_result if int_type == "custom" else data
         assert expected == content["data"]
         assert ctype == headers["content-type"]
-
-        # clean up
-        proxy.stop()
 
     @pytest.mark.parametrize("use_hostname", [True, False])
     @pytest.mark.parametrize("disable_custom_cors", [True, False])
@@ -1650,13 +1661,14 @@ class TestAPIGateway:
                 retry(_invoke_step_function, retries=15, sleep=0.8)
 
     def test_api_gateway_http_integration_with_path_request_parameter(
-        self, apigateway_client, create_rest_apigw
+        self,
+        apigateway_client,
+        create_rest_apigw,
+        echo_http_server,
     ):
-        test_port = get_free_tcp_port()
-        backend_url = "http://localhost:%s/person/{id}" % test_port
-
         # start test HTTP backend
-        proxy = self.start_http_backend(test_port)
+        backend_base_url = echo_http_server
+        backend_url = backend_base_url + "/person/{id}"
 
         # create rest api
         api_id, _, _ = create_rest_apigw(name="test")
@@ -1697,7 +1709,7 @@ class TestAPIGateway:
             assert 200 == result.status_code
             assert re.search(
                 "http://.*localhost.*/person/123",
-                content["headers"].get(HEADER_LOCALSTACK_REQUEST_URL),
+                content["request_url"],
             )
 
         for use_hostname in [True, False]:
@@ -1710,8 +1722,6 @@ class TestAPIGateway:
                     use_ssl=use_ssl,
                 )
                 _test_invoke(url)
-
-        proxy.stop()
 
     def _get_invoke_endpoint(
         self, api_id, stage="test", path="/", use_hostname=False, use_ssl=False
@@ -2006,23 +2016,6 @@ class TestAPIGateway:
         assert 200 == response.get("status")
         assert "response from" in json.loads(response.get("body")).get("body")
         assert "val123" in json.loads(response.get("body")).get("body")
-
-    @staticmethod
-    def start_http_backend(test_port):
-        # test listener for target HTTP backend
-        class TestListener(ProxyListener):
-            def forward_request(self, **kwargs):
-                response = Response()
-                response.status_code = 200
-                result = {
-                    "data": kwargs.get("data") or "{}",
-                    "headers": dict(kwargs.get("headers")),
-                }
-                response._content = json.dumps(json_safe(result))
-                return response
-
-        proxy = start_proxy(test_port, update_listener=TestListener())
-        return proxy
 
     @staticmethod
     def create_api_gateway_and_deploy(

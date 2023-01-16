@@ -933,6 +933,7 @@ def kms_create_key(create_boto_client):
 
     for region, key_id in key_ids:
         try:
+            # shortest amount of time you can schedule the deletion
             create_boto_client("kms", region).schedule_key_deletion(
                 KeyId=key_id, PendingWindowInDays=7
             )
@@ -959,6 +960,7 @@ def kms_replicate_key(create_boto_client):
 
     for region_to, key_id in key_ids:
         try:
+            # shortest amount of time you can schedule the deletion
             create_boto_client("kms", region_to).schedule_key_deletion(
                 KeyId=key_id, PendingWindowInDays=7
             )
