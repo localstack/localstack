@@ -155,9 +155,12 @@ def s3_create_bucket_with_client(s3_resource):
 
 @pytest.fixture
 def s3_multipart_upload(s3_client):
-    def perform_multipart_upload(bucket, key, data=None, zipped=False, acl=None, parts: int = 1):
+    def perform_multipart_upload(
+        bucket, key, data=None, zipped=False, acl=None, parts: int = 1, **kwargs
+    ):
         # beware, the last part can be under 5 MiB, but previous parts needs to be between 5MiB and 5GiB
-        kwargs = {"ACL": acl} if acl else {}
+        if acl:
+            kwargs["ACL"] = acl
         multipart_upload_dict = s3_client.create_multipart_upload(Bucket=bucket, Key=key, **kwargs)
         upload_id = multipart_upload_dict["UploadId"]
         data = data or (5 * short_uid())
@@ -198,39 +201,6 @@ def s3_multipart_upload(s3_client):
             MultipartUpload={"Parts": multipart_upload_parts},
             UploadId=upload_id,
         )
-
-    return perform_multipart_upload
-
-
-@pytest.fixture
-def s3_multipart_upload_with_snapshot(s3_client, snapshot):
-    def perform_multipart_upload(
-        bucket: str, key: str, data: bytes, snapshot_prefix: str, **kwargs
-    ):
-        create_multipart_resp = s3_client.create_multipart_upload(Bucket=bucket, Key=key, **kwargs)
-        snapshot.match(f"{snapshot_prefix}-create-multipart", create_multipart_resp)
-        upload_id = create_multipart_resp["UploadId"]
-
-        # Write contents to memory rather than a file.
-        upload_file_object = BytesIO(data)
-
-        response = s3_client.upload_part(
-            Bucket=bucket,
-            Key=key,
-            Body=upload_file_object,
-            PartNumber=1,
-            UploadId=upload_id,
-        )
-        snapshot.match(f"{snapshot_prefix}-upload-part", response)
-
-        response = s3_client.complete_multipart_upload(
-            Bucket=bucket,
-            Key=key,
-            MultipartUpload={"Parts": [{"ETag": response["ETag"], "PartNumber": 1}]},
-            UploadId=upload_id,
-        )
-        snapshot.match(f"{snapshot_prefix}-compete-multipart", response)
-        return response
 
     return perform_multipart_upload
 
@@ -2946,9 +2916,15 @@ class TestS3:
 
     @pytest.mark.aws_validated
     @pytest.mark.skip_snapshot_verify(
-        condition=is_old_provider, paths=["$..Error.StorageClassRequested"]
+        condition=is_old_provider,
+        paths=[
+            "$..Error.StorageClassRequested",
+            "$..Error.RequestID",
+        ],
     )
-    def test_put_object_storage_class_outposts(self, s3_client, s3_bucket, snapshot):
+    def test_put_object_storage_class_outposts(
+        self, s3_client, s3_bucket, s3_multipart_upload, snapshot
+    ):
         key_name = "test-put-object-storage-class"
         with pytest.raises(ClientError) as e:
             s3_client.put_object(
@@ -2958,6 +2934,16 @@ class TestS3:
                 StorageClass=StorageClass.OUTPOSTS,
             )
         snapshot.match("put-object-outposts", e.value.response)
+
+        key_name = "test-multipart-storage-class"
+        with pytest.raises(ClientError) as e:
+            s3_multipart_upload(
+                bucket=s3_bucket,
+                key=key_name,
+                data="upload-part-1" * 5,
+                StorageClass=StorageClass.OUTPOSTS,
+            )
+        snapshot.match("multipart-outposts", e.value.response)
 
 
 class TestS3TerraformRawRequests:

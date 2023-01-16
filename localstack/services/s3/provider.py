@@ -482,11 +482,11 @@ class S3Provider(S3Api, ServiceLifecycleHook):
         # we need to check before sending it to moto
         moto_backend = get_moto_s3_backend(context)
         bucket = get_bucket_from_moto(moto_backend, bucket=request["Bucket"])
-        if multipart := bucket.multipart.get(request["UploadId"]):
-            if multipart.storage_class and multipart.storage_class not in VALID_STORAGE_CLASSES:
+        if multipart := bucket.multiparts.get(request["UploadId"]):
+            if multipart.storage and multipart.storage not in VALID_STORAGE_CLASSES:
                 raise InvalidStorageClass(
                     "The storage class you specified is not valid",
-                    StorageClassRequested=multipart.storage_class,
+                    StorageClassRequested=multipart.storage,
                 )
 
         response: CompleteMultipartUploadOutput = call_moto(context)
