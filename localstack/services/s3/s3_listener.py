@@ -21,6 +21,7 @@ from requests.models import Request, Response
 
 from localstack import config, constants
 from localstack.aws.api import CommonServiceException
+from localstack.aws.connect import connect_to
 from localstack.config import get_protocol as get_service_protocol
 from localstack.services.generic_proxy import ProxyListener
 from localstack.services.generic_proxy import append_cors_headers as _append_default_cors_headers
@@ -368,10 +369,11 @@ def send_notification_for_subscriber(
             )
     if notification.get("Topic"):
         region = arns.extract_region_from_arn(notification["Topic"])
-        sns_client = aws_stack.connect_to_service("sns", region_name=region)
+        topic_arn = notification["Topic"]
+        sns_client = connect_to("sns", target_arn=topic_arn, source_service="s3")
         try:
             sns_client.publish(
-                TopicArn=notification["Topic"],
+                TopicArn=topic_arn,
                 Message=message,
                 Subject="Amazon S3 Notification",
             )

@@ -7,6 +7,7 @@ from typing import Dict, Optional
 
 from moto.events.models import events_backends
 
+from localstack.aws.connect import connect_to
 from localstack.services.apigateway.helpers import extract_query_string_params
 from localstack.utils import collections
 from localstack.utils.aws.arns import (
@@ -35,6 +36,7 @@ def send_event_to_target(
     asynchronous: bool = True,
     target: Dict = None,
 ):
+    # TODO@viren Refactor to accept source ARN and source service, and send them with all `connect_to` calls
     region = extract_region_from_arn(target_arn)
     if target is None:
         target = {}
@@ -48,7 +50,7 @@ def send_event_to_target(
         )
 
     elif ":sns:" in target_arn:
-        sns_client = connect_to_service("sns", region_name=region)
+        sns_client = connect_to("sns", target_arn=target_arn)
         sns_client.publish(TopicArn=target_arn, Message=json.dumps(event))
 
     elif ":sqs:" in target_arn:

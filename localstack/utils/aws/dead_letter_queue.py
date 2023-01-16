@@ -3,6 +3,7 @@ import logging
 import uuid
 from typing import Dict, List
 
+from localstack.aws.connect import connect_to
 from localstack.utils.aws import arns, aws_stack
 from localstack.utils.aws.aws_models import LambdaFunction
 from localstack.utils.strings import convert_to_printable_chars, first_char_to_upper
@@ -52,7 +53,9 @@ def _send_to_dead_letter_queue(source_arn: str, dlq_arn: str, event: Dict, error
             LOG.info(msg)
             raise Exception(msg)
     elif ":sns:" in dlq_arn:
-        sns_client = aws_stack.connect_to_service("sns")
+        sns_client = connect_to(
+            "sns", target_arn=dlq_arn, source_service="lambda", source_arn=source_arn
+        )
         for message in messages:
             sns_client.publish(
                 TopicArn=dlq_arn,

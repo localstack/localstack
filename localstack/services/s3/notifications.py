@@ -28,6 +28,7 @@ from localstack.aws.api.s3 import (
     TopicArn,
     TopicConfiguration,
 )
+from localstack.aws.connect import connect_to
 from localstack.config import DEFAULT_REGION
 from localstack.services.s3.models import get_moto_s3_backend
 from localstack.services.s3.utils import (
@@ -350,7 +351,7 @@ class SnsNotifier(BaseNotifier):
         return topic_configuration.get("TopicArn", ""), "TopicArn"
 
     def _verify_target_exists(self, arn: str, arn_data: ArnData) -> None:
-        client = aws_stack.connect_to_service(self.service_name, region_name=arn_data["region"])
+        client = connect_to(self.service_name, target_arn=arn, source_service="s3")
         try:
             client.get_topic_attributes(TopicArn=arn)
         except ClientError:
