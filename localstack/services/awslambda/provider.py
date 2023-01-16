@@ -1754,7 +1754,7 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
 
         # Update revision id of alias or version
         # TODO: re-evaluate data model to prevent this dirty hack just for bumping the revision id
-        # TODO: does that need a `with function.lock`? => single .replace would facilitate this
+        # TODO: does that need a `with function.lock` for atomic updates of the policy + revision_id?
         if api_utils.qualifier_is_alias(resolved_qualifier):
             latest_alias = resolved_fn.aliases[resolved_qualifier]
             resolved_fn.aliases[resolved_qualifier] = dataclasses.replace(latest_alias)
@@ -1817,7 +1817,7 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
 
         # Update revision id for alias or version
         # TODO: re-evaluate data model to prevent this dirty hack just for bumping the revision id
-        # TODO: does that need a `with function.lock`? => single .replace would facilitate this
+        # TODO: does that need a `with function.lock` for atomic updates of the policy + revision_id?
         if api_utils.qualifier_is_alias(resolved_qualifier):
             latest_alias = resolved_fn.aliases[resolved_qualifier]
             resolved_fn.aliases[resolved_qualifier] = dataclasses.replace(latest_alias)
