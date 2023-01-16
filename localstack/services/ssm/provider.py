@@ -4,6 +4,8 @@ import time
 from abc import ABC
 from typing import Dict, Optional
 
+from moto.ssm.models import SimpleSystemManagerBackend, ssm_backends
+
 from localstack.aws.api import CommonServiceException, RequestContext
 from localstack.aws.api.ssm import (
     Boolean,
@@ -25,7 +27,6 @@ from localstack.utils.aws import aws_stack
 from localstack.utils.collections import remove_attributes
 from localstack.utils.objects import keys_to_lower
 from localstack.utils.patch import patch
-from moto.ssm.models import SimpleSystemManagerBackend, ssm_backends
 
 PARAM_PREFIX_SECRETSMANAGER = "/aws/reference/secretsmanager"
 
@@ -48,8 +49,9 @@ class InvalidParameterNameException(ValidationException):
 class DoesNotExistException(CommonServiceException):
     def __init__(self, window_id):
         super().__init__(
-            "DoesNotExistException", message=f"Maintenance window {window_id} does not exist",
-            sender_fault=True
+            "DoesNotExistException",
+            message=f"Maintenance window {window_id} does not exist",
+            sender_fault=True,
         )
 
 
@@ -239,4 +241,3 @@ def delete_maintenance_window(fn, self, window_id):
     if not store.windows.get(window_id):
         raise DoesNotExistException(window_id)
     return fn(self, window_id)
-
