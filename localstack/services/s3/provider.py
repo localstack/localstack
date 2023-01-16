@@ -42,6 +42,7 @@ from localstack.aws.api.s3 import (
     GetBucketRequestPaymentOutput,
     GetBucketRequestPaymentRequest,
     GetBucketWebsiteOutput,
+    GetObjectAclOutput,
     GetObjectAttributesOutput,
     GetObjectAttributesParts,
     GetObjectAttributesRequest,
@@ -65,12 +66,15 @@ from localstack.aws.api.s3 import (
     ObjectIdentifier,
     ObjectKey,
     ObjectLockToken,
+    ObjectVersionId,
     PostResponse,
     PutBucketAclRequest,
     PutBucketLifecycleConfigurationRequest,
     PutBucketLifecycleRequest,
     PutBucketRequestPaymentRequest,
     PutBucketVersioningRequest,
+    PutObjectAclOutput,
+    PutObjectAclRequest,
     PutObjectOutput,
     PutObjectRequest,
     PutObjectTaggingOutput,
@@ -709,7 +713,7 @@ class S3Provider(S3Api, ServiceLifecycleHook):
             raise UnexpectedContent("This request does not support content")
 
         if canned_acl:
-            validate_bucket_canned_acl(canned_acl)
+            validate_canned_acl(canned_acl)
 
         elif present_headers:
             for key, grantees_values in present_headers:
@@ -719,6 +723,61 @@ class S3Provider(S3Api, ServiceLifecycleHook):
             validate_acl_acp(acp)
 
         call_moto(context)
+
+    def get_object_acl(
+        self,
+        context: RequestContext,
+        bucket: BucketName,
+        key: ObjectKey,
+        version_id: ObjectVersionId = None,
+        request_payer: RequestPayer = None,
+        expected_bucket_owner: AccountId = None,
+    ) -> GetObjectAclOutput:
+        response: GetObjectAclOutput = call_moto(context)
+
+        for grant in response["Grants"]:
+            grantee = grant.get("Grantee", {})
+            if grantee.get("ID") == MOTO_CANONICAL_USER_ID:
+                # adding the DisplayName used by moto for the owner
+                grantee["DisplayName"] = "webfile"
+
+        return response
+
+    @handler("PutObjectAcl", expand=False)
+    def put_object_acl(
+        self,
+        context: RequestContext,
+        request: PutObjectAclRequest,
+    ) -> PutObjectAclOutput:
+        validate_canned_acl(request.get("ACL"))
+
+        grant_keys = [
+            "GrantFullControl",
+            "GrantRead",
+            "GrantReadACP",
+            "GrantWrite",
+            "GrantWriteACP",
+        ]
+        for key in grant_keys:
+            if grantees_values := request.get(key, ""):  # noqa
+                validate_grantee_in_headers(key, grantees_values)
+
+        if acp := request.get("AccessControlPolicy"):
+            validate_acl_acp(acp)
+
+        moto_backend = get_moto_s3_backend(context)
+        key = get_key_from_moto_bucket(
+            get_bucket_from_moto(moto_backend, bucket=request["Bucket"]), key=request["Key"]
+        )
+        acl = key.acl
+
+        response: PutObjectOutput = call_moto(context)
+        new_acl = key.acl
+
+        if acl != new_acl:
+            self._notify(context)
+
+        return response
 
     @handler("PutBucketVersioning", expand=False)
     def put_bucket_versioning(
@@ -911,7 +970,7 @@ def validate_bucket_name(bucket: BucketName) -> None:
         raise ex
 
 
-def validate_bucket_canned_acl(canned_acl: str) -> None:
+def validate_canned_acl(canned_acl: str) -> None:
     """
     Validate the canned ACL value, or raise an Exception
     """
