@@ -140,6 +140,7 @@ def sanitize_pattern(pattern: str) -> str:
     pattern = pattern.replace("\\p{M}", "[`]")
     pattern = pattern.replace("\\p{IsLetter}", "[a-zA-Z]")
     pattern = pattern.replace("[:alnum:]", "[a-zA-Z0-9]")
+    pattern = pattern.replace("\\p{ASCII}*", "[a-zA-Z0-9]")
     return pattern
 
 
@@ -329,13 +330,16 @@ def _(shape: StringShape, graph: ShapeGraph) -> str:
 
     pattern = shape.metadata.get("pattern")
 
-    if not pattern or pattern in [".*", "^.*$", ".+", "\\p{ASCII}*"]:
+    if not pattern or pattern in [".*", "^.*$", ".+"]:
         if min_len <= 6 and max_len >= 6:
             # pick a random six-letter word, to spice things up. this will be the case most of the time.
             return random.choice(words)
         else:
             return "a" * str_len
-
+    if shape.name == "EndpointId" and pattern == "^[A-Za-z0-9\\-]+[\\.][A-Za-z0-9\\-]+$":
+        # there are sometimes issues with this pattern, because it could create invalid host labels, e.g. b6NOZqj5rIMdcta4IKyKRHvZakH90r.-wzuX6tQ-pB-pTNePY2
+        # for simplification we just remove the dash for now
+        pattern = "^[A-Za-z0-9]+[\\.][A-Za-z0-9]+$"
     pattern = sanitize_pattern(pattern)
 
     try:
