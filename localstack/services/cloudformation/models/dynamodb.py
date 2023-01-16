@@ -74,7 +74,6 @@ class DynamoDBTable(GenericBaseModel):
 
     def fetch_state(self, stack_name, resources):
         table_name = self.props.get("TableName") or self.logical_resource_id
-        table_name = self.resolve_refs_recursively(stack_name, table_name, resources)
         return aws_stack.connect_to_service("dynamodb").describe_table(TableName=table_name)
 
     @staticmethod

@@ -21,7 +21,7 @@ class EventConnection(GenericBaseModel):
 
     def fetch_state(self, stack_name, resources):
         client = aws_stack.connect_to_service("events")
-        conn_name = self.resolve_refs_recursively(stack_name, self.props.get("Name"), resources)
+        conn_name = self.props.get("Name")
         return client.describe_connection(Name=conn_name)
 
     def get_cfn_attribute(self, attribute_name):
@@ -47,9 +47,7 @@ class EventBus(GenericBaseModel):
         return "AWS::Events::EventBus"
 
     def fetch_state(self, stack_name, resources):
-        event_bus_name = self.resolve_refs_recursively(
-            stack_name, self.props.get("Name"), resources
-        )
+        event_bus_name = self.props.get("Name")
         client = aws_stack.connect_to_service("events")
         return client.describe_event_bus(Name=event_bus_name)
 
@@ -83,7 +81,7 @@ class EventsRule(GenericBaseModel):
         return self.props.get("Name")
 
     def fetch_state(self, stack_name, resources):
-        rule_name = self.resolve_refs_recursively(stack_name, self.props.get("Name"), resources)
+        rule_name = self.props.get("Name")
         result = aws_stack.connect_to_service("events").describe_rule(Name=rule_name) or {}
         return result if result.get("Name") else None
 
