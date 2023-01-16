@@ -410,7 +410,7 @@ class StackChangeSet(Stack):
         return self.stack.stack_parameters(defaults=defaults)
 
 
-def resolve_ssm_parameter_value(parameter_type: str, parameter_value: str) -> Any:
+def resolve_ssm_parameter_value(parameter_type: str, parameter_value: str) -> str:
     """
     Resolve the SSM stack parameter with the name specified via the given `parameter_value`.
 
