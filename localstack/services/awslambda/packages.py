@@ -9,7 +9,7 @@ from localstack.utils.platform import get_arch
 
 LAMBDA_RUNTIME_INIT_URL = "https://github.com/localstack/lambda-runtime-init/releases/download/{version}/aws-lambda-rie-{arch}"
 
-LAMBDA_RUNTIME_DEFAULT_VERSION = "v0.1.8-pre"
+LAMBDA_RUNTIME_DEFAULT_VERSION = "v0.1.9-pre"
 
 # GO Lambda runtime
 GO_RUNTIME_VERSION = "0.4.0"
@@ -21,15 +21,7 @@ class AWSLambdaRuntimePackage(Package):
         super().__init__(name="AwsLambda", default_version=default_version)
 
     def get_versions(self) -> List[str]:
-        return [
-            "v0.1.8-pre",
-            "v0.1.7-pre",
-            "v0.1.6-pre",
-            "v0.1.5-pre",
-            "v0.1.4-pre",
-            "v0.1.1-pre",
-            "v0.1-pre",
-        ]
+        return ["v0.1.9-pre"]
 
     def _get_installer(self, version: str) -> PackageInstaller:
         return AWSLambdaRuntimePackageInstaller(name="awslambda-runtime", version=version)
