@@ -12,15 +12,15 @@ LocalStack providers.
 import json
 from datetime import datetime, timezone
 from functools import cache
-from typing import Optional, TypedDict
+from typing import Mapping, Optional, TypedDict, Union
 
 from boto3.session import Session
 from botocore.awsrequest import AWSPreparedRequest
 from botocore.client import BaseClient
 from botocore.config import Config
+from websockets.datastructures import Headers
 
 from localstack import config
-from localstack.aws.api import RequestContext
 from localstack.constants import (
     INTERNAL_AWS_ACCESS_KEY_ID,
     INTERNAL_AWS_SECRET_ACCESS_KEY,
@@ -236,8 +236,8 @@ connect_to = ConnectFactory()
 #
 
 
-def is_internal_call(context: RequestContext) -> bool:
+def is_internal_call(headers: Union[Mapping, Headers]) -> bool:
     """
-    Whether a given request is an internal LocalStack cross-service call.
+    Whether given request headers indicate an internal LocalStack cross-service call.
     """
-    return LOCALSTACK_DATA_HEADER in context.request.headers
+    return LOCALSTACK_DATA_HEADER in headers
