@@ -51,6 +51,7 @@ EVENT_OPERATION_MAP = {
     "DeleteObjectTagging": Event.s3_ObjectTagging_Delete,
     "DeleteObject": Event.s3_ObjectRemoved_Delete,
     "DeleteObjects": Event.s3_ObjectRemoved_Delete,
+    "PutObjectAcl": Event.s3_ObjectAcl_Put,
 }
 
 HEADER_AMZN_XRAY = "X-Amzn-Trace-Id"
@@ -286,10 +287,11 @@ class BaseNotifier:
         if "created" in ctx.event_type.lower():
             record["s3"]["object"]["size"] = ctx.key_size
             record["s3"]["object"]["eTag"] = ctx.key_etag
-        if "ObjectTagging" in ctx.event_type:
+        if "ObjectTagging" in ctx.event_type or "ObjectAcl" in ctx.event_type:
             record["eventVersion"] = "2.3"
             record["s3"]["object"]["eTag"] = ctx.key_etag
             record["s3"]["object"].pop("sequencer")
+
         return {"Records": [record]}
 
 
@@ -482,6 +484,11 @@ class EventBridgeNotifier(BaseNotifier):
             entry["DetailType"] = (
                 "Object Tags Added" if "Put" in ctx.event_type else "Object Tags Deleted"
             )
+
+        elif "ObjectAcl" in ctx.event_type:
+            entry["DetailType"] = "Object ACL Updated"
+            event_details["object"].pop("size")
+            event_details["object"].pop("sequencer")
 
         entry["Detail"] = json.dumps(event_details)
         return entry

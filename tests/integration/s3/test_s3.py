@@ -634,10 +634,10 @@ class TestS3:
         snapshot.match("expected_error", e.value.response)
 
     @pytest.mark.aws_validated
-    @pytest.mark.skip_snapshot_verify(path="$..RequestID")
+    @pytest.mark.skip_snapshot_verify(condition=is_old_provider, path="$..RequestID")
     def test_delete_bucket_no_such_bucket(self, s3_client, snapshot):
         with pytest.raises(ClientError) as e:
-            s3_client.delete_bucket(Bucket=f"does-not-exist-{short_uid()}")
+            s3_client.delete_bucket(Bucket="does-not-exist-localstack-test")
 
         snapshot.match("expected_error", e.value.response)
 
@@ -769,7 +769,9 @@ class TestS3:
         snapshot.match("exc", e.value.response)
 
     @pytest.mark.aws_validated
-    @pytest.mark.skip_snapshot_verify(paths=["$..Error.Key", "$..Error.RequestID"])
+    @pytest.mark.skip_snapshot_verify(
+        condition=is_old_provider, paths=["$..Error.Key", "$..Error.RequestID"]
+    )
     def test_range_key_not_exists(self, s3_client, s3_bucket, snapshot):
         key = "my-key"
         with pytest.raises(ClientError) as e:
@@ -929,7 +931,7 @@ class TestS3:
         assert response["ResponseMetadata"]["HTTPStatusCode"] == 200
 
     @pytest.mark.aws_validated
-    @pytest.mark.skip_snapshot_verify(paths=["$..AcceptRanges"])
+    @pytest.mark.skip_snapshot_verify(condition=is_old_provider, paths=["$..AcceptRanges"])
     def test_s3_copy_metadata_replace(self, s3_client, s3_create_bucket, snapshot):
         snapshot.add_transformer(snapshot.transform.s3_api())
 
@@ -962,7 +964,7 @@ class TestS3:
         snapshot.match("head_object_copy", head_object)
 
     @pytest.mark.aws_validated
-    @pytest.mark.skip_snapshot_verify(paths=["$..AcceptRanges"])
+    @pytest.mark.skip_snapshot_verify(condition=is_old_provider, paths=["$..AcceptRanges"])
     def test_s3_copy_content_type_and_metadata(self, s3_client, s3_create_bucket, snapshot):
         snapshot.add_transformer(snapshot.transform.s3_api())
         object_key = "source-object"
@@ -1005,13 +1007,14 @@ class TestS3:
         snapshot.match("head_object_second_copy", head_object)
 
     @pytest.mark.aws_validated
-    @pytest.mark.xfail(
-        reason="wrong behaviour, see https://docs.aws.amazon.com/AmazonS3/latest/userguide/managing-acls.html"
+    # behaviour is wrong in Legacy, we inherit Bucket ACL
+    @pytest.mark.skip_snapshot_verify(
+        condition=is_old_provider,
+        paths=["$..Grants..Grantee.DisplayName", "$.permission-acl-key1.Grants"],
     )
     def test_s3_multipart_upload_acls(
         self, s3_client, s3_create_bucket, s3_multipart_upload, snapshot
     ):
-        # The basis for this test is wrong - see:
         # https://docs.aws.amazon.com/AmazonS3/latest/userguide/managing-acls.html
         # > Bucket and object permissions are independent of each other. An object does not inherit the permissions
         # > from its bucket. For example, if you create a bucket and grant write access to a user, you can't access
@@ -1825,8 +1828,7 @@ class TestS3:
         )
 
     @pytest.mark.aws_validated
-    # TODO LocalStack adds this RequestID to the error response
-    @pytest.mark.skip_snapshot_verify(paths=["$..Error.RequestID"])
+    @pytest.mark.skip_snapshot_verify(condition=is_old_provider, paths=["$..Error.RequestID"])
     def test_precondition_failed_error(self, s3_client, s3_create_bucket, snapshot):
         bucket = f"bucket-{short_uid()}"
 
@@ -1968,7 +1970,7 @@ class TestS3:
 
     @pytest.mark.skip_offline
     @pytest.mark.aws_validated
-    @pytest.mark.skip_snapshot_verify(paths=["$..AcceptRanges"])
+    @pytest.mark.skip_snapshot_verify(condition=is_old_provider, paths=["$..AcceptRanges"])
     def test_s3_lambda_integration(
         self,
         lambda_client,
@@ -2274,7 +2276,7 @@ class TestS3:
         snapshot.match("list-objects", resp)
 
     @pytest.mark.aws_validated
-    @pytest.mark.skip_snapshot_verify(paths=["$..AcceptRanges"])
+    @pytest.mark.skip_snapshot_verify(condition=is_old_provider, paths=["$..AcceptRanges"])
     def test_upload_big_file(self, s3_client, s3_create_bucket, snapshot):
         snapshot.add_transformer(snapshot.transform.s3_api())
         bucket_name = f"bucket-{short_uid()}"
@@ -3188,7 +3190,9 @@ class TestS3PresignedUrl:
         assert response.headers.get("content-length") == str(len(body))
 
     @pytest.mark.aws_validated
-    @pytest.mark.skip_snapshot_verify(paths=["$..Expires", "$..AcceptRanges"])
+    @pytest.mark.skip_snapshot_verify(
+        condition=is_old_provider, paths=["$..Expires", "$..AcceptRanges"]
+    )
     def test_put_url_metadata(self, s3_client, s3_bucket, snapshot):
         snapshot.add_transformer(snapshot.transform.s3_api())
         # Object metadata should be passed as query params via presigned URL
