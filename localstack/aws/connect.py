@@ -1,5 +1,5 @@
 """
-Internal AWS client.
+LocalStack client stack.
 
 This module provides the interface to perform cross-service communication between
 LocalStack providers.
@@ -20,6 +20,7 @@ from botocore.client import BaseClient
 from botocore.config import Config
 
 from localstack import config
+from localstack.aws.api import RequestContext
 from localstack.constants import (
     INTERNAL_AWS_ACCESS_KEY_ID,
     INTERNAL_AWS_SECRET_ACCESS_KEY,
@@ -59,11 +60,13 @@ class LocalStackData(TypedDict):
     """Service principal where the call originates, eg. `ec2`"""
 
     target_arn: str
-    """ARN of the resource being targetted."""
+    """ARN of the resource being targeted."""
 
 
 def dump_dto(data: LocalStackData) -> str:
     # TODO@viren: Improve minification using custom JSONEncoder that use shortened keys
+
+    # To produce a compact JSON representation of DTO, remove spaces from separators
     return json.dumps(data, separators=(",", ":"))
 
 
@@ -78,7 +81,7 @@ def load_dto(data: str) -> LocalStackData:
 
 class ConnectFactory:
     """
-    Factory to build the internal AWS client.
+    Factory to build the AWS client.
     """
 
     def __init__(
@@ -111,12 +114,31 @@ class ConnectFactory:
         self._session = Session()
         self._config = Config(max_pool_connections=MAX_POOL_CONNECTIONS)
 
-    def get_region(self) -> str:
+    def get_partition_for_region(self, region_name: str) -> str:
+        """
+        Return the AWS partition name for a given region, eg. `aws`, `aws-cn`, etc.
+        """
+        return self._session.get_partition_for_region(region_name)
+
+    def get_session_region_name(self) -> str:
+        """
+        Return AWS region as set in the Boto session.
+        """
+        return self._session.region_name
+
+    def get_region_name(self) -> str:
+        """
+        Return the AWS region name from following sources, in order of availability.
+        - LocalStack request context
+        - LocalStack default region
+        - Boto session
+        """
         return (
-            get_region_from_request_context() or config.DEFAULT_REGION or self._session.region_name
+            get_region_from_request_context()
+            or config.DEFAULT_REGION
+            or self.get_session_region_name()
         )
 
-    # TODO@viren is this thread safe?
     @cache
     def get_client(
         self,
@@ -155,6 +177,9 @@ class ConnectFactory:
         """
         Build and return the client.
 
+        Presence of any attribute apart from `source_*` or `target_*` argument
+        indicates that this is a client meant for internal calls.
+
         :param target_service: Service to build the client for, eg. `s3`
         :param region_name: Name of the AWS region to be associated with the client
         :param endpoint_url: Full endpoint URL to be used by the client.
@@ -176,12 +201,13 @@ class ConnectFactory:
             localstack_data["source_service"] = source_service
 
         if target_arn:
+            # Attention: region is overriden here
             region_name = extract_region_from_arn(target_arn)
             localstack_data["target_arn"] = target_arn
 
         client = self.get_client(
             service_name=target_service,
-            region_name=region_name or self.get_region(),
+            region_name=region_name or self.get_region_name(),
             use_ssl=self._use_ssl,
             verify=self._verify,
             endpoint_url=endpoint_url or get_local_service_url(target_service),
@@ -195,13 +221,23 @@ class ConnectFactory:
             data = localstack_data | LocalStackData(
                 current_time=datetime.now(timezone.utc).isoformat()
             )
-
-            # Use a compact JSON representation of DTO
             request.headers[LOCALSTACK_DATA_HEADER] = dump_dto(data)
 
-        client.meta.events.register("before-send.*.*", handler=_handler)
+        if len(localstack_data):
+            client.meta.events.register("before-send.*.*", handler=_handler)
 
         return client
 
 
 connect_to = ConnectFactory()
+
+#
+# Utilities
+#
+
+
+def is_internal_call(context: RequestContext) -> bool:
+    """
+    Whether a given request is an internal LocalStack cross-service call.
+    """
+    return LOCALSTACK_DATA_HEADER in context.request.headers
