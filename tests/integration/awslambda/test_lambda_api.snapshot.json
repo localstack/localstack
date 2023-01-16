@@ -7731,7 +7731,7 @@
     }
   },
   "tests/integration/awslambda/test_lambda_api.py::TestLambdaLayer::test_layer_policy_exceptions": {
-    "recorded-date": "18-11-2022, 08:32:32",
+    "recorded-date": "16-01-2023, 14:08:15",
     "recorded-content": {
       "publish_result": {
         "CompatibleArchitectures": [
@@ -7801,6 +7801,18 @@
         "ResponseMetadata": {
           "HTTPHeaders": {},
           "HTTPStatusCode": 409
+        }
+      },
+      "layer_permission_wrong_revision": {
+        "Error": {
+          "Code": "PreconditionFailedException",
+          "Message": "The Revision Id provided does not match the latest Revision Id. Call the GetLayerPolicy API to retrieve the latest Revision Id"
+        },
+        "Type": "User",
+        "message": "The Revision Id provided does not match the latest Revision Id. Call the GetLayerPolicy API to retrieve the latest Revision Id",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 412
         }
       },
       "layer_permission_layername_doesnotexist_add": {
@@ -7878,19 +7890,31 @@
       "layer_permission_statementid_doesnotexist_remove": {
         "Error": {
           "Code": "ResourceNotFoundException",
-          "Message": "Statement s2 is not found in resource policy."
+          "Message": "Statement doesnotexist is not found in resource policy."
         },
-        "Message": "Statement s2 is not found in resource policy.",
+        "Message": "Statement doesnotexist is not found in resource policy.",
         "Type": "User",
         "ResponseMetadata": {
           "HTTPHeaders": {},
           "HTTPStatusCode": 404
         }
+      },
+      "layer_permission_wrong_revision_remove": {
+        "Error": {
+          "Code": "PreconditionFailedException",
+          "Message": "The Revision Id provided does not match the latest Revision Id. Call the GetLayerPolicy API to retrieve the latest Revision Id"
+        },
+        "Type": "User",
+        "message": "The Revision Id provided does not match the latest Revision Id. Call the GetLayerPolicy API to retrieve the latest Revision Id",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 412
+        }
       }
     }
   },
   "tests/integration/awslambda/test_lambda_api.py::TestLambdaLayer::test_layer_policy_lifecycle": {
-    "recorded-date": "18-11-2022, 08:32:37",
+    "recorded-date": "16-01-2023, 14:12:10",
     "recorded-content": {
       "publish_result": {
         "CompatibleArchitectures": [
@@ -7928,6 +7952,26 @@
           "HTTPStatusCode": 201
         }
       },
+      "get_layer_version_policy": {
+        "Policy": {
+          "Version": "2012-10-17",
+          "Id": "default",
+          "Statement": [
+            {
+              "Sid": "s1",
+              "Effect": "Allow",
+              "Principal": "*",
+              "Action": "lambda:GetLayerVersion",
+              "Resource": "arn:aws:lambda:<region>:111111111111:layer:<resource:1>:1"
+            }
+          ]
+        },
+        "RevisionId": "<uuid:1>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
       "add_policy_s2": {
         "RevisionId": "<uuid:2>",
         "Statement": {
@@ -7942,7 +7986,7 @@
           "HTTPStatusCode": 201
         }
       },
-      "get_layer_version_policy": {
+      "get_layer_version_policy_postadd2": {
         "Policy": {
           "Version": "2012-10-17",
           "Id": "default",

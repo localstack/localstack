@@ -2886,7 +2886,6 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
         organization_id: OrganizationId = None,
         revision_id: String = None,
     ) -> AddLayerVersionPermissionResponse:
-        # TODO: test for revision_id
         # TODO: add layer ARN as layer_name support
 
         layer_version_arn = api_utils.layer_version_arn(
@@ -2916,6 +2915,13 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
         if statement_id in layer_version.policy.statements:
             raise ResourceConflictException(
                 f"The statement id ({statement_id}) provided already exists. Please provide a new statement id, or remove the existing statement.",
+                Type="User",
+            )
+
+        if revision_id and layer_version.policy.revision_id != revision_id:
+            raise PreconditionFailedException(
+                "The Revision Id provided does not match the latest Revision Id. "
+                "Call the GetLayerPolicy API to retrieve the latest Revision Id",
                 Type="User",
             )
 
@@ -2966,8 +2972,11 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
             )
 
         if revision_id and layer_version.policy.revision_id != revision_id:
-            # TODO: add test
-            return
+            raise PreconditionFailedException(
+                "The Revision Id provided does not match the latest Revision Id. "
+                "Call the GetLayerPolicy API to retrieve the latest Revision Id",
+                Type="User",
+            )
 
         if statement_id not in layer_version.policy.statements:
             raise ResourceNotFoundException(

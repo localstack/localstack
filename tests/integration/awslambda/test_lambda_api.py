@@ -4368,13 +4368,11 @@ class TestLambdaLayer:
         snapshot.match("publish_layer_result", publish_layer_result)
 
     @pytest.mark.aws_validated
-    def test_layer_policy_exceptions(
-        self, lambda_client, create_lambda_function, snapshot, dummylayer, cleanups
-    ):
+    def test_layer_policy_exceptions(self, lambda_client, snapshot, dummylayer, cleanups):
         """
         API-level exceptions and edge cases for lambda layer permissions
 
-        TODO: OrganizationId & RevisionId
+        TODO: OrganizationId
         """
         layer_name = f"layer4policy-{short_uid()}"
 
@@ -4428,6 +4426,18 @@ class TestLambdaLayer:
             )
         snapshot.match("layer_permission_duplicate_statement", e.value.response)
 
+        # wrong revision id
+        with pytest.raises(lambda_client.exceptions.PreconditionFailedException) as e:
+            lambda_client.add_layer_version_permission(
+                LayerName=layer_name,
+                VersionNumber=1,
+                Action="lambda:GetLayerVersion",
+                Principal="*",
+                StatementId="s2",
+                RevisionId="wrong",
+            )
+        snapshot.match("layer_permission_wrong_revision", e.value.response)
+
         # layer does not exist
         with pytest.raises(lambda_client.exceptions.ResourceNotFoundException) as e:
             lambda_client.add_layer_version_permission(
@@ -4475,9 +4485,16 @@ class TestLambdaLayer:
         # statement id does not exist for given layer version
         with pytest.raises(lambda_client.exceptions.ResourceNotFoundException) as e:
             lambda_client.remove_layer_version_permission(
-                LayerName=layer_name, VersionNumber=1, StatementId="s2"
+                LayerName=layer_name, VersionNumber=1, StatementId="doesnotexist"
             )
         snapshot.match("layer_permission_statementid_doesnotexist_remove", e.value.response)
+
+        # wrong revision id
+        with pytest.raises(lambda_client.exceptions.PreconditionFailedException) as e:
+            lambda_client.remove_layer_version_permission(
+                LayerName=layer_name, VersionNumber=1, StatementId="s1", RevisionId="wrong"
+            )
+        snapshot.match("layer_permission_wrong_revision_remove", e.value.response)
 
     @pytest.mark.aws_validated
     def test_layer_policy_lifecycle(
@@ -4486,7 +4503,7 @@ class TestLambdaLayer:
         """
         Simple lifecycle tests for lambda layer policies
 
-        TODO: OrganizationId & RevisionId
+        TODO: OrganizationId
         """
         layer_name = f"testlayer-{short_uid()}"
 
@@ -4513,22 +4530,31 @@ class TestLambdaLayer:
         )
         snapshot.match("add_policy_s1", add_policy_s1)
 
+        get_layer_version_policy = lambda_client.get_layer_version_policy(
+            LayerName=layer_name, VersionNumber=1
+        )
+        snapshot.match("get_layer_version_policy", get_layer_version_policy)
+
         add_policy_s2 = lambda_client.add_layer_version_permission(
             LayerName=layer_name,
             VersionNumber=1,
             StatementId="s2",
             Action="lambda:GetLayerVersion",
             Principal="*",
+            RevisionId=get_layer_version_policy["RevisionId"],
         )
         snapshot.match("add_policy_s2", add_policy_s2)
 
-        get_layer_version_policy = lambda_client.get_layer_version_policy(
+        get_layer_version_policy_postadd2 = lambda_client.get_layer_version_policy(
             LayerName=layer_name, VersionNumber=1
         )
-        snapshot.match("get_layer_version_policy", get_layer_version_policy)
+        snapshot.match("get_layer_version_policy_postadd2", get_layer_version_policy_postadd2)
 
         remove_s2 = lambda_client.remove_layer_version_permission(
-            LayerName=layer_name, VersionNumber=1, StatementId="s2"
+            LayerName=layer_name,
+            VersionNumber=1,
+            StatementId="s2",
+            RevisionId=get_layer_version_policy_postadd2["RevisionId"],
         )
         snapshot.match("remove_s2", remove_s2)
 
