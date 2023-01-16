@@ -343,6 +343,7 @@ def events():
     )
 
 
+@aws_provider()
 def stepfunctions():
     from localstack.services.stepfunctions.provider import StepFunctionsProvider
 
