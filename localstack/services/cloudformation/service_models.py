@@ -155,4 +155,4 @@ class GenericBaseModel:
     @property
     def resource_id(self) -> str:
         """Return the logical resource ID of this resource (i.e., the ref. name within the stack's resources)."""
-        return self.ource_json["LogicalResourceId"]
+        return self.resource_json["LogicalResourceId"]
