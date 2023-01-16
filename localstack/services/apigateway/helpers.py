@@ -577,8 +577,9 @@ def import_api_from_openapi_spec(rest_api: RestAPI, body: Dict, query_params: Di
         security_schemes = path_payload.get("security")
         for security_scheme in security_schemes:
             for security_scheme_name, _ in security_scheme.items():
-                if security_scheme_name in body.get("securityDefinitions", []):
-                    security_config = body.get("securityDefinitions", {}).get(security_scheme_name)
+                security_definitions = body.get("securityDefinitions") or {}
+                if security_scheme_name in security_definitions:
+                    security_config = security_definitions.get(security_scheme_name)
                     aws_apigateway_authorizer = security_config.get(
                         "x-amazon-apigateway-authorizer", {}
                     )
@@ -591,8 +592,8 @@ def import_api_from_openapi_spec(rest_api: RestAPI, body: Dict, query_params: Di
                     authorizer = Authorizer(
                         authorizer_id=create_resource_id(),
                         name=security_scheme_name,
-                        authorizer_type=aws_apigateway_authorizer.get("type"),
-                        provider_arns=None,
+                        authorizer_type=aws_apigateway_authorizer.get("type", "").upper(),
+                        provider_arns=aws_apigateway_authorizer.get("providerARNs"),
                         auth_type=security_config.get("x-amazon-apigateway-authtype"),
                         authorizer_uri=aws_apigateway_authorizer.get("authorizerUri"),
                         authorizer_credentials=aws_apigateway_authorizer.get(
@@ -608,11 +609,10 @@ def import_api_from_openapi_spec(rest_api: RestAPI, body: Dict, query_params: Di
                         or 300,
                     )
 
-                    if authorizer:
-                        region_details.authorizers.setdefault(rest_api.id, []).append(
-                            authorizer.to_json()
-                        )
-                        authorizers[security_scheme_name] = authorizer
+                    region_details.authorizers.setdefault(rest_api.id, []).append(
+                        authorizer.to_json()
+                    )
+                    authorizers[security_scheme_name] = authorizer
                     return authorizer
 
     def get_or_create_path(abs_path: str, base_path: str):

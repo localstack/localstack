@@ -1466,7 +1466,7 @@ class TestAPIGateway:
         resources = apigateway_client.get_resources(restApiId=rest_api_id)
         for rv in resources.get("items"):
             for method in rv.get("resourceMethods", {}).values():
-                assert method.get("authorizationType") == "request"
+                assert method.get("authorizationType") == "REQUEST"
                 assert method.get("authorizerId") is not None
 
         spec_file = load_file(TEST_SWAGGER_FILE_YAML)
@@ -2099,7 +2099,7 @@ class TestAPIGateway:
         resources = get_rest_api_resources(apigateway_client, restApiId=rest_api_id)
         for rv in resources:
             for method in rv.get("resourceMethods", {}).values():
-                assert method.get("authorizationType") == "request"
+                assert method.get("authorizationType") == "REQUEST"
                 assert method.get("authorizerId") is not None
 
         spec_file = load_file(TEST_SWAGGER_FILE_YAML)
