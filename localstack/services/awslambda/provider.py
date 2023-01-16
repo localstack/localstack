@@ -284,7 +284,7 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
     @staticmethod
     def _function_revision_id(resolved_fn: Function, resolved_qualifier: str) -> str:
         if api_utils.qualifier_is_alias(resolved_qualifier):
-            return resolved_fn.aliases[resolved_qualifier].config.revision_id
+            return resolved_fn.aliases[resolved_qualifier].revision_id
         # Assumes that a non-alias is a version
         else:
             return resolved_fn.versions[resolved_qualifier].config.revision_id
@@ -1710,7 +1710,6 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
         resolved_fn = self._get_function(function_name, context.account_id, context.region)
         resolved_qualifier, fn_arn = self._resolve_fn_qualifier(resolved_fn, qualifier)
 
-        # TODO: test for alias
         revision_id = request.get("RevisionId")
         if revision_id:
             fn_revision_id = self._function_revision_id(resolved_fn, resolved_qualifier)

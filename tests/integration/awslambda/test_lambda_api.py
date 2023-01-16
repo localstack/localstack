@@ -2622,11 +2622,26 @@ class TestLambdaPermissions:
         snapshot.match("get_policy_version", get_policy_result_version)
 
         alias_name = "permission-alias"
-        lambda_client.create_alias(
+        create_alias_response = lambda_client.create_alias(
             FunctionName=function_name,
             Name=alias_name,
             FunctionVersion=fn_version,
         )
+        snapshot.match("create_alias_response", create_alias_response)
+
+        sid = "s3"
+        with pytest.raises(lambda_client.exceptions.PreconditionFailedException) as e:
+            lambda_client.add_permission(
+                FunctionName=function_name,
+                Action=action,
+                StatementId=sid,
+                Principal=principal,
+                SourceArn=arns.s3_bucket_arn("test-bucket"),
+                Qualifier=alias_name,
+                RevisionId="wrong",
+            )
+        snapshot.match("add_permission_alias_revision_exception", e.value.response)
+
         # create lambda permission with the same sid for specific alias
         lambda_client.add_permission(
             FunctionName=f"{function_name}:{alias_name}",  # alias suffix matching Qualifier
@@ -2635,6 +2650,7 @@ class TestLambdaPermissions:
             Principal=principal,
             SourceArn=arns.s3_bucket_arn("test-bucket"),
             Qualifier=alias_name,
+            RevisionId=create_alias_response["RevisionId"],
         )
         get_policy_result_alias = lambda_client.get_policy(
             FunctionName=function_name, Qualifier=alias_name
