@@ -229,6 +229,10 @@ class TestLambdaRuntimesCommon:
 
 
 @pytest.mark.whitebox
+@pytest.mark.skipif(
+    condition=is_old_provider(),
+    reason="Local executor does not support the majority of the runtimes",
+)
 class TestLambdaCallingLocalstack:
     @pytest.mark.multiruntime(
         scenario="endpointinjection",
