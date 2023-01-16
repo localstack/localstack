@@ -46,7 +46,7 @@ class LocalKMSServer(Server):
         t.start()
         return t
 
-    def _log_listener(self, line: str) -> None:
+    def _log_listener(self, line: str, **_kwargs) -> None:
         LOG.info(line.rstrip())
 
     def _create_shell_command(self) -> Tuple[List, Dict]:
