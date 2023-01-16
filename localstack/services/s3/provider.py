@@ -53,6 +53,7 @@ from localstack.aws.api.s3 import (
     HeadObjectOutput,
     HeadObjectRequest,
     InvalidBucketName,
+    InvalidPartOrder,
     ListObjectsOutput,
     ListObjectsRequest,
     ListObjectsV2Output,
@@ -457,6 +458,15 @@ class S3Provider(S3Api, ServiceLifecycleHook):
     def complete_multipart_upload(
         self, context: RequestContext, request: CompleteMultipartUploadRequest
     ) -> CompleteMultipartUploadOutput:
+        parts = request.get("MultipartUpload", {}).get("Parts", [])
+        parts_numbers = [part.get("PartNumber") for part in parts]
+        # sorted is very fast (fastest) if the list is already sorted, which should be the case
+        if sorted(parts_numbers) != parts_numbers:
+            raise InvalidPartOrder(
+                "The list of parts was not in ascending order. Parts must be ordered by part number.",
+                UploadId=request["UploadId"],
+            )
+
         response: CompleteMultipartUploadOutput = call_moto(context)
         # moto return the Location in AWS `http://{bucket}.s3.amazonaws.com/{key}`
         response[

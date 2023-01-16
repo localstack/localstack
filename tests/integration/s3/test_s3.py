@@ -689,7 +689,7 @@ class TestS3:
     @pytest.mark.skip_snapshot_verify(
         condition=is_old_provider, paths=["$..VersionId", "$..Error.RequestID"]
     )
-    def test_multipart_and_list_parts(self, s3_client, s3_bucket, s3_multipart_upload, snapshot):
+    def test_multipart_and_list_parts(self, s3_client, s3_bucket, snapshot):
         snapshot.add_transformer(
             [
                 snapshot.transform.key_value("Bucket", reference_replacement=False),
@@ -2797,6 +2797,87 @@ class TestS3:
                 SSEKMSKeyId="fake-key-id",
             )
         snapshot.match("copy-obj-wrong-kms-key", e.value.response)
+
+    @pytest.mark.aws_validated
+    @pytest.mark.xfail(
+        condition=LEGACY_S3_PROVIDER, reason="Validation not implemented in legacy provider"
+    )
+    def test_complete_multipart_parts_order(self, s3_client, s3_bucket, snapshot):
+        snapshot.add_transformer(
+            [
+                snapshot.transform.key_value("Bucket", reference_replacement=False),
+                snapshot.transform.key_value("Location"),
+                snapshot.transform.key_value("UploadId"),
+            ]
+        )
+
+        key_name = "test-order-parts"
+        response = s3_client.create_multipart_upload(Bucket=s3_bucket, Key=key_name)
+        upload_id = response["UploadId"]
+
+        # data must be at least 5MiB
+        part_data = "a" * (5_242_880 + 1)
+        part_data = to_bytes(part_data)
+
+        parts = 3
+        multipart_upload_parts = []
+        for part in range(parts):
+            # Write contents to memory rather than a file.
+            part_number = part + 1
+            upload_file_object = BytesIO(part_data)
+            response = s3_client.upload_part(
+                Bucket=s3_bucket,
+                Key=key_name,
+                Body=upload_file_object,
+                PartNumber=part_number,
+                UploadId=upload_id,
+            )
+            multipart_upload_parts.append({"ETag": response["ETag"], "PartNumber": part_number})
+
+        # testing completing the multipart with an unordered sequence of parts
+        with pytest.raises(ClientError) as e:
+            s3_client.complete_multipart_upload(
+                Bucket=s3_bucket,
+                Key=key_name,
+                MultipartUpload={"Parts": list(reversed(multipart_upload_parts))},
+                UploadId=upload_id,
+            )
+        snapshot.match("complete-multipart-unordered", e.value.response)
+
+        response = s3_client.complete_multipart_upload(
+            Bucket=s3_bucket,
+            Key=key_name,
+            MultipartUpload={"Parts": multipart_upload_parts},
+            UploadId=upload_id,
+        )
+        snapshot.match("complete-multipart-ordered", response)
+
+        # testing completing the multipart with a sequence of parts number going from 2, 4, and 6 (missing numbers)
+        key_name_2 = "key-sequence-with-step-2"
+        response = s3_client.create_multipart_upload(Bucket=s3_bucket, Key=key_name_2)
+        upload_id = response["UploadId"]
+
+        multipart_upload_parts = []
+        for part in range(parts):
+            # Write contents to memory rather than a file.
+            part_number = part + 2
+            upload_file_object = BytesIO(part_data)
+            response = s3_client.upload_part(
+                Bucket=s3_bucket,
+                Key=key_name_2,
+                Body=upload_file_object,
+                PartNumber=part_number,
+                UploadId=upload_id,
+            )
+            multipart_upload_parts.append({"ETag": response["ETag"], "PartNumber": part_number})
+
+        response = s3_client.complete_multipart_upload(
+            Bucket=s3_bucket,
+            Key=key_name_2,
+            MultipartUpload={"Parts": multipart_upload_parts},
+            UploadId=upload_id,
+        )
+        snapshot.match("complete-multipart-with-step-2", response)
 
 
 class TestS3TerraformRawRequests:
