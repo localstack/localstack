@@ -2629,6 +2629,10 @@ class TestLambdaPermissions:
         )
         snapshot.match("create_alias_response", create_alias_response)
 
+        get_alias_response = lambda_client.get_alias(FunctionName=function_name, Name=alias_name)
+        snapshot.match("get_alias", get_alias_response)
+        assert get_alias_response["RevisionId"] == create_alias_response["RevisionId"]
+
         sid = "s3"
         with pytest.raises(lambda_client.exceptions.PreconditionFailedException) as e:
             lambda_client.add_permission(
