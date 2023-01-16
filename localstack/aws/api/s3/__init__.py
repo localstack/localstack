@@ -747,6 +747,13 @@ class InvalidPartOrder(ServiceException):
     UploadId: Optional[MultipartUploadId]
 
 
+class InvalidStorageClass(ServiceException):
+    code: str = "InvalidStorageClass"
+    sender_fault: bool = False
+    status_code: int = 400
+    StorageClassRequested: Optional[StorageClass]
+
+
 AbortDate = datetime
 
 

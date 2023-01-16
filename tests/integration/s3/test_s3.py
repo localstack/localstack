@@ -27,6 +27,7 @@ from botocore.client import Config
 from botocore.exceptions import ClientError
 
 from localstack import config, constants
+from localstack.aws.api.s3 import StorageClass
 from localstack.config import LEGACY_S3_PROVIDER
 from localstack.constants import (
     LOCALHOST_HOSTNAME,
@@ -197,6 +198,39 @@ def s3_multipart_upload(s3_client):
             MultipartUpload={"Parts": multipart_upload_parts},
             UploadId=upload_id,
         )
+
+    return perform_multipart_upload
+
+
+@pytest.fixture
+def s3_multipart_upload_with_snapshot(s3_client, snapshot):
+    def perform_multipart_upload(
+        bucket: str, key: str, data: bytes, snapshot_prefix: str, **kwargs
+    ):
+        create_multipart_resp = s3_client.create_multipart_upload(Bucket=bucket, Key=key, **kwargs)
+        snapshot.match(f"{snapshot_prefix}-create-multipart", create_multipart_resp)
+        upload_id = create_multipart_resp["UploadId"]
+
+        # Write contents to memory rather than a file.
+        upload_file_object = BytesIO(data)
+
+        response = s3_client.upload_part(
+            Bucket=bucket,
+            Key=key,
+            Body=upload_file_object,
+            PartNumber=1,
+            UploadId=upload_id,
+        )
+        snapshot.match(f"{snapshot_prefix}-upload-part", response)
+
+        response = s3_client.complete_multipart_upload(
+            Bucket=bucket,
+            Key=key,
+            MultipartUpload={"Parts": [{"ETag": response["ETag"], "PartNumber": 1}]},
+            UploadId=upload_id,
+        )
+        snapshot.match(f"{snapshot_prefix}-compete-multipart", response)
+        return response
 
     return perform_multipart_upload
 
@@ -2878,6 +2912,52 @@ class TestS3:
             UploadId=upload_id,
         )
         snapshot.match("complete-multipart-with-step-2", response)
+
+    @pytest.mark.aws_validated
+    @pytest.mark.parametrize(
+        "storage_class",
+        [
+            StorageClass.STANDARD,
+            StorageClass.STANDARD_IA,
+            StorageClass.GLACIER,
+            StorageClass.GLACIER_IR,
+            StorageClass.REDUCED_REDUNDANCY,
+            StorageClass.ONEZONE_IA,
+            StorageClass.INTELLIGENT_TIERING,
+            StorageClass.DEEP_ARCHIVE,
+        ],
+    )
+    @pytest.mark.xfail(condition=LEGACY_S3_PROVIDER, reason="Patched only in ASF provider")
+    def test_put_object_storage_class(self, s3_client, s3_bucket, snapshot, storage_class):
+        key_name = "test-put-object-storage-class"
+        s3_client.put_object(
+            Bucket=s3_bucket,
+            Key=key_name,
+            Body=b"body-test",
+            StorageClass=storage_class,
+        )
+
+        response = s3_client.get_object_attributes(
+            Bucket=s3_bucket,
+            Key=key_name,
+            ObjectAttributes=["StorageClass"],
+        )
+        snapshot.match("put-object-storage-class", response)
+
+    @pytest.mark.aws_validated
+    @pytest.mark.skip_snapshot_verify(
+        condition=is_old_provider, paths=["$..Error.StorageClassRequested"]
+    )
+    def test_put_object_storage_class_outposts(self, s3_client, s3_bucket, snapshot):
+        key_name = "test-put-object-storage-class"
+        with pytest.raises(ClientError) as e:
+            s3_client.put_object(
+                Bucket=s3_bucket,
+                Key=key_name,
+                Body=b"body-test",
+                StorageClass=StorageClass.OUTPOSTS,
+            )
+        snapshot.match("put-object-outposts", e.value.response)
 
 
 class TestS3TerraformRawRequests:
