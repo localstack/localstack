@@ -2915,12 +2915,8 @@ class TestS3:
         snapshot.match("put-object-storage-class", response)
 
     @pytest.mark.aws_validated
-    @pytest.mark.skip_snapshot_verify(
-        condition=is_old_provider,
-        paths=[
-            "$..Error.StorageClassRequested",
-            "$..Error.RequestID",
-        ],
+    @pytest.mark.xfail(
+        condition=LEGACY_S3_PROVIDER, reason="Validation not implemented in legacy provider"
     )
     def test_put_object_storage_class_outposts(
         self, s3_client, s3_bucket, s3_multipart_upload, snapshot
