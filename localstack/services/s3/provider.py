@@ -93,7 +93,6 @@ from localstack.aws.handlers import (
     preprocess_request,
     serve_custom_service_request_handlers,
 )
-from localstack.config import LEGACY_S3_PROVIDER
 from localstack.constants import LOCALHOST_HOSTNAME
 from localstack.services.edge import ROUTER
 from localstack.services.moto import call_moto
