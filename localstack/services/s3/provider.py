@@ -462,6 +462,14 @@ class S3Provider(S3Api, ServiceLifecycleHook):
             bucket = get_bucket_from_moto(moto_backend, bucket=request["Bucket"])
             validate_kms_key_id(sse_kms_key_id, bucket)
 
+        if (
+            storage_class := request.get("StorageClass")
+        ) and storage_class not in VALID_STORAGE_CLASSES:
+            raise InvalidStorageClass(
+                "The storage class you specified is not valid",
+                StorageClassRequested=storage_class,
+            )
+
         response: CreateMultipartUploadOutput = call_moto(context)
         return response
 
@@ -477,17 +485,6 @@ class S3Provider(S3Api, ServiceLifecycleHook):
                 "The list of parts was not in ascending order. Parts must be ordered by part number.",
                 UploadId=request["UploadId"],
             )
-
-        # if moto raises an InvalidStorageClass, it would delete the multipart before validating
-        # we need to check before sending it to moto
-        moto_backend = get_moto_s3_backend(context)
-        bucket = get_bucket_from_moto(moto_backend, bucket=request["Bucket"])
-        if multipart := bucket.multiparts.get(request["UploadId"]):
-            if multipart.storage and multipart.storage not in VALID_STORAGE_CLASSES:
-                raise InvalidStorageClass(
-                    "The storage class you specified is not valid",
-                    StorageClassRequested=multipart.storage,
-                )
 
         response: CompleteMultipartUploadOutput = call_moto(context)
 

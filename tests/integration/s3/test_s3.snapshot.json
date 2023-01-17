@@ -4242,7 +4242,7 @@
     }
   },
   "tests/integration/s3/test_s3.py::TestS3::test_put_object_storage_class_outposts": {
-    "recorded-date": "16-01-2023, 21:51:03",
+    "recorded-date": "17-01-2023, 14:34:16",
     "recorded-content": {
       "put-object-outposts": {
         "Error": {
@@ -4255,7 +4255,7 @@
           "HTTPStatusCode": 400
         }
       },
-      "multipart-outposts": {
+      "create-multipart-outposts-exc": {
         "Error": {
           "Code": "InvalidStorageClass",
           "Message": "The storage class you specified is not valid",

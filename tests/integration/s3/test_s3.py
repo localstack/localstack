@@ -2937,13 +2937,12 @@ class TestS3:
 
         key_name = "test-multipart-storage-class"
         with pytest.raises(ClientError) as e:
-            s3_multipart_upload(
-                bucket=s3_bucket,
-                key=key_name,
-                data="upload-part-1" * 5,
+            s3_client.create_multipart_upload(
+                Bucket=s3_bucket,
+                Key=key_name,
                 StorageClass=StorageClass.OUTPOSTS,
             )
-        snapshot.match("multipart-outposts", e.value.response)
+        snapshot.match("create-multipart-outposts-exc", e.value.response)
 
 
 class TestS3TerraformRawRequests:
