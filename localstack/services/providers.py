@@ -157,8 +157,10 @@ def kms():
         from localstack.services.kms.local_kms_provider import LocalKmsProvider
 
         provider = LocalKmsProvider()
-        # something like HttpFallbackDispatcher but without the base provider might be handy
-        listener = AwsApiListener("kms", HttpFallbackDispatcher(provider, provider.get_forward_url))
+        # something like HttpFallbackDispatcher but without the base provider might be handy here
+        listener = AwsApiListener(
+            "kms", HttpFallbackDispatcher(provider, provider.start_and_get_backend)
+        )
 
         return Service("kms", listener=listener)
 

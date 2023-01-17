@@ -19,8 +19,10 @@ _LOCKS = SynchronizedDefaultDict(threading.RLock)
 
 
 class LocalKmsProvider(KmsApi, ServiceLifecycleHook):
-    def get_forward_url(self):
-        """Return the URL of the backend local-kms server to forward requests to"""
+    def start_and_get_backend(self):
+        """
+        Start the local-kms backend and return the URL of the server.
+        """
         account_id = get_aws_account_id()
         start_kms_local(account_id=account_id)
         return f"http://{LOCALSTACK_HOSTNAME}:{get_server(account_id).port}"
