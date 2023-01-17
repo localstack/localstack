@@ -473,6 +473,26 @@ class TestImportValues:
 
 
 class TestMacros:
+    def test_macro_deployment(
+        self, deploy_cfn_template, cfn_client, create_lambda_function, lambda_client, snapshot
+    ):
+        macro_function_path = os.path.join(
+            os.path.dirname(__file__), "../templates/macros/format_template.py"
+        )
+        macro_name = "SubstitutionMacro"
+        stack_with_macro = create_macro(
+            macro_name,
+            macro_function_path,
+            deploy_cfn_template,
+            create_lambda_function,
+            lambda_client,
+        )
+        description = cfn_client.describe_stack_resources(StackName=stack_with_macro.stack_name)
+
+        snapshot.add_transformer(snapshot.transform.cloudformation_api())
+        snapshot.match("stack_outputs", stack_with_macro.outputs)
+        snapshot.match("stack_resource_descriptions", description)
+
     @pytest.mark.aws_validated
     def test_global_scope(
         self, deploy_cfn_template, cfn_client, create_lambda_function, lambda_client, snapshot
@@ -480,6 +500,18 @@ class TestMacros:
         """
         This test validates the behaviour of a template deployment that includes a global transformation
         """
+
+        macro_function_path = os.path.join(
+            os.path.dirname(__file__), "../templates/macros/format_template.py"
+        )
+        macro_name = "SubstitutionMacro"
+        create_macro(
+            macro_name,
+            macro_function_path,
+            deploy_cfn_template,
+            create_lambda_function,
+            lambda_client,
+        )
 
         new_value = f"new-value-{short_uid()}"
         stack = deploy_cfn_template(

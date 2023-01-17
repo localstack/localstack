@@ -76,3 +76,32 @@ class CloudFormationStack(GenericBaseModel):
                 "parameters": get_nested_stack_params,
             }
         }
+
+
+class CloudFormationMacro(GenericBaseModel):
+    @staticmethod
+    def cloudformation_type():
+        return "AWS::CloudFormation::Macro"
+
+    def get_physical_resource_id(self, attribute=None, **kwargs):
+        return self.props.get("Name")
+
+    def fetch_state(self, stack_name, resources):
+        return {}
+
+    @classmethod
+    def get_deploy_templates(cls):
+        def _store_macro(*args, **kwargs):
+            pass
+
+        def _delete_macro(*args, **kwargs):
+            pass
+
+        return {
+            "create": {
+                "function": _store_macro,
+            },
+            "delete": {
+                "function": _delete_macro,
+            },
+        }

@@ -29,7 +29,7 @@
     }
   },
   "tests/integration/cloudformation/test_template_engine.py::TestMacros::test_global_scope": {
-    "recorded-date": "05-12-2022, 16:13:58",
+    "recorded-date": "17-01-2023, 10:48:40",
     "recorded-content": {
       "processed_template": {
         "StagesAvailable": [
@@ -46,6 +46,7 @@
           },
           "Parameters": {
             "Substitution": {
+              "Default": "SubstitutionDefault",
               "Type": "String"
             }
           },
@@ -511,6 +512,34 @@
           {
             "Key": "param-value",
             "Value": "param <resolved-value:1>"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/integration/cloudformation/test_template_engine.py::TestMacros::test_macro_deployment": {
+    "recorded-date": "17-01-2023, 10:54:32",
+    "recorded-content": {
+      "stack_outputs": {
+        "MacroRef": "SubstitutionMacro"
+      },
+      "stack_resource_descriptions": {
+        "StackResources": [
+          {
+            "DriftInformation": {
+              "StackResourceDriftStatus": "NOT_CHECKED"
+            },
+            "LogicalResourceId": "Macro",
+            "PhysicalResourceId": "SubstitutionMacro",
+            "ResourceStatus": "CREATE_COMPLETE",
+            "ResourceType": "AWS::CloudFormation::Macro",
+            "StackId": "arn:aws:cloudformation:<region>:111111111111:stack/<stack-name:1>/<resource:1>",
+            "StackName": "<stack-name:1>",
+            "Timestamp": "timestamp"
           }
         ],
         "ResponseMetadata": {
