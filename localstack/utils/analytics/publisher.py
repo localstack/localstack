@@ -1,8 +1,8 @@
 import abc
 import atexit
+import datetime
 import logging
 import os
-import datetime
 import threading
 import time
 from queue import Full, Queue
@@ -16,6 +16,7 @@ from .events import Event, EventHandler, EventMetadata
 from .metadata import get_client_metadata, get_session_id
 
 LOG = logging.getLogger(__name__)
+
 
 def _publish_env_var_as_analytics_event(env_var: str, version=1):
     if not os.getenv(env_var):
