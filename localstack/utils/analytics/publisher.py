@@ -1,6 +1,8 @@
 import abc
 import atexit
 import logging
+import os
+import datetime
 import threading
 import time
 from queue import Full, Queue
@@ -10,10 +12,25 @@ from localstack import config
 from localstack.utils.threads import start_thread, start_worker_thread
 
 from .client import AnalyticsClient
-from .events import Event, EventHandler
-from .metadata import get_client_metadata
+from .events import Event, EventHandler, EventMetadata
+from .metadata import get_client_metadata, get_session_id
 
 LOG = logging.getLogger(__name__)
+
+def _publish_env_var_as_analytics_event(env_var: str, version=1):
+    if not os.getenv(env_var):
+        return
+
+    event = Event(
+        name="env_var",
+        payload={"key": env_var, "value": os.getenv(env_var), "version": version},
+        metadata=EventMetadata(
+            session_id=get_session_id(),
+            client_time=str(datetime.datetime.now()),
+        ),
+    )
+    publisher = AnalyticsClientPublisher(AnalyticsClient())
+    publisher.publish([event])
 
 
 class Publisher(abc.ABC):
