@@ -17,8 +17,10 @@ class CloudFormationStore(BaseStore):
     # maps stack set ID to stack set details
     stack_sets: Dict[str, StackSet] = LocalAttribute(default=dict)
 
-    # exports: Dict[str, str]
+    # maps macro ID to macros
+    macros: Dict[str, StackSet] = LocalAttribute(default=dict)
 
+    # exports: Dict[str, str]
     @property
     def exports(self):
         exports = []
