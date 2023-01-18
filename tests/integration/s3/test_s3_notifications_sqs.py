@@ -11,7 +11,7 @@ from botocore.exceptions import ClientError
 from localstack.config import LEGACY_S3_PROVIDER
 from localstack.utils.aws import arns
 from localstack.utils.strings import short_uid
-from localstack.utils.sync import poll_condition, retry
+from localstack.utils.sync import retry
 
 if TYPE_CHECKING:
     from mypy_boto3_s3 import S3Client
@@ -120,13 +120,13 @@ def sqs_collect_s3_events(
 
     events = []
 
-    def collect_events() -> int:
+    def collect_events() -> None:
         _response = sqs_client.receive_message(
-            QueueUrl=queue_url, WaitTimeSeconds=timeout, MaxNumberOfMessages=1
+            QueueUrl=queue_url, WaitTimeSeconds=1, MaxNumberOfMessages=1
         )
         messages = _response.get("Messages", [])
         if not messages:
-            LOG.info("no messages received from %s after %d seconds", queue_url, timeout)
+            LOG.info("no messages received from %s after 1 second", queue_url)
 
         for m in messages:
             body = m["Body"]
@@ -139,9 +139,9 @@ def sqs_collect_s3_events(
             doc = json.loads(body)
             events.extend(doc["Records"])
 
-        return len(events)
+        assert len(events) >= min_events
 
-    assert poll_condition(lambda: collect_events() >= min_events, timeout=timeout)
+    retry(collect_events, retries=timeout, sleep=0.01)
 
     return events
 
@@ -901,3 +901,64 @@ class TestS3NotificationsToSQS:
         )
         config = s3_client.get_bucket_notification_configuration(Bucket=bucket_name)
         snapshot.match("skip_destination_validation", config)
+
+    @pytest.mark.aws_validated
+    @pytest.mark.skipif(condition=LEGACY_S3_PROVIDER, reason="not implemented")
+    def test_object_put_acl(
+        self,
+        s3_client,
+        sqs_client,
+        s3_create_bucket,
+        sqs_create_queue,
+        s3_create_sqs_bucket_notification,
+        snapshot,
+    ):
+        snapshot.add_transformer(snapshot.transform.sqs_api())
+        snapshot.add_transformer(snapshot.transform.s3_api())
+
+        # setup fixture
+        bucket_name = s3_create_bucket()
+        queue_url = sqs_create_queue()
+        key_name = "my_key_acl"
+        s3_create_sqs_bucket_notification(bucket_name, queue_url, ["s3:ObjectAcl:Put"])
+
+        s3_client.put_object(Bucket=bucket_name, Key=key_name, Body="something")
+        list_bucket_output = s3_client.list_buckets()
+        owner = list_bucket_output["Owner"]
+
+        # change the ACL to the default one, it should not send an Event. Use canned ACL first
+        s3_client.put_object_acl(Bucket=bucket_name, Key=key_name, ACL="private")
+        # change the ACL, it should not send an Event. Use canned ACL first
+        s3_client.put_object_acl(Bucket=bucket_name, Key=key_name, ACL="public-read")
+        # try changing ACL with Grant
+        s3_client.put_object_acl(
+            Bucket=bucket_name,
+            Key=key_name,
+            GrantRead='uri="http://acs.amazonaws.com/groups/s3/LogDelivery"',
+        )
+        # try changing ACL with ACP
+        acp = {
+            "Owner": owner,
+            "Grants": [
+                {
+                    "Grantee": {"ID": owner["ID"], "Type": "CanonicalUser"},
+                    "Permission": "FULL_CONTROL",
+                },
+                {
+                    "Grantee": {
+                        "URI": "http://acs.amazonaws.com/groups/s3/LogDelivery",
+                        "Type": "Group",
+                    },
+                    "Permission": "WRITE",
+                },
+            ],
+        }
+        s3_client.put_object_acl(Bucket=bucket_name, Key=key_name, AccessControlPolicy=acp)
+
+        # collect s3 events from SQS queue
+        events = sqs_collect_s3_events(sqs_client, queue_url, min_events=3)
+
+        assert len(events) == 3, f"unexpected number of events in {events}"
+        # order seems not be guaranteed - sort so we can rely on the order
+        events.sort(key=lambda x: x["eventTime"])
+        snapshot.match("receive_messages", {"messages": events})

@@ -4,12 +4,13 @@ from typing import Tuple
 import pytest
 import requests
 from pytest_httpserver import HTTPServer
-from werkzeug import Request, Response
+from werkzeug import Request as WerkzeugRequest
 
-from localstack.http import Router
+from localstack.http import Request, Response, Router
+from localstack.http.client import SimpleRequestsClient
 from localstack.http.dispatcher import handler_dispatcher
 from localstack.http.hypercorn import HypercornServer
-from localstack.http.proxy import ProxyHandler, forward
+from localstack.http.proxy import Proxy, ProxyHandler, forward
 
 
 @pytest.fixture
@@ -18,8 +19,27 @@ def router_server(serve_asgi_adapter) -> Tuple[Router, HypercornServer]:
     both the router and the server.
     """
     router = Router(dispatcher=handler_dispatcher())
-    app = Request.application(router.dispatch)
+    app = WerkzeugRequest.application(router.dispatch)
     return router, serve_asgi_adapter(app)
+
+
+def echo_request_metadata(request: WerkzeugRequest) -> Response:
+    """
+    Simple request handler that returns the incoming request metadata (method, path, url, headers).
+
+    :param request: the incoming HTTP request
+    :return: an HTTP response
+    """
+    response = Response()
+    response.set_json(
+        {
+            "method": request.method,
+            "path": request.path,
+            "url": request.url,
+            "headers": dict(request.headers),
+        }
+    )
+    return response
 
 
 class TestPathForwarder:
@@ -120,7 +140,7 @@ class TestPathForwarder:
         router, proxy = router_server
         backend = httpserver
 
-        def _handler(request: Request):
+        def _handler(request: WerkzeugRequest):
             data = {
                 "args": request.args,
                 "form": request.form,
@@ -141,16 +161,44 @@ class TestPathForwarder:
         assert doc == {"args": {"q": "yes"}, "form": {"foo": "bar", "baz": "ed"}}
 
 
+class TestProxy:
+    def test_proxy_with_custom_client(self, httpserver: HTTPServer):
+        """The Proxy class allows the injection of a custom HTTP client which can attach default headers to every
+        request. this test verifies that this works through the proxy implementation."""
+        httpserver.expect_request("/").respond_with_handler(echo_request_metadata)
+
+        with SimpleRequestsClient() as client:
+            client.session.headers["X-My-Custom-Header"] = "hello world"
+
+            proxy = Proxy(httpserver.url_for("/").lstrip("/"), client)
+
+            request = Request(
+                path="/",
+                method="POST",
+                body="foobar",
+                remote_addr="127.0.0.10",
+                headers={"Host": "127.0.0.1:80"},
+            )
+
+            response = proxy.request(request)
+
+            assert "X-My-Custom-Header" in response.json["headers"]
+            assert response.json["method"] == "POST"
+            assert response.json["headers"]["X-My-Custom-Header"] == "hello world"
+            assert response.json["headers"]["X-Forwarded-For"] == "127.0.0.10"
+            assert response.json["headers"]["Host"] == f"{httpserver.host}:{httpserver.port}"
+
+
 @pytest.mark.parametrize("consume_data", [True, False])
 def test_forward_files_and_form_data_proxy_consumes_data(
     consume_data, serve_asgi_adapter, tmp_path
 ):
-    """Tests that, when the proxy consumes (or doesn't) consume the request object's data prior to forwarding,
+    """Tests that, when the proxy consumes (or doesn't consume) the request object's data prior to forwarding,
     the request is forwarded correctly. not using httpserver here because it consumes werkzeug data incorrectly (it
-    calls request.get_data())"""
+    calls ``request.get_data()``)."""
 
-    @Request.application
-    def _backend_handler(request: Request):
+    @WerkzeugRequest.application
+    def _backend_handler(request: WerkzeugRequest):
         data = {
             "data": request.data.decode("utf-8"),
             "args": request.args,
@@ -162,8 +210,8 @@ def test_forward_files_and_form_data_proxy_consumes_data(
         }
         return Response(json.dumps(data), mimetype="application/json")
 
-    @Request.application
-    def _proxy_handler(request: Request):
+    @WerkzeugRequest.application
+    def _proxy_handler(request: WerkzeugRequest):
         # heuristic to check whether the stream has been consumed
         assert getattr(request, "_cached_data", None) is None, "data has already been cached"
 

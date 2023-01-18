@@ -843,5 +843,110 @@
         ]
       }
     }
+  },
+  "tests/integration/s3/test_s3_notifications_sqs.py::TestS3NotificationsToSQS::test_object_put_acl": {
+    "recorded-date": "30-12-2022, 23:14:21",
+    "recorded-content": {
+      "receive_messages": {
+        "messages": [
+          {
+            "awsRegion": "<region>",
+            "eventName": "ObjectAcl:Put",
+            "eventSource": "aws:s3",
+            "eventTime": "date",
+            "eventVersion": "2.3",
+            "requestParameters": {
+              "sourceIPAddress": "<ip-address:1>"
+            },
+            "responseElements": {
+              "x-amz-id-2": "amz-id",
+              "x-amz-request-id": "amz-request-id"
+            },
+            "s3": {
+              "bucket": {
+                "arn": "arn:aws:s3:::<resource:1>",
+                "name": "<resource:1>",
+                "ownerIdentity": {
+                  "principalId": "<principal-id:1>"
+                }
+              },
+              "configurationId": "<config-id:1>",
+              "object": {
+                "eTag": "437b930db84b8079c2dd804a71936b5f",
+                "key": "my_key_acl"
+              },
+              "s3SchemaVersion": "1.0"
+            },
+            "userIdentity": {
+              "principalId": "<principal-id:2>"
+            }
+          },
+          {
+            "awsRegion": "<region>",
+            "eventName": "ObjectAcl:Put",
+            "eventSource": "aws:s3",
+            "eventTime": "date",
+            "eventVersion": "2.3",
+            "requestParameters": {
+              "sourceIPAddress": "<ip-address:1>"
+            },
+            "responseElements": {
+              "x-amz-id-2": "amz-id",
+              "x-amz-request-id": "amz-request-id"
+            },
+            "s3": {
+              "bucket": {
+                "arn": "arn:aws:s3:::<resource:1>",
+                "name": "<resource:1>",
+                "ownerIdentity": {
+                  "principalId": "<principal-id:1>"
+                }
+              },
+              "configurationId": "<config-id:1>",
+              "object": {
+                "eTag": "437b930db84b8079c2dd804a71936b5f",
+                "key": "my_key_acl"
+              },
+              "s3SchemaVersion": "1.0"
+            },
+            "userIdentity": {
+              "principalId": "<principal-id:2>"
+            }
+          },
+          {
+            "awsRegion": "<region>",
+            "eventName": "ObjectAcl:Put",
+            "eventSource": "aws:s3",
+            "eventTime": "date",
+            "eventVersion": "2.3",
+            "requestParameters": {
+              "sourceIPAddress": "<ip-address:1>"
+            },
+            "responseElements": {
+              "x-amz-id-2": "amz-id",
+              "x-amz-request-id": "amz-request-id"
+            },
+            "s3": {
+              "bucket": {
+                "arn": "arn:aws:s3:::<resource:1>",
+                "name": "<resource:1>",
+                "ownerIdentity": {
+                  "principalId": "<principal-id:1>"
+                }
+              },
+              "configurationId": "<config-id:1>",
+              "object": {
+                "eTag": "437b930db84b8079c2dd804a71936b5f",
+                "key": "my_key_acl"
+              },
+              "s3SchemaVersion": "1.0"
+            },
+            "userIdentity": {
+              "principalId": "<principal-id:2>"
+            }
+          }
+        ]
+      }
+    }
   }
 }

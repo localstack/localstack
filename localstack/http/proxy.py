@@ -19,12 +19,11 @@ def forward(
     Convenience method that creates a new Proxy and immediately calls proxy.forward(...). See ``Proxy`` for more
     information.
     """
-    return Proxy(forward_base_url=forward_base_url).forward(
-        request, forward_path=forward_path, headers=headers
-    )
+    with Proxy(forward_base_url=forward_base_url) as proxy:
+        return proxy.forward(request, forward_path=forward_path, headers=headers)
 
 
-class Proxy:
+class Proxy(HttpClient):
     def __init__(self, forward_base_url: str, client: HttpClient = None):
         """
         Creates a new HTTP Proxy which can be used to forward incoming requests according to the configuration.
@@ -34,6 +33,15 @@ class Proxy:
         """
         self.forward_base_url = forward_base_url
         self.client = client or SimpleRequestsClient()
+
+    def request(self, request: Request) -> Response:
+        """
+        Compatibility with HttpClient interface. A call is equivalent to ``Proxy.forward(request, None, None)``.
+
+        :param request: the request to proxy
+        :return: the proxied response
+        """
+        return self.forward(request)
 
     def forward(
         self,
@@ -47,8 +55,8 @@ class Proxy:
         :param request: the base request to forward (with the original URL and path data)
         :param forward_path: the path to forward the request to. if set, the original path will be replaced completely,
             otherwise the original path will be used
-        :param headers:
-        :return:
+        :param headers: additional custom headers to send as part of the proxy request
+        :return: the proxied response
         """
         headers = Headers(headers) if headers else Headers()
 
@@ -65,6 +73,9 @@ class Proxy:
 
         proxy_request = _copy_request(request, self.forward_base_url, forward_path, headers)
         return self.client.request(proxy_request)
+
+    def close(self):
+        self.client.close()
 
 
 class ProxyHandler:
@@ -97,6 +108,9 @@ class ProxyHandler:
     def __call__(self, request: Request, **kwargs) -> Response:
         return self.proxy.forward(request, forward_path=kwargs.get("path", ""))
 
+    def close(self):
+        self.proxy.close()
+
 
 def _copy_request(
     request: Request,
@@ -114,6 +128,8 @@ def _copy_request(
     :return: a new request with slightly modified underlying environment but the same data stream
     """
     # ensure that the headers in the env are set on the environment
+    # FIXME: we should preserve header casing like we do with the `asgi.headers` property in the  asgi/wsgi bridge to
+    #  pass through the raw headers.
     set_environment_headers(request.environ, request.headers)
     builder = EnvironBuilder.from_environ(request.environ)
 

@@ -146,7 +146,11 @@ def container_port_can_be_bound(port: int) -> bool:
     ports.add(port, port)
     try:
         result = DOCKER_CLIENT.run_container(
-            PORTS_CHECK_DOCKER_IMAGE, entrypoint="", command=["echo", "test123"], ports=ports
+            PORTS_CHECK_DOCKER_IMAGE,
+            entrypoint="",
+            command=["echo", "test123"],
+            ports=ports,
+            remove=True,
         )
     except Exception as e:
         if "port is already allocated" not in str(e):

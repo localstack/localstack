@@ -879,42 +879,6 @@ class TestLambdaVersions:
         snapshot.match("list_versions_result_end", list_versions_result_end)
 
     @pytest.mark.aws_validated
-    def test_publish_with_wrong_revisionid(
-        self, lambda_client, create_lambda_function_aws, lambda_su_role, snapshot
-    ):
-        function_name = f"fn-{short_uid()}"
-        create_response = create_lambda_function_aws(
-            FunctionName=function_name,
-            Handler="index.handler",
-            Code={
-                "ZipFile": create_lambda_archive(
-                    load_file(TEST_LAMBDA_PYTHON_ECHO), get_content=True
-                )
-            },
-            PackageType="Zip",
-            Role=lambda_su_role,
-            Runtime=Runtime.python3_9,
-        )
-        snapshot.match("create_response", create_response)
-
-        get_fn_response = lambda_client.get_function(FunctionName=function_name)
-        snapshot.match("get_fn_response", get_fn_response)
-
-        # state change causes rev id change!
-        assert create_response["RevisionId"] != get_fn_response["Configuration"]["RevisionId"]
-
-        # publish_versions fails for the wrong revision id
-        with pytest.raises(lambda_client.exceptions.PreconditionFailedException) as e:
-            lambda_client.publish_version(FunctionName=function_name, RevisionId="doesntexist")
-        snapshot.match("publish_wrong_revisionid_exc", e.value.response)
-
-        # but with the proper rev id, it should work
-        publish_result = lambda_client.publish_version(
-            FunctionName=function_name, RevisionId=get_fn_response["Configuration"]["RevisionId"]
-        )
-        snapshot.match("publish_result", publish_result)
-
-    @pytest.mark.aws_validated
     def test_publish_with_wrong_sha256(
         self, lambda_client, create_lambda_function_aws, lambda_su_role, snapshot
     ):
@@ -1294,6 +1258,245 @@ class TestLambdaAlias:
                 Name="non-existent",
             )
         snapshot.match("alias_does_not_exist_esc", e.value.response)
+
+
+@pytest.mark.skipif(condition=is_old_provider(), reason="not supported")
+@pytest.mark.skip_snapshot_verify(
+    paths=[
+        # new Lambda feature: https://docs.aws.amazon.com/lambda/latest/dg/snapstart.html
+        "$..SnapStart"
+    ]
+)
+class TestLambdaRevisions:
+    @pytest.mark.aws_validated
+    def test_function_revisions_basic(self, lambda_client, create_lambda_function, snapshot):
+        """Tests basic revision id lifecycle for creating and updating functions"""
+        function_name = f"fn-{short_uid()}"
+        zip_file_content = load_file(TEST_LAMBDA_PYTHON_ECHO_ZIP, mode="rb")
+
+        # rev1: create function
+        # The fixture waits until the function is not in Pending state anymore
+        create_function_response = create_lambda_function(
+            func_name=function_name,
+            zip_file=zip_file_content,
+            handler="index.handler",
+            runtime=Runtime.python3_9,
+        )
+        snapshot.match("create_function_response_rev1", create_function_response)
+        rev1_create_function = create_function_response["CreateFunctionResponse"]["RevisionId"]
+
+        # rev2: created function becomes active (the fixture does the waiting)
+        get_function_response_rev2 = lambda_client.get_function(FunctionName=function_name)
+        snapshot.match("get_function_response_rev2", get_function_response_rev2)
+        rev2_active_state = get_function_response_rev2["Configuration"]["RevisionId"]
+        # State change from Pending to Active causes revision id change!
+        # Lambda function states: https://docs.aws.amazon.com/lambda/latest/dg/functions-states.html
+        assert rev1_create_function != rev2_active_state
+
+        with pytest.raises(lambda_client.exceptions.PreconditionFailedException) as e:
+            lambda_client.update_function_code(
+                FunctionName=function_name,
+                ZipFile=zip_file_content,
+                RevisionId="wrong",
+            )
+        snapshot.match("update_function_revision_exception", e.value.response)
+
+        # rev3: update function code
+        update_fn_code_response = lambda_client.update_function_code(
+            FunctionName=function_name,
+            ZipFile=zip_file_content,
+            RevisionId=rev2_active_state,
+        )
+        snapshot.match("update_function_code_response_rev3", update_fn_code_response)
+        rev3_update_fn_code = update_fn_code_response["RevisionId"]
+        assert rev2_active_state != rev3_update_fn_code
+
+        # rev4: function code update completed
+        lambda_client.get_waiter("function_updated_v2").wait(FunctionName=function_name)
+        get_function_response_rev4 = lambda_client.get_function(FunctionName=function_name)
+        snapshot.match("get_function_response_rev4", get_function_response_rev4)
+        rev4_fn_code_updated = get_function_response_rev4["Configuration"]["RevisionId"]
+        assert rev3_update_fn_code != rev4_fn_code_updated
+
+        with pytest.raises(lambda_client.exceptions.PreconditionFailedException) as e:
+            lambda_client.update_function_configuration(
+                FunctionName=function_name, Runtime=Runtime.python3_8, RevisionId="wrong"
+            )
+        snapshot.match("update_function_configuration_revision_exception", e.value.response)
+
+        # rev5: update function configuration
+        update_fn_config_response = lambda_client.update_function_configuration(
+            FunctionName=function_name, Runtime=Runtime.python3_8, RevisionId=rev4_fn_code_updated
+        )
+        snapshot.match("update_function_configuration_response_rev5", update_fn_config_response)
+        rev5_fn_config_update = update_fn_config_response["RevisionId"]
+        assert rev4_fn_code_updated != rev5_fn_config_update
+
+        # rev6: function configuration updated completed
+        lambda_client.get_waiter("function_updated_v2").wait(FunctionName=function_name)
+        get_function_response_rev6 = lambda_client.get_function(FunctionName=function_name)
+        snapshot.match("get_function_response_rev6", get_function_response_rev6)
+        rev6_fn_config_update_done = get_function_response_rev6["Configuration"]["RevisionId"]
+        assert rev5_fn_config_update != rev6_fn_config_update_done
+
+    @pytest.mark.aws_validated
+    def test_function_revisions_version_and_alias(
+        self, create_lambda_function, lambda_client, snapshot
+    ):
+        """Tests revision id lifecycle for 1) publishing function versions and 2) creating and updating aliases
+        Shortcut notation to clarify branching:
+        revN: revision counter for $LATEST
+        rev_vN: revision counter for versions
+        rev_aN: revision counter for aliases
+        """
+        # rev1: create function
+        function_name = f"fn-{short_uid()}"
+        create_function_response = create_lambda_function(
+            func_name=function_name,
+            handler_file=TEST_LAMBDA_PYTHON_ECHO,
+            runtime=Runtime.python3_9,
+        )
+        snapshot.match("create_function_response_rev1", create_function_response)
+        rev1_create_function = create_function_response["CreateFunctionResponse"]["RevisionId"]
+
+        # rev2: created function becomes active
+        get_function_response_rev2 = lambda_client.get_function(FunctionName=function_name)
+        snapshot.match("get_function_active_rev2", get_function_response_rev2)
+        rev2_active_state = get_function_response_rev2["Configuration"]["RevisionId"]
+        assert rev1_create_function != rev2_active_state
+
+        with pytest.raises(lambda_client.exceptions.PreconditionFailedException) as e:
+            lambda_client.publish_version(FunctionName=function_name, RevisionId="wrong")
+        snapshot.match("publish_version_revision_exception", e.value.response)
+
+        # rev_v1: publish version
+        fn_version_response = lambda_client.publish_version(
+            FunctionName=function_name, RevisionId=rev2_active_state
+        )
+        snapshot.match("publish_version_response_rev_v1", fn_version_response)
+        function_version = fn_version_response["Version"]
+        rev_v1_publish_version = fn_version_response["RevisionId"]
+        assert rev2_active_state != rev_v1_publish_version
+
+        # rev_v2: published version becomes active does NOT change revision
+        lambda_client.get_waiter("published_version_active").wait(FunctionName=function_name)
+        get_function_response_rev_v2 = lambda_client.get_function(
+            FunctionName=function_name, Qualifier=function_version
+        )
+        snapshot.match("get_function_published_version_rev_v2", get_function_response_rev_v2)
+        rev_v2_publish_version_done = get_function_response_rev_v2["Configuration"]["RevisionId"]
+        assert rev_v1_publish_version == rev_v2_publish_version_done
+
+        # publish_version changes the revision id of $LATEST
+        get_function_response_rev3 = lambda_client.get_function(FunctionName=function_name)
+        snapshot.match("get_function_latest_rev3", get_function_response_rev3)
+        rev3_publish_version = get_function_response_rev3["Configuration"]["RevisionId"]
+        assert rev2_active_state != rev3_publish_version
+
+        # rev_a1: create alias
+        alias_name = "revision_alias"
+        create_alias_response = lambda_client.create_alias(
+            FunctionName=function_name,
+            Name=alias_name,
+            FunctionVersion=function_version,
+        )
+        snapshot.match("create_alias_response_rev_a1", create_alias_response)
+        rev_a1_create_alias = create_alias_response["RevisionId"]
+        assert rev_v2_publish_version_done != rev_a1_create_alias
+
+        # create_alias does NOT change the revision id of $LATEST
+        get_function_response_rev4 = lambda_client.get_function(FunctionName=function_name)
+        snapshot.match("get_function_latest_rev4", get_function_response_rev4)
+        rev4_create_alias = get_function_response_rev4["Configuration"]["RevisionId"]
+        assert rev3_publish_version == rev4_create_alias
+
+        # create_alias does NOT change the revision id of versions
+        get_function_response_rev_v3 = lambda_client.get_function(
+            FunctionName=function_name, Qualifier=function_version
+        )
+        snapshot.match("get_function_published_version_rev_v3", get_function_response_rev_v3)
+        rev_v3_create_alias = get_function_response_rev_v3["Configuration"]["RevisionId"]
+        assert rev_v2_publish_version_done == rev_v3_create_alias
+
+        with pytest.raises(lambda_client.exceptions.PreconditionFailedException) as e:
+            lambda_client.update_alias(
+                FunctionName=function_name,
+                Name=alias_name,
+                RevisionId="wrong",
+            )
+        snapshot.match("update_alias_revision_exception", e.value.response)
+
+        # rev_a2: update alias
+        update_alias_response = lambda_client.update_alias(
+            FunctionName=function_name,
+            Name=alias_name,
+            Description="something changed",
+            RevisionId=rev_a1_create_alias,
+        )
+        snapshot.match("update_alias_response_rev_a2", update_alias_response)
+        rev_a2_update_alias = update_alias_response["RevisionId"]
+        assert rev_a1_create_alias != rev_a2_update_alias
+
+    @pytest.mark.aws_validated
+    def test_function_revisions_permissions(self, create_lambda_function, lambda_client, snapshot):
+        """Tests revision id lifecycle for adding and removing permissions"""
+        # rev1: create function
+        function_name = f"fn-{short_uid()}"
+        create_lambda_function(
+            func_name=function_name,
+            handler_file=TEST_LAMBDA_PYTHON_ECHO,
+            runtime=Runtime.python3_9,
+        )
+
+        # rev2: created function becomes active
+        get_function_response_rev2 = lambda_client.get_function(FunctionName=function_name)
+        rev2_active_state = get_function_response_rev2["Configuration"]["RevisionId"]
+
+        sid = "s3"
+        with pytest.raises(lambda_client.exceptions.PreconditionFailedException) as e:
+            lambda_client.add_permission(
+                FunctionName=function_name,
+                StatementId=sid,
+                Action="lambda:InvokeFunction",
+                Principal="s3.amazonaws.com",
+                RevisionId="wrong",
+            )
+        snapshot.match("add_permission_revision_exception", e.value.response)
+
+        # rev3: add permission
+        add_permission_response = lambda_client.add_permission(
+            FunctionName=function_name,
+            StatementId=sid,
+            Action="lambda:InvokeFunction",
+            Principal="s3.amazonaws.com",
+            RevisionId=rev2_active_state,
+        )
+        snapshot.match("add_permission_response", add_permission_response)
+
+        get_policy_response_rev3 = lambda_client.get_policy(FunctionName=function_name)
+        snapshot.match("get_policy_response_rev3", get_policy_response_rev3)
+        rev3policy_added_permission = get_policy_response_rev3["RevisionId"]
+        assert rev2_active_state != rev3policy_added_permission
+        # function revision is the same as policy revision
+        get_function_response_rev3 = lambda_client.get_function(FunctionName=function_name)
+        rev3_added_permission = get_function_response_rev3["Configuration"]["RevisionId"]
+        assert rev3_added_permission == rev3policy_added_permission
+
+        with pytest.raises(lambda_client.exceptions.PreconditionFailedException) as e:
+            lambda_client.remove_permission(
+                FunctionName=function_name, StatementId=sid, RevisionId="wrong"
+            )
+        snapshot.match("remove_permission_revision_exception", e.value.response)
+
+        # rev4: remove permission
+        remove_permission_response = lambda_client.remove_permission(
+            FunctionName=function_name, StatementId=sid, RevisionId=rev3_added_permission
+        )
+        snapshot.match("remove_permission_response", remove_permission_response)
+
+        get_function_response_rev4 = lambda_client.get_function(FunctionName=function_name)
+        rev4_removed_permission = get_function_response_rev4["Configuration"]["RevisionId"]
+        assert rev3_added_permission != rev4_removed_permission
 
 
 @pytest.mark.skipif(is_old_provider(), reason="focusing on new provider")
@@ -2354,6 +2557,12 @@ class TestLambdaPermissions:
         snapshot.match("get_policy", get_policy_result)
 
     @pytest.mark.skipif(condition=is_old_provider(), reason="not supported")
+    @pytest.mark.skip_snapshot_verify(
+        paths=[
+            # new Lambda feature: https://docs.aws.amazon.com/lambda/latest/dg/snapstart.html
+            "$..SnapStart"
+        ]
+    )
     @pytest.mark.aws_validated
     def test_lambda_permission_fn_versioning(
         self, lambda_client, iam_client, create_lambda_function, account_id, snapshot
@@ -2380,12 +2589,16 @@ class TestLambdaPermissions:
         snapshot.match("add_permission", resp)
 
         # fetch lambda policy
-        get_policy_result = lambda_client.get_policy(FunctionName=function_name)
-        snapshot.match("get_policy", get_policy_result)
+        get_policy_result_base = lambda_client.get_policy(FunctionName=function_name)
+        snapshot.match("get_policy", get_policy_result_base)
 
         # publish version
         fn_version_result = lambda_client.publish_version(FunctionName=function_name)
+        snapshot.match("publish_version_result", fn_version_result)
         fn_version = fn_version_result["Version"]
+        lambda_client.get_waiter("published_version_active").wait(FunctionName=function_name)
+        get_function_result_after_publish = lambda_client.get_function(FunctionName=function_name)
+        snapshot.match("get_function_result_after_publishing", get_function_result_after_publish)
         get_policy_result_after_publishing = lambda_client.get_policy(FunctionName=function_name)
         snapshot.match("get_policy_after_publishing_latest", get_policy_result_after_publishing)
 
@@ -2403,17 +2616,36 @@ class TestLambdaPermissions:
             SourceArn=arns.s3_bucket_arn("test-bucket"),
             Qualifier=fn_version,
         )
-        get_policy_result_alias = lambda_client.get_policy(
+        get_policy_result_version = lambda_client.get_policy(
             FunctionName=function_name, Qualifier=fn_version
         )
-        snapshot.match("get_policy_version", get_policy_result_alias)
+        snapshot.match("get_policy_version", get_policy_result_version)
 
         alias_name = "permission-alias"
-        lambda_client.create_alias(
+        create_alias_response = lambda_client.create_alias(
             FunctionName=function_name,
             Name=alias_name,
             FunctionVersion=fn_version,
         )
+        snapshot.match("create_alias_response", create_alias_response)
+
+        get_alias_response = lambda_client.get_alias(FunctionName=function_name, Name=alias_name)
+        snapshot.match("get_alias", get_alias_response)
+        assert get_alias_response["RevisionId"] == create_alias_response["RevisionId"]
+
+        sid = "s3"
+        with pytest.raises(lambda_client.exceptions.PreconditionFailedException) as e:
+            lambda_client.add_permission(
+                FunctionName=function_name,
+                Action=action,
+                StatementId=sid,
+                Principal=principal,
+                SourceArn=arns.s3_bucket_arn("test-bucket"),
+                Qualifier=alias_name,
+                RevisionId="wrong",
+            )
+        snapshot.match("add_permission_alias_revision_exception", e.value.response)
+
         # create lambda permission with the same sid for specific alias
         lambda_client.add_permission(
             FunctionName=f"{function_name}:{alias_name}",  # alias suffix matching Qualifier
@@ -2422,14 +2654,15 @@ class TestLambdaPermissions:
             Principal=principal,
             SourceArn=arns.s3_bucket_arn("test-bucket"),
             Qualifier=alias_name,
+            RevisionId=create_alias_response["RevisionId"],
         )
         get_policy_result_alias = lambda_client.get_policy(
             FunctionName=function_name, Qualifier=alias_name
         )
         snapshot.match("get_policy_alias", get_policy_result_alias)
 
-        get_policy_result_alias = lambda_client.get_policy(FunctionName=function_name)
-        snapshot.match("get_policy_after_adding_to_new_version", get_policy_result_alias)
+        get_policy_result = lambda_client.get_policy(FunctionName=function_name)
+        snapshot.match("get_policy_after_adding_to_new_version", get_policy_result)
 
         # create lambda permission with other sid and correct revision id
         lambda_client.add_permission(
@@ -2438,7 +2671,7 @@ class TestLambdaPermissions:
             StatementId=f"{sid}_2",
             Principal=principal,
             SourceArn=arns.s3_bucket_arn("test-bucket"),
-            RevisionId=get_policy_result_alias["RevisionId"],
+            RevisionId=get_policy_result["RevisionId"],
         )
 
         get_policy_result_adding_2 = lambda_client.get_policy(FunctionName=function_name)
@@ -4135,13 +4368,11 @@ class TestLambdaLayer:
         snapshot.match("publish_layer_result", publish_layer_result)
 
     @pytest.mark.aws_validated
-    def test_layer_policy_exceptions(
-        self, lambda_client, create_lambda_function, snapshot, dummylayer, cleanups
-    ):
+    def test_layer_policy_exceptions(self, lambda_client, snapshot, dummylayer, cleanups):
         """
         API-level exceptions and edge cases for lambda layer permissions
 
-        TODO: OrganizationId & RevisionId
+        TODO: OrganizationId
         """
         layer_name = f"layer4policy-{short_uid()}"
 
@@ -4195,6 +4426,18 @@ class TestLambdaLayer:
             )
         snapshot.match("layer_permission_duplicate_statement", e.value.response)
 
+        # wrong revision id
+        with pytest.raises(lambda_client.exceptions.PreconditionFailedException) as e:
+            lambda_client.add_layer_version_permission(
+                LayerName=layer_name,
+                VersionNumber=1,
+                Action="lambda:GetLayerVersion",
+                Principal="*",
+                StatementId="s2",
+                RevisionId="wrong",
+            )
+        snapshot.match("layer_permission_wrong_revision", e.value.response)
+
         # layer does not exist
         with pytest.raises(lambda_client.exceptions.ResourceNotFoundException) as e:
             lambda_client.add_layer_version_permission(
@@ -4242,9 +4485,16 @@ class TestLambdaLayer:
         # statement id does not exist for given layer version
         with pytest.raises(lambda_client.exceptions.ResourceNotFoundException) as e:
             lambda_client.remove_layer_version_permission(
-                LayerName=layer_name, VersionNumber=1, StatementId="s2"
+                LayerName=layer_name, VersionNumber=1, StatementId="doesnotexist"
             )
         snapshot.match("layer_permission_statementid_doesnotexist_remove", e.value.response)
+
+        # wrong revision id
+        with pytest.raises(lambda_client.exceptions.PreconditionFailedException) as e:
+            lambda_client.remove_layer_version_permission(
+                LayerName=layer_name, VersionNumber=1, StatementId="s1", RevisionId="wrong"
+            )
+        snapshot.match("layer_permission_wrong_revision_remove", e.value.response)
 
     @pytest.mark.aws_validated
     def test_layer_policy_lifecycle(
@@ -4253,7 +4503,7 @@ class TestLambdaLayer:
         """
         Simple lifecycle tests for lambda layer policies
 
-        TODO: OrganizationId & RevisionId
+        TODO: OrganizationId
         """
         layer_name = f"testlayer-{short_uid()}"
 
@@ -4280,22 +4530,31 @@ class TestLambdaLayer:
         )
         snapshot.match("add_policy_s1", add_policy_s1)
 
+        get_layer_version_policy = lambda_client.get_layer_version_policy(
+            LayerName=layer_name, VersionNumber=1
+        )
+        snapshot.match("get_layer_version_policy", get_layer_version_policy)
+
         add_policy_s2 = lambda_client.add_layer_version_permission(
             LayerName=layer_name,
             VersionNumber=1,
             StatementId="s2",
             Action="lambda:GetLayerVersion",
             Principal="*",
+            RevisionId=get_layer_version_policy["RevisionId"],
         )
         snapshot.match("add_policy_s2", add_policy_s2)
 
-        get_layer_version_policy = lambda_client.get_layer_version_policy(
+        get_layer_version_policy_postadd2 = lambda_client.get_layer_version_policy(
             LayerName=layer_name, VersionNumber=1
         )
-        snapshot.match("get_layer_version_policy", get_layer_version_policy)
+        snapshot.match("get_layer_version_policy_postadd2", get_layer_version_policy_postadd2)
 
         remove_s2 = lambda_client.remove_layer_version_permission(
-            LayerName=layer_name, VersionNumber=1, StatementId="s2"
+            LayerName=layer_name,
+            VersionNumber=1,
+            StatementId="s2",
+            RevisionId=get_layer_version_policy_postadd2["RevisionId"],
         )
         snapshot.match("remove_s2", remove_s2)
 

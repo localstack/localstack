@@ -3,6 +3,7 @@ import io
 import json
 import logging
 import os
+import re
 import struct
 import uuid
 from collections import namedtuple
@@ -32,12 +33,16 @@ from localstack.aws.api.kms import (
     UnsupportedOperationException,
 )
 from localstack.services.stores import AccountRegionBundle, BaseStore, LocalAttribute
-from localstack.utils.aws.arns import kms_alias_arn, kms_key_arn
+from localstack.utils.aws.arns import kms_alias_arn, kms_key_arn, parse_arn
 from localstack.utils.crypto import decrypt, encrypt
 from localstack.utils.strings import long_uid
 
 LOG = logging.getLogger(__name__)
 
+PATTERN_UUID = re.compile(
+    r"^[a-fA-F0-9]{8}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{12}$"
+)
+MULTI_REGION_PATTERN = re.compile(r"^mrk-[a-fA-F0-9]{32}$")
 
 SYMMETRIC_DEFAULT_MATERIAL_LENGTH = 32
 
@@ -544,8 +549,7 @@ class KmsStore(BaseStore):
             raise ValueError("A key is requested, but all possible key states are prohibited")
 
         key_id = self.get_key_id_from_any_id(any_type_of_key_id)
-        if key_id not in self.keys:
-            raise NotFoundException(f"Invalid keyID '{key_id}'")
+
         key = self.keys[key_id]
         if not disabled_key_allowed and key.metadata.get("KeyState") == "Disabled":
             raise DisabledException(f"{key.metadata.get('Arn')} is disabled.")
@@ -622,7 +626,7 @@ class KmsStore(BaseStore):
     ) -> str:
         alias_name = None
         key_id = None
-
+        key_arn = None
         if some_id.startswith("arn:"):
             if ":alias/" in some_id:
                 alias_arn = some_id
@@ -630,6 +634,9 @@ class KmsStore(BaseStore):
             elif ":key/" in some_id:
                 key_arn = some_id
                 key_id = key_arn.split(":key/")[1]
+                parsed_arn = parse_arn(key_arn)
+                if parsed_arn["region"] != self._region_name:
+                    raise NotFoundException(f"Invalid arn {parsed_arn['region']}")
             else:
                 raise ValueError(
                     f"Supplied value of {some_id} is an ARN, but neither of a KMS key nor of a KMS key "
@@ -645,6 +652,15 @@ class KmsStore(BaseStore):
             if alias_name not in self.aliases:
                 raise NotFoundException(f"Unable to find KMS alias with name {alias_name}")
             key_id = self.aliases[alias_name].metadata["TargetKeyId"]
+
+        # regular KeyId are UUID, and MultiRegion keys starts with 'mrk-' and 32 hex chars
+        if not PATTERN_UUID.match(key_id) and not MULTI_REGION_PATTERN.match(key_id):
+            raise NotFoundException(f"Invalid keyId {key_id}")
+
+        if key_id not in self.keys:
+            if not key_arn:
+                key_arn = f"arn:aws:kms:{self._region_name}:{self._account_id}:key/{key_id}"
+            raise NotFoundException(f"Key '{key_arn}' does not exist")
 
         return key_id
 

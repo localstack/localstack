@@ -151,93 +151,6 @@
       }
     }
   },
-  "tests/integration/awslambda/test_lambda.py::TestLambdaURL::test_lambda_url_invocation": {
-    "recorded-date": "31-08-2022, 17:33:27",
-    "recorded-content": {
-      "create_lambda_url_config": {
-        "AuthType": "NONE",
-        "CreationTime": "date",
-        "FunctionArn": "arn:aws:lambda:<region>:111111111111:function:<resource:1>",
-        "FunctionUrl": "function-url",
-        "ResponseMetadata": {
-          "HTTPHeaders": {},
-          "HTTPStatusCode": 201
-        }
-      },
-      "add_permission": {
-        "ResponseMetadata": {
-          "HTTPHeaders": {},
-          "HTTPStatusCode": 201
-        },
-        "Statement": {
-          "Sid": "urlPermission",
-          "Effect": "Allow",
-          "Principal": "*",
-          "Action": "lambda:InvokeFunctionUrl",
-          "Resource": "arn:aws:lambda:<region>:111111111111:function:<resource:1>",
-          "Condition": {
-            "StringEquals": {
-              "lambda:FunctionUrlAuthType": "NONE"
-            }
-          }
-        }
-      },
-      "lambda_url_invocation": {
-        "context": {
-          "awsRequestId": "<uuid:1>",
-          "callbackWaitsForEmptyEventLoop": true,
-          "functionName": "<resource:1>",
-          "functionVersion": "$LATEST",
-          "invokedFunctionArn": "arn:aws:lambda:<region>:111111111111:function:<resource:1>",
-          "logGroupName": "/aws/lambda/<resource:1>",
-          "logStreamName": "<log-stream-name:1>",
-          "memoryLimitInMB": "128"
-        },
-        "event": {
-          "body": "eydrZXknOid2YWx1ZSd9",
-          "headers": {
-            "accept": "*/*",
-            "accept-encoding": "gzip, deflate",
-            "content-length": "15",
-            "host": "lambda-url",
-            "user-agent": "python-requests/testing",
-            "x-amzn-tls-cipher-suite": "ECDHE-RSA-AES128-GCM-SHA256",
-            "x-amzn-tls-version": "TLSv1.2",
-            "x-amzn-trace-id": "x-amzn-trace-id",
-            "x-forwarded-for": "ip-address",
-            "x-forwarded-port": "443",
-            "x-forwarded-proto": "https"
-          },
-          "isBase64Encoded": true,
-          "queryStringParameters": {
-            "test_param": "test_value"
-          },
-          "rawPath": "/custom_path/extend",
-          "rawQueryString": "test_param=test_value",
-          "requestContext": {
-            "accountId": "anonymous",
-            "apiId": "api-id",
-            "domainName": "lambda-url",
-            "domainPrefix": "api-id",
-            "http": {
-              "method": "POST",
-              "path": "/custom_path/extend",
-              "protocol": "HTTP/1.1",
-              "sourceIp": "ip-address",
-              "userAgent": "python-requests/testing"
-            },
-            "requestId": "request-id",
-            "routeKey": "$default",
-            "stage": "$default",
-            "time": "readable-date",
-            "timeEpoch": "epoch-milliseconds"
-          },
-          "routeKey": "$default",
-          "version": "2.0"
-        }
-      }
-    }
-  },
   "tests/integration/awslambda/test_lambda.py::TestLambdaBehavior::test_lambda_cache_local[nodejs]": {
     "recorded-date": "01-09-2022, 07:36:39",
     "recorded-content": {
@@ -2073,7 +1986,7 @@
     }
   },
   "tests/integration/awslambda/test_lambda.py::TestLambdaURL::test_lambda_url_invocation_exception": {
-    "recorded-date": "22-11-2022, 22:55:11",
+    "recorded-date": "12-01-2023, 09:22:41",
     "recorded-content": {
       "get_fn_result": {
         "Code": {
@@ -2103,6 +2016,10 @@
           "RevisionId": "<uuid:1>",
           "Role": "arn:aws:iam::111111111111:role/<resource:1>",
           "Runtime": "python3.9",
+          "SnapStart": {
+            "ApplyOn": "None",
+            "OptimizationStatus": "Off"
+          },
           "State": "Active",
           "Timeout": 30,
           "TracingConfig": {
@@ -2172,6 +2089,379 @@
         "ResponseMetadata": {
           "HTTPHeaders": {},
           "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/integration/awslambda/test_lambda.py::TestLambdaPermissions::test_lambda_permission_url_invocation": {
+    "recorded-date": "10-01-2023, 09:11:18",
+    "recorded-content": {
+      "lambda_url_invocation_missing_permission": {
+        "Message": "Forbidden"
+      }
+    }
+  },
+  "tests/integration/awslambda/test_lambda.py::TestLambdaURL::test_lambda_url_invocation[dict]": {
+    "recorded-date": "12-01-2023, 09:16:21",
+    "recorded-content": {
+      "create_lambda_url_config": {
+        "AuthType": "NONE",
+        "CreationTime": "date",
+        "FunctionArn": "arn:aws:lambda:<region>:111111111111:function:<resource:1>",
+        "FunctionUrl": "<function-url>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 201
+        }
+      },
+      "add_permission": {
+        "Statement": {
+          "Sid": "urlPermission",
+          "Effect": "Allow",
+          "Principal": "*",
+          "Action": "lambda:InvokeFunctionUrl",
+          "Resource": "arn:aws:lambda:<region>:111111111111:function:<resource:1>",
+          "Condition": {
+            "StringEquals": {
+              "lambda:FunctionUrlAuthType": "NONE"
+            }
+          }
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 201
+        }
+      },
+      "lambda_url_invocation": {
+        "content": {
+          "hello": "world"
+        },
+        "headers": {
+          "Content-Length": "17",
+          "Content-Type": "application/json"
+        },
+        "statuscode": 200
+      }
+    }
+  },
+  "tests/integration/awslambda/test_lambda.py::TestLambdaURL::test_lambda_url_invocation[http-response]": {
+    "recorded-date": "12-01-2023, 09:16:25",
+    "recorded-content": {
+      "create_lambda_url_config": {
+        "AuthType": "NONE",
+        "CreationTime": "date",
+        "FunctionArn": "arn:aws:lambda:<region>:111111111111:function:<resource:1>",
+        "FunctionUrl": "<function-url>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 201
+        }
+      },
+      "add_permission": {
+        "Statement": {
+          "Sid": "urlPermission",
+          "Effect": "Allow",
+          "Principal": "*",
+          "Action": "lambda:InvokeFunctionUrl",
+          "Resource": "arn:aws:lambda:<region>:111111111111:function:<resource:1>",
+          "Condition": {
+            "StringEquals": {
+              "lambda:FunctionUrlAuthType": "NONE"
+            }
+          }
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 201
+        }
+      },
+      "lambda_url_invocation": {
+        "content": "body123",
+        "headers": {
+          "Content-Length": "7",
+          "Content-Type": "application/json"
+        },
+        "statuscode": 200
+      }
+    }
+  },
+  "tests/integration/awslambda/test_lambda.py::TestLambdaURL::test_lambda_url_invocation[http-response-json]": {
+    "recorded-date": "12-01-2023, 09:16:29",
+    "recorded-content": {
+      "create_lambda_url_config": {
+        "AuthType": "NONE",
+        "CreationTime": "date",
+        "FunctionArn": "arn:aws:lambda:<region>:111111111111:function:<resource:1>",
+        "FunctionUrl": "<function-url>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 201
+        }
+      },
+      "add_permission": {
+        "Statement": {
+          "Sid": "urlPermission",
+          "Effect": "Allow",
+          "Principal": "*",
+          "Action": "lambda:InvokeFunctionUrl",
+          "Resource": "arn:aws:lambda:<region>:111111111111:function:<resource:1>",
+          "Condition": {
+            "StringEquals": {
+              "lambda:FunctionUrlAuthType": "NONE"
+            }
+          }
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 201
+        }
+      },
+      "lambda_url_invocation": {
+        "content": {
+          "hello": "world"
+        },
+        "headers": {
+          "Content-Length": "18",
+          "Content-Type": "application/json"
+        },
+        "statuscode": 200
+      }
+    }
+  },
+  "tests/integration/awslambda/test_lambda.py::TestLambdaURL::test_lambda_url_invocation[list-mixed]": {
+    "recorded-date": "12-01-2023, 09:16:33",
+    "recorded-content": {
+      "create_lambda_url_config": {
+        "AuthType": "NONE",
+        "CreationTime": "date",
+        "FunctionArn": "arn:aws:lambda:<region>:111111111111:function:<resource:1>",
+        "FunctionUrl": "<function-url>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 201
+        }
+      },
+      "add_permission": {
+        "Statement": {
+          "Sid": "urlPermission",
+          "Effect": "Allow",
+          "Principal": "*",
+          "Action": "lambda:InvokeFunctionUrl",
+          "Resource": "arn:aws:lambda:<region>:111111111111:function:<resource:1>",
+          "Condition": {
+            "StringEquals": {
+              "lambda:FunctionUrlAuthType": "NONE"
+            }
+          }
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 201
+        }
+      },
+      "lambda_url_invocation": {
+        "content": "[\"hello\",3,true]",
+        "headers": {
+          "Content-Length": "16",
+          "Content-Type": "application/json"
+        },
+        "statuscode": 200
+      }
+    }
+  },
+  "tests/integration/awslambda/test_lambda.py::TestLambdaURL::test_lambda_url_invocation[string]": {
+    "recorded-date": "12-01-2023, 09:16:37",
+    "recorded-content": {
+      "create_lambda_url_config": {
+        "AuthType": "NONE",
+        "CreationTime": "date",
+        "FunctionArn": "arn:aws:lambda:<region>:111111111111:function:<resource:1>",
+        "FunctionUrl": "<function-url>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 201
+        }
+      },
+      "add_permission": {
+        "Statement": {
+          "Sid": "urlPermission",
+          "Effect": "Allow",
+          "Principal": "*",
+          "Action": "lambda:InvokeFunctionUrl",
+          "Resource": "arn:aws:lambda:<region>:111111111111:function:<resource:1>",
+          "Condition": {
+            "StringEquals": {
+              "lambda:FunctionUrlAuthType": "NONE"
+            }
+          }
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 201
+        }
+      },
+      "lambda_url_invocation": {
+        "content": "hello",
+        "headers": {
+          "Content-Length": "5",
+          "Content-Type": "application/json"
+        },
+        "statuscode": 200
+      }
+    }
+  },
+  "tests/integration/awslambda/test_lambda.py::TestLambdaURL::test_lambda_url_invocation[integer]": {
+    "recorded-date": "12-01-2023, 09:16:41",
+    "recorded-content": {
+      "create_lambda_url_config": {
+        "AuthType": "NONE",
+        "CreationTime": "date",
+        "FunctionArn": "arn:aws:lambda:<region>:111111111111:function:<resource:1>",
+        "FunctionUrl": "<function-url>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 201
+        }
+      },
+      "add_permission": {
+        "Statement": {
+          "Sid": "urlPermission",
+          "Effect": "Allow",
+          "Principal": "*",
+          "Action": "lambda:InvokeFunctionUrl",
+          "Resource": "arn:aws:lambda:<region>:111111111111:function:<resource:1>",
+          "Condition": {
+            "StringEquals": {
+              "lambda:FunctionUrlAuthType": "NONE"
+            }
+          }
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 201
+        }
+      },
+      "lambda_url_invocation": {
+        "content": "3",
+        "headers": {
+          "Content-Length": "1",
+          "Content-Type": "application/json"
+        },
+        "statuscode": 200
+      }
+    }
+  },
+  "tests/integration/awslambda/test_lambda.py::TestLambdaURL::test_lambda_url_invocation[float]": {
+    "recorded-date": "12-01-2023, 09:16:44",
+    "recorded-content": {
+      "create_lambda_url_config": {
+        "AuthType": "NONE",
+        "CreationTime": "date",
+        "FunctionArn": "arn:aws:lambda:<region>:111111111111:function:<resource:1>",
+        "FunctionUrl": "<function-url>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 201
+        }
+      },
+      "add_permission": {
+        "Statement": {
+          "Sid": "urlPermission",
+          "Effect": "Allow",
+          "Principal": "*",
+          "Action": "lambda:InvokeFunctionUrl",
+          "Resource": "arn:aws:lambda:<region>:111111111111:function:<resource:1>",
+          "Condition": {
+            "StringEquals": {
+              "lambda:FunctionUrlAuthType": "NONE"
+            }
+          }
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 201
+        }
+      },
+      "lambda_url_invocation": {
+        "content": "3.1",
+        "headers": {
+          "Content-Length": "3",
+          "Content-Type": "application/json"
+        },
+        "statuscode": 200
+      }
+    }
+  },
+  "tests/integration/awslambda/test_lambda.py::TestLambdaURL::test_lambda_url_invocation[boolean]": {
+    "recorded-date": "12-01-2023, 09:16:48",
+    "recorded-content": {
+      "create_lambda_url_config": {
+        "AuthType": "NONE",
+        "CreationTime": "date",
+        "FunctionArn": "arn:aws:lambda:<region>:111111111111:function:<resource:1>",
+        "FunctionUrl": "<function-url>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 201
+        }
+      },
+      "add_permission": {
+        "Statement": {
+          "Sid": "urlPermission",
+          "Effect": "Allow",
+          "Principal": "*",
+          "Action": "lambda:InvokeFunctionUrl",
+          "Resource": "arn:aws:lambda:<region>:111111111111:function:<resource:1>",
+          "Condition": {
+            "StringEquals": {
+              "lambda:FunctionUrlAuthType": "NONE"
+            }
+          }
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 201
+        }
+      },
+      "lambda_url_invocation": {
+        "content": "true",
+        "headers": {
+          "Content-Length": "4",
+          "Content-Type": "application/json"
+        },
+        "statuscode": 200
+      }
+    }
+  },
+  "tests/integration/awslambda/test_lambda.py::TestLambdaURL::test_lambda_url_echo_invoke": {
+    "recorded-date": "12-01-2023, 09:11:03",
+    "recorded-content": {
+      "create_lambda_url_config": {
+        "AuthType": "NONE",
+        "CreationTime": "date",
+        "FunctionArn": "arn:aws:lambda:<region>:111111111111:function:<resource:1>",
+        "FunctionUrl": "<function-url>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 201
+        }
+      },
+      "add_permission": {
+        "Statement": {
+          "Sid": "urlPermission",
+          "Effect": "Allow",
+          "Principal": "*",
+          "Action": "lambda:InvokeFunctionUrl",
+          "Resource": "arn:aws:lambda:<region>:111111111111:function:<resource:1>",
+          "Condition": {
+            "StringEquals": {
+              "lambda:FunctionUrlAuthType": "NONE"
+            }
+          }
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 201
         }
       }
     }

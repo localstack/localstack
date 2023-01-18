@@ -2742,5 +2742,223 @@
         }
       }
     }
+  },
+  "tests/integration/test_sns.py::TestSNSProvider::test_set_subscription_filter_policy_scope": {
+    "recorded-date": "30-12-2022, 18:19:59",
+    "recorded-content": {
+      "sub-attrs-default": {
+        "Attributes": {
+          "ConfirmationWasAuthenticated": "true",
+          "Endpoint": "arn:aws:sqs:<region>:111111111111:<resource:1>",
+          "Owner": "111111111111",
+          "PendingConfirmation": "false",
+          "Protocol": "sqs",
+          "RawMessageDelivery": "false",
+          "SubscriptionArn": "arn:aws:sns:<region>:111111111111:<resource:3>:<resource:2>",
+          "SubscriptionPrincipal": "<sub-principal>",
+          "TopicArn": "arn:aws:sns:<region>:111111111111:<resource:3>"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "sub-attrs-filter-scope-body": {
+        "Attributes": {
+          "ConfirmationWasAuthenticated": "true",
+          "Endpoint": "arn:aws:sqs:<region>:111111111111:<resource:1>",
+          "Owner": "111111111111",
+          "PendingConfirmation": "false",
+          "Protocol": "sqs",
+          "RawMessageDelivery": "false",
+          "SubscriptionArn": "arn:aws:sns:<region>:111111111111:<resource:3>:<resource:2>",
+          "SubscriptionPrincipal": "<sub-principal>",
+          "TopicArn": "arn:aws:sns:<region>:111111111111:<resource:3>"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "sub-attrs-filter-scope-error": {
+        "Error": {
+          "Code": "InvalidParameter",
+          "Message": "Invalid parameter: FilterPolicyScope: Invalid value [RandomValue]. Please use either MessageBody or MessageAttributes",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "sub-attrs-after-setting-policy": {
+        "Attributes": {
+          "ConfirmationWasAuthenticated": "true",
+          "Endpoint": "arn:aws:sqs:<region>:111111111111:<resource:1>",
+          "FilterPolicy": {
+            "attr": [
+              "match-this"
+            ]
+          },
+          "FilterPolicyScope": "MessageBody",
+          "Owner": "111111111111",
+          "PendingConfirmation": "false",
+          "Protocol": "sqs",
+          "RawMessageDelivery": "false",
+          "SubscriptionArn": "arn:aws:sns:<region>:111111111111:<resource:3>:<resource:2>",
+          "SubscriptionPrincipal": "<sub-principal>",
+          "TopicArn": "arn:aws:sns:<region>:111111111111:<resource:3>"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/integration/test_sns.py::TestSNSProvider::test_sub_filter_policy_nested_property": {
+    "recorded-date": "30-12-2022, 18:38:05",
+    "recorded-content": {
+      "sub-filter-policy-nested-error": {
+        "Error": {
+          "Code": "InvalidParameter",
+          "Message": "Invalid parameter: Filter policy scope MessageAttributes does not support nested filter policy",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "sub-attrs-after-setting-nested-policy": {
+        "Attributes": {
+          "ConfirmationWasAuthenticated": "true",
+          "Endpoint": "arn:aws:sqs:<region>:111111111111:<resource:1>",
+          "FilterPolicy": {
+            "object": {
+              "key": [
+                {
+                  "prefix": "auto-"
+                }
+              ]
+            }
+          },
+          "FilterPolicyScope": "MessageBody",
+          "Owner": "111111111111",
+          "PendingConfirmation": "false",
+          "Protocol": "sqs",
+          "RawMessageDelivery": "false",
+          "SubscriptionArn": "arn:aws:sns:<region>:111111111111:<resource:3>:<resource:2>",
+          "SubscriptionPrincipal": "<sub-principal>",
+          "TopicArn": "arn:aws:sns:<region>:111111111111:<resource:3>"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/integration/test_sns.py::TestSNSProvider::test_filter_policy_on_message_body[True]": {
+    "recorded-date": "02-01-2023, 20:03:47",
+    "recorded-content": {
+      "recv-init": {
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "recv-passed-msg": {
+        "Messages": [
+          {
+            "Body": {
+              "object": {
+                "key": "auto-test"
+              }
+            },
+            "MD5OfBody": "<md5-hash>",
+            "MessageId": "<uuid:1>",
+            "ReceiptHandle": "<receipt-handle:1>"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/integration/test_sns.py::TestSNSProvider::test_filter_policy_on_message_body[False]": {
+    "recorded-date": "02-01-2023, 20:03:59",
+    "recorded-content": {
+      "recv-init": {
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "recv-passed-msg": {
+        "Messages": [
+          {
+            "Body": {
+              "Type": "Notification",
+              "MessageId": "<uuid:1>",
+              "TopicArn": "arn:aws:sns:<region>:111111111111:<resource:1>",
+              "Message": "{\"object\": {\"key\": \"auto-test\"}}",
+              "Timestamp": "date",
+              "SignatureVersion": "1",
+              "Signature": "<signature>",
+              "SigningCertURL": "https://sns.<region>.amazonaws.com/SimpleNotificationService-<signing-cert-file:1>",
+              "UnsubscribeURL": "<unsubscribe-domain>/?Action=Unsubscribe&SubscriptionArn=arn:aws:sns:<region>:111111111111:<resource:1>:<resource:2>"
+            },
+            "MD5OfBody": "<md5-hash>",
+            "MessageId": "<uuid:2>",
+            "ReceiptHandle": "<receipt-handle:1>"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/integration/test_sns.py::TestSNSProvider::test_sub_filter_policy_nested_property_constraints": {
+    "recorded-date": "04-01-2023, 17:41:42",
+    "recorded-content": {
+      "sub-filter-policy-nested-error-too-many-combinations": {
+        "Error": {
+          "Code": "InvalidParameter",
+          "Message": "Invalid parameter: FilterPolicy: Filter policy is too complex",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "sub-filter-policy-max-attr-keys": {
+        "Error": {
+          "Code": "InvalidParameter",
+          "Message": "Invalid parameter: FilterPolicy: Filter policy can not have more than 5 keys",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "sub-filter-policy-rule-no-list": {
+        "Error": {
+          "Code": "InvalidParameter",
+          "Message": "Invalid parameter: FilterPolicy: \"key_a\" must be an object or an array\n at [Source: (String)\"{\"key_a\":\"value_one\"}\"; line: 1, column: 11]",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
   }
 }

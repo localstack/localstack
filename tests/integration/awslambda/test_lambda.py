@@ -22,7 +22,7 @@ from localstack.testing.aws.util import create_client_with_keys
 from localstack.testing.pytest.snapshot import is_aws
 from localstack.testing.snapshots.transformer import KeyValueBasedTransformer
 from localstack.testing.snapshots.transformer_utility import PATTERN_UUID
-from localstack.utils import testutil
+from localstack.utils import files, testutil
 from localstack.utils.files import load_file
 from localstack.utils.http import safe_requests
 from localstack.utils.strings import short_uid, to_bytes, to_str
@@ -170,11 +170,12 @@ if is_old_provider():
             "$..Environment",  # missing
             "$..HTTPStatusCode",  # 201 vs 200
             "$..Layers",
+            "$..SnapStart",  # FIXME
         ],
     )
 else:
     pytestmark = pytest.mark.skip_snapshot_verify(
-        paths=["$..CodeSize"],
+        paths=["$..CodeSize", "$..SnapStart"],  # FIXME
     )
 
 
@@ -520,6 +521,12 @@ class TestLambdaBehavior:
         snapshot.match("invoke-result-read-number-after-timeout", result)
 
 
+URL_HANDLER_CODE = """
+def handler(event, ctx):
+    return <<returnvalue>>
+"""
+
+
 @pytest.mark.skip_snapshot_verify(
     condition=is_old_provider,
     paths=[
@@ -544,62 +551,50 @@ class TestLambdaBehavior:
 class TestLambdaURL:
     # TODO: add more tests
 
+    @pytest.mark.parametrize(
+        "returnvalue",
+        [
+            '{"hello": "world"}',
+            '{"statusCode": 200, "body": "body123"}',
+            '{"statusCode": 200, "body": "{\\"hello\\": \\"world\\"}"}',
+            '["hello", 3, True]',
+            '"hello"',
+            "3",
+            "3.1",
+            "True",
+        ],
+        ids=[
+            "dict",
+            "http-response",
+            "http-response-json",
+            "list-mixed",
+            "string",
+            "integer",
+            "float",
+            "boolean",
+        ],
+    )
+    @pytest.mark.skipif(condition=is_old_provider(), reason="broken/not-implemented")
     @pytest.mark.aws_validated
-    def test_lambda_url_invocation(self, lambda_client, create_lambda_function, snapshot):
-        snapshot.add_transformers_list(
-            [
-                snapshot.transform.key_value("requestId", reference_replacement=False),
-                snapshot.transform.key_value("FunctionUrl", reference_replacement=False),
-                snapshot.transform.jsonpath(
-                    "$..headers.x-forwarded-for", "ip-address", reference_replacement=False
-                ),
-                snapshot.transform.jsonpath(
-                    "$..headers.x-amzn-trace-id", "x-amzn-trace-id", reference_replacement=False
-                ),
-                snapshot.transform.jsonpath(
-                    "$..headers.x-amzn-lambda-forwarded-client-ip",
-                    "ip-address",
-                    reference_replacement=False,
-                ),
-                snapshot.transform.jsonpath(
-                    "$..headers.x-amzn-lambda-forwarded-host",
-                    "forwarded-host",
-                    reference_replacement=False,
-                ),
-                snapshot.transform.jsonpath(
-                    "$..requestContext.http.sourceIp",
-                    "ip-address",
-                    reference_replacement=False,
-                ),
-                snapshot.transform.jsonpath(
-                    "$..headers.host", "lambda-url", reference_replacement=False
-                ),
-                snapshot.transform.jsonpath(
-                    "$..requestContext.apiId", "api-id", reference_replacement=False
-                ),
-                snapshot.transform.jsonpath(
-                    "$..requestContext.domainName", "lambda-url", reference_replacement=False
-                ),
-                snapshot.transform.jsonpath(
-                    "$..requestContext.domainPrefix", "api-id", reference_replacement=False
-                ),
-                snapshot.transform.jsonpath(
-                    "$..requestContext.time", "readable-date", reference_replacement=False
-                ),
-                snapshot.transform.jsonpath(
-                    "$..requestContext.timeEpoch",
-                    "epoch-milliseconds",
-                    reference_replacement=False,
-                ),
-            ]
+    def test_lambda_url_invocation(
+        self, lambda_client, create_lambda_function, snapshot, returnvalue
+    ):
+        snapshot.add_transformer(
+            snapshot.transform.key_value(
+                "FunctionUrl", "<function-url>", reference_replacement=False
+            )
         )
+
         function_name = f"test-function-{short_uid()}"
+
+        handler_file = files.new_tmp_file()
+        handler_code = URL_HANDLER_CODE.replace("<<returnvalue>>", returnvalue)
+        files.save_file(handler_file, handler_code)
 
         create_lambda_function(
             func_name=function_name,
-            zip_file=testutil.create_zip_file(TEST_LAMBDA_URL, get_content=True),
-            runtime=Runtime.nodejs14_x,
-            handler="lambda_url.handler",
+            handler_file=handler_file,
+            runtime=Runtime.python3_9,
         )
 
         url_config = lambda_client.create_function_url_config(
@@ -616,19 +611,56 @@ class TestLambdaURL:
             Principal="*",
             FunctionUrlAuthType="NONE",
         )
-
         snapshot.match("add_permission", permissions_response)
 
-        url = url_config["FunctionUrl"]
-        url += "custom_path/extend?test_param=test_value"
-
-        result = safe_requests.post(
-            url, data=b"{'key':'value'}", headers={"User-Agent": "python-requests/testing"}
+        url = f"{url_config['FunctionUrl']}custom_path/extend?test_param=test_value"
+        result = safe_requests.post(url, data=b"{'key':'value'}")
+        snapshot.match(
+            "lambda_url_invocation",
+            {
+                "statuscode": result.status_code,
+                "headers": {
+                    "Content-Type": result.headers["Content-Type"],
+                    "Content-Length": result.headers["Content-Length"],
+                },
+                "content": to_str(result.content),
+            },
         )
 
-        assert result.status_code == 200
-        snapshot.match("lambda_url_invocation", json.loads(result.content))
+    @pytest.mark.aws_validated
+    def test_lambda_url_echo_invoke(self, create_lambda_function, lambda_client, snapshot):
+        snapshot.add_transformer(
+            snapshot.transform.key_value(
+                "FunctionUrl", "<function-url>", reference_replacement=False
+            )
+        )
+        function_name = f"test-fnurl-echo-{short_uid()}"
 
+        create_lambda_function(
+            func_name=function_name,
+            zip_file=testutil.create_zip_file(TEST_LAMBDA_URL, get_content=True),
+            runtime=Runtime.nodejs16_x,
+            handler="lambda_url.handler",
+        )
+
+        url_config = lambda_client.create_function_url_config(
+            FunctionName=function_name,
+            AuthType="NONE",
+        )
+        snapshot.match("create_lambda_url_config", url_config)
+
+        permissions_response = lambda_client.add_permission(
+            FunctionName=function_name,
+            StatementId="urlPermission",
+            Action="lambda:InvokeFunctionUrl",
+            Principal="*",
+            FunctionUrlAuthType="NONE",
+        )
+        snapshot.match("add_permission", permissions_response)
+
+        url = f"{url_config['FunctionUrl']}custom_path/extend?test_param=test_value"
+
+        # TODO: add more cases
         result = safe_requests.post(url, data="text", headers={"Content-Type": "text/plain"})
         assert result.status_code == 200
         event = json.loads(result.content)["event"]
@@ -641,8 +673,9 @@ class TestLambdaURL:
         assert event["isBase64Encoded"] is False
 
     @pytest.mark.aws_validated
-    @pytest.mark.skipif(condition=is_old_provider(), reason="not implemented")
+    @pytest.mark.skipif(condition=is_old_provider(), reason="broken/not-implemented")
     def test_lambda_url_invocation_exception(self, lambda_client, create_lambda_function, snapshot):
+        # TODO: extend tests
         snapshot.add_transformer(
             snapshot.transform.key_value("FunctionUrl", reference_replacement=False)
         )
@@ -678,6 +711,33 @@ class TestLambdaURL:
         )
         assert to_str(result.content) == "Internal Server Error"
         assert result.status_code == 502
+
+
+@pytest.mark.skip(reason="Not yet implemented")
+class TestLambdaPermissions:
+    @pytest.mark.aws_validated
+    def test_lambda_permission_url_invocation(
+        self, create_lambda_function, lambda_client, snapshot
+    ):
+
+        function_name = f"test-function-{short_uid()}"
+        create_lambda_function(
+            func_name=function_name,
+            zip_file=testutil.create_zip_file(TEST_LAMBDA_URL, get_content=True),
+            runtime=Runtime.nodejs18_x,
+            handler="lambda_url.handler",
+        )
+        url_config = lambda_client.create_function_url_config(
+            FunctionName=function_name,
+            AuthType="NONE",
+        )
+
+        # Intentionally missing add_permission for invoking lambda function
+
+        url = url_config["FunctionUrl"]
+        result = safe_requests.post(url, data="text", headers={"Content-Type": "text/plain"})
+        assert result.status_code == 403
+        snapshot.match("lambda_url_invocation_missing_permission", result.text)
 
 
 class TestLambdaFeatures:

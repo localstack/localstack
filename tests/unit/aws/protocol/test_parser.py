@@ -399,6 +399,22 @@ def test_query_parser_no_input_shape_autoscaling_with_botocore():
     )
 
 
+def test_query_parser_iot_with_botocore():
+    """Test if timestamp for 'rest-json' is parsed correctly"""
+    start = datetime(2023, 1, 10, tzinfo=timezone.utc)
+    end = datetime(2023, 1, 11, tzinfo=timezone.utc)
+    _botocore_parser_integration_test(
+        service="iot",
+        action="ListAuditMitigationActionsTasks",
+        endTime=end,
+        startTime=start,
+        expected={
+            "endTime": end,
+            "startTime": start,
+        },
+    )
+
+
 def test_query_parser_cloudformation_with_botocore():
     _botocore_parser_integration_test(
         service="cloudformation",

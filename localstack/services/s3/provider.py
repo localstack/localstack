@@ -24,6 +24,8 @@ from localstack.aws.api.s3 import (
     CORSConfiguration,
     CreateBucketOutput,
     CreateBucketRequest,
+    CreateMultipartUploadOutput,
+    CreateMultipartUploadRequest,
     Delete,
     DeleteObjectOutput,
     DeleteObjectRequest,
@@ -40,6 +42,7 @@ from localstack.aws.api.s3 import (
     GetBucketRequestPaymentOutput,
     GetBucketRequestPaymentRequest,
     GetBucketWebsiteOutput,
+    GetObjectAclOutput,
     GetObjectAttributesOutput,
     GetObjectAttributesParts,
     GetObjectAttributesRequest,
@@ -50,10 +53,12 @@ from localstack.aws.api.s3 import (
     HeadObjectOutput,
     HeadObjectRequest,
     InvalidBucketName,
+    InvalidPartOrder,
     ListObjectsOutput,
     ListObjectsRequest,
     ListObjectsV2Output,
     ListObjectsV2Request,
+    MissingSecurityHeader,
     NoSuchBucket,
     NoSuchKey,
     NoSuchLifecycleConfiguration,
@@ -62,12 +67,15 @@ from localstack.aws.api.s3 import (
     ObjectIdentifier,
     ObjectKey,
     ObjectLockToken,
+    ObjectVersionId,
     PostResponse,
     PutBucketAclRequest,
     PutBucketLifecycleConfigurationRequest,
     PutBucketLifecycleRequest,
     PutBucketRequestPaymentRequest,
     PutBucketVersioningRequest,
+    PutObjectAclOutput,
+    PutObjectAclRequest,
     PutObjectOutput,
     PutObjectRequest,
     PutObjectTaggingOutput,
@@ -110,6 +118,7 @@ from localstack.services.s3.utils import (
     is_canned_acl_bucket_valid,
     is_key_expired,
     is_valid_canonical_id,
+    validate_kms_key_id,
     verify_checksum,
 )
 from localstack.services.s3.website_hosting import register_website_hosting_routes
@@ -147,6 +156,11 @@ class InvalidRequest(CommonServiceException):
         super().__init__("InvalidRequest", status_code=400, message=message)
 
 
+class UnexpectedContent(CommonServiceException):
+    def __init__(self, message=None):
+        super().__init__("UnexpectedContent", status_code=400, message=message)
+
+
 def get_full_default_bucket_location(bucket_name):
     if config.HOSTNAME_EXTERNAL != config.LOCALHOST:
         return f"{config.get_protocol()}://{config.HOSTNAME_EXTERNAL}:{config.get_edge_port_http()}/{bucket_name}/"
@@ -173,6 +187,7 @@ class S3Provider(S3Api, ServiceLifecycleHook):
         register_website_hosting_routes(router=ROUTER)
         register_custom_handlers()
         # registering of virtual host routes happens with the hook on_infra_ready in virtual_host.py
+        # create a AWS managed KMS key at start and save it in the store for persistence?
 
     def __init__(self) -> None:
         super().__init__()
@@ -336,12 +351,16 @@ class S3Provider(S3Api, ServiceLifecycleHook):
         if checksum_algorithm := request.get("ChecksumAlgorithm"):
             verify_checksum(checksum_algorithm, context.request.data, request)
 
+        moto_backend = get_moto_s3_backend(context)
+        bucket = get_bucket_from_moto(moto_backend, bucket=request["Bucket"])
+
+        if not config.S3_SKIP_KMS_KEY_VALIDATION and (sse_kms_key_id := request.get("SSEKMSKeyId")):
+            validate_kms_key_id(sse_kms_key_id, bucket)
+
         response: PutObjectOutput = call_moto(context)
 
         # moto interprets the Expires in query string for presigned URL as an Expires header and use it for the object
         # we set it to the correctly parsed value in Request, else we remove it from moto metadata
-        moto_backend = get_moto_s3_backend(context)
-        bucket = get_bucket_from_moto(moto_backend, bucket=request["Bucket"])
         key_object = get_key_from_moto_bucket(bucket, key=request["Key"])
         if expires := request.get("Expires"):
             key_object.set_expiry(expires)
@@ -359,6 +378,11 @@ class S3Provider(S3Api, ServiceLifecycleHook):
         context: RequestContext,
         request: CopyObjectRequest,
     ) -> CopyObjectOutput:
+        if not config.S3_SKIP_KMS_KEY_VALIDATION and (sse_kms_key_id := request.get("SSEKMSKeyId")):
+            moto_backend = get_moto_s3_backend(context)
+            bucket = get_bucket_from_moto(moto_backend, bucket=request["Bucket"])
+            validate_kms_key_id(sse_kms_key_id, bucket)
+
         response: CopyObjectOutput = call_moto(context)
         self._notify(context)
         return response
@@ -416,10 +440,33 @@ class S3Provider(S3Api, ServiceLifecycleHook):
         result.pop("Deleted", "")
         return result
 
+    @handler("CreateMultipartUpload", expand=False)
+    def create_multipart_upload(
+        self,
+        context: RequestContext,
+        request: CreateMultipartUploadRequest,
+    ) -> CreateMultipartUploadOutput:
+        if not config.S3_SKIP_KMS_KEY_VALIDATION and (sse_kms_key_id := request.get("SSEKMSKeyId")):
+            moto_backend = get_moto_s3_backend(context)
+            bucket = get_bucket_from_moto(moto_backend, bucket=request["Bucket"])
+            validate_kms_key_id(sse_kms_key_id, bucket)
+
+        response: CreateMultipartUploadOutput = call_moto(context)
+        return response
+
     @handler("CompleteMultipartUpload", expand=False)
     def complete_multipart_upload(
         self, context: RequestContext, request: CompleteMultipartUploadRequest
     ) -> CompleteMultipartUploadOutput:
+        parts = request.get("MultipartUpload", {}).get("Parts", [])
+        parts_numbers = [part.get("PartNumber") for part in parts]
+        # sorted is very fast (fastest) if the list is already sorted, which should be the case
+        if sorted(parts_numbers) != parts_numbers:
+            raise InvalidPartOrder(
+                "The list of parts was not in ascending order. Parts must be ordered by part number.",
+                UploadId=request["UploadId"],
+            )
+
         response: CompleteMultipartUploadOutput = call_moto(context)
         # moto return the Location in AWS `http://{bucket}.s3.amazonaws.com/{key}`
         response[
@@ -647,7 +694,72 @@ class S3Provider(S3Api, ServiceLifecycleHook):
         context: RequestContext,
         request: PutBucketAclRequest,
     ) -> None:
-        validate_bucket_canned_acl(request.get("ACL"))
+        canned_acl = request.get("ACL")
+
+        grant_keys = [
+            "GrantFullControl",
+            "GrantRead",
+            "GrantReadACP",
+            "GrantWrite",
+            "GrantWriteACP",
+        ]
+        present_headers = [
+            (key, grant_header) for key in grant_keys if (grant_header := request.get(key))
+        ]
+        # FIXME: this is very dirty, but the parser does not differentiate between an empty body and an empty XML node
+        # errors are different depending on that data, so we need to access the context. Modifying the parser for this
+        # use case seems dangerous
+        is_acp_in_body = context.request.data
+
+        if not (canned_acl or present_headers or is_acp_in_body):
+            raise MissingSecurityHeader(
+                "Your request was missing a required header", MissingHeaderName="x-amz-acl"
+            )
+
+        elif canned_acl and present_headers:
+            raise InvalidRequest("Specifying both Canned ACLs and Header Grants is not allowed")
+
+        elif (canned_acl or present_headers) and is_acp_in_body:
+            raise UnexpectedContent("This request does not support content")
+
+        if canned_acl:
+            validate_canned_acl(canned_acl)
+
+        elif present_headers:
+            for key, grantees_values in present_headers:
+                validate_grantee_in_headers(key, grantees_values)
+
+        elif acp := request.get("AccessControlPolicy"):
+            validate_acl_acp(acp)
+
+        call_moto(context)
+
+    def get_object_acl(
+        self,
+        context: RequestContext,
+        bucket: BucketName,
+        key: ObjectKey,
+        version_id: ObjectVersionId = None,
+        request_payer: RequestPayer = None,
+        expected_bucket_owner: AccountId = None,
+    ) -> GetObjectAclOutput:
+        response: GetObjectAclOutput = call_moto(context)
+
+        for grant in response["Grants"]:
+            grantee = grant.get("Grantee", {})
+            if grantee.get("ID") == MOTO_CANONICAL_USER_ID:
+                # adding the DisplayName used by moto for the owner
+                grantee["DisplayName"] = "webfile"
+
+        return response
+
+    @handler("PutObjectAcl", expand=False)
+    def put_object_acl(
+        self,
+        context: RequestContext,
+        request: PutObjectAclRequest,
+    ) -> PutObjectAclOutput:
+        validate_canned_acl(request.get("ACL"))
 
         grant_keys = [
             "GrantFullControl",
@@ -663,7 +775,19 @@ class S3Provider(S3Api, ServiceLifecycleHook):
         if acp := request.get("AccessControlPolicy"):
             validate_acl_acp(acp)
 
-        call_moto(context)
+        moto_backend = get_moto_s3_backend(context)
+        key = get_key_from_moto_bucket(
+            get_bucket_from_moto(moto_backend, bucket=request["Bucket"]), key=request["Key"]
+        )
+        acl = key.acl
+
+        response: PutObjectOutput = call_moto(context)
+        new_acl = key.acl
+
+        if acl != new_acl:
+            self._notify(context)
+
+        return response
 
     @handler("PutBucketVersioning", expand=False)
     def put_bucket_versioning(
@@ -856,7 +980,7 @@ def validate_bucket_name(bucket: BucketName) -> None:
         raise ex
 
 
-def validate_bucket_canned_acl(canned_acl: str) -> None:
+def validate_canned_acl(canned_acl: str) -> None:
     """
     Validate the canned ACL value, or raise an Exception
     """
@@ -887,7 +1011,7 @@ def validate_grantee_in_headers(grant: str, grantees: str) -> None:
 
 
 def validate_acl_acp(acp: AccessControlPolicy) -> None:
-    if "Owner" not in acp or "Grants" not in acp:
+    if acp is None or "Owner" not in acp or "Grants" not in acp:
         raise MalformedACLError(
             "The XML you provided was not well-formed or did not validate against our published schema"
         )
@@ -1145,6 +1269,22 @@ def apply_moto_patches():
         original comment: Temporary fix until moto supports x-id and DeleteObjects (#3931)
         """
         return get_safe(self.querystring, "$.x-id.0") == "DeleteObjects" or fn(self)
+
+    @patch(moto_s3_responses.S3ResponseInstance.parse_bucket_name_from_url, pass_target=False)
+    def parse_bucket_name_from_url(self, request, url):
+        """
+        Requests going to moto will never be subdomain based, as they passed through the VirtualHost forwarder.
+        We know the bucket is in the path, we can directly return it.
+        """
+        path = urlparse(url).path
+        return path.split("/")[1]
+
+    @patch(moto_s3_responses.S3ResponseInstance.subdomain_based_buckets, pass_target=False)
+    def subdomain_based_buckets(self, request):
+        """
+        Requests going to moto will never be subdomain based, as they passed through the VirtualHost forwarder
+        """
+        return False
 
 
 def register_custom_handlers():

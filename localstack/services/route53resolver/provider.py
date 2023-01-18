@@ -221,7 +221,7 @@ class Route53ResolverProvider(Route53ResolverApi):
         store = self.get_store(context.account_id, context.region)
         firewall_domain_lists = []
         for firewall_domain_list in store.firewall_domain_lists.values():
-            firewall_domain_list.append(
+            firewall_domain_lists.append(
                 select_from_typed_dict(FirewallDomainListMetadata, firewall_domain_list)
             )
         return ListFirewallDomainListsResponse(FirewallDomainLists=firewall_domain_lists)

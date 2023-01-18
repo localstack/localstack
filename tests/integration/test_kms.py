@@ -2,15 +2,25 @@ import json
 from datetime import datetime
 from random import getrandbits
 
-import botocore.exceptions
 import pytest
 from botocore.config import Config
+from botocore.exceptions import ClientError
 from cryptography.hazmat.primitives.asymmetric.padding import PKCS1v15
 from cryptography.hazmat.primitives.serialization import load_der_public_key
 
 from localstack.aws.accounts import get_aws_account_id
-from localstack.utils.aws.aws_stack import get_region
+from localstack.testing.pytest.fixtures import _client
 from localstack.utils.strings import short_uid
+
+
+@pytest.fixture(scope="class")
+def kms_client_for_region():
+    def _kms_client(
+        region_name: str = None,
+    ):
+        return _client("kms", region_name=region_name)
+
+    return _kms_client
 
 
 def _get_all_key_ids(kms_client):
@@ -48,26 +58,104 @@ class TestKMS:
     def user_arn(self, sts_client):
         return sts_client.get_caller_identity()["Arn"]
 
-    # Not AWS validated anymore, as get_region() doesn't return the region used in AWS.
-    @pytest.mark.only_localstack
-    def test_create_key(self, kms_client, sts_client):
-        account_id = get_aws_account_id()
-        region = get_region()
+    @pytest.mark.aws_validated
+    def test_create_key(self, kms_client_for_region, kms_create_key, sts_client, snapshot):
+        region = "us-east-1"
+        kms_client = kms_client_for_region(region)
+        account_id = sts_client.get_caller_identity()["Account"]
 
         key_ids_before = _get_all_key_ids(kms_client)
 
-        response = kms_client.create_key(Description="test key 123", KeyUsage="ENCRYPT_DECRYPT")
-        assert response["ResponseMetadata"]["HTTPStatusCode"] == 200
-        key_id = response["KeyMetadata"]["KeyId"]
+        key_id = kms_create_key(
+            region=region, Description="test key 123", KeyUsage="ENCRYPT_DECRYPT"
+        )["KeyId"]
         assert key_id not in key_ids_before
 
         key_ids_after = _get_all_key_ids(kms_client)
         assert key_id in key_ids_after
 
         response = kms_client.describe_key(KeyId=key_id)["KeyMetadata"]
+        snapshot.match("describe-key", response)
+
         assert response["KeyId"] == key_id
         assert f":{region}:" in response["Arn"]
         assert f":{account_id}:" in response["Arn"]
+
+    @pytest.mark.aws_validated
+    def test_get_key_in_different_region(self, kms_client_for_region, kms_create_key, snapshot):
+        client_region = "us-east-1"
+        key_region = "us-west-2"
+        us_east_1_kms_client = kms_client_for_region(client_region)
+        us_west_2_kms_client = kms_client_for_region(key_region)
+
+        response = kms_create_key(region=key_region, Description="test key 123")
+        key_id = response["KeyId"]
+        key_arn = response["Arn"]
+
+        with pytest.raises(ClientError) as e:
+            us_east_1_kms_client.describe_key(KeyId=key_id)
+
+        snapshot.match("describe-key-diff-region-with-id", e.value.response)
+
+        with pytest.raises(ClientError) as e:
+            us_east_1_kms_client.describe_key(KeyId=key_arn)
+
+        snapshot.match("describe-key-diff-region-with-arn", e.value.response)
+
+        response = us_west_2_kms_client.describe_key(KeyId=key_id)
+        snapshot.match("describe-key-same-specific-region-with-id", response)
+
+        response = us_west_2_kms_client.describe_key(KeyId=key_arn)
+        snapshot.match("describe-key-same-specific-region-with-arn", response)
+
+    @pytest.mark.aws_validated
+    def test_get_key_does_not_exist(self, kms_client, kms_create_key, snapshot):
+        # we create a real key to base our fake key ARN on, so we have real account ID and same region
+        response = kms_create_key(Description="test key 123")
+        key_id = response["KeyId"]
+        key_arn = response["Arn"]
+
+        # valid UUID
+        fake_key_uuid = "134f2428-cec1-4b25-a1ae-9048164dba47"
+        fake_key_arn = key_arn.replace(key_id, fake_key_uuid)
+
+        with pytest.raises(ClientError) as e:
+            kms_client.describe_key(KeyId=fake_key_uuid)
+
+        snapshot.match("describe-nonexistent-key-with-id", e.value.response)
+
+        with pytest.raises(ClientError) as e:
+            kms_client.describe_key(KeyId=fake_key_arn)
+
+        snapshot.match("describe-nonexistent-with-arn", e.value.response)
+
+        # valid multi region keyId
+        fake_mr_key_uuid = "mrk-d3b95762d3b95762d3b95762d3b95762"
+
+        with pytest.raises(ClientError) as e:
+            kms_client.describe_key(KeyId=fake_mr_key_uuid)
+
+        snapshot.match("describe-key-with-valid-id-mrk", e.value.response)
+
+    @pytest.mark.aws_validated
+    def test_get_key_invalid_uuid(self, kms_client, snapshot):
+        # valid regular KeyId format
+        # "134f2428-cec1-4b25-a1ae-9048164dba47"
+        with pytest.raises(ClientError) as e:
+            kms_client.describe_key(KeyId="fake-key-id")
+        snapshot.match("describe-key-with-invalid-uuid", e.value.response)
+
+        # this UUID is valid for python
+        # "134f2428cec14b25a1ae9048164dba47"
+        with pytest.raises(ClientError) as e:
+            kms_client.describe_key(KeyId="134f2428cec14b25a1ae9048164dba47")
+        snapshot.match("describe-key-with-invalid-uuid-2", e.value.response)
+
+        # valid MultiRegionKey KeyId format
+        # "mrk-e4b2ea8ffcd4461e9821c9b9521a8896"
+        with pytest.raises(ClientError) as e:
+            kms_client.describe_key(KeyId="mrk-fake-key-id")
+        snapshot.match("describe-key-with-invalid-uuid-mrk", e.value.response)
 
     @pytest.mark.aws_validated
     def test_list_keys(self, kms_client, kms_create_key):
@@ -121,7 +209,7 @@ class TestKMS:
     @pytest.mark.aws_validated
     def test_create_grant_with_invalid_key(self, kms_client, user_arn):
 
-        with pytest.raises(botocore.exceptions.ClientError) as e:
+        with pytest.raises(ClientError) as e:
             kms_client.create_grant(
                 KeyId="invalid",
                 GranteePrincipal=user_arn,
@@ -132,7 +220,7 @@ class TestKMS:
     # Not sure how useful this test is, as it just fails during key validation, before grant-specific logic kicks in.
     @pytest.mark.aws_validated
     def test_list_grants_with_invalid_key(self, kms_client):
-        with pytest.raises(botocore.exceptions.ClientError) as e:
+        with pytest.raises(ClientError) as e:
             kms_client.list_grants(
                 KeyId="invalid",
             )
@@ -258,7 +346,7 @@ class TestKMS:
     ):
         kms_client = create_boto_client("kms", additional_config=Config(parameter_validation=False))
 
-        with pytest.raises(botocore.exceptions.ClientError) as e:
+        with pytest.raises(ClientError) as e:
             kms_client.generate_random(NumberOfBytes=number_of_bytes)
 
         snapshot.match("generate-random-exc", e.value.response)
@@ -434,22 +522,46 @@ class TestKMS:
         assert not key["MultiRegion"]
 
     @pytest.mark.aws_validated
-    def test_replicate_key(self, create_boto_client, kms_create_key, kms_replicate_key):
+    @pytest.mark.skip_snapshot_verify(
+        paths=[
+            "$..KeyMetadata.Enabled",
+            "$..KeyMetadata.KeyState",
+            "$..KeyMetadata.MultiRegionConfiguration",  # not implemented
+            "$..ReplicaKeyMetadata.Enabled",
+            "$..ReplicaKeyMetadata.KeyState",
+            "$..ReplicaKeyMetadata.MultiRegionConfiguration",  # not implemented
+            "$..ReplicaPolicy",  # not implemented
+        ],
+    )
+    def test_replicate_key(
+        self, kms_client_for_region, kms_create_key, kms_replicate_key, snapshot
+    ):
+        snapshot.add_transformer(snapshot.transform.key_value("KeyId"))
         region_to_replicate_from = "us-east-1"
         region_to_replicate_to = "us-west-1"
-        from_region_client = create_boto_client("kms", region_to_replicate_from)
-        to_region_client = create_boto_client("kms", region_to_replicate_to)
+        us_east_1_kms_client = kms_client_for_region(region_to_replicate_from)
+        us_west_1_kms_client = kms_client_for_region(region_to_replicate_to)
 
-        key_id = kms_create_key(region=region_to_replicate_from, MultiRegion=True)["KeyId"]
-        with pytest.raises(to_region_client.exceptions.NotFoundException):
-            to_region_client.describe_key(KeyId=key_id)
+        key_id = kms_create_key(
+            region=region_to_replicate_from, MultiRegion=True, Description="test replicated key"
+        )["KeyId"]
+
+        with pytest.raises(ClientError) as e:
+            us_west_1_kms_client.describe_key(KeyId=key_id)
+        snapshot.match("describe-key-from-different-region", e.value.response)
 
         response = kms_replicate_key(
             region_from=region_to_replicate_from, KeyId=key_id, ReplicaRegion=region_to_replicate_to
         )
-        assert response.get("ReplicaKeyMetadata")
-        to_region_client.describe_key(KeyId=key_id)
-        from_region_client.describe_key(KeyId=key_id)
+        snapshot.match("replicate-key", response)
+        # assert response.get("ReplicaKeyMetadata")
+        # describe original key with the client from its region
+        response = us_east_1_kms_client.describe_key(KeyId=key_id)
+        snapshot.match("describe-key-from-region", response)
+
+        # describe replicated key
+        response = us_west_1_kms_client.describe_key(KeyId=key_id)
+        snapshot.match("describe-replicated-key", response)
 
     @pytest.mark.aws_validated
     def test_update_key_description(self, kms_client, kms_create_key):
@@ -587,12 +699,12 @@ class TestKMS:
         kms_client.generate_data_key(KeyId=key_id, KeySpec="AES_256")
 
         kms_client.disable_key(KeyId=key_id)
-        with pytest.raises(botocore.exceptions.ClientError) as e:
+        with pytest.raises(ClientError) as e:
             kms_client.generate_data_key(KeyId=key_id, KeySpec="AES_256")
         e.match("DisabledException")
 
         kms_client.schedule_key_deletion(KeyId=key_id)
-        with pytest.raises(botocore.exceptions.ClientError) as e:
+        with pytest.raises(ClientError) as e:
             kms_client.generate_data_key(KeyId=key_id, KeySpec="AES_256")
         e.match("KMSInvalidStateException")
 
@@ -601,6 +713,6 @@ class TestKMS:
         key_id = kms_create_key()["KeyId"]
         kms_client.schedule_key_deletion(KeyId=key_id)
 
-        with pytest.raises(botocore.exceptions.ClientError) as e:
+        with pytest.raises(ClientError) as e:
             kms_client.schedule_key_deletion(KeyId=key_id)
         e.match("KMSInvalidStateException")

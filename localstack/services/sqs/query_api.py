@@ -131,7 +131,7 @@ def handle_request(request: Request, region: str) -> Response:
         op = service.operation_model(service.operation_names[0])
         return serializer.serialize_error_to_response(
             CommonServiceException(
-                "InternalError", f"An internal error ocurred: {e}", status_code=500
+                "InternalError", f"An internal error occurred: {e}", status_code=500
             ),
             op,
             request.headers,

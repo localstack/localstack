@@ -21,25 +21,43 @@ class HttpClient(abc.ABC):
         """
         raise NotImplementedError
 
+    def close(self):
+        """
+        Close any underlying resources the client may need.
+        """
+        pass
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, *args):
+        self.close()
+
 
 class SimpleRequestsClient(HttpClient):
+    session: requests.Session
+
+    def __init__(self, session: requests.Session = None):
+        self.session = session or requests.Session()
+
     def request(self, request: Request) -> Response:
         """
         Very naive implementation to make the given HTTP request using the requests library, i.e., process the request
         as a client.
 
         TODO: over time, this should become more sophisticated, specifically the use of restore_payload should only be
-         used only when necessary (when the stream has been consumed), and by default the underlying stream should be
+         used when necessary (when the underlying stream has been consumed), and by default the stream should be
          streamed to the destination.
 
         :param request: the request to perform
         :return: the response.
         """
-        response = requests.request(
+        response = self.session.request(
             method=request.method,
             url=request.base_url,
-            params=request.args,
-            headers=request.headers,
+            # request.args are only the url parameters
+            params=[(k, v) for k, v in request.args.items(multi=True)],
+            headers=dict(request.headers.items()),
             data=restore_payload(request),
         )
 
@@ -49,10 +67,13 @@ class SimpleRequestsClient(HttpClient):
             headers=Headers(dict(response.headers)),
         )
         if request.method == "HEAD":
-            # for head we have to keep the original content-length, but it will be re-calcualated when creating
+            # for HEAD  requests we have to keep the original content-length, but it will be re-calculated when creating
             # the final_response object
             final_response.content_length = response.headers.get("Content-Length", 0)
         return final_response
+
+    def close(self):
+        self.session.close()
 
 
 def make_request(request: Request) -> Response:
@@ -62,4 +83,5 @@ def make_request(request: Request) -> Response:
     :param request: the request to make
     :return: the response.
     """
-    return SimpleRequestsClient().request(request)
+    with SimpleRequestsClient() as client:
+        return client.request(request)
