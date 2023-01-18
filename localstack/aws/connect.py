@@ -12,13 +12,13 @@ LocalStack providers.
 import json
 from datetime import datetime, timezone
 from functools import cache
-from typing import Mapping, Optional, TypedDict, Union
+from typing import Mapping, TypedDict, Union
 
 from boto3.session import Session
 from botocore.awsrequest import AWSPreparedRequest
 from botocore.client import BaseClient
 from botocore.config import Config
-from websockets.datastructures import Headers
+from werkzeug.datastructures import Headers
 
 from localstack import config
 from localstack.constants import (
@@ -46,7 +46,7 @@ class LocalStackData(TypedDict):
     LocalStack might need for the purpose of policy enforcement. It is serialised
     into text and sent in the request header.
 
-    The keys approximately correspond to:
+    The keys roughly correspond to:
     https://docs.aws.amazon.com/IAM/latest/UserGuide/reference_policies_condition-keys.html
     """
 
@@ -86,10 +86,10 @@ class ConnectFactory:
 
     def __init__(
         self,
+        aws_access_key_id: str,
+        aws_secret_access_key: str,
         use_ssl: bool = False,
         verify: bool = False,
-        aws_access_key_id: Optional[str] = INTERNAL_AWS_ACCESS_KEY_ID,
-        aws_secret_access_key: Optional[str] = INTERNAL_AWS_SECRET_ACCESS_KEY,
     ):
         """
         If either of the access keys are set to None, they are loaded from following
@@ -177,7 +177,7 @@ class ConnectFactory:
         """
         Build and return the client.
 
-        Presence of any attribute apart from `source_*` or `target_*` argument
+        Presence of any argument name with `source_*` or `target_*` prefix
         indicates that this is a client meant for internal calls.
 
         :param target_service: Service to build the client for, eg. `s3`
@@ -217,19 +217,23 @@ class ConnectFactory:
             config=config or self._config,
         )
 
-        def _handler(request: AWSPreparedRequest, **_):
-            data = localstack_data | LocalStackData(
-                current_time=datetime.now(timezone.utc).isoformat()
-            )
-            request.headers[LOCALSTACK_DATA_HEADER] = dump_dto(data)
-
         if len(localstack_data):
+
+            def _handler(request: AWSPreparedRequest, **_):
+                data = localstack_data | LocalStackData(
+                    current_time=datetime.now(timezone.utc).isoformat()
+                )
+                request.headers[LOCALSTACK_DATA_HEADER] = dump_dto(data)
+
             client.meta.events.register("before-send.*.*", handler=_handler)
 
         return client
 
 
-connect_to = ConnectFactory()
+connect_to = ConnectFactory(
+    aws_access_key_id=INTERNAL_AWS_ACCESS_KEY_ID,
+    aws_secret_access_key=INTERNAL_AWS_SECRET_ACCESS_KEY,
+)
 
 #
 # Utilities
