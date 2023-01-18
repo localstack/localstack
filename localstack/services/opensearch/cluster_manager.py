@@ -29,6 +29,7 @@ from localstack.utils.common import (
     start_thread,
 )
 from localstack.utils.serving import Server
+from localstack.utils.sync import retry
 
 LOG = logging.getLogger(__name__)
 
@@ -177,7 +178,16 @@ class ClusterManager:
         # call abstract cluster factory
         cluster = self._create_cluster(arn, url, version)
         cluster.start()
-        self.register_cluster(cluster)
+
+        # The assignment of the final port can take some time
+        def wait_for_cluster():
+            port = cluster.cluster_port
+            if not port:
+                raise Exception("Port for cluster could not be determined")
+            return port
+
+        port = retry(wait_for_cluster)
+        self.register_cluster(cluster, port)
 
         # save cluster into registry and return
         self.clusters[arn] = cluster
@@ -210,13 +220,15 @@ class ClusterManager:
             domain, cluster = self.clusters.popitem()
             call_safe(cluster.shutdown)
 
-    def register_cluster(self, cluster: Server):
-        cluster_port = cluster.cluster_port
-        endpoint = ProxyHandler(f"http://127.0.0.1:{cluster_port}")
+    def register_cluster(self, cluster: Server, port: int = None):
+        endpoint = ProxyHandler(f"http://127.0.0.1:{port}")
         match config.OPENSEARCH_ENDPOINT_STRATEGY:
             case "domain":
                 # TODO: unify these rules
                 #   <path:path> does not match the empty path
+                LOG.debug(
+                    f"Registering route from {cluster.host} to {endpoint.proxy.forward_base_url}"
+                )
                 ROUTER.add(
                     "/",
                     endpoint=endpoint,
@@ -228,7 +240,10 @@ class ClusterManager:
                     host=f'{cluster.host}<regex("(:.*)?"):port>',
                 )
             case "path":
-                ROUTER.add(urlparse(cluster.url).path, endpoint=endpoint)
+                path = urlparse(cluster.url).path
+                LOG.debug(f"Registering route from {path} to {endpoint.proxy.forward_base_url}")
+                ROUTER.add(path, endpoint=endpoint)
+                ROUTER.add(f"{path}/<path:path>", endpoint=endpoint)
 
 
 class ClusterEndpoint(FakeEndpointProxyServer):
@@ -248,13 +263,7 @@ class ClusterEndpoint(FakeEndpointProxyServer):
         self.cluster.shutdown()
 
     def register(self):
-        cluster_port = self.cluster.cluster_port
-        endpoint = ProxyHandler(f"127.0.0.1:{cluster_port}")
-        match config.OPENSEARCH_ENDPOINT_STRATEGY:
-            case "domain":
-                ROUTER.add("/<path:path>", endpoint=endpoint, host=self.cluster.host)
-            case "path":
-                ROUTER.add(urlparse(self.cluster.url).path, endpoint=endpoint)
+        ...
 
     def unregister(self):
         ...
