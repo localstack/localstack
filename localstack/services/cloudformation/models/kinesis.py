@@ -13,7 +13,7 @@ class KinesisStreamConsumer(GenericBaseModel):
 
     def fetch_state(self, stack_name, resources):
         props = self.props
-        stream_arn = self.resolve_refs_recursively(stack_name, props["StreamARN"], resources)
+        stream_arn = props["StreamARN"]
         result = aws_stack.connect_to_service("kinesis").list_stream_consumers(StreamARN=stream_arn)
         result = [r for r in result["Consumers"] if r["ConsumerName"] == props["ConsumerName"]]
         return (result or [None])[0]
@@ -37,7 +37,7 @@ class KinesisStream(GenericBaseModel):
         return self.physical_resource_id
 
     def fetch_state(self, stack_name, resources):
-        stream_name = self.resolve_refs_recursively(stack_name, self.props["Name"], resources)
+        stream_name = self.props["Name"]
         result = aws_stack.connect_to_service("kinesis").describe_stream(StreamName=stream_name)
         return result
 

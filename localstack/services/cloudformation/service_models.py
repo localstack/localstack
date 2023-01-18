@@ -1,7 +1,6 @@
 import logging
 from typing import Optional, TypedDict
 
-from localstack import config
 from localstack.utils.aws import aws_stack
 
 LOG = logging.getLogger(__name__)
@@ -157,17 +156,3 @@ class GenericBaseModel:
     def resource_id(self) -> str:
         """Return the logical resource ID of this resource (i.e., the ref. name within the stack's resources)."""
         return self.resource_json["LogicalResourceId"]
-
-    @classmethod
-    def resolve_refs_recursively(cls, stack_name, value, resources):
-        if config.CFN_ENABLE_RESOLVE_REFS_IN_MODELS:
-            # TODO: restructure code to avoid circular import here
-            from localstack.services.cloudformation.engine.template_deployer import (
-                resolve_refs_recursively,
-            )
-            from localstack.services.cloudformation.provider import find_stack
-
-            stack = find_stack(stack_name)
-            return resolve_refs_recursively(stack, value)
-
-        return value

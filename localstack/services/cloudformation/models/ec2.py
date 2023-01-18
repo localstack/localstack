@@ -60,13 +60,9 @@ class EC2Route(GenericBaseModel):
     def fetch_state(self, stack_name, resources):
         client = aws_stack.connect_to_service("ec2")
         props = self.props
-        dst_cidr = self.resolve_refs_recursively(
-            stack_name, props.get("DestinationCidrBlock"), resources
-        )
-        dst_cidr6 = self.resolve_refs_recursively(
-            stack_name, props.get("DestinationIpv6CidrBlock"), resources
-        )
-        table_id = self.resolve_refs_recursively(stack_name, props.get("RouteTableId"), resources)
+        dst_cidr = props.get("DestinationCidrBlock")
+        dst_cidr6 = props.get("DestinationIpv6CidrBlock")
+        table_id = props.get("RouteTableId")
         route_tables = client.describe_route_tables()["RouteTables"]
         route_table = ([t for t in route_tables if t["RouteTableId"] == table_id] or [None])[0]
         if route_table:
@@ -144,11 +140,11 @@ class EC2SubnetRouteTableAssociation(GenericBaseModel):
     def fetch_state(self, stack_name, resources):
         client = aws_stack.connect_to_service("ec2")
         props = self.props
-        table_id = self.resolve_refs_recursively(stack_name, props.get("RouteTableId"), resources)
-        gw_id = self.resolve_refs_recursively(stack_name, props.get("GatewayId"), resources)
+        table_id = props.get("RouteTableId")
+        gw_id = props.get("GatewayId")
         route_tables = client.describe_route_tables()["RouteTables"]
         route_table = ([t for t in route_tables if t["RouteTableId"] == table_id] or [None])[0]
-        subnet_id = self.resolve_refs_recursively(stack_name, props.get("SubnetId"), resources)
+        subnet_id = props.get("SubnetId")
         if route_table:
             associations = route_table.get("Associations", [])
             association = [a for a in associations if a.get("GatewayId") == gw_id]
@@ -185,10 +181,8 @@ class EC2VPCGatewayAttachment(GenericBaseModel):
     def fetch_state(self, stack_name, resources):
         client = aws_stack.connect_to_service("ec2")
         props = self.props
-        igw_id = self.resolve_refs_recursively(
-            stack_name, props.get("InternetGatewayId"), resources
-        )
-        vpngw_id = self.resolve_refs_recursively(stack_name, props.get("VpnGatewayId"), resources)
+        igw_id = props.get("InternetGatewayId")
+        vpngw_id = props.get("VpnGatewayId")
         gateways = []
         if igw_id:
             gateways = client.describe_internet_gateways()["InternetGateways"]
@@ -462,8 +456,8 @@ class EC2NatGateway(GenericBaseModel):
     def fetch_state(self, stack_name, resources):
         client = aws_stack.connect_to_service("ec2")
         props = self.props
-        subnet_id = self.resolve_refs_recursively(stack_name, props.get("SubnetId"), resources)
-        assoc_id = self.resolve_refs_recursively(stack_name, props.get("AllocationId"), resources)
+        subnet_id = props.get("SubnetId")
+        assoc_id = props.get("AllocationId")
         result = client.describe_nat_gateways(
             Filters=[{"Name": "subnet-id", "Values": [subnet_id]}]
         )

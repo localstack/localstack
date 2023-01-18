@@ -18,7 +18,6 @@ class CloudFormationStack(GenericBaseModel):
     def fetch_state(self, stack_name, resources):
         client = aws_stack.connect_to_service("cloudformation")
         child_stack_name = self.props["StackName"]
-        child_stack_name = self.resolve_refs_recursively(stack_name, child_stack_name, resources)
         result = client.describe_stacks(StackName=child_stack_name)
         # probably not the best way to wait in a blocking manner here but the current implementation requires it
         client.get_waiter("stack_create_complete").wait(StackName=child_stack_name)

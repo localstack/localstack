@@ -51,7 +51,6 @@ class SFNStateMachine(GenericBaseModel):
 
     def fetch_state(self, stack_name, resources):
         sm_name = self.props.get("StateMachineName") or self.logical_resource_id
-        sm_name = self.resolve_refs_recursively(stack_name, sm_name, resources)
         sfn_client = aws_stack.connect_to_service("stepfunctions")
         state_machines = sfn_client.list_state_machines()["stateMachines"]
         sm_arn = [m["stateMachineArn"] for m in state_machines if m["name"] == sm_name]
