@@ -433,8 +433,6 @@ class ResourcePolicy:
 
 @dataclasses.dataclass
 class FunctionResourcePolicy:
-    # TODO: do we have a typed IAM policy somewhere already?
-    # Something like this? localstack_ext.services.iam.policy_engine.models.PolicyDocument
     policy: ResourcePolicy
 
 
