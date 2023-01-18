@@ -45,7 +45,16 @@ def test_localstack_data_sent_only_when_certain_attribs_set(_):
     mock = connect_to("s3")
     mock.meta.events.register.assert_not_called()
 
-    mock = connect_to("s3", source_service="foo")
+    mock.reset_mock()
+    mock = connect_to("s3", source_service="asdf")
+    mock.meta.events.register.assert_called_once()
+
+    mock.reset_mock()
+    mock = connect_to("s3", target_arn="qwer")
+    mock.meta.events.register.assert_called_once()
+
+    mock.reset_mock()
+    mock = connect_to("s3", source_arn="zxcv")
     mock.meta.events.register.assert_called_once()
 
 
