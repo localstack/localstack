@@ -52,7 +52,7 @@ class TestConnectFactory:
     @patch.object(ConnectFactory, "get_client")
     def test_external_client_credentials_loaded_from_env_if_set_to_none(self, mock, monkeypatch):
         connect_to = ConnectFactory(use_ssl=True)
-        connect_to.get_client_for_external(
+        connect_to.get_external_client(
             "abc", region_name="xx-south-1", aws_access_key_id="foo", aws_secret_access_key="bar"
         )
         mock.assert_called_once_with(
@@ -71,7 +71,7 @@ class TestConnectFactory:
         monkeypatch.setenv("AWS_ACCESS_KEY_ID", "lorem")
         monkeypatch.setenv("AWS_SECRET_ACCESS_KEY", "ipsum")
 
-        connect_to.get_client_for_external(
+        connect_to.get_external_client(
             "def", region_name=None, aws_secret_access_key=None, aws_access_key_id=None
         )
         mock.assert_called_once_with(
