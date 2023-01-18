@@ -95,6 +95,7 @@ class Server(abc.ABC):
         try:
             return True if self.health() else False
         except Exception:
+            LOG.exception("Health check failed: ")
             return False
 
     def shutdown(self) -> None:

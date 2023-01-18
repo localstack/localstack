@@ -7,7 +7,6 @@ import requests
 
 from localstack import config, constants
 from localstack.aws.api.opensearch import EngineType
-from localstack.services.generic_proxy import EndpointProxy
 from localstack.services.infra import DEFAULT_BACKEND_HOST
 from localstack.services.opensearch import versions
 from localstack.services.opensearch.packages import elasticsearch_package, opensearch_package
@@ -307,9 +306,9 @@ class EdgeProxiedOpensearchCluster(Server):
         self.cluster = self._backend_cluster()
         self.cluster.start()
 
-        self.proxy = EndpointProxy(self.url, self.cluster.url)
-        LOG.info("registering an endpoint proxy for %s => %s", self.url, self.cluster.url)
-        self.proxy.register()
+        # self.proxy = EndpointProxy(self.url, self.cluster.url)
+        # LOG.info("registering an endpoint proxy for %s => %s", self.url, self.cluster.url)
+        # self.proxy.register()
 
         self.cluster.wait_is_up()
         LOG.info("cluster on %s is ready", self.cluster.url)

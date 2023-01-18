@@ -2,6 +2,7 @@ import dataclasses
 import logging
 import threading
 from typing import Dict, Optional
+from urllib.parse import urlparse
 
 from botocore.utils import ArnParser
 
@@ -9,6 +10,8 @@ from localstack import config
 from localstack.aws.api.opensearch import DomainEndpointOptions, EngineType
 from localstack.config import EDGE_BIND_HOST
 from localstack.constants import LOCALHOST, LOCALHOST_HOSTNAME
+from localstack.http.proxy import ProxyHandler
+from localstack.services.edge import ROUTER
 from localstack.services.generic_proxy import EndpointProxy, FakeEndpointProxyServer
 from localstack.services.opensearch import versions
 from localstack.services.opensearch.cluster import (
@@ -174,6 +177,7 @@ class ClusterManager:
         # call abstract cluster factory
         cluster = self._create_cluster(arn, url, version)
         cluster.start()
+        self.register_cluster(cluster)
 
         # save cluster into registry and return
         self.clusters[arn] = cluster
@@ -206,14 +210,23 @@ class ClusterManager:
             domain, cluster = self.clusters.popitem()
             call_safe(cluster.shutdown)
 
+    def register_cluster(self, cluster: Server):
+        cluster_port = cluster.cluster_port
+        endpoint = ProxyHandler(f"127.0.0.1:{cluster_port}")
+        match config.OPENSEARCH_ENDPOINT_STRATEGY:
+            case "domain":
+                ROUTER.add("/", endpoint=endpoint, host=cluster.host)
+            case "path":
+                ROUTER.add(urlparse(cluster.url).path, endpoint=endpoint)
+
 
 class ClusterEndpoint(FakeEndpointProxyServer):
     """
     An endpoint that points to a cluster, and behaves like a Server.
     """
 
-    def __init__(self, cluster: Server, endpoint: EndpointProxy) -> None:
-        super().__init__(endpoint)
+    def __init__(self, cluster: Server) -> None:
+        super().__init__(cluster.url)
         self.cluster = cluster
 
     def health(self):
@@ -222,6 +235,18 @@ class ClusterEndpoint(FakeEndpointProxyServer):
     def do_shutdown(self):
         super(FakeEndpointProxyServer, self).do_shutdown()
         self.cluster.shutdown()
+
+    def register(self):
+        cluster_port = self.cluster.cluster_port
+        endpoint = ProxyHandler(f"127.0.0.1:{cluster_port}")
+        match config.OPENSEARCH_ENDPOINT_STRATEGY:
+            case "domain":
+                ROUTER.add("/<path:path>", endpoint=endpoint, host=self.cluster.host)
+            case "path":
+                ROUTER.add(urlparse(self.cluster.url).path, endpoint=endpoint)
+
+    def unregister(self):
+        ...
 
 
 def _get_port_from_url(url: str) -> int:
@@ -263,7 +288,7 @@ class MultiplexingClusterManager(ClusterManager):
                     self.cluster.start()  # start may block during install
 
                 start_thread(_start_async, name="opensearch-multiplex")
-            cluster_endpoint = ClusterEndpoint(self.cluster, EndpointProxy(url, self.cluster.url))
+            cluster_endpoint = ClusterEndpoint(self.cluster)
             self.clusters[arn] = cluster_endpoint
             return cluster_endpoint
 

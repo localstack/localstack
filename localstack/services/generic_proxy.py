@@ -699,13 +699,10 @@ class FakeEndpointProxyServer(Server):
     multiplexing behavior.
     """
 
-    endpoint: EndpointProxy
-
-    def __init__(self, endpoint: EndpointProxy) -> None:
-        self.endpoint = endpoint
+    def __init__(self, url: str) -> None:
         self._shutdown_event = threading.Event()
 
-        self._url = self.endpoint.forwarder.base_url
+        self._url = urlparse(url)
         super().__init__(self._url.port, self._url.hostname)
 
     @property
@@ -713,15 +710,15 @@ class FakeEndpointProxyServer(Server):
         return self._url.geturl()
 
     def do_run(self):
-        self.endpoint.register()
+        self.register()
         try:
             self._shutdown_event.wait()
         finally:
-            self.endpoint.unregister()
+            self.unregister()
 
     def do_shutdown(self):
         self._shutdown_event.set()
-        self.endpoint.unregister()
+        self.unregister()
 
 
 async def _accept_connection2(self, protocol_factory, conn, extra, sslcontext, *args, **kwargs):
