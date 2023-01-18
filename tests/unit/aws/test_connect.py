@@ -29,8 +29,8 @@ def test_target_arn_overrides_region(mock):
         use_ssl=False,
         verify=False,
         endpoint_url="http://localhost:4566",
-        aws_access_key_id="test",
-        aws_secret_access_key="test",
+        aws_access_key_id=TEST_AWS_ACCESS_KEY_ID,
+        aws_secret_access_key=TEST_AWS_SECRET_ACCESS_KEY,
         aws_session_token=None,
         config=connect_to._config,
     )
@@ -47,3 +47,43 @@ def test_localstack_data_sent_only_when_certain_attribs_set(_):
 
     mock = connect_to("s3", source_service="foo")
     mock.meta.events.register.assert_called_once()
+
+
+@patch.object(ConnectFactory, "get_client")
+def test_credentials_loaded_from_env_if_set_to_none(mock, monkeypatch):
+    # Ensure that credentials passed in args are used for client
+    connect_to = ConnectFactory(aws_access_key_id="foo", aws_secret_access_key="bar")
+    connect_to("sns")
+    mock.assert_called_once_with(
+        service_name="sns",
+        region_name=connect_to.get_region_name(),
+        use_ssl=False,
+        verify=False,
+        endpoint_url="http://localhost:4566",
+        aws_access_key_id="foo",
+        aws_secret_access_key="bar",
+        aws_session_token=None,
+        config=connect_to._config,
+    )
+
+    # Ensure that credentials from environment are used when None in args
+    mock.reset_mock()
+    monkeypatch.setenv("AWS_ACCESS_KEY_ID", "lorem")
+    monkeypatch.setenv("AWS_SECRET_ACCESS_KEY", "ipsum")
+
+    connect_to = ConnectFactory(
+        aws_access_key_id=None,
+        aws_secret_access_key=None,
+    )
+    connect_to("ec2")
+    mock.assert_called_once_with(
+        service_name="ec2",
+        region_name=connect_to.get_region_name(),
+        use_ssl=False,
+        verify=False,
+        endpoint_url="http://localhost:4566",
+        aws_access_key_id="lorem",
+        aws_secret_access_key="ipsum",
+        aws_session_token=None,
+        config=connect_to._config,
+    )

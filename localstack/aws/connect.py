@@ -7,6 +7,7 @@ LocalStack providers.
     from localstack.aws.connect import connect_to
 
     key_pairs = connect_to('ec2').describe_key_pairs()
+
     buckets = connect_to('s3', region='ap-south-1').list_buckets()
 """
 import json
@@ -139,6 +140,20 @@ class ConnectFactory:
             or self.get_session_region_name()
         )
 
+    def get_session_access_key(self) -> str:
+        """
+        Return AWS access key from the Boto session.
+        """
+        credentials = self._session.get_credentials()
+        return credentials.access_key
+
+    def get_session_secret_key(self) -> str:
+        """
+        Return AWS secret key from the Boto session.
+        """
+        credentials = self._session.get_credentials()
+        return credentials.secret_key
+
     @cache
     def get_client(
         self,
@@ -211,8 +226,8 @@ class ConnectFactory:
             use_ssl=self._use_ssl,
             verify=self._verify,
             endpoint_url=endpoint_url or get_local_service_url(target_service),
-            aws_access_key_id=self._aws_access_key_id,
-            aws_secret_access_key=self._aws_secret_access_key,
+            aws_access_key_id=self._aws_access_key_id or self.get_session_access_key(),
+            aws_secret_access_key=self._aws_secret_access_key or self.get_session_secret_key(),
             aws_session_token=self._aws_session_token,
             config=config or self._config,
         )
