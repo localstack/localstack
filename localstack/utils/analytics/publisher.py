@@ -1,42 +1,19 @@
 import abc
 import atexit
-import datetime
 import logging
-import os
 import threading
 import time
 from queue import Full, Queue
 from typing import List, Optional
 
 from localstack import config
-from localstack.runtime import hooks
 from localstack.utils.threads import start_thread, start_worker_thread
 
 from .client import AnalyticsClient
-from .events import Event, EventHandler, EventMetadata
-from .metadata import get_client_metadata, get_session_id
+from .events import Event, EventHandler
+from .metadata import get_client_metadata
 
 LOG = logging.getLogger(__name__)
-
-
-@hooks.on_infra_start()
-def _publish_env_var_as_analytics_event():
-    tracked_env_vars = ["PROVIDER_OVERRIDE_S3", "LAMBDA_RUNTIME_EXECUTOR"]
-    env_vars = {key: os.getenv(key) for key in tracked_env_vars}
-
-    if not any(env_vars.values()):
-        return
-
-    event = Event(
-        name="env_var",
-        payload=env_vars,
-        metadata=EventMetadata(
-            session_id=get_session_id(),
-            client_time=str(datetime.datetime.now()),
-        ),
-    )
-    publisher = AnalyticsClientPublisher(AnalyticsClient())
-    publisher.publish([event])
 
 
 class Publisher(abc.ABC):
