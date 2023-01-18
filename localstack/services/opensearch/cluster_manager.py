@@ -212,10 +212,14 @@ class ClusterManager:
 
     def register_cluster(self, cluster: Server):
         cluster_port = cluster.cluster_port
-        endpoint = ProxyHandler(f"127.0.0.1:{cluster_port}")
+        endpoint = ProxyHandler(f"http://127.0.0.1:{cluster_port}")
         match config.OPENSEARCH_ENDPOINT_STRATEGY:
             case "domain":
-                ROUTER.add("/", endpoint=endpoint, host=cluster.host)
+                ROUTER.add(
+                    r'\/<regex(".*"):optional_path>',
+                    endpoint=endpoint,
+                    host=f'{cluster.host}<regex("(:.*)?"):port>',
+                )
             case "path":
                 ROUTER.add(urlparse(cluster.url).path, endpoint=endpoint)
 
