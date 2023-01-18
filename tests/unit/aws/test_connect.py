@@ -34,6 +34,7 @@ class TestConnectFactory:
             aws_secret_access_key=INTERNAL_AWS_SECRET_ACCESS_KEY,
             aws_session_token=None,
             config=connect_to._config,
+            dto='{"source_service":"s3","target_arn":"arn:aws:sns:xx-south-1:000000000000:lorem"}',
         )
 
         with pytest.raises(AssertionError) as exc:
@@ -65,6 +66,7 @@ class TestConnectFactory:
             aws_secret_access_key="bar",
             aws_session_token=None,
             config=connect_to._config,
+            dto=None,
         )
 
         mock.reset_mock()
@@ -84,4 +86,5 @@ class TestConnectFactory:
             aws_secret_access_key="ipsum",
             aws_session_token=None,
             config=connect_to._config,
+            dto=None,
         )
