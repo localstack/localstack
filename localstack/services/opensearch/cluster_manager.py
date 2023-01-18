@@ -215,8 +215,15 @@ class ClusterManager:
         endpoint = ProxyHandler(f"http://127.0.0.1:{cluster_port}")
         match config.OPENSEARCH_ENDPOINT_STRATEGY:
             case "domain":
+                # TODO: unify these rules
+                #   <path:path> does not match the empty path
                 ROUTER.add(
-                    r'\/<regex(".*"):optional_path>',
+                    "/",
+                    endpoint=endpoint,
+                    host=f'{cluster.host}<regex("(:.*)?"):port>',
+                )
+                ROUTER.add(
+                    "/<path:path>",
                     endpoint=endpoint,
                     host=f'{cluster.host}<regex("(:.*)?"):port>',
                 )
