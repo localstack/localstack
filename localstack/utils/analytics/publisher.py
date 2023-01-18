@@ -8,6 +8,7 @@ import time
 from queue import Full, Queue
 from typing import List, Optional
 
+from localstack.runtime import hooks
 from localstack import config
 from localstack.utils.threads import start_thread, start_worker_thread
 
@@ -18,13 +19,20 @@ from .metadata import get_client_metadata, get_session_id
 LOG = logging.getLogger(__name__)
 
 
-def _publish_env_var_as_analytics_event(env_var: str, version=1):
-    if not os.getenv(env_var):
+@hooks.on_infra_start()
+def _publish_env_var_as_analytics_event():
+    tracked_env_vars = [
+        "PROVIDER_OVERRIDE_S3",
+        "LAMBDA_RUNTIME_EXECUTOR"
+    ]
+    env_vars = {key: os.getenv(key) for key in tracked_env_vars}
+
+    if not any(env_vars.values()):
         return
 
     event = Event(
         name="env_var",
-        payload={"key": env_var, "value": os.getenv(env_var), "version": version},
+        payload=env_vars,
         metadata=EventMetadata(
             session_id=get_session_id(),
             client_time=str(datetime.datetime.now()),

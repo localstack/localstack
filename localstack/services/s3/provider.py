@@ -122,7 +122,6 @@ from localstack.services.s3.utils import (
     verify_checksum,
 )
 from localstack.services.s3.website_hosting import register_website_hosting_routes
-from localstack.utils.analytics.publisher import _publish_env_var_as_analytics_event
 from localstack.utils.aws import aws_stack
 from localstack.utils.aws.arns import s3_bucket_name
 from localstack.utils.collections import get_safe
@@ -189,7 +188,6 @@ class S3Provider(S3Api, ServiceLifecycleHook):
         register_custom_handlers()
         # registering of virtual host routes happens with the hook on_infra_ready in virtual_host.py
         # create a AWS managed KMS key at start and save it in the store for persistence?
-        _publish_env_var_as_analytics_event("PROVIDER_OVERRIDE_S3")
 
     def __init__(self) -> None:
         super().__init__()
