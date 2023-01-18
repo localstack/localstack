@@ -181,12 +181,14 @@ class ClusterManager:
 
         # The assignment of the final port can take some time
         def wait_for_cluster():
+            if not hasattr(cluster, "cluster_port"):
+                return cluster.port
             port = cluster.cluster_port
             if not port:
                 raise Exception("Port for cluster could not be determined")
             return port
 
-        port = retry(wait_for_cluster)
+        port = retry(wait_for_cluster, retries=10, sleep=0.25)
         self.register_cluster(cluster, port)
 
         # save cluster into registry and return
