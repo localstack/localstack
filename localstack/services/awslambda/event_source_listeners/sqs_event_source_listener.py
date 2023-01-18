@@ -63,16 +63,6 @@ class SQSEventSourceListener(EventSourceListener):
                 for source in sources:
                     queue_arn = source["EventSourceArn"]
                     region_name = extract_region_from_arn(queue_arn)
-                    ## sqs_client = aws_stack.connect_to_service("sqs", region_name=region_name)
-                    # `sqs` is the factory
-                    # config args include stuff going into boto like retries, max conn pool,.
-                    # could be called `boto_config`
-                    # all options will map to boto_config args
-                    # aws.sqs.configure().credentials(aws_access_key_id=...)
-                    # client can be created from ARNs
-                    # can communicate with Queue ARN
-                    # all methods could be prefixed with `set_` eg. set_target_arn()
-                    # sqs_client = aws_client().target_arn(queue_arn).credentials(sts_call_credentials).sqs()
                     sqs_client = aws_stack.connect_to_service("sqs", region_name=region_name)
                     batch_size = max(min(source.get("BatchSize", 1), 10), 1)
 
