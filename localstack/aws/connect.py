@@ -13,7 +13,7 @@ LocalStack providers.
 import json
 from datetime import datetime, timezone
 from functools import cache
-from typing import Mapping, TypedDict, Union
+from typing import Mapping, Optional, TypedDict, Union
 
 from boto3.session import Session
 from botocore.awsrequest import AWSPreparedRequest
@@ -83,37 +83,140 @@ def load_dto(data: str) -> LocalStackData:
 class ConnectFactory:
     """
     Factory to build the AWS client.
+
+    This class caches all clients it creates.
     """
 
     def __init__(
         self,
-        aws_access_key_id: str,
-        aws_secret_access_key: str,
         use_ssl: bool = False,
         verify: bool = False,
     ):
         """
-        If either of the access keys are set to None, they are loaded from following
+        :param use_ssl: Whether to use SSL
+        :param verify: Whether to verify SSL certificates
+        :param localstack_data: LocalStack data transfer object
+        """
+        self._use_ssl = use_ssl
+        self._verify = verify
+        self._session = Session()
+        self._config = Config(max_pool_connections=MAX_POOL_CONNECTIONS)
+
+    def __call__(self, *args, **kwargs):
+        """
+        Calling the class instance is a proxy for creating the internal client.
+        """
+        return self.get_client_for_internal(*args, **kwargs)
+
+    def get_client_for_external(
+        self,
+        service_name: str,
+        region_name: Optional[str],
+        aws_access_key_id: Optional[str],
+        aws_secret_access_key: Optional[str],
+        endpoint_url: str = None,
+        config: Config = None,
+    ):
+        """
+        Build and return client for connections originating outside LocalStack.
+
+        If either of the access keys or region are set to None, they are loaded from following
         locations:
         - AWS environment variables
         - Credentials file `~/.aws/credentials`
         - Config file `~/.aws/config`
 
-        :param use_ssl: Whether to use SSL
-        :param verify: Whether to verify SSL certificates
+        :param service_name: Service to build the client for, eg. `s3`
+        :param region_name: Name of the AWS region to be associated with the client
+            If set to None, loads from botocore session.
         :param aws_access_key_id: Access key to use for the client.
-            If set to None, loads them from botocore session. See above.
+            If set to None, loads from botocore session.
         :param aws_secret_access_key: Secret key to use for the client.
-            If set to None, loads them from botocore session. See above.
-        :param localstack_data: LocalStack data transfer object
+            If set to None, loads from botocore session.
+        :param aws_access_key_id:
+        :param aws_secret_access_key:
+        :param endpoint_url:
+        :param config: Boto config for advanced use.
+        :return:
         """
-        self._use_ssl = use_ssl
-        self._verify = verify
-        self._aws_access_key_id = aws_access_key_id
-        self._aws_secret_access_key = aws_secret_access_key
-        self._aws_session_token = None
-        self._session = Session()
-        self._config = Config(max_pool_connections=MAX_POOL_CONNECTIONS)
+        client = self.get_client(
+            service_name=service_name,
+            region_name=region_name or self.get_region_name(),
+            use_ssl=self._use_ssl,
+            verify=self._verify,
+            endpoint_url=endpoint_url or get_local_service_url(service_name),
+            aws_access_key_id=aws_access_key_id or self.get_session_access_key(),
+            aws_secret_access_key=aws_secret_access_key or self.get_session_secret_key(),
+            aws_session_token=None,
+            config=config or self._config,
+        )
+        return client
+
+    def get_client_for_internal(
+        self,
+        target_service: str,
+        endpoint_url: str = None,
+        aws_access_key_id: str = INTERNAL_AWS_ACCESS_KEY_ID,
+        aws_secret_access_key: str = INTERNAL_AWS_SECRET_ACCESS_KEY,
+        config: Config = None,
+        source_arn: str = None,
+        source_service: str = None,
+        target_arn: str = None,
+    ) -> BaseClient:
+        """
+        Build and return client for connections originating within LocalStack.
+
+        Region can only be specified by setting the `target_arn`
+
+        :param target_service: Service to build the client for, eg. `s3`
+        :param endpoint_url: Full endpoint URL to be used by the client.
+            Defaults to appropriate LocalStack endpoint.
+        :param aws_access_key_id: Access key to use for the client.
+            Defaults to LocalStack internal credentials.
+        :param aws_secret_access_key: Secret key to use for the client.
+            Defaults to LocalStack internal credentials.
+        :param config: Boto config for advanced use.
+        :param source_arn: ARN of resource which triggers the call.
+        :param source_service: Service name where call originates.
+        :param target_arn: ARN of targeted resource.
+        """
+        region_name = None
+        localstack_data = LocalStackData()
+
+        if source_arn:
+            localstack_data["source_arn"] = source_arn
+
+        if source_service:
+            localstack_data["source_service"] = source_service
+
+        if target_arn:
+            # Attention: region is set here
+            region_name = extract_region_from_arn(target_arn)
+            localstack_data["target_arn"] = target_arn
+
+        assert region_name, "Region not set for internal client"
+
+        client = self.get_client(
+            service_name=target_service,
+            region_name=region_name,
+            use_ssl=self._use_ssl,
+            verify=self._verify,
+            endpoint_url=endpoint_url or get_local_service_url(target_service),
+            aws_access_key_id=aws_access_key_id,
+            aws_secret_access_key=aws_secret_access_key,
+            aws_session_token=None,
+            config=config or self._config,
+        )
+
+        def _handler(request: AWSPreparedRequest, **_):
+            data = localstack_data | LocalStackData(
+                current_time=datetime.now(timezone.utc).isoformat()
+            )
+            request.headers[LOCALSTACK_DATA_HEADER] = dump_dto(data)
+
+        client.meta.events.register("before-send.*.*", handler=_handler)
+
+        return client
 
     def get_partition_for_region(self, region_name: str) -> str:
         """
@@ -179,76 +282,10 @@ class ConnectFactory:
             config=config,
         )
 
-    def __call__(
-        self,
-        target_service: str,
-        region_name: str = None,
-        endpoint_url: str = None,
-        config: Config = None,
-        source_arn: str = None,
-        source_service: str = None,
-        target_arn: str = None,
-    ) -> BaseClient:
-        """
-        Build and return the client.
 
-        Presence of any argument name with `source_*` or `target_*` prefix
-        indicates that this is a client meant for internal calls.
-
-        :param target_service: Service to build the client for, eg. `s3`
-        :param region_name: Name of the AWS region to be associated with the client
-        :param endpoint_url: Full endpoint URL to be used by the client.
-            Defaults to appropriate LocalStack endpoint.
-        :param config: Boto config for advanced use.
-        :param source_arn: ARN of resource which triggers the call. Required for
-            internal calls.
-        :param source_service: Service name where call originates. Required for
-            internal calls.
-        :param target_arn: ARN of targeted resource. Overrides `region_name`.
-            Required for internal calls.
-        """
-        localstack_data = LocalStackData()
-
-        if source_arn:
-            localstack_data["source_arn"] = source_arn
-
-        if source_service:
-            localstack_data["source_service"] = source_service
-
-        if target_arn:
-            # Attention: region is overriden here
-            region_name = extract_region_from_arn(target_arn)
-            localstack_data["target_arn"] = target_arn
-
-        client = self.get_client(
-            service_name=target_service,
-            region_name=region_name or self.get_region_name(),
-            use_ssl=self._use_ssl,
-            verify=self._verify,
-            endpoint_url=endpoint_url or get_local_service_url(target_service),
-            aws_access_key_id=self._aws_access_key_id or self.get_session_access_key(),
-            aws_secret_access_key=self._aws_secret_access_key or self.get_session_secret_key(),
-            aws_session_token=self._aws_session_token,
-            config=config or self._config,
-        )
-
-        if len(localstack_data):
-
-            def _handler(request: AWSPreparedRequest, **_):
-                data = localstack_data | LocalStackData(
-                    current_time=datetime.now(timezone.utc).isoformat()
-                )
-                request.headers[LOCALSTACK_DATA_HEADER] = dump_dto(data)
-
-            client.meta.events.register("before-send.*.*", handler=_handler)
-
-        return client
-
-
-connect_to = ConnectFactory(
-    aws_access_key_id=INTERNAL_AWS_ACCESS_KEY_ID,
-    aws_secret_access_key=INTERNAL_AWS_SECRET_ACCESS_KEY,
-)
+connector = ConnectFactory()
+connect_to = connector.get_client_for_internal
+connect_externally_to = connector.get_client_for_external
 
 #
 # Utilities
