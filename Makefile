@@ -293,3 +293,5 @@ clean:             		  ## Clean up (npm dependencies, downloaded infrastructure 
 clean-dist:				  ## Clean up python distribution directories
 	rm -rf dist/ build/
 	rm -rf *.egg-info
+
+.PHONY: usage venv freeze install-basic install-runtime install-test install-dev install entrypoints dist publish coveralls start docker-save-images docker-build docker-build-light docker-build-multi-platform docker-push-master docker-push-master-all docker-create-push-manifests docker-create-push-manifests-light docker-run-tests docker-run docker-mount-run docker-build-lambdas docker-cp-coverage test test-coverage test-docker test-docker-mount test-docker-mount-code ci-pro-smoke-tests lint lint-modified format format-modified init-precommit clean clean-dist vagrant-start vagrant-stop infra
