@@ -17,6 +17,10 @@ TRACKED_ENV_VAR = [
     "HOSTNAME",
     "HOSTNAME_EXTERNAL",
     "HOSTNAME_FROM_LAMBDA",
+    "LAMBDA_EXECUTOR",
+    "LAMBDA_RUNTIME_EXECUTOR",
+    "LAMBDA_REMOTE_DOCKER",
+    "LAMBDA_PREBUILD_IMAGES",
     "LEGACY_DIRECTORIES",
     "LEGACY_EDGE_PROXY",
     "LS_LOG",
@@ -25,9 +29,18 @@ TRACKED_ENV_VAR = [
     "SQS_ENDPOINT_STRATEGY",
 ]
 
+PRESENCE_ENV_VAR = ["LAMBDA_FALLBACK_URL", "LAMBDA_FORWARD_URL"]
+
 
 @hooks.on_infra_start()
 def _publish_config_as_analytics_event():
-    env_vars = {key: os.getenv(key) for key in TRACKED_ENV_VAR}
+    env_vars = list(TRACKED_ENV_VAR)
 
-    log.event("config", env_vars=env_vars)
+    for key, value in os.environ.items():
+        if key.startswith("PROVIDER_OVERRIDE_"):
+            env_vars.append(key)
+
+    env_vars = {key: os.getenv(key) for key in env_vars}
+    present_env_vars = {env_var: 1 for env_var in PRESENCE_ENV_VAR if os.getenv(env_var)}
+
+    log.event("config", env_vars=env_vars, set_vars=present_env_vars)
