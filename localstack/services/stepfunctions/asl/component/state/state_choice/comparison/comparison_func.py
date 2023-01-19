@@ -4,8 +4,7 @@ import json
 from enum import Enum
 from typing import Final
 
-from antlr4.localstack.services.stepfunctions.asl.antlr.ASLLexer import ASLLexer
-
+from localstack.services.stepfunctions.asl.antlr.runtime.ASLLexer import ASLLexer
 from localstack.services.stepfunctions.asl.component.state.state_choice.comparison.comparison_stmt import (
     ComparisonStmt,
 )
