@@ -34,6 +34,10 @@ class StatePass(CommonStateField):
         self.parameters = state_props.get(Parameters)
 
     def _eval_state(self, env: Environment) -> None:
+        if self.parameters:
+            self.parameters.eval(env=env)
+            env.inp = env.stack.pop()
+
         if self.result:
             env.stack.append(self.result.result_obj)
         else:

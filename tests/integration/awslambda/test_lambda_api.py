@@ -3555,8 +3555,8 @@ class TestLambdaEventSourceMappings:
         #
         # lambda_client.update_event_source_mapping()
         #
-        # lambda_client.list_event_source_mappings(FunctionName=function_name)
-        # lambda_client.list_event_source_mappings(FunctionName=function_name, EventSourceArn=queue_arn)
+        # lambda_client.list_event_source_mappings(FunctionName=functionname)
+        # lambda_client.list_event_source_mappings(FunctionName=functionname, EventSourceArn=queue_arn)
         # lambda_client.list_event_source_mappings(EventSourceArn=queue_arn)
         #
         # lambda_client.delete_event_source_mapping(UUID=uuid)

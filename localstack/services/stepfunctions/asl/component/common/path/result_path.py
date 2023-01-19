@@ -15,4 +15,4 @@ class ResultPath(EvalComponent):
         result = env.stack.pop()
         if env.inp is None:
             env.inp = dict()
-        result_expr.update_or_create(env.inp, result)
+        env.inp = result_expr.update_or_create(env.inp, result)

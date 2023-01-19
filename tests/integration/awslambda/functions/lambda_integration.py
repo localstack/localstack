@@ -105,7 +105,7 @@ def handler(event, context):
         result_map = {"event": event, "context": {}}
         result_map["context"]["invoked_function_arn"] = context.invoked_function_arn
         result_map["context"]["function_version"] = context.function_version
-        result_map["context"]["function_name"] = context.function_name
+        result_map["context"]["functionname"] = context.function_name
         result_map["context"]["memory_limit_in_mb"] = context.memory_limit_in_mb
         result_map["context"]["aws_request_id"] = context.aws_request_id
         result_map["context"]["log_group_name"] = context.log_group_name

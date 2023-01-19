@@ -910,7 +910,7 @@ def forward_to_fallback_url(func_arn, data):
             "id": {"S": short_uid()},
             "timestamp": {"N": str(now_utc())},
             "payload": {"S": data},
-            "function_name": {"S": lambda_name},
+            "functionname": {"S": lambda_name},
         }
         resources.create_dynamodb_table(table_name, partition_key="id")
         dynamodb.put_item(TableName=table_name, Item=item)

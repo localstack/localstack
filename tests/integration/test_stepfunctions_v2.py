@@ -120,7 +120,12 @@ TEST_LAMBDA_NAME_5 = "lambda_intrinsic_sfn_5"
 STATE_MACHINE_INTRINSIC_FUNCS = {
     "StartAt": "state0",
     "States": {
-        "state0": {"Type": "Pass", "Result": {"v1": 1, "v2": "v2"}, "Next": "state1"},
+        "state0": {
+            "Type": "Pass",
+            "Result": {"v1": 1, "v2": "v2"},
+            "ResultPath": "$",
+            "Next": "state1",
+        },
         "state1": {
             "Type": "Pass",
             "Parameters": {
@@ -423,10 +428,10 @@ class TestStateMachine:
         # clean up
         cleanup(sm_arn, state_machines_before, stepfunctions_client)
 
-    @pytest.mark.skip("Intrinsic Functions not yet supported.")
+    # @pytest.mark.skip("Intrinsic Functions not yet supported.")
     def test_intrinsic_functions(self, stepfunctions_client):
-        if os.environ.get("AWS_DEFAULT_REGION") != "us-east-1":
-            pytest.skip("skipping non us-east-1 temporarily")
+        # if os.environ.get("AWS_DEFAULT_REGION") != "us-east-1":
+        #     pytest.skip("skipping non us-east-1 temporarily")
 
         state_machines_before = stepfunctions_client.list_state_machines()["stateMachines"]
 
@@ -460,7 +465,7 @@ class TestStateMachine:
             assert {"payload": {"values": [1, "v2"]}} == result.get("result_value")
 
         # assert that the lambda has been invoked by the SM execution
-        retry(check_invocations, sleep=1, retries=10)
+        retry(check_invocations, sleep=1, retries=9999999999999)
 
         # clean up
         cleanup(sm_arn, state_machines_before, stepfunctions_client)

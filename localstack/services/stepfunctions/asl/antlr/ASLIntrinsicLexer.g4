@@ -1,28 +1,46 @@
-// TODO: playground lexer.
-
 lexer grammar ASLIntrinsicLexer;
 
-DOLLAR: '$';
-DDOLLAR: '$$';
+DOLLARDOT: '$.';
 DOT: '.';
+STAR: '*';
 COMMA: ',';
 LPAREN: '(';
 RPAREN: ')';
 LBRACK: '[';
 RBRACK: ']';
-LBRACE: '{';
-RBRACE: '}';
+LDIAM: '<';
+RDIAM: '>';
+ATDOT: '@.';
+ATDOTLENGTHDASH: '@.length-';
+ANDAND: '&&';
+OROR: '||';
+EQEQ: '==';
+EQ: '=';
+
+States: 'States';
+Format: 'Format';
+StringToJson: 'StringToJson';
+JsonToString: 'JsonToString';
+Array: 'Array';
+ArrayPartition: 'ArrayPartition';
+ArrayContains: 'ArrayContains';
+ArrayRange: 'ArrayRange';
+ArrayGetItem: 'ArrayGetItem';
+ArrayLength: 'ArrayLength';
+ArrayUnique: 'ArrayUnique';
+Base64Encode: 'Base64Encode';
+Base64Decode: 'Base64Decode';
+Hash: 'Hash';
+JsonMerge: 'JsonMerge';
+MathRandom: 'MathRandom';
+MathAdd: 'MathAdd';
+StringSplit: 'StringSplit';
+UUID: 'UUID';
 
 
-IDENTIFIER
-    : ([0-9a-zA-Z_] | UNICODE)+
-    ;
-
-// TODO
 STRING
-   : '\\"' (ESC | SAFECODEPOINT)* '\\"'
+   : '\'' (ESC | SAFECODEPOINT)* '\''
    ;
-
 
 fragment ESC
    : '\\' (["\\/bfnrt] | UNICODE)
@@ -37,20 +55,22 @@ fragment SAFECODEPOINT
    : ~ ["\\\u0000-\u001F]
    ;
 
+INT
+   : '0' | [1-9] [0-9]*
+   ;
 
 NUMBER
    : '-'? INT ('.' [0-9] +)? EXP?
-   ;
-
-
-fragment INT
-   : '0' | [1-9] [0-9]*
    ;
 
 fragment EXP
    : [Ee] [+\-]? INT
    ;
 
+IDENTIFIER
+    : ([0-9a-zA-Z_] | UNICODE)+
+    ;
+
 WS
-   : [ \t] + -> skip
+   : [ \t\n] + -> skip
    ;

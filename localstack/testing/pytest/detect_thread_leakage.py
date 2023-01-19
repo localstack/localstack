@@ -19,7 +19,7 @@ def pytest_unconfigure(config):
     info_tuples = [
         {
             "file_name": frame.f_code.co_filename,
-            "function_name": frame.f_code.co_name,
+            "functionname": frame.f_code.co_name,
             "line_no": frame.f_code.co_firstlineno,
             "frame_traceback": traceback.format_stack(frame),
             "thread_name": thread.name,

@@ -77,7 +77,7 @@ class FunctionUrlRouter:
         match = FULL_FN_ARN_PATTERN.search(lambda_url_config.function_arn).groupdict()
 
         result_ft = self.lambda_service.invoke(
-            function_name=match.get("function_name"),
+            function_name=match.get("functionname"),
             qualifier=match.get("qualifier"),
             account_id=match.get("account_id"),
             region=match.get("region_name"),

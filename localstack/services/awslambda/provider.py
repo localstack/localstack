@@ -2274,12 +2274,12 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
                     fn_parts = api_utils.FULL_FN_ARN_PATTERN.search(destination_arn).groupdict()
                     if fn_parts:
                         # check if it exists
-                        fn = store.functions.get(fn_parts["function_name"])
+                        fn = store.functions.get(fn_parts["functionname"])
                         if not fn:
                             raise InvalidParameterValueException(
                                 f"The destination ARN {destination_arn} is invalid.", Type="User"
                             )
-                        if fn_parts["function_name"] == function_name:
+                        if fn_parts["functionname"] == function_name:
                             raise InvalidParameterValueException(
                                 "You can't specify the function as a destination for itself.",
                                 Type="User",
@@ -3061,7 +3061,7 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
             )
 
         groups = pattern_match.groupdict()
-        fn_name = groups.get("function_name")
+        fn_name = groups.get("functionname")
 
         if groups.get("qualifier"):
             raise InvalidParameterValueException(
