@@ -7,6 +7,8 @@ import requests
 
 from localstack import config, constants
 from localstack.aws.api.opensearch import EngineType
+from localstack.http.proxy import ProxyHandler
+from localstack.services.edge import ROUTER
 from localstack.services.infra import DEFAULT_BACKEND_HOST
 from localstack.services.opensearch import versions
 from localstack.services.opensearch.packages import elasticsearch_package, opensearch_package
@@ -309,6 +311,15 @@ class EdgeProxiedOpensearchCluster(Server):
         # self.proxy = EndpointProxy(self.url, self.cluster.url)
         # LOG.info("registering an endpoint proxy for %s => %s", self.url, self.cluster.url)
         # self.proxy.register()
+        _url = urlparse(self.url)
+        # TODO: solve this cleaner than with assert, _url might be localhost but should be none
+        #   We MUST NOT create a catch all traffic rule
+        assert not (
+            (_url.path == "" or _url.path is None or _url.path == "/")
+            and _url.netloc == config.LOCALSTACK_HOSTNAME
+        )
+        ROUTER.add(_url.path or "/", ProxyHandler(self.cluster.url), _url.netloc)
+        ROUTER.add(f"{_url.path or '/'}/<path:path>", ProxyHandler(self.cluster.url), _url.netloc)
 
         self.cluster.wait_is_up()
         LOG.info("cluster on %s is ready", self.cluster.url)

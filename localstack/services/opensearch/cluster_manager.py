@@ -12,7 +12,7 @@ from localstack.config import EDGE_BIND_HOST
 from localstack.constants import LOCALHOST, LOCALHOST_HOSTNAME
 from localstack.http.proxy import ProxyHandler
 from localstack.services.edge import ROUTER
-from localstack.services.generic_proxy import EndpointProxy, FakeEndpointProxyServer
+from localstack.services.generic_proxy import FakeEndpointProxyServer
 from localstack.services.opensearch import versions
 from localstack.services.opensearch.cluster import (
     CustomEndpoint,
@@ -29,7 +29,6 @@ from localstack.utils.common import (
     start_thread,
 )
 from localstack.utils.serving import Server
-from localstack.utils.sync import retry
 
 LOG = logging.getLogger(__name__)
 
@@ -174,22 +173,23 @@ class ClusterManager:
             DomainKey.from_arn(arn), custom_endpoint, engine_type, preferred_port
         )
         url = f"http://{endpoint}" if "://" not in endpoint else endpoint
-
+        # TODO: approach: delete 172-176, remove url from _create_cluster, call build_cluster whenever url is needed
         # call abstract cluster factory
         cluster = self._create_cluster(arn, url, version)
         cluster.start()
 
+        # TODO: remove/consolidate this
         # The assignment of the final port can take some time
-        def wait_for_cluster():
-            if not hasattr(cluster, "cluster_port"):
-                return cluster.port
-            port = cluster.cluster_port
-            if not port:
-                raise Exception("Port for cluster could not be determined")
-            return port
+        # def wait_for_cluster():
+        #     if not hasattr(cluster, "cluster_port"):
+        #         return cluster.port
+        #     port = cluster.cluster_port
+        #     if not port:
+        #         raise Exception("Port for cluster could not be determined")
+        #     return port
 
-        port = retry(wait_for_cluster, retries=10, sleep=0.25)
-        self.register_cluster(cluster, port)
+        # port = retry(wait_for_cluster, retries=10, sleep=0.25)
+        # self.register_cluster(cluster, port)
 
         # save cluster into registry and return
         self.clusters[arn] = cluster
@@ -226,8 +226,6 @@ class ClusterManager:
         endpoint = ProxyHandler(f"http://127.0.0.1:{port}")
         match config.OPENSEARCH_ENDPOINT_STRATEGY:
             case "domain":
-                # TODO: unify these rules
-                #   <path:path> does not match the empty path
                 LOG.debug(
                     f"Registering route from {cluster.host} to {endpoint.proxy.forward_base_url}"
                 )
@@ -263,12 +261,6 @@ class ClusterEndpoint(FakeEndpointProxyServer):
     def do_shutdown(self):
         super(FakeEndpointProxyServer, self).do_shutdown()
         self.cluster.shutdown()
-
-    def register(self):
-        ...
-
-    def unregister(self):
-        ...
 
 
 def _get_port_from_url(url: str) -> int:
@@ -411,4 +403,4 @@ class SingletonClusterManager(ClusterManager):
 
 class CustomBackendManager(ClusterManager):
     def _create_cluster(self, arn, url, version) -> Server:
-        return FakeEndpointProxyServer(EndpointProxy(url, config.OPENSEARCH_CUSTOM_BACKEND))
+        return FakeEndpointProxyServer(url)

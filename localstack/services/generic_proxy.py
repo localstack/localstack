@@ -709,6 +709,14 @@ class FakeEndpointProxyServer(Server):
     def url(self):
         return self._url.geturl()
 
+    def register(self):
+        # _url = urlparse(self.url)
+        # # TODO: necessary for CustomEndpoint
+        ...
+
+    def unregister(self):
+        ...
+
     def do_run(self):
         self.register()
         try:

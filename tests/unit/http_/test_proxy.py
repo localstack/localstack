@@ -114,6 +114,32 @@ class TestPathForwarder:
         assert response.ok
         assert response.text == "ok/bar/"  # it's calling /bar/ because it's part of the root URL
 
+    def test_get_with_path_variable_does_not_match_empty_path(
+        self, router_server, httpserver: HTTPServer
+    ):
+        router, proxy = router_server
+        backend = httpserver
+
+        backend.expect_request("/bar").respond_with_data("ok/bar")
+        backend.expect_request("/").respond_with_data("ok")
+
+        router.add("/<path:path>", ProxyHandler(backend.url_for("/")))
+
+        response = requests.get(proxy.url)
+        assert not response.ok
+        assert response.status_code == 404
+
+        response = requests.get(proxy.url + "/bar")
+        assert response.ok
+        assert response.text == "ok/bar"
+
+        # As showcased, <path:path> does not match "/"
+        # We currently solve this by adding another route
+        router.add("/", ProxyHandler(backend.url_for("/")))
+        response = requests.get(proxy.url + "/")
+        assert response.ok
+        assert response.text == "ok"
+
     def test_xff_header(self, router_server, httpserver: HTTPServer):
         router, proxy = router_server
         backend = httpserver
