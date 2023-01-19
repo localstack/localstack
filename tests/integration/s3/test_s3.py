@@ -27,6 +27,7 @@ from botocore.client import Config
 from botocore.exceptions import ClientError
 
 from localstack import config, constants
+from localstack.aws.api.s3 import StorageClass
 from localstack.config import LEGACY_S3_PROVIDER
 from localstack.constants import (
     LOCALHOST_HOSTNAME,
@@ -154,9 +155,12 @@ def s3_create_bucket_with_client(s3_resource):
 
 @pytest.fixture
 def s3_multipart_upload(s3_client):
-    def perform_multipart_upload(bucket, key, data=None, zipped=False, acl=None, parts: int = 1):
+    def perform_multipart_upload(
+        bucket, key, data=None, zipped=False, acl=None, parts: int = 1, **kwargs
+    ):
         # beware, the last part can be under 5 MiB, but previous parts needs to be between 5MiB and 5GiB
-        kwargs = {"ACL": acl} if acl else {}
+        if acl:
+            kwargs["ACL"] = acl
         multipart_upload_dict = s3_client.create_multipart_upload(Bucket=bucket, Key=key, **kwargs)
         upload_id = multipart_upload_dict["UploadId"]
         data = data or (5 * short_uid())
@@ -689,7 +693,7 @@ class TestS3:
     @pytest.mark.skip_snapshot_verify(
         condition=is_old_provider, paths=["$..VersionId", "$..Error.RequestID"]
     )
-    def test_multipart_and_list_parts(self, s3_client, s3_bucket, s3_multipart_upload, snapshot):
+    def test_multipart_and_list_parts(self, s3_client, s3_bucket, snapshot):
         snapshot.add_transformer(
             [
                 snapshot.transform.key_value("Bucket", reference_replacement=False),
@@ -2797,6 +2801,144 @@ class TestS3:
                 SSEKMSKeyId="fake-key-id",
             )
         snapshot.match("copy-obj-wrong-kms-key", e.value.response)
+
+    @pytest.mark.aws_validated
+    @pytest.mark.xfail(
+        condition=LEGACY_S3_PROVIDER, reason="Validation not implemented in legacy provider"
+    )
+    def test_complete_multipart_parts_order(self, s3_client, s3_bucket, snapshot):
+        snapshot.add_transformer(
+            [
+                snapshot.transform.key_value("Bucket", reference_replacement=False),
+                snapshot.transform.key_value("Location"),
+                snapshot.transform.key_value("UploadId"),
+            ]
+        )
+
+        key_name = "test-order-parts"
+        response = s3_client.create_multipart_upload(Bucket=s3_bucket, Key=key_name)
+        upload_id = response["UploadId"]
+
+        # data must be at least 5MiB
+        part_data = "a" * (5_242_880 + 1)
+        part_data = to_bytes(part_data)
+
+        parts = 3
+        multipart_upload_parts = []
+        for part in range(parts):
+            # Write contents to memory rather than a file.
+            part_number = part + 1
+            upload_file_object = BytesIO(part_data)
+            response = s3_client.upload_part(
+                Bucket=s3_bucket,
+                Key=key_name,
+                Body=upload_file_object,
+                PartNumber=part_number,
+                UploadId=upload_id,
+            )
+            multipart_upload_parts.append({"ETag": response["ETag"], "PartNumber": part_number})
+
+        # testing completing the multipart with an unordered sequence of parts
+        with pytest.raises(ClientError) as e:
+            s3_client.complete_multipart_upload(
+                Bucket=s3_bucket,
+                Key=key_name,
+                MultipartUpload={"Parts": list(reversed(multipart_upload_parts))},
+                UploadId=upload_id,
+            )
+        snapshot.match("complete-multipart-unordered", e.value.response)
+
+        response = s3_client.complete_multipart_upload(
+            Bucket=s3_bucket,
+            Key=key_name,
+            MultipartUpload={"Parts": multipart_upload_parts},
+            UploadId=upload_id,
+        )
+        snapshot.match("complete-multipart-ordered", response)
+
+        # testing completing the multipart with a sequence of parts number going from 2, 4, and 6 (missing numbers)
+        key_name_2 = "key-sequence-with-step-2"
+        response = s3_client.create_multipart_upload(Bucket=s3_bucket, Key=key_name_2)
+        upload_id = response["UploadId"]
+
+        multipart_upload_parts = []
+        for part in range(parts):
+            # Write contents to memory rather than a file.
+            part_number = part + 2
+            upload_file_object = BytesIO(part_data)
+            response = s3_client.upload_part(
+                Bucket=s3_bucket,
+                Key=key_name_2,
+                Body=upload_file_object,
+                PartNumber=part_number,
+                UploadId=upload_id,
+            )
+            multipart_upload_parts.append({"ETag": response["ETag"], "PartNumber": part_number})
+
+        response = s3_client.complete_multipart_upload(
+            Bucket=s3_bucket,
+            Key=key_name_2,
+            MultipartUpload={"Parts": multipart_upload_parts},
+            UploadId=upload_id,
+        )
+        snapshot.match("complete-multipart-with-step-2", response)
+
+    @pytest.mark.aws_validated
+    @pytest.mark.parametrize(
+        "storage_class",
+        [
+            StorageClass.STANDARD,
+            StorageClass.STANDARD_IA,
+            StorageClass.GLACIER,
+            StorageClass.GLACIER_IR,
+            StorageClass.REDUCED_REDUNDANCY,
+            StorageClass.ONEZONE_IA,
+            StorageClass.INTELLIGENT_TIERING,
+            StorageClass.DEEP_ARCHIVE,
+        ],
+    )
+    @pytest.mark.xfail(condition=LEGACY_S3_PROVIDER, reason="Patched only in ASF provider")
+    def test_put_object_storage_class(self, s3_client, s3_bucket, snapshot, storage_class):
+        key_name = "test-put-object-storage-class"
+        s3_client.put_object(
+            Bucket=s3_bucket,
+            Key=key_name,
+            Body=b"body-test",
+            StorageClass=storage_class,
+        )
+
+        response = s3_client.get_object_attributes(
+            Bucket=s3_bucket,
+            Key=key_name,
+            ObjectAttributes=["StorageClass"],
+        )
+        snapshot.match("put-object-storage-class", response)
+
+    @pytest.mark.aws_validated
+    @pytest.mark.xfail(
+        condition=LEGACY_S3_PROVIDER, reason="Validation not implemented in legacy provider"
+    )
+    def test_put_object_storage_class_outposts(
+        self, s3_client, s3_bucket, s3_multipart_upload, snapshot
+    ):
+        key_name = "test-put-object-storage-class"
+        with pytest.raises(ClientError) as e:
+            s3_client.put_object(
+                Bucket=s3_bucket,
+                Key=key_name,
+                Body=b"body-test",
+                StorageClass=StorageClass.OUTPOSTS,
+            )
+        snapshot.match("put-object-outposts", e.value.response)
+
+        key_name = "test-multipart-storage-class"
+        with pytest.raises(ClientError) as e:
+            s3_client.create_multipart_upload(
+                Bucket=s3_bucket,
+                Key=key_name,
+                StorageClass=StorageClass.OUTPOSTS,
+            )
+        snapshot.match("create-multipart-outposts-exc", e.value.response)
 
 
 class TestS3TerraformRawRequests:

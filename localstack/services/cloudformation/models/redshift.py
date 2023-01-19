@@ -13,9 +13,7 @@ class RedshiftCluster(GenericBaseModel):
 
     def fetch_state(self, stack_name, resources):
         client = aws_stack.connect_to_service("redshift")
-        cluster_id = self.resolve_refs_recursively(
-            stack_name, self.props.get("ClusterIdentifier"), resources
-        )
+        cluster_id = self.props.get("ClusterIdentifier")
         result = client.describe_clusters(ClusterIdentifier=cluster_id)["Clusters"]
         return (result or [None])[0]
 

@@ -239,6 +239,7 @@ class Stack:
 
         return result
 
+    # TODO: check duplication with stack_parameters(..) property method
     def _resolve_stack_parameters(
         self, defaults=True, existing: Dict[str, Dict] = None
     ) -> Dict[str, Dict]:
@@ -248,14 +249,25 @@ class Stack:
         for param in self.stack_parameters(defaults=defaults):
             param_key = param["ParameterKey"]
             if param_key not in existing:
+                template_parameter = self.template_parameters.get(param_key, {})
+                param_type = template_parameter.get("Type")
                 resolved_value = param.get("ResolvedValue")
+                # TODO: check if we should fall back to template_parameter.get("Default") in case prop_value is None
                 prop_value = (
                     resolved_value if resolved_value is not None else param.get("ParameterValue")
                 )
-                result[param["ParameterKey"]] = {
+                # TODO: consider replacing "Value" with "ResolvedValue", to have a clearer distinction
+                properties = {
+                    "Value": prop_value,
+                    "ParameterType": param_type,
+                    "ParameterValue": param.get("ParameterValue"),
+                }
+                if resolved_value is not None:
+                    properties["ResolvedValue"] = resolved_value
+                result[param_key] = {
                     "Type": "Parameter",
                     "LogicalResourceId": param_key,
-                    "Properties": {"Value": prop_value},
+                    "Properties": properties,
                 }
         return result
 
@@ -296,11 +308,9 @@ class Stack:
                 param_type = value.get("Type", "")
                 if not param_type:
                     if param_type == "AWS::SSM::Parameter::Value<String>":
-                        ssm_client = aws_stack.connect_to_service("ssm")
-                        resolved_value = ssm_client.get_parameter(Name=param_value)["Parameter"][
-                            "Value"
-                        ]
-                        result[key]["ResolvedValue"] = resolved_value
+                        result[key]["ResolvedValue"] = resolve_ssm_parameter_value(
+                            param_type, param_value
+                        )
                     elif param_type.startswith("AWS::"):
                         LOG.info(
                             f"Parameter Type '{param_type}' is currently not supported. Coming soon, stay tuned!"
@@ -398,3 +408,18 @@ class StackChangeSet(Stack):
 
     def stack_parameters(self, defaults=True) -> List[Dict[str, Any]]:
         return self.stack.stack_parameters(defaults=defaults)
+
+
+def resolve_ssm_parameter_value(parameter_type: str, parameter_value: str) -> str:
+    """
+    Resolve the SSM stack parameter with the name specified via the given `parameter_value`.
+
+    Given a stack template with parameter {"param1": {"Type": "AWS::SSM::Parameter::Value<String>"}} and
+    a stack instance with stack parameter {"ParameterKey": "param1", "ParameterValue": "test-param"}, this
+    function will resolve the SSM parameter with name `test-param` and return the SSM parameter's value.
+    """
+    # TODO: support different parameter value types
+    if parameter_type == "AWS::SSM::Parameter::Value<String>":
+        ssm_client = aws_stack.connect_to_service("ssm")
+        return ssm_client.get_parameter(Name=parameter_value)["Parameter"]["Value"]
+    raise Exception(f"Unsupported parameter value type {parameter_type}")

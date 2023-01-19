@@ -154,11 +154,16 @@ def kinesis():
 @aws_provider()
 def kms():
     if config.KMS_PROVIDER == "local-kms":
-        from localstack.services.kms import kms_starter
+        from localstack.services.kms.local_kms_provider import LocalKmsProvider
 
-        return Service("kms", start=kms_starter.start_kms_local)
+        provider = LocalKmsProvider()
+        # something like HttpFallbackDispatcher but without the base provider might be handy here
+        listener = AwsApiListener(
+            "kms", HttpFallbackDispatcher(provider, provider.start_and_get_backend)
+        )
 
-    # fall back to default provider
+        return Service("kms", listener=listener)
+
     from localstack.services.kms.provider import KmsProvider
 
     provider = KmsProvider()

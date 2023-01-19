@@ -191,6 +191,57 @@ def _botocore_error_serializer_integration_test(
     return parsed_response
 
 
+def _botocore_event_streaming_test(
+    service: str, action: str, response: dict, response_root_tag: str, expected_events: List[dict]
+):
+    """
+    Tests the serialization of event streaming responses using botocore.
+
+    :param service: to load the correct service specification, serializer, and parser
+    :param action: to load the correct service specification, serializer, and parser
+    :param response: which should be serialized
+    :param response_root_tag: name of the root element in the response
+    :param expected_events: events which are streamed and should be contained in the fully streamed and deserialized response
+    :return: None
+    """
+    # Serialize the response
+    service = load_service(service)
+    operation_model = service.operation_model(action)
+    response_serializer = create_serializer(service)
+    serialized_response = response_serializer.serialize_to_response(response, operation_model, None)
+
+    # Convert the Werkzeug response from our serializer to a response botocore can work with
+    urllib_response = UrlLibHttpResponse(
+        body=_iterable_to_stream(serialized_response.response),
+        headers={
+            entry_tuple[0].lower(): entry_tuple[1] for entry_tuple in serialized_response.headers
+        },
+        status=serialized_response.status_code,
+        decode_content=False,
+        preload_content=False,
+    )
+    requests_response = RequestsResponse()
+    requests_response.headers = urllib_response.headers
+    requests_response.status_code = urllib_response.status
+    requests_response.raw = urllib_response
+    botocore_response = convert_to_response_dict(requests_response, operation_model)
+
+    # parse the response using botocore
+    response_parser: ResponseParser = create_parser(service.protocol)
+    parsed_response = response_parser.parse(
+        botocore_response,
+        operation_model.output_shape,
+    )
+
+    # check that the response contains the event stream
+    assert response_root_tag in parsed_response
+
+    # fetch all events and check their content
+    actual_events = list(parsed_response[response_root_tag])
+    assert len(actual_events) == len(expected_events)
+    assert actual_events == expected_events
+
+
 def test_rest_xml_serializer_cloudfront_with_botocore():
     parameters = {
         "TestResult": {
@@ -1376,78 +1427,24 @@ def test_json_event_streaming():
         yield event_2
 
     response = {"EventStream": event_generator()}
-
-    # Serialize the response
-    service = load_service("kinesis")
-    operation_model = service.operation_model("SubscribeToShard")
-    response_serializer = create_serializer(service)
-    serialized_response = response_serializer.serialize_to_response(response, operation_model, None)
-
-    # Convert the Werkzeug response from our serializer to a response botocore can work with
-    urllib_response = UrlLibHttpResponse(
-        body=_iterable_to_stream(serialized_response.response),
-        headers={
-            entry_tuple[0].lower(): entry_tuple[1] for entry_tuple in serialized_response.headers
-        },
-        status=serialized_response.status_code,
-        decode_content=False,
-        preload_content=False,
-    )
-    requests_response = RequestsResponse()
-    requests_response.headers = urllib_response.headers
-    requests_response.status_code = urllib_response.status
-    requests_response.raw = urllib_response
-    botocore_response = convert_to_response_dict(requests_response, operation_model)
-
-    # parse the response using botocore
-    response_parser: ResponseParser = create_parser(service.protocol)
-    parsed_response = response_parser.parse(
-        botocore_response,
-        operation_model.output_shape,
+    _botocore_event_streaming_test(
+        "kinesis", "SubscribeToShard", response, "EventStream", [event_1, event_2]
     )
 
-    # check that the response contains the event stream
-    assert "EventStream" in parsed_response
 
-    # fetch all events and check their content
-    events = list(parsed_response["EventStream"])
-    assert len(events) == 2
-    assert events[0] == {
-        "SubscribeToShardEvent": {
-            "ContinuationSequenceNumber": "1",
-            "MillisBehindLatest": 1337,
-            "Records": [
-                {
-                    "Data": b"event_data_1_record_1",
-                    "PartitionKey": "event_1_partition_key_record_1",
-                    "SequenceNumber": "1",
-                },
-                {
-                    "Data": b"event_data_1_record_2",
-                    "PartitionKey": "event_1_partition_key_record_1",
-                    "SequenceNumber": "2",
-                },
-            ],
-        }
-    }
-    assert events[1] == {
-        "SubscribeToShardEvent": {
-            "Records": [
-                {
-                    "SequenceNumber": "3",
-                    "Data": b"event_data_2_record_1",
-                    "PartitionKey": "event_2_partition_key_record_1",
-                },
-                {
-                    "SequenceNumber": "4",
-                    "Data": b"event_data_2_record_2",
-                    "PartitionKey": "event_2_partition_key_record_2",
-                },
-            ],
-            "ContinuationSequenceNumber": "2",
-            "MillisBehindLatest": 1338,
-        }
-    }
+def test_s3_event_streaming():
+    event_1 = {"Records": {"Payload": b"Streamed-Body-Content"}}
+    event_2 = {"End": {}}
+
+    # Create the response which contains the generator
+    def event_generator() -> Iterator:
+        yield event_1
+        yield event_2
+
+    response = {"Payload": event_generator()}
+    _botocore_event_streaming_test(
+        "s3", "SelectObjectContent", response, "Payload", [event_1, event_2]
+    )
 
 
 def test_all_non_existing_key():

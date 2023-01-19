@@ -16,7 +16,11 @@ from localstack.services.cloudformation.deployment_utils import (
     is_none_or_empty_value,
     remove_none_values,
 )
-from localstack.services.cloudformation.engine.entities import Stack, StackChangeSet
+from localstack.services.cloudformation.engine.entities import (
+    Stack,
+    StackChangeSet,
+    resolve_ssm_parameter_value,
+)
 from localstack.services.cloudformation.service_models import (
     KEY_RESOURCE_STATE,
     DependencyNotYetSatisfied,
@@ -216,8 +220,7 @@ def extract_resource_attribute(
         if not resource_state:
             raise DependencyNotYetSatisfied(
                 resource_ids=resource_id,
-                message='Unable to fetch details for resource "%s" (attribute "%s")'
-                % (resource_id, attribute),
+                message=f'Unable to fetch details for resource "{resource_id}" (attribute "{attribute}")',
             )
 
     if isinstance(resource_state, GenericBaseModel):
@@ -227,8 +230,7 @@ def extract_resource_attribute(
             except Exception:
                 pass
         raise Exception(
-            'Unable to extract attribute "%s" from "%s" model class %s'
-            % (attribute, resource_type, type(resource_state))
+            f'Unable to extract attribute "{attribute}" from "{resource_type}" model class {type(resource_state)}'
         )
 
     # extract resource specific attributes
@@ -241,6 +243,11 @@ def extract_resource_attribute(
             "Value",
             resource.get("Value", resource_props.get("Properties", {}).get("Value")),
         )
+        param_value_type = resource_props.get("ParameterType") or ""
+        if param_value_type.startswith("AWS::SSM::Parameter::Value"):
+            param_value = resolve_ssm_parameter_value(
+                param_value_type, resource_props.get("ParameterValue")
+            )
         if is_ref_attr_or_arn:
             result = param_value
         elif isinstance(param_value, dict):
@@ -571,14 +578,15 @@ def resolve_placeholders_in_string(result, stack):
     resources = stack.resources
 
     def _replace(match):
-        parts = match.group(1).split(".")
+        ref_expression = match.group(1)
+        parts = ref_expression.split(".")
         if len(parts) >= 2:
-            resource_name, _, attr_name = match.group(1).partition(".")
+            resource_name, _, attr_name = ref_expression.partition(".")
             resolved = resolve_ref(stack, resource_name.strip(), attribute=attr_name.strip())
             if resolved is None:
                 raise DependencyNotYetSatisfied(
                     resource_ids=resource_name,
-                    message="Unable to resolve attribute ref %s" % match.group(1),
+                    message=f"Unable to resolve attribute ref {ref_expression}",
                 )
             return resolved
         if len(parts) == 1 and parts[0] in resources:
@@ -595,7 +603,7 @@ def resolve_placeholders_in_string(result, stack):
             if result is None:
                 raise DependencyNotYetSatisfied(
                     resource_ids=parts[0],
-                    message="Unable to resolve attribute ref %s" % match.group(1),
+                    message=f"Unable to resolve attribute ref {ref_expression}",
                 )
             # make sure we resolve any functions/placeholders in the extracted string
             result = resolve_refs_recursively(stack, result)
@@ -1179,9 +1187,7 @@ class TemplateDeployer:
         self, logical_id: str, param_type: str, default_value: Optional[str] = None
     ) -> Optional[str]:
         if param_type == "AWS::SSM::Parameter::Value<String>":
-            ssm_client = aws_stack.connect_to_service("ssm")
-            param = ssm_client.get_parameter(Name=default_value)
-            return param["Parameter"]["Value"]
+            return resolve_ssm_parameter_value(param_type, default_value)
         return None
 
     def apply_parameter_changes(self, old_stack, new_stack) -> None:

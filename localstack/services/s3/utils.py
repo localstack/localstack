@@ -19,6 +19,7 @@ from localstack.aws.api.s3 import (
     ObjectCannedACL,
     ObjectKey,
     Permission,
+    StorageClass,
 )
 from localstack.utils.aws import arns, aws_stack
 from localstack.utils.aws.arns import parse_arn
@@ -75,6 +76,17 @@ VALID_GRANTEE_PERMISSIONS = {
     Permission.WRITE,
     Permission.WRITE_ACP,
 }
+
+VALID_STORAGE_CLASSES = [
+    StorageClass.STANDARD,
+    StorageClass.STANDARD_IA,
+    StorageClass.GLACIER,
+    StorageClass.GLACIER_IR,
+    StorageClass.REDUCED_REDUNDANCY,
+    StorageClass.ONEZONE_IA,
+    StorageClass.INTELLIGENT_TIERING,
+    StorageClass.DEEP_ARCHIVE,
+]
 
 # response header overrides the client may request
 ALLOWED_HEADER_OVERRIDES = {

@@ -20,7 +20,7 @@ class SNSTopic(GenericBaseModel):
         return arns.sns_topic_arn(self.props["TopicName"])
 
     def fetch_state(self, stack_name, resources):
-        topic_name = self.resolve_refs_recursively(stack_name, self.props["TopicName"], resources)
+        topic_name = self.props["TopicName"]
         topics = aws_stack.connect_to_service("sns").list_topics()
         result = list(
             filter(
@@ -119,7 +119,6 @@ class SNSSubscription(GenericBaseModel):
     def fetch_state(self, stack_name, resources):
         props = self.props
         topic_arn = props.get("TopicArn")
-        topic_arn = self.resolve_refs_recursively(stack_name, topic_arn, resources)
         if topic_arn is None:
             return
         subs = aws_stack.connect_to_service("sns").list_subscriptions_by_topic(TopicArn=topic_arn)
@@ -177,7 +176,6 @@ class SNSTopicPolicy(GenericBaseModel):
         result = {}
         props = self.props
         for topic_arn in props["Topics"]:
-            topic_arn = self.resolve_refs_recursively(stack_name, topic_arn, resources)
             result[topic_arn] = None
             attrs = sns_client.get_topic_attributes(TopicArn=topic_arn)
             policy = attrs["Attributes"].get("Policy")
