@@ -7,7 +7,7 @@ def handler(event, context):
     return {
         "environment": dict(os.environ),
         "ctx": {
-            "functionname": context.function_name,
+            "function_name": context.function_name,
             "function_version": context.function_version,
             "invoked_function_arn": context.invoked_function_arn,
             "memory_limit_in_mb": context.memory_limit_in_mb,

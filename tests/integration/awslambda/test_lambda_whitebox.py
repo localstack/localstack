@@ -164,7 +164,7 @@ class TestLambdaFallbackUrl(unittest.TestCase):
 
         def check_item():
             result = run_safe(ddb_client.scan, TableName=db_table)
-            self.assertEqual("non-existing-lambda", result["Items"][0]["functionname"]["S"])
+            self.assertEqual("non-existing-lambda", result["Items"][0]["function_name"]["S"])
 
         retry(check_item)
 
