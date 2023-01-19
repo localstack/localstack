@@ -267,7 +267,7 @@ class EdgeProxiedOpensearchCluster(Server):
 
         self.cluster = None
         self.cluster_port = None
-        self.proxy = None
+        self.route_rules = []
 
     @property
     def version(self):
@@ -311,6 +311,14 @@ class EdgeProxiedOpensearchCluster(Server):
         # self.proxy = EndpointProxy(self.url, self.cluster.url)
         # LOG.info("registering an endpoint proxy for %s => %s", self.url, self.cluster.url)
         # self.proxy.register()
+        self.register()
+
+        self.cluster.wait_is_up()
+        LOG.info("cluster on %s is ready", self.cluster.url)
+
+        return self.cluster.join()
+
+    def register(self):
         _url = urlparse(self.url)
         # TODO: solve this cleaner than with assert, _url might be localhost but should be none
         #   We MUST NOT create a catch all traffic rule
@@ -318,19 +326,24 @@ class EdgeProxiedOpensearchCluster(Server):
             (_url.path == "" or _url.path is None or _url.path == "/")
             and _url.netloc == config.LOCALSTACK_HOSTNAME
         )
-        ROUTER.add(_url.path or "/", ProxyHandler(self.cluster.url), _url.netloc)
-        ROUTER.add(f"{_url.path or '/'}/<path:path>", ProxyHandler(self.cluster.url), _url.netloc)
-
-        self.cluster.wait_is_up()
-        LOG.info("cluster on %s is ready", self.cluster.url)
-
-        return self.cluster.join()
+        self.route_rules.append(
+            ROUTER.add(_url.path or "/", ProxyHandler(self.cluster.url), _url.netloc)
+        )
+        self.route_rules.append(
+            ROUTER.add(
+                f"{_url.path or '/'}/<path:path>", ProxyHandler(self.cluster.url), _url.netloc
+            )
+        )
+        LOG.info(f"registering route for {self.url} to {self.cluster.url}")
 
     def do_shutdown(self):
-        if self.proxy:
-            self.proxy.unregister()
-        if self.cluster:
-            self.cluster.shutdown()
+        try:
+            for rule in self.route_rules:
+                ROUTER.remove_rule(rule)
+                LOG.debug("Removing router rule %s for %s", rule.rule, rule.host)
+        finally:
+            if self.cluster:
+                self.cluster.shutdown()
 
 
 class ElasticsearchCluster(OpensearchCluster):
