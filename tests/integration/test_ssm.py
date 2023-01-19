@@ -145,6 +145,7 @@ class TestSSM:
         assert found_param["Type"] == "String"
         assert found_param["Value"] == "value"
 
+    @pytest.mark.aws_validated
     def test_get_inexistent_maintenance_window(self, ssm_client):
         invalid_name = "mw-00000000000000000"
         with pytest.raises(ssm_client.exceptions.DoesNotExistException) as exc:
