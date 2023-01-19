@@ -495,8 +495,17 @@ class TestMacros:
         snapshot.match("stack_resource_descriptions", description)
 
     @pytest.mark.aws_validated
+    @pytest.mark.skip_snapshot_verify(
+        paths=["$..TemplateBody.Resources.Parameter.LogicalResourceId"]
+    )
     def test_global_scope(
-        self, deploy_cfn_template, cfn_client, create_lambda_function, lambda_client, snapshot
+        self,
+        deploy_cfn_template,
+        cfn_client,
+        create_lambda_function,
+        lambda_client,
+        snapshot,
+        cleanups,
     ):
         """
         This test validates the behaviour of a template deployment that includes a global transformation
@@ -515,15 +524,23 @@ class TestMacros:
         )
 
         new_value = f"new-value-{short_uid()}"
-        stack = deploy_cfn_template(
-            template_path=os.path.join(
-                os.path.dirname(__file__), "../templates/transformation_global_parameter.yml"
+        stack_name = f"stake-{short_uid()}"
+        cfn_client.create_stack(
+            StackName=stack_name,
+            Capabilities=["CAPABILITY_AUTO_EXPAND"],
+            TemplateBody=load_template_file(
+                os.path.join(
+                    os.path.dirname(__file__),
+                    "../templates/transformation_global_parameter.yml",
+                )
             ),
-            parameters={"Substitution": new_value},
+            Parameters=[{"ParameterKey": "Substitution", "ParameterValue": new_value}],
         )
+        cleanups.append(lambda: cfn_client.delete_stack(StackName=stack_name))
+        cfn_client.get_waiter("stack_create_complete").wait(StackName=stack_name)
 
         processed_template = cfn_client.get_template(
-            StackName=stack.stack_name, TemplateStage="Processed"
+            StackName=stack_name, TemplateStage="Processed"
         )
         snapshot.add_transformer(snapshot.transform.regex(new_value, "new-value"))
         snapshot.match("processed_template", processed_template)
@@ -721,8 +738,8 @@ class TestMacros:
             ),
         )
         cleanups.append(lambda: cfn_client.delete_stack(StackName=stack_name))
-
         cfn_client.get_waiter("stack_create_complete").wait(StackName=stack_name)
+
         processed_template = cfn_client.get_template(
             StackName=stack_name, TemplateStage="Processed"
         )
