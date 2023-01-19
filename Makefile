@@ -50,7 +50,7 @@ install-test-only: venv
 install-dev: venv         ## Install developer requirements into venv
 	$(VENV_RUN); $(PIP_CMD) install $(PIP_OPTS) -e ".[cli,runtime,test,dev]"
 
-install: install-dev aslgrammars entrypoints  ## Install full dependencies into venv
+install: install-dev entrypoints  ## Install full dependencies into venv
 
 entrypoints:              ## Run setup.py develop to build entry points
 	$(VENV_RUN); python setup.py plugins egg_info
@@ -293,21 +293,5 @@ clean:             		  ## Clean up (npm dependencies, downloaded infrastructure 
 clean-dist:				  ## Clean up python distribution directories
 	rm -rf dist/ build/
 	rm -rf *.egg-info
-
-
-
-ANTLR_JAR_FILENAME=antlr-4.11.1-complete.jar
-ANTLR_JAR_DOWNLOAD_URL=https://www.antlr.org/download/$(ANTLR_JAR_FILENAME)
-ANTLR_JAR=$(VENV_DIR)/$(ANTLR_JAR_FILENAME)
-ANTLR_GRAMMARS_REL_PATH=localstack/services/stepfunctions/asl/antlr/
-ANTLR_LIB_PATH=$(VENV_DIR)/lib/python*/*/antlr4/
-
-antlr-tool-download: install
-	test -f $(ANTLR_JAR) || wget -O $(ANTLR_JAR) $(ANTLR_JAR_DOWNLOAD_URL)
-
-aslgrammars: antlr-tool-download
-	java -jar $(ANTLR_JAR) -Dlanguage=Python3 $(ANTLR_GRAMMARS_REL_PATH)*Lexer.g4 -o $(ANTLR_LIB_PATH)
-	java -jar $(ANTLR_JAR) -visitor -Dlanguage=Python3 $(ANTLR_GRAMMARS_REL_PATH)*Parser.g4 -lib $(ANTLR_LIB_PATH)$(ANTLR_GRAMMARS_REL_PATH) -o $(ANTLR_LIB_PATH)
-
 
 .PHONY: usage venv freeze install-basic install-runtime install-test install-dev install entrypoints dist publish coveralls start docker-save-images docker-build docker-build-light docker-build-multi-platform docker-push-master docker-push-master-all docker-create-push-manifests docker-create-push-manifests-light docker-run-tests docker-run docker-mount-run docker-build-lambdas docker-cp-coverage test test-coverage test-docker test-docker-mount test-docker-mount-code ci-pro-smoke-tests lint lint-modified format format-modified init-precommit clean clean-dist vagrant-start vagrant-stop infra

@@ -2,11 +2,11 @@ import json
 from typing import Optional
 
 from antlr4 import ParserRuleContext
-from antlr4.localstack.services.stepfunctions.asl.antlr.ASLLexer import ASLLexer
-from antlr4.localstack.services.stepfunctions.asl.antlr.ASLParser import ASLParser
-from antlr4.localstack.services.stepfunctions.asl.antlr.ASLParserVisitor import ASLParserVisitor
 from antlr4.tree.Tree import ParseTree, TerminalNodeImpl
 
+from localstack.services.stepfunctions.asl.antlr.runtime.ASLLexer import ASLLexer
+from localstack.services.stepfunctions.asl.antlr.runtime.ASLParser import ASLParser
+from localstack.services.stepfunctions.asl.antlr.runtime.ASLParserVisitor import ASLParserVisitor
 from localstack.services.stepfunctions.asl.antlt4utils.antlr4utils import Antlr4Utils
 from localstack.services.stepfunctions.asl.component.common.catch.catch_decl import CatchDecl
 from localstack.services.stepfunctions.asl.component.common.catch.catcher_decl import CatcherDecl

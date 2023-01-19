@@ -165,6 +165,8 @@ class LambdaVersionManager(ServiceEndpoint):
             self.log_handler.start_subscriber()
             get_runtime_executor().prepare_version(self.function_version)
 
+            # code and reason not set for success scenario because only failed states provide this field:
+            # https://docs.aws.amazon.com/lambda/latest/dg/API_GetFunctionConfiguration.html#SSS-GetFunctionConfiguration-response-LastUpdateStatusReasonCode
             self.state = VersionState(state=State.Active)
             LOG.debug(
                 f"Lambda '{self.function_arn}' (id {self.function_version.config.internal_revision}) changed to active"

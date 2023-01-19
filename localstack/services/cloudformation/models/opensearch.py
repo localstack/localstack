@@ -32,7 +32,6 @@ class OpenSearchDomain(GenericBaseModel):
 
     def fetch_state(self, stack_name, resources):
         domain_name = self._domain_name()
-        domain_name = self.resolve_refs_recursively(stack_name, domain_name, resources)
         return aws_stack.connect_to_service("opensearch").describe_domain(DomainName=domain_name)
 
     def _domain_name(self):

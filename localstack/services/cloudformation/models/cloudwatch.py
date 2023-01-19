@@ -22,7 +22,7 @@ class CloudWatchAlarm(GenericBaseModel):
 
     def fetch_state(self, stack_name, resources):
         client = aws_stack.connect_to_service("cloudwatch")
-        alarm_name = self.resolve_refs_recursively(stack_name, self.props["AlarmName"], resources)
+        alarm_name = self.props["AlarmName"]
         result = client.describe_alarms(AlarmNames=[alarm_name]).get(self._response_name(), [])
         return (result or [None])[0]
 

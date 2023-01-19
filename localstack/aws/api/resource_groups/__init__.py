@@ -17,6 +17,7 @@ GroupConfigurationParameterName = str
 GroupConfigurationParameterValue = str
 GroupConfigurationType = str
 GroupFilterValue = str
+GroupLifecycleEventsStatusMessage = str
 GroupName = str
 GroupString = str
 MaxResults = int
@@ -41,9 +42,22 @@ class GroupFilterName(str):
     configuration_type = "configuration-type"
 
 
+class GroupLifecycleEventsDesiredStatus(str):
+    ACTIVE = "ACTIVE"
+    INACTIVE = "INACTIVE"
+
+
+class GroupLifecycleEventsStatus(str):
+    ACTIVE = "ACTIVE"
+    INACTIVE = "INACTIVE"
+    IN_PROGRESS = "IN_PROGRESS"
+    ERROR = "ERROR"
+
+
 class QueryErrorCode(str):
     CLOUDFORMATION_STACK_INACTIVE = "CLOUDFORMATION_STACK_INACTIVE"
     CLOUDFORMATION_STACK_NOT_EXISTING = "CLOUDFORMATION_STACK_NOT_EXISTING"
+    CLOUDFORMATION_STACK_UNASSUMABLE_ROLE = "CLOUDFORMATION_STACK_UNASSUMABLE_ROLE"
 
 
 class QueryType(str):
@@ -99,6 +113,12 @@ class UnauthorizedException(ServiceException):
     code: str = "UnauthorizedException"
     sender_fault: bool = False
     status_code: int = 401
+
+
+class AccountSettings(TypedDict, total=False):
+    GroupLifecycleEventsDesiredStatus: Optional[GroupLifecycleEventsDesiredStatus]
+    GroupLifecycleEventsStatus: Optional[GroupLifecycleEventsStatus]
+    GroupLifecycleEventsStatusMessage: Optional[GroupLifecycleEventsStatusMessage]
 
 
 GroupConfigurationParameterValueList = List[GroupConfigurationParameterValue]
@@ -170,6 +190,10 @@ class FailedResource(TypedDict, total=False):
 
 
 FailedResourceList = List[FailedResource]
+
+
+class GetAccountSettingsOutput(TypedDict, total=False):
+    AccountSettings: Optional[AccountSettings]
 
 
 class GetGroupConfigurationInput(ServiceRequest):
@@ -370,6 +394,14 @@ class UntagOutput(TypedDict, total=False):
     Keys: Optional[TagKeyList]
 
 
+class UpdateAccountSettingsInput(ServiceRequest):
+    GroupLifecycleEventsDesiredStatus: Optional[GroupLifecycleEventsDesiredStatus]
+
+
+class UpdateAccountSettingsOutput(TypedDict, total=False):
+    AccountSettings: Optional[AccountSettings]
+
+
 class UpdateGroupInput(ServiceRequest):
     GroupName: Optional[GroupName]
     Group: Optional[GroupString]
@@ -411,6 +443,13 @@ class ResourceGroupsApi:
     def delete_group(
         self, context: RequestContext, group_name: GroupName = None, group: GroupString = None
     ) -> DeleteGroupOutput:
+        raise NotImplementedError
+
+    @handler("GetAccountSettings")
+    def get_account_settings(
+        self,
+        context: RequestContext,
+    ) -> GetAccountSettingsOutput:
         raise NotImplementedError
 
     @handler("GetGroup")
@@ -494,6 +533,14 @@ class ResourceGroupsApi:
 
     @handler("Untag")
     def untag(self, context: RequestContext, arn: GroupArn, keys: TagKeyList) -> UntagOutput:
+        raise NotImplementedError
+
+    @handler("UpdateAccountSettings")
+    def update_account_settings(
+        self,
+        context: RequestContext,
+        group_lifecycle_events_desired_status: GroupLifecycleEventsDesiredStatus = None,
+    ) -> UpdateAccountSettingsOutput:
         raise NotImplementedError
 
     @handler("UpdateGroup")

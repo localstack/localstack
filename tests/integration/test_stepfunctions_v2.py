@@ -465,7 +465,7 @@ class TestStateMachine:
             assert {"payload": {"values": [1, "v2"]}} == result.get("result_value")
 
         # assert that the lambda has been invoked by the SM execution
-        retry(check_invocations, sleep=1, retries=9999999999999)
+        retry(check_invocations, sleep=1, retries=10)
 
         # clean up
         cleanup(sm_arn, state_machines_before, stepfunctions_client)

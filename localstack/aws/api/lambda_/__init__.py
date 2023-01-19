@@ -53,6 +53,7 @@ MaxLayerListItems = int
 MaxListItems = int
 MaxProvisionedConcurrencyConfigListItems = int
 MaximumBatchingWindowInSeconds = int
+MaximumConcurrency = int
 MaximumEventAgeInSeconds = int
 MaximumRecordAgeInSeconds = int
 MaximumRetryAttempts = int
@@ -687,6 +688,10 @@ class CreateCodeSigningConfigResponse(TypedDict, total=False):
     CodeSigningConfig: CodeSigningConfig
 
 
+class ScalingConfig(TypedDict, total=False):
+    MaximumConcurrency: Optional[MaximumConcurrency]
+
+
 class SelfManagedKafkaEventSourceConfig(TypedDict, total=False):
     ConsumerGroupId: Optional[URI]
 
@@ -759,6 +764,7 @@ class CreateEventSourceMappingRequest(ServiceRequest):
     FunctionResponseTypes: Optional[FunctionResponseTypeList]
     AmazonManagedKafkaEventSourceConfig: Optional[AmazonManagedKafkaEventSourceConfig]
     SelfManagedKafkaEventSourceConfig: Optional[SelfManagedKafkaEventSourceConfig]
+    ScalingConfig: Optional[ScalingConfig]
 
 
 class SnapStart(TypedDict, total=False):
@@ -947,6 +953,7 @@ class EventSourceMappingConfiguration(TypedDict, total=False):
     FunctionResponseTypes: Optional[FunctionResponseTypeList]
     AmazonManagedKafkaEventSourceConfig: Optional[AmazonManagedKafkaEventSourceConfig]
     SelfManagedKafkaEventSourceConfig: Optional[SelfManagedKafkaEventSourceConfig]
+    ScalingConfig: Optional[ScalingConfig]
 
 
 EventSourceMappingsList = List[EventSourceMappingConfiguration]
@@ -1528,6 +1535,7 @@ class UpdateEventSourceMappingRequest(ServiceRequest):
     SourceAccessConfigurations: Optional[SourceAccessConfigurations]
     TumblingWindowInSeconds: Optional[TumblingWindowInSeconds]
     FunctionResponseTypes: Optional[FunctionResponseTypeList]
+    ScalingConfig: Optional[ScalingConfig]
 
 
 class UpdateFunctionCodeRequest(ServiceRequest):
@@ -1672,6 +1680,7 @@ class LambdaApi:
         function_response_types: FunctionResponseTypeList = None,
         amazon_managed_kafka_event_source_config: AmazonManagedKafkaEventSourceConfig = None,
         self_managed_kafka_event_source_config: SelfManagedKafkaEventSourceConfig = None,
+        scaling_config: ScalingConfig = None,
     ) -> EventSourceMappingConfiguration:
         raise NotImplementedError
 
@@ -2158,6 +2167,7 @@ class LambdaApi:
         source_access_configurations: SourceAccessConfigurations = None,
         tumbling_window_in_seconds: TumblingWindowInSeconds = None,
         function_response_types: FunctionResponseTypeList = None,
+        scaling_config: ScalingConfig = None,
     ) -> EventSourceMappingConfiguration:
         raise NotImplementedError
 

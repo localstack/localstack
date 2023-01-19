@@ -1,6 +1,6 @@
 from enum import Enum
 
-from antlr4.localstack.services.stepfunctions.asl.antlr.ASLLexer import ASLLexer
+from localstack.services.stepfunctions.asl.antlr.runtime.ASLLexer import ASLLexer
 
 
 class Mode(Enum):

@@ -281,6 +281,14 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
         resolved_qualifier = qualifier or "$LATEST"
         return resolved_qualifier, fn_arn
 
+    @staticmethod
+    def _function_revision_id(resolved_fn: Function, resolved_qualifier: str) -> str:
+        if api_utils.qualifier_is_alias(resolved_qualifier):
+            return resolved_fn.aliases[resolved_qualifier].revision_id
+        # Assumes that a non-alias is a version
+        else:
+            return resolved_fn.versions[resolved_qualifier].config.revision_id
+
     def _create_version_model(
         self,
         function_name: str,
@@ -361,12 +369,6 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
                 id=new_id,
             )
             function.versions[next_version] = new_version
-            # Any Lambda permission for $LATEST (if existing) receives a new revision id upon publishing a new version.
-            # TODO: test revision id behavior for versions, permissions, etc because it seems they share the same revid
-            if "$LATEST" in function.permissions:
-                function.permissions[
-                    "$LATEST"
-                ].revision_id = FunctionResourcePolicy.new_revision_id()
         return new_version, True
 
     def _publish_version_from_existing_version(
@@ -402,6 +404,11 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
         self.lambda_service.publish_version(new_version)
         state = lambda_stores[account_id][region]
         function = state.functions.get(function_name)
+        # TODO: re-evaluate data model to prevent this dirty hack just for bumping the revision id
+        latest_version = function.versions["$LATEST"]
+        function.versions["$LATEST"] = dataclasses.replace(
+            latest_version, config=dataclasses.replace(latest_version.config)
+        )
         return function.versions.get(new_version.id.qualifier)
 
     def _publish_version_with_changes(
@@ -645,6 +652,14 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
         latest_version = function.latest()
         latest_version_config = latest_version.config
 
+        revision_id = request.get("RevisionId")
+        if revision_id and revision_id != latest_version.config.revision_id:
+            raise PreconditionFailedException(
+                "The Revision Id provided does not match the latest Revision Id. "
+                "Call the GetFunction/GetAlias API to retrieve the latest Revision Id",
+                Type="User",
+            )
+
         replace_kwargs = {}
         if "EphemeralStorage" in request:
             replace_kwargs["ephemeral_storage"] = LambdaEphemeralStorage(
@@ -734,6 +749,15 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
                 Type="User",
             )
         function = state.functions[function_name]
+
+        revision_id = request.get("RevisionId")
+        if revision_id and revision_id != function.latest().config.revision_id:
+            raise PreconditionFailedException(
+                "The Revision Id provided does not match the latest Revision Id. "
+                "Call the GetFunction/GetAlias API to retrieve the latest Revision Id",
+                Type="User",
+            )
+
         # TODO verify if correct combination of code is set
         image = None
         if (
@@ -1223,7 +1247,11 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
         if not (alias := function.aliases.get(name)):
             raise ValueError("Alias not found")  # TODO proper exception
         if revision_id and alias.revision_id != revision_id:
-            raise ValueError("Wrong revision id")  # TODO proper exception
+            raise PreconditionFailedException(
+                "The Revision Id provided does not match the latest Revision Id. "
+                "Call the GetFunction/GetAlias API to retrieve the latest Revision Id",
+                Type="User",
+            )
         changes = {}
         if function_version is not None:
             changes |= {"function_version": function_version}
@@ -1680,18 +1708,21 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
                 )
 
         resolved_fn = self._get_function(function_name, context.account_id, context.region)
-
         resolved_qualifier, fn_arn = self._resolve_fn_qualifier(resolved_fn, qualifier)
+
+        revision_id = request.get("RevisionId")
+        if revision_id:
+            fn_revision_id = self._function_revision_id(resolved_fn, resolved_qualifier)
+            if revision_id != fn_revision_id:
+                raise PreconditionFailedException(
+                    "The Revision Id provided does not match the latest Revision Id. "
+                    "Call the GetFunction/GetAlias API to retrieve the latest Revision Id",
+                    Type="User",
+                )
 
         # check for an already existing policy and any conflicts in existing statements
         existing_policy = resolved_fn.permissions.get(resolved_qualifier)
         if existing_policy:
-            revision_id = request.get("RevisionId")
-            if revision_id and existing_policy.revision_id != revision_id:
-                raise PreconditionFailedException(
-                    "The Revision Id provided does not match the latest Revision Id. Call the GetFunction/GetAlias API to retrieve the latest Revision Id",
-                    Type="User",
-                )
             request_sid = request["StatementId"]
             if request_sid in [s["Sid"] for s in existing_policy.policy.Statement]:
                 # uniqueness scope: statement id needs to be unique per qualified function ($LATEST, version, or alias)
@@ -1712,18 +1743,27 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
             event_source_token=request.get("EventSourceToken"),
             auth_type=request.get("FunctionUrlAuthType"),
         )
-        # TODO: test revision behavior for lambda in general (with versions, aliases, layers, etc).
-        #  It seems that it is the same as the revision id of a lambda (i.e., VersionFunctionConfiguration).
-        policy = existing_policy
-        if existing_policy:
-            policy.revision_id = FunctionResourcePolicy.new_revision_id()
-        else:
-            policy = FunctionResourcePolicy(
+        new_policy = existing_policy
+        if not existing_policy:
+            new_policy = FunctionResourcePolicy(
                 policy=ResourcePolicy(Version="2012-10-17", Id="default", Statement=[])
             )
-        policy.policy.Statement.append(permission_statement)
+        new_policy.policy.Statement.append(permission_statement)
         if not existing_policy:
-            resolved_fn.permissions[resolved_qualifier] = policy
+            resolved_fn.permissions[resolved_qualifier] = new_policy
+
+        # Update revision id of alias or version
+        # TODO: re-evaluate data model to prevent this dirty hack just for bumping the revision id
+        # TODO: does that need a `with function.lock` for atomic updates of the policy + revision_id?
+        if api_utils.qualifier_is_alias(resolved_qualifier):
+            latest_alias = resolved_fn.aliases[resolved_qualifier]
+            resolved_fn.aliases[resolved_qualifier] = dataclasses.replace(latest_alias)
+        # Assumes that a non-alias is a version
+        else:
+            latest_version = resolved_fn.versions[resolved_qualifier]
+            resolved_fn.versions[resolved_qualifier] = dataclasses.replace(
+                latest_version, config=dataclasses.replace(latest_version.config)
+            )
         return AddPermissionResponse(Statement=json.dumps(permission_statement))
 
     def remove_permission(
@@ -1766,13 +1806,27 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
             raise ResourceNotFoundException(
                 f"Statement {statement_id} is not found in resource policy.", Type="User"
             )
-        if revision_id and function_permission.revision_id != revision_id:
+        fn_revision_id = self._function_revision_id(resolved_fn, resolved_qualifier)
+        if revision_id and revision_id != fn_revision_id:
             raise PreconditionFailedException(
-                "The Revision Id provided does not match the latest Revision Id. Call the GetFunction/GetAlias API to retrieve the latest Revision Id",
+                "The Revision Id provided does not match the latest Revision Id. "
+                "Call the GetFunction/GetAlias API to retrieve the latest Revision Id",
                 Type="User",
             )
         function_permission.policy.Statement.remove(statement)
-        function_permission.revision_id = FunctionResourcePolicy.new_revision_id()
+
+        # Update revision id for alias or version
+        # TODO: re-evaluate data model to prevent this dirty hack just for bumping the revision id
+        # TODO: does that need a `with function.lock` for atomic updates of the policy + revision_id?
+        if api_utils.qualifier_is_alias(resolved_qualifier):
+            latest_alias = resolved_fn.aliases[resolved_qualifier]
+            resolved_fn.aliases[resolved_qualifier] = dataclasses.replace(latest_alias)
+        # Assumes that a non-alias is a version
+        else:
+            latest_version = resolved_fn.versions[resolved_qualifier]
+            resolved_fn.versions[resolved_qualifier] = dataclasses.replace(
+                latest_version, config=dataclasses.replace(latest_version.config)
+            )
 
         # remove the policy as a whole when there's no statement left in it
         if len(function_permission.policy.Statement) == 0:
@@ -1800,9 +1854,18 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
                 "The resource you requested does not exist.", Type="User"
             )
 
+        fn_revision_id = None
+        if api_utils.qualifier_is_alias(resolved_qualifier):
+            latest_alias = resolved_fn.aliases[resolved_qualifier]
+            fn_revision_id = latest_alias.revision_id
+        # Assumes that a non-alias is a version
+        else:
+            latest_version = resolved_fn.versions[resolved_qualifier]
+            fn_revision_id = latest_version.config.revision_id
+
         return GetPolicyResponse(
             Policy=json.dumps(dataclasses.asdict(function_permission.policy)),
-            RevisionId=function_permission.revision_id,
+            RevisionId=fn_revision_id,
         )
 
     # =======================================
@@ -2823,7 +2886,6 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
         organization_id: OrganizationId = None,
         revision_id: String = None,
     ) -> AddLayerVersionPermissionResponse:
-        # TODO: test for revision_id
         # TODO: add layer ARN as layer_name support
 
         layer_version_arn = api_utils.layer_version_arn(
@@ -2853,6 +2915,13 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
         if statement_id in layer_version.policy.statements:
             raise ResourceConflictException(
                 f"The statement id ({statement_id}) provided already exists. Please provide a new statement id, or remove the existing statement.",
+                Type="User",
+            )
+
+        if revision_id and layer_version.policy.revision_id != revision_id:
+            raise PreconditionFailedException(
+                "The Revision Id provided does not match the latest Revision Id. "
+                "Call the GetLayerPolicy API to retrieve the latest Revision Id",
                 Type="User",
             )
 
@@ -2903,8 +2972,11 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
             )
 
         if revision_id and layer_version.policy.revision_id != revision_id:
-            # TODO: add test
-            return
+            raise PreconditionFailedException(
+                "The Revision Id provided does not match the latest Revision Id. "
+                "Call the GetLayerPolicy API to retrieve the latest Revision Id",
+                Type="User",
+            )
 
         if statement_id not in layer_version.policy.statements:
             raise ResourceNotFoundException(

@@ -85,7 +85,7 @@ class SQSQueue(GenericBaseModel):
         return queue_url
 
     def fetch_state(self, stack_name, resources):
-        queue_name = self.resolve_refs_recursively(stack_name, self.props["QueueName"], resources)
+        queue_name = self.props["QueueName"]
         sqs_client = aws_stack.connect_to_service("sqs")
         queues = sqs_client.list_queues()
         result = list(
