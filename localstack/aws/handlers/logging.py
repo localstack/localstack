@@ -1,12 +1,14 @@
 """Handlers for logging."""
+import functools
 import logging
 from functools import cached_property
 from typing import Type
+from wsgiref.headers import Headers
 
 from localstack.aws.api import RequestContext, ServiceException
 from localstack.aws.chain import ExceptionHandler, HandlerChain
 from localstack.http import Response
-from localstack.http.request import restore_payload
+from localstack.http.request import Request, restore_payload
 from localstack.logging.format import AwsTraceLoggingFormatter, TraceLoggingFormatter
 from localstack.logging.setup import create_default_handler
 from localstack.utils.aws.aws_stack import is_internal_call_context
@@ -79,6 +81,44 @@ class ResponseLogger:
             logger.addHandler(handler)
         return logger
 
+    def log_http_response(
+        self,
+        logger: logging.Logger,
+        request: Request,
+        response_status: int,
+        response_headers: Headers,
+        response_data,
+    ):
+        """
+        Logs a given HTTP response on a given logger.
+        The given response data is returned by this function, which allows the usage as a log interceptor for streamed
+        response data.
+
+        :param request: HTTP request data (containing useful metadata like the HTTP method and path)
+        :param response_status: HTTP status of the response to log
+        :param response_headers: HTTP headers of the response to log
+        :param response_data: HTTP body of the response to log
+        :return: response data
+        """
+        # log any other HTTP response
+        self.http_logger.info(
+            "%s %s => %d",
+            request.method,
+            request.path,
+            response_status,
+            extra={
+                # request
+                "input_type": "Request",
+                "input": restore_payload(request),
+                "request_headers": dict(request.headers),
+                # response
+                "output_type": "Response",
+                "output": response_data,
+                "response_headers": dict(response_headers),
+            },
+        )
+        return response_data
+
     def _log(self, context: RequestContext, response: Response):
         aws_logger = self.aws_logger
         http_logger = self.http_logger
@@ -130,20 +170,23 @@ class ResponseLogger:
                     },
                 )
         else:
-            # log any other HTTP response
-            http_logger.info(
-                "%s %s => %d",
-                context.request.method,
-                context.request.path,
-                response.status_code,
-                extra={
-                    # request
-                    "input_type": "Request",
-                    "input": restore_payload(context.request),
-                    "request_headers": dict(context.request.headers),
-                    # response
-                    "output_type": "Response",
-                    "output": response.data,
-                    "response_headers": dict(response.headers),
-                },
-            )
+            if hasattr(response.response, "__iter__"):
+                # If the response is streamed, wrap the response data's iterator which logs all values when they are consumed
+                log_partial = functools.partial(
+                    self.log_http_response,
+                    http_logger,
+                    context.request,
+                    response.status_code,
+                    response.headers,
+                )
+                wrapped_response_iterator = map(log_partial, response.response)
+                response.set_response(wrapped_response_iterator)
+            else:
+                # If the response is synchronous, we log the data directly
+                self.log_http_response(
+                    http_logger,
+                    context.request,
+                    response.status_code,
+                    response.headers,
+                    response.data,
+                )
