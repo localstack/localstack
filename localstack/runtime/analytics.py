@@ -7,7 +7,6 @@ from localstack.utils.analytics import log
 LOG = logging.getLogger(__name__)
 
 TRACKED_ENV_VAR = [
-    "PROVIDER_OVERRIDE_S3",
     "DEBUG",
     "DISABLE_CORS_CHECK",
     "DISABLE_CORS_HEADERS",
