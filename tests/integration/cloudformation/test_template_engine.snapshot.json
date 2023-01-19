@@ -29,7 +29,7 @@
     }
   },
   "tests/integration/cloudformation/test_template_engine.py::TestMacros::test_global_scope": {
-    "recorded-date": "17-01-2023, 10:48:40",
+    "recorded-date": "17-01-2023, 11:28:28",
     "recorded-content": {
       "processed_template": {
         "StagesAvailable": [
@@ -351,8 +351,40 @@
     }
   },
   "tests/integration/cloudformation/test_template_engine.py::TestMacros::test_validate_lambda_internals": {
-    "recorded-date": "08-12-2022, 15:02:05",
-    "recorded-content": {}
+    "recorded-date": "18-01-2023, 10:05:20",
+    "recorded-content": {
+      "event": {
+        "Event": {
+          "accountId": "111111111111",
+          "fragment": {
+            "Parameters": {
+              "ExampleParameter": {
+                "Type": "String",
+                "Default": "example-value"
+              }
+            },
+            "Resources": {
+              "Parameter": {
+                "Type": "AWS::SSM::Parameter",
+                "Properties": {
+                  "Value": "<replace-this>",
+                  "Type": "String"
+                }
+              }
+            }
+          },
+          "transformId": "111111111111::PrintInternals",
+          "requestId": "<uuid:1>",
+          "region": "<region>",
+          "params": {
+            "Input": "test-input"
+          },
+          "templateParameterValues": {
+            "ExampleParameter": "example-value"
+          }
+        }
+      }
+    }
   },
   "tests/integration/cloudformation/test_template_engine.py::TestMacros::test_to_validate_template_limit_for_macro": {
     "recorded-date": "08-12-2022, 09:29:56",

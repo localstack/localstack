@@ -88,6 +88,7 @@ class Stack:
         self.metadata["StackStatus"] = "CREATE_IN_PROGRESS"
         self.metadata["CreationTime"] = self.metadata.get("CreationTime") or timestamp_millis()
         self.metadata["LastUpdatedTime"] = self.metadata["CreationTime"]
+        self.metadata["Transform"] = format_transforms(self.template.get("Transform", []))
         self.metadata.setdefault("Description", self.template.get("Description"))
         self.metadata.setdefault("RollbackConfiguration", {})
         self.metadata.setdefault("DisableRollback", False)
@@ -423,3 +424,21 @@ def resolve_ssm_parameter_value(parameter_type: str, parameter_value: str) -> st
         ssm_client = aws_stack.connect_to_service("ssm")
         return ssm_client.get_parameter(Name=parameter_value)["Parameter"]["Value"]
     raise Exception(f"Unsupported parameter value type {parameter_type}")
+
+
+def format_transforms(transforms: List | Dict | str) -> List[Dict]:
+    formatted_transformations = []
+    if isinstance(transforms, str):
+        formatted_transformations.append({"Name": transforms})
+
+    if isinstance(transforms, Dict):
+        formatted_transformations.append(transforms)
+
+    if isinstance(transforms, list):
+        for transformation in transforms:
+            if isinstance(transformation, str):
+                formatted_transformations.append({"Name": transformation})
+            if isinstance(transformation, Dict):
+                formatted_transformations.append(transformation)
+
+    return formatted_transformations

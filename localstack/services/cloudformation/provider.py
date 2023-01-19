@@ -159,9 +159,9 @@ class CloudformationProvider(CloudformationApi):
             stack.stack_name,
             len(stack.template_resources),
         )
+        template_preparer.transform_template(stack)
         deployer = template_deployer.TemplateDeployer(stack)
         try:
-            # TODO: create separate step to first resolve parameters
             deployer.deploy_stack()
         except Exception as e:
             stack.set_stack_status("CREATE_FAILED")
@@ -200,6 +200,7 @@ class CloudformationProvider(CloudformationApi):
         new_stack = Stack(request, template)
         deployer = template_deployer.TemplateDeployer(stack)
         try:
+            template_preparer.transform_template(stack)
             deployer.update_stack(new_stack)
         except Exception as e:
             stack.set_stack_status("UPDATE_FAILED")
@@ -515,6 +516,7 @@ class CloudformationProvider(CloudformationApi):
             len(change_set.template_resources),
         )
         deployer = template_deployer.TemplateDeployer(change_set.stack)
+        template_preparer.transform_template(change_set.stack)
         try:
             deployer.apply_change_set(change_set)
             change_set.stack.metadata["ChangeSetId"] = change_set.change_set_id
