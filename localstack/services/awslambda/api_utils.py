@@ -38,7 +38,7 @@ if TYPE_CHECKING:
 
 # Pattern for a full (both with and without qualifier) lambda function ARN
 FULL_FN_ARN_PATTERN = re.compile(
-    r"^arn:aws:lambda:(?P<region_name>[^:]+):(?P<account_id>\d{12}):function:(?P<functionname>[^:]+)(:(?P<qualifier>.*))?$"
+    r"^arn:aws:lambda:(?P<region_name>[^:]+):(?P<account_id>\d{12}):function:(?P<function_name>[^:]+)(:(?P<qualifier>.*))?$"
 )
 
 # Pattern for a full (both with and without qualifier) lambda function ARN

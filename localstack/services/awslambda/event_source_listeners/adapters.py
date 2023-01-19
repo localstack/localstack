@@ -125,7 +125,7 @@ class EventSourceAsfAdapter(EventSourceAdapter):
 
         ft = self.lambda_service.invoke(
             # basically function ARN
-            function_name=fn_parts["functionname"],
+            function_name=fn_parts["function_name"],
             qualifier=fn_parts["qualifier"],
             region=fn_parts["region_name"],
             account_id=fn_parts["account_id"],
@@ -181,7 +181,7 @@ class EventSourceAsfAdapter(EventSourceAdapter):
         try:
             ft = self.lambda_service.invoke(
                 # basically function ARN
-                function_name=fn_parts["functionname"],
+                function_name=fn_parts["function_name"],
                 qualifier=fn_parts["qualifier"],
                 region=fn_parts["region_name"],
                 account_id=fn_parts["account_id"],
