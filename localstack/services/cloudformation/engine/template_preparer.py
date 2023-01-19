@@ -14,7 +14,7 @@ from localstack.services.cloudformation.engine.policy_loader import create_polic
 from localstack.services.cloudformation.stores import get_cloudformation_store
 from localstack.utils.aws import aws_stack
 from localstack.utils.json import clone_safe
-from localstack.utils.strings import short_uid
+from localstack.utils.strings import long_uid
 
 LOG = logging.getLogger(__name__)
 SERVERLESS_TRANSFORM = "AWS::Serverless-2016-10-31"
@@ -51,44 +51,48 @@ def transform_template(stack: Stack):
             )
 
     stack.template = result
+    stack.template_body = json.dumps(result)
 
 
 def execute_macro(parsed_template: Dict, macro: Dict, stack_parameters: List) -> Dict:
-    result = {}
     macro_definition = get_cloudformation_store().macros.get(macro["Name"])
     if not macro_definition:
         raise FailedTransformation(macro["Name"], "2DO")
 
     parsed_template.pop("Transform")
+    parsed_template.pop("StackId")
 
-    formated_stack_parameters = {
+    parsed_template = {
+        k: v for k, v in parsed_template.items() if v and k not in ["StackName", "StackId"]
+    }
+
+    formatted_stack_parameters = {
         param["ParameterKey"]: param["ParameterValue"] for param in stack_parameters
     }
-    formated_transform_parameters = macro.get("Parameters", {})
 
+    formated_transform_parameters = macro.get("Parameters", {})
     for k, v in formated_transform_parameters.items():
         if isinstance(v, Dict) and "Ref" in v:
-            formated_transform_parameters[k] = formated_stack_parameters[v["Ref"]]
+            formated_transform_parameters[k] = formatted_stack_parameters[v["Ref"]]
 
     event = {
         "region": aws_stack.get_region(),
         "accountId": get_aws_account_id(),
         "fragment": parsed_template,
-        "transformId": macro["Name"],
+        "transformId": f"{get_aws_account_id()}::{macro['Name']}",
         "params": formated_transform_parameters,
-        "requestId": short_uid(),
-        "templateParameterValues": formated_stack_parameters,
+        "requestId": long_uid(),
+        "templateParameterValues": formatted_stack_parameters,
     }
 
     function_arn = func_arn(macro_definition["FunctionName"])
 
     try:
-        lambda_result = run_lambda(func_arn=function_arn, event=event)
-        print(lambda_result)
+        invocation_result = run_lambda(func_arn=function_arn, event=event)
+        # TODO Validate Result
+        return json.loads(invocation_result.result).get("fragment")
     except Exception as e:
         print(e)
-
-    return result
 
 
 def apply_serverless_transformation(parsed_template):

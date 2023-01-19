@@ -681,6 +681,9 @@ class TestMacros:
         snapshot.match("processed_template", processed_template)
 
     @pytest.mark.aws_validated
+    @pytest.mark.skip_snapshot_verify(
+        paths=["$..Event.fragment.Resources.Parameter.LogicalResourceId"]
+    )
     def test_validate_lambda_internals(
         self,
         deploy_cfn_template,
@@ -706,9 +709,9 @@ class TestMacros:
         )
 
         stack_name = f"stake-{short_uid()}"
-
         cfn_client.create_stack(
             StackName=stack_name,
+            Capabilities=["CAPABILITY_AUTO_EXPAND"],
             TemplateBody=load_template_file(
                 os.path.join(
                     os.path.dirname(__file__),
@@ -717,13 +720,14 @@ class TestMacros:
             ),
         )
 
-        # processed_template = cfn_client.get_template(
-        #     StackName=stack.stack_name, TemplateStage="Processed"
-        # )
-        # snapshot.match(
-        #     "event",
-        #     processed_template["TemplateBody"]["Resources"]["Parameter"]["Properties"]["Value"],
-        # )
+        cfn_client.get_waiter("stack_create_complete").wait(StackName=stack_name)
+        processed_template = cfn_client.get_template(
+            StackName=stack_name, TemplateStage="Processed"
+        )
+        snapshot.match(
+            "event",
+            processed_template["TemplateBody"]["Resources"]["Parameter"]["Properties"]["Value"],
+        )
 
     @pytest.mark.aws_validated
     def test_to_validate_template_limit_for_macro(
