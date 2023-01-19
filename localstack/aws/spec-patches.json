@@ -754,6 +754,23 @@
         "documentation": "<p>The list of parts was not in ascending order. Parts must be ordered by part number.</p>",
         "exception": true
       }
+    },
+    {
+      "op": "add",
+      "path": "/shapes/InvalidStorageClass",
+      "value": {
+        "type": "structure",
+        "members": {
+          "StorageClassRequested": {
+            "shape": "StorageClass"
+          }
+        },
+        "error": {
+          "httpStatusCode": 400
+        },
+        "documentation": "<p>The storage class you specified is not valid</p>",
+        "exception": true
+      }
     }
   ]
 }
