@@ -31,6 +31,7 @@ from localstack.config import (
     EXTRA_CORS_EXPOSE_HEADERS,
 )
 from localstack.constants import APPLICATION_JSON, BIND_HOST, HEADER_LOCALSTACK_REQUEST_URL
+from localstack.http.proxy import ProxyHandler
 from localstack.http.request import get_full_raw_path
 from localstack.services.messages import Headers, MessagePayload
 from localstack.services.messages import Request as RoutingRequest
@@ -699,11 +700,13 @@ class FakeEndpointProxyServer(Server):
     multiplexing behavior.
     """
 
-    def __init__(self, url: str) -> None:
+    def __init__(self, base_url: str, forward_url: str) -> None:
         self._shutdown_event = threading.Event()
-
-        self._url = urlparse(url)
+        self.base_url = base_url
+        self.forward_url = forward_url
+        self._url = urlparse(base_url)
         super().__init__(self._url.port, self._url.hostname)
+        self.rules = []
 
     @property
     def url(self):
@@ -712,10 +715,26 @@ class FakeEndpointProxyServer(Server):
     def register(self):
         # _url = urlparse(self.url)
         # # TODO: necessary for CustomEndpoint
-        ...
+        from localstack.services.edge import ROUTER
+
+        self.rules.append(
+            ROUTER.add(
+                "/", ProxyHandler(self.forward_url), f"{self._url.hostname}<regex('(:.*)?'):port>"
+            )
+        )
+        self.rules.append(
+            ROUTER.add(
+                "/<path:path>",
+                ProxyHandler(self.forward_url),
+                f"{self._url.hostname}<regex('(:.*)?'):port>",
+            )
+        )
 
     def unregister(self):
-        ...
+        for rule in self.rules:
+            from localstack.services.edge import ROUTER
+
+            ROUTER.remove_rule(rule)
 
     def do_run(self):
         self.register()

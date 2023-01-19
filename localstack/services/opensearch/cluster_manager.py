@@ -454,5 +454,6 @@ class CustomBackendManager(ClusterManager):
         return FakeEndpointProxyServer(
             build_cluster_endpoint(
                 DomainKey.from_arn(arn), custom_endpoint, engine_type, preferred_port
-            )
+            ),
+            config.OPENSEARCH_CUSTOM_BACKEND,
         )
