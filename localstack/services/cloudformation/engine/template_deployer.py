@@ -1180,7 +1180,7 @@ class TemplateDeployer:
             for p in old_stack.metadata["Parameters"]  # go through current parameter values
         }
 
-        for logical_id, value in new_stack.template["Parameters"].items():
+        for logical_id, value in new_stack.template_parameters.items():
             default = value.get("Default")
             provided_param_value = parameters.get(logical_id)
             param = {

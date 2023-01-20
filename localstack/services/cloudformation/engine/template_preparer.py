@@ -9,6 +9,7 @@ from samtranslator.translator.transform import transform as transform_sam
 from localstack.services.cloudformation.engine import yaml_parser
 from localstack.aws.accounts import get_aws_account_id
 from localstack.aws.api import CommonServiceException
+from localstack.aws.api.cloudformation import InsufficientCapabilitiesException
 from localstack.services.awslambda.lambda_api import func_arn, run_lambda
 from localstack.services.cloudformation.engine.entities import Stack
 from localstack.services.cloudformation.engine.policy_loader import create_policy_loader
@@ -38,7 +39,13 @@ def template_to_json(template: str) -> str:
 
 
 def transform_template(stack: Stack):
+    if "CAPABILITIES_AUTO_EXPAND" not in stack.metadata.get("Capabilities", []):
+        raise InsufficientCapabilitiesException()
+
     do_transformations(stack)
+
+
+#     TODO:
 
 
 def do_transformations(stack: Stack):

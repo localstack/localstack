@@ -332,7 +332,7 @@ class Stack:
 
     @property
     def template_parameters(self):
-        return self.template["Parameters"]
+        return self.template.get("Parameters", {})
 
     @property
     def conditions(self):
