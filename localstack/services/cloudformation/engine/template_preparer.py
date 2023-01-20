@@ -38,9 +38,11 @@ def template_to_json(template: str) -> str:
 
 
 def transform_template(stack: Stack):
-    # template_body = get_template_body(req_data) # FIXME
-    result = dict(stack.template)
+    do_transformations(stack)
 
+
+def do_transformations(stack: Stack):
+    result = dict(stack.template)
     for transformation in stack.metadata.get("Transform", []):
         if not isinstance(transformation["Name"], str):
             raise CommonServiceException(

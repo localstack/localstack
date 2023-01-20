@@ -787,7 +787,7 @@ class TestMacros:
         template = yaml.dump(template_dict)
 
         with pytest.raises(botocore.exceptions.ClientError) as ex:
-            deploy_cfn_template(template=template)
+            cfn_client.create_stack(StackName=f"stack-{short_uid()}", TemplateBody=template)
 
         response = ex.value.response
         response["Error"]["Message"] = response["Error"]["Message"].replace(
