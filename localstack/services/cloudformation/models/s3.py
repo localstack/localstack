@@ -27,7 +27,6 @@ class S3BucketPolicy(GenericBaseModel):
 
     def fetch_state(self, stack_name, resources):
         bucket_name = self.props.get("Bucket") or self.logical_resource_id
-        bucket_name = self.resolve_refs_recursively(stack_name, bucket_name, resources)
         return aws_stack.connect_to_service("s3").get_bucket_policy(Bucket=bucket_name)
 
     @staticmethod
@@ -190,7 +189,6 @@ class S3Bucket(GenericBaseModel):
     def fetch_state(self, stack_name, resources):
         props = self.props
         bucket_name = self._get_bucket_name()
-        bucket_name = self.resolve_refs_recursively(stack_name, bucket_name, resources)
         bucket_name = self.normalize_bucket_name(bucket_name)
         s3_client = aws_stack.connect_to_service("s3")
         response = s3_client.get_bucket_location(Bucket=bucket_name)

@@ -29,6 +29,7 @@ from localstack.aws.api.apigateway import (
     ListOfPatchOperation,
     ListOfString,
     MapOfStringToString,
+    MethodResponse,
     NotFoundException,
     NullableBoolean,
     NullableInteger,
@@ -43,7 +44,7 @@ from localstack.aws.api.apigateway import (
     VpcLink,
     VpcLinks,
 )
-from localstack.aws.forwarder import create_aws_request_context
+from localstack.aws.forwarder import NotImplementedAvoidFallbackError, create_aws_request_context
 from localstack.constants import APPLICATION_JSON
 from localstack.services.apigateway.helpers import (
     OpenApiExporter,
@@ -139,6 +140,16 @@ class ApigatewayProvider(ApigatewayApi, ServiceLifecycleHook):
             raise NotFoundException(
                 f"Invalid API identifier specified {context.account_id}:{rest_api_id}"
             ) from e
+
+    # method responses
+
+    @handler("UpdateMethodResponse", expand=False)
+    def update_method_response(
+        self, context: RequestContext, request: TestInvokeMethodRequest
+    ) -> MethodResponse:
+        # this operation is not implemented by moto, but raises a 500 error (instead of a 501).
+        # avoid a fallback to moto and return the 501 to the client directly instead.
+        raise NotImplementedAvoidFallbackError
 
     # authorizers
 
@@ -757,21 +768,6 @@ def create_custom_context(
     ctx.request.headers.update(context.request.headers)
     ctx.account_id = context.account_id
     return ctx
-
-
-def _call_moto(context: RequestContext, operation_name: str, parameters: ServiceRequest):
-    """
-    Not necessarily the pattern we want to follow in the future, but this makes possible to nest
-    moto call and still be interface compatible.
-
-    Ripped :call_moto_with_request: from moto.py but applicable to any operation (operation_name).
-    """
-    local_context = create_custom_context(
-        context=context,
-        action=operation_name,
-        parameters=parameters,
-    )
-    return call_moto(local_context)
 
 
 def normalize_authorizer(data):

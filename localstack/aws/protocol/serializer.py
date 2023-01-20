@@ -327,20 +327,22 @@ class ResponseSerializer(abc.ABC):
             # yield one event per generated event
             for event in event_generator:
                 # find the actual event payload (the member with event=true)
-                event_member = None
-                for member in event_stream_shape_members.values():
-                    if member.serialization.get("event"):
-                        event_member = member
+                event_member_shape = None
+                event_member_name = None
+                for member_name, member_shape in event_stream_shape_members.items():
+                    if member_shape.serialization.get("event") and member_name in event:
+                        event_member_shape = member_shape
+                        event_member_name = member_name
                         break
-                if event_member is None:
+                if event_member_shape is None:
                     raise UnknownSerializerError("Couldn't find event shape for serialization.")
 
                 # serialize the part of the response for the event
                 self._serialize_response(
-                    event.get(event_member.name),
+                    event.get(event_member_name),
                     serialized_event_response,
-                    event_member,
-                    event_member.members if event_member is not None else None,
+                    event_member_shape,
+                    event_member_shape.members if event_member_shape is not None else None,
                     operation_model,
                     mime_type,
                 )
@@ -350,7 +352,7 @@ class ResponseSerializer(abc.ABC):
                 )
                 # encode the event and yield it
                 yield self._encode_event_payload(
-                    event_type=event_member.name, content=serialized_event_response.data
+                    event_type=event_member_name, content=serialized_event_response.data
                 )
 
         return HttpResponse(
@@ -894,6 +896,13 @@ class BaseRestResponseSerializer(ResponseSerializer, ABC):
             return
 
         payload_member = shape.serialization.get("payload")
+        # If this shape is defined as being an event, we need to search for the payload member
+        if not payload_member and shape.serialization.get("event"):
+            for member_name, member_shape in shape_members.items():
+                # Try to find the first shape which is marked as "eventpayload" and is given in the params dict
+                if member_shape.serialization.get("eventpayload") and parameters.get(member_name):
+                    payload_member = member_name
+                    break
         if payload_member is not None and shape_members[payload_member].type_name in [
             "blob",
             "string",

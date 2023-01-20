@@ -54,6 +54,7 @@ from localstack.aws.api.s3 import (
     HeadObjectRequest,
     InvalidBucketName,
     InvalidPartOrder,
+    InvalidStorageClass,
     ListObjectsOutput,
     ListObjectsRequest,
     ListObjectsV2Output,
@@ -109,6 +110,7 @@ from localstack.services.s3.utils import (
     ALLOWED_HEADER_OVERRIDES,
     VALID_ACL_PREDEFINED_GROUPS,
     VALID_GRANTEE_PERMISSIONS,
+    VALID_STORAGE_CLASSES,
     _create_invalid_argument_exc,
     capitalize_header_name_from_snake_case,
     get_bucket_from_moto,
@@ -357,7 +359,16 @@ class S3Provider(S3Api, ServiceLifecycleHook):
         if not config.S3_SKIP_KMS_KEY_VALIDATION and (sse_kms_key_id := request.get("SSEKMSKeyId")):
             validate_kms_key_id(sse_kms_key_id, bucket)
 
-        response: PutObjectOutput = call_moto(context)
+        try:
+            response: PutObjectOutput = call_moto(context)
+        except CommonServiceException as e:
+            # missing attributes in exception
+            if e.code == "InvalidStorageClass":
+                raise InvalidStorageClass(
+                    "The storage class you specified is not valid",
+                    StorageClassRequested=request.get("StorageClass"),
+                )
+            raise
 
         # moto interprets the Expires in query string for presigned URL as an Expires header and use it for the object
         # we set it to the correctly parsed value in Request, else we remove it from moto metadata
@@ -451,6 +462,14 @@ class S3Provider(S3Api, ServiceLifecycleHook):
             bucket = get_bucket_from_moto(moto_backend, bucket=request["Bucket"])
             validate_kms_key_id(sse_kms_key_id, bucket)
 
+        if (
+            storage_class := request.get("StorageClass")
+        ) and storage_class not in VALID_STORAGE_CLASSES:
+            raise InvalidStorageClass(
+                "The storage class you specified is not valid",
+                StorageClassRequested=storage_class,
+            )
+
         response: CreateMultipartUploadOutput = call_moto(context)
         return response
 
@@ -468,6 +487,7 @@ class S3Provider(S3Api, ServiceLifecycleHook):
             )
 
         response: CompleteMultipartUploadOutput = call_moto(context)
+
         # moto return the Location in AWS `http://{bucket}.s3.amazonaws.com/{key}`
         response[
             "Location"
@@ -1170,9 +1190,14 @@ def _create_redirect_for_post_request(
 def apply_moto_patches():
     # importing here in case we need InvalidObjectState from `localstack.aws.api.s3`
     from moto.s3.exceptions import InvalidObjectState
+    from moto.s3.models import STORAGE_CLASS
 
     if not os.environ.get("MOTO_S3_DEFAULT_KEY_BUFFER_SIZE"):
         os.environ["MOTO_S3_DEFAULT_KEY_BUFFER_SIZE"] = str(S3_MAX_FILE_SIZE_BYTES)
+
+    # TODO: fix upstream
+    STORAGE_CLASS.clear()
+    STORAGE_CLASS.extend(VALID_STORAGE_CLASSES)
 
     @patch(moto_s3_responses.S3Response.key_response)
     def _fix_key_response(fn, self, *args, **kwargs):

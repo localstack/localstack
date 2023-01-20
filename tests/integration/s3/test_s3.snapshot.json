@@ -4136,5 +4136,136 @@
         }
       }
     }
+  },
+  "tests/integration/s3/test_s3.py::TestS3::test_put_object_storage_class[STANDARD]": {
+    "recorded-date": "16-01-2023, 18:02:54",
+    "recorded-content": {
+      "put-object-storage-class": {
+        "LastModified": "datetime",
+        "StorageClass": "STANDARD",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/integration/s3/test_s3.py::TestS3::test_put_object_storage_class[STANDARD_IA]": {
+    "recorded-date": "16-01-2023, 18:01:59",
+    "recorded-content": {
+      "put-object-storage-class": {
+        "LastModified": "datetime",
+        "StorageClass": "STANDARD_IA",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/integration/s3/test_s3.py::TestS3::test_put_object_storage_class[GLACIER]": {
+    "recorded-date": "16-01-2023, 18:02:01",
+    "recorded-content": {
+      "put-object-storage-class": {
+        "LastModified": "datetime",
+        "StorageClass": "GLACIER",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/integration/s3/test_s3.py::TestS3::test_put_object_storage_class[GLACIER_IR]": {
+    "recorded-date": "16-01-2023, 18:02:04",
+    "recorded-content": {
+      "put-object-storage-class": {
+        "LastModified": "datetime",
+        "StorageClass": "GLACIER_IR",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/integration/s3/test_s3.py::TestS3::test_put_object_storage_class[REDUCED_REDUNDANCY]": {
+    "recorded-date": "16-01-2023, 18:02:06",
+    "recorded-content": {
+      "put-object-storage-class": {
+        "LastModified": "datetime",
+        "StorageClass": "REDUCED_REDUNDANCY",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/integration/s3/test_s3.py::TestS3::test_put_object_storage_class[ONEZONE_IA]": {
+    "recorded-date": "16-01-2023, 18:02:09",
+    "recorded-content": {
+      "put-object-storage-class": {
+        "LastModified": "datetime",
+        "StorageClass": "ONEZONE_IA",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/integration/s3/test_s3.py::TestS3::test_put_object_storage_class[INTELLIGENT_TIERING]": {
+    "recorded-date": "16-01-2023, 18:02:11",
+    "recorded-content": {
+      "put-object-storage-class": {
+        "LastModified": "datetime",
+        "StorageClass": "INTELLIGENT_TIERING",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/integration/s3/test_s3.py::TestS3::test_put_object_storage_class[DEEP_ARCHIVE]": {
+    "recorded-date": "16-01-2023, 18:02:13",
+    "recorded-content": {
+      "put-object-storage-class": {
+        "LastModified": "datetime",
+        "StorageClass": "DEEP_ARCHIVE",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/integration/s3/test_s3.py::TestS3::test_put_object_storage_class_outposts": {
+    "recorded-date": "17-01-2023, 14:34:16",
+    "recorded-content": {
+      "put-object-outposts": {
+        "Error": {
+          "Code": "InvalidStorageClass",
+          "Message": "The storage class you specified is not valid",
+          "StorageClassRequested": "OUTPOSTS"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "create-multipart-outposts-exc": {
+        "Error": {
+          "Code": "InvalidStorageClass",
+          "Message": "The storage class you specified is not valid",
+          "StorageClassRequested": "OUTPOSTS"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
   }
 }

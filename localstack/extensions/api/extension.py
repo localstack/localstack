@@ -84,3 +84,9 @@ class Extension(BaseExtension):
         Called when LocalStack is ready and the Ready marker has been printed.
         """
         pass
+
+    def on_platform_shutdown(self):
+        """
+        Called when LocalStack is shutting down. Can be used to close any resources (threads, processes, sockets, etc.).
+        """
+        pass
