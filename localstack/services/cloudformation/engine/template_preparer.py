@@ -8,6 +8,7 @@ from samtranslator.translator.transform import transform as transform_sam
 
 from localstack.services.cloudformation.engine import yaml_parser
 from localstack.aws.accounts import get_aws_account_id
+from localstack.aws.api import CommonServiceException
 from localstack.services.awslambda.lambda_api import func_arn, run_lambda
 from localstack.services.cloudformation.engine.entities import Stack
 from localstack.services.cloudformation.engine.policy_loader import create_policy_loader
@@ -41,7 +42,14 @@ def transform_template(stack: Stack):
     result = dict(stack.template)
 
     for transformation in stack.metadata.get("Transform", []):
-        if transformation["Name"] == SERVERLESS_TRANSFORM:
+        if not isinstance(transformation["Name"], str):
+            raise CommonServiceException(
+                code="ValidationError",
+                status_code=400,
+                message="Key Name of transform definition must be a string.",
+                sender_fault=True,
+            )
+        elif transformation["Name"] == SERVERLESS_TRANSFORM:
             result = apply_serverless_transformation(result)
         else:
             result = execute_macro(
