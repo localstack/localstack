@@ -249,7 +249,7 @@ class InitScriptsStageResource:
         }
 
 
-class ConfigUpdateResource:
+class ConfigResource:
     def on_post(self, request: Request):
         data = request.get_json(force=True)
         variable = data.get("variable", "")
@@ -298,7 +298,7 @@ class LocalstackResources(Router):
         self.add("/cloudformation/deploy", CloudFormationUi())
 
         if config.ENABLE_CONFIG_UPDATES:
-            self.add("/config-update", ConfigUpdateResource())
+            self.add("/config", ConfigResource())
 
         if config.DEBUG:
             LOG.warning(

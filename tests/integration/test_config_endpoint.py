@@ -3,7 +3,7 @@ import requests
 
 from localstack import config
 from localstack.constants import CONFIG_UPDATE_PATH
-from localstack.services.internal import ConfigUpdateResource, get_internal_apis
+from localstack.services.internal import ConfigResource, get_internal_apis
 from localstack.utils import config_listener
 
 
@@ -17,7 +17,7 @@ def config_endpoint(monkeypatch):
     # will listen on /?_config_
     config_listener.start_listener()
     # will listen on /_localstack/config-update
-    rule = router.add("/config-update", ConfigUpdateResource())
+    rule = router.add("/config", ConfigResource())
     yield
     config_listener.remove_listener()
     router.remove_rule(rule)
@@ -49,7 +49,7 @@ def test_config_endpoint(config_endpoint):
     body = {"variable": "FOO", "value": "BAZ"}
     config_listener.CONFIG_LISTENERS.append(custom_listener)
     # test the ProxyListener
-    url = f"{config.get_edge_url()}/_localstack/config-update"
+    url = f"{config.get_edge_url()}/_localstack/config"
     response = requests.post(url, json=body)
     assert 200 == response.status_code
     response_body = response.json()
