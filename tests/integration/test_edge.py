@@ -2,6 +2,9 @@ import io
 import json
 import os
 import urllib
+from contextlib import contextmanager
+from queue import Empty, Queue
+from typing import Callable
 
 import pytest
 import requests
@@ -12,7 +15,10 @@ from requests.models import Request as RequestsRequest
 from localstack import config
 from localstack.aws.accounts import get_aws_account_id
 from localstack.constants import APPLICATION_JSON, HEADER_LOCALSTACK_EDGE_URL
+from localstack.http import Response as HttpResponse
+from localstack.http import route
 from localstack.http.request import get_full_raw_path
+from localstack.services.edge import ROUTER
 from localstack.services.generic_proxy import (
     MessageModifyingProxyListener,
     ProxyListener,
@@ -386,3 +392,63 @@ class TestEdgeAPI:
         expected = {"method": "GET", "path": raw_path}
         assert json.loads(to_str(response.content)) == expected
         proxy.stop()
+
+    @contextmanager
+    def register_edge_route(self, route_endpoint: Callable):
+        """
+        As simple context manager which registers a given route endpoint (typically a function with a @route decorator)
+        on the global edge ROUTER when entering and removes it when exiting.
+        :param route_endpoint: to register
+        :return: yields the registered rule
+        """
+        rule = ROUTER.add_route_endpoint(route_endpoint)
+        try:
+            yield rule
+        finally:
+            ROUTER.remove_rule(rule)
+
+    def test_streaming_response(self):
+        """Test if responses are correctly streamed (HTTP 1.1 chunks) when the HTTP response contains a generator."""
+
+        # queue blocks the producer until the testing _consumer_ gives it a new element to send
+        queue = Queue()
+
+        @route("/streaming-endpoint-test")
+        def streaming_endpoint(_):
+            def chunk_generator():
+                # wait for a new element in the queue, if one is received, send it immediately
+                try:
+                    while chunk := queue.get(timeout=0.1):
+                        yield chunk
+                except Empty:
+                    # the queue is empty for more than 100 ms, we end here
+                    pass
+
+            # return the generator as the HTTP response body
+            return HttpResponse(response=chunk_generator())
+
+        # generate test events
+        elements = [f"element-{n}" for n in range(100)]
+        # take the first element from the list and add it to the queue
+        element = elements.pop(0)
+        queue.put(element)
+
+        # register the streaming test endpoint
+        with self.register_edge_route(streaming_endpoint):
+            # send a streaming request to the registered endpoint
+            with requests.get(f"{config.get_edge_url()}/streaming-endpoint-test", stream=True) as r:
+                r.raise_for_status()
+                chunk_iterator = r.iter_content(chunk_size=None)
+                while len(elements) > 0:
+                    # take the next chunk and assert it's the last element added to the queue
+                    assert element == next(chunk_iterator).decode("utf-8")
+                    # make sure the queue is empty
+                    assert queue.empty()
+                    # take the next element from the list and add it to the queue
+                    element = elements.pop(0)
+                    queue.put(element)
+
+                # check the last chunk
+                assert element == next(chunk_iterator).decode("utf-8")
+                # make sure the queue is empty
+                assert queue.empty()

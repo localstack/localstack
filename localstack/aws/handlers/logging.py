@@ -100,7 +100,6 @@ class ResponseLogger:
         :param response_data: HTTP body of the response to log
         :return: response data
         """
-        # log any other HTTP response
         self.http_logger.info(
             "%s %s => %d",
             request.method,
@@ -170,6 +169,7 @@ class ResponseLogger:
                     },
                 )
         else:
+            # log any other HTTP response
             if hasattr(response.response, "__iter__"):
                 # If the response is streamed, wrap the response data's iterator which logs all values when they are consumed
                 log_partial = functools.partial(
