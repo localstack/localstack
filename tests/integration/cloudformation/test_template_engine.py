@@ -827,6 +827,7 @@ class TestMacros:
         create_lambda_function,
         lambda_client,
         snapshot,
+        cleanups,
     ):
         """
         This tests shows the state of instrinsic functions during the execution of the macro
@@ -843,16 +844,23 @@ class TestMacros:
             lambda_client,
         )
 
-        stack = deploy_cfn_template(
-            template_path=os.path.join(
-                os.path.dirname(__file__),
-                "../templates/transformation_macro_params_as_reference.yml",
+        stack_name = f"stake-{short_uid()}"
+        cfn_client.create_stack(
+            StackName=stack_name,
+            Capabilities=["CAPABILITY_AUTO_EXPAND"],
+            TemplateBody=load_template_file(
+                os.path.join(
+                    os.path.dirname(__file__),
+                    "../templates/transformation_macro_params_as_reference.yml",
+                )
             ),
-            parameters={"MacroInput": "CreateStackInput"},
+            Parameters=[{"ParameterKey": "MacroInput", "ParameterValue": "CreateStackInput"}],
         )
+        cleanups.append(lambda: cfn_client.delete_stack(StackName=stack_name))
+        cfn_client.get_waiter("stack_create_complete").wait(StackName=stack_name)
 
         processed_template = cfn_client.get_template(
-            StackName=stack.stack_name, TemplateStage="Processed"
+            StackName=stack_name, TemplateStage="Processed"
         )
         snapshot.match(
             "event",
