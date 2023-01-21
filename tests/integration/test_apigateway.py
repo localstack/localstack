@@ -94,6 +94,11 @@ APIGATEWAY_STEPFUNCTIONS_POLICY = {
     "Statement": [{"Effect": "Allow", "Action": "states:*", "Resource": "*"}],
 }
 
+APIGATEWAY_KINESIS_POLICY = {
+    "Version": "2012-10-17",
+    "Statement": [{"Effect": "Allow", "Action": "kinesis:*", "Resource": "*"}],
+}
+
 APIGATEWAY_ASSUME_ROLE_POLICY = {
     "Statement": {
         "Sid": "",

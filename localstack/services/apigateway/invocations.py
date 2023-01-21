@@ -366,7 +366,7 @@ def invoke_rest_api_integration_backend(invocation_context: ApiInvocationContext
             headers["X-Amz-Target"] = target
 
             result = common.make_http_request(
-                url=config.service_url("kineses"), data=payload, headers=headers, method="POST"
+                url=config.service_url("kinesis"), data=payload, headers=headers, method="POST"
             )
 
             # apply response template
