@@ -37,6 +37,7 @@ from localstack.services.apigateway.helpers import (
     path_based_url,
 )
 from localstack.services.awslambda.lambda_api import add_event_source, use_docker
+from localstack.services.awslambda.lambda_utils import LAMBDA_RUNTIME_PYTHON39
 from localstack.utils import testutil
 from localstack.utils.aws import arns, aws_stack, queries
 from localstack.utils.aws import resources as resource_util
@@ -2135,6 +2136,104 @@ class TestAPIGateway:
         assert "/" in paths
         assert "/pets" in paths
         assert "/pets/{petId}" in paths
+
+    @pytest.mark.aws_validated
+    @pytest.mark.parametrize("stage_name", ["local", "dev"])
+    def test_apigw_stage_variables(
+        self,
+        apigateway_client,
+        create_lambda_function,
+        create_rest_apigw,
+        lambda_client,
+        sts_client,
+        stage_name,
+    ):
+        aws_account_id = sts_client.get_caller_identity()["Account"]
+        region_name = apigateway_client._client_config.region_name
+        api_id, _, root = create_rest_apigw(name="aws lambda api")
+        resource_id, _ = create_rest_resource(
+            apigateway_client, restApiId=api_id, parentId=root, pathPart="test"
+        )
+        create_rest_resource_method(
+            apigateway_client,
+            restApiId=api_id,
+            resourceId=resource_id,
+            httpMethod="POST",
+            authorizationType="NONE",
+        )
+
+        fn_name = f"test-{short_uid()}"
+        create_lambda_function(
+            func_name=fn_name,
+            handler_file=TEST_LAMBDA_PYTHON_ECHO,
+            runtime=LAMBDA_RUNTIME_PYTHON39,
+        )
+        lambda_arn = lambda_client.get_function(FunctionName=fn_name)["Configuration"][
+            "FunctionArn"
+        ]
+
+        if stage_name == "dev":
+            uri = f"arn:aws:apigateway:{region_name}:lambda:path/2015-03-31/functions/arn:aws:lambda:{region_name}:{aws_account_id}:function:${{stageVariables.lambdaFunction}}/invocations"
+        else:
+            uri = f"arn:aws:apigateway:{region_name}:lambda:path/2015-03-31/functions/arn:aws:lambda:{region_name}:{aws_account_id}:function:{fn_name}/invocations"
+
+        create_rest_api_integration(
+            apigateway_client,
+            restApiId=api_id,
+            resourceId=resource_id,
+            httpMethod="POST",
+            integrationHttpMethod="POST",
+            type="AWS",
+            uri=uri,
+            requestTemplates={"application/json": '{ "version": "$stageVariables.version" }'},
+        )
+        create_rest_api_method_response(
+            apigateway_client,
+            restApiId=api_id,
+            resourceId=resource_id,
+            httpMethod="POST",
+            statusCode="200",
+            responseParameters={
+                "method.response.header.Content-Type": False,
+                "method.response.header.Access-Control-Allow-Origin": False,
+            },
+        )
+        create_rest_api_integration_response(
+            apigateway_client,
+            restApiId=api_id,
+            resourceId=resource_id,
+            httpMethod="POST",
+            statusCode="200",
+        )
+        deployment_id, _ = create_rest_api_deployment(apigateway_client, restApiId=api_id)
+
+        stage_variables = (
+            {"lambdaFunction": fn_name, "version": "1.0"} if stage_name == "dev" else {}
+        )
+        create_rest_api_stage(
+            apigateway_client,
+            restApiId=api_id,
+            stageName=stage_name,
+            deploymentId=deployment_id,
+            variables=stage_variables,
+        )
+
+        source_arn = f"arn:aws:execute-api:{region_name}:{aws_account_id}:{api_id}/*/*/test"
+        lambda_client.add_permission(
+            FunctionName=lambda_arn,
+            StatementId=str(short_uid()),
+            Action="lambda:InvokeFunction",
+            Principal="apigateway.amazonaws.com",
+            SourceArn=source_arn,
+        )
+
+        url = api_invoke_url(api_id, stage=stage_name, path="/test")
+        response = requests.post(url, json={"test": "test"})
+
+        if stage_name == "local":
+            assert response.json() == {"version": ""}
+        else:
+            assert response.json() == {"version": "1.0"}
 
 
 def test_import_swagger_api(apigateway_client):
