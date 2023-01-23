@@ -320,6 +320,7 @@ def _(shape: StringShape, graph: ShapeGraph) -> str:
     if (
         shape.name.endswith("ARN")
         or shape.name.endswith("Arn")
+        or shape.name.endswith("ArnString")
         or shape.name == "AmazonResourceName"
     ):
         return generate_arn(shape)
