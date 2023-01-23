@@ -36,6 +36,7 @@ from localstack.aws.api.cloudformation import (
     GetTemplateOutput,
     GetTemplateSummaryInput,
     GetTemplateSummaryOutput,
+    InsufficientCapabilitiesException,
     InvalidChangeSetStatusException,
     ListChangeSetsOutput,
     ListExportsOutput,
@@ -74,6 +75,7 @@ from localstack.services.cloudformation.engine.entities import (
     StackSet,
 )
 from localstack.services.cloudformation.engine.template_deployer import NoStackUpdates
+from localstack.services.cloudformation.engine.template_preparer import FailedTransformation
 from localstack.services.cloudformation.stores import (
     find_change_set,
     find_stack,
@@ -158,8 +160,18 @@ class CloudformationProvider(CloudformationApi):
                 )
             state.stacks.pop(existing.stack_id)
 
-        template_preparer.transform_template(stack)
         state.stacks[stack.stack_id] = stack
+        try:
+            template_preparer.transform_template(stack)
+        except InsufficientCapabilitiesException as e:
+            state.stacks.pop(stack.stack_id)
+            raise e
+
+        except FailedTransformation as e:
+            stack.set_stack_status("ROLLBACK_COMPLETE")
+            stack.add_stack_event(status="ROLLBACK_IN_PROGRESS", status_reason=e.message)
+            return CreateStackOutput(StackId=stack.stack_id)
+
         LOG.debug(
             'Creating stack "%s" with %s resources ...',
             stack.stack_name,

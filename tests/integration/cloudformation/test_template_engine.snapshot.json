@@ -445,7 +445,7 @@
     }
   },
   "tests/integration/cloudformation/test_template_engine.py::TestMacros::test_failed_state[return_unsuccessful_with_message.py]": {
-    "recorded-date": "28-12-2022, 09:52:00",
+    "recorded-date": "23-01-2023, 13:35:12",
     "recorded-content": {
       "failed_description": {
         "EventId": "<uuid:1>",
@@ -461,7 +461,7 @@
     }
   },
   "tests/integration/cloudformation/test_template_engine.py::TestMacros::test_failed_state[return_unsuccessful_without_message.py]": {
-    "recorded-date": "28-12-2022, 09:52:50",
+    "recorded-date": "23-01-2023, 13:36:03",
     "recorded-content": {
       "failed_description": {
         "EventId": "<uuid:1>",
@@ -477,7 +477,7 @@
     }
   },
   "tests/integration/cloudformation/test_template_engine.py::TestMacros::test_failed_state[return_invalid_template.py]": {
-    "recorded-date": "28-12-2022, 09:53:49",
+    "recorded-date": "23-01-2023, 13:36:53",
     "recorded-content": {
       "failed_description": {
         "EventId": "<uuid:1>",
@@ -493,7 +493,7 @@
     }
   },
   "tests/integration/cloudformation/test_template_engine.py::TestMacros::test_failed_state[raise_error.py]": {
-    "recorded-date": "28-12-2022, 09:54:39",
+    "recorded-date": "23-01-2023, 13:37:44",
     "recorded-content": {
       "failed_description": {
         "EventId": "<uuid:1>",

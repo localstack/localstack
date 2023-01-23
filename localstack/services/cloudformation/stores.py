@@ -18,7 +18,7 @@ class CloudFormationStore(BaseStore):
     stack_sets: Dict[str, StackSet] = LocalAttribute(default=dict)
 
     # maps macro ID to macros
-    macros: Dict[str, StackSet] = LocalAttribute(default=dict)
+    macros: Dict[str, Dict] = LocalAttribute(default=dict)
 
     # exports: Dict[str, str]
     @property

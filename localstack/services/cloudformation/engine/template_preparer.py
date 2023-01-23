@@ -68,7 +68,7 @@ def do_transformations(stack: Stack):
     stack.template_body = json.dumps(result)
 
 
-def execute_macro(parsed_template: Dict, macro: Dict, stack_parameters: List) -> Dict:
+def execute_macro(parsed_template: Dict, macro: Dict, stack_parameters: List) -> str:
     macro_definition = get_cloudformation_store().macros.get(macro["Name"])
     if not macro_definition:
         raise FailedTransformation(macro["Name"], "2DO")
@@ -88,12 +88,12 @@ def execute_macro(parsed_template: Dict, macro: Dict, stack_parameters: List) ->
     for k, v in formated_transform_parameters.items():
         if isinstance(v, Dict) and "Ref" in v:
             formated_transform_parameters[k] = formatted_stack_parameters[v["Ref"]]
-
+    transformation_id = f"{get_aws_account_id()}::{macro['Name']}"
     event = {
         "region": aws_stack.get_region(),
         "accountId": get_aws_account_id(),
         "fragment": parsed_template,
-        "transformId": f"{get_aws_account_id()}::{macro['Name']}",
+        "transformId": transformation_id,
         "params": formated_transform_parameters,
         "requestId": long_uid(),
         "templateParameterValues": formatted_stack_parameters,
@@ -101,12 +101,33 @@ def execute_macro(parsed_template: Dict, macro: Dict, stack_parameters: List) ->
 
     function_arn = func_arn(macro_definition["FunctionName"])
 
+    result = {}
     try:
-        invocation_result = run_lambda(func_arn=function_arn, event=event)
-        # TODO Validate Result
-        return json.loads(invocation_result.result).get("fragment")
-    except Exception as e:
-        print(e)
+        result = json.loads(run_lambda(func_arn=function_arn, event=event).result)
+    except TypeError:
+        raise FailedTransformation(
+            transformation=macro["Name"],
+            message="Template format error: unsupported structure.. Rollback requested by user.",
+        )
+    except Exception:
+        print("jeje")
+
+    if result.get("status") != "success":
+        error_message = result.get("errorMessage")
+        message = (
+            f"Transform {transformation_id} failed with: {error_message}. Rollback requested by user."
+            if error_message
+            else f"Transform {transformation_id} failed without an error message.. Rollback requested by user."
+        )
+        raise FailedTransformation(transformation=macro["Name"], message=message)
+
+    if not isinstance(result.get("fragment"), dict):
+        raise FailedTransformation(
+            transformation=macro["Name"],
+            message="Template format error: unsupported structure.. Rollback requested by user.",
+        )
+
+    return result.get("fragment")
 
 
 def apply_serverless_transformation(parsed_template):

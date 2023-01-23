@@ -143,7 +143,21 @@ class Stack:
     def set_time_attribute(self, attribute, new_time=None):
         self.metadata[attribute] = new_time or timestamp_millis()
 
-    def add_stack_event(self, resource_id: str, physical_res_id: str, status: str):
+    def add_stack_event(
+        self,
+        resource_id: str = None,
+        physical_res_id: str = None,
+        status: str = "",
+        status_reason: str = "",
+    ):
+        resource_id = resource_id or self.stack_name
+        physical_res_id = physical_res_id or self.stack_id
+        resource_type = (
+            self.template.get("Resources", {})
+            .get(resource_id, {})
+            .get("Type", "AWS::CloudFormation::Stack")
+        )
+
         event = {
             "EventId": long_uid(),
             "Timestamp": timestamp_millis(),
@@ -152,8 +166,12 @@ class Stack:
             "LogicalResourceId": resource_id,
             "PhysicalResourceId": physical_res_id,
             "ResourceStatus": status,
-            "ResourceType": "AWS::CloudFormation::Stack",
+            "ResourceType": resource_type,
         }
+
+        if status_reason:
+            event["ResourceStatusReason"] = status_reason
+
         self.events.insert(0, event)
 
     def set_resource_status(self, resource_id: str, status: str, physical_res_id: str = None):
@@ -335,27 +353,23 @@ class Stack:
         return self.template.get("Parameters", {})
 
     @property
-    def conditions(self):
+    def conditions(self) -> Dict:
         """Returns the (mutable) dict of stack conditions."""
-        return self.template.setdefault("Conditions", {})
+        return self.template.get("Conditions", {})
 
     @property
-    def mappings(self):
+    def mappings(self) -> Dict:
         """Returns the (mutable) dict of stack mappings."""
-        return self.template.setdefault("Mappings", {})
+        return self.template.get("Mappings", {})
 
     @property
-    def outputs(self):
+    def outputs(self) -> Dict:
         """Returns the (mutable) dict of stack outputs."""
-        return self.template.setdefault("Outputs", {})
+        return self.template.get("Outputs", {})
 
     @property
-    def status(self):
+    def status(self) -> str:
         return self.metadata["StackStatus"]
-
-    @property
-    def resource_types(self):
-        return [r.get("Type") for r in self.template_resources.values()]
 
     def resource(self, resource_id):
         return self._lookup(self.resources, resource_id)
