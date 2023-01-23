@@ -1681,6 +1681,51 @@ class InstanceType(str):
     trn1_2xlarge = "trn1.2xlarge"
     trn1_32xlarge = "trn1.32xlarge"
     hpc6id_32xlarge = "hpc6id.32xlarge"
+    c6in_large = "c6in.large"
+    c6in_xlarge = "c6in.xlarge"
+    c6in_2xlarge = "c6in.2xlarge"
+    c6in_4xlarge = "c6in.4xlarge"
+    c6in_8xlarge = "c6in.8xlarge"
+    c6in_12xlarge = "c6in.12xlarge"
+    c6in_16xlarge = "c6in.16xlarge"
+    c6in_24xlarge = "c6in.24xlarge"
+    c6in_32xlarge = "c6in.32xlarge"
+    m6in_large = "m6in.large"
+    m6in_xlarge = "m6in.xlarge"
+    m6in_2xlarge = "m6in.2xlarge"
+    m6in_4xlarge = "m6in.4xlarge"
+    m6in_8xlarge = "m6in.8xlarge"
+    m6in_12xlarge = "m6in.12xlarge"
+    m6in_16xlarge = "m6in.16xlarge"
+    m6in_24xlarge = "m6in.24xlarge"
+    m6in_32xlarge = "m6in.32xlarge"
+    m6idn_large = "m6idn.large"
+    m6idn_xlarge = "m6idn.xlarge"
+    m6idn_2xlarge = "m6idn.2xlarge"
+    m6idn_4xlarge = "m6idn.4xlarge"
+    m6idn_8xlarge = "m6idn.8xlarge"
+    m6idn_12xlarge = "m6idn.12xlarge"
+    m6idn_16xlarge = "m6idn.16xlarge"
+    m6idn_24xlarge = "m6idn.24xlarge"
+    m6idn_32xlarge = "m6idn.32xlarge"
+    r6in_large = "r6in.large"
+    r6in_xlarge = "r6in.xlarge"
+    r6in_2xlarge = "r6in.2xlarge"
+    r6in_4xlarge = "r6in.4xlarge"
+    r6in_8xlarge = "r6in.8xlarge"
+    r6in_12xlarge = "r6in.12xlarge"
+    r6in_16xlarge = "r6in.16xlarge"
+    r6in_24xlarge = "r6in.24xlarge"
+    r6in_32xlarge = "r6in.32xlarge"
+    r6idn_large = "r6idn.large"
+    r6idn_xlarge = "r6idn.xlarge"
+    r6idn_2xlarge = "r6idn.2xlarge"
+    r6idn_4xlarge = "r6idn.4xlarge"
+    r6idn_8xlarge = "r6idn.8xlarge"
+    r6idn_12xlarge = "r6idn.12xlarge"
+    r6idn_16xlarge = "r6idn.16xlarge"
+    r6idn_24xlarge = "r6idn.24xlarge"
+    r6idn_32xlarge = "r6idn.32xlarge"
 
 
 class InstanceTypeHypervisor(str):
@@ -6130,6 +6175,7 @@ class CreateLaunchTemplateVersionRequest(ServiceRequest):
     SourceVersion: Optional[String]
     VersionDescription: Optional[VersionDescription]
     LaunchTemplateData: RequestLaunchTemplateData
+    ResolveAlias: Optional[Boolean]
 
 
 class LaunchTemplateInstanceMaintenanceOptions(TypedDict, total=False):
@@ -10800,6 +10846,7 @@ class DescribeLaunchTemplateVersionsRequest(ServiceRequest):
     NextToken: Optional[String]
     MaxResults: Optional[Integer]
     Filters: Optional[FilterList]
+    ResolveAlias: Optional[Boolean]
 
 
 LaunchTemplateVersionSet = List[LaunchTemplateVersion]
@@ -17524,6 +17571,7 @@ class Ec2Api:
         launch_template_name: LaunchTemplateName = None,
         source_version: String = None,
         version_description: VersionDescription = None,
+        resolve_alias: Boolean = None,
     ) -> CreateLaunchTemplateVersionResult:
         raise NotImplementedError
 
@@ -19581,6 +19629,7 @@ class Ec2Api:
         next_token: String = None,
         max_results: Integer = None,
         filters: FilterList = None,
+        resolve_alias: Boolean = None,
     ) -> DescribeLaunchTemplateVersionsResult:
         raise NotImplementedError
 
