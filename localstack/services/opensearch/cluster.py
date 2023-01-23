@@ -320,6 +320,8 @@ class EdgeProxiedOpensearchCluster(Server):
 
     def register(self):
         _url = urlparse(self.url)
+        # FIXME: Right now, we do not respect the edge port or localstack hostname
+
         # TODO: solve this cleaner than with assert, _url might be localhost but should be none
         #   We MUST NOT create a catch all traffic rule
         assert not (
@@ -331,7 +333,7 @@ class EdgeProxiedOpensearchCluster(Server):
         )
         self.route_rules.append(
             ROUTER.add(
-                f"{_url.path or '/'}/<path:path>", ProxyHandler(self.cluster.url), _url.netloc
+                f"{_url.path or ''}/<path:path>", ProxyHandler(self.cluster.url), _url.netloc
             )
         )
         LOG.info(f"registering route for {self.url} to {self.cluster.url}")

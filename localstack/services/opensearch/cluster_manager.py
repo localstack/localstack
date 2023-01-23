@@ -98,7 +98,7 @@ def build_cluster_endpoint(
     """
     # If we have a CustomEndpoint, we directly take its endpoint.
     if custom_endpoint and custom_endpoint.enabled:
-        endpoint_url = custom_endpoint.endpoint
+        return custom_endpoint.endpoint
 
     # different endpoints based on engine type
     engine_domain = "opensearch" if engine_type == EngineType.OpenSearch else "es"
@@ -261,8 +261,8 @@ class ClusterEndpoint(FakeEndpointProxyServer):
     An endpoint that points to a cluster, and behaves like a Server.
     """
 
-    def __init__(self, cluster: Server) -> None:
-        super().__init__(cluster.url)
+    def __init__(self, base_url: str, cluster: Server) -> None:
+        super().__init__(base_url, cluster.url)
         self.cluster = cluster
 
     def health(self):
@@ -298,11 +298,15 @@ class MultiplexingClusterManager(ClusterManager):
         self.mutex = threading.RLock()
 
     def _create_cluster(
-        self, arn: str, version: str, custom_endpoint: Optional[CustomEndpoint], port: Optional[int]
+        self,
+        arn: str,
+        version: str,
+        custom_endpoint: Optional[CustomEndpoint],
+        preferred_port: Optional[int],
     ) -> Server:
         with self.mutex:
+            engine_type = versions.get_engine_type(version)
             if not self.cluster:
-                engine_type = versions.get_engine_type(version)
                 # startup routine for the singleton cluster instance
                 if engine_type == EngineType.OpenSearch:
                     self.cluster = OpensearchCluster(port=get_free_tcp_port(), arn=arn)
@@ -314,7 +318,10 @@ class MultiplexingClusterManager(ClusterManager):
                     self.cluster.start()  # start may block during install
 
                 start_thread(_start_async, name="opensearch-multiplex")
-            cluster_endpoint = ClusterEndpoint(self.cluster)
+            cluster_endpoint = ClusterEndpoint(
+                build_cluster_endpoint(DomainKey.from_arn(arn), custom_endpoint, engine_type),
+                self.cluster,
+            )
             self.clusters[arn] = cluster_endpoint
             return cluster_endpoint
 
