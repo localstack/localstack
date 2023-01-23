@@ -275,7 +275,7 @@
     }
   },
   "tests/integration/cloudformation/test_template_engine.py::TestMacros::test_capabilities_requirements": {
-    "recorded-date": "07-12-2022, 11:47:31",
+    "recorded-date": "23-01-2023, 12:51:26",
     "recorded-content": {
       "error": {
         "Error": {

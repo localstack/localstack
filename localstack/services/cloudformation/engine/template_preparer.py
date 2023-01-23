@@ -39,13 +39,10 @@ def template_to_json(template: str) -> str:
 
 
 def transform_template(stack: Stack):
-    if "CAPABILITIES_AUTO_EXPAND" not in stack.metadata.get("Capabilities", []):
-        raise InsufficientCapabilitiesException()
+    if "CAPABILITY_AUTO_EXPAND" not in stack.metadata.get("Capabilities", []):
+        raise InsufficientCapabilitiesException("Requires capabilities : [CAPABILITY_AUTO_EXPAND]")
 
     do_transformations(stack)
-
-
-#     TODO:
 
 
 def do_transformations(stack: Stack):

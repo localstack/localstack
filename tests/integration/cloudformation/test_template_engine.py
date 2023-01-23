@@ -643,6 +643,9 @@ class TestMacros:
         snapshot.match("processed_template", processed_template)
 
     @pytest.mark.aws_validated
+    @pytest.mark.skip_snapshot_verify(
+        paths=["$..TemplateBody.Resources.Parameter.LogicalResourceId"]
+    )
     def test_capabilities_requirements(
         self,
         deploy_cfn_template,

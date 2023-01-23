@@ -1069,7 +1069,7 @@ class TemplateDeployer:
     def get_resource_dependencies(self, resource):
         result = {}
         # Note: using the original, unmodified template here to preserve Ref's ...
-        raw_resources = self.stack.template_original["Resources"]
+        raw_resources = self.stack.template["Resources"]
         raw_resource = raw_resources[resource["LogicalResourceId"]]
         dumped = json.dumps(json_safe(raw_resource))
         for other_id, other in raw_resources.items():
@@ -1163,9 +1163,7 @@ class TemplateDeployer:
             old_res_props[key] = value
 
         # overwrite original template entirely
-        old_stack.template_original["Resources"][resource_id] = new_stack.template_original[
-            "Resources"
-        ][resource_id]
+        old_stack.template["Resources"][resource_id] = new_stack.template["Resources"][resource_id]
 
     def resolve_param(
         self, logical_id: str, param_type: str, default_value: Optional[str] = None
