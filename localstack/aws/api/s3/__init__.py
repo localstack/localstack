@@ -2253,11 +2253,6 @@ class ListBucketMetricsConfigurationsRequest(ServiceRequest):
     ExpectedBucketOwner: Optional[AccountId]
 
 
-class ListBucketsOutput(TypedDict, total=False):
-    Buckets: Optional[Buckets]
-    Owner: Optional[Owner]
-
-
 class MultipartUpload(TypedDict, total=False):
     UploadId: Optional[MultipartUploadId]
     Key: Optional[ObjectKey]
@@ -3097,6 +3092,11 @@ class PostResponse(TypedDict, total=False):
     RequestCharged: Optional[RequestCharged]
 
 
+class ListAllMyBucketsResult(TypedDict, total=False):
+    Buckets: Optional[Buckets]
+    Owner: Optional[Owner]
+
+
 class S3Api:
 
     service = "s3"
@@ -3700,7 +3700,7 @@ class S3Api:
     def list_buckets(
         self,
         context: RequestContext,
-    ) -> ListBucketsOutput:
+    ) -> ListAllMyBucketsResult:
         raise NotImplementedError
 
     @handler("ListMultipartUploads")
