@@ -771,6 +771,32 @@
         "documentation": "<p>The storage class you specified is not valid</p>",
         "exception": true
       }
+    },
+    {
+        "op": "remove",
+        "path": "/shapes/ListBucketsOutput"
+    },
+    {
+        "op": "add",
+        "path": "/shapes/ListAllMyBucketsResult",
+        "value": {
+            "type": "structure",
+            "members": {
+                "Buckets": {
+                    "shape": "Buckets",
+                    "documentation": "<p>The list of buckets owned by the requester.</p>"
+                },
+                "Owner": {
+                    "shape": "Owner",
+                    "documentation": "<p>The owner of the buckets listed.</p>"
+                }
+            }
+        }
+    },
+    {
+        "op": "replace",
+        "path": "/operations/ListBuckets/output/shape",
+        "value": "ListAllMyBucketsResult"
     }
   ]
 }
