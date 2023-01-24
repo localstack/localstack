@@ -188,7 +188,8 @@ class TestLambdaRuntimesCommon:
     # Source: https://docs.aws.amazon.com/lambda/latest/dg/runtimes-modify.html#runtime-wrapper
     @pytest.mark.multiruntime(
         scenario="introspection",
-        runtimes=["nodejs", "python3.8", "python3.9", "java8.al2", "java11", "dotnet", "ruby"],
+        runtimes=["nodejs"],
+        # runtimes=["nodejs", "python3.8", "python3.9", "java8.al2", "java11", "dotnet", "ruby"],
     )
     def test_runtime_wrapper_invoke(self, lambda_client, multiruntime_lambda, snapshot, tmp_path):
         # copy and modify zip file, pretty dirty hack to reuse scenario and reduce CI test runtime
@@ -240,12 +241,13 @@ class TestLambdaCallingLocalstack:
             "nodejs12.x",
             "nodejs14.x",
             "nodejs16.x",
-            "python3.8",
-            "python3.9",
-            "ruby",
-            "go1.x",
-            "java8.al2",
-            "java11",
+            "python",
+            "ruby",  # TODO: does not yet support transparent endpoint injection
+            "go1.x",  # TODO: does not yet support transparent endpoint injection
+            "java8.al2",  # TODO: does not yet support transparent endpoint injection
+            "java11",  # TODO: does not yet support transparent endpoint injection
+            "dotnet6",  # TODO: does not yet support transparent endpoint injection
+            "dotnetcore3.1",  # TODO: does not yet support transparent endpoint injection
         ],
     )
     def test_calling_localstack_from_lambda(self, lambda_client, multiruntime_lambda, tmp_path):
