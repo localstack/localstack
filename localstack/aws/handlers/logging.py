@@ -3,7 +3,8 @@ import functools
 import logging
 from functools import cached_property
 from typing import Type
-from wsgiref.headers import Headers
+
+from werkzeug.datastructures import Headers
 
 from localstack.aws.api import RequestContext, ServiceException
 from localstack.aws.chain import ExceptionHandler, HandlerChain
@@ -81,7 +82,7 @@ class ResponseLogger:
             logger.addHandler(handler)
         return logger
 
-    def log_http_response(
+    def _log_http_response(
         self,
         logger: logging.Logger,
         request: Request,
@@ -94,13 +95,14 @@ class ResponseLogger:
         The given response data is returned by this function, which allows the usage as a log interceptor for streamed
         response data.
 
+        :param logger: HTTP logger to log the request onto
         :param request: HTTP request data (containing useful metadata like the HTTP method and path)
         :param response_status: HTTP status of the response to log
         :param response_headers: HTTP headers of the response to log
         :param response_data: HTTP body of the response to log
         :return: response data
         """
-        self.http_logger.info(
+        logger.info(
             "%s %s => %d",
             request.method,
             request.path,
@@ -173,7 +175,7 @@ class ResponseLogger:
             if hasattr(response.response, "__iter__"):
                 # If the response is streamed, wrap the response data's iterator which logs all values when they are consumed
                 log_partial = functools.partial(
-                    self.log_http_response,
+                    self._log_http_response,
                     http_logger,
                     context.request,
                     response.status_code,
@@ -183,7 +185,7 @@ class ResponseLogger:
                 response.set_response(wrapped_response_iterator)
             else:
                 # If the response is synchronous, we log the data directly
-                self.log_http_response(
+                self._log_http_response(
                     http_logger,
                     context.request,
                     response.status_code,

@@ -15,6 +15,7 @@ from requests.models import Request as RequestsRequest
 from localstack import config
 from localstack.aws.accounts import get_aws_account_id
 from localstack.constants import APPLICATION_JSON, HEADER_LOCALSTACK_EDGE_URL
+from localstack.http import Request as HttpRequest
 from localstack.http import Response as HttpResponse
 from localstack.http import route
 from localstack.http.request import get_full_raw_path
@@ -452,3 +453,39 @@ class TestEdgeAPI:
                 assert element == next(chunk_iterator).decode("utf-8")
                 # make sure the queue is empty
                 assert queue.empty()
+
+    def test_streaming_request(self):
+        """Test if request data is correctly streamed when the HTTP request uses a generator."""
+        queue = Queue()
+
+        # generate test events
+        elements = [bytes(f"element-{n:02d}", "latin-1") for n in range(100)]
+
+        @route("/streaming-endpoint-test")
+        def streaming_endpoint(request: HttpRequest):
+            # take the first element from the list and add it to the queue
+            next_element = elements.pop(0)
+            queue.put(next_element)
+            # process each element, and add the next element to the generating queue after the element is processed
+            while data := request.input_stream.read(10):
+                assert next_element == data
+                if len(elements) > 0:
+                    next_element = elements.pop(0)
+                    queue.put(next_element)
+
+        def data_generator():
+            try:
+                # wait for a new element in the queue, if one is received, send it immediately
+                while chunk := queue.get(timeout=0.1):
+                    yield chunk
+            except Empty:
+                # the queue is empty for more than 100 ms, we end here
+                pass
+
+        # register the streaming test endpoint
+        with self.register_edge_route(streaming_endpoint):
+            # send a streamed request data to the registered endpoint
+            requests.post(f"{config.get_edge_url()}/streaming-endpoint-test", data=data_generator())
+
+        # ensure that all elements have been processed
+        assert len(elements) == 0
