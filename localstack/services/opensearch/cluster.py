@@ -329,11 +329,17 @@ class EdgeProxiedOpensearchCluster(Server):
             and _url.netloc == config.LOCALSTACK_HOSTNAME
         )
         self.route_rules.append(
-            ROUTER.add(_url.path or "/", ProxyHandler(self.cluster.url), _url.netloc)
+            ROUTER.add(
+                _url.path or "/",
+                ProxyHandler(self.cluster.url),
+                f"{_url.hostname}<regex('(:.*)?'):port>",
+            )
         )
         self.route_rules.append(
             ROUTER.add(
-                f"{_url.path or ''}/<path:path>", ProxyHandler(self.cluster.url), _url.netloc
+                f"{_url.path or ''}/<path:path>",
+                ProxyHandler(self.cluster.url),
+                f"{_url.hostname}<regex('(:.*)?'):port>",
             )
         )
         LOG.info(f"registering route for {self.url} to {self.cluster.url}")
