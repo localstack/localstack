@@ -156,6 +156,13 @@ class ReflectionStateLocator:
                 attribute_name = f"{service_name}_backends"
                 attribute = _load_attribute_from_module(module_name, attribute_name)
 
+                if attribute is None and "_" in attribute_name:
+                    # some services like application_autoscaling do have a backend without the underscore
+                    service_name_tmp = service_name.replace("_", "")
+                    module_name = f"moto.{service_name_tmp}.models"
+                    attribute_name = f"{service_name_tmp}_backends"
+                    attribute = _load_attribute_from_module(module_name, attribute_name)
+
                 if attribute is not None:
                     LOG.debug("Visiting attribute %s in module %s", attribute_name, module_name)
                     visitor.visit(attribute)
