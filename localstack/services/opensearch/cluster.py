@@ -7,8 +7,8 @@ import requests
 
 from localstack import config, constants
 from localstack.aws.api.opensearch import EngineType
-from localstack.http.proxy import ProxyHandler
 from localstack.services.edge import ROUTER
+from localstack.services.generic_proxy import RegisteredServer
 from localstack.services.infra import DEFAULT_BACKEND_HOST
 from localstack.services.opensearch import versions
 from localstack.services.opensearch.packages import elasticsearch_package, opensearch_package
@@ -249,7 +249,7 @@ class CustomEndpoint:
             self.url = None
 
 
-class EdgeProxiedOpensearchCluster(Server):
+class EdgeProxiedOpensearchCluster(RegisteredServer):
     """
     Opensearch-backed Server that can be routed through the edge proxy using an UrlMatchingForwarder to forward
     requests to the backend cluster.
@@ -258,10 +258,7 @@ class EdgeProxiedOpensearchCluster(Server):
     def __init__(self, url: str, arn: str, version=None) -> None:
         self._url = urlparse(url)
 
-        super().__init__(
-            host=self._url.hostname,
-            port=self._url.port,
-        )
+        super().__init__(url)
         self._version = version or self.default_version
         self.arn = arn
 
@@ -311,38 +308,39 @@ class EdgeProxiedOpensearchCluster(Server):
         # self.proxy = EndpointProxy(self.url, self.cluster.url)
         # LOG.info("registering an endpoint proxy for %s => %s", self.url, self.cluster.url)
         # self.proxy.register()
-        self.register()
-
         self.cluster.wait_is_up()
+        self.register(self.cluster.url)
+
         LOG.info("cluster on %s is ready", self.cluster.url)
 
         return self.cluster.join()
 
-    def register(self):
-        _url = urlparse(self.url)
-        # FIXME: Right now, we do not respect the edge port or localstack hostname
-
-        # TODO: solve this cleaner than with assert, _url might be localhost but should be none
-        #   We MUST NOT create a catch all traffic rule
-        assert not (
-            (_url.path == "" or _url.path is None or _url.path == "/")
-            and _url.netloc == config.LOCALSTACK_HOSTNAME
-        )
-        self.route_rules.append(
-            ROUTER.add(
-                _url.path or "/",
-                ProxyHandler(self.cluster.url),
-                f"{_url.hostname}<regex('(:.*)?'):port>",
-            )
-        )
-        self.route_rules.append(
-            ROUTER.add(
-                f"{_url.path or ''}/<path:path>",
-                ProxyHandler(self.cluster.url),
-                f"{_url.hostname}<regex('(:.*)?'):port>",
-            )
-        )
-        LOG.info(f"registering route for {self.url} to {self.cluster.url}")
+    #
+    # def register(self):
+    #     _url = urlparse(self.url)
+    #     # FIXME: Right now, we do not respect the edge port or localstack hostname
+    #
+    #     # TODO: solve this cleaner than with assert, _url might be localhost but should be none
+    #     #   We MUST NOT create a catch all traffic rule
+    #     assert not (
+    #         (_url.path == "" or _url.path is None or _url.path == "/")
+    #         and _url.netloc == config.LOCALSTACK_HOSTNAME
+    #     )
+    #     self.route_rules.append(
+    #         ROUTER.add(
+    #             _url.path or "/",
+    #             ProxyHandler(self.cluster.url),
+    #             f"{_url.hostname}<regex('(:.*)?'):port>",
+    #         )
+    #     )
+    #     self.route_rules.append(
+    #         ROUTER.add(
+    #             f"{_url.path or ''}/<path:path>",
+    #             ProxyHandler(self.cluster.url),
+    #             f"{_url.hostname}<regex('(:.*)?'):port>",
+    #         )
+    #     )
+    #     LOG.info(f"registering route for {self.url} to {self.cluster.url}")
 
     def do_shutdown(self):
         try:

@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import abc
 import functools
 import json
 import logging
@@ -694,7 +695,56 @@ class EndpointProxy(ProxyListener):
             pass
 
 
-class FakeEndpointProxyServer(Server):
+class RegisteredServer(Server, abc.ABC):
+    def __init__(self, base_url):
+        parsed_fw_url = urlparse(base_url)
+        super().__init__(parsed_fw_url.port, f"{parsed_fw_url.hostname}")
+        self.base_url = base_url
+        self.rules = []
+
+    def register(self, forward_url):
+        _url = urlparse(self.base_url)
+
+        # TODO: solve this cleaner than with assert, _url might be localhost but should be none
+        #   We MUST NOT create a catch all traffic rule
+        assert not (
+            (_url.path == "" or _url.path is None or _url.path == "/")
+            and _url.netloc == config.LOCALSTACK_HOSTNAME
+        )
+        from localstack.services.edge import ROUTER
+
+        self.rules.append(
+            ROUTER.add(
+                _url.path or "/",
+                ProxyHandler(forward_url),
+                f"{_url.hostname}<regex('(:.*)?'):port>",
+            )
+        )
+        self.rules.append(
+            ROUTER.add(
+                f"{_url.path or ''}/<path:path>",
+                ProxyHandler(forward_url),
+                f"{_url.hostname}<regex('(:.*)?'):port>",
+            )
+        )
+
+    def unregister(self):
+        for rule in self.rules:
+            from localstack.services.edge import ROUTER
+
+            ROUTER.remove_rule(rule)
+            LOG.debug("Removing router rule %s for %s", rule.rule, rule.host)
+        self.rules = []
+
+    def do_shutdown(self):
+        try:
+            self.unregister()
+        except Exception as e:
+            # TODO: which log level?
+            LOG.debug(f"An exception occurred during server shutdown: {e}")
+
+
+class FakeEndpointProxyServer(RegisteredServer):
     """
     Makes an EndpointProxy behave like a Server. You can use this to create transparent
     multiplexing behavior.
@@ -705,39 +755,14 @@ class FakeEndpointProxyServer(Server):
         self.base_url = base_url
         self.forward_url = forward_url
         self._url = urlparse(base_url)
-        super().__init__(self._url.port, self._url.hostname)
-        self.rules = []
+        super().__init__(base_url)
 
     @property
     def url(self):
         return self._url.geturl()
 
-    def register(self):
-        # _url = urlparse(self.url)
-        # # TODO: necessary for CustomEndpoint
-        from localstack.services.edge import ROUTER
-
-        self.rules.append(
-            ROUTER.add(
-                "/", ProxyHandler(self.forward_url), f"{self._url.hostname}<regex('(:.*)?'):port>"
-            )
-        )
-        self.rules.append(
-            ROUTER.add(
-                "/<path:path>",
-                ProxyHandler(self.forward_url),
-                f"{self._url.hostname}<regex('(:.*)?'):port>",
-            )
-        )
-
-    def unregister(self):
-        for rule in self.rules:
-            from localstack.services.edge import ROUTER
-
-            ROUTER.remove_rule(rule)
-
     def do_run(self):
-        self.register()
+        self.register(self.forward_url)
         try:
             self._shutdown_event.wait()
         finally:
