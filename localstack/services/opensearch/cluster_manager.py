@@ -16,8 +16,8 @@ from localstack.services.generic_proxy import FakeEndpointProxyServer
 from localstack.services.opensearch import versions
 from localstack.services.opensearch.cluster import (
     CustomEndpoint,
-    EdgeProxiedElasticsearchCluster,
-    EdgeProxiedOpensearchCluster,
+    EdgeProxiedElasticsearchServer,
+    EdgeProxiedOpensearchProxyServer,
     ElasticsearchCluster,
     OpensearchCluster,
 )
@@ -354,7 +354,7 @@ class MultiClusterManager(ClusterManager):
         engine_type = versions.get_engine_type(version)
         if config.OPENSEARCH_ENDPOINT_STRATEGY != "port":
             if engine_type == EngineType.OpenSearch:
-                return EdgeProxiedOpensearchCluster(
+                return EdgeProxiedOpensearchProxyServer(
                     url=build_cluster_endpoint(
                         DomainKey.from_arn(arn), custom_endpoint, engine_type
                     ),
@@ -362,7 +362,7 @@ class MultiClusterManager(ClusterManager):
                     version=version,
                 )
             else:
-                return EdgeProxiedElasticsearchCluster(
+                return EdgeProxiedElasticsearchServer(
                     url=build_cluster_endpoint(
                         DomainKey.from_arn(arn), custom_endpoint, engine_type
                     ),

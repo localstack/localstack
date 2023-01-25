@@ -8,7 +8,7 @@ import requests
 from localstack import config, constants
 from localstack.aws.api.opensearch import EngineType
 from localstack.services.edge import ROUTER
-from localstack.services.generic_proxy import RegisteredServer
+from localstack.services.generic_proxy import EndpointProxy, RegisteredProxyServer
 from localstack.services.infra import DEFAULT_BACKEND_HOST
 from localstack.services.opensearch import versions
 from localstack.services.opensearch.packages import elasticsearch_package, opensearch_package
@@ -249,7 +249,7 @@ class CustomEndpoint:
             self.url = None
 
 
-class EdgeProxiedOpensearchCluster(RegisteredServer):
+class EdgeProxiedOpensearchProxyServer(RegisteredProxyServer):
     """
     Opensearch-backed Server that can be routed through the edge proxy using an UrlMatchingForwarder to forward
     requests to the backend cluster.
@@ -392,7 +392,7 @@ class ElasticsearchCluster(OpensearchCluster):
         }
 
 
-class EdgeProxiedElasticsearchCluster(EdgeProxiedOpensearchCluster):
+class EdgeProxiedElasticsearchServer(EdgeProxiedOpensearchProxyServer):
     @property
     def default_version(self):
         return constants.ELASTICSEARCH_DEFAULT_VERSION
@@ -401,3 +401,78 @@ class EdgeProxiedElasticsearchCluster(EdgeProxiedOpensearchCluster):
         return ElasticsearchCluster(
             port=self.cluster_port, host=DEFAULT_BACKEND_HOST, arn=self.arn, version=self.version
         )
+
+
+class EdgeProxiedOpensearchCluster(Server):
+    """
+    This is the old opensearch-backed Server that can be routed through the edge proxy using an UrlMatchingForwarder to forward
+    requests to the backend cluster.
+    """
+
+    def __init__(self, url: str, arn: str, version=None) -> None:
+        self._url = urlparse(url)
+
+        super().__init__(
+            host=self._url.hostname,
+            port=self._url.port,
+        )
+        self._version = version or self.default_version
+        self.arn = arn
+
+        self.cluster = None
+        self.cluster_port = None
+        self.proxy = None
+
+    @property
+    def version(self):
+        return self._version
+
+    @property
+    def default_version(self):
+        return constants.OPENSEARCH_DEFAULT_VERSION
+
+    @property
+    def url(self) -> str:
+        return self._url.geturl()
+
+    def is_up(self):
+        # check service lifecycle
+        if not self.cluster:
+            return False
+
+        if not self.cluster.is_up():
+            return False
+
+        return super().is_up()
+
+    def health(self):
+        """calls the health endpoint of cluster through the proxy, making sure implicitly that both are running"""
+        return get_cluster_health_status(self.url)
+
+    def _backend_cluster(self) -> OpensearchCluster:
+        return OpensearchCluster(
+            port=self.cluster_port,
+            host=DEFAULT_BACKEND_HOST,
+            arn=self.arn,
+            version=self.version,
+        )
+
+    def do_run(self):
+        self.cluster_port = get_free_tcp_port()
+        self.cluster = self._backend_cluster()
+        self.cluster.start()
+
+        self.proxy = EndpointProxy(self.url, self.cluster.url)
+        LOG.info("registering an endpoint proxy for %s => %s", self.url, self.cluster.url)
+        self.proxy.register()
+
+        self.cluster.wait_is_up()
+        LOG.info("cluster on %s is ready", self.cluster.url)
+
+        return self.cluster.join()
+
+    def do_shutdown(self):
+        if self.proxy:
+            self.proxy.unregister()
+        if self.cluster:
+            self.cluster.shutdown()

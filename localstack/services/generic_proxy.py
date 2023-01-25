@@ -695,7 +695,11 @@ class EndpointProxy(ProxyListener):
             pass
 
 
-class RegisteredServer(Server, abc.ABC):
+class RegisteredProxyServer(Server, abc.ABC):
+    """
+    A proxy server that can register itself at the
+    """
+
     def __init__(self, base_url):
         parsed_fw_url = urlparse(base_url)
         super().__init__(parsed_fw_url.port, f"{parsed_fw_url.hostname}")
@@ -744,7 +748,7 @@ class RegisteredServer(Server, abc.ABC):
             LOG.debug(f"An exception occurred during server shutdown: {e}")
 
 
-class FakeEndpointProxyServer(RegisteredServer):
+class FakeEndpointProxyServer(RegisteredProxyServer):
     """
     Makes an EndpointProxy behave like a Server. You can use this to create transparent
     multiplexing behavior.
