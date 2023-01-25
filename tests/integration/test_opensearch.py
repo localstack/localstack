@@ -10,7 +10,7 @@ from localstack import config
 from localstack.aws.accounts import get_aws_account_id
 from localstack.config import EDGE_BIND_HOST, LOCALSTACK_HOSTNAME
 from localstack.constants import OPENSEARCH_DEFAULT_VERSION, OPENSEARCH_PLUGIN_LIST
-from localstack.services.opensearch.cluster import EdgeProxiedOpensearchCluster
+from localstack.services.opensearch.cluster import EdgeProxiedOpensearchProxyServer
 from localstack.services.opensearch.cluster_manager import (
     CustomBackendManager,
     DomainKey,
@@ -465,7 +465,7 @@ class TestEdgeProxiedOpensearchCluster:
         cluster_id = f"domain-{short_uid()}"
         cluster_url = f"http://localhost:{config.EDGE_PORT}/{cluster_id}"
         arn = f"arn:aws:es:us-east-1:000000000000:domain/{cluster_id}"
-        cluster = EdgeProxiedOpensearchCluster(cluster_url, arn)
+        cluster = EdgeProxiedOpensearchProxyServer(cluster_url, arn)
 
         try:
             cluster.start()

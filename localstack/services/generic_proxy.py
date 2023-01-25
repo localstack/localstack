@@ -674,27 +674,6 @@ class UrlMatchingForwarder(ProxyListener):
         return urlparse(forward_url)
 
 
-class EndpointProxy(ProxyListener):
-    def __init__(self, base_url: str, forward_url: str) -> None:
-        super().__init__()
-        self.forwarder = UrlMatchingForwarder(
-            base_url=base_url,
-            forward_url=forward_url,
-        )
-
-    def forward_request(self, method, path, data, headers):
-        return self.forwarder.forward_request(method, path, data, headers)
-
-    def register(self):
-        ProxyListener.DEFAULT_LISTENERS.append(self)
-
-    def unregister(self):
-        try:
-            ProxyListener.DEFAULT_LISTENERS.remove(self)
-        except ValueError:
-            pass
-
-
 class RegisteredProxyServer(Server, abc.ABC):
     """
     A proxy server that can register itself at the edge router
@@ -714,7 +693,7 @@ class RegisteredProxyServer(Server, abc.ABC):
         :param forward_url: The url which the proxy forwards to (from the initially passed base_url)
         """
 
-        # TODO: solve this cleaner than with assert
+        # TODO: solve this cleaner than with assert?
 
         #   We MUST NOT create a catch all traffic rule
         assert not (
