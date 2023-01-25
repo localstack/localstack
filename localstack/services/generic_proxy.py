@@ -698,7 +698,7 @@ class RegisteredProxyServer(Server, abc.ABC):
         #   We MUST NOT create a catch all traffic rule
         assert not (
             (self._url.path == "" or self._url.path is None or self._url.path == "/")
-            and self._url.netloc == config.LOCALSTACK_HOSTNAME
+            and self._url.hostname == config.LOCALSTACK_HOSTNAME
         )
         from localstack.services.edge import ROUTER
 
