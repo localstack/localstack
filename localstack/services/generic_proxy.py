@@ -728,9 +728,9 @@ class RegisteredProxyServer(Server, abc.ABC):
     def do_shutdown(self):
         try:
             self.unregister()
-        except Exception as e:
-            # TODO: which log level?
-            LOG.debug(f"An exception occurred during server shutdown: {e}")
+        except KeyError as e:
+            # KeyError occurs when a rule is no longer present that is attempted to be removed
+            LOG.debug(e)
 
 
 class FakeEndpointProxyServer(RegisteredProxyServer):
