@@ -305,42 +305,12 @@ class EdgeProxiedOpensearchProxyServer(RegisteredProxyServer):
         self.cluster = self._backend_cluster()
         self.cluster.start()
 
-        # self.proxy = EndpointProxy(self.url, self.cluster.url)
-        # LOG.info("registering an endpoint proxy for %s => %s", self.url, self.cluster.url)
-        # self.proxy.register()
         self.cluster.wait_is_up()
         self.register(self.cluster.url)
 
         LOG.info("cluster on %s is ready", self.cluster.url)
 
         return self.cluster.join()
-
-    #
-    # def register(self):
-    #     _url = urlparse(self.url)
-    #     # FIXME: Right now, we do not respect the edge port or localstack hostname
-    #
-    #     # TODO: solve this cleaner than with assert, _url might be localhost but should be none
-    #     #   We MUST NOT create a catch all traffic rule
-    #     assert not (
-    #         (_url.path == "" or _url.path is None or _url.path == "/")
-    #         and _url.netloc == config.LOCALSTACK_HOSTNAME
-    #     )
-    #     self.route_rules.append(
-    #         ROUTER.add(
-    #             _url.path or "/",
-    #             ProxyHandler(self.cluster.url),
-    #             f"{_url.hostname}<regex('(:.*)?'):port>",
-    #         )
-    #     )
-    #     self.route_rules.append(
-    #         ROUTER.add(
-    #             f"{_url.path or ''}/<path:path>",
-    #             ProxyHandler(self.cluster.url),
-    #             f"{_url.hostname}<regex('(:.*)?'):port>",
-    #         )
-    #     )
-    #     LOG.info(f"registering route for {self.url} to {self.cluster.url}")
 
     def do_shutdown(self):
         try:
