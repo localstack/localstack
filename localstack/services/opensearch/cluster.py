@@ -264,7 +264,6 @@ class EdgeProxiedOpensearchServer(RegisteredProxyServer):
 
         self.cluster = None
         self.cluster_port = None
-        self.route_rules = []
 
     @property
     def version(self):

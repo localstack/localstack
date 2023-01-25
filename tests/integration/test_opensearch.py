@@ -515,8 +515,7 @@ class TestEdgeProxiedOpensearchCluster:
             assert response.status_code == 200
 
         finally:
-            pass
-        #     opensearch_client.delete_domain(DomainName=domain_name)
+            opensearch_client.delete_domain(DomainName=domain_name)
 
 
 @pytest.mark.skip_offline
