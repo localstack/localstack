@@ -39,7 +39,7 @@ class LambdaFunction(GenericBaseModel):
         func_name = self.props.get("FunctionName")
         if attribute == "Arn":
             return arns.lambda_function_arn(func_name)
-        return func_name
+        return self.physical_resource_id
 
     def update_resource(self, new_resource, stack_name, resources):
         props = new_resource["Properties"]
@@ -131,6 +131,7 @@ class LambdaFunction(GenericBaseModel):
             """waits for the lambda to be in a "terminal" state, i.e. not pending"""
             lambda_client = aws_stack.connect_to_service("lambda")
             lambda_client.get_waiter("function_active_v2").wait(FunctionName=result["FunctionArn"])
+            resources[resource_id]["PhysicalResourceId"] = result["FunctionName"]
 
         return {
             "create": {
