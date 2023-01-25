@@ -93,6 +93,7 @@ class TestOpensearchProvider:
         versions = response["Versions"]
 
         expected_versions = [
+            "OpenSearch_2.3",
             "OpenSearch_1.3",
             "OpenSearch_1.2",
             "OpenSearch_1.1",
