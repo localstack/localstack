@@ -697,38 +697,44 @@ class EndpointProxy(ProxyListener):
 
 class RegisteredProxyServer(Server, abc.ABC):
     """
-    A proxy server that can register itself at the
+    A proxy server that can register itself at the edge router
     """
 
     def __init__(self, base_url):
-        parsed_fw_url = urlparse(base_url)
-        super().__init__(parsed_fw_url.port, f"{parsed_fw_url.hostname}")
-        self.base_url = base_url
+        self._url = urlparse(base_url)
+        super().__init__(self._url.port, f"{self._url.hostname}")
         self.rules = []
 
     def register(self, forward_url):
-        _url = urlparse(self.base_url)
+        """
+        Registers two routes at the edge router to implement either a path or a domain based routing.
+        We need two rules to match 1) the root path + no additional path 2) the root path + any other path.
+        This function is NOT called automatically, it is usually called in the leaf class' start up routine.
 
-        # TODO: solve this cleaner than with assert, _url might be localhost but should be none
+        :param forward_url: The url which the proxy forwards to (from the initially passed base_url)
+        """
+
+        # TODO: solve this cleaner than with assert
+
         #   We MUST NOT create a catch all traffic rule
         assert not (
-            (_url.path == "" or _url.path is None or _url.path == "/")
-            and _url.netloc == config.LOCALSTACK_HOSTNAME
+            (self._url.path == "" or self._url.path is None or self._url.path == "/")
+            and self._url.netloc == config.LOCALSTACK_HOSTNAME
         )
         from localstack.services.edge import ROUTER
 
         self.rules.append(
             ROUTER.add(
-                _url.path or "/",
+                self._url.path or "/",
                 ProxyHandler(forward_url),
-                f"{_url.hostname}<regex('(:.*)?'):port>",
+                f"{self._url.hostname}<regex('(:.*)?'):port>",
             )
         )
         self.rules.append(
             ROUTER.add(
-                f"{_url.path or ''}/<path:path>",
+                f"{self._url.path or ''}/<path:path>",
                 ProxyHandler(forward_url),
-                f"{_url.hostname}<regex('(:.*)?'):port>",
+                f"{self._url.hostname}<regex('(:.*)?'):port>",
             )
         )
 
@@ -755,11 +761,9 @@ class FakeEndpointProxyServer(RegisteredProxyServer):
     """
 
     def __init__(self, base_url: str, forward_url: str) -> None:
-        self._shutdown_event = threading.Event()
-        self.base_url = base_url
-        self.forward_url = forward_url
-        self._url = urlparse(base_url)
         super().__init__(base_url)
+        self._shutdown_event = threading.Event()
+        self.forward_url = forward_url
 
     @property
     def url(self):
