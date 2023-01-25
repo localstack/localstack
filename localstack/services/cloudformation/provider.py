@@ -418,6 +418,8 @@ class CloudformationProvider(CloudformationApi):
         change_set = StackChangeSet(stack, req_params, template)
         # TODO: refactor the flow here
         deployer = template_deployer.TemplateDeployer(change_set)
+
+        template_preparer.transform_template(change_set)
         changes = deployer.construct_changes(
             stack,
             change_set,
@@ -475,6 +477,7 @@ class CloudformationProvider(CloudformationApi):
             "LastUpdatedTime",
             "DisableRollback",
             "EnableTerminationProtection",
+            "Transform",
         ]
         result = remove_attributes(deepcopy(change_set.metadata), attrs)
         return result
@@ -533,7 +536,6 @@ class CloudformationProvider(CloudformationApi):
             len(change_set.template_resources),
         )
         deployer = template_deployer.TemplateDeployer(change_set.stack)
-        template_preparer.transform_template(change_set.stack)
         try:
             deployer.apply_change_set(change_set)
             change_set.stack.metadata["ChangeSetId"] = change_set.change_set_id

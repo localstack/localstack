@@ -48,6 +48,12 @@ def transform_template(stack: Stack):
 
 def do_transformations(stack: Stack):
     result = dict(stack.template)
+
+    result.pop("Transform")
+    result.pop("StackId")
+
+    result = {k: v for k, v in result.items() if v and k not in ["StackName", "StackId"]}
+
     for transformation in stack.metadata.get("Transform", []):
         if not isinstance(transformation["Name"], str):
             raise CommonServiceException(
@@ -65,6 +71,9 @@ def do_transformations(stack: Stack):
                 stack_parameters=stack.stack_parameters(),
             )
 
+    for k, v in result.get("Resources", {}).items():
+        result["Resources"][k]["LogicalResourceId"] = k
+
     stack.template = result
     stack.template_body = json.dumps(result)
 
@@ -73,13 +82,6 @@ def execute_macro(parsed_template: Dict, macro: Dict, stack_parameters: List) ->
     macro_definition = get_cloudformation_store().macros.get(macro["Name"])
     if not macro_definition:
         raise FailedTransformation(macro["Name"], "2DO")
-
-    parsed_template.pop("Transform")
-    parsed_template.pop("StackId")
-
-    parsed_template = {
-        k: v for k, v in parsed_template.items() if v and k not in ["StackName", "StackId"]
-    }
 
     formatted_stack_parameters = {
         param["ParameterKey"]: param["ParameterValue"] for param in stack_parameters
@@ -142,20 +144,16 @@ def apply_serverless_transformation(parsed_template):
         os.environ["AWS_DEFAULT_REGION"] = aws_stack.get_region()
     loader = create_policy_loader()
 
-    failed = False
     try:
         transformed = transform_sam(parsed_template, {}, loader)
-        return json.dumps(transformed)
+        return transformed
     except Exception as e:
-        print(e)
-        failed = True
+        raise FailedTransformation(transformation=SERVERLESS_TRANSFORM, message=str(e))
     finally:
         # Note: we need to fix boto3 region, otherwise AWS SAM transformer fails
         os.environ.pop("AWS_DEFAULT_REGION", None)
         if region_before is not None:
             os.environ["AWS_DEFAULT_REGION"] = region_before
-        if failed:
-            raise FailedTransformation(transformation=SERVERLESS_TRANSFORM)
 
 
 class FailedTransformation(Exception):
