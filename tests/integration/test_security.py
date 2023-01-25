@@ -122,6 +122,9 @@ class TestCSRF:
         test_domain = f"test-{short_uid()}.com"
         monkeypatch.setattr(config, "EXTRA_CORS_ALLOWED_ORIGINS", f"https://{test_domain}")
         monkeypatch.setattr(cors_handler, "ALLOWED_CORS_ORIGINS", _get_allowed_cors_origins())
+        # TODO: CI debugging - remove!
+        print("!!_get_allowed_cors_origins", _get_allowed_cors_origins())
+        print("!!ALLOWED_CORS_ORIGINS", cors_handler.ALLOWED_CORS_ORIGINS)
 
         url = config.get_edge_url()
         headers = aws_stack.mock_aws_request_headers("sns")

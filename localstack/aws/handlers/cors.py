@@ -169,6 +169,9 @@ class CorsEnforcer(Handler):
     def _is_in_allowed_origins(allowed_origins: List[str], origin: str) -> bool:
         """Returns true if the `origin` is in the `allowed_origins`."""
         for allowed_origin in allowed_origins:
+            if origin and origin.startswith("https://test-"):
+                # TODO CI debugging - remove
+                print("!!!origin cmp", origin, allowed_origin, origin == allowed_origin)
             if allowed_origin == "*" or origin == allowed_origin:
                 return True
         return False
