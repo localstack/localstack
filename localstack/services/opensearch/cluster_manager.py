@@ -1,15 +1,20 @@
 import dataclasses
 import logging
 import threading
-from typing import Dict, Optional
+from typing import Dict, List, Optional
+from urllib.parse import urlparse
 
 from botocore.utils import ArnParser
+from werkzeug.routing import Rule
 
 from localstack import config
 from localstack.aws.api.opensearch import DomainEndpointOptions, EngineType
 from localstack.config import EDGE_BIND_HOST
 from localstack.constants import LOCALHOST, LOCALHOST_HOSTNAME
+from localstack.http.proxy import ProxyHandler
+from localstack.services.edge import ROUTER
 from localstack.services.generic_proxy import FakeEndpointProxyServer
+from localstack.services.infra import DEFAULT_BACKEND_HOST
 from localstack.services.opensearch import versions
 from localstack.services.opensearch.cluster import (
     CustomEndpoint,
@@ -26,6 +31,7 @@ from localstack.utils.common import (
     start_thread,
 )
 from localstack.utils.serving import Server
+from localstack.utils.sync import retry
 
 LOG = logging.getLogger(__name__)
 
@@ -144,6 +150,7 @@ class ClusterManager:
 
     def __init__(self) -> None:
         self.clusters = {}
+        self.routing_rules = {}
 
     def create(
         self,
@@ -175,9 +182,88 @@ class ClusterManager:
         cluster = self._create_cluster(arn=arn, url=url, version=version)
         cluster.start()
 
-        # save cluster into registry and return
+        # The assignment of the final port can take some time
+        def wait_for_cluster():
+            # return self._cluster_port
+            if not hasattr(cluster, "cluster_port"):
+                return cluster.port
+            port = cluster.cluster_port
+            if not port:
+                raise Exception("Port for cluster could not be determined")
+            return port
+
+        # save cluster into registry
         self.clusters[arn] = cluster
+        url = urlparse(url)
+        cluster_port = retry(wait_for_cluster, retries=10, sleep=0.1)
+        self.routing_rules[arn] = self.register_cluster(
+            host=url.hostname,
+            path=url.path,
+            cluster_port=cluster_port,
+            custom_endpoint=custom_endpoint,
+        )
+
         return cluster
+
+    def register_cluster(self, host, path, cluster_port: int, custom_endpoint) -> List[Rule]:
+        # custom backends overwrite
+        forward_url = (
+            config.OPENSEARCH_CUSTOM_BACKEND or f"http://{DEFAULT_BACKEND_HOST}:{cluster_port}"
+        )
+        endpoint = ProxyHandler(forward_url)
+        rules = []
+        # custom endpoints override any endpoint strategy
+        if custom_endpoint:
+            LOG.debug(f"Registering route from {host}{path} to {endpoint.proxy.forward_base_url}")
+            assert not (
+                host == config.LOCALSTACK_HOSTNAME and (not path or path == "/")
+            ), "trying to register an illegal catch all route"
+            rules.append(
+                ROUTER.add(
+                    path=path,
+                    endpoint=endpoint,
+                    host=f'{host}<regex("(:.*)?"):port>',
+                )
+            )
+            rules.append(
+                ROUTER.add(
+                    f"{path}/<path:path>",
+                    endpoint=endpoint,
+                    host=f'{host}<regex("(:.*)?"):port>',
+                )
+            )
+        else:
+            match config.OPENSEARCH_ENDPOINT_STRATEGY:
+                case "domain":
+                    LOG.debug(f"Registering route from {host} to {endpoint.proxy.forward_base_url}")
+                    assert (
+                        not host == config.LOCALSTACK_HOSTNAME
+                    ), "trying to register an illegal catch all route"
+                    rules.append(
+                        ROUTER.add(
+                            "/",
+                            endpoint=endpoint,
+                            host=f"{host}<regex('(:.*)?'):port>",
+                        )
+                    )
+                    rules.append(
+                        ROUTER.add(
+                            "/<path:path>",
+                            endpoint=endpoint,
+                            host=f"{host}<regex('(:.*)?'):port>",
+                        )
+                    )
+                case "path":
+                    LOG.debug(f"Registering route from {path} to {endpoint.proxy.forward_base_url}")
+                    assert path and not path == "/", "trying to register an illegal catch all route"
+                    rules.append(ROUTER.add(path, endpoint=endpoint))
+                    rules.append(ROUTER.add(f"{path}/<path:path>", endpoint=endpoint))
+
+                case "port":
+                    # port strategy exposes clusters directly, nothing to route
+                    pass
+
+        return rules
 
     def get(self, arn: str) -> Optional[Server]:
         return self.clusters.get(arn)
@@ -199,6 +285,10 @@ class ClusterManager:
 
         :param version: the full prefixed version, e.g. "OpenSearch_1.0" or "Elasticsearch_7.10"
         """
+        raise NotImplementedError
+
+    @property
+    def _cluster_port(self):
         raise NotImplementedError
 
     def shutdown_all(self):
@@ -247,6 +337,9 @@ class MultiplexingClusterManager(ClusterManager):
         self.cluster = None
         self.endpoints = {}
         self.mutex = threading.RLock()
+
+    def _cluster_port(self):
+        return self.cluster.port
 
     def _create_cluster(self, arn: str, url: str, version: str) -> Server:
         with self.mutex:

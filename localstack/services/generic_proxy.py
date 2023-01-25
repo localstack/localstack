@@ -32,7 +32,6 @@ from localstack.config import (
     EXTRA_CORS_EXPOSE_HEADERS,
 )
 from localstack.constants import APPLICATION_JSON, BIND_HOST, HEADER_LOCALSTACK_REQUEST_URL
-from localstack.http.proxy import ProxyHandler
 from localstack.http.request import get_full_raw_path
 from localstack.services.messages import Headers, MessagePayload
 from localstack.services.messages import Request as RoutingRequest
@@ -614,26 +613,27 @@ class RegisteredProxyServer(Server, abc.ABC):
         """
 
         #   We MUST NOT create a catch all traffic rule
-        assert not (
-            (self._url.path == "" or self._url.path is None or self._url.path == "/")
-            and self._url.hostname == config.LOCALSTACK_HOSTNAME
-        )
-        from localstack.services.edge import ROUTER
-
-        self.rules.append(
-            ROUTER.add(
-                self._url.path or "/",
-                ProxyHandler(forward_url),
-                f"{self._url.hostname}<regex('(:.*)?'):port>",
-            )
-        )
-        self.rules.append(
-            ROUTER.add(
-                f"{self._url.path or ''}/<path:path>",
-                ProxyHandler(forward_url),
-                f"{self._url.hostname}<regex('(:.*)?'):port>",
-            )
-        )
+        # assert not (
+        #     (self._url.path == "" or self._url.path is None or self._url.path == "/")
+        #     and self._url.hostname == config.LOCALSTACK_HOSTNAME
+        # )
+        # from localstack.services.edge import ROUTER
+        #
+        # self.rules.append(
+        #     ROUTER.add(
+        #         self._url.path or "/",
+        #         ProxyHandler(forward_url),
+        #         f"{self._url.hostname}<regex('(:.*)?'):port>",
+        #     )
+        # )
+        # self.rules.append(
+        #     ROUTER.add(
+        #         f"{self._url.path or ''}/<path:path>",
+        #         ProxyHandler(forward_url),
+        #         f"{self._url.hostname}<regex('(:.*)?'):port>",
+        #     )
+        # )
+        pass
 
     def unregister(self):
         for rule in self.rules:
