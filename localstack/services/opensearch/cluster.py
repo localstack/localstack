@@ -251,8 +251,8 @@ class CustomEndpoint:
 
 class EdgeProxiedOpensearchServer(RegisteredProxyServer):
     """
-    Opensearch-backed Server that can be routed through the edge proxy using an UrlMatchingForwarder to forward
-    requests to the backend cluster.
+    Opensearch-backed Server that can be routed through the edge proxy making use of the rule adding specified in
+    RegisteredProxyServer. With these rules, requests are forwarded to the backend cluster.
     """
 
     def __init__(self, url: str, arn: str, version=None) -> None:
