@@ -249,7 +249,7 @@ class CustomEndpoint:
             self.url = None
 
 
-class EdgeProxiedOpensearchProxyServer(RegisteredProxyServer):
+class EdgeProxiedOpensearchServer(RegisteredProxyServer):
     """
     Opensearch-backed Server that can be routed through the edge proxy using an UrlMatchingForwarder to forward
     requests to the backend cluster.
@@ -362,7 +362,7 @@ class ElasticsearchCluster(OpensearchCluster):
         }
 
 
-class EdgeProxiedElasticsearchServer(EdgeProxiedOpensearchProxyServer):
+class EdgeProxiedElasticsearchServer(EdgeProxiedOpensearchServer):
     @property
     def default_version(self):
         return constants.ELASTICSEARCH_DEFAULT_VERSION

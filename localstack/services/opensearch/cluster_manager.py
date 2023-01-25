@@ -14,7 +14,7 @@ from localstack.services.opensearch import versions
 from localstack.services.opensearch.cluster import (
     CustomEndpoint,
     EdgeProxiedElasticsearchServer,
-    EdgeProxiedOpensearchProxyServer,
+    EdgeProxiedOpensearchServer,
     ElasticsearchCluster,
     OpensearchCluster,
 )
@@ -175,19 +175,6 @@ class ClusterManager:
         cluster = self._create_cluster(arn=arn, url=url, version=version)
         cluster.start()
 
-        # TODO: remove/consolidate this
-        # The assignment of the final port can take some time
-        # def wait_for_cluster():
-        #     if not hasattr(cluster, "cluster_port"):
-        #         return cluster.port
-        #     port = cluster.cluster_port
-        #     if not port:
-        #         raise Exception("Port for cluster could not be determined")
-        #     return port
-
-        # port = retry(wait_for_cluster, retries=10, sleep=0.25)
-        # self.register_cluster(cluster, port)
-
         # save cluster into registry and return
         self.clusters[arn] = cluster
         return cluster
@@ -306,7 +293,7 @@ class MultiClusterManager(ClusterManager):
         engine_type = versions.get_engine_type(version)
         if config.OPENSEARCH_ENDPOINT_STRATEGY != "port":
             if engine_type == EngineType.OpenSearch:
-                return EdgeProxiedOpensearchProxyServer(
+                return EdgeProxiedOpensearchServer(
                     url=url,
                     arn=arn,
                     version=version,
