@@ -491,6 +491,33 @@ class TestEdgeProxiedOpensearchCluster:
             lambda: not cluster.is_up(), timeout=240
         ), "gave up waiting for cluster to shut down"
 
+    @pytest.mark.skip_offline
+    def test_custom_endpoint(self, opensearch_client, opensearch_wait_for_cluster):
+        domain_name = f"opensearch-domain-{short_uid()}"
+        custom_endpoint = "http://localhost:4566/my-custom-endpoint"
+        domain_endpoint_options = {
+            "CustomEndpoint": "http://localhost:4566/my-custom-endpoint",
+            "CustomEndpointEnabled": True,
+        }
+        try:
+            opensearch_client.create_domain(
+                DomainName=domain_name, DomainEndpointOptions=domain_endpoint_options
+            )
+
+            response = opensearch_client.list_domain_names(EngineType="OpenSearch")
+            domain_names = [domain["DomainName"] for domain in response["DomainNames"]]
+
+            assert domain_name in domain_names
+            # wait for the cluster
+            opensearch_wait_for_cluster(domain_name=domain_name)
+            response = requests.get(f"{custom_endpoint}/_cluster/health")
+            assert response.ok
+            assert response.status_code == 200
+
+        finally:
+            pass
+        #     opensearch_client.delete_domain(DomainName=domain_name)
+
 
 @pytest.mark.skip_offline
 class TestMultiClusterManager:

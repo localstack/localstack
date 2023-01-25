@@ -693,8 +693,6 @@ class RegisteredProxyServer(Server, abc.ABC):
         :param forward_url: The url which the proxy forwards to (from the initially passed base_url)
         """
 
-        # TODO: solve this cleaner than with assert?
-
         #   We MUST NOT create a catch all traffic rule
         assert not (
             (self._url.path == "" or self._url.path is None or self._url.path == "/")
