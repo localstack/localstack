@@ -184,10 +184,10 @@ class ClusterManager:
 
         # The assignment of the final port can take some time
         def wait_for_cluster():
-            # return self._cluster_port
-            if not hasattr(cluster, "cluster_port"):
-                return cluster.port
-            port = cluster.cluster_port
+            port = self._cluster_port
+            # if not hasattr(cluster, "cluster_port"):
+            #     return cluster.port
+            # port = cluster.cluster_port
             if not port:
                 raise Exception("Port for cluster could not be determined")
             return port
@@ -338,6 +338,7 @@ class MultiplexingClusterManager(ClusterManager):
         self.endpoints = {}
         self.mutex = threading.RLock()
 
+    @property
     def _cluster_port(self):
         return self.cluster.port
 
@@ -382,17 +383,24 @@ class MultiClusterManager(ClusterManager):
     Manages one cluster and endpoint per domain.
     """
 
+    @property
+    def _cluster_port(self):
+        if config.OPENSEARCH_ENDPOINT_STRATEGY == "port":
+            return self.cluster.port
+        else:
+            return self.cluster.cluster_port
+
     def _create_cluster(self, arn: str, url: str, version: str) -> Server:
         engine_type = versions.get_engine_type(version)
         if config.OPENSEARCH_ENDPOINT_STRATEGY != "port":
             if engine_type == EngineType.OpenSearch:
-                return EdgeProxiedOpensearchServer(
+                self.cluster = EdgeProxiedOpensearchServer(
                     url=url,
                     arn=arn,
                     version=version,
                 )
             else:
-                return EdgeProxiedElasticsearchServer(
+                self.cluster = EdgeProxiedElasticsearchServer(
                     url=url,
                     arn=arn,
                     version=version,
@@ -400,11 +408,15 @@ class MultiClusterManager(ClusterManager):
         else:
             port = _get_port_from_url(url)
             if engine_type == EngineType.OpenSearch:
-                return OpensearchCluster(port=port, host=EDGE_BIND_HOST, arn=arn, version=version)
-            else:
-                return ElasticsearchCluster(
+                self.cluster = OpensearchCluster(
                     port=port, host=EDGE_BIND_HOST, arn=arn, version=version
                 )
+            else:
+                self.cluster = ElasticsearchCluster(
+                    port=port, host=EDGE_BIND_HOST, arn=arn, version=version
+                )
+
+        return self.cluster
 
 
 class SingletonClusterManager(ClusterManager):
@@ -435,6 +447,10 @@ class SingletonClusterManager(ClusterManager):
     ) -> Server:
         with self.mutex:
             return super().create(arn, version, endpoint_options, preferred_port)
+
+    @property
+    def _cluster_port(self):
+        return self.cluster.port
 
     def _create_cluster(self, arn: str, url: str, version: str) -> Server:
         if not self.cluster:
@@ -468,7 +484,11 @@ class SingletonClusterManager(ClusterManager):
 
 class CustomBackendManager(ClusterManager):
     def _create_cluster(self, arn: str, url: str, version: str) -> Server:
-        return FakeEndpointProxyServer(
+        self.cluster = FakeEndpointProxyServer(
             url,
             config.OPENSEARCH_CUSTOM_BACKEND,
         )
+        return self.cluster
+
+    def _cluster_port(self):
+        return self.cluster.port

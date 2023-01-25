@@ -496,7 +496,7 @@ class TestEdgeProxiedOpensearchCluster:
         domain_name = f"opensearch-domain-{short_uid()}"
         custom_endpoint = "http://localhost:4566/my-custom-endpoint"
         domain_endpoint_options = {
-            "CustomEndpoint": "http://localhost:4566/my-custom-endpoint",
+            "CustomEndpoint": custom_endpoint,
             "CustomEndpointEnabled": True,
         }
         try:
@@ -723,3 +723,73 @@ class TestCustomBackendManager:
             call_safe(cluster.shutdown)
 
         httpserver.check()
+
+    def test_custom_backend_with_custom_endpoint(
+        self,
+        httpserver,
+        monkeypatch,
+        opensearch_client,
+        opensearch_wait_for_cluster,
+        opensearch_create_domain,
+    ):
+        monkeypatch.setattr(config, "OPENSEARCH_ENDPOINT_STRATEGY", "domain")
+        monkeypatch.setattr(config, "OPENSEARCH_CUSTOM_BACKEND", httpserver.url_for("/"))
+
+        # create fake elasticsearch cluster
+        httpserver.expect_request("/").respond_with_json(
+            {
+                "name": "om",
+                "cluster_name": "opensearch",
+                "cluster_uuid": "gREewvVZR0mIswR-8-6VRQ",
+                "version": {
+                    "number": "7.10.0",
+                    "build_flavor": "default",
+                    "build_type": "tar",
+                    "build_hash": "51e9d6f22758d0374a0f3f5c6e8f3a7997850f96",
+                    "build_date": "2020-11-09T21:30:33.964949Z",
+                    "build_snapshot": False,
+                    "lucene_version": "8.7.0",
+                    "minimum_wire_compatibility_version": "6.8.0",
+                    "minimum_index_compatibility_version": "6.0.0-beta1",
+                },
+                "tagline": "You Know, for Search",
+            }
+        )
+        cluster_name = "my_very_special_custom_backend"
+        httpserver.expect_request("/_cluster/health").respond_with_json(
+            {
+                "cluster_name": cluster_name,
+                "status": "green",
+                "timed_out": False,
+                "number_of_nodes": 1,
+                "number_of_data_nodes": 1,
+                "active_primary_shards": 0,
+                "active_shards": 0,
+                "relocating_shards": 0,
+                "initializing_shards": 0,
+                "unassigned_shards": 0,
+                "delayed_unassigned_shards": 0,
+                "number_of_pending_tasks": 0,
+                "number_of_in_flight_fetch": 0,
+                "task_max_waiting_in_queue_millis": 0,
+                "active_shards_percent_as_number": 100,
+            }
+        )
+        domain_name = f"opensearch-domain-{short_uid()}"
+        custom_endpoint = "http://localhost:4566/my-custom-endpoint"
+        domain_endpoint_options = {
+            "CustomEndpoint": custom_endpoint,
+            "CustomEndpointEnabled": True,
+        }
+        opensearch_create_domain(
+            DomainName=domain_name, DomainEndpointOptions=domain_endpoint_options
+        )
+        response = opensearch_client.list_domain_names(EngineType="OpenSearch")
+        domain_names = [domain["DomainName"] for domain in response["DomainNames"]]
+
+        assert domain_name in domain_names
+
+        opensearch_wait_for_cluster(domain_name=domain_name)
+        response = requests.get(f"{custom_endpoint}/_cluster/health")
+        assert response.ok
+        assert cluster_name in response.text
