@@ -2,7 +2,7 @@ from localstack import config
 from localstack.aws.handlers.cors import _get_allowed_cors_origins
 
 
-def test_allowed_cors_headers_different_ports_and_protocols(monkeypatch):
+def test_allowed_cors_origins_different_ports_and_protocols(monkeypatch):
     # test allowed origins for default config (edge port 4566)
     monkeypatch.setattr(config, "EDGE_PORT", 4566)
     monkeypatch.setattr(config, "EDGE_PORT_HTTP", 0)
