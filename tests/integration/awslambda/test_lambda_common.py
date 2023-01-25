@@ -238,9 +238,7 @@ class TestLambdaCallingLocalstack:
     @pytest.mark.multiruntime(
         scenario="endpointinjection",
         runtimes=[
-            "nodejs12.x",
-            "nodejs14.x",
-            "nodejs16.x",
+            "nodejs",
             "python",
             "ruby",  # TODO: does not yet support transparent endpoint injection
             "go1.x",  # TODO: does not yet support transparent endpoint injection
