@@ -478,9 +478,9 @@ class CmdDockerClient(ContainerClient):
 
     def has_docker(self) -> bool:
         try:
-            run(self._docker_cmd() + ["ps"])
+            run(self._docker_cmd() + ["ps"], timeout=5)
             return True
-        except (subprocess.CalledProcessError, FileNotFoundError):
+        except (subprocess.CalledProcessError, FileNotFoundError, TimeoutError):
             return False
 
     def create_container(self, image_name: str, **kwargs) -> str:

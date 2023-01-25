@@ -35,6 +35,7 @@ def run(
     tty=False,
     shell=True,
     cwd: str = None,
+    timeout: Optional[float] = None,
 ) -> Union[str, subprocess.Popen]:
     LOG.debug("Executing command: %s", cmd)
     env_dict = os.environ.copy() if inherit_env else {}
@@ -64,9 +65,9 @@ def run(
         if not asynchronous:
             if stdin:
                 return subprocess.check_output(
-                    cmd, shell=shell, stderr=stderr, env=env_dict, stdin=subprocess.PIPE, cwd=cwd
+                    cmd, shell=shell, stderr=stderr, env=env_dict, stdin=subprocess.PIPE, cwd=cwd, timeout=timeout,
                 )
-            output = subprocess.check_output(cmd, shell=shell, stderr=stderr, env=env_dict, cwd=cwd)
+            output = subprocess.check_output(cmd, shell=shell, stderr=stderr, env=env_dict, cwd=cwd, timeout=timeout)
             return output.decode(config.DEFAULT_ENCODING)
 
         stdin_arg = subprocess.PIPE if stdin else None
