@@ -486,7 +486,7 @@ class TestEdgeProxiedOpensearchCluster:
 
             response = requests.get(cluster_url)
             assert response.ok, f"cluster endpoint returned an error: {response.text}"
-            assert response.json()["version"]["number"] == "1.3.6"
+            assert response.json()["version"]["number"] == "2.3.0"
 
             response = requests.get(f"{cluster_url}/_cluster/health")
             assert response.ok, f"cluster health endpoint returned an error: {response.text}"
