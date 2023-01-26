@@ -7,7 +7,7 @@ from localstack.services.cloudformation.deployment_utils import (
     is_none_or_empty_value,
 )
 from localstack.services.cloudformation.service_models import GenericBaseModel
-from localstack.utils.aws import arns, aws_stack
+from localstack.utils.aws import aws_stack
 from localstack.utils.common import canonicalize_bool_to_str
 
 
@@ -17,7 +17,7 @@ class SNSTopic(GenericBaseModel):
         return "AWS::SNS::Topic"
 
     def get_physical_resource_id(self, attribute=None, **kwargs):
-        return arns.sns_topic_arn(self.props["TopicName"])
+        return self.physical_resource_id
 
     def fetch_state(self, stack_name, resources):
         topic_name = self.props["TopicName"]
@@ -93,11 +93,15 @@ class SNSTopic(GenericBaseModel):
                     TopicArn=topic_arn, Protocol=subscription["Protocol"], Endpoint=endpoint
                 )
 
+        def _store_arn(result, resource_id, resources, resource_type):
+            resources[resource_id]["PhysicalResourceId"] = result["TopicArn"]
+
         return {
             "create": [
                 {
                     "function": "create_topic",
                     "parameters": _create_params,
+                    "result_handler": _store_arn,
                 },
                 {"function": _add_topics},
             ],
