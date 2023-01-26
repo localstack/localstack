@@ -443,7 +443,7 @@ class CloudformationProvider(CloudformationApi):
             transformed_template = template_preparer.transform_template(
                 change_set.template,
                 change_set.stack_parameters(),
-                change_set.metadata.get("Capabilities"),
+                change_set.metadata.get("Capabilities", []),
             )
             change_set.template = transformed_template
             change_set.template_body = json.dumps(transformed_template)

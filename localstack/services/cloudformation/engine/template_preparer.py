@@ -40,7 +40,7 @@ def template_to_json(template: str) -> str:
 
 
 def transform_template(template: Dict, parameters: List, capabilities: List) -> Dict:
-    if "CAPABILITY_AUTO_EXPAND" not in capabilities:
+    if "CAPABILITY_AUTO_EXPAND" not in capabilities and "Transform" in template:
         raise InsufficientCapabilitiesException("Requires capabilities : [CAPABILITY_AUTO_EXPAND]")
 
     return do_transformations(dict(template), parameters)
