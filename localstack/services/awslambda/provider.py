@@ -9,6 +9,7 @@ import time
 from typing import IO
 
 from localstack import config
+from localstack.aws.accounts import get_aws_account_id
 from localstack.aws.api import RequestContext, handler
 from localstack.aws.api.lambda_ import (
     AccountLimit,
@@ -129,7 +130,8 @@ from localstack.aws.api.lambda_ import (
     Version,
 )
 from localstack.constants import LOCALHOST_HOSTNAME
-from localstack.services.awslambda import api_utils
+from localstack.services.awslambda import AccessDeniedException, api_utils
+from localstack.services.awslambda import hooks as lambda_hooks
 from localstack.services.awslambda.event_source_listeners.event_source_listener import (
     EventSourceListener,
 )
@@ -455,11 +457,11 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
             )
 
     @staticmethod
-    def _validate_layers(new_layers: list[str]):
+    def _validate_layers(new_layers: list[str], region: str, account_id: int):
         visited_layers = dict()
 
         for layer_version_arn in new_layers:
-            region_name, account_id, layer_name, layer_version = api_utils.parse_layer_arn(
+            layer_region, layer_account_id, layer_name, layer_version = api_utils.parse_layer_arn(
                 layer_version_arn
             )
             if layer_version is None:
@@ -467,17 +469,38 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
                     f"1 validation error detected: Value '[{layer_version_arn}]'"
                     + r" at 'layers' failed to satisfy constraint: Member must satisfy constraint: [Member must have length less than or equal to 140, Member must have length greater than or equal to 1, Member must satisfy regular expression pattern: (arn:[a-zA-Z0-9-]+:lambda:[a-zA-Z0-9-]+:\d{12}:layer:[a-zA-Z0-9-_]+:[0-9]+)|(arn:[a-zA-Z0-9-]+:lambda:::awslayer:[a-zA-Z0-9-_]+), Member must not be null]",
                 )
+            if region and layer_region != region:
+                # TODO: detect user or role from context when having IAM users implemented
+                user = "user/localstack-testing"
+                raise AccessDeniedException(
+                    f"User: arn:aws:iam::{account_id}:{user} is not authorized to perform: lambda:GetLayerVersion on resource: {layer_version_arn} because no resource-based policy allows the lambda:GetLayerVersion action"
+                )
 
-            layer = lambda_stores[account_id][region_name].layers.get(layer_name)
-            if layer is None:
-                raise InvalidParameterValueException(
-                    f"Layer version {layer_version_arn} does not exist.", Type="User"
-                )
-            layer_version = layer.layer_versions.get(layer_version)
-            if layer_version is None:
-                raise InvalidParameterValueException(
-                    f"Layer version {layer_version_arn} does not exist.", Type="User"
-                )
+            state = lambda_stores[layer_account_id][layer_region]
+            layer = state.layers.get(layer_name)
+            if layer_account_id == get_aws_account_id():
+                if layer is None or layer.layer_versions.get(layer_version) is None:
+                    raise InvalidParameterValueException(
+                        f"Layer version {layer_version_arn} does not exist.", Type="User"
+                    )
+            else:  # External layer from other account
+                if layer is None:
+                    # External layer import from AWS is a pro feature
+                    # Limitation: cannot download external layers when using the same account id as the target layer
+                    # because we do not want to trigger the layer fetcher for every non-existing layer.
+                    lambda_hooks.import_external_layer.run(layer_version_arn, state)
+                    layer = state.layers.get(layer_name)
+                    # Community users get this error
+                    if layer is None:
+                        # TODO: detect user from context
+                        user = "user/localstack-testing"
+                        raise AccessDeniedException(
+                            f"User: arn:aws:iam::{account_id}:{user} is not authorized to perform: lambda:GetLayerVersion on resource: {layer_version_arn} because no resource-based policy allows the lambda:GetLayerVersion action"
+                        )
+
+                if layer:
+                    # TODO: validate IAM layer policy here, allow access by default for now
+                    pass
 
             # only the first two matches in the array are considered for the error message
             layer_arn = ":".join(layer_version_arn.split(":")[:-1])
@@ -520,7 +543,7 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
             self._verify_env_variables(env_vars)
 
         if layers := request.get("Layers", []):
-            self._validate_layers(layers)
+            self._validate_layers(layers, region=context.region, account_id=context.account_id)
 
         if not api_utils.is_role_arn(request.get("Role")):
             raise ValidationException(
@@ -717,7 +740,9 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
         if "Layers" in request:
             new_layers = request["Layers"]
             if new_layers:
-                self._validate_layers(new_layers)
+                self._validate_layers(
+                    new_layers, region=context.region, account_id=context.account_id
+                )
             replace_kwargs["layers"] = self.map_layers(new_layers)
 
         if "ImageConfig" in request:
