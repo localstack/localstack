@@ -49,10 +49,9 @@ def transform_template(stack: Stack):
 def do_transformations(stack: Stack):
     result = dict(stack.template)
 
-    result.pop("Transform")
-    result.pop("StackId")
-
-    result = {k: v for k, v in result.items() if v and k not in ["StackName", "StackId"]}
+    for key in ["Transform", "StackId", "StackName"]:
+        if key in result:
+            result.pop(key)
 
     for transformation in stack.metadata.get("Transform", []):
         if not isinstance(transformation["Name"], str):
