@@ -7,7 +7,6 @@ import requests
 
 from localstack import config, constants
 from localstack.aws.api.opensearch import EngineType
-from localstack.services.edge import ROUTER
 from localstack.services.generic_proxy import RegisteredProxyServer
 from localstack.services.infra import DEFAULT_BACKEND_HOST
 from localstack.services.opensearch import versions
@@ -313,12 +312,10 @@ class EdgeProxiedOpensearchServer(RegisteredProxyServer):
 
     def do_shutdown(self):
         try:
-            for rule in self.route_rules:
-                ROUTER.remove_rule(rule)
-                LOG.debug("Removing router rule %s for %s", rule.rule, rule.host)
-        finally:
             if self.cluster:
                 self.cluster.shutdown()
+        except Exception:
+            LOG.debug("Exception during shutdown: ", exc_info=True)
 
 
 class ElasticsearchCluster(OpensearchCluster):

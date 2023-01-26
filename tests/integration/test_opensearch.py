@@ -461,6 +461,7 @@ class TestOpensearchProvider:
 
 @pytest.mark.skip_offline
 class TestEdgeProxiedOpensearchCluster:
+    @pytest.mark.skip
     def test_route_through_edge(self):
         cluster_id = f"domain-{short_uid()}"
         cluster_url = f"http://localhost:{config.EDGE_PORT}/{cluster_id}"

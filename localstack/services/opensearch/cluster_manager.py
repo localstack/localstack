@@ -274,6 +274,11 @@ class ClusterManager:
             if cluster:
                 LOG.debug("shutting down cluster arn %s (%s)", arn, cluster.url)
                 cluster.shutdown()
+        if arn in self.routing_rules:
+            rules = self.routing_rules.pop(arn)
+            for rule in rules:
+                LOG.debug(f"removing routing rule {rule}")
+                ROUTER.remove_rule(rule)
 
     def is_up(self, arn: str) -> bool:
         cluster = self.get(arn)
