@@ -19,7 +19,7 @@ from localstack import config
 from localstack.config import EXTRA_CORS_ALLOWED_HEADERS, EXTRA_CORS_EXPOSE_HEADERS
 from localstack.http import Response
 
-from ...constants import PATH_USER_REQUEST
+from ...constants import LOCALHOST, LOCALHOST_HOSTNAME, PATH_USER_REQUEST
 from ..api import RequestContext
 from ..chain import Handler, HandlerChain
 
@@ -91,8 +91,8 @@ def _get_allowed_cors_origins() -> List[str]:
     _ports = set([config.EDGE_PORT] + ([config.EDGE_PORT_HTTP] if config.EDGE_PORT_HTTP else []))
     for protocol in {"http", "https"}:
         for port in _ports:
-            result.append(f"{protocol}://localhost:{port}")
-            result.append(f"{protocol}://localhost.localstack.cloud:{port}")
+            result.append(f"{protocol}://{LOCALHOST}:{port}")
+            result.append(f"{protocol}://{LOCALHOST_HOSTNAME}:{port}")
 
     if config.EXTRA_CORS_ALLOWED_ORIGINS:
         result += config.EXTRA_CORS_ALLOWED_ORIGINS.split(",")
@@ -169,9 +169,6 @@ class CorsEnforcer(Handler):
     def _is_in_allowed_origins(allowed_origins: List[str], origin: str) -> bool:
         """Returns true if the `origin` is in the `allowed_origins`."""
         for allowed_origin in allowed_origins:
-            if origin and origin.startswith("https://test-"):
-                # TODO CI debugging - remove
-                print("!!!origin cmp", origin, allowed_origin, origin == allowed_origin)
             if allowed_origin == "*" or origin == allowed_origin:
                 return True
         return False

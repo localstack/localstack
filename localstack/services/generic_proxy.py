@@ -1,3 +1,6 @@
+# TODO majority of this file is deprecated and will be removed in the near future.
+#  Beware of duplications between this file and localstack.aws.handlers.cors, among other modules.
+
 from __future__ import annotations
 
 import functools
@@ -25,11 +28,7 @@ from requests.models import Request, Response
 from werkzeug.exceptions import HTTPException
 
 from localstack import config
-from localstack.config import (
-    EXTRA_CORS_ALLOWED_HEADERS,
-    EXTRA_CORS_ALLOWED_ORIGINS,
-    EXTRA_CORS_EXPOSE_HEADERS,
-)
+from localstack.config import EXTRA_CORS_ALLOWED_HEADERS, EXTRA_CORS_EXPOSE_HEADERS
 from localstack.constants import APPLICATION_JSON, BIND_HOST, HEADER_LOCALSTACK_REQUEST_URL
 from localstack.http.request import get_full_raw_path
 from localstack.services.messages import Headers, MessagePayload
@@ -97,20 +96,13 @@ ALLOWED_CORS_RESPONSE_HEADERS = [
     "Access-Control-Expose-Headers",
 ]
 
-ALLOWED_CORS_ORIGINS = [
-    "https://app.localstack.cloud",
-    "http://app.localstack.cloud",
-    f"https://localhost:{config.EDGE_PORT}",
-    f"http://localhost:{config.EDGE_PORT}",
-    f"https://localhost.localstack.cloud:{config.EDGE_PORT}",
-    f"http://localhost.localstack.cloud:{config.EDGE_PORT}",
-    "https://localhost",
-    "https://localhost.localstack.cloud",
-    # for requests from Electron apps, e.g., DynamoDB NoSQL Workbench
-    "file://",
-]
-if EXTRA_CORS_ALLOWED_ORIGINS:
-    ALLOWED_CORS_ORIGINS += EXTRA_CORS_ALLOWED_ORIGINS.split(",")
+
+def get_allowed_cors_origins() -> List[str]:
+    """Return the list of allowed CORS origins."""
+    # Note: importing from localstack.aws.handlers.cors, to keep the logic in a single place for now
+    from localstack.aws.handlers.cors import _get_allowed_cors_origins
+
+    return _get_allowed_cors_origins()
 
 
 class ProxyListener:
@@ -263,7 +255,7 @@ def _is_in_allowed_origins(allowed_origins, origin):
 
 def is_cors_origin_allowed(headers, allowed_origins=None):
     """Returns true if origin is allowed to perform cors requests, false otherwise"""
-    allowed_origins = ALLOWED_CORS_ORIGINS if allowed_origins is None else allowed_origins
+    allowed_origins = get_allowed_cors_origins() if allowed_origins is None else allowed_origins
     origin = headers.get("origin")
     referer = headers.get("referer")
     if origin:
