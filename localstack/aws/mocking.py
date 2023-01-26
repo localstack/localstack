@@ -127,6 +127,8 @@ def shape_graph(root: Shape) -> ShapeGraph:
 
 
 def sanitize_pattern(pattern: str) -> str:
+    if pattern == "^(https|s3)://([^/]+)/?(.*)$":
+        pattern = "^(https|s3)://(\\w+)$"
     pattern = pattern.replace("\\p{XDigit}", "[A-Fa-f0-9]")
     pattern = pattern.replace("\\p{P}", "[.,;]")
     pattern = pattern.replace("\\p{Punct}", "[.,;]")
@@ -138,6 +140,7 @@ def sanitize_pattern(pattern: str) -> str:
     pattern = pattern.replace("\\p{M}", "[`]")
     pattern = pattern.replace("\\p{IsLetter}", "[a-zA-Z]")
     pattern = pattern.replace("[:alnum:]", "[a-zA-Z0-9]")
+    pattern = pattern.replace("\\p{ASCII}*", "[a-zA-Z0-9]")
     return pattern
 
 
@@ -317,6 +320,7 @@ def _(shape: StringShape, graph: ShapeGraph) -> str:
     if (
         shape.name.endswith("ARN")
         or shape.name.endswith("Arn")
+        or shape.name.endswith("ArnString")
         or shape.name == "AmazonResourceName"
     ):
         return generate_arn(shape)
@@ -333,7 +337,10 @@ def _(shape: StringShape, graph: ShapeGraph) -> str:
             return random.choice(words)
         else:
             return "a" * str_len
-
+    if shape.name == "EndpointId" and pattern == "^[A-Za-z0-9\\-]+[\\.][A-Za-z0-9\\-]+$":
+        # there are sometimes issues with this pattern, because it could create invalid host labels, e.g. b6NOZqj5rIMdcta4IKyKRHvZakH90r.-wzuX6tQ-pB-pTNePY2
+        # for simplification we just remove the dash for now
+        pattern = "^[A-Za-z0-9]+[\\.][A-Za-z0-9]+$"
     pattern = sanitize_pattern(pattern)
 
     try:
