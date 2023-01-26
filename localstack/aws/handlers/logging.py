@@ -1,5 +1,4 @@
 """Handlers for logging."""
-import functools
 import logging
 from functools import cached_property
 from typing import Type
@@ -42,6 +41,61 @@ class ExceptionLogger(ExceptionHandler):
             self.logger.error("exception during call chain: %s", exception)
 
 
+class _ResponseChunkLogger:
+    # TODO also use this logger for other types (f.e. Kinesis' SubscribeToShard event streamed responses)
+    def __init__(
+        self,
+        logger: logging.Logger,
+        request: Request,
+        response_status: int,
+        response_headers: Headers,
+        streaming: bool,
+    ):
+        """
+        :param logger: HTTP logger to log the request onto
+        :param request: HTTP request data (containing useful metadata like the HTTP method and path)
+        :param response_status: HTTP status of the response to log
+        :param response_headers: HTTP headers of the response to log
+        :param streaming: true if this instance will be used to log streaming responses
+        """
+        self.logger = logger
+        self.request = request
+        self.response_status = response_status
+        self.response_headers = response_headers
+        self.streaming = streaming
+
+    def __call__(
+        self,
+        response_data,
+    ):
+        """
+        Logs a given HTTP response on a defined logger.
+        The given response data is returned by this function, which allows the usage as a log interceptor for streamed
+        response data.
+
+        :param response_data: HTTP body of the response to log
+        :return: response data
+        """
+        self.logger.info(
+            "%s %s => %d",
+            self.request.method,
+            self.request.path,
+            self.response_status,
+            extra={
+                # request
+                "input_type": "Request",
+                "input": restore_payload(self.request),
+                "request_headers": dict(self.request.headers),
+                # response
+                "output_type": "Response",
+                "output_streaming": self.streaming,
+                "output": response_data,
+                "response_headers": dict(self.response_headers),
+            },
+        )
+        return response_data
+
+
 class ResponseLogger:
     def __call__(self, _: HandlerChain, context: RequestContext, response: Response):
         if context.request.path == "/health" or context.request.path == "/_localstack/health":
@@ -82,44 +136,6 @@ class ResponseLogger:
             logger.addHandler(handler)
         return logger
 
-    def _log_http_response(
-        self,
-        logger: logging.Logger,
-        request: Request,
-        response_status: int,
-        response_headers: Headers,
-        response_data,
-    ):
-        """
-        Logs a given HTTP response on a given logger.
-        The given response data is returned by this function, which allows the usage as a log interceptor for streamed
-        response data.
-
-        :param logger: HTTP logger to log the request onto
-        :param request: HTTP request data (containing useful metadata like the HTTP method and path)
-        :param response_status: HTTP status of the response to log
-        :param response_headers: HTTP headers of the response to log
-        :param response_data: HTTP body of the response to log
-        :return: response data
-        """
-        logger.info(
-            "%s %s => %d",
-            request.method,
-            request.path,
-            response_status,
-            extra={
-                # request
-                "input_type": "Request",
-                "input": restore_payload(request),
-                "request_headers": dict(request.headers),
-                # response
-                "output_type": "Response",
-                "output": response_data,
-                "response_headers": dict(response_headers),
-            },
-        )
-        return response_data
-
     def _log(self, context: RequestContext, response: Response):
         aws_logger = self.aws_logger
         http_logger = self.http_logger
@@ -146,6 +162,7 @@ class ResponseLogger:
                         # response
                         "output_type": context.service_exception.code,
                         "output": context.service_exception.message,
+                        "output_streaming": False,
                         "response_headers": dict(response.headers),
                     },
                 )
@@ -167,28 +184,18 @@ class ResponseLogger:
                         if context.operation.output_shape
                         else "Response",
                         "output": context.service_response,
+                        "output_streaming": context.operation.has_event_stream_output,
                         "response_headers": dict(response.headers),
                     },
                 )
         else:
-            # log any other HTTP response
-            if hasattr(response.response, "__iter__"):
-                # If the response is streamed, wrap the response data's iterator which logs all values when they are consumed
-                log_partial = functools.partial(
-                    self._log_http_response,
-                    http_logger,
-                    context.request,
-                    response.status_code,
-                    response.headers,
-                )
-                wrapped_response_iterator = map(log_partial, response.response)
-                response.set_response(wrapped_response_iterator)
-            else:
-                # If the response is synchronous, we log the data directly
-                self._log_http_response(
-                    http_logger,
-                    context.request,
-                    response.status_code,
-                    response.headers,
-                    response.data,
-                )
+            streaming = hasattr(response.response, "__iter__")
+            response_chunk_logger = _ResponseChunkLogger(
+                logger=http_logger,
+                request=context.request,
+                response_status=response.status_code,
+                response_headers=response.headers,
+                streaming=streaming,
+            )
+            wrapped_response_iterator = map(response_chunk_logger, response.response)
+            response.set_response(wrapped_response_iterator)

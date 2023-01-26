@@ -108,7 +108,7 @@ def compress_logger_name(name: str, length: int) -> str:
 class TraceLoggingFormatter(logging.Formatter):
     aws_trace_log_format = (
         LOG_FORMAT
-        + "; %(input_type)s(%(input)s, headers=%(request_headers)s); %(output_type)s(%(output)s, headers=%(response_headers)s)"
+        + "; %(input_type)s(%(input)s, headers=%(request_headers)s); %(output_type)s(%(output)s, headers=%(response_headers)s, streaming=%(output_streaming)s)"
     )
 
     def __init__(self):
