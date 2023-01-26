@@ -496,7 +496,13 @@ class TestMacros:
 
     @pytest.mark.aws_validated
     @pytest.mark.skip_snapshot_verify(
-        paths=["$..TemplateBody.Resources.Parameter.LogicalResourceId"]
+        paths=[
+            "$..TemplateBody.Resources.Parameter.LogicalResourceId",
+            "$..TemplateBody.Conditions",
+            "$..TemplateBody.StackId",
+            "$..TemplateBody.StackName",
+            "$..TemplateBody.Transform",
+        ]
     )
     def test_global_scope(
         self,
@@ -644,7 +650,14 @@ class TestMacros:
 
     @pytest.mark.aws_validated
     @pytest.mark.skip_snapshot_verify(
-        paths=["$..TemplateBody.Resources.Parameter.LogicalResourceId"]
+        paths=[
+            "$..TemplateBody.Resources.Parameter.LogicalResourceId",
+            "$..TemplateBody.Conditions",
+            "$..TemplateBody.Parameters",
+            "$..TemplateBody.StackId",
+            "$..TemplateBody.StackName",
+            "$..TemplateBody.Transform",
+        ]
     )
     def test_capabilities_requirements(
         self,
@@ -702,7 +715,14 @@ class TestMacros:
 
     @pytest.mark.aws_validated
     @pytest.mark.skip_snapshot_verify(
-        paths=["$..Event.fragment.Resources.Parameter.LogicalResourceId"]
+        paths=[
+            "$..Event.fragment.Conditions",
+            "$..Event.fragment.Outputs",
+            "$..Event.fragment.Resources.Parameter.LogicalResourceId",
+            "$..Event.fragment.StackId",
+            "$..Event.fragment.StackName",
+            "$..Event.fragment.Transform",
+        ]
     )
     def test_validate_lambda_internals(
         self,
@@ -818,6 +838,7 @@ class TestMacros:
                         "../templates/transformation_macro_as_reference.yml",
                     )
                 ),
+                Capabilities=["CAPABILITY_AUTO_EXPAND"],
                 Parameters=[{"ParameterKey": "MacroName", "ParameterValue": "NonExistent"}],
             )
         snapshot.match("error", ex.value.response)

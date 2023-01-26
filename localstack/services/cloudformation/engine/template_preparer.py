@@ -49,10 +49,6 @@ def transform_template(stack: Stack):
 def do_transformations(stack: Stack):
     result = dict(stack.template)
 
-    for key in ["Transform", "StackId", "StackName"]:
-        if key in result:
-            result.pop(key)
-
     for transformation in stack.metadata.get("Transform", []):
         if not isinstance(transformation["Name"], str):
             raise CommonServiceException(
@@ -69,9 +65,6 @@ def do_transformations(stack: Stack):
                 macro=transformation,
                 stack_parameters=stack.stack_parameters(),
             )
-
-    for k, v in result.get("Resources", {}).items():
-        result["Resources"][k]["LogicalResourceId"] = k
 
     stack.template = result
     stack.template_body = json.dumps(result)
