@@ -153,15 +153,16 @@ def register_cluster(
     must not include more than one part in their rules.
 
     This method is tightly coupled with build_cluster_endpoint(). It prepares the necessary URL data already according
-    the endpoint strategies. It also has an overview of the different endpoint strategies and their url schema.
+    to the endpoint strategies. It also has an overview of the different endpoint strategies and their url schema.
 
     :param host: hostname of the inbound address without protocol or port
     :param path: path of the inbound address
     :param forward_url: whole address for outgoing traffic (including the protocol)
-    :param custom_endpoint: A custom address. If a custom_endpoint is set AND enabled, it takes precedence over any
-    strategy currently active, and overwrites any host/path combination
+    :param custom_endpoint: Object that stores a custom address and if its enabled.
+            If a custom_endpoint is set AND enabled, it takes precedence over any strategy currently active,
+            and overwrites any host/path combination
 
-    :return: A list of router rules. Primarily a reference to them for cleanup on shutdown.
+    :return: A list of generated router rules. Primarily a reference to them for cleanup on shutdown.
     """
     # custom backends overwrite the usual forward_url
     forward_url = config.OPENSEARCH_CUSTOM_BACKEND or forward_url
@@ -389,7 +390,7 @@ class EdgeProxiedOpensearchCluster(Server):
     requests to the backend cluster.
     """
 
-    def __init__(self, url: str, arn: str, custom_endpoint, version=None) -> None:
+    def __init__(self, url: str, arn: str, custom_endpoint: CustomEndpoint, version=None) -> None:
         self._url = urlparse(url)
 
         super().__init__(
