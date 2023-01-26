@@ -149,18 +149,18 @@ def register_cluster(
 ) -> List[Rule]:
     """
     Registers routes for a cluster at the edge router.
-    Depending on which endpoint strategy is employed, different routes are registered.
-    This method is tightly coupled with build_cluster_endpoint(). It prepares the necessary URL data already according
-    to the endpoint strategies. It also has an overview of the different endpoint strategies and their url schemas.
+    Depending on which endpoint strategy is employed, and if a custom endpoint is enabled, different routes are
+    registered.
+    This method is tightly coupled with `cluster_manager.build_cluster_endpoint`, which already creates the
+    endpoint URL according to the configuration used here.
 
-    :param host: hostname of the inbound address without protocol or port
+    :param host: hostname of the inbound address without scheme or port
     :param path: path of the inbound address
     :param forward_url: whole address for outgoing traffic (including the protocol)
     :param custom_endpoint: Object that stores a custom address and if its enabled.
             If a custom_endpoint is set AND enabled, the specified address takes precedence
             over any strategy currently active, and overwrites any host/path combination.
-
-    :return: A list of generated router rules. Primarily a reference to them for cleanup on shutdown.
+    :return: a list of generated router rules, which can be used for removal
     """
     # custom backends overwrite the usual forward_url
     forward_url = config.OPENSEARCH_CUSTOM_BACKEND or forward_url
@@ -188,7 +188,6 @@ def register_cluster(
             )
         )
     elif strategy == "domain":
-
         LOG.debug(f"Registering route from {host} to {endpoint.proxy.forward_base_url}")
         assert (
             not host == config.LOCALSTACK_HOSTNAME
