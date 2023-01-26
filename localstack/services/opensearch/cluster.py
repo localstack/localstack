@@ -344,11 +344,9 @@ class EndpointProxy:
         )
 
     def unregister(self):
-        try:
-            for rule in self.routing_rules:
-                ROUTER.remove_rule(rule)
-        except Exception:
-            LOG.debug("Router rule removing failed", exc_info=True)
+        for rule in self.routing_rules:
+            ROUTER.remove_rule(rule)
+        self.routing_rules.clear()
 
 
 class FakeEndpointProxyServer(Server):
@@ -379,7 +377,6 @@ class FakeEndpointProxyServer(Server):
 
     def do_shutdown(self):
         self._shutdown_event.set()
-        self.endpoint.unregister()
 
 
 class EdgeProxiedOpensearchCluster(Server):
