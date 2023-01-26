@@ -148,19 +148,17 @@ def register_cluster(
     host: str, path: str, forward_url: str, custom_endpoint: CustomEndpoint
 ) -> List[Rule]:
     """
-    Registers routes for a cluster. Depending on which endpoint strategy is employed, different routes
-    are registered. Host and path for the incoming traffic is split because some strategies (e.g. 'path')
-    must not include more than one part in their rules.
-
+    Registers routes for a cluster at the edge router.
+    Depending on which endpoint strategy is employed, different routes are registered.
     This method is tightly coupled with build_cluster_endpoint(). It prepares the necessary URL data already according
-    to the endpoint strategies. It also has an overview of the different endpoint strategies and their url schema.
+    to the endpoint strategies. It also has an overview of the different endpoint strategies and their url schemas.
 
     :param host: hostname of the inbound address without protocol or port
     :param path: path of the inbound address
     :param forward_url: whole address for outgoing traffic (including the protocol)
     :param custom_endpoint: Object that stores a custom address and if its enabled.
-            If a custom_endpoint is set AND enabled, it takes precedence over any strategy currently active,
-            and overwrites any host/path combination
+            If a custom_endpoint is set AND enabled, the specified address takes precedence
+            over any strategy currently active, and overwrites any host/path combination.
 
     :return: A list of generated router rules. Primarily a reference to them for cleanup on shutdown.
     """
