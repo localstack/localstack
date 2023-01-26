@@ -1104,7 +1104,7 @@ def opensearch_document_path(opensearch_client, opensearch_endpoint):
         "about": "I'm just a simple man, trying to make my way in the universe.",
         "interests": ["mandalorian armor", "tusken culture"],
     }
-    document_path = f"{opensearch_endpoint}/bounty/hunters/1"
+    document_path = f"{opensearch_endpoint}/bountyhunters/_doc/1"
     response = requests.put(
         document_path,
         data=json.dumps(document),
