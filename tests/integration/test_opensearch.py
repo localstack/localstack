@@ -10,6 +10,7 @@ from localstack import config
 from localstack.aws.accounts import get_aws_account_id
 from localstack.config import EDGE_BIND_HOST, LOCALSTACK_HOSTNAME
 from localstack.constants import OPENSEARCH_DEFAULT_VERSION, OPENSEARCH_PLUGIN_LIST
+from localstack.services.opensearch import provider
 from localstack.services.opensearch.cluster import CustomEndpoint, EdgeProxiedOpensearchCluster
 from localstack.services.opensearch.cluster_manager import (
     CustomBackendManager,
@@ -762,6 +763,8 @@ class TestCustomBackendManager:
     ):
         monkeypatch.setattr(config, "OPENSEARCH_ENDPOINT_STRATEGY", "domain")
         monkeypatch.setattr(config, "OPENSEARCH_CUSTOM_BACKEND", httpserver.url_for("/"))
+        # reset the singleton for the test
+        monkeypatch.setattr(provider, "__CLUSTER_MANAGER", None)
 
         # create fake elasticsearch cluster
         custom_name = "my_very_special_custom_backend"
