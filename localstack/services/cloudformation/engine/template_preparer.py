@@ -12,7 +12,6 @@ from localstack.aws.accounts import get_aws_account_id
 from localstack.aws.api import CommonServiceException
 from localstack.aws.api.cloudformation import InsufficientCapabilitiesException
 from localstack.services.awslambda.lambda_api import func_arn, run_lambda
-from localstack.services.cloudformation.engine.entities import Stack
 from localstack.services.cloudformation.engine.policy_loader import create_policy_loader
 from localstack.services.cloudformation.stores import get_cloudformation_store
 from localstack.utils.aws import aws_stack
@@ -39,17 +38,18 @@ def template_to_json(template: str) -> str:
     return json.dumps(template)
 
 
-def transform_template(stack: Stack):
-    if "CAPABILITY_AUTO_EXPAND" not in stack.metadata.get("Capabilities", []):
+def transform_template(template: Dict, parameters: List, capabilities: List) -> Dict:
+    if "CAPABILITY_AUTO_EXPAND" not in capabilities:
         raise InsufficientCapabilitiesException("Requires capabilities : [CAPABILITY_AUTO_EXPAND]")
 
-    do_transformations(stack)
+    return do_transformations(dict(template), parameters)
 
 
-def do_transformations(stack: Stack):
-    result = dict(stack.template)
+def do_transformations(template: Dict, parameters: List) -> Dict:
+    result = dict(template)
 
-    for transformation in stack.metadata.get("Transform", []):
+    transformations = format_transforms(result.get("Transform", []))
+    for transformation in transformations:
         if not isinstance(transformation["Name"], str):
             raise CommonServiceException(
                 code="ValidationError",
@@ -63,11 +63,10 @@ def do_transformations(stack: Stack):
             result = execute_macro(
                 parsed_template=result,
                 macro=transformation,
-                stack_parameters=stack.stack_parameters(),
+                stack_parameters=parameters,
             )
 
-    stack.template = result
-    stack.template_body = json.dumps(result)
+    return result
 
 
 def execute_macro(parsed_template: Dict, macro: Dict, stack_parameters: List) -> str:
@@ -79,17 +78,18 @@ def execute_macro(parsed_template: Dict, macro: Dict, stack_parameters: List) ->
         param["ParameterKey"]: param["ParameterValue"] for param in stack_parameters
     }
 
-    formated_transform_parameters = macro.get("Parameters", {})
-    for k, v in formated_transform_parameters.items():
+    formatted_transform_parameters = macro.get("Parameters", {})
+    for k, v in formatted_transform_parameters.items():
         if isinstance(v, Dict) and "Ref" in v:
-            formated_transform_parameters[k] = formatted_stack_parameters[v["Ref"]]
+            formatted_transform_parameters[k] = formatted_stack_parameters[v["Ref"]]
+
     transformation_id = f"{get_aws_account_id()}::{macro['Name']}"
     event = {
         "region": aws_stack.get_region(),
         "accountId": get_aws_account_id(),
         "fragment": parsed_template,
         "transformId": transformation_id,
-        "params": formated_transform_parameters,
+        "params": formatted_transform_parameters,
         "requestId": long_uid(),
         "templateParameterValues": formatted_stack_parameters,
     }
@@ -146,6 +146,24 @@ def apply_serverless_transformation(parsed_template):
         os.environ.pop("AWS_DEFAULT_REGION", None)
         if region_before is not None:
             os.environ["AWS_DEFAULT_REGION"] = region_before
+
+
+def format_transforms(transforms: List | Dict | str) -> List[Dict]:
+    formatted_transformations = []
+    if isinstance(transforms, str):
+        formatted_transformations.append({"Name": transforms})
+
+    if isinstance(transforms, Dict):
+        formatted_transformations.append(transforms)
+
+    if isinstance(transforms, list):
+        for transformation in transforms:
+            if isinstance(transformation, str):
+                formatted_transformations.append({"Name": transformation})
+            if isinstance(transformation, Dict):
+                formatted_transformations.append(transformation)
+
+    return formatted_transformations
 
 
 class FailedTransformation(Exception):
