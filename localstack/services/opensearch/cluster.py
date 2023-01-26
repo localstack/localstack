@@ -127,6 +127,7 @@ def register_cluster(host, path, forward_url, custom_endpoint) -> List[Rule]:
     forward_url = config.OPENSEARCH_CUSTOM_BACKEND or forward_url
     endpoint = ProxyHandler(forward_url)
     rules = []
+    strategy = config.OPENSEARCH_ENDPOINT_STRATEGY
     # custom endpoints override any endpoint strategy
     if custom_endpoint:
         LOG.debug(f"Registering route from {host}{path} to {endpoint.proxy.forward_base_url}")
@@ -147,36 +148,34 @@ def register_cluster(host, path, forward_url, custom_endpoint) -> List[Rule]:
                 host=f'{host}<regex("(:.*)?"):port>',
             )
         )
-    else:
-        match config.OPENSEARCH_ENDPOINT_STRATEGY:
-            case "domain":
-                LOG.debug(f"Registering route from {host} to {endpoint.proxy.forward_base_url}")
-                assert (
-                    not host == config.LOCALSTACK_HOSTNAME
-                ), "trying to register an illegal catch all route"
-                rules.append(
-                    ROUTER.add(
-                        "/",
-                        endpoint=endpoint,
-                        host=f"{host}<regex('(:.*)?'):port>",
-                    )
-                )
-                rules.append(
-                    ROUTER.add(
-                        "/<path:path>",
-                        endpoint=endpoint,
-                        host=f"{host}<regex('(:.*)?'):port>",
-                    )
-                )
-            case "path":
-                LOG.debug(f"Registering route from {path} to {endpoint.proxy.forward_base_url}")
-                assert path and not path == "/", "trying to register an illegal catch all route"
-                rules.append(ROUTER.add(path, endpoint=endpoint))
-                rules.append(ROUTER.add(f"{path}/<path:path>", endpoint=endpoint))
+    elif strategy == "domain":
 
-            case "port":
-                # port strategy exposes clusters directly, nothing to route
-                pass
+        LOG.debug(f"Registering route from {host} to {endpoint.proxy.forward_base_url}")
+        assert (
+            not host == config.LOCALSTACK_HOSTNAME
+        ), "trying to register an illegal catch all route"
+        rules.append(
+            ROUTER.add(
+                "/",
+                endpoint=endpoint,
+                host=f"{host}<regex('(:.*)?'):port>",
+            )
+        )
+        rules.append(
+            ROUTER.add(
+                "/<path:path>",
+                endpoint=endpoint,
+                host=f"{host}<regex('(:.*)?'):port>",
+            )
+        )
+    elif strategy == "path":
+        LOG.debug(f"Registering route from {path} to {endpoint.proxy.forward_base_url}")
+        assert path and not path == "/", "trying to register an illegal catch all route"
+        rules.append(ROUTER.add(path, endpoint=endpoint))
+        rules.append(ROUTER.add(f"{path}/<path:path>", endpoint=endpoint))
+
+    elif strategy != "port":
+        LOG.warning(f"Attempted to register route for cluster with invalid strategy '{strategy}'")
 
     return rules
 
