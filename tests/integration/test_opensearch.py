@@ -491,30 +491,59 @@ class TestEdgeProxiedOpensearchCluster:
             lambda: not cluster.is_up(), timeout=240
         ), "gave up waiting for cluster to shut down"
 
-    def test_custom_endpoint(self, opensearch_client, opensearch_wait_for_cluster):
+    def test_custom_endpoint(
+        self, opensearch_client, opensearch_wait_for_cluster, opensearch_create_domain
+    ):
         domain_name = f"opensearch-domain-{short_uid()}"
         custom_endpoint = "http://localhost:4566/my-custom-endpoint"
         domain_endpoint_options = {
             "CustomEndpoint": custom_endpoint,
             "CustomEndpointEnabled": True,
         }
-        try:
-            opensearch_client.create_domain(
-                DomainName=domain_name, DomainEndpointOptions=domain_endpoint_options
-            )
 
-            response = opensearch_client.list_domain_names(EngineType="OpenSearch")
-            domain_names = [domain["DomainName"] for domain in response["DomainNames"]]
+        opensearch_create_domain(
+            DomainName=domain_name, DomainEndpointOptions=domain_endpoint_options
+        )
 
-            assert domain_name in domain_names
-            # wait for the cluster
-            opensearch_wait_for_cluster(domain_name=domain_name)
-            response = requests.get(f"{custom_endpoint}/_cluster/health")
-            assert response.ok
-            assert response.status_code == 200
+        response = opensearch_client.list_domain_names(EngineType="OpenSearch")
+        domain_names = [domain["DomainName"] for domain in response["DomainNames"]]
 
-        finally:
-            opensearch_client.delete_domain(DomainName=domain_name)
+        assert domain_name in domain_names
+        # wait for the cluster
+        opensearch_wait_for_cluster(domain_name=domain_name)
+        response = requests.get(f"{custom_endpoint}/_cluster/health")
+        assert response.ok
+        assert response.status_code == 200
+
+    def test_custom_endpoint_disabled(
+        self, opensearch_client, opensearch_wait_for_cluster, opensearch_create_domain
+    ):
+        domain_name = f"opensearch-domain-{short_uid()}"
+        custom_endpoint = "http://localhost:4566/my-custom-endpoint"
+        domain_endpoint_options = {
+            "CustomEndpoint": custom_endpoint,
+            "CustomEndpointEnabled": False,
+        }
+
+        opensearch_create_domain(
+            DomainName=domain_name, DomainEndpointOptions=domain_endpoint_options
+        )
+
+        response = opensearch_client.describe_domain(DomainName=domain_name)
+        response_domain_name = response["DomainStatus"]["DomainName"]
+        assert domain_name == response_domain_name
+
+        endpoint = f"http://{response['DomainStatus']['Endpoint']}"
+
+        # wait for the cluster
+        opensearch_wait_for_cluster(domain_name=domain_name)
+        response = requests.get(f"{custom_endpoint}/_cluster/health")
+        assert not response.ok
+        assert response.status_code == 404
+
+        response = requests.get(f"{endpoint}/_cluster/health")
+        assert response.ok
+        assert response.status_code == 200
 
 
 @pytest.mark.skip_offline

@@ -169,7 +169,7 @@ def register_cluster(
     rules = []
     strategy = config.OPENSEARCH_ENDPOINT_STRATEGY
     # custom endpoints override any endpoint strategy
-    if custom_endpoint.enabled:
+    if custom_endpoint and custom_endpoint.enabled:
         LOG.debug(f"Registering route from {host}{path} to {endpoint.proxy.forward_base_url}")
         assert not (
             host == config.LOCALSTACK_HOSTNAME and (not path or path == "/")
