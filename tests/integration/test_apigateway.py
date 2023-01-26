@@ -1610,19 +1610,22 @@ class TestAPIGateway:
 
         test_data = {"test": "test-value"}
         url = api_invoke_url(api_id=rest_api, stage="dev", path="/")
+
+        req_template = {
+            "application/json": """
+            {
+            "input": "$util.escapeJavaScript($input.json('$'))",
+            "stateMachineArn": "%s"
+            }
+            """
+            % sm_arn
+        }
         match action:
             case "StartExecution":
-                req_template = {
-                    "application/json": """
-                            #set($data = $util.escapeJavaScript($input.json('$')))
-                            {"input": "$data", "stateMachineArn": "%s"}
-                        """
-                    % sm_arn
-                }
                 _prepare_integration(req_template, response_template={})
                 apigateway_client.create_deployment(restApiId=rest_api, stageName="dev")
-                # invoke stepfunction via API GW, assert results
 
+                # invoke stepfunction via API GW, assert results
                 def _invoke_start_step_function():
                     resp = requests.post(url, data=json.dumps(test_data))
                     assert resp.ok
@@ -1634,13 +1637,9 @@ class TestAPIGateway:
 
             case "StartSyncExecution":
                 resp_template = {APPLICATION_JSON: "$input.path('$.output')"}
-                _prepare_integration({}, resp_template)
+                _prepare_integration(req_template, resp_template)
                 apigateway_client.create_deployment(restApiId=rest_api, stageName="dev")
-                input_data = {
-                    "input": json.dumps(test_data),
-                    "name": "MyExecution",
-                    "stateMachineArn": sm_arn,
-                }
+                input_data = {"input": json.dumps(test_data), "name": "MyExecution"}
 
                 def _invoke_start_sync_step_function():
                     input_data["name"] += "1"
