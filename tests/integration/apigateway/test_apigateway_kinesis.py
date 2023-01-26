@@ -2,10 +2,9 @@ import json
 
 import pytest
 
-from localstack.services.awslambda.lambda_utils import LAMBDA_RUNTIME_PYTHON39
-from localstack.testing.aws.lambda_utils import _await_event_source_mapping_enabled
 from localstack.utils.http import safe_requests as requests
 from localstack.utils.strings import short_uid
+from localstack.utils.sync import retry
 from tests.integration.apigateway_fixtures import (
     api_invoke_url,
     create_rest_api_deployment,
@@ -16,7 +15,6 @@ from tests.integration.apigateway_fixtures import (
     create_rest_resource,
     create_rest_resource_method,
 )
-from tests.integration.awslambda.test_lambda import TEST_LAMBDA_PYTHON_ECHO
 from tests.integration.test_apigateway import (
     APIGATEWAY_ASSUME_ROLE_POLICY,
     APIGATEWAY_KINESIS_POLICY,
@@ -25,7 +23,7 @@ from tests.integration.test_apigateway import (
 
 # PutRecord does not return EncryptionType, but it's documented as such.
 # xxx requires further investigation
-@pytest.mark.skip_snapshot_verify(paths=["$..EncryptionType"])
+@pytest.mark.skip_snapshot_verify(paths=["$..EncryptionType", "$..ChildShards"])
 def test_apigateway_to_kinesis(
     create_rest_apigw,
     apigateway_client,
@@ -44,7 +42,6 @@ def test_apigateway_to_kinesis(
     snapshot.add_transformer(snapshot.transform.kinesis_api())
 
     stream_name = f"kinesis-stream-{short_uid()}"
-    function_name = f"lambda-consumer-{short_uid()}"
     region_name = apigateway_client.meta.region_name
 
     api_id, name, root_id = create_rest_apigw(
@@ -117,27 +114,23 @@ def test_apigateway_to_kinesis(
     wait_for_stream_ready(stream_name=stream_name)
     stream_summary = kinesis_client.describe_stream_summary(StreamName=stream_name)
     assert stream_summary["StreamDescriptionSummary"]["OpenShardCount"] == 1
-    stream_arn = kinesis_client.describe_stream(StreamName=stream_name)["StreamDescription"][
-        "StreamARN"
-    ]
+    first_stream_shard_data = kinesis_client.describe_stream(StreamName=stream_name)[
+        "StreamDescription"
+    ]["Shards"][0]
+    shard_id = first_stream_shard_data["ShardId"]
 
-    create_lambda_function(
-        func_name=function_name,
-        handler_file=TEST_LAMBDA_PYTHON_ECHO,
-        runtime=LAMBDA_RUNTIME_PYTHON39,
-        role=lambda_su_role,
-    )
-
-    create_event_source_mapping_response = lambda_client.create_event_source_mapping(
-        EventSourceArn=stream_arn, FunctionName=function_name, StartingPosition="LATEST"
-    )
-    uuid = create_event_source_mapping_response["UUID"]
-    cleanups.append(lambda: lambda_client.delete_event_source_mapping(UUID=uuid))
-    _await_event_source_mapping_enabled(lambda_client, uuid)
+    shard_iterator = kinesis_client.get_shard_iterator(
+        StreamName=stream_name, ShardIteratorType="LATEST", ShardId=shard_id
+    )["ShardIterator"]
 
     # asserts
-    url = api_invoke_url(api_id, stage=stage, path="/test")
-    response = requests.post(url, json={"kinesis": "snapshot"})
+    def _invoke_apigw_to_kinesis():
+        url = api_invoke_url(api_id, stage=stage, path="/test")
+        response = requests.post(url, json={"kinesis": "snapshot"})
+        assert response.status_code == 200
+        snapshot.match("apigateway_response", response.json())
 
-    snapshot.match("apigateway_response", response.json())
-    assert response.status_code == 200
+    retry(_invoke_apigw_to_kinesis, retries=15, sleep=1)
+
+    get_records_response = kinesis_client.get_records(ShardIterator=shard_iterator)
+    snapshot.match("kinesis_records", get_records_response)
