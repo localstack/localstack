@@ -10,6 +10,7 @@ from werkzeug.routing import Rule
 from localstack import config, constants
 from localstack.aws.api.opensearch import EngineType
 from localstack.http.proxy import ProxyHandler
+from localstack.services.edge import ROUTER
 from localstack.services.infra import DEFAULT_BACKEND_HOST
 from localstack.services.opensearch import versions
 from localstack.services.opensearch.packages import elasticsearch_package, opensearch_package
@@ -120,16 +121,55 @@ def build_cluster_run_command(cluster_bin: str, settings: CommandSettings) -> Li
     return [cluster_bin] + cmd_settings
 
 
-def register_cluster(host, path, forward_url, custom_endpoint) -> List[Rule]:
-    from localstack.services.edge import ROUTER
+class CustomEndpoint:
+    """
+    Encapsulates a custom endpoint (combines CustomEndpoint and CustomEndpointEnabled within the DomainEndpointOptions
+    of the cluster, i.e. combines two fields from the AWS OpenSearch service model).
+    """
 
+    enabled: bool
+    endpoint: str
+
+    def __init__(self, enabled: bool, endpoint: str) -> None:
+        """
+        :param enabled: true if the custom endpoint is enabled (refers to DomainEndpointOptions#CustomEndpointEnabled)
+        :param endpoint: defines the endpoint (i.e. the URL - refers to DomainEndpointOptions#CustomEndpoint)
+        """
+        self.enabled = enabled
+        self.endpoint = endpoint
+
+        if self.endpoint:
+            self.url = urlparse(endpoint)
+        else:
+            self.url = None
+
+
+def register_cluster(
+    host: str, path: str, forward_url: str, custom_endpoint: CustomEndpoint
+) -> List[Rule]:
+    """
+    Registers routes for a cluster. Depending on which endpoint strategy is employed, different routes
+    are registered. Host and path for the incoming traffic is split because some strategies (e.g. 'path')
+    must not include more than one part in their rules.
+
+    This method is tightly coupled with build_cluster_endpoint(). It prepares the necessary URL data already according
+    the endpoint strategies. It also has an overview of the different endpoint strategies and their url schema.
+
+    :param host: hostname of the inbound address without protocol or port
+    :param path: path of the inbound address
+    :param forward_url: whole address for outgoing traffic (including the protocol)
+    :param custom_endpoint: A custom address. If a custom_endpoint is set AND enabled, it takes precedence over any
+    strategy currently active, and overwrites any host/path combination
+
+    :return: A list of router rules. Primarily a reference to them for cleanup on shutdown.
+    """
     # custom backends overwrite the usual forward_url
     forward_url = config.OPENSEARCH_CUSTOM_BACKEND or forward_url
     endpoint = ProxyHandler(forward_url)
     rules = []
     strategy = config.OPENSEARCH_ENDPOINT_STRATEGY
     # custom endpoints override any endpoint strategy
-    if custom_endpoint:
+    if custom_endpoint.enabled:
         LOG.debug(f"Registering route from {host}{path} to {endpoint.proxy.forward_base_url}")
         assert not (
             host == config.LOCALSTACK_HOSTNAME and (not path or path == "/")
@@ -287,31 +327,8 @@ class OpensearchCluster(Server):
         LOG.info("[%s] %s", self.port, line.rstrip())
 
 
-class CustomEndpoint:
-    """
-    Encapsulates a custom endpoint (combines CustomEndpoint and CustomEndpointEnabled within the DomainEndpointOptions
-    of the cluster, i.e. combines two fields from the AWS OpenSearch service model).
-    """
-
-    enabled: bool
-    endpoint: str
-
-    def __init__(self, enabled: bool, endpoint: str) -> None:
-        """
-        :param enabled: true if the custom endpoint is enabled (refers to DomainEndpointOptions#CustomEndpointEnabled)
-        :param endpoint: defines the endpoint (i.e. the URL - refers to DomainEndpointOptions#CustomEndpoint)
-        """
-        self.enabled = enabled
-        self.endpoint = endpoint
-
-        if self.endpoint:
-            self.url = urlparse(endpoint)
-        else:
-            self.url = None
-
-
 class EndpointProxy:
-    def __init__(self, base_url: str, forward_url: str, custom_endpoint: str) -> None:
+    def __init__(self, base_url: str, forward_url: str, custom_endpoint: CustomEndpoint) -> None:
         super().__init__()
         self.base_url = base_url
         self.forward_url = forward_url
@@ -330,11 +347,9 @@ class EndpointProxy:
     def unregister(self):
         try:
             for rule in self.routing_rules:
-                from localstack.services.edge import ROUTER
-
                 ROUTER.remove_rule(rule)
-        except KeyError:
-            pass
+        except Exception:
+            LOG.debug("Router rule removing failed", exc_info=True)
 
 
 class FakeEndpointProxyServer(Server):
