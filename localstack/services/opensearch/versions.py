@@ -208,6 +208,10 @@ compatible_versions = [
         SourceVersion="OpenSearch_1.2",
         TargetVersions=["OpenSearch_1.3"],
     ),
+    CompatibleVersionsMap(
+        SourceVersion="OpenSearch_1.3",
+        TargetVersions=["OpenSearch_2.3"],
+    ),
 ]
 
 

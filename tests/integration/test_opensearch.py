@@ -134,6 +134,18 @@ class TestOpensearchProvider:
                 "TargetVersions": ["OpenSearch_1.1", "OpenSearch_1.2", "OpenSearch_1.3"],
             },
             {
+                "SourceVersion": "OpenSearch_1.1",
+                "TargetVersions": ["OpenSearch_1.2", "OpenSearch_1.3"],
+            },
+            {
+                "SourceVersion": "OpenSearch_1.2",
+                "TargetVersions": ["OpenSearch_1.3"],
+            },
+            {
+                "SourceVersion": "OpenSearch_1.3",
+                "TargetVersions": ["OpenSearch_2.3"],
+            },
+            {
                 "SourceVersion": "Elasticsearch_7.10",
                 "TargetVersions": [
                     "OpenSearch_1.0",
