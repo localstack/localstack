@@ -20,6 +20,7 @@ from localstack.utils.strings import long_uid
 
 LOG = logging.getLogger(__name__)
 SERVERLESS_TRANSFORM = "AWS::Serverless-2016-10-31"
+EXTENSIONS_TRANSFORM = "AWS::LanguageExtensions"
 
 
 def parse_template(template: str) -> dict:
@@ -59,6 +60,8 @@ def do_transformations(template: Dict, parameters: List) -> Dict:
             )
         elif transformation["Name"] == SERVERLESS_TRANSFORM:
             result = apply_serverless_transformation(result)
+        elif transformation["Name"] == EXTENSIONS_TRANSFORM:
+            continue
         else:
             result = execute_macro(
                 parsed_template=result,
