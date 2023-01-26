@@ -103,17 +103,20 @@ class ApigatewayRouter:
             host="<api_id>.execute-api.<regex('.*'):server>",
             endpoint=self.invoke_rest_api,
             defaults={"path": "", "stage": None},
+            strict_slashes=True,
         )
         self.router.add(
             "/<stage>/",
             host="<api_id>.execute-api.<regex('.*'):server>",
             endpoint=self.invoke_rest_api,
             defaults={"path": ""},
+            strict_slashes=False,
         )
         self.router.add(
             "/<stage>/<path:path>",
             host="<api_id>.execute-api.<regex('.*'):server>",
             endpoint=self.invoke_rest_api,
+            strict_slashes=True,
         )
 
         # add the localstack-specific _user_request_ routes
@@ -125,6 +128,7 @@ class ApigatewayRouter:
         self.router.add(
             "/restapis/<api_id>/<stage>/_user_request_/<path:path>",
             endpoint=self.invoke_rest_api,
+            strict_slashes=True,
         )
 
     def invoke_rest_api(self, request: Request, **url_params: Dict[str, Any]) -> Response:
