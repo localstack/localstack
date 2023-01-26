@@ -574,7 +574,6 @@ class FirehoseProvider(FirehoseApi):
         sends Firehose records to an ElasticSearch or Opensearch database
         """
         search_db_index = db_description["IndexName"]
-        search_db_type = db_description.get("TypeName")
         region = aws_stack.get_region()
         domain_arn = db_description.get("DomainARN")
         cluster_endpoint = db_description.get("ClusterEndpoint")
@@ -621,9 +620,7 @@ class FirehoseProvider(FirehoseApi):
                 )
             )
             try:
-                db_connection.create(
-                    index=search_db_index, doc_type=search_db_type, id=obj_id, body=body
-                )
+                db_connection.create(index=search_db_index, id=obj_id, body=body)
             except Exception as e:
                 LOG.exception(f"Unable to put record to stream {delivery_stream_name}.")
                 raise e
