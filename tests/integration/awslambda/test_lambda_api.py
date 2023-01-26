@@ -4108,11 +4108,7 @@ class TestLambdaLayer:
     def test_layer_function_exceptions(
         self, lambda_client, create_lambda_function, snapshot, dummylayer, cleanups
     ):
-        """
-        Test interaction of layers when adding them to the function
-
-        TODO: add test for > 5 layers
-        """
+        """Test interaction of layers when adding them to the function"""
         function_name = f"fn-layer-{short_uid()}"
         layer_name = f"testlayer-{short_uid()}"
 
@@ -4239,6 +4235,39 @@ class TestLambdaLayer:
                 layers=[other_region_layer_result["LayerVersionArn"]],
             )
         snapshot.match("create_function_with_layer_in_different_region", e.value.response)
+
+    @pytest.mark.skip_snapshot_verify(paths=["$..SnapStart"])  # FIXME: new lambda feature
+    def test_layer_function_quota_exception(
+        self, lambda_client, create_lambda_function, snapshot, dummylayer, cleanups
+    ):
+        """Test lambda quota of "up to five layers"
+        Layer docs: https://docs.aws.amazon.com/lambda/latest/dg/invocation-layers.html#invocation-layers-using
+        Lambda quota: https://docs.aws.amazon.com/lambda/latest/dg/gettingstarted-limits.html#function-configuration-deployment-and-execution
+        """
+        layer_arns = []
+        for n in range(6):
+            layer_name_N = f"testlayer-{n+1}-{short_uid()}"
+            publish_result_N = lambda_client.publish_layer_version(
+                LayerName=layer_name_N,
+                CompatibleRuntimes=[],
+                Content={"ZipFile": dummylayer},
+                CompatibleArchitectures=[Architecture.x86_64],
+            )
+            cleanups.append(
+                lambda: lambda_client.delete_layer_version(
+                    LayerName=layer_name_N, VersionNumber=publish_result_N["Version"]
+                )
+            )
+            layer_arns.append(publish_result_N["LayerVersionArn"])
+
+        function_name = f"fn-layer-{short_uid()}"
+        with pytest.raises(lambda_client.exceptions.ClientError) as e:
+            create_lambda_function(
+                func_name=function_name,
+                handler_file=TEST_LAMBDA_PYTHON_ECHO,
+                layers=layer_arns,
+            )
+        snapshot.match("create_function_with_six_layers", e.value.response)
 
     @pytest.mark.aws_validated
     def test_layer_lifecycle(

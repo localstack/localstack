@@ -190,6 +190,7 @@ LAMBDA_DEFAULT_TIMEOUT = 3
 LAMBDA_DEFAULT_MEMORY_SIZE = 128
 
 LAMBDA_TAG_LIMIT_PER_RESOURCE = 50
+LAMBDA_LAYERS_LIMIT_PER_FUNCTION = 5
 
 
 class LambdaProvider(LambdaApi, ServiceLifecycleHook):
@@ -458,8 +459,12 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
 
     @staticmethod
     def _validate_layers(new_layers: list[str], region: str, account_id: int):
-        visited_layers = dict()
+        if len(new_layers) > LAMBDA_LAYERS_LIMIT_PER_FUNCTION:
+            raise InvalidParameterValueException(
+                "Cannot reference more than 5 layers.", Type="User"
+            )
 
+        visited_layers = dict()
         for layer_version_arn in new_layers:
             layer_region, layer_account_id, layer_name, layer_version = api_utils.parse_layer_arn(
                 layer_version_arn

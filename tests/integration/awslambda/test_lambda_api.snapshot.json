@@ -10887,5 +10887,22 @@
         }
       }
     }
+  },
+  "tests/integration/awslambda/test_lambda_api.py::TestLambdaLayer::test_layer_function_quota_exception": {
+    "recorded-date": "26-01-2023, 22:52:19",
+    "recorded-content": {
+      "create_function_with_six_layers": {
+        "Error": {
+          "Code": "InvalidParameterValueException",
+          "Message": "Cannot reference more than 5 layers."
+        },
+        "Type": "User",
+        "message": "Cannot reference more than 5 layers.",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
   }
 }
