@@ -1163,7 +1163,9 @@ class TemplateDeployer:
             old_res_props[key] = value
 
         # overwrite original template entirely
-        old_stack.template["Resources"][resource_id] = new_stack.template["Resources"][resource_id]
+        old_stack.template_original["Resources"][resource_id] = new_stack.template["Resources"][
+            resource_id
+        ]
 
     def resolve_param(
         self, logical_id: str, param_type: str, default_value: Optional[str] = None
