@@ -10,7 +10,8 @@ from localstack import config
 from localstack.aws.accounts import get_aws_account_id
 from localstack.config import EDGE_BIND_HOST, LOCALSTACK_HOSTNAME
 from localstack.constants import OPENSEARCH_DEFAULT_VERSION, OPENSEARCH_PLUGIN_LIST
-from localstack.services.opensearch.cluster import EdgeProxiedOpensearchCluster
+from localstack.services.opensearch import provider
+from localstack.services.opensearch.cluster import CustomEndpoint, EdgeProxiedOpensearchCluster
 from localstack.services.opensearch.cluster_manager import (
     CustomBackendManager,
     DomainKey,
@@ -465,7 +466,7 @@ class TestEdgeProxiedOpensearchCluster:
         cluster_id = f"domain-{short_uid()}"
         cluster_url = f"http://localhost:{config.EDGE_PORT}/{cluster_id}"
         arn = f"arn:aws:es:us-east-1:000000000000:domain/{cluster_id}"
-        cluster = EdgeProxiedOpensearchCluster(cluster_url, arn)
+        cluster = EdgeProxiedOpensearchCluster(cluster_url, arn, CustomEndpoint(True, cluster_url))
 
         try:
             cluster.start()
@@ -490,6 +491,60 @@ class TestEdgeProxiedOpensearchCluster:
         assert poll_condition(
             lambda: not cluster.is_up(), timeout=240
         ), "gave up waiting for cluster to shut down"
+
+    def test_custom_endpoint(
+        self, opensearch_client, opensearch_wait_for_cluster, opensearch_create_domain
+    ):
+        domain_name = f"opensearch-domain-{short_uid()}"
+        custom_endpoint = "http://localhost:4566/my-custom-endpoint"
+        domain_endpoint_options = {
+            "CustomEndpoint": custom_endpoint,
+            "CustomEndpointEnabled": True,
+        }
+
+        opensearch_create_domain(
+            DomainName=domain_name, DomainEndpointOptions=domain_endpoint_options
+        )
+
+        response = opensearch_client.list_domain_names(EngineType="OpenSearch")
+        domain_names = [domain["DomainName"] for domain in response["DomainNames"]]
+
+        assert domain_name in domain_names
+        # wait for the cluster
+        opensearch_wait_for_cluster(domain_name=domain_name)
+        response = requests.get(f"{custom_endpoint}/_cluster/health")
+        assert response.ok
+        assert response.status_code == 200
+
+    def test_custom_endpoint_disabled(
+        self, opensearch_client, opensearch_wait_for_cluster, opensearch_create_domain
+    ):
+        domain_name = f"opensearch-domain-{short_uid()}"
+        custom_endpoint = "http://localhost:4566/my-custom-endpoint"
+        domain_endpoint_options = {
+            "CustomEndpoint": custom_endpoint,
+            "CustomEndpointEnabled": False,
+        }
+
+        opensearch_create_domain(
+            DomainName=domain_name, DomainEndpointOptions=domain_endpoint_options
+        )
+
+        response = opensearch_client.describe_domain(DomainName=domain_name)
+        response_domain_name = response["DomainStatus"]["DomainName"]
+        assert domain_name == response_domain_name
+
+        endpoint = f"http://{response['DomainStatus']['Endpoint']}"
+
+        # wait for the cluster
+        opensearch_wait_for_cluster(domain_name=domain_name)
+        response = requests.get(f"{custom_endpoint}/_cluster/health")
+        assert not response.ok
+        assert response.status_code == 404
+
+        response = requests.get(f"{endpoint}/_cluster/health")
+        assert response.ok
+        assert response.status_code == 200
 
 
 @pytest.mark.skip_offline
@@ -697,3 +752,53 @@ class TestCustomBackendManager:
             call_safe(cluster.shutdown)
 
         httpserver.check()
+
+    def test_custom_backend_with_custom_endpoint(
+        self,
+        httpserver,
+        monkeypatch,
+        opensearch_client,
+        opensearch_wait_for_cluster,
+        opensearch_create_domain,
+    ):
+        monkeypatch.setattr(config, "OPENSEARCH_ENDPOINT_STRATEGY", "domain")
+        monkeypatch.setattr(config, "OPENSEARCH_CUSTOM_BACKEND", httpserver.url_for("/"))
+        # reset the singleton for the test
+        monkeypatch.setattr(provider, "__CLUSTER_MANAGER", None)
+
+        # create fake elasticsearch cluster
+        custom_name = "my_very_special_custom_backend"
+        httpserver.expect_request("/").respond_with_json(
+            {
+                "name": custom_name,
+                "status": "green",
+            }
+        )
+        httpserver.expect_request("/_cluster/health").respond_with_json(
+            {
+                "name_health": custom_name,
+                "status": "green",
+            }
+        )
+        domain_name = f"opensearch-domain-{short_uid()}"
+        custom_endpoint = "http://localhost:4566/my-custom-endpoint"
+        domain_endpoint_options = {
+            "CustomEndpoint": custom_endpoint,
+            "CustomEndpointEnabled": True,
+        }
+        opensearch_create_domain(
+            DomainName=domain_name, DomainEndpointOptions=domain_endpoint_options
+        )
+        response = opensearch_client.list_domain_names(EngineType="OpenSearch")
+        domain_names = [domain["DomainName"] for domain in response["DomainNames"]]
+
+        assert domain_name in domain_names
+
+        opensearch_wait_for_cluster(domain_name=domain_name)
+
+        response = requests.get(f"{custom_endpoint}/")
+        assert response.ok
+        assert custom_name in response.text
+        response = requests.get(f"{custom_endpoint}/_cluster/health")
+        assert response.ok
+        assert custom_name in response.text
