@@ -10,7 +10,6 @@ from localstack.utils.common import (
     get_free_tcp_port,
     mkdir,
 )
-from localstack.utils.functions import run_safe
 from localstack.utils.run import FuncThread
 from localstack.utils.serving import Server
 
@@ -100,7 +99,7 @@ class KinesisMockServer(Server):
         if self._bin_path.endswith(".jar"):
             cmd = ["java", "-XX:+UseG1GC", "-jar", self._bin_path]
         else:
-            run_safe(lambda: chmod_r(self._bin_path, 0o777))
+            chmod_r(self._bin_path, 0o777)
             cmd = [self._bin_path, "--gc=G1"]
         return cmd, env_vars
 
