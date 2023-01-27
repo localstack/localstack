@@ -240,12 +240,12 @@ class TestLambdaCallingLocalstack:
         runtimes=[
             "nodejs",
             "python",
-            "ruby",  # TODO: does not yet support transparent endpoint injection
-            "go1.x",  # TODO: does not yet support transparent endpoint injection
-            "java8.al2",  # TODO: does not yet support transparent endpoint injection
-            "java11",  # TODO: does not yet support transparent endpoint injection
-            "dotnet6",  # TODO: does not yet support transparent endpoint injection
-            "dotnetcore3.1",  # TODO: does not yet support transparent endpoint injection
+            "ruby",
+            "java8.al2",
+            "java11",
+            # "go1.x",  # TODO: does not yet support transparent endpoint injection
+            # "dotnet6",  # TODO: does not yet support transparent endpoint injection
+            # "dotnetcore3.1",  # TODO: does not yet support transparent endpoint injection
         ],
     )
     def test_calling_localstack_from_lambda(self, lambda_client, multiruntime_lambda, tmp_path):

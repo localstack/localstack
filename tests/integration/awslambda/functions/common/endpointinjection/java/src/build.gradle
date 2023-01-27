@@ -6,17 +6,14 @@ repositories {
     mavenCentral()
 }
 
+// we have to use the v1 of the java SDK since the v2 removed the ability to disable SSL certificate checking
 dependencies {
-    implementation platform('software.amazon.awssdk:bom:2.10.73')
-    implementation platform('com.amazonaws:aws-xray-recorder-sdk-bom:2.4.0')
-    implementation 'software.amazon.awssdk:lambda'
-    implementation 'software.amazon.awssdk:sqs'
-    implementation 'com.amazonaws:aws-xray-recorder-sdk-core'
-    implementation 'com.amazonaws:aws-xray-recorder-sdk-aws-sdk-core'
-    implementation 'com.amazonaws:aws-xray-recorder-sdk-aws-sdk-v2'
-    implementation 'com.amazonaws:aws-xray-recorder-sdk-aws-sdk-v2-instrumentor'
+    implementation platform('com.amazonaws:aws-java-sdk-bom:1.11.1000')
+
+    implementation 'com.amazonaws:aws-java-sdk-sqs'
+    implementation 'com.amazonaws:aws-java-sdk-lambda'
     implementation 'com.amazonaws:aws-lambda-java-core:1.2.1'
-    implementation 'com.amazonaws:aws-lambda-java-events:2.2.9'
+    implementation 'com.amazonaws:aws-java-sdk-lambda'
     implementation 'com.google.code.gson:gson:2.8.6'
     implementation 'org.apache.logging.log4j:log4j-api:[2.17.1,)'
     implementation 'org.apache.logging.log4j:log4j-core:[2.17.1,)'
