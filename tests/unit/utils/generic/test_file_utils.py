@@ -52,7 +52,8 @@ def test_parse_config_file(input_type, sections):
 
 @pytest.mark.parametrize("file_type", ["file", "dir"])
 @pytest.mark.skipif(
-    condition=not config.is_in_docker, reason="running chmod with su user switch only in Docker"
+    condition=not config.is_in_docker,
+    reason="requires `localstack` user switch, running only in Docker",
 )
 def test_idempotent_chmod(file_type):
     tmp_file = new_tmp_file() if file_type == "file" else new_tmp_dir()
@@ -72,7 +73,7 @@ def test_idempotent_chmod(file_type):
         with pytest.raises(PermissionError):
             idempotent_chmod(tmp_file, 0o733)
 
-    # run chmod tests in subprocess
+    # run chmod tests in subprocess (`localstack` user should be available in our Docker container)
     run_as_os_user(_test_chmod, "localstack")
 
     # clean up
