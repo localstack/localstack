@@ -435,28 +435,26 @@ class CloudformationProvider(CloudformationApi):
             )
             raise ValidationError(msg)
 
-        change_set = StackChangeSet(stack, req_params, template)
-        # TODO: refactor the flow here
-        deployer = template_deployer.TemplateDeployer(change_set)
-
         try:
             transformed_template = template_preparer.transform_template(
-                change_set.template,
-                change_set.stack_parameters(),
-                change_set.metadata.get("Capabilities", []),
+                template,
+                stack.stack_parameters(),
+                stack.metadata.get("Capabilities", []),
             )
-            change_set.template = transformed_template
-            change_set.template_body = json.dumps(transformed_template)
+            template = transformed_template
         except InsufficientCapabilitiesException as e:
             if stack and state:
                 state.stacks.pop(stack.stack_id)
             raise e
 
         except FailedTransformation as e:
+            change_set = StackChangeSet(stack, req_params, template)
             change_set.set_stack_status("ROLLBACK_COMPLETE")
             change_set.add_stack_event(status="ROLLBACK_IN_PROGRESS", status_reason=e.message)
             return CreateChangeSetOutput(StackId=change_set.stack_id, Id=change_set.change_set_id)
 
+        change_set = StackChangeSet(stack, req_params, template)
+        deployer = template_deployer.TemplateDeployer(change_set)
         changes = deployer.construct_changes(
             stack,
             change_set,
