@@ -3,6 +3,7 @@ import inspect
 import logging
 import os
 import shutil
+import stat
 import tempfile
 from pathlib import Path
 from typing import Dict
@@ -165,7 +166,7 @@ def idempotent_chmod(path: str, mode: int):
         os.chmod(path, mode)
     except Exception:
         existing_mode = os.stat(path)
-        if mode in [existing_mode.st_mode, existing_mode.st_mode & 0o777]:
+        if mode in (existing_mode.st_mode, stat.S_IMODE(existing_mode.st_mode)):
             # file already has the desired permissions -> return
             return
         raise

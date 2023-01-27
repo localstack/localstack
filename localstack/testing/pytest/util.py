@@ -6,7 +6,10 @@ from typing import Callable
 
 def run_as_os_user(target: Callable, uid: str | int, gid: str | int = None):
     """
-    Run the given callable under a different OS user ID and (optionally) group ID, in a forked subprocess
+    Run the given callable under a different OS user and (optionally) group, in a forked subprocess.
+    :param target: the function to call in the subprocess
+    :param uid: either the user name (string) or numeric user ID
+    :param gid: optionally, either the group name (string) or numeric group ID
     """
 
     def _wrapper():
