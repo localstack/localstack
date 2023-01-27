@@ -94,6 +94,11 @@ APIGATEWAY_STEPFUNCTIONS_POLICY = {
     "Statement": [{"Effect": "Allow", "Action": "states:*", "Resource": "*"}],
 }
 
+APIGATEWAY_KINESIS_POLICY = {
+    "Version": "2012-10-17",
+    "Statement": [{"Effect": "Allow", "Action": "kinesis:*", "Resource": "*"}],
+}
+
 APIGATEWAY_ASSUME_ROLE_POLICY = {
     "Statement": {
         "Sid": "",
@@ -237,7 +242,6 @@ class TestAPIGateway:
         assert response.ok
         assert response._content == b'{"echo": "foobar", "response": "mocked"}'
 
-    @pytest.mark.skip
     def test_api_gateway_kinesis_integration(self):
         # create target Kinesis stream
         stream = resource_util.create_kinesis_stream(self.TEST_STREAM_KINESIS_API_GW)
