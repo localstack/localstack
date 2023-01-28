@@ -29,7 +29,7 @@
     }
   },
   "tests/integration/cloudformation/test_template_engine.py::TestMacros::test_global_scope": {
-    "recorded-date": "17-01-2023, 11:28:28",
+    "recorded-date": "28-01-2023, 10:13:11",
     "recorded-content": {
       "processed_template": {
         "StagesAvailable": [
@@ -275,7 +275,7 @@
     }
   },
   "tests/integration/cloudformation/test_template_engine.py::TestMacros::test_capabilities_requirements": {
-    "recorded-date": "23-01-2023, 12:51:26",
+    "recorded-date": "28-01-2023, 10:14:01",
     "recorded-content": {
       "error": {
         "Error": {
@@ -351,7 +351,7 @@
     }
   },
   "tests/integration/cloudformation/test_template_engine.py::TestMacros::test_validate_lambda_internals": {
-    "recorded-date": "19-01-2023, 13:02:19",
+    "recorded-date": "28-01-2023, 10:14:59",
     "recorded-content": {
       "event": {
         "Event": {
@@ -387,7 +387,7 @@
     }
   },
   "tests/integration/cloudformation/test_template_engine.py::TestMacros::test_to_validate_template_limit_for_macro": {
-    "recorded-date": "08-12-2022, 09:29:56",
+    "recorded-date": "28-01-2023, 10:15:19",
     "recorded-content": {
       "error_response": {
         "Error": {
@@ -403,7 +403,7 @@
     }
   },
   "tests/integration/cloudformation/test_template_engine.py::TestMacros::test_error_pass_macro_as_reference": {
-    "recorded-date": "08-12-2022, 11:03:51",
+    "recorded-date": "28-01-2023, 10:15:20",
     "recorded-content": {
       "error": {
         "Error": {
@@ -423,7 +423,7 @@
     "recorded-content": {}
   },
   "tests/integration/cloudformation/test_template_engine.py::TestMacros::test_functions_and_references_during_transformation": {
-    "recorded-date": "08-12-2022, 16:15:15",
+    "recorded-date": "28-01-2023, 10:16:09",
     "recorded-content": {
       "event": {
         "Params": {
@@ -445,7 +445,7 @@
     }
   },
   "tests/integration/cloudformation/test_template_engine.py::TestMacros::test_failed_state[return_unsuccessful_with_message.py]": {
-    "recorded-date": "23-01-2023, 13:35:12",
+    "recorded-date": "28-01-2023, 10:16:59",
     "recorded-content": {
       "failed_description": {
         "EventId": "<uuid:1>",
@@ -461,7 +461,7 @@
     }
   },
   "tests/integration/cloudformation/test_template_engine.py::TestMacros::test_failed_state[return_unsuccessful_without_message.py]": {
-    "recorded-date": "23-01-2023, 13:36:03",
+    "recorded-date": "28-01-2023, 10:17:49",
     "recorded-content": {
       "failed_description": {
         "EventId": "<uuid:1>",
@@ -477,7 +477,7 @@
     }
   },
   "tests/integration/cloudformation/test_template_engine.py::TestMacros::test_failed_state[return_invalid_template.py]": {
-    "recorded-date": "23-01-2023, 13:36:53",
+    "recorded-date": "28-01-2023, 10:18:47",
     "recorded-content": {
       "failed_description": {
         "EventId": "<uuid:1>",
@@ -493,7 +493,7 @@
     }
   },
   "tests/integration/cloudformation/test_template_engine.py::TestMacros::test_failed_state[raise_error.py]": {
-    "recorded-date": "23-01-2023, 13:37:44",
+    "recorded-date": "28-01-2023, 10:19:37",
     "recorded-content": {
       "failed_description": {
         "EventId": "<uuid:1>",
@@ -554,7 +554,7 @@
     }
   },
   "tests/integration/cloudformation/test_template_engine.py::TestMacros::test_macro_deployment": {
-    "recorded-date": "17-01-2023, 10:54:32",
+    "recorded-date": "28-01-2023, 10:12:21",
     "recorded-content": {
       "stack_outputs": {
         "MacroRef": "SubstitutionMacro"
