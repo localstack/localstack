@@ -1,13 +1,16 @@
 import logging
 import os
+import threading
 from typing import Dict, List, NamedTuple, Optional
 from urllib.parse import urlparse
 
 import requests
+from werkzeug.routing import Rule
 
 from localstack import config, constants
 from localstack.aws.api.opensearch import EngineType
-from localstack.services.generic_proxy import EndpointProxy
+from localstack.http.proxy import ProxyHandler
+from localstack.services.edge import ROUTER
 from localstack.services.infra import DEFAULT_BACKEND_HOST
 from localstack.services.opensearch import versions
 from localstack.services.opensearch.packages import elasticsearch_package, opensearch_package
@@ -118,6 +121,103 @@ def build_cluster_run_command(cluster_bin: str, settings: CommandSettings) -> Li
     return [cluster_bin] + cmd_settings
 
 
+class CustomEndpoint:
+    """
+    Encapsulates a custom endpoint (combines CustomEndpoint and CustomEndpointEnabled within the DomainEndpointOptions
+    of the cluster, i.e. combines two fields from the AWS OpenSearch service model).
+    """
+
+    enabled: bool
+    endpoint: str
+
+    def __init__(self, enabled: bool, endpoint: str) -> None:
+        """
+        :param enabled: true if the custom endpoint is enabled (refers to DomainEndpointOptions#CustomEndpointEnabled)
+        :param endpoint: defines the endpoint (i.e. the URL - refers to DomainEndpointOptions#CustomEndpoint)
+        """
+        self.enabled = enabled
+        self.endpoint = endpoint
+
+        if self.endpoint:
+            self.url = urlparse(endpoint)
+        else:
+            self.url = None
+
+
+def register_cluster(
+    host: str, path: str, forward_url: str, custom_endpoint: CustomEndpoint
+) -> List[Rule]:
+    """
+    Registers routes for a cluster at the edge router.
+    Depending on which endpoint strategy is employed, and if a custom endpoint is enabled, different routes are
+    registered.
+    This method is tightly coupled with `cluster_manager.build_cluster_endpoint`, which already creates the
+    endpoint URL according to the configuration used here.
+
+    :param host: hostname of the inbound address without scheme or port
+    :param path: path of the inbound address
+    :param forward_url: whole address for outgoing traffic (including the protocol)
+    :param custom_endpoint: Object that stores a custom address and if its enabled.
+            If a custom_endpoint is set AND enabled, the specified address takes precedence
+            over any strategy currently active, and overwrites any host/path combination.
+    :return: a list of generated router rules, which can be used for removal
+    """
+    # custom backends overwrite the usual forward_url
+    forward_url = config.OPENSEARCH_CUSTOM_BACKEND or forward_url
+    endpoint = ProxyHandler(forward_url)
+    rules = []
+    strategy = config.OPENSEARCH_ENDPOINT_STRATEGY
+    # custom endpoints override any endpoint strategy
+    if custom_endpoint and custom_endpoint.enabled:
+        LOG.debug(f"Registering route from {host}{path} to {endpoint.proxy.forward_base_url}")
+        assert not (
+            host == config.LOCALSTACK_HOSTNAME and (not path or path == "/")
+        ), "trying to register an illegal catch all route"
+        rules.append(
+            ROUTER.add(
+                path=path,
+                endpoint=endpoint,
+                host=f'{host}<regex("(:.*)?"):port>',
+            )
+        )
+        rules.append(
+            ROUTER.add(
+                f"{path}/<path:path>",
+                endpoint=endpoint,
+                host=f'{host}<regex("(:.*)?"):port>',
+            )
+        )
+    elif strategy == "domain":
+        LOG.debug(f"Registering route from {host} to {endpoint.proxy.forward_base_url}")
+        assert (
+            not host == config.LOCALSTACK_HOSTNAME
+        ), "trying to register an illegal catch all route"
+        rules.append(
+            ROUTER.add(
+                "/",
+                endpoint=endpoint,
+                host=f"{host}<regex('(:.*)?'):port>",
+            )
+        )
+        rules.append(
+            ROUTER.add(
+                "/<path:path>",
+                endpoint=endpoint,
+                host=f"{host}<regex('(:.*)?'):port>",
+            )
+        )
+    elif strategy == "path":
+        LOG.debug(f"Registering route from {path} to {endpoint.proxy.forward_base_url}")
+        assert path and not path == "/", "trying to register an illegal catch all route"
+        rules.append(ROUTER.add(path, endpoint=endpoint))
+        rules.append(ROUTER.add(f"{path}/<path:path>", endpoint=endpoint))
+
+    elif strategy != "port":
+        LOG.warning(f"Attempted to register route for cluster with invalid strategy '{strategy}'")
+
+    return rules
+
+
 class OpensearchCluster(Server):
     """Manages an OpenSearch cluster which is installed and operated by LocalStack."""
 
@@ -225,27 +325,57 @@ class OpensearchCluster(Server):
         LOG.info("[%s] %s", self.port, line.rstrip())
 
 
-class CustomEndpoint:
+class EndpointProxy:
+    def __init__(self, base_url: str, forward_url: str, custom_endpoint: CustomEndpoint) -> None:
+        super().__init__()
+        self.base_url = base_url
+        self.forward_url = forward_url
+        self.custom_endpoint = custom_endpoint
+        self.routing_rules = None
+
+    def register(self):
+        _url = urlparse(self.base_url)
+        self.routing_rules = register_cluster(
+            host=_url.hostname,
+            path=_url.path,
+            forward_url=self.forward_url,
+            custom_endpoint=self.custom_endpoint,
+        )
+
+    def unregister(self):
+        for rule in self.routing_rules:
+            ROUTER.remove_rule(rule)
+        self.routing_rules.clear()
+
+
+class FakeEndpointProxyServer(Server):
     """
-    Encapsulates a custom endpoint (combines CustomEndpoint and CustomEndpointEnabled within the DomainEndpointOptions
-    of the cluster, i.e. combines two fields from the AWS OpenSearch service model).
+    Makes an EndpointProxy behave like a Server. You can use this to create transparent
+    multiplexing behavior.
     """
 
-    enabled: bool
-    endpoint: str
+    endpoint: EndpointProxy
 
-    def __init__(self, enabled: bool, endpoint: str) -> None:
-        """
-        :param enabled: true if the custom endpoint is enabled (refers to DomainEndpointOptions#CustomEndpointEnabled)
-        :param endpoint: defines the endpoint (i.e. the URL - refers to DomainEndpointOptions#CustomEndpoint)
-        """
-        self.enabled = enabled
+    def __init__(self, endpoint: EndpointProxy) -> None:
         self.endpoint = endpoint
+        self._shutdown_event = threading.Event()
 
-        if self.endpoint:
-            self.url = urlparse(endpoint)
-        else:
-            self.url = None
+        self._url = urlparse(self.endpoint.base_url)
+        super().__init__(self._url.port, self._url.hostname)
+
+    @property
+    def url(self):
+        return self._url.geturl()
+
+    def do_run(self):
+        self.endpoint.register()
+        try:
+            self._shutdown_event.wait()
+        finally:
+            self.endpoint.unregister()
+
+    def do_shutdown(self):
+        self._shutdown_event.set()
 
 
 class EdgeProxiedOpensearchCluster(Server):
@@ -254,13 +384,14 @@ class EdgeProxiedOpensearchCluster(Server):
     requests to the backend cluster.
     """
 
-    def __init__(self, url: str, arn: str, version=None) -> None:
+    def __init__(self, url: str, arn: str, custom_endpoint: CustomEndpoint, version=None) -> None:
         self._url = urlparse(url)
 
         super().__init__(
             host=self._url.hostname,
             port=self._url.port,
         )
+        self.custom_endpoint = custom_endpoint
         self._version = version or self.default_version
         self.arn = arn
 
@@ -307,7 +438,7 @@ class EdgeProxiedOpensearchCluster(Server):
         self.cluster = self._backend_cluster()
         self.cluster.start()
 
-        self.proxy = EndpointProxy(self.url, self.cluster.url)
+        self.proxy = EndpointProxy(self.url, self.cluster.url, self.custom_endpoint)
         LOG.info("registering an endpoint proxy for %s => %s", self.url, self.cluster.url)
         self.proxy.register()
 

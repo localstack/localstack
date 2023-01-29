@@ -1,19 +1,14 @@
-import gzip
 import logging
 import os
 import select
 import socket
-from typing import Any, Dict, Tuple, Union
+from typing import Tuple, Union
 
-import requests
-
-from localstack.constants import BIND_HOST, HEADER_ACCEPT_ENCODING, LOCALHOST_IP
-from localstack.services.generic_proxy import ProxyListener, start_proxy_server
+from localstack.constants import BIND_HOST, LOCALHOST_IP
 from localstack.utils.asyncio import ensure_event_loop
 from localstack.utils.files import new_tmp_file, save_file
 from localstack.utils.functions import run_safe
 from localstack.utils.numbers import is_number
-from localstack.utils.strings import to_bytes
 from localstack.utils.threads import TMP_THREADS, FuncThread, start_worker_thread
 
 LOG = logging.getLogger(__name__)
@@ -48,11 +43,10 @@ def start_tcp_proxy(src, dst, handler, **kwargs):
 
     def handle_request(s_src, thread):
         s_dst = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        s_dst.connect(ip_to_tuple(dst))
-
-        sockets = [s_src, s_dst]
-
         try:
+            s_dst.connect(ip_to_tuple(dst))
+
+            sockets = [s_src, s_dst]
             while thread.running:
                 s_read, _, _ = select.select(sockets, [], [])
 
@@ -90,21 +84,8 @@ def start_ssl_proxy(
     target_ssl=False,
     client_cert_key: Tuple[str, str] = None,
     asynchronous: bool = False,
-    fix_encoding: bool = False,
 ):
     """Start a proxy server that accepts SSL requests and forwards requests to a backend (either SSL or non-SSL)"""
-
-    if fix_encoding:
-        # use a custom proxy listener, in case the user provides client certificates for authentication
-        if client_cert_key:
-            server = _do_start_ssl_proxy_with_client_auth(
-                port, target, client_cert_key=client_cert_key
-            )
-        else:
-            server = _do_start_ssl_proxy_with_listener(port, target)
-        if not asynchronous:
-            server.join()
-        return server
 
     def _run(*args):
         return _do_start_ssl_proxy(
@@ -188,40 +169,3 @@ def _do_start_ssl_proxy(
     loop.run_until_complete(handler.wait_closed())
     loop.run_until_complete(loop.shutdown_asyncgens())
     loop.close()
-
-
-def _do_start_ssl_proxy_with_client_auth(
-    port: int, target: PortOrUrl, client_cert_key: Tuple[str, str]
-):
-    # prepare cert files (TODO: check whether/how we can pass cert strings to requests.request(..) directly)
-    cert_params = _save_cert_keys(client_cert_key)
-    # start proxy
-    requests_kwargs = {"cert": cert_params}
-    result = _do_start_ssl_proxy_with_listener(port, target, requests_kwargs=requests_kwargs)
-    return result
-
-
-def _do_start_ssl_proxy_with_listener(
-    port: int, target: PortOrUrl, requests_kwargs: Dict[str, Any] = None
-):
-    target = f"http://localhost:{target}" if isinstance(target, int) else target
-    base_url = f"{'https://' if '://' not in target else ''}{target.rstrip('/')}"
-    requests_kwargs = requests_kwargs or {}
-
-    # define forwarding listener
-    class Listener(ProxyListener):
-        def forward_request(self, method, path, data, headers):
-            # send request to target
-            url = f"{base_url}{path}"
-            response = requests.request(
-                method=method, url=url, data=data, headers=headers, verify=False, **requests_kwargs
-            )
-            # fix encoding of response, based on Accept-Encoding header
-            if "gzip" in headers.get(HEADER_ACCEPT_ENCODING, "").lower():
-                response._content = gzip.compress(to_bytes(response._content))
-                response.headers["Content-Length"] = str(len(response._content))
-                response.headers["Content-Encoding"] = "gzip"
-            return response
-
-    proxy_thread = start_proxy_server(port, update_listener=Listener(), use_ssl=True)
-    return proxy_thread

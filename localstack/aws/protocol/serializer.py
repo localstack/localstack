@@ -91,10 +91,13 @@ from boto.utils import ISO8601
 from botocore.model import ListShape, MapShape, OperationModel, ServiceModel, Shape, StructureShape
 from botocore.serialize import ISO8601_MICRO
 from botocore.utils import calculate_md5, is_json_value_header, parse_to_aware_datetime
+from werkzeug import Request as WerkzeugRequest
+from werkzeug import Response as WerkzeugResponse
 from werkzeug.datastructures import Headers, MIMEAccept
 from werkzeug.http import parse_accept_header
 
-from localstack.aws.api import HttpResponse, ServiceException
+from localstack.aws.api import CommonServiceException, HttpResponse, ServiceException
+from localstack.aws.spec import load_service
 from localstack.constants import (
     APPLICATION_AMZ_CBOR_1_1,
     APPLICATION_AMZ_JSON_1_0,
@@ -324,20 +327,22 @@ class ResponseSerializer(abc.ABC):
             # yield one event per generated event
             for event in event_generator:
                 # find the actual event payload (the member with event=true)
-                event_member = None
-                for member in event_stream_shape_members.values():
-                    if member.serialization.get("event"):
-                        event_member = member
+                event_member_shape = None
+                event_member_name = None
+                for member_name, member_shape in event_stream_shape_members.items():
+                    if member_shape.serialization.get("event") and member_name in event:
+                        event_member_shape = member_shape
+                        event_member_name = member_name
                         break
-                if event_member is None:
+                if event_member_shape is None:
                     raise UnknownSerializerError("Couldn't find event shape for serialization.")
 
                 # serialize the part of the response for the event
                 self._serialize_response(
-                    event.get(event_member.name),
+                    event.get(event_member_name),
                     serialized_event_response,
-                    event_member,
-                    event_member.members if event_member is not None else None,
+                    event_member_shape,
+                    event_member_shape.members if event_member_shape is not None else None,
                     operation_model,
                     mime_type,
                 )
@@ -347,7 +352,7 @@ class ResponseSerializer(abc.ABC):
                 )
                 # encode the event and yield it
                 yield self._encode_event_payload(
-                    event_type=event_member.name, content=serialized_event_response.data
+                    event_type=event_member_name, content=serialized_event_response.data
                 )
 
         return HttpResponse(
@@ -891,6 +896,13 @@ class BaseRestResponseSerializer(ResponseSerializer, ABC):
             return
 
         payload_member = shape.serialization.get("payload")
+        # If this shape is defined as being an event, we need to search for the payload member
+        if not payload_member and shape.serialization.get("event"):
+            for member_name, member_shape in shape_members.items():
+                # Try to find the first shape which is marked as "eventpayload" and is given in the params dict
+                if member_shape.serialization.get("eventpayload") and parameters.get(member_name):
+                    payload_member = member_name
+                    break
         if payload_member is not None and shape_members[payload_member].type_name in [
             "blob",
             "string",
@@ -1498,3 +1510,70 @@ def create_serializer(service: ServiceModel) -> ResponseSerializer:
     else:
         # Otherwise, pick the protocol-specific serializer for the protocol of the service
         return protocol_specific_serializers[service.protocol]()
+
+
+def aws_response_serializer(service: str, operation: str):
+    """
+    A decorator for an HTTP route that can serialize return values or exceptions into AWS responses.
+    This can be used to create AWS request handlers in a convenient way. Example usage::
+
+        from localstack.http import route, Request
+        from localstack.aws.api.sqs import ListQueuesResult
+
+        @route("/_aws/sqs/queues")
+        @aws_response_serializer("sqs", "ListQueues")
+        def my_route(request: Request):
+            if some_condition_on_request:
+                raise CommonServiceError("...")  # <- will be serialized into an error response
+
+            return ListQueuesResult(QueueUrls=...)  # <- object from the SQS API will be serialized
+
+    :param service: the AWS service (e.g., "sqs", "lambda")
+    :param operation: the operation name (e.g., "ReceiveMessage", "ListFunctions")
+    :returns: a decorator
+    """
+
+    def _decorate(fn):
+        service_model = load_service(service)
+        operation_model = service_model.operation_model(operation)
+        serializer = create_serializer(service_model)
+
+        def _proxy(*args, **kwargs) -> WerkzeugResponse:
+            # extract request from function invocation (decorator can be used for methods as well as for functions).
+            if len(args) > 0 and isinstance(args[0], WerkzeugRequest):
+                # function
+                request = args[0]
+            elif len(args) > 1 and isinstance(args[1], WerkzeugRequest):
+                # method (arg[0] == self)
+                request = args[1]
+            elif "request" in kwargs:
+                request = kwargs["request"]
+            else:
+                raise ValueError(f"could not find Request in signature of function {fn}")
+
+            try:
+                response = fn(*args, **kwargs)
+
+                if isinstance(response, WerkzeugResponse):
+                    return response
+
+                return serializer.serialize_to_response(
+                    response,
+                    operation_model,
+                    request.headers,
+                )
+
+            except ServiceException as e:
+                return serializer.serialize_error_to_response(e, operation_model, request.headers)
+            except Exception as e:
+                return serializer.serialize_error_to_response(
+                    CommonServiceException(
+                        "InternalError", f"An internal error occurred: {e}", status_code=500
+                    ),
+                    operation_model,
+                    request.headers,
+                )
+
+        return _proxy
+
+    return _decorate

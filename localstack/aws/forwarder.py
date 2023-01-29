@@ -46,6 +46,10 @@ def ForwardingFallbackDispatcher(
     return table
 
 
+class NotImplementedAvoidFallbackError(NotImplementedError):
+    pass
+
+
 def _wrap_with_fallthrough(
     handler: ServiceRequestHandler, fallthrough_handler: ServiceRequestHandler
 ) -> ServiceRequestHandler:
@@ -54,6 +58,9 @@ def _wrap_with_fallthrough(
             # handler will typically be an ASF provider method, and in case it hasn't been
             # implemented, we try to fall back to forwarding the request to the backend
             return handler(context, req)
+        except NotImplementedAvoidFallbackError as e:
+            # if the fallback has been explicitly disabled, don't pass on to the fallback
+            raise e
         except NotImplementedError:
             pass
 

@@ -366,7 +366,7 @@ def invoke_rest_api_integration_backend(invocation_context: ApiInvocationContext
             headers["X-Amz-Target"] = target
 
             result = common.make_http_request(
-                url=config.service_url("kineses"), data=payload, headers=headers, method="POST"
+                url=config.service_url("kinesis"), data=payload, headers=headers, method="POST"
             )
 
             # apply response template
@@ -441,6 +441,13 @@ def invoke_rest_api_integration_backend(invocation_context: ApiInvocationContext
                 return apply_request_response_templates(
                     integration_response, response_templates, content_type=APPLICATION_JSON
                 )
+            elif uri.startswith("arn:aws:apigateway:") and ".appsync-api:" in uri:
+                # arn:aws:apigateway:us-east-1:appsyncid.appsync-api:path/graphql
+                uri_parts = uri.split(":")
+                app_sync_id = uri_parts[-2].replace(".appsync-api", "")
+                url = urljoin(config.service_url("appsync"), f"graphql/{app_sync_id}")
+                result = common.make_http_request(url, method="POST", headers=headers, data=data)
+                return result
 
         raise Exception(
             'API Gateway AWS integration action URI "%s", method "%s" not yet implemented'

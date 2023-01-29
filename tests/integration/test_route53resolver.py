@@ -563,3 +563,30 @@ class TestRoute53Resolver:
             route53resolver_client, resolver_rule_id, vpcId, "disassociate"
         )
         snapshot.match("disassociate_resolver_rule_res", disassociate_resolver_rule_res)
+
+    @pytest.mark.aws_validated
+    @pytest.mark.skip_snapshot_verify(paths=["$..ManagedOwnerName"])
+    def test_list_firewall_domain_lists(self, route53resolver_client, cleanups, snapshot):
+        snapshot.add_transformer(snapshot.transform.key_value("Id"))
+
+        tags = [{"Key": "hello", "Value": "world"}]
+        firewall_name = "my_firewall_domain"
+
+        result = route53resolver_client.create_firewall_domain_list(
+            CreatorRequestId="test", Name=firewall_name, Tags=tags
+        )
+        snapshot.match("create-firewall-domain-list", result)
+        arn = result["FirewallDomainList"]["Arn"]
+        firewall_id = result["FirewallDomainList"]["Id"]
+        cleanups.append(
+            lambda: route53resolver_client.delete_firewall_domain_list(
+                FirewallDomainListId=firewall_id
+            )
+        )
+
+        result_list = route53resolver_client.list_firewall_domain_lists()
+        extracted = [r for r in result_list["FirewallDomainLists"] if r["Name"] == firewall_name]
+        snapshot.match("list-firewall-domain-list-filtered", extracted)
+
+        tag_result = route53resolver_client.list_tags_for_resource(ResourceArn=arn)
+        snapshot.match("list-tags-for-resource", tag_result)

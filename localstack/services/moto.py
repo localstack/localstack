@@ -108,7 +108,13 @@ def dispatch_to_moto(context: RequestContext) -> Response:
     dispatch = get_dispatcher(service.service_name, request.path)
 
     try:
-        status, headers, content = dispatch(request, request.url, request.headers)
+        response = dispatch(request, request.url, request.headers)
+        if not response:
+            # some operations are only partially implemented by moto
+            # e.g. the request will be resolved, but then the request method is not handled
+            # it will return None in that case, e.g. for: apigateway TestInvokeAuthorizer + UpdateGatewayResponse
+            raise NotImplementedError
+        status, headers, content = response
         if isinstance(content, str) and len(content) == 0:
             # moto often returns an empty string to indicate an empty body.
             # use None instead to ensure that body-related headers aren't overwritten when creating the response object.

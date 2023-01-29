@@ -1297,12 +1297,34 @@
     }
   },
   "tests/integration/test_sns.py::TestSNSProvider::test_validations_for_fifo": {
-    "recorded-date": "09-08-2022, 11:35:56",
+    "recorded-date": "12-12-2022, 12:01:57",
     "recorded-content": {
       "not-fifo-topic": {
         "Error": {
           "Code": "InvalidParameter",
           "Message": "Invalid parameter: Invalid parameter: Endpoint Reason: FIFO SQS Queues can not be subscribed to standard SNS topics",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "not-fifo-queue": {
+        "Error": {
+          "Code": "InvalidParameter",
+          "Message": "Invalid parameter: Invalid parameter: Endpoint Reason: Please use FIFO SQS queue",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "regular-queue-for-dlq-of-fifo-topic": {
+        "Error": {
+          "Code": "InvalidParameter",
+          "Message": "Invalid parameter: RedrivePolicy: must use a FIFO queue as DLQ for a FIFO topic",
           "Type": "Sender"
         },
         "ResponseMetadata": {
@@ -1488,11 +1510,32 @@
     }
   },
   "tests/integration/test_sns.py::TestSNSProvider::test_publish_sqs_from_sns_with_xray_propagation": {
-    "recorded-date": "09-08-2022, 11:35:46",
-    "recorded-content": {}
+    "recorded-date": "30-11-2022, 18:18:00",
+    "recorded-content": {
+      "xray-msg": {
+        "Attributes": {
+          "AWSTraceHeader": "Root=1-3152b799-8954dae64eda91bc9a23a7e8;Parent=7fa8c0f79203be72;Sampled=1",
+          "SentTimestamp": "timestamp"
+        },
+        "Body": {
+          "Type": "Notification",
+          "MessageId": "<uuid:1>",
+          "TopicArn": "arn:aws:sns:<region>:111111111111:<resource:1>",
+          "Message": "X-Ray propagation test msg",
+          "Timestamp": "date",
+          "SignatureVersion": "1",
+          "Signature": "<signature>",
+          "SigningCertURL": "https://sns.<region>.amazonaws.com/SimpleNotificationService-<signing-cert-file:1>",
+          "UnsubscribeURL": "<unsubscribe-domain>/?Action=Unsubscribe&SubscriptionArn=arn:aws:sns:<region>:111111111111:<resource:1>:<resource:2>"
+        },
+        "MD5OfBody": "<md5-hash>",
+        "MessageId": "<uuid:2>",
+        "ReceiptHandle": "<receipt-handle:1>"
+      }
+    }
   },
   "tests/integration/test_sns.py::TestSNSProvider::test_subscription_after_failure_to_deliver": {
-    "recorded-date": "10-08-2022, 17:04:52",
+    "recorded-date": "20-12-2022, 20:25:24",
     "recorded-content": {
       "subscriptions-attrs": {
         "Attributes": {
@@ -1503,6 +1546,7 @@
           "Protocol": "sqs",
           "RawMessageDelivery": "false",
           "SubscriptionArn": "arn:aws:sns:<region>:111111111111:<resource:3>:<resource:2>",
+          "SubscriptionPrincipal": "<sub-principal>",
           "TopicArn": "arn:aws:sns:<region>:111111111111:<resource:3>"
         },
         "ResponseMetadata": {
@@ -1535,10 +1579,6 @@
         }
       },
       "subscriptions": {
-        "ResponseMetadata": {
-          "HTTPHeaders": {},
-          "HTTPStatusCode": 200
-        },
         "Subscriptions": [
           {
             "Endpoint": "arn:aws:sqs:<region>:111111111111:<resource:1>",
@@ -1547,7 +1587,11 @@
             "SubscriptionArn": "arn:aws:sns:<region>:111111111111:<resource:3>:<resource:2>",
             "TopicArn": "arn:aws:sns:<region>:111111111111:<resource:3>"
           }
-        ]
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
       },
       "subscriptions-attrs-with-redrive": {
         "Attributes": {
@@ -1561,6 +1605,7 @@
             "deadLetterTargetArn": "arn:aws:sqs:<region>:111111111111:<resource:4>"
           },
           "SubscriptionArn": "arn:aws:sns:<region>:111111111111:<resource:3>:<resource:2>",
+          "SubscriptionPrincipal": "<sub-principal>",
           "TopicArn": "arn:aws:sns:<region>:111111111111:<resource:3>"
         },
         "ResponseMetadata": {
@@ -1961,7 +2006,7 @@
     }
   },
   "tests/integration/test_sns.py::TestSNSProvider::test_message_to_fifo_sqs[True]": {
-    "recorded-date": "12-08-2022, 13:52:38",
+    "recorded-date": "27-01-2023, 19:44:21",
     "recorded-content": {
       "messages": {
         "Messages": [
@@ -1975,9 +2020,17 @@
               "SentTimestamp": "timestamp",
               "SequenceNumber": "<sequence-number:1>"
             },
-            "Body": "Test",
+            "Body": {
+              "Type": "Notification",
+              "MessageId": "<uuid:1>",
+              "SequenceNumber": "<sequence-number:2>",
+              "TopicArn": "arn:aws:sns:<region>:111111111111:<resource:1>",
+              "Message": "Test",
+              "Timestamp": "date",
+              "UnsubscribeURL": "<unsubscribe-domain>/?Action=Unsubscribe&SubscriptionArn=arn:aws:sns:<region>:111111111111:<resource:1>:<resource:2>"
+            },
             "MD5OfBody": "<md5-hash>",
-            "MessageId": "<uuid:1>",
+            "MessageId": "<uuid:2>",
             "ReceiptHandle": "<receipt-handle:1>"
           }
         ],
@@ -1989,7 +2042,7 @@
     }
   },
   "tests/integration/test_sns.py::TestSNSProvider::test_message_to_fifo_sqs[False]": {
-    "recorded-date": "12-08-2022, 13:52:40",
+    "recorded-date": "27-01-2023, 19:44:23",
     "recorded-content": {
       "messages": {
         "Messages": [
@@ -2003,9 +2056,17 @@
               "SentTimestamp": "timestamp",
               "SequenceNumber": "<sequence-number:1>"
             },
-            "Body": "Test",
+            "Body": {
+              "Type": "Notification",
+              "MessageId": "<uuid:1>",
+              "SequenceNumber": "<sequence-number:2>",
+              "TopicArn": "arn:aws:sns:<region>:111111111111:<resource:1>",
+              "Message": "Test",
+              "Timestamp": "date",
+              "UnsubscribeURL": "<unsubscribe-domain>/?Action=Unsubscribe&SubscriptionArn=arn:aws:sns:<region>:111111111111:<resource:1>:<resource:2>"
+            },
             "MD5OfBody": "<md5-hash>",
-            "MessageId": "<uuid:1>",
+            "MessageId": "<uuid:2>",
             "ReceiptHandle": "<receipt-handle:1>"
           }
         ],
@@ -2203,6 +2264,776 @@
       },
       "publish-ok-2": {
         "MessageId": "<uuid:2>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/integration/test_sns.py::TestSNSProvider::test_message_structure_json_exc": {
+    "recorded-date": "25-11-2022, 18:42:09",
+    "recorded-content": {
+      "missing-default-key": {
+        "Error": {
+          "Code": "InvalidParameter",
+          "Message": "Invalid parameter: Message Structure - No default entry in JSON message body",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "invalid-json": {
+        "Error": {
+          "Code": "InvalidParameter",
+          "Message": "Invalid parameter: Message Structure - JSON message body failed to parse",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "duplicate-json-keys": {
+        "MessageId": "<uuid:1>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/integration/test_sns.py::TestSNSProvider::test_publish_non_existent_target": {
+    "recorded-date": "30-11-2022, 17:03:38",
+    "recorded-content": {
+      "non-existent-endpoint": {
+        "Error": {
+          "Code": "InvalidParameter",
+          "Message": "Invalid parameter: TargetArn Reason: No endpoint found for the target arn specified",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/integration/test_sns.py::TestSNSProvider::test_publish_wrong_phone_format": {
+    "recorded-date": "30-11-2022, 17:20:37",
+    "recorded-content": {
+      "invalid-number": {
+        "Error": {
+          "Code": "InvalidParameter",
+          "Message": "Invalid parameter: PhoneNumber Reason: +1a234 is not valid to publish to",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "wrong-format": {
+        "Error": {
+          "Code": "InvalidParameter",
+          "Message": "Invalid parameter: PhoneNumber Reason: NAA+15551234567 is not valid to publish to",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "wrong-endpoint": {
+        "Error": {
+          "Code": "InvalidParameter",
+          "Message": "Invalid SMS endpoint: NAA+15551234567",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/integration/test_sns.py::TestSNSProvider::test_subscribe_to_sqs_with_queue_url": {
+    "recorded-date": "30-11-2022, 18:09:39",
+    "recorded-content": {
+      "sub-queue-url": {
+        "Error": {
+          "Code": "InvalidParameter",
+          "Message": "Invalid parameter: SQS endpoint ARN",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/integration/test_sns.py::TestSNSProvider::test_publish_fifo_batch_messages_to_dlq[True]": {
+    "recorded-date": "09-12-2022, 17:27:21",
+    "recorded-content": {
+      "topic-attrs": {
+        "Attributes": {
+          "ContentBasedDeduplication": "false",
+          "DisplayName": "",
+          "EffectiveDeliveryPolicy": {
+            "http": {
+              "defaultHealthyRetryPolicy": {
+                "minDelayTarget": 20,
+                "maxDelayTarget": 20,
+                "numRetries": 3,
+                "numMaxDelayRetries": 0,
+                "numNoDelayRetries": 0,
+                "numMinDelayRetries": 0,
+                "backoffFunction": "linear"
+              },
+              "disableSubscriptionOverrides": false
+            }
+          },
+          "FifoTopic": "true",
+          "Owner": "111111111111",
+          "Policy": {
+            "Version": "2008-10-17",
+            "Id": "__default_policy_ID",
+            "Statement": [
+              {
+                "Sid": "__default_statement_ID",
+                "Effect": "Allow",
+                "Principal": {
+                  "AWS": "*"
+                },
+                "Action": [
+                  "SNS:GetTopicAttributes",
+                  "SNS:SetTopicAttributes",
+                  "SNS:AddPermission",
+                  "SNS:RemovePermission",
+                  "SNS:DeleteTopic",
+                  "SNS:Subscribe",
+                  "SNS:ListSubscriptionsByTopic",
+                  "SNS:Publish"
+                ],
+                "Resource": "arn:aws:sns:<region>:111111111111:<resource:1>",
+                "Condition": {
+                  "StringEquals": {
+                    "AWS:SourceOwner": "111111111111"
+                  }
+                }
+              }
+            ]
+          },
+          "SubscriptionsConfirmed": "0",
+          "SubscriptionsDeleted": "0",
+          "SubscriptionsPending": "0",
+          "TopicArn": "arn:aws:sns:<region>:111111111111:<resource:1>"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "publish-batch-response-fifo": {
+        "Failed": [],
+        "Successful": [
+          {
+            "Id": "1",
+            "MessageId": "<uuid:1>",
+            "SequenceNumber": "<sequence-number:1>"
+          },
+          {
+            "Id": "2",
+            "MessageId": "<uuid:2>",
+            "SequenceNumber": "<sequence-number:2>"
+          },
+          {
+            "Id": "3",
+            "MessageId": "<uuid:3>",
+            "SequenceNumber": "<sequence-number:3>"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "messages-in-dlq": {
+        "Messages": [
+          {
+            "Attributes": {
+              "ApproximateFirstReceiveTimestamp": "timestamp",
+              "ApproximateReceiveCount": "1",
+              "MessageDeduplicationId": "MessageDeduplicationId-1",
+              "MessageGroupId": "complexMessageGroupId",
+              "SenderId": "<sender-id>",
+              "SentTimestamp": "timestamp",
+              "SequenceNumber": "<sequence-number:4>"
+            },
+            "Body": "Test Message with two attributes",
+            "MD5OfBody": "<md5-hash>",
+            "MD5OfMessageAttributes": "<md5-hash>",
+            "MessageAttributes": {
+              "attr1": {
+                "DataType": "Number",
+                "StringValue": "99.12"
+              },
+              "attr2": {
+                "DataType": "Number",
+                "StringValue": "109.12"
+              }
+            },
+            "MessageId": "<uuid:4>",
+            "ReceiptHandle": "<receipt-handle:1>"
+          },
+          {
+            "Attributes": {
+              "ApproximateFirstReceiveTimestamp": "timestamp",
+              "ApproximateReceiveCount": "1",
+              "MessageDeduplicationId": "MessageDeduplicationId-2",
+              "MessageGroupId": "complexMessageGroupId",
+              "SenderId": "<sender-id>",
+              "SentTimestamp": "timestamp",
+              "SequenceNumber": "<sequence-number:5>"
+            },
+            "Body": "Test Message with one attribute",
+            "MD5OfBody": "<md5-hash>",
+            "MD5OfMessageAttributes": "<md5-hash>",
+            "MessageAttributes": {
+              "attr1": {
+                "DataType": "Number",
+                "StringValue": "19.12"
+              }
+            },
+            "MessageId": "<uuid:5>",
+            "ReceiptHandle": "<receipt-handle:2>"
+          },
+          {
+            "Attributes": {
+              "ApproximateFirstReceiveTimestamp": "timestamp",
+              "ApproximateReceiveCount": "1",
+              "MessageDeduplicationId": "MessageDeduplicationId-3",
+              "MessageGroupId": "complexMessageGroupId",
+              "SenderId": "<sender-id>",
+              "SentTimestamp": "timestamp",
+              "SequenceNumber": "<sequence-number:6>"
+            },
+            "Body": "Test Message without attribute",
+            "MD5OfBody": "<md5-hash>",
+            "MessageId": "<uuid:6>",
+            "ReceiptHandle": "<receipt-handle:3>"
+          }
+        ]
+      }
+    }
+  },
+  "tests/integration/test_sns.py::TestSNSProvider::test_publish_fifo_batch_messages_to_dlq[False]": {
+    "recorded-date": "09-12-2022, 17:27:24",
+    "recorded-content": {
+      "topic-attrs": {
+        "Attributes": {
+          "ContentBasedDeduplication": "false",
+          "DisplayName": "",
+          "EffectiveDeliveryPolicy": {
+            "http": {
+              "defaultHealthyRetryPolicy": {
+                "minDelayTarget": 20,
+                "maxDelayTarget": 20,
+                "numRetries": 3,
+                "numMaxDelayRetries": 0,
+                "numNoDelayRetries": 0,
+                "numMinDelayRetries": 0,
+                "backoffFunction": "linear"
+              },
+              "disableSubscriptionOverrides": false
+            }
+          },
+          "FifoTopic": "true",
+          "Owner": "111111111111",
+          "Policy": {
+            "Version": "2008-10-17",
+            "Id": "__default_policy_ID",
+            "Statement": [
+              {
+                "Sid": "__default_statement_ID",
+                "Effect": "Allow",
+                "Principal": {
+                  "AWS": "*"
+                },
+                "Action": [
+                  "SNS:GetTopicAttributes",
+                  "SNS:SetTopicAttributes",
+                  "SNS:AddPermission",
+                  "SNS:RemovePermission",
+                  "SNS:DeleteTopic",
+                  "SNS:Subscribe",
+                  "SNS:ListSubscriptionsByTopic",
+                  "SNS:Publish"
+                ],
+                "Resource": "arn:aws:sns:<region>:111111111111:<resource:1>",
+                "Condition": {
+                  "StringEquals": {
+                    "AWS:SourceOwner": "111111111111"
+                  }
+                }
+              }
+            ]
+          },
+          "SubscriptionsConfirmed": "0",
+          "SubscriptionsDeleted": "0",
+          "SubscriptionsPending": "0",
+          "TopicArn": "arn:aws:sns:<region>:111111111111:<resource:1>"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "publish-batch-response-fifo": {
+        "Failed": [],
+        "Successful": [
+          {
+            "Id": "1",
+            "MessageId": "<uuid:1>",
+            "SequenceNumber": "<sequence-number:1>"
+          },
+          {
+            "Id": "2",
+            "MessageId": "<uuid:2>",
+            "SequenceNumber": "<sequence-number:2>"
+          },
+          {
+            "Id": "3",
+            "MessageId": "<uuid:3>",
+            "SequenceNumber": "<sequence-number:3>"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "messages-in-dlq": {
+        "Messages": [
+          {
+            "Attributes": {
+              "ApproximateFirstReceiveTimestamp": "timestamp",
+              "ApproximateReceiveCount": "1",
+              "MessageDeduplicationId": "MessageDeduplicationId-1",
+              "MessageGroupId": "complexMessageGroupId",
+              "SenderId": "<sender-id>",
+              "SentTimestamp": "timestamp",
+              "SequenceNumber": "<sequence-number:4>"
+            },
+            "Body": {
+              "Type": "Notification",
+              "MessageId": "<uuid:1>",
+              "SequenceNumber": "<sequence-number:1>",
+              "TopicArn": "arn:aws:sns:<region>:111111111111:<resource:1>",
+              "Subject": "Subject",
+              "Message": "Test Message with two attributes",
+              "Timestamp": "date",
+              "UnsubscribeURL": "<unsubscribe-domain>/?Action=Unsubscribe&SubscriptionArn=arn:aws:sns:<region>:111111111111:<resource:1>:<resource:2>",
+              "MessageAttributes": {
+                "attr2": {
+                  "Type": "Number",
+                  "Value": "109.12"
+                },
+                "attr1": {
+                  "Type": "Number",
+                  "Value": "99.12"
+                }
+              }
+            },
+            "MD5OfBody": "<md5-hash>",
+            "MessageId": "<uuid:4>",
+            "ReceiptHandle": "<receipt-handle:1>"
+          },
+          {
+            "Attributes": {
+              "ApproximateFirstReceiveTimestamp": "timestamp",
+              "ApproximateReceiveCount": "1",
+              "MessageDeduplicationId": "MessageDeduplicationId-2",
+              "MessageGroupId": "complexMessageGroupId",
+              "SenderId": "<sender-id>",
+              "SentTimestamp": "timestamp",
+              "SequenceNumber": "<sequence-number:5>"
+            },
+            "Body": {
+              "Type": "Notification",
+              "MessageId": "<uuid:2>",
+              "SequenceNumber": "<sequence-number:2>",
+              "TopicArn": "arn:aws:sns:<region>:111111111111:<resource:1>",
+              "Subject": "Subject",
+              "Message": "Test Message with one attribute",
+              "Timestamp": "date",
+              "UnsubscribeURL": "<unsubscribe-domain>/?Action=Unsubscribe&SubscriptionArn=arn:aws:sns:<region>:111111111111:<resource:1>:<resource:2>",
+              "MessageAttributes": {
+                "attr1": {
+                  "Type": "Number",
+                  "Value": "19.12"
+                }
+              }
+            },
+            "MD5OfBody": "<md5-hash>",
+            "MessageId": "<uuid:5>",
+            "ReceiptHandle": "<receipt-handle:2>"
+          },
+          {
+            "Attributes": {
+              "ApproximateFirstReceiveTimestamp": "timestamp",
+              "ApproximateReceiveCount": "1",
+              "MessageDeduplicationId": "MessageDeduplicationId-3",
+              "MessageGroupId": "complexMessageGroupId",
+              "SenderId": "<sender-id>",
+              "SentTimestamp": "timestamp",
+              "SequenceNumber": "<sequence-number:6>"
+            },
+            "Body": {
+              "Type": "Notification",
+              "MessageId": "<uuid:3>",
+              "SequenceNumber": "<sequence-number:3>",
+              "TopicArn": "arn:aws:sns:<region>:111111111111:<resource:1>",
+              "Subject": "Subject",
+              "Message": "Test Message without attribute",
+              "Timestamp": "date",
+              "UnsubscribeURL": "<unsubscribe-domain>/?Action=Unsubscribe&SubscriptionArn=arn:aws:sns:<region>:111111111111:<resource:1>:<resource:2>"
+            },
+            "MD5OfBody": "<md5-hash>",
+            "MessageId": "<uuid:6>",
+            "ReceiptHandle": "<receipt-handle:3>"
+          }
+        ]
+      }
+    }
+  },
+  "tests/integration/test_sns.py::TestSNSProvider::test_validate_set_sub_attributes": {
+    "recorded-date": "12-12-2022, 12:33:28",
+    "recorded-content": {
+      "fake-attribute": {
+        "Error": {
+          "Code": "InvalidParameter",
+          "Message": "Invalid parameter: AttributeName",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "fake-arn-redrive-policy": {
+        "Error": {
+          "Code": "InvalidParameter",
+          "Message": "Invalid parameter: RedrivePolicy: deadLetterTargetArn is an invalid arn",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "invalid-json-redrive-policy": {
+        "Error": {
+          "Code": "InvalidParameter",
+          "Message": "Invalid parameter: RedrivePolicy: failed to parse JSON. Unexpected character ('i' (code 105)): was expecting double-quote to start field name\n at [Source: java.io.StringReader@6fb45229; line: 1, column: 3]",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "invalid-json-filter-policy": {
+        "Error": {
+          "Code": "InvalidParameter",
+          "Message": "Invalid parameter: FilterPolicy: failed to parse JSON. Unexpected character ('i' (code 105)): was expecting double-quote to start field name\n at [Source: (String)\"{invalidjson}\"; line: 1, column: 3]",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/integration/test_sns.py::TestSNSProvider::test_set_subscription_filter_policy_scope": {
+    "recorded-date": "30-12-2022, 18:19:59",
+    "recorded-content": {
+      "sub-attrs-default": {
+        "Attributes": {
+          "ConfirmationWasAuthenticated": "true",
+          "Endpoint": "arn:aws:sqs:<region>:111111111111:<resource:1>",
+          "Owner": "111111111111",
+          "PendingConfirmation": "false",
+          "Protocol": "sqs",
+          "RawMessageDelivery": "false",
+          "SubscriptionArn": "arn:aws:sns:<region>:111111111111:<resource:3>:<resource:2>",
+          "SubscriptionPrincipal": "<sub-principal>",
+          "TopicArn": "arn:aws:sns:<region>:111111111111:<resource:3>"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "sub-attrs-filter-scope-body": {
+        "Attributes": {
+          "ConfirmationWasAuthenticated": "true",
+          "Endpoint": "arn:aws:sqs:<region>:111111111111:<resource:1>",
+          "Owner": "111111111111",
+          "PendingConfirmation": "false",
+          "Protocol": "sqs",
+          "RawMessageDelivery": "false",
+          "SubscriptionArn": "arn:aws:sns:<region>:111111111111:<resource:3>:<resource:2>",
+          "SubscriptionPrincipal": "<sub-principal>",
+          "TopicArn": "arn:aws:sns:<region>:111111111111:<resource:3>"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "sub-attrs-filter-scope-error": {
+        "Error": {
+          "Code": "InvalidParameter",
+          "Message": "Invalid parameter: FilterPolicyScope: Invalid value [RandomValue]. Please use either MessageBody or MessageAttributes",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "sub-attrs-after-setting-policy": {
+        "Attributes": {
+          "ConfirmationWasAuthenticated": "true",
+          "Endpoint": "arn:aws:sqs:<region>:111111111111:<resource:1>",
+          "FilterPolicy": {
+            "attr": [
+              "match-this"
+            ]
+          },
+          "FilterPolicyScope": "MessageBody",
+          "Owner": "111111111111",
+          "PendingConfirmation": "false",
+          "Protocol": "sqs",
+          "RawMessageDelivery": "false",
+          "SubscriptionArn": "arn:aws:sns:<region>:111111111111:<resource:3>:<resource:2>",
+          "SubscriptionPrincipal": "<sub-principal>",
+          "TopicArn": "arn:aws:sns:<region>:111111111111:<resource:3>"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/integration/test_sns.py::TestSNSProvider::test_sub_filter_policy_nested_property": {
+    "recorded-date": "30-12-2022, 18:38:05",
+    "recorded-content": {
+      "sub-filter-policy-nested-error": {
+        "Error": {
+          "Code": "InvalidParameter",
+          "Message": "Invalid parameter: Filter policy scope MessageAttributes does not support nested filter policy",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "sub-attrs-after-setting-nested-policy": {
+        "Attributes": {
+          "ConfirmationWasAuthenticated": "true",
+          "Endpoint": "arn:aws:sqs:<region>:111111111111:<resource:1>",
+          "FilterPolicy": {
+            "object": {
+              "key": [
+                {
+                  "prefix": "auto-"
+                }
+              ]
+            }
+          },
+          "FilterPolicyScope": "MessageBody",
+          "Owner": "111111111111",
+          "PendingConfirmation": "false",
+          "Protocol": "sqs",
+          "RawMessageDelivery": "false",
+          "SubscriptionArn": "arn:aws:sns:<region>:111111111111:<resource:3>:<resource:2>",
+          "SubscriptionPrincipal": "<sub-principal>",
+          "TopicArn": "arn:aws:sns:<region>:111111111111:<resource:3>"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/integration/test_sns.py::TestSNSProvider::test_filter_policy_on_message_body[True]": {
+    "recorded-date": "02-01-2023, 20:03:47",
+    "recorded-content": {
+      "recv-init": {
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "recv-passed-msg": {
+        "Messages": [
+          {
+            "Body": {
+              "object": {
+                "key": "auto-test"
+              }
+            },
+            "MD5OfBody": "<md5-hash>",
+            "MessageId": "<uuid:1>",
+            "ReceiptHandle": "<receipt-handle:1>"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/integration/test_sns.py::TestSNSProvider::test_filter_policy_on_message_body[False]": {
+    "recorded-date": "02-01-2023, 20:03:59",
+    "recorded-content": {
+      "recv-init": {
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "recv-passed-msg": {
+        "Messages": [
+          {
+            "Body": {
+              "Type": "Notification",
+              "MessageId": "<uuid:1>",
+              "TopicArn": "arn:aws:sns:<region>:111111111111:<resource:1>",
+              "Message": "{\"object\": {\"key\": \"auto-test\"}}",
+              "Timestamp": "date",
+              "SignatureVersion": "1",
+              "Signature": "<signature>",
+              "SigningCertURL": "https://sns.<region>.amazonaws.com/SimpleNotificationService-<signing-cert-file:1>",
+              "UnsubscribeURL": "<unsubscribe-domain>/?Action=Unsubscribe&SubscriptionArn=arn:aws:sns:<region>:111111111111:<resource:1>:<resource:2>"
+            },
+            "MD5OfBody": "<md5-hash>",
+            "MessageId": "<uuid:2>",
+            "ReceiptHandle": "<receipt-handle:1>"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/integration/test_sns.py::TestSNSProvider::test_sub_filter_policy_nested_property_constraints": {
+    "recorded-date": "04-01-2023, 17:41:42",
+    "recorded-content": {
+      "sub-filter-policy-nested-error-too-many-combinations": {
+        "Error": {
+          "Code": "InvalidParameter",
+          "Message": "Invalid parameter: FilterPolicy: Filter policy is too complex",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "sub-filter-policy-max-attr-keys": {
+        "Error": {
+          "Code": "InvalidParameter",
+          "Message": "Invalid parameter: FilterPolicy: Filter policy can not have more than 5 keys",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "sub-filter-policy-rule-no-list": {
+        "Error": {
+          "Code": "InvalidParameter",
+          "Message": "Invalid parameter: FilterPolicy: \"key_a\" must be an object or an array\n at [Source: (String)\"{\"key_a\":\"value_one\"}\"; line: 1, column: 11]",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/integration/test_sns.py::TestSNSProvider::test_publish_to_fifo_topic_to_sqs_queue_no_content_dedup[True]": {
+    "recorded-date": "27-01-2023, 19:39:16",
+    "recorded-content": {
+      "messages": {
+        "Messages": [
+          {
+            "Attributes": {
+              "ApproximateFirstReceiveTimestamp": "timestamp",
+              "ApproximateReceiveCount": "1",
+              "MessageDeduplicationId": "532eaabd9574880dbf76b9b8cc00832c20a6ec113d682299550d7a6e0f345e25",
+              "MessageGroupId": "message-group-id-1",
+              "SenderId": "<sender-id>",
+              "SentTimestamp": "timestamp",
+              "SequenceNumber": "<sequence-number:1>"
+            },
+            "Body": "Test",
+            "MD5OfBody": "<md5-hash>",
+            "MessageId": "<uuid:1>",
+            "ReceiptHandle": "<receipt-handle:1>"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/integration/test_sns.py::TestSNSProvider::test_publish_to_fifo_topic_to_sqs_queue_no_content_dedup[False]": {
+    "recorded-date": "27-01-2023, 19:39:19",
+    "recorded-content": {
+      "messages": {
+        "Messages": [
+          {
+            "Attributes": {
+              "ApproximateFirstReceiveTimestamp": "timestamp",
+              "ApproximateReceiveCount": "1",
+              "MessageDeduplicationId": "532eaabd9574880dbf76b9b8cc00832c20a6ec113d682299550d7a6e0f345e25",
+              "MessageGroupId": "message-group-id-1",
+              "SenderId": "<sender-id>",
+              "SentTimestamp": "timestamp",
+              "SequenceNumber": "<sequence-number:1>"
+            },
+            "Body": {
+              "Type": "Notification",
+              "MessageId": "<uuid:1>",
+              "SequenceNumber": "<sequence-number:2>",
+              "TopicArn": "arn:aws:sns:<region>:111111111111:<resource:1>",
+              "Message": "Test",
+              "Timestamp": "date",
+              "UnsubscribeURL": "<unsubscribe-domain>/?Action=Unsubscribe&SubscriptionArn=arn:aws:sns:<region>:111111111111:<resource:1>:<resource:2>"
+            },
+            "MD5OfBody": "<md5-hash>",
+            "MessageId": "<uuid:2>",
+            "ReceiptHandle": "<receipt-handle:1>"
+          }
+        ],
         "ResponseMetadata": {
           "HTTPHeaders": {},
           "HTTPStatusCode": 200

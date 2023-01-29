@@ -30,6 +30,10 @@
 # HTTP framework
 /localstack/http/ @thrau
 
+# Stores
+/localstack/services/stores.py @viren-nadkarni
+/tests/unit/test_stores.py @viren-nadkarni
+
 # Dockerfile
 /Dockerfile @alexrashed
 /Dockerfile.rh @alexrashed
@@ -129,11 +133,11 @@
 /tests/integration/test_route53.py @giograno
 
 # S3
-/localstack/aws/api/s3/ @thrau
-/localstack/services/s3/ @thrau
-/localstack/services/cloudformation/models/s3.py @thrau
-/tests/integration/test_s3.py @thrau
-/tests/unit/test_s3.py @thrau
+/localstack/aws/api/s3/ @bentsku @macnev2013
+/localstack/services/s3/ @bentsku @macnev2013
+/localstack/services/cloudformation/models/s3.py @bentsku @macnev2013
+/tests/integration/test_s3.py @bentsku @macnev2013
+/tests/unit/test_s3.py @bentsku @macnev2013
 
 # Secretsmanager
 /localstack/aws/api/secretsmanager/ @dominikschubert
@@ -154,11 +158,12 @@
 /tests/unit/test_sns.py @bentsku
 
 # SQS
-/localstack/aws/api/sqs/ @thrau
-/localstack/services/sqs/ @thrau
-/localstack/services/cloudformation/models/sqs.py @thrau
-/tests/integration/test_sqs.py @thrau
-/tests/unit/test_sqs.py @thrau
+/localstack/aws/api/sqs/ @thrau @baermat
+/localstack/services/sqs/ @thrau @baermat
+/localstack/services/cloudformation/models/sqs.py @thrau @baermat
+/tests/integration/test_sqs.py @thrau @baermat
+/tests/unit/test_sqs.py @thrau @baermat
+/tests/unit/test_sqs_backdoor.py @thrau @baermat
 
 # SSM
 /localstack/aws/api/ssm/ @dominikschubert

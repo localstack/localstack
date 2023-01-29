@@ -199,9 +199,9 @@ def import_apigw(apigateway_client):
     rest_api_ids = []
 
     def _import_apigateway_function(*args, **kwargs):
-        api_id, name, root_id = import_rest_api(apigateway_client, **kwargs)
-        rest_api_ids.append(api_id)
-        return api_id, name, root_id
+        response, root_id = import_rest_api(apigateway_client, **kwargs)
+        rest_api_ids.append(response.get("id"))
+        return response, root_id
 
     yield _import_apigateway_function
 

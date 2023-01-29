@@ -130,6 +130,18 @@ class ReflectionStateLocator:
                     ("moto.apigatewayv2.models", "apigatewayv2_backends"),
                 ]
                 _visit_modules(modules)
+            case "cloudformation":
+                modules = [
+                    ("localstack.services.cloudformation.stores", "cloudformation_stores"),
+                    ("moto.cloudformation.models", "cloudformation_backends"),
+                ]
+                _visit_modules(modules)
+            case "ce":
+                modules = [
+                    ("localstack_ext.services.costexplorer.models", "ce_stores"),
+                    ("moto.ce.models", "ce_backends"),
+                ]
+                _visit_modules(modules)
             case _:
                 # try to load AccountRegionBundle from predictable location
                 attribute_name = f"{service_name}_stores"
@@ -149,6 +161,13 @@ class ReflectionStateLocator:
                 module_name = f"moto.{service_name}.models"
                 attribute_name = f"{service_name}_backends"
                 attribute = _load_attribute_from_module(module_name, attribute_name)
+
+                if attribute is None and "_" in attribute_name:
+                    # some services like application_autoscaling do have a backend without the underscore
+                    service_name_tmp = service_name.replace("_", "")
+                    module_name = f"moto.{service_name_tmp}.models"
+                    attribute_name = f"{service_name_tmp}_backends"
+                    attribute = _load_attribute_from_module(module_name, attribute_name)
 
                 if attribute is not None:
                     LOG.debug("Visiting attribute %s in module %s", attribute_name, module_name)

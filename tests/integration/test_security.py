@@ -2,9 +2,11 @@ import pytest
 import requests
 
 from localstack import config
+from localstack.aws.handlers import cors as cors_handler
+from localstack.aws.handlers.cors import _get_allowed_cors_origins
 from localstack.testing.aws.lambda_utils import is_new_provider
 from localstack.utils.aws import aws_stack
-from localstack.utils.strings import to_str
+from localstack.utils.strings import short_uid, to_str
 
 
 class TestCSRF:
@@ -115,3 +117,23 @@ class TestCSRF:
         assert not response.headers.get("access-control-allow-methods")
         assert not response.headers.get("access-control-allow-origin")
         assert not response.headers.get("access-control-allow-credentials")
+
+    def test_additional_allowed_origins(self, monkeypatch):
+        test_domain = f"test-{short_uid()}.com"
+        monkeypatch.setattr(config, "EXTRA_CORS_ALLOWED_ORIGINS", f"https://{test_domain}")
+        monkeypatch.setattr(cors_handler, "ALLOWED_CORS_ORIGINS", _get_allowed_cors_origins())
+
+        url = config.get_edge_url()
+        headers = aws_stack.mock_aws_request_headers("sns")
+        data = {"Action": "ListTopics", "Version": "2010-03-31"}
+
+        # test successful request
+        headers["Origin"] = f"https://{test_domain}"
+        response = requests.post(url, headers=headers, data=data)
+        assert response.ok
+        assert response.headers["access-control-allow-origin"] == headers["Origin"]
+
+        # test unsuccessful (non-HTTPS) request
+        headers["Origin"] = f"http://{test_domain}"
+        response = requests.post(url, headers=headers, data=data)
+        assert not response.ok

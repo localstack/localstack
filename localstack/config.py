@@ -664,6 +664,8 @@ WINDOWS_DOCKER_MOUNT_PREFIX = os.environ.get("WINDOWS_DOCKER_MOUNT_PREFIX", "/ho
 
 # whether to skip S3 presign URL signature validation (TODO: currently enabled, until all issues are resolved)
 S3_SKIP_SIGNATURE_VALIDATION = is_env_not_false("S3_SKIP_SIGNATURE_VALIDATION")
+# whether to skip S3 validation of provided KMS key
+S3_SKIP_KMS_KEY_VALIDATION = is_env_not_false("S3_SKIP_KMS_KEY_VALIDATION")
 
 # user-defined lambda executor mode
 LAMBDA_EXECUTOR = os.environ.get("LAMBDA_EXECUTOR", "").strip()
@@ -725,12 +727,11 @@ OPENSEARCH_MULTI_CLUSTER = is_env_not_false("OPENSEARCH_MULTI_CLUSTER") or is_en
     "ES_MULTI_CLUSTER"
 )
 
+# Whether to really publish to GCM while using SNS Platform Application (needs credentials)
+LEGACY_SNS_GCM_PUBLISHING = is_env_true("LEGACY_SNS_GCM_PUBLISHING")
+
 # TODO remove fallback to LAMBDA_DOCKER_NETWORK with next minor version
 MAIN_DOCKER_NETWORK = os.environ.get("MAIN_DOCKER_NETWORK", "") or LAMBDA_DOCKER_NETWORK
-
-# EXPERIMENTAL/LEGACY. Use this flag to return to the legacy behavior of resolving references in the specific models
-CFN_ENABLE_RESOLVE_REFS_IN_MODELS = is_env_true("CFN_ENABLE_RESOLVE_REFS_IN_MODELS")
-
 
 # list of environment variable names used for configuration.
 # Make sure to keep this in sync with the above!
@@ -795,6 +796,7 @@ CONFIG_ENV_VARS = [
     "LEGACY_DIRECTORIES",
     "LEGACY_DOCKER_CLIENT",
     "LEGACY_EDGE_PROXY",
+    "LEGACY_SNS_GCM_PUBLISHING",
     "LOCALSTACK_API_KEY",
     "LOCALSTACK_HOSTNAME",
     "LOG_LICENSE_ISSUES",
@@ -806,6 +808,7 @@ CONFIG_ENV_VARS = [
     "PERSISTENCE",
     "REQUESTS_CA_BUNDLE",
     "S3_SKIP_SIGNATURE_VALIDATION",
+    "S3_SKIP_KMS_KEY_VALIDATION",
     "SERVICES",
     "SKIP_INFRA_DOWNLOADS",
     "SKIP_SSL_CERT_DOWNLOAD",

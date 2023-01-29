@@ -408,7 +408,7 @@ class DescribeLogGroupsResponse(TypedDict, total=False):
 
 
 class DescribeLogStreamsRequest(ServiceRequest):
-    logGroupName: LogGroupName
+    logGroupName: Optional[LogGroupName]
     logGroupIdentifier: Optional[LogGroupIdentifier]
     logStreamNamePrefix: Optional[LogStreamName]
     orderBy: Optional[OrderBy]
@@ -578,7 +578,7 @@ InputLogStreamNames = List[LogStreamName]
 
 
 class FilterLogEventsRequest(ServiceRequest):
-    logGroupName: LogGroupName
+    logGroupName: Optional[LogGroupName]
     logGroupIdentifier: Optional[LogGroupIdentifier]
     logStreamNames: Optional[InputLogStreamNames]
     logStreamNamePrefix: Optional[LogStreamName]
@@ -627,7 +627,7 @@ class GetDataProtectionPolicyResponse(TypedDict, total=False):
 
 
 class GetLogEventsRequest(ServiceRequest):
-    logGroupName: LogGroupName
+    logGroupName: Optional[LogGroupName]
     logGroupIdentifier: Optional[LogGroupIdentifier]
     logStreamName: LogStreamName
     startTime: Optional[Timestamp]
@@ -654,7 +654,7 @@ class GetLogEventsResponse(TypedDict, total=False):
 
 
 class GetLogGroupFieldsRequest(ServiceRequest):
-    logGroupName: LogGroupName
+    logGroupName: Optional[LogGroupName]
     time: Optional[Timestamp]
     logGroupIdentifier: Optional[LogGroupIdentifier]
 
@@ -1016,7 +1016,7 @@ class LogsApi:
     def describe_log_streams(
         self,
         context: RequestContext,
-        log_group_name: LogGroupName,
+        log_group_name: LogGroupName = None,
         log_group_identifier: LogGroupIdentifier = None,
         log_stream_name_prefix: LogStreamName = None,
         order_by: OrderBy = None,
@@ -1085,7 +1085,7 @@ class LogsApi:
     def filter_log_events(
         self,
         context: RequestContext,
-        log_group_name: LogGroupName,
+        log_group_name: LogGroupName = None,
         log_group_identifier: LogGroupIdentifier = None,
         log_stream_names: InputLogStreamNames = None,
         log_stream_name_prefix: LogStreamName = None,
@@ -1109,8 +1109,8 @@ class LogsApi:
     def get_log_events(
         self,
         context: RequestContext,
-        log_group_name: LogGroupName,
         log_stream_name: LogStreamName,
+        log_group_name: LogGroupName = None,
         log_group_identifier: LogGroupIdentifier = None,
         start_time: Timestamp = None,
         end_time: Timestamp = None,
@@ -1125,7 +1125,7 @@ class LogsApi:
     def get_log_group_fields(
         self,
         context: RequestContext,
-        log_group_name: LogGroupName,
+        log_group_name: LogGroupName = None,
         time: Timestamp = None,
         log_group_identifier: LogGroupIdentifier = None,
     ) -> GetLogGroupFieldsResponse:

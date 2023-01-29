@@ -123,6 +123,11 @@ class DomainPackageStatus(str):
     DISSOCIATION_FAILED = "DISSOCIATION_FAILED"
 
 
+class DryRunMode(str):
+    Basic = "Basic"
+    Verbose = "Verbose"
+
+
 class EngineType(str):
     OpenSearch = "OpenSearch"
     Elasticsearch = "Elasticsearch"
@@ -1104,6 +1109,39 @@ class DescribeDomainsResponse(TypedDict, total=False):
     DomainStatusList: DomainStatusList
 
 
+class DescribeDryRunProgressRequest(ServiceRequest):
+    DomainName: DomainName
+    DryRunId: Optional[GUID]
+    LoadDryRunConfig: Optional[Boolean]
+
+
+class DryRunResults(TypedDict, total=False):
+    DeploymentType: Optional[DeploymentType]
+    Message: Optional[Message]
+
+
+class ValidationFailure(TypedDict, total=False):
+    Code: Optional[String]
+    Message: Optional[String]
+
+
+ValidationFailures = List[ValidationFailure]
+
+
+class DryRunProgressStatus(TypedDict, total=False):
+    DryRunId: GUID
+    DryRunStatus: String
+    CreationDate: String
+    UpdateDate: String
+    ValidationFailures: Optional[ValidationFailures]
+
+
+class DescribeDryRunProgressResponse(TypedDict, total=False):
+    DryRunProgressStatus: Optional[DryRunProgressStatus]
+    DryRunConfig: Optional[DomainStatus]
+    DryRunResults: Optional[DryRunResults]
+
+
 ValueStringList = List[NonEmptyString]
 
 
@@ -1318,11 +1356,6 @@ class DomainInfo(TypedDict, total=False):
 
 DomainInfoList = List[DomainInfo]
 DomainPackageDetailsList = List[DomainPackageDetails]
-
-
-class DryRunResults(TypedDict, total=False):
-    DeploymentType: Optional[DeploymentType]
-    Message: Optional[Message]
 
 
 class GetCompatibleVersionsRequest(ServiceRequest):
@@ -1564,11 +1597,13 @@ class UpdateDomainConfigRequest(ServiceRequest):
     AdvancedSecurityOptions: Optional[AdvancedSecurityOptionsInput]
     AutoTuneOptions: Optional[AutoTuneOptions]
     DryRun: Optional[DryRun]
+    DryRunMode: Optional[DryRunMode]
 
 
 class UpdateDomainConfigResponse(TypedDict, total=False):
     DomainConfig: DomainConfig
     DryRunResults: Optional[DryRunResults]
+    DryRunProgressStatus: Optional[DryRunProgressStatus]
 
 
 class UpdatePackageRequest(ServiceRequest):
@@ -1756,6 +1791,16 @@ class OpensearchApi:
     def describe_domains(
         self, context: RequestContext, domain_names: DomainNameList
     ) -> DescribeDomainsResponse:
+        raise NotImplementedError
+
+    @handler("DescribeDryRunProgress")
+    def describe_dry_run_progress(
+        self,
+        context: RequestContext,
+        domain_name: DomainName,
+        dry_run_id: GUID = None,
+        load_dry_run_config: Boolean = None,
+    ) -> DescribeDryRunProgressResponse:
         raise NotImplementedError
 
     @handler("DescribeInboundConnections")
@@ -1978,6 +2023,7 @@ class OpensearchApi:
         advanced_security_options: AdvancedSecurityOptionsInput = None,
         auto_tune_options: AutoTuneOptions = None,
         dry_run: DryRun = None,
+        dry_run_mode: DryRunMode = None,
     ) -> UpdateDomainConfigResponse:
         raise NotImplementedError
 
