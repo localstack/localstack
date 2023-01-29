@@ -46,7 +46,7 @@ LocalStack also provides additional features to make your life as a cloud develo
 
 ## Requirements
 
-* `python` (Python 3.7 up to 3.10 supported)
+* `python` (Python 3.7 up to 3.11 supported)
 * `pip` (Python package manager)
 * `Docker`
 
@@ -184,7 +184,7 @@ You can also support this project by becoming a sponsor on [Open Collective](htt
 
 ## License
 
-Copyright (c) 2017-2022 LocalStack maintainers and contributors.
+Copyright (c) 2017-2023 LocalStack maintainers and contributors.
 
 Copyright (c) 2016 Atlassian and others.
 

@@ -533,5 +533,47 @@
       "resource_not_found_ex_error_code": "ResourceNotFoundException",
       "resource_not_found_ex_http_status_code": 400
     }
+  },
+  "tests/integration/test_route53resolver.py::TestRoute53Resolver::test_list_firewall_domain_lists": {
+    "recorded-date": "13-01-2023, 18:47:03",
+    "recorded-content": {
+      "create-firewall-domain-list": {
+        "FirewallDomainList": {
+          "Arn": "arn:aws:route53resolver:<region>:111111111111:firewall-domain-list/<id:1>",
+          "CreationTime": "date",
+          "CreatorRequestId": "<creator-request-id:1>",
+          "DomainCount": 0,
+          "Id": "<id:1>",
+          "ModificationTime": "date",
+          "Name": "my_firewall_domain",
+          "Status": "COMPLETE",
+          "StatusMessage": "status-message"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "list-firewall-domain-list-filtered": [
+        {
+          "Id": "<id:1>",
+          "Arn": "arn:aws:route53resolver:<region>:111111111111:firewall-domain-list/<id:1>",
+          "Name": "my_firewall_domain",
+          "CreatorRequestId": "<creator-request-id:1>"
+        }
+      ],
+      "list-tags-for-resource": {
+        "Tags": [
+          {
+            "Key": "hello",
+            "Value": "world"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
   }
 }

@@ -2,7 +2,7 @@ import builtins
 import json
 import re
 from copy import deepcopy
-from typing import Callable
+from typing import Callable, List
 
 from localstack.utils import common
 from localstack.utils.common import select_attributes, short_uid
@@ -65,8 +65,10 @@ def params_list_to_dict(param_name, key_attr_name="Key", value_attr_name="Value"
     return do_replace
 
 
-def lambda_keys_to_lower(key=None):
-    return lambda params, **kwargs: common.keys_to_lower(params.get(key) if key else params)
+def lambda_keys_to_lower(key=None, skip_children_of: List[str] = None):
+    return lambda params, **kwargs: common.keys_to_lower(
+        obj=(params.get(key) if key else params), skip_children_of=skip_children_of
+    )
 
 
 def merge_parameters(func1, func2):

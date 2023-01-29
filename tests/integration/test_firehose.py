@@ -3,22 +3,13 @@ import json
 
 import pytest as pytest
 import requests
+from pytest_httpserver import HTTPServer
 
 from localstack import config
-from localstack.services.generic_proxy import ProxyListener
-from localstack.services.infra import start_proxy
 from localstack.utils.aws import arns, aws_stack
 from localstack.utils.aws.arns import lambda_function_arn
-from localstack.utils.common import (
-    get_free_tcp_port,
-    get_service_protocol,
-    poll_condition,
-    retry,
-    short_uid,
-    to_bytes,
-    to_str,
-    wait_for_port_open,
-)
+from localstack.utils.strings import short_uid, to_bytes, to_str
+from localstack.utils.sync import poll_condition, retry
 
 PROCESSOR_LAMBDA = """
 def handler(event, context):
@@ -41,25 +32,23 @@ def handler(event, context):
 
 
 @pytest.mark.parametrize("lambda_processor_enabled", [True, False])
-def test_firehose_http(lambda_processor_enabled: bool, create_lambda_function):
-    class MyUpdateListener(ProxyListener):
-        def forward_request(self, method, path, data, headers):
-            data_received = dict(json.loads(data.decode("utf-8")))
-            records.append(data_received)
-            return 200
-
+def test_firehose_http(
+    lambda_processor_enabled: bool, create_lambda_function, httpserver: HTTPServer
+):
+    httpserver.expect_request("").respond_with_data(b"", 200)
+    http_endpoint = httpserver.url_for("/")
     if lambda_processor_enabled:
         # create processor func
         func_name = f"proc-{short_uid()}"
         create_lambda_function(handler_file=PROCESSOR_LAMBDA, func_name=func_name)
 
     # define firehose configs
-    local_port = get_free_tcp_port()
-    endpoint = "{}://{}:{}".format(get_service_protocol(), config.LOCALSTACK_HOSTNAME, local_port)
-    records = []
-    http_destination_update = {"EndpointConfiguration": {"Url": endpoint, "Name": "test_update"}}
+    # records = []
+    http_destination_update = {
+        "EndpointConfiguration": {"Url": http_endpoint, "Name": "test_update"}
+    }
     http_destination = {
-        "EndpointConfiguration": {"Url": endpoint},
+        "EndpointConfiguration": {"Url": http_endpoint},
         "S3BackupMode": "FailedDataOnly",
         "S3Configuration": {
             "RoleARN": "arn:.*",
@@ -86,10 +75,6 @@ def test_firehose_http(lambda_processor_enabled: bool, create_lambda_function):
             ],
         }
 
-    # start proxy server
-    start_proxy(local_port, backend_url=None, update_listener=MyUpdateListener())
-    wait_for_port_open(local_port)
-
     # create firehose stream with http destination
     firehose = aws_stack.create_external_boto_client("firehose")
     stream_name = "firehose_" + short_uid()
@@ -104,23 +89,19 @@ def test_firehose_http(lambda_processor_enabled: bool, create_lambda_function):
         "HttpEndpointDestinationDescription"
     ]
     assert len(stream_description["Destinations"]) == 1
-    assert (
-        destination_description["EndpointConfiguration"]["Url"] == f"http://localhost:{local_port}"
-    )
+    assert destination_description["EndpointConfiguration"]["Url"] == http_endpoint
 
     # put record
     msg_text = "Hello World!"
     firehose.put_record(DeliveryStreamName=stream_name, Record={"Data": msg_text})
 
     # wait for the result to arrive with proper content
-    def _assert_record():
-        received_record = records[0]["records"][0]
-        received_record_data = to_str(base64.b64decode(to_bytes(received_record["data"])))
-        assert (
-            received_record_data == f"{msg_text}{'-processed' if lambda_processor_enabled else ''}"
-        )
-
-    retry(_assert_record, retries=5, sleep=1)
+    assert poll_condition(lambda: len(httpserver.log) >= 1, timeout=5)
+    request, _ = httpserver.log[0]
+    record = request.get_json(force=True)
+    received_record = record["records"][0]
+    received_record_data = to_str(base64.b64decode(to_bytes(received_record["data"])))
+    assert received_record_data == f"{msg_text}{'-processed' if lambda_processor_enabled else ''}"
 
     # update stream destination
     destination_id = stream_description["Destinations"][0]["DestinationId"]

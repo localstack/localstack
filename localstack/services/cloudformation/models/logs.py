@@ -21,7 +21,6 @@ class LogsLogGroup(GenericBaseModel):
 
     def fetch_state(self, stack_name, resources):
         group_name = self.props.get("LogGroupName")
-        group_name = self.resolve_refs_recursively(stack_name, group_name, resources)
         logs = aws_stack.connect_to_service("logs")
         groups = logs.describe_log_groups(logGroupNamePrefix=group_name)["logGroups"]
         return ([g for g in groups if g["logGroupName"] == group_name] or [None])[0]
@@ -62,7 +61,6 @@ class LogsLogStream(GenericBaseModel):
     def fetch_state(self, stack_name, resources):
         group_name = self.props.get("LogGroupName")
         stream_name = self.props.get("LogStreamName")
-        group_name = self.resolve_refs_recursively(stack_name, group_name, resources)
         logs = aws_stack.connect_to_service("logs")
         streams = logs.describe_log_streams(
             logGroupName=group_name, logStreamNamePrefix=stream_name
@@ -101,10 +99,8 @@ class LogsSubscriptionFilter(GenericBaseModel):
 
     def fetch_state(self, stack_name, resources):
         props = self.props
-        group_name = self.resolve_refs_recursively(stack_name, props.get("LogGroupName"), resources)
-        filter_pattern = self.resolve_refs_recursively(
-            stack_name, props.get("FilterPattern"), resources
-        )
+        group_name = props.get("LogGroupName")
+        filter_pattern = props.get("FilterPattern")
         logs = aws_stack.connect_to_service("logs")
         groups = logs.describe_subscription_filters(logGroupName=group_name)["subscriptionFilters"]
         groups = [g for g in groups if g.get("filterPattern") == filter_pattern]

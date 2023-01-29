@@ -607,12 +607,19 @@ def configure_volume_mounts(container: LocalstackContainer):
 
 
 @log_duration()
-def prepare_host():
+def prepare_host(console):
     """
     Prepare the host environment for running LocalStack, this should be called before start_infra_*.
     """
     if os.environ.get(constants.LOCALSTACK_INFRA_PROCESS) in constants.TRUE_STRINGS:
         return
+
+    try:
+        mkdir(config.VOLUME_DIR)
+    except Exception as e:
+        console.print(f"Error while creating volume dir {config.VOLUME_DIR}: {e}")
+        if config.DEBUG:
+            console.print_exception()
 
     setup_logging()
     hooks.prepare_host.run()
@@ -636,7 +643,7 @@ def start_infra_in_docker():
     #  There are subtle differences across operating systems and terminal emulators when it
     #  comes to handling of CTRL-C - in particular, Linux sends SIGINT to the parent process,
     #  whereas MacOS sends SIGINT to the process group, which can result in multiple SIGINT signals
-    #  being received (e.g., when running the localstack CLI as part of an "npm run .." script).
+    #  being received (e.g., when running the localstack CLI as part of a "npm run .." script).
     #  Hence, using a shutdown handler and synchronization event here, to avoid inconsistencies.
     def shutdown_handler(*args):
         with shutdown_event_lock:

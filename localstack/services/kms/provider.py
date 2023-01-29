@@ -250,8 +250,7 @@ class KmsProvider(KmsApi, ServiceLifecycleHook):
                 f"already exist there"
             )
         replica_key = copy.deepcopy(key)
-        if request.get("Description"):
-            replica_key.metadata["Description"] = request.get("Description")
+        replica_key.metadata["Description"] = request.get("Description", "")
         # Multiregion keys have the same key ID for all replicas, but ARNs differ, as they include actual regions of
         # replicas.
         replica_key.calculate_and_set_arn(context.account_id, replica_region)

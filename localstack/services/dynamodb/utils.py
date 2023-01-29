@@ -77,9 +77,15 @@ class SchemaExtractor:
         ).table_definitions
         table_def = table_definitions.get(table_name)
         if not table_def:
-            raise ResourceNotFoundException(
-                f"Unknown table: {table_name} not found in {table_definitions.keys()}"
+            # Try fetching from the backend in case table_definitions has been reset
+            schema = cls.get_table_schema(
+                table_name=table_name, account_id=account_id, region_name=region_name
             )
+            if not schema:
+                raise ResourceNotFoundException(f"Unknown table: {table_name} not found")
+            # Save the schema in the cache
+            table_definitions[table_name] = schema["Table"]
+            table_def = table_definitions[table_name]
         return table_def["KeySchema"]
 
     @classmethod
@@ -110,15 +116,17 @@ class SchemaExtractor:
 
 class ItemFinder:
     @staticmethod
-    def find_existing_item(put_item: Dict, table_name=None) -> Optional[Dict]:
+    def find_existing_item(
+        put_item: Dict, table_name: str = None, account_id: str = None, region_name: str = None
+    ) -> Optional[Dict]:
         from localstack.services.dynamodb.provider import ValidationException
 
         table_name = table_name or put_item["TableName"]
         ddb_client = aws_stack.connect_to_service(
             "dynamodb",
-            aws_access_key_id=get_aws_account_id(),
+            aws_access_key_id=account_id or get_aws_account_id(),
             aws_secret_access_key=TEST_AWS_SECRET_ACCESS_KEY,
-            region_name=aws_stack.get_region(),
+            region_name=region_name or aws_stack.get_region(),
         )
 
         search_key = {}

@@ -1,11 +1,14 @@
 import json
 import logging
+import time
+import zipfile
 
 import pytest
 
 from localstack.testing.aws.lambda_utils import is_old_provider
 from localstack.testing.snapshots.transformer import KeyValueBasedTransformer
-from localstack.utils.strings import to_bytes, to_str
+from localstack.utils.files import cp_r
+from localstack.utils.strings import short_uid, to_bytes, to_str
 
 LOG = logging.getLogger(__name__)
 
@@ -173,3 +176,52 @@ class TestLambdaRuntimesCommon:
         )
         assert "FunctionError" in invocation_result
         snapshot.match("error_result", invocation_result)
+
+    @pytest.mark.skip_snapshot_verify(
+        paths=[
+            "$..CodeSha256",  # works locally but unfortunately still produces a different hash in CI
+            "$..SnapStart",  # FIXME needs to be added to CreateFunction + all snapshots regenerated
+        ]
+    )
+    # this does only work on al2 lambdas, except provided.al2.
+    # Source: https://docs.aws.amazon.com/lambda/latest/dg/runtimes-modify.html#runtime-wrapper
+    @pytest.mark.multiruntime(
+        scenario="introspection",
+        runtimes=["nodejs", "python3.8", "python3.9", "java8.al2", "java11", "dotnet", "ruby"],
+    )
+    def test_runtime_wrapper_invoke(self, lambda_client, multiruntime_lambda, snapshot, tmp_path):
+        # copy and modify zip file, pretty dirty hack to reuse scenario and reduce CI test runtime
+        modified_zip = str(tmp_path / f"temp-zip-{short_uid()}.zip")
+        cp_r(multiruntime_lambda.zip_file_path, modified_zip)
+        test_value = f"test-value-{short_uid()}"
+        env_wrapper = f"""#!/bin/bash
+          export WRAPPER_VAR={test_value}
+          exec "$@"
+        """
+        with zipfile.ZipFile(modified_zip, mode="a") as zip_file:
+            info = zipfile.ZipInfo("environment_wrapper")
+            info.date_time = time.localtime()
+            info.external_attr = 0o100755 << 16
+            zip_file.writestr(info, env_wrapper)
+
+        # use new zipfile for file upload
+        multiruntime_lambda.zip_file_path = modified_zip
+        create_function_result = multiruntime_lambda.create_function(
+            MemorySize=1024,
+            Environment={"Variables": {"AWS_LAMBDA_EXEC_WRAPPER": "/var/task/environment_wrapper"}},
+        )
+        snapshot.match("create_function_result", create_function_result)
+
+        # simple payload
+        invoke_result = lambda_client.invoke(
+            FunctionName=create_function_result["FunctionName"],
+            Payload=b'{"simple": "payload"}',
+        )
+
+        assert invoke_result["StatusCode"] == 200
+        invocation_result_payload = to_str(invoke_result["Payload"].read())
+        invocation_result_payload = json.loads(invocation_result_payload)
+        assert "environment" in invocation_result_payload
+        assert "ctx" in invocation_result_payload
+        assert "packages" in invocation_result_payload
+        assert invocation_result_payload["environment"]["WRAPPER_VAR"] == test_value

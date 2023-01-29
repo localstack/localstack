@@ -3,10 +3,12 @@ import re
 from typing import Dict, Union
 
 import moto.s3.models as moto_s3_models
+from botocore.exceptions import ClientError
+from botocore.utils import InvalidArnException
 from moto.s3.exceptions import MissingBucket
-from moto.s3.models import FakeDeleteMarker, FakeKey
+from moto.s3.models import FakeBucket, FakeDeleteMarker, FakeKey
 
-from localstack.aws.api import ServiceException
+from localstack.aws.api import CommonServiceException, ServiceException
 from localstack.aws.api.s3 import (
     BucketCannedACL,
     BucketName,
@@ -17,7 +19,10 @@ from localstack.aws.api.s3 import (
     ObjectCannedACL,
     ObjectKey,
     Permission,
+    StorageClass,
 )
+from localstack.utils.aws import arns, aws_stack
+from localstack.utils.aws.arns import parse_arn
 from localstack.utils.strings import checksum_crc32, checksum_crc32c, hash_sha1, hash_sha256
 
 checksum_keys = ["ChecksumSHA1", "ChecksumSHA256", "ChecksumCRC32", "ChecksumCRC32C"]
@@ -37,6 +42,10 @@ S3_VIRTUAL_HOSTNAME_REGEX = (  # path based refs have at least valid bucket expr
     r"({}\.)?amazonaws\.com(.cn)?)){}(/[\w\-. ]*)*$"
 ).format(
     REGION_REGEX, REGION_REGEX, PORT_REGEX
+)
+
+PATTERN_UUID = re.compile(
+    r"[a-fA-F0-9]{8}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{12}"
 )
 
 S3_VIRTUAL_HOST_FORWARDED_HEADER = "x-s3-vhost-forwarded-for"
@@ -67,6 +76,17 @@ VALID_GRANTEE_PERMISSIONS = {
     Permission.WRITE,
     Permission.WRITE_ACP,
 }
+
+VALID_STORAGE_CLASSES = [
+    StorageClass.STANDARD,
+    StorageClass.STANDARD_IA,
+    StorageClass.GLACIER,
+    StorageClass.GLACIER_IR,
+    StorageClass.REDUCED_REDUNDANCY,
+    StorageClass.ONEZONE_IA,
+    StorageClass.INTELLIGENT_TIERING,
+    StorageClass.DEEP_ARCHIVE,
+]
 
 # response header overrides the client may request
 ALLOWED_HEADER_OVERRIDES = {
@@ -147,7 +167,7 @@ def is_valid_canonical_id(canonical_id: str) -> bool:
         return False
 
 
-def uses_host_addressing(headers: Dict[str, str]) -> bool:
+def forwarded_from_virtual_host_addressed_request(headers: Dict[str, str]) -> bool:
     """
     Determines if the request was forwarded from a v-host addressing style into a path one
     """
@@ -196,3 +216,41 @@ def _create_invalid_argument_exc(
 
 def capitalize_header_name_from_snake_case(header_name: str) -> str:
     return "-".join([part.capitalize() for part in header_name.split("-")])
+
+
+def validate_kms_key_id(kms_key: str, bucket: FakeBucket):
+    """
+    Validate that the KMS key used to encrypt the object is valid
+    :param kms_key: the KMS key id or ARN
+    :param bucket: the targeted bucket
+    :raise
+    :return:
+    """
+    try:
+        parsed_arn = parse_arn(kms_key)
+        key_region = parsed_arn["region"]
+        # the KMS key should be in the same region as the bucket, we can raise an exception without calling KMS
+        if key_region != bucket.region_name:
+            raise CommonServiceException(
+                code="KMS.NotFoundException", message=f"Invalid arn {key_region}"
+            )
+
+    except InvalidArnException:
+        # if it fails, the passed ID is a UUID with no region data
+        key_id = kms_key
+        # recreate the ARN manually with the bucket region and bucket owner
+        # if the KMS key is cross-account, user should provide an ARN and not a KeyId
+        kms_key = arns.kms_key_arn(
+            key_id=key_id, account_id=bucket.account_id, region_name=bucket.region_name
+        )
+
+    # the KMS key should be in the same region as the bucket, create the client in the bucket region
+    kms_client = aws_stack.connect_to_service("kms", region_name=bucket.region_name)
+    try:
+        kms_client.describe_key(KeyId=kms_key)
+    except ClientError as e:
+        if e.response["Error"]["Code"] == "NotFoundException":
+            raise CommonServiceException(
+                code="KMS.NotFoundException", message=e.response["Error"]["Message"]
+            )
+        raise

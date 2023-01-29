@@ -54,7 +54,7 @@ def localstack(debug, profile):
 
     # overwrite the config variable here to defer import of cache_dir
     if not config.LEGACY_DIRECTORIES and not os.environ.get("LOCALSTACK_VOLUME_DIR", "").strip():
-        config.VOLUME_DIR = cache_dir() / "volume"
+        config.VOLUME_DIR = str(cache_dir() / "volume")
 
 
 @localstack.group(name="config", help="Inspect your LocalStack configuration")
@@ -137,7 +137,7 @@ def cmd_start(docker: bool, host: bool, no_banner: bool, detached: bool):
         else:
             console.log("starting LocalStack in Docker mode :whale:")
 
-    bootstrap.prepare_host()
+    bootstrap.prepare_host(console)
 
     if not no_banner and not detached:
         console.rule("LocalStack Runtime Log (press [bold][yellow]CTRL-C[/yellow][/bold] to quit)")

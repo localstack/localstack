@@ -298,7 +298,6 @@ def test_lambda_vpc(deploy_cfn_template, lambda_client):
         "$..Policy.PolicyName",
         "$..Policy.Statement..Resource",
         "$..Policy.Statement..Sid",
-        "$..RevisionId",
     ]
 )
 def test_update_lambda_permissions(deploy_cfn_template, lambda_client, sts_client):
@@ -338,6 +337,7 @@ class TestCfnLambdaIntegrations:
             "$..Configuration.EphemeralStorage",
             "$..Configuration.MemorySize",
             "$..Configuration.VpcConfig",
+            "$..RevisionId",  # seems the revision id of the policy actually corresponds to the one of the function version
         ],
         condition=is_old_provider,
     )
@@ -348,7 +348,6 @@ class TestCfnLambdaIntegrations:
             "$..Attributes.Policy",  # missing SNS:Receive
             "$..CodeSize",
             "$..Configuration.Layers",
-            "$..RevisionId",  # seems the revision id of the policy actually corresponds to the one of the function version
             "$..Tags",  # missing cloudformation automatic resource tags for the lambda function
         ]
     )
@@ -596,6 +595,7 @@ class TestCfnLambdaIntegrations:
             # dynamodb describe_table
             "$..Table.ProvisionedThroughput.LastDecreaseDateTime",
             "$..Table.ProvisionedThroughput.LastIncreaseDateTime",
+            "$..Table.Replicas",
             # stream result
             "$..StreamDescription.CreationRequestDateTime",
             # event source mapping

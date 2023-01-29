@@ -2,6 +2,7 @@
 import json
 import logging
 import os
+import re
 from collections import defaultdict
 from typing import List, Optional
 
@@ -15,6 +16,7 @@ from localstack.http.adapters import RouterListener
 from localstack.http.dispatcher import resource_dispatcher
 from localstack.services.infra import SHUTDOWN_INFRA, terminate_all_processes_in_docker
 from localstack.utils.collections import merge_recursive
+from localstack.utils.config_listener import update_config_variable
 from localstack.utils.files import load_file
 from localstack.utils.functions import call_safe
 from localstack.utils.json import parse_json_or_yaml
@@ -247,6 +249,21 @@ class InitScriptsStageResource:
         }
 
 
+class ConfigResource:
+    def on_post(self, request: Request):
+        data = request.get_json(force=True)
+        variable = data.get("variable", "")
+        if not re.match(r"^[_a-zA-Z0-9]+$", variable):
+            return Response("{}", mimetype="application/json", status=400)
+        new_value = data.get("value")
+        update_config_variable(variable, new_value)
+        value = getattr(config, variable, None)
+        return {
+            "variable": variable,
+            "value": value,
+        }
+
+
 class LocalstackResources(Router):
     """
     Router for localstack-internal HTTP resources.
@@ -280,6 +297,9 @@ class LocalstackResources(Router):
         self.add("/init/<stage>", InitScriptsStageResource())
         self.add("/cloudformation/deploy", CloudFormationUi())
 
+        if config.ENABLE_CONFIG_UPDATES:
+            self.add("/config", ConfigResource())
+
         if config.DEBUG:
             LOG.warning(
                 "Enabling diagnose endpoint, "
@@ -288,7 +308,7 @@ class LocalstackResources(Router):
             self.add("/diagnose", DiagnoseResource())
 
     def add(self, path, *args, **kwargs):
-        super().add(f"{constants.INTERNAL_RESOURCE_PATH}{path}", *args, **kwargs)
+        return super().add(f"{constants.INTERNAL_RESOURCE_PATH}{path}", *args, **kwargs)
 
 
 class LocalstackResourceHandler(RouterListener):

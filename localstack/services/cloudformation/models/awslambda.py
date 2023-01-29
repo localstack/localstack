@@ -32,7 +32,7 @@ class LambdaFunction(GenericBaseModel):
         return "AWS::Lambda::Function"
 
     def fetch_state(self, stack_name, resources):
-        func_name = self.resolve_refs_recursively(stack_name, self.props["FunctionName"], resources)
+        func_name = self.props["FunctionName"]
         return aws_stack.connect_to_service("lambda").get_function(FunctionName=func_name)
 
     def get_physical_resource_id(self, attribute=None, **kwargs):
@@ -59,9 +59,6 @@ class LambdaFunction(GenericBaseModel):
             "VpcConfig",
         ]
         update_config_props = select_attributes(props, config_keys)
-        update_config_props = self.resolve_refs_recursively(
-            stack_name, update_config_props, resources
-        )
         if "Timeout" in update_config_props:
             update_config_props["Timeout"] = int(update_config_props["Timeout"])
         if "Code" in props:
@@ -205,8 +202,7 @@ class LambdaEventSourceMapping(GenericBaseModel):
         props = self.props
         source_arn = props.get("EventSourceArn")
         self_managed_src = props.get("SelfManagedEventSource")
-        function_name = self.resolve_refs_recursively(stack_name, props["FunctionName"], resources)
-        source_arn = self.resolve_refs_recursively(stack_name, source_arn, resources)
+        function_name = props["FunctionName"]
         if not function_name or (not source_arn and not self_managed_src):
             raise Exception("ResourceNotFound")
 
@@ -248,7 +244,7 @@ class LambdaPermission(GenericBaseModel):
 
     def fetch_state(self, stack_name, resources):
         props = self.props
-        func_name = self.resolve_refs_recursively(stack_name, props.get("FunctionName"), resources)
+        func_name = props.get("FunctionName")
         lambda_client = aws_stack.connect_to_service("lambda")
         return lambda_client.get_policy(FunctionName=func_name)
 
@@ -260,9 +256,6 @@ class LambdaPermission(GenericBaseModel):
         props = new_resource["Properties"]
         parameters_to_select = ["FunctionName", "Action", "Principal", "SourceArn"]
         update_config_props = select_attributes(props, parameters_to_select)
-        update_config_props = self.resolve_refs_recursively(
-            stack_name, update_config_props, resources
-        )
 
         client = aws_stack.connect_to_service("lambda")
         sid = new_resource["PhysicalResourceId"]
@@ -478,9 +471,7 @@ class LambdaLayerVersion(GenericBaseModel):
         return self.state.get("LayerVersionArn")
 
     def fetch_state(self, stack_name, resources):
-        layer_name = self.resolve_refs_recursively(
-            stack_name, self.props.get("LayerName"), resources
-        )
+        layer_name = self.props.get("LayerName")
         # TODO extract region name if layer_name is an ARN
         client = aws_stack.connect_to_service("lambda")
         layers = client.list_layer_versions(LayerName=layer_name).get("LayerVersions", [])
@@ -506,9 +497,7 @@ class LambdaLayerVersionPermission(LambdaPermission):
 
     def fetch_state(self, stack_name, resources):
         props = self.props
-        props["LayerVersionArn"] = self.resolve_refs_recursively(
-            stack_name, props["LayerVersionArn"], resources
-        )
+        props["LayerVersionArn"] = props["LayerVersionArn"]
         layer_name, version_number = self.layer_name_and_version(props)
         layer_arn = arns.lambda_layer_arn(layer_name)
         layer_arn_qualified = "%s:%s" % (layer_arn, version_number)
