@@ -338,7 +338,7 @@ def _(shape: StringShape, graph: ShapeGraph) -> str:
                 shape.name,
                 shape.metadata.get("pattern", "(no pattern set)"),
             )
-            return "arn:aws:ec2:us-east-1:1234567890123:instance/i-abcde0123456789f"
+            return DEFAULT_ARN
 
     max_len: int = shape.metadata.get("max") or 256
     min_len: int = shape.metadata.get("min") or 0
