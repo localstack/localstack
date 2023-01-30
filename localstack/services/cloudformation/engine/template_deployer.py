@@ -252,7 +252,6 @@ def extract_resource_attribute(
                 resource_id=resource_id,
             )
     if is_ref_attribute:
-        result = None
         for attr in ["Id", "PhysicalResourceId", "Ref"]:
             if result is None:
                 for obj in [resource_state, resource]:
@@ -1070,7 +1069,7 @@ class TemplateDeployer:
     def get_resource_dependencies(self, resource):
         result = {}
         # Note: using the original, unmodified template here to preserve Ref's ...
-        raw_resources = self.stack.template["Resources"]
+        raw_resources = self.stack.template_original["Resources"]
         raw_resource = raw_resources[resource["LogicalResourceId"]]
         dumped = json.dumps(json_safe(raw_resource))
         for other_id, other in raw_resources.items():
@@ -1164,9 +1163,9 @@ class TemplateDeployer:
             old_res_props[key] = value
 
         # overwrite original template entirely
-        old_stack.template_original["Resources"][resource_id] = new_stack.template["Resources"][
-            resource_id
-        ]
+        old_stack.template_original["Resources"][resource_id] = new_stack.template_original[
+            "Resources"
+        ][resource_id]
 
     def resolve_param(
         self, logical_id: str, param_type: str, default_value: Optional[str] = None
@@ -1181,7 +1180,7 @@ class TemplateDeployer:
             for p in old_stack.metadata["Parameters"]  # go through current parameter values
         }
 
-        for logical_id, value in new_stack.template_parameters.items():
+        for logical_id, value in new_stack.template["Parameters"].items():
             default = value.get("Default")
             provided_param_value = parameters.get(logical_id)
             param = {

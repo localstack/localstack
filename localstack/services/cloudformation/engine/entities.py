@@ -349,26 +349,30 @@ class Stack:
 
     @property
     def template_parameters(self):
-        return self.template.get("Parameters", {})
+        return self.template["Parameters"]
 
     @property
-    def conditions(self) -> Dict:
+    def conditions(self):
         """Returns the (mutable) dict of stack conditions."""
-        return self.template.get("Conditions", {})
+        return self.template.setdefault("Conditions", {})
 
     @property
-    def mappings(self) -> Dict:
+    def mappings(self):
         """Returns the (mutable) dict of stack mappings."""
-        return self.template.get("Mappings", {})
+        return self.template.setdefault("Mappings", {})
 
     @property
-    def outputs(self) -> Dict:
+    def outputs(self):
         """Returns the (mutable) dict of stack outputs."""
-        return self.template.get("Outputs", {})
+        return self.template.setdefault("Outputs", {})
 
     @property
-    def status(self) -> str:
+    def status(self):
         return self.metadata["StackStatus"]
+
+    @property
+    def resource_types(self):
+        return [r.get("Type") for r in self.template_resources.values()]
 
     def resource(self, resource_id):
         return self._lookup(self.resources, resource_id)

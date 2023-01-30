@@ -15,13 +15,11 @@ class SSMParameter(GenericBaseModel):
         return "AWS::SSM::Parameter"
 
     def get_physical_resource_id(self, attribute=None, **kwargs):
-        return self.physical_resource_id
+        return self.props.get("Name") or self.logical_resource_id
 
     def fetch_state(self, stack_name, resources):
-        if self.physical_resource_id:
-            return aws_stack.connect_to_service("ssm").get_parameter(Name=self.props["Name"])[
-                "Parameter"
-            ]
+        param_name = self.props.get("Name") or self.logical_resource_id
+        return aws_stack.connect_to_service("ssm").get_parameter(Name=param_name)["Parameter"]
 
     @staticmethod
     def add_defaults(resource, stack_name: str):
@@ -58,11 +56,6 @@ class SSMParameter(GenericBaseModel):
 
     @staticmethod
     def get_deploy_templates():
-        def _store_id(result, resource_id, resources, resource_type):
-            resources[resource_id]["PhysicalResourceId"] = resources[resource_id]["Properties"][
-                "Name"
-            ]
-
         return {
             "create": {
                 "function": "put_parameter",
@@ -79,7 +72,6 @@ class SSMParameter(GenericBaseModel):
                     ),
                 ),
                 "types": {"Value": str},
-                "result_handler": _store_id,
             },
             "delete": {"function": "delete_parameter", "parameters": ["Name"]},
         }

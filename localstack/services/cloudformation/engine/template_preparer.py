@@ -12,6 +12,7 @@ from localstack.aws.accounts import get_aws_account_id
 from localstack.aws.api import CommonServiceException
 from localstack.aws.api.cloudformation import InsufficientCapabilitiesException
 from localstack.services.awslambda.lambda_api import func_arn, run_lambda
+from localstack.services.cloudformation.engine.entities import resolve_ssm_parameter_value
 from localstack.services.cloudformation.engine.policy_loader import create_policy_loader
 from localstack.services.cloudformation.stores import get_cloudformation_store
 from localstack.utils.aws import aws_stack
@@ -167,6 +168,33 @@ def format_transforms(transforms: List | Dict | str) -> List[Dict]:
                 formatted_transformations.append(transformation)
 
     return formatted_transformations
+
+
+def resolve_parameters(template_parameters: dict, request_parameters: List[dict]):
+    result = {}
+    # add default template parameter values
+    for key, value in template_parameters.items():
+        param_value = value.get("Default")
+        result[key] = {
+            "ParameterKey": key,
+            "ParameterValue": param_value,
+        }
+        param_type = value.get("Type", "")
+        if not param_type:
+            if param_type == "AWS::SSM::Parameter::Value<String>":
+                result[key]["ResolvedValue"] = resolve_ssm_parameter_value(param_type, param_value)
+            elif param_type.startswith("AWS::"):
+                LOG.info(
+                    f"Parameter Type '{param_type}' is currently not supported. Coming soon, stay tuned!"
+                )
+            else:
+                # lets assume we support the normal CFn parameters
+                pass
+
+    # add stack parameters
+    result.update({p["ParameterKey"]: p for p in request_parameters})
+    result = list(result.values())
+    return result
 
 
 class FailedTransformation(Exception):

@@ -8,7 +8,10 @@ from localstack.services.cloudformation.deployment_utils import (
     params_list_to_dict,
     params_select_attributes,
 )
-from localstack.services.cloudformation.service_models import GenericBaseModel
+from localstack.services.cloudformation.service_models import (
+    DependencyNotYetSatisfied,
+    GenericBaseModel,
+)
 from localstack.utils.aws import arns, aws_stack
 from localstack.utils.common import short_uid
 
@@ -68,7 +71,18 @@ class SQSQueue(GenericBaseModel):
         return "AWS::SQS::Queue"
 
     def get_physical_resource_id(self, attribute=None, **kwargs):
-        return self.physical_resource_id
+        queue_url = None
+        props = self.props
+        try:
+            queue_url = arns.get_sqs_queue_url(props.get("QueueName"))
+        except Exception as e:
+            if "NonExistentQueue" in str(e):
+                raise DependencyNotYetSatisfied(
+                    resource_ids=self.logical_resource_id, message="Unable to get queue: %s" % e
+                )
+        if attribute == "Arn":
+            return arns.sqs_queue_arn(props.get("QueueName"))
+        return queue_url
 
     def fetch_state(self, stack_name, resources):
         queue_name = self.props["QueueName"]
@@ -111,12 +125,8 @@ class SQSQueue(GenericBaseModel):
                 return queue_url
             return arns.sqs_queue_url_for_arn(props["QueueArn"])
 
-        def _store_id(result, resource_id, resources, resource_type):
-            resources[resource_id]["PhysicalResourceId"] = result["QueueUrl"]
-
         return {
             "create": {
-                "result_handler": _store_id,
                 "function": "create_queue",
                 "parameters": {
                     "QueueName": "QueueName",
