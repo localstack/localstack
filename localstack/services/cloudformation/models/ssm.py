@@ -15,7 +15,7 @@ class SSMParameter(GenericBaseModel):
         return "AWS::SSM::Parameter"
 
     def get_physical_resource_id(self, attribute=None, **kwargs):
-        return self.props.get("Name") or self.logical_resource_id
+        return self.logical_resource_id
 
     def fetch_state(self, stack_name, resources):
         param_name = self.props.get("Name") or self.logical_resource_id
