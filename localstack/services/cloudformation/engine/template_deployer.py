@@ -252,6 +252,7 @@ def extract_resource_attribute(
                 resource_id=resource_id,
             )
     if is_ref_attribute:
+        result = None
         for attr in ["Id", "PhysicalResourceId", "Ref"]:
             if result is None:
                 for obj in [resource_state, resource]:
