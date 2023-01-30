@@ -183,7 +183,8 @@ class ConnectFactory:
             region_name = extract_region_from_arn(target_arn)
             localstack_data["target_arn"] = target_arn
 
-        assert region_name, "Region not set for internal client"
+        if not region_name:
+            raise ValueError("Region not set for internal client")
 
         dto = dump_dto(localstack_data)
 
