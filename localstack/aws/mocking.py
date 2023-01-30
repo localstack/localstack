@@ -152,7 +152,7 @@ def sanitize_pattern(pattern: str) -> str:
 
 def sanitize_arn_pattern(pattern: str) -> str:
     # clown emoji
-    # ^arn:aws[a-z\\-]*:iam::\\d{12}:role/?[a-zA-Z_0-9+=,.@\\-_/]+$
+
     # some devs were just lazy ...
     if pattern in [
         ".*",
