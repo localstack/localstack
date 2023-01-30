@@ -5,11 +5,11 @@ This module provides the interface to perform cross-service communication betwee
 LocalStack providers.
 """
 import json
+import logging
 from functools import cache
 from typing import Mapping, Optional, TypedDict, Union
 
 from boto3.session import Session
-from botocore.awsrequest import AWSPreparedRequest
 from botocore.client import BaseClient
 from botocore.config import Config
 from werkzeug.datastructures import Headers
@@ -20,19 +20,20 @@ from localstack.constants import (
     INTERNAL_AWS_SECRET_ACCESS_KEY,
     MAX_POOL_CONNECTIONS,
 )
-from localstack.utils.aws.arns import extract_region_from_arn
 from localstack.utils.aws.aws_stack import get_local_service_url
 from localstack.utils.aws.request_context import get_region_from_request_context
+
+LOG = logging.getLogger(__name__)
 
 #
 # Data transfer object
 #
 
-LOCALSTACK_DATA_HEADER = "x-localstack-data"
+LOCALSTACK_REQUEST_PARAM_HEADER = "x-localstack-data"
 """Request header which contains the data transfer object."""
 
 
-class LocalStackData(TypedDict):
+class LocalstackRequestParameters(TypedDict):
     """
     LocalStack Data Transfer Object.
 
@@ -54,20 +55,26 @@ class LocalStackData(TypedDict):
     """ARN of the resource being targeted."""
 
 
-def dump_dto(data: LocalStackData) -> str:
+def dump_dto(data: LocalstackRequestParameters) -> str:
     # TODO@viren: Improve minification using custom JSONEncoder that use shortened keys
 
     # To produce a compact JSON representation of DTO, remove spaces from separators
     return json.dumps(data, separators=(",", ":"))
 
 
-def load_dto(data: str) -> LocalStackData:
+def load_dto(data: str) -> LocalstackRequestParameters:
     return json.loads(data)
 
 
 #
 # Client
 #
+
+# Names of arguments that can be passed to Boto API operation functions.
+# These have appropriate entries on the data transfer object.
+ARG_SOURCE_SERVICE = "_SourceService"
+ARG_SOURCE_ARN = "_SourceArn"
+ARG_TARGET_ARN = "_TargetArn"
 
 
 class ConnectFactory:
@@ -98,6 +105,43 @@ class ConnectFactory:
         """
         return self.get_internal_client(*args, **kwargs)
 
+    def get_internal_client(
+        self,
+        service_name: str,
+        region_name: str,
+        endpoint_url: str = None,
+        aws_access_key_id: str = INTERNAL_AWS_ACCESS_KEY_ID,
+        aws_secret_access_key: str = INTERNAL_AWS_SECRET_ACCESS_KEY,
+        config: Config = None,
+    ) -> BaseClient:
+        """
+        Build and return client for connections originating within LocalStack.
+
+        Region in `_TargetArn` takes precedence when specified.
+
+        :param service_name: Service to build the client for, eg. `s3`
+        :param region_name: Region name. See note above.
+        :param endpoint_url: Full endpoint URL to be used by the client.
+            Defaults to appropriate LocalStack endpoint.
+        :param aws_access_key_id: Access key to use for the client.
+            Defaults to LocalStack internal credentials.
+        :param aws_secret_access_key: Secret key to use for the client.
+            Defaults to LocalStack internal credentials.
+        :param config: Boto config for advanced use.
+        """
+
+        return self._get_client(
+            service_name=service_name,
+            region_name=region_name,
+            use_ssl=self._use_ssl,
+            verify=self._verify,
+            endpoint_url=endpoint_url or get_local_service_url(service_name),
+            aws_access_key_id=aws_access_key_id,
+            aws_secret_access_key=aws_secret_access_key,
+            aws_session_token=None,
+            config=config or self._config,
+        )
+
     def get_external_client(
         self,
         service_name: str,
@@ -106,7 +150,7 @@ class ConnectFactory:
         aws_secret_access_key: Optional[str],
         endpoint_url: str = None,
         config: Config = None,
-    ):
+    ) -> BaseClient:
         """
         Build and return client for connections originating outside LocalStack.
 
@@ -127,7 +171,8 @@ class ConnectFactory:
             Defaults to appropriate LocalStack endpoint.
         :param config: Boto config for advanced use.
         """
-        client = self.get_client(
+
+        return self._get_client(
             service_name=service_name,
             region_name=region_name or self.get_region_name(),
             use_ssl=self._use_ssl,
@@ -137,81 +182,10 @@ class ConnectFactory:
             aws_secret_access_key=aws_secret_access_key or self.get_session_secret_key(),
             aws_session_token=None,
             config=config or self._config,
-            dto=None,
         )
-        return client
-
-    def get_internal_client(
-        self,
-        target_service: str,
-        region_name: str = None,
-        endpoint_url: str = None,
-        aws_access_key_id: str = INTERNAL_AWS_ACCESS_KEY_ID,
-        aws_secret_access_key: str = INTERNAL_AWS_SECRET_ACCESS_KEY,
-        config: Config = None,
-        source_arn: str = None,
-        source_service: str = None,
-        target_arn: str = None,
-    ) -> BaseClient:
-        """
-        Build and return client for connections originating within LocalStack.
-
-        :param target_service: Service to build the client for, eg. `s3`
-        :param region_name: Region name
-        :param endpoint_url: Full endpoint URL to be used by the client.
-            Defaults to appropriate LocalStack endpoint.
-        :param aws_access_key_id: Access key to use for the client.
-            Defaults to LocalStack internal credentials.
-        :param aws_secret_access_key: Secret key to use for the client.
-            Defaults to LocalStack internal credentials.
-        :param config: Boto config for advanced use.
-        :param source_arn: ARN of resource which triggers the call.
-        :param source_service: Service name where call originates.
-        :param target_arn: ARN of targeted resource. When set, the region from ARN
-            takes precedence over the `region` argument.
-        """
-        localstack_data = LocalStackData()
-
-        if source_arn:
-            localstack_data["source_arn"] = source_arn
-
-        if source_service:
-            localstack_data["source_service"] = source_service
-
-        if target_arn:
-            # Attention: region is overriden here
-            region_name = extract_region_from_arn(target_arn)
-            localstack_data["target_arn"] = target_arn
-
-        if not region_name:
-            raise ValueError("Region not set for internal client")
-
-        dto = dump_dto(localstack_data)
-
-        client = self.get_client(
-            service_name=target_service,
-            region_name=region_name,
-            use_ssl=self._use_ssl,
-            verify=self._verify,
-            endpoint_url=endpoint_url or get_local_service_url(target_service),
-            aws_access_key_id=aws_access_key_id,
-            aws_secret_access_key=aws_secret_access_key,
-            aws_session_token=None,
-            config=config or self._config,
-            dto=dto,
-        )
-
-        if len(localstack_data):
-
-            def _handler(request: AWSPreparedRequest, **_):
-                request.headers[LOCALSTACK_DATA_HEADER] = dto
-
-            client.meta.events.register("before-send.*.*", handler=_handler)
-
-        return client
 
     @cache
-    def get_client(
+    def _get_client(
         self,
         service_name: str,
         region_name: str,
@@ -222,9 +196,8 @@ class ConnectFactory:
         aws_secret_access_key: str,
         aws_session_token: str,
         config: Config,
-        dto: Optional[str],  # noqa
     ) -> BaseClient:
-        return self._session.client(
+        client = self._session.client(
             service_name=service_name,
             region_name=region_name,
             use_ssl=use_ssl,
@@ -235,6 +208,47 @@ class ConnectFactory:
             aws_session_token=aws_session_token,
             config=config,
         )
+
+        def _handler_piggyback_dto(params, model, context, **kwargs):
+            """
+            Construct the data transfer object at the time of parsing the client
+            parameters and proxy it over the Boto context dict.
+            """
+
+            dto = LocalstackRequestParameters()
+            if ARG_SOURCE_SERVICE in params:
+                dto["source_service"] = params.pop(ARG_SOURCE_SERVICE)
+            if ARG_SOURCE_ARN in params:
+                dto["source_arn"] = params.pop(ARG_SOURCE_ARN)
+            if ARG_TARGET_ARN in params:
+                target_arn = params.pop(ARG_TARGET_ARN)
+
+                if target_arn.startswith("arn:"):
+                    dto["target_arn"] = params.pop(ARG_TARGET_ARN)
+                else:
+                    try:
+                        dto["target_arn"] = params[target_arn]
+                    except KeyError:
+                        LOG.warning(
+                            "TargetArn '%s' not an ARN or a valid ref to another parameter."
+                            % target_arn
+                        )
+
+            if dto:
+                context["_localstack"] = dto
+
+        def _handler_inject_dto_header(model, params, request_signer, context, **kwargs):
+            """
+            Retrieve the data transfer object and make it part of the request
+            headers.
+            """
+            if dto := context.pop("_localstack", None):
+                params["headers"][LOCALSTACK_REQUEST_PARAM_HEADER] = dump_dto(dto)
+
+        client.meta.events.register("provide-client-params.*.*", handler=_handler_piggyback_dto)
+        client.meta.events.register("before-call.*.*", handler=_handler_inject_dto_header)
+
+        return client
 
     #
     # Boto session utilities
@@ -293,4 +307,4 @@ def is_internal_call(headers: Union[Mapping, Headers]) -> bool:
     """
     Whether given request headers are for an internal LocalStack cross-service call.
     """
-    return LOCALSTACK_DATA_HEADER in headers
+    return LOCALSTACK_REQUEST_PARAM_HEADER in headers
