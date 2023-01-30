@@ -157,7 +157,10 @@ IpamId = str
 IpamMaxResults = int
 IpamNetmaskLength = int
 IpamPoolAllocationId = str
+IpamPoolCidrId = str
 IpamPoolId = str
+IpamResourceDiscoveryAssociationId = str
+IpamResourceDiscoveryId = str
 IpamScopeId = str
 Ipv4PoolCoipId = str
 Ipv4PoolEc2Id = str
@@ -1757,11 +1760,22 @@ class IpamAddressHistoryResourceType(str):
     instance = "instance"
 
 
+class IpamAssociatedResourceDiscoveryStatus(str):
+    active = "active"
+    not_found = "not-found"
+
+
 class IpamComplianceStatus(str):
     compliant = "compliant"
     noncompliant = "noncompliant"
     unmanaged = "unmanaged"
     ignored = "ignored"
+
+
+class IpamDiscoveryFailureCode(str):
+    assume_role_failure = "assume-role-failure"
+    throttling_failure = "throttling-failure"
+    unauthorized_failure = "unauthorized-failure"
 
 
 class IpamManagementState(str):
@@ -1789,6 +1803,7 @@ class IpamPoolAwsService(str):
 
 class IpamPoolCidrFailureCode(str):
     cidr_not_available = "cidr-not-available"
+    limit_exceeded = "limit-exceeded"
 
 
 class IpamPoolCidrState(str):
@@ -1802,7 +1817,39 @@ class IpamPoolCidrState(str):
     failed_import = "failed-import"
 
 
+class IpamPoolPublicIpSource(str):
+    amazon = "amazon"
+    byoip = "byoip"
+
+
 class IpamPoolState(str):
+    create_in_progress = "create-in-progress"
+    create_complete = "create-complete"
+    create_failed = "create-failed"
+    modify_in_progress = "modify-in-progress"
+    modify_complete = "modify-complete"
+    modify_failed = "modify-failed"
+    delete_in_progress = "delete-in-progress"
+    delete_complete = "delete-complete"
+    delete_failed = "delete-failed"
+    isolate_in_progress = "isolate-in-progress"
+    isolate_complete = "isolate-complete"
+    restore_in_progress = "restore-in-progress"
+
+
+class IpamResourceDiscoveryAssociationState(str):
+    associate_in_progress = "associate-in-progress"
+    associate_complete = "associate-complete"
+    associate_failed = "associate-failed"
+    disassociate_in_progress = "disassociate-in-progress"
+    disassociate_complete = "disassociate-complete"
+    disassociate_failed = "disassociate-failed"
+    isolate_in_progress = "isolate-in-progress"
+    isolate_complete = "isolate-complete"
+    restore_in_progress = "restore-in-progress"
+
+
+class IpamResourceDiscoveryState(str):
     create_in_progress = "create-in-progress"
     create_complete = "create-complete"
     create_failed = "create-failed"
@@ -2327,6 +2374,8 @@ class ResourceType(str):
     verified_access_trust_provider = "verified-access-trust-provider"
     vpn_connection_device_type = "vpn-connection-device-type"
     vpc_block_public_access_exclusion = "vpc-block-public-access-exclusion"
+    ipam_resource_discovery = "ipam-resource-discovery"
+    ipam_resource_discovery_association = "ipam-resource-discovery-association"
 
 
 class RootDeviceType(str):
@@ -3788,6 +3837,32 @@ class InstanceEventWindow(TypedDict, total=False):
 
 class AssociateInstanceEventWindowResult(TypedDict, total=False):
     InstanceEventWindow: Optional[InstanceEventWindow]
+
+
+class AssociateIpamResourceDiscoveryRequest(ServiceRequest):
+    DryRun: Optional[Boolean]
+    IpamId: IpamId
+    IpamResourceDiscoveryId: IpamResourceDiscoveryId
+    TagSpecifications: Optional[TagSpecificationList]
+    ClientToken: Optional[String]
+
+
+class IpamResourceDiscoveryAssociation(TypedDict, total=False):
+    OwnerId: Optional[String]
+    IpamResourceDiscoveryAssociationId: Optional[IpamResourceDiscoveryAssociationId]
+    IpamResourceDiscoveryAssociationArn: Optional[String]
+    IpamResourceDiscoveryId: Optional[IpamResourceDiscoveryId]
+    IpamId: Optional[IpamId]
+    IpamArn: Optional[ResourceArn]
+    IpamRegion: Optional[String]
+    IsDefault: Optional[Boolean]
+    ResourceDiscoveryStatus: Optional[IpamAssociatedResourceDiscoveryStatus]
+    State: Optional[IpamResourceDiscoveryAssociationState]
+    Tags: Optional[TagList]
+
+
+class AssociateIpamResourceDiscoveryResult(TypedDict, total=False):
+    IpamResourceDiscoveryAssociation: Optional[IpamResourceDiscoveryAssociation]
 
 
 class AssociateRouteTableRequest(ServiceRequest):
@@ -5804,6 +5879,7 @@ class CreateIpamPoolRequest(ServiceRequest):
     TagSpecifications: Optional[TagSpecificationList]
     ClientToken: Optional[String]
     AwsService: Optional[IpamPoolAwsService]
+    PublicIpSource: Optional[IpamPoolPublicIpSource]
 
 
 class IpamResourceTag(TypedDict, total=False):
@@ -5837,6 +5913,7 @@ class IpamPool(TypedDict, total=False):
     AllocationResourceTags: Optional[IpamResourceTagList]
     Tags: Optional[TagList]
     AwsService: Optional[IpamPoolAwsService]
+    PublicIpSource: Optional[IpamPoolPublicIpSource]
 
 
 class CreateIpamPoolResult(TypedDict, total=False):
@@ -5851,11 +5928,35 @@ class CreateIpamRequest(ServiceRequest):
     ClientToken: Optional[String]
 
 
+class CreateIpamResourceDiscoveryRequest(ServiceRequest):
+    DryRun: Optional[Boolean]
+    Description: Optional[String]
+    OperatingRegions: Optional[AddIpamOperatingRegionSet]
+    TagSpecifications: Optional[TagSpecificationList]
+    ClientToken: Optional[String]
+
+
 class IpamOperatingRegion(TypedDict, total=False):
     RegionName: Optional[String]
 
 
 IpamOperatingRegionSet = List[IpamOperatingRegion]
+
+
+class IpamResourceDiscovery(TypedDict, total=False):
+    OwnerId: Optional[String]
+    IpamResourceDiscoveryId: Optional[IpamResourceDiscoveryId]
+    IpamResourceDiscoveryArn: Optional[String]
+    IpamResourceDiscoveryRegion: Optional[String]
+    Description: Optional[String]
+    OperatingRegions: Optional[IpamOperatingRegionSet]
+    IsDefault: Optional[Boolean]
+    State: Optional[IpamResourceDiscoveryState]
+    Tags: Optional[TagList]
+
+
+class CreateIpamResourceDiscoveryResult(TypedDict, total=False):
+    IpamResourceDiscovery: Optional[IpamResourceDiscovery]
 
 
 class Ipam(TypedDict, total=False):
@@ -5870,6 +5971,9 @@ class Ipam(TypedDict, total=False):
     OperatingRegions: Optional[IpamOperatingRegionSet]
     State: Optional[IpamState]
     Tags: Optional[TagList]
+    DefaultResourceDiscoveryId: Optional[IpamResourceDiscoveryId]
+    DefaultResourceDiscoveryAssociationId: Optional[IpamResourceDiscoveryAssociationId]
+    ResourceDiscoveryAssociationCount: Optional[Integer]
 
 
 class CreateIpamResult(TypedDict, total=False):
@@ -8411,6 +8515,15 @@ class DeleteIpamRequest(ServiceRequest):
     Cascade: Optional[Boolean]
 
 
+class DeleteIpamResourceDiscoveryRequest(ServiceRequest):
+    DryRun: Optional[Boolean]
+    IpamResourceDiscoveryId: IpamResourceDiscoveryId
+
+
+class DeleteIpamResourceDiscoveryResult(TypedDict, total=False):
+    IpamResourceDiscovery: Optional[IpamResourceDiscovery]
+
+
 class DeleteIpamResult(TypedDict, total=False):
     Ipam: Optional[Ipam]
 
@@ -8965,6 +9078,8 @@ class IpamPoolCidr(TypedDict, total=False):
     Cidr: Optional[String]
     State: Optional[IpamPoolCidrState]
     FailureReason: Optional[IpamPoolCidrFailureReason]
+    IpamPoolCidrId: Optional[IpamPoolCidrId]
+    NetmaskLength: Optional[Integer]
 
 
 class DeprovisionIpamPoolCidrResult(TypedDict, total=False):
@@ -10740,6 +10855,38 @@ IpamPoolSet = List[IpamPool]
 class DescribeIpamPoolsResult(TypedDict, total=False):
     NextToken: Optional[NextToken]
     IpamPools: Optional[IpamPoolSet]
+
+
+class DescribeIpamResourceDiscoveriesRequest(ServiceRequest):
+    DryRun: Optional[Boolean]
+    IpamResourceDiscoveryIds: Optional[ValueStringList]
+    NextToken: Optional[NextToken]
+    MaxResults: Optional[IpamMaxResults]
+    Filters: Optional[FilterList]
+
+
+IpamResourceDiscoverySet = List[IpamResourceDiscovery]
+
+
+class DescribeIpamResourceDiscoveriesResult(TypedDict, total=False):
+    IpamResourceDiscoveries: Optional[IpamResourceDiscoverySet]
+    NextToken: Optional[NextToken]
+
+
+class DescribeIpamResourceDiscoveryAssociationsRequest(ServiceRequest):
+    DryRun: Optional[Boolean]
+    IpamResourceDiscoveryAssociationIds: Optional[ValueStringList]
+    NextToken: Optional[NextToken]
+    MaxResults: Optional[IpamMaxResults]
+    Filters: Optional[FilterList]
+
+
+IpamResourceDiscoveryAssociationSet = List[IpamResourceDiscoveryAssociation]
+
+
+class DescribeIpamResourceDiscoveryAssociationsResult(TypedDict, total=False):
+    IpamResourceDiscoveryAssociations: Optional[IpamResourceDiscoveryAssociationSet]
+    NextToken: Optional[NextToken]
 
 
 class DescribeIpamScopesRequest(ServiceRequest):
@@ -13358,6 +13505,15 @@ class DisassociateInstanceEventWindowResult(TypedDict, total=False):
     InstanceEventWindow: Optional[InstanceEventWindow]
 
 
+class DisassociateIpamResourceDiscoveryRequest(ServiceRequest):
+    DryRun: Optional[Boolean]
+    IpamResourceDiscoveryAssociationId: IpamResourceDiscoveryAssociationId
+
+
+class DisassociateIpamResourceDiscoveryResult(TypedDict, total=False):
+    IpamResourceDiscoveryAssociation: Optional[IpamResourceDiscoveryAssociation]
+
+
 class DisassociateRouteTableRequest(ServiceRequest):
     AssociationId: RouteTableAssociationId
     DryRun: Optional[Boolean]
@@ -13966,6 +14122,66 @@ IpamAddressHistoryRecordSet = List[IpamAddressHistoryRecord]
 
 class GetIpamAddressHistoryResult(TypedDict, total=False):
     HistoryRecords: Optional[IpamAddressHistoryRecordSet]
+    NextToken: Optional[NextToken]
+
+
+class GetIpamDiscoveredAccountsRequest(ServiceRequest):
+    DryRun: Optional[Boolean]
+    IpamResourceDiscoveryId: IpamResourceDiscoveryId
+    DiscoveryRegion: String
+    Filters: Optional[FilterList]
+    NextToken: Optional[NextToken]
+    MaxResults: Optional[IpamMaxResults]
+
+
+class IpamDiscoveryFailureReason(TypedDict, total=False):
+    Code: Optional[IpamDiscoveryFailureCode]
+    Message: Optional[String]
+
+
+class IpamDiscoveredAccount(TypedDict, total=False):
+    AccountId: Optional[String]
+    DiscoveryRegion: Optional[String]
+    FailureReason: Optional[IpamDiscoveryFailureReason]
+    LastAttemptedDiscoveryTime: Optional[MillisecondDateTime]
+    LastSuccessfulDiscoveryTime: Optional[MillisecondDateTime]
+
+
+IpamDiscoveredAccountSet = List[IpamDiscoveredAccount]
+
+
+class GetIpamDiscoveredAccountsResult(TypedDict, total=False):
+    IpamDiscoveredAccounts: Optional[IpamDiscoveredAccountSet]
+    NextToken: Optional[NextToken]
+
+
+class GetIpamDiscoveredResourceCidrsRequest(ServiceRequest):
+    DryRun: Optional[Boolean]
+    IpamResourceDiscoveryId: IpamResourceDiscoveryId
+    ResourceRegion: String
+    Filters: Optional[FilterList]
+    NextToken: Optional[NextToken]
+    MaxResults: Optional[IpamMaxResults]
+
+
+class IpamDiscoveredResourceCidr(TypedDict, total=False):
+    IpamResourceDiscoveryId: Optional[IpamResourceDiscoveryId]
+    ResourceRegion: Optional[String]
+    ResourceId: Optional[String]
+    ResourceOwnerId: Optional[String]
+    ResourceCidr: Optional[String]
+    ResourceType: Optional[IpamResourceType]
+    ResourceTags: Optional[IpamResourceTagList]
+    IpUsage: Optional[BoxedDouble]
+    VpcId: Optional[String]
+    SampleTime: Optional[MillisecondDateTime]
+
+
+IpamDiscoveredResourceCidrSet = List[IpamDiscoveredResourceCidr]
+
+
+class GetIpamDiscoveredResourceCidrsResult(TypedDict, total=False):
+    IpamDiscoveredResourceCidrs: Optional[IpamDiscoveredResourceCidrSet]
     NextToken: Optional[NextToken]
 
 
@@ -15138,6 +15354,18 @@ class ModifyIpamResourceCidrResult(TypedDict, total=False):
     IpamResourceCidr: Optional[IpamResourceCidr]
 
 
+class ModifyIpamResourceDiscoveryRequest(ServiceRequest):
+    DryRun: Optional[Boolean]
+    IpamResourceDiscoveryId: IpamResourceDiscoveryId
+    Description: Optional[String]
+    AddOperatingRegions: Optional[AddIpamOperatingRegionSet]
+    RemoveOperatingRegions: Optional[RemoveIpamOperatingRegionSet]
+
+
+class ModifyIpamResourceDiscoveryResult(TypedDict, total=False):
+    IpamResourceDiscovery: Optional[IpamResourceDiscovery]
+
+
 class ModifyIpamResult(TypedDict, total=False):
     Ipam: Optional[Ipam]
 
@@ -15810,6 +16038,8 @@ class ProvisionIpamPoolCidrRequest(ServiceRequest):
     IpamPoolId: IpamPoolId
     Cidr: Optional[String]
     CidrAuthorizationContext: Optional[IpamCidrAuthorizationContext]
+    NetmaskLength: Optional[Integer]
+    ClientToken: Optional[String]
 
 
 class ProvisionIpamPoolCidrResult(TypedDict, total=False):
@@ -16911,6 +17141,18 @@ class Ec2Api:
     ) -> AssociateInstanceEventWindowResult:
         raise NotImplementedError
 
+    @handler("AssociateIpamResourceDiscovery")
+    def associate_ipam_resource_discovery(
+        self,
+        context: RequestContext,
+        ipam_id: IpamId,
+        ipam_resource_discovery_id: IpamResourceDiscoveryId,
+        dry_run: Boolean = None,
+        tag_specifications: TagSpecificationList = None,
+        client_token: String = None,
+    ) -> AssociateIpamResourceDiscoveryResult:
+        raise NotImplementedError
+
     @handler("AssociateRouteTable")
     def associate_route_table(
         self,
@@ -17520,7 +17762,20 @@ class Ec2Api:
         tag_specifications: TagSpecificationList = None,
         client_token: String = None,
         aws_service: IpamPoolAwsService = None,
+        public_ip_source: IpamPoolPublicIpSource = None,
     ) -> CreateIpamPoolResult:
+        raise NotImplementedError
+
+    @handler("CreateIpamResourceDiscovery")
+    def create_ipam_resource_discovery(
+        self,
+        context: RequestContext,
+        dry_run: Boolean = None,
+        description: String = None,
+        operating_regions: AddIpamOperatingRegionSet = None,
+        tag_specifications: TagSpecificationList = None,
+        client_token: String = None,
+    ) -> CreateIpamResourceDiscoveryResult:
         raise NotImplementedError
 
     @handler("CreateIpamScope")
@@ -18421,6 +18676,15 @@ class Ec2Api:
     def delete_ipam_pool(
         self, context: RequestContext, ipam_pool_id: IpamPoolId, dry_run: Boolean = None
     ) -> DeleteIpamPoolResult:
+        raise NotImplementedError
+
+    @handler("DeleteIpamResourceDiscovery")
+    def delete_ipam_resource_discovery(
+        self,
+        context: RequestContext,
+        ipam_resource_discovery_id: IpamResourceDiscoveryId,
+        dry_run: Boolean = None,
+    ) -> DeleteIpamResourceDiscoveryResult:
         raise NotImplementedError
 
     @handler("DeleteIpamScope")
@@ -19566,6 +19830,30 @@ class Ec2Api:
         next_token: NextToken = None,
         ipam_pool_ids: ValueStringList = None,
     ) -> DescribeIpamPoolsResult:
+        raise NotImplementedError
+
+    @handler("DescribeIpamResourceDiscoveries")
+    def describe_ipam_resource_discoveries(
+        self,
+        context: RequestContext,
+        dry_run: Boolean = None,
+        ipam_resource_discovery_ids: ValueStringList = None,
+        next_token: NextToken = None,
+        max_results: IpamMaxResults = None,
+        filters: FilterList = None,
+    ) -> DescribeIpamResourceDiscoveriesResult:
+        raise NotImplementedError
+
+    @handler("DescribeIpamResourceDiscoveryAssociations")
+    def describe_ipam_resource_discovery_associations(
+        self,
+        context: RequestContext,
+        dry_run: Boolean = None,
+        ipam_resource_discovery_association_ids: ValueStringList = None,
+        next_token: NextToken = None,
+        max_results: IpamMaxResults = None,
+        filters: FilterList = None,
+    ) -> DescribeIpamResourceDiscoveryAssociationsResult:
         raise NotImplementedError
 
     @handler("DescribeIpamScopes")
@@ -20822,6 +21110,15 @@ class Ec2Api:
     ) -> DisassociateInstanceEventWindowResult:
         raise NotImplementedError
 
+    @handler("DisassociateIpamResourceDiscovery")
+    def disassociate_ipam_resource_discovery(
+        self,
+        context: RequestContext,
+        ipam_resource_discovery_association_id: IpamResourceDiscoveryAssociationId,
+        dry_run: Boolean = None,
+    ) -> DisassociateIpamResourceDiscoveryResult:
+        raise NotImplementedError
+
     @handler("DisassociateRouteTable")
     def disassociate_route_table(
         self,
@@ -21200,6 +21497,32 @@ class Ec2Api:
         max_results: IpamAddressHistoryMaxResults = None,
         next_token: NextToken = None,
     ) -> GetIpamAddressHistoryResult:
+        raise NotImplementedError
+
+    @handler("GetIpamDiscoveredAccounts")
+    def get_ipam_discovered_accounts(
+        self,
+        context: RequestContext,
+        ipam_resource_discovery_id: IpamResourceDiscoveryId,
+        discovery_region: String,
+        dry_run: Boolean = None,
+        filters: FilterList = None,
+        next_token: NextToken = None,
+        max_results: IpamMaxResults = None,
+    ) -> GetIpamDiscoveredAccountsResult:
+        raise NotImplementedError
+
+    @handler("GetIpamDiscoveredResourceCidrs")
+    def get_ipam_discovered_resource_cidrs(
+        self,
+        context: RequestContext,
+        ipam_resource_discovery_id: IpamResourceDiscoveryId,
+        resource_region: String,
+        dry_run: Boolean = None,
+        filters: FilterList = None,
+        next_token: NextToken = None,
+        max_results: IpamMaxResults = None,
+    ) -> GetIpamDiscoveredResourceCidrsResult:
         raise NotImplementedError
 
     @handler("GetIpamPoolAllocations")
@@ -21874,6 +22197,18 @@ class Ec2Api:
     ) -> ModifyIpamResourceCidrResult:
         raise NotImplementedError
 
+    @handler("ModifyIpamResourceDiscovery")
+    def modify_ipam_resource_discovery(
+        self,
+        context: RequestContext,
+        ipam_resource_discovery_id: IpamResourceDiscoveryId,
+        dry_run: Boolean = None,
+        description: String = None,
+        add_operating_regions: AddIpamOperatingRegionSet = None,
+        remove_operating_regions: RemoveIpamOperatingRegionSet = None,
+    ) -> ModifyIpamResourceDiscoveryResult:
+        raise NotImplementedError
+
     @handler("ModifyIpamScope")
     def modify_ipam_scope(
         self,
@@ -22398,6 +22733,8 @@ class Ec2Api:
         dry_run: Boolean = None,
         cidr: String = None,
         cidr_authorization_context: IpamCidrAuthorizationContext = None,
+        netmask_length: Integer = None,
+        client_token: String = None,
     ) -> ProvisionIpamPoolCidrResult:
         raise NotImplementedError
 
