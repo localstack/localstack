@@ -3,6 +3,7 @@ import inspect
 import logging
 import os
 import shutil
+import stat
 import tempfile
 from pathlib import Path
 from typing import Dict
@@ -139,15 +140,36 @@ def chown_r(path: str, user: str):
 
 
 def chmod_r(path: str, mode: int):
-    """Recursive chmod"""
+    """
+    Recursive chmod
+    :param path: path to file or directory
+    :param mode: permission mask as octal integer value
+    """
     if not os.path.exists(path):
         return
-    os.chmod(path, mode)
+    idempotent_chmod(path, mode)
     for root, dirnames, filenames in os.walk(path):
         for dirname in dirnames:
-            os.chmod(os.path.join(root, dirname), mode)
+            idempotent_chmod(os.path.join(root, dirname), mode)
         for filename in filenames:
-            os.chmod(os.path.join(root, filename), mode)
+            idempotent_chmod(os.path.join(root, filename), mode)
+
+
+def idempotent_chmod(path: str, mode: int):
+    """
+    Perform idempotent chmod on the given file path (non-recursively). The function attempts to call `os.chmod`, and
+    will catch and only re-raise exceptions (e.g., PermissionError) if the file does not have the given mode already.
+    :param path: path to file
+    :param mode: permission mask as octal integer value
+    """
+    try:
+        os.chmod(path, mode)
+    except Exception:
+        existing_mode = os.stat(path)
+        if mode in (existing_mode.st_mode, stat.S_IMODE(existing_mode.st_mode)):
+            # file already has the desired permissions -> return
+            return
+        raise
 
 
 def rm_rf(path: str):
