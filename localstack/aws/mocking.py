@@ -141,6 +141,10 @@ def sanitize_pattern(pattern: str) -> str:
     pattern = pattern.replace("\\p{IsLetter}", "[a-zA-Z]")
     pattern = pattern.replace("[:alnum:]", "[a-zA-Z0-9]")
     pattern = pattern.replace("\\p{ASCII}*", "[a-zA-Z0-9]")
+    pattern = pattern.replace("\\p{Alnum}", "[a-zA-Z0-9]")
+
+    if "\\p{" in pattern:
+        LOG.warning("Find potential additional pattern that need to be sanitized: %s", pattern)
     return pattern
 
 
