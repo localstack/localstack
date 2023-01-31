@@ -104,7 +104,7 @@ class ConnectFactory:
     def get_internal_client(
         self,
         service_name: str,
-        region_name: str,
+        region_name: Optional[str],
         endpoint_url: str = None,
         aws_access_key_id: str = INTERNAL_AWS_ACCESS_KEY_ID,
         aws_secret_access_key: str = INTERNAL_AWS_SECRET_ACCESS_KEY,
@@ -117,7 +117,7 @@ class ConnectFactory:
         take additional args that start with `_` prefix. These are used to pass
         additional information to LocalStack server during internal calls.
 
-        Note that when `_TargetArn` is used, the region from the ARN takes
+        Note that when `_TargetArn` is used, the account and region from the ARN takes
         precedence over the region used during client instantiation. The
         precedence logic happens on the serverside LocalStack handler chain.
 
@@ -134,7 +134,7 @@ class ConnectFactory:
 
         return self._get_client(
             service_name=service_name,
-            region_name=region_name,
+            region_name=region_name or self.get_region_name(),
             use_ssl=self._use_ssl,
             verify=self._verify,
             endpoint_url=endpoint_url or get_local_service_url(service_name),
