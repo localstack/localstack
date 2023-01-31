@@ -28,10 +28,21 @@ class AWSLambdaRuntimePackage(Package):
 
 
 class AWSLambdaRuntimePackageInstaller(DownloadInstaller):
-    def _get_download_url(self) -> str:
+    def _get_arch(self):
         arch = get_arch()
-        arch = "x86_64" if arch == "amd64" else arch
+        return "x86_64" if arch == "amd64" else arch
+
+    def _get_download_url(self) -> str:
+        arch = self._get_arch()
         return LAMBDA_RUNTIME_INIT_URL.format(version=self.version, arch=arch)
+
+    def _get_install_dir(self, target: InstallTarget) -> str:
+        install_dir = super()._get_install_dir(target)
+        arch = self._get_arch()
+        return os.path.join(install_dir, arch)
+
+    def _get_install_marker_path(self, install_dir: str) -> str:
+        return os.path.join(install_dir, "var", "rapid", "init")
 
     def _install(self, target: InstallTarget) -> None:
         super()._install(target)
