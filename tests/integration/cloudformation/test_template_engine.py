@@ -657,6 +657,7 @@ class TestMacros:
             "$..TemplateBody.StackId",
             "$..TemplateBody.StackName",
             "$..TemplateBody.Transform",
+            "$..TemplateBody.Resources.Role.LogicalResourceId",
         ]
     )
     def test_capabilities_requirements(
