@@ -227,15 +227,16 @@ class ConnectFactory:
             if ARG_TARGET_ARN in params:
                 target_arn = params.pop(ARG_TARGET_ARN)
 
-                # This can either be a ref to another param or an ARN
+                # ARG_TARGET_ARN can either be a ref to another param or an ARN
                 if target_arn in params:
                     target_arn = params[target_arn]
 
                 try:
                     arn_data = parse_arn(target_arn)
+                    # ARNs may not have a region for global resources
+                    override_region_name = arn_data.get("region")
 
                     dto["target_arn"] = target_arn
-                    override_region_name = arn_data["region"]
                 except InvalidArnException:
                     LOG.warning(
                         "TargetArn '%s' not an ARN or a valid ref to another parameter."
@@ -245,9 +246,10 @@ class ConnectFactory:
             if dto:
                 context["_localstack"] = dto
 
-                # Attention: Region is overridden here from TargetArn
+                # Attention: Region is overridden here
                 if override_region_name:
                     context["client_region"] = override_region_name
+                    context["signing"]["region"] = override_region_name
 
         def _handler_inject_dto_header(model, params, request_signer, context, **kwargs):
             """
