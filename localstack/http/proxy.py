@@ -148,4 +148,9 @@ def _copy_request(
     builder.input_stream = BytesIO(restore_payload(request))
 
     new_request = builder.get_request()
+
+    # explicitly set the path in the environment and in the newly created request
+    if path is not None:
+        new_request.environ["RAW_URI"] = path or "/"
+
     return new_request

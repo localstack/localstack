@@ -2,12 +2,15 @@ import json
 from unittest import mock
 
 import pytest
+from werkzeug.wrappers import Request as WerkzeugRequest
 
+from localstack import config
 from localstack.aws.api import RequestContext
 from localstack.aws.chain import HandlerChain
 from localstack.aws.handlers.partition_rewriter import ArnPartitionRewriteHandler
 from localstack.constants import INTERNAL_AWS_ACCESS_KEY_ID
 from localstack.http import Request, Response
+from localstack.http.request import get_full_raw_path, get_raw_path
 from localstack.utils.aws.aws_stack import mock_aws_request_headers
 from localstack.utils.common import to_bytes, to_str
 
@@ -66,18 +69,18 @@ def test_arn_partition_rewriting_in_request(internal_call, encoding, origin_part
 
     request = Request(
         method="POST",
-        path="/",
-        query_string=f"arn=arn%3A{origin_partition}%3Aapigateway%3Aus-gov-west-1%3A%3A%2Frestapis%2Farn-in-path%2F%2A&"
-        f"arn2=arn%3A{origin_partition}%3Aapigateway%3Aus-gov-west-1%3A%3A%2Frestapis%2Farn-in-path2%2F%2A",
+        path=f"/arn%3A{origin_partition}%3Aapigateway%3Aus-gov-west-1%3A%3A%2Frestapis%2Farn-in-path%2F%2A",
+        query_string=f"arn=arn%3A{origin_partition}%3Aapigateway%3Aus-gov-west-1%3A%3A%2Frestapis%2Farn-in-query%2F%2A&"
+        f"arn2=arn%3A{origin_partition}%3Aapigateway%3Aus-gov-west-1%3A%3A%2Frestapis%2Farn-in-query2%2F%2A",
         body=data,
         headers=headers,
     )
     result = rewrite_handler.modify_request(request)
     assert result.method == "POST"
     assert (
-        result.full_path
-        == "/?arn=arn%3Aaws%3Aapigateway%3Aus-gov-west-1%3A%3A%2Frestapis%2Farn-in-path%2F%2A&"
-        "arn2=arn%3Aaws%3Aapigateway%3Aus-gov-west-1%3A%3A%2Frestapis%2Farn-in-path2%2F%2A"
+        get_full_raw_path(result)
+        == "/arn%3Aaws%3Aapigateway%3Aus-gov-west-1%3A%3A%2Frestapis%2Farn-in-path%2F%2A?arn=arn%3Aaws%3Aapigateway%3Aus-gov-west-1%3A%3A%2Frestapis%2Farn-in-query%2F%2A&"
+        "arn2=arn%3Aaws%3Aapigateway%3Aus-gov-west-1%3A%3A%2Frestapis%2Farn-in-query2%2F%2A"
     )
     assert result.data == to_bytes(
         json.dumps(
@@ -88,6 +91,46 @@ def test_arn_partition_rewriting_in_request(internal_call, encoding, origin_part
         result.headers["some-header-with-arn"]
         == "arn:aws:apigateway:us-gov-west-1::/restapis/arn-in-header/*"
     )
+
+
+def test_arn_partition_rewriting_url_encoding(httpserver, monkeypatch):
+    path = "/query%3Aencoded%2Fpath/"
+
+    def echo_path(request: WerkzeugRequest) -> Response:
+        response = Response()
+        response.set_json(
+            {
+                "method": request.method,
+                "raw_path": get_raw_path(request),
+                "url": request.url,
+                "headers": dict(request.headers),
+            }
+        )
+        return response
+
+    httpserver.expect_request(path).respond_with_handler(echo_path)
+
+    def mock_get_edge_url() -> str:
+        # Set the forwarding URL to the mock HTTP server
+        return httpserver.url_for("/")
+
+    monkeypatch.setattr(config, "get_edge_url", mock_get_edge_url)
+
+    request = Request(
+        method="POST",
+        path=path,
+        body=b"",
+        headers={"Host": f"{httpserver.host}:{httpserver.port}"},
+    )
+
+    rewrite_handler = ArnPartitionRewriteHandler()
+    chain = HandlerChain()
+    chain.request_handlers.append(rewrite_handler)
+    context = RequestContext()
+    context.request = request
+    chain.handle(context, Response())
+    assert chain.terminated
+    assert chain.response.json.get("raw_path") == path
 
 
 @pytest.mark.parametrize("encoding", [byte_encoding, string_encoding])

@@ -1756,13 +1756,13 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
         # TODO: re-evaluate data model to prevent this dirty hack just for bumping the revision id
         # TODO: does that need a `with function.lock` for atomic updates of the policy + revision_id?
         if api_utils.qualifier_is_alias(resolved_qualifier):
-            latest_alias = resolved_fn.aliases[resolved_qualifier]
-            resolved_fn.aliases[resolved_qualifier] = dataclasses.replace(latest_alias)
+            resolved_alias = resolved_fn.aliases[resolved_qualifier]
+            resolved_fn.aliases[resolved_qualifier] = dataclasses.replace(resolved_alias)
         # Assumes that a non-alias is a version
         else:
-            latest_version = resolved_fn.versions[resolved_qualifier]
+            resolved_version = resolved_fn.versions[resolved_qualifier]
             resolved_fn.versions[resolved_qualifier] = dataclasses.replace(
-                latest_version, config=dataclasses.replace(latest_version.config)
+                resolved_version, config=dataclasses.replace(resolved_version.config)
             )
         return AddPermissionResponse(Statement=json.dumps(permission_statement))
 
@@ -1819,13 +1819,13 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
         # TODO: re-evaluate data model to prevent this dirty hack just for bumping the revision id
         # TODO: does that need a `with function.lock` for atomic updates of the policy + revision_id?
         if api_utils.qualifier_is_alias(resolved_qualifier):
-            latest_alias = resolved_fn.aliases[resolved_qualifier]
-            resolved_fn.aliases[resolved_qualifier] = dataclasses.replace(latest_alias)
+            resolved_alias = resolved_fn.aliases[resolved_qualifier]
+            resolved_fn.aliases[resolved_qualifier] = dataclasses.replace(resolved_alias)
         # Assumes that a non-alias is a version
         else:
-            latest_version = resolved_fn.versions[resolved_qualifier]
+            resolved_version = resolved_fn.versions[resolved_qualifier]
             resolved_fn.versions[resolved_qualifier] = dataclasses.replace(
-                latest_version, config=dataclasses.replace(latest_version.config)
+                resolved_version, config=dataclasses.replace(resolved_version.config)
             )
 
         # remove the policy as a whole when there's no statement left in it
@@ -1856,12 +1856,12 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
 
         fn_revision_id = None
         if api_utils.qualifier_is_alias(resolved_qualifier):
-            latest_alias = resolved_fn.aliases[resolved_qualifier]
-            fn_revision_id = latest_alias.revision_id
+            resolved_alias = resolved_fn.aliases[resolved_qualifier]
+            fn_revision_id = resolved_alias.revision_id
         # Assumes that a non-alias is a version
         else:
-            latest_version = resolved_fn.versions[resolved_qualifier]
-            fn_revision_id = latest_version.config.revision_id
+            resolved_version = resolved_fn.versions[resolved_qualifier]
+            fn_revision_id = resolved_version.config.revision_id
 
         return GetPolicyResponse(
             Policy=json.dumps(dataclasses.asdict(function_permission.policy)),

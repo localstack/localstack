@@ -4,7 +4,7 @@ import requests
 from werkzeug import Request, Response
 from werkzeug.datastructures import Headers
 
-from localstack.http.request import restore_payload
+from localstack.http.request import get_raw_base_url, restore_payload
 
 
 class HttpClient(abc.ABC):
@@ -54,7 +54,8 @@ class SimpleRequestsClient(HttpClient):
         """
         response = self.session.request(
             method=request.method,
-            url=request.base_url,
+            # use raw base url to preserve path url encoding
+            url=get_raw_base_url(request),
             # request.args are only the url parameters
             params=[(k, v) for k, v in request.args.items(multi=True)],
             headers=dict(request.headers.items()),
