@@ -281,7 +281,8 @@ class DockerRuntimeExecutor(RuntimeExecutor):
 
     def stop(self) -> None:
         CONTAINER_CLIENT.stop_container(container_name=self.id, timeout=5)
-        CONTAINER_CLIENT.remove_container(container_name=self.id)
+        if config.LAMBDA_REMOVE_CONTAINERS:
+            CONTAINER_CLIENT.remove_container(container_name=self.id)
         try:
             self.executor_endpoint.shutdown()
         except Exception as e:
