@@ -10,10 +10,11 @@ from moto.ec2.models import SubnetBackend, TransitGatewayAttachmentBackend
 from moto.ec2.models.launch_templates import LaunchTemplate as MotoLaunchTemplate
 from moto.ec2.models.subnets import Subnet
 
-from localstack.aws.api import RequestContext, handler, CommonServiceException
+from localstack.aws.api import CommonServiceException, RequestContext, handler
 from localstack.aws.api.ec2 import (
     AvailabilityZone,
     Boolean,
+    CreateLaunchTemplateResult,
     CreateSubnetRequest,
     CreateSubnetResult,
     CreateTransitGatewayRequest,
@@ -54,7 +55,7 @@ from localstack.aws.api.ec2 import (
     VpcEndpointRouteTableIdList,
     VpcEndpointSecurityGroupIdList,
     VpcEndpointSubnetIdList,
-    scope, CreateLaunchTemplateResult,
+    scope,
 )
 from localstack.services.moto import call_moto
 from localstack.utils.aws import aws_stack
@@ -333,7 +334,7 @@ class Ec2Provider(Ec2Api, ABC):
             raise CommonServiceException(
                 message="A launch template name must be between 3 and 128 characters, and may contain letters, numbers, and the following characters: - ( ) . / _.'",
                 code="InvalidLaunchTemplateName.MalformedException",
-                status_code=400
+                status_code=400,
             )
 
         result = call_moto(context)
@@ -347,28 +348,32 @@ class Ec2Provider(Ec2Api, ABC):
     ) -> ModifyLaunchTemplateResult:
 
         backend = ec2_backends[context.account_id][context.region]
-        template: MotoLaunchTemplate = backend.launch_templates[request["LaunchTemplateId"]] if request["LaunchTemplateId"] else backend.launch_templates[backend.launch_template_name_to_ids[request["LaunchTemplateName"]]]
+        template: MotoLaunchTemplate = (
+            backend.launch_templates[request["LaunchTemplateId"]]
+            if request["LaunchTemplateId"]
+            else backend.launch_templates[
+                backend.launch_template_name_to_ids[request["LaunchTemplateName"]]
+            ]
+        )
 
         # check if defaultVersion exists
         if request["DefaultVersion"]:
             try:
                 template.versions[int(request["DefaultVersion"]) - 1]
-            except:
+            except KeyError:
                 raise CommonServiceException(
                     message="Could not find lauch template version",
                     code="InvalidLaunchTemplateId.VersionNotFound",
-                    status_code=400
+                    status_code=400,
                 )
 
-        template.default_version_number = int(request['DefaultVersion'])
+        template.default_version_number = int(request["DefaultVersion"])
 
         client = aws_stack.connect_to_service("ec2")
-        retrieved_template = client.describe_launch_templates(
-            LaunchTemplateIds=[template.id]
-        )
+        retrieved_template = client.describe_launch_templates(LaunchTemplateIds=[template.id])
 
         result: ModifyLaunchTemplateResult = {
-            'LaunchTemplate': retrieved_template['LaunchTemplates'][0],
+            "LaunchTemplate": retrieved_template["LaunchTemplates"][0],
         }
 
         return result
