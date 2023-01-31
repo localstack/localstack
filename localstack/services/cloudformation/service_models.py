@@ -72,6 +72,9 @@ class GenericBaseModel:
         # get_deploy_templates() responses, and based on checking whether resource attributes have changed
         pass
 
+    def is_updatable(self) -> bool:
+        return type(self).update_resource != GenericBaseModel.update_resource
+
     @classmethod
     def cloudformation_type(cls):
         """Return the CloudFormation resource type name, e.g., "AWS::S3::Bucket" (implemented by subclasses)."""
