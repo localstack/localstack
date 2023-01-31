@@ -1,4 +1,3 @@
-import time
 from typing import Final
 
 from localstack.services.stepfunctions.asl.component.state.state_wait.wait_function.wait_function import (
@@ -15,7 +14,5 @@ class Seconds(WaitFunction):
     def __init__(self, seconds: int):
         self.seconds: Final[int] = seconds
 
-    def _eval_body(self, env: Environment) -> None:
-        # TODO: interrupts try-catch
-        if self.seconds > 0:
-            time.sleep(self.seconds)
+    def _get_wait_seconds(self, env: Environment) -> int:
+        return self.seconds

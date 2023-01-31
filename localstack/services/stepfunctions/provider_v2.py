@@ -1,4 +1,5 @@
 import datetime
+import json
 from typing import Optional
 
 from localstack.aws.accounts import get_aws_account_id
@@ -14,6 +15,7 @@ from localstack.aws.api.stepfunctions import (
     ExecutionStatus,
     GetExecutionHistoryOutput,
     IncludeExecutionDataGetExecutionHistory,
+    InvalidExecutionInput,
     InvalidName,
     ListExecutionsOutput,
     ListExecutionsPageToken,
@@ -27,7 +29,11 @@ from localstack.aws.api.stepfunctions import (
     SensitiveData,
     SensitiveError,
     StartExecutionOutput,
+    StateMachineAlreadyExists,
+    StateMachineDoesNotExist,
+    StateMachineList,
     StateMachineStatus,
+    StateMachineType,
     StepfunctionsApi,
     StopExecutionOutput,
     TraceHeader,
@@ -36,8 +42,9 @@ from localstack.services.stepfunctions.backend.execution import Execution
 from localstack.services.stepfunctions.backend.state_machine import StateMachine
 from localstack.services.stepfunctions.backend.store import SFNStore, sfn_stores
 from localstack.utils.aws import aws_stack
+from localstack.utils.aws.arns import ArnData, parse_arn
 from localstack.utils.aws.arns import state_machine_arn as aws_stack_state_machine_arn
-from localstack.utils.aws.arns import state_machine_arn as aws_stack_stepfunctions_activity_arn
+from localstack.utils.strings import long_uid
 
 
 class StepFunctionsProvider(StepfunctionsApi):
@@ -45,10 +52,8 @@ class StepFunctionsProvider(StepfunctionsApi):
     def get_store() -> SFNStore:
         return sfn_stores[get_aws_account_id()][aws_stack.get_region()]
 
-    def _get_state_machine(self, state_machine_arn: Arn) -> StateMachine:
+    def _get_state_machine(self, state_machine_arn: Arn) -> Optional[StateMachine]:
         state_machine: Optional[StateMachine] = self.get_store().sm_by_arn.get(state_machine_arn)
-        if not state_machine:
-            raise InvalidName()  # TODO
         return state_machine
 
     def _get_execution(self, execution_arn: Arn) -> Execution:
@@ -57,10 +62,57 @@ class StepFunctionsProvider(StepfunctionsApi):
             raise InvalidName()  # TODO
         return execution
 
+    def _is_idempotent_create_state_machine(
+        self, request: CreateStateMachineInput
+    ) -> Optional[StateMachine]:
+        # CreateStateMachine's idempotency check is based on the state machine name, definition, type,
+        # LoggingConfiguration and TracingConfiguration.
+        # If a following request has a different roleArn or tags, Step Functions will ignore these differences and
+        # treat it as an idempotent request of the previous. In this case, roleArn and tags will not be updated, even
+        # if they are different.
+        state_machines: list[StateMachine] = list(self.get_store().sm_by_arn.values())
+        for state_machine in state_machines:
+            check = all(
+                [
+                    state_machine.name == request["name"],
+                    state_machine.definition == request["definition"],
+                    state_machine.sm_type == request.get("type") or StateMachineType.STANDARD,
+                    state_machine.logging_config == request.get("loggingConfiguration"),
+                    state_machine.tracing_config == request.get("tracingConfiguration"),
+                ]
+            )
+            if check:
+                return state_machine
+        return None
+
+    def _state_machine_by_name(self, name: str) -> Optional[StateMachine]:
+        state_machines: list[StateMachine] = list(self.get_store().sm_by_arn.values())
+        for state_machine in state_machines:
+            if state_machine.name == name:
+                return state_machine
+        return None
+
     def create_state_machine(
         self, context: RequestContext, request: CreateStateMachineInput
     ) -> CreateStateMachineOutput:
-        # TODO.
+        # CreateStateMachine is an idempotent API. Subsequent requests won’t create a duplicate resource if it was
+        # already created.
+        idem_state_machine: Optional[StateMachine] = self._is_idempotent_create_state_machine(
+            request
+        )
+        if idem_state_machine is not None:
+            return CreateStateMachineOutput(
+                stateMachineArn=idem_state_machine.arn, creationDate=idem_state_machine.create_date
+            )
+
+        state_machine_with_name: Optional[StateMachine] = self._state_machine_by_name(
+            name=request["name"]
+        )
+        if state_machine_with_name is not None:
+            raise StateMachineAlreadyExists(
+                f"State Machine Already Exists: '{state_machine_with_name.arn}'"
+            )
+
         name: Optional[Name] = request["name"]
         arn = aws_stack_state_machine_arn(
             name=name, account_id=context.account_id, region_name=context.region
@@ -111,21 +163,40 @@ class StepFunctionsProvider(StepfunctionsApi):
     ) -> StartExecutionOutput:
         state_machine: Optional[StateMachine] = self.get_store().sm_by_arn.get(state_machine_arn)
         if not state_machine:
-            raise InvalidName()  # TODO
+            raise StateMachineDoesNotExist(f"State Machine Does Not Exist: '{state_machine_arn}'")
 
-        # TODO: generate execution arn instead?.
-        exec_arn = aws_stack_stepfunctions_activity_arn(
-            name=state_machine.name, account_id=context.account_id, region_name=context.region
+        if input is None:
+            input_data = None
+        else:
+            try:
+                input_data = json.loads(input)
+            except Exception as ex:
+                raise InvalidExecutionInput(str(ex))  # TODO: report parsing error like AWS.
+
+        exec_name = long_uid()
+        arn_data: ArnData = parse_arn(state_machine_arn)
+        exec_arn = ":".join(
+            [
+                "arn",
+                arn_data["partition"],
+                arn_data["service"],
+                arn_data["region"],
+                arn_data["account"],
+                "execution",
+                "".join(arn_data["resource"].split(":")[1:]),
+                exec_name,
+            ]
         )
-
         if exec_arn in self.get_store().execs_by_exec_arn:
             raise InvalidName()  # TODO
 
         execution = Execution(
+            name=exec_name,
+            role_arn=state_machine.role_arn,
             exec_arn=exec_arn,
             state_machine=state_machine,
             start_date=datetime.datetime.now(),
-            input_data=input,
+            input_data=input_data,
             trace_header=trace_header,
         )
         self.get_store().execs_by_exec_arn[exec_arn] = execution
@@ -159,11 +230,11 @@ class StepFunctionsProvider(StepfunctionsApi):
         self, context: RequestContext, max_results: PageSize = None, next_token: PageToken = None
     ) -> ListStateMachinesOutput:
         # TODO: add paging support.
-        return ListStateMachinesOutput(
-            stateMachines=[
-                sm.to_state_machine_list_item() for sm in self.get_store().sm_by_arn.values()
-            ]
-        )
+        state_machines: StateMachineList = [
+            sm.to_state_machine_list_item() for sm in self.get_store().sm_by_arn.values()
+        ]
+        state_machines.sort(key=lambda si: si["creationDate"])
+        return ListStateMachinesOutput(stateMachines=state_machines)
 
     def get_execution_history(
         self,
@@ -183,9 +254,7 @@ class StepFunctionsProvider(StepfunctionsApi):
         self, context: RequestContext, state_machine_arn: Arn
     ) -> DeleteStateMachineOutput:
         # TODO: halt executions?
-        state_machine = self._get_state_machine(state_machine_arn=state_machine_arn)
-        # Failure of getter is handled implicitly.
-        del self.get_store().sm_by_arn[state_machine.arn]
+        self.get_store().sm_by_arn.pop(state_machine_arn, None)
         return DeleteStateMachineOutput()
 
     def stop_execution(

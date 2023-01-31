@@ -3,6 +3,7 @@ from __future__ import annotations
 import abc
 from typing import Optional
 
+from localstack.aws.api.stepfunctions import HistoryEventType
 from localstack.services.stepfunctions.asl.component.common.parameters import Parameters
 from localstack.services.stepfunctions.asl.component.state.state_execution.execute_state import (
     ExecutionState,
@@ -19,7 +20,10 @@ class StateTask(ExecutionState, abc.ABC):
     resource: Resource
 
     def __init__(self):
-        super(StateTask, self).__init__()
+        super(StateTask, self).__init__(
+            state_entered_event_type=HistoryEventType.TaskStateEntered,
+            state_exited_event_type=HistoryEventType.TaskStateExited,
+        )
         # Parameters (Optional)
         # Used to state_pass information to the API actions of connected resources. The parameters can use a mix of static
         # JSON and JsonPath.

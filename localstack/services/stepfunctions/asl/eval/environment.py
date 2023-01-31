@@ -10,6 +10,7 @@ from localstack.services.stepfunctions.asl.eval.contextobject.contex_object impo
     ContextObject,
     ContextObjectInitData,
 )
+from localstack.services.stepfunctions.asl.eval.event.event_history import EventHistory
 from localstack.services.stepfunctions.asl.eval.programstate.program_ended import ProgramEnded
 from localstack.services.stepfunctions.asl.eval.programstate.program_error import ProgramError
 from localstack.services.stepfunctions.asl.eval.programstate.program_running import ProgramRunning
@@ -24,7 +25,10 @@ class Environment:
         super(Environment, self).__init__()
         self._state_mutex = threading.RLock()
         self._program_state: Optional[ProgramState] = None
+        self.program_state_event = threading.Event()
         self._frames: list[Environment] = list()
+
+        self.event_history: EventHistory = EventHistory()
 
         self.heap: dict[str, Any] = dict()
         self.stack: list[Any] = list()
@@ -46,6 +50,7 @@ class Environment:
         )
         frame = cls(context_object_init=context_object_init)
         frame.heap = env.heap
+        frame.event_history = env.event_history
         frame.context_object = env.context_object
         return frame
 
@@ -80,12 +85,16 @@ class Environment:
                 self._program_state = ProgramEnded()
                 for frame in self._frames:
                     frame.set_ended()
+            self.program_state_event.set()
+            self.program_state_event.clear()
 
     def set_error(self, error: Any) -> None:
         with self._state_mutex:
             self._program_state = ProgramError(error=error)
             for frame in self._frames:
                 frame.set_error(error=error)
+            self.program_state_event.set()
+            self.program_state_event.clear()
 
     def set_stop(self, stop_date: Timestamp, cause: Optional[str], error: Optional[str]) -> None:
         with self._state_mutex:
@@ -93,6 +102,8 @@ class Environment:
                 self._program_state = ProgramStopped(stop_date=stop_date, cause=cause, error=error)
                 for frame in self._frames:
                     frame.set_stop(stop_date=stop_date, cause=cause, error=error)
+                self.program_state_event.set()
+                self.program_state_event.clear()
             else:
                 raise RuntimeError("Cannot stop non running ProgramState.")
 

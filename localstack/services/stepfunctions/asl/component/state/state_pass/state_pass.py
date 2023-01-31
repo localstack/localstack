@@ -1,5 +1,6 @@
 from typing import Optional
 
+from localstack.aws.api.stepfunctions import HistoryEventType
 from localstack.services.stepfunctions.asl.component.common.parameters import Parameters
 from localstack.services.stepfunctions.asl.component.common.path.result_path import ResultPath
 from localstack.services.stepfunctions.asl.component.state.state import CommonStateField
@@ -10,7 +11,10 @@ from localstack.services.stepfunctions.asl.eval.environment import Environment
 
 class StatePass(CommonStateField):
     def __init__(self):
-        super(StatePass, self).__init__()
+        super(StatePass, self).__init__(
+            state_entered_event_type=HistoryEventType.PassStateEntered,
+            state_exited_event_type=HistoryEventType.PassStateExited,
+        )
 
         # Result (Optional)
         # Refers to the output of a virtual state_task that is passed on to the next state. If you include the ResultPath
@@ -32,6 +36,9 @@ class StatePass(CommonStateField):
         self.result = state_props.get(Result)
         self.result_path = state_props.get(ResultPath)
         self.parameters = state_props.get(Parameters)
+
+        if self.result is not None and self.result_path is None:
+            self.result_path = ResultPath(result_path_src=ResultPath.DEFAULT_PATH)
 
     def _eval_state(self, env: Environment) -> None:
         if self.result:

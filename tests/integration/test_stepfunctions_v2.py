@@ -4,6 +4,7 @@ import os
 
 import pytest
 
+from localstack.aws.api.stepfunctions import CreateStateMachineInput
 from localstack.services.events.provider import TEST_EVENTS_CACHE
 from localstack.services.stepfunctions.stepfunctions_utils import is_old_provider
 from localstack.utils import testutil
@@ -215,24 +216,6 @@ def setup_and_tear_down():
     testutil.delete_lambda_function(name=TEST_LAMBDA_NAME_3)
     testutil.delete_lambda_function(name=TEST_LAMBDA_NAME_4)
     testutil.delete_lambda_function(name=TEST_LAMBDA_NAME_5)
-
-
-@pytest.fixture
-def create_state_machine(stepfunctions_client):
-    machines_arns = []
-
-    def factory(**kwargs):
-        result = stepfunctions_client.create_state_machine(**kwargs)
-        machines_arns.append(result["stateMachineArn"])
-        return result
-
-    yield factory
-
-    for machine in machines_arns:
-        try:
-            stepfunctions_client.delete_state_machine(stateMachineArn=machine)
-        except Exception as e:
-            LOG.debug("Unable to delete SFN state machine: ", e)
 
 
 def _assert_machine_instances(expected_instances, sfn_client):
@@ -659,7 +642,9 @@ def test_default_logging_configuration(iam_client, create_state_machine, stepfun
         definition = json.dumps(definition)
 
         sm_name = f"sts-logging-{short_uid()}"
-        result = create_state_machine(name=sm_name, definition=definition, roleArn=role_arn)
+        result = create_state_machine(
+            CreateStateMachineInput(name=sm_name, definition=definition, roleArn=role_arn)
+        )
 
         assert result["ResponseMetadata"]["HTTPStatusCode"] == 200
         result = stepfunctions_client.describe_state_machine(

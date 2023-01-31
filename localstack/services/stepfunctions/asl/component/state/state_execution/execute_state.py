@@ -1,6 +1,7 @@
 import abc
 from typing import Optional
 
+from localstack.aws.api.stepfunctions import HistoryEventType
 from localstack.services.stepfunctions.asl.component.common.catch.catch_decl import CatchDecl
 from localstack.services.stepfunctions.asl.component.common.catch.catch_outcome import (
     CatchOutcome,
@@ -24,8 +25,15 @@ from localstack.services.stepfunctions.asl.eval.environment import Environment
 
 
 class ExecutionState(CommonStateField, abc.ABC):
-    def __init__(self):
-        super().__init__()
+    def __init__(
+        self,
+        state_entered_event_type: HistoryEventType,
+        state_exited_event_type: Optional[HistoryEventType],
+    ):
+        super().__init__(
+            state_entered_event_type=state_entered_event_type,
+            state_exited_event_type=state_exited_event_type,
+        )
         # ResultPath (Optional)
         # Specifies where (in the input) to place the results of executing the state_task that's specified in Resource.
         # The input is then filtered as specified by the OutputPath field (if present) before being used as the

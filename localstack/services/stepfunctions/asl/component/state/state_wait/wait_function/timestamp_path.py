@@ -20,10 +20,10 @@ class TimestampPath(WaitFunction):
     def __init__(self, path: str):
         self.path: Final[str] = path
 
-    def _eval_body(self, env: Environment) -> None:
+    def _get_wait_seconds(self, env: Environment) -> int:
         input_expr = parse(self.path)
         timestamp_str = input_expr.find(env.inp)
-
         timestamp = datetime.datetime.strptime(timestamp_str, Timestamp.TIMESTAMP_FORMAT)
-        timestamp_func = Timestamp(timestamp=timestamp)
-        timestamp_func.eval(env)
+        delta = timestamp - datetime.datetime.today()
+        delta_sec = int(delta.total_seconds())
+        return delta_sec

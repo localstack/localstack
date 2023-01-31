@@ -7,6 +7,8 @@ from localstack.services.stepfunctions.asl.eval.environment import Environment
 
 
 class ResultPath(EvalComponent):
+    DEFAULT_PATH: Final[str] = "$"
+
     def __init__(self, result_path_src: str):
         self.result_path_src: Final[str] = result_path_src
 
@@ -15,4 +17,4 @@ class ResultPath(EvalComponent):
         result = env.stack.pop()
         if env.inp is None:
             env.inp = dict()
-        result_expr.update_or_create(env.inp, result)
+        env.inp = result_expr.update_or_create(env.inp, result)

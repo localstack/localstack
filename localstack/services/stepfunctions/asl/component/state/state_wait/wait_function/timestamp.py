@@ -1,9 +1,6 @@
 import datetime
 from typing import Final
 
-from localstack.services.stepfunctions.asl.component.state.state_wait.wait_function.seconds import (
-    Seconds,
-)
 from localstack.services.stepfunctions.asl.component.state.state_wait.wait_function.wait_function import (
     WaitFunction,
 )
@@ -30,9 +27,7 @@ class Timestamp(WaitFunction):
     def parse_timestamp(timestamp: str) -> datetime.datetime:
         return datetime.datetime.strptime(timestamp, Timestamp.TIMESTAMP_FORMAT)
 
-    def _eval_body(self, env: Environment) -> None:
+    def _get_wait_seconds(self, env: Environment) -> int:
         delta = self.timestamp - datetime.datetime.today()
         delta_sec = int(delta.total_seconds())
-        if delta_sec > 0:
-            seconds_func = Seconds(seconds=delta_sec)
-            seconds_func.eval(env)
+        return delta_sec
