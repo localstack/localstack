@@ -242,11 +242,6 @@ class ConnectFactory:
             if dto:
                 context["_localstack"] = dto
 
-                # Attention: Region is overridden here
-                if override_region_name:
-                    context["client_region"] = override_region_name
-                    context["signing"]["region"] = override_region_name
-
         def _handler_inject_dto_header(model, params, request_signer, context, **kwargs):
             """
             Retrieve the data transfer object and make it part of the request

@@ -113,7 +113,10 @@ class RequestContext:
 
     @property
     def is_internal_call(self) -> bool:
-        return self.data is not None
+        """
+        Whether this request is an internal cross-service call.
+        """
+        return self.internal_request_params is not None
 
     @property
     def service_operation(self) -> Optional[ServiceOperation]:

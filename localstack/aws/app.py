@@ -35,7 +35,7 @@ class LocalstackAwsGateway(Gateway):
                 handlers.inject_auth_header_if_missing,
                 handlers.add_region_from_header,
                 handlers.add_account_id,
-                handlers.add_internal_request_params,
+                handlers.add_internal_request_params,  # important: must be placed after region enricher
                 handlers.parse_service_request,
                 metric_collector.record_parsed_request,
                 handlers.serve_custom_service_request_handlers,
