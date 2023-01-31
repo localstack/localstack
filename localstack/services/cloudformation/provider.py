@@ -160,7 +160,7 @@ class CloudformationProvider(CloudformationApi):
 
         try:
             parameters = template_preparer.resolve_parameters(
-                template.get("Parameters", []), request.get("Parameters", [])
+                template.get("Parameters", {}), request.get("Parameters", [])
             )
             template = template_preparer.transform_template(
                 template, parameters, request.get("Capabilities", [])
@@ -222,7 +222,7 @@ class CloudformationProvider(CloudformationApi):
 
         try:
             parameters = template_preparer.resolve_parameters(
-                template.get("Parameters", []), request.get("Parameters", [])
+                template.get("Parameters", {}), request.get("Parameters", [])
             )
             template = template_preparer.transform_template(
                 template, parameters, request.get("Capabilities", [])
