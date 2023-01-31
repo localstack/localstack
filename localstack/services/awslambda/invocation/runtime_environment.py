@@ -72,7 +72,7 @@ class RuntimeEnvironment:
         )
         self.last_returned = datetime.min
         self.startup_timer = None
-        self.keepalive_timer = None
+        self.keepalive_timer = Timer(0, lambda *args, **kwargs: None)
 
     def get_log_group_name(self) -> str:
         return f"/aws/lambda/{self.function_version.id.function_name}"
@@ -176,7 +176,6 @@ class RuntimeEnvironment:
             self.id,
             self.function_version.qualified_arn,
         )
-        self.keepalive_timer = None
         self.stop()
 
     def timed_out(self) -> None:
