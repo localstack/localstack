@@ -115,7 +115,7 @@ def recipients_from_destination(destination: Destination) -> List[str]:
 
 
 def get_ses_backend(context: RequestContext) -> SESBackend:
-    return ses_backends[context.account_id]["global"]
+    return ses_backends[context.account_id][context.region]
 
 
 class SesServiceApiResource:

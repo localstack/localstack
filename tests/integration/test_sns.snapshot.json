@@ -2006,7 +2006,7 @@
     }
   },
   "tests/integration/test_sns.py::TestSNSProvider::test_message_to_fifo_sqs[True]": {
-    "recorded-date": "12-08-2022, 13:52:38",
+    "recorded-date": "27-01-2023, 19:44:21",
     "recorded-content": {
       "messages": {
         "Messages": [
@@ -2020,9 +2020,17 @@
               "SentTimestamp": "timestamp",
               "SequenceNumber": "<sequence-number:1>"
             },
-            "Body": "Test",
+            "Body": {
+              "Type": "Notification",
+              "MessageId": "<uuid:1>",
+              "SequenceNumber": "<sequence-number:2>",
+              "TopicArn": "arn:aws:sns:<region>:111111111111:<resource:1>",
+              "Message": "Test",
+              "Timestamp": "date",
+              "UnsubscribeURL": "<unsubscribe-domain>/?Action=Unsubscribe&SubscriptionArn=arn:aws:sns:<region>:111111111111:<resource:1>:<resource:2>"
+            },
             "MD5OfBody": "<md5-hash>",
-            "MessageId": "<uuid:1>",
+            "MessageId": "<uuid:2>",
             "ReceiptHandle": "<receipt-handle:1>"
           }
         ],
@@ -2034,7 +2042,7 @@
     }
   },
   "tests/integration/test_sns.py::TestSNSProvider::test_message_to_fifo_sqs[False]": {
-    "recorded-date": "12-08-2022, 13:52:40",
+    "recorded-date": "27-01-2023, 19:44:23",
     "recorded-content": {
       "messages": {
         "Messages": [
@@ -2048,9 +2056,17 @@
               "SentTimestamp": "timestamp",
               "SequenceNumber": "<sequence-number:1>"
             },
-            "Body": "Test",
+            "Body": {
+              "Type": "Notification",
+              "MessageId": "<uuid:1>",
+              "SequenceNumber": "<sequence-number:2>",
+              "TopicArn": "arn:aws:sns:<region>:111111111111:<resource:1>",
+              "Message": "Test",
+              "Timestamp": "date",
+              "UnsubscribeURL": "<unsubscribe-domain>/?Action=Unsubscribe&SubscriptionArn=arn:aws:sns:<region>:111111111111:<resource:1>:<resource:2>"
+            },
             "MD5OfBody": "<md5-hash>",
-            "MessageId": "<uuid:1>",
+            "MessageId": "<uuid:2>",
             "ReceiptHandle": "<receipt-handle:1>"
           }
         ],
@@ -2957,6 +2973,70 @@
         "ResponseMetadata": {
           "HTTPHeaders": {},
           "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/integration/test_sns.py::TestSNSProvider::test_publish_to_fifo_topic_to_sqs_queue_no_content_dedup[True]": {
+    "recorded-date": "27-01-2023, 19:39:16",
+    "recorded-content": {
+      "messages": {
+        "Messages": [
+          {
+            "Attributes": {
+              "ApproximateFirstReceiveTimestamp": "timestamp",
+              "ApproximateReceiveCount": "1",
+              "MessageDeduplicationId": "532eaabd9574880dbf76b9b8cc00832c20a6ec113d682299550d7a6e0f345e25",
+              "MessageGroupId": "message-group-id-1",
+              "SenderId": "<sender-id>",
+              "SentTimestamp": "timestamp",
+              "SequenceNumber": "<sequence-number:1>"
+            },
+            "Body": "Test",
+            "MD5OfBody": "<md5-hash>",
+            "MessageId": "<uuid:1>",
+            "ReceiptHandle": "<receipt-handle:1>"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/integration/test_sns.py::TestSNSProvider::test_publish_to_fifo_topic_to_sqs_queue_no_content_dedup[False]": {
+    "recorded-date": "27-01-2023, 19:39:19",
+    "recorded-content": {
+      "messages": {
+        "Messages": [
+          {
+            "Attributes": {
+              "ApproximateFirstReceiveTimestamp": "timestamp",
+              "ApproximateReceiveCount": "1",
+              "MessageDeduplicationId": "532eaabd9574880dbf76b9b8cc00832c20a6ec113d682299550d7a6e0f345e25",
+              "MessageGroupId": "message-group-id-1",
+              "SenderId": "<sender-id>",
+              "SentTimestamp": "timestamp",
+              "SequenceNumber": "<sequence-number:1>"
+            },
+            "Body": {
+              "Type": "Notification",
+              "MessageId": "<uuid:1>",
+              "SequenceNumber": "<sequence-number:2>",
+              "TopicArn": "arn:aws:sns:<region>:111111111111:<resource:1>",
+              "Message": "Test",
+              "Timestamp": "date",
+              "UnsubscribeURL": "<unsubscribe-domain>/?Action=Unsubscribe&SubscriptionArn=arn:aws:sns:<region>:111111111111:<resource:1>:<resource:2>"
+            },
+            "MD5OfBody": "<md5-hash>",
+            "MessageId": "<uuid:2>",
+            "ReceiptHandle": "<receipt-handle:1>"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
         }
       }
     }

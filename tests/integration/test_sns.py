@@ -1812,14 +1812,7 @@ class TestSNSProvider:
         # todo check both ContentBasedDeduplication and MessageDeduplicationId when implemented
         # https://docs.aws.amazon.com/sns/latest/dg/fifo-message-dedup.html
 
-        subscription = sns_create_sqs_subscription(topic_arn=topic_arn, queue_url=queue_url)
-
-        # this allows us to have a simplified body not containing timestamp, so we can check MessageDeduplicationId
-        sns_client.set_subscription_attributes(
-            SubscriptionArn=subscription["SubscriptionArn"],
-            AttributeName="RawMessageDelivery",
-            AttributeValue="true",
-        )
+        sns_create_sqs_subscription(topic_arn=topic_arn, queue_url=queue_url)
 
         message = "Test"
         if content_based_deduplication:
@@ -3191,3 +3184,60 @@ class TestSNSProvider:
         )
         # assert there are no messages in the queue
         assert "Messages" not in response
+
+    @pytest.mark.aws_validated
+    @pytest.mark.parametrize("raw_message_delivery", [True, False])
+    @pytest.mark.skip_snapshot_verify(
+        paths=[
+            "$..Messages..Body.SignatureVersion",  # TODO: apparently, messages are not signed in fifo topics
+            "$..Messages..Body.Signature",
+            "$..Messages..Body.SigningCertURL",
+            "$..Messages..Body.SequenceNumber",
+        ]
+    )
+    def test_publish_to_fifo_topic_to_sqs_queue_no_content_dedup(
+        self,
+        sns_client,
+        sqs_client,
+        sns_create_topic,
+        sqs_create_queue,
+        sns_create_sqs_subscription,
+        snapshot,
+        raw_message_delivery,
+    ):
+        topic_name = f"topic-{short_uid()}.fifo"
+        queue_name = f"queue-{short_uid()}.fifo"
+        topic_attributes = {"FifoTopic": "true", "ContentBasedDeduplication": "true"}
+        queue_attributes = {"FifoQueue": "true"}
+
+        topic_arn = sns_create_topic(
+            Name=topic_name,
+            Attributes=topic_attributes,
+        )["TopicArn"]
+        queue_url = sqs_create_queue(
+            QueueName=queue_name,
+            Attributes=queue_attributes,
+        )
+
+        subscription = sns_create_sqs_subscription(topic_arn=topic_arn, queue_url=queue_url)
+
+        if raw_message_delivery:
+            sns_client.set_subscription_attributes(
+                SubscriptionArn=subscription["SubscriptionArn"],
+                AttributeName="RawMessageDelivery",
+                AttributeValue="true",
+            )
+
+        # Topic has ContentBasedDeduplication set to true, the queue should receive only one message
+        # SNS will create a MessageDeduplicationId for the SQS queue, as it does not have ContentBasedDeduplication
+        message = "Test"
+        sns_client.publish(TopicArn=topic_arn, Message=message, MessageGroupId="message-group-id-1")
+        sns_client.publish(TopicArn=topic_arn, Message=message, MessageGroupId="message-group-id-1")
+
+        response = sqs_client.receive_message(
+            QueueUrl=queue_url,
+            VisibilityTimeout=0,
+            WaitTimeSeconds=10,
+            AttributeNames=["All"],
+        )
+        snapshot.match("messages", response)

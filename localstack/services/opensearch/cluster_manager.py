@@ -9,13 +9,14 @@ from localstack import config
 from localstack.aws.api.opensearch import DomainEndpointOptions, EngineType
 from localstack.config import EDGE_BIND_HOST
 from localstack.constants import LOCALHOST, LOCALHOST_HOSTNAME
-from localstack.services.generic_proxy import EndpointProxy, FakeEndpointProxyServer
 from localstack.services.opensearch import versions
 from localstack.services.opensearch.cluster import (
     CustomEndpoint,
     EdgeProxiedElasticsearchCluster,
     EdgeProxiedOpensearchCluster,
     ElasticsearchCluster,
+    EndpointProxy,
+    FakeEndpointProxyServer,
     OpensearchCluster,
 )
 from localstack.utils.common import (
@@ -172,7 +173,7 @@ class ClusterManager:
         url = f"http://{endpoint}" if "://" not in endpoint else endpoint
 
         # call abstract cluster factory
-        cluster = self._create_cluster(arn, url, version)
+        cluster = self._create_cluster(arn, url, version, custom_endpoint)
         cluster.start()
 
         # save cluster into registry and return
@@ -193,7 +194,7 @@ class ClusterManager:
         cluster = self.get(arn)
         return cluster.is_up() if cluster else False
 
-    def _create_cluster(self, arn, url, version) -> Server:
+    def _create_cluster(self, arn, url, version, custom_endpoint) -> Server:
         """
         Abstract cluster factory.
 
@@ -248,7 +249,7 @@ class MultiplexingClusterManager(ClusterManager):
         self.endpoints = {}
         self.mutex = threading.RLock()
 
-    def _create_cluster(self, arn, url, version) -> Server:
+    def _create_cluster(self, arn, url, version, custom_endpoint) -> Server:
         with self.mutex:
             if not self.cluster:
                 engine_type = versions.get_engine_type(version)
@@ -263,7 +264,9 @@ class MultiplexingClusterManager(ClusterManager):
                     self.cluster.start()  # start may block during install
 
                 start_thread(_start_async, name="opensearch-multiplex")
-            cluster_endpoint = ClusterEndpoint(self.cluster, EndpointProxy(url, self.cluster.url))
+            cluster_endpoint = ClusterEndpoint(
+                self.cluster, EndpointProxy(url, self.cluster.url, custom_endpoint=custom_endpoint)
+            )
             self.clusters[arn] = cluster_endpoint
             return cluster_endpoint
 
@@ -286,13 +289,17 @@ class MultiClusterManager(ClusterManager):
     Manages one cluster and endpoint per domain.
     """
 
-    def _create_cluster(self, arn, url, version) -> Server:
+    def _create_cluster(self, arn, url, version, custom_endpoint) -> Server:
         engine_type = versions.get_engine_type(version)
         if config.OPENSEARCH_ENDPOINT_STRATEGY != "port":
             if engine_type == EngineType.OpenSearch:
-                return EdgeProxiedOpensearchCluster(url=url, arn=arn, version=version)
+                return EdgeProxiedOpensearchCluster(
+                    url=url, arn=arn, version=version, custom_endpoint=custom_endpoint
+                )
             else:
-                return EdgeProxiedElasticsearchCluster(url=url, arn=arn, version=version)
+                return EdgeProxiedElasticsearchCluster(
+                    url=url, arn=arn, version=version, custom_endpoint=custom_endpoint
+                )
         else:
             port = _get_port_from_url(url)
             if engine_type == EngineType.OpenSearch:
@@ -332,7 +339,7 @@ class SingletonClusterManager(ClusterManager):
         with self.mutex:
             return super().create(arn, version, endpoint_options, preferred_port)
 
-    def _create_cluster(self, arn, url, version) -> Server:
+    def _create_cluster(self, arn, url, version, custom_endpoint) -> Server:
         if not self.cluster:
             port = _get_port_from_url(url)
             engine_type = versions.get_engine_type(version)
@@ -363,5 +370,7 @@ class SingletonClusterManager(ClusterManager):
 
 
 class CustomBackendManager(ClusterManager):
-    def _create_cluster(self, arn, url, version) -> Server:
-        return FakeEndpointProxyServer(EndpointProxy(url, config.OPENSEARCH_CUSTOM_BACKEND))
+    def _create_cluster(self, arn, url, version, custom_endpoint) -> Server:
+        return FakeEndpointProxyServer(
+            EndpointProxy(url, config.OPENSEARCH_CUSTOM_BACKEND, custom_endpoint)
+        )

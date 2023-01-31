@@ -28,6 +28,7 @@ from localstack.aws.api.s3 import (
     TopicArn,
     TopicConfiguration,
 )
+from localstack.aws.protocol.serializer import gen_amzn_requestid_long
 from localstack.config import DEFAULT_REGION
 from localstack.services.s3.models import get_moto_s3_backend
 from localstack.services.s3.utils import (
@@ -456,7 +457,7 @@ class EventBridgeNotifier(BaseNotifier):
                 "etag": ctx.key_etag,
                 "sequencer": "0062E99A88DC407460",
             },
-            "request-id": "RKREYG1RN2X92YX6",
+            "request-id": gen_amzn_requestid_long(),
             "requester": "074255357339",
             "source-ip-address": "127.0.0.1",
             # TODO previously headers.get("X-Forwarded-For", "127.0.0.1").split(",")[0]

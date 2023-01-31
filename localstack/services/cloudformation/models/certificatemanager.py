@@ -11,9 +11,7 @@ class CertificateManagerCertificate(GenericBaseModel):
     def fetch_state(self, stack_name, resources):
         client = aws_stack.connect_to_service("acm")
         result = client.list_certificates().get("CertificateSummaryList", [])
-        domain_name = self.resolve_refs_recursively(
-            stack_name, self.props.get("DomainName"), resources
-        )
+        domain_name = self.props.get("DomainName")
         result = [c for c in result if c["DomainName"] == domain_name]
         return (result or [None])[0]
 
