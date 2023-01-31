@@ -58,7 +58,7 @@ class InternalRequestParameters(TypedDict):
 
 
 def dump_dto(data: InternalRequestParameters) -> str:
-    # TODO@viren: Improve minification using custom JSONEncoder that use shortened keys
+    # TODO@viren: Minification can be improved using custom JSONEncoder that uses shortened keys
 
     # To produce a compact JSON representation of DTO, remove spaces from separators
     return json.dumps(data, separators=(",", ":"))
@@ -71,12 +71,6 @@ def load_dto(data: str) -> InternalRequestParameters:
 #
 # Client
 #
-
-# Names of arguments that can be passed to Boto API operation functions.
-# These have appropriate entries on the data transfer object.
-ARG_SOURCE_SERVICE = "_SourceService"
-ARG_SOURCE_ARN = "_SourceArn"
-ARG_TARGET_ARN = "_TargetArn"
 
 
 class ConnectFactory:
@@ -119,7 +113,13 @@ class ConnectFactory:
         """
         Build and return client for connections originating within LocalStack.
 
-        Region in `_TargetArn` takes precedence when specified.
+        All API operation methods (such as `.list_buckets()` or `.run_instances()`
+        take additional args that start with `_` prefix. These are used to pass
+        additional information to LocalStack server during internal calls.
+
+        Note that when `_TargetArn` is used, the region from the ARN takes
+        precedence over the region used during client instantiation. The
+        precedence logic happens on the serverside LocalStack handler chain.
 
         :param service_name: Service to build the client for, eg. `s3`
         :param region_name: Region name. See note above.
@@ -142,6 +142,7 @@ class ConnectFactory:
             aws_secret_access_key=aws_secret_access_key,
             aws_session_token=None,
             config=config or self._config,
+            internal=True,
         )
 
     def get_external_client(
@@ -184,6 +185,7 @@ class ConnectFactory:
             aws_secret_access_key=aws_secret_access_key or self.get_session_secret_key(),
             aws_session_token=None,
             config=config or self._config,
+            internal=False,
         )
 
     @cache
@@ -198,6 +200,7 @@ class ConnectFactory:
         aws_secret_access_key: str,
         aws_session_token: str,
         config: Config,
+        internal: bool,
     ) -> BaseClient:
         client = self._session.client(
             service_name=service_name,
@@ -211,47 +214,9 @@ class ConnectFactory:
             config=config,
         )
 
-        def _handler_piggyback_dto(params, model, context, **kwargs):
-            """
-            Construct the data transfer object at the time of parsing the client
-            parameters and proxy it over the Boto context dict.
-            """
-
-            dto = InternalRequestParameters()
-
-            if ARG_SOURCE_SERVICE in params:
-                dto["source_service"] = params.pop(ARG_SOURCE_SERVICE)
-            if ARG_SOURCE_ARN in params:
-                dto["source_arn"] = params.pop(ARG_SOURCE_ARN)
-            if ARG_TARGET_ARN in params:
-                target_arn = params.pop(ARG_TARGET_ARN)
-
-                # ARG_TARGET_ARN can either be a ref to another param or an ARN
-                if target_arn in params:
-                    target_arn = params[target_arn]
-
-                try:
-                    parse_arn(target_arn)
-                    dto["target_arn"] = target_arn
-                except InvalidArnException:
-                    LOG.warning(
-                        "TargetArn '%s' not an ARN or a valid ref to another parameter."
-                        % target_arn
-                    )
-
-            if dto:
-                context["_localstack"] = dto
-
-        def _handler_inject_dto_header(model, params, request_signer, context, **kwargs):
-            """
-            Retrieve the data transfer object and make it part of the request
-            headers.
-            """
-            if dto := context.pop("_localstack", None):
-                params["headers"][INTERNAL_REQUEST_PARAMS_HEADER] = dump_dto(dto)
-
-        client.meta.events.register("provide-client-params.*.*", handler=_handler_piggyback_dto)
-        client.meta.events.register("before-call.*.*", handler=_handler_inject_dto_header)
+        if internal:
+            client.meta.events.register("provide-client-params.*.*", handler=_handler_piggyback_dto)
+            client.meta.events.register("before-call.*.*", handler=_handler_inject_dto_header)
 
         return client
 
@@ -302,6 +267,60 @@ class ConnectFactory:
 connector = ConnectFactory()
 connect_to = connector.get_internal_client
 connect_externally_to = connector.get_external_client
+
+#
+# Handlers
+#
+
+
+def _handler_piggyback_dto(params, model, context, **kwargs):
+    """
+    Construct the data transfer object at the time of parsing the client
+    parameters and proxy it via the Boto context dict.
+
+    This handler enables the use of additional keyword parameters in Boto API
+    operation functions.
+    """
+
+    # Names of arguments that can be passed to Boto API operation functions.
+    # These must correspond to entries on the data transfer object.
+    ARG_SOURCE_SERVICE = "_SourceService"
+    ARG_SOURCE_ARN = "_SourceArn"
+    ARG_TARGET_ARN = "_TargetArn"
+
+    dto = InternalRequestParameters()
+
+    if ARG_SOURCE_SERVICE in params:
+        dto["source_service"] = params.pop(ARG_SOURCE_SERVICE)
+    if ARG_SOURCE_ARN in params:
+        dto["source_arn"] = params.pop(ARG_SOURCE_ARN)
+    if ARG_TARGET_ARN in params:
+        target_arn = params.pop(ARG_TARGET_ARN)
+
+        # ARG_TARGET_ARN can either be a ref to another param or an ARN
+        if target_arn in params:
+            target_arn = params[target_arn]
+
+        try:
+            parse_arn(target_arn)
+            dto["target_arn"] = target_arn
+        except InvalidArnException:
+            LOG.warning(
+                "TargetArn '%s' not an ARN or a valid ref to another parameter." % target_arn
+            )
+
+    if dto:
+        context["_localstack"] = dto
+
+
+def _handler_inject_dto_header(model, params, request_signer, context, **kwargs):
+    """
+    Retrieve the data transfer object from the Boto context dict and serialise
+    it as part of the request headers.
+    """
+    if dto := context.pop("_localstack", None):
+        params["headers"][INTERNAL_REQUEST_PARAMS_HEADER] = dump_dto(dto)
+
 
 #
 # Utilities
