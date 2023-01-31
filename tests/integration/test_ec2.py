@@ -1,4 +1,31 @@
+import pytest
+from botocore.exceptions import ClientError
+from mypy_boto3_ec2 import EC2Client
 from localstack.utils.aws import aws_stack
+from localstack.utils.strings import short_uid
+
+# public amazon image used for ec2 launch temlpates
+PUBLIC_AMAZON_LINUX_IMAGE = 'ami-06c39ed6b42908a36'
+PUBLIC_AMAZON_UBUNTU_IMAGE = 'ami-03e08697c325f02ab'
+
+@pytest.fixture()
+def create_launch_template(ec2_client):
+    template_ids = []
+    def create(template_name):
+        response = ec2_client.create_launch_template(
+            LaunchTemplateName=template_name,
+            LaunchTemplateData={
+                'ImageId': PUBLIC_AMAZON_LINUX_IMAGE,
+            }
+        )
+        template_ids.append(response['LaunchTemplate']['LaunchTemplateId'])
+        return response
+
+    yield create
+    for id in template_ids:
+        ec2_client.delete_launch_template(
+            LaunchTemplateId=id
+        )
 
 
 class TestEc2Integrations:
@@ -59,8 +86,8 @@ class TestEc2Integrations:
 
         assert "com.amazonaws.us-east-1.s3" == vpc_end_point["VpcEndpoint"]["ServiceName"]
         assert (
-            route_table["RouteTable"]["RouteTableId"]
-            == vpc_end_point["VpcEndpoint"]["RouteTableIds"][0]
+                route_table["RouteTable"]["RouteTableId"]
+                == vpc_end_point["VpcEndpoint"]["RouteTableIds"][0]
         )
         assert vpc["Vpc"]["VpcId"] == vpc_end_point["VpcEndpoint"]["VpcId"]
         assert 0 == len(vpc_end_point["VpcEndpoint"]["DnsEntries"])
@@ -80,8 +107,8 @@ class TestEc2Integrations:
 
         assert "com.amazonaws.us-east-1.s3" == vpc_end_point["VpcEndpoint"]["ServiceName"]
         assert (
-            route_table["RouteTable"]["RouteTableId"]
-            == vpc_end_point["VpcEndpoint"]["RouteTableIds"][0]
+                route_table["RouteTable"]["RouteTableId"]
+                == vpc_end_point["VpcEndpoint"]["RouteTableIds"][0]
         )
         assert vpc["Vpc"]["VpcId"] == vpc_end_point["VpcEndpoint"]["VpcId"]
         assert 0 == len(vpc_end_point["VpcEndpoint"]["DnsEntries"])
@@ -157,12 +184,12 @@ class TestEc2Integrations:
         )
         assert 200 == cross_region["ResponseMetadata"]["HTTPStatusCode"]
         assert (
-            peer_vpc1["Vpc"]["VpcId"]
-            == cross_region["VpcPeeringConnection"]["RequesterVpcInfo"]["VpcId"]
+                peer_vpc1["Vpc"]["VpcId"]
+                == cross_region["VpcPeeringConnection"]["RequesterVpcInfo"]["VpcId"]
         )
         assert (
-            peer_vpc2["Vpc"]["VpcId"]
-            == cross_region["VpcPeeringConnection"]["AccepterVpcInfo"]["VpcId"]
+                peer_vpc2["Vpc"]["VpcId"]
+                == cross_region["VpcPeeringConnection"]["AccepterVpcInfo"]["VpcId"]
         )
 
         accept_vpc = ec2_client2.accept_vpc_peering_connection(
@@ -170,16 +197,16 @@ class TestEc2Integrations:
         )
         assert 200 == accept_vpc["ResponseMetadata"]["HTTPStatusCode"]
         assert (
-            peer_vpc1["Vpc"]["VpcId"]
-            == accept_vpc["VpcPeeringConnection"]["RequesterVpcInfo"]["VpcId"]
+                peer_vpc1["Vpc"]["VpcId"]
+                == accept_vpc["VpcPeeringConnection"]["RequesterVpcInfo"]["VpcId"]
         )
         assert (
-            peer_vpc2["Vpc"]["VpcId"]
-            == accept_vpc["VpcPeeringConnection"]["AccepterVpcInfo"]["VpcId"]
+                peer_vpc2["Vpc"]["VpcId"]
+                == accept_vpc["VpcPeeringConnection"]["AccepterVpcInfo"]["VpcId"]
         )
         assert (
-            cross_region["VpcPeeringConnection"]["VpcPeeringConnectionId"]
-            == accept_vpc["VpcPeeringConnection"]["VpcPeeringConnectionId"]
+                cross_region["VpcPeeringConnection"]["VpcPeeringConnectionId"]
+                == accept_vpc["VpcPeeringConnection"]["VpcPeeringConnectionId"]
         )
 
         requester_peer = ec2_client1.describe_vpc_peering_connections(
@@ -277,3 +304,81 @@ class TestEc2Integrations:
 
         # clean up
         ec2_client.delete_vpc(VpcId=vpc_id)
+
+    @pytest.mark.aws_validated
+    def test_modify_launch_template(self, ec2_client, create_launch_template):
+        launch_template_result = create_launch_template(f"template-with-versions-{short_uid()}")
+        template = launch_template_result['LaunchTemplate']
+
+        # call the API identifying the template wither by `LaunchTemplateId` or `LaunchTemplateName`
+        api_calls = [
+            lambda :
+                ec2_client.create_launch_template_version(
+                    LaunchTemplateId=template['LaunchTemplateId'],
+                    LaunchTemplateData={
+                        'ImageId': PUBLIC_AMAZON_UBUNTU_IMAGE
+                    }
+                )
+            ,
+            lambda:
+                ec2_client.create_launch_template_version(
+                    LaunchTemplateName=template["LaunchTemplateName"],
+                    LaunchTemplateData={
+                        'ImageId': PUBLIC_AMAZON_UBUNTU_IMAGE
+                    }
+                )
+        ]
+        for call in api_calls:
+            new_version_result = call()
+            new_default_version = new_version_result['LaunchTemplateVersion']['VersionNumber']
+            ec2_client.modify_launch_template(
+                LaunchTemplateId=template['LaunchTemplateId'],
+                DefaultVersion=str(new_default_version)
+            )
+
+            modified_template = ec2_client.describe_launch_templates(
+                LaunchTemplateIds=[template['LaunchTemplateId']]
+            )
+            assert modified_template['LaunchTemplates'][0]['DefaultVersionNumber'] == int(new_default_version)
+
+@pytest.mark.aws_validated
+def test_raise_modify_to_invalid_default_version(ec2_client, create_launch_template):
+    launch_template_result = create_launch_template(f"my-first-launch-template-{short_uid()}")
+    template = launch_template_result['LaunchTemplate']
+
+    with pytest.raises(ClientError) as e:
+        ec2_client.modify_launch_template(
+            LaunchTemplateId=template['LaunchTemplateId'],
+            DefaultVersion='666'
+        )
+    assert e.value.response["ResponseMetadata"]["HTTPStatusCode"] == 400
+    assert e.value.response["Error"]["Code"] == "InvalidLaunchTemplateId.VersionNotFound"
+
+@pytest.mark.aws_validated
+def test_raise_when_launcTemplateData_missing(ec2_client):
+    with pytest.raises(ClientError) as e:
+        ec2_client.create_launch_template(
+            LaunchTemplateName=f"unique_name-{short_uid()}",
+            LaunchTemplateData={}
+        )
+    assert e.value.response["ResponseMetadata"]["HTTPStatusCode"] == 400
+    assert e.value.response["Error"]["Code"] == "MissingParameter"
+
+@pytest.mark.aws_validated
+def test_raise_invalid_launch_template_name(ec2_client, create_launch_template):
+    with pytest.raises(ClientError) as e:
+        create_launch_template(f"some illegal name {short_uid()}")
+
+    assert e.value.response["ResponseMetadata"]["HTTPStatusCode"] == 400
+    assert e.value.response["Error"]["Code"] == "InvalidLaunchTemplateName.MalformedException"
+
+@pytest.mark.aws_validated
+def test_raise_duplicate_Launch_template_name(ec2_client, create_launch_template):
+    create_launch_template("name")
+
+    with pytest.raises(ClientError) as e:
+        create_launch_template("name")
+
+    # TODO: check response http code
+    assert e.value.response["ResponseMetadata"]["HTTPStatusCode"] == 400
+    assert e.value.response["Error"]["Code"] == "InvalidLaunchTemplateName.AlreadyExistsException"
