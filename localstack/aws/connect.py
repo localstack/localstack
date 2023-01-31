@@ -218,7 +218,6 @@ class ConnectFactory:
             """
 
             dto = InternalRequestParameters()
-            override_region_name = None
 
             if ARG_SOURCE_SERVICE in params:
                 dto["source_service"] = params.pop(ARG_SOURCE_SERVICE)
@@ -232,10 +231,7 @@ class ConnectFactory:
                     target_arn = params[target_arn]
 
                 try:
-                    arn_data = parse_arn(target_arn)
-                    # ARNs may not have a region for global resources
-                    override_region_name = arn_data.get("region")
-
+                    parse_arn(target_arn)
                     dto["target_arn"] = target_arn
                 except InvalidArnException:
                     LOG.warning(
