@@ -2,17 +2,17 @@ from unittest.mock import MagicMock, patch
 
 from werkzeug.datastructures import Headers
 
-from localstack.aws.connect import LOCALSTACK_REQUEST_PARAM_HEADER, ConnectFactory, is_internal_call
+from localstack.aws.connect import INTERNAL_REQUEST_PARAMS_HEADER, ConnectFactory, is_internal_call
 
 
 class TestConnectFactory:
     def test_is_internal_call(self):
         assert is_internal_call(dict()) is False
-        assert is_internal_call({LOCALSTACK_REQUEST_PARAM_HEADER: "xyz"}) is True
+        assert is_internal_call({INTERNAL_REQUEST_PARAMS_HEADER: "xyz"}) is True
         headers = Headers()
         headers["x-nonsense"] = "okay"
         assert is_internal_call(headers) is False
-        headers[LOCALSTACK_REQUEST_PARAM_HEADER] = "{}"
+        headers[INTERNAL_REQUEST_PARAMS_HEADER] = "{}"
         assert is_internal_call(headers) is True
 
     def test_internal_client_dto_is_registered(self):
