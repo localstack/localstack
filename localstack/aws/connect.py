@@ -12,6 +12,7 @@ from typing import Mapping, Optional, TypedDict, Union
 from boto3.session import Session
 from botocore.client import BaseClient
 from botocore.config import Config
+from botocore.utils import InvalidArnException
 from werkzeug.datastructures import Headers
 
 from localstack import config
@@ -20,6 +21,7 @@ from localstack.constants import (
     INTERNAL_AWS_SECRET_ACCESS_KEY,
     MAX_POOL_CONNECTIONS,
 )
+from localstack.utils.aws.arns import parse_arn
 from localstack.utils.aws.aws_stack import get_local_service_url
 from localstack.utils.aws.request_context import get_region_from_request_context
 
@@ -29,11 +31,11 @@ LOG = logging.getLogger(__name__)
 # Data transfer object
 #
 
-LOCALSTACK_REQUEST_PARAM_HEADER = "x-localstack-data"
+INTERNAL_REQUEST_PARAMS_HEADER = "x-localstack-data"
 """Request header which contains the data transfer object."""
 
 
-class LocalstackRequestParameters(TypedDict):
+class InternalRequestParameters(TypedDict):
     """
     LocalStack Data Transfer Object.
 
@@ -55,14 +57,14 @@ class LocalstackRequestParameters(TypedDict):
     """ARN of the resource being targeted."""
 
 
-def dump_dto(data: LocalstackRequestParameters) -> str:
+def dump_dto(data: InternalRequestParameters) -> str:
     # TODO@viren: Improve minification using custom JSONEncoder that use shortened keys
 
     # To produce a compact JSON representation of DTO, remove spaces from separators
     return json.dumps(data, separators=(",", ":"))
 
 
-def load_dto(data: str) -> LocalstackRequestParameters:
+def load_dto(data: str) -> InternalRequestParameters:
     return json.loads(data)
 
 
@@ -215,7 +217,9 @@ class ConnectFactory:
             parameters and proxy it over the Boto context dict.
             """
 
-            dto = LocalstackRequestParameters()
+            dto = InternalRequestParameters()
+            override_region_name = None
+
             if ARG_SOURCE_SERVICE in params:
                 dto["source_service"] = params.pop(ARG_SOURCE_SERVICE)
             if ARG_SOURCE_ARN in params:
@@ -223,19 +227,29 @@ class ConnectFactory:
             if ARG_TARGET_ARN in params:
                 target_arn = params.pop(ARG_TARGET_ARN)
 
-                if target_arn.startswith("arn:"):
-                    dto["target_arn"] = params.pop(ARG_TARGET_ARN)
-                else:
-                    try:
-                        dto["target_arn"] = params[target_arn]
-                    except KeyError:
-                        LOG.warning(
-                            "TargetArn '%s' not an ARN or a valid ref to another parameter."
-                            % target_arn
-                        )
+                # ARG_TARGET_ARN can either be a ref to another param or an ARN
+                if target_arn in params:
+                    target_arn = params[target_arn]
+
+                try:
+                    arn_data = parse_arn(target_arn)
+                    # ARNs may not have a region for global resources
+                    override_region_name = arn_data.get("region")
+
+                    dto["target_arn"] = target_arn
+                except InvalidArnException:
+                    LOG.warning(
+                        "TargetArn '%s' not an ARN or a valid ref to another parameter."
+                        % target_arn
+                    )
 
             if dto:
                 context["_localstack"] = dto
+
+                # Attention: Region is overridden here
+                if override_region_name:
+                    context["client_region"] = override_region_name
+                    context["signing"]["region"] = override_region_name
 
         def _handler_inject_dto_header(model, params, request_signer, context, **kwargs):
             """
@@ -243,7 +257,7 @@ class ConnectFactory:
             headers.
             """
             if dto := context.pop("_localstack", None):
-                params["headers"][LOCALSTACK_REQUEST_PARAM_HEADER] = dump_dto(dto)
+                params["headers"][INTERNAL_REQUEST_PARAMS_HEADER] = dump_dto(dto)
 
         client.meta.events.register("provide-client-params.*.*", handler=_handler_piggyback_dto)
         client.meta.events.register("before-call.*.*", handler=_handler_inject_dto_header)
@@ -307,4 +321,4 @@ def is_internal_call(headers: Union[Mapping, Headers]) -> bool:
     """
     Whether given request headers are for an internal LocalStack cross-service call.
     """
-    return LOCALSTACK_REQUEST_PARAM_HEADER in headers
+    return INTERNAL_REQUEST_PARAMS_HEADER in headers
