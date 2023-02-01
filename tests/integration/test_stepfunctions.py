@@ -690,7 +690,6 @@ def test_aws_sdk_task(sfn_execution_role, stepfunctions_client, iam_client, sns_
     # create parent state machine
     name = f"statemachine-{short_uid()}"
     policy_name = f"policy-{short_uid()}"
-    role_name = f"role-{short_uid()}"
     topic_name = f"topic-{short_uid()}"
 
     policy = iam_client.create_policy(
@@ -751,8 +750,6 @@ def test_aws_sdk_task(sfn_execution_role, stepfunctions_client, iam_client, sns_
         assert wait_until(_retry_execution, max_retries=3, strategy="linear", wait=3.0)
 
     finally:
-        iam_client.detach_role_policy(RoleName=role_name, PolicyArn=policy["Policy"]["Arn"])
-        iam_client.delete_role(RoleName=role_name)
         iam_client.delete_policy(PolicyArn=policy["Policy"]["Arn"])
         stepfunctions_client.delete_state_machine(stateMachineArn=machine_arn)
 
