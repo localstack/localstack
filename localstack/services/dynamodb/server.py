@@ -3,9 +3,14 @@ import os
 from typing import List, Optional
 
 from localstack import config
+from localstack.aws.connect import connect_externally_to
 from localstack.config import is_env_true
+from localstack.constants import (
+    TEST_AWS_ACCESS_KEY_ID,
+    TEST_AWS_REGION_NAME,
+    TEST_AWS_SECRET_ACCESS_KEY,
+)
 from localstack.services.dynamodb.packages import dynamodblocal_package
-from localstack.utils.aws import aws_stack
 from localstack.utils.bootstrap import is_api_key_configured
 from localstack.utils.common import TMP_THREADS, ShellCommandThread, get_free_tcp_port, mkdir
 from localstack.utils.files import rm_rf
@@ -150,7 +155,13 @@ def check_dynamodb(expect_shutdown=False, print_error=False):
 
     try:
         _server.wait_is_up()
-        out = aws_stack.connect_to_service("dynamodb", endpoint_url=_server.url).list_tables()
+        out = connect_externally_to(
+            "dynamodb",
+            region_name=TEST_AWS_REGION_NAME,
+            aws_access_key_id=TEST_AWS_ACCESS_KEY_ID,
+            aws_secret_access_key=TEST_AWS_SECRET_ACCESS_KEY,
+            endpoint_url=_server.url,
+        ).list_tables()
     except Exception:
         if print_error:
             LOG.exception("DynamoDB health check failed")

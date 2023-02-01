@@ -1466,9 +1466,11 @@ class TestDynamoDB:
             ProvisionedThroughput={"ReadCapacityUnits": 5, "WriteCapacityUnits": 5},
         )
 
+        client_request_token = f"dedupe_token_{short_uid()}"
+
         def _transact_write(_d: Dict):
             return dynamodb_client.transact_write_items(
-                ClientRequestToken="dedupe_token",
+                ClientRequestToken=client_request_token,
                 TransactItems=[
                     {
                         "Put": {

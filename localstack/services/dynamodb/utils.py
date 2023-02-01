@@ -7,7 +7,7 @@ from moto.core.exceptions import JsonRESTError
 
 from localstack.aws.accounts import get_aws_account_id
 from localstack.aws.api.dynamodb import ResourceNotFoundException
-from localstack.constants import TEST_AWS_SECRET_ACCESS_KEY
+from localstack.aws.connect import connect_to
 from localstack.utils.aws import aws_stack
 from localstack.utils.aws.arns import dynamodb_table_arn
 from localstack.utils.json import canonical_json
@@ -64,12 +64,9 @@ class SchemaExtractor:
 
     @classmethod
     def get_key_schema(
-        cls, table_name: str, account_id: str = None, region_name: str = None
+        cls, table_name: str, account_id: str, region_name: str
     ) -> Optional[List[Dict]]:
         from localstack.services.dynamodb.provider import get_store
-
-        account_id = account_id or get_aws_account_id()
-        region_name = region_name or aws_stack.get_region()
 
         table_definitions: Dict = get_store(
             account_id=account_id,
@@ -98,14 +95,10 @@ class SchemaExtractor:
         schema = SCHEMA_CACHE.get(key)
         if not schema:
             # TODO: consider making in-memory lookup instead of API call
-            ddb_client = aws_stack.connect_to_service(
-                "dynamodb",
-                aws_access_key_id=account_id,
-                aws_secret_access_key=TEST_AWS_SECRET_ACCESS_KEY,
-                region_name=region_name,
-            )
             try:
-                schema = ddb_client.describe_table(TableName=table_name)
+                schema = connect_to("dynamodb", region_name=None).describe_table(
+                    TableName=table_name, _TargetArn=key
+                )
                 SCHEMA_CACHE[key] = schema
             except Exception as e:
                 if "ResourceNotFoundException" in str(e):
@@ -117,17 +110,14 @@ class SchemaExtractor:
 class ItemFinder:
     @staticmethod
     def find_existing_item(
-        put_item: Dict, table_name: str = None, account_id: str = None, region_name: str = None
+        put_item: Dict,
+        account_id: str,
+        region_name: str,
+        table_name: str = None,
     ) -> Optional[Dict]:
         from localstack.services.dynamodb.provider import ValidationException
 
         table_name = table_name or put_item["TableName"]
-        ddb_client = aws_stack.connect_to_service(
-            "dynamodb",
-            aws_access_key_id=account_id or get_aws_account_id(),
-            aws_secret_access_key=TEST_AWS_SECRET_ACCESS_KEY,
-            region_name=region_name or aws_stack.get_region(),
-        )
 
         search_key = {}
         if "Key" in put_item:
@@ -151,21 +141,14 @@ class ItemFinder:
             if not search_key:
                 return
 
-        req = {"TableName": table_name, "Key": search_key}
-        existing_item = ddb_client.get_item(**req)
+        existing_item = connect_to("dynamodb", region_name=region_name).get_item(
+            TableName=table_name, Key=search_key, _TargetAccount=account_id
+        )
         if not existing_item:
             return existing_item
         if "Item" not in existing_item:
             if "message" in existing_item:
-                table_names = ddb_client.list_tables()["TableNames"]
-                msg = (
-                    "Unable to get item from DynamoDB (existing tables: %s ...truncated if >100 tables): %s"
-                    % (
-                        table_names,
-                        existing_item["message"],
-                    )
-                )
-                LOG.warning(msg)
+                LOG.warning("Unable to get item from DynamoDB: %s" % existing_item["message"])
             return
         return existing_item.get("Item")
 
@@ -179,15 +162,13 @@ class ItemFinder:
 
     @staticmethod
     def get_all_table_items(table_name: str) -> List:
-        ddb_client = aws_stack.connect_to_service(
-            "dynamodb",
-            aws_access_key_id=get_aws_account_id(),
-            aws_secret_access_key=TEST_AWS_SECRET_ACCESS_KEY,
-            region_name=aws_stack.get_region(),
-        )
+        account_id = get_aws_account_id()
+        region_name = aws_stack.get_region()
+
+        client = connect_to("dynamodb", region_name=region_name)
         dynamodb_kwargs = {"TableName": table_name}
         all_items = list_all_resources(
-            lambda kwargs: ddb_client.scan(**{**kwargs, **dynamodb_kwargs}),
+            lambda kwargs: client.scan(_TargetAccount=account_id, **{**kwargs, **dynamodb_kwargs}),
             last_token_attr_name="LastEvaluatedKey",
             next_token_attr_name="ExclusiveStartKey",
             list_attr_name="Items",
