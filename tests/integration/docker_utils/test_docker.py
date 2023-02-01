@@ -1186,6 +1186,8 @@ class TestDockerClient:
         assert is_ipv4_address(ip)
         assert "127.0.0.1" != ip
 
+
+class TestDockerImages:
     def test_commit_creates_image_from_running_container(self, docker_client: ContainerClient):
         image_name = "lorem"
         image_tag = "ipsum"
@@ -1217,6 +1219,8 @@ class TestDockerClient:
         with pytest.raises(NoSuchImage):
             docker_client.remove_image(image, force=False)
 
+
+class TestDockerNetworking:
     def test_get_container_ip_with_network(
         self, docker_client: ContainerClient, create_container, create_network
     ):
@@ -1313,6 +1317,8 @@ class TestDockerClient:
                 container_name_or_id=container_2.container_id, attach=True
             )
 
+
+class TestDockerPermissions:
     def test_container_with_cap_add(self, docker_client: ContainerClient, create_container):
         container = create_container(
             "alpine",
@@ -1426,3 +1432,12 @@ class TestDockerPorts:
         if delta <= 1:
             time.sleep(1.01 - delta)
         assert is_port_available_for_containers(port)
+
+
+class TestDockerLabels:
+    def test_create_container_with_labels(self, docker_client, create_container):
+        labels = {"foo": "bar", short_uid(): short_uid()}
+        container = create_container("alpine", command=["dummy"], labels=labels)
+        result = docker_client.inspect_container(container.container_id)
+        result_labels = result.get("Config", {}).get("Labels")
+        assert result_labels == labels
