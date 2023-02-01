@@ -1842,6 +1842,7 @@ def invoke_function(function):
             Handler="index.handler",
             Code={"ZipFile": code},
             Role=LAMBDA_TEST_ROLE.format(account_id=get_aws_account_id()),
+            Timeout=30,
         )
         not_found = None
 
