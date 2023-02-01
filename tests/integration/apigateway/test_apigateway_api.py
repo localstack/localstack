@@ -23,7 +23,14 @@ def apigw_snapshot_transformer(snapshot):
     snapshot.add_transformer(snapshot.transform.apigateway_api())
 
 
-# TODO: use this at the beginning of the class tests?
+@pytest.fixture(scope="class", autouse=True)
+def apigw_cleanup_before_run(apigateway_client):
+    # TODO: remove this once all tests are properly cleaning up and using fixtures
+    rest_apis = apigateway_client.get_rest_apis()
+    for rest_api in rest_apis["items"]:
+        delete_rest_api_retry(apigateway_client, rest_api["id"])
+
+
 def delete_rest_api_retry(client, rest_api_id: str):
     try:
         if is_aws_cloud():
@@ -34,11 +41,10 @@ def delete_rest_api_retry(client, rest_api_id: str):
                     client.delete_rest_api(restApiId=rest_api_id)
                     cleaned = True
                 except ClientError as e:
-                    print(e)
-                    if "TooManyRequestsException" in str(e):
-                        print("sleeping 10sec")
+                    error_message = str(e)
+                    if "TooManyRequestsException" in error_message:
                         time.sleep(10)
-                    elif "NotFound" in str(e):
+                    elif "NotFoundException" in error_message:
                         break
                     else:
                         raise
@@ -64,27 +70,7 @@ def apigw_create_rest_api(apigateway_client):
 
     # TODO: might clean up even more resources as we learn? integrations and such?
     for rest_api_id in rest_apis:
-        try:
-            if is_aws_cloud():
-                # This is ugly but API GW returns 429 very quickly, and we want to be sure to clean up properly
-                cleaned = False
-                while not cleaned:
-                    try:
-                        apigateway_client.delete_rest_api(restApiId=rest_api_id)
-                        cleaned = True
-                    except ClientError as e:
-                        error_message = str(e)
-                        if "TooManyRequestsException" in error_message:
-                            time.sleep(10)
-                        elif "NotFoundException" in error_message:
-                            break
-                        else:
-                            raise
-            else:
-                apigateway_client.delete_rest_api(restApiId=rest_api_id)
-
-        except Exception as e:
-            LOG.debug("Error cleaning up rest API: %s, %s", rest_api_id, e)
+        delete_rest_api_retry(apigateway_client, rest_api_id)
 
 
 def test_import_rest_api(import_apigw, snapshot):
@@ -96,7 +82,6 @@ def test_import_rest_api(import_apigw, snapshot):
     snapshot.match("import_rest_api", response)
 
 
-# TODO: create fixture to cleanup all resources before launching this test: snapshot would fail?
 class TestApiGatewayApi:
     @pytest.mark.aws_validated
     def test_list_and_delete_apis(self, apigateway_client, apigw_create_rest_api, snapshot):
