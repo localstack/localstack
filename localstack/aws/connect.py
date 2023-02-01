@@ -50,11 +50,11 @@ class InternalRequestParameters(TypedDict):
     source_arn: str
     """ARN of resource which is triggering the call"""
 
-    source_service: str
-    """Service principal where the call originates, eg. `ec2`"""
+    target_account: str
+    """Account ID of the resource being accessed. To be used during create operations."""
 
     target_arn: str
-    """ARN of the resource being targeted."""
+    """ARN of the resource being accessed."""
 
 
 def dump_dto(data: InternalRequestParameters) -> str:
@@ -120,6 +120,9 @@ class ConnectFactory:
         Note that when `_TargetArn` is used, the account and region from the ARN takes
         precedence over the region used during client instantiation. The
         precedence logic happens on the serverside LocalStack handler chain.
+
+        When `_TargetAccount` is used, the specified account ID is used. This
+        takes precedence over `_TargetArn` account ID.
 
         :param service_name: Service to build the client for, eg. `s3`
         :param region_name: Region name. See note above.
@@ -284,16 +287,16 @@ def _handler_piggyback_dto(params, model, context, **kwargs):
 
     # Names of arguments that can be passed to Boto API operation functions.
     # These must correspond to entries on the data transfer object.
-    ARG_SOURCE_SERVICE = "_SourceService"
     ARG_SOURCE_ARN = "_SourceArn"
     ARG_TARGET_ARN = "_TargetArn"
+    ARG_TARGET_ACCOUNT = "_TargetAccount"
 
     dto = InternalRequestParameters()
 
-    if ARG_SOURCE_SERVICE in params:
-        dto["source_service"] = params.pop(ARG_SOURCE_SERVICE)
     if ARG_SOURCE_ARN in params:
         dto["source_arn"] = params.pop(ARG_SOURCE_ARN)
+    if ARG_TARGET_ACCOUNT in params:
+        dto["target_account"] = params.pop(ARG_TARGET_ACCOUNT)
     if ARG_TARGET_ARN in params:
         target_arn = params.pop(ARG_TARGET_ARN)
 

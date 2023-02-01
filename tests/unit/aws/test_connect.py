@@ -22,6 +22,15 @@ class TestConnectFactory:
         mock = connect_to("sns", "eu-central-1")
         mock.meta.events.register.assert_called()
 
+    def test_external_client_dto_is_not_registered(self):
+        factory = ConnectFactory()
+        factory._session = MagicMock()
+
+        mock = factory.get_external_client(
+            "sqs", "eu-central-1", aws_access_key_id="foo", aws_secret_access_key="bar"
+        )
+        mock.meta.events.register.assert_not_called()
+
     @patch.object(ConnectFactory, "_get_client")
     def test_external_client_credentials_loaded_from_env_if_set_to_none(self, mock, monkeypatch):
         connect_to = ConnectFactory(use_ssl=True)
