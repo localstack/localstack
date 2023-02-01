@@ -157,7 +157,11 @@ class ApigatewayProvider(ApigatewayApi, ServiceLifecycleHook):
         patch_operations: ListOfPatchOperation = None,
     ) -> RestApi:
         moto_backend = get_moto_backend(context)
-        rest_api = moto_backend.get_rest_api(rest_api_id)
+        rest_api = moto_backend.apis.get(rest_api_id)
+        if not rest_api:
+            raise NotFoundException(
+                f"Invalid API identifier specified {context.account_id}:{rest_api_id}"
+            )
 
         fixed_patch_ops = []
         binary_media_types_path = "/binaryMediaTypes"

@@ -339,10 +339,9 @@ def apply_patches():
     if not hasattr(apigateway_models.APIGatewayBackend, "update_deployment"):
         apigateway_models.APIGatewayBackend.update_deployment = backend_update_deployment
 
-    apigateway_models_RestAPI_to_dict_orig = apigateway_models.RestAPI.to_dict
-
-    def apigateway_models_RestAPI_to_dict(self):
-        resp = apigateway_models_RestAPI_to_dict_orig(self)
+    @patch(apigateway_models.RestAPI.to_dict)
+    def apigateway_models_rest_api_to_dict(fn, self):
+        resp = fn(self)
         resp["policy"] = None
         if self.policy:
             # Strip whitespaces for TF compatibility (not entirely sure why we need double-dumps,
@@ -404,4 +403,3 @@ def apply_patches():
 
     apigateway_response_usage_plan_individual_orig = APIGatewayResponse.usage_plan_individual
     APIGatewayResponse.usage_plan_individual = apigateway_response_usage_plan_individual
-    apigateway_models.RestAPI.to_dict = apigateway_models_RestAPI_to_dict

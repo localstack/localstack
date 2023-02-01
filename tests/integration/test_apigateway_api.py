@@ -14,13 +14,6 @@ from tests.integration.test_apigateway import TEST_IMPORT_PETSTORE_SWAGGER
 LOG = logging.getLogger(__name__)
 
 
-def test_update_rest_api_invalid_api_id(apigateway_client):
-    patchOperations = [{"op": "replace", "path": "/apiKeySource", "value": "AUTHORIZER"}]
-    with pytest.raises(ClientError) as ex:
-        apigateway_client.update_rest_api(restApiId="api_id", patchOperations=patchOperations)
-    assert ex.value.response["Error"]["Code"] == "NotFoundException"
-
-
 @pytest.mark.skip
 def test_create_authorizer(apigateway_client, cognito_idp_client):
     authorizer_name = "my_authorizer"

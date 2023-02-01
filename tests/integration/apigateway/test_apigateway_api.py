@@ -235,3 +235,11 @@ class TestApiGatewayApi:
             ]
             apigateway_client.update_rest_api(restApiId=api_id, patchOperations=patch_operations)
         snapshot.match("update-rest-api-remove-base-path", e.value.response)
+
+    @pytest.mark.aws_validated
+    def test_update_rest_api_invalid_api_id(self, apigateway_client, snapshot):
+        patch_operations = [{"op": "replace", "path": "/apiKeySource", "value": "AUTHORIZER"}]
+        with pytest.raises(ClientError) as ex:
+            apigateway_client.update_rest_api(restApiId="api_id", patchOperations=patch_operations)
+        snapshot.match("not-found-update-rest-api", ex.value.response)
+        assert ex.value.response["Error"]["Code"] == "NotFoundException"
