@@ -4,7 +4,6 @@ import os
 
 import pytest
 
-from localstack.aws.api.stepfunctions import CreateStateMachineInput
 from localstack.services.events.provider import TEST_EVENTS_CACHE
 from localstack.services.stepfunctions.stepfunctions_utils import is_new_provider
 from localstack.utils import testutil
@@ -639,9 +638,7 @@ def test_default_logging_configuration(iam_client, create_state_machine, stepfun
         definition = json.dumps(definition)
 
         sm_name = f"sts-logging-{short_uid()}"
-        result = create_state_machine(
-            CreateStateMachineInput(name=sm_name, definition=definition, roleArn=role_arn)
-        )
+        result = create_state_machine(name=sm_name, definition=definition, roleArn=role_arn)
 
         assert result["ResponseMetadata"]["HTTPStatusCode"] == 200
         result = stepfunctions_client.describe_state_machine(
