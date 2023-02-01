@@ -27,11 +27,35 @@ from localstack.services.stepfunctions.asl.eval.contextobject.contex_object impo
 from localstack.services.stepfunctions.asl.eval.contextobject.contex_object import (
     StateMachine as ContextObjectStateMachine,
 )
+from localstack.services.stepfunctions.asl.eval.programstate.program_ended import ProgramEnded
+from localstack.services.stepfunctions.asl.eval.programstate.program_error import ProgramError
+from localstack.services.stepfunctions.asl.eval.programstate.program_state import ProgramState
+from localstack.services.stepfunctions.asl.eval.programstate.program_stopped import ProgramStopped
 from localstack.services.stepfunctions.backend.execution_worker import ExecutionWorker
+from localstack.services.stepfunctions.backend.execution_worker_comm import ExecutionWorkerComm
 from localstack.services.stepfunctions.backend.state_machine import StateMachine
 
 
 class Execution:
+    class BaseExecutionWorkerComm(ExecutionWorkerComm):
+        def __init__(self, execution: Execution):
+            self.execution: Execution = execution
+
+        def terminated(self) -> None:
+            exit_program_state: ProgramState = self.execution.exec_worker.env.program_state()
+            self.execution.stop_date = datetime.datetime.now()
+            self.execution.output = json.dumps(self.execution.exec_worker.env.inp)
+            if isinstance(exit_program_state, ProgramEnded):
+                self.execution.exec_status = ExecutionStatus.SUCCEEDED
+            elif isinstance(exit_program_state, ProgramStopped):
+                self.execution.exec_status = ExecutionStatus.ABORTED
+            elif isinstance(exit_program_state, ProgramError):
+                self.execution.exec_status = ExecutionStatus.FAILED
+            else:
+                raise RuntimeWarning(
+                    f"Execution ended with unsupported ProgramState type '{type(exit_program_state)}'."
+                )
+
     def __init__(
         self,
         name: str,
@@ -101,6 +125,7 @@ class Execution:
             role_arn=self.role_arn,
             definition=self.state_machine.definition,
             input_data=self.input_data,
+            exec_comm=Execution.BaseExecutionWorkerComm(self),
             context_object_init=ContextObjectInitData(
                 Execution=ContextObjectExecution(
                     Id="TODO",
@@ -122,6 +147,4 @@ class Execution:
         exec_worker: Optional[ExecutionWorker] = self.exec_worker
         if not exec_worker:
             raise RuntimeError("No running executions.")
-        self.exec_status = ExecutionStatus.ABORTED  # TODO: what state?
-        self.stop_date = stop_date
         exec_worker.stop(stop_date=stop_date, cause=cause, error=error)

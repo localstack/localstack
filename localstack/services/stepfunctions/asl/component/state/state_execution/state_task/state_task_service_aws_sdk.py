@@ -20,5 +20,6 @@ class StateTaskServiceAwsSdk(StateTaskService):
 
         api_client = aws_stack.create_external_boto_client(service_name=api_name)
         response = getattr(api_client, api_action)(**args)
+        response.pop("ResponseMetadata", None)
 
         env.stack.append(response)

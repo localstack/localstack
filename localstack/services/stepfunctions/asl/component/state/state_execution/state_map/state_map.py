@@ -32,7 +32,7 @@ class StateMap(ExecutionState):
     catch: Optional[CatchDecl]
 
     def __init__(self):
-        super(StateMap).__init__(
+        super(StateMap, self).__init__(
             state_entered_event_type=HistoryEventType.MapStateEntered,
             state_exited_event_type=HistoryEventType.MapStateExited,
         )

@@ -4,7 +4,6 @@ import os
 
 import pytest
 
-from localstack.aws.api.stepfunctions import CreateStateMachineInput
 from localstack.services.events.provider import TEST_EVENTS_CACHE
 from localstack.services.stepfunctions.stepfunctions_utils import is_old_provider
 from localstack.utils import testutil
@@ -14,9 +13,8 @@ from localstack.utils.json import clone
 from localstack.utils.strings import short_uid
 from localstack.utils.sync import ShortCircuitWaitException, retry, wait_until
 from localstack.utils.threads import parallelize
-
-from .awslambda.functions import lambda_environment
-from .awslambda.test_lambda import TEST_LAMBDA_ENV, TEST_LAMBDA_PYTHON_ECHO
+from tests.integration.awslambda.functions import lambda_environment
+from tests.integration.awslambda.test_lambda import TEST_LAMBDA_ENV, TEST_LAMBDA_PYTHON_ECHO
 
 THIS_FOLDER = os.path.dirname(os.path.realpath(__file__))
 TEST_LAMBDA_NAME_1 = "lambda_sfn_1"
@@ -642,9 +640,7 @@ def test_default_logging_configuration(iam_client, create_state_machine, stepfun
         definition = json.dumps(definition)
 
         sm_name = f"sts-logging-{short_uid()}"
-        result = create_state_machine(
-            CreateStateMachineInput(name=sm_name, definition=definition, roleArn=role_arn)
-        )
+        result = create_state_machine(name=sm_name, definition=definition, roleArn=role_arn)
 
         assert result["ResponseMetadata"]["HTTPStatusCode"] == 200
         result = stepfunctions_client.describe_state_machine(

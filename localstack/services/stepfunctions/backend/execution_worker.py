@@ -17,6 +17,7 @@ from localstack.services.stepfunctions.asl.eval.contextobject.contex_object impo
 from localstack.services.stepfunctions.asl.eval.environment import Environment
 from localstack.services.stepfunctions.asl.eval.event.event_detail import EventDetails
 from localstack.services.stepfunctions.asl.parse.asl_parser import AmazonStateLanguageParser
+from localstack.services.stepfunctions.backend.execution_worker_comm import ExecutionWorkerComm
 
 
 class ExecutionWorker:
@@ -26,6 +27,7 @@ class ExecutionWorker:
         definition: Definition,
         input_data: Optional[dict],
         context_object_init: ContextObjectInitData,
+        exec_comm: ExecutionWorkerComm,
     ):
         self.role_arn: Final[Arn] = role_arn
         self.definition: Definition = definition
@@ -33,6 +35,7 @@ class ExecutionWorker:
         self._worker_thread: Optional[Thread] = None
         self.env: Optional[Environment] = None
         self._context_object_init = context_object_init
+        self.exec_comm: Final[ExecutionWorkerComm] = exec_comm
 
     def _execution_logic(self):
         program: Program = AmazonStateLanguageParser.parse(self.definition)
@@ -53,6 +56,8 @@ class ExecutionWorker:
         )
 
         program.eval(self.env)
+
+        self.exec_comm.terminated()
 
     def start(self):
         self._worker_thread = Thread(target=self._execution_logic)
