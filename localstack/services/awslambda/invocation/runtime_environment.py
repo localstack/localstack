@@ -147,6 +147,7 @@ class RuntimeEnvironment:
                 raise InvalidStatusException("Runtime Handler cannot be shutdown before started")
             self.runtime_executor.stop()
             self.status = RuntimeStatus.STOPPED
+            self.keepalive_timer.cancel()
 
     # Status methods
     def set_ready(self) -> None:

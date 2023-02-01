@@ -265,6 +265,7 @@ class LambdaVersionManager(ServiceEndpoint):
                 if self.available_environments.empty() or self.active_environment_count() == 0:
                     self.start_environment()
                 environment = None
+                # TODO avoid infinite environment spawning retrying
                 while not environment:
                     try:
                         environment = self.available_environments.get(timeout=1)
@@ -295,6 +296,8 @@ class LambdaVersionManager(ServiceEndpoint):
                             environment.id,
                         )
                         self.running_invocations.pop(queued_invocation.invocation_id, None)
+                        # try next environment
+                        environment = None
             except Exception as e:
                 queued_invocation.result_future.set_exception(e)
 
