@@ -14,6 +14,7 @@ from localstack.aws.api import CommonServiceException, RequestContext, handler
 from localstack.aws.api.ec2 import (
     AvailabilityZone,
     Boolean,
+    CreateLaunchTemplateRequest,
     CreateLaunchTemplateResult,
     CreateSubnetRequest,
     CreateSubnetResult,
@@ -326,9 +327,15 @@ class Ec2Provider(Ec2Api, ABC):
     def create_launch_template(
         self,
         context: RequestContext,
-        request: ModifyLaunchTemplateRequest,
+        request: CreateLaunchTemplateRequest,
     ) -> CreateLaunchTemplateResult:
+
         # parameter validation
+        if not request["LaunchTemplateData"]:
+            raise CommonServiceException(
+                message="Launch template data is missing", code="MissingParameter", status_code=400
+            )
+
         name = request["LaunchTemplateName"]
         if len(name) < 3 or len(name) > 128 or not re.fullmatch(r"[a-zA-Z0-9.\-_()/]*", name):
             raise CommonServiceException(
@@ -360,7 +367,7 @@ class Ec2Provider(Ec2Api, ABC):
         if request["DefaultVersion"]:
             try:
                 template.versions[int(request["DefaultVersion"]) - 1]
-            except KeyError:
+            except IndexError:
                 raise CommonServiceException(
                     message="Could not find lauch template version",
                     code="InvalidLaunchTemplateId.VersionNotFound",

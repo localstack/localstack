@@ -306,35 +306,34 @@ class TestEc2Integrations:
         ec2_client.delete_vpc(VpcId=vpc_id)
 
     @pytest.mark.aws_validated
-    def test_modify_launch_template(self, ec2_client, create_launch_template):
+    @pytest.mark.parametrize("id_type", ["id", "name"])
+    def test_modify_launch_template(self, ec2_client, create_launch_template, id_type):
         launch_template_result = create_launch_template(f"template-with-versions-{short_uid()}")
         template = launch_template_result["LaunchTemplate"]
 
         # call the API identifying the template wither by `LaunchTemplateId` or `LaunchTemplateName`
-        api_calls = [
-            lambda: ec2_client.create_launch_template_version(
-                LaunchTemplateId=template["LaunchTemplateId"],
-                LaunchTemplateData={"ImageId": PUBLIC_AMAZON_UBUNTU_IMAGE},
-            ),
-            lambda: ec2_client.create_launch_template_version(
-                LaunchTemplateName=template["LaunchTemplateName"],
-                LaunchTemplateData={"ImageId": PUBLIC_AMAZON_UBUNTU_IMAGE},
-            ),
-        ]
-        for call in api_calls:
-            new_version_result = call()
-            new_default_version = new_version_result["LaunchTemplateVersion"]["VersionNumber"]
-            ec2_client.modify_launch_template(
-                LaunchTemplateId=template["LaunchTemplateId"],
-                DefaultVersion=str(new_default_version),
-            )
+        kwargs = (
+            {"LaunchTemplateId": template["LaunchTemplateId"]}
+            if (id_type == "id")
+            else {"LaunchTemplateName": template["LaunchTemplateName"]}
+        )
 
-            modified_template = ec2_client.describe_launch_templates(
-                LaunchTemplateIds=[template["LaunchTemplateId"]]
-            )
-            assert modified_template["LaunchTemplates"][0]["DefaultVersionNumber"] == int(
-                new_default_version
-            )
+        new_version_result = ec2_client.create_launch_template_version(
+            LaunchTemplateData={"ImageId": PUBLIC_AMAZON_UBUNTU_IMAGE}, **kwargs
+        )
+
+        new_default_version = new_version_result["LaunchTemplateVersion"]["VersionNumber"]
+        ec2_client.modify_launch_template(
+            LaunchTemplateId=template["LaunchTemplateId"],
+            DefaultVersion=str(new_default_version),
+        )
+
+        modified_template = ec2_client.describe_launch_templates(
+            LaunchTemplateIds=[template["LaunchTemplateId"]]
+        )
+        assert modified_template["LaunchTemplates"][0]["DefaultVersionNumber"] == int(
+            new_default_version
+        )
 
 
 @pytest.mark.aws_validated
@@ -376,6 +375,5 @@ def test_raise_duplicate_Launch_template_name(ec2_client, create_launch_template
     with pytest.raises(ClientError) as e:
         create_launch_template("name")
 
-    # TODO: check response http code
     assert e.value.response["ResponseMetadata"]["HTTPStatusCode"] == 400
     assert e.value.response["Error"]["Code"] == "InvalidLaunchTemplateName.AlreadyExistsException"
