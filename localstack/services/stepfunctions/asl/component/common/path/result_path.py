@@ -7,6 +7,8 @@ from localstack.services.stepfunctions.asl.eval.environment import Environment
 
 
 class ResultPath(EvalComponent):
+    DEFAULT_PATH: Final[str] = "$"
+
     def __init__(self, result_path_src: str):
         self.result_path_src: Final[str] = result_path_src
 

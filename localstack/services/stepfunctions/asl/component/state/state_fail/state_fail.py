@@ -1,5 +1,6 @@
 from typing import Optional
 
+from localstack.aws.api.stepfunctions import HistoryEventType
 from localstack.services.stepfunctions.asl.component.common.cause_decl import CauseDecl
 from localstack.services.stepfunctions.asl.component.common.error_decl import ErrorDecl
 from localstack.services.stepfunctions.asl.component.state.state import CommonStateField
@@ -9,7 +10,10 @@ from localstack.services.stepfunctions.asl.eval.environment import Environment
 
 class StateFail(CommonStateField):
     def __init__(self):
-        super().__init__()
+        super().__init__(
+            state_entered_event_type=HistoryEventType.FailStateEntered,
+            state_exited_event_type=None,
+        )
         self.cause: Optional[CauseDecl] = None
         self.error: Optional[ErrorDecl] = None
 

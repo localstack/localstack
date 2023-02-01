@@ -216,7 +216,9 @@ class RequestTemplates(Templates):
 
 class ResponseTemplates(Templates):
     """
-    Handles response template rendering
+    Handles response template rendering. The integration response status code is used to select
+    the correct template to render, if there is no template for the status code, the default
+    template is used.
     """
 
     def render(self, api_context: ApiInvocationContext, **kwargs) -> Union[bytes, str]:
@@ -230,21 +232,42 @@ class ResponseTemplates(Templates):
         # depending on the type of templates.
         api_context.data = response._content
 
-        integration_responses = integration.get("integrationResponses") or {}
+        # status code returned by the integration
+        status_code = str(response.status_code)
+
+        # get the integration responses configuration from the integration object
+        integration_responses = integration.get("integrationResponses")
         if not integration_responses:
             return response._content
-        entries = list(integration_responses.keys())
-        return_code = str(response.status_code)
-        if return_code not in entries and len(entries) > 1:
-            LOG.info("Found multiple integration response status codes: %s", entries)
-            return response._content
-        return_code = entries[0]
 
-        response_templates = integration_responses[return_code].get("responseTemplates", {})
+        # get the configured integration response status codes,
+        # e.g. ["200", "400", "500"]
+        integration_status_codes = [str(code) for code in list(integration_responses.keys())]
+
+        # we return the response as is if the integration response status code is not on
+        # the list of configured integration response status codes
+        if status_code not in integration_status_codes or not integration_status_codes:
+            return response._content
+
+        # if there is integration response for the status code returned
+        # by the integration we use the template configured for that status code
+        if status_code in integration_responses:
+            response_templates = integration_responses[status_code].get("responseTemplates", {})
+        else:
+            # if there is no integration response for the status code returned
+            # by the integration we use the first integration response status code
+            LOG.info(
+                f"Found multiple integration response status codes: {integration_status_codes}"
+            )
+            response_templates = integration_responses[0].get("responseTemplates", {})
+
+        # we only support JSON templates for now - if there is no template we return
+        # the response as is
         template = response_templates.get(APPLICATION_JSON, {})
         if not template:
             return response._content
 
+        # we render the template with the context data and the response content
         variables = self.build_variables_mapping(api_context)
         response._content = self.render_vtl(template, variables=variables)
         LOG.info("Endpoint response body after transformations:\n%s", response._content)

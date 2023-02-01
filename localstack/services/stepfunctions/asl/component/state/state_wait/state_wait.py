@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from localstack.aws.api.stepfunctions import HistoryEventType
 from localstack.services.stepfunctions.asl.component.state.state import CommonStateField
 from localstack.services.stepfunctions.asl.component.state.state_props import StateProps
 from localstack.services.stepfunctions.asl.component.state.state_wait.wait_function.wait_function import (
@@ -12,7 +13,10 @@ class StateWait(CommonStateField):
     wait_function: WaitFunction
 
     def __init__(self):
-        super().__init__()
+        super().__init__(
+            state_entered_event_type=HistoryEventType.WaitStateEntered,
+            state_exited_event_type=HistoryEventType.WaitStateExited,
+        )
 
     def from_state_props(self, state_props: StateProps) -> None:
         super(StateWait, self).from_state_props(state_props)

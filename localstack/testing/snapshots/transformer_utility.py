@@ -4,6 +4,7 @@ from datetime import datetime
 from typing import Optional, Pattern
 
 from localstack.aws.api.secretsmanager import CreateSecretResponse
+from localstack.aws.api.stepfunctions import CreateStateMachineOutput, StartExecutionOutput
 from localstack.testing.snapshots.transformer import (
     JsonpathTransformer,
     KeyValueBasedTransformer,
@@ -267,8 +268,10 @@ class TransformerUtility:
                 replacement="sequence_number",
                 replace_reference=True,
             ),
+            TransformerUtility.key_value("SequenceNumber", "sequence_number"),
             TransformerUtility.key_value("StartingSequenceNumber", "starting_sequence_number"),
             TransformerUtility.key_value("ShardId", "shard_id"),
+            TransformerUtility.key_value("NextShardIterator", "next_shard_iterator"),
             TransformerUtility.key_value(
                 "EndingHashKey", "ending_hash", reference_replacement=False
             ),
@@ -407,6 +410,18 @@ class TransformerUtility:
             RegexTransformer(arn_part, arn_part_repl),
             RegexTransformer(secret_id, secret_id_repl),
         ]
+
+    @staticmethod
+    def snf_sm_create_arn(create_sm_res: CreateStateMachineOutput, index: int):
+        arn_part_repl = f"<ArnPart_{index}idx>"
+        arn_part: str = "".join(create_sm_res["stateMachineArn"].rpartition(":")[-1])
+        return RegexTransformer(arn_part, arn_part_repl)
+
+    @staticmethod
+    def snf_sm_exec_arn(start_exec: StartExecutionOutput, index: int):
+        arn_part_repl = f"<ExecArnPart_{index}idx>"
+        arn_part: str = "".join(start_exec["executionArn"].rpartition(":")[-1])
+        return RegexTransformer(arn_part, arn_part_repl)
 
     # TODO add example
     # @staticmethod

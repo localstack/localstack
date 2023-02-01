@@ -1,20 +1,17 @@
 from __future__ import annotations
 
 import datetime
-from collections import OrderedDict
+import json
 from typing import Final, Optional
 
 from localstack.aws.api.stepfunctions import (
     Arn,
     CloudWatchEventsExecutionDataDetails,
     DescribeExecutionOutput,
-    EventId,
     ExecutionListItem,
     ExecutionStatus,
-    ExecutionSucceededEventDetails,
     GetExecutionHistoryOutput,
-    HistoryEvent,
-    HistoryEventType,
+    HistoryEventList,
     InvalidName,
     SensitiveData,
     StartExecutionOutput,
@@ -30,59 +27,62 @@ from localstack.services.stepfunctions.asl.eval.contextobject.contex_object impo
 from localstack.services.stepfunctions.asl.eval.contextobject.contex_object import (
     StateMachine as ContextObjectStateMachine,
 )
-from localstack.services.stepfunctions.backend.execution_event import ExecutionEvent
-from localstack.services.stepfunctions.backend.execution_worker import (
-    ExecutionWorker,
-    ExecutionWorkerComm,
-)
+from localstack.services.stepfunctions.asl.eval.programstate.program_ended import ProgramEnded
+from localstack.services.stepfunctions.asl.eval.programstate.program_error import ProgramError
+from localstack.services.stepfunctions.asl.eval.programstate.program_state import ProgramState
+from localstack.services.stepfunctions.asl.eval.programstate.program_stopped import ProgramStopped
+from localstack.services.stepfunctions.backend.execution_worker import ExecutionWorker
+from localstack.services.stepfunctions.backend.execution_worker_comm import ExecutionWorkerComm
 from localstack.services.stepfunctions.backend.state_machine import StateMachine
 
 
-# TODO: add Event support.
 class Execution:
-    # TODO: see interface's todos.
     class BaseExecutionWorkerComm(ExecutionWorkerComm):
         def __init__(self, execution: Execution):
             self.execution: Execution = execution
 
-        def succeed(self, result_data: Optional[SensitiveData]):
-            # TODO: add support for output event details.
-            self.execution.exec_status = ExecutionStatus.SUCCEEDED
-            self.execution.output = result_data
-            event = ExecutionEvent(
-                timestamp=datetime.datetime.now(),
-                event_type=HistoryEventType.ActivitySucceeded,
-            )
-            event.execution_succeeded_event_details = ExecutionSucceededEventDetails(
-                output=result_data
-            )
-            self.execution.add_event(event)
+        def terminated(self) -> None:
+            exit_program_state: ProgramState = self.execution.exec_worker.env.program_state()
+            self.execution.stop_date = datetime.datetime.now()
+            self.execution.output = json.dumps(self.execution.exec_worker.env.inp)
+            if isinstance(exit_program_state, ProgramEnded):
+                self.execution.exec_status = ExecutionStatus.SUCCEEDED
+            elif isinstance(exit_program_state, ProgramStopped):
+                self.execution.exec_status = ExecutionStatus.ABORTED
+            elif isinstance(exit_program_state, ProgramError):
+                self.execution.exec_status = ExecutionStatus.FAILED
+            else:
+                raise RuntimeWarning(
+                    f"Execution ended with unsupported ProgramState type '{type(exit_program_state)}'."
+                )
 
     def __init__(
         self,
+        name: str,
+        role_arn: Arn,
         exec_arn: Arn,
         state_machine: StateMachine,
         start_date: Timestamp,
-        input_data: Optional[SensitiveData] = None,
+        input_data: Optional[dict] = None,
         input_details: Optional[CloudWatchEventsExecutionDataDetails] = None,
         trace_header: Optional[TraceHeader] = None,
     ):
+        self.name: Final[str] = name
+        self.role_arn: Final[Arn] = role_arn
         self.exec_arn: Final[Arn] = exec_arn
         self.state_machine: Final[StateMachine] = state_machine
         self.start_date: Final[Timestamp] = start_date
-        self.input_data: Final[Optional[SensitiveData]] = input_data
+        self.input_data: Final[Optional[dict]] = input_data
         self.input_details: Final[Optional[CloudWatchEventsExecutionDataDetails]] = input_details
         self.trace_header: Final[Optional[TraceHeader]] = trace_header
 
-        self.exec_status: Optional[ExecutionStatus] = None  # TODO
+        self.exec_status: Optional[ExecutionStatus] = None
         self.stop_date: Optional[Timestamp] = None
 
         self.output: Optional[SensitiveData] = None
         self.output_details: Optional[CloudWatchEventsExecutionDataDetails] = None
 
         self.exec_worker: Optional[ExecutionWorker] = None
-
-        self._events: OrderedDict[EventId, ExecutionEvent] = OrderedDict()
 
     def to_start_output(self) -> StartExecutionOutput:
         return StartExecutionOutput(executionArn=self.exec_arn, startDate=self.start_date)
@@ -95,7 +95,7 @@ class Execution:
             status=self.exec_status,
             startDate=self.start_date,
             stopDate=self.stop_date,
-            input=self.input_data,
+            input=json.dumps(self.input_data),
             inputDetails=self.input_details,
             output=self.output,
             outputDetails=self.output_details,
@@ -106,15 +106,15 @@ class Execution:
         return ExecutionListItem(
             executionArn=self.exec_arn,
             stateMachineArn=self.state_machine.arn,
-            name=self.state_machine.name,
+            name=self.name,
             status=self.exec_status,
             startDate=self.start_date,
             stopDate=self.stop_date,
         )
 
     def to_history_output(self) -> GetExecutionHistoryOutput:
-        events: list[HistoryEvent] = [event.to_history_event() for event in self._events.values()]
-        return GetExecutionHistoryOutput(events=events)
+        event_history: HistoryEventList = self.exec_worker.env.event_history.get_event_history()
+        return GetExecutionHistoryOutput(events=event_history)
 
     def start(self) -> None:
         # TODO: checks exec_worker does not exists already?
@@ -122,6 +122,7 @@ class Execution:
             raise InvalidName()  # TODO.
 
         self.exec_worker = ExecutionWorker(
+            role_arn=self.role_arn,
             definition=self.state_machine.definition,
             input_data=self.input_data,
             exec_comm=Execution.BaseExecutionWorkerComm(self),
@@ -142,17 +143,8 @@ class Execution:
         self.exec_status = ExecutionStatus.RUNNING
         self.exec_worker.start()
 
-    def add_event(self, event: ExecutionEvent) -> None:
-        # TODO: eventId workflow.
-        event_id = len(self._events)
-        event.event_id = event_id
-        self._events[event_id] = event
-
     def stop(self, stop_date: datetime.datetime, error: Optional[str], cause: Optional[str]):
-        # TODO: timeout to force timeout?
         exec_worker: Optional[ExecutionWorker] = self.exec_worker
         if not exec_worker:
             raise RuntimeError("No running executions.")
-        self.exec_status = ExecutionStatus.ABORTED  # TODO: what state?
-        self.stop_date = stop_date
         exec_worker.stop(stop_date=stop_date, cause=cause, error=error)

@@ -32,7 +32,7 @@ class StateMachine:
         self.definition: Definition = definition
         self.role_arn: Arn = role_arn
         self.create_date: datetime = create_date or datetime.now()
-        self.sm_type: Optional[StateMachineType] = sm_type
+        self.sm_type: StateMachineType = sm_type or StateMachineType.STANDARD
         self.logging_config: Optional[LoggingConfiguration] = logging_config
         self.tags: Optional[TagList] = tags
         self.tracing_config: Optional[TracingConfiguration] = tracing_config

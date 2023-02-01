@@ -1,5 +1,6 @@
 from typing import Optional
 
+from localstack.aws.api.stepfunctions import HistoryEventType
 from localstack.services.stepfunctions.asl.component.common.flow.end import End
 from localstack.services.stepfunctions.asl.component.common.flow.next import Next
 from localstack.services.stepfunctions.asl.component.state.state import CommonStateField
@@ -17,7 +18,10 @@ class StateChoice(CommonStateField):
     choices_decl: ChoicesDecl
 
     def __init__(self):
-        super(StateChoice, self).__init__()
+        super(StateChoice, self).__init__(
+            state_entered_event_type=HistoryEventType.ChoiceStateEntered,
+            state_exited_event_type=HistoryEventType.ChoiceStateExited,
+        )
         self.default_state: Optional[DefaultDecl] = None
         self._next_state_name: Optional[str] = None
 

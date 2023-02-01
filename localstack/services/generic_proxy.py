@@ -1,3 +1,6 @@
+# TODO majority of this file is deprecated and will be removed in the near future.
+#  Beware of duplications between this file and localstack.aws.handlers.cors, among other modules.
+
 from __future__ import annotations
 
 import functools
@@ -7,7 +10,6 @@ import os
 import re
 import socket
 import ssl
-import threading
 from asyncio.selector_events import BaseSelectorEventLoop
 from typing import Dict, List, Optional, Union
 from urllib.parse import urlparse
@@ -25,11 +27,7 @@ from requests.models import Request, Response
 from werkzeug.exceptions import HTTPException
 
 from localstack import config
-from localstack.config import (
-    EXTRA_CORS_ALLOWED_HEADERS,
-    EXTRA_CORS_ALLOWED_ORIGINS,
-    EXTRA_CORS_EXPOSE_HEADERS,
-)
+from localstack.config import EXTRA_CORS_ALLOWED_HEADERS, EXTRA_CORS_EXPOSE_HEADERS
 from localstack.constants import APPLICATION_JSON, BIND_HOST, HEADER_LOCALSTACK_REQUEST_URL
 from localstack.http.request import get_full_raw_path
 from localstack.services.messages import Headers, MessagePayload
@@ -43,7 +41,6 @@ from localstack.utils.functions import empty_context_manager
 from localstack.utils.json import json_safe
 from localstack.utils.net import wait_for_port_open
 from localstack.utils.server import http2_server
-from localstack.utils.serving import Server
 from localstack.utils.threads import start_thread
 
 # set up logger
@@ -97,20 +94,13 @@ ALLOWED_CORS_RESPONSE_HEADERS = [
     "Access-Control-Expose-Headers",
 ]
 
-ALLOWED_CORS_ORIGINS = [
-    "https://app.localstack.cloud",
-    "http://app.localstack.cloud",
-    f"https://localhost:{config.EDGE_PORT}",
-    f"http://localhost:{config.EDGE_PORT}",
-    f"https://localhost.localstack.cloud:{config.EDGE_PORT}",
-    f"http://localhost.localstack.cloud:{config.EDGE_PORT}",
-    "https://localhost",
-    "https://localhost.localstack.cloud",
-    # for requests from Electron apps, e.g., DynamoDB NoSQL Workbench
-    "file://",
-]
-if EXTRA_CORS_ALLOWED_ORIGINS:
-    ALLOWED_CORS_ORIGINS += EXTRA_CORS_ALLOWED_ORIGINS.split(",")
+
+def get_allowed_cors_origins() -> List[str]:
+    """Return the list of allowed CORS origins."""
+    # Note: importing from localstack.aws.handlers.cors, to keep the logic in a single place for now
+    from localstack.aws.handlers.cors import _get_allowed_cors_origins
+
+    return _get_allowed_cors_origins()
 
 
 class ProxyListener:
@@ -263,7 +253,7 @@ def _is_in_allowed_origins(allowed_origins, origin):
 
 def is_cors_origin_allowed(headers, allowed_origins=None):
     """Returns true if origin is allowed to perform cors requests, false otherwise"""
-    allowed_origins = ALLOWED_CORS_ORIGINS if allowed_origins is None else allowed_origins
+    allowed_origins = get_allowed_cors_origins() if allowed_origins is None else allowed_origins
     origin = headers.get("origin")
     referer = headers.get("referer")
     if origin:
@@ -590,138 +580,6 @@ class GenericProxy:
             _, cert_file_name, key_file_name = cls.create_ssl_cert(serial_number=serial_number)
             return cert_file_name, key_file_name
         return None
-
-
-class UrlMatchingForwarder(ProxyListener):
-    """
-    ProxyListener that matches URLs to a base url pattern, and if the request url matches the
-    pattern, forwards it to
-    a forward_url. See TestUrlMatchingForwarder for how it behaves.
-    """
-
-    def __init__(self, base_url: str, forward_url: str) -> None:
-        super().__init__()
-        self.base_url = urlparse(base_url)
-        self.forward_url = urlparse(forward_url)
-
-    def forward_request(self, method, path, data, headers):
-        host = headers.get("Host", "")
-
-        if not self.matches(host, path):
-            return True
-
-        # build forward url
-        forward_url = self.build_forward_url(host, path)
-
-        # update headers
-        headers.pop("Host", None)
-        headers["Host"] = forward_url.netloc
-
-        # TODO: set proxy headers like x-forwarded-for?
-
-        return self.do_forward(method, forward_url.geturl(), headers, data)
-
-    def do_forward(self, method, url, headers, data):
-        return requests.request(method, url, data=data, headers=headers, stream=True, verify=False)
-
-    def matches(self, host, path):
-        # TODO: refine matching default ports (80, 443 if scheme is https). Example:
-        #  http://localhost:80 matches
-        #  http://localhost) check host rule. Can lead to problems with 443-4566 edge proxy
-        #  forwarding if not enabled
-        if self.base_url.netloc:
-            stripped_netloc, _, port = self.base_url.netloc.rpartition(":")
-            if host != self.base_url.netloc and (
-                host != stripped_netloc or port not in ["80", "443"]
-            ):
-                return False
-
-        # check path components
-        if self.base_url.path == "/":
-            if path.startswith("/"):
-                return True
-
-        path_parts = path.split("/")
-        base_path_parts = self.base_url.path.split("/")
-
-        if len(base_path_parts) > len(path_parts):
-            return False
-
-        for i, component in enumerate(base_path_parts):
-            if component != path_parts[i]:
-                return False
-
-        return True
-
-    def build_forward_url(self, host, path):
-        # build forward url
-        if self.forward_url.hostname:
-            forward_host = self.forward_url.scheme + "://" + self.forward_url.netloc
-        else:
-            forward_host = host
-        forward_path_root = self.forward_url.path
-        forward_path = path[len(self.base_url.path) :]  # strip base path
-
-        # avoid double slashes
-        if forward_path and not forward_path_root.endswith("/"):
-            if not forward_path.startswith("/"):
-                forward_path = "/" + forward_path
-
-        forward_url = forward_host + forward_path_root + forward_path
-
-        return urlparse(forward_url)
-
-
-class EndpointProxy(ProxyListener):
-    def __init__(self, base_url: str, forward_url: str) -> None:
-        super().__init__()
-        self.forwarder = UrlMatchingForwarder(
-            base_url=base_url,
-            forward_url=forward_url,
-        )
-
-    def forward_request(self, method, path, data, headers):
-        return self.forwarder.forward_request(method, path, data, headers)
-
-    def register(self):
-        ProxyListener.DEFAULT_LISTENERS.append(self)
-
-    def unregister(self):
-        try:
-            ProxyListener.DEFAULT_LISTENERS.remove(self)
-        except ValueError:
-            pass
-
-
-class FakeEndpointProxyServer(Server):
-    """
-    Makes an EndpointProxy behave like a Server. You can use this to create transparent
-    multiplexing behavior.
-    """
-
-    endpoint: EndpointProxy
-
-    def __init__(self, endpoint: EndpointProxy) -> None:
-        self.endpoint = endpoint
-        self._shutdown_event = threading.Event()
-
-        self._url = self.endpoint.forwarder.base_url
-        super().__init__(self._url.port, self._url.hostname)
-
-    @property
-    def url(self):
-        return self._url.geturl()
-
-    def do_run(self):
-        self.endpoint.register()
-        try:
-            self._shutdown_event.wait()
-        finally:
-            self.endpoint.unregister()
-
-    def do_shutdown(self):
-        self._shutdown_event.set()
-        self.endpoint.unregister()
 
 
 async def _accept_connection2(self, protocol_factory, conn, extra, sslcontext, *args, **kwargs):

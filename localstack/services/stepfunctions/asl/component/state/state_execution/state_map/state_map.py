@@ -1,5 +1,6 @@
 from typing import Optional
 
+from localstack.aws.api.stepfunctions import HistoryEventType
 from localstack.services.stepfunctions.asl.component.common.catch.catch_decl import CatchDecl
 from localstack.services.stepfunctions.asl.component.common.path.items_path import ItemsPath
 from localstack.services.stepfunctions.asl.component.common.path.result_path import ResultPath
@@ -29,6 +30,12 @@ class StateMap(ExecutionState):
     result_selector: ResultSelector
     retry: Optional[RetryDecl]
     catch: Optional[CatchDecl]
+
+    def __init__(self):
+        super(StateMap, self).__init__(
+            state_entered_event_type=HistoryEventType.MapStateEntered,
+            state_exited_event_type=HistoryEventType.MapStateExited,
+        )
 
     def from_state_props(self, state_props: StateProps) -> None:
         super(StateMap, self).from_state_props(state_props)

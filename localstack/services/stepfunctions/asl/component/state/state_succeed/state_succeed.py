@@ -1,3 +1,4 @@
+from localstack.aws.api.stepfunctions import HistoryEventType
 from localstack.services.stepfunctions.asl.component.common.flow.end import End
 from localstack.services.stepfunctions.asl.component.common.flow.next import Next
 from localstack.services.stepfunctions.asl.component.state.state import CommonStateField
@@ -10,7 +11,10 @@ from localstack.services.stepfunctions.asl.eval.environment import Environment
 
 class StateSucceed(CommonStateField):
     def __init__(self):
-        super().__init__()
+        super().__init__(
+            state_entered_event_type=HistoryEventType.SucceedStateEntered,
+            state_exited_event_type=HistoryEventType.SucceedStateExited,
+        )
 
     def from_state_props(self, state_props: StateProps) -> None:
         super(StateSucceed, self).from_state_props(state_props)

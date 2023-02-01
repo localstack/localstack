@@ -50,5 +50,6 @@ class StateTaskServiceLambda(StateTaskService):
         resp_payload = invocation_resp["Payload"].read()
         resp_payload_str = to_str(resp_payload)
         resp_payload_json: json = json.loads(resp_payload_str)
+        resp_payload_json.pop("ResponseMetadata", None)
 
         env.stack.append(resp_payload_json)
