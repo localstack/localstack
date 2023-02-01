@@ -27,7 +27,6 @@ from localstack.services.stepfunctions.asl.eval.contextobject.contex_object impo
 from localstack.services.stepfunctions.asl.eval.contextobject.contex_object import (
     StateMachine as ContextObjectStateMachine,
 )
-from localstack.services.stepfunctions.asl.eval.programstate.program_ended import ProgramEnded
 from localstack.services.stepfunctions.backend.execution_worker import ExecutionWorker
 from localstack.services.stepfunctions.backend.state_machine import StateMachine
 
