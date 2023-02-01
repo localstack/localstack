@@ -674,7 +674,7 @@ def test_default_logging_configuration(iam_client, create_state_machine, stepfun
         iam_client.delete_role(RoleName=role_name)
 
 
-def test_aws_sdk_task(stepfunctions_client, iam_client, sns_client):
+def test_aws_sdk_task(sfn_execution_role, stepfunctions_client, iam_client, sns_client):
     statemachine_definition = {
         "StartAt": "CreateTopicTask",
         "States": {
