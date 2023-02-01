@@ -506,13 +506,21 @@ class SdkDockerClient(ContainerClient):
         additional_flags: Optional[str] = None,
         workdir: Optional[str] = None,
         privileged: Optional[bool] = None,
+        labels: Optional[Dict[str, str]] = None,
     ) -> str:
         LOG.debug("Creating container with attributes: %s", locals())
         extra_hosts = None
         if additional_flags:
-            env_vars, ports, mount_volumes, extra_hosts, network = Util.parse_additional_flags(
+            parsed_flags = Util.parse_additional_flags(
                 additional_flags, env_vars, ports, mount_volumes, network
             )
+            env_vars = parsed_flags.env_vars
+            ports = parsed_flags.ports
+            mount_volumes = parsed_flags.mounts
+            extra_hosts = parsed_flags.extra_hosts
+            network = parsed_flags.network
+            labels = parsed_flags.labels
+
         try:
             kwargs = {}
             if cap_add:
@@ -529,6 +537,8 @@ class SdkDockerClient(ContainerClient):
                 kwargs["working_dir"] = workdir
             if privileged:
                 kwargs["privileged"] = True
+            if labels:
+                kwargs["labels"] = labels
             mounts = None
             if mount_volumes:
                 mounts = Util.convert_mount_list_to_dict(mount_volumes)
