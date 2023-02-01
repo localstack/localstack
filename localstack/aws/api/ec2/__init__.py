@@ -28,6 +28,7 @@ CapacityReservationId = str
 CarrierGatewayId = str
 CarrierGatewayMaxResults = int
 CertificateArn = str
+CertificateId = str
 ClientVpnAssociationId = str
 ClientVpnEndpointId = str
 CloudWatchLogGroupArn = str
@@ -37,6 +38,7 @@ ComponentAccount = str
 ComponentRegion = str
 ConnectionNotificationId = str
 ConversionTaskId = str
+CopySnapshotRequestPSU = str
 CoreCount = int
 CoreNetworkArn = str
 CurrentGenerationFlag = bool
@@ -101,6 +103,7 @@ DhcpOptionsId = str
 DiskCount = int
 Double = float
 DoubleWithConstraints = float
+DrainSeconds = int
 EfaSupportedFlag = bool
 EgressOnlyInternetGatewayId = str
 ElasticGpuId = str
@@ -147,6 +150,7 @@ InstanceEventWindowCronExpression = str
 InstanceEventWindowId = str
 InstanceId = str
 InstanceIdForResolver = str
+InstanceIdWithVolumeResolver = str
 InstanceStorageFlag = bool
 Integer = int
 IntegerWithConstraints = int
@@ -157,7 +161,10 @@ IpamId = str
 IpamMaxResults = int
 IpamNetmaskLength = int
 IpamPoolAllocationId = str
+IpamPoolCidrId = str
 IpamPoolId = str
+IpamResourceDiscoveryAssociationId = str
+IpamResourceDiscoveryId = str
 IpamScopeId = str
 Ipv4PoolCoipId = str
 Ipv4PoolEc2Id = str
@@ -218,6 +225,7 @@ PoolMaxResults = int
 Port = int
 PrefixListMaxResults = int
 PrefixListResourceId = str
+PrivateIpAddressCount = int
 ProcessorSustainedClockSpeed = float
 PublicIpAddress = str
 RamdiskId = str
@@ -229,6 +237,7 @@ ReservedInstancesOfferingId = str
 ResourceArn = str
 RestoreSnapshotTierRequestTemporaryRestoreDays = int
 ResultRange = int
+RoleId = str
 RouteGatewayId = str
 RouteTableAssociationId = str
 RouteTableId = str
@@ -251,7 +260,7 @@ SubnetId = str
 TaggableResourceId = str
 ThreadsPerCore = int
 TrafficMirrorFilterId = str
-TrafficMirrorFilterRuleId = str
+TrafficMirrorFilterRuleIdWithResolver = str
 TrafficMirrorSessionId = str
 TrafficMirrorTargetId = str
 TrafficMirroringMaxResults = int
@@ -1757,11 +1766,22 @@ class IpamAddressHistoryResourceType(str):
     instance = "instance"
 
 
+class IpamAssociatedResourceDiscoveryStatus(str):
+    active = "active"
+    not_found = "not-found"
+
+
 class IpamComplianceStatus(str):
     compliant = "compliant"
     noncompliant = "noncompliant"
     unmanaged = "unmanaged"
     ignored = "ignored"
+
+
+class IpamDiscoveryFailureCode(str):
+    assume_role_failure = "assume-role-failure"
+    throttling_failure = "throttling-failure"
+    unauthorized_failure = "unauthorized-failure"
 
 
 class IpamManagementState(str):
@@ -1789,6 +1809,7 @@ class IpamPoolAwsService(str):
 
 class IpamPoolCidrFailureCode(str):
     cidr_not_available = "cidr-not-available"
+    limit_exceeded = "limit-exceeded"
 
 
 class IpamPoolCidrState(str):
@@ -1802,7 +1823,39 @@ class IpamPoolCidrState(str):
     failed_import = "failed-import"
 
 
+class IpamPoolPublicIpSource(str):
+    amazon = "amazon"
+    byoip = "byoip"
+
+
 class IpamPoolState(str):
+    create_in_progress = "create-in-progress"
+    create_complete = "create-complete"
+    create_failed = "create-failed"
+    modify_in_progress = "modify-in-progress"
+    modify_complete = "modify-complete"
+    modify_failed = "modify-failed"
+    delete_in_progress = "delete-in-progress"
+    delete_complete = "delete-complete"
+    delete_failed = "delete-failed"
+    isolate_in_progress = "isolate-in-progress"
+    isolate_complete = "isolate-complete"
+    restore_in_progress = "restore-in-progress"
+
+
+class IpamResourceDiscoveryAssociationState(str):
+    associate_in_progress = "associate-in-progress"
+    associate_complete = "associate-complete"
+    associate_failed = "associate-failed"
+    disassociate_in_progress = "disassociate-in-progress"
+    disassociate_complete = "disassociate-complete"
+    disassociate_failed = "disassociate-failed"
+    isolate_in_progress = "isolate-in-progress"
+    isolate_complete = "isolate-complete"
+    restore_in_progress = "restore-in-progress"
+
+
+class IpamResourceDiscoveryState(str):
     create_in_progress = "create-in-progress"
     create_complete = "create-complete"
     create_failed = "create-failed"
@@ -2002,6 +2055,15 @@ class MoveStatus(str):
 class MulticastSupportValue(str):
     enable = "enable"
     disable = "disable"
+
+
+class NatGatewayAddressStatus(str):
+    assigning = "assigning"
+    unassigning = "unassigning"
+    associating = "associating"
+    disassociating = "disassociating"
+    succeeded = "succeeded"
+    failed = "failed"
 
 
 class NatGatewayState(str):
@@ -2327,6 +2389,8 @@ class ResourceType(str):
     verified_access_trust_provider = "verified-access-trust-provider"
     vpn_connection_device_type = "vpn-connection-device-type"
     vpc_block_public_access_exclusion = "vpc-block-public-access-exclusion"
+    ipam_resource_discovery = "ipam-resource-discovery"
+    ipam_resource_discovery_association = "ipam-resource-discovery-association"
 
 
 class RootDeviceType(str):
@@ -3668,6 +3732,35 @@ class AssignPrivateIpAddressesResult(TypedDict, total=False):
     AssignedIpv4Prefixes: Optional[Ipv4PrefixesList]
 
 
+IpList = List[String]
+
+
+class AssignPrivateNatGatewayAddressRequest(ServiceRequest):
+    NatGatewayId: NatGatewayId
+    PrivateIpAddresses: Optional[IpList]
+    PrivateIpAddressCount: Optional[PrivateIpAddressCount]
+    DryRun: Optional[Boolean]
+
+
+class NatGatewayAddress(TypedDict, total=False):
+    AllocationId: Optional[String]
+    NetworkInterfaceId: Optional[String]
+    PrivateIp: Optional[String]
+    PublicIp: Optional[String]
+    AssociationId: Optional[String]
+    IsPrimary: Optional[Boolean]
+    FailureMessage: Optional[String]
+    Status: Optional[NatGatewayAddressStatus]
+
+
+NatGatewayAddressList = List[NatGatewayAddress]
+
+
+class AssignPrivateNatGatewayAddressResult(TypedDict, total=False):
+    NatGatewayId: Optional[NatGatewayId]
+    NatGatewayAddresses: Optional[NatGatewayAddressList]
+
+
 class AssociateAddressRequest(ServiceRequest):
     AllocationId: Optional[AllocationId]
     InstanceId: Optional[InstanceId]
@@ -3706,8 +3799,8 @@ class AssociateDhcpOptionsRequest(ServiceRequest):
 
 
 class AssociateEnclaveCertificateIamRoleRequest(ServiceRequest):
-    CertificateArn: Optional[ResourceArn]
-    RoleArn: Optional[ResourceArn]
+    CertificateArn: Optional[CertificateId]
+    RoleArn: Optional[RoleId]
     DryRun: Optional[Boolean]
 
 
@@ -3788,6 +3881,44 @@ class InstanceEventWindow(TypedDict, total=False):
 
 class AssociateInstanceEventWindowResult(TypedDict, total=False):
     InstanceEventWindow: Optional[InstanceEventWindow]
+
+
+class AssociateIpamResourceDiscoveryRequest(ServiceRequest):
+    DryRun: Optional[Boolean]
+    IpamId: IpamId
+    IpamResourceDiscoveryId: IpamResourceDiscoveryId
+    TagSpecifications: Optional[TagSpecificationList]
+    ClientToken: Optional[String]
+
+
+class IpamResourceDiscoveryAssociation(TypedDict, total=False):
+    OwnerId: Optional[String]
+    IpamResourceDiscoveryAssociationId: Optional[IpamResourceDiscoveryAssociationId]
+    IpamResourceDiscoveryAssociationArn: Optional[String]
+    IpamResourceDiscoveryId: Optional[IpamResourceDiscoveryId]
+    IpamId: Optional[IpamId]
+    IpamArn: Optional[ResourceArn]
+    IpamRegion: Optional[String]
+    IsDefault: Optional[Boolean]
+    ResourceDiscoveryStatus: Optional[IpamAssociatedResourceDiscoveryStatus]
+    State: Optional[IpamResourceDiscoveryAssociationState]
+    Tags: Optional[TagList]
+
+
+class AssociateIpamResourceDiscoveryResult(TypedDict, total=False):
+    IpamResourceDiscoveryAssociation: Optional[IpamResourceDiscoveryAssociation]
+
+
+class AssociateNatGatewayAddressRequest(ServiceRequest):
+    NatGatewayId: NatGatewayId
+    AllocationIds: AllocationIdList
+    PrivateIpAddresses: Optional[IpList]
+    DryRun: Optional[Boolean]
+
+
+class AssociateNatGatewayAddressResult(TypedDict, total=False):
+    NatGatewayId: Optional[NatGatewayId]
+    NatGatewayAddresses: Optional[NatGatewayAddressList]
 
 
 class AssociateRouteTableRequest(ServiceRequest):
@@ -5051,7 +5182,7 @@ class CopySnapshotRequest(ServiceRequest):
     DestinationRegion: Optional[String]
     Encrypted: Optional[Boolean]
     KmsKeyId: Optional[KmsKeyId]
-    PresignedUrl: Optional[String]
+    PresignedUrl: Optional[CopySnapshotRequestPSU]
     SourceRegion: String
     SourceSnapshotId: String
     TagSpecifications: Optional[TagSpecificationList]
@@ -5804,6 +5935,7 @@ class CreateIpamPoolRequest(ServiceRequest):
     TagSpecifications: Optional[TagSpecificationList]
     ClientToken: Optional[String]
     AwsService: Optional[IpamPoolAwsService]
+    PublicIpSource: Optional[IpamPoolPublicIpSource]
 
 
 class IpamResourceTag(TypedDict, total=False):
@@ -5837,6 +5969,7 @@ class IpamPool(TypedDict, total=False):
     AllocationResourceTags: Optional[IpamResourceTagList]
     Tags: Optional[TagList]
     AwsService: Optional[IpamPoolAwsService]
+    PublicIpSource: Optional[IpamPoolPublicIpSource]
 
 
 class CreateIpamPoolResult(TypedDict, total=False):
@@ -5851,11 +5984,35 @@ class CreateIpamRequest(ServiceRequest):
     ClientToken: Optional[String]
 
 
+class CreateIpamResourceDiscoveryRequest(ServiceRequest):
+    DryRun: Optional[Boolean]
+    Description: Optional[String]
+    OperatingRegions: Optional[AddIpamOperatingRegionSet]
+    TagSpecifications: Optional[TagSpecificationList]
+    ClientToken: Optional[String]
+
+
 class IpamOperatingRegion(TypedDict, total=False):
     RegionName: Optional[String]
 
 
 IpamOperatingRegionSet = List[IpamOperatingRegion]
+
+
+class IpamResourceDiscovery(TypedDict, total=False):
+    OwnerId: Optional[String]
+    IpamResourceDiscoveryId: Optional[IpamResourceDiscoveryId]
+    IpamResourceDiscoveryArn: Optional[String]
+    IpamResourceDiscoveryRegion: Optional[String]
+    Description: Optional[String]
+    OperatingRegions: Optional[IpamOperatingRegionSet]
+    IsDefault: Optional[Boolean]
+    State: Optional[IpamResourceDiscoveryState]
+    Tags: Optional[TagList]
+
+
+class CreateIpamResourceDiscoveryResult(TypedDict, total=False):
+    IpamResourceDiscovery: Optional[IpamResourceDiscovery]
 
 
 class Ipam(TypedDict, total=False):
@@ -5870,6 +6027,9 @@ class Ipam(TypedDict, total=False):
     OperatingRegions: Optional[IpamOperatingRegionSet]
     State: Optional[IpamState]
     Tags: Optional[TagList]
+    DefaultResourceDiscoveryId: Optional[IpamResourceDiscoveryId]
+    DefaultResourceDiscoveryAssociationId: Optional[IpamResourceDiscoveryAssociationId]
+    ResourceDiscoveryAssociationCount: Optional[Integer]
 
 
 class CreateIpamResult(TypedDict, total=False):
@@ -6407,11 +6567,12 @@ class CreateLaunchTemplateVersionResult(TypedDict, total=False):
 
 
 class CreateLocalGatewayRouteRequest(ServiceRequest):
-    DestinationCidrBlock: String
+    DestinationCidrBlock: Optional[String]
     LocalGatewayRouteTableId: LocalGatewayRoutetableId
     LocalGatewayVirtualInterfaceGroupId: Optional[LocalGatewayVirtualInterfaceGroupId]
     DryRun: Optional[Boolean]
     NetworkInterfaceId: Optional[NetworkInterfaceId]
+    DestinationPrefixListId: Optional[PrefixListResourceId]
 
 
 class LocalGatewayRoute(TypedDict, total=False):
@@ -6425,6 +6586,7 @@ class LocalGatewayRoute(TypedDict, total=False):
     SubnetId: Optional[SubnetId]
     CoipPoolId: Optional[CoipPoolId]
     NetworkInterfaceId: Optional[NetworkInterfaceId]
+    DestinationPrefixListId: Optional[PrefixListResourceId]
 
 
 class CreateLocalGatewayRouteResult(TypedDict, total=False):
@@ -6542,6 +6704,9 @@ class CreateNatGatewayRequest(ServiceRequest):
     TagSpecifications: Optional[TagSpecificationList]
     ConnectivityType: Optional[ConnectivityType]
     PrivateIpAddress: Optional[String]
+    SecondaryAllocationIds: Optional[AllocationIdList]
+    SecondaryPrivateIpAddresses: Optional[IpList]
+    SecondaryPrivateIpAddressCount: Optional[PrivateIpAddressCount]
 
 
 class ProvisionedBandwidth(TypedDict, total=False):
@@ -6550,16 +6715,6 @@ class ProvisionedBandwidth(TypedDict, total=False):
     RequestTime: Optional[DateTime]
     Requested: Optional[String]
     Status: Optional[String]
-
-
-class NatGatewayAddress(TypedDict, total=False):
-    AllocationId: Optional[String]
-    NetworkInterfaceId: Optional[String]
-    PrivateIp: Optional[String]
-    PublicIp: Optional[String]
-
-
-NatGatewayAddressList = List[NatGatewayAddress]
 
 
 class NatGateway(TypedDict, total=False):
@@ -7026,7 +7181,7 @@ VolumeIdStringList = List[VolumeId]
 
 
 class InstanceSpecification(TypedDict, total=False):
-    InstanceId: Optional[InstanceId]
+    InstanceId: InstanceIdWithVolumeResolver
     ExcludeBootVolume: Optional[Boolean]
     ExcludeDataVolumeIds: Optional[VolumeIdStringList]
 
@@ -8411,6 +8566,15 @@ class DeleteIpamRequest(ServiceRequest):
     Cascade: Optional[Boolean]
 
 
+class DeleteIpamResourceDiscoveryRequest(ServiceRequest):
+    DryRun: Optional[Boolean]
+    IpamResourceDiscoveryId: IpamResourceDiscoveryId
+
+
+class DeleteIpamResourceDiscoveryResult(TypedDict, total=False):
+    IpamResourceDiscovery: Optional[IpamResourceDiscovery]
+
+
 class DeleteIpamResult(TypedDict, total=False):
     Ipam: Optional[Ipam]
 
@@ -8486,9 +8650,10 @@ class DeleteLaunchTemplateVersionsResult(TypedDict, total=False):
 
 
 class DeleteLocalGatewayRouteRequest(ServiceRequest):
-    DestinationCidrBlock: String
+    DestinationCidrBlock: Optional[String]
     LocalGatewayRouteTableId: LocalGatewayRoutetableId
     DryRun: Optional[Boolean]
+    DestinationPrefixListId: Optional[PrefixListResourceId]
 
 
 class DeleteLocalGatewayRouteResult(TypedDict, total=False):
@@ -8710,7 +8875,7 @@ class DeleteTrafficMirrorFilterResult(TypedDict, total=False):
 
 
 class DeleteTrafficMirrorFilterRuleRequest(ServiceRequest):
-    TrafficMirrorFilterRuleId: TrafficMirrorFilterRuleId
+    TrafficMirrorFilterRuleId: TrafficMirrorFilterRuleIdWithResolver
     DryRun: Optional[Boolean]
 
 
@@ -8965,6 +9130,8 @@ class IpamPoolCidr(TypedDict, total=False):
     Cidr: Optional[String]
     State: Optional[IpamPoolCidrState]
     FailureReason: Optional[IpamPoolCidrFailureReason]
+    IpamPoolCidrId: Optional[IpamPoolCidrId]
+    NetmaskLength: Optional[Integer]
 
 
 class DeprovisionIpamPoolCidrResult(TypedDict, total=False):
@@ -10740,6 +10907,38 @@ IpamPoolSet = List[IpamPool]
 class DescribeIpamPoolsResult(TypedDict, total=False):
     NextToken: Optional[NextToken]
     IpamPools: Optional[IpamPoolSet]
+
+
+class DescribeIpamResourceDiscoveriesRequest(ServiceRequest):
+    DryRun: Optional[Boolean]
+    IpamResourceDiscoveryIds: Optional[ValueStringList]
+    NextToken: Optional[NextToken]
+    MaxResults: Optional[IpamMaxResults]
+    Filters: Optional[FilterList]
+
+
+IpamResourceDiscoverySet = List[IpamResourceDiscovery]
+
+
+class DescribeIpamResourceDiscoveriesResult(TypedDict, total=False):
+    IpamResourceDiscoveries: Optional[IpamResourceDiscoverySet]
+    NextToken: Optional[NextToken]
+
+
+class DescribeIpamResourceDiscoveryAssociationsRequest(ServiceRequest):
+    DryRun: Optional[Boolean]
+    IpamResourceDiscoveryAssociationIds: Optional[ValueStringList]
+    NextToken: Optional[NextToken]
+    MaxResults: Optional[IpamMaxResults]
+    Filters: Optional[FilterList]
+
+
+IpamResourceDiscoveryAssociationSet = List[IpamResourceDiscoveryAssociation]
+
+
+class DescribeIpamResourceDiscoveryAssociationsResult(TypedDict, total=False):
+    IpamResourceDiscoveryAssociations: Optional[IpamResourceDiscoveryAssociationSet]
+    NextToken: Optional[NextToken]
 
 
 class DescribeIpamScopesRequest(ServiceRequest):
@@ -13325,8 +13524,8 @@ class DisassociateClientVpnTargetNetworkResult(TypedDict, total=False):
 
 
 class DisassociateEnclaveCertificateIamRoleRequest(ServiceRequest):
-    CertificateArn: Optional[ResourceArn]
-    RoleArn: Optional[ResourceArn]
+    CertificateArn: Optional[CertificateId]
+    RoleArn: Optional[RoleId]
     DryRun: Optional[Boolean]
 
 
@@ -13356,6 +13555,30 @@ class DisassociateInstanceEventWindowRequest(ServiceRequest):
 
 class DisassociateInstanceEventWindowResult(TypedDict, total=False):
     InstanceEventWindow: Optional[InstanceEventWindow]
+
+
+class DisassociateIpamResourceDiscoveryRequest(ServiceRequest):
+    DryRun: Optional[Boolean]
+    IpamResourceDiscoveryAssociationId: IpamResourceDiscoveryAssociationId
+
+
+class DisassociateIpamResourceDiscoveryResult(TypedDict, total=False):
+    IpamResourceDiscoveryAssociation: Optional[IpamResourceDiscoveryAssociation]
+
+
+EipAssociationIdList = List[ElasticIpAssociationId]
+
+
+class DisassociateNatGatewayAddressRequest(ServiceRequest):
+    NatGatewayId: NatGatewayId
+    AssociationIds: EipAssociationIdList
+    MaxDrainDurationSeconds: Optional[DrainSeconds]
+    DryRun: Optional[Boolean]
+
+
+class DisassociateNatGatewayAddressResult(TypedDict, total=False):
+    NatGatewayId: Optional[NatGatewayId]
+    NatGatewayAddresses: Optional[NatGatewayAddressList]
 
 
 class DisassociateRouteTableRequest(ServiceRequest):
@@ -13712,7 +13935,7 @@ class ExportTransitGatewayRoutesResult(TypedDict, total=False):
 
 
 class GetAssociatedEnclaveCertificateIamRolesRequest(ServiceRequest):
-    CertificateArn: Optional[ResourceArn]
+    CertificateArn: Optional[CertificateId]
     DryRun: Optional[Boolean]
 
 
@@ -13966,6 +14189,66 @@ IpamAddressHistoryRecordSet = List[IpamAddressHistoryRecord]
 
 class GetIpamAddressHistoryResult(TypedDict, total=False):
     HistoryRecords: Optional[IpamAddressHistoryRecordSet]
+    NextToken: Optional[NextToken]
+
+
+class GetIpamDiscoveredAccountsRequest(ServiceRequest):
+    DryRun: Optional[Boolean]
+    IpamResourceDiscoveryId: IpamResourceDiscoveryId
+    DiscoveryRegion: String
+    Filters: Optional[FilterList]
+    NextToken: Optional[NextToken]
+    MaxResults: Optional[IpamMaxResults]
+
+
+class IpamDiscoveryFailureReason(TypedDict, total=False):
+    Code: Optional[IpamDiscoveryFailureCode]
+    Message: Optional[String]
+
+
+class IpamDiscoveredAccount(TypedDict, total=False):
+    AccountId: Optional[String]
+    DiscoveryRegion: Optional[String]
+    FailureReason: Optional[IpamDiscoveryFailureReason]
+    LastAttemptedDiscoveryTime: Optional[MillisecondDateTime]
+    LastSuccessfulDiscoveryTime: Optional[MillisecondDateTime]
+
+
+IpamDiscoveredAccountSet = List[IpamDiscoveredAccount]
+
+
+class GetIpamDiscoveredAccountsResult(TypedDict, total=False):
+    IpamDiscoveredAccounts: Optional[IpamDiscoveredAccountSet]
+    NextToken: Optional[NextToken]
+
+
+class GetIpamDiscoveredResourceCidrsRequest(ServiceRequest):
+    DryRun: Optional[Boolean]
+    IpamResourceDiscoveryId: IpamResourceDiscoveryId
+    ResourceRegion: String
+    Filters: Optional[FilterList]
+    NextToken: Optional[NextToken]
+    MaxResults: Optional[IpamMaxResults]
+
+
+class IpamDiscoveredResourceCidr(TypedDict, total=False):
+    IpamResourceDiscoveryId: Optional[IpamResourceDiscoveryId]
+    ResourceRegion: Optional[String]
+    ResourceId: Optional[String]
+    ResourceOwnerId: Optional[String]
+    ResourceCidr: Optional[String]
+    ResourceType: Optional[IpamResourceType]
+    ResourceTags: Optional[IpamResourceTagList]
+    IpUsage: Optional[BoxedDouble]
+    VpcId: Optional[String]
+    SampleTime: Optional[MillisecondDateTime]
+
+
+IpamDiscoveredResourceCidrSet = List[IpamDiscoveredResourceCidr]
+
+
+class GetIpamDiscoveredResourceCidrsResult(TypedDict, total=False):
+    IpamDiscoveredResourceCidrs: Optional[IpamDiscoveredResourceCidrSet]
     NextToken: Optional[NextToken]
 
 
@@ -15138,6 +15421,18 @@ class ModifyIpamResourceCidrResult(TypedDict, total=False):
     IpamResourceCidr: Optional[IpamResourceCidr]
 
 
+class ModifyIpamResourceDiscoveryRequest(ServiceRequest):
+    DryRun: Optional[Boolean]
+    IpamResourceDiscoveryId: IpamResourceDiscoveryId
+    Description: Optional[String]
+    AddOperatingRegions: Optional[AddIpamOperatingRegionSet]
+    RemoveOperatingRegions: Optional[RemoveIpamOperatingRegionSet]
+
+
+class ModifyIpamResourceDiscoveryResult(TypedDict, total=False):
+    IpamResourceDiscovery: Optional[IpamResourceDiscovery]
+
+
 class ModifyIpamResult(TypedDict, total=False):
     Ipam: Optional[Ipam]
 
@@ -15165,11 +15460,12 @@ class ModifyLaunchTemplateResult(TypedDict, total=False):
 
 
 class ModifyLocalGatewayRouteRequest(ServiceRequest):
-    DestinationCidrBlock: String
+    DestinationCidrBlock: Optional[String]
     LocalGatewayRouteTableId: LocalGatewayRoutetableId
     LocalGatewayVirtualInterfaceGroupId: Optional[LocalGatewayVirtualInterfaceGroupId]
     NetworkInterfaceId: Optional[NetworkInterfaceId]
     DryRun: Optional[Boolean]
+    DestinationPrefixListId: Optional[PrefixListResourceId]
 
 
 class ModifyLocalGatewayRouteResult(TypedDict, total=False):
@@ -15329,7 +15625,7 @@ TrafficMirrorFilterRuleFieldList = List[TrafficMirrorFilterRuleField]
 
 
 class ModifyTrafficMirrorFilterRuleRequest(ServiceRequest):
-    TrafficMirrorFilterRuleId: TrafficMirrorFilterRuleId
+    TrafficMirrorFilterRuleId: TrafficMirrorFilterRuleIdWithResolver
     TrafficDirection: Optional[TrafficDirection]
     RuleNumber: Optional[Integer]
     RuleAction: Optional[TrafficMirrorRuleAction]
@@ -15810,6 +16106,8 @@ class ProvisionIpamPoolCidrRequest(ServiceRequest):
     IpamPoolId: IpamPoolId
     Cidr: Optional[String]
     CidrAuthorizationContext: Optional[IpamCidrAuthorizationContext]
+    NetmaskLength: Optional[Integer]
+    ClientToken: Optional[String]
 
 
 class ProvisionIpamPoolCidrResult(TypedDict, total=False):
@@ -16645,6 +16943,18 @@ class UnassignPrivateIpAddressesRequest(ServiceRequest):
     Ipv4Prefixes: Optional[IpPrefixList]
 
 
+class UnassignPrivateNatGatewayAddressRequest(ServiceRequest):
+    NatGatewayId: NatGatewayId
+    PrivateIpAddresses: IpList
+    MaxDrainDurationSeconds: Optional[DrainSeconds]
+    DryRun: Optional[Boolean]
+
+
+class UnassignPrivateNatGatewayAddressResult(TypedDict, total=False):
+    NatGatewayId: Optional[NatGatewayId]
+    NatGatewayAddresses: Optional[NatGatewayAddressList]
+
+
 class UnmonitorInstancesRequest(ServiceRequest):
     InstanceIds: InstanceIdStringList
     DryRun: Optional[Boolean]
@@ -16847,6 +17157,17 @@ class Ec2Api:
     ) -> AssignPrivateIpAddressesResult:
         raise NotImplementedError
 
+    @handler("AssignPrivateNatGatewayAddress")
+    def assign_private_nat_gateway_address(
+        self,
+        context: RequestContext,
+        nat_gateway_id: NatGatewayId,
+        private_ip_addresses: IpList = None,
+        private_ip_address_count: PrivateIpAddressCount = None,
+        dry_run: Boolean = None,
+    ) -> AssignPrivateNatGatewayAddressResult:
+        raise NotImplementedError
+
     @handler("AssociateAddress")
     def associate_address(
         self,
@@ -16886,8 +17207,8 @@ class Ec2Api:
     def associate_enclave_certificate_iam_role(
         self,
         context: RequestContext,
-        certificate_arn: ResourceArn = None,
-        role_arn: ResourceArn = None,
+        certificate_arn: CertificateId = None,
+        role_arn: RoleId = None,
         dry_run: Boolean = None,
     ) -> AssociateEnclaveCertificateIamRoleResult:
         raise NotImplementedError
@@ -16909,6 +17230,29 @@ class Ec2Api:
         association_target: InstanceEventWindowAssociationRequest,
         dry_run: Boolean = None,
     ) -> AssociateInstanceEventWindowResult:
+        raise NotImplementedError
+
+    @handler("AssociateIpamResourceDiscovery")
+    def associate_ipam_resource_discovery(
+        self,
+        context: RequestContext,
+        ipam_id: IpamId,
+        ipam_resource_discovery_id: IpamResourceDiscoveryId,
+        dry_run: Boolean = None,
+        tag_specifications: TagSpecificationList = None,
+        client_token: String = None,
+    ) -> AssociateIpamResourceDiscoveryResult:
+        raise NotImplementedError
+
+    @handler("AssociateNatGatewayAddress")
+    def associate_nat_gateway_address(
+        self,
+        context: RequestContext,
+        nat_gateway_id: NatGatewayId,
+        allocation_ids: AllocationIdList,
+        private_ip_addresses: IpList = None,
+        dry_run: Boolean = None,
+    ) -> AssociateNatGatewayAddressResult:
         raise NotImplementedError
 
     @handler("AssociateRouteTable")
@@ -17244,7 +17588,7 @@ class Ec2Api:
         destination_region: String = None,
         encrypted: Boolean = None,
         kms_key_id: KmsKeyId = None,
-        presigned_url: String = None,
+        presigned_url: CopySnapshotRequestPSU = None,
         tag_specifications: TagSpecificationList = None,
         dry_run: Boolean = None,
     ) -> CopySnapshotResult:
@@ -17520,7 +17864,20 @@ class Ec2Api:
         tag_specifications: TagSpecificationList = None,
         client_token: String = None,
         aws_service: IpamPoolAwsService = None,
+        public_ip_source: IpamPoolPublicIpSource = None,
     ) -> CreateIpamPoolResult:
+        raise NotImplementedError
+
+    @handler("CreateIpamResourceDiscovery")
+    def create_ipam_resource_discovery(
+        self,
+        context: RequestContext,
+        dry_run: Boolean = None,
+        description: String = None,
+        operating_regions: AddIpamOperatingRegionSet = None,
+        tag_specifications: TagSpecificationList = None,
+        client_token: String = None,
+    ) -> CreateIpamResourceDiscoveryResult:
         raise NotImplementedError
 
     @handler("CreateIpamScope")
@@ -17579,11 +17936,12 @@ class Ec2Api:
     def create_local_gateway_route(
         self,
         context: RequestContext,
-        destination_cidr_block: String,
         local_gateway_route_table_id: LocalGatewayRoutetableId,
+        destination_cidr_block: String = None,
         local_gateway_virtual_interface_group_id: LocalGatewayVirtualInterfaceGroupId = None,
         dry_run: Boolean = None,
         network_interface_id: NetworkInterfaceId = None,
+        destination_prefix_list_id: PrefixListResourceId = None,
     ) -> CreateLocalGatewayRouteResult:
         raise NotImplementedError
 
@@ -17645,6 +18003,9 @@ class Ec2Api:
         tag_specifications: TagSpecificationList = None,
         connectivity_type: ConnectivityType = None,
         private_ip_address: String = None,
+        secondary_allocation_ids: AllocationIdList = None,
+        secondary_private_ip_addresses: IpList = None,
+        secondary_private_ip_address_count: PrivateIpAddressCount = None,
     ) -> CreateNatGatewayResult:
         raise NotImplementedError
 
@@ -18423,6 +18784,15 @@ class Ec2Api:
     ) -> DeleteIpamPoolResult:
         raise NotImplementedError
 
+    @handler("DeleteIpamResourceDiscovery")
+    def delete_ipam_resource_discovery(
+        self,
+        context: RequestContext,
+        ipam_resource_discovery_id: IpamResourceDiscoveryId,
+        dry_run: Boolean = None,
+    ) -> DeleteIpamResourceDiscoveryResult:
+        raise NotImplementedError
+
     @handler("DeleteIpamScope")
     def delete_ipam_scope(
         self, context: RequestContext, ipam_scope_id: IpamScopeId, dry_run: Boolean = None
@@ -18464,9 +18834,10 @@ class Ec2Api:
     def delete_local_gateway_route(
         self,
         context: RequestContext,
-        destination_cidr_block: String,
         local_gateway_route_table_id: LocalGatewayRoutetableId,
+        destination_cidr_block: String = None,
         dry_run: Boolean = None,
+        destination_prefix_list_id: PrefixListResourceId = None,
     ) -> DeleteLocalGatewayRouteResult:
         raise NotImplementedError
 
@@ -18680,7 +19051,7 @@ class Ec2Api:
     def delete_traffic_mirror_filter_rule(
         self,
         context: RequestContext,
-        traffic_mirror_filter_rule_id: TrafficMirrorFilterRuleId,
+        traffic_mirror_filter_rule_id: TrafficMirrorFilterRuleIdWithResolver,
         dry_run: Boolean = None,
     ) -> DeleteTrafficMirrorFilterRuleResult:
         raise NotImplementedError
@@ -19566,6 +19937,30 @@ class Ec2Api:
         next_token: NextToken = None,
         ipam_pool_ids: ValueStringList = None,
     ) -> DescribeIpamPoolsResult:
+        raise NotImplementedError
+
+    @handler("DescribeIpamResourceDiscoveries")
+    def describe_ipam_resource_discoveries(
+        self,
+        context: RequestContext,
+        dry_run: Boolean = None,
+        ipam_resource_discovery_ids: ValueStringList = None,
+        next_token: NextToken = None,
+        max_results: IpamMaxResults = None,
+        filters: FilterList = None,
+    ) -> DescribeIpamResourceDiscoveriesResult:
+        raise NotImplementedError
+
+    @handler("DescribeIpamResourceDiscoveryAssociations")
+    def describe_ipam_resource_discovery_associations(
+        self,
+        context: RequestContext,
+        dry_run: Boolean = None,
+        ipam_resource_discovery_association_ids: ValueStringList = None,
+        next_token: NextToken = None,
+        max_results: IpamMaxResults = None,
+        filters: FilterList = None,
+    ) -> DescribeIpamResourceDiscoveryAssociationsResult:
         raise NotImplementedError
 
     @handler("DescribeIpamScopes")
@@ -20800,8 +21195,8 @@ class Ec2Api:
     def disassociate_enclave_certificate_iam_role(
         self,
         context: RequestContext,
-        certificate_arn: ResourceArn = None,
-        role_arn: ResourceArn = None,
+        certificate_arn: CertificateId = None,
+        role_arn: RoleId = None,
         dry_run: Boolean = None,
     ) -> DisassociateEnclaveCertificateIamRoleResult:
         raise NotImplementedError
@@ -20820,6 +21215,26 @@ class Ec2Api:
         association_target: InstanceEventWindowDisassociationRequest,
         dry_run: Boolean = None,
     ) -> DisassociateInstanceEventWindowResult:
+        raise NotImplementedError
+
+    @handler("DisassociateIpamResourceDiscovery")
+    def disassociate_ipam_resource_discovery(
+        self,
+        context: RequestContext,
+        ipam_resource_discovery_association_id: IpamResourceDiscoveryAssociationId,
+        dry_run: Boolean = None,
+    ) -> DisassociateIpamResourceDiscoveryResult:
+        raise NotImplementedError
+
+    @handler("DisassociateNatGatewayAddress")
+    def disassociate_nat_gateway_address(
+        self,
+        context: RequestContext,
+        nat_gateway_id: NatGatewayId,
+        association_ids: EipAssociationIdList,
+        max_drain_duration_seconds: DrainSeconds = None,
+        dry_run: Boolean = None,
+    ) -> DisassociateNatGatewayAddressResult:
         raise NotImplementedError
 
     @handler("DisassociateRouteTable")
@@ -21048,7 +21463,10 @@ class Ec2Api:
 
     @handler("GetAssociatedEnclaveCertificateIamRoles")
     def get_associated_enclave_certificate_iam_roles(
-        self, context: RequestContext, certificate_arn: ResourceArn = None, dry_run: Boolean = None
+        self,
+        context: RequestContext,
+        certificate_arn: CertificateId = None,
+        dry_run: Boolean = None,
     ) -> GetAssociatedEnclaveCertificateIamRolesResult:
         raise NotImplementedError
 
@@ -21200,6 +21618,32 @@ class Ec2Api:
         max_results: IpamAddressHistoryMaxResults = None,
         next_token: NextToken = None,
     ) -> GetIpamAddressHistoryResult:
+        raise NotImplementedError
+
+    @handler("GetIpamDiscoveredAccounts")
+    def get_ipam_discovered_accounts(
+        self,
+        context: RequestContext,
+        ipam_resource_discovery_id: IpamResourceDiscoveryId,
+        discovery_region: String,
+        dry_run: Boolean = None,
+        filters: FilterList = None,
+        next_token: NextToken = None,
+        max_results: IpamMaxResults = None,
+    ) -> GetIpamDiscoveredAccountsResult:
+        raise NotImplementedError
+
+    @handler("GetIpamDiscoveredResourceCidrs")
+    def get_ipam_discovered_resource_cidrs(
+        self,
+        context: RequestContext,
+        ipam_resource_discovery_id: IpamResourceDiscoveryId,
+        resource_region: String,
+        dry_run: Boolean = None,
+        filters: FilterList = None,
+        next_token: NextToken = None,
+        max_results: IpamMaxResults = None,
+    ) -> GetIpamDiscoveredResourceCidrsResult:
         raise NotImplementedError
 
     @handler("GetIpamPoolAllocations")
@@ -21874,6 +22318,18 @@ class Ec2Api:
     ) -> ModifyIpamResourceCidrResult:
         raise NotImplementedError
 
+    @handler("ModifyIpamResourceDiscovery")
+    def modify_ipam_resource_discovery(
+        self,
+        context: RequestContext,
+        ipam_resource_discovery_id: IpamResourceDiscoveryId,
+        dry_run: Boolean = None,
+        description: String = None,
+        add_operating_regions: AddIpamOperatingRegionSet = None,
+        remove_operating_regions: RemoveIpamOperatingRegionSet = None,
+    ) -> ModifyIpamResourceDiscoveryResult:
+        raise NotImplementedError
+
     @handler("ModifyIpamScope")
     def modify_ipam_scope(
         self,
@@ -21900,11 +22356,12 @@ class Ec2Api:
     def modify_local_gateway_route(
         self,
         context: RequestContext,
-        destination_cidr_block: String,
         local_gateway_route_table_id: LocalGatewayRoutetableId,
+        destination_cidr_block: String = None,
         local_gateway_virtual_interface_group_id: LocalGatewayVirtualInterfaceGroupId = None,
         network_interface_id: NetworkInterfaceId = None,
         dry_run: Boolean = None,
+        destination_prefix_list_id: PrefixListResourceId = None,
     ) -> ModifyLocalGatewayRouteResult:
         raise NotImplementedError
 
@@ -22031,7 +22488,7 @@ class Ec2Api:
     def modify_traffic_mirror_filter_rule(
         self,
         context: RequestContext,
-        traffic_mirror_filter_rule_id: TrafficMirrorFilterRuleId,
+        traffic_mirror_filter_rule_id: TrafficMirrorFilterRuleIdWithResolver,
         traffic_direction: TrafficDirection = None,
         rule_number: Integer = None,
         rule_action: TrafficMirrorRuleAction = None,
@@ -22398,6 +22855,8 @@ class Ec2Api:
         dry_run: Boolean = None,
         cidr: String = None,
         cidr_authorization_context: IpamCidrAuthorizationContext = None,
+        netmask_length: Integer = None,
+        client_token: String = None,
     ) -> ProvisionIpamPoolCidrResult:
         raise NotImplementedError
 
@@ -23034,6 +23493,17 @@ class Ec2Api:
         private_ip_addresses: PrivateIpAddressStringList = None,
         ipv4_prefixes: IpPrefixList = None,
     ) -> None:
+        raise NotImplementedError
+
+    @handler("UnassignPrivateNatGatewayAddress")
+    def unassign_private_nat_gateway_address(
+        self,
+        context: RequestContext,
+        nat_gateway_id: NatGatewayId,
+        private_ip_addresses: IpList,
+        max_drain_duration_seconds: DrainSeconds = None,
+        dry_run: Boolean = None,
+    ) -> UnassignPrivateNatGatewayAddressResult:
         raise NotImplementedError
 
     @handler("UnmonitorInstances")
