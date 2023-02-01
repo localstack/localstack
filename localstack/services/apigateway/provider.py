@@ -87,7 +87,7 @@ def remove_empty_attributes_from_rest_api(rest_api: RestApi, remove_tags=True):
             rest_api.pop("tags", None)
     else:
         rest_api["tags"] = {}
-    if rest_api.get("version") == "V1":
+    if not rest_api.get("version"):
         rest_api.pop("version", None)
     if not rest_api.get("description"):
         rest_api.pop("description", None)
@@ -133,17 +133,16 @@ class ApigatewayProvider(ApigatewayApi, ServiceLifecycleHook):
 
     @handler("CreateRestApi", expand=False)
     def create_rest_api(self, context: RequestContext, request: CreateRestApiRequest) -> RestApi:
-        # binaryMediaTypes: Optional[ListOfString]
-        #     minimumCompressionSize: Optional[NullableInteger]
-        #     apiKeySource: Optional[ApiKeySourceType]
-        #     endpointConfiguration: Optional[EndpointConfiguration]
-        #     policy: Optional[String]
-        #     tags: Optional[MapOfStringToString]
-        #     disableExecuteApiEndpoint: Optional[Boolean]
+        if request.get("description") == "":
+            raise BadRequestException("Description cannot be an empty string")
         result = call_moto(context)
-        remove_empty_attributes_from_rest_api(result)
+        moto_backend = get_moto_backend(context)
+        rest_api = moto_backend.apis.get(result["id"])
+        rest_api.version = request.get("version")
+        response = rest_api.to_dict()
+        remove_empty_attributes_from_rest_api(response)
 
-        return result
+        return response
 
     def get_rest_api(self, context: RequestContext, rest_api_id: String) -> RestApi:
         rest_api: RestApi = call_moto(context)
@@ -175,21 +174,21 @@ class ApigatewayProvider(ApigatewayApi, ServiceLifecycleHook):
                     raise BadRequestException(f"Invalid patch path {patch_op_path}")
                 value = patch_op_path.rsplit("/", maxsplit=1)[-1]
                 path_value = value.replace("~1", "/")
-                patch_op["path"] = "/binaryMediaTypes"
+                patch_op["path"] = binary_media_types_path
 
                 if patch_op["op"] == "add":
                     patch_op["value"] = path_value
 
                 elif patch_op["op"] == "remove":
                     remove_index = rest_api.binaryMediaTypes.index(path_value)
-                    patch_op["path"] = f"/binaryMediaTypes/{remove_index}"
+                    patch_op["path"] = f"{binary_media_types_path}/{remove_index}"
 
                 elif patch_op["op"] == "replace":
                     # AWS is behaving weirdly, and will actually remove/add instead of replacing in place
                     # it will put the replaced value last in the array
                     replace_index = rest_api.binaryMediaTypes.index(path_value)
                     fixed_patch_ops.append(
-                        {"op": "remove", "path": f"/binaryMediaTypes/{replace_index}"}
+                        {"op": "remove", "path": f"{binary_media_types_path}/{replace_index}"}
                     )
                     patch_op["op"] = "add"
 

@@ -115,6 +115,41 @@ class TestApiGatewayApi:
         assert len(items) == 1
 
     @pytest.mark.aws_validated
+    def test_create_rest_api_with_optional_params(
+        self,
+        apigateway_client,
+        apigw_create_rest_api,
+        snapshot,
+    ):
+        # create only with mandatory name
+        response = apigw_create_rest_api(
+            name=f"test-api-{short_uid()}",
+        )
+        snapshot.match("create-only-name", response)
+
+        # create with empty description
+        with pytest.raises(ClientError) as e:
+            apigw_create_rest_api(
+                name=f"test-api-{short_uid()}",
+                description="",
+            )
+        snapshot.match("create-empty-desc", e.value.response)
+
+        # create with random version
+        response = apigw_create_rest_api(
+            name=f"test-api-{short_uid()}",
+            version="v1",
+        )
+        snapshot.match("create-with-version", response)
+
+        # create with empty binaryMediaTypes
+        response = apigw_create_rest_api(
+            name=f"test-api-{short_uid()}",
+            binaryMediaTypes=[],
+        )
+        snapshot.match("create-with-empty-binary-media", response)
+
+    @pytest.mark.aws_validated
     def test_create_rest_api_with_tags(self, apigateway_client, apigw_create_rest_api, snapshot):
         response = apigw_create_rest_api(
             name=f"test-api-{short_uid()}",
