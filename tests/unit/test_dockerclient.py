@@ -124,9 +124,12 @@ def test_argument_parsing():
     argument_string = r"--label foo=bar.123"
     flags = Util.parse_additional_flags(argument_string)
     assert flags.labels == {"foo": "bar.123"}
-    argument_string = r'--label foo="bar 123"'
+    argument_string = r'--label foo="bar 123"'  # test with whitespaces
     flags = Util.parse_additional_flags(argument_string)
     assert flags.labels == {"foo": "bar 123"}
+    argument_string = r'--label foo1="bar" --label foo2="baz"'  # test with multiple labels
+    flags = Util.parse_additional_flags(argument_string)
+    assert flags.labels == {"foo1": "bar", "foo2": "baz"}
     argument_string = r'--label ""'  # assert that we gracefully handle invalid labels
     flags = Util.parse_additional_flags(argument_string)
     assert flags.labels == {}

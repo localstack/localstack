@@ -370,7 +370,7 @@ class ContainerConfiguration:
 
 @dataclasses.dataclass
 class DockerRunFlags:
-    """Class to capture Docker run flags that can be specified by the user"""
+    """Class to capture Docker run flags for a container"""
 
     env_vars: Optional[Dict[str, str]]
     ports: Optional[PortMappings]
