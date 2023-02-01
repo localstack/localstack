@@ -76,6 +76,7 @@ Queue = str
 ReservedConcurrentExecutions = int
 ResourceArn = str
 RoleArn = str
+RuntimeVersionArn = str
 S3Bucket = str
 S3Key = str
 S3ObjectVersion = str
@@ -285,6 +286,12 @@ class ThrottleReason(str):
 class TracingMode(str):
     Active = "Active"
     PassThrough = "PassThrough"
+
+
+class UpdateRuntimeOn(str):
+    Auto = "Auto"
+    Manual = "Manual"
+    FunctionUpdate = "FunctionUpdate"
 
 
 class CodeSigningConfigNotFoundException(ServiceException):
@@ -967,6 +974,16 @@ class FunctionCodeLocation(TypedDict, total=False):
     ResolvedImageUri: Optional[String]
 
 
+class RuntimeVersionError(TypedDict, total=False):
+    ErrorCode: Optional[String]
+    Message: Optional[SensitiveString]
+
+
+class RuntimeVersionConfig(TypedDict, total=False):
+    RuntimeVersionArn: Optional[RuntimeVersionArn]
+    Error: Optional[RuntimeVersionError]
+
+
 class SnapStartResponse(TypedDict, total=False):
     ApplyOn: Optional[SnapStartApplyOn]
     OptimizationStatus: Optional[SnapStartOptimizationStatus]
@@ -1037,6 +1054,7 @@ class FunctionConfiguration(TypedDict, total=False):
     Architectures: Optional[ArchitecturesList]
     EphemeralStorage: Optional[EphemeralStorage]
     SnapStart: Optional[SnapStartResponse]
+    RuntimeVersionConfig: Optional[RuntimeVersionConfig]
 
 
 class FunctionEventInvokeConfig(TypedDict, total=False):
@@ -1203,6 +1221,16 @@ class GetProvisionedConcurrencyConfigResponse(TypedDict, total=False):
     Status: Optional[ProvisionedConcurrencyStatusEnum]
     StatusReason: Optional[String]
     LastModified: Optional[Timestamp]
+
+
+class GetRuntimeManagementConfigRequest(ServiceRequest):
+    FunctionName: FunctionName
+    Qualifier: Optional[Qualifier]
+
+
+class GetRuntimeManagementConfigResponse(TypedDict, total=False):
+    UpdateRuntimeOn: Optional[UpdateRuntimeOn]
+    RuntimeVersionArn: Optional[RuntimeVersionArn]
 
 
 class InvocationRequest(ServiceRequest):
@@ -1471,6 +1499,19 @@ class PutProvisionedConcurrencyConfigResponse(TypedDict, total=False):
     Status: Optional[ProvisionedConcurrencyStatusEnum]
     StatusReason: Optional[String]
     LastModified: Optional[Timestamp]
+
+
+class PutRuntimeManagementConfigRequest(ServiceRequest):
+    FunctionName: FunctionName
+    Qualifier: Optional[Qualifier]
+    UpdateRuntimeOn: UpdateRuntimeOn
+    RuntimeVersionArn: Optional[RuntimeVersionArn]
+
+
+class PutRuntimeManagementConfigResponse(TypedDict, total=False):
+    UpdateRuntimeOn: UpdateRuntimeOn
+    FunctionArn: FunctionArn
+    RuntimeVersionArn: Optional[RuntimeVersionArn]
 
 
 class RemoveLayerVersionPermissionRequest(ServiceRequest):
@@ -1891,6 +1932,12 @@ class LambdaApi:
     ) -> GetProvisionedConcurrencyConfigResponse:
         raise NotImplementedError
 
+    @handler("GetRuntimeManagementConfig")
+    def get_runtime_management_config(
+        self, context: RequestContext, function_name: FunctionName, qualifier: Qualifier = None
+    ) -> GetRuntimeManagementConfigResponse:
+        raise NotImplementedError
+
     @handler("Invoke")
     def invoke(
         self,
@@ -2091,6 +2138,17 @@ class LambdaApi:
         qualifier: Qualifier,
         provisioned_concurrent_executions: PositiveInteger,
     ) -> PutProvisionedConcurrencyConfigResponse:
+        raise NotImplementedError
+
+    @handler("PutRuntimeManagementConfig")
+    def put_runtime_management_config(
+        self,
+        context: RequestContext,
+        function_name: FunctionName,
+        update_runtime_on: UpdateRuntimeOn,
+        qualifier: Qualifier = None,
+        runtime_version_arn: RuntimeVersionArn = None,
+    ) -> PutRuntimeManagementConfigResponse:
         raise NotImplementedError
 
     @handler("RemoveLayerVersionPermission")
