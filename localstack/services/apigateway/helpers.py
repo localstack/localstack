@@ -521,7 +521,7 @@ def apply_json_patch_safe(subject, patch_operations, in_place=True, return_list=
                 if isinstance(target, list) and not path.endswith("/-"):
                     # if "path" is an attribute name pointing to an array in "subject", and we're running
                     # an "add" operation, then we should use the standard-compliant notation "/path/-"
-                    operation["path"] = "%s/-" % path
+                    operation["path"] = f"{path}/-"
 
             result = apply_patch(subject, [operation], in_place=in_place)
             if not in_place:
