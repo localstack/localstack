@@ -197,7 +197,7 @@ jobs:
           name: Test SFN V2 provider
           environment:
             PROVIDER_OVERRIDE_STEPFUNCTIONS: "v2"
-            TEST_PATH: "tests/integration/test_stepfunctions_v2.py"
+            TEST_PATH: "tests/integration/stepfunctions/test_stepfunctions_v2.py"
             PYTEST_ARGS: "--reruns 3 --junitxml=target/reports/sfn_v2.xml -o junit_suite_name='sfn_v2'"
             COVERAGE_ARGS: "-p"
           command: make test-coverage
