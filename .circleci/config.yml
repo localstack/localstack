@@ -212,6 +212,31 @@ jobs:
       - store_test_results:
           path: target/reports/
 
+  itest-sfn-v2-provider-snapshots-api:
+    executor: ubuntu-machine-amd64
+    working_directory: /tmp/workspace/repo
+    steps:
+      - attach_workspace:
+          at: /tmp/workspace
+      - run:
+          name: Test SFN V2 provider api
+          environment:
+            PROVIDER_OVERRIDE_STEPFUNCTIONS: "v2"
+            TEST_PATH: "tests/integration/stepfunctions/test_stepfunctions_api.py"
+            PYTEST_ARGS: "--reruns 3 --junitxml=target/reports/sfn_api_v2.xml -o junit_suite_name='sfn_api_v2'"
+            COVERAGE_ARGS: "-p"
+          command: make test-coverage
+      - run:
+          name: Store coverage results
+          command: mv .coverage.* target/coverage/
+      - persist_to_workspace:
+          root:
+            /tmp/workspace
+          paths:
+            - repo/target/coverage/
+      - store_test_results:
+          path: target/reports/
+
   docker-build:
     parameters:
       platform:
