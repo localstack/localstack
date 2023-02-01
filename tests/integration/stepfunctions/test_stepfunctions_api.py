@@ -4,10 +4,15 @@ import pytest
 
 from localstack.aws.api.stepfunctions import StateMachineType
 from localstack.services.awslambda.lambda_utils import LAMBDA_RUNTIME_PYTHON39
+from localstack.services.stepfunctions.stepfunctions_utils import is_old_provider
 from localstack.testing.snapshots.transformer import RegexTransformer
 from localstack.utils.strings import short_uid
 from tests.integration.stepfunctions.state_machine_templates import Templates
 from tests.integration.stepfunctions.utils import lambda_handler
+
+pytestmark = pytest.mark.skipif(
+    condition=is_old_provider(), reason="Test suite for v2 provider only."
+)
 
 
 @pytest.mark.skip_snapshot_verify(
