@@ -47,6 +47,7 @@ class TestConnectFactory:
             aws_secret_access_key="bar",
             aws_session_token=None,
             config=connect_to._config,
+            internal=False,
         )
 
         mock.reset_mock()
@@ -66,4 +67,5 @@ class TestConnectFactory:
             aws_secret_access_key="ipsum",
             aws_session_token=None,
             config=connect_to._config,
+            internal=False,
         )
