@@ -283,6 +283,9 @@ class LambdaVersionManager(ServiceEndpoint):
                         environment.invoke(invocation_event=queued_invocation)
                         LOG.debug("Invoke for request %s done", queued_invocation.invocation_id)
                     except queue.Empty:
+                        # TODO if one environment threw an invalid status exception, we will get here potentially with
+                        # another busy environment, and won't spawn a new one as there is one active here.
+                        # We will be stuck in the loop until another becomes active without scaling.
                         if self.active_environment_count() == 0:
                             LOG.debug(
                                 "Detected no active environments for version %s. Starting one...",
