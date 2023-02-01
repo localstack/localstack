@@ -138,7 +138,7 @@ resolver = RuntimeImageResolver()
 def get_runtime_client_path() -> Path:
     installer = awslambda_runtime_package.get_installer()
     installer.install()
-    return Path(installer.get_executable_path())
+    return Path(installer.get_installed_dir())
 
 
 def prepare_image(target_path: Path, function_version: FunctionVersion) -> None:
@@ -264,7 +264,7 @@ class DockerRuntimeExecutor(RuntimeExecutor):
             or self.function_version.config.package_type != PackageType.Zip
         ):
             CONTAINER_CLIENT.copy_into_container(
-                self.id, str(get_runtime_client_path()), RAPID_ENTRYPOINT
+                self.id, f"{str(get_runtime_client_path())}/.", "/"
             )
         if not config.LAMBDA_PREBUILD_IMAGES:
             # copy_folders should be empty here if package type is not zip
@@ -281,7 +281,8 @@ class DockerRuntimeExecutor(RuntimeExecutor):
 
     def stop(self) -> None:
         CONTAINER_CLIENT.stop_container(container_name=self.id, timeout=5)
-        CONTAINER_CLIENT.remove_container(container_name=self.id)
+        if config.LAMBDA_REMOVE_CONTAINERS:
+            CONTAINER_CLIENT.remove_container(container_name=self.id)
         try:
             self.executor_endpoint.shutdown()
         except Exception as e:

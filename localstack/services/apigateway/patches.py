@@ -198,7 +198,7 @@ def apply_patches():
 
         if self.method == "PATCH":
             patch_operations = self._get_param("patchOperations")
-            apply_json_patch_safe(integration, patch_operations, in_place=True)
+            apply_json_patch_safe(integration.to_json(), patch_operations, in_place=True)
             # fix data types
             if integration.timeout_in_millis:
                 integration.timeout_in_millis = int(integration.timeout_in_millis)

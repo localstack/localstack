@@ -6,7 +6,7 @@ from localstack import config
 from localstack.packages import GitHubReleaseInstaller, Package, PackageInstaller
 from localstack.utils.platform import get_arch, get_os
 
-_KINESIS_MOCK_VERSION = os.environ.get("KINESIS_MOCK_VERSION") or "0.3.1"
+_KINESIS_MOCK_VERSION = os.environ.get("KINESIS_MOCK_VERSION") or "0.3.4"
 
 
 class KinesisMockPackage(Package):

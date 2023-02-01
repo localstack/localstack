@@ -2,7 +2,7 @@ import logging
 import re
 from re import Match
 from typing import Optional
-from urllib.parse import parse_qs, unquote, urlencode, urlparse
+from urllib.parse import unquote, urlparse
 
 from localstack import config
 from localstack.aws.api import RequestContext
@@ -10,7 +10,7 @@ from localstack.aws.chain import Handler, HandlerChain
 from localstack.constants import AWS_REGION_US_EAST_1
 from localstack.http import Response
 from localstack.http.proxy import forward
-from localstack.http.request import Request, restore_payload
+from localstack.http.request import Request, get_full_raw_path, get_raw_path, restore_payload
 from localstack.utils.aws.aws_responses import calculate_crc32
 from localstack.utils.aws.aws_stack import is_internal_call_context
 from localstack.utils.aws.request_context import extract_region_from_headers
@@ -52,6 +52,18 @@ class ArnPartitionRewriteHandler(Handler):
         r")"
     )
 
+    arn_regex_encoded = re.compile(
+        r"arn%3A"  # Prefix
+        r"(?P<Partition>(aws|aws-cn|aws-iso|aws-iso-b|aws-us-gov)*)%3A"  # Partition
+        r"(?P<Service>[\w-]*)%3A"  # Service (lambda, s3, ecs,...)
+        r"(?P<Region>[\w-]*)%3A"  # Region (us-east-1, us-gov-west-1,...)
+        r"(?P<AccountID>[\w-]*)%3A"  # AccountID
+        r"(?P<ResourcePath>"  # Combine the resource type and id to the ResourcePath
+        r"((?P<ResourceType>[\w-]*)((%3A)|(%2F)))?"  # ResourceType (optional, f.e. S3 bucket name)
+        r"(?P<ResourceID>(\w|-|(%2F)|(%2A))*)"  # Resource ID (f.e. file name in S3)
+        r")"
+    )
+
     def __call__(self, chain: HandlerChain, context: RequestContext, response: Response):
         request = context.request
         # If this header is present, or the request is internal, remove it and continue the handler chain
@@ -62,11 +74,12 @@ class ArnPartitionRewriteHandler(Handler):
         # since we are very early in the handler chain, we cannot use the request context here
         request_region = extract_region_from_headers(request.headers)
         forward_request = self.modify_request(request)
+
         # forward to the handler chain again
         result_response = forward(
             request=forward_request,
             forward_base_url=config.get_edge_url(),
-            forward_path=forward_request.path,
+            forward_path=get_raw_path(request),
             headers=forward_request.headers,
         )
         self.modify_response(result_response, request_region=request_region)
@@ -79,13 +92,15 @@ class ArnPartitionRewriteHandler(Handler):
         """
         Modifies the request by rewriting ARNs
 
+
         :param request: Request
         :return: New request with rewritten data
         """
         # rewrite inbound request
-        forward_rewritten_path, forward_rewritten_query_string = self._adjust_partition_in_path(
-            request.full_path, self.DEFAULT_INBOUND_PARTITION
+        full_forward_rewritten_path = self._adjust_partition(
+            get_full_raw_path(request), self.DEFAULT_INBOUND_PARTITION, encoded=True
         )
+        parsed_forward_rewritten_path = urlparse(full_forward_rewritten_path)
         forward_rewritten_body = self._adjust_partition(
             restore_payload(request), self.DEFAULT_INBOUND_PARTITION
         )
@@ -98,11 +113,11 @@ class ArnPartitionRewriteHandler(Handler):
         # Create a new request with the updated data
         return Request(
             method=request.method,
+            path=parsed_forward_rewritten_path.path,
+            query_string=parsed_forward_rewritten_path.query,
             headers=forward_rewritten_headers,
-            path=forward_rewritten_path,
             body=forward_rewritten_body,
-            # we have to set query string to None to avoid it being counted as defined in werkzeug
-            query_string=forward_rewritten_query_string,
+            raw_path=parsed_forward_rewritten_path.path,
         )
 
     def modify_response(self, response: Response, request_region: str):
@@ -119,38 +134,34 @@ class ArnPartitionRewriteHandler(Handler):
         response.data = self._adjust_partition(response.data, request_region=request_region)
         self._post_process_response_headers(response)
 
-    def _adjust_partition_in_path(self, path: str | bytes, static_partition: str = None):
-        """Adjusts the (still url encoded) URL path"""
-        parsed_url = urlparse(path)
-        # Make sure to keep blank values, otherwise we drop query params which do not have a
-        # value (f.e. "/?policy")
-        decoded_query = parse_qs(qs=parsed_url.query, keep_blank_values=True)
-        adjusted_path = self._adjust_partition(parsed_url.path, static_partition)
-        adjusted_query = self._adjust_partition(decoded_query, static_partition)
-        encoded_query = urlencode(adjusted_query, doseq=True)
-
-        # Make sure to avoid empty equals signs (in between and in the end)
-        encoded_query = encoded_query.replace("=&", "&")
-        encoded_query = re.sub(r"=$", "", encoded_query)
-
-        return adjusted_path, encoded_query or ""
-
-    def _adjust_partition(self, source, static_partition: str = None, request_region: str = None):
+    def _adjust_partition(
+        self,
+        source,
+        static_partition: str = None,
+        request_region: str = None,
+        encoded: bool = False,
+    ):
         # Call this function recursively if we get a dictionary or a list
         if isinstance(source, dict):
             result = {}
             for k, v in source.items():
-                result[k] = self._adjust_partition(v, static_partition, request_region)
+                result[k] = self._adjust_partition(
+                    v, static_partition, request_region, encoded=encoded
+                )
             return result
         if isinstance(source, list):
             result = []
             for v in source:
-                result.append(self._adjust_partition(v, static_partition, request_region))
+                result.append(
+                    self._adjust_partition(v, static_partition, request_region, encoded=encoded)
+                )
             return result
         elif isinstance(source, bytes):
             try:
                 decoded = unquote(to_str(source))
-                adjusted = self._adjust_partition(decoded, static_partition, request_region)
+                adjusted = self._adjust_partition(
+                    decoded, static_partition, request_region, encoded=encoded
+                )
                 return to_bytes(adjusted)
             except UnicodeDecodeError:
                 # If the body can't be decoded to a string, we return the initial source
@@ -158,11 +169,19 @@ class ArnPartitionRewriteHandler(Handler):
         elif not isinstance(source, str):
             # Ignore any other types
             return source
-        return self.arn_regex.sub(
-            lambda m: self._adjust_match(m, static_partition, request_region), source
+        regex = self.arn_regex if not encoded else self.arn_regex_encoded
+        return regex.sub(
+            lambda m: self._adjust_match(m, static_partition, request_region, encoded=encoded),
+            source,
         )
 
-    def _adjust_match(self, match: Match, static_partition: str = None, request_region: str = None):
+    def _adjust_match(
+        self,
+        match: Match,
+        static_partition: str = None,
+        request_region: str = None,
+        encoded: bool = False,
+    ):
         region = match.group("Region")
         partition = (
             self._partition_lookup(region, request_region)
@@ -172,7 +191,8 @@ class ArnPartitionRewriteHandler(Handler):
         service = match.group("Service")
         account_id = match.group("AccountID")
         resource_path = match.group("ResourcePath")
-        return f"arn:{partition}:{service}:{region}:{account_id}:{resource_path}"
+        separator = ":" if not encoded else "%3A"
+        return f"arn{separator}{partition}{separator}{service}{separator}{region}{separator}{account_id}{separator}{resource_path}"
 
     def _partition_lookup(self, region: str, request_region: str = None):
         try:

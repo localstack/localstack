@@ -7,6 +7,7 @@ from moto.core import DEFAULT_ACCOUNT_ID as DEFAULT_MOTO_ACCOUNT_ID
 import localstack.aws.accounts
 from localstack import config
 from localstack.aws.api import ServiceException, handler
+from localstack.aws.forwarder import NotImplementedAvoidFallbackError
 from localstack.services import moto
 from localstack.services.moto import MotoFallbackDispatcher
 from localstack.utils.common import short_uid
@@ -287,6 +288,11 @@ class FakeS3Provider:
         # Test call_moto raises exception
         return moto.call_moto(context)
 
+    @handler("PutObject", expand=False)
+    def put_object(self, _, __):
+        # Test avoiding a fall-through, but raise a not implemented directly
+        raise NotImplementedAvoidFallbackError
+
 
 def test_moto_fallback_dispatcher_error_handling(monkeypatch):
     """
@@ -317,6 +323,10 @@ def test_moto_fallback_dispatcher_error_handling(monkeypatch):
     with pytest.raises(ServiceException) as e:
         _dispatch("ListObjectsV2", {"Bucket": bucket_name})
     assert getattr(e.value, "BucketName") == bucket_name
+
+    # Test provider raises NotImplementedAvoidFallbackError, avoiding a fall-through, raising the "not implemented" directly
+    with pytest.raises(NotImplementedError) as e:
+        _dispatch("PutObject", {"Bucket": bucket_name, "Key": "key"})
 
 
 def test_request_with_response_header_location_fields():

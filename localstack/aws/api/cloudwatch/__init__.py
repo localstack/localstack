@@ -46,6 +46,7 @@ GetMetricDataMaxDatapoints = int
 HistoryData = str
 HistorySummary = str
 IncludeLinkedAccounts = bool
+IncludeLinkedAccountsMetrics = bool
 InsightRuleAggregationStatistic = str
 InsightRuleContributorKey = str
 InsightRuleContributorKeyLabel = str
@@ -811,6 +812,7 @@ class GetMetricStreamOutput(TypedDict, total=False):
     LastUpdateDate: Optional[Timestamp]
     OutputFormat: Optional[MetricStreamOutputFormat]
     StatisticsConfigurations: Optional[MetricStreamStatisticsConfigurations]
+    IncludeLinkedAccountsMetrics: Optional[IncludeLinkedAccountsMetrics]
 
 
 class GetMetricWidgetImageInput(ServiceRequest):
@@ -1047,6 +1049,7 @@ class PutMetricStreamInput(ServiceRequest):
     OutputFormat: MetricStreamOutputFormat
     Tags: Optional[TagList]
     StatisticsConfigurations: Optional[MetricStreamStatisticsConfigurations]
+    IncludeLinkedAccountsMetrics: Optional[IncludeLinkedAccountsMetrics]
 
 
 class PutMetricStreamOutput(TypedDict, total=False):
@@ -1439,6 +1442,7 @@ class CloudwatchApi:
         exclude_filters: MetricStreamFilters = None,
         tags: TagList = None,
         statistics_configurations: MetricStreamStatisticsConfigurations = None,
+        include_linked_accounts_metrics: IncludeLinkedAccountsMetrics = None,
     ) -> PutMetricStreamOutput:
         raise NotImplementedError
 

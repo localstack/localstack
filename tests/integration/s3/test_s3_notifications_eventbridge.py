@@ -121,9 +121,17 @@ class TestS3NotificationsToEventBridge:
 
         retries = 10 if is_aws_cloud() else 5
         retry(_receive_messages, retries=retries)
-
-        snapshot.match("object_deleted", messages.get("Object Deleted"))
-        snapshot.match("object_created", messages.get("Object Created"))
+        object_deleted_event = messages["Object Deleted"]
+        object_created_event = messages["Object Created"]
+        snapshot.match("object_deleted", object_deleted_event)
+        snapshot.match("object_created", object_created_event)
+        # assert that the request-id is randomly generated
+        # ideally, it should use the true request-id. However, the request-id is set in the serializer for now,
+        # and would need to be set before going through the skeleton
+        assert (
+            object_deleted_event["detail"]["request-id"]
+            != object_created_event["detail"]["request-id"]
+        )
 
     @pytest.mark.aws_validated
     @pytest.mark.skipif(condition=LEGACY_S3_PROVIDER, reason="not implemented")

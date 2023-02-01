@@ -6,6 +6,12 @@ from hypercorn import Config
 from hypercorn.asyncio import serve
 from hypercorn.typing import ASGIFramework
 
+from localstack.aws.gateway import Gateway
+from localstack.aws.handlers.proxy import ProxyHandler
+from localstack.aws.serving.asgi import AsgiGateway
+from localstack.logging.setup import setup_hypercorn_logger
+from localstack.services.generic_proxy import GenericProxy, install_predefined_cert_if_available
+from localstack.utils.collections import ensure_list
 from localstack.utils.serving import Server
 
 
@@ -62,3 +68,63 @@ class HypercornServer(Server):
 
     async def _shutdown_trigger(self):
         await self._close.wait()
+
+
+class GatewayServer(HypercornServer):
+    """
+    A Hypercorn-based server implementation which serves a given Gateway.
+    It can be used to easily spawn new gateway servers, defining their individual request-, response-, and
+    exception-handlers.
+    """
+
+    def __init__(
+        self, gateway: Gateway, port: int, bind_address: str | list[str], use_ssl: bool = False
+    ):
+        """
+        Creates a new GatewayServer instance.
+
+        :param gateway: which will be served by this server
+        :param port: defining the port of this server instance
+        :param bind_address: to bind this server instance to. Can be a host string or a list of host strings.
+        :param use_ssl: True if the LocalStack cert should be loaded and HTTP/HTTPS multiplexing should be enabled.
+        """
+        # build server config
+        config = Config()
+        setup_hypercorn_logger(config)
+
+        bind_address = ensure_list(bind_address)
+        config.bind = [f"{addr}:{port}" for addr in bind_address]
+
+        if use_ssl:
+            install_predefined_cert_if_available()
+            _, cert_file_name, key_file_name = GenericProxy.create_ssl_cert(serial_number=port)
+            config.certfile = cert_file_name
+            config.keyfile = key_file_name
+
+        # build gateway
+        loop = asyncio.new_event_loop()
+        app = AsgiGateway(gateway, event_loop=loop)
+
+        # start serving gateway
+        super().__init__(app, config, loop)
+
+
+class ProxyServer(GatewayServer):
+    """
+    Proxy server implementation which uses the localstack.http.proxy module.
+    These server instances can be spawned easily, while implementing HTTP/HTTPS multiplexing (if enabled),
+    and just forward all incoming requests to a backend.
+    """
+
+    def __init__(self, forward_base_url: str, port: int, bind_address: str, use_ssl: bool = False):
+        """
+        Creates a new ProxyServer instance.
+
+        :param forward_base_url: URL of the backend system all requests this server receives should be forwarded to
+        :param port: defining the port of this server instance
+        :param bind_address: to bind this server instance to. Can be a host string or a list of host strings.
+        :param use_ssl: True if the LocalStack cert should be loaded and HTTP/HTTPS multiplexing should be enabled.
+        """
+        gateway = Gateway()
+        gateway.request_handlers.append(ProxyHandler(forward_base_url=forward_base_url))
+        super().__init__(gateway, port, bind_address, use_ssl)
