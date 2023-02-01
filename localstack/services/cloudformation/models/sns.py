@@ -60,7 +60,8 @@ class SNSTopic(GenericBaseModel):
             return result
 
         def _topic_arn(params, resources, resource_id, **kwargs):
-            return resources[resource_id]["PhysicalResourceId"]
+            resource = cls(resources[resource_id])
+            return resource.physical_resource_id or resource.get_physical_resource_id()
 
         def _list_all_topics(sns_client):
             rs = sns_client.list_topics()
