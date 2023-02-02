@@ -121,10 +121,8 @@ class AlarmScheduler:
 def get_metric_alarm_details_for_alarm_arn(alarm_arn: str) -> Optional[MetricAlarm]:
     alarm_name = arns.extract_resource_from_arn(alarm_arn).split(":", 1)[1]
     client = get_cloudwatch_client_for_region_of_alarm(alarm_arn)
-    response = client.describe_alarms(AlarmNames=[alarm_name])["MetricAlarms"]
-    if len(response) == 1:
-        return response[0]
-    return None
+    metric_alarms = client.describe_alarms(AlarmNames=[alarm_name])["MetricAlarms"]
+    return metric_alarms[0] if metric_alarms else None
 
 
 def get_cloudwatch_client_for_region_of_alarm(alarm_arn: str) -> "CloudWatchClient":
