@@ -360,7 +360,7 @@ def test_raise_when_launcTemplateData_missing(ec2_client):
 
 
 @pytest.mark.aws_validated
-def test_raise_invalid_launch_template_name(ec2_client, create_launch_template):
+def test_raise_invalid_launch_template_name(create_launch_template):
     with pytest.raises(ClientError) as e:
         create_launch_template(f"some illegal name {short_uid()}")
 
