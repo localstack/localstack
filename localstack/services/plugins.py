@@ -238,7 +238,7 @@ class Service:
     def for_provider(
         provider: ServiceProvider,
         dispatch_table_factory: Callable[[ServiceProvider], DispatchTable] = None,
-        service_lifecycle_hook=_default,
+        service_lifecycle_hook=None,
     ) -> "Service":
         """
         Factory method for creating services for providers. This method hides a bunch of legacy code and
@@ -247,18 +247,15 @@ class Service:
         :param provider: the service provider, i.e., the implementation of the generated ASF service API.
         :param dispatch_table_factory: a `MotoFallbackDispatcher` or something similar that uses the provider to
             create a dispatch table. this one's a bit clumsy.
-        :param service_lifecycle_hook: if left empty, then it checks whether the provider is a ServiceLifecycleHook.
-            if set to None, it will disable the lifecyle hook alltogether
+        :param service_lifecycle_hook: if left empty, the factory checks whether the provider is a ServiceLifecycleHook.
         :return: a service instance
         """
         from localstack.aws.proxy import AwsApiListener
 
         # determine the service_lifecycle_hook
-        if service_lifecycle_hook is _default:
+        if service_lifecycle_hook is None:
             if isinstance(provider, ServiceLifecycleHook):
                 service_lifecycle_hook = provider
-            else:
-                service_lifecycle_hook = None
 
         # determine the delegate for injecting into the AwsApiListener
         delegate = dispatch_table_factory(provider) if dispatch_table_factory else provider
