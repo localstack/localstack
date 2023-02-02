@@ -175,6 +175,7 @@ from localstack.services.awslambda.invocation.lambda_service import (
 )
 from localstack.services.awslambda.invocation.models import LambdaStore
 from localstack.services.awslambda.lambda_utils import validate_filters
+from localstack.services.awslambda.layerfetcher.layer_fetcher import LayerFetcher
 from localstack.services.awslambda.urlrouter import FunctionUrlRouter
 from localstack.services.edge import ROUTER
 from localstack.services.plugins import ServiceLifecycleHook
@@ -198,12 +199,14 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
     create_fn_lock: threading.RLock
     create_layer_lock: threading.RLock
     router: FunctionUrlRouter
+    layer_fetcher: LayerFetcher
 
-    def __init__(self) -> None:
+    def __init__(self, layer_fetcher: LayerFetcher | None = None) -> None:
         self.lambda_service = LambdaService()
         self.create_fn_lock = threading.RLock()
         self.create_layer_lock = threading.RLock()
         self.router = FunctionUrlRouter(ROUTER, self.lambda_service)
+        self.layer_fetcher = layer_fetcher
 
     def on_after_init(self):
         self.router.register_routes()
@@ -457,8 +460,9 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
                 Type="User",
             )
 
-    @staticmethod
-    def _validate_layers(new_layers: list[str], region: str, account_id: int):
+    def _validate_layers(self, new_layers: list[str], region: str, account_id: int):
+        lambda_hooks.inject_layer_fetcher.run(self)
+
         if len(new_layers) > LAMBDA_LAYERS_LIMIT_PER_FUNCTION:
             raise InvalidParameterValueException(
                 "Cannot reference more than 5 layers.", Type="User"
@@ -489,6 +493,7 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
                         f"Layer version {layer_version_arn} does not exist.", Type="User"
                     )
             else:  # External layer from other account
+                # TODO: validate IAM layer policy here, allowing access by default for now and only checking region
                 if region and layer_region != region:
                     # TODO: detect user or role from context when IAM users are implemented
                     user = "user/localstack-testing"
@@ -496,22 +501,22 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
                         f"User: arn:aws:iam::{account_id}:{user} is not authorized to perform: lambda:GetLayerVersion on resource: {layer_version_arn} because no resource-based policy allows the lambda:GetLayerVersion action"
                     )
                 if layer is None:
-                    # External layer import from AWS is a pro feature
-                    # Limitation: cannot download external layers when using the same account id as the target layer
+                    # Limitation: cannot fetch external layers when using the same account id as the target layer
                     # because we do not want to trigger the layer fetcher for every non-existing layer.
-                    lambda_hooks.import_external_layer.run(layer_version_arn, state)
-                    layer = state.layers.get(layer_name)
-                    # Community users get this error
+                    if self.layer_fetcher is None:
+                        # TODO: Do we have a specific exception for pro features?
+                        raise ServiceException(
+                            "Fetching shared layers from AWS is a pro feature.", status_code=501
+                        )
+
+                    layer = self.layer_fetcher.fetch_layer(layer_version_arn)
                     if layer is None:
                         # TODO: detect user or role from context when IAM users are implemented
                         user = "user/localstack-testing"
                         raise AccessDeniedException(
                             f"User: arn:aws:iam::{account_id}:{user} is not authorized to perform: lambda:GetLayerVersion on resource: {layer_version_arn} because no resource-based policy allows the lambda:GetLayerVersion action"
                         )
-
-                if layer:
-                    # TODO: validate IAM layer policy here, allow access by default for now
-                    pass
+                    state.layers[layer_name] = layer
 
             # only the first two matches in the array are considered for the error message
             layer_arn = ":".join(layer_version_arn.split(":")[:-1])
