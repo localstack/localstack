@@ -2244,7 +2244,7 @@ def test_import_swagger_api(apigateway_client):
     api_spec_dict = json.loads(api_spec)
 
     backend = apigateway_backends[TEST_AWS_ACCOUNT_ID][TEST_AWS_REGION_NAME]
-    api_model = backend.create_rest_api(name="")
+    api_model = backend.create_rest_api(name="api_name", description="description-1")
 
     imported_api = import_api_from_openapi_spec(api_model, api_spec_dict, {})
 
