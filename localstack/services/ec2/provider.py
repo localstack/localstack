@@ -354,13 +354,8 @@ class Ec2Provider(Ec2Api, ABC):
     ) -> ModifyLaunchTemplateResult:
 
         backend = ec2_backends[context.account_id][context.region]
-        template: MotoLaunchTemplate = (
-            backend.launch_templates[request["LaunchTemplateId"]]
-            if request["LaunchTemplateId"]
-            else backend.launch_templates[
-                backend.launch_template_name_to_ids[request["LaunchTemplateName"]]
-            ]
-        )
+        template_id = request["LaunchTemplateId"] or backend.launch_template_name_to_ids[request["LaunchTemplateName"]
+        template: MotoLaunchTemplate = backend.launch_templates[template_id]
 
         # check if defaultVersion exists
         if request["DefaultVersion"]:
