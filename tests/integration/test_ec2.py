@@ -25,7 +25,8 @@ def create_launch_template(ec2_client):
 
     yield create
     for id in template_ids:
-        ec2_client.delete_launch_template(LaunchTemplateId=id)
+        with contextlib.suppress(ClientError):
+            ec2_client.delete_launch_template(LaunchTemplateId=id)
 
 
 class TestEc2Integrations:
