@@ -762,9 +762,7 @@ class TestMacros:
             ),
         )
         cleanups.append(lambda: cfn_client.delete_stack(StackName=stack_name))
-        cfn_client.get_waiter("stack_create_complete").wait(
-            StackName=stack_name, WaiterConfig={"Delay": 10, "MaxAttempts": 5}
-        )
+        cfn_client.get_waiter("stack_create_complete").wait(StackName=stack_name)
 
         processed_template = cfn_client.get_template(
             StackName=stack_name, TemplateStage="Processed"
@@ -884,9 +882,7 @@ class TestMacros:
             Parameters=[{"ParameterKey": "MacroInput", "ParameterValue": "CreateStackInput"}],
         )
         cleanups.append(lambda: cfn_client.delete_stack(StackName=stack_name))
-        cfn_client.get_waiter("stack_create_complete").wait(
-            StackName=stack_name, WaiterConfig={"Delay": 10, "MaxAttempts": 5}
-        )
+        cfn_client.get_waiter("stack_create_complete").wait(StackName=stack_name)
 
         processed_template = cfn_client.get_template(
             StackName=stack_name, TemplateStage="Processed"
