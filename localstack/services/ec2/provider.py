@@ -344,8 +344,7 @@ class Ec2Provider(Ec2Api, ABC):
                 status_code=400,
             )
 
-        result = call_moto(context)
-        return result
+        return call_moto(context)
 
     @handler("ModifyLaunchTemplate", expand=False)
     def modify_launch_template(
