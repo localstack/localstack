@@ -5,6 +5,7 @@ import os
 import pytest
 
 from localstack.services.events.provider import TEST_EVENTS_CACHE
+from localstack.services.stepfunctions.stepfunctions_utils import await_sfn_execution_result
 from localstack.utils import testutil
 from localstack.utils.aws import arns, aws_stack
 from localstack.utils.files import load_file
@@ -231,6 +232,16 @@ def create_state_machine(stepfunctions_client):
             stepfunctions_client.delete_state_machine(stateMachineArn=machine)
         except Exception as e:
             LOG.debug("Unable to delete SFN state machine: ", e)
+
+
+@pytest.fixture
+def sfn_execution_role(iam_client):
+    role_name = f"role-{short_uid()}"
+    result = iam_client.create_role(
+        RoleName=role_name,
+        AssumeRolePolicyDocument='{"Version": "2012-10-17", "Statement": {"Action": "sts:AssumeRole", "Effect": "Allow", "Principal": {"Service": "states.amazonaws.com"}}}',
+    )
+    return result["Role"]
 
 
 def _assert_machine_instances(expected_instances, sfn_client):
@@ -663,7 +674,7 @@ def test_default_logging_configuration(iam_client, create_state_machine, stepfun
         iam_client.delete_role(RoleName=role_name)
 
 
-def test_aws_sdk_task(stepfunctions_client, iam_client, sns_client):
+def test_aws_sdk_task(sfn_execution_role, stepfunctions_client, iam_client, sns_client):
     statemachine_definition = {
         "StartAt": "CreateTopicTask",
         "States": {
@@ -679,25 +690,20 @@ def test_aws_sdk_task(stepfunctions_client, iam_client, sns_client):
     # create parent state machine
     name = f"statemachine-{short_uid()}"
     policy_name = f"policy-{short_uid()}"
-    role_name = f"role-{short_uid()}"
     topic_name = f"topic-{short_uid()}"
 
-    role = iam_client.create_role(
-        RoleName=role_name,
-        AssumeRolePolicyDocument='{"Version": "2012-10-17", "Statement": {"Action": "sts:AssumeRole", "Effect": "Allow", "Principal": {"Service": "states.amazonaws.com"}}}',
-    )
     policy = iam_client.create_policy(
         PolicyDocument='{"Version": "2012-10-17", "Statement": {"Action": "sns:createTopic", "Effect": "Allow", "Resource": "*"}}',
         PolicyName=policy_name,
     )
     iam_client.attach_role_policy(
-        RoleName=role["Role"]["RoleName"], PolicyArn=policy["Policy"]["Arn"]
+        RoleName=sfn_execution_role["RoleName"], PolicyArn=policy["Policy"]["Arn"]
     )
 
     result = stepfunctions_client.create_state_machine(
         name=name,
         definition=json.dumps(statemachine_definition),
-        roleArn=role["Role"]["Arn"],
+        roleArn=sfn_execution_role["Arn"],
     )
     machine_arn = result["stateMachineArn"]
 
@@ -744,7 +750,42 @@ def test_aws_sdk_task(stepfunctions_client, iam_client, sns_client):
         assert wait_until(_retry_execution, max_retries=3, strategy="linear", wait=3.0)
 
     finally:
-        iam_client.detach_role_policy(RoleName=role_name, PolicyArn=policy["Policy"]["Arn"])
-        iam_client.delete_role(RoleName=role_name)
         iam_client.delete_policy(PolicyArn=policy["Policy"]["Arn"])
         stepfunctions_client.delete_state_machine(stateMachineArn=machine_arn)
+
+
+def test_aws_sdk_task_delete_s3_object(
+    stepfunctions_client, s3_bucket, iam_client, sns_client, s3_client, sfn_execution_role
+):
+    s3_key = "test-key"
+    statemachine_definition = {
+        "StartAt": "CreateTopicTask",
+        "States": {
+            "CreateTopicTask": {
+                "Type": "Task",
+                "Parameters": {"Bucket": s3_bucket, "Key": s3_key},
+                "Resource": "arn:aws:states:::aws-sdk:s3:deleteObject",
+                "End": True,
+            }
+        },
+    }
+
+    # create state machine
+    s3_client.put_object(Bucket=s3_bucket, Key=s3_key, Body=b"")
+    name = f"statemachine-{short_uid()}"
+
+    result = stepfunctions_client.create_state_machine(
+        name=name,
+        definition=json.dumps(statemachine_definition),
+        roleArn=sfn_execution_role["Arn"],
+    )
+    machine_arn = result["stateMachineArn"]
+
+    result = stepfunctions_client.start_execution(stateMachineArn=machine_arn, input="{}")
+    execution_arn = result["executionArn"]
+
+    await_sfn_execution_result(execution_arn)
+
+    with pytest.raises(Exception) as exc:
+        s3_client.head_object(Bucket=s3_bucket, Key=s3_key)
+    assert "Not Found" in str(exc)

@@ -32,7 +32,7 @@ SFN_PATCH_CLASS_DESCRIBEEXECUTIONPARSED = "cloud/localstack/DescribeExecutionPar
 SFN_PATCH_FILE_METAINF = "META-INF/aop.xml"
 
 SFN_AWS_SDK_URL_PREFIX = (
-    f"{ARTIFACTS_REPO}/raw/a4adc8f4da9c7ec0d93b50ca5b73dd14df791c0e/stepfunctions-internal-awssdk"
+    f"{ARTIFACTS_REPO}/raw/6f56dd5b9c405d4356367ffb22d2f52cc8efa57a/stepfunctions-internal-awssdk"
 )
 SFN_AWS_SDK_LAMBDA_ZIP_FILE = f"{SFN_AWS_SDK_URL_PREFIX}/awssdk.zip"
 
