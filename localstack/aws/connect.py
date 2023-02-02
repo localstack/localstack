@@ -119,7 +119,8 @@ class ConnectFactory:
 
         Note that when `_TargetArn` is used, the account and region from the ARN takes
         precedence over the region used during client instantiation. The
-        precedence logic happens on the serverside LocalStack handler chain.
+        precedence logic happens on the serverside LocalStack handler chain. The
+        ARN must have the account ID and region in it.
 
         When `_TargetAccount` is used, the specified account ID is used. This
         takes precedence over `_TargetArn` account ID.
