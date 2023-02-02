@@ -6,11 +6,10 @@ import requests
 from pytest_httpserver import HTTPServer
 from werkzeug import Request as WerkzeugRequest
 
-from localstack.http import Request, Response, Router
-from localstack.http.client import SimpleRequestsClient
+from localstack.http import Response, Router
 from localstack.http.dispatcher import handler_dispatcher
 from localstack.http.hypercorn import HypercornServer
-from localstack.http.proxy import Proxy, ProxyHandler, forward
+from localstack.http.proxy import ProxyHandler, forward
 
 
 @pytest.fixture
@@ -21,25 +20,6 @@ def router_server(serve_asgi_adapter) -> Tuple[Router, HypercornServer]:
     router = Router(dispatcher=handler_dispatcher())
     app = WerkzeugRequest.application(router.dispatch)
     return router, serve_asgi_adapter(app)
-
-
-def echo_request_metadata(request: WerkzeugRequest) -> Response:
-    """
-    Simple request handler that returns the incoming request metadata (method, path, url, headers).
-
-    :param request: the incoming HTTP request
-    :return: an HTTP response
-    """
-    response = Response()
-    response.set_json(
-        {
-            "method": request.method,
-            "path": request.path,
-            "url": request.url,
-            "headers": dict(request.headers),
-        }
-    )
-    return response
 
 
 class TestPathForwarder:
@@ -130,7 +110,7 @@ class TestPathForwarder:
         headers = response.json()
         assert headers["X-Forwarded-For"] == "127.0.0.1"
 
-        # check that it appends remote address correctly if an header is already present
+        # check that it appends remote address correctly if a header is already present
         response = requests.get(proxy.url + "/echo", headers={"X-Forwarded-For": "127.0.0.2"})
         assert response.ok
         headers = response.json()
@@ -159,34 +139,6 @@ class TestPathForwarder:
         assert response.ok
         doc = response.json()
         assert doc == {"args": {"q": "yes"}, "form": {"foo": "bar", "baz": "ed"}}
-
-
-class TestProxy:
-    def test_proxy_with_custom_client(self, httpserver: HTTPServer):
-        """The Proxy class allows the injection of a custom HTTP client which can attach default headers to every
-        request. this test verifies that this works through the proxy implementation."""
-        httpserver.expect_request("/").respond_with_handler(echo_request_metadata)
-
-        with SimpleRequestsClient() as client:
-            client.session.headers["X-My-Custom-Header"] = "hello world"
-
-            proxy = Proxy(httpserver.url_for("/").lstrip("/"), client)
-
-            request = Request(
-                path="/",
-                method="POST",
-                body="foobar",
-                remote_addr="127.0.0.10",
-                headers={"Host": "127.0.0.1:80"},
-            )
-
-            response = proxy.request(request)
-
-            assert "X-My-Custom-Header" in response.json["headers"]
-            assert response.json["method"] == "POST"
-            assert response.json["headers"]["X-My-Custom-Header"] == "hello world"
-            assert response.json["headers"]["X-Forwarded-For"] == "127.0.0.10"
-            assert response.json["headers"]["Host"] == f"{httpserver.host}:{httpserver.port}"
 
 
 @pytest.mark.parametrize("consume_data", [True, False])

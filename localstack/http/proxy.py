@@ -1,5 +1,6 @@
 from io import BytesIO
 from typing import Mapping, Union
+from urllib.parse import urlparse
 
 from werkzeug import Request, Response
 from werkzeug.datastructures import Headers
@@ -24,15 +25,14 @@ def forward(
 
 
 class Proxy(HttpClient):
-    def __init__(self, forward_base_url: str, client: HttpClient = None):
+    def __init__(self, forward_base_url: str):
         """
         Creates a new HTTP Proxy which can be used to forward incoming requests according to the configuration.
 
         :param forward_base_url: the base url (backend) to forward the requests to.
-        :param client: the HTTP Client used to make the requests
         """
         self.forward_base_url = forward_base_url
-        self.client = client or SimpleRequestsClient()
+        self.client = SimpleRequestsClient(prefer_server=True)
 
     def request(self, request: Request) -> Response:
         """
@@ -133,9 +133,16 @@ def _copy_request(
     set_environment_headers(request.environ, request.headers)
     builder = EnvironBuilder.from_environ(request.environ)
 
-    if base_url:
-        builder.base_url = base_url
-        builder.headers["Host"] = builder.host
+    # make sure to keep the Host header, but set the `SERVER_*` fields
+    parsed_url = urlparse(base_url)
+    builder.environ_overrides = {
+        "SERVER_NAME": parsed_url.hostname,
+        "SERVER_PORT": parsed_url.port,
+        "SERVER_PROTOCOL": parsed_url.scheme,
+    }
+    # set the base path (if the forward URL defines one)
+    if parsed_url.path:
+        builder.script_root = "/" + parsed_url.path.lstrip("/")
 
     if path is not None:
         builder.path = path
@@ -145,7 +152,13 @@ def _copy_request(
 
     # FIXME: unfortunately, EnvironBuilder expects the input stream to be seekable, but we don't have that when using
     #  the asgi/wsgi bridge. we need a better way of dealing with IO!
-    builder.input_stream = BytesIO(restore_payload(request))
+    data = restore_payload(request)
+    builder.input_stream = BytesIO(data)
+    builder.content_length = len(data)
+    # Since the payload is completely restored, the proxy forwarding is not streamed.
+    # Therefore, we need to remove a potential "chunked" Transfer-Encoding
+    if builder.headers.get("Transfer-Encoding", None) == "chunked":
+        builder.headers.pop("Transfer-Encoding")
 
     new_request = builder.get_request()
 
