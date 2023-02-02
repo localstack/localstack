@@ -199,7 +199,7 @@ def download_and_extract(archive_url, target_dir, retries=0, sleep=3, tmp_archiv
                     e,
                 )
                 # only sleep between retries, not after the last one
-                if current_try < retries:
+                if current_try <= retries:
                     time.sleep(sleep)
             finally:
                 current_try += 1
