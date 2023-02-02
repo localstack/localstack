@@ -563,5 +563,17 @@
         }
       }
     }
+  },
+  "tests/integration/cloudformation/api/test_stacks.py::test_events_resource_types": {
+    "recorded-date": "02-02-2023, 14:34:00",
+    "recorded-content": {
+      "resource_types": {
+        "AWS::CloudFormation::Stack": 0,
+        "AWS::SNS::Subscription": 0,
+        "AWS::SNS::Topic": 0,
+        "AWS::SQS::Queue": 0,
+        "AWS::SQS::QueuePolicy": 0
+      }
+    }
   }
 }

@@ -531,10 +531,12 @@ def test_update_termination_protection(deploy_cfn_template, cfn_client, sns_clie
 
 
 @pytest.mark.aws_validated
-def test_events_types(deploy_cfn_template, cfn_client, snapshot):
-    template_path = os.path.join(os.path.dirname(__file__), "../../templates/sfn_apigateway.yaml")
-    stack = deploy_cfn_template(template_path=template_path)
+def test_events_resource_types(deploy_cfn_template, cfn_client, snapshot):
+    template_path = os.path.join(
+        os.path.dirname(__file__), "../../templates/cfn_cdk_sample_app.yaml"
+    )
+    stack = deploy_cfn_template(template_path=template_path, max_wait=500)
     events = cfn_client.describe_stack_events(StackName=stack.stack_name)["StackEvents"]
 
     resource_types = set([event["ResourceType"] for event in events])
-    assert resource_types
+    snapshot.match("resource_types", dict.fromkeys(resource_types, 0))
