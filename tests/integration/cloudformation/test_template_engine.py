@@ -10,6 +10,7 @@ import yaml
 from localstack.aws.api.lambda_ import Runtime
 from localstack.services.cloudformation.engine.yaml_parser import parse_yaml
 from localstack.testing.aws.cloudformation_utils import load_template_file, load_template_raw
+from localstack.testing.aws.lambda_utils import is_new_provider
 from localstack.utils.aws import arns
 from localstack.utils.common import short_uid
 from localstack.utils.files import load_file
@@ -472,6 +473,7 @@ class TestImportValues:
         # assert cfn_client.list_imports(ExportName=export_name)["Imports"]
 
 
+@pytest.mark.skipif(condition=is_new_provider(), reason="not implemented yet")
 class TestMacros:
     @pytest.mark.aws_validated
     def test_macro_deployment(

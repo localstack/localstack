@@ -45,6 +45,7 @@ def transform_template(template: Dict, parameters: List) -> Dict:
     transformations = format_transforms(result.get("Transform", []))
     for transformation in transformations:
         if not isinstance(transformation["Name"], str):
+            # TODO this should be done during template validation
             raise CommonServiceException(
                 code="ValidationError",
                 status_code=400,
