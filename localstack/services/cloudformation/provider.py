@@ -36,6 +36,7 @@ from localstack.aws.api.cloudformation import (
     GetTemplateOutput,
     GetTemplateSummaryInput,
     GetTemplateSummaryOutput,
+    InsufficientCapabilitiesException,
     InvalidChangeSetStatusException,
     ListChangeSetsOutput,
     ListExportsOutput,
@@ -158,18 +159,32 @@ class CloudformationProvider(CloudformationApi):
                 )
             state.stacks.pop(existing.stack_id)
 
+        if (
+            "CAPABILITY_AUTO_EXPAND" not in request.get("Capabilities", [])
+            and "Transform" in template
+        ):
+            raise InsufficientCapabilitiesException(
+                "Requires capabilities : [CAPABILITY_AUTO_EXPAND]"
+            )
+
         try:
             parameters = template_preparer.resolve_parameters(
                 template.get("Parameters", {}), request.get("Parameters", [])
             )
             template = template_preparer.transform_template(
-                template, parameters, request.get("Capabilities", [])
+                template,
+                parameters,
             )
 
         except FailedTransformation as e:
             stack = Stack(request, template)
             stack.set_stack_status("ROLLBACK_COMPLETE")
-            stack.add_stack_event(status="ROLLBACK_IN_PROGRESS", status_reason=e.message)
+            stack.add_stack_event(
+                stack.stack_name,
+                stack.stack_id,
+                status="ROLLBACK_IN_PROGRESS",
+                status_reason=e.message,
+            )
             state.stacks[stack.stack_id] = stack
             return CreateStackOutput(StackId=stack.stack_id)
 
@@ -218,19 +233,31 @@ class CloudformationProvider(CloudformationApi):
 
         api_utils.prepare_template_body(request)
         template = template_preparer.parse_template(request["TemplateBody"])
+
+        if (
+            "CAPABILITY_AUTO_EXPAND" not in request.get("Capabilities", [])
+            and "Transform" in template
+        ):
+            raise InsufficientCapabilitiesException(
+                "Requires capabilities : [CAPABILITY_AUTO_EXPAND]"
+            )
+
         deployer = template_deployer.TemplateDeployer(stack)
 
         try:
             parameters = template_preparer.resolve_parameters(
                 template.get("Parameters", {}), request.get("Parameters", [])
             )
-            template = template_preparer.transform_template(
-                template, parameters, request.get("Capabilities", [])
-            )
+            template = template_preparer.transform_template(template, parameters)
 
         except FailedTransformation as e:
             stack.set_stack_status("ROLLBACK_COMPLETE")
-            stack.add_stack_event(status="ROLLBACK_IN_PROGRESS", status_reason=e.message)
+            stack.add_stack_event(
+                stack.stack_name,
+                stack.stack_id,
+                status="ROLLBACK_IN_PROGRESS",
+                status_reason=e.message,
+            )
             return CreateStackOutput(StackId=stack.stack_id)
 
         new_stack = Stack(request, template)
@@ -396,12 +423,18 @@ class CloudformationProvider(CloudformationApi):
             ]  # should then have been set by prepare_template_body
         template = template_preparer.parse_template(req_params["TemplateBody"])
 
+        if (
+            "CAPABILITY_AUTO_EXPAND" not in request.get("Capabilities", [])
+            and "Transform" in template
+        ):
+            raise InsufficientCapabilitiesException(
+                "Requires capabilities : [CAPABILITY_AUTO_EXPAND]"
+            )
+
         parameters = template_preparer.resolve_parameters(
             template.get("Parameters", {}), request.get("Parameters", [])
         )
-        template = template_preparer.transform_template(
-            template, parameters, request.get("Capabilities", [])
-        )
+        template = template_preparer.transform_template(template, parameters)
 
         del req_params["TemplateBody"]  # TODO: stop mutating req_params
         template["StackName"] = stack_name

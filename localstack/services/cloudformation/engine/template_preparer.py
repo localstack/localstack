@@ -10,7 +10,6 @@ from samtranslator.translator.transform import transform as transform_sam
 from localstack.services.cloudformation.engine import yaml_parser
 from localstack.aws.accounts import get_aws_account_id
 from localstack.aws.api import CommonServiceException
-from localstack.aws.api.cloudformation import InsufficientCapabilitiesException
 from localstack.services.awslambda.lambda_api import func_arn, run_lambda
 from localstack.services.cloudformation.engine.entities import resolve_ssm_parameter_value
 from localstack.services.cloudformation.engine.policy_loader import create_policy_loader
@@ -40,14 +39,7 @@ def template_to_json(template: str) -> str:
     return json.dumps(template)
 
 
-def transform_template(template: Dict, parameters: List, capabilities: List) -> Dict:
-    if "CAPABILITY_AUTO_EXPAND" not in capabilities and "Transform" in template:
-        raise InsufficientCapabilitiesException("Requires capabilities : [CAPABILITY_AUTO_EXPAND]")
-
-    return do_transformations(dict(template), parameters)
-
-
-def do_transformations(template: Dict, parameters: List) -> Dict:
+def transform_template(template: Dict, parameters: List) -> Dict:
     result = dict(template)
 
     transformations = format_transforms(result.get("Transform", []))
