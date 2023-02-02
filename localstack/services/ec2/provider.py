@@ -58,6 +58,7 @@ from localstack.aws.api.ec2 import (
     VpcEndpointSubnetIdList,
     scope,
 )
+from localstack.services.ec2.exceptions import InvalidLaunchTemplateNameError, MissingParameterError
 from localstack.services.moto import call_moto
 from localstack.utils.aws import aws_stack
 from localstack.utils.patch import patch
@@ -332,17 +333,11 @@ class Ec2Provider(Ec2Api, ABC):
 
         # parameter validation
         if not request["LaunchTemplateData"]:
-            raise CommonServiceException(
-                message="Launch template data is missing", code="MissingParameter", status_code=400
-            )
+            raise MissingParameterError(parameter="LaunchTemplateData")
 
         name = request["LaunchTemplateName"]
         if len(name) < 3 or len(name) > 128 or not re.fullmatch(r"[a-zA-Z0-9.\-_()/]*", name):
-            raise CommonServiceException(
-                message="A launch template name must be between 3 and 128 characters, and may contain letters, numbers, and the following characters: - ( ) . / _.'",
-                code="InvalidLaunchTemplateName.MalformedException",
-                status_code=400,
-            )
+            raise InvalidLaunchTemplateNameError()
 
         return call_moto(context)
 
@@ -354,7 +349,10 @@ class Ec2Provider(Ec2Api, ABC):
     ) -> ModifyLaunchTemplateResult:
 
         backend = ec2_backends[context.account_id][context.region]
-        template_id = request["LaunchTemplateId"] or backend.launch_template_name_to_ids[request["LaunchTemplateName"]]
+        template_id = (
+            request["LaunchTemplateId"]
+            or backend.launch_template_name_to_ids[request["LaunchTemplateName"]]
+        )
         template: MotoLaunchTemplate = backend.launch_templates[template_id]
 
         # check if defaultVersion exists
