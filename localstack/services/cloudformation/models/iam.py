@@ -77,15 +77,6 @@ class IAMUser(GenericBaseModel):
         user_name = self.props.get("UserName")
         return aws_stack.connect_to_service("iam").get_user(UserName=user_name)["User"]
 
-    def update_resource(self, new_resource, stack_name, resources):
-        props = new_resource["Properties"]
-        client = aws_stack.connect_to_service("iam")
-        return client.update_user(
-            UserName=props.get("UserName"),
-            NewPath=props.get("NewPath") or "",
-            NewUserName=props.get("NewUserName") or "",
-        )
-
     @staticmethod
     def add_defaults(resource, stack_name: str):
         role_name = resource["Properties"].get("UserName")

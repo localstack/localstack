@@ -68,9 +68,10 @@ class GenericBaseModel:
     # TODO: change the signature to pass in a Stack instance (instead of stack_name and resources)
     def update_resource(self, new_resource, stack_name, resources):
         """Update the deployment of this resource, using the updated properties (implemented by subclasses)."""
-        # TODO: evaluate if we can add a generic implementation here, using "update" parameters from
-        # get_deploy_templates() responses, and based on checking whether resource attributes have changed
-        pass
+        raise NotImplementedError
+
+    def is_updatable(self) -> bool:
+        return type(self).update_resource != GenericBaseModel.update_resource
 
     @classmethod
     def cloudformation_type(cls):
