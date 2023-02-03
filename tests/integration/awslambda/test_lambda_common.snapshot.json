@@ -2124,11 +2124,7 @@
         "Payload": {
           "errorType": "Error",
           "errorMessage": "Error: some_error_msg",
-          "trace": [
-            "Error: Error: some_error_msg",
-            "    at Runtime.exports.handler (/var/task/index.js:2:11)",
-            "    at Runtime.handleOnce (/var/runtime/Runtime.js:66:25)"
-          ]
+          "trace": "<stack-trace>"
         },
         "StatusCode": 200,
         "ResponseMetadata": {
@@ -2179,11 +2175,7 @@
         "Payload": {
           "errorType": "Error",
           "errorMessage": "Error: some_error_msg",
-          "trace": [
-            "Error: Error: some_error_msg",
-            "    at Runtime.exports.handler (/var/task/index.js:2:11)",
-            "    at Runtime.handleOnceNonStreaming (/var/runtime/Runtime.js:74:25)"
-          ]
+          "trace": "<stack-trace>"
         },
         "StatusCode": 200,
         "ResponseMetadata": {
@@ -2234,11 +2226,7 @@
         "Payload": {
           "errorType": "Error",
           "errorMessage": "Error: some_error_msg",
-          "trace": [
-            "Error: Error: some_error_msg",
-            "    at Runtime.exports.handler (/var/task/index.js:2:11)",
-            "    at Runtime.handleOnceNonStreaming (file:///var/runtime/index.mjs:1089:29)"
-          ]
+          "trace": "<stack-trace>"
         },
         "StatusCode": 200,
         "ResponseMetadata": {
@@ -2939,11 +2927,7 @@
         "Payload": {
           "errorType": "Error",
           "errorMessage": "Error: some_error_msg",
-          "trace": [
-            "Error: Error: some_error_msg",
-            "    at exports.handler (/var/task/index.js:2:11)",
-            "    at Runtime.handleOnceNonStreaming (file:///var/runtime/index.mjs:1089:29)"
-          ]
+          "trace": "<stack-trace>"
         },
         "StatusCode": 200,
         "ResponseMetadata": {

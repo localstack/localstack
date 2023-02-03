@@ -172,6 +172,10 @@ class TestLambdaRuntimesCommon:
         snapshot.add_transformer(
             snapshot.transform.key_value("stackTrace", "<stack-trace>", reference_replacement=False)
         )
+        # for nodejs
+        snapshot.add_transformer(
+            snapshot.transform.key_value("trace", "<stack-trace>", reference_replacement=False)
+        )
         create_function_result = multiruntime_lambda.create_function(MemorySize=1024)
         snapshot.match("create_function_result", create_function_result)
 
