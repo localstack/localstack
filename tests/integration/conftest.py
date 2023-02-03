@@ -98,7 +98,7 @@ def _trigger_stop():
 def startup_monitor() -> None:
     """
     The startup monitor is a thread that waits for the startup_monitor_event and, once the event is true, starts a
-    localstack instance in it's own thread context.
+    localstack instance in its own thread context.
     """
     logger.info("waiting on localstack_start signal")
     startup_monitor_event.wait()

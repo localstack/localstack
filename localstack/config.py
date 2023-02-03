@@ -261,6 +261,10 @@ def load_environment(profile: str = None):
     dotenv.load_dotenv(path, override=False)
 
 
+def is_persistence_enabled() -> bool:
+    return PERSISTENCE and dirs.data
+
+
 def is_linux():
     return platform.system() == "Linux"
 

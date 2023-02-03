@@ -20,7 +20,7 @@ from localstack.runtime import events, hooks
 from localstack.services import generic_proxy, motoserver
 from localstack.services.generic_proxy import ProxyListener, start_proxy_server
 from localstack.services.plugins import SERVICE_PLUGINS, ServiceDisabled, wait_for_infra_shutdown
-from localstack.utils import analytics, config_listener, files, persistence
+from localstack.utils import analytics, config_listener, files
 from localstack.utils.aws.request_context import patch_moto_request_handling
 from localstack.utils.bootstrap import (
     canonicalize_api_names,
@@ -513,9 +513,6 @@ def do_start_infra(asynchronous, apis, is_in_docker):
     prepare_environment()
     thread = start_runtime_components()
     preload_services()
-
-    if config.PERSISTENCE:
-        persistence.save_startup_info()
 
     print(READY_MARKER_OUTPUT)
     sys.stdout.flush()
