@@ -199,14 +199,15 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
     create_fn_lock: threading.RLock
     create_layer_lock: threading.RLock
     router: FunctionUrlRouter
-    layer_fetcher: LayerFetcher
+    layer_fetcher: LayerFetcher | None
 
-    def __init__(self, layer_fetcher: LayerFetcher | None = None) -> None:
+    def __init__(self) -> None:
         self.lambda_service = LambdaService()
         self.create_fn_lock = threading.RLock()
         self.create_layer_lock = threading.RLock()
         self.router = FunctionUrlRouter(ROUTER, self.lambda_service)
-        self.layer_fetcher = layer_fetcher
+        self.layer_fetcher = None
+        lambda_hooks.inject_layer_fetcher.run(self)
 
     def on_after_init(self):
         self.router.register_routes()
@@ -461,8 +462,6 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
             )
 
     def _validate_layers(self, new_layers: list[str], region: str, account_id: int):
-        lambda_hooks.inject_layer_fetcher.run(self)
-
         if len(new_layers) > LAMBDA_LAYERS_LIMIT_PER_FUNCTION:
             raise InvalidParameterValueException(
                 "Cannot reference more than 5 layers.", Type="User"
