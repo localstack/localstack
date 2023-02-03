@@ -186,23 +186,20 @@ def download_and_extract(archive_url, target_dir, retries=0, sleep=3, tmp_archiv
         # create temporary placeholder file, to avoid duplicate parallel downloads
         save_file(tmp_archive, "")
 
-        current_try = 1
-        while current_try <= retries + 1:
+        for i in range(retries + 1):
             try:
                 download(archive_url, tmp_archive)
                 break
             except Exception as e:
                 LOG.warning(
                     "Attempt %d. Failed to download archive from %s: %s",
-                    current_try,
+                    i + 1,
                     archive_url,
                     e,
                 )
                 # only sleep between retries, not after the last one
-                if current_try <= retries:
+                if i < retries:
                     time.sleep(sleep)
-            finally:
-                current_try += 1
 
     # if the temporary file we created above hasn't been replaced, we assume failure
     if os.path.getsize(tmp_archive) <= 0:
