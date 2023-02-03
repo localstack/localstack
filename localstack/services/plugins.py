@@ -238,7 +238,7 @@ class Service:
     def for_provider(
         provider: ServiceProvider,
         dispatch_table_factory: Callable[[ServiceProvider], DispatchTable] = None,
-        service_lifecycle_hook=None,
+        service_lifecycle_hook: ServiceLifecycleHook = None,
     ) -> "Service":
         """
         Factory method for creating services for providers. This method hides a bunch of legacy code and
