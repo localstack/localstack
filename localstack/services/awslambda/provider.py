@@ -130,11 +130,12 @@ from localstack.aws.api.lambda_ import (
     Version,
 )
 from localstack.constants import LOCALHOST_HOSTNAME
-from localstack.services.awslambda import AccessDeniedException, api_utils
+from localstack.services.awslambda import api_utils
 from localstack.services.awslambda import hooks as lambda_hooks
 from localstack.services.awslambda.event_source_listeners.event_source_listener import (
     EventSourceListener,
 )
+from localstack.services.awslambda.invocation import AccessDeniedException
 from localstack.services.awslambda.invocation.lambda_models import (
     IMAGE_MAPPING,
     LAMBDA_LIMITS_CREATE_FUNCTION_REQUEST_SIZE,
@@ -503,9 +504,8 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
                     # Limitation: cannot fetch external layers when using the same account id as the target layer
                     # because we do not want to trigger the layer fetcher for every non-existing layer.
                     if self.layer_fetcher is None:
-                        # TODO: Do we have a specific exception for pro features?
-                        raise ServiceException(
-                            "Fetching shared layers from AWS is a pro feature.", status_code=501
+                        raise NotImplementedError(
+                            "Fetching shared layers from AWS is a pro feature."
                         )
 
                     layer = self.layer_fetcher.fetch_layer(layer_version_arn)
