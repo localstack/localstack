@@ -4,13 +4,11 @@ import os
 from typing import Dict, List
 
 import boto3
-from flask import Response
 from samtranslator.translator.transform import transform as transform_sam
 
 from localstack.services.cloudformation.engine import yaml_parser
 from localstack.aws.accounts import get_aws_account_id
 from localstack.aws.api import CommonServiceException
-from localstack.services.awslambda.lambda_api import func_arn, run_lambda
 from localstack.services.cloudformation.engine.entities import resolve_ssm_parameter_value
 from localstack.services.cloudformation.engine.policy_loader import create_policy_loader
 from localstack.services.cloudformation.stores import get_cloudformation_store
@@ -91,22 +89,16 @@ def execute_macro(parsed_template: Dict, macro: Dict, stack_parameters: List) ->
         "templateParameterValues": formatted_stack_parameters,
     }
 
-    function_arn = func_arn(macro_definition["FunctionName"])
-
-    result = {}
-    try:
-        invocation = run_lambda(func_arn=function_arn, event=event)
-        if isinstance(invocation.result, Response) and invocation.result.status_code == 500:
-            raise FailedTransformation(
-                transformation=macro["Name"],
-                message=f"Received malformed response from transform {transformation_id}. Rollback requested by user.",
-            )
-        result = json.loads(invocation.result)
-    except TypeError:
+    client = aws_stack.connect_to_service("lambda")
+    invocation = client.invoke(
+        FunctionName=macro_definition["FunctionName"], Payload=json.dumps(event)
+    )
+    if invocation.get("StatusCode") != 200 or invocation.get("FunctionError") == "Unhandled":
         raise FailedTransformation(
             transformation=macro["Name"],
-            message="Template format error: unsupported structure.. Rollback requested by user.",
+            message=f"Received malformed response from transform {transformation_id}. Rollback requested by user.",
         )
+    result = json.loads(invocation["Payload"].read())
 
     if result.get("status") != "success":
         error_message = result.get("errorMessage")
