@@ -9,7 +9,7 @@ from localstack.utils.platform import get_arch
 
 LAMBDA_RUNTIME_INIT_URL = "https://github.com/localstack/lambda-runtime-init/releases/download/{version}/aws-lambda-rie-{arch}"
 
-LAMBDA_RUNTIME_DEFAULT_VERSION = "v0.1.8-pre"
+LAMBDA_RUNTIME_DEFAULT_VERSION = "v0.1.11-pre"
 
 # GO Lambda runtime
 GO_RUNTIME_VERSION = "0.4.0"
@@ -21,25 +21,28 @@ class AWSLambdaRuntimePackage(Package):
         super().__init__(name="AwsLambda", default_version=default_version)
 
     def get_versions(self) -> List[str]:
-        return [
-            "v0.1.8-pre",
-            "v0.1.7-pre",
-            "v0.1.6-pre",
-            "v0.1.5-pre",
-            "v0.1.4-pre",
-            "v0.1.1-pre",
-            "v0.1-pre",
-        ]
+        return [LAMBDA_RUNTIME_DEFAULT_VERSION]
 
     def _get_installer(self, version: str) -> PackageInstaller:
         return AWSLambdaRuntimePackageInstaller(name="awslambda-runtime", version=version)
 
 
 class AWSLambdaRuntimePackageInstaller(DownloadInstaller):
-    def _get_download_url(self) -> str:
+    def _get_arch(self):
         arch = get_arch()
-        arch = "x86_64" if arch == "amd64" else arch
+        return "x86_64" if arch == "amd64" else arch
+
+    def _get_download_url(self) -> str:
+        arch = self._get_arch()
         return LAMBDA_RUNTIME_INIT_URL.format(version=self.version, arch=arch)
+
+    def _get_install_dir(self, target: InstallTarget) -> str:
+        install_dir = super()._get_install_dir(target)
+        arch = self._get_arch()
+        return os.path.join(install_dir, arch)
+
+    def _get_install_marker_path(self, install_dir: str) -> str:
+        return os.path.join(install_dir, "var", "rapid", "init")
 
     def _install(self, target: InstallTarget) -> None:
         super()._install(target)

@@ -89,10 +89,13 @@ from localstack.services.opensearch.cluster_manager import (
 from localstack.services.opensearch.models import OpenSearchStore, opensearch_stores
 from localstack.utils.aws.request_context import get_region_from_request_context
 from localstack.utils.collections import PaginatedList, remove_none_values_from_dict
-from localstack.utils.objects import singleton_factory
 from localstack.utils.serving import Server
 
 LOG = logging.getLogger(__name__)
+
+# The singleton for the ClusterManager instance.
+# The singleton is implemented this way only to be able to overwrite its value during tests.
+__CLUSTER_MANAGER = None
 
 # mutex for modifying domains
 _domain_mutex = threading.RLock()
@@ -107,9 +110,11 @@ DEFAULT_OPENSEARCH_CLUSTER_CONFIG = ClusterConfig(
 )
 
 
-@singleton_factory
 def cluster_manager() -> ClusterManager:
-    return create_cluster_manager()
+    global __CLUSTER_MANAGER
+    if __CLUSTER_MANAGER is None:
+        __CLUSTER_MANAGER = create_cluster_manager()
+    return __CLUSTER_MANAGER
 
 
 def _run_cluster_startup_monitor(cluster: Server, domain_name: str, region: str):

@@ -2,6 +2,7 @@ import abc
 import ast
 import base64
 import datetime
+import hashlib
 import json
 import logging
 import time
@@ -251,7 +252,7 @@ class SqsTopicPublisher(TopicPublisher):
             LOG.exception("An internal error occurred while trying to format the message for SQS")
             return
         try:
-            queue_url = sqs_queue_url_for_arn(subscriber["Endpoint"])
+            queue_url: str = sqs_queue_url_for_arn(subscriber["Endpoint"])
             parsed_arn = parse_arn(subscriber["Endpoint"])
             sqs_client = aws_stack.connect_to_service("sqs", region_name=parsed_arn["region"])
             kwargs = {}
@@ -259,6 +260,14 @@ class SqsTopicPublisher(TopicPublisher):
                 kwargs["MessageGroupId"] = message_context.message_group_id
             if message_context.message_deduplication_id:
                 kwargs["MessageDeduplicationId"] = message_context.message_deduplication_id
+            elif queue_url.endswith(".fifo"):
+                # Amazon SNS uses the message body provided to generate a unique hash value to use as the deduplication
+                # ID for each message, so you don't need to set a deduplication ID when you send each message.
+                # https://docs.aws.amazon.com/sns/latest/dg/fifo-message-dedup.html
+                content = context.message.message_content("sqs")
+                kwargs["MessageDeduplicationId"] = hashlib.sha256(
+                    content.encode("utf-8")
+                ).hexdigest()
             sqs_client.send_message(
                 QueueUrl=queue_url,
                 MessageBody=message_body,

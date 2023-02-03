@@ -94,6 +94,11 @@ APIGATEWAY_STEPFUNCTIONS_POLICY = {
     "Statement": [{"Effect": "Allow", "Action": "states:*", "Resource": "*"}],
 }
 
+APIGATEWAY_KINESIS_POLICY = {
+    "Version": "2012-10-17",
+    "Statement": [{"Effect": "Allow", "Action": "kinesis:*", "Resource": "*"}],
+}
+
 APIGATEWAY_ASSUME_ROLE_POLICY = {
     "Statement": {
         "Sid": "",
@@ -237,7 +242,6 @@ class TestAPIGateway:
         assert response.ok
         assert response._content == b'{"echo": "foobar", "response": "mocked"}'
 
-    @pytest.mark.skip
     def test_api_gateway_kinesis_integration(self):
         # create target Kinesis stream
         stream = resource_util.create_kinesis_stream(self.TEST_STREAM_KINESIS_API_GW)
@@ -1610,19 +1614,22 @@ class TestAPIGateway:
 
         test_data = {"test": "test-value"}
         url = api_invoke_url(api_id=rest_api, stage="dev", path="/")
+
+        req_template = {
+            "application/json": """
+            {
+            "input": "$util.escapeJavaScript($input.json('$'))",
+            "stateMachineArn": "%s"
+            }
+            """
+            % sm_arn
+        }
         match action:
             case "StartExecution":
-                req_template = {
-                    "application/json": """
-                            #set($data = $util.escapeJavaScript($input.json('$')))
-                            {"input": "$data", "stateMachineArn": "%s"}
-                        """
-                    % sm_arn
-                }
                 _prepare_integration(req_template, response_template={})
                 apigateway_client.create_deployment(restApiId=rest_api, stageName="dev")
-                # invoke stepfunction via API GW, assert results
 
+                # invoke stepfunction via API GW, assert results
                 def _invoke_start_step_function():
                     resp = requests.post(url, data=json.dumps(test_data))
                     assert resp.ok
@@ -1634,13 +1641,9 @@ class TestAPIGateway:
 
             case "StartSyncExecution":
                 resp_template = {APPLICATION_JSON: "$input.path('$.output')"}
-                _prepare_integration({}, resp_template)
+                _prepare_integration(req_template, resp_template)
                 apigateway_client.create_deployment(restApiId=rest_api, stageName="dev")
-                input_data = {
-                    "input": json.dumps(test_data),
-                    "name": "MyExecution",
-                    "stateMachineArn": sm_arn,
-                }
+                input_data = {"input": json.dumps(test_data), "name": "MyExecution"}
 
                 def _invoke_start_sync_step_function():
                     input_data["name"] += "1"

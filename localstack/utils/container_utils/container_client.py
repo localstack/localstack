@@ -368,6 +368,18 @@ class ContainerConfiguration:
     workdir: Optional[str] = None
 
 
+@dataclasses.dataclass
+class DockerRunFlags:
+    """Class to capture Docker run flags for a container"""
+
+    env_vars: Optional[Dict[str, str]]
+    ports: Optional[PortMappings]
+    mounts: Optional[List[SimpleVolumeBind]]
+    extra_hosts: Optional[Dict[str, str]]
+    network: Optional[str]
+    labels: Optional[Dict[str, str]]
+
+
 class ContainerClient(metaclass=ABCMeta):
     STOP_TIMEOUT = 0
 
@@ -701,6 +713,7 @@ class ContainerClient(metaclass=ABCMeta):
         additional_flags: Optional[str] = None,
         workdir: Optional[str] = None,
         privileged: Optional[bool] = None,
+        labels: Optional[Dict[str, str]] = None,
     ) -> str:
         """Creates a container with the given image
 
@@ -875,25 +888,20 @@ class Util:
         ports: PortMappings = None,
         mounts: List[SimpleVolumeBind] = None,
         network: Optional[str] = None,
-    ) -> Tuple[
-        Dict[str, str],
-        PortMappings,
-        List[SimpleVolumeBind],
-        Optional[Dict[str, str]],
-        Optional[str],
-    ]:
+    ) -> DockerRunFlags:
         """Parses environment, volume and port flags passed as string
         :param additional_flags: String which contains the flag definitions
         :param env_vars: Dict with env vars. Will be modified in place.
         :param ports: PortMapping object. Will be modified in place.
         :param mounts: List of mount tuples (host_path, container_path). Will be modified in place.
         :param network: Existing network name (optional). Warning will be printed if network is overwritten in flags.
-        :return: A tuple containing the env_vars, ports, mount, extra_hosts and network objects. Will return new objects
-                if respective parameters were None and additional flags contained a flag for that object, the same which
-                are passed otherwise.
+        :return: A DockerRunFlags object containing the env_vars, ports, mount, extra_hosts, network, and labels.
+                The result will return new objects if respective parameters were None and additional flags contained
+                a flag for that object, the same which are passed otherwise.
         """
         cur_state = None
         extra_hosts = None
+        labels = {}
         # TODO Use argparse to simplify this logic
         for flag in shlex.split(additional_flags):
             if not cur_state:
@@ -907,6 +915,8 @@ class Util:
                     cur_state = "add-host"
                 elif flag == "--network":
                     cur_state = "set-network"
+                elif flag == "--label":
+                    cur_state = "add-label"
                 else:
                     raise NotImplementedError(
                         f"Flag {flag} is currently not supported by this Docker client."
@@ -966,9 +976,23 @@ class Util:
                             flag,
                         )
                     network = flag
+                elif cur_state == "add-label":
+                    key, _, value = flag.partition("=")
+                    if key:
+                        labels[key] = value
+                    else:
+                        LOG.warning("Invalid --label specified, unable to parse: '%s'", flag)
 
                 cur_state = None
-        return env_vars, ports, mounts, extra_hosts, network
+
+        return DockerRunFlags(
+            env_vars=env_vars,
+            ports=ports,
+            mounts=mounts,
+            extra_hosts=extra_hosts,
+            network=network,
+            labels=labels,
+        )
 
     @staticmethod
     def convert_mount_list_to_dict(

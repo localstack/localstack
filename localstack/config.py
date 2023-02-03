@@ -649,6 +649,11 @@ LAMBDA_REMOVE_CONTAINERS = (
     os.environ.get("LAMBDA_REMOVE_CONTAINERS", "").lower().strip() not in FALSE_STRINGS
 )
 
+# time in milliseconds until lambda kills the execution environment after the last invocation has been processed
+# can be set to 0 to immediately kill the execution environments after an invocation
+# defaults to 600_000 ms => 10 minutes
+LAMBDA_KEEPALIVE_MS = int(os.environ.get("LAMBDA_KEEPALIVE_MS", "600000"))
+
 # DEV | Only for LS developers. Only applicable to new Lambda provider.
 # whether to explicitly expose port in lambda container when invoking functions in host mode for systems that cannot
 # reach the container via its IPv4 (e.g., macOS https://docs.docker.com/desktop/networking/#i-cannot-ping-my-containers)

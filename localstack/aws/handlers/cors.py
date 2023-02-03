@@ -16,16 +16,18 @@ from flask_cors.core import (
 from werkzeug.datastructures import Headers
 
 from localstack import config
-from localstack.config import (
-    EXTRA_CORS_ALLOWED_HEADERS,
-    EXTRA_CORS_ALLOWED_ORIGINS,
-    EXTRA_CORS_EXPOSE_HEADERS,
-)
+from localstack.config import EXTRA_CORS_ALLOWED_HEADERS, EXTRA_CORS_EXPOSE_HEADERS
 from localstack.http import Response
 
-from ...constants import PATH_USER_REQUEST
+from ...constants import LOCALHOST, LOCALHOST_HOSTNAME, PATH_USER_REQUEST
 from ..api import RequestContext
 from ..chain import Handler, HandlerChain
+
+LOG = logging.getLogger(__name__)
+
+# header name constants
+ACL_REQUEST_PRIVATE_NETWORK = "Access-Control-Request-Private-Network"
+ACL_ALLOW_PRIVATE_NETWORK = "Access-Control-Allow-Private-Network"
 
 # CORS constants below
 CORS_ALLOWED_HEADERS = [
@@ -72,25 +74,34 @@ ALLOWED_CORS_RESPONSE_HEADERS = [
     "Access-Control-Expose-Headers",
 ]
 
-ALLOWED_CORS_ORIGINS = [
-    "https://app.localstack.cloud",
-    "http://app.localstack.cloud",
-    f"https://localhost:{config.EDGE_PORT}",
-    f"http://localhost:{config.EDGE_PORT}",
-    f"https://localhost.localstack.cloud:{config.EDGE_PORT}",
-    f"http://localhost.localstack.cloud:{config.EDGE_PORT}",
-    "https://localhost",
-    "https://localhost.localstack.cloud",
-    # for requests from Electron apps, e.g., DynamoDB NoSQL Workbench
-    "file://",
-]
-if EXTRA_CORS_ALLOWED_ORIGINS:
-    ALLOWED_CORS_ORIGINS += EXTRA_CORS_ALLOWED_ORIGINS.split(",")
 
-ACL_REQUEST_PRIVATE_NETWORK = "Access-Control-Request-Private-Network"
-ACL_ALLOW_PRIVATE_NETWORK = "Access-Control-Allow-Private-Network"
+def _get_allowed_cors_origins() -> List[str]:
+    """Construct the list of allowed origins for CORS enforcement purposes"""
+    result = [
+        # allow access from Web app and localhost domains
+        "https://app.localstack.cloud",
+        "http://app.localstack.cloud",
+        "https://localhost",
+        "https://localhost.localstack.cloud",
+        # for requests from Electron apps, e.g., DynamoDB NoSQL Workbench
+        "file://",
+    ]
+    # Add allowed origins for localhost domains, using different protocol/port combinations.
+    # If a different port is configured for EDGE_PORT_HTTP, add it to allowed origins as well
+    _ports = set([config.EDGE_PORT] + ([config.EDGE_PORT_HTTP] if config.EDGE_PORT_HTTP else []))
+    for protocol in {"http", "https"}:
+        for port in _ports:
+            result.append(f"{protocol}://{LOCALHOST}:{port}")
+            result.append(f"{protocol}://{LOCALHOST_HOSTNAME}:{port}")
 
-LOG = logging.getLogger(__name__)
+    if config.EXTRA_CORS_ALLOWED_ORIGINS:
+        result += config.EXTRA_CORS_ALLOWED_ORIGINS.split(",")
+
+    return result
+
+
+# allowed origins used for CORS / CSRF checks
+ALLOWED_CORS_ORIGINS = _get_allowed_cors_origins()
 
 
 def should_enforce_self_managed_service(context: RequestContext) -> bool:

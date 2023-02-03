@@ -267,8 +267,10 @@ class TransformerUtility:
                 replacement="sequence_number",
                 replace_reference=True,
             ),
+            TransformerUtility.key_value("SequenceNumber", "sequence_number"),
             TransformerUtility.key_value("StartingSequenceNumber", "starting_sequence_number"),
             TransformerUtility.key_value("ShardId", "shard_id"),
+            TransformerUtility.key_value("NextShardIterator", "next_shard_iterator"),
             TransformerUtility.key_value(
                 "EndingHashKey", "ending_hash", reference_replacement=False
             ),

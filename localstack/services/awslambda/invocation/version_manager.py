@@ -265,6 +265,7 @@ class LambdaVersionManager(ServiceEndpoint):
                 if self.available_environments.empty() or self.active_environment_count() == 0:
                     self.start_environment()
                 environment = None
+                # TODO avoid infinite environment spawning retrying
                 while not environment:
                     try:
                         environment = self.available_environments.get(timeout=1)
@@ -282,6 +283,9 @@ class LambdaVersionManager(ServiceEndpoint):
                         environment.invoke(invocation_event=queued_invocation)
                         LOG.debug("Invoke for request %s done", queued_invocation.invocation_id)
                     except queue.Empty:
+                        # TODO if one environment threw an invalid status exception, we will get here potentially with
+                        # another busy environment, and won't spawn a new one as there is one active here.
+                        # We will be stuck in the loop until another becomes active without scaling.
                         if self.active_environment_count() == 0:
                             LOG.debug(
                                 "Detected no active environments for version %s. Starting one...",
@@ -295,6 +299,8 @@ class LambdaVersionManager(ServiceEndpoint):
                             environment.id,
                         )
                         self.running_invocations.pop(queued_invocation.invocation_id, None)
+                        # try next environment
+                        environment = None
             except Exception as e:
                 queued_invocation.result_future.set_exception(e)
 
