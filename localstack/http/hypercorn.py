@@ -60,7 +60,7 @@ class HypercornServer(Server):
     def do_shutdown(self):
         asyncio.run_coroutine_threadsafe(self._set_closed(), self.loop)
         self._closed.wait(timeout=10)
-        self.loop.shutdown_asyncgens()
+        asyncio.run_coroutine_threadsafe(self.loop.shutdown_asyncgens(), self.loop)
         self.loop.close()
 
     async def _set_closed(self):
