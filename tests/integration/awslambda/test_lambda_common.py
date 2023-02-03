@@ -165,7 +165,7 @@ class TestLambdaRuntimesCommon:
             "$..CodeSha256",  # works locally but unfortunately still produces a different hash in CI
         ]
     )
-    @pytest.mark.multiruntime(scenario="uncaughtexception", runtimes=["python"])
+    @pytest.mark.multiruntime(scenario="uncaughtexception")
     def test_uncaught_exception_invoke(self, lambda_client, multiruntime_lambda, snapshot):
         # unfortunately the stack trace is quite unreliable and changes when AWS updates the runtime transparently
         # since the stack trace contains references to internal runtime code.
