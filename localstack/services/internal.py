@@ -299,7 +299,7 @@ class LocalstackResources(Router):
         self.add(Resource("/_localstack/cloudformation/deploy", CloudFormationUi()))
 
         if config.ENABLE_CONFIG_UPDATES:
-            self.add(Resource("/_localstack/diagnose", ConfigResource()))
+            self.add(Resource("/_localstack/config", ConfigResource()))
 
         if config.DEBUG:
             LOG.warning(
