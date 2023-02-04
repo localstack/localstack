@@ -179,6 +179,54 @@ def localstack_runtime():
     return
 
 
+@pytest.hookimpl(hookwrapper=True)
+def pytest_runtest_teardown(item, *args):
+    import traceback
+    from time import perf_counter
+
+    from localstack_ext.bootstrap import pods_client
+    from pip._internal.utils.filesystem import format_file_size
+
+    from localstack.utils.files import mkdir
+    from localstack.utils.numbers import format_number
+    from localstack.utils.patch import patch
+
+    pod_save_file = os.path.join(config.TMP_FOLDER, "test.pod.export.zip")
+    mkdir(config.TMP_FOLDER)
+
+    # TODO remove! fix upstream...
+    @patch(pods_client.get_environment_metadata)
+    def get_environment_metadata(fn, *args, **kwargs):
+        try:
+            return fn(*args, **kwargs)
+        except Exception:
+            return {}
+
+    def _save_state():
+        start_time = perf_counter()
+        try:
+            pods_client.export_pod(target=f"file://{pod_save_file}")
+            # TODO: convert to logger
+            duration = (perf_counter() - start_time) * 1000
+            print(
+                f"💾 Stored pod file {pod_save_file} - "
+                f"size: {format_file_size(pod_save_file)}, duration: {format_number(duration)} ms"
+            )
+        except Exception as e:
+            # TODO: convert to logger
+            print(
+                "Unable to store pod for test function",
+                item.name,
+                pod_save_file,
+                e,
+                traceback.format_exc(),
+            )
+
+    _save_state()
+
+    yield
+
+
 @pytest.fixture
 def create_rest_apigw(apigateway_client):
     rest_api_ids = []

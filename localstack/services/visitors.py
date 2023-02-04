@@ -75,10 +75,11 @@ def _load_attribute_from_module(module_name: str, attribute_name: str) -> Any | 
     try:
         module = importlib.import_module(module_name)
         return getattr(module, attribute_name)
-    except (ModuleNotFoundError, AttributeError) as e:
-        LOG.debug(
-            'Unable to get attribute "%s" for module "%s": "%s"', attribute_name, module_name, e
-        )
+    except (ModuleNotFoundError, AttributeError):
+        # TODO: temporarily disabled to reduce verbosity
+        # LOG.debug(
+        #     'Unable to get attribute "%s" for module "%s": "%s"', attribute_name, module_name, e
+        # )
         return None
 
 
@@ -112,7 +113,8 @@ class ReflectionStateLocator:
             for _module, _attribute in _modules:
                 _attribute = _load_attribute_from_module(_module, _attribute)
                 if _attribute is not None:
-                    LOG.debug("Visiting attribute %s in module %s", _attribute, _module)
+                    # TODO: temporarily disabled to reduce verbosity
+                    # LOG.debug("Visiting attribute %s in module %s", _attribute, _module)
                     visitor.visit(_attribute)
 
         match service_name:
@@ -154,7 +156,8 @@ class ReflectionStateLocator:
                     attribute = _load_attribute_from_module(module_name, attribute_name)
 
                 if attribute is not None:
-                    LOG.debug("Visiting attribute %s in module %s", attribute_name, module_name)
+                    # TODO: temporarily disabled to reduce verbosity
+                    # LOG.debug("Visiting attribute %s in module %s", attribute_name, module_name)
                     visitor.visit(attribute)
 
                 # try to load BackendDict from predictable location
@@ -170,5 +173,6 @@ class ReflectionStateLocator:
                     attribute = _load_attribute_from_module(module_name, attribute_name)
 
                 if attribute is not None:
-                    LOG.debug("Visiting attribute %s in module %s", attribute_name, module_name)
+                    # TODO: temporarily disabled to reduce verbosity
+                    # LOG.debug("Visiting attribute %s in module %s", attribute_name, module_name)
                     visitor.visit(attribute)
