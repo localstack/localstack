@@ -51,6 +51,7 @@ from localstack.aws.api.ses import (
     VerificationStatus,
 )
 from localstack.constants import TEST_AWS_SECRET_ACCESS_KEY
+from localstack.http import resource
 from localstack.services.internal import get_internal_apis
 from localstack.services.moto import call_moto
 from localstack.services.plugins import ServiceLifecycleHook
@@ -118,6 +119,7 @@ def get_ses_backend(context: RequestContext) -> SESBackend:
     return ses_backends[context.account_id][context.region]
 
 
+@resource(f"/_localstack{EMAILS_ENDPOINT}")
 class SesServiceApiResource:
     """Provides a REST API for retrospective access to emails sent via SES.
 
@@ -147,7 +149,7 @@ def register_ses_api_resource():
     global _EMAILS_ENDPOINT_REGISTERED
 
     if not _EMAILS_ENDPOINT_REGISTERED:
-        get_internal_apis().add(EMAILS_ENDPOINT, SesServiceApiResource())
+        get_internal_apis().add(SesServiceApiResource())
         _EMAILS_ENDPOINT_REGISTERED = True
 
 

@@ -81,9 +81,9 @@ def register(router: Router[Handler]):
 
     :param router: the router to add the handlers into.
     """
-    router.add_route_endpoint(path_strategy_handler)
-    router.add_route_endpoint(domain_strategy_handler)
-    router.add_route_endpoint(legacy_handler)
+    router.add(path_strategy_handler)
+    router.add(domain_strategy_handler)
+    router.add(legacy_handler)
 
 
 class UnknownOperationException(Exception):

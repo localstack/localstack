@@ -203,6 +203,31 @@ class TestRouter:
         with pytest.raises(NotFound):
             assert router.dispatch(Request("GET", "/users/12"))
 
+    def test_remove_rules(self):
+        router = Router()
+
+        class MyRoutes:
+            @route("/a")
+            def route_a(self, request, args):
+                return Response(b"a")
+
+            @route("/b")
+            def route_b(self, request, args):
+                return Response(b"b")
+
+        rules = router.add(MyRoutes())
+
+        assert router.dispatch(Request("GET", "/a")).data == b"a"
+        assert router.dispatch(Request("GET", "/b")).data == b"b"
+
+        router.remove(rules)
+
+        with pytest.raises(NotFound):
+            assert router.dispatch(Request("GET", "/a"))
+
+        with pytest.raises(NotFound):
+            assert router.dispatch(Request("GET", "/b"))
+
     def test_remove_non_existing_rule(self):
         router = Router()
 
@@ -252,7 +277,7 @@ class TestRouter:
 
         api = MyApi()
         router = Router()
-        rules = router.add_route_endpoints(api)
+        rules = router.add(api)
         assert len(rules) == 2
 
         assert router.dispatch(Request("GET", "/users")).data == b"user"
@@ -273,7 +298,7 @@ class TestRouter:
 
         api = MyApi()
         router = Router()
-        rules = router.add_route_endpoints(api)
+        rules = router.add(api)
         assert len(rules) == 2
 
         assert router.dispatch(Request("GET", "/my_api")).data == b"/my_api/do-get"

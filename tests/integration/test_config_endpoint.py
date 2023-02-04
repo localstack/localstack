@@ -17,10 +17,10 @@ def config_endpoint(monkeypatch):
     # will listen on /?_config_
     config_listener.start_listener()
     # will listen on /_localstack/config-update
-    rule = router.add("/config", ConfigResource())
+    rules = router.add(ConfigResource())
     yield
     config_listener.remove_listener()
-    router.remove_rule(rule)
+    router.remove(rules)
 
 
 def test_config_endpoint(config_endpoint):
