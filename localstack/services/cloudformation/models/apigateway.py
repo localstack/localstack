@@ -150,6 +150,9 @@ class GatewayRestAPI(GenericBaseModel):
             )
             kwargs = keys_to_lower(kwargs)
             kwargs["tags"] = {tag["key"]: tag["value"] for tag in kwargs.get("tags", [])}
+            policy = kwargs["policy"]
+            if policy:
+                kwargs["policy"] = json.dumps(policy) if isinstance(policy, dict) else policy
 
             cfn_client = aws_stack.connect_to_service("cloudformation")
             stack_id = cfn_client.describe_stacks(StackName=stack_name)["Stacks"][0]["StackId"]
