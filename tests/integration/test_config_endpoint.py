@@ -3,6 +3,7 @@ import requests
 
 from localstack import config
 from localstack.constants import CONFIG_UPDATE_PATH
+from localstack.http import Resource
 from localstack.services.internal import ConfigResource, get_internal_apis
 from localstack.utils import config_listener
 
@@ -16,8 +17,8 @@ def config_endpoint(monkeypatch):
     monkeypatch.setattr(config, "ENABLE_CONFIG_UPDATES", True)
     # will listen on /?_config_
     config_listener.start_listener()
-    # will listen on /_localstack/config-update
-    rules = router.add(ConfigResource())
+    # will listen on /_localstack/config
+    rules = router.add(Resource("/_localstack/config", ConfigResource()))
     yield
     config_listener.remove_listener()
     router.remove(rules)
