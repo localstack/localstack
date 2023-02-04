@@ -5,13 +5,14 @@ import threading
 from collections import defaultdict
 from concurrent.futures import ThreadPoolExecutor
 from enum import Enum
-from typing import Callable, Dict, List, Optional, Tuple
+from typing import Callable, Dict, List, Optional, Protocol, Tuple
 
 from plugin import Plugin, PluginLifecycleListener, PluginManager, PluginSpec
 from readerwriterlock import rwlock
 from werkzeug import Request
 
 from localstack import config
+from localstack.aws.skeleton import DispatchTable
 from localstack.config import ServiceProviderConfig
 from localstack.utils.bootstrap import get_enabled_apis, log_duration
 from localstack.utils.functions import call_safe
@@ -160,7 +161,19 @@ class BackendStateLifecycle(abc.ABC):
         pass
 
 
+class ServiceProvider(Protocol):
+    service: str
+
+
 class Service:
+    """
+    FIXME: this has become frankenstein's monster, and it has to go. once we've rid ourselves of the legacy edge
+     proxy, we can get rid of the ``listener`` concept. we should then do one iteration over all the
+     ``start_dynamodb``, ``start_<whatever>``, ``check_<whatever>``, etc. methods, to make all of those integral part
+     of the service provider. the assumption that every service provider starts a backend server is outdated, and then
+     we can get rid of ``start``, and ``check``.
+    """
+
     def __init__(
         self,
         name,
@@ -180,6 +193,7 @@ class Service:
         self.stop_function = stop
         self.lifecycle_hook = lifecycle_hook or ServiceLifecycleHook()
         self.backend_state_lifecycle = backend_state_lifecycle
+        self._provider = None
         call_safe(self.lifecycle_hook.on_after_init)
 
     def start(self, asynchronous):
@@ -219,6 +233,41 @@ class Service:
 
     def is_enabled(self):
         return True
+
+    @staticmethod
+    def for_provider(
+        provider: ServiceProvider,
+        dispatch_table_factory: Callable[[ServiceProvider], DispatchTable] = None,
+        service_lifecycle_hook: ServiceLifecycleHook = None,
+    ) -> "Service":
+        """
+        Factory method for creating services for providers. This method hides a bunch of legacy code and
+        band-aids/adapters to make persistence visitors work, while providing compatibility with the legacy edge proxy.
+
+        :param provider: the service provider, i.e., the implementation of the generated ASF service API.
+        :param dispatch_table_factory: a `MotoFallbackDispatcher` or something similar that uses the provider to
+            create a dispatch table. this one's a bit clumsy.
+        :param service_lifecycle_hook: if left empty, the factory checks whether the provider is a ServiceLifecycleHook.
+        :return: a service instance
+        """
+        from localstack.aws.proxy import AwsApiListener
+
+        # determine the service_lifecycle_hook
+        if service_lifecycle_hook is None:
+            if isinstance(provider, ServiceLifecycleHook):
+                service_lifecycle_hook = provider
+
+        # determine the delegate for injecting into the AwsApiListener
+        delegate = dispatch_table_factory(provider) if dispatch_table_factory else provider
+
+        service = Service(
+            name=provider.service,
+            listener=AwsApiListener(provider.service, delegate=delegate),
+            lifecycle_hook=service_lifecycle_hook,
+        )
+        service._provider = provider
+
+        return service
 
 
 class ServiceState(Enum):
