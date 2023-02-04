@@ -75,24 +75,6 @@ from localstack.utils.time import now_utc
 LOG = logging.getLogger(__name__)
 
 
-def get_moto_backend(context: RequestContext) -> apigw_models.APIGatewayBackend:
-    return apigw_models.apigateway_backends[context.account_id][context.region]
-
-
-def remove_empty_attributes_from_rest_api(rest_api: RestApi, remove_tags=True):
-    if not rest_api.get("binaryMediaTypes"):
-        rest_api.pop("binaryMediaTypes", None)
-    if remove_tags:
-        if not rest_api.get("tags"):
-            rest_api.pop("tags", None)
-    else:
-        rest_api["tags"] = {}
-    if not rest_api.get("version"):
-        rest_api.pop("version", None)
-    if not rest_api.get("description"):
-        rest_api.pop("description", None)
-
-
 class ApigatewayProvider(ApigatewayApi, ServiceLifecycleHook):
     router: ApigatewayRouter
 
@@ -102,6 +84,10 @@ class ApigatewayProvider(ApigatewayApi, ServiceLifecycleHook):
     def on_after_init(self):
         apply_patches()
         self.router.register_routes()
+
+    @staticmethod
+    def _get_moto_backend(context: RequestContext) -> apigw_models.APIGatewayBackend:
+        return apigw_models.apigateway_backends[context.account_id][context.region]
 
     @handler("TestInvokeMethod", expand=False)
     def test_invoke_method(
@@ -136,7 +122,7 @@ class ApigatewayProvider(ApigatewayApi, ServiceLifecycleHook):
         if request.get("description") == "":
             raise BadRequestException("Description cannot be an empty string")
         result = call_moto(context)
-        moto_backend = get_moto_backend(context)
+        moto_backend = self._get_moto_backend(context)
         rest_api = moto_backend.apis.get(result["id"])
         rest_api.version = request.get("version")
         response = rest_api.to_dict()
@@ -155,7 +141,7 @@ class ApigatewayProvider(ApigatewayApi, ServiceLifecycleHook):
         rest_api_id: String,
         patch_operations: ListOfPatchOperation = None,
     ) -> RestApi:
-        moto_backend = get_moto_backend(context)
+        moto_backend = self._get_moto_backend(context)
         rest_api = moto_backend.apis.get(rest_api_id)
         if not rest_api:
             raise NotFoundException(
@@ -212,8 +198,8 @@ class ApigatewayProvider(ApigatewayApi, ServiceLifecycleHook):
 
     @handler("PutRestApi", expand=False)
     def put_rest_api(self, context: RequestContext, request: PutRestApiRequest) -> RestApi:
-        moto_backend = get_moto_backend(context)
-        rest_api = moto_backend.get_rest_api(request["restApiId"])
+        moto_backend = self._get_moto_backend(context)
+        rest_api = moto_backend.apis.get(request["restApiId"])
         body_data = request["body"].read()
 
         openapi_spec = parse_json_or_yaml(to_str(body_data))
@@ -856,6 +842,23 @@ class ApigatewayProvider(ApigatewayApi, ServiceLifecycleHook):
 # ---------------
 # UTIL FUNCTIONS
 # ---------------
+
+
+def remove_empty_attributes_from_rest_api(rest_api: RestApi, remove_tags=True):
+    if not rest_api.get("binaryMediaTypes"):
+        rest_api.pop("binaryMediaTypes", None)
+
+    if not rest_api.get("tags"):
+        if remove_tags:
+            rest_api.pop("tags", None)
+        else:
+            # if `tags` is falsy, set it to an empty dict
+            rest_api["tags"] = {}
+
+    if not rest_api.get("version"):
+        rest_api.pop("version", None)
+    if not rest_api.get("description"):
+        rest_api.pop("description", None)
 
 
 def create_custom_context(

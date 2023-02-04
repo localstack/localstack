@@ -85,8 +85,8 @@ def test_import_rest_api(import_apigw, snapshot):
 class TestApiGatewayApi:
     @pytest.mark.aws_validated
     def test_list_and_delete_apis(self, apigateway_client, apigw_create_rest_api, snapshot):
-        api_name1 = "test-list-and-delete-apis-1"
-        api_name2 = "test-list-and-delete-apis-2"
+        api_name1 = f"test-list-and-delete-apis-{short_uid()}"
+        api_name2 = f"test-list-and-delete-apis-{short_uid()}"
 
         response = apigw_create_rest_api(name=api_name1, description="this is my api")
         snapshot.match("create-rest-api-1", response)
@@ -100,19 +100,11 @@ class TestApiGatewayApi:
         response["items"].sort(key=itemgetter("createdDate"))
         snapshot.match("get-rest-api-before-delete", response)
 
-        # TODO: remove this once we know we have proper cleanup of resources
-        items = [item for item in response["items"] if item["name"] in [api_name1, api_name2]]
-        assert len(items) == 2
-
         response = apigateway_client.delete_rest_api(restApiId=api_id)
         snapshot.match("delete-rest-api", response)
 
         response = apigateway_client.get_rest_apis()
         snapshot.match("get-rest-api-after-delete", response)
-
-        # TODO: remove this once we know we have proper cleanup of resources
-        items = [item for item in response["items"] if item["name"] in [api_name1, api_name2]]
-        assert len(items) == 1
 
     @pytest.mark.aws_validated
     def test_create_rest_api_with_optional_params(
