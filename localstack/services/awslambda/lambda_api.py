@@ -799,7 +799,7 @@ def do_set_function_code(lambda_function: LambdaFunction):
         if runtime.startswith("dotnet") and not use_docker():
             def execute(event, context):
                 result = lambda_executors.EXECUTOR_LOCAL.execute_dotnet_lambda(
-                    event, context, maon_file=main_file, lambda_function=lambda_function
+                    event, context, main_file=main_file, lambda_function=lambda_function
                 )
                 return result
             lambda_handler = execute
