@@ -281,6 +281,9 @@ jobs:
             - repo/target/reports/
             - repo/target/coverage/
             - repo/target/metric_reports
+      - store_artifacts:
+          path: /tmp/localstack/test.pod.export.zip
+          destination: pods-state/test.pod.export.zip
 
   capture-not-implemented:
     parameters:

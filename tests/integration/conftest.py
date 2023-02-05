@@ -9,6 +9,7 @@ import logging
 import multiprocessing as mp
 import os
 import pickle
+import random
 import threading
 
 import pytest
@@ -190,7 +191,7 @@ def localstack_runtime():
 
 
 # temporarily disable logger (too verbose)
-states.LOG.setLevel(logging.NOTSET)
+states.LOG.setLevel(logging.WARNING)
 
 pickle_error_cases = {}
 
@@ -228,6 +229,8 @@ def pickle_save(fn, self, obj, *args, **kwargs):
         arg_names = [_get_name(arg) for arg in args]
         name = "->".join(arg_names)
 
+        # TODO: convert to logger
+        print("Recording pickle error:", name, e)
         pickle_error_cases.setdefault(name, set()).add(str(e))
 
 
@@ -261,24 +264,29 @@ def pytest_runtest_teardown(item, *args):
     pod_save_file = os.path.join(config.TMP_FOLDER, "test.pod.export.zip")
     mkdir(config.TMP_FOLDER)
 
-    start_time = perf_counter()
-    try:
-        pods_client.export_pod(target=f"file://{pod_save_file}")
-        duration = (perf_counter() - start_time) * 1000
-        # TODO: convert to logger
-        print(
-            f"💾 Stored pod file {pod_save_file} - "
-            f"size: {format_file_size(pod_save_file)}, duration: {format_number(duration)} ms"
-        )
-    except Exception as e:
-        # TODO: convert to logger
-        print(
-            "Unable to store pod for test function",
-            item.name,
-            pod_save_file,
-            e,
-            traceback.format_exc(),
-        )
+    def _save_state():
+        start_time = perf_counter()
+        try:
+            pods_client.export_pod(target=f"file://{pod_save_file}")
+            duration = (perf_counter() - start_time) * 1000
+            # TODO: convert to logger
+            print(
+                f"💾 Stored pod file {pod_save_file} - "
+                f"size: {format_file_size(pod_save_file)}, duration: {format_number(duration)} ms"
+            )
+        except Exception as e:
+            # TODO: convert to logger
+            print(
+                "Unable to store pod for test function",
+                item.name,
+                pod_save_file,
+                e,
+                traceback.format_exc(),
+            )
+
+    # currently taking a sample of data only (to avoid timeouts)
+    if random.random() < 0.3:
+        _save_state()
 
     yield
 
