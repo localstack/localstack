@@ -4,12 +4,17 @@ See: https://docs.pytest.org/en/6.2.x/fixture.html#conftest-py-sharing-fixtures-
 
 It is thread/process safe to run with pytest-parallel, however not for pytest-xdist.
 """
+import inspect
 import logging
 import multiprocessing as mp
 import os
+import pickle
 import threading
 
 import pytest
+from localstack_ext.bootstrap import pods_client
+from localstack_ext.bootstrap.pods.server import states
+from moto.ec2.models.subnets import Subnet
 
 from localstack import config
 from localstack.config import is_env_true
@@ -17,6 +22,7 @@ from localstack.constants import ENV_INTERNAL_TEST_RUN
 from localstack.runtime import events
 from localstack.services import infra
 from localstack.utils.common import safe_requests
+from localstack.utils.patch import patch
 from tests.integration.apigateway_fixtures import create_rest_api, delete_rest_api, import_rest_api
 from tests.integration.test_es import install_async as es_install_async
 from tests.integration.test_opensearch import install_async as opensearch_install_async
@@ -84,6 +90,10 @@ def pytest_unconfigure(config):
     # wait for localstack to stop. We do not want to exit immediately, otherwise new threads during shutdown will fail
     if not localstack_stopped.wait(timeout=10):
         logger.warning("LocalStack did not exit in time!")
+
+    # print pickle errors
+    # TODO use logger
+    print(f"Recorded {len(pickle_error_cases)} pickle errors: {pickle_error_cases}")
 
 
 def _start_monitor():
@@ -179,6 +189,64 @@ def localstack_runtime():
     return
 
 
+# temporarily disable logger (too verbose)
+states.LOG.setLevel(logging.NOTSET)
+
+pickle_error_cases = {}
+
+
+# TODO remove! fix upstream...
+@patch(pods_client.get_environment_metadata)
+def get_environment_metadata(fn, *args, **kwargs):
+    try:
+        return fn(*args, **kwargs)
+    except Exception:
+        return {}
+
+
+@patch(pickle._Pickler.save)
+def pickle_save(fn, self, obj, *args, **kwargs):
+    try:
+        return fn(self, obj, *args, **kwargs)
+    except Exception as e:
+
+        def _get_name(obj):
+            case_name = str(obj)
+            if hasattr(obj, "__qualname__"):
+                case_name = obj.__qualname__
+            elif hasattr(obj, "__class__"):
+                case_name = obj.__class__.__name__
+            elif hasattr(obj, "__name__"):
+                case_name = obj.__name__
+            return case_name
+
+        # simple heuristic to get object path
+        stack = inspect.stack()
+        frames = [f for f in stack if f.function == "save" and f.filename.endswith("pickle.py")]
+        frames = reversed(frames)
+        args = [inspect.getargvalues(f[0]).locals.get("obj") for f in frames]
+        arg_names = [_get_name(arg) for arg in args]
+        name = "->".join(arg_names)
+
+        pickle_error_cases.setdefault(name, set()).add(str(e))
+
+
+def set_state(self, state, *args, **kwargs):
+    state["_subnet_ip_generator"] = self.cidr.hosts()
+    self.__dict__.update(state)
+
+
+def get_state(self, *args, **kwargs):
+    state = self.__dict__.copy()
+    state.pop("_subnet_ip_generator", None)
+    return state
+
+
+# TODO temorary patch to fix `generator` pickle error
+Subnet.__setstate__ = set_state
+Subnet.__getstate__ = get_state
+
+
 @pytest.hookimpl(hookwrapper=True)
 def pytest_runtest_teardown(item, *args):
     import traceback
@@ -189,40 +257,28 @@ def pytest_runtest_teardown(item, *args):
 
     from localstack.utils.files import mkdir
     from localstack.utils.numbers import format_number
-    from localstack.utils.patch import patch
 
     pod_save_file = os.path.join(config.TMP_FOLDER, "test.pod.export.zip")
     mkdir(config.TMP_FOLDER)
 
-    # TODO remove! fix upstream...
-    @patch(pods_client.get_environment_metadata)
-    def get_environment_metadata(fn, *args, **kwargs):
-        try:
-            return fn(*args, **kwargs)
-        except Exception:
-            return {}
-
-    def _save_state():
-        start_time = perf_counter()
-        try:
-            pods_client.export_pod(target=f"file://{pod_save_file}")
-            # TODO: convert to logger
-            duration = (perf_counter() - start_time) * 1000
-            print(
-                f"💾 Stored pod file {pod_save_file} - "
-                f"size: {format_file_size(pod_save_file)}, duration: {format_number(duration)} ms"
-            )
-        except Exception as e:
-            # TODO: convert to logger
-            print(
-                "Unable to store pod for test function",
-                item.name,
-                pod_save_file,
-                e,
-                traceback.format_exc(),
-            )
-
-    _save_state()
+    start_time = perf_counter()
+    try:
+        pods_client.export_pod(target=f"file://{pod_save_file}")
+        duration = (perf_counter() - start_time) * 1000
+        # TODO: convert to logger
+        print(
+            f"💾 Stored pod file {pod_save_file} - "
+            f"size: {format_file_size(pod_save_file)}, duration: {format_number(duration)} ms"
+        )
+    except Exception as e:
+        # TODO: convert to logger
+        print(
+            "Unable to store pod for test function",
+            item.name,
+            pod_save_file,
+            e,
+            traceback.format_exc(),
+        )
 
     yield
 
