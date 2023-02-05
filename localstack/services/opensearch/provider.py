@@ -143,7 +143,7 @@ def create_cluster(
     context. NOT thread safe, needs to be called around _domain_mutex.
     If the preferred_port is given, this port will be preferred (if OPENSEARCH_ENDPOINT_STRATEGY == "port").
     """
-    store = OpensearchProvider.get_store()
+    store = opensearch_stores[domain_key.account][domain_key.region]
 
     manager = cluster_manager()
     engine_version = engine_version or OPENSEARCH_DEFAULT_VERSION
