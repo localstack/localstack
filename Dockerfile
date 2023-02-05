@@ -58,6 +58,13 @@ RUN apt-get update && \
             nodejs && \
         apt-get clean && rm -rf /var/lib/apt/lists/*
 
+# Install .NET for local executor
+RUN curl -sSL https://packages.microsoft.com/config/ubuntu/20.04/packages-microsoft-prod.deb \
+         -o microsoft.deb && \
+    dpkg -i microsoft.deb && \
+    apt update && \
+    apt install -y aspnetcore-runtime-7.0
+
 SHELL [ "/bin/bash", "-c" ]
 
 # Install Java 11

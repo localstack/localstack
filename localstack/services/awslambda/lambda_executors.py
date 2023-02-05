@@ -1324,10 +1324,15 @@ class LambdaExecutorLocal(LambdaExecutor):
         """
 
         env_vars = lambda_function and lambda_function.envvars
+        input = env_vars.pop("AWS_LAMBDA_EVENT_BODY")
+        args = {}
+        if input:
+            args["input"] = input.encode("utf-8")
+            env_vars["DOCKER_LAMBDA_USE_STDIN"] = "1"
         kwargs = {"stdin": True, "inherit_env": True, "asynchronous": True, "env_vars": env_vars}
 
         process = run(cmd, stderr=subprocess.PIPE, outfile=subprocess.PIPE, **kwargs)
-        result, log_output = process.communicate()
+        result, log_output = process.communicate(**args)
 
         try:
             result = to_str(result).strip()
@@ -1595,6 +1600,16 @@ class LambdaExecutorLocal(LambdaExecutor):
         go_installer = awslambda_go_runtime_package.get_installer()
         cmd = go_installer.get_executable_path()
         LOG.debug("Running Golang Lambda with runtime: %s", cmd)
+        result = self._execute_in_custom_runtime(cmd, lambda_function=lambda_function)
+        return result
+
+    def execute_dotnet_lambda(self, event, context, main_file, lambda_function: LambdaFunction = None):
+        cmd = [
+            "dotnet",
+            main_file,
+        ]
+        if lambda_function:
+            lambda_function.envvars["AWS_LAMBDA_EVENT_BODY"] = json.dumps(json_safe(event))
         result = self._execute_in_custom_runtime(cmd, lambda_function=lambda_function)
         return result
 

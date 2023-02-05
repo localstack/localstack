@@ -698,11 +698,7 @@ def do_set_function_code(lambda_function: LambdaFunction):
 
     def generic_handler(*_):
         raise ClientError(
-            (
-                'Unable to find executor for Lambda function "%s". Note that '
-                + "Node.js, Golang, and .Net Core Lambdas currently require LAMBDA_EXECUTOR=docker"
-            )
-            % lambda_name
+            f'Unable to find executor for Lambda function "{lambda_name}"'
         )
 
     lambda_name = lambda_function.name()
@@ -800,6 +796,14 @@ def do_set_function_code(lambda_function: LambdaFunction):
             except Exception as e:
                 raise ClientError("Unable to get handler function from lambda code: %s" % e)
 
+        if runtime.startswith("dotnet") and not use_docker():
+            def execute(event, context):
+                result = lambda_executors.EXECUTOR_LOCAL.execute_dotnet_lambda(
+                    event, context, maon_file=main_file, lambda_function=lambda_function
+                )
+                return result
+            lambda_handler = execute
+
         if runtime.startswith("node") and not use_docker():
             ensure_readable(main_file)
 
@@ -816,13 +820,13 @@ def do_set_function_code(lambda_function: LambdaFunction):
 
             ensure_readable(main_file)
 
-            def execute_go(event, context):
+            def execute(event, context):
                 result = lambda_executors.EXECUTOR_LOCAL.execute_go_lambda(
                     event, context, main_file=main_file, lambda_function=lambda_function
                 )
                 return result
 
-            lambda_handler = execute_go
+            lambda_handler = execute
 
     if lambda_handler:
         lambda_executors.LambdaExecutorLocal.add_function_callable(lambda_function, lambda_handler)
