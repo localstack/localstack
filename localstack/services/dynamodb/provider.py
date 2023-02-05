@@ -1,6 +1,7 @@
 import copy
 import json
 import logging
+import os.path
 import random
 import re
 import time
@@ -91,6 +92,7 @@ from localstack.aws.api.dynamodb import (
 from localstack.aws.forwarder import get_request_forwarder_http
 from localstack.constants import AUTH_CREDENTIAL_REGEX, LOCALHOST, TEST_AWS_SECRET_ACCESS_KEY
 from localstack.http import Response
+from localstack.persistence import AssetDirectory, StateVisitor
 from localstack.services.dynamodb import server
 from localstack.services.dynamodb.models import DynamoDBStore, dynamodb_stores
 from localstack.services.dynamodb.server import start_dynamodb, wait_for_dynamodb
@@ -339,6 +341,10 @@ class DynamoDBProvider(DynamodbApi, ServiceLifecycleHook):
     def __init__(self):
         self.request_forwarder = get_request_forwarder_http(self.get_forward_url)
 
+    def accept_state_visitor(self, visitor: StateVisitor):
+        visitor.visit(dynamodb_stores)
+        visitor.visit(AssetDirectory(os.path.join(config.dirs.data, "dynamodb")))
+
     def on_after_init(self):
         # add response processor specific to ddblocal
         handlers.modify_service_response.append(self.service, self._modify_ddblocal_arns)
@@ -385,7 +391,7 @@ class DynamoDBProvider(DynamodbApi, ServiceLifecycleHook):
         return self.forward_request(context)
 
     def forward_request(
-        self, context: RequestContext, service_request: ServiceRequest = None
+            self, context: RequestContext, service_request: ServiceRequest = None
     ) -> ServiceResponse:
         """
         Forward a request to DynamoDB Local.
@@ -426,9 +432,9 @@ class DynamoDBProvider(DynamodbApi, ServiceLifecycleHook):
 
     @handler("CreateTable", expand=False)
     def create_table(
-        self,
-        context: RequestContext,
-        create_table_input: CreateTableInput,
+            self,
+            context: RequestContext,
+            create_table_input: CreateTableInput,
     ) -> CreateTableOutput:
         # Check if table exists, to avoid error log output from DynamoDBLocal
         table_name = create_table_input["TableName"]
@@ -549,7 +555,7 @@ class DynamoDBProvider(DynamodbApi, ServiceLifecycleHook):
 
     @handler("UpdateTable", expand=False)
     def update_table(
-        self, context: RequestContext, update_table_input: UpdateTableInput
+            self, context: RequestContext, update_table_input: UpdateTableInput
     ) -> UpdateTableOutput:
         table_name = update_table_input["TableName"]
         global_table_region = self.get_global_table_region(context, table_name)
@@ -619,10 +625,10 @@ class DynamoDBProvider(DynamodbApi, ServiceLifecycleHook):
         return result
 
     def list_tables(
-        self,
-        context: RequestContext,
-        exclusive_start_table_name: TableName = None,
-        limit: ListTablesInputLimit = None,
+            self,
+            context: RequestContext,
+            exclusive_start_table_name: TableName = None,
+            limit: ListTablesInputLimit = None,
     ) -> ListTablesOutput:
         response = self.forward_request(context)
 
@@ -691,9 +697,9 @@ class DynamoDBProvider(DynamodbApi, ServiceLifecycleHook):
 
     @handler("DeleteItem", expand=False)
     def delete_item(
-        self,
-        context: RequestContext,
-        delete_item_input: DeleteItemInput,
+            self,
+            context: RequestContext,
+            delete_item_input: DeleteItemInput,
     ) -> DeleteItemOutput:
         table_name = delete_item_input["TableName"]
         global_table_region = self.get_global_table_region(context, table_name)
@@ -730,9 +736,9 @@ class DynamoDBProvider(DynamodbApi, ServiceLifecycleHook):
 
     @handler("UpdateItem", expand=False)
     def update_item(
-        self,
-        context: RequestContext,
-        update_item_input: UpdateItemInput,
+            self,
+            context: RequestContext,
+            update_item_input: UpdateItemInput,
     ) -> UpdateItemOutput:
         table_name = update_item_input["TableName"]
         global_table_region = self.get_global_table_region(context, table_name)
@@ -804,9 +810,9 @@ class DynamoDBProvider(DynamodbApi, ServiceLifecycleHook):
 
     @handler("BatchWriteItem", expand=False)
     def batch_write_item(
-        self,
-        context: RequestContext,
-        batch_write_item_input: BatchWriteItemInput,
+            self,
+            context: RequestContext,
+            batch_write_item_input: BatchWriteItemInput,
     ) -> BatchWriteItemOutput:
         # TODO: add global table support
         existing_items = []
@@ -841,10 +847,10 @@ class DynamoDBProvider(DynamodbApi, ServiceLifecycleHook):
         event_sources_or_streams_enabled = False
         for record in records:
             event_sources_or_streams_enabled = (
-                event_sources_or_streams_enabled
-                or has_event_sources_or_streams_enabled(
-                    record["eventSourceARN"], cache=streams_enabled_cache
-                )
+                    event_sources_or_streams_enabled
+                    or has_event_sources_or_streams_enabled(
+                record["eventSourceARN"], cache=streams_enabled_cache
+            )
             )
         if event_sources_or_streams_enabled:
             self.forward_stream_records(records)
@@ -866,10 +872,10 @@ class DynamoDBProvider(DynamodbApi, ServiceLifecycleHook):
 
     @handler("BatchGetItem")
     def batch_get_item(
-        self,
-        context: RequestContext,
-        request_items: BatchGetRequestMap,
-        return_consumed_capacity: ReturnConsumedCapacity = None,
+            self,
+            context: RequestContext,
+            request_items: BatchGetRequestMap,
+            return_consumed_capacity: ReturnConsumedCapacity = None,
     ) -> BatchGetItemOutput:
         # TODO: add global table support
         return self.forward_request(context)
@@ -880,9 +886,9 @@ class DynamoDBProvider(DynamodbApi, ServiceLifecycleHook):
 
     @handler("TransactWriteItems", expand=False)
     def transact_write_items(
-        self,
-        context: RequestContext,
-        transact_write_items_input: TransactWriteItemsInput,
+            self,
+            context: RequestContext,
+            transact_write_items_input: TransactWriteItemsInput,
     ) -> TransactWriteItemsOutput:
         existing_items = []
         for item in transact_write_items_input["TransactItems"]:
@@ -909,11 +915,11 @@ class DynamoDBProvider(DynamodbApi, ServiceLifecycleHook):
         event_sources_or_streams_enabled = False
         for record in records:
             event_sources_or_streams_enabled = (
-                event_sources_or_streams_enabled
-                or has_event_sources_or_streams_enabled(
-                    record["eventSourceARN"],
-                    streams_enabled_cache,
-                )
+                    event_sources_or_streams_enabled
+                    or has_event_sources_or_streams_enabled(
+                record["eventSourceARN"],
+                streams_enabled_cache,
+            )
             )
         if event_sources_or_streams_enabled:
             self.forward_stream_records(records)
@@ -922,25 +928,25 @@ class DynamoDBProvider(DynamodbApi, ServiceLifecycleHook):
 
     @handler("TransactGetItems", expand=False)
     def transact_get_items(
-        self,
-        context: RequestContext,
-        transact_items: TransactGetItemList,
-        return_consumed_capacity: ReturnConsumedCapacity = None,
+            self,
+            context: RequestContext,
+            transact_items: TransactGetItemList,
+            return_consumed_capacity: ReturnConsumedCapacity = None,
     ) -> TransactGetItemsOutput:
         return self.forward_request(context)
 
     @handler("ExecuteTransaction", expand=False)
     def execute_transaction(
-        self, context: RequestContext, execute_transaction_input: ExecuteTransactionInput
+            self, context: RequestContext, execute_transaction_input: ExecuteTransactionInput
     ) -> ExecuteTransactionOutput:
         result = self.forward_request(context)
         return result
 
     @handler("ExecuteStatement", expand=False)
     def execute_statement(
-        self,
-        context: RequestContext,
-        execute_statement_input: ExecuteStatementInput,
+            self,
+            context: RequestContext,
+            execute_statement_input: ExecuteStatementInput,
     ) -> ExecuteStatementOutput:
         statement = execute_statement_input["Statement"]
         table_name = extract_table_name_from_partiql_update(statement)
@@ -967,7 +973,7 @@ class DynamoDBProvider(DynamodbApi, ServiceLifecycleHook):
     #
 
     def tag_resource(
-        self, context: RequestContext, resource_arn: ResourceArnString, tags: TagList
+            self, context: RequestContext, resource_arn: ResourceArnString, tags: TagList
     ) -> None:
         table_tags = get_store(context.account_id, context.region).TABLE_TAGS
         if resource_arn not in table_tags:
@@ -975,7 +981,7 @@ class DynamoDBProvider(DynamodbApi, ServiceLifecycleHook):
         table_tags[resource_arn].update({tag["Key"]: tag["Value"] for tag in tags})
 
     def untag_resource(
-        self, context: RequestContext, resource_arn: ResourceArnString, tag_keys: TagKeyList
+            self, context: RequestContext, resource_arn: ResourceArnString, tag_keys: TagKeyList
     ) -> None:
         for tag_key in tag_keys or []:
             get_store(context.account_id, context.region).TABLE_TAGS.get(resource_arn, {}).pop(
@@ -983,10 +989,10 @@ class DynamoDBProvider(DynamodbApi, ServiceLifecycleHook):
             )
 
     def list_tags_of_resource(
-        self,
-        context: RequestContext,
-        resource_arn: ResourceArnString,
-        next_token: NextTokenString = None,
+            self,
+            context: RequestContext,
+            resource_arn: ResourceArnString,
+            next_token: NextTokenString = None,
     ) -> ListTagsOfResourceOutput:
         result = [
             {"Key": k, "Value": v}
@@ -1001,7 +1007,7 @@ class DynamoDBProvider(DynamodbApi, ServiceLifecycleHook):
     #
 
     def describe_time_to_live(
-        self, context: RequestContext, table_name: TableName
+            self, context: RequestContext, table_name: TableName
     ) -> DescribeTimeToLiveOutput:
         backend = get_store(context.account_id, context.region)
 
@@ -1020,10 +1026,10 @@ class DynamoDBProvider(DynamodbApi, ServiceLifecycleHook):
         return DescribeTimeToLiveOutput(TimeToLiveDescription=result)
 
     def update_time_to_live(
-        self,
-        context: RequestContext,
-        table_name: TableName,
-        time_to_live_specification: TimeToLiveSpecification,
+            self,
+            context: RequestContext,
+            table_name: TableName,
+            time_to_live_specification: TimeToLiveSpecification,
     ) -> UpdateTimeToLiveOutput:
         # TODO: TTL status is maintained/mocked but no real expiry is happening for items
         backend = get_store(context.account_id, context.region)
@@ -1035,7 +1041,7 @@ class DynamoDBProvider(DynamodbApi, ServiceLifecycleHook):
     #
 
     def create_global_table(
-        self, context: RequestContext, global_table_name: TableName, replication_group: ReplicaList
+            self, context: RequestContext, global_table_name: TableName, replication_group: ReplicaList
     ) -> CreateGlobalTableOutput:
         global_tables: Dict = get_store(context.account_id, context.region).GLOBAL_TABLES
         if global_table_name in global_tables:
@@ -1049,7 +1055,7 @@ class DynamoDBProvider(DynamodbApi, ServiceLifecycleHook):
         return CreateGlobalTableOutput(GlobalTableDescription=data)
 
     def describe_global_table(
-        self, context: RequestContext, global_table_name: TableName
+            self, context: RequestContext, global_table_name: TableName
     ) -> DescribeGlobalTableOutput:
         details = get_store(context.account_id, context.region).GLOBAL_TABLES.get(global_table_name)
         if not details:
@@ -1057,11 +1063,11 @@ class DynamoDBProvider(DynamodbApi, ServiceLifecycleHook):
         return DescribeGlobalTableOutput(GlobalTableDescription=details)
 
     def list_global_tables(
-        self,
-        context: RequestContext,
-        exclusive_start_global_table_name: TableName = None,
-        limit: PositiveIntegerObject = None,
-        region_name: RegionName = None,
+            self,
+            context: RequestContext,
+            exclusive_start_global_table_name: TableName = None,
+            limit: PositiveIntegerObject = None,
+            region_name: RegionName = None,
     ) -> ListGlobalTablesOutput:
         # TODO: add paging support
         result = [
@@ -1071,10 +1077,10 @@ class DynamoDBProvider(DynamodbApi, ServiceLifecycleHook):
         return ListGlobalTablesOutput(GlobalTables=result)
 
     def update_global_table(
-        self,
-        context: RequestContext,
-        global_table_name: TableName,
-        replica_updates: ReplicaUpdateList,
+            self,
+            context: RequestContext,
+            global_table_name: TableName,
+            replica_updates: ReplicaUpdateList,
     ) -> UpdateGlobalTableOutput:
         details = get_store(context.account_id, context.region).GLOBAL_TABLES.get(global_table_name)
         if not details:
@@ -1106,7 +1112,7 @@ class DynamoDBProvider(DynamodbApi, ServiceLifecycleHook):
     #
 
     def enable_kinesis_streaming_destination(
-        self, context: RequestContext, table_name: TableName, stream_arn: StreamArn
+            self, context: RequestContext, table_name: TableName, stream_arn: StreamArn
     ) -> KinesisStreamingDestinationOutput:
         # Check if table exists, to avoid error log output from DynamoDBLocal
         if not self.table_exists(context.account_id, context.region, table_name):
@@ -1128,7 +1134,7 @@ class DynamoDBProvider(DynamodbApi, ServiceLifecycleHook):
             )
 
         table_def["KinesisDataStreamDestinations"] = (
-            table_def.get("KinesisDataStreamDestinations") or []
+                table_def.get("KinesisDataStreamDestinations") or []
         )
         # remove the stream destination if already present
         table_def["KinesisDataStreamDestinations"] = [
@@ -1148,7 +1154,7 @@ class DynamoDBProvider(DynamodbApi, ServiceLifecycleHook):
         )
 
     def disable_kinesis_streaming_destination(
-        self, context: RequestContext, table_name: TableName, stream_arn: StreamArn
+            self, context: RequestContext, table_name: TableName, stream_arn: StreamArn
     ) -> KinesisStreamingDestinationOutput:
         # Check if table exists, to avoid error log output from DynamoDBLocal
         if not self.table_exists(context.account_id, context.region, table_name):
@@ -1182,14 +1188,14 @@ class DynamoDBProvider(DynamodbApi, ServiceLifecycleHook):
         )
 
     def describe_kinesis_streaming_destination(
-        self, context: RequestContext, table_name: TableName
+            self, context: RequestContext, table_name: TableName
     ) -> DescribeKinesisStreamingDestinationOutput:
         # Check if table exists, to avoid error log output from DynamoDBLocal
         if not self.table_exists(context.account_id, context.region, table_name):
             raise ResourceNotFoundException("Cannot do operations on a non-existent table")
 
         table_def = (
-            get_store(context.account_id, context.region).table_definitions.get(table_name) or {}
+                get_store(context.account_id, context.region).table_definitions.get(table_name) or {}
         )
 
         stream_destinations = table_def.get("KinesisDataStreamDestinations") or []
@@ -1250,7 +1256,7 @@ class DynamoDBProvider(DynamodbApi, ServiceLifecycleHook):
             replicated_at = replicas[global_table_region]
             # Ensure that a replica exists in the current context region, and that the table exists in DDB Local
             if (
-                context.region == global_table_region or context.region in replicated_at
+                    context.region == global_table_region or context.region in replicated_at
             ) and DynamoDBProvider.table_exists(
                 context.account_id, global_table_region, table_name
             ):
@@ -1379,20 +1385,20 @@ class DynamoDBProvider(DynamodbApi, ServiceLifecycleHook):
         return records
 
     def batch_execute_statement(
-        self,
-        context: RequestContext,
-        statements: PartiQLBatchRequest,
-        return_consumed_capacity: ReturnConsumedCapacity = None,
+            self,
+            context: RequestContext,
+            statements: PartiQLBatchRequest,
+            return_consumed_capacity: ReturnConsumedCapacity = None,
     ) -> BatchExecuteStatementOutput:
         result = self.forward_request(context)
         return result
 
     def prepare_batch_write_item_records(
-        self,
-        request_items,
-        existing_items,
-        unprocessed_put_items: List,
-        unprocessed_delete_items: List,
+            self,
+            request_items,
+            existing_items,
+            unprocessed_put_items: List,
+            unprocessed_delete_items: List,
     ):
         records = []
         record = self.get_record_template()
@@ -1479,8 +1485,8 @@ class DynamoDBProvider(DynamodbApi, ServiceLifecycleHook):
         """
         if self.should_throttle(action):
             message = (
-                "The level of configured provisioned throughput for the table was exceeded. "
-                + "Consider increasing your provisioning level with the UpdateTable API"
+                    "The level of configured provisioned throughput for the table was exceeded. "
+                    + "Consider increasing your provisioning level with the UpdateTable API"
             )
             raise ProvisionedThroughputExceededException(message)
 
@@ -1491,15 +1497,15 @@ class DynamoDBProvider(DynamodbApi, ServiceLifecycleHook):
     def should_throttle(self, action):
         rand = random.random()
         if rand < config.DYNAMODB_READ_ERROR_PROBABILITY and self.action_should_throttle(
-            action, READ_THROTTLED_ACTIONS
+                action, READ_THROTTLED_ACTIONS
         ):
             return True
         elif rand < config.DYNAMODB_WRITE_ERROR_PROBABILITY and self.action_should_throttle(
-            action, WRITE_THROTTLED_ACTIONS
+                action, WRITE_THROTTLED_ACTIONS
         ):
             return True
         elif rand < config.DYNAMODB_ERROR_PROBABILITY and self.action_should_throttle(
-            action, THROTTLED_ACTIONS
+                action, THROTTLED_ACTIONS
         ):
             return True
         return False

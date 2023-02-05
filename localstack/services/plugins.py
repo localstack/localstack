@@ -14,6 +14,7 @@ from werkzeug import Request
 from localstack import config
 from localstack.aws.skeleton import DispatchTable
 from localstack.config import ServiceProviderConfig
+from localstack.persistence import StateLifecycleHook
 from localstack.utils.bootstrap import get_enabled_apis, log_duration
 from localstack.utils.functions import call_safe
 from localstack.utils.net import wait_for_port_status
@@ -120,7 +121,7 @@ class ServiceStateException(ServiceException):
     pass
 
 
-class ServiceLifecycleHook:
+class ServiceLifecycleHook(StateLifecycleHook):
     def on_after_init(self):
         pass
 
@@ -128,36 +129,6 @@ class ServiceLifecycleHook:
         pass
 
     def on_before_stop(self):
-        pass
-
-    def on_after_inject(self):
-        """Hook triggered after new state has been injected into the provider's store."""
-        pass
-
-    def on_exception(self):
-        pass
-
-
-class BackendStateLifecycle(abc.ABC):
-    """
-    Interface that supports the retrieval, injection and restore of the backend for services.
-    """
-
-    @abc.abstractmethod
-    def retrieve_state(self, **kwargs):
-        """Retrieves the backend of a service"""
-
-    @abc.abstractmethod
-    def inject_state(self, **kwargs):
-        """Injects a backend for a service"""
-
-    @abc.abstractmethod
-    def reset_state(self):
-        """Resets a backend for a service"""
-
-    @abc.abstractmethod
-    def on_after_reset(self):
-        """Performed after the reset of a service"""
         pass
 
 
@@ -183,7 +154,6 @@ class Service:
         active=False,
         stop=None,
         lifecycle_hook: ServiceLifecycleHook = None,
-        backend_state_lifecycle: BackendStateLifecycle = None,
     ):
         self.plugin_name = name
         self.start_function = start
@@ -192,7 +162,6 @@ class Service:
         self.default_active = active
         self.stop_function = stop
         self.lifecycle_hook = lifecycle_hook or ServiceLifecycleHook()
-        self.backend_state_lifecycle = backend_state_lifecycle
         self._provider = None
         call_safe(self.lifecycle_hook.on_after_init)
 
@@ -233,6 +202,17 @@ class Service:
 
     def is_enabled(self):
         return True
+
+    def accept_state_visitor(self, visitor):
+        from localstack.persistence.locate import ReflectionStateLocator
+        from localstack.persistence import StateVisitable
+
+        if self._provider:
+            if isinstance(self._provider, StateVisitable):
+                self._provider.accept_state_visitor(visitor)
+                return
+
+        ReflectionStateLocator(service=self.plugin_name).accept_state_visitor(visitor)
 
     @staticmethod
     def for_provider(
@@ -450,10 +430,10 @@ class ServicePlugin(Plugin):
 
 class ServicePluginAdapter(ServicePlugin):
     def __init__(
-        self,
-        api: str,
-        create_service: Callable[[], Service],
-        should_load: Callable[[], bool] = None,
+            self,
+            api: str,
+            create_service: Callable[[], Service],
+            should_load: Callable[[], bool] = None,
     ) -> None:
         super().__init__()
         self.api = api
@@ -532,9 +512,9 @@ class ServicePluginManager(ServiceManager):
     plugin_errors: ServicePluginErrorCollector
 
     def __init__(
-        self,
-        plugin_manager: PluginManager[ServicePlugin] = None,
-        provider_config: ServiceProviderConfig = None,
+            self,
+            plugin_manager: PluginManager[ServicePlugin] = None,
+            provider_config: ServiceProviderConfig = None,
     ) -> None:
         super().__init__()
         self.plugin_errors = ServicePluginErrorCollector()
@@ -576,7 +556,7 @@ class ServicePluginManager(ServiceManager):
         ]
 
     def _get_loaded_service_containers(
-        self, services: Optional[List[str]] = None
+            self, services: Optional[List[str]] = None
     ) -> List[ServiceContainer]:
         """
         Returns all the available service containers.

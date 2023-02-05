@@ -528,9 +528,11 @@ def sqs_create_queue(sqs_client):
     # cleanup
     for queue_url in queue_urls:
         try:
+            LOG.info(">>> DELETING QUEUE")
             sqs_client.delete_queue(QueueUrl=queue_url)
         except Exception as e:
             LOG.debug("error cleaning up queue %s: %s", queue_url, e)
+    LOG.info(">>> DONE CLEANING UP")
 
 
 @pytest.fixture

@@ -1,7 +1,8 @@
 from moto.sns import models as sns_models
 
 from localstack.services.sqs import models as sqs_models
-from localstack.services.visitors import ReflectionStateLocator, ServiceBackendCollectorVisitor
+from localstack.services.visitors import ServiceBackendCollectorVisitor
+from localstack.persistence.locate import ReflectionStateLocator
 
 
 class TestVisitors:
@@ -15,7 +16,7 @@ class TestVisitors:
 
         visitor = ServiceBackendCollectorVisitor()
         state_manager = ReflectionStateLocator(service="sqs")
-        state_manager.accept(visitor=visitor)
+        state_manager.accept_state_visitor(visitor=visitor)
         backends = visitor.collect()
 
         store_backend = backends.get("localstack")
@@ -37,7 +38,7 @@ class TestVisitors:
 
         visitor = ServiceBackendCollectorVisitor()
         state_manager = ReflectionStateLocator(service="sns")
-        state_manager.accept(visitor=visitor)
+        state_manager.accept_state_visitor(visitor=visitor)
         backends = visitor.collect()
 
         store_backend = backends.get("moto")

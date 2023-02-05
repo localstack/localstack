@@ -207,3 +207,4 @@ def import_apigw(apigateway_client):
 
     for rest_api_id in rest_api_ids:
         delete_rest_api(apigateway_client, restApiId=rest_api_id)
+
