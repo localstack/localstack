@@ -771,6 +771,26 @@
         "documentation": "<p>The storage class you specified is not valid</p>",
         "exception": true
       }
+    },
+    {
+      "op": "move",
+      "from": "/shapes/ListBucketsOutput",
+      "path": "/shapes/ListAllMyBucketsResult"
+    },
+    {
+        "op": "replace",
+        "path": "/operations/ListBuckets/output/shape",
+        "value": "ListAllMyBucketsResult"
+    },
+    {
+      "op": "replace",
+      "path": "/operations/ListObjects/output/shape",
+      "value": "ListBucketResult"
+    },
+    {
+      "op": "move",
+      "from": "/shapes/ListObjectsOutput",
+      "path": "/shapes/ListBucketResult"
     }
   ]
 }

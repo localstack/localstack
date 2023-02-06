@@ -3,7 +3,7 @@ import logging
 import math
 import threading
 from datetime import datetime, timedelta, timezone
-from typing import TYPE_CHECKING, List
+from typing import TYPE_CHECKING, List, Optional
 
 from localstack.aws.api.cloudwatch import MetricAlarm, MetricDataQuery, StateValue
 from localstack.utils.aws import arns, aws_stack
@@ -53,6 +53,9 @@ class AlarmScheduler:
         starting a new one"""
         alarm_details = get_metric_alarm_details_for_alarm_arn(alarm_arn)
         self.delete_scheduler_for_alarm(alarm_arn)
+        if not alarm_details:
+            LOG.warning("Scheduling alarm failed: could not find alarm %s", alarm_arn)
+            return
 
         if not self._is_alarm_supported(alarm_details):
             LOG.warning(
@@ -115,10 +118,11 @@ class AlarmScheduler:
         return True
 
 
-def get_metric_alarm_details_for_alarm_arn(alarm_arn: str) -> MetricAlarm:
+def get_metric_alarm_details_for_alarm_arn(alarm_arn: str) -> Optional[MetricAlarm]:
     alarm_name = arns.extract_resource_from_arn(alarm_arn).split(":", 1)[1]
     client = get_cloudwatch_client_for_region_of_alarm(alarm_arn)
-    return client.describe_alarms(AlarmNames=[alarm_name])["MetricAlarms"][0]
+    metric_alarms = client.describe_alarms(AlarmNames=[alarm_name])["MetricAlarms"]
+    return metric_alarms[0] if metric_alarms else None
 
 
 def get_cloudwatch_client_for_region_of_alarm(alarm_arn: str) -> "CloudWatchClient":
@@ -279,6 +283,10 @@ def calculate_alarm_state(alarm_arn: str) -> None:
     :param alarm_arn: the arn of the alarm to be evaluated
     """
     alarm_details = get_metric_alarm_details_for_alarm_arn(alarm_arn)
+    if not alarm_details:
+        LOG.warning("Could not find alarm %s", alarm_arn)
+        return
+
     client = get_cloudwatch_client_for_region_of_alarm(alarm_arn)
 
     query_date = datetime.utcnow().strftime(format="%Y-%m-%dT%H:%M:%S+0000")

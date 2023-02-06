@@ -56,6 +56,23 @@ class Execution:
                     f"Execution ended with unsupported ProgramState type '{type(exit_program_state)}'."
                 )
 
+    name: Final[str]
+    role_arn: Final[Arn]
+    exec_arn: Final[Arn]
+    state_machine: Final[StateMachine]
+    start_date: Final[Timestamp]
+    input_data: Final[Optional[dict]]
+    input_details: Final[Optional[CloudWatchEventsExecutionDataDetails]]
+    trace_header: Final[Optional[TraceHeader]]
+
+    exec_status: Optional[ExecutionStatus]
+    stop_date: Optional[Timestamp]
+
+    output: Optional[SensitiveData]
+    output_details: Optional[CloudWatchEventsExecutionDataDetails]
+
+    exec_worker: Optional[ExecutionWorker]
+
     def __init__(
         self,
         name: str,
@@ -67,22 +84,19 @@ class Execution:
         input_details: Optional[CloudWatchEventsExecutionDataDetails] = None,
         trace_header: Optional[TraceHeader] = None,
     ):
-        self.name: Final[str] = name
-        self.role_arn: Final[Arn] = role_arn
-        self.exec_arn: Final[Arn] = exec_arn
-        self.state_machine: Final[StateMachine] = state_machine
-        self.start_date: Final[Timestamp] = start_date
-        self.input_data: Final[Optional[dict]] = input_data
-        self.input_details: Final[Optional[CloudWatchEventsExecutionDataDetails]] = input_details
-        self.trace_header: Final[Optional[TraceHeader]] = trace_header
-
-        self.exec_status: Optional[ExecutionStatus] = None
-        self.stop_date: Optional[Timestamp] = None
-
-        self.output: Optional[SensitiveData] = None
-        self.output_details: Optional[CloudWatchEventsExecutionDataDetails] = None
-
-        self.exec_worker: Optional[ExecutionWorker] = None
+        self.name = name
+        self.role_arn = role_arn
+        self.exec_arn = exec_arn
+        self.state_machine = state_machine
+        self.start_date = start_date
+        self.input_data = input_data
+        self.input_details = input_details
+        self.trace_header = trace_header
+        self.exec_status = None
+        self.stop_date = None
+        self.output = None
+        self.output_details = None
+        self.exec_worker = None
 
     def to_start_output(self) -> StartExecutionOutput:
         return StartExecutionOutput(executionArn=self.exec_arn, startDate=self.start_date)
