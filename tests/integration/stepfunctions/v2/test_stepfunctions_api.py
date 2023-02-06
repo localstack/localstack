@@ -199,7 +199,6 @@ class TestSnfApi:
             create_state_machine(name=sm_name, definition=definition_str_2, roleArn=snf_role_arn)
         snapshot.match("already_exists_1", resource_not_found.value.response)
 
-    @pytest.mark.skip("Flaky: depends on deletion delays.")
     def test_list_sms(
         self, stepfunctions_client, create_iam_role_for_sfn, create_state_machine, snapshot
     ):

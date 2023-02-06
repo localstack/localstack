@@ -536,5 +536,167 @@
         }
       }
     }
+  },
+  "tests/integration/stepfunctions/v2/test_stepfunctions_api.py::TestSnfApi::test_list_sms": {
+    "recorded-date": "06-02-2023, 08:57:45",
+    "recorded-content": {
+      "lst_resp_init": {
+        "stateMachines": [],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "creation_resp_0": {
+        "creationDate": "datetime",
+        "stateMachineArn": "arn:aws:states:<region>:111111111111:stateMachine:<ArnPart_0idx>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "lst_resp_0": {
+        "stateMachines": [
+          {
+            "creationDate": "datetime",
+            "name": "<ArnPart_0idx>",
+            "stateMachineArn": "arn:aws:states:<region>:111111111111:stateMachine:<ArnPart_0idx>",
+            "type": "EXPRESS"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "creation_resp_1": {
+        "creationDate": "datetime",
+        "stateMachineArn": "arn:aws:states:<region>:111111111111:stateMachine:<ArnPart_1idx>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "lst_resp_1": {
+        "stateMachines": [
+          {
+            "creationDate": "datetime",
+            "name": "<ArnPart_0idx>",
+            "stateMachineArn": "arn:aws:states:<region>:111111111111:stateMachine:<ArnPart_0idx>",
+            "type": "EXPRESS"
+          },
+          {
+            "creationDate": "datetime",
+            "name": "<ArnPart_1idx>",
+            "stateMachineArn": "arn:aws:states:<region>:111111111111:stateMachine:<ArnPart_1idx>",
+            "type": "EXPRESS"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "creation_resp_2": {
+        "creationDate": "datetime",
+        "stateMachineArn": "arn:aws:states:<region>:111111111111:stateMachine:<ArnPart_2idx>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "lst_resp_2": {
+        "stateMachines": [
+          {
+            "creationDate": "datetime",
+            "name": "<ArnPart_0idx>",
+            "stateMachineArn": "arn:aws:states:<region>:111111111111:stateMachine:<ArnPart_0idx>",
+            "type": "EXPRESS"
+          },
+          {
+            "creationDate": "datetime",
+            "name": "<ArnPart_1idx>",
+            "stateMachineArn": "arn:aws:states:<region>:111111111111:stateMachine:<ArnPart_1idx>",
+            "type": "EXPRESS"
+          },
+          {
+            "creationDate": "datetime",
+            "name": "<ArnPart_2idx>",
+            "stateMachineArn": "arn:aws:states:<region>:111111111111:stateMachine:<ArnPart_2idx>",
+            "type": "EXPRESS"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "deletion_resp_0": {
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "lst_resp_del_0": {
+        "stateMachines": [
+          {
+            "creationDate": "datetime",
+            "name": "<ArnPart_1idx>",
+            "stateMachineArn": "arn:aws:states:<region>:111111111111:stateMachine:<ArnPart_1idx>",
+            "type": "EXPRESS"
+          },
+          {
+            "creationDate": "datetime",
+            "name": "<ArnPart_2idx>",
+            "stateMachineArn": "arn:aws:states:<region>:111111111111:stateMachine:<ArnPart_2idx>",
+            "type": "EXPRESS"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "deletion_resp_1": {
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "lst_resp_del_1": {
+        "stateMachines": [
+          {
+            "creationDate": "datetime",
+            "name": "<ArnPart_2idx>",
+            "stateMachineArn": "arn:aws:states:<region>:111111111111:stateMachine:<ArnPart_2idx>",
+            "type": "EXPRESS"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "deletion_resp_2": {
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "lst_resp_del_2": {
+        "stateMachines": [],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "lst_resp_del_end": {
+        "stateMachines": [],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
   }
 }
