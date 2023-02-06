@@ -10,7 +10,7 @@ from moto.ec2.models import SubnetBackend, TransitGatewayAttachmentBackend
 from moto.ec2.models.launch_templates import LaunchTemplate as MotoLaunchTemplate
 from moto.ec2.models.subnets import Subnet
 
-from localstack.aws.api import CommonServiceException, RequestContext, handler
+from localstack.aws.api import RequestContext, handler
 from localstack.aws.api.ec2 import (
     AvailabilityZone,
     Boolean,
@@ -58,7 +58,11 @@ from localstack.aws.api.ec2 import (
     VpcEndpointSubnetIdList,
     scope,
 )
-from localstack.services.ec2.exceptions import InvalidLaunchTemplateNameError, MissingParameterError
+from localstack.services.ec2.exceptions import (
+    InvalidLaunchTemplateIdError,
+    InvalidLaunchTemplateNameError,
+    MissingParameterError,
+)
 from localstack.services.moto import call_moto
 from localstack.utils.aws import aws_stack
 from localstack.utils.patch import patch
@@ -360,11 +364,7 @@ class Ec2Provider(Ec2Api, ABC):
             try:
                 template.versions[int(request["DefaultVersion"]) - 1]
             except IndexError:
-                raise CommonServiceException(
-                    message="Could not find lauch template version",
-                    code="InvalidLaunchTemplateId.VersionNotFound",
-                    status_code=400,
-                )
+                raise InvalidLaunchTemplateIdError()
 
         template.default_version_number = int(request["DefaultVersion"])
 

@@ -314,7 +314,7 @@ class TestEc2Integrations:
         launch_template_result = create_launch_template(f"template-with-versions-{short_uid()}")
         template = launch_template_result["LaunchTemplate"]
 
-        # call the API identifying the template wither by `LaunchTemplateId` or `LaunchTemplateName`
+        # call the API identifying the template either by `LaunchTemplateId` or `LaunchTemplateName`
         kwargs = (
             {"LaunchTemplateId": template["LaunchTemplateId"]}
             if (id_type == "id")

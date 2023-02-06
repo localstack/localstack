@@ -46,3 +46,11 @@ class InvalidLaunchTemplateNameError(CommonServiceException):
             code="InvalidLaunchTemplateName.MalformedException",
             message="A launch template name must be between 3 and 128 characters, and may contain letters, numbers, and the following characters: - ( ) . / _.'",
         )
+
+
+class InvalidLaunchTemplateIdError(CommonServiceException):
+    def __init__(self):
+        super().__init__(
+            code="InvalidLaunchTemplateId.VersionNotFound",
+            message="Could not find launch template version",
+        )
