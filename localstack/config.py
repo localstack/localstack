@@ -702,6 +702,10 @@ LAMBDA_TRUNCATE_STDOUT = int(os.getenv("LAMBDA_TRUNCATE_STDOUT") or 2000)
 #   The delay between the first retry and the second retry will be 60s
 LAMBDA_RETRY_BASE_DELAY_SECONDS = int(os.getenv("LAMBDA_RETRY_BASE_DELAY") or 60)
 
+# whether Lambda.CreateFunction will block until the function is in a terminal state (active or failed)
+# this technically breaks behavior parity but is provided as a simplification over the default AWS behavior
+LAMBDA_SYNCHRONOUS_CREATE = is_env_true("LAMBDA_SYNCHRONOUS_CREATE")
+
 # A comma-delimited string of stream names and its corresponding shard count to
 # initialize during startup (DEPRECATED).
 # For example: "my-first-stream:1,my-other-stream:2,my-last-stream:1"
@@ -798,6 +802,7 @@ CONFIG_ENV_VARS = [
     "LAMBDA_STAY_OPEN_MODE",
     "LAMBDA_TRUNCATE_STDOUT",
     "LAMBDA_RETRY_BASE_DELAY_SECONDS",
+    "LAMBDA_SYNCHRONOUS_CREATE",
     "LEGACY_DIRECTORIES",
     "LEGACY_DOCKER_CLIENT",
     "LEGACY_EDGE_PROXY",
