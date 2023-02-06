@@ -46,6 +46,7 @@ def generate_runtime_id() -> str:
     return "".join(random.choices(string.hexdigits[:16], k=32)).lower()
 
 
+# TODO: add status callback
 class RuntimeEnvironment:
     runtime_executor: RuntimeExecutor
     status_lock: RLock
@@ -53,6 +54,7 @@ class RuntimeEnvironment:
     initialization_type: InitializationType
     last_returned: datetime
     startup_timer: Optional[Timer]
+    keepalive_timer: Optional[Timer]
 
     def __init__(
         self,
@@ -70,6 +72,7 @@ class RuntimeEnvironment:
         )
         self.last_returned = datetime.min
         self.startup_timer = None
+        self.keepalive_timer = Timer(0, lambda *args, **kwargs: None)
 
     def get_log_group_name(self) -> str:
         return f"/aws/lambda/{self.function_version.id.function_name}"
@@ -144,6 +147,7 @@ class RuntimeEnvironment:
                 raise InvalidStatusException("Runtime Handler cannot be shutdown before started")
             self.runtime_executor.stop()
             self.status = RuntimeStatus.STOPPED
+            self.keepalive_timer.cancel()
 
     # Status methods
     def set_ready(self) -> None:
@@ -163,6 +167,17 @@ class RuntimeEnvironment:
             if self.status != RuntimeStatus.RUNNING:
                 raise InvalidStatusException("Runtime Handler can only be set ready while running")
             self.status = RuntimeStatus.READY
+
+            self.keepalive_timer = Timer(config.LAMBDA_KEEPALIVE_MS / 1000, self.keepalive_passed)
+            self.keepalive_timer.start()
+
+    def keepalive_passed(self) -> None:
+        LOG.debug(
+            "Executor %s for function %s hasn't received any invocations in a while. Stopping.",
+            self.id,
+            self.function_version.qualified_arn,
+        )
+        self.stop()
 
     def timed_out(self) -> None:
         LOG.warning(
@@ -190,6 +205,8 @@ class RuntimeEnvironment:
             if self.status != RuntimeStatus.READY:
                 raise InvalidStatusException("Invoke can only happen if status is ready")
             self.status = RuntimeStatus.RUNNING
+            self.keepalive_timer.cancel()
+
         invoke_payload = {
             "invoke-id": invocation_event.invocation_id,
             "invoked-function-arn": invocation_event.invocation.invoked_arn,

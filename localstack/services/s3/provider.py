@@ -55,7 +55,7 @@ from localstack.aws.api.s3 import (
     InvalidBucketName,
     InvalidPartOrder,
     InvalidStorageClass,
-    ListObjectsOutput,
+    ListBucketResult,
     ListObjectsRequest,
     ListObjectsV2Output,
     ListObjectsV2Request,
@@ -262,8 +262,8 @@ class S3Provider(S3Api, ServiceLifecycleHook):
         self,
         context: RequestContext,
         request: ListObjectsRequest,
-    ) -> ListObjectsOutput:
-        response: ListObjectsOutput = call_moto(context)
+    ) -> ListBucketResult:
+        response: ListBucketResult = call_moto(context)
 
         if "Marker" not in response:
             response["Marker"] = request.get("Marker") or ""
@@ -283,7 +283,7 @@ class S3Provider(S3Api, ServiceLifecycleHook):
             bucket = get_bucket_from_moto(moto_backend, bucket=request["Bucket"])
             response["BucketRegion"] = bucket.region_name
 
-        return ListObjectsOutput(**response)
+        return ListBucketResult(**response)
 
     @handler("ListObjectsV2", expand=False)
     def list_objects_v2(

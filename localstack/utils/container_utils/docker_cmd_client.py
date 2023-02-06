@@ -615,6 +615,7 @@ class CmdDockerClient(ContainerClient):
         additional_flags: Optional[str] = None,
         workdir: Optional[str] = None,
         privileged: Optional[bool] = None,
+        labels: Optional[Dict[str, str]] = None,
     ) -> Tuple[List[str], str]:
         env_file = None
         cmd = self._docker_cmd() + [action]
@@ -659,6 +660,10 @@ class CmdDockerClient(ContainerClient):
             cmd += ["--dns", dns]
         if workdir:
             cmd += ["--workdir", workdir]
+        if labels:
+            for key, value in labels.items():
+                cmd += ["--label", f"{key}={value}"]
+
         if additional_flags:
             cmd += shlex.split(additional_flags)
         cmd.append(image_name)

@@ -101,6 +101,11 @@ class AutoTuneType(str):
     SCHEDULED_ACTION = "SCHEDULED_ACTION"
 
 
+class ConnectionMode(str):
+    DIRECT = "DIRECT"
+    VPC_ENDPOINT = "VPC_ENDPOINT"
+
+
 class DeploymentStatus(str):
     PENDING_UPDATE = "PENDING_UPDATE"
     IN_PROGRESS = "IN_PROGRESS"
@@ -457,6 +462,7 @@ class InboundConnection(TypedDict, total=False):
     RemoteDomainInfo: Optional[DomainInformationContainer]
     ConnectionId: Optional[ConnectionId]
     ConnectionStatus: Optional[InboundConnectionStatus]
+    ConnectionMode: Optional[ConnectionMode]
 
 
 class AcceptInboundConnectionResponse(TypedDict, total=False):
@@ -774,6 +780,10 @@ class CompatibleVersionsMap(TypedDict, total=False):
 CompatibleVersionsList = List[CompatibleVersionsMap]
 
 
+class ConnectionProperties(TypedDict, total=False):
+    Endpoint: Optional[Endpoint]
+
+
 class DomainEndpointOptions(TypedDict, total=False):
     EnforceHTTPS: Optional[Boolean]
     TLSSecurityPolicy: Optional[TLSSecurityPolicy]
@@ -881,6 +891,7 @@ class CreateOutboundConnectionRequest(ServiceRequest):
     LocalDomainInfo: DomainInformationContainer
     RemoteDomainInfo: DomainInformationContainer
     ConnectionAlias: ConnectionAlias
+    ConnectionMode: Optional[ConnectionMode]
 
 
 class OutboundConnectionStatus(TypedDict, total=False):
@@ -894,6 +905,8 @@ class CreateOutboundConnectionResponse(TypedDict, total=False):
     ConnectionAlias: Optional[ConnectionAlias]
     ConnectionStatus: Optional[OutboundConnectionStatus]
     ConnectionId: Optional[ConnectionId]
+    ConnectionMode: Optional[ConnectionMode]
+    ConnectionProperties: Optional[ConnectionProperties]
 
 
 class PackageSource(TypedDict, total=False):
@@ -972,6 +985,8 @@ class OutboundConnection(TypedDict, total=False):
     ConnectionId: Optional[ConnectionId]
     ConnectionAlias: Optional[ConnectionAlias]
     ConnectionStatus: Optional[OutboundConnectionStatus]
+    ConnectionMode: Optional[ConnectionMode]
+    ConnectionProperties: Optional[ConnectionProperties]
 
 
 class DeleteOutboundConnectionResponse(TypedDict, total=False):
@@ -1705,6 +1720,7 @@ class OpensearchApi:
         local_domain_info: DomainInformationContainer,
         remote_domain_info: DomainInformationContainer,
         connection_alias: ConnectionAlias,
+        connection_mode: ConnectionMode = None,
     ) -> CreateOutboundConnectionResponse:
         raise NotImplementedError
 

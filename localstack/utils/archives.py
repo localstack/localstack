@@ -185,12 +185,26 @@ def download_and_extract(archive_url, target_dir, retries=0, sleep=3, tmp_archiv
     if not os.path.exists(tmp_archive) or os.path.getsize(tmp_archive) <= 0:
         # create temporary placeholder file, to avoid duplicate parallel downloads
         save_file(tmp_archive, "")
+
         for i in range(retries + 1):
             try:
                 download(archive_url, tmp_archive)
                 break
-            except Exception:
-                time.sleep(sleep)
+            except Exception as e:
+                LOG.warning(
+                    "Attempt %d. Failed to download archive from %s: %s",
+                    i + 1,
+                    archive_url,
+                    e,
+                )
+                # only sleep between retries, not after the last one
+                if i < retries:
+                    time.sleep(sleep)
+
+    # if the temporary file we created above hasn't been replaced, we assume failure
+    if os.path.getsize(tmp_archive) <= 0:
+        raise Exception("Failed to download archive from %s: . Retries exhausted", archive_url)
+
     if ext == ".zip":
         unzip(tmp_archive, target_dir)
     elif ext in (

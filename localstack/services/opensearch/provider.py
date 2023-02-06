@@ -139,11 +139,11 @@ def create_cluster(
     preferred_port: Optional[int] = None,
 ):
     """
-    Uses the ClusterManager to create a new cluster for the given domain_name in the region of the current request
-    context. NOT thread safe, needs to be called around _domain_mutex.
+    Uses the ClusterManager to create a new cluster for the given domain key. NOT thread safe, needs to be called
+    around _domain_mutex.
     If the preferred_port is given, this port will be preferred (if OPENSEARCH_ENDPOINT_STRATEGY == "port").
     """
-    store = OpensearchProvider.get_store()
+    store = opensearch_stores[domain_key.account][domain_key.region]
 
     manager = cluster_manager()
     engine_version = engine_version or OPENSEARCH_DEFAULT_VERSION

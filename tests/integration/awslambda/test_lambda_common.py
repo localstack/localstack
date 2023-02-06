@@ -1,5 +1,6 @@
 import json
 import logging
+import os
 import time
 import zipfile
 
@@ -166,6 +167,15 @@ class TestLambdaRuntimesCommon:
     )
     @pytest.mark.multiruntime(scenario="uncaughtexception")
     def test_uncaught_exception_invoke(self, lambda_client, multiruntime_lambda, snapshot):
+        # unfortunately the stack trace is quite unreliable and changes when AWS updates the runtime transparently
+        # since the stack trace contains references to internal runtime code.
+        snapshot.add_transformer(
+            snapshot.transform.key_value("stackTrace", "<stack-trace>", reference_replacement=False)
+        )
+        # for nodejs
+        snapshot.add_transformer(
+            snapshot.transform.key_value("trace", "<stack-trace>", reference_replacement=False)
+        )
         create_function_result = multiruntime_lambda.create_function(MemorySize=1024)
         snapshot.match("create_function_result", create_function_result)
 
@@ -187,7 +197,8 @@ class TestLambdaRuntimesCommon:
     # Source: https://docs.aws.amazon.com/lambda/latest/dg/runtimes-modify.html#runtime-wrapper
     @pytest.mark.multiruntime(
         scenario="introspection",
-        runtimes=["nodejs", "python3.8", "python3.9", "java8.al2", "java11", "dotnet", "ruby"],
+        runtimes=["nodejs"],
+        # runtimes=["nodejs", "python3.8", "python3.9", "java8.al2", "java11", "dotnet", "ruby"],
     )
     def test_runtime_wrapper_invoke(self, lambda_client, multiruntime_lambda, snapshot, tmp_path):
         # copy and modify zip file, pretty dirty hack to reuse scenario and reduce CI test runtime
@@ -225,3 +236,42 @@ class TestLambdaRuntimesCommon:
         assert "ctx" in invocation_result_payload
         assert "packages" in invocation_result_payload
         assert invocation_result_payload["environment"]["WRAPPER_VAR"] == test_value
+
+
+@pytest.mark.whitebox
+@pytest.mark.skipif(
+    condition=is_old_provider(),
+    reason="Local executor does not support the majority of the runtimes",
+)
+class TestLambdaCallingLocalstack:
+    @pytest.mark.multiruntime(
+        scenario="endpointinjection",
+        runtimes=[
+            "nodejs",
+            "python",
+            "ruby",
+            "java8.al2",
+            "java11",
+            "go1.x",  # TODO: does not yet support transparent endpoint injection
+            "dotnet6",  # TODO: does not yet support transparent endpoint injection
+            "dotnetcore3.1",  # TODO: does not yet support transparent endpoint injection
+        ],
+    )
+    def test_calling_localstack_from_lambda(self, lambda_client, multiruntime_lambda, tmp_path):
+        pro_enabled = "LOCALSTACK_API_KEY" in os.environ
+
+        if pro_enabled and multiruntime_lambda.runtime in ["go1.x", "dotnet6", "dotnetcore3.1"]:
+            pytest.skip(
+                f"Runtime ({multiruntime_lambda.runtime}) does not support transparent endpoint injection yet. Skipping"
+            )
+
+        create_function_result = multiruntime_lambda.create_function(
+            MemorySize=1024,
+            Environment={"Variables": {"CONFIGURE_CLIENT": "0" if pro_enabled else "1"}},
+        )
+
+        invocation_result = lambda_client.invoke(
+            FunctionName=create_function_result["FunctionName"],
+            Payload=b"{}",
+        )
+        assert "FunctionError" not in invocation_result

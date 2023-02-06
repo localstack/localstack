@@ -62,6 +62,8 @@ words = [
     "latest",
 ]
 
+DEFAULT_ARN = "arn:aws:ec2:us-east-1:1234567890123:instance/i-abcde0123456789f"
+
 
 class ShapeGraph(networkx.DiGraph):
     root: Union[ListShape, StructureShape, MapShape]
@@ -141,6 +143,10 @@ def sanitize_pattern(pattern: str) -> str:
     pattern = pattern.replace("\\p{IsLetter}", "[a-zA-Z]")
     pattern = pattern.replace("[:alnum:]", "[a-zA-Z0-9]")
     pattern = pattern.replace("\\p{ASCII}*", "[a-zA-Z0-9]")
+    pattern = pattern.replace("\\p{Alnum}", "[a-zA-Z0-9]")
+
+    if "\\p{" in pattern:
+        LOG.warning("Find potential additional pattern that need to be sanitized: %s", pattern)
     return pattern
 
 
@@ -263,7 +269,7 @@ def _(shape: MapShape, graph: ShapeGraph) -> Dict[str, Instance]:
 
 def generate_arn(shape: StringShape):
     if not shape.metadata:
-        return "arn:aws:ec2:us-east-1:1234567890123:instance/i-abcde0123456789f"
+        return DEFAULT_ARN
 
     def _generate_arn():
         # some custom hacks
@@ -277,9 +283,10 @@ def generate_arn(shape: StringShape):
         if pattern:
             # FIXME: also conforming to length may be difficult
             pattern = sanitize_arn_pattern(pattern)
+            pattern = sanitize_pattern(pattern)
             arn = rstr.xeger(pattern)
         else:
-            arn = "arn:aws:ec2:us-east-1:1234567890123:instance/i-abcde0123456789f"
+            arn = DEFAULT_ARN
 
         # if there's a value set for the region, replace with a randomly picked region
         # TODO: splitting the ARNs here by ":" sometimes fails for some reason (e.g. or dynamodb for some reason)
@@ -323,7 +330,15 @@ def _(shape: StringShape, graph: ShapeGraph) -> str:
         or shape.name.endswith("ArnString")
         or shape.name == "AmazonResourceName"
     ):
-        return generate_arn(shape)
+        try:
+            return generate_arn(shape)
+        except re.error:
+            LOG.error(
+                "Could not generate arn pattern for %s, with pattern %s",
+                shape.name,
+                shape.metadata.get("pattern", "(no pattern set)"),
+            )
+            return DEFAULT_ARN
 
     max_len: int = shape.metadata.get("max") or 256
     min_len: int = shape.metadata.get("min") or 0
@@ -354,6 +369,11 @@ def _(shape: StringShape, graph: ShapeGraph) -> str:
         return val[: min(max_len, len(val))]
     except re.error:
         # TODO: this will likely break the pattern
+        LOG.error(
+            "Could not generate pattern for %s, with pattern %s",
+            shape.name,
+            shape.metadata.get("pattern", "(no pattern set)"),
+        )
         return "0" * str_len
 
 

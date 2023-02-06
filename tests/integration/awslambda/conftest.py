@@ -3,6 +3,7 @@ import logging
 import os
 import subprocess
 import zipfile
+from pathlib import Path
 from typing import TYPE_CHECKING, Mapping, Optional, Sequence, overload
 
 import pytest
@@ -108,10 +109,23 @@ def package_for_lang(scenario: str, runtime: str) -> str:
     :return: path to built zip file
     """
     runtime_folder = PACKAGE_FOR_RUNTIME[runtime]
-    scenario_dir = os.path.join(os.path.dirname(__file__), "functions", "common", scenario)
-    lang_dir = os.path.join(scenario_dir, runtime_folder)
-    build_dir = os.path.join(lang_dir, "build")
-    package_path = os.path.join(lang_dir, "handler.zip")
+
+    common_dir = (
+        Path(os.path.dirname(__file__)) / "functions" / "common"
+    )  # TODO: remove implicit relative location to this file
+    scenario_dir = common_dir / scenario
+    runtime_dir_candidate = scenario_dir / runtime
+    generic_runtime_dir_candidate = scenario_dir / runtime_folder
+
+    # if a more specific folder exists, use that one
+    # otherwise: try to fall back to generic runtime (e.g. python for python3.9)
+    if runtime_dir_candidate.exists() and runtime_dir_candidate.is_dir():
+        runtime_dir = runtime_dir_candidate
+    else:
+        runtime_dir = generic_runtime_dir_candidate
+
+    build_dir = runtime_dir / "build"
+    package_path = runtime_dir / "handler.zip"
 
     # caching step
     # TODO: add invalidation (e.g. via storing a hash besides this of all files in src)
@@ -119,18 +133,20 @@ def package_for_lang(scenario: str, runtime: str) -> str:
         return package_path
 
     # packaging
-    result = subprocess.run(["make", "build"], cwd=os.path.join(lang_dir))
+    result = subprocess.run(["make", "build"], cwd=runtime_dir)
     if result.returncode != 0:
-        raise Exception(f"Failed with error code: {result.returncode}")
+        raise Exception(
+            f"Failed to build multiruntime {scenario=} for {runtime=} with error code: {result.returncode}"
+        )
 
     # check again if the zip file is now present
     if os.path.exists(package_path) and os.path.isfile(package_path):
         return package_path
 
-    # check something is in target now
-    target_empty = len(os.listdir(lang_dir)) <= 0
+    # check something is in build now
+    target_empty = len(os.listdir(build_dir)) <= 0
     if target_empty:
-        raise Exception("Failed")
+        raise Exception(f"Failed to build multiruntime {scenario=} for {runtime=} ")
 
     with zipfile.ZipFile(package_path, "w", strict_timestamps=True) as zf:
         for root, dirs, files in os.walk(build_dir):
@@ -139,7 +155,7 @@ def package_for_lang(scenario: str, runtime: str) -> str:
                 zf.write(os.path.join(root, f), arcname=os.path.join(rel_dir, f))
 
     # make sure package file has been generated
-    assert os.path.exists(package_path) and os.path.isfile(package_path)
+    assert package_path.exists() and package_path.is_file()
     return package_path
 
 
