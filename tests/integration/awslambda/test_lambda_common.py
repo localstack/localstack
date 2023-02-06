@@ -167,6 +167,15 @@ class TestLambdaRuntimesCommon:
     )
     @pytest.mark.multiruntime(scenario="uncaughtexception")
     def test_uncaught_exception_invoke(self, lambda_client, multiruntime_lambda, snapshot):
+        # unfortunately the stack trace is quite unreliable and changes when AWS updates the runtime transparently
+        # since the stack trace contains references to internal runtime code.
+        snapshot.add_transformer(
+            snapshot.transform.key_value("stackTrace", "<stack-trace>", reference_replacement=False)
+        )
+        # for nodejs
+        snapshot.add_transformer(
+            snapshot.transform.key_value("trace", "<stack-trace>", reference_replacement=False)
+        )
         create_function_result = multiruntime_lambda.create_function(MemorySize=1024)
         snapshot.match("create_function_result", create_function_result)
 
