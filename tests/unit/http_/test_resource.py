@@ -34,7 +34,7 @@ class TestResource:
         assert router.dispatch(request1).get_data(True) == "GET/OK"
         assert router.dispatch(request1).get_data(True) == "GET/OK"
         assert router.dispatch(request2).json == {"ok": "POST"}
-        assert router.dispatch(request3).get_data(True) == "GET/OK"
+        assert router.dispatch(request3).get_data(True) == "HEAD/OK"
         assert len(requests) == 4
         assert requests[0] is request1
         assert requests[1] is request1
@@ -51,12 +51,17 @@ class TestResource:
             def on_post(self, req):
                 return "POST/OK"
 
+            def on_head(self, req):
+                return "HEAD/OK"
+
         router.add(Resource("/_localstack/health", TestResource()))
 
         request1 = Request("GET", "/_localstack/health")
         request2 = Request("POST", "/_localstack/health")
+        request3 = Request("HEAD", "/_localstack/health")
         assert router.dispatch(request1).get_data(True) == "GET/OK"
         assert router.dispatch(request2).get_data(True) == "POST/OK"
+        assert router.dispatch(request3).get_data(True) == "HEAD/OK"
 
     def test_dispatch_to_non_existing_method_raises_exception(self):
         router = Router(dispatcher=handler_dispatcher())

@@ -29,3 +29,15 @@ class TestInitScriptsResource:
         response = requests.get(get_edge_url() + f"/_localstack/init/{stage}")
         assert response.status_code == 200
         assert response.json()["completed"] == completed
+
+
+class TestHealthResource:
+    def test_get(self):
+        response = requests.get(get_edge_url() + "/_localstack/health")
+        assert response.ok
+        assert "services" in response.json()
+
+    def test_head(self):
+        response = requests.head(get_edge_url() + "/_localstack/health")
+        assert response.ok
+        assert not response.text

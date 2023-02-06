@@ -17,7 +17,18 @@ from typing import Any, Iterable, Optional, Type
 
 from werkzeug.routing import Map, Rule, RuleFactory
 
-from .router import HTTP_METHODS, route
+from .router import route
+
+_resource_methods = [
+    "on_head",  # it's important that HEAD rules are added first (werkzeug matching order)
+    "on_get",
+    "on_post",
+    "on_put",
+    "on_patch",
+    "on_delete",
+    "on_options",
+    "on_trace",
+]
 
 
 def resource(path: str, host: Optional[str] = None, **kwargs):
@@ -36,19 +47,18 @@ def resource(path: str, host: Optional[str] = None, **kwargs):
 
     This class can then be added to a router via ``router.add_route_endpoints(MyResource())``.
 
-    Note that HEAD requests are automatically routed to ``on_get``. There is currently no way of specifying ``on_head``
-    methods because of how werkzeug works. See https://werkzeug.palletsprojects.com/en/2.2.x/routing/
+    Note that, if an on_get method is present in the resource but on_head is not, then HEAD requests are automatically
+    routed to ``on_get``. This replicates Werkzeug's behavior https://werkzeug.palletsprojects.com/en/2.2.x/routing/.
 
     :param path: the path pattern to match
     :param host: an optional host matching pattern. if not pattern is given, the rule matches any host
     :param kwargs: any other argument that can be passed to ``werkzeug.routing.Rule``
     :return: a class where each matching function is wrapped as a ``_RouteEndpoint``
     """
-    allowed_names = [f"on_{method.lower()}" for method in HTTP_METHODS if method != "HEAD"]
     kwargs.pop("methods", None)
 
     def _wrapper(cls: Type):
-        for name in allowed_names:
+        for name in _resource_methods:
             member = getattr(cls, name, None)
             if member is None:
                 continue
@@ -74,6 +84,9 @@ class Resource(RuleFactory):
                 return Response(f"POST called on {resource_id}")
 
         router.add(Resource("/myresource/<resource_id>", MyResource()))
+
+    Note that, if an on_get method is present in the resource but on_head is not, then HEAD requests are automatically
+    routed to ``on_get``. This replicates Werkzeug's behavior https://werkzeug.palletsprojects.com/en/2.2.x/routing/.
     """
 
     def __init__(self, path: str, obj: Any, host: Optional[str] = None, **kwargs):
@@ -83,10 +96,8 @@ class Resource(RuleFactory):
         self.kwargs = kwargs
 
     def get_rules(self, map: "Map") -> Iterable["Rule"]:
-        allowed_names = [f"on_{method.lower()}" for method in HTTP_METHODS if method != "HEAD"]
-
         rules = []
-        for name in allowed_names:
+        for name in _resource_methods:
             member = getattr(self.obj, name, None)
             if member is None:
                 continue

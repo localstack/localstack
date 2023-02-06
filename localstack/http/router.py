@@ -280,13 +280,24 @@ class Router(Generic[E]):
         :param obj: the object to scan
         :return: the rules that were added
         """
-        rules = []
+        endpoints: list[_RouteEndpoint] = []
 
         members = inspect.getmembers(obj)
         for _, member in members:
             if hasattr(member, "rule_attributes"):
-                rules.append(self._add_route(member))
+                endpoints.append(member)
 
+        rules = []
+        # make sure rules with "HEAD" are added first, otherwise werkzeug would let any "GET" rule would overwrite them.
+        for endpoint in endpoints:
+            if endpoint.rule_attributes.methods and "HEAD" in endpoint.rule_attributes.methods:
+                rules.append(self._add_route(endpoint))
+        for endpoint in endpoints:
+            if (
+                not endpoint.rule_attributes.methods
+                or "HEAD" not in endpoint.rule_attributes.methods
+            ):
+                rules.append(self._add_route(endpoint))
         return rules
 
     def _add_rules(self, rule_factory: RuleFactory) -> List[Rule]:

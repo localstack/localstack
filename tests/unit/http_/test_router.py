@@ -291,6 +291,11 @@ class TestRouter:
                 # should be inherited
                 return Response(f"{request.path}/do-get")
 
+            @route("/my_api", methods=["HEAD"])
+            def do_head(self, request: Request, _args):
+                # should be inherited
+                return Response(f"{request.path}/do-head")
+
             @route("/my_api", methods=["POST", "PUT"])
             def do_post(self, request: Request, _args):
                 # should be inherited
@@ -299,14 +304,27 @@ class TestRouter:
         api = MyApi()
         router = Router()
         rules = router.add(api)
-        assert len(rules) == 2
+        assert len(rules) == 3
 
         assert router.dispatch(Request("GET", "/my_api")).data == b"/my_api/do-get"
+        assert router.dispatch(Request("HEAD", "/my_api")).data == b"/my_api/do-head"
         assert router.dispatch(Request("POST", "/my_api")).data == b"/my_api/do-post-or-put"
         assert router.dispatch(Request("PUT", "/my_api")).data == b"/my_api/do-post-or-put"
 
         with pytest.raises(MethodNotAllowed):
             router.dispatch(Request("DELETE", "/my_api"))
+
+    def test_head_requests_are_routed_to_get_handlers(self):
+        @route("/my_api", methods=["GET"])
+        def do_get(request: Request, _args):
+            # should be inherited
+            return Response(f"{request.path}/do-get")
+
+        router = Router()
+        router.add(do_get)
+
+        assert router.dispatch(Request("GET", "/my_api")).data == b"/my_api/do-get"
+        assert router.dispatch(Request("HEAD", "/my_api")).data == b"/my_api/do-get"
 
 
 class TestWsgiIntegration:

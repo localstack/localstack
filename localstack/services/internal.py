@@ -71,9 +71,6 @@ class HealthResource:
         return Response("ok", 200)
 
     def on_get(self, request: Request):
-        if request.method == "HEAD":
-            return Response("ok", 200)
-
         path = request.path
 
         reload = "reload" in path
@@ -90,6 +87,9 @@ class HealthResource:
         result = merge_recursive({"services": services}, result)
         result["version"] = constants.VERSION
         return result
+
+    def on_head(self, request: Request):
+        return Response("ok", 200)
 
     def on_put(self, request: Request):
         data = request.get_json(True, True) or {}
