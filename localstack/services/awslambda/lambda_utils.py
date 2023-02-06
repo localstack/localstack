@@ -15,6 +15,7 @@ from localstack import config
 from localstack.aws.accounts import get_aws_account_id
 from localstack.aws.api.lambda_ import FilterCriteria, Runtime
 from localstack.services.awslambda.lambda_models import AwsLambdaStore, awslambda_stores
+from localstack.utils.analytics import log
 from localstack.utils.aws import aws_stack
 from localstack.utils.aws.arns import extract_account_id_from_arn, extract_region_from_arn
 from localstack.utils.aws.aws_models import LambdaFunction
@@ -90,12 +91,16 @@ def get_default_executor_mode() -> str:
     Returns the default docker executor mode, which is "docker" if the docker socket is available via the docker
     client, or "local"  otherwise.
 
-    :return:
+    :return: 'docker' if docker socket available, otherwise 'local'
     """
     try:
-        return "docker" if DOCKER_CLIENT.has_docker() else "local"
+        default_executor_mode = "docker" if DOCKER_CLIENT.has_docker() else "local"
     except Exception:
-        return "local"
+        default_executor_mode = "local"
+
+    # TODO: better to only log event when it is actually used, or should we by default also log "null" runs?
+    log.event("lambda_default_executor", default_executor_mode=default_executor_mode)
+    return default_executor_mode
 
 
 def get_executor_mode() -> str:
