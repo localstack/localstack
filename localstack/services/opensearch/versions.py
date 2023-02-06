@@ -13,7 +13,13 @@ from localstack.aws.api.opensearch import CompatibleVersionsMap, EngineType
 from localstack.utils.common import get_arch
 
 # Internal representation of the OpenSearch versions (without the "OpenSearch_" prefix)
-_opensearch_install_versions = {"1.0": "1.0.0", "1.1": "1.1.0", "1.2": "1.2.4", "1.3": "1.3.6"}
+_opensearch_install_versions = {
+    "1.0": "1.0.0",
+    "1.1": "1.1.0",
+    "1.2": "1.2.4",
+    "1.3": "1.3.6",
+    "2.3": "2.3.0",
+}
 # Internal representation of the Elasticsearch versions (without the "Elasticsearch_" prefix)
 _elasticsearch_install_versions = {
     "7.10": "7.10.0",
@@ -201,6 +207,10 @@ compatible_versions = [
     CompatibleVersionsMap(
         SourceVersion="OpenSearch_1.2",
         TargetVersions=["OpenSearch_1.3"],
+    ),
+    CompatibleVersionsMap(
+        SourceVersion="OpenSearch_1.3",
+        TargetVersions=["OpenSearch_2.3"],
     ),
 ]
 

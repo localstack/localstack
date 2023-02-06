@@ -83,7 +83,7 @@ class TestElasticsearchProvider:
 
         versions = response["CompatibleElasticsearchVersions"]
 
-        assert len(versions) == 20
+        assert len(versions) == 21
 
         assert {
             "SourceVersion": "OpenSearch_1.0",
