@@ -59,6 +59,7 @@ from localstack.aws.api.firehose import (
     S3DestinationConfiguration,
     S3DestinationDescription,
     S3DestinationUpdate,
+    ServiceUnavailableException,
     SplunkDestinationConfiguration,
     SplunkDestinationUpdate,
     TagDeliveryStreamInputTagList,
@@ -82,8 +83,14 @@ from localstack.services.firehose.mappers import (
     convert_source_config_to_desc,
 )
 from localstack.services.firehose.models import FirehoseStore, firehose_stores
+from localstack.services.opensearch import versions
 from localstack.utils.aws import aws_stack
-from localstack.utils.aws.arns import extract_region_from_arn, firehose_stream_arn, s3_bucket_name
+from localstack.utils.aws.arns import (
+    extract_region_from_arn,
+    firehose_stream_arn,
+    opensearch_domain_name,
+    s3_bucket_name,
+)
 from localstack.utils.common import (
     TIMESTAMP_FORMAT_MICROS,
     first_char_to_lower,
@@ -138,7 +145,7 @@ def get_opensearch_endpoint(domain_arn: str) -> str:
     opensearch_client = aws_stack.connect_to_service(
         service_name="opensearch", region_name=region_name
     )
-    domain_name = domain_arn.rpartition("/")[2]
+    domain_name = opensearch_domain_name(domain_arn)
     info = opensearch_client.describe_domain(DomainName=domain_name)
     base_domain = info["DomainStatus"]["Endpoint"]
     # Add the URL scheme "http" if it's not set yet. https might not be enabled for all instances
@@ -218,12 +225,28 @@ class FirehoseProvider(FirehoseApi):
                 )
             )
         if amazonopensearchservice_destination_configuration:
+            db_description = convert_opensearch_config_to_desc(
+                amazonopensearchservice_destination_configuration
+            )
+
+            domain_arn = db_description.get("DomainARN")
+            domain_name = opensearch_domain_name(domain_arn)
+
+            domain = aws_stack.connect_to_service("opensearch").describe_domain(
+                DomainName=domain_name
+            )
+            engine_version = domain["DomainStatus"]["EngineVersion"]
+
+            if versions.get_install_version(engine_version).startswith("2.3"):
+                # See https://docs.aws.amazon.com/opensearch-service/latest/developerguide/version-migration.html
+                raise ServiceUnavailableException(
+                    "Delivery stream destination is not supported: OpenSearch 2.3"
+                )
+
             destinations.append(
                 DestinationDescription(
                     DestinationId=short_uid(),
-                    AmazonopensearchserviceDestinationDescription=convert_opensearch_config_to_desc(
-                        amazonopensearchservice_destination_configuration
-                    ),
+                    AmazonopensearchserviceDestinationDescription=db_description,
                 )
             )
         if s3_destination_configuration or extended_s3_destination_configuration:
@@ -574,7 +597,6 @@ class FirehoseProvider(FirehoseApi):
         sends Firehose records to an ElasticSearch or Opensearch database
         """
         search_db_index = db_description["IndexName"]
-        search_db_type = db_description.get("TypeName")
         region = aws_stack.get_region()
         domain_arn = db_description.get("DomainARN")
         cluster_endpoint = db_description.get("ClusterEndpoint")
@@ -582,6 +604,7 @@ class FirehoseProvider(FirehoseApi):
             cluster_endpoint = get_opensearch_endpoint(domain_arn)
 
         db_connection = get_search_db_connection(cluster_endpoint, region)
+
         if db_description.get("S3BackupMode") == ElasticsearchS3BackupMode.AllDocuments:
             s3_dest_desc = db_description.get("S3DestinationDescription")
             if s3_dest_desc:
@@ -621,9 +644,7 @@ class FirehoseProvider(FirehoseApi):
                 )
             )
             try:
-                db_connection.create(
-                    index=search_db_index, doc_type=search_db_type, id=obj_id, body=body
-                )
+                db_connection.create(index=search_db_index, id=obj_id, body=body)
             except Exception as e:
                 LOG.exception(f"Unable to put record to stream {delivery_stream_name}.")
                 raise e

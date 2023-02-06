@@ -48,21 +48,6 @@ REGEX_DYNAMIC_REF = re.compile("{{resolve:([^:]+):(.+)}}")
 
 LOG = logging.getLogger(__name__)
 
-# list of resource types that can be updated
-# TODO: make this a property of the model classes themselves
-UPDATEABLE_RESOURCES = [
-    "AWS::CDK::Metadata",
-    "AWS::Lambda::Function",
-    "AWS::Lambda::Permission",
-    "AWS::ApiGateway::Method",
-    "AWS::ApiGateway::UsagePlan",
-    "AWS::SSM::Parameter",
-    "AWS::StepFunctions::StateMachine",
-    "AWS::IAM::Role",
-    "AWS::IAM::AccessKey",
-    "AWS::EC2::Instance",
-]
-
 # list of static attribute references to be replaced in {'Fn::Sub': '...'} strings
 STATIC_REFS = ["AWS::Region", "AWS::Partition", "AWS::StackName", "AWS::AccountId"]
 
@@ -641,7 +626,9 @@ def update_resource(resource_id, stack):
 
     resource = resources[resource_id]
     resource_type = get_resource_type(resource)
-    if resource_type not in UPDATEABLE_RESOURCES:
+
+    resource_instance = get_resource_model_instance(resource["LogicalResourceId"], stack)
+    if not resource_instance.is_updatable():
         LOG.warning('Unable to update resource type "%s", id "%s"', resource_type, resource_id)
         return
     LOG.info("Updating resource %s of type %s", resource_id, resource_type)
@@ -1050,11 +1037,8 @@ class TemplateDeployer:
         """Return whether the given resource can be updated or not."""
         if not self.is_deployable_resource(resource) or not self.is_deployed(resource):
             return False
-        resource_type = get_resource_type(resource)
-        return (
-            resource_type in UPDATEABLE_RESOURCES
-            or resource_type.partition("AWS::")[-1] in UPDATEABLE_RESOURCES
-        )  # TODO: second case just a fall-back for now, delete when PRO is updated
+        resource_instance = get_resource_model_instance(resource["LogicalResourceId"], self.stack)
+        return resource_instance.is_updatable()
 
     def all_resource_dependencies_satisfied(self, resource):
         unsatisfied = self.get_unsatisfied_dependencies(resource)
