@@ -331,6 +331,10 @@ def firehose_name(firehose_arn):
     return firehose_arn.split("/")[-1]
 
 
+def opensearch_domain_name(domain_arn: str) -> str:
+    return domain_arn.rpartition("/")[2]
+
+
 def kinesis_stream_name(kinesis_arn):
     return kinesis_arn.split(":stream/")[-1]
 

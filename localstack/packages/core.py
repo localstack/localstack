@@ -106,6 +106,7 @@ class ArchiveDownloadAndExtractInstaller(ExecutableInstaller):
         archive_name = os.path.basename(download_url)
         download_and_extract(
             download_url,
+            retries=3,
             tmp_archive=os.path.join(config.dirs.tmp, archive_name),
             target_dir=target_directory,
         )

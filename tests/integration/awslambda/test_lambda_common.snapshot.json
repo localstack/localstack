@@ -1970,9 +1970,7 @@
         "Payload": {
           "errorMessage": "Failed: some_error_msg",
           "errorType": "Exception",
-          "stackTrace": [
-            "  File \"/var/task/handler.py\", line 15, in handler\n    raise Exception(f\"Failed: {event.get('error_msg')}\")\n"
-          ]
+          "stackTrace": "<stack-trace>"
         },
         "StatusCode": 200,
         "ResponseMetadata": {
@@ -2023,9 +2021,7 @@
         "Payload": {
           "errorMessage": "Failed: some_error_msg",
           "errorType": "Exception",
-          "stackTrace": [
-            "  File \"/var/task/handler.py\", line 15, in handler\n    raise Exception(f\"Failed: {event.get('error_msg')}\")\n"
-          ]
+          "stackTrace": "<stack-trace>"
         },
         "StatusCode": 200,
         "ResponseMetadata": {
@@ -2077,9 +2073,7 @@
           "errorMessage": "Failed: some_error_msg",
           "errorType": "Exception",
           "requestId": "<uuid:2>",
-          "stackTrace": [
-            "  File \"/var/task/handler.py\", line 15, in handler\n    raise Exception(f\"Failed: {event.get('error_msg')}\")\n"
-          ]
+          "stackTrace": "<stack-trace>"
         },
         "StatusCode": 200,
         "ResponseMetadata": {
@@ -2130,11 +2124,7 @@
         "Payload": {
           "errorType": "Error",
           "errorMessage": "Error: some_error_msg",
-          "trace": [
-            "Error: Error: some_error_msg",
-            "    at Runtime.exports.handler (/var/task/index.js:2:11)",
-            "    at Runtime.handleOnce (/var/runtime/Runtime.js:66:25)"
-          ]
+          "trace": "<stack-trace>"
         },
         "StatusCode": 200,
         "ResponseMetadata": {
@@ -2185,11 +2175,7 @@
         "Payload": {
           "errorType": "Error",
           "errorMessage": "Error: some_error_msg",
-          "trace": [
-            "Error: Error: some_error_msg",
-            "    at Runtime.exports.handler (/var/task/index.js:2:11)",
-            "    at Runtime.handleOnceNonStreaming (/var/runtime/Runtime.js:74:25)"
-          ]
+          "trace": "<stack-trace>"
         },
         "StatusCode": 200,
         "ResponseMetadata": {
@@ -2240,11 +2226,7 @@
         "Payload": {
           "errorType": "Error",
           "errorMessage": "Error: some_error_msg",
-          "trace": [
-            "Error: Error: some_error_msg",
-            "    at Runtime.exports.handler (/var/task/index.js:2:11)",
-            "    at Runtime.handleOnceNonStreaming (file:///var/runtime/index.mjs:1089:29)"
-          ]
+          "trace": "<stack-trace>"
         },
         "StatusCode": 200,
         "ResponseMetadata": {
@@ -2295,10 +2277,7 @@
         "Payload": {
           "errorMessage": "Error: some_error_msg",
           "errorType": "java.lang.RuntimeException",
-          "stackTrace": [
-            "echo.Handler.handleRequest(Handler.java:11)",
-            "echo.Handler.handleRequest(Handler.java:8)"
-          ]
+          "stackTrace": "<stack-trace>"
         },
         "StatusCode": 200,
         "ResponseMetadata": {
@@ -2349,10 +2328,7 @@
         "Payload": {
           "errorMessage": "Error: some_error_msg",
           "errorType": "java.lang.RuntimeException",
-          "stackTrace": [
-            "echo.Handler.handleRequest(Handler.java:11)",
-            "echo.Handler.handleRequest(Handler.java:8)"
-          ]
+          "stackTrace": "<stack-trace>"
         },
         "StatusCode": 200,
         "ResponseMetadata": {
@@ -2403,10 +2379,7 @@
         "Payload": {
           "errorMessage": "Error: some_error_msg",
           "errorType": "java.lang.RuntimeException",
-          "stackTrace": [
-            "echo.Handler.handleRequest(Handler.java:11)",
-            "echo.Handler.handleRequest(Handler.java:8)"
-          ]
+          "stackTrace": "<stack-trace>"
         },
         "StatusCode": 200,
         "ResponseMetadata": {
@@ -2457,9 +2430,7 @@
         "Payload": {
           "errorMessage": "Error: some_error_msg",
           "errorType": "Function<RuntimeError>",
-          "stackTrace": [
-            "/var/task/function.rb:2:in `handler'"
-          ]
+          "stackTrace": "<stack-trace>"
         },
         "StatusCode": 200,
         "ResponseMetadata": {
@@ -2660,13 +2631,7 @@
         "Payload": {
           "errorType": "Exception",
           "errorMessage": "Error: some_error_msg",
-          "stackTrace": [
-            "at dotnet6.Function.FunctionHandler(IDictionary`2 input, ILambdaContext context) in /app2/Function.cs:line 15",
-            "at lambda_method1(Closure , Stream , ILambdaContext , Stream )",
-            "at Amazon.Lambda.RuntimeSupport.Bootstrap.UserCodeLoader.Invoke(Stream lambdaData, ILambdaContext lambdaContext, Stream outStream) in /src/Repo/Libraries/src/Amazon.Lambda.RuntimeSupport/Bootstrap/UserCodeLoader.cs:line 145",
-            "at Amazon.Lambda.RuntimeSupport.HandlerWrapper.<>c__DisplayClass8_0.<GetHandlerWrapper>b__0(InvocationRequest invocation) in /src/Repo/Libraries/src/Amazon.Lambda.RuntimeSupport/Bootstrap/HandlerWrapper.cs:line 56",
-            "at Amazon.Lambda.RuntimeSupport.LambdaBootstrap.InvokeOnceAsync(CancellationToken cancellationToken) in /src/Repo/Libraries/src/Amazon.Lambda.RuntimeSupport/Bootstrap/LambdaBootstrap.cs:line 176"
-          ]
+          "stackTrace": "<stack-trace>"
         },
         "StatusCode": 200,
         "ResponseMetadata": {
@@ -2717,10 +2682,7 @@
         "Payload": {
           "errorType": "Exception",
           "errorMessage": "Error: some_error_msg",
-          "stackTrace": [
-            "at dotnetcore31.Function.FunctionHandler(IDictionary`2 input, ILambdaContext context) in /app2/Function.cs:line 15",
-            "at lambda_method(Closure , Stream , Stream , LambdaContextInternal )"
-          ]
+          "stackTrace": "<stack-trace>"
         },
         "StatusCode": 200,
         "ResponseMetadata": {
@@ -2965,11 +2927,7 @@
         "Payload": {
           "errorType": "Error",
           "errorMessage": "Error: some_error_msg",
-          "trace": [
-            "Error: Error: some_error_msg",
-            "    at exports.handler (/var/task/index.js:2:11)",
-            "    at Runtime.handleOnceNonStreaming (file:///var/runtime/index.mjs:1089:29)"
-          ]
+          "trace": "<stack-trace>"
         },
         "StatusCode": 200,
         "ResponseMetadata": {

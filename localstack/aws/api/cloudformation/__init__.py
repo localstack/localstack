@@ -1400,6 +1400,7 @@ class StackSet(TypedDict, total=False):
     PermissionModel: Optional[PermissionModels]
     OrganizationalUnitIds: Optional[OrganizationalUnitIdList]
     ManagedExecution: Optional[ManagedExecution]
+    Regions: Optional[RegionList]
 
 
 class DescribeStackSetOutput(TypedDict, total=False):

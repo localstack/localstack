@@ -533,13 +533,20 @@ class SnsProvider(SnsApi, ServiceLifecycleHook):
         if len(message) > MAXIMUM_MESSAGE_LENGTH:
             raise InvalidParameterException("Invalid parameter: Message too long")
 
-        if topic_arn and ".fifo" in topic_arn:
+        # for compatibility reasons, AWS allows users to use either TargetArn or TopicArn for publishing to a topic
+        # use any of them for topic validation
+        topic_or_target_arn = topic_arn or target_arn
+
+        if topic_or_target_arn and ".fifo" in topic_or_target_arn:
             if not message_group_id:
                 raise InvalidParameterException(
                     "Invalid parameter: The MessageGroupId parameter is required for FIFO topics",
                 )
             moto_sns_backend = sns_backends[context.account_id][context.region]
-            if moto_sns_backend.get_topic(arn=topic_arn).content_based_deduplication == "false":
+            if (
+                moto_sns_backend.get_topic(arn=topic_or_target_arn).content_based_deduplication
+                == "false"
+            ):
                 if not message_deduplication_id:
                     raise InvalidParameterException(
                         "Invalid parameter: The topic should either have ContentBasedDeduplication enabled or MessageDeduplicationId provided explicitly",
@@ -581,8 +588,7 @@ class SnsProvider(SnsApi, ServiceLifecycleHook):
                         "Invalid parameter: TargetArn Reason: No endpoint found for the target arn specified"
                     )
             else:
-                topic = topic_arn or target_arn
-                if topic not in store.sns_subscriptions:
+                if topic_or_target_arn not in store.sns_subscriptions:
                     raise NotFoundException(
                         "Topic does not exist",
                     )
@@ -610,7 +616,7 @@ class SnsProvider(SnsApi, ServiceLifecycleHook):
             # beware if the subscription is FIFO, the order might not be guaranteed.
             # 2 quick call to this method in succession might not be executed in order in the executor?
             # TODO: test how this behaves in a FIFO context with a lot of threads.
-            self._publisher.publish_to_topic(publish_ctx, topic_arn or target_arn)
+            self._publisher.publish_to_topic(publish_ctx, topic_or_target_arn)
 
         return PublishResponse(MessageId=message_ctx.message_id)
 
