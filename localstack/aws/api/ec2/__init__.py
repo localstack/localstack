@@ -3168,7 +3168,7 @@ class AcceptVpcEndpointConnectionsResult(TypedDict, total=False):
 
 class AcceptVpcPeeringConnectionRequest(ServiceRequest):
     DryRun: Optional[Boolean]
-    VpcPeeringConnectionId: Optional[VpcPeeringConnectionIdWithResolver]
+    VpcPeeringConnectionId: VpcPeeringConnectionIdWithResolver
 
 
 class VpcPeeringConnectionStateReason(TypedDict, total=False):
@@ -3799,8 +3799,8 @@ class AssociateDhcpOptionsRequest(ServiceRequest):
 
 
 class AssociateEnclaveCertificateIamRoleRequest(ServiceRequest):
-    CertificateArn: Optional[CertificateId]
-    RoleArn: Optional[RoleId]
+    CertificateArn: CertificateId
+    RoleArn: RoleId
     DryRun: Optional[Boolean]
 
 
@@ -3963,9 +3963,9 @@ TransitGatewaySubnetIdList = List[SubnetId]
 
 
 class AssociateTransitGatewayMulticastDomainRequest(ServiceRequest):
-    TransitGatewayMulticastDomainId: Optional[TransitGatewayMulticastDomainId]
-    TransitGatewayAttachmentId: Optional[TransitGatewayAttachmentId]
-    SubnetIds: Optional[TransitGatewaySubnetIdList]
+    TransitGatewayMulticastDomainId: TransitGatewayMulticastDomainId
+    TransitGatewayAttachmentId: TransitGatewayAttachmentId
+    SubnetIds: TransitGatewaySubnetIdList
     DryRun: Optional[Boolean]
 
 
@@ -8076,7 +8076,7 @@ class CreateVpcPeeringConnectionRequest(ServiceRequest):
     DryRun: Optional[Boolean]
     PeerOwnerId: Optional[String]
     PeerVpcId: Optional[String]
-    VpcId: Optional[VpcId]
+    VpcId: VpcId
     PeerRegion: Optional[String]
     TagSpecifications: Optional[TagSpecificationList]
 
@@ -13524,8 +13524,8 @@ class DisassociateClientVpnTargetNetworkResult(TypedDict, total=False):
 
 
 class DisassociateEnclaveCertificateIamRoleRequest(ServiceRequest):
-    CertificateArn: Optional[CertificateId]
-    RoleArn: Optional[RoleId]
+    CertificateArn: CertificateId
+    RoleArn: RoleId
     DryRun: Optional[Boolean]
 
 
@@ -13596,9 +13596,9 @@ class DisassociateSubnetCidrBlockResult(TypedDict, total=False):
 
 
 class DisassociateTransitGatewayMulticastDomainRequest(ServiceRequest):
-    TransitGatewayMulticastDomainId: Optional[TransitGatewayMulticastDomainId]
-    TransitGatewayAttachmentId: Optional[TransitGatewayAttachmentId]
-    SubnetIds: Optional[TransitGatewaySubnetIdList]
+    TransitGatewayMulticastDomainId: TransitGatewayMulticastDomainId
+    TransitGatewayAttachmentId: TransitGatewayAttachmentId
+    SubnetIds: TransitGatewaySubnetIdList
     DryRun: Optional[Boolean]
 
 
@@ -13935,7 +13935,7 @@ class ExportTransitGatewayRoutesResult(TypedDict, total=False):
 
 
 class GetAssociatedEnclaveCertificateIamRolesRequest(ServiceRequest):
-    CertificateArn: Optional[CertificateId]
+    CertificateArn: CertificateId
     DryRun: Optional[Boolean]
 
 
@@ -14536,7 +14536,7 @@ class GetTransitGatewayAttachmentPropagationsResult(TypedDict, total=False):
 
 
 class GetTransitGatewayMulticastDomainAssociationsRequest(ServiceRequest):
-    TransitGatewayMulticastDomainId: Optional[TransitGatewayMulticastDomainId]
+    TransitGatewayMulticastDomainId: TransitGatewayMulticastDomainId
     Filters: Optional[FilterList]
     MaxResults: Optional[TransitGatewayMaxResults]
     NextToken: Optional[String]
@@ -14951,7 +14951,7 @@ InstanceBlockDeviceMappingSpecificationList = List[InstanceBlockDeviceMappingSpe
 
 
 class InstanceCreditSpecificationRequest(TypedDict, total=False):
-    InstanceId: Optional[InstanceId]
+    InstanceId: InstanceId
     CpuCredits: Optional[String]
 
 
@@ -15510,7 +15510,7 @@ class ModifyNetworkInterfaceAttributeRequest(ServiceRequest):
 
 class ModifyPrivateDnsNameOptionsRequest(ServiceRequest):
     DryRun: Optional[Boolean]
-    InstanceId: Optional[InstanceId]
+    InstanceId: InstanceId
     PrivateDnsHostnameType: Optional[HostnameType]
     EnableResourceNameDnsARecord: Optional[Boolean]
     EnableResourceNameDnsAAAARecord: Optional[Boolean]
@@ -15545,7 +15545,7 @@ class SecurityGroupRuleRequest(TypedDict, total=False):
 
 
 class SecurityGroupRuleUpdate(TypedDict, total=False):
-    SecurityGroupRuleId: Optional[SecurityGroupRuleId]
+    SecurityGroupRuleId: SecurityGroupRuleId
     SecurityGroupRule: Optional[SecurityGroupRuleRequest]
 
 
@@ -16228,9 +16228,9 @@ class RegisterInstanceEventNotificationAttributesResult(TypedDict, total=False):
 
 
 class RegisterTransitGatewayMulticastGroupMembersRequest(ServiceRequest):
-    TransitGatewayMulticastDomainId: Optional[TransitGatewayMulticastDomainId]
+    TransitGatewayMulticastDomainId: TransitGatewayMulticastDomainId
     GroupIpAddress: Optional[String]
-    NetworkInterfaceIds: Optional[TransitGatewayNetworkInterfaceIdList]
+    NetworkInterfaceIds: TransitGatewayNetworkInterfaceIdList
     DryRun: Optional[Boolean]
 
 
@@ -16245,9 +16245,9 @@ class RegisterTransitGatewayMulticastGroupMembersResult(TypedDict, total=False):
 
 
 class RegisterTransitGatewayMulticastGroupSourcesRequest(ServiceRequest):
-    TransitGatewayMulticastDomainId: Optional[TransitGatewayMulticastDomainId]
+    TransitGatewayMulticastDomainId: TransitGatewayMulticastDomainId
     GroupIpAddress: Optional[String]
-    NetworkInterfaceIds: Optional[TransitGatewayNetworkInterfaceIdList]
+    NetworkInterfaceIds: TransitGatewayNetworkInterfaceIdList
     DryRun: Optional[Boolean]
 
 
@@ -16783,7 +16783,7 @@ class SearchLocalGatewayRoutesResult(TypedDict, total=False):
 
 
 class SearchTransitGatewayMulticastGroupsRequest(ServiceRequest):
-    TransitGatewayMulticastDomainId: Optional[TransitGatewayMulticastDomainId]
+    TransitGatewayMulticastDomainId: TransitGatewayMulticastDomainId
     Filters: Optional[FilterList]
     MaxResults: Optional[TransitGatewayMaxResults]
     NextToken: Optional[String]
@@ -17065,8 +17065,8 @@ class Ec2Api:
     def accept_vpc_peering_connection(
         self,
         context: RequestContext,
+        vpc_peering_connection_id: VpcPeeringConnectionIdWithResolver,
         dry_run: Boolean = None,
-        vpc_peering_connection_id: VpcPeeringConnectionIdWithResolver = None,
     ) -> AcceptVpcPeeringConnectionResult:
         raise NotImplementedError
 
@@ -17207,8 +17207,8 @@ class Ec2Api:
     def associate_enclave_certificate_iam_role(
         self,
         context: RequestContext,
-        certificate_arn: CertificateId = None,
-        role_arn: RoleId = None,
+        certificate_arn: CertificateId,
+        role_arn: RoleId,
         dry_run: Boolean = None,
     ) -> AssociateEnclaveCertificateIamRoleResult:
         raise NotImplementedError
@@ -17276,9 +17276,9 @@ class Ec2Api:
     def associate_transit_gateway_multicast_domain(
         self,
         context: RequestContext,
-        transit_gateway_multicast_domain_id: TransitGatewayMulticastDomainId = None,
-        transit_gateway_attachment_id: TransitGatewayAttachmentId = None,
-        subnet_ids: TransitGatewaySubnetIdList = None,
+        transit_gateway_multicast_domain_id: TransitGatewayMulticastDomainId,
+        transit_gateway_attachment_id: TransitGatewayAttachmentId,
+        subnet_ids: TransitGatewaySubnetIdList,
         dry_run: Boolean = None,
     ) -> AssociateTransitGatewayMulticastDomainResult:
         raise NotImplementedError
@@ -18631,10 +18631,10 @@ class Ec2Api:
     def create_vpc_peering_connection(
         self,
         context: RequestContext,
+        vpc_id: VpcId,
         dry_run: Boolean = None,
         peer_owner_id: String = None,
         peer_vpc_id: String = None,
-        vpc_id: VpcId = None,
         peer_region: String = None,
         tag_specifications: TagSpecificationList = None,
     ) -> CreateVpcPeeringConnectionResult:
@@ -21195,8 +21195,8 @@ class Ec2Api:
     def disassociate_enclave_certificate_iam_role(
         self,
         context: RequestContext,
-        certificate_arn: CertificateId = None,
-        role_arn: RoleId = None,
+        certificate_arn: CertificateId,
+        role_arn: RoleId,
         dry_run: Boolean = None,
     ) -> DisassociateEnclaveCertificateIamRoleResult:
         raise NotImplementedError
@@ -21256,9 +21256,9 @@ class Ec2Api:
     def disassociate_transit_gateway_multicast_domain(
         self,
         context: RequestContext,
-        transit_gateway_multicast_domain_id: TransitGatewayMulticastDomainId = None,
-        transit_gateway_attachment_id: TransitGatewayAttachmentId = None,
-        subnet_ids: TransitGatewaySubnetIdList = None,
+        transit_gateway_multicast_domain_id: TransitGatewayMulticastDomainId,
+        transit_gateway_attachment_id: TransitGatewayAttachmentId,
+        subnet_ids: TransitGatewaySubnetIdList,
         dry_run: Boolean = None,
     ) -> DisassociateTransitGatewayMulticastDomainResult:
         raise NotImplementedError
@@ -21463,10 +21463,7 @@ class Ec2Api:
 
     @handler("GetAssociatedEnclaveCertificateIamRoles")
     def get_associated_enclave_certificate_iam_roles(
-        self,
-        context: RequestContext,
-        certificate_arn: CertificateId = None,
-        dry_run: Boolean = None,
+        self, context: RequestContext, certificate_arn: CertificateId, dry_run: Boolean = None
     ) -> GetAssociatedEnclaveCertificateIamRolesResult:
         raise NotImplementedError
 
@@ -21803,7 +21800,7 @@ class Ec2Api:
     def get_transit_gateway_multicast_domain_associations(
         self,
         context: RequestContext,
-        transit_gateway_multicast_domain_id: TransitGatewayMulticastDomainId = None,
+        transit_gateway_multicast_domain_id: TransitGatewayMulticastDomainId,
         filters: FilterList = None,
         max_results: TransitGatewayMaxResults = None,
         next_token: String = None,
@@ -22397,8 +22394,8 @@ class Ec2Api:
     def modify_private_dns_name_options(
         self,
         context: RequestContext,
+        instance_id: InstanceId,
         dry_run: Boolean = None,
-        instance_id: InstanceId = None,
         private_dns_hostname_type: HostnameType = None,
         enable_resource_name_dns_a_record: Boolean = None,
         enable_resource_name_dns_aaaa_record: Boolean = None,
@@ -22949,9 +22946,9 @@ class Ec2Api:
     def register_transit_gateway_multicast_group_members(
         self,
         context: RequestContext,
-        transit_gateway_multicast_domain_id: TransitGatewayMulticastDomainId = None,
+        transit_gateway_multicast_domain_id: TransitGatewayMulticastDomainId,
+        network_interface_ids: TransitGatewayNetworkInterfaceIdList,
         group_ip_address: String = None,
-        network_interface_ids: TransitGatewayNetworkInterfaceIdList = None,
         dry_run: Boolean = None,
     ) -> RegisterTransitGatewayMulticastGroupMembersResult:
         raise NotImplementedError
@@ -22960,9 +22957,9 @@ class Ec2Api:
     def register_transit_gateway_multicast_group_sources(
         self,
         context: RequestContext,
-        transit_gateway_multicast_domain_id: TransitGatewayMulticastDomainId = None,
+        transit_gateway_multicast_domain_id: TransitGatewayMulticastDomainId,
+        network_interface_ids: TransitGatewayNetworkInterfaceIdList,
         group_ip_address: String = None,
-        network_interface_ids: TransitGatewayNetworkInterfaceIdList = None,
         dry_run: Boolean = None,
     ) -> RegisterTransitGatewayMulticastGroupSourcesResult:
         raise NotImplementedError
@@ -23382,7 +23379,7 @@ class Ec2Api:
     def search_transit_gateway_multicast_groups(
         self,
         context: RequestContext,
-        transit_gateway_multicast_domain_id: TransitGatewayMulticastDomainId = None,
+        transit_gateway_multicast_domain_id: TransitGatewayMulticastDomainId,
         filters: FilterList = None,
         max_results: TransitGatewayMaxResults = None,
         next_token: String = None,
