@@ -2940,6 +2940,27 @@ class TestS3:
             )
         snapshot.match("create-multipart-outposts-exc", e.value.response)
 
+    @pytest.mark.aws_validated
+    def test_response_structure(self, aws_http_client_factory, s3_bucket):
+        """
+        Test that the response structure is correct for the S3 API
+        """
+        headers = {"x-amz-content-sha256": "UNSIGNED-PAYLOAD"}
+
+        s3_http_client = aws_http_client_factory("s3", signer_factory=SigV4Auth)
+
+        # Lists all buckets
+        endpoint_url = _endpoint_url()
+        resp = s3_http_client.get(endpoint_url, headers=headers)
+        resp_dict = xmltodict.parse(resp.content)
+        assert "ListAllMyBucketsResult" in resp_dict
+
+        # Lists all objects in a bucket
+        bucket_url = _bucket_url(s3_bucket)
+        resp = s3_http_client.get(bucket_url, headers=headers)
+        resp_dict = xmltodict.parse(resp.content)
+        assert "ListBucketResult" in resp_dict
+
 
 class TestS3TerraformRawRequests:
     @pytest.mark.only_localstack
