@@ -631,8 +631,17 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
 
         if config.LAMBDA_SYNCHRONOUS_CREATE:
             # block via retrying until "terminal" condition reached before returning
-            if not poll_condition(lambda: self._get_function_version(function_name, version.id.qualifier, version.id.account, version.id.region).config.state.state in [State.Active, State.Failed], timeout=10):
-                LOG.warning("LAMBDA_SYNCHRONOUS_CREATE is active, but waiting for %s reached timeout.", function_name)
+            if not poll_condition(
+                lambda: self._get_function_version(
+                    function_name, version.id.qualifier, version.id.account, version.id.region
+                ).config.state.state
+                in [State.Active, State.Failed],
+                timeout=10,
+            ):
+                LOG.warning(
+                    "LAMBDA_SYNCHRONOUS_CREATE is active, but waiting for %s reached timeout.",
+                    function_name,
+                )
 
         return api_utils.map_config_out(
             version, return_qualified_arn=False, return_update_status=False
