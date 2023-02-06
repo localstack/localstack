@@ -21,6 +21,13 @@ from localstack.services.stepfunctions.backend.execution_worker_comm import Exec
 
 
 class ExecutionWorker:
+    role_arn: Final[Arn]
+    definition: Definition
+    input_data: Optional[dict]
+    env: Optional[Environment]
+    _context_object_init: ContextObjectInitData
+    exec_comm: Final[ExecutionWorkerComm]
+
     def __init__(
         self,
         role_arn: Arn,
@@ -29,13 +36,12 @@ class ExecutionWorker:
         context_object_init: ContextObjectInitData,
         exec_comm: ExecutionWorkerComm,
     ):
-        self.role_arn: Final[Arn] = role_arn
-        self.definition: Definition = definition
-        self.input_data: Optional[dict] = input_data
-        self._worker_thread: Optional[Thread] = None
-        self.env: Optional[Environment] = None
+        self.role_arn = role_arn
+        self.definition = definition
+        self.input_data = input_data
+        self.env = None
         self._context_object_init = context_object_init
-        self.exec_comm: Final[ExecutionWorkerComm] = exec_comm
+        self.exec_comm = exec_comm
 
     def _execution_logic(self):
         program: Program = AmazonStateLanguageParser.parse(self.definition)
@@ -60,8 +66,7 @@ class ExecutionWorker:
         self.exec_comm.terminated()
 
     def start(self):
-        self._worker_thread = Thread(target=self._execution_logic)
-        self._worker_thread.start()
+        Thread(target=self._execution_logic).start()
 
     def stop(self, stop_date: datetime.datetime, error: Optional[str], cause: Optional[str]):
         self.env.set_stop(stop_date=stop_date, cause=cause, error=error)

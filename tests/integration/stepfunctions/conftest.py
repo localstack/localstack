@@ -50,11 +50,10 @@ def create_iam_role_for_sfn(create_iam_role_with_policy):
     return _create
 
 
-_state_machine_arns: Final[list[str]] = list()
-
-
 @pytest.fixture
 def create_state_machine(stepfunctions_client):
+    _state_machine_arns: Final[list[str]] = list()
+
     def _create_state_machine(**kwargs):
         create_output = stepfunctions_client.create_state_machine(**kwargs)
         create_output_arn = create_output["stateMachineArn"]

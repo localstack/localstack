@@ -5,7 +5,6 @@ import os
 import pytest
 
 from localstack.services.events.provider import TEST_EVENTS_CACHE
-from localstack.services.stepfunctions.stepfunctions_utils import is_new_provider
 from localstack.utils import testutil
 from localstack.utils.aws import arns, aws_stack
 from localstack.utils.files import load_file
@@ -15,6 +14,7 @@ from localstack.utils.sync import ShortCircuitWaitException, retry, wait_until
 from localstack.utils.threads import parallelize
 from tests.integration.awslambda.functions import lambda_environment
 from tests.integration.awslambda.test_lambda import TEST_LAMBDA_ENV, TEST_LAMBDA_PYTHON_ECHO
+from tests.integration.stepfunctions.utils import is_new_provider
 
 THIS_FOLDER = os.path.dirname(os.path.realpath(__file__))
 TEST_LAMBDA_NAME_1 = "lambda_sfn_1"

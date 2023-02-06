@@ -1,5 +1,4 @@
 import logging
-import os
 from typing import Dict
 
 from localstack.utils.aws import aws_stack
@@ -19,14 +18,3 @@ def await_sfn_execution_result(execution_arn: str, timeout_secs: int = 60) -> Di
         return result
 
     return retry(_get_result, sleep=2, retries=timeout_secs / 2)
-
-
-def is_old_provider():
-    return (
-        os.environ.get("TEST_TARGET") != "AWS_CLOUD"
-        and os.environ.get("PROVIDER_OVERRIDE_STEPFUNCTIONS") != "v2"
-    )
-
-
-def is_new_provider():
-    return not is_old_provider()

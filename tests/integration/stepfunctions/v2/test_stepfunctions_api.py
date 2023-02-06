@@ -4,7 +4,6 @@ import pytest
 
 from localstack.aws.api.stepfunctions import StateMachineType
 from localstack.services.awslambda.lambda_utils import LAMBDA_RUNTIME_PYTHON39
-from localstack.services.stepfunctions.stepfunctions_utils import is_old_provider
 from localstack.testing.snapshots.transformer import RegexTransformer
 from localstack.utils.strings import short_uid
 from tests.integration.stepfunctions.lambda_functions import lambda_functions
@@ -16,6 +15,7 @@ from tests.integration.stepfunctions.utils import (
     await_no_state_machines_listed,
     await_state_machine_listed,
     await_state_machine_not_listed,
+    is_old_provider,
 )
 
 pytestmark = pytest.mark.skipif(

@@ -1,14 +1,17 @@
 from collections import OrderedDict
 from typing import Final
 
+from localstack.aws.api.stepfunctions import Arn
 from localstack.services.stepfunctions.backend.execution import Execution
 from localstack.services.stepfunctions.backend.state_machine import StateMachine
 from localstack.services.stores import AccountRegionBundle, BaseStore, LocalAttribute
 
 
 class SFNStore(BaseStore):
-    sm_by_arn: dict[str, StateMachine] = LocalAttribute(default=dict)
-    execs_by_exec_arn: dict[str, Execution] = LocalAttribute(
+    # Maps ARNs to state machines.
+    state_machines: Final[dict[Arn, StateMachine]] = LocalAttribute(default=dict)
+    # Maps Execution-ARNs to state machines.
+    executions: Final[dict[Arn, Execution]] = LocalAttribute(
         default=OrderedDict
     )  # TODO: when snapshot to pods stop execution(?)
 

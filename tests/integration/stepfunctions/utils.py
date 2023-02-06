@@ -1,7 +1,8 @@
 import logging
-from typing import Final
+import os
+from typing import Callable, Final
 
-from localstack.aws.api.stepfunctions import ExecutionStatus
+from localstack.aws.api.stepfunctions import ExecutionStatus, HistoryEventList
 from localstack.utils.sync import poll_condition
 
 LOG = logging.getLogger(__name__)
@@ -10,6 +11,17 @@ LOG = logging.getLogger(__name__)
 # For EXPRESS state machines, the deletion will happen eventually (usually less than a minute).
 # Running executions may emit logs after DeleteStateMachine API is called.
 _DELETION_TIMEOUT_SECS: Final[int] = 120
+
+
+def is_old_provider():
+    return (
+        os.environ.get("TEST_TARGET") != "AWS_CLOUD"
+        and os.environ.get("PROVIDER_OVERRIDE_STEPFUNCTIONS") != "v2"
+    )
+
+
+def is_new_provider():
+    return not is_old_provider()
 
 
 def await_no_state_machines_listed(stepfunctions_client):
@@ -56,54 +68,49 @@ def await_state_machine_listed(stepfunctions_client, state_machine_arn: str):
         LOG.warning(f"Timed out whilst awaiting for listing to include '{state_machine_arn}'.")
 
 
-def _await_last_execution_event_is(stepfunctions_client, event_key: str, execution_arn: str):
+def _await_on_execution_events(
+    stepfunctions_client, execution_arn: str, check_func: Callable[[HistoryEventList], bool]
+) -> None:
     def _run_check():
         hist_resp = stepfunctions_client.get_execution_history(executionArn=execution_arn)
-        events = sorted(hist_resp.get("events", []), key=lambda event: event.get("timestamp"))
-        if len(events) > 0:
-            last_event = events[-1]
-            return event_key in last_event
-        return False
+        events: HistoryEventList = sorted(
+            hist_resp.get("events", []), key=lambda event: event.get("timestamp")
+        )
+        res: bool = check_func(events)
+        return res
 
     success = poll_condition(condition=_run_check, timeout=120, interval=1)
     if not success:
         LOG.warning(
-            f"Timed out whilst awaiting for execution events to end with a '{event_key}' event "
-            f"for execution '{execution_arn}'."
+            f"Timed out whilst awaiting for execution events to satisfy condition for execution '{execution_arn}'."
         )
 
 
 def await_execution_success(stepfunctions_client, execution_arn: str):
-    def _run_check():
-        hist_resp = stepfunctions_client.get_execution_history(executionArn=execution_arn)
-        events = sorted(hist_resp.get("events", []), key=lambda event: event.get("timestamp"))
+    def _check_last_is_success(events: HistoryEventList) -> bool:
         if len(events) > 0:
             last_event = events[-1]
             return "executionSucceededEventDetails" in last_event
         return False
 
-    success = poll_condition(condition=_run_check, timeout=120, interval=1)
-    if not success:
-        LOG.warning(
-            f"Timed out whilst awaiting for execution events to end with a executionSucceededEventDetails event "
-            f"for execution '{execution_arn}'."
-        )
+    _await_on_execution_events(
+        stepfunctions_client=stepfunctions_client,
+        execution_arn=execution_arn,
+        check_func=_check_last_is_success,
+    )
 
 
 def await_execution_started(stepfunctions_client, execution_arn: str):
-    def _run_check():
-        hist_resp = stepfunctions_client.get_execution_history(executionArn=execution_arn)
-        events = sorted(hist_resp.get("events", []), key=lambda event: event.get("timestamp"))
+    def _check_stated_exists(events: HistoryEventList) -> bool:
         for event in events:
             return "executionStartedEventDetails" in event
         return False
 
-    success = poll_condition(condition=_run_check, timeout=120, interval=1)
-    if not success:
-        LOG.warning(
-            f"Timed out whilst awaiting for execution events to end with a executionSucceededEventDetails event "
-            f"for execution '{execution_arn}'."
-        )
+    _await_on_execution_events(
+        stepfunctions_client=stepfunctions_client,
+        execution_arn=execution_arn,
+        check_func=_check_stated_exists,
+    )
 
 
 def await_execution_aborted(stepfunctions_client, execution_arn: str):
