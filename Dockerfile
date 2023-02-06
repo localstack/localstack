@@ -223,7 +223,7 @@ RUN source .venv/bin/activate && \
       timescaledb && \
     rm -rf /tmp/localstack/* && \
     rm -rf /var/lib/localstack/cache/* && \
-    chown localstack:localstack /usr/lib/localstack && \
+    chown -R localstack:localstack /usr/lib/localstack && \
     chmod -R 777 /usr/lib/localstack
 
 
