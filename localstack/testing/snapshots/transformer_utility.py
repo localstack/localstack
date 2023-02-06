@@ -412,13 +412,13 @@ class TransformerUtility:
         ]
 
     @staticmethod
-    def snf_sm_create_arn(create_sm_res: CreateStateMachineOutput, index: int):
+    def sfn_sm_create_arn(create_sm_res: CreateStateMachineOutput, index: int):
         arn_part_repl = f"<ArnPart_{index}idx>"
         arn_part: str = "".join(create_sm_res["stateMachineArn"].rpartition(":")[-1])
         return RegexTransformer(arn_part, arn_part_repl)
 
     @staticmethod
-    def snf_sm_exec_arn(start_exec: StartExecutionOutput, index: int):
+    def sfn_sm_exec_arn(start_exec: StartExecutionOutput, index: int):
         arn_part_repl = f"<ExecArnPart_{index}idx>"
         arn_part: str = "".join(start_exec["executionArn"].rpartition(":")[-1])
         return RegexTransformer(arn_part, arn_part_repl)

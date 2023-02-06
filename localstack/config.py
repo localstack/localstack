@@ -399,9 +399,6 @@ LEGACY_EDGE_PROXY = is_env_true("LEGACY_EDGE_PROXY")
 # TODO change when asf becomes default: os.environ.get("PROVIDER_OVERRIDE_S3", "") == 'legacy'
 LEGACY_S3_PROVIDER = os.environ.get("PROVIDER_OVERRIDE_S3", "") not in ("asf", "asf_pro")
 
-# Whether to use the legacy implementation for AWS StepFunctions.
-LEGACY_SFN_PROVIDER = os.environ.get("PROVIDER_OVERRIDE_SFN", "") not in "v2"
-
 # Whether to report internal failures as 500 or 501 errors.
 FAIL_FAST = is_env_true("FAIL_FAST")
 
