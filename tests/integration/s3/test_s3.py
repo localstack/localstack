@@ -4260,6 +4260,144 @@ class TestS3PresignedUrl:
         assert response.status_code == 200
         assert response.content == data
 
+    @pytest.mark.aws_validated
+    def test_presigned_url_v4_x_amz_in_qs(
+        self,
+        s3_client,
+        s3_bucket,
+        s3_create_bucket,
+        patch_s3_skip_signature_validation_false,
+        lambda_client,
+        create_lambda_function,
+        lambda_su_role,
+        create_tmp_folder_lambda,
+    ):
+        # test that Boto does not hoist x-amz-storage-class in the query string while pre-signing
+        object_key = "temp.txt"
+        client = _s3_client_custom_config(
+            Config(signature_version="s3v4"),
+        )
+        url = client.generate_presigned_url(
+            "put_object",
+            Params={"Bucket": s3_bucket, "Key": object_key, "StorageClass": StorageClass.STANDARD},
+        )
+        assert StorageClass.STANDARD not in url
+
+        handler_file = os.path.join(
+            os.path.dirname(__file__), "../awslambda/functions/lambda_s3_integration_presign.js"
+        )
+        temp_folder = create_tmp_folder_lambda(
+            handler_file,
+            run_command="npm i @aws-sdk/util-endpoints @aws-sdk/client-s3 @aws-sdk/s3-request-presigner @aws-sdk/middleware-endpoint",
+        )
+
+        function_name = f"func-integration-{short_uid()}"
+        create_lambda_function(
+            func_name=function_name,
+            zip_file=testutil.create_zip_file(temp_folder, get_content=True),
+            runtime=LAMBDA_RUNTIME_NODEJS14X,
+            handler="lambda_s3_integration_presign.handler",
+            role=lambda_su_role,
+        )
+        s3_create_bucket(Bucket=function_name)
+
+        response = lambda_client.invoke(FunctionName=function_name)
+        presigned_url = response["Payload"].read()
+        presigned_url = json.loads(to_str(presigned_url))["body"].strip('"')
+        assert StorageClass.STANDARD in presigned_url
+
+        # missing Content-MD5
+        response = requests.put(presigned_url, verify=False, data=b"123456")
+        assert response.status_code == 403
+
+        # AWS needs the Content-MD5 header to validate the integrity of the file as set in the pre-signed URL
+        # but do not provide StorageClass in the headers, because it's not in SignedHeaders
+        response = requests.put(
+            presigned_url,
+            data=b"123456",
+            verify=False,
+            headers={"Content-MD5": "4QrcOUm6Wau+VuBX8g+IPg=="},
+        )
+        assert response.status_code == 200
+
+    @pytest.mark.aws_validated
+    @pytest.mark.skipif(
+        condition=is_old_provider(),
+        reason="behaviour not properly implemented in the legacy provider",
+    )
+    def test_presigned_url_v4_signed_headers_in_qs(
+        self,
+        s3_client,
+        s3_bucket,
+        s3_create_bucket,
+        patch_s3_skip_signature_validation_false,
+        lambda_client,
+        create_lambda_function,
+        lambda_su_role,
+        create_tmp_folder_lambda,
+    ):
+        # test that Boto does not hoist x-amz-server-side-encryption in the query string while pre-signing
+        # it means we would need to provide it in the request headers
+        object_key = "temp.txt"
+        client = _s3_client_custom_config(
+            Config(signature_version="s3v4"),
+        )
+        url = client.generate_presigned_url(
+            "put_object",
+            Params={"Bucket": s3_bucket, "Key": object_key, "ServerSideEncryption": "AES256"},
+        )
+        assert "=AES256" not in url
+
+        handler_file = os.path.join(
+            os.path.dirname(__file__), "../awslambda/functions/lambda_s3_integration_sdk_v2.js"
+        )
+        temp_folder = create_tmp_folder_lambda(
+            handler_file,
+            run_command="npm i @aws-sdk/util-endpoints @aws-sdk/client-s3 @aws-sdk/s3-request-presigner @aws-sdk/middleware-endpoint",
+        )
+
+        function_name = f"func-integration-{short_uid()}"
+        create_lambda_function(
+            func_name=function_name,
+            zip_file=testutil.create_zip_file(temp_folder, get_content=True),
+            runtime=LAMBDA_RUNTIME_NODEJS14X,
+            handler="lambda_s3_integration_sdk_v2.handler",
+            role=lambda_su_role,
+        )
+        s3_create_bucket(Bucket=function_name)
+
+        response = lambda_client.invoke(FunctionName=function_name)
+        presigned_url = response["Payload"].read()
+        presigned_url = json.loads(to_str(presigned_url))["body"].strip('"')
+        assert "=AES256" in presigned_url
+
+        # AWS needs the Content-MD5 header to validate the integrity of the file as set in the pre-signed URL
+        response = requests.put(presigned_url, verify=False, data=b"123456")
+        assert response.status_code == 403
+
+        # assert that we don't need to give x-amz-server-side-encryption even though it's in SignedHeaders,
+        # because it's in the query string
+        response = requests.put(
+            presigned_url,
+            data=b"123456",
+            verify=False,
+            headers={"Content-MD5": "4QrcOUm6Wau+VuBX8g+IPg=="},
+        )
+        assert response.status_code == 200
+
+        # assert that even if we give x-amz-server-side-encryption, as long as it's the same value as the query string,
+        # it will work
+        response = requests.put(
+            presigned_url,
+            data=b"123456",
+            verify=False,
+            headers={
+                "Content-MD5": "4QrcOUm6Wau+VuBX8g+IPg==",
+                "x-amz-server-side-encryption": "AES256",
+            },
+        )
+        assert response.status_code == 200
+
     @staticmethod
     def _get_presigned_snapshot_transformers(snapshot):
         return [
