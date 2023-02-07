@@ -5,7 +5,10 @@ from asyncio import AbstractEventLoop
 import pytest
 from hypercorn import Config
 from hypercorn.typing import ASGIFramework
+from werkzeug.datastructures import Headers
+from werkzeug.wrappers import Request as WerkzeugRequest
 
+from localstack.http import Response
 from localstack.http.asgi import ASGIAdapter
 from localstack.http.hypercorn import HypercornServer
 from localstack.utils import net
@@ -53,3 +56,26 @@ def serve_asgi_adapter(serve_asgi_app):
         )
 
     yield _create
+
+
+@pytest.fixture()
+def httpserver_echo_request_metadata():
+    def httpserver_handler(request: WerkzeugRequest) -> Response:
+        """
+        Simple request handler that returns the incoming request metadata (method, path, url, headers).
+
+        :param request: the incoming HTTP request
+        :return: an HTTP response
+        """
+        response = Response()
+        response.set_json(
+            {
+                "method": request.method,
+                "path": request.path,
+                "url": request.url,
+                "headers": dict(Headers(request.headers)),
+            }
+        )
+        return response
+
+    return httpserver_handler

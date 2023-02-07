@@ -1,10 +1,12 @@
 import abc
+from urllib.parse import urlparse
 
 import requests
 from werkzeug import Request, Response
 from werkzeug.datastructures import Headers
+from werkzeug.sansio.utils import get_current_url
 
-from localstack.http.request import get_raw_base_url, restore_payload
+from localstack.http.request import get_raw_base_url, get_raw_path, restore_payload
 
 
 class HttpClient(abc.ABC):
@@ -12,11 +14,12 @@ class HttpClient(abc.ABC):
     An HTTP client that can make http requests using werkzeug's request object.
     """
 
-    def request(self, request: Request) -> Response:
+    def request(self, request: Request, server: str | None = None) -> Response:
         """
         Make the given HTTP as a client.
 
         :param request: the request to make
+        :param server: the URL to send the request to, which defaults to the host component of the original Request.
         :return: the response.
         """
         raise NotImplementedError
@@ -40,7 +43,7 @@ class SimpleRequestsClient(HttpClient):
     def __init__(self, session: requests.Session = None):
         self.session = session or requests.Session()
 
-    def request(self, request: Request) -> Response:
+    def request(self, request: Request, server: str | None = None) -> Response:
         """
         Very naive implementation to make the given HTTP request using the requests library, i.e., process the request
         as a client.
@@ -50,12 +53,25 @@ class SimpleRequestsClient(HttpClient):
          streamed to the destination.
 
         :param request: the request to perform
+        :param server: the URL to send the request to, which defaults to the host component of the original Request.
         :return: the response.
         """
+
+        if server:
+            # accepts "http://localhost:5000" or "localhost:5000"
+            if "://" in server:
+                parts = urlparse(server)
+                scheme, server = parts.scheme, parts.netloc
+            else:
+                scheme = request.scheme
+            url = get_current_url(scheme, server, request.root_path, get_raw_path(request))
+        else:
+            url = get_raw_base_url(request)
+
         response = self.session.request(
             method=request.method,
             # use raw base url to preserve path url encoding
-            url=get_raw_base_url(request),
+            url=url,
             # request.args are only the url parameters
             params=[(k, v) for k, v in request.args.items(multi=True)],
             headers=dict(request.headers.items()),
