@@ -79,8 +79,8 @@ class Proxy(HttpClient):
 
         proxy_request = _copy_request(request, self.forward_base_url, forward_path, headers)
 
-        if self.preserve_host:
-            proxy_request.headers["Host"] = request.host
+        if self.preserve_host and "Host" in request.headers:
+            proxy_request.headers["Host"] = request.headers["Host"]
 
         target = urlparse(self.forward_base_url)
         return self.client.request(proxy_request, server=f"{target.scheme}://{target.netloc}")
@@ -156,7 +156,13 @@ def _copy_request(
 
     # FIXME: unfortunately, EnvironBuilder expects the input stream to be seekable, but we don't have that when using
     #  the asgi/wsgi bridge. we need a better way of dealing with IO!
-    builder.input_stream = BytesIO(restore_payload(request))
+    data = restore_payload(request)
+    builder.input_stream = BytesIO(data)
+    builder.content_length = len(data)
+    # Since the payload is completely restored, the proxy forwarding is not streamed.
+    # Therefore, we need to remove a potential "chunked" Transfer-Encoding
+    if builder.headers.get("Transfer-Encoding", None) == "chunked":
+        builder.headers.pop("Transfer-Encoding")
 
     new_request = builder.get_request()
 
