@@ -103,6 +103,7 @@ from localstack.utils.common import (
     truncate,
 )
 from localstack.utils.kinesis import kinesis_connector
+from localstack.utils.kinesis.kinesis_connector import KinesisProcessorThread
 from localstack.utils.run import run_for_max_seconds
 
 LOG = logging.getLogger(__name__)
@@ -191,6 +192,10 @@ def get_search_db_connection(endpoint: str, region_name: str):
 
 
 class FirehoseProvider(FirehoseApi):
+    def __init__(self) -> None:
+        super().__init__()
+        self.kinesis_listeners: dict[tuple, dict[str, KinesisProcessorThread]] = {}
+
     @staticmethod
     def get_store() -> FirehoseStore:
         return firehose_stores[get_aws_account_id()][aws_stack.get_region()]
@@ -317,7 +322,12 @@ class FirehoseProvider(FirehoseApi):
                         wait_until_started=True,
                         ddb_lease_table_suffix="-firehose",
                     )
-                    store.kinesis_listeners[delivery_stream_name] = process
+
+                    account_region_tuple: tuple[str, str] = context.account_id, context.region
+                    listener_backend: dict[
+                        str, KinesisProcessorThread
+                    ] = self.kinesis_listeners.setdefault(account_region_tuple, {})
+                    listener_backend[delivery_stream_name] = process
                     stream["DeliveryStreamStatus"] = DeliveryStreamStatus.ACTIVE
                 except Exception as e:
                     LOG.warning(
@@ -340,8 +350,11 @@ class FirehoseProvider(FirehoseApi):
             raise ResourceNotFoundException(
                 f"Firehose {delivery_stream_name} under account {context.account_id} " f"not found."
             )
-        kinesis_process = store.kinesis_listeners.pop(delivery_stream_name, None)
-        if kinesis_process:
+        account_region_tuple: tuple[str, str] = context.account_id, context.region
+        listener_backend: dict[str, KinesisProcessorThread] = self.kinesis_listeners.get(
+            account_region_tuple, {}
+        )
+        if kinesis_process := listener_backend.pop(delivery_stream_name, None):
             LOG.debug("Stopping kinesis listener for %s", delivery_stream_name)
             kinesis_process.stop()
 
