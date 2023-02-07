@@ -5,6 +5,7 @@ import botocore.exceptions
 import pytest
 import yaml
 
+from localstack.services.cloudformation.engine.yaml_parser import parse_yaml
 from localstack.testing.aws.cloudformation_utils import load_template_file
 from localstack.testing.snapshots.transformer import SortingTransformer
 from localstack.utils.files import load_file
@@ -106,11 +107,13 @@ class TestStacksApi:
         snapshot.add_transformer(snapshot.transform.key_value("PhysicalResourceId"))
 
         api_name = f"test_{short_uid()}"
-        template_path = os.path.join(os.path.dirname(__file__), "../../templates/simple_api.yaml")
 
         # create stack
         deployed = deploy_cfn_template(
-            template_path=template_path, parameters={"ApiName": api_name}
+            template_path=os.path.join(os.path.dirname(__file__), "../../templates/simple_api.yaml"),
+            parameters={
+                "ApiName": api_name
+            }
         )
         stack_name = deployed.stack_name
         stack_id = deployed.stack_id
@@ -120,12 +123,10 @@ class TestStacksApi:
 
         # update stack, with one additional resource
         api_name = f"test_{short_uid()}"
-        template_body = yaml.safe_load(load_template_file(template_path))
-        template_body["Resources"]["Bucket"] = {"Type": "AWS::S3::Bucket"}
         deploy_cfn_template(
             is_update=True,
             stack_name=deployed.stack_name,
-            template=json.dumps(template_body),
+            template_path=os.path.join(os.path.dirname(__file__), "../../templates/simple_api.update.yaml"),
             parameters={"ApiName": api_name},
         )
 
@@ -155,7 +156,7 @@ class TestStacksApi:
         assert statuses == {"CREATE_COMPLETE"}
 
         # remove one resource from the template, then update stack (via change set)
-        template_dict = yaml.safe_load(open(template_path))
+        template_dict = parse_yaml(load_file(template_path))
         template_dict["Resources"].pop("eventPolicy2")
         template2 = yaml.dump(template_dict)
 

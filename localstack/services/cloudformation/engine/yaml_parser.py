@@ -43,6 +43,8 @@ def shorthand_constructor(loader: yaml.Loader, tag_suffix: str, node: yaml.Node)
         return {fn_name: node.value}
     elif isinstance(node, yaml.SequenceNode):
         return {fn_name: loader.construct_sequence(node)}
+    elif isinstance(node, yaml.MappingNode):
+        return {fn_name: loader.construct_mapping(node)}
     else:
         raise ValueError(f"Unexpected yaml Node type: {type(node)}")
 
