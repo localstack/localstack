@@ -22,7 +22,7 @@ class TestErrorInjection:
 
             # by default, no errors
             test_no_errors = kinesis.put_records(StreamName=stream_name, Records=records)
-            assert test_no_errors.get["FailedRecordCount"] == None
+            assert test_no_errors.get["FailedRecordCount"] is None
 
             # with a probability of 1, always throw errors
             monkeypatch.setattr(config, "KINESIS_ERROR_PROBABILITY", 1.0)
