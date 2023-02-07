@@ -6,9 +6,9 @@ from typing import Dict, List
 import boto3
 from samtranslator.translator.transform import transform as transform_sam
 
-from localstack.services.cloudformation.engine import yaml_parser
 from localstack.aws.accounts import get_aws_account_id
 from localstack.aws.api import CommonServiceException
+from localstack.services.cloudformation.engine import yaml_parser
 from localstack.services.cloudformation.engine.entities import resolve_ssm_parameter_value
 from localstack.services.cloudformation.engine.policy_loader import create_policy_loader
 from localstack.services.cloudformation.stores import get_cloudformation_store
