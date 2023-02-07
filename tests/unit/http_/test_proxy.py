@@ -6,10 +6,11 @@ import requests
 from pytest_httpserver import HTTPServer
 from werkzeug import Request as WerkzeugRequest
 
-from localstack.http import Response, Router
+from localstack.http import Request, Response, Router
+from localstack.http.client import SimpleRequestsClient
 from localstack.http.dispatcher import handler_dispatcher
 from localstack.http.hypercorn import HypercornServer
-from localstack.http.proxy import ProxyHandler, forward
+from localstack.http.proxy import Proxy, ProxyHandler, forward
 
 
 @pytest.fixture
@@ -139,6 +140,36 @@ class TestPathForwarder:
         assert response.ok
         doc = response.json()
         assert doc == {"args": {"q": "yes"}, "form": {"foo": "bar", "baz": "ed"}}
+
+
+class TestProxy:
+    def test_proxy_with_custom_client(
+        self, httpserver: HTTPServer, httpserver_echo_request_metadata
+    ):
+        """The Proxy class allows the injection of a custom HTTP client which can attach default headers to every
+        request. this test verifies that this works through the proxy implementation."""
+        httpserver.expect_request("/").respond_with_handler(httpserver_echo_request_metadata)
+
+        with SimpleRequestsClient() as client:
+            client.session.headers["X-My-Custom-Header"] = "hello world"
+
+            proxy = Proxy(httpserver.url_for("/").lstrip("/"), client)
+
+            request = Request(
+                path="/",
+                method="POST",
+                body="foobar",
+                remote_addr="127.0.0.10",
+                headers={"Host": "127.0.0.1:80"},
+            )
+
+            response = proxy.request(request)
+
+            assert "X-My-Custom-Header" in response.json["headers"]
+            assert response.json["method"] == "POST"
+            assert response.json["headers"]["X-My-Custom-Header"] == "hello world"
+            assert response.json["headers"]["X-Forwarded-For"] == "127.0.0.10"
+            assert response.json["headers"]["Host"] == "127.0.0.1:80"
 
 
 @pytest.mark.parametrize("consume_data", [True, False])

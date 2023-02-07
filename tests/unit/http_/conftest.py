@@ -73,7 +73,7 @@ def httpserver_echo_request_metadata():
                 "method": request.method,
                 "path": request.path,
                 "url": request.url,
-                "headers": Headers(request.headers),
+                "headers": dict(Headers(request.headers)),
             }
         )
         return response
