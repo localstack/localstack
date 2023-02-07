@@ -4,7 +4,9 @@ from moto.awslambda import models as moto_awslambda_models
 
 from localstack import config
 from localstack.services.awslambda.lambda_api import handle_lambda_url_invocation
+from localstack.services.awslambda.lambda_utils import get_default_executor_mode
 from localstack.services.edge import ROUTER
+from localstack.utils.analytics import log
 from localstack.utils.aws import arns, aws_stack
 from localstack.utils.aws.request_context import AWS_REGION_REGEX
 from localstack.utils.patch import patch
@@ -33,6 +35,11 @@ def start_lambda(port=None, asynchronous=False):
         host=f"<api_id>.lambda-url.<regex('{AWS_REGION_REGEX}'):region>.<regex('.*'):server>",
         endpoint=handle_lambda_url_invocation,
     )
+
+    if not config.LAMBDA_EXECUTOR:
+        default_mode = get_default_executor_mode()
+        LOG.debug("No executor set. Lambda falling back to default executor mode: %s", default_mode)
+        log.event("lambda:config", version="v1", default_executor_mode=default_mode)
 
     # print a warning if we're not running in Docker but using Docker based LAMBDA_EXECUTOR
     if "docker" in lambda_utils.get_executor_mode() and not config.is_in_docker and not is_linux():
