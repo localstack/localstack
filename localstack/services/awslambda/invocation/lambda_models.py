@@ -24,6 +24,7 @@ from localstack.aws.api.lambda_ import (
     PackageType,
     ProvisionedConcurrencyStatusEnum,
     Runtime,
+    SnapStartResponse,
     State,
     StateReasonCode,
     TracingMode,
@@ -592,6 +593,7 @@ class VersionFunctionConfiguration:
     # internal revision is updated when runtime restart is necessary
     internal_revision: str
     ephemeral_storage: LambdaEphemeralStorage
+    snap_start: SnapStartResponse
 
     tracing_config_mode: TracingMode
     code: ArchiveCode

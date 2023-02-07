@@ -115,6 +115,9 @@ from localstack.aws.api.lambda_ import (
     ResourceNotFoundException,
     Runtime,
     ServiceException,
+    SnapStartApplyOn,
+    SnapStartOptimizationStatus,
+    SnapStartResponse,
     State,
     StatementId,
     StateReasonCode,
@@ -657,6 +660,10 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
                     internal_revision=short_uid(),
                     ephemeral_storage=LambdaEphemeralStorage(
                         size=request.get("EphemeralStorage", {}).get("Size", 512)
+                    ),
+                    snap_start=SnapStartResponse(
+                        ApplyOn=SnapStartApplyOn.None_,
+                        OptimizationStatus=SnapStartOptimizationStatus.Off,
                     ),
                     dead_letter_arn=request.get("DeadLetterConfig", {}).get("TargetArn"),
                     state=VersionState(

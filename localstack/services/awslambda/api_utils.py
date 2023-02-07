@@ -468,6 +468,8 @@ def map_config_out(
         PackageType=version.config.package_type,
         TracingConfig=TracingConfig(Mode=version.config.tracing_config_mode),
         EphemeralStorage=EphemeralStorage(Size=version.config.ephemeral_storage.size),
+        # TODO: Do we return the model or build the SnapStart object?
+        SnapStart=version.config.snap_start,
         **optional_kwargs,
     )
     return func_conf
