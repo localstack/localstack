@@ -208,6 +208,7 @@ class TestRouter:
 
         class MyRoutes:
             @route("/a")
+            @route("/a2")
             def route_a(self, request, args):
                 return Response(b"a")
 
@@ -218,12 +219,16 @@ class TestRouter:
         rules = router.add(MyRoutes())
 
         assert router.dispatch(Request("GET", "/a")).data == b"a"
+        assert router.dispatch(Request("GET", "/a2")).data == b"a"
         assert router.dispatch(Request("GET", "/b")).data == b"b"
 
         router.remove(rules)
 
         with pytest.raises(NotFound):
             assert router.dispatch(Request("GET", "/a"))
+
+        with pytest.raises(NotFound):
+            assert router.dispatch(Request("GET", "/a2"))
 
         with pytest.raises(NotFound):
             assert router.dispatch(Request("GET", "/b"))
@@ -245,6 +250,7 @@ class TestRouter:
         router = Router()
 
         @router.route("/users")
+        @router.route("/alternative-users")
         def user(_: Request, args):
             assert not args
             return Response("user")
@@ -255,6 +261,7 @@ class TestRouter:
             return Response(f"{args['user_id']}")
 
         assert router.dispatch(Request("GET", "/users")).data == b"user"
+        assert router.dispatch(Request("GET", "/alternative-users")).data == b"user"
         assert router.dispatch(Request("GET", "/users/123")).data == b"123"
 
     def test_add_route_endpoint_with_object(self):

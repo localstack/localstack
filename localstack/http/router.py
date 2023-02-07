@@ -82,7 +82,7 @@ class _RouteEndpoint(Protocol):
     An endpoint that encapsulates ``_RuleAttributes`` for the creation of a ``Rule`` inside a ``Router``.
     """
 
-    rule_attributes: _RuleAttributes
+    rule_attributes: list[_RuleAttributes]
 
     def __call__(self, *args, **kwargs):
         raise NotImplementedError
@@ -90,7 +90,7 @@ class _RouteEndpoint(Protocol):
 
 def route(
     path: str, host: Optional[str] = None, methods: Optional[Iterable[str]] = None, **kwargs
-) -> Callable[[E], _RouteEndpoint]:
+) -> Callable[[E], list[_RouteEndpoint]]:
     """
     Decorator that indicates that the given function is a Router Rule.
 
@@ -102,11 +102,17 @@ def route(
     """
 
     def wrapper(fn: E):
-        @functools.wraps(fn)
-        def route_marker(*args, **kwargs):
-            return fn(*args, **kwargs)
+        if hasattr(fn, "rule_attributes"):
+            route_marker = fn
+        else:
 
-        route_marker.rule_attributes = _RuleAttributes(path, host, methods, kwargs)
+            @functools.wraps(fn)
+            def route_marker(*args, **kwargs):
+                return fn(*args, **kwargs)
+
+            route_marker.rule_attributes = []
+
+        route_marker.rule_attributes.append(_RuleAttributes(path, host, methods, kwargs))
 
         return route_marker
 
@@ -263,16 +269,21 @@ class Router(Generic[E]):
         self.add_rule(rule)
         return rule
 
-    def _add_route(self, fn: _RouteEndpoint) -> Rule:
+    def _add_route(self, fn: _RouteEndpoint) -> Union[Rule, List[Rule]]:
         """
-        Adds a RouteEndpoint (typically a function decorated with ``@route``) as a rule to the router.
+        Adds a RouteEndpoint (typically a function decorated with one or more ``@route``) as rules to the router.
         :param fn: the RouteEndpoint function
-        :return: the rule that was added
+        :return: the rules that were added
         """
-        attr: _RuleAttributes = fn.rule_attributes
-        return self._add_endpoint(
-            path=attr.path, endpoint=fn, host=attr.host, methods=attr.methods, **attr.kwargs
-        )
+        attrs: list[_RuleAttributes] = fn.rule_attributes
+        rules = []
+        for attr in attrs:
+            rules.append(
+                self._add_endpoint(
+                    path=attr.path, endpoint=fn, host=attr.host, methods=attr.methods, **attr.kwargs
+                )
+            )
+        return rules
 
     def _add_routes(self, obj: object) -> List[Rule]:
         """
@@ -290,14 +301,29 @@ class Router(Generic[E]):
         rules = []
         # make sure rules with "HEAD" are added first, otherwise werkzeug would let any "GET" rule would overwrite them.
         for endpoint in endpoints:
-            if endpoint.rule_attributes.methods and "HEAD" in endpoint.rule_attributes.methods:
-                rules.append(self._add_route(endpoint))
+            for attr in endpoint.rule_attributes:
+                if attr.methods and "HEAD" in attr.methods:
+                    rules.append(
+                        self._add_endpoint(
+                            path=attr.path,
+                            endpoint=endpoint,
+                            host=attr.host,
+                            methods=attr.methods,
+                            **attr.kwargs,
+                        )
+                    )
         for endpoint in endpoints:
-            if (
-                not endpoint.rule_attributes.methods
-                or "HEAD" not in endpoint.rule_attributes.methods
-            ):
-                rules.append(self._add_route(endpoint))
+            for attr in endpoint.rule_attributes:
+                if not attr.methods or "HEAD" not in attr.methods:
+                    rules.append(
+                        self._add_endpoint(
+                            path=attr.path,
+                            endpoint=endpoint,
+                            host=attr.host,
+                            methods=attr.methods,
+                            **attr.kwargs,
+                        )
+                    )
         return rules
 
     def _add_rules(self, rule_factory: RuleFactory) -> List[Rule]:
