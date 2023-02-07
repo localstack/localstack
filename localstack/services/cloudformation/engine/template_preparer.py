@@ -8,6 +8,7 @@ from samtranslator.translator.transform import transform as transform_sam
 from localstack.services.cloudformation.engine import yaml_parser
 from localstack.services.cloudformation.engine.policy_loader import create_policy_loader
 from localstack.utils.aws import aws_stack
+from localstack.utils.json import clone_safe
 
 LOG = logging.getLogger(__name__)
 
@@ -17,9 +18,9 @@ def parse_template(template: str) -> dict:
         return json.loads(template)
     except Exception:
         try:
-            return yaml_parser.parse_yaml(template)
-        except Exception:
-            # TODO
+            return clone_safe(yaml_parser.parse_yaml(template))
+        except Exception as e:
+            LOG.debug("Unable to parse CloudFormation template (%s): %s", e, template)
             raise
 
 
