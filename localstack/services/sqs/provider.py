@@ -556,7 +556,7 @@ class SqsProvider(SqsApi, ServiceLifecycleHook):
         return sqs_stores[account_id or get_aws_account_id()][region or aws_stack.get_region()]
 
     def on_before_start(self):
-        self._router_rules = ROUTER.add_route_endpoints(SqsDeveloperEndpoints())
+        self._router_rules = ROUTER.add(SqsDeveloperEndpoints())
         self._queue_update_worker.start()
         self._cloudwatch_publish_worker.start()
 

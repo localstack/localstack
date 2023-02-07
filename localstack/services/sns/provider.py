@@ -942,7 +942,7 @@ def extract_tags(topic_arn, tags, is_create_topic_request, store):
 
 def register_sns_api_resource(router: Router):
     """Register the platform endpointmessages retrospection endpoint as an internal LocalStack endpoint."""
-    router.add_route_endpoints(SNSServicePlatformEndpointMessagesApiResource())
+    router.add(SNSServicePlatformEndpointMessagesApiResource())
 
 
 def _format_platform_endpoint_messages(sent_messages: List[Dict[str, str]]):
