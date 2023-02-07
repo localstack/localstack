@@ -51,8 +51,8 @@ from localstack.aws.api.ses import (
     VerificationStatus,
 )
 from localstack.constants import TEST_AWS_SECRET_ACCESS_KEY
-from localstack.http import resource
-from localstack.services.internal import get_internal_apis
+from localstack.http import Resource
+from localstack.services.internal import DeprecatedResource, get_internal_apis
 from localstack.services.moto import call_moto
 from localstack.services.plugins import ServiceLifecycleHook
 from localstack.services.ses.models import SentEmail, SentEmailBody
@@ -72,7 +72,7 @@ EMAILS: Dict[MessageId, Dict[str, Any]] = {}
 
 # Endpoint to access all the sent emails
 # (relative to LocalStack internal HTTP resources base endpoint)
-EMAILS_ENDPOINT = "/ses"
+EMAILS_ENDPOINT = "/_aws/ses"
 
 _EMAILS_ENDPOINT_REGISTERED = False
 
@@ -119,7 +119,6 @@ def get_ses_backend(context: RequestContext) -> SESBackend:
     return ses_backends[context.account_id][context.region]
 
 
-@resource(f"/_localstack{EMAILS_ENDPOINT}")
 class SesServiceApiResource:
     """Provides a REST API for retrospective access to emails sent via SES.
 
@@ -149,7 +148,23 @@ def register_ses_api_resource():
     global _EMAILS_ENDPOINT_REGISTERED
 
     if not _EMAILS_ENDPOINT_REGISTERED:
-        get_internal_apis().add(SesServiceApiResource())
+        ses_service_api_resource = SesServiceApiResource()
+        get_internal_apis().add(
+            Resource(
+                "/_localstack/ses",
+                DeprecatedResource(
+                    ses_service_api_resource,
+                    previous_path="/_localstack/ses",
+                    deprecation_version="1.4.0",
+                    new_path="/_aws/ses/",
+                ),
+            )
+        )
+
+        from localstack.services.edge import ROUTER
+
+        ROUTER.add(Resource(EMAILS_ENDPOINT, ses_service_api_resource))
+
         _EMAILS_ENDPOINT_REGISTERED = True
 
 
