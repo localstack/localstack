@@ -161,3 +161,90 @@ def test_lifecycle_nested_stack(cfn_client, deploy_cfn_template, s3_client, s3_c
             return True
 
     retry(_assert_bucket_is_deleted, retries=5, sleep=2, sleep_before=2)
+
+
+@pytest.mark.skip_snapshot_verify(
+    paths=[
+        "$..Role.Description",
+        "$..Role.MaxSessionDuration",
+        "$..Role.AssumeRolePolicyDocument..Action",
+    ]
+)
+@pytest.mark.aws_validated
+def test_nested_output_in_params(
+    s3_client, cfn_client, deploy_cfn_template, s3_create_bucket, iam_client, sns_client, snapshot
+):
+    """
+    Deploys a Stack with two nested stacks (sub1 and sub2) with a dependency between each other sub2 depends on sub1.
+    The `sub2` stack uses an output parameter of `sub1` as an input parameter.
+
+    Resources:
+        - Stack
+        - 2x Nested Stack
+        - SNS Topic
+        - IAM role with policy (sns:Publish)
+
+    """
+    # upload template to S3 for nested stacks
+    template_bucket = f"cfn-root-{short_uid()}"
+    sub1_path = "sub1.yaml"
+    sub2_path = "sub2.yaml"
+    s3_create_bucket(Bucket=template_bucket, ACL="public-read")
+    s3_client.put_object(
+        Bucket=template_bucket,
+        Key=sub1_path,
+        Body=load_file(
+            os.path.join(
+                os.path.dirname(__file__), "../../templates/nested-stack-outputref/sub1.yaml"
+            )
+        ),
+    )
+    s3_client.put_object(
+        Bucket=template_bucket,
+        Key=sub2_path,
+        Body=load_file(
+            os.path.join(
+                os.path.dirname(__file__), "../../templates/nested-stack-outputref/sub2.yaml"
+            )
+        ),
+    )
+    topic_name = f"test-topic-{short_uid()}"
+    role_name = f"test-role-{short_uid()}"
+
+    if os.environ.get("TEST_TARGET") == "AWS_CLOUD":
+        base_path = "https://s3.amazonaws.com"
+    else:
+        base_path = "http://localhost:4566"
+
+    deploy_cfn_template(
+        template=load_file(
+            os.path.join(
+                os.path.dirname(__file__), "../../templates/nested-stack-outputref/root.yaml"
+            )
+        ),
+        parameters={
+            "Sub1TemplateUrl": f"{base_path}/{template_bucket}/{sub1_path}",
+            "Sub2TemplateUrl": f"{base_path}/{template_bucket}/{sub2_path}",
+            "TopicName": topic_name,
+            "RoleName": role_name,
+        },
+    )
+    # validations
+    snapshot.add_transformer(snapshot.transform.key_value("RoleId", "role-id"))
+    snapshot.add_transformer(snapshot.transform.regex(topic_name, "<topic>"))
+    snapshot.add_transformer(snapshot.transform.regex(role_name, "<role-name>"))
+
+    snapshot.add_transformer(snapshot.transform.cloudformation_api())
+
+    get_role_response = iam_client.get_role(RoleName=role_name)
+    snapshot.match("get_role_response", get_role_response)
+    role_policies = iam_client.list_role_policies(RoleName=role_name)
+    snapshot.match("role_policies", role_policies)
+    policy_name = role_policies["PolicyNames"][0]
+    actual_policy = iam_client.get_role_policy(RoleName=role_name, PolicyName=policy_name)
+    snapshot.match("actual_policy", actual_policy)
+
+    sns_pager = sns_client.get_paginator("list_topics")
+    topics = sns_pager.paginate().build_full_result()["Topics"]
+    filtered_topics = [t["TopicArn"] for t in topics if topic_name in t["TopicArn"]]
+    assert len(filtered_topics) == 1
