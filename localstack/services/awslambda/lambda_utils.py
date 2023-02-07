@@ -90,7 +90,7 @@ def get_default_executor_mode() -> str:
     Returns the default docker executor mode, which is "docker" if the docker socket is available via the docker
     client, or "local"  otherwise.
 
-    :return:
+    :return: 'docker' if docker socket available, otherwise 'local'
     """
     try:
         return "docker" if DOCKER_CLIENT.has_docker() else "local"
