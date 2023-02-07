@@ -28,16 +28,20 @@ class Proxy(HttpClient):
 
     preserve_host: bool
 
-    def __init__(self, forward_base_url: str, client: HttpClient = None):
+    def __init__(
+        self, forward_base_url: str, client: HttpClient = None, preserve_host: bool = True
+    ):
         """
         Creates a new HTTP Proxy which can be used to forward incoming requests according to the configuration.
 
         :param forward_base_url: the base url (backend) to forward the requests to.
         :param client: the HTTP Client used to make the requests
+        :param preserve_host: True to ensure that the Host header of the incoming request is preserved.
+                              If False, then the Host header will be set to the Host from the perspective of the Proxy.
         """
         self.forward_base_url = forward_base_url
         self.client = client or SimpleRequestsClient()
-        self.preserve_host = True
+        self.preserve_host = preserve_host
 
     def request(self, request: Request, server: str | None = None) -> Response:
         """
