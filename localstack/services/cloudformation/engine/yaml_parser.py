@@ -13,7 +13,7 @@ class NoDatesSafeLoader(yaml.SafeLoader):
         """
         # needed to make sure we're not changing the constructors of the base class
         # otherwise usage across the code base is affected as well
-        if not "yaml_constructors" in cls.__dict__:
+        if "yaml_constructors" not in cls.__dict__:
             cls.yaml_constructors = cls.yaml_constructors.copy()
 
         cls.yaml_constructors[tag] = construct_raw
@@ -44,7 +44,7 @@ def shorthand_constructor(loader: yaml.Loader, tag_suffix: str, node: yaml.Node)
     elif isinstance(node, yaml.SequenceNode):
         return {fn_name: loader.construct_sequence(node)}
     else:
-        raise ValueError(f"Unexpected yaml Node type")
+        raise ValueError(f"Unexpected yaml Node type: {type(node)}")
 
 
 customloader = NoDatesSafeLoader
