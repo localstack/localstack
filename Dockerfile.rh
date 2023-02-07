@@ -43,7 +43,7 @@ RUN python3 -m venv .venv
 # Install python packages
 RUN source .venv/bin/activate && python3 -m pip install supervisor awscli awscli-local --upgrade --no-cache-dir
 # Install localstack dev packages
-RUN source .venv/bin/activate && python3 -m pip install 'localstack[full]>=1.3.0' 'localstack-ext[full]>=1.3.0' --pre --upgrade --no-cache-dir
+RUN source .venv/bin/activate && python3 -m pip install 'localstack[runtime]>=1.3.0' 'localstack-ext[runtime]>=1.3.0' --pre --upgrade --no-cache-dir
 
 # Set default settings
 ENV USER=localstack
