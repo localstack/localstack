@@ -159,6 +159,14 @@ def awslambda_asf():
     return Service.for_provider(provider)
 
 
+@aws_provider(api="lambda", name="v2")
+def awslambda_v2():
+    from localstack.services.awslambda.provider import LambdaProvider
+
+    provider = LambdaProvider()
+    return Service.for_provider(provider)
+
+
 @aws_provider()
 def logs():
     from localstack.services.logs.provider import LogsProvider

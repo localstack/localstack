@@ -3,13 +3,12 @@ import os
 from typing import List, Optional
 
 from localstack import config
-from localstack.config import is_env_true
+from localstack.config import is_env_true, is_persistence_enabled
 from localstack.services.dynamodb.packages import dynamodblocal_package
 from localstack.utils.aws import aws_stack
 from localstack.utils.bootstrap import is_api_key_configured
 from localstack.utils.common import TMP_THREADS, ShellCommandThread, get_free_tcp_port, mkdir
 from localstack.utils.files import rm_rf
-from localstack.utils.persistence import is_persistence_enabled
 from localstack.utils.run import FuncThread
 from localstack.utils.serving import Server
 from localstack.utils.sync import retry
