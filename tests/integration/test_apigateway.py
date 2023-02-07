@@ -275,6 +275,7 @@ class TestAPIGateway:
         # post test data to Kinesis via API Gateway
         result = requests.post(url, data=json.dumps(test_data))
         result = json.loads(to_str(result.content))
+        assert None == result.get["FailedRecordCount"]
         assert len(test_data["records"]) == len(result["Records"])
 
         # clean up

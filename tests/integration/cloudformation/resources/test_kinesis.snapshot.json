@@ -29,11 +29,6 @@
       "stream_description": {
         "StreamDescription": {
           "EncryptionType": "NONE",
-          "EnhancedMonitoring": [
-            {
-              "ShardLevelMetrics": []
-            }
-          ],
           "HasMoreShards": false,
           "RetentionPeriodHours": 24,
           "Shards": [
