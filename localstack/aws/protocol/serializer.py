@@ -1438,6 +1438,11 @@ class S3ResponseSerializer(RestXMLResponseSerializer):
     def _create_empty_node(xmlnode: ETree.Element, name: str) -> None:
         ETree.SubElement(xmlnode, name)
 
+    def _prepare_additional_traits_in_xml(self, root: Optional[ETree.Element]):
+        # some tools (Serverless) require a newline after the "<?xml ...>\n" preamble line, e.g., for LocationConstraint
+        if root and not root.tail:
+            root.tail = "\n"
+
 
 class SqsResponseSerializer(QueryResponseSerializer):
     """
@@ -1577,3 +1582,7 @@ def aws_response_serializer(service: str, operation: str):
         return _proxy
 
     return _decorate
+
+
+# b'<?xml version="1.0" encoding="UTF-8"?>\n<LocationConstraint xmlns="http://s3.amazonaws.com/doc/2006-03-01/">eu-west-2</LocationConstraint>'
+# b'<?xml version="1.0" encoding="UTF-8"?><LocationConstraint xmlns="http://s3.amazonaws.com/doc/2006-03-01/">eu-west-2</LocationConstraint>'

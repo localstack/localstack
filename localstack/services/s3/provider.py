@@ -255,6 +255,16 @@ class S3Provider(S3Api, ServiceLifecycleHook):
         self, context: RequestContext, bucket: BucketName, expected_bucket_owner: AccountId = None
     ) -> GetBucketLocationOutput:
         response = call_moto(context)
+        # LocationConstraint is a bit of weird response, we return directly XML from moto because it does not have
+        # a GetBucketLocationOutput XML tag.
+        # some tools (Serverless) require a newline after the "<?xml ...>\n" preamble line, e.g., for LocationConstraint
+        # this is required because upstream moto is generally collapsing all S3 XML responses
+        location_constraint_xml = response["LocationConstraint"]
+        xml_root_end = location_constraint_xml.find(">") + 1
+        location_constraint_xml = (
+            f"{location_constraint_xml[:xml_root_end]}\n{location_constraint_xml[xml_root_end:]}"
+        )
+        response["LocationConstraint"] = location_constraint_xml[:]
         return response
 
     @handler("ListObjects", expand=False)

@@ -2949,17 +2949,30 @@ class TestS3:
 
         s3_http_client = aws_http_client_factory("s3", signer_factory=SigV4Auth)
 
+        def get_xml_content(http_response_content: bytes) -> bytes:
+            # just format a bit the XML, nothing bad parity wise, but allow the test to run against AWS
+            return http_response_content.replace(b"'", b'"').replace(b"utf", b"UTF")
+
         # Lists all buckets
         endpoint_url = _endpoint_url()
         resp = s3_http_client.get(endpoint_url, headers=headers)
+        if is_asf_provider():
+            # legacy provider does not add XML preample for ListAllMyBucketsResult
+            assert b'<?xml version="1.0" encoding="UTF-8"?>\n' in get_xml_content(resp.content)
+
         resp_dict = xmltodict.parse(resp.content)
         assert "ListAllMyBucketsResult" in resp_dict
 
         # Lists all objects in a bucket
         bucket_url = _bucket_url(s3_bucket)
         resp = s3_http_client.get(bucket_url, headers=headers)
+        assert b'<?xml version="1.0" encoding="UTF-8"?>\n' in get_xml_content(resp.content)
         resp_dict = xmltodict.parse(resp.content)
         assert "ListBucketResult" in resp_dict
+
+        location_constraint_url = f"{bucket_url}?location"
+        resp = s3_http_client.get(location_constraint_url, headers=headers)
+        assert b'<?xml version="1.0" encoding="UTF-8"?>\n' in get_xml_content(resp.content)
 
     @pytest.mark.aws_validated
     def test_s3_delete_objects_trailing_slash(self, s3_client, aws_http_client_factory, s3_bucket):
