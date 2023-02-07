@@ -79,6 +79,7 @@ def pytest_runtest_teardown(item, *args):
         try:
             dill.dumps(backend)
         except TypeError:
+            print(f'Cannot pickle {backend_type} backend for {service_name}')
             log.event(
                 event="pickle:error",
                 backend=backend_type,
