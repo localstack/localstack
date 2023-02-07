@@ -6,7 +6,6 @@ import pytest
 import yaml
 
 from localstack.services.cloudformation.engine.yaml_parser import parse_yaml
-from localstack.testing.aws.cloudformation_utils import load_template_file
 from localstack.testing.snapshots.transformer import SortingTransformer
 from localstack.utils.files import load_file
 from localstack.utils.strings import short_uid
@@ -110,10 +109,10 @@ class TestStacksApi:
 
         # create stack
         deployed = deploy_cfn_template(
-            template_path=os.path.join(os.path.dirname(__file__), "../../templates/simple_api.yaml"),
-            parameters={
-                "ApiName": api_name
-            }
+            template_path=os.path.join(
+                os.path.dirname(__file__), "../../templates/simple_api.yaml"
+            ),
+            parameters={"ApiName": api_name},
         )
         stack_name = deployed.stack_name
         stack_id = deployed.stack_id
@@ -126,7 +125,9 @@ class TestStacksApi:
         deploy_cfn_template(
             is_update=True,
             stack_name=deployed.stack_name,
-            template_path=os.path.join(os.path.dirname(__file__), "../../templates/simple_api.update.yaml"),
+            template_path=os.path.join(
+                os.path.dirname(__file__), "../../templates/simple_api.update.yaml"
+            ),
             parameters={"ApiName": api_name},
         )
 
