@@ -36,10 +36,12 @@ def start_lambda(port=None, asynchronous=False):
         endpoint=handle_lambda_url_invocation,
     )
 
-    if not config.LAMBDA_EXECUTOR:
-        default_mode = get_default_executor_mode()
-        LOG.debug("No executor set. Lambda falling back to default executor mode: %s", default_mode)
-        log.event("lambda:config", version="v1", default_executor_mode=default_mode)
+    log.event(
+        "lambda:config",
+        version="v1",
+        executor_mode=config.LAMBDA_EXECUTOR,
+        default_executor_mode=get_default_executor_mode(),
+    )
 
     # print a warning if we're not running in Docker but using Docker based LAMBDA_EXECUTOR
     if "docker" in lambda_utils.get_executor_mode() and not config.is_in_docker and not is_linux():
