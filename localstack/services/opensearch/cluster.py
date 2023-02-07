@@ -1,5 +1,6 @@
 import logging
 import os
+import shutil
 import threading
 from typing import Dict, List, NamedTuple, Optional
 from urllib.parse import urlparse
@@ -9,8 +10,10 @@ from werkzeug.routing import Rule
 
 from localstack import config, constants
 from localstack.aws.api.opensearch import EngineType
+from localstack.http.client import SimpleRequestsClient
 from localstack.http.proxy import ProxyHandler
 from localstack.services.edge import ROUTER
+from localstack.services.generic_proxy import GenericProxy, install_predefined_cert_if_available
 from localstack.services.infra import DEFAULT_BACKEND_HOST
 from localstack.services.opensearch import versions
 from localstack.services.opensearch.packages import elasticsearch_package, opensearch_package
@@ -43,7 +46,8 @@ def get_cluster_health_status(url: str) -> Optional[str]:
     Queries the health endpoint of OpenSearch/Elasticsearch and returns either the status ('green', 'yellow',
     ...) or None if the response returned a non-200 response.
     """
-    resp = requests.get(url + "/_cluster/health")
+    # add the default credentials here (in case the opensearch security plugin is enabled)
+    resp = requests.get(url + "/_cluster/health", verify=False, auth=("admin", "admin"))
 
     if resp and resp.ok:
         opensearch_status = resp.json()
@@ -164,7 +168,12 @@ def register_cluster(
     """
     # custom backends overwrite the usual forward_url
     forward_url = config.OPENSEARCH_CUSTOM_BACKEND or forward_url
-    endpoint = ProxyHandler(forward_url)
+
+    # if the opensearch security plugin is enabled, only TLS connections are allowed, but the cert cannot be verified
+    client = SimpleRequestsClient()
+    client.session.verify = False
+    endpoint = ProxyHandler(forward_url, client)
+
     rules = []
     strategy = config.OPENSEARCH_ENDPOINT_STRATEGY
     # custom endpoints override any endpoint strategy
@@ -242,6 +251,10 @@ class OpensearchCluster(Server):
         return install_version
 
     @property
+    def protocol(self):
+        return "https" if config.OPENSEARCH_SECURITY else "http"
+
+    @property
     def bin_name(self) -> str:
         return "opensearch"
 
@@ -256,6 +269,8 @@ class OpensearchCluster(Server):
         self._ensure_installed()
         directories = resolve_directories(version=self.version, cluster_path=self.arn)
         init_directories(directories)
+
+        self._setup_security(directories)
 
         cmd = self._create_run_command(
             directories=directories, additional_settings=self.command_settings
@@ -291,9 +306,26 @@ class OpensearchCluster(Server):
             "http.compression": "false",
             "path.data": f'"{dirs.data}"',
             "path.repo": f'"{dirs.backup}"',
-            "plugins.security.disabled": "true",
             "discovery.type": "single-node",
         }
+
+        if not config.OPENSEARCH_SECURITY:
+            settings["plugins.security.disabled"] = "true"
+        else:
+            # enable the security plugin in the settings
+            settings["plugins.security.disabled"] = "false"
+            settings["plugins.security.ssl.transport.pemkey_filepath"] = "cert.key"
+            settings["plugins.security.ssl.transport.pemcert_filepath"] = "cert.crt"
+            settings["plugins.security.ssl.transport.pemtrustedcas_filepath"] = "cert.crt"
+            settings["plugins.security.ssl.transport.enforce_hostname_verification"] = "false"
+            settings["plugins.security.ssl.http.enabled"] = "true"
+            settings["plugins.security.ssl.http.pemkey_filepath"] = "cert.key"
+            settings["plugins.security.ssl.http.pemcert_filepath"] = "cert.crt"
+            settings["plugins.security.ssl.http.pemtrustedcas_filepath"] = "cert.crt"
+            settings["plugins.security.allow_default_init_securityindex"] = "true"
+            settings[
+                "plugins.security.restapi.roles_enabled"
+            ] = "all_access,security_rest_api_access"
 
         if os.path.exists(os.path.join(dirs.mods, "x-pack-ml")):
             settings["xpack.ml.enabled"] = "false"
@@ -323,6 +355,19 @@ class OpensearchCluster(Server):
     def _log_listener(self, line, **_kwargs):
         # logging the port before each line to be able to connect logs to specific instances
         LOG.info("[%s] %s", self.port, line.rstrip())
+
+    def _setup_security(self, directories: Directories):
+        """
+        Ensures that the cluster has up-to-date certs in case the security plugin is enabled.
+
+        :param directories: to install the certs in
+        """
+        install_predefined_cert_if_available()
+        # create & copy SSL certs to opensearch config dir
+        config_path = os.path.join(directories.install, "config")
+        _, cert_file_name, key_file_name = GenericProxy.create_ssl_cert(serial_number=self.port)
+        shutil.copyfile(cert_file_name, os.path.join(config_path, "cert.crt"))
+        shutil.copyfile(key_file_name, os.path.join(config_path, "cert.key"))
 
 
 class EndpointProxy:
@@ -458,6 +503,11 @@ class ElasticsearchCluster(OpensearchCluster):
     @property
     def default_version(self) -> str:
         return constants.ELASTICSEARCH_DEFAULT_VERSION
+
+    @property
+    def protocol(self):
+        # the security plugin is not supported for elasticsearch, protocol is always HTTP
+        return "http"
 
     @property
     def bin_name(self) -> str:
