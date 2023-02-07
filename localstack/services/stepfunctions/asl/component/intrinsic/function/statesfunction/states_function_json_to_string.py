@@ -29,5 +29,5 @@ class StatesFunctionJsonToString(StatesFunction):
     def _eval_body(self, env: Environment) -> None:
         self.arg_list.eval(env=env)
         json_obj: json = env.stack.pop()
-        json_string: str = json.dumps(json_obj)
+        json_string: str = json.dumps(json_obj, separators=(",", ":"))
         env.stack.append(json_string)

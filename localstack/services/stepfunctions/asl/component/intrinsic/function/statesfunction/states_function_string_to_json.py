@@ -29,5 +29,9 @@ class StatesFunctionStringToJson(StatesFunction):
     def _eval_body(self, env: Environment) -> None:
         self.arg_list.eval(env=env)
         string_json: str = env.stack.pop()
-        json_obj: json = json.loads(string_json)
+
+        if string_json is not None and string_json.strip():
+            json_obj: json = json.loads(string_json)
+        else:
+            json_obj: json = None
         env.stack.append(json_obj)
