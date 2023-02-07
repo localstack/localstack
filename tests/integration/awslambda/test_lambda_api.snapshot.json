@@ -8063,7 +8063,7 @@
     }
   },
   "tests/integration/awslambda/test_lambda_api.py::TestLambdaLayer::test_layer_function_exceptions": {
-    "recorded-date": "22-11-2022, 19:53:01",
+    "recorded-date": "26-01-2023, 22:16:37",
     "recorded-content": {
       "publish_result": {
         "CompatibleArchitectures": [
@@ -8153,6 +8153,10 @@
           "RevisionId": "<uuid:1>",
           "Role": "arn:aws:iam::111111111111:role/<resource:2>",
           "Runtime": "python3.9",
+          "SnapStart": {
+            "ApplyOn": "None",
+            "OptimizationStatus": "Off"
+          },
           "State": "Active",
           "Timeout": 30,
           "TracingConfig": {
@@ -8230,6 +8234,18 @@
           "Code": "ValidationException",
           "Message": "1 validation error detected: Value '[arn:aws:lambda:<region>:111111111111:layer:<resource:1>]' at 'layers' failed to satisfy constraint: Member must satisfy constraint: [Member must have length less than or equal to 140, Member must have length greater than or equal to 1, Member must satisfy regular expression pattern: (arn:[a-zA-Z0-9-]+:lambda:[a-zA-Z0-9-]+:\\d{12}:layer:[a-zA-Z0-9-_]+:[0-9]+)|(arn:[a-zA-Z0-9-]+:lambda:::awslayer:[a-zA-Z0-9-_]+), Member must not be null]"
         },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "create_function_with_layer_in_different_region": {
+        "Error": {
+          "Code": "InvalidParameterValueException",
+          "Message": "Layers are not in the same region as the function. Layers are expected to be in region <region>."
+        },
+        "Type": "User",
+        "message": "Layers are not in the same region as the function. Layers are expected to be in region <region>.",
         "ResponseMetadata": {
           "HTTPHeaders": {},
           "HTTPStatusCode": 400
@@ -10868,6 +10884,23 @@
         "ResponseMetadata": {
           "HTTPHeaders": {},
           "HTTPStatusCode": 204
+        }
+      }
+    }
+  },
+  "tests/integration/awslambda/test_lambda_api.py::TestLambdaLayer::test_layer_function_quota_exception": {
+    "recorded-date": "26-01-2023, 22:52:19",
+    "recorded-content": {
+      "create_function_with_six_layers": {
+        "Error": {
+          "Code": "InvalidParameterValueException",
+          "Message": "Cannot reference more than 5 layers."
+        },
+        "Type": "User",
+        "message": "Cannot reference more than 5 layers.",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
         }
       }
     }
