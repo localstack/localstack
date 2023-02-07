@@ -2961,6 +2961,33 @@ class TestS3:
         resp_dict = xmltodict.parse(resp.content)
         assert "ListBucketResult" in resp_dict
 
+    @pytest.mark.aws_validated
+    def test_s3_delete_objects_trailing_slash(self, s3_client, aws_http_client_factory, s3_bucket):
+        object_key = "key-to-delete-trailing-slash"
+        # create an object to delete
+        s3_client.put_object(Bucket=s3_bucket, Key=object_key, Body=b"123")
+
+        headers = {"x-amz-content-sha256": "UNSIGNED-PAYLOAD"}
+        s3_http_client = aws_http_client_factory("s3", signer_factory=SigV4Auth)
+
+        # Endpoint as created by Rust and AWS JS SDK v3
+        bucket_url = f"{_bucket_url(s3_bucket)}/?delete&x-id=DeleteObjects"
+
+        delete_body = f"""<Delete>
+            <Object>
+                <Key>{object_key}</Key>
+             </Object>
+        </Delete>
+        """
+
+        # Post the request to delete the objects, with a trailing slash in the URL
+        resp = s3_http_client.post(bucket_url, headers=headers, data=delete_body)
+        assert resp.status_code == 200
+
+        resp_dict = xmltodict.parse(resp.content)
+        assert "DeleteResult" in resp_dict
+        assert resp_dict["DeleteResult"]["Deleted"]["Key"] == object_key
+
 
 class TestS3TerraformRawRequests:
     @pytest.mark.only_localstack
