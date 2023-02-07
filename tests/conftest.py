@@ -1,8 +1,12 @@
 import os
 
+import dill
 import pytest
 from _pytest.config import PytestPluginManager
 from _pytest.config.argparsing import Parser
+
+from localstack.services.visitors import ReflectionStateLocator, ServiceBackendCollectorVisitor
+from localstack.utils.analytics import log
 
 os.environ["LOCALSTACK_INTERNAL_TEST_RUN"] = "1"
 
@@ -50,3 +54,36 @@ def pytest_collection_modifyitems(config, items):
     for item in items:
         if "skip_offline" in item.keywords:
             item.add_marker(skip_offline)
+
+
+@pytest.hookimpl(hookwrapper=True)
+def pytest_runtest_teardown(item, *args):
+    # simple heuristic to get the service under test; we might want to pickle only for a single store to keep the
+    # overhead limited
+    import traceback
+
+    module_name: str = item.module.__name__
+    service_name = module_name.split("_")[-1]
+
+    # todo: revisit when the visitors have been reworked
+    try:
+        visitor = ServiceBackendCollectorVisitor()
+        state_manager = ReflectionStateLocator(service=service_name)
+        state_manager.accept(visitor=visitor)
+        backends = visitor.collect()
+    except Exception:
+        backends = []
+
+    for backend_type in backends:
+        backend = backends[backend_type]  # noqa
+        try:
+            dill.dumps(backend)
+        except TypeError:
+            log.event(
+                event="pickle:error",
+                backend=backend_type,
+                service=service_name,
+                error=traceback.format_exc(),
+            )
+
+    yield
