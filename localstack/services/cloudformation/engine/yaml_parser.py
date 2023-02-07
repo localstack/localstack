@@ -37,7 +37,7 @@ def shorthand_constructor(loader: yaml.Loader, tag_suffix: str, node: yaml.Node)
         parts = node.value.partition(".")
         if len(parts) != 3:
             raise ValueError(f"Node value contains unexpected format for !GetAtt: {parts}")
-        return {fn_name: [parts[0], *parts[2:]]}
+        return {fn_name: [parts[0], parts[2]]}
 
     if isinstance(node, yaml.ScalarNode):
         return {fn_name: node.value}
