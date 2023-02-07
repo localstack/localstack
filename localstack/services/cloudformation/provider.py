@@ -50,6 +50,8 @@ from localstack.aws.api.cloudformation import (
     LogicalResourceId,
     NextToken,
     PhysicalResourceId,
+    RegisterTypeInput,
+    RegisterTypeOutput,
     RetainResources,
     RoleARN,
     StackName,
@@ -342,7 +344,7 @@ class CloudformationProvider(CloudformationApi):
             return stack_not_found_error(stack_name)
 
         return GetTemplateOutput(
-            TemplateBody=stack.template_body,
+            TemplateBody=json.dumps(stack.template),
             StagesAvailable=[TemplateStage.Original, TemplateStage.Processed],
         )
 
@@ -900,3 +902,11 @@ class CloudformationProvider(CloudformationApi):
         stack_set = stack_set[0]
         result = [inst.metadata for inst in stack_set.stack_instances]
         return ListStackInstancesOutput(Summaries=result)
+
+    @handler("RegisterType", expand=False)
+    def register_type(
+        self,
+        context: RequestContext,
+        request: RegisterTypeInput,
+    ) -> RegisterTypeOutput:
+        return RegisterTypeOutput()

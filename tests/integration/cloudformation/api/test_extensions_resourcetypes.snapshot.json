@@ -1,0 +1,6 @@
+{
+  "tests/integration/cloudformation/api/test_extensions_resourcetypes.py::TestExtensionResourceTypes::test_crud_resource_type": {
+    "recorded-date": "07-02-2023, 17:32:44",
+    "recorded-content": {}
+  }
+}
