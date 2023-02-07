@@ -180,6 +180,7 @@ from localstack.utils.aws import aws_stack
 from localstack.utils.collections import PaginatedList
 from localstack.utils.files import load_file
 from localstack.utils.strings import get_random_hex, long_uid, short_uid, to_bytes, to_str
+from localstack.utils.sync import poll_condition
 
 LOG = logging.getLogger(__name__)
 
@@ -627,6 +628,20 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
             version = self._publish_version_with_changes(
                 function_name=function_name, region=context.region, account_id=context.account_id
             )
+
+        if config.LAMBDA_SYNCHRONOUS_CREATE:
+            # block via retrying until "terminal" condition reached before returning
+            if not poll_condition(
+                lambda: self._get_function_version(
+                    function_name, version.id.qualifier, version.id.account, version.id.region
+                ).config.state.state
+                in [State.Active, State.Failed],
+                timeout=10,
+            ):
+                LOG.warning(
+                    "LAMBDA_SYNCHRONOUS_CREATE is active, but waiting for %s reached timeout.",
+                    function_name,
+                )
 
         return api_utils.map_config_out(
             version, return_qualified_arn=False, return_update_status=False
