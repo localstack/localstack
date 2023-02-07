@@ -163,7 +163,7 @@ def register_ses_api_resource():
 
         from localstack.services.edge import ROUTER
 
-        ROUTER.add(Resource("/_aws/ses/", ses_service_api_resource))
+        ROUTER.add(Resource(EMAILS_ENDPOINT, ses_service_api_resource))
 
         _EMAILS_ENDPOINT_REGISTERED = True
 
