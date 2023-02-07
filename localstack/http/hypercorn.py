@@ -61,6 +61,7 @@ class HypercornServer(Server):
         asyncio.run_coroutine_threadsafe(self._set_closed(), self.loop)
         self._closed.wait(timeout=10)
         asyncio.run_coroutine_threadsafe(self.loop.shutdown_asyncgens(), self.loop)
+        self.loop.shutdown_default_executor()
         self.loop.close()
 
     async def _set_closed(self):
@@ -107,6 +108,10 @@ class GatewayServer(HypercornServer):
 
         # start serving gateway
         super().__init__(app, config, loop)
+
+    def do_shutdown(self):
+        super().do_shutdown()
+        self.app.close()  # noqa (app will be of type AsgiGateway)
 
 
 class ProxyServer(GatewayServer):
