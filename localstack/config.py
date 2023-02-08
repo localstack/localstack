@@ -745,9 +745,6 @@ OPENSEARCH_MULTI_CLUSTER = is_env_not_false("OPENSEARCH_MULTI_CLUSTER") or is_en
     "ES_MULTI_CLUSTER"
 )
 
-# Whether the OpenSearch Security Plugin should be enabled or not
-OPENSEARCH_SECURITY = is_env_true("OPENSEARCH_SECURITY")
-
 # Whether to really publish to GCM while using SNS Platform Application (needs credentials)
 LEGACY_SNS_GCM_PUBLISHING = is_env_true("LEGACY_SNS_GCM_PUBLISHING")
 

@@ -1,3 +1,4 @@
+import dataclasses
 import logging
 import os
 import shutil
@@ -9,7 +10,7 @@ import requests
 from werkzeug.routing import Rule
 
 from localstack import config, constants
-from localstack.aws.api.opensearch import EngineType
+from localstack.aws.api.opensearch import AdvancedSecurityOptionsInput, EngineType
 from localstack.http.client import SimpleRequestsClient
 from localstack.http.proxy import ProxyHandler
 from localstack.services.edge import ROUTER
@@ -148,6 +149,33 @@ class CustomEndpoint:
             self.url = None
 
 
+@dataclasses.dataclass
+class SecurityOptions:
+    """DTO which encapsulates the currently supported security options."""
+
+    enabled: bool
+    master_username: str | None
+    master_password: str | None
+
+    @staticmethod
+    def from_input(
+        advanced_security_options: Optional[AdvancedSecurityOptionsInput],
+    ) -> "SecurityOptions":
+        if advanced_security_options is None:
+            return SecurityOptions(enabled=False, master_username=None, master_password=None)
+        master_username = advanced_security_options.get("MasterUserOptions", {}).get(
+            "MasterUserName", None
+        )
+        master_password = advanced_security_options.get("MasterUserOptions", {}).get(
+            "MasterUserPassword", None
+        )
+        return SecurityOptions(
+            enabled=advanced_security_options["Enabled"] or False,
+            master_username=master_username,
+            master_password=master_password,
+        )
+
+
 def register_cluster(
     host: str, path: str, forward_url: str, custom_endpoint: CustomEndpoint
 ) -> List[Rule]:
@@ -230,10 +258,18 @@ def register_cluster(
 class OpensearchCluster(Server):
     """Manages an OpenSearch cluster which is installed and operated by LocalStack."""
 
-    def __init__(self, port: int, arn: str, host: str = "localhost", version: str = None) -> None:
+    def __init__(
+        self,
+        port: int,
+        arn: str,
+        host: str = "localhost",
+        version: str = None,
+        security_options: SecurityOptions = None,
+    ) -> None:
         super().__init__(port, host)
         self._version = version or self.default_version
         self.arn = arn
+        self.security_options = security_options
 
         self.command_settings = {}
 
@@ -252,7 +288,7 @@ class OpensearchCluster(Server):
 
     @property
     def protocol(self):
-        return "https" if config.OPENSEARCH_SECURITY else "http"
+        return "https" if self.security_options and self.security_options.enabled else "http"
 
     @property
     def bin_name(self) -> str:
@@ -309,7 +345,7 @@ class OpensearchCluster(Server):
             "discovery.type": "single-node",
         }
 
-        if not config.OPENSEARCH_SECURITY:
+        if not self.security_options or not self.security_options.enabled:
             settings["plugins.security.disabled"] = "true"
         else:
             # enable the security plugin in the settings
@@ -429,7 +465,14 @@ class EdgeProxiedOpensearchCluster(Server):
     requests to the backend cluster.
     """
 
-    def __init__(self, url: str, arn: str, custom_endpoint: CustomEndpoint, version=None) -> None:
+    def __init__(
+        self,
+        url: str,
+        arn: str,
+        custom_endpoint: CustomEndpoint,
+        version: str = None,
+        security_options: SecurityOptions = None,
+    ) -> None:
         self._url = urlparse(url)
 
         super().__init__(
@@ -438,6 +481,7 @@ class EdgeProxiedOpensearchCluster(Server):
         )
         self.custom_endpoint = custom_endpoint
         self._version = version or self.default_version
+        self.security_options = security_options
         self.arn = arn
 
         self.cluster = None
@@ -476,6 +520,7 @@ class EdgeProxiedOpensearchCluster(Server):
             host=DEFAULT_BACKEND_HOST,
             arn=self.arn,
             version=self.version,
+            security_options=self.security_options,
         )
 
     def do_run(self):
@@ -505,11 +550,6 @@ class ElasticsearchCluster(OpensearchCluster):
         return constants.ELASTICSEARCH_DEFAULT_VERSION
 
     @property
-    def protocol(self):
-        # the security plugin is not supported for elasticsearch, protocol is always HTTP
-        return "http"
-
-    @property
     def bin_name(self) -> str:
         return "elasticsearch"
 
@@ -535,6 +575,8 @@ class ElasticsearchCluster(OpensearchCluster):
         if os.path.exists(os.path.join(dirs.mods, "x-pack-ml")):
             settings["xpack.ml.enabled"] = "false"
 
+        # TODO security plugin config!
+
         return settings
 
     def _create_env_vars(self, directories: Directories) -> Dict:
@@ -551,5 +593,9 @@ class EdgeProxiedElasticsearchCluster(EdgeProxiedOpensearchCluster):
 
     def _backend_cluster(self) -> OpensearchCluster:
         return ElasticsearchCluster(
-            port=self.cluster_port, host=DEFAULT_BACKEND_HOST, arn=self.arn, version=self.version
+            port=self.cluster_port,
+            host=DEFAULT_BACKEND_HOST,
+            arn=self.arn,
+            version=self.version,
+            security_options=self.security_options,
         )

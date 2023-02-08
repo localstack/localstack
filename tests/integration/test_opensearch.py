@@ -10,6 +10,7 @@ from opensearchpy.exceptions import AuthorizationException
 
 from localstack import config
 from localstack.aws.accounts import get_aws_account_id
+from localstack.aws.api.opensearch import AdvancedSecurityOptionsInput, MasterUserOptions
 from localstack.config import EDGE_BIND_HOST, LOCALSTACK_HOSTNAME
 from localstack.constants import OPENSEARCH_DEFAULT_VERSION, OPENSEARCH_PLUGIN_LIST
 from localstack.services.opensearch import provider
@@ -327,10 +328,27 @@ class TestOpensearchProvider:
         finally:
             opensearch_client.delete_domain(DomainName=domain_name)
 
-    def test_security_plugin(self, monkeypatch, opensearch_create_domain, opensearch_client):
+    def test_security_plugin(self, opensearch_create_domain, opensearch_client):
+        # TODO test this with elasticsearch as well
+        # TODO validate the create cluster security options input
+        # TODO implement initial user setup
+        #  - maybe just post a new user with admin role after the cluster is up?
+        #  - or maybe change the internalusers.yaml? https://opensearch.org/docs/latest/security/configuration/yaml/
+        # TODO verify that the behavior is similar to AWS!
+        # TODO write docs
+
         # enable the security plugin for this test
-        monkeypatch.setattr(config, "OPENSEARCH_SECURITY", True)
-        domain_name = opensearch_create_domain()
+        admin_auth = ("admin", "admin")
+        advanced_security_options = AdvancedSecurityOptionsInput(
+            Enabled=True,
+            InternalUserDatabaseEnabled=True,
+            MasterUserOptions=MasterUserOptions(
+                MasterUserName=admin_auth[0],
+                # TODO MasterUserPassword=admin_auth[1]
+                MasterUserPassword="12345678Aa!",
+            ),
+        )
+        domain_name = opensearch_create_domain(AdvancedSecurityOptions=advanced_security_options)
         endpoint = opensearch_client.describe_domain(DomainName=domain_name)["DomainStatus"][
             "Endpoint"
         ]
@@ -356,7 +374,6 @@ class TestOpensearchProvider:
         test_index_name = "new-index"
         test_index_id = "new-index-id"
         test_document = {"test-key": "test-value"}
-        admin_auth = ("admin", "admin")  # For testing only. Don't store credentials in code.
         admin_client = OpenSearch(hosts=endpoint, http_auth=admin_auth)
         admin_client.create(test_index_name, id=test_index_id, body={})
         admin_client.index(test_index_name, body=test_document)
