@@ -2,11 +2,12 @@ import contextlib
 
 import pytest
 from botocore.exceptions import ClientError
+from moto.ec2 import ec2_backends
 
 from localstack.utils.aws import aws_stack
 from localstack.utils.strings import short_uid
 
-# public amazon image used for ec2 launch temlpates
+# public amazon image used for ec2 launch templates
 PUBLIC_AMAZON_LINUX_IMAGE = "ami-06c39ed6b42908a36"
 PUBLIC_AMAZON_UBUNTU_IMAGE = "ami-03e08697c325f02ab"
 
@@ -353,7 +354,7 @@ def test_raise_modify_to_invalid_default_version(ec2_client, create_launch_templ
 
 
 @pytest.mark.aws_validated
-def test_raise_when_launcTemplateData_missing(ec2_client):
+def test_raise_when_launch_template_data_missing(ec2_client):
     with pytest.raises(ClientError) as e:
         ec2_client.create_launch_template(
             LaunchTemplateName=f"unique_name-{short_uid()}", LaunchTemplateData={}
@@ -372,7 +373,7 @@ def test_raise_invalid_launch_template_name(create_launch_template):
 
 
 @pytest.mark.aws_validated
-def test_raise_duplicate_Launch_template_name(ec2_client, create_launch_template):
+def test_raise_duplicate_launch_template_name(ec2_client, create_launch_template):
     create_launch_template("name")
 
     with pytest.raises(ClientError) as e:
@@ -380,3 +381,24 @@ def test_raise_duplicate_Launch_template_name(ec2_client, create_launch_template
 
     assert e.value.response["ResponseMetadata"]["HTTPStatusCode"] == 400
     assert e.value.response["Error"]["Code"] == "InvalidLaunchTemplateName.AlreadyExistsException"
+
+
+@pytest.fixture
+def pickle_backends():
+    def _can_pickle(*args) -> bool:
+        import dill
+
+        try:
+            for i in args:
+                dill.dumps(i)
+        except TypeError:
+            return False
+        return True
+
+    return _can_pickle
+
+
+def test_pickle_ec2_backend(ec2_client, pickle_backends):
+    _ = ec2_client.describe_account_attributes()
+    pickle_backends(ec2_backends)
+    assert pickle_backends(ec2_backends)

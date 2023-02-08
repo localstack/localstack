@@ -135,7 +135,6 @@ class TestFirehoseIntegration:
         s3_client,
         s3_bucket,
         kinesis_create_stream,
-        monkeypatch,
         cleanups,
     ):
         domain_name = f"test-domain-{short_uid()}"
