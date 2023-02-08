@@ -1381,6 +1381,11 @@ class TestS3:
         response = client_2.get_bucket_location(Bucket=bucket_3_name)
         snapshot.match("get_bucket_location_bucket_3", response)
 
+        with pytest.raises(ClientError) as exc:
+            s3_client.get_bucket_location(Bucket=f"random-bucket-test-{short_uid()}")
+
+        snapshot.match("get_bucket_location_non_existent_bucket", exc.value.response)
+
     @pytest.mark.aws_validated
     @pytest.mark.skip_snapshot_verify(
         condition=is_old_provider,
