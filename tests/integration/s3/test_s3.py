@@ -3047,7 +3047,7 @@ class TestS3PresignedUrl:
         host = f"{S3_VIRTUAL_HOSTNAME}:{config.EDGE_PORT}"
         s3_presign = _s3_client_custom_config(
             Config(signature_version="s3v4"),
-            endpoint_url=_endpoint_url(),
+            endpoint_url=f"http://{host}",
         )
 
         s3_client.put_object(Body="test-value", Bucket=s3_bucket, Key="test")
