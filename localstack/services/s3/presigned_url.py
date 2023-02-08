@@ -557,7 +557,7 @@ class S3SigV4SignatureContext:
         :param original_host_port:
         :return:
         """
-        if new_host_port:
+        if original_host_port:
             updated_netloc = self._original_host.replace(original_host_port, new_host_port)
         else:
             updated_netloc = f"{self._original_host}{new_host_port}"
