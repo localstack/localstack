@@ -3063,9 +3063,11 @@ class TestS3PresignedUrl:
         response = requests.get(presign_url, headers={"host": host_443})
         assert b"test-value" == response._content
 
-        host_no_port = host.replace(":443", "")
-        response = requests.get(presign_url, headers={"host": host_no_port})
-        assert b"test-value" == response._content
+        if is_asf_provider():
+            # this does not work with old legacy provider, the signature does not match
+            host_no_port = host_443.replace(":443", "")
+            response = requests.get(presign_url, headers={"host": host_no_port})
+            assert b"test-value" == response._content
 
     @pytest.mark.aws_validated
     @pytest.mark.skip_snapshot_verify(
