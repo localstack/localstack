@@ -401,7 +401,12 @@ LEGACY_EDGE_PROXY = is_env_true("LEGACY_EDGE_PROXY")
 
 # whether legacy s3 is enabled
 # TODO change when asf becomes default: os.environ.get("PROVIDER_OVERRIDE_S3", "") == 'legacy'
-LEGACY_S3_PROVIDER = os.environ.get("PROVIDER_OVERRIDE_S3", "") not in ("asf", "asf_pro")
+LEGACY_S3_PROVIDER = os.environ.get("PROVIDER_OVERRIDE_S3", "") not in (
+    "asf",
+    "asf_pro",
+    "v2",
+    "v2_pro",
+)
 
 # Whether to report internal failures as 500 or 501 errors.
 FAIL_FAST = is_env_true("FAIL_FAST")
