@@ -13,7 +13,7 @@ def get_ec2_backend(account_id: str, region: str) -> EC2Backend:
 
 
 def set_state(self, state):
-    state["_subnet_ip_generator"] = self.cidr.hosts()
+    state["_subnet_ip_generator"] = state["cidr"].hosts()
     self.__dict__.update(state)
 
 
