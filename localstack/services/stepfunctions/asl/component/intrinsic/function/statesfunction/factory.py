@@ -1,11 +1,14 @@
 from localstack.services.stepfunctions.asl.component.intrinsic.argument.function_argument_list import (
     FunctionArgumentList,
 )
+from localstack.services.stepfunctions.asl.component.intrinsic.function.statesfunction.array import (
+    states_function_array,
+    states_function_array_contains,
+    states_function_array_partition,
+    states_function_array_range,
+)
 from localstack.services.stepfunctions.asl.component.intrinsic.function.statesfunction.states_function import (
     StatesFunction,
-)
-from localstack.services.stepfunctions.asl.component.intrinsic.function.statesfunction.states_function_array import (
-    StatesFunctionArray,
 )
 from localstack.services.stepfunctions.asl.component.intrinsic.function.statesfunction.states_function_format import (
     StatesFunctionFormat,
@@ -32,15 +35,26 @@ class StatesFunctionFactory:
     @staticmethod
     def from_name(func_name: StatesFunctionName, arg_list: FunctionArgumentList) -> StatesFunction:
         match func_name.function_type:
+            # Array.
+            case StatesFunctionNameType.Array:
+                return states_function_array.StatesFunctionArray(arg_list=arg_list)
+            case StatesFunctionNameType.ArrayPartition:
+                return states_function_array_partition.StatesFunctionArrayPartition(
+                    arg_list=arg_list
+                )
+            case StatesFunctionNameType.ArrayContains:
+                return states_function_array_contains.StatesFunctionArrayContains(arg_list=arg_list)
+            case StatesFunctionNameType.ArrayRange:
+                return states_function_array_range.StatesFunctionArrayRange(arg_list=arg_list)
+            #
             case StatesFunctionNameType.Format:
                 return StatesFunctionFormat(arg_list=arg_list)
-            case StatesFunctionNameType.Array:
-                return StatesFunctionArray(arg_list=arg_list)
             case StatesFunctionNameType.JsonToString:
                 return StatesFunctionJsonToString(arg_list=arg_list)
             case StatesFunctionNameType.StringToJson:
                 return StatesFunctionStringToJson(arg_list=arg_list)
             case StatesFunctionNameType.UUID:
                 return StatesFunctionUUID(arg_list=arg_list)
+            #
             case unsupported:
                 raise NotImplementedError(unsupported)  # noqa
