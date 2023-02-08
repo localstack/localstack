@@ -3041,21 +3041,13 @@ class TestS3PresignedUrl:
             s3_presigned_client.meta.events.unregister("before-sign.s3.GetObject", add_query_param)
 
     @pytest.mark.only_localstack
-    @pytest.mark.xfail(
-        condition=not LEGACY_S3_PROVIDER,
-        reason="failing for ASF provider, will be fixed in separate PR",
-    )
     def test_presign_check_signature_validation_for_port_permutation(
         self, s3_client, s3_bucket, patch_s3_skip_signature_validation_false
     ):
-        port1 = 443
-        port2 = config.EDGE_PORT
-        endpoint = (
-            f"http://{config.LOCALSTACK_HOSTNAME}:{port1}"  # .replace(f":{port2}", f":{port1}")
-        )
+        host = f"{S3_VIRTUAL_HOSTNAME}:{config.EDGE_PORT}"
         s3_presign = _s3_client_custom_config(
             Config(signature_version="s3v4"),
-            endpoint_url=endpoint,
+            endpoint_url=f"http://{host}",
         )
 
         s3_client.put_object(Body="test-value", Bucket=s3_bucket, Key="test")
@@ -3065,11 +3057,17 @@ class TestS3PresignedUrl:
             Params={"Bucket": s3_bucket, "Key": "test"},
             ExpiresIn=86400,
         )
-        assert f":{port1}" in presign_url
-        presign_url = presign_url.replace(f":{port1}", f":{port2}")
+        assert f":{config.EDGE_PORT}" in presign_url
 
-        response = requests.get(presign_url)
+        host_443 = host.replace(f":{config.EDGE_PORT}", ":443")
+        response = requests.get(presign_url, headers={"host": host_443})
         assert b"test-value" == response._content
+
+        if is_asf_provider():
+            # this does not work with old legacy provider, the signature does not match
+            host_no_port = host_443.replace(":443", "")
+            response = requests.get(presign_url, headers={"host": host_no_port})
+            assert b"test-value" == response._content
 
     @pytest.mark.aws_validated
     @pytest.mark.skip_snapshot_verify(

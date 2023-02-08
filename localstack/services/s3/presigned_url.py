@@ -498,10 +498,10 @@ def _find_valid_signature_through_ports(context: RequestContext) -> FindSigV4Res
             # the request has already been tested before the loop, skip
             if request_port == port:
                 continue
-            sigv4_context.update_host_port(port, request_port)
+            sigv4_context.update_host_port(new_host_port=port, original_host_port=request_port)
 
         else:
-            sigv4_context.update_host_port(port)
+            sigv4_context.update_host_port(new_host_port=port)
 
         # we ignore the additional data because we want the exception raised to match the original request
         signature, _, _ = sigv4_context.get_signature_data()
@@ -538,6 +538,7 @@ class S3SigV4SignatureContext:
             netloc = self._headers.get(S3_VIRTUAL_HOST_FORWARDED_HEADER)
             self.host = netloc
             self._original_host = netloc
+            self.signed_headers["host"] = netloc
             # the request comes from the Virtual Host router, we need to remove the bucket from the path
             splitted_path = self.request.path.split("/", maxsplit=2)
             self.path = f"/{splitted_path[-1]}"
@@ -557,7 +558,7 @@ class S3SigV4SignatureContext:
         :param original_host_port:
         :return:
         """
-        if new_host_port:
+        if original_host_port:
             updated_netloc = self._original_host.replace(original_host_port, new_host_port)
         else:
             updated_netloc = f"{self._original_host}{new_host_port}"
