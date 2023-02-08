@@ -8,6 +8,7 @@ LOG = logging.getLogger(__name__)
 
 TRACKED_ENV_VAR = [
     "DEBUG",
+    "DEFAULT_REGION",
     "DISABLE_CORS_CHECK",
     "DISABLE_CORS_HEADERS",
     "EAGER_SERVICE_LOADING",
@@ -17,6 +18,8 @@ TRACKED_ENV_VAR = [
     "HOSTNAME_EXTERNAL",
     "HOSTNAME_FROM_LAMBDA",
     "IAM_SOFT_MODE",
+    "KINESIS_PROVIDER",
+    "KMS_PROVIDER",
     "LAMBDA_DOWNLOAD_AWS_LAYERS",
     "LAMBDA_EXECUTOR",
     "LAMBDA_PREBUILD_IMAGES",
@@ -25,14 +28,32 @@ TRACKED_ENV_VAR = [
     "LEGACY_DIRECTORIES",
     "LEGACY_EDGE_PROXY",
     "LS_LOG",
+    "MOCK_UNIMPLEMENTED",
     "OPENSEARCH_ENDPOINT_STRATEGY",
     "PERSISTENCE",
+    "PERSISTENCE_SINGLE_FILE",
     "PERSIST_ALL",
+    "PORT_WEB_UI",
+    "RDS_MYSQL_DOCKER",
     "REQUIRE_PRO",
+    "SKIP_INFRA_DOWNLOADS",
     "SQS_ENDPOINT_STRATEGY",
+    "USE_SINGLE_REGION",
+    "USE_SSL",
 ]
 
-PRESENCE_ENV_VAR = ["LAMBDA_FALLBACK_URL", "LAMBDA_FORWARD_URL", "S3_DIR"]
+PRESENCE_ENV_VAR = [
+    "DATA_DIR",
+    "EDGE_FORWARD_URL",
+    "HOST_TMP_FOLDER",
+    "INIT_SCRIPTS_PATH",
+    "LAMBDA_FALLBACK_URL",
+    "LAMBDA_FORWARD_URL",
+    "LEGACY_DIRECTORIES",
+    "LEGACY_INIT_DIR",
+    "S3_DIR",
+    "TMPDIR",
+]
 
 
 @hooks.on_infra_start()
@@ -41,6 +62,8 @@ def _publish_config_as_analytics_event():
 
     for key, value in os.environ.items():
         if key.startswith("PROVIDER_OVERRIDE_"):
+            env_vars.append(key)
+        elif key.startswith("SYNCHRONOUS_") and key.endswith("_EVENTS"):
             env_vars.append(key)
 
     env_vars = {key: os.getenv(key) for key in env_vars}
