@@ -8,6 +8,7 @@ import pytest
 import yaml
 
 from localstack.aws.api.lambda_ import Runtime
+from localstack.services.cloudformation.engine.yaml_parser import parse_yaml
 from localstack.testing.aws.cloudformation_utils import load_template_raw
 from localstack.utils.aws import arns
 from localstack.utils.common import short_uid
@@ -709,7 +710,7 @@ class TestMacros:
             lambda_client,
         )
 
-        template_dict = yaml.safe_load(
+        template_dict = parse_yaml(
             load_file(
                 os.path.join(
                     os.path.dirname(__file__), "../templates/transformation_global_parameter.yml"
@@ -721,7 +722,7 @@ class TestMacros:
                 template_dict["Resources"]["Parameter"]
             )
 
-        template = yaml.safe_dump(template_dict)
+        template = yaml.dump(template_dict)
 
         with pytest.raises(botocore.exceptions.ClientError) as ex:
             deploy_cfn_template(template=template)
