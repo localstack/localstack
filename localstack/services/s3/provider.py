@@ -254,7 +254,24 @@ class S3Provider(S3Api, ServiceLifecycleHook):
     def get_bucket_location(
         self, context: RequestContext, bucket: BucketName, expected_bucket_owner: AccountId = None
     ) -> GetBucketLocationOutput:
+        """
+        When implementing the ASF provider, this operation is implemented because:
+        - The spec defines a root element GetBucketLocationOutput containing a LocationConstraint member, where
+          S3 actually just returns the LocationConstraint on the root level (only operation so far that we know of).
+        - We circumvent the root level element here by patching the spec such that this operation returns a
+          single "payload" (the XML body response), which causes the serializer to directly take the payload element.
+        - The above "hack" causes the fix in the serializer to not be picked up here as we're passing the XML body as
+          the payload, which is why we need to manually do this here by manipulating the string.
+        Botocore implements this hack for parsing the response in `botocore.handlers.py#parse_get_bucket_location`
+        """
         response = call_moto(context)
+
+        location_constraint_xml = response["LocationConstraint"]
+        xml_root_end = location_constraint_xml.find(">") + 1
+        location_constraint_xml = (
+            f"{location_constraint_xml[:xml_root_end]}\n{location_constraint_xml[xml_root_end:]}"
+        )
+        response["LocationConstraint"] = location_constraint_xml[:]
         return response
 
     @handler("ListObjects", expand=False)
