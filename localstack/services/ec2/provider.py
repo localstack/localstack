@@ -1,3 +1,4 @@
+import re
 from abc import ABC
 from datetime import datetime, timezone
 
@@ -6,12 +7,15 @@ from moto.core.utils import camelcase_to_underscores, underscores_to_camelcase
 from moto.ec2 import ec2_backends
 from moto.ec2.exceptions import InvalidVpcEndPointIdError
 from moto.ec2.models import SubnetBackend, TransitGatewayAttachmentBackend
+from moto.ec2.models.launch_templates import LaunchTemplate as MotoLaunchTemplate
 from moto.ec2.models.subnets import Subnet
 
 from localstack.aws.api import RequestContext, handler
 from localstack.aws.api.ec2 import (
     AvailabilityZone,
     Boolean,
+    CreateLaunchTemplateRequest,
+    CreateLaunchTemplateResult,
     CreateSubnetRequest,
     CreateSubnetResult,
     CreateTransitGatewayRequest,
@@ -29,6 +33,8 @@ from localstack.aws.api.ec2 import (
     DescribeTransitGatewaysResult,
     Ec2Api,
     InstanceType,
+    ModifyLaunchTemplateRequest,
+    ModifyLaunchTemplateResult,
     ModifySubnetAttributeRequest,
     ModifyVpcEndpointResult,
     OfferingClassType,
@@ -52,7 +58,13 @@ from localstack.aws.api.ec2 import (
     VpcEndpointSubnetIdList,
     scope,
 )
+from localstack.services.ec2.exceptions import (
+    InvalidLaunchTemplateIdError,
+    InvalidLaunchTemplateNameError,
+    MissingParameterError,
+)
 from localstack.services.moto import call_moto
+from localstack.utils.aws import aws_stack
 from localstack.utils.patch import patch
 from localstack.utils.strings import first_char_to_upper, long_uid
 
@@ -314,6 +326,55 @@ class Ec2Provider(Ec2Api, ABC):
             transit_gateway_id = transit_gateway["TransitGatewayId"]
             tgw = backend.transit_gateways.get(transit_gateway_id)
             transit_gateway["Options"].update(tgw.options)
+        return result
+
+    @handler("CreateLaunchTemplate", expand=False)
+    def create_launch_template(
+        self,
+        context: RequestContext,
+        request: CreateLaunchTemplateRequest,
+    ) -> CreateLaunchTemplateResult:
+
+        # parameter validation
+        if not request["LaunchTemplateData"]:
+            raise MissingParameterError(parameter="LaunchTemplateData")
+
+        name = request["LaunchTemplateName"]
+        if len(name) < 3 or len(name) > 128 or not re.fullmatch(r"[a-zA-Z0-9.\-_()/]*", name):
+            raise InvalidLaunchTemplateNameError()
+
+        return call_moto(context)
+
+    @handler("ModifyLaunchTemplate", expand=False)
+    def modify_launch_template(
+        self,
+        context: RequestContext,
+        request: ModifyLaunchTemplateRequest,
+    ) -> ModifyLaunchTemplateResult:
+
+        backend = ec2_backends[context.account_id][context.region]
+        template_id = (
+            request["LaunchTemplateId"]
+            or backend.launch_template_name_to_ids[request["LaunchTemplateName"]]
+        )
+        template: MotoLaunchTemplate = backend.launch_templates[template_id]
+
+        # check if defaultVersion exists
+        if request["DefaultVersion"]:
+            try:
+                template.versions[int(request["DefaultVersion"]) - 1]
+            except IndexError:
+                raise InvalidLaunchTemplateIdError()
+
+        template.default_version_number = int(request["DefaultVersion"])
+
+        client = aws_stack.connect_to_service("ec2")
+        retrieved_template = client.describe_launch_templates(LaunchTemplateIds=[template.id])
+
+        result: ModifyLaunchTemplateResult = {
+            "LaunchTemplate": retrieved_template["LaunchTemplates"][0],
+        }
+
         return result
 
 

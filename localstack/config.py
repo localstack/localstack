@@ -272,7 +272,7 @@ def is_linux():
 def ping(host):
     """Returns True if host responds to a ping request"""
     is_windows = platform.system().lower() == "windows"
-    ping_opts = "-n 1" if is_windows else "-c 1"
+    ping_opts = "-n 1 -w 2000" if is_windows else "-c 1 -W 2"
     args = "ping %s %s" % (ping_opts, host)
     return (
         subprocess.call(args, shell=not is_windows, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
