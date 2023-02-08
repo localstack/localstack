@@ -15,7 +15,6 @@ import threading
 import pytest
 from localstack_ext.bootstrap import pods_client
 from localstack_ext.bootstrap.pods.server import states
-from moto.ec2.models.subnets import Subnet
 
 from localstack import config
 from localstack.config import is_env_true
@@ -232,22 +231,6 @@ def pickle_save(fn, self, obj, *args, **kwargs):
         # TODO: convert to logger
         print("Recording pickle error:", name, e)
         pickle_error_cases.setdefault(name, set()).add(str(e))
-
-
-def set_state(self, state, *args, **kwargs):
-    state["_subnet_ip_generator"] = self.cidr.hosts()
-    self.__dict__.update(state)
-
-
-def get_state(self, *args, **kwargs):
-    state = self.__dict__.copy()
-    state.pop("_subnet_ip_generator", None)
-    return state
-
-
-# TODO temorary patch to fix `generator` pickle error
-Subnet.__setstate__ = set_state
-Subnet.__getstate__ = get_state
 
 
 @pytest.hookimpl(hookwrapper=True)
