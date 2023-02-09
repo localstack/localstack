@@ -6,10 +6,10 @@ Description: >
 Parameters:
   ResourceType:
     Type: String
-    Default: resource/LS-Testing-Test
+    Default: resource/Localstack-Testing-Testresource
   ResourceActions:
     Type: String
-    Default: initech:CreateReport;initech:DeleteReport;initech:DescribeReport;initech:ListReports;initech:UpdateReport
+    Default: initech:CreateReport;initech:DeleteReport
 
 
 Resources:

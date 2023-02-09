@@ -1,0 +1,15 @@
+Parameters:
+  Name:
+    Type: String
+
+Resources:
+  Test:
+    Type: LocalStack::Testing::TestResource
+    Properties:
+      Name:
+        Ref: Name
+
+Outputs:
+  TestRef:
+    Value:
+      Ref: Test
