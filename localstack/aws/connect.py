@@ -73,7 +73,7 @@ def load_dto(data: str) -> InternalRequestParameters:
 #
 
 
-class ConnectFactory:
+class ClientFactory:
     """
     Factory to build the AWS client.
 
@@ -268,7 +268,7 @@ class ConnectFactory:
         return credentials.secret_key
 
 
-connector = ConnectFactory()
+connector = ClientFactory()
 connect_to = connector.get_internal_client
 connect_externally_to = connector.get_external_client
 

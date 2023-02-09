@@ -2,7 +2,7 @@ from unittest.mock import MagicMock, patch
 
 from werkzeug.datastructures import Headers
 
-from localstack.aws.connect import INTERNAL_REQUEST_PARAMS_HEADER, ConnectFactory, is_internal_call
+from localstack.aws.connect import INTERNAL_REQUEST_PARAMS_HEADER, ClientFactory, is_internal_call
 
 
 class TestConnectFactory:
@@ -16,14 +16,14 @@ class TestConnectFactory:
         assert is_internal_call(headers) is True
 
     def test_internal_client_dto_is_registered(self):
-        connect_to = ConnectFactory()
+        connect_to = ClientFactory()
         connect_to._session = MagicMock()
 
         mock = connect_to("sns", "eu-central-1")
         mock.meta.events.register.assert_called()
 
     def test_external_client_dto_is_not_registered(self):
-        factory = ConnectFactory()
+        factory = ClientFactory()
         factory._session = MagicMock()
 
         mock = factory.get_external_client(
@@ -31,9 +31,9 @@ class TestConnectFactory:
         )
         mock.meta.events.register.assert_not_called()
 
-    @patch.object(ConnectFactory, "_get_client")
+    @patch.object(ClientFactory, "_get_client")
     def test_external_client_credentials_loaded_from_env_if_set_to_none(self, mock, monkeypatch):
-        connect_to = ConnectFactory(use_ssl=True)
+        connect_to = ClientFactory(use_ssl=True)
         connect_to.get_external_client(
             "abc", region_name="xx-south-1", aws_access_key_id="foo", aws_secret_access_key="bar"
         )
