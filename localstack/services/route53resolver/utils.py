@@ -1,8 +1,7 @@
 import re
 
-from moto.ec2 import ec2_backends
-
 from localstack.aws.api.route53resolver import ResourceNotFoundException, ValidationException
+from localstack.services.ec2.models import get_ec2_backend
 from localstack.utils.strings import get_random_hex
 
 
@@ -56,7 +55,7 @@ def validate_destination_arn(destination_arn):
 
 
 def validate_vpc(vpc_id: str, region: str, account_id: str):
-    backend = ec2_backends[account_id][region]
+    backend = get_ec2_backend(account_id, region)
 
     if vpc_id not in backend.vpcs:
         raise ValidationException(

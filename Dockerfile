@@ -223,7 +223,8 @@ RUN source .venv/bin/activate && \
       timescaledb && \
     rm -rf /tmp/localstack/* && \
     rm -rf /var/lib/localstack/cache/* && \
-    chmod -R 777 /var/lib/localstack
+    chown -R localstack:localstack /usr/lib/localstack && \
+    chmod -R 777 /usr/lib/localstack
 
 
 # Add the build date and git hash at last (changes everytime)

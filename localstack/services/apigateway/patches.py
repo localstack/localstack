@@ -11,22 +11,12 @@ from moto.apigateway.exceptions import (
 from moto.apigateway.responses import APIGatewayResponse
 from moto.core.utils import camelcase_to_underscores
 
-from localstack.aws.accounts import get_aws_account_id
-from localstack.aws.api.apigateway import NotFoundException
 from localstack.services.apigateway.helpers import TAG_KEY_CUSTOM_ID, apply_json_patch_safe
 from localstack.utils.collections import ensure_list
 from localstack.utils.common import DelSafeDict, str_to_bool, to_str
-from localstack.utils.json import parse_json_or_yaml
+from localstack.utils.patch import patch
 
 LOG = logging.getLogger(__name__)
-
-# additional REST API attributes
-REST_API_ATTRIBUTES = [
-    "apiKeySource",
-    "binaryMediaTypes",
-    "disableExecuteApiEndpoint",
-    "minimumCompressionSize",
-]
 
 
 def apply_patches():
@@ -55,8 +45,6 @@ def apply_patches():
 
         model_attributes = list(entity.keys())
         for operation in patch_operations:
-            if operation["path"].strip("/") in REST_API_ATTRIBUTES:
-                operation["path"] = camelcase_to_underscores(operation["path"])
             path_start = operation["path"].strip("/").split("/")[0]
             path_start_usc = camelcase_to_underscores(path_start)
             if path_start not in model_attributes and path_start_usc in model_attributes:
@@ -71,42 +59,6 @@ def apply_patches():
             entity["disableExecuteApiEndpoint"] = bool(entity.pop("disable_execute_api_endpoint"))
         if "binary_media_types" in entity:
             entity["binaryMediaTypes"] = ensure_list(entity.pop("binary_media_types"))
-
-    def apigateway_response_restapis_individual(self, request, full_url, headers):
-        if request.method in ["GET", "DELETE"]:
-            return apigateway_response_restapis_individual_orig(self, request, full_url, headers)
-
-        self.setup_class(request, full_url, headers)
-        function_id = self.path.replace("/restapis/", "", 1).split("/")[0]
-
-        if self.method == "PATCH":
-            rest_api = self.backend.apis.get(function_id)
-            if not rest_api:
-                msg = f"Invalid API identifier specified {get_aws_account_id()}:{function_id}"
-                raise NotFoundException(msg)
-
-            if not isinstance(rest_api.__dict__, DelSafeDict):
-                rest_api.__dict__ = DelSafeDict(rest_api.__dict__)
-
-            result = _patch_api_gateway_entity(self, rest_api.__dict__)
-            if result is not None:
-                return result
-
-            # fix data types after patches have been applied
-            rest_api.minimum_compression_size = int(rest_api.minimum_compression_size or -1)
-            endpoint_configs = rest_api.endpoint_configuration or {}
-            if isinstance(endpoint_configs.get("vpcEndpointIds"), str):
-                endpoint_configs["vpcEndpointIds"] = [endpoint_configs["vpcEndpointIds"]]
-
-            return 200, {}, json.dumps(self.backend.get_rest_api(function_id).to_dict())
-
-        # handle import rest_api via swagger file
-        if self.method == "PUT":
-            body = parse_json_or_yaml(to_str(self.body))
-            rest_api = self.backend.put_rest_api(function_id, body, self.querystring)
-            return 200, {}, json.dumps(rest_api.to_dict())
-
-        return 400, {}, ""
 
     def apigateway_response_resource_individual(self, request, full_url, headers):
         if request.method in ["GET", "DELETE"]:
@@ -381,19 +333,15 @@ def apply_patches():
             raise NoIntegrationDefined()
         return resource_method.method_integration
 
-    # TODO: put_rest_api now available upstream - see if we can leverage some synergies
-    apigateway_response_restapis_individual_orig = APIGatewayResponse.restapis_individual
-    APIGatewayResponse.restapis_individual = apigateway_response_restapis_individual
     apigateway_response_resource_individual_orig = APIGatewayResponse.resource_individual
     APIGatewayResponse.resource_individual = apigateway_response_resource_individual
 
     if not hasattr(apigateway_models.APIGatewayBackend, "update_deployment"):
         apigateway_models.APIGatewayBackend.update_deployment = backend_update_deployment
 
-    apigateway_models_RestAPI_to_dict_orig = apigateway_models.RestAPI.to_dict
-
-    def apigateway_models_RestAPI_to_dict(self):
-        resp = apigateway_models_RestAPI_to_dict_orig(self)
+    @patch(apigateway_models.RestAPI.to_dict)
+    def apigateway_models_rest_api_to_dict(fn, self):
+        resp = fn(self)
         resp["policy"] = None
         if self.policy:
             # Strip whitespaces for TF compatibility (not entirely sure why we need double-dumps,
@@ -405,9 +353,6 @@ def apply_patches():
         if not self.tags:
             resp["tags"] = None
 
-        for attr in REST_API_ATTRIBUTES:
-            if attr not in resp:
-                resp[attr] = getattr(self, camelcase_to_underscores(attr), None)
         resp["disableExecuteApiEndpoint"] = (
             str(resp.get("disableExecuteApiEndpoint")).lower() == "true"
         )
@@ -427,28 +372,26 @@ def apply_patches():
             return 201, {}, json.dumps(deployment)
         return result
 
-    def create_rest_api(self, *args, tags={}, **kwargs):
+    @patch(apigateway_models.APIGatewayBackend.create_rest_api)
+    def create_rest_api(fn, self, *args, tags=None, **kwargs):
         """
         https://github.com/localstack/localstack/pull/4413/files
         Add ability to specify custom IDs for API GW REST APIs via tags
         """
-        result = create_rest_api_orig(self, *args, tags=tags, **kwargs)
         tags = tags or {}
+        result = fn(self, *args, tags=tags, **kwargs)
         if custom_id := tags.get(TAG_KEY_CUSTOM_ID):
             self.apis.pop(result.id)
             result.id = custom_id
             self.apis[custom_id] = result
         return result
 
+    @patch(apigateway_models.APIGatewayBackend.get_rest_api, pass_target=False)
     def get_rest_api(self, function_id):
         for key in self.apis.keys():
             if key.lower() == function_id.lower():
                 return self.apis[key]
         raise RestAPINotFound()
-
-    create_rest_api_orig = apigateway_models.APIGatewayBackend.create_rest_api
-    apigateway_models.APIGatewayBackend.create_rest_api = create_rest_api
-    apigateway_models.APIGatewayBackend.get_rest_api = get_rest_api
 
     apigateway_models.Resource.get_integration = apigateway_models_resource_get_integration
     apigateway_response_resource_methods_orig = APIGatewayResponse.resource_methods
@@ -460,4 +403,3 @@ def apply_patches():
 
     apigateway_response_usage_plan_individual_orig = APIGatewayResponse.usage_plan_individual
     APIGatewayResponse.usage_plan_individual = apigateway_response_usage_plan_individual
-    apigateway_models.RestAPI.to_dict = apigateway_models_RestAPI_to_dict

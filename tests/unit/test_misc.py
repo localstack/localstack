@@ -44,7 +44,7 @@ class TestMisc(unittest.TestCase):
         if isinstance(obj["Version"], datetime.date):
             obj = json_safe(obj)
             self.assertEqual(str, type(obj["Version"]))
-            self.assertEqual("2012-10-17", obj["Version"])
+            self.assertEqual("2012-10-17T00:00:00.000Z", obj["Version"])
 
     def test_timstamp_millis(self):
         t1 = now_utc()

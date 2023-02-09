@@ -1,5 +1,5 @@
 import json
-from typing import Dict, Iterable, Union
+from typing import Any, Dict, Iterable, Union
 
 from werkzeug.wrappers import Response as WerkzeugResponse
 
@@ -23,7 +23,7 @@ class Response(WerkzeugResponse):
         self.response = other.response
         self.headers.update(other.headers)
 
-    def set_json(self, doc: Dict):
+    def set_json(self, doc: Any):
         """
         Serializes the given dictionary using localstack's ``CustomEncoder`` into a json response, and sets the
         mimetype automatically to ``application/json``.
@@ -51,6 +51,8 @@ class Response(WerkzeugResponse):
         else:
             self.response = response
 
+        return self
+
     def to_readonly_response_dict(self) -> Dict:
         """
         Returns a read-only version of a response dictionary as it is often expected by other libraries like boto.
@@ -60,3 +62,17 @@ class Response(WerkzeugResponse):
             "status_code": self.status_code,
             "headers": dict(self.headers),
         }
+
+    @classmethod
+    def for_json(cls, doc: Any, *args, **kwargs) -> "Response":
+        """
+        Creates a new JSON response from the given document. It automatically sets the mimetype to ``application/json``.
+
+        :param doc: the document to serialize into JSON
+        :param args: arguments passed to the ``Response`` constructor
+        :param kwargs: keyword arguments passed to the ``Response`` constructor
+        :return: a new Response object
+        """
+        response = cls(*args, **kwargs)
+        response.set_json(doc)
+        return response
