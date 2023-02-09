@@ -7,13 +7,12 @@ LocalStack providers.
 import json
 import logging
 from functools import cache
-from typing import Mapping, Optional, TypedDict, Union
+from typing import Optional, TypedDict
 
 from boto3.session import Session
 from botocore.client import BaseClient
 from botocore.config import Config
 from botocore.utils import InvalidArnException
-from werkzeug.datastructures import Headers
 
 from localstack import config
 from localstack.constants import (
@@ -350,15 +349,3 @@ def _handler_inject_dto_header(model, params, request_signer, context, **kwargs)
     """
     if dto := context.pop("_localstack", None):
         params["headers"][INTERNAL_REQUEST_PARAMS_HEADER] = dump_dto(dto)
-
-
-#
-# Utilities
-#
-
-
-def is_internal_call(headers: Union[Mapping, Headers]) -> bool:
-    """
-    Whether given request headers are for an internal LocalStack cross-service call.
-    """
-    return INTERNAL_REQUEST_PARAMS_HEADER in headers
