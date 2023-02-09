@@ -775,7 +775,11 @@ def get_target_resource_method(invocation_context: ApiInvocationContext) -> Opti
         return None
     methods = resource.get("resourceMethods") or {}
     method_name = invocation_context.method.upper()
-    return methods.get(method_name) or methods.get("ANY")
+    return (
+        methods.get(method_name)
+        or methods.get("ANY")
+        or methods.get("X-AMAZON-APIGATEWAY-ANY-METHOD")
+    )
 
 
 def get_event_request_context(invocation_context: ApiInvocationContext):
