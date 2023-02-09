@@ -1,3 +1,5 @@
+import json
+
 from localstack.services.stepfunctions.asl.component.intrinsic.argument.function_argument_list import (
     FunctionArgumentList,
 )
@@ -11,19 +13,21 @@ from localstack.services.stepfunctions.asl.component.intrinsic.functionname.stat
     StatesFunctionName,
 )
 from localstack.services.stepfunctions.asl.eval.environment import Environment
-from localstack.utils.strings import long_uid
 
 
-class StatesFunctionUUID(StatesFunction):
+class JsonToString(StatesFunction):
     def __init__(self, arg_list: FunctionArgumentList):
         super().__init__(
-            states_name=StatesFunctionName(function_type=StatesFunctionNameType.UUID),
+            states_name=StatesFunctionName(function_type=StatesFunctionNameType.JsonToString),
             arg_list=arg_list,
         )
-        if len(arg_list.arg_list) != 0:
+        if arg_list.size != 1:
             raise ValueError(
-                f"Expected no arguments for function type '{type(self)}', but got: '{arg_list}'."
+                f"Expected 1 argument for function type '{type(self)}', but got: '{arg_list}'."
             )
 
     def _eval_body(self, env: Environment) -> None:
-        env.stack.append(long_uid())
+        self.arg_list.eval(env=env)
+        json_obj: json = env.stack.pop()
+        json_string: str = json.dumps(json_obj, separators=(",", ":"))
+        env.stack.append(json_string)

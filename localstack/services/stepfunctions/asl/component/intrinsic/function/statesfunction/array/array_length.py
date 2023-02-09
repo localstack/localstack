@@ -13,22 +13,23 @@ from localstack.services.stepfunctions.asl.component.intrinsic.functionname.stat
 from localstack.services.stepfunctions.asl.eval.environment import Environment
 
 
-class StatesFunctionArrayContains(StatesFunction):
+class ArrayLength(StatesFunction):
     def __init__(self, arg_list: FunctionArgumentList):
         super().__init__(
-            states_name=StatesFunctionName(function_type=StatesFunctionNameType.ArrayContains),
+            states_name=StatesFunctionName(function_type=StatesFunctionNameType.ArrayLength),
             arg_list=arg_list,
         )
-        if arg_list.size != 2:
+        if arg_list.size != 1:
             raise ValueError(
-                f"Expected 2 arguments for function type '{type(self)}', but got: '{arg_list}'."
+                f"Expected 1 argument for function type '{type(self)}', but got: '{arg_list}'."
             )
 
     def _eval_body(self, env: Environment) -> None:
         self.arg_list.eval(env=env)
-        value = env.stack.pop()
+
         array = env.stack.pop()
         if not isinstance(array, list):
-            raise ValueError(f"Expected an array type as first argument, but got {array}.")
-        contains = value in array
-        env.stack.append(contains)
+            raise ValueError(f"Expected an array type, but got '{array}'.")
+
+        length = len(array)
+        env.stack.append(length)

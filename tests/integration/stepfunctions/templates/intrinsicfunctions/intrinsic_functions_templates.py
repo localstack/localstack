@@ -10,13 +10,36 @@ class IntrinsicFunctionTemplate(TemplateLoader):
     FUNCTION_INPUT_KEY: Final[str] = "FunctionInput"
     FUNCTION_OUTPUT_KEY: Final[str] = "FunctionResult"
 
-    STRING_TO_JSON: Final[str] = os.path.join(_THIS_FOLDER, "statemachines/string_to_json.json5")
-    JSON_TO_STRING: Final[str] = os.path.join(_THIS_FOLDER, "statemachines/json_to_string.json5")
-    FORMAT_1: Final[str] = os.path.join(_THIS_FOLDER, "statemachines/format_1.json5")
-    FORMAT_2: Final[str] = os.path.join(_THIS_FOLDER, "statemachines/format_2.json5")
-    ARRAY_0: Final[str] = os.path.join(_THIS_FOLDER, "statemachines/array_0.json5")
-    ARRAY_2: Final[str] = os.path.join(_THIS_FOLDER, "statemachines/array_2.json5")
-    UUID: Final[str] = os.path.join(_THIS_FOLDER, "statemachines/uuid.json5")
-    ARRAY_PARTITION: Final[str] = os.path.join(_THIS_FOLDER, "statemachines/array_partition.json5")
-    ARRAY_CONTAINS: Final[str] = os.path.join(_THIS_FOLDER, "statemachines/array_contains.json5")
-    ARRAY_RANGE: Final[str] = os.path.join(_THIS_FOLDER, "statemachines/array_range.json5")
+    # Array.
+    ARRAY_0: Final[str] = os.path.join(_THIS_FOLDER, "statemachines/array/array_0.json5")
+    ARRAY_2: Final[str] = os.path.join(_THIS_FOLDER, "statemachines/array/array_2.json5")
+    UUID: Final[str] = os.path.join(_THIS_FOLDER, "statemachines/unique_id_generation/uuid.json5")
+    ARRAY_PARTITION: Final[str] = os.path.join(
+        _THIS_FOLDER, "statemachines/array/array_partition.json5"
+    )
+    ARRAY_CONTAINS: Final[str] = os.path.join(
+        _THIS_FOLDER, "statemachines/array/array_contains.json5"
+    )
+    ARRAY_RANGE: Final[str] = os.path.join(_THIS_FOLDER, "statemachines/array/array_range.json5")
+    ARRAY_GET_ITEM: Final[str] = os.path.join(
+        _THIS_FOLDER, "statemachines/array/array_get_item.json5"
+    )
+    ARRAY_LENGTH: Final[str] = os.path.join(_THIS_FOLDER, "statemachines/array/array_length.json5")
+    ARRAY_UNIQUE: Final[str] = os.path.join(_THIS_FOLDER, "statemachines/array/array_unique.json5")
+
+    # JSON Manipulation.
+    STRING_TO_JSON: Final[str] = os.path.join(
+        _THIS_FOLDER, "statemachines/json_manipulation/string_to_json.json5"
+    )
+    JSON_TO_STRING: Final[str] = os.path.join(
+        _THIS_FOLDER, "statemachines/json_manipulation/json_to_string.json5"
+    )
+
+    # String Operations.
+    STRING_SPLIT: Final[str] = os.path.join(
+        _THIS_FOLDER, "statemachines/string_operations/string_split.json5"
+    )
+
+    # Generic.
+    FORMAT_1: Final[str] = os.path.join(_THIS_FOLDER, "statemachines/generic/format_1.json5")
+    FORMAT_2: Final[str] = os.path.join(_THIS_FOLDER, "statemachines/generic/format_2.json5")

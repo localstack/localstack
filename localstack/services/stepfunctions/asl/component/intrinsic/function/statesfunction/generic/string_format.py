@@ -19,7 +19,7 @@ from localstack.services.stepfunctions.asl.component.intrinsic.functionname.stat
 from localstack.services.stepfunctions.asl.eval.environment import Environment
 
 
-class StatesFunctionFormat(StatesFunction):
+class StringFormat(StatesFunction):
     _DELIMITER: Final[str] = "{}"
 
     def __init__(self, arg_list: FunctionArgumentList):
@@ -63,10 +63,10 @@ class StatesFunctionFormat(StatesFunction):
         if isinstance(value, dict):
             dict_items = list()
             for d_key, d_value in value.items():
-                d_value_lit = StatesFunctionFormat._json_to_literal(d_value)
+                d_value_lit = StringFormat._json_to_literal(d_value)
                 dict_items.append(f"{d_key}={d_value_lit}")
             return f"{{{', '.join(dict_items)}}}"
         elif isinstance(value, list):
-            return f"[{', '.join(list(map(StatesFunctionFormat._json_to_literal, value)))}]"
+            return f"[{', '.join(list(map(StringFormat._json_to_literal, value)))}]"
         else:
             return json.dumps(value)

@@ -1,5 +1,3 @@
-import json
-
 from localstack.services.stepfunctions.asl.component.intrinsic.argument.function_argument_list import (
     FunctionArgumentList,
 )
@@ -15,10 +13,10 @@ from localstack.services.stepfunctions.asl.component.intrinsic.functionname.stat
 from localstack.services.stepfunctions.asl.eval.environment import Environment
 
 
-class StatesFunctionJsonToString(StatesFunction):
+class ArrayUnique(StatesFunction):
     def __init__(self, arg_list: FunctionArgumentList):
         super().__init__(
-            states_name=StatesFunctionName(function_type=StatesFunctionNameType.JsonToString),
+            states_name=StatesFunctionName(function_type=StatesFunctionNameType.ArrayUnique),
             arg_list=arg_list,
         )
         if arg_list.size != 1:
@@ -28,6 +26,11 @@ class StatesFunctionJsonToString(StatesFunction):
 
     def _eval_body(self, env: Environment) -> None:
         self.arg_list.eval(env=env)
-        json_obj: json = env.stack.pop()
-        json_string: str = json.dumps(json_obj, separators=(",", ":"))
-        env.stack.append(json_string)
+
+        array = env.stack.pop()
+        if not isinstance(array, list):
+            raise ValueError(f"Expected an array type, but got '{array}'.")
+
+        items_set = set(array)
+        unique_array = list(items_set)
+        env.stack.append(unique_array)

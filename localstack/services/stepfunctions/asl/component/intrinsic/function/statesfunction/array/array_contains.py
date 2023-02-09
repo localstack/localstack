@@ -13,35 +13,22 @@ from localstack.services.stepfunctions.asl.component.intrinsic.functionname.stat
 from localstack.services.stepfunctions.asl.eval.environment import Environment
 
 
-class StatesFunctionArrayRange(StatesFunction):
+class ArrayContains(StatesFunction):
     def __init__(self, arg_list: FunctionArgumentList):
         super().__init__(
             states_name=StatesFunctionName(function_type=StatesFunctionNameType.ArrayContains),
             arg_list=arg_list,
         )
-        if arg_list.size != 3:
+        if arg_list.size != 2:
             raise ValueError(
-                f"Expected 3 arguments for function type '{type(self)}', but got: '{arg_list}'."
+                f"Expected 2 arguments for function type '{type(self)}', but got: '{arg_list}'."
             )
 
     def _eval_body(self, env: Environment) -> None:
         self.arg_list.eval(env=env)
-        range_vals = [env.stack.pop(), env.stack.pop(), env.stack.pop()]
-        for range_val in range_vals:
-            if not isinstance(range_val, (int, float)):
-                raise ValueError(
-                    f"Expected 3 integer arguments for function type '{type(self)}', but got: '{range_vals}'."
-                )
-        step = round(range_vals[0])
-        last = round(range_vals[1])
-        first = round(range_vals[2])
-
-        if step <= 0:
-            raise ValueError(f"Expected step argument to be non negative, but got: '{step}'.")
-
-        array = list(range(first, last + 1, step))
-
-        if len(array) > 1000:
-            raise RuntimeError(f"Arrays cannot contain more than 1000 items, size: {len(array)}.")
-
-        env.stack.append(array)
+        value = env.stack.pop()
+        array = env.stack.pop()
+        if not isinstance(array, list):
+            raise ValueError(f"Expected an array type as first argument, but got {array}.")
+        contains = value in array
+        env.stack.append(contains)

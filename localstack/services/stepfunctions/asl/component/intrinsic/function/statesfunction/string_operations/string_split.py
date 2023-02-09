@@ -1,3 +1,5 @@
+import re
+
 from localstack.services.stepfunctions.asl.component.intrinsic.argument.function_argument_list import (
     FunctionArgumentList,
 )
@@ -13,10 +15,10 @@ from localstack.services.stepfunctions.asl.component.intrinsic.functionname.stat
 from localstack.services.stepfunctions.asl.eval.environment import Environment
 
 
-class StatesFunctionArrayPartition(StatesFunction):
+class StringSplit(StatesFunction):
     def __init__(self, arg_list: FunctionArgumentList):
         super().__init__(
-            states_name=StatesFunctionName(function_type=StatesFunctionNameType.ArrayPartition),
+            states_name=StatesFunctionName(function_type=StatesFunctionNameType.StringSplit),
             arg_list=arg_list,
         )
         if arg_list.size != 2:
@@ -26,25 +28,21 @@ class StatesFunctionArrayPartition(StatesFunction):
 
     def _eval_body(self, env: Environment) -> None:
         self.arg_list.eval(env=env)
-        chunk_size = env.stack.pop()
-        if not isinstance(chunk_size, (int, float)):
-            raise ValueError(f"Expected an integer value as chunk_size, but got {chunk_size}.")
-        chunk_size = round(chunk_size)
-        if chunk_size < 0:
+
+        del_chars = env.stack.pop()
+        if not isinstance(del_chars, str):
             raise ValueError(
-                f"Expected a non-zero, positive integer as chuck_size, but got {chunk_size}."
+                f"Expected string value as delimiting characters, but got '{del_chars}'."
             )
 
-        array = env.stack.pop()
-        if not isinstance(array, list):
-            raise ValueError(f"Expected an array type as first argument, but got {array}.")
+        string = env.stack.pop()
+        if not isinstance(del_chars, str):
+            raise ValueError(f"Expected string value, but got '{del_chars}'.")
 
-        chunks = self._to_chunks(array=array, chunk_size=chunk_size)
-        env.stack.append(chunks)
+        patterns = []
+        for c in del_chars:
+            patterns.append(f"\\{c}")
+        pattern = "|".join(patterns)
 
-    @staticmethod
-    def _to_chunks(array: list, chunk_size: int):
-        chunks = list()
-        for i in range(0, len(array), chunk_size):
-            chunks.append(array[i : i + chunk_size])
-        return chunks
+        parts = re.split(pattern, string)
+        env.stack.append(parts)
