@@ -521,7 +521,7 @@ def apply_json_patch_safe(subject, patch_operations, in_place=True, return_list=
                 if isinstance(target, list) and not path.endswith("/-"):
                     # if "path" is an attribute name pointing to an array in "subject", and we're running
                     # an "add" operation, then we should use the standard-compliant notation "/path/-"
-                    operation["path"] = "%s/-" % path
+                    operation["path"] = f"{path}/-"
 
             result = apply_patch(subject, [operation], in_place=in_place)
             if not in_place:
@@ -775,7 +775,11 @@ def get_target_resource_method(invocation_context: ApiInvocationContext) -> Opti
         return None
     methods = resource.get("resourceMethods") or {}
     method_name = invocation_context.method.upper()
-    return methods.get(method_name) or methods.get("ANY")
+    return (
+        methods.get(method_name)
+        or methods.get("ANY")
+        or methods.get("X-AMAZON-APIGATEWAY-ANY-METHOD")
+    )
 
 
 def get_event_request_context(invocation_context: ApiInvocationContext):

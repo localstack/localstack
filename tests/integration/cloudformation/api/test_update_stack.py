@@ -4,7 +4,6 @@ import os
 import botocore.errorfactory
 import botocore.exceptions
 import pytest
-import yaml
 
 from localstack.utils.files import load_file
 from localstack.utils.strings import short_uid
@@ -253,22 +252,20 @@ def test_no_parameters_update(deploy_cfn_template, cfn_client):
 
 @pytest.mark.aws_validated
 def test_update_with_previous_parameter_value(deploy_cfn_template, cfn_client, snapshot):
-    template = load_file(
-        os.path.join(os.path.dirname(__file__), "../../templates/sns_topic_parameter.yml")
-    )
-
     stack = deploy_cfn_template(
-        template=template,
+        template_path=os.path.join(
+            os.path.dirname(__file__), "../../templates/sns_topic_parameter.yml"
+        ),
         parameters={"TopicName": f"topic-{short_uid()}"},
     )
 
-    template_dict = yaml.safe_load(template)
-    del template_dict["Resources"]["topic123"]["UpdateReplacePolicy"]
-    template = yaml.safe_dump(template_dict)
-
     cfn_client.update_stack(
         StackName=stack.stack_name,
-        TemplateBody=template,
+        TemplateBody=load_file(
+            os.path.join(
+                os.path.dirname(__file__), "../../templates/sns_topic_parameter.update.yml"
+            )
+        ),
         Parameters=[{"ParameterKey": "TopicName", "UsePreviousValue": True}],
     )
 

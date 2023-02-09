@@ -52,7 +52,7 @@ class ConfigUpdateProxyListener(ProxyListener):
             endpoint=_update_config_variable_handler,
             previous_path=constants.CONFIG_UPDATE_PATH,
             deprecation_version="1.4.0",
-            new_path="/_localstack/config-update",
+            new_path="/_localstack/config",
         )
 
     def forward_request(self, method, path, data, headers):

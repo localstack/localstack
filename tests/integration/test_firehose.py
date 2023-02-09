@@ -3,6 +3,7 @@ import json
 
 import pytest as pytest
 import requests
+from botocore.exceptions import ClientError
 from pytest_httpserver import HTTPServer
 
 from localstack import config
@@ -126,7 +127,6 @@ def test_firehose_http(
 
 class TestFirehoseIntegration:
     @pytest.mark.skip_offline
-    @pytest.mark.parametrize("opensearch_endpoint_strategy", ["domain", "path"])
     def test_kinesis_firehose_elasticsearch_s3_backup(
         self,
         firehose_client,
@@ -135,15 +135,12 @@ class TestFirehoseIntegration:
         s3_client,
         s3_bucket,
         kinesis_create_stream,
-        monkeypatch,
-        opensearch_endpoint_strategy,
         cleanups,
     ):
         domain_name = f"test-domain-{short_uid()}"
         stream_name = f"test-stream-{short_uid()}"
         role_arn = "arn:aws:iam::000000000000:role/Firehose-Role"
         delivery_stream_name = f"test-delivery-stream-{short_uid()}"
-        monkeypatch.setattr(config, "OPENSEARCH_ENDPOINT_STRATEGY", opensearch_endpoint_strategy)
         es_create_response = es_client.create_elasticsearch_domain(DomainName=domain_name)
         cleanups.append(lambda: es_client.delete_elasticsearch_domain(DomainName=domain_name))
         es_url = f"http://{es_create_response['DomainStatus']['Endpoint']}"
@@ -238,7 +235,58 @@ class TestFirehoseIntegration:
         retry(assert_s3_contents)
 
     @pytest.mark.skip_offline
-    @pytest.mark.parametrize("opensearch_endpoint_strategy", ["domain", "path"])
+    def test_kinesis_firehose_incompatible_with_opensearch_2_3(
+        self,
+        firehose_client,
+        opensearch_client,
+        kinesis_client,
+        kinesis_create_stream,
+    ):
+        # Kinesis Firehose does not support OpenSearch 2.3
+        domain_name = f"test-domain-{short_uid()}"
+        stream_name = f"test-stream-{short_uid()}"
+        role_arn = "arn:aws:iam::000000000000:role/Firehose-Role"
+        bucket_arn = "arn:aws:s3:::foo"
+        delivery_stream_name = f"test-delivery-stream-{short_uid()}"
+
+        opensearch_create_response = opensearch_client.create_domain(
+            DomainName=domain_name, EngineVersion="OpenSearch_2.3"
+        )
+        opensearch_arn = opensearch_create_response["DomainStatus"]["ARN"]
+
+        # create kinesis stream
+        kinesis_create_stream(StreamName=stream_name, ShardCount=2)
+        stream_arn = kinesis_client.describe_stream(StreamName=stream_name)["StreamDescription"][
+            "StreamARN"
+        ]
+
+        kinesis_stream_source_def = {
+            "KinesisStreamARN": stream_arn,
+            "RoleARN": role_arn,
+        }
+        opensearch_destination_configuration = {
+            "RoleARN": role_arn,
+            "DomainARN": opensearch_arn,
+            "IndexName": "activity",
+            "TypeName": "activity",
+            "S3BackupMode": "AllDocuments",
+            "S3Configuration": {
+                "RoleARN": role_arn,
+                "BucketARN": bucket_arn,
+            },
+        }
+        with pytest.raises(ClientError) as exc:
+            firehose_client.create_delivery_stream(
+                DeliveryStreamName=delivery_stream_name,
+                DeliveryStreamType="KinesisStreamAsSource",
+                KinesisStreamSourceConfiguration=kinesis_stream_source_def,
+                AmazonopensearchserviceDestinationConfiguration=opensearch_destination_configuration,
+            )
+        exc.match("ServiceUnavailableException")
+        exc.match("Delivery stream destination is not supported: OpenSearch 2.3")
+
+    @pytest.mark.skip_offline
+    @pytest.mark.parametrize("opensearch_endpoint_strategy", ["domain", "path", "port"])
     def test_kinesis_firehose_opensearch_s3_backup(
         self,
         firehose_client,
@@ -256,7 +304,9 @@ class TestFirehoseIntegration:
         delivery_stream_name = f"test-delivery-stream-{short_uid()}"
         monkeypatch.setattr(config, "OPENSEARCH_ENDPOINT_STRATEGY", opensearch_endpoint_strategy)
         try:
-            opensearch_create_response = opensearch_client.create_domain(DomainName=domain_name)
+            opensearch_create_response = opensearch_client.create_domain(
+                DomainName=domain_name, EngineVersion="OpenSearch_1.3"
+            )
             opensearch_url = f"http://{opensearch_create_response['DomainStatus']['Endpoint']}"
             opensearch_arn = opensearch_create_response["DomainStatus"]["ARN"]
 

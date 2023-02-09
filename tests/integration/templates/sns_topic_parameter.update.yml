@@ -1,0 +1,19 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Parameters:
+  TopicName:
+    Type: String
+    Default: sns-topic-simple
+Resources:
+  topic123:
+    Type: AWS::SNS::Topic
+    Properties:
+      TopicName:
+        Ref: TopicName
+    DeletionPolicy: Delete
+
+Outputs:
+  TopicArn:
+    Value:
+      Fn::GetAtt:
+        - topic123
+        - TopicArn

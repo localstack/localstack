@@ -94,6 +94,7 @@ class TestOpensearchProvider:
         versions = response["Versions"]
 
         expected_versions = [
+            "OpenSearch_2.3",
             "OpenSearch_1.3",
             "OpenSearch_1.2",
             "OpenSearch_1.1",
@@ -132,6 +133,18 @@ class TestOpensearchProvider:
             {
                 "SourceVersion": "OpenSearch_1.0",
                 "TargetVersions": ["OpenSearch_1.1", "OpenSearch_1.2", "OpenSearch_1.3"],
+            },
+            {
+                "SourceVersion": "OpenSearch_1.1",
+                "TargetVersions": ["OpenSearch_1.2", "OpenSearch_1.3"],
+            },
+            {
+                "SourceVersion": "OpenSearch_1.2",
+                "TargetVersions": ["OpenSearch_1.3"],
+            },
+            {
+                "SourceVersion": "OpenSearch_1.3",
+                "TargetVersions": ["OpenSearch_2.3"],
             },
             {
                 "SourceVersion": "Elasticsearch_7.10",
@@ -474,7 +487,7 @@ class TestEdgeProxiedOpensearchCluster:
 
             response = requests.get(cluster_url)
             assert response.ok, f"cluster endpoint returned an error: {response.text}"
-            assert response.json()["version"]["number"] == "1.3.6"
+            assert response.json()["version"]["number"] == "2.3.0"
 
             response = requests.get(f"{cluster_url}/_cluster/health")
             assert response.ok, f"cluster health endpoint returned an error: {response.text}"
