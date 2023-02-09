@@ -1546,10 +1546,23 @@ def create_user(iam_client):
                     attached_policy["PolicyArn"],
                     username,
                 )
+        access_keys = iam_client.list_access_keys(UserName=username)["AccessKeyMetadata"]
+        for access_key in access_keys:
+            try:
+                iam_client.delete_access_key(
+                    UserName=username, AccessKeyId=access_key["AccessKeyId"]
+                )
+            except Exception:
+                LOG.debug(
+                    "Error deleting access key '%s' from user '%s'",
+                    access_key["AccessKeyId"],
+                    username,
+                )
+
         try:
             iam_client.delete_user(UserName=username)
-        except Exception:
-            LOG.debug("Error deleting user '%s' during test cleanup", username)
+        except Exception as e:
+            LOG.debug("Error deleting user '%s' during test cleanup: %s", username, e)
 
 
 @pytest.fixture
