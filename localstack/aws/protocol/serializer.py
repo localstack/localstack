@@ -1438,6 +1438,11 @@ class S3ResponseSerializer(RestXMLResponseSerializer):
     def _create_empty_node(xmlnode: ETree.Element, name: str) -> None:
         ETree.SubElement(xmlnode, name)
 
+    def _prepare_additional_traits_in_xml(self, root: Optional[ETree.Element]):
+        # some tools (Serverless) require a newline after the "<?xml ...>\n" preamble line, e.g., for LocationConstraint
+        if root and not root.tail:
+            root.tail = "\n"
+
 
 class SqsResponseSerializer(QueryResponseSerializer):
     """

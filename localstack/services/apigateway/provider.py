@@ -2,9 +2,10 @@ import io
 import json
 import logging
 from copy import deepcopy
-from typing import IO
+from typing import IO, Dict
 
 from moto.apigateway import models as apigw_models
+from moto.core.utils import camelcase_to_underscores
 
 from localstack.aws.api import RequestContext, ServiceRequest, handler
 from localstack.aws.api.apigateway import (
@@ -13,6 +14,7 @@ from localstack.aws.api.apigateway import (
     ApiKeys,
     Authorizer,
     Authorizers,
+    BadRequestException,
     BasePathMapping,
     BasePathMappings,
     Blob,
@@ -37,6 +39,7 @@ from localstack.aws.api.apigateway import (
     RequestValidator,
     RequestValidators,
     RestApi,
+    RestApis,
     String,
     Tags,
     TestInvokeMethodRequest,
@@ -59,7 +62,12 @@ from localstack.services.apigateway.router_asf import ApigatewayRouter, to_invoc
 from localstack.services.edge import ROUTER
 from localstack.services.moto import call_moto
 from localstack.services.plugins import ServiceLifecycleHook
-from localstack.utils.collections import PaginatedList, ensure_list, select_from_typed_dict
+from localstack.utils.collections import (
+    DelSafeDict,
+    PaginatedList,
+    ensure_list,
+    select_from_typed_dict,
+)
 from localstack.utils.json import parse_json_or_yaml
 from localstack.utils.strings import short_uid, str_to_bool, to_str
 from localstack.utils.time import now_utc
@@ -76,6 +84,10 @@ class ApigatewayProvider(ApigatewayApi, ServiceLifecycleHook):
     def on_after_init(self):
         apply_patches()
         self.router.register_routes()
+
+    @staticmethod
+    def _get_moto_backend(context: RequestContext) -> apigw_models.APIGatewayBackend:
+        return apigw_models.apigateway_backends[context.account_id][context.region]
 
     @handler("TestInvokeMethod", expand=False)
     def test_invoke_method(
@@ -107,22 +119,87 @@ class ApigatewayProvider(ApigatewayApi, ServiceLifecycleHook):
 
     @handler("CreateRestApi", expand=False)
     def create_rest_api(self, context: RequestContext, request: CreateRestApiRequest) -> RestApi:
+        if request.get("description") == "":
+            raise BadRequestException("Description cannot be an empty string")
         result = call_moto(context)
-        if not result.get("binaryMediaTypes"):
-            result.pop("binaryMediaTypes", None)
-        if not result.get("tags"):
-            result.pop("tags", None)
-        if result.get("version") == "V1":
-            result.pop("version", None)
-        return result
+        moto_backend = self._get_moto_backend(context)
+        rest_api = moto_backend.apis.get(result["id"])
+        rest_api.version = request.get("version")
+        response = rest_api.to_dict()
+        remove_empty_attributes_from_rest_api(response)
+
+        return response
+
+    def get_rest_api(self, context: RequestContext, rest_api_id: String) -> RestApi:
+        rest_api: RestApi = call_moto(context)
+        remove_empty_attributes_from_rest_api(rest_api)
+        return rest_api
+
+    def update_rest_api(
+        self,
+        context: RequestContext,
+        rest_api_id: String,
+        patch_operations: ListOfPatchOperation = None,
+    ) -> RestApi:
+        moto_backend = self._get_moto_backend(context)
+        rest_api = moto_backend.apis.get(rest_api_id)
+        if not rest_api:
+            raise NotFoundException(
+                f"Invalid API identifier specified {context.account_id}:{rest_api_id}"
+            )
+
+        fixed_patch_ops = []
+        binary_media_types_path = "/binaryMediaTypes"
+        for patch_op in patch_operations:
+            patch_op_path = patch_op.get("path", "")
+            # binaryMediaTypes has a specific way of being set
+            # see https://docs.aws.amazon.com/apigateway/latest/api/API_PatchOperation.html
+            # TODO: maybe implement a more generalized way if this happens anywhere else
+            if patch_op_path.startswith(binary_media_types_path):
+                if patch_op_path == binary_media_types_path:
+                    raise BadRequestException(f"Invalid patch path {patch_op_path}")
+                value = patch_op_path.rsplit("/", maxsplit=1)[-1]
+                path_value = value.replace("~1", "/")
+                patch_op["path"] = binary_media_types_path
+
+                if patch_op["op"] == "add":
+                    patch_op["value"] = path_value
+
+                elif patch_op["op"] == "remove":
+                    remove_index = rest_api.binaryMediaTypes.index(path_value)
+                    patch_op["path"] = f"{binary_media_types_path}/{remove_index}"
+
+                elif patch_op["op"] == "replace":
+                    # AWS is behaving weirdly, and will actually remove/add instead of replacing in place
+                    # it will put the replaced value last in the array
+                    replace_index = rest_api.binaryMediaTypes.index(path_value)
+                    fixed_patch_ops.append(
+                        {"op": "remove", "path": f"{binary_media_types_path}/{replace_index}"}
+                    )
+                    patch_op["op"] = "add"
+
+            fixed_patch_ops.append(patch_op)
+
+        if not isinstance(rest_api.__dict__, DelSafeDict):
+            rest_api.__dict__ = DelSafeDict(rest_api.__dict__)
+
+        _patch_api_gateway_entity(rest_api.__dict__, fixed_patch_ops)
+
+        # fix data types after patches have been applied
+        if rest_api.minimum_compression_size:
+            rest_api.minimum_compression_size = int(rest_api.minimum_compression_size or -1)
+        endpoint_configs = rest_api.endpoint_configuration or {}
+        if isinstance(endpoint_configs.get("vpcEndpointIds"), str):
+            endpoint_configs["vpcEndpointIds"] = [endpoint_configs["vpcEndpointIds"]]
+
+        response = rest_api.to_dict()
+        remove_empty_attributes_from_rest_api(response, remove_tags=False)
+        return response
 
     @handler("PutRestApi", expand=False)
     def put_rest_api(self, context: RequestContext, request: PutRestApiRequest) -> RestApi:
-        account_id = context.account_id
-        region_name = context.region
-        rest_api = apigw_models.apigateway_backends[account_id][region_name].apis.get(
-            request["restApiId"]
-        )
+        moto_backend = self._get_moto_backend(context)
+        rest_api = moto_backend.apis.get(request["restApiId"])
         body_data = request["body"].read()
 
         openapi_spec = parse_json_or_yaml(to_str(body_data))
@@ -130,7 +207,10 @@ class ApigatewayProvider(ApigatewayApi, ServiceLifecycleHook):
             rest_api, openapi_spec, context.request.values.to_dict()
         )
 
-        return to_rest_api_response_json(rest_api.to_dict())
+        response = rest_api.to_dict()
+        remove_empty_attributes_from_rest_api(response)
+        # TODO: verify this
+        return to_rest_api_response_json(response)
 
     def delete_rest_api(self, context: RequestContext, rest_api_id: String) -> None:
         try:
@@ -140,6 +220,14 @@ class ApigatewayProvider(ApigatewayApi, ServiceLifecycleHook):
             raise NotFoundException(
                 f"Invalid API identifier specified {context.account_id}:{rest_api_id}"
             ) from e
+
+    def get_rest_apis(
+        self, context: RequestContext, position: String = None, limit: NullableInteger = None
+    ) -> RestApis:
+        response: RestApis = call_moto(context)
+        for rest_api in response["items"]:
+            remove_empty_attributes_from_rest_api(rest_api)
+        return response
 
     # method responses
 
@@ -756,6 +844,23 @@ class ApigatewayProvider(ApigatewayApi, ServiceLifecycleHook):
 # ---------------
 
 
+def remove_empty_attributes_from_rest_api(rest_api: RestApi, remove_tags=True):
+    if not rest_api.get("binaryMediaTypes"):
+        rest_api.pop("binaryMediaTypes", None)
+
+    if not rest_api.get("tags"):
+        if remove_tags:
+            rest_api.pop("tags", None)
+        else:
+            # if `tags` is falsy, set it to an empty dict
+            rest_api["tags"] = {}
+
+    if not rest_api.get("version"):
+        rest_api.pop("version", None)
+    if not rest_api.get("description"):
+        rest_api.pop("description", None)
+
+
 def create_custom_context(
     context: RequestContext, action: str, parameters: ServiceRequest
 ) -> RequestContext:
@@ -779,6 +884,21 @@ def normalize_authorizer(data):
         entry["authorizerResultTtlInSeconds"] = int(entry.get("authorizerResultTtlInSeconds", 300))
         entries[i] = entry
     return entries if is_list else entries[0]
+
+
+def _patch_api_gateway_entity(entity: Dict, patch_operations: ListOfPatchOperation):
+    not_supported_attributes = {"/id", "/region_name", "/create_date"}
+
+    model_attributes = list(entity.keys())
+    for operation in patch_operations:
+        path_start = operation["path"].strip("/").split("/")[0]
+        path_start_usc = camelcase_to_underscores(path_start)
+        if path_start not in model_attributes and path_start_usc in model_attributes:
+            operation["path"] = operation["path"].replace(path_start, path_start_usc)
+        if operation["path"] in not_supported_attributes:
+            raise BadRequestException(f"Invalid patch path {operation['path']}")
+
+    apply_json_patch_safe(entity, patch_operations, in_place=True)
 
 
 def to_authorizer_response_json(api_id, data):

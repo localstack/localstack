@@ -35,7 +35,6 @@ from localstack.runtime import events
 from localstack.services.generic_proxy import ProxyListener, modify_and_forward, start_proxy_server
 from localstack.services.infra import PROXY_LISTENERS
 from localstack.services.plugins import SERVICE_PLUGINS
-from localstack.utils import persistence
 from localstack.utils.aws import aws_stack
 from localstack.utils.aws.aws_stack import (
     extract_access_key_id_from_auth_header,
@@ -184,7 +183,7 @@ class ProxyListenerEdge(ProxyListener):
         self._require_service(api)
 
         lock_ctx = BOOTSTRAP_LOCK
-        if is_internal_call or persistence.is_persistence_restored():
+        if is_internal_call or not config.is_persistence_enabled():
             lock_ctx = empty_context_manager()
 
         with lock_ctx:

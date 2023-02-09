@@ -29,12 +29,6 @@ class S3VirtualHostProxyHandler:
     addressed S3 bucket to a path addressed URL, to allow easy routing matching the ASF specs.
     """
 
-    def __init__(self):
-        """
-        Creates a new Proxy with no forward_base_url configured, it will be changed depending on the incoming request.
-        """
-        self.proxy = Proxy(forward_base_url="")
-
     def __call__(self, request: Request, **kwargs) -> Response:
         # TODO region pattern currently not working -> removing it from url
         rewritten_url = self._rewrite_url(request.url, kwargs.get("bucket"), kwargs.get("region"))
@@ -45,10 +39,14 @@ class S3VirtualHostProxyHandler:
         copied_headers = copy.copy(request.headers)
         copied_headers["Host"] = forward_to_url.netloc
         copied_headers[S3_VIRTUAL_HOST_FORWARDED_HEADER] = request.headers["host"]
-        self.proxy.forward_base_url = f"{forward_to_url.scheme}://{forward_to_url.netloc}"
-        forwarded = self.proxy.forward(
-            request=request, forward_path=forward_to_url.path, headers=copied_headers
-        )
+        # do not preserve the Host when forwarding (to avoid an endless loop)
+        with Proxy(
+            forward_base_url=f"{forward_to_url.scheme}://{forward_to_url.netloc}",
+            preserve_host=False,
+        ) as proxy:
+            forwarded = proxy.forward(
+                request=request, forward_path=forward_to_url.path, headers=copied_headers
+            )
         # remove server specific headers that will be added before being returned
         forwarded.headers.pop("date", None)
         forwarded.headers.pop("server", None)

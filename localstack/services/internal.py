@@ -4,22 +4,23 @@ import logging
 import os
 import re
 from collections import defaultdict
-from typing import List, Optional
+from typing import List
 
 import requests
 from werkzeug.exceptions import NotFound
 
 from localstack import config, constants
 from localstack.deprecations import deprecated_endpoint
-from localstack.http import Request, Response, Router
+from localstack.http import Request, Resource, Response, Router
 from localstack.http.adapters import RouterListener
-from localstack.http.dispatcher import resource_dispatcher
+from localstack.http.dispatcher import handler_dispatcher
 from localstack.services.infra import SHUTDOWN_INFRA, terminate_all_processes_in_docker
 from localstack.utils.collections import merge_recursive
 from localstack.utils.config_listener import update_config_variable
 from localstack.utils.files import load_file
 from localstack.utils.functions import call_safe
 from localstack.utils.json import parse_json_or_yaml
+from localstack.utils.objects import singleton_factory
 from localstack.utils.server.http2_server import HTTP_METHODS
 
 LOG = logging.getLogger(__name__)
@@ -87,7 +88,7 @@ class HealthResource:
         result["version"] = constants.VERSION
         return result
 
-    def on_head(self, _request: Request):
+    def on_head(self, request: Request):
         return Response("ok", 200)
 
     def on_put(self, request: Request):
@@ -270,7 +271,7 @@ class LocalstackResources(Router):
     """
 
     def __init__(self):
-        super().__init__(dispatcher=resource_dispatcher(pass_response=False))
+        super().__init__(dispatcher=handler_dispatcher())
         self.add_default_routes()
         # TODO: load routes as plugins
 
@@ -278,37 +279,34 @@ class LocalstackResources(Router):
         from localstack.services.plugins import SERVICE_PLUGINS
 
         health_resource = HealthResource(SERVICE_PLUGINS)
-        plugins_resource = PluginsResource()
-
         # special route for legacy support (before `/_localstack` was introduced)
-        super().add(
-            "/health",
-            DeprecatedResource(
-                health_resource,
-                previous_path="/health",
-                deprecation_version="1.3.0",
-                new_path="/_localstack/health",
+        self.add(
+            Resource(
+                "/health",
+                DeprecatedResource(
+                    health_resource,
+                    previous_path="/health",
+                    deprecation_version="1.3.0",
+                    new_path="/_localstack/health",
+                ),
             ),
         )
+        self.add(Resource("/_localstack/health", health_resource))
 
-        self.add("/health", health_resource)
-        self.add("/plugins", plugins_resource)
-        self.add("/init", InitScriptsResource())
-        self.add("/init/<stage>", InitScriptsStageResource())
-        self.add("/cloudformation/deploy", CloudFormationUi())
+        self.add(Resource("/_localstack/plugins", PluginsResource()))
+        self.add(Resource("/_localstack/init", InitScriptsResource()))
+        self.add(Resource("/_localstack/init/<stage>", InitScriptsStageResource()))
+        self.add(Resource("/_localstack/cloudformation/deploy", CloudFormationUi()))
 
         if config.ENABLE_CONFIG_UPDATES:
-            self.add("/config", ConfigResource())
+            self.add(Resource("/_localstack/config", ConfigResource()))
 
         if config.DEBUG:
             LOG.warning(
                 "Enabling diagnose endpoint, "
                 "please be aware that this can expose sensitive information via your network."
             )
-            self.add("/diagnose", DiagnoseResource())
-
-    def add(self, path, *args, **kwargs):
-        return super().add(f"{constants.INTERNAL_RESOURCE_PATH}{path}", *args, **kwargs)
+            self.add(Resource("/_localstack/diagnose", DiagnoseResource()))
 
 
 class LocalstackResourceHandler(RouterListener):
@@ -333,14 +331,9 @@ class LocalstackResourceHandler(RouterListener):
                 return 404
 
 
-INTERNAL_APIS: Optional[LocalstackResources] = None
-
-
+@singleton_factory
 def get_internal_apis() -> LocalstackResources:
     """
     Get the LocalstackResources singleton.
     """
-    global INTERNAL_APIS
-    if not INTERNAL_APIS:
-        INTERNAL_APIS = LocalstackResources()
-    return INTERNAL_APIS
+    return LocalstackResources()
