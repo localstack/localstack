@@ -1,6 +1,7 @@
 import copy
 import json
 import logging
+import os.path
 import random
 import re
 import time
@@ -99,6 +100,7 @@ from localstack.aws.api.dynamodb import (
 from localstack.aws.forwarder import get_request_forwarder_http
 from localstack.constants import AUTH_CREDENTIAL_REGEX, LOCALHOST, TEST_AWS_SECRET_ACCESS_KEY
 from localstack.http import Response
+from localstack.state import AssetDirectory, StateVisitor
 from localstack.services.dynamodb import server
 from localstack.services.dynamodb.models import DynamoDBStore, dynamodb_stores
 from localstack.services.dynamodb.server import start_dynamodb, wait_for_dynamodb
@@ -346,6 +348,10 @@ def modify_context_region(context: RequestContext, region: str):
 class DynamoDBProvider(DynamodbApi, ServiceLifecycleHook):
     def __init__(self):
         self.request_forwarder = get_request_forwarder_http(self.get_forward_url)
+
+    def accept_state_visitor(self, visitor: StateVisitor):
+        visitor.visit(dynamodb_stores)
+        visitor.visit(AssetDirectory(os.path.join(config.dirs.data, "dynamodb")))
 
     def on_after_init(self):
         # add response processor specific to ddblocal
