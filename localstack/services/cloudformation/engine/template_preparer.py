@@ -1,7 +1,9 @@
 import json
 import logging
+import os
 from typing import Dict, List
 
+import boto3
 from samtranslator.translator.transform import transform as transform_sam
 
 from localstack.aws.accounts import get_aws_account_id
@@ -117,12 +119,22 @@ def execute_macro(parsed_template: dict, macro: dict, stack_parameters: list) ->
 
 
 def apply_serverless_transformation(parsed_template: dict):
+    """only returns string when parsing SAM template, otherwise None"""
+    region_before = os.environ.get("AWS_DEFAULT_REGION")
+    if boto3.session.Session().region_name is None:
+        os.environ["AWS_DEFAULT_REGION"] = aws_stack.get_region()
     loader = create_policy_loader()
+
     try:
         transformed = transform_sam(parsed_template, {}, loader)
         return transformed
     except Exception as e:
         raise FailedTransformationException(transformation=SERVERLESS_TRANSFORM, message=str(e))
+    finally:
+        # Note: we need to fix boto3 region, otherwise AWS SAM transformer fails
+        os.environ.pop("AWS_DEFAULT_REGION", None)
+        if region_before is not None:
+            os.environ["AWS_DEFAULT_REGION"] = region_before
 
 
 def format_transforms(transforms: list | dict | str) -> list[dict]:
