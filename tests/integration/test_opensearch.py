@@ -332,9 +332,7 @@ class TestOpensearchProvider:
     @pytest.mark.parametrize("engine_version", ["OpenSearch_2.3"])
     def test_security_plugin(self, opensearch_create_domain, opensearch_client, engine_version):
         # TODO try to support OpenSearch < 2.3 too
-        # TODO create the master user after the startup
-        # admin_auth = ("master-user", "12345678Aa!")
-        admin_auth = ("localstack-internal", "localstack-internal")
+        admin_auth = ("master-user", "12345678Aa!")
 
         # enable the security plugin for this test
         advanced_security_options = AdvancedSecurityOptionsInput(

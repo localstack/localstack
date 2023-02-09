@@ -2,7 +2,7 @@ import dataclasses
 import logging
 import os
 import threading
-from typing import Dict, List, NamedTuple, Optional
+from typing import Dict, List, NamedTuple, Optional, Tuple
 from urllib.parse import urlparse
 
 import requests
@@ -31,6 +31,7 @@ from localstack.utils.common import (
 )
 from localstack.utils.run import FuncThread
 from localstack.utils.serving import Server
+from localstack.utils.sync import poll_condition
 
 LOG = logging.getLogger(__name__)
 INTERNAL_USER_AUTH = ("localstack-internal", "localstack-internal")
@@ -46,13 +47,12 @@ class Directories(NamedTuple):
     backup: str
 
 
-def get_cluster_health_status(url: str) -> Optional[str]:
+def get_cluster_health_status(url: str, auth: Tuple[str, str] | None) -> Optional[str]:
     """
     Queries the health endpoint of OpenSearch/Elasticsearch and returns either the status ('green', 'yellow',
     ...) or None if the response returned a non-200 response.
     """
-    # add the default credentials here (in case the opensearch security plugin is enabled)
-    resp = requests.get(url + "/_cluster/health", verify=False, auth=INTERNAL_USER_AUTH)
+    resp = requests.get(url + "/_cluster/health", verify=False, auth=auth)
 
     if resp and resp.ok:
         opensearch_status = resp.json()
@@ -286,6 +286,7 @@ class OpensearchCluster(Server):
         super().__init__(port, host)
         self._version = version or self.default_version
         self.arn = arn
+        self.auth = None
 
         parsed_version = semver.VersionInfo.parse(self.install_version)
         if parsed_version < "2.3.0" and security_options and security_options.enabled:
@@ -295,6 +296,11 @@ class OpensearchCluster(Server):
             self.security_options = None
         else:
             self.security_options = security_options
+            if self.security_options:
+                self.auth = (
+                    self.security_options.master_username,
+                    self.security_options.master_password,
+                )
 
     @property
     def default_version(self) -> str:
@@ -322,7 +328,7 @@ class OpensearchCluster(Server):
         return constants.OS_USER_OPENSEARCH
 
     def health(self) -> Optional[str]:
-        return get_cluster_health_status(self.url)
+        return get_cluster_health_status(self.url, auth=self.auth)
 
     def do_start_thread(self) -> FuncThread:
         self._ensure_installed()
@@ -348,21 +354,38 @@ class OpensearchCluster(Server):
         )
         t.start()
 
+        # TODO this seems a bit hacky
+        # wait for the cluster to be up and running and perform the post-startup setup
+        threading.Thread(
+            target=self._post_start_setup,
+            daemon=True,
+        ).start()
+
         return t
 
-    def post_start_setup(self):
-        # TODO this should be executed after the cluster is up (but before it's marked as "up and running"
+    def _post_start_setup(self):
         if not self.security_options or not self.security_options.enabled:
             # post start setup not necessary
             return
 
-        user = {"password": self.security_options.master_password, "backend_roles": ["all_access"]}
+        def wait_for_cluster_with_internal_creds() -> bool:
+            try:
+                return get_cluster_health_status(self.url, auth=INTERNAL_USER_AUTH) is not None
+            except Exception:
+                return False
+
+        poll_condition(wait_for_cluster_with_internal_creds)
+        user = {
+            "password": self.security_options.master_password,
+            "opendistro_security_roles": ["all_access"],
+        }
         response = requests.put(
             f"{self.url}/_plugins/_security/api/internalusers/{self.security_options.master_username}",
             json=user,
             auth=INTERNAL_USER_AUTH,
+            verify=False,
         )
-        if not response.status_code == 201:
+        if not response.ok:
             LOG.error("Setting up master user failed!")
 
     def _ensure_installed(self):
@@ -510,6 +533,13 @@ class EdgeProxiedOpensearchCluster(Server):
         self.cluster_port = None
         self.proxy = None
 
+        self.auth = None
+        if self.security_options:
+            self.auth = (
+                self.security_options.master_username,
+                self.security_options.master_password,
+            )
+
     @property
     def version(self):
         return self._version
@@ -534,7 +564,7 @@ class EdgeProxiedOpensearchCluster(Server):
 
     def health(self):
         """calls the health endpoint of cluster through the proxy, making sure implicitly that both are running"""
-        return get_cluster_health_status(self.url)
+        return get_cluster_health_status(self.url, self.auth)
 
     def _backend_cluster(self) -> OpensearchCluster:
         return OpensearchCluster(
