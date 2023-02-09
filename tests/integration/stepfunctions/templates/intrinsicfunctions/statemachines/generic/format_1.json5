@@ -1,5 +1,5 @@
 {
-    "Comment": "JSON_TO_STRING",
+    "Comment": "FORMAT_1",
     "StartAt": "State_0",
     "States": {
         "State_0": {
