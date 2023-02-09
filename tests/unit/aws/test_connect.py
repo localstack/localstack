@@ -2,7 +2,12 @@ from unittest.mock import MagicMock, patch
 
 from werkzeug.datastructures import Headers
 
-from localstack.aws.connect import INTERNAL_REQUEST_PARAMS_HEADER, ClientFactory, is_internal_call
+from localstack.aws.connect import (
+    INTERNAL_REQUEST_PARAMS_HEADER,
+    ExternalClientFactory,
+    InternalClientFactory,
+    is_internal_call,
+)
 
 
 class TestConnectFactory:
@@ -16,25 +21,25 @@ class TestConnectFactory:
         assert is_internal_call(headers) is True
 
     def test_internal_client_dto_is_registered(self):
-        connect_to = ClientFactory()
-        connect_to._session = MagicMock()
+        factory = InternalClientFactory()
+        factory._session = MagicMock()
 
-        mock = connect_to("sns", "eu-central-1")
+        mock = factory("sns", "eu-central-1")
         mock.meta.events.register.assert_called()
 
     def test_external_client_dto_is_not_registered(self):
-        factory = ClientFactory()
+        factory = ExternalClientFactory()
         factory._session = MagicMock()
 
-        mock = factory.get_external_client(
+        mock = factory.get_client(
             "sqs", "eu-central-1", aws_access_key_id="foo", aws_secret_access_key="bar"
         )
         mock.meta.events.register.assert_not_called()
 
-    @patch.object(ClientFactory, "_get_client")
+    @patch.object(ExternalClientFactory, "_get_client")
     def test_external_client_credentials_loaded_from_env_if_set_to_none(self, mock, monkeypatch):
-        connect_to = ClientFactory(use_ssl=True)
-        connect_to.get_external_client(
+        connect_to = ExternalClientFactory(use_ssl=True)
+        connect_to.get_client(
             "abc", region_name="xx-south-1", aws_access_key_id="foo", aws_secret_access_key="bar"
         )
         mock.assert_called_once_with(
@@ -47,14 +52,13 @@ class TestConnectFactory:
             aws_secret_access_key="bar",
             aws_session_token=None,
             config=connect_to._config,
-            internal=False,
         )
 
         mock.reset_mock()
         monkeypatch.setenv("AWS_ACCESS_KEY_ID", "lorem")
         monkeypatch.setenv("AWS_SECRET_ACCESS_KEY", "ipsum")
 
-        connect_to.get_external_client(
+        connect_to.get_client(
             "def", region_name=None, aws_secret_access_key=None, aws_access_key_id=None
         )
         mock.assert_called_once_with(
@@ -67,5 +71,4 @@ class TestConnectFactory:
             aws_secret_access_key="ipsum",
             aws_session_token=None,
             config=connect_to._config,
-            internal=False,
         )

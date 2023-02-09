@@ -69,7 +69,7 @@ def load_dto(data: str) -> InternalRequestParameters:
 
 
 #
-# Client
+# Factory
 #
 
 
@@ -92,105 +92,33 @@ class ClientFactory:
         """
         self._use_ssl = use_ssl
         self._verify = verify
-        self._session = Session()
-        self._config = Config(max_pool_connections=MAX_POOL_CONNECTIONS)
+        self._config: Config = Config(max_pool_connections=MAX_POOL_CONNECTIONS)
+        self._session: Session = Session()
 
     def __call__(self, *args, **kwargs) -> BaseClient:
-        """
-        Every `ConnectFactory` instance is a proxy for creating the internal client.
-        """
-        return self.get_internal_client(*args, **kwargs)
+        return self.get_client(*args, **kwargs)
 
-    def get_internal_client(
+    def get_client(
         self,
         service_name: str,
         region_name: Optional[str],
-        endpoint_url: str = None,
-        aws_access_key_id: str = INTERNAL_AWS_ACCESS_KEY_ID,
-        aws_secret_access_key: str = INTERNAL_AWS_SECRET_ACCESS_KEY,
-        config: Config = None,
-    ) -> BaseClient:
-        """
-        Build and return client for connections originating within LocalStack.
-
-        All API operation methods (such as `.list_buckets()` or `.run_instances()`
-        take additional args that start with `_` prefix. These are used to pass
-        additional information to LocalStack server during internal calls.
-
-        Note that when `_TargetArn` is used, the account and region from the ARN takes
-        precedence over the region used during client instantiation. The
-        precedence logic happens on the serverside LocalStack handler chain. The
-        ARN must have the account ID and region in it.
-
-        When `_TargetAccount` is used, the specified account ID is used. This
-        takes precedence over `_TargetArn` account ID.
-
-        :param service_name: Service to build the client for, eg. `s3`
-        :param region_name: Region name. See note above.
-        :param endpoint_url: Full endpoint URL to be used by the client.
-            Defaults to appropriate LocalStack endpoint.
-        :param aws_access_key_id: Access key to use for the client.
-            Defaults to LocalStack internal credentials.
-        :param aws_secret_access_key: Secret key to use for the client.
-            Defaults to LocalStack internal credentials.
-        :param config: Boto config for advanced use.
-        """
-
-        return self._get_client(
-            service_name=service_name,
-            region_name=region_name or self.get_region_name(),
-            use_ssl=self._use_ssl,
-            verify=self._verify,
-            endpoint_url=endpoint_url or get_local_service_url(service_name),
-            aws_access_key_id=aws_access_key_id,
-            aws_secret_access_key=aws_secret_access_key,
-            aws_session_token=None,
-            config=config or self._config,
-            internal=True,
-        )
-
-    def get_external_client(
-        self,
-        service_name: str,
-        region_name: Optional[str],
-        aws_access_key_id: Optional[str],
-        aws_secret_access_key: Optional[str],
+        aws_access_key_id: Optional[str] = None,
+        aws_secret_access_key: Optional[str] = None,
         endpoint_url: str = None,
         config: Config = None,
-    ) -> BaseClient:
+        *args,
+        **kwargs,
+    ):
+        raise NotImplementedError()
+
+    def _get_client_post_hook(self, client: BaseClient) -> BaseClient:
         """
-        Build and return client for connections originating outside LocalStack.
+        This is called after the client is created by Boto.
 
-        If either of the access keys or region are set to None, they are loaded from following
-        locations:
-        - AWS environment variables
-        - Credentials file `~/.aws/credentials`
-        - Config file `~/.aws/config`
-
-        :param service_name: Service to build the client for, eg. `s3`
-        :param region_name: Name of the AWS region to be associated with the client
-            If set to None, loads from botocore session.
-        :param aws_access_key_id: Access key to use for the client.
-            If set to None, loads from botocore session.
-        :param aws_secret_access_key: Secret key to use for the client.
-            If set to None, loads from botocore session.
-        :param endpoint_url: Full endpoint URL to be used by the client.
-            Defaults to appropriate LocalStack endpoint.
-        :param config: Boto config for advanced use.
+        Any modifications to the client can be implemented here in subclasses
+        without affecting the caching mechanism.
         """
-
-        return self._get_client(
-            service_name=service_name,
-            region_name=region_name or self.get_region_name(),
-            use_ssl=self._use_ssl,
-            verify=self._verify,
-            endpoint_url=endpoint_url or get_local_service_url(service_name),
-            aws_access_key_id=aws_access_key_id or self.get_session_access_key(),
-            aws_secret_access_key=aws_secret_access_key or self.get_session_secret_key(),
-            aws_session_token=None,
-            config=config or self._config,
-            internal=False,
-        )
+        pass
 
     @cache
     def _get_client(
@@ -204,7 +132,6 @@ class ClientFactory:
         aws_secret_access_key: str,
         aws_session_token: str,
         config: Config,
-        internal: bool,
     ) -> BaseClient:
         client = self._session.client(
             service_name=service_name,
@@ -218,11 +145,7 @@ class ClientFactory:
             config=config,
         )
 
-        if internal:
-            client.meta.events.register("provide-client-params.*.*", handler=_handler_piggyback_dto)
-            client.meta.events.register("before-call.*.*", handler=_handler_inject_dto_header)
-
-        return client
+        return self._get_client_post_hook(client)
 
     #
     # Boto session utilities
@@ -268,9 +191,112 @@ class ClientFactory:
         return credentials.secret_key
 
 
-connector = ClientFactory()
-connect_to = connector.get_internal_client
-connect_externally_to = connector.get_external_client
+class InternalClientFactory(ClientFactory):
+    def _get_client_post_hook(self, client: BaseClient) -> BaseClient:
+        """
+        Register handlers that enable internal data object transfer mechanism
+        for internal clients.
+        """
+        client.meta.events.register("provide-client-params.*.*", handler=_handler_piggyback_dto)
+        client.meta.events.register("before-call.*.*", handler=_handler_inject_dto_header)
+
+        return client
+
+    def get_client(
+        self,
+        service_name: str,
+        region_name: Optional[str],
+        aws_access_key_id: Optional[str] = None,
+        aws_secret_access_key: Optional[str] = None,
+        endpoint_url: str = None,
+        config: Config = None,
+    ) -> BaseClient:
+        """
+        Build and return client for connections originating within LocalStack.
+
+        All API operation methods (such as `.list_buckets()` or `.run_instances()`
+        take additional args that start with `_` prefix. These are used to pass
+        additional information to LocalStack server during internal calls.
+
+        Note that when `_TargetArn` is used, the account and region from the ARN takes
+        precedence over the region used during client instantiation. The
+        precedence logic happens on the serverside LocalStack handler chain. The
+        ARN must have the account ID and region in it.
+
+        When `_TargetAccount` is used, the specified account ID is used. This
+        takes precedence over `_TargetArn` account ID.
+
+        :param service_name: Service to build the client for, eg. `s3`
+        :param region_name: Region name. See note above.
+            If set to None, loads from botocore session.
+        :param aws_access_key_id: Access key to use for the client.
+            Defaults to LocalStack internal credentials.
+        :param aws_secret_access_key: Secret key to use for the client.
+            Defaults to LocalStack internal credentials.
+        :param endpoint_url: Full endpoint URL to be used by the client.
+            Defaults to appropriate LocalStack endpoint.
+        :param config: Boto config for advanced use.
+        """
+
+        return self._get_client(
+            service_name=service_name,
+            region_name=region_name or self.get_region_name(),
+            use_ssl=self._use_ssl,
+            verify=self._verify,
+            endpoint_url=endpoint_url or get_local_service_url(service_name),
+            aws_access_key_id=aws_access_key_id or INTERNAL_AWS_ACCESS_KEY_ID,
+            aws_secret_access_key=aws_secret_access_key or INTERNAL_AWS_SECRET_ACCESS_KEY,
+            aws_session_token=None,
+            config=config or self._config,
+        )
+
+
+class ExternalClientFactory(ClientFactory):
+    def get_client(
+        self,
+        service_name: str,
+        region_name: Optional[str],
+        aws_access_key_id: Optional[str] = None,
+        aws_secret_access_key: Optional[str] = None,
+        endpoint_url: str = None,
+        config: Config = None,
+    ) -> BaseClient:
+        """
+        Build and return client for connections originating outside LocalStack.
+
+        If either of the access keys or region are set to None, they are loaded from following
+        locations:
+        - AWS environment variables
+        - Credentials file `~/.aws/credentials`
+        - Config file `~/.aws/config`
+
+        :param service_name: Service to build the client for, eg. `s3`
+        :param region_name: Name of the AWS region to be associated with the client
+            If set to None, loads from botocore session.
+        :param aws_access_key_id: Access key to use for the client.
+            If set to None, loads from botocore session.
+        :param aws_secret_access_key: Secret key to use for the client.
+            If set to None, loads from botocore session.
+        :param endpoint_url: Full endpoint URL to be used by the client.
+            Defaults to appropriate LocalStack endpoint.
+        :param config: Boto config for advanced use.
+        """
+
+        return self._get_client(
+            service_name=service_name,
+            region_name=region_name or self.get_region_name(),
+            use_ssl=self._use_ssl,
+            verify=self._verify,
+            endpoint_url=endpoint_url or get_local_service_url(service_name),
+            aws_access_key_id=aws_access_key_id or self.get_session_access_key(),
+            aws_secret_access_key=aws_secret_access_key or self.get_session_secret_key(),
+            aws_session_token=None,
+            config=config or self._config,
+        )
+
+
+connect_to = InternalClientFactory()
+connect_externally_to = ExternalClientFactory()
 
 #
 # Handlers
