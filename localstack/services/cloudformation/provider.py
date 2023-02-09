@@ -75,7 +75,9 @@ from localstack.services.cloudformation.engine.entities import (
     StackSet,
 )
 from localstack.services.cloudformation.engine.template_deployer import NoStackUpdates
-from localstack.services.cloudformation.engine.template_preparer import FailedTransformation
+from localstack.services.cloudformation.engine.template_preparer import (
+    FailedTransformationException,
+)
 from localstack.services.cloudformation.stores import (
     find_change_set,
     find_stack,
@@ -161,30 +163,30 @@ class CloudformationProvider(CloudformationApi):
 
         if (
             "CAPABILITY_AUTO_EXPAND" not in request.get("Capabilities", [])
-            and "Transform" in template
+            and "Transform" in template.keys()
         ):
             raise InsufficientCapabilitiesException(
                 "Requires capabilities : [CAPABILITY_AUTO_EXPAND]"
             )
 
+        parameters = template_preparer.resolve_parameters(
+            template.get("Parameters", {}), request.get("Parameters", [])
+        )
+
         try:
-            parameters = template_preparer.resolve_parameters(
-                template.get("Parameters", {}), request.get("Parameters", [])
-            )
             template = template_preparer.transform_template(
                 template,
                 parameters,
             )
-
-        except FailedTransformation as e:
+        except FailedTransformationException as e:
             stack = Stack(request, template)
-            stack.set_stack_status("ROLLBACK_COMPLETE")
             stack.add_stack_event(
                 stack.stack_name,
                 stack.stack_id,
                 status="ROLLBACK_IN_PROGRESS",
                 status_reason=e.message,
             )
+            stack.set_stack_status("ROLLBACK_COMPLETE")
             state.stacks[stack.stack_id] = stack
             return CreateStackOutput(StackId=stack.stack_id)
 
@@ -236,30 +238,29 @@ class CloudformationProvider(CloudformationApi):
 
         if (
             "CAPABILITY_AUTO_EXPAND" not in request.get("Capabilities", [])
-            and "Transform" in template
+            and "Transform" in template.keys()
         ):
             raise InsufficientCapabilitiesException(
                 "Requires capabilities : [CAPABILITY_AUTO_EXPAND]"
             )
 
-        deployer = template_deployer.TemplateDeployer(stack)
+        parameters = template_preparer.resolve_parameters(
+            template.get("Parameters", {}), request.get("Parameters", [])
+        )
 
         try:
-            parameters = template_preparer.resolve_parameters(
-                template.get("Parameters", {}), request.get("Parameters", [])
-            )
             template = template_preparer.transform_template(template, parameters)
-
-        except FailedTransformation as e:
-            stack.set_stack_status("ROLLBACK_COMPLETE")
+        except FailedTransformationException as e:
             stack.add_stack_event(
                 stack.stack_name,
                 stack.stack_id,
                 status="ROLLBACK_IN_PROGRESS",
                 status_reason=e.message,
             )
+            stack.set_stack_status("ROLLBACK_COMPLETE")
             return CreateStackOutput(StackId=stack.stack_id)
 
+        deployer = template_deployer.TemplateDeployer(stack)
         new_stack = Stack(request, template)
         try:
             deployer.update_stack(new_stack)

@@ -481,13 +481,23 @@ class TestMacros:
             os.path.dirname(__file__), "../templates/macros/format_template.py"
         )
         macro_name = "SubstitutionMacro"
-        stack_with_macro = create_macro(
-            macro_name,
-            macro_function_path,
-            deploy_cfn_template,
-            create_lambda_function,
-            lambda_client,
+
+        func_name = f"test_lambda_{short_uid()}"
+        create_lambda_function(
+            func_name=func_name,
+            handler_file=macro_function_path,
+            runtime=Runtime.python3_8,
+            client=lambda_client,
+            timeout=1,
         )
+
+        stack_with_macro = deploy_cfn_template(
+            template_path=os.path.join(
+                os.path.dirname(__file__), "../templates/macro_resource.yml"
+            ),
+            parameters={"FunctionName": func_name, "MacroName": macro_name},
+        )
+
         description = cfn_client.describe_stack_resources(StackName=stack_with_macro.stack_name)
 
         snapshot.add_transformer(snapshot.transform.cloudformation_api())
@@ -521,12 +531,20 @@ class TestMacros:
             os.path.dirname(__file__), "../templates/macros/format_template.py"
         )
         macro_name = "SubstitutionMacro"
-        create_macro(
-            macro_name,
-            macro_function_path,
-            deploy_cfn_template,
-            create_lambda_function,
-            lambda_client,
+        func_name = f"test_lambda_{short_uid()}"
+        create_lambda_function(
+            func_name=func_name,
+            handler_file=macro_function_path,
+            runtime=Runtime.python3_8,
+            client=lambda_client,
+            timeout=1,
+        )
+
+        deploy_cfn_template(
+            template_path=os.path.join(
+                os.path.dirname(__file__), "../templates/macro_resource.yml"
+            ),
+            parameters={"FunctionName": func_name, "MacroName": macro_name},
         )
 
         new_value = f"new-value-{short_uid()}"
@@ -628,12 +646,20 @@ class TestMacros:
             os.path.dirname(__file__), "../templates/macros/replace_string.py"
         )
         macro_name = "ReplaceString"
-        create_macro(
-            macro_name,
-            macro_function_path,
-            deploy_cfn_template,
-            create_lambda_function,
-            lambda_client,
+        func_name = f"test_lambda_{short_uid()}"
+        create_lambda_function(
+            func_name=func_name,
+            handler_file=macro_function_path,
+            runtime=Runtime.python3_8,
+            client=lambda_client,
+            timeout=1,
+        )
+
+        deploy_cfn_template(
+            template_path=os.path.join(
+                os.path.dirname(__file__), "../templates/macro_resource.yml"
+            ),
+            parameters={"FunctionName": func_name, "MacroName": macro_name},
         )
 
         stack = deploy_cfn_template(
@@ -679,12 +705,20 @@ class TestMacros:
             os.path.dirname(__file__), "../templates/macros/add_role.py"
         )
         macro_name = "AddRole"
-        create_macro(
-            macro_name,
-            macro_function_path,
-            deploy_cfn_template,
-            create_lambda_function,
-            lambda_client,
+        func_name = f"test_lambda_{short_uid()}"
+        create_lambda_function(
+            func_name=func_name,
+            handler_file=macro_function_path,
+            runtime=Runtime.python3_8,
+            client=lambda_client,
+            timeout=1,
+        )
+
+        deploy_cfn_template(
+            template_path=os.path.join(
+                os.path.dirname(__file__), "../templates/macro_resource.yml"
+            ),
+            parameters={"FunctionName": func_name, "MacroName": macro_name},
         )
 
         stack_name = f"stack-{short_uid()}"
@@ -742,12 +776,20 @@ class TestMacros:
         )
 
         macro_name = "PrintInternals"
-        create_macro(
-            macro_name,
-            macro_function_path,
-            deploy_cfn_template,
-            create_lambda_function,
-            lambda_client,
+        func_name = f"test_lambda_{short_uid()}"
+        create_lambda_function(
+            func_name=func_name,
+            handler_file=macro_function_path,
+            runtime=Runtime.python3_8,
+            client=lambda_client,
+            timeout=1,
+        )
+
+        deploy_cfn_template(
+            template_path=os.path.join(
+                os.path.dirname(__file__), "../templates/macro_resource.yml"
+            ),
+            parameters={"FunctionName": func_name, "MacroName": macro_name},
         )
 
         stack_name = f"stake-{short_uid()}"
@@ -788,12 +830,20 @@ class TestMacros:
             os.path.dirname(__file__), "../templates/macros/format_template.py"
         )
         macro_name = "FormatTemplate"
-        create_macro(
-            macro_name,
-            macro_function_path,
-            deploy_cfn_template,
-            create_lambda_function,
-            lambda_client,
+        func_name = f"test_lambda_{short_uid()}"
+        create_lambda_function(
+            func_name=func_name,
+            handler_file=macro_function_path,
+            runtime=Runtime.python3_8,
+            client=lambda_client,
+            timeout=1,
+        )
+
+        deploy_cfn_template(
+            template_path=os.path.join(
+                os.path.dirname(__file__), "../templates/macro_resource.yml"
+            ),
+            parameters={"FunctionName": func_name, "MacroName": macro_name},
         )
 
         template_dict = parse_yaml(
@@ -861,12 +911,20 @@ class TestMacros:
             os.path.dirname(__file__), "../templates/macros/print_references.py"
         )
         macro_name = "PrintReferences"
-        create_macro(
-            macro_name,
-            macro_function_path,
-            deploy_cfn_template,
-            create_lambda_function,
-            lambda_client,
+        func_name = f"test_lambda_{short_uid()}"
+        create_lambda_function(
+            func_name=func_name,
+            handler_file=macro_function_path,
+            runtime=Runtime.python3_8,
+            client=lambda_client,
+            timeout=1,
+        )
+
+        deploy_cfn_template(
+            template_path=os.path.join(
+                os.path.dirname(__file__), "../templates/macro_resource.yml"
+            ),
+            parameters={"FunctionName": func_name, "MacroName": macro_name},
         )
 
         stack_name = f"stake-{short_uid()}"
@@ -919,12 +977,20 @@ class TestMacros:
         )
 
         macro_name = "Unsuccessful"
-        create_macro(
-            macro_name,
-            macro_function_path,
-            deploy_cfn_template,
-            create_lambda_function,
-            lambda_client,
+        func_name = f"test_lambda_{short_uid()}"
+        create_lambda_function(
+            func_name=func_name,
+            handler_file=macro_function_path,
+            runtime=Runtime.python3_8,
+            client=lambda_client,
+            timeout=1,
+        )
+
+        deploy_cfn_template(
+            template_path=os.path.join(
+                os.path.dirname(__file__), "../templates/macro_resource.yml"
+            ),
+            parameters={"FunctionName": func_name, "MacroName": macro_name},
         )
 
         template = load_file(

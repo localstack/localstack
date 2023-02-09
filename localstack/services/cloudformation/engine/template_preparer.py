@@ -37,7 +37,7 @@ def template_to_json(template: str) -> str:
     return json.dumps(template)
 
 
-def transform_template(template: Dict, parameters: List) -> Dict:
+def transform_template(template: dict, parameters: list) -> Dict:
     result = dict(template)
 
     transformations = format_transforms(result.get("Transform", []))
@@ -64,10 +64,10 @@ def transform_template(template: Dict, parameters: List) -> Dict:
     return result
 
 
-def execute_macro(parsed_template: Dict, macro: Dict, stack_parameters: List) -> str:
+def execute_macro(parsed_template: dict, macro: dict, stack_parameters: list) -> str:
     macro_definition = get_cloudformation_store().macros.get(macro["Name"])
     if not macro_definition:
-        raise FailedTransformation(macro["Name"], "2DO")
+        raise FailedTransformationException(macro["Name"], "2DO")
 
     formatted_stack_parameters = {
         param["ParameterKey"]: param["ParameterValue"] for param in stack_parameters
@@ -75,7 +75,7 @@ def execute_macro(parsed_template: Dict, macro: Dict, stack_parameters: List) ->
 
     formatted_transform_parameters = macro.get("Parameters", {})
     for k, v in formatted_transform_parameters.items():
-        if isinstance(v, Dict) and "Ref" in v:
+        if isinstance(v, dict) and "Ref" in v:
             formatted_transform_parameters[k] = formatted_stack_parameters[v["Ref"]]
 
     transformation_id = f"{get_aws_account_id()}::{macro['Name']}"
@@ -94,7 +94,7 @@ def execute_macro(parsed_template: Dict, macro: Dict, stack_parameters: List) ->
         FunctionName=macro_definition["FunctionName"], Payload=json.dumps(event)
     )
     if invocation.get("StatusCode") != 200 or invocation.get("FunctionError") == "Unhandled":
-        raise FailedTransformation(
+        raise FailedTransformationException(
             transformation=macro["Name"],
             message=f"Received malformed response from transform {transformation_id}. Rollback requested by user.",
         )
@@ -107,10 +107,10 @@ def execute_macro(parsed_template: Dict, macro: Dict, stack_parameters: List) ->
             if error_message
             else f"Transform {transformation_id} failed without an error message.. Rollback requested by user."
         )
-        raise FailedTransformation(transformation=macro["Name"], message=message)
+        raise FailedTransformationException(transformation=macro["Name"], message=message)
 
     if not isinstance(result.get("fragment"), dict):
-        raise FailedTransformation(
+        raise FailedTransformationException(
             transformation=macro["Name"],
             message="Template format error: unsupported structure.. Rollback requested by user.",
         )
@@ -118,7 +118,7 @@ def execute_macro(parsed_template: Dict, macro: Dict, stack_parameters: List) ->
     return result.get("fragment")
 
 
-def apply_serverless_transformation(parsed_template):
+def apply_serverless_transformation(parsed_template: dict):
     """only returns string when parsing SAM template, otherwise None"""
     region_before = os.environ.get("AWS_DEFAULT_REGION")
     if boto3.session.Session().region_name is None:
@@ -129,7 +129,7 @@ def apply_serverless_transformation(parsed_template):
         transformed = transform_sam(parsed_template, {}, loader)
         return transformed
     except Exception as e:
-        raise FailedTransformation(transformation=SERVERLESS_TRANSFORM, message=str(e))
+        raise FailedTransformationException(transformation=SERVERLESS_TRANSFORM, message=str(e))
     finally:
         # Note: we need to fix boto3 region, otherwise AWS SAM transformer fails
         os.environ.pop("AWS_DEFAULT_REGION", None)
@@ -137,25 +137,39 @@ def apply_serverless_transformation(parsed_template):
             os.environ["AWS_DEFAULT_REGION"] = region_before
 
 
-def format_transforms(transforms: List | Dict | str) -> List[Dict]:
+def format_transforms(transforms: list | dict | str) -> list[dict]:
+    """
+    The value of the Transform attribute can be:
+     - a list name of the transformations to apply
+     - an object like {Name: transformation, Parameters:{}}
+     - a transformation name
+     - a list of objects defining a transformation
+
+     so the objective of this function is to normalize the list of transformations to apply.
+    """
     formatted_transformations = []
     if isinstance(transforms, str):
         formatted_transformations.append({"Name": transforms})
 
-    if isinstance(transforms, Dict):
+    if isinstance(transforms, dict):
         formatted_transformations.append(transforms)
 
     if isinstance(transforms, list):
         for transformation in transforms:
             if isinstance(transformation, str):
                 formatted_transformations.append({"Name": transformation})
-            if isinstance(transformation, Dict):
+            if isinstance(transformation, dict):
                 formatted_transformations.append(transformation)
 
     return formatted_transformations
 
 
+# TODO add support for "previous values"
 def resolve_parameters(template_parameters: dict, request_parameters: List[dict]):
+    """
+    Macros can use the template parameters so this method resolves them so they can be pass to the lambda function.
+    This method was extracted from entities.py with the intent to not depend on the Stack Class.
+    """
     result = {}
     # add default template parameter values
     for key, value in template_parameters.items():
@@ -182,7 +196,7 @@ def resolve_parameters(template_parameters: dict, request_parameters: List[dict]
     return result
 
 
-class FailedTransformation(Exception):
+class FailedTransformationException(Exception):
     transformation: str
     msg: str
 
