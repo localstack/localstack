@@ -3,6 +3,7 @@ import logging
 import os
 import re
 import shutil
+import textwrap
 import threading
 from typing import List
 
@@ -75,9 +76,10 @@ class OpensearchPackageInstaller(PackageInstaller):
                     mkdir(dir_path)
                     chmod_r(dir_path, 0o777)
 
-                # install default plugins for opensearch 1.1+
+                # install and configure default plugins for opensearch 1.1+
                 # https://forum.opensearch.org/t/ingest-attachment-cannot-be-installed/6494/12
                 parsed_version = semver.VersionInfo.parse(version)
+                self._setup_security(install_dir)
                 if parsed_version >= "1.1.0":
                     for plugin in OPENSEARCH_PLUGIN_LIST:
                         plugin_binary = os.path.join(install_dir, "bin", "opensearch-plugin")
@@ -101,6 +103,89 @@ class OpensearchPackageInstaller(PackageInstaller):
                                 )
                                 if not os.environ.get("IGNORE_OS_DOWNLOAD_ERRORS"):
                                     raise
+
+    def _setup_security(self, install_dir: str):
+        from localstack.services.generic_proxy import (
+            GenericProxy,
+            install_predefined_cert_if_available,
+        )
+
+        # create & copy SSL certs to opensearch config dir
+        install_predefined_cert_if_available()
+        config_path = os.path.join(install_dir, "config")
+        _, cert_file_name, key_file_name = GenericProxy.create_ssl_cert()
+        shutil.copyfile(cert_file_name, os.path.join(config_path, "cert.crt"))
+        shutil.copyfile(key_file_name, os.path.join(config_path, "cert.key"))
+
+        # configure the default roles, roles_mappings, and internal_users
+        security_config_folder = os.path.join(install_dir, "config", "opensearch-security")
+
+        roles_path = os.path.join(security_config_folder, "roles.yml")
+        save_file(
+            file=roles_path,
+            permissions=0o666,
+            content=textwrap.dedent(
+                """\
+                _meta:
+                  type: "roles"
+                  config_version: 2
+                """
+            ),
+        )
+
+        roles_mapping_path = os.path.join(security_config_folder, "roles_mapping.yml")
+        save_file(
+            file=roles_mapping_path,
+            permissions=0o666,
+            content=textwrap.dedent(
+                """\
+                _meta:
+                  type: "rolesmapping"
+                  config_version: 2
+
+                security_manager:
+                  hosts: []
+                  users:
+                    - localstack-internal
+                  reserved: false
+                  hidden: false
+                  backend_roles: []
+                  and_backend_roles: []
+
+                all_access:
+                  hosts: []
+                  users:
+                    - localstack-internal
+                  reserved: false
+                  hidden: false
+                  backend_roles: []
+                  and_backend_roles: []
+                """
+            ),
+        )
+
+        internal_users_path = os.path.join(security_config_folder, "internal_users.yml")
+        save_file(
+            file=internal_users_path,
+            permissions=0o666,
+            content=textwrap.dedent(
+                """\
+                _meta:
+                  type: "internalusers"
+                  config_version: 2
+
+                # Define your internal users here
+                localstack-internal:
+                  hash: "$2y$12$ZvpKLI2nsdGj1ResAmlLne7ki5o45XpBppyg9nXF2RLNfmwjbFY22"
+                  reserved: true
+                  hidden: true
+                  backend_roles: []
+                  attributes: {}
+                  opendistro_security_roles: []
+                  static: false
+                """
+            ),
+        )
 
     def _get_install_marker_path(self, install_dir: str) -> str:
         return os.path.join(install_dir, "bin", "opensearch")

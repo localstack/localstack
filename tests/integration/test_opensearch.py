@@ -328,27 +328,26 @@ class TestOpensearchProvider:
         finally:
             opensearch_client.delete_domain(DomainName=domain_name)
 
-    def test_security_plugin(self, opensearch_create_domain, opensearch_client):
-        # TODO test this with elasticsearch as well
-        # TODO validate the create cluster security options input
-        # TODO implement initial user setup
-        #  - maybe just post a new user with admin role after the cluster is up?
-        #  - or maybe change the internalusers.yaml? https://opensearch.org/docs/latest/security/configuration/yaml/
-        # TODO verify that the behavior is similar to AWS!
-        # TODO write docs
+    @pytest.mark.only_localstack
+    @pytest.mark.parametrize("engine_version", ["OpenSearch_2.3"])
+    def test_security_plugin(self, opensearch_create_domain, opensearch_client, engine_version):
+        # TODO try to support OpenSearch < 2.3 too
+        # TODO create the master user after the startup
+        # admin_auth = ("master-user", "12345678Aa!")
+        admin_auth = ("localstack-internal", "localstack-internal")
 
         # enable the security plugin for this test
-        admin_auth = ("admin", "admin")
         advanced_security_options = AdvancedSecurityOptionsInput(
             Enabled=True,
             InternalUserDatabaseEnabled=True,
             MasterUserOptions=MasterUserOptions(
                 MasterUserName=admin_auth[0],
-                # TODO MasterUserPassword=admin_auth[1]
-                MasterUserPassword="12345678Aa!",
+                MasterUserPassword=admin_auth[1],
             ),
         )
-        domain_name = opensearch_create_domain(AdvancedSecurityOptions=advanced_security_options)
+        domain_name = opensearch_create_domain(
+            EngineVersion=engine_version, AdvancedSecurityOptions=advanced_security_options
+        )
         endpoint = opensearch_client.describe_domain(DomainName=domain_name)["DomainStatus"][
             "Endpoint"
         ]
@@ -362,7 +361,7 @@ class TestOpensearchProvider:
 
         # request with default admin credentials is successful
         plugins_response = requests.get(
-            plugins_url, headers={"Accept": "application/json"}, auth=("admin", "admin")
+            plugins_url, headers={"Accept": "application/json"}, auth=admin_auth
         )
         assert plugins_response.status_code == 200
         installed_plugins = set(plugin["component"] for plugin in plugins_response.json())
@@ -377,6 +376,15 @@ class TestOpensearchProvider:
         admin_client = OpenSearch(hosts=endpoint, http_auth=admin_auth)
         admin_client.create(test_index_name, id=test_index_id, body={})
         admin_client.index(test_index_name, body=test_document)
+
+        # create a new "readall" rolemapping
+        test_rolemapping = {"backend_roles": ["readall"], "users": []}
+        response = requests.put(
+            f"https://{endpoint}/_plugins/_security/api/rolesmapping/readall",
+            json=test_rolemapping,
+            auth=admin_auth,
+        )
+        assert response.status_code == 201
 
         # create a new user which is only mapped to the readall role
         test_user = {"password": "test_password", "backend_roles": ["readall"]}
@@ -408,16 +416,15 @@ class TestOpensearchProvider:
             test_user_client.index(test_index_name, body={"test-key1": "test-value1"})
 
         # add the user to the all_access role
-        user_patch = [{"op": "replace", "path": "/backend_roles", "value": ["admin"]}]
+        rolemappins_patch = [{"op": "add", "path": "/users/-", "value": "test_user"}]
         response = requests.patch(
-            f"https://{endpoint}/_plugins/_security/api/internalusers/test_user",
-            json=user_patch,
+            f"https://{endpoint}/_plugins/_security/api/rolesmapping/all_access",
+            json=rolemappins_patch,
             auth=admin_auth,
         )
         assert response.status_code == 200
 
         # ensure the user can now write and create a new index
-        test_user_client = OpenSearch(hosts=endpoint, http_auth=test_user_auth)
         test_user_client.create("new-index2", id="new-index-id2", body={})
         test_user_client.index(test_index_name, body={"test-key1": "test-value1"})
 

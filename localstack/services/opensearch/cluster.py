@@ -1,20 +1,23 @@
 import dataclasses
 import logging
 import os
-import shutil
 import threading
 from typing import Dict, List, NamedTuple, Optional
 from urllib.parse import urlparse
 
 import requests
+import semver
 from werkzeug.routing import Rule
 
 from localstack import config, constants
-from localstack.aws.api.opensearch import AdvancedSecurityOptionsInput, EngineType
+from localstack.aws.api.opensearch import (
+    AdvancedSecurityOptionsInput,
+    EngineType,
+    ValidationException,
+)
 from localstack.http.client import SimpleRequestsClient
 from localstack.http.proxy import ProxyHandler
 from localstack.services.edge import ROUTER
-from localstack.services.generic_proxy import GenericProxy, install_predefined_cert_if_available
 from localstack.services.infra import DEFAULT_BACKEND_HOST
 from localstack.services.opensearch import versions
 from localstack.services.opensearch.packages import elasticsearch_package, opensearch_package
@@ -30,6 +33,7 @@ from localstack.utils.run import FuncThread
 from localstack.utils.serving import Server
 
 LOG = logging.getLogger(__name__)
+INTERNAL_USER_AUTH = ("localstack-internal", "localstack-internal")
 
 CommandSettings = Dict[str, str]
 
@@ -48,7 +52,7 @@ def get_cluster_health_status(url: str) -> Optional[str]:
     ...) or None if the response returned a non-200 response.
     """
     # add the default credentials here (in case the opensearch security plugin is enabled)
-    resp = requests.get(url + "/_cluster/health", verify=False, auth=("admin", "admin"))
+    resp = requests.get(url + "/_cluster/health", verify=False, auth=INTERNAL_USER_AUTH)
 
     if resp and resp.ok:
         opensearch_status = resp.json()
@@ -163,12 +167,25 @@ class SecurityOptions:
     ) -> "SecurityOptions":
         if advanced_security_options is None:
             return SecurityOptions(enabled=False, master_username=None, master_password=None)
+        if not advanced_security_options.get("InternalUserDatabaseEnabled", False):
+            LOG.warning(
+                "AdvancedSecurityOptions are set, but InternalUserDatabase is disabled. Disabling security options."
+            )
+            return SecurityOptions(enabled=False, master_username=None, master_password=None)
+
         master_username = advanced_security_options.get("MasterUserOptions", {}).get(
             "MasterUserName", None
         )
         master_password = advanced_security_options.get("MasterUserOptions", {}).get(
             "MasterUserPassword", None
         )
+        if not master_username and not master_password:
+            raise ValidationException(
+                "You must provide a master username and password when the internal user database is enabled."
+            )
+        if not master_username or not master_password:
+            raise ValidationException("You must provide a master username and password together.")
+
         return SecurityOptions(
             enabled=advanced_security_options["Enabled"] or False,
             master_username=master_username,
@@ -269,9 +286,15 @@ class OpensearchCluster(Server):
         super().__init__(port, host)
         self._version = version or self.default_version
         self.arn = arn
-        self.security_options = security_options
 
-        self.command_settings = {}
+        parsed_version = semver.VersionInfo.parse(self.install_version)
+        if parsed_version < "2.3.0" and security_options and security_options.enabled:
+            LOG.warning(
+                "Advanced security options are enabled, but are not supported for OpenSearch < 2.3.0."
+            )
+            self.security_options = None
+        else:
+            self.security_options = security_options
 
     @property
     def default_version(self) -> str:
@@ -306,11 +329,7 @@ class OpensearchCluster(Server):
         directories = resolve_directories(version=self.version, cluster_path=self.arn)
         init_directories(directories)
 
-        self._setup_security(directories)
-
-        cmd = self._create_run_command(
-            directories=directories, additional_settings=self.command_settings
-        )
+        cmd = self._create_run_command(directories=directories)
         cmd = " ".join(cmd)
 
         if is_root() and self.os_user:
@@ -328,7 +347,23 @@ class OpensearchCluster(Server):
             name="opensearch-cluster",
         )
         t.start()
+
         return t
+
+    def post_start_setup(self):
+        # TODO this should be executed after the cluster is up (but before it's marked as "up and running"
+        if not self.security_options or not self.security_options.enabled:
+            # post start setup not necessary
+            return
+
+        user = {"password": self.security_options.master_password, "backend_roles": ["all_access"]}
+        response = requests.put(
+            f"{self.url}/_plugins/_security/api/internalusers/{self.security_options.master_username}",
+            json=user,
+            auth=INTERNAL_USER_AUTH,
+        )
+        if not response.status_code == 201:
+            LOG.error("Setting up master user failed!")
 
     def _ensure_installed(self):
         opensearch_package.install(self.version)
@@ -391,19 +426,6 @@ class OpensearchCluster(Server):
     def _log_listener(self, line, **_kwargs):
         # logging the port before each line to be able to connect logs to specific instances
         LOG.info("[%s] %s", self.port, line.rstrip())
-
-    def _setup_security(self, directories: Directories):
-        """
-        Ensures that the cluster has up-to-date certs in case the security plugin is enabled.
-
-        :param directories: to install the certs in
-        """
-        install_predefined_cert_if_available()
-        # create & copy SSL certs to opensearch config dir
-        config_path = os.path.join(directories.install, "config")
-        _, cert_file_name, key_file_name = GenericProxy.create_ssl_cert(serial_number=self.port)
-        shutil.copyfile(cert_file_name, os.path.join(config_path, "cert.crt"))
-        shutil.copyfile(key_file_name, os.path.join(config_path, "cert.key"))
 
 
 class EndpointProxy:
@@ -560,6 +582,11 @@ class ElasticsearchCluster(OpensearchCluster):
     def _ensure_installed(self):
         elasticsearch_package.install(self.version)
 
+    @property
+    def protocol(self):
+        # the security plugin is not supported for elasticsearch, always use http
+        return "http"
+
     def _base_settings(self, dirs) -> CommandSettings:
         settings = {
             "http.port": self.port,
@@ -575,7 +602,10 @@ class ElasticsearchCluster(OpensearchCluster):
         if os.path.exists(os.path.join(dirs.mods, "x-pack-ml")):
             settings["xpack.ml.enabled"] = "false"
 
-        # TODO security plugin config!
+        if self.security_options and self.security_options.enabled:
+            LOG.warning(
+                "Advanced security options are enabled, but are not supported for ElasticSearch."
+            )
 
         return settings
 
