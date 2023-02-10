@@ -300,7 +300,8 @@ class OpensearchCluster(Server):
         self._version = version or self.default_version
         self.arn = arn
         self.security_options = security_options
-        self.auth = security_options.auth if security_options else None
+        self.is_security_enabled = self.security_options and self.security_options.enabled
+        self.auth = security_options.auth if self.is_security_enabled else None
 
     @property
     def default_version(self) -> str:
@@ -318,7 +319,7 @@ class OpensearchCluster(Server):
     @property
     def protocol(self):
         # if the security plugin is enabled, the cluster rejects unencrypted requests
-        return "https" if self.security_options and self.security_options.enabled else "http"
+        return "https" if self.is_security_enabled else "http"
 
     @property
     def bin_name(self) -> str:
@@ -367,7 +368,7 @@ class OpensearchCluster(Server):
         return t
 
     def _post_start_setup(self):
-        if not self.security_options or not self.security_options.enabled:
+        if not self.is_security_enabled:
             # post start setup not necessary
             return
 
@@ -419,7 +420,7 @@ class OpensearchCluster(Server):
         if os.path.exists(os.path.join(dirs.mods, "x-pack-ml")):
             settings["xpack.ml.enabled"] = "false"
 
-        if not self.security_options or not self.security_options.enabled:
+        if not self.is_security_enabled:
             settings["plugins.security.disabled"] = "true"
         else:
             # enable the security plugin in the settings
@@ -541,7 +542,8 @@ class EdgeProxiedOpensearchCluster(Server):
         self.custom_endpoint = custom_endpoint
         self._version = version or self.default_version
         self.security_options = security_options
-        self.auth = security_options.auth if security_options else None
+        self.is_security_enabled = self.security_options and self.security_options.enabled
+        self.auth = security_options.auth if self.is_security_enabled else None
         self.arn = arn
 
         self.cluster = None
@@ -605,6 +607,23 @@ class EdgeProxiedOpensearchCluster(Server):
 
 
 class ElasticsearchCluster(OpensearchCluster):
+    def __init__(
+        self,
+        port: int,
+        arn: str,
+        host: str = "localhost",
+        version: str = None,
+        security_options: SecurityOptions = None,
+    ) -> None:
+        if security_options and security_options.enabled:
+            LOG.warning(
+                "Advanced security options are enabled, but are not supported for ElasticSearch."
+            )
+            security_options = None
+        super().__init__(
+            port=port, arn=arn, host=host, version=version, security_options=security_options
+        )
+
     @property
     def default_version(self) -> str:
         return constants.ELASTICSEARCH_DEFAULT_VERSION
@@ -620,11 +639,6 @@ class ElasticsearchCluster(OpensearchCluster):
     def _ensure_installed(self):
         elasticsearch_package.install(self.version)
 
-    @property
-    def protocol(self):
-        # the security plugin is not supported for elasticsearch, always use http
-        return "http"
-
     def _base_settings(self, dirs) -> CommandSettings:
         settings = {
             "http.port": self.port,
@@ -639,11 +653,6 @@ class ElasticsearchCluster(OpensearchCluster):
 
         if os.path.exists(os.path.join(dirs.mods, "x-pack-ml")):
             settings["xpack.ml.enabled"] = "false"
-
-        if self.security_options and self.security_options.enabled:
-            LOG.warning(
-                "Advanced security options are enabled, but are not supported for ElasticSearch."
-            )
 
         return settings
 
