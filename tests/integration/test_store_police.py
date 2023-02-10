@@ -10,8 +10,6 @@ class TestStorePolice:
         assert check.ok
 
     def test_store_police_failing(self, monkeypatch):
-        store_police = StorePolice("sns")
-
         class SampleStore(BaseStore):
             # store with unpickable state
             def __init__(self):
@@ -24,8 +22,13 @@ class TestStorePolice:
         def _yield_fake_generator(*args):
             yield "localstack", SampleStore()
 
-        monkeypatch.setattr(StorePolice, "yield_backends", _yield_fake_generator)
+        try:
+            store_police = StorePolice("fake")
+            monkeypatch.setattr(StorePolice, "yield_backends", _yield_fake_generator)
 
-        check = store_police.control()
-        assert not check.ok
-        assert check.why
+            check = store_police.control()
+
+            assert not check.ok
+            assert check.why
+        finally:
+            monkeypatch.undo()

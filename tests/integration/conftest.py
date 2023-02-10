@@ -22,6 +22,7 @@ from tests.integration.apigateway.apigateway_fixtures import delete_rest_api, im
 from tests.integration.test_es import install_async as es_install_async
 from tests.integration.test_opensearch import install_async as opensearch_install_async
 from tests.integration.test_terraform import TestTerraform
+from tests.store_police import StorePolice, StorePoliceResult
 
 logger = logging.getLogger(__name__)
 
@@ -208,3 +209,18 @@ def aws_client_factory(aws_session):
 @pytest.fixture(scope="session")
 def aws_client(aws_client_factory):
     return base_aws_client(aws_client_factory)
+
+
+@pytest.hookimpl(hookwrapper=True)
+def pytest_runtest_teardown(item, *args):
+    # simple heuristic to get the service under test
+    module_name: str = item.module.__name__
+    service_name = module_name.split("_")[-1]
+
+    store_police = StorePolice(service_name)
+    control_result: StorePoliceResult = store_police.control()
+    if not control_result.ok:
+        logger.error(control_result.why)
+    assert control_result.ok
+
+    yield
