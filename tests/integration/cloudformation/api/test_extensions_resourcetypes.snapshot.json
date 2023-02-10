@@ -97,7 +97,7 @@
     }
   },
   "tests/integration/cloudformation/api/test_extensions_resourcetypes.py::TestExtensionResourceTypes::test_deploy_resource_type": {
-    "recorded-date": "09-02-2023, 16:55:28",
+    "recorded-date": "10-02-2023, 15:59:28",
     "recorded-content": {}
   }
 }

@@ -4,7 +4,7 @@ Parameters:
 
 Resources:
   Test:
-    Type: LocalStack::Testing::TestResource
+    Type: LocalStack::Testing::DeployableResource
     Properties:
       Name:
         Ref: Name
