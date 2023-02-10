@@ -1,11 +1,8 @@
-import logging
 import os
 
 import pytest
 from _pytest.config import PytestPluginManager
 from _pytest.config.argparsing import Parser
-
-LOG = logging.getLogger(__name__)
 
 os.environ["LOCALSTACK_INTERNAL_TEST_RUN"] = "1"
 
