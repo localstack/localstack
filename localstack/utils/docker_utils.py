@@ -19,8 +19,10 @@ LOG = logging.getLogger(__name__)
 
 
 # port range instance used to reserve Docker container ports
-PORT_START = 1024
+PORT_START = 0
 PORT_END = 65536
+RANDOM_PORT_START = 1024
+RANDOM_PORT_END = 65536
 reserved_docker_ports = PortRange(PORT_START, PORT_END)
 
 
@@ -173,13 +175,18 @@ def is_container_port_reserved(port: int) -> bool:
     return reserved_docker_ports.is_port_reserved(port)
 
 
-def reserve_available_container_port(duration: int = None) -> int:
+def reserve_available_container_port(
+    duration: int = None, port_start: int = None, port_end: int = None
+) -> int:
     """Determine and reserve a port that can then be bound by a Docker container"""
 
     def _random_port():
         port = None
         while not port or reserved_docker_ports.is_port_reserved(port):
-            port = random.randint(PORT_START, PORT_END)
+            port = random.randint(
+                RANDOM_PORT_START if port_start is None else port_start,
+                RANDOM_PORT_END if port_end is None else port_end,
+            )
         return port
 
     retries = 10
