@@ -81,7 +81,7 @@ from localstack.aws.api.opensearch import (
 from localstack.config import LOCALSTACK_HOSTNAME
 from localstack.constants import OPENSEARCH_DEFAULT_VERSION
 from localstack.services.opensearch import versions
-from localstack.services.opensearch.cluster import OpensearchCluster, SecurityOptions
+from localstack.services.opensearch.cluster import SecurityOptions
 from localstack.services.opensearch.cluster_manager import (
     ClusterManager,
     DomainKey,
@@ -90,6 +90,7 @@ from localstack.services.opensearch.cluster_manager import (
 from localstack.services.opensearch.models import OpenSearchStore, opensearch_stores
 from localstack.utils.aws.request_context import get_region_from_request_context
 from localstack.utils.collections import PaginatedList, remove_none_values_from_dict
+from localstack.utils.serving import Server
 
 LOG = logging.getLogger(__name__)
 
@@ -117,7 +118,7 @@ def cluster_manager() -> ClusterManager:
     return __CLUSTER_MANAGER
 
 
-def _run_cluster_startup_monitor(cluster: OpensearchCluster, domain_name: str, region: str):
+def _run_cluster_startup_monitor(cluster: Server, domain_name: str, region: str):
     LOG.debug("running cluster startup monitor for cluster %s", cluster)
 
     # wait until the cluster is started

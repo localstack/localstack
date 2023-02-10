@@ -50,6 +50,7 @@ def get_cluster_health_status(url: str, auth: Tuple[str, str] | None) -> Optiona
     """
     Queries the health endpoint of OpenSearch/Elasticsearch and returns either the status ('green', 'yellow',
     ...) or None if the response returned a non-200 response.
+    Authentication needs to be set in case the security plugin is enabled.
     """
     resp = requests.get(url + "/_cluster/health", verify=False, auth=auth)
 
@@ -160,10 +161,23 @@ class SecurityOptions:
     master_username: str | None
     master_password: str | None
 
+    @property
+    def auth(self) -> Tuple[str, str] | None:
+        """Returns an auth tuple which can be used for HTTP requests or None, if disabled."""
+        return None if not self.enabled else (self.master_username, self.master_password)
+
     @staticmethod
     def from_input(
         advanced_security_options: Optional[AdvancedSecurityOptionsInput],
     ) -> "SecurityOptions":
+        """
+        Parses the given AdvancedSecurityOptionsInput, performs some validation, and returns the parsed SecurityOptions.
+        If unsupported settings are used, the SecurityOptions are disabled and a warning is logged.
+
+        :param advanced_security_options: of the domain which will be created
+        :return: parsed SecurityOptions
+        :raises: ValidationException in case the given AdvancedSecurityOptions are invalid
+        """
         if advanced_security_options is None:
             return SecurityOptions(enabled=False, master_username=None, master_password=None)
         if not advanced_security_options.get("InternalUserDatabaseEnabled", False):
@@ -285,13 +299,8 @@ class OpensearchCluster(Server):
         super().__init__(port, host)
         self._version = version or self.default_version
         self.arn = arn
-        self.auth = None
         self.security_options = security_options
-        if self.security_options:
-            self.auth = (
-                self.security_options.master_username,
-                self.security_options.master_password,
-            )
+        self.auth = security_options.auth if security_options else None
 
     @property
     def default_version(self) -> str:
@@ -308,6 +317,7 @@ class OpensearchCluster(Server):
 
     @property
     def protocol(self):
+        # if the security plugin is enabled, the cluster rejects unencrypted requests
         return "https" if self.security_options and self.security_options.enabled else "http"
 
     @property
@@ -345,7 +355,9 @@ class OpensearchCluster(Server):
         )
         t.start()
 
-        # TODO this seems a bit hacky
+        # FIXME this approach should be handled differently
+        #  - we need to perform some API requests after the server is up, but before the Server instance becomes healthy
+        #  - this should be implemented in the Cluster or Server implementation
         # wait for the cluster to be up and running and perform the post-startup setup
         threading.Thread(
             target=self._post_start_setup,
@@ -359,13 +371,18 @@ class OpensearchCluster(Server):
             # post start setup not necessary
             return
 
+        # the health check for the cluster uses the master user auth (which will be created here).
+        # check for the health using the startup internal user auth here.
         def wait_for_cluster_with_internal_creds() -> bool:
             try:
                 return get_cluster_health_status(self.url, auth=INTERNAL_USER_AUTH) is not None
             except Exception:
+                # we can get (raised) connection exceptions when the cluster is not yet accepting requests
                 return False
 
         poll_condition(wait_for_cluster_with_internal_creds)
+
+        # create the master user
         user = {
             "password": self.security_options.master_password,
             "opendistro_security_roles": ["all_access"],
@@ -376,8 +393,13 @@ class OpensearchCluster(Server):
             auth=INTERNAL_USER_AUTH,
             verify=False,
         )
+        # after it's created the actual domain check (using these credentials) will report healthy
         if not response.ok:
-            LOG.error("Setting up master user failed!")
+            LOG.error(
+                "Setting up master user failed with status code %d! Shutting down!",
+                response.status_code,
+            )
+            self.shutdown()
 
     def _ensure_installed(self):
         opensearch_package.install(self.version)
@@ -394,11 +416,15 @@ class OpensearchCluster(Server):
             "discovery.type": "single-node",
         }
 
+        if os.path.exists(os.path.join(dirs.mods, "x-pack-ml")):
+            settings["xpack.ml.enabled"] = "false"
+
         if not self.security_options or not self.security_options.enabled:
             settings["plugins.security.disabled"] = "true"
         else:
             # enable the security plugin in the settings
             settings["plugins.security.disabled"] = "false"
+            # certs are set up during the package installation
             settings["plugins.security.ssl.transport.pemkey_filepath"] = "cert.key"
             settings["plugins.security.ssl.transport.pemcert_filepath"] = "cert.crt"
             settings["plugins.security.ssl.transport.pemtrustedcas_filepath"] = "cert.crt"
@@ -411,9 +437,6 @@ class OpensearchCluster(Server):
             settings[
                 "plugins.security.restapi.roles_enabled"
             ] = "all_access,security_rest_api_access"
-
-        if os.path.exists(os.path.join(dirs.mods, "x-pack-ml")):
-            settings["xpack.ml.enabled"] = "false"
 
         return settings
 
@@ -518,18 +541,12 @@ class EdgeProxiedOpensearchCluster(Server):
         self.custom_endpoint = custom_endpoint
         self._version = version or self.default_version
         self.security_options = security_options
+        self.auth = security_options.auth if security_options else None
         self.arn = arn
 
         self.cluster = None
         self.cluster_port = None
         self.proxy = None
-
-        self.auth = None
-        if self.security_options:
-            self.auth = (
-                self.security_options.master_username,
-                self.security_options.master_password,
-            )
 
     @property
     def version(self):

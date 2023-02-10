@@ -334,16 +334,15 @@ class TestOpensearchProvider:
         ["OpenSearch_1.0", "OpenSearch_1.1", "OpenSearch_1.2", "OpenSearch_1.3", "OpenSearch_2.3"],
     )
     def test_security_plugin(self, opensearch_create_domain, opensearch_client, engine_version):
-        # TODO try to support OpenSearch < 2.3 too
-        admin_auth = ("master-user", "12345678Aa!")
+        master_user_auth = ("master-user", "12345678Aa!")
 
         # enable the security plugin for this test
         advanced_security_options = AdvancedSecurityOptionsInput(
             Enabled=True,
             InternalUserDatabaseEnabled=True,
             MasterUserOptions=MasterUserOptions(
-                MasterUserName=admin_auth[0],
-                MasterUserPassword=admin_auth[1],
+                MasterUserName=master_user_auth[0],
+                MasterUserPassword=master_user_auth[1],
             ),
         )
         domain_name = opensearch_create_domain(
@@ -362,7 +361,7 @@ class TestOpensearchProvider:
 
         # request with default admin credentials is successful
         plugins_response = requests.get(
-            plugins_url, headers={"Accept": "application/json"}, auth=admin_auth
+            plugins_url, headers={"Accept": "application/json"}, auth=master_user_auth
         )
         assert plugins_response.status_code == 200
         installed_plugins = set(plugin["component"] for plugin in plugins_response.json())
@@ -372,7 +371,7 @@ class TestOpensearchProvider:
         test_index_name = "new-index"
         test_index_id = "new-index-id"
         test_document = {"test-key": "test-value"}
-        admin_client = OpenSearch(hosts=endpoint, http_auth=admin_auth)
+        admin_client = OpenSearch(hosts=endpoint, http_auth=master_user_auth)
         admin_client.create(test_index_name, id=test_index_id, body={})
         admin_client.index(test_index_name, body=test_document)
 
@@ -381,7 +380,7 @@ class TestOpensearchProvider:
         response = requests.put(
             f"https://{endpoint}/_plugins/_security/api/rolesmapping/readall",
             json=test_rolemapping,
-            auth=admin_auth,
+            auth=master_user_auth,
         )
         assert response.status_code == 201
 
@@ -390,7 +389,7 @@ class TestOpensearchProvider:
         response = requests.put(
             f"https://{endpoint}/_plugins/_security/api/internalusers/test_user",
             json=test_user,
-            auth=admin_auth,
+            auth=master_user_auth,
         )
         assert response.status_code == 201
 
@@ -419,7 +418,7 @@ class TestOpensearchProvider:
         response = requests.patch(
             f"https://{endpoint}/_plugins/_security/api/rolesmapping/all_access",
             json=rolemappins_patch,
-            auth=admin_auth,
+            auth=master_user_auth,
         )
         assert response.status_code == 200
 

@@ -76,10 +76,13 @@ class OpensearchPackageInstaller(PackageInstaller):
                     mkdir(dir_path)
                     chmod_r(dir_path, 0o777)
 
-                # install and configure default plugins for opensearch 1.1+
-                # https://forum.opensearch.org/t/ingest-attachment-cannot-be-installed/6494/12
                 parsed_version = semver.VersionInfo.parse(version)
+
+                # setup security based on the version
                 self._setup_security(install_dir, parsed_version)
+
+                # install other default plugins for opensearch 1.1+
+                # https://forum.opensearch.org/t/ingest-attachment-cannot-be-installed/6494/12
                 if parsed_version >= "1.1.0":
                     for plugin in OPENSEARCH_PLUGIN_LIST:
                         plugin_binary = os.path.join(install_dir, "bin", "opensearch-plugin")
@@ -105,6 +108,11 @@ class OpensearchPackageInstaller(PackageInstaller):
                                     raise
 
     def _setup_security(self, install_dir: str, parsed_version: semver.VersionInfo):
+        """
+        Prepares the usage of the SecurityPlugin for the different versions of OpenSearch.
+        :param install_dir: root installation directory for OpenSearch which should be configured
+        :param parsed_version: parsed semantic version of the OpenSearch installation which should be configured
+        """
         from localstack.services.generic_proxy import (
             GenericProxy,
             install_predefined_cert_if_available,
@@ -126,6 +134,7 @@ class OpensearchPackageInstaller(PackageInstaller):
                 install_dir, "plugins", "opensearch-security", "securityconfig"
             )
 
+        # no non-default roles (not even the demo roles) should be set up
         roles_path = os.path.join(security_config_folder, "roles.yml")
         save_file(
             file=roles_path,
@@ -139,6 +148,31 @@ class OpensearchPackageInstaller(PackageInstaller):
             ),
         )
 
+        # create the internal user which allows localstack to manage the running instance
+        internal_users_path = os.path.join(security_config_folder, "internal_users.yml")
+        save_file(
+            file=internal_users_path,
+            permissions=0o666,
+            content=textwrap.dedent(
+                """\
+                _meta:
+                  type: "internalusers"
+                  config_version: 2
+
+                # Define your internal users here
+                localstack-internal:
+                  hash: "$2y$12$ZvpKLI2nsdGj1ResAmlLne7ki5o45XpBppyg9nXF2RLNfmwjbFY22"
+                  reserved: true
+                  hidden: true
+                  backend_roles: []
+                  attributes: {}
+                  opendistro_security_roles: []
+                  static: false
+                """
+            ),
+        )
+
+        # define the necessary roles mappings for the internal user
         roles_mapping_path = os.path.join(security_config_folder, "roles_mapping.yml")
         save_file(
             file=roles_mapping_path,
@@ -166,29 +200,6 @@ class OpensearchPackageInstaller(PackageInstaller):
                   hidden: false
                   backend_roles: []
                   and_backend_roles: []
-                """
-            ),
-        )
-
-        internal_users_path = os.path.join(security_config_folder, "internal_users.yml")
-        save_file(
-            file=internal_users_path,
-            permissions=0o666,
-            content=textwrap.dedent(
-                """\
-                _meta:
-                  type: "internalusers"
-                  config_version: 2
-
-                # Define your internal users here
-                localstack-internal:
-                  hash: "$2y$12$ZvpKLI2nsdGj1ResAmlLne7ki5o45XpBppyg9nXF2RLNfmwjbFY22"
-                  reserved: true
-                  hidden: true
-                  backend_roles: []
-                  attributes: {}
-                  opendistro_security_roles: []
-                  static: false
                 """
             ),
         )
