@@ -79,7 +79,7 @@ class OpensearchPackageInstaller(PackageInstaller):
                 # install and configure default plugins for opensearch 1.1+
                 # https://forum.opensearch.org/t/ingest-attachment-cannot-be-installed/6494/12
                 parsed_version = semver.VersionInfo.parse(version)
-                self._setup_security(install_dir)
+                self._setup_security(install_dir, parsed_version)
                 if parsed_version >= "1.1.0":
                     for plugin in OPENSEARCH_PLUGIN_LIST:
                         plugin_binary = os.path.join(install_dir, "bin", "opensearch-plugin")
@@ -104,7 +104,7 @@ class OpensearchPackageInstaller(PackageInstaller):
                                 if not os.environ.get("IGNORE_OS_DOWNLOAD_ERRORS"):
                                     raise
 
-    def _setup_security(self, install_dir: str):
+    def _setup_security(self, install_dir: str, parsed_version: semver.VersionInfo):
         from localstack.services.generic_proxy import (
             GenericProxy,
             install_predefined_cert_if_available,
@@ -118,7 +118,13 @@ class OpensearchPackageInstaller(PackageInstaller):
         shutil.copyfile(key_file_name, os.path.join(config_path, "cert.key"))
 
         # configure the default roles, roles_mappings, and internal_users
-        security_config_folder = os.path.join(install_dir, "config", "opensearch-security")
+        if parsed_version >= "2.0.0":
+            # with version 2 of opensearch and the security plugin, the config moved to the root config folder
+            security_config_folder = os.path.join(install_dir, "config", "opensearch-security")
+        else:
+            security_config_folder = os.path.join(
+                install_dir, "plugins", "opensearch-security", "securityconfig"
+            )
 
         roles_path = os.path.join(security_config_folder, "roles.yml")
         save_file(

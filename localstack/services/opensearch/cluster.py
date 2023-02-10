@@ -6,7 +6,6 @@ from typing import Dict, List, NamedTuple, Optional, Tuple
 from urllib.parse import urlparse
 
 import requests
-import semver
 from werkzeug.routing import Rule
 
 from localstack import config, constants
@@ -287,20 +286,12 @@ class OpensearchCluster(Server):
         self._version = version or self.default_version
         self.arn = arn
         self.auth = None
-
-        parsed_version = semver.VersionInfo.parse(self.install_version)
-        if parsed_version < "2.3.0" and security_options and security_options.enabled:
-            LOG.warning(
-                "Advanced security options are enabled, but are not supported for OpenSearch < 2.3.0."
+        self.security_options = security_options
+        if self.security_options:
+            self.auth = (
+                self.security_options.master_username,
+                self.security_options.master_password,
             )
-            self.security_options = None
-        else:
-            self.security_options = security_options
-            if self.security_options:
-                self.auth = (
-                    self.security_options.master_username,
-                    self.security_options.master_password,
-                )
 
     @property
     def default_version(self) -> str:

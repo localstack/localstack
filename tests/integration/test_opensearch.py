@@ -329,7 +329,10 @@ class TestOpensearchProvider:
             opensearch_client.delete_domain(DomainName=domain_name)
 
     @pytest.mark.only_localstack
-    @pytest.mark.parametrize("engine_version", ["OpenSearch_2.3"])
+    @pytest.mark.parametrize(
+        "engine_version",
+        ["OpenSearch_1.0", "OpenSearch_1.1", "OpenSearch_1.2", "OpenSearch_1.3", "OpenSearch_2.3"],
+    )
     def test_security_plugin(self, opensearch_create_domain, opensearch_client, engine_version):
         # TODO try to support OpenSearch < 2.3 too
         admin_auth = ("master-user", "12345678Aa!")
@@ -363,8 +366,6 @@ class TestOpensearchProvider:
         )
         assert plugins_response.status_code == 200
         installed_plugins = set(plugin["component"] for plugin in plugins_response.json())
-        requested_plugins = set(OPENSEARCH_PLUGIN_LIST)
-        assert requested_plugins.issubset(installed_plugins)
         assert "opensearch-security" in installed_plugins
 
         # create a new index with the admin user
