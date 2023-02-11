@@ -356,6 +356,10 @@ class SqsBatchTopicPublisher(SqsTopicPublisher):
 
             entries.append(entry)
 
+        if len(entries) == 0:
+            LOG.info("Unable to forward SNS message to SQS with empty entries")
+            return
+
         try:
             queue_url = sqs_queue_url_for_arn(subscriber["Endpoint"])
             parsed_arn = parse_arn(subscriber["Endpoint"])
