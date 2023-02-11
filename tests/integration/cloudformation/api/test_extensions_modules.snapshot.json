@@ -1,0 +1,100 @@
+{
+  "tests/integration/cloudformation/api/test_extensions_modules.py::TestExtensionModule::test_crud_module": {
+    "recorded-date": "10-02-2023, 16:58:22",
+    "recorded-content": {
+      "register_response": {
+        "RegistrationToken": "<registration-token:1>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "describe_type_response": {
+        "ProgressStatus": "IN_PROGRESS",
+        "TypeArn": "arn:aws:cloudformation:<region>:111111111111:type/module/LocalStack-Testing-TestModule-MODULE",
+        "TypeVersionArn": "arn:aws:cloudformation:<region>:111111111111:type/module/LocalStack-Testing-TestModule-MODULE/00000003",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "describe_response": {
+        "Arn": "arn:aws:cloudformation:<region>:111111111111:type/module/LocalStack-Testing-TestModule-MODULE/00000002",
+        "DefaultVersionId": "00000002",
+        "DeprecatedStatus": "DEPRECATED",
+        "Description": "Schema for Module Fragment of type LocalStack::Testing::TestModule::MODULE",
+        "IsDefaultVersion": true,
+        "LastUpdated": "datetime",
+        "Schema": {
+          "typeName": "LocalStack::Testing::TestModule::MODULE",
+          "description": "Schema for Module Fragment of type LocalStack::Testing::TestModule::MODULE",
+          "properties": {
+            "Parameters": {
+              "type": "object",
+              "properties": {
+                "BucketName": {
+                  "type": "object",
+                  "properties": {
+                    "Type": {
+                      "type": "string"
+                    },
+                    "Description": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "Type",
+                    "Description"
+                  ],
+                  "description": "Name for the bucket"
+                }
+              }
+            },
+            "Resources": {
+              "properties": {
+                "S3Bucket": {
+                  "type": "object",
+                  "properties": {
+                    "Type": {
+                      "type": "string",
+                      "const": "AWS::S3::Bucket"
+                    },
+                    "Properties": {
+                      "type": "object"
+                    }
+                  }
+                }
+              },
+              "type": "object",
+              "additionalProperties": false
+            }
+          },
+          "additionalProperties": true
+        },
+        "TimeCreated": "datetime",
+        "Type": "MODULE",
+        "TypeName": "LocalStack::Testing::TestModule::MODULE",
+        "Visibility": "PRIVATE",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "list_response": {
+        "RegistrationTokenList": [
+          "<registration-token:1>"
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "deregister_response": {
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  }
+}
