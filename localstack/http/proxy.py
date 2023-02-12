@@ -112,13 +112,14 @@ class ProxyHandler:
         }
     """
 
-    def __init__(self, forward_base_url: str):
+    def __init__(self, forward_base_url: str, client: HttpClient = None):
         """
         Creates a new Proxy with the given ``forward_base_url`` (see ``Proxy``).
 
         :param forward_base_url: the base url (backend) to forward the requests to.
+        :param client: the HTTP Client used to make the requests
         """
-        self.proxy = Proxy(forward_base_url=forward_base_url)
+        self.proxy = Proxy(forward_base_url=forward_base_url, client=client)
 
     def __call__(self, request: Request, **kwargs) -> Response:
         return self.proxy.forward(request, forward_path=kwargs.get("path", ""))
