@@ -148,6 +148,7 @@ def awslambda():
         start=lambda_starter.start_lambda,
         stop=lambda_starter.stop_lambda,
         check=lambda_starter.check_lambda,
+        lifecycle_hook=lambda_starter.LambdaLifecycleHook(),
     )
 
 
