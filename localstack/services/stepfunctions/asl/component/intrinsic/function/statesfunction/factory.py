@@ -14,6 +14,7 @@ from localstack.services.stepfunctions.asl.component.intrinsic.function.statesfu
     string_format,
 )
 from localstack.services.stepfunctions.asl.component.intrinsic.function.statesfunction.json_manipulation import (
+    json_merge,
     json_to_string,
     string_to_json,
 )
@@ -60,6 +61,8 @@ class StatesFunctionFactory:
                 return json_to_string.JsonToString(arg_list=arg_list)
             case StatesFunctionNameType.StringToJson:
                 return string_to_json.StringToJson(arg_list=arg_list)
+            case StatesFunctionNameType.JsonMerge:
+                return json_merge.JsonMerge(arg_list=arg_list)
 
             # Unique Id Generation.
             case StatesFunctionNameType.UUID:

@@ -44,6 +44,11 @@ class ASLIntrinsicParserVisitor(ParseTreeVisitor):
         return self.visitChildren(ctx)
 
 
+    # Visit a parse tree produced by ASLIntrinsicParser#func_arg_bool.
+    def visitFunc_arg_bool(self, ctx:ASLIntrinsicParser.Func_arg_boolContext):
+        return self.visitChildren(ctx)
+
+
     # Visit a parse tree produced by ASLIntrinsicParser#func_arg_json_path.
     def visitFunc_arg_json_path(self, ctx:ASLIntrinsicParser.Func_arg_json_pathContext):
         return self.visitChildren(ctx)

@@ -1,7 +1,8 @@
 from typing import Optional
 
-from antlr4.tree.Tree import ParseTree
+from antlr4.tree.Tree import ParseTree, TerminalNodeImpl
 
+from localstack.services.stepfunctions.asl.antlr.runtime.ASLIntrinsicLexer import ASLIntrinsicLexer
 from localstack.services.stepfunctions.asl.antlr.runtime.ASLIntrinsicParser import (
     ASLIntrinsicParser,
 )
@@ -12,6 +13,9 @@ from localstack.services.stepfunctions.asl.antlt4utils.antlr4utils import Antlr4
 from localstack.services.stepfunctions.asl.component.component import Component
 from localstack.services.stepfunctions.asl.component.intrinsic.argument.function_argument import (
     FunctionArgument,
+)
+from localstack.services.stepfunctions.asl.component.intrinsic.argument.function_argument_bool import (
+    FunctionArgumentBool,
 )
 from localstack.services.stepfunctions.asl.component.intrinsic.argument.function_argument_float import (
     FunctionArgumentFloat,
@@ -81,6 +85,14 @@ class Preprocessor(ASLIntrinsicParserVisitor):
     ) -> FunctionArgumentFunction:
         function: Function = self.visit(ctx.func_decl())
         return FunctionArgumentFunction(function=function)
+
+    def visitFunc_arg_bool(
+        self, ctx: ASLIntrinsicParser.Func_arg_boolContext
+    ) -> FunctionArgumentBool:
+        bool_term: TerminalNodeImpl = ctx.children[0]
+        bool_term_rule: int = bool_term.getSymbol().type
+        bool_val: bool = bool_term_rule == ASLIntrinsicLexer.TRUE
+        return FunctionArgumentBool(boolean=bool_val)
 
     def visitFunc_arg_list(
         self, ctx: ASLIntrinsicParser.Func_arg_listContext

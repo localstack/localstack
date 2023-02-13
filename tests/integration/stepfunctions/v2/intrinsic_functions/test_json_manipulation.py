@@ -74,3 +74,25 @@ class TestJsonManipulation:
             IFT.JSON_TO_STRING,
             input_values_jsons,
         )
+
+    def test_json_merge(
+        self,
+        stepfunctions_client,
+        create_iam_role_for_sfn,
+        create_state_machine,
+        snapshot,
+    ):
+        merge_bindings = [
+            ({"a": {"a1": 1, "a2": 2}, "b": 2, "d": 3}, {"a": {"a3": 1, "a4": 2}, "c": 3, "d": 4}),
+        ]
+        input_values = list()
+        for fst, snd in merge_bindings:
+            input_values.append({"fst": fst, "snd": snd})
+        create_and_test_on_inputs(
+            stepfunctions_client,
+            create_iam_role_for_sfn,
+            create_state_machine,
+            snapshot,
+            IFT.JSON_MERGE,
+            input_values,
+        )

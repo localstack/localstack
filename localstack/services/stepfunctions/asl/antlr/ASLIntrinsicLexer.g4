@@ -17,6 +17,9 @@ OROR: '||';
 EQEQ: '==';
 EQ: '=';
 
+TRUE: 'true';
+FALSE: 'false';
+
 States: 'States';
 Format: 'Format';
 StringToJson: 'StringToJson';
