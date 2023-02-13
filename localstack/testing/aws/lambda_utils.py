@@ -117,14 +117,12 @@ def _get_lambda_invocation_events(logs_client, function_name, expected_num_event
 
 
 def is_old_provider():
-    return (
-        os.environ.get("TEST_TARGET") != "AWS_CLOUD"
-        and os.environ.get("PROVIDER_OVERRIDE_LAMBDA") != "asf"
-    )
+    return os.environ.get("TEST_TARGET") != "AWS_CLOUD" and os.environ.get(
+        "PROVIDER_OVERRIDE_LAMBDA"
+    ) not in ["asf", "v2"]
 
 
 def is_new_provider():
-    return (
-        os.environ.get("TEST_TARGET") != "AWS_CLOUD"
-        and os.environ.get("PROVIDER_OVERRIDE_LAMBDA") == "asf"
-    )
+    return os.environ.get("TEST_TARGET") != "AWS_CLOUD" and os.environ.get(
+        "PROVIDER_OVERRIDE_LAMBDA"
+    ) in ["asf", "v2"]
