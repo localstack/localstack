@@ -315,6 +315,22 @@ class TestLambdaBehavior:
         # TODO: run lambdas as user `sbx_user1051`
         paths=["$..Payload.user_login_name", "$..Payload.user_whoami"]
     )
+    @pytest.mark.skip_snapshot_verify(
+        condition=is_old_provider,
+        paths=[
+            # empty dict is interpreted as string and fails upon event parsing
+            "$..FunctionError",
+            "$..LogResult",
+            "$..Payload.errorMessage",
+            "$..Payload.errorType",
+            "$..Payload.event",
+            "$..Payload.opt_filemode",
+            "$..Payload.platform_machine",
+            "$..Payload.platform_system",
+            "$..Payload.pwd_filemode",
+            "$..Payload.stackTrace",
+        ],
+    )
     def test_runtime_introspection_x86(self, lambda_client, create_lambda_function, snapshot):
         func_name = f"test_lambda_x86_{short_uid()}"
         create_lambda_function(
