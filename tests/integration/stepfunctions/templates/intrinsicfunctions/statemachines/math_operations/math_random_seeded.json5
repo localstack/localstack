@@ -1,0 +1,13 @@
+{
+    "Comment": "MATH_RANDOM",
+    "StartAt": "State_0",
+    "States": {
+        "State_0": {
+            "Type": "Pass",
+            "Parameters": {
+                "FunctionResult.$": "States.MathRandom($.FunctionInput.fst, $.FunctionInput.snd, $.FunctionInput.trd)"
+            },
+            "End": true,
+        },
+    },
+}

@@ -43,6 +43,17 @@ class IntrinsicFunctionTemplate(TemplateLoader):
         _THIS_FOLDER, "statemachines/string_operations/string_split.json5"
     )
 
+    # Math Operations.
+    MATH_RANDOM: Final[str] = os.path.join(
+        _THIS_FOLDER, "statemachines/math_operations/math_random.json5"
+    )
+    MATH_RANDOM_SEEDED: Final[str] = os.path.join(
+        _THIS_FOLDER, "statemachines/math_operations/math_random_seeded.json5"
+    )
+    MATH_ADD: Final[str] = os.path.join(
+        _THIS_FOLDER, "statemachines/math_operations/math_add.json5"
+    )
+
     # Generic.
     FORMAT_1: Final[str] = os.path.join(_THIS_FOLDER, "statemachines/generic/format_1.json5")
     FORMAT_2: Final[str] = os.path.join(_THIS_FOLDER, "statemachines/generic/format_2.json5")
