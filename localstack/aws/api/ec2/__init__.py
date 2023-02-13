@@ -6528,7 +6528,7 @@ class ResponseLaunchTemplateData(TypedDict, total=False):
     RamDiskId: Optional[String]
     DisableApiTermination: Optional[Boolean]
     InstanceInitiatedShutdownBehavior: Optional[ShutdownBehavior]
-    UserData: Optional[String]
+    UserData: Optional[SensitiveUserData]
     TagSpecifications: Optional[LaunchTemplateTagSpecificationList]
     ElasticGpuSpecifications: Optional[ElasticGpuSpecificationResponseList]
     ElasticInferenceAccelerators: Optional[LaunchTemplateElasticInferenceAcceleratorResponseList]
@@ -12204,7 +12204,7 @@ class SpotFleetLaunchSpecification(TypedDict, total=False):
     RamdiskId: Optional[String]
     SpotPrice: Optional[String]
     SubnetId: Optional[SubnetId]
-    UserData: Optional[String]
+    UserData: Optional[SensitiveUserData]
     WeightedCapacity: Optional[Double]
     TagSpecifications: Optional[SpotFleetTagSpecificationList]
     InstanceRequirements: Optional[InstanceRequirements]
@@ -12287,7 +12287,7 @@ class RunInstancesMonitoringEnabled(TypedDict, total=False):
 
 
 class LaunchSpecification(TypedDict, total=False):
-    UserData: Optional[String]
+    UserData: Optional[SensitiveUserData]
     SecurityGroups: Optional[GroupIdentifierList]
     AddressingType: Optional[String]
     BlockDeviceMappings: Optional[BlockDeviceMappingList]
@@ -16450,7 +16450,7 @@ class RequestSpotLaunchSpecification(TypedDict, total=False):
     Placement: Optional[SpotPlacement]
     RamdiskId: Optional[RamdiskId]
     SubnetId: Optional[SubnetId]
-    UserData: Optional[String]
+    UserData: Optional[SensitiveUserData]
 
 
 class RequestSpotInstancesRequest(ServiceRequest):
