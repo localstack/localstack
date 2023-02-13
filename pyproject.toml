@@ -6,11 +6,11 @@ build-backend = "setuptools.build_meta"
 [tool.black]
 line_length = 100
 include = '(localstack/.*\.py$|tests/.*\.py$)'
-extend_exclude = '(localstack/infra|localstack/node_modules|.filesystem)'
+extend_exclude = '(localstack/infra|localstack/node_modules|.filesystem|localstack/services/stepfunctions/asl/antlr/runtime)'
 
 [tool.isort]
 profile = 'black'
-extend_skip = ['localstack/infra/', 'localstack/node_modules', 'bin', '.filesystem']
+extend_skip = ['localstack/infra/', 'localstack/node_modules', 'bin', '.filesystem', 'localstack/services/stepfunctions/asl/antlr/runtime']
 line_length = 100
 
 # call using pflake8
@@ -18,7 +18,7 @@ line_length = 100
 max-line-length = 110
 ignore = 'E203,E266,E501,W503,F403'
 select = 'B,C,E,F,I,W,T4,B9'
-exclude = 'node_modules,.venv*,venv*,dist,build,target,*.egg-info,fixes,localstack/infra,localstack/node_modules,.filesystem,.git'
+exclude = 'node_modules,.venv*,venv*,dist,build,target,*.egg-info,fixes,localstack/infra,localstack/node_modules,.filesystem,.git,localstack/services/stepfunctions/asl/antlr/runtime'
 
 [tool.coverage.run]
 relative_files = true
@@ -28,6 +28,7 @@ source = [
 omit = [
     "localstack/aws/api/*",
     "localstack/extensions/api/*",
+    "localstack/services/stepfunctions/asl/antlr/runtime/*"
 ]
 [tool.coverage.report]
 exclude_lines = [

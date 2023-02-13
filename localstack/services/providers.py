@@ -307,6 +307,14 @@ def stepfunctions():
     )
 
 
+@aws_provider(api="stepfunctions", name="v2")
+def stepfunctions_v2():
+    from localstack.services.stepfunctions.provider_v2 import StepFunctionsProvider
+
+    provider = StepFunctionsProvider()
+    return Service.for_provider(provider)
+
+
 @aws_provider()
 def swf():
     from localstack.services.moto import MotoFallbackDispatcher
