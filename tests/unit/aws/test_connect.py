@@ -3,7 +3,7 @@ from unittest.mock import MagicMock, patch
 from localstack.aws.connect import ExternalClientFactory, InternalClientFactory
 
 
-class TestConnectFactory:
+class TestClientFactory:
     def test_internal_client_dto_is_registered(self):
         factory = InternalClientFactory()
         factory._session = MagicMock()

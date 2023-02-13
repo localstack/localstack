@@ -117,7 +117,7 @@ class ClientFactory:
         Any modifications to the client can be implemented here in subclasses
         without affecting the caching mechanism.
         """
-        pass
+        return client
 
     @cache
     def _get_client(
