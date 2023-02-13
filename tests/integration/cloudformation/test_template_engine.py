@@ -486,9 +486,8 @@ class TestMacros:
         create_lambda_function(
             func_name=func_name,
             handler_file=macro_function_path,
-            runtime=Runtime.python3_8,
+            runtime=Runtime.python3_9,
             client=lambda_client,
-            timeout=1,
         )
 
         stack_with_macro = deploy_cfn_template(
