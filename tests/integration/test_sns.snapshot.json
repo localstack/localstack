@@ -242,7 +242,7 @@
     }
   },
   "tests/integration/test_sns.py::TestSNSProvider::test_filter_policy": {
-    "recorded-date": "09-08-2022, 11:30:09",
+    "recorded-date": "13-02-2023, 16:48:57",
     "recorded-content": {
       "subscription-attributes": {
         "Attributes": {
@@ -260,11 +260,13 @@
               }
             ]
           },
+          "FilterPolicyScope": "MessageAttributes",
           "Owner": "111111111111",
           "PendingConfirmation": "false",
           "Protocol": "sqs",
           "RawMessageDelivery": "false",
           "SubscriptionArn": "arn:aws:sns:<region>:111111111111:<resource:3>:<resource:2>",
+          "SubscriptionPrincipal": "<sub-principal>",
           "TopicArn": "arn:aws:sns:<region>:111111111111:<resource:3>"
         },
         "ResponseMetadata": {
@@ -341,7 +343,7 @@
     }
   },
   "tests/integration/test_sns.py::TestSNSProvider::test_exists_filter_policy": {
-    "recorded-date": "09-08-2022, 11:30:12",
+    "recorded-date": "13-02-2023, 16:49:47",
     "recorded-content": {
       "subscription-attributes-policy-1": {
         "Attributes": {
@@ -354,11 +356,13 @@
               }
             ]
           },
+          "FilterPolicyScope": "MessageAttributes",
           "Owner": "111111111111",
           "PendingConfirmation": "false",
           "Protocol": "sqs",
           "RawMessageDelivery": "false",
           "SubscriptionArn": "arn:aws:sns:<region>:111111111111:<resource:3>:<resource:2>",
+          "SubscriptionPrincipal": "<sub-principal>",
           "TopicArn": "arn:aws:sns:<region>:111111111111:<resource:3>"
         },
         "ResponseMetadata": {
@@ -451,11 +455,13 @@
               }
             ]
           },
+          "FilterPolicyScope": "MessageAttributes",
           "Owner": "111111111111",
           "PendingConfirmation": "false",
           "Protocol": "sqs",
           "RawMessageDelivery": "false",
           "SubscriptionArn": "arn:aws:sns:<region>:111111111111:<resource:3>:<resource:2>",
+          "SubscriptionPrincipal": "<sub-principal>",
           "TopicArn": "arn:aws:sns:<region>:111111111111:<resource:3>"
         },
         "ResponseMetadata": {
@@ -526,7 +532,7 @@
     }
   },
   "tests/integration/test_sns.py::TestSNSProvider::test_subscribe_sqs_queue": {
-    "recorded-date": "09-08-2022, 11:30:15",
+    "recorded-date": "13-02-2023, 16:50:28",
     "recorded-content": {
       "subscription-attributes": {
         "Attributes": {
@@ -544,11 +550,13 @@
               }
             ]
           },
+          "FilterPolicyScope": "MessageAttributes",
           "Owner": "111111111111",
           "PendingConfirmation": "false",
           "Protocol": "sqs",
           "RawMessageDelivery": "false",
           "SubscriptionArn": "arn:aws:sns:<region>:111111111111:<resource:3>:<resource:2>",
+          "SubscriptionPrincipal": "<sub-principal>",
           "TopicArn": "arn:aws:sns:<region>:111111111111:<resource:3>"
         },
         "ResponseMetadata": {

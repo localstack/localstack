@@ -241,6 +241,7 @@ class TestSNSProvider:
         snapshot.match("messages-response", response)
 
     @pytest.mark.aws_validated
+    @pytest.mark.skip_snapshot_verify(paths=["$..Attributes.SubscriptionPrincipal"])
     def test_filter_policy(
         self,
         sns_client,
@@ -308,6 +309,7 @@ class TestSNSProvider:
         assert num_msgs_2 == num_msgs_1
 
     @pytest.mark.aws_validated
+    @pytest.mark.skip_snapshot_verify(paths=["$..Attributes.SubscriptionPrincipal"])
     def test_exists_filter_policy(
         self,
         sns_client,
@@ -432,6 +434,7 @@ class TestSNSProvider:
         assert num_msgs_4 == num_msgs_3
 
     @pytest.mark.aws_validated
+    @pytest.mark.skip_snapshot_verify(paths=["$..Attributes.SubscriptionPrincipal"])
     def test_subscribe_sqs_queue(
         self,
         sns_client,
