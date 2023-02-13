@@ -159,6 +159,14 @@ def awslambda_asf():
     return Service.for_provider(provider)
 
 
+@aws_provider(api="lambda", name="v2")
+def awslambda_v2():
+    from localstack.services.awslambda.provider import LambdaProvider
+
+    provider = LambdaProvider()
+    return Service.for_provider(provider)
+
+
 @aws_provider()
 def logs():
     from localstack.services.logs.provider import LogsProvider
@@ -210,6 +218,14 @@ def s3():
 
 @aws_provider(api="s3", name="asf")
 def s3_asf():
+    from localstack.services.s3.provider import S3Provider
+
+    provider = S3Provider()
+    return Service.for_provider(provider, dispatch_table_factory=MotoFallbackDispatcher)
+
+
+@aws_provider(api="s3", name="v2")
+def s3_v2():
     from localstack.services.s3.provider import S3Provider
 
     provider = S3Provider()

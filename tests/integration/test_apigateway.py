@@ -873,7 +873,7 @@ class TestAPIGateway:
         target_uri = arns.apigateway_invocations_arn(lambda_uri)
 
         # create REST API
-        api_id, _, _ = create_rest_apigw(name="test-api", description="")
+        api_id, _, _ = create_rest_apigw(name="test-api")
         root_res_id = apigateway_client.get_resources(restApiId=api_id)["items"][0]["id"]
         api_resource = apigateway_client.create_resource(
             restApiId=api_id, parentId=root_res_id, pathPart="test"
@@ -1032,7 +1032,7 @@ class TestAPIGateway:
         lambda_uri = arns.lambda_function_arn(lambda_name)
 
         # create REST API
-        api_id, _, _ = create_rest_apigw(name="test-api", description="")
+        api_id, _, _ = create_rest_apigw(name="test-api")
         root_res_id = apigateway_client.get_resources(restApiId=api_id)["items"][0]["id"]
 
         # create authorizer at root resource
@@ -1796,7 +1796,7 @@ class TestAPIGateway:
         assert "POST,OPTIONS" == result.headers.get("Access-Control-Allow-Methods")
 
     def test_api_gateway_update_resource_path_part(self, apigateway_client, create_rest_apigw):
-        api_id, _, _ = create_rest_apigw(name="test-api", description="")
+        api_id, _, _ = create_rest_apigw(name="test-api")
         root_res_id = apigateway_client.get_resources(restApiId=api_id)["items"][0]["id"]
         api_resource = apigateway_client.create_resource(
             restApiId=api_id, parentId=root_res_id, pathPart="test"
@@ -2244,7 +2244,7 @@ def test_import_swagger_api(apigateway_client):
     api_spec_dict = json.loads(api_spec)
 
     backend = apigateway_backends[TEST_AWS_ACCOUNT_ID][TEST_AWS_REGION_NAME]
-    api_model = backend.create_rest_api(name="", description="")
+    api_model = backend.create_rest_api(name="api_name", description="description-1")
 
     imported_api = import_api_from_openapi_spec(api_model, api_spec_dict, {})
 
