@@ -264,7 +264,7 @@ class CmdDockerClient(ContainerClient):
                 "Docker process returned with errorcode %s" % e.returncode, e.stdout, e.stderr
             ) from e
 
-    def pull_image(self, docker_image: str, platform: DockerPlatform | None = None) -> None:
+    def pull_image(self, docker_image: str, platform: Optional[DockerPlatform] = None) -> None:
         cmd = self._docker_cmd()
         cmd += ["pull", docker_image]
         if platform:

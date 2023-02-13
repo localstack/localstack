@@ -506,7 +506,7 @@ class ContainerClient(metaclass=ABCMeta):
         pass
 
     @abstractmethod
-    def pull_image(self, docker_image: str, platform: DockerPlatform | None = None) -> None:
+    def pull_image(self, docker_image: str, platform: Optional[DockerPlatform] = None) -> None:
         """Pulls an image with a given name from a Docker registry"""
         pass
 
