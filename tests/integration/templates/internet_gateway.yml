@@ -1,0 +1,21 @@
+Resources:
+  Gateway:
+    Type: AWS::EC2::InternetGateway
+  Vpc:
+    Type: AWS::EC2::VPC
+    Properties:
+      CidrBlock: 10.0.0.0/16
+  GatewayAttachment:
+    Type: AWS::EC2::VPCGatewayAttachment
+    Properties:
+      VpcId:
+        Ref: Vpc
+      InternetGatewayId:
+        !GetAtt [Gateway,InternetGatewayId]
+Outputs:
+  RefAttachment:
+    Value:
+      Ref: Gateway
+  IdAttachment:
+    Value:
+      !GetAtt [Gateway,InternetGatewayId]
