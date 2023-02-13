@@ -1,13 +1,10 @@
 import concurrent.futures.thread
-import logging
 from asyncio import AbstractEventLoop
 from typing import Optional
 
 from localstack.aws.gateway import Gateway
 from localstack.aws.serving.wsgi import WsgiGateway
 from localstack.http.asgi import ASGIAdapter
-
-LOG = logging.getLogger(__name__)
 
 
 class _ThreadPool(concurrent.futures.thread.ThreadPoolExecutor):
