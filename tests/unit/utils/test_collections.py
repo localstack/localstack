@@ -3,6 +3,7 @@ from typing import Optional, TypedDict, Union
 import pytest
 
 from localstack.utils.collections import (
+    DictProxy,
     HashableJsonDict,
     HashableList,
     ImmutableDict,
@@ -10,6 +11,7 @@ from localstack.utils.collections import (
     convert_to_typed_dict,
     select_from_typed_dict,
 )
+from localstack.utils.json import clone_safe, json_safe
 
 
 class MyTypeDict(TypedDict):
@@ -178,3 +180,36 @@ def test_convert_to_typed_dict_with_typed_subdict():
     result = convert_to_typed_dict(TestTypedDict, test_dict)
     assert isinstance(result, dict)
     assert result["subdict"] == {"str_member": "1"}
+
+
+def test_dict_proxy():
+    wrapped_dict = {}
+    proxy = DictProxy(wrapped_dict)
+
+    # call update
+    proxy.update({"foo": 123})
+    assert proxy == {"foo": 123}
+
+    # set item
+    proxy["bar"] = "baz"
+    assert proxy == {"foo": 123, "bar": "baz"}
+
+    # delete item
+    del proxy["bar"]
+    assert proxy == {"foo": 123}
+
+    # create copy
+    copy = dict(proxy)
+    assert copy == proxy
+
+    # assert dir/len/keys/items functions
+    assert dir(wrapped_dict) == dir(proxy)
+    assert len(wrapped_dict) == len(proxy)
+    assert wrapped_dict.keys() == proxy.keys()
+    assert wrapped_dict.items() == proxy.items()
+
+    # assert that proxy equals wrapped dict
+    assert proxy == wrapped_dict
+    assert dict(proxy) == dict(wrapped_dict)
+    assert json_safe(proxy) == json_safe(wrapped_dict)
+    assert clone_safe(proxy) == clone_safe(wrapped_dict)
