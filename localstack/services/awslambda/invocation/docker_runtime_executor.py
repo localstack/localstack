@@ -24,6 +24,7 @@ from localstack.services.awslambda.lambda_utils import (
     get_main_endpoint_from_container,
 )
 from localstack.services.awslambda.packages import awslambda_runtime_package
+from localstack.utils.container_networking import get_main_container_name
 from localstack.utils.container_utils.container_client import (
     ContainerConfiguration,
     PortMappings,
@@ -185,6 +186,7 @@ class LambdaContainerConfiguration(ContainerConfiguration):
 class DockerRuntimeExecutor(RuntimeExecutor):
     ip: Optional[str]
     executor_endpoint: Optional[ExecutorEndpoint]
+    container_name: str
 
     def __init__(
         self, id: str, function_version: FunctionVersion, service_endpoint: ServiceEndpoint
@@ -194,6 +196,8 @@ class DockerRuntimeExecutor(RuntimeExecutor):
         )
         self.ip = None
         self.executor_endpoint = self._build_executor_endpoint(service_endpoint)
+        self.container_name = self._generate_container_name()
+        LOG.debug("Assigning container name of %s to executor %s", self.container_name, self.id)
 
     def get_image(self) -> str:
         if not self.function_version.config.runtime:
@@ -218,12 +222,26 @@ class DockerRuntimeExecutor(RuntimeExecutor):
         )
         return executor_endpoint
 
+    def _generate_container_name(self):
+        """
+        Format <main-container-name>-lambda-<function-name>-<executor-id>
+        TODO: make the format configurable
+        """
+        container_name = "-".join(
+            [
+                get_main_container_name() or "localstack",
+                "lambda",
+                self.function_version.id.function_name.lower(),
+            ]
+        ).replace("_", "-")
+        return f"{container_name}-{self.id}"
+
     def start(self, env_vars: dict[str, str]) -> None:
         self.executor_endpoint.start()
         network = self._get_network_for_executor()
         container_config = LambdaContainerConfiguration(
             image_name=None,
-            name=self.id,
+            name=self.container_name,
             env_vars=env_vars,
             network=network,
             entrypoint=RAPID_ENTRYPOINT,
@@ -264,25 +282,25 @@ class DockerRuntimeExecutor(RuntimeExecutor):
             or self.function_version.config.package_type != PackageType.Zip
         ):
             CONTAINER_CLIENT.copy_into_container(
-                self.id, f"{str(get_runtime_client_path())}/.", "/"
+                self.container_name, f"{str(get_runtime_client_path())}/.", "/"
             )
         if not config.LAMBDA_PREBUILD_IMAGES:
             # copy_folders should be empty here if package type is not zip
             for source, target in container_config.copy_folders:
-                CONTAINER_CLIENT.copy_into_container(self.id, source, target)
+                CONTAINER_CLIENT.copy_into_container(self.container_name, source, target)
 
-        CONTAINER_CLIENT.start_container(self.id)
+        CONTAINER_CLIENT.start_container(self.container_name)
         self.ip = CONTAINER_CLIENT.get_container_ipv4_for_network(
-            container_name_or_id=self.id, container_network=network
+            container_name_or_id=self.container_name, container_network=network
         )
         if config.LAMBDA_DEV_PORT_EXPOSE:
             self.ip = "127.0.0.1"
         self.executor_endpoint.container_address = self.ip
 
     def stop(self) -> None:
-        CONTAINER_CLIENT.stop_container(container_name=self.id, timeout=5)
+        CONTAINER_CLIENT.stop_container(container_name=self.container_name, timeout=5)
         if config.LAMBDA_REMOVE_CONTAINERS:
-            CONTAINER_CLIENT.remove_container(container_name=self.id)
+            CONTAINER_CLIENT.remove_container(container_name=self.container_name)
         try:
             self.executor_endpoint.shutdown()
         except Exception as e:
