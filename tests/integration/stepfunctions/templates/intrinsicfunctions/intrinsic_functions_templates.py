@@ -43,6 +43,9 @@ class IntrinsicFunctionTemplate(TemplateLoader):
         _THIS_FOLDER, "statemachines/string_operations/string_split.json5"
     )
 
+    # Hash Calculations.
+    HASH: Final[str] = os.path.join(_THIS_FOLDER, "statemachines/hash_calculations/hash.json5")
+
     # Generic.
     FORMAT_1: Final[str] = os.path.join(_THIS_FOLDER, "statemachines/generic/format_1.json5")
     FORMAT_2: Final[str] = os.path.join(_THIS_FOLDER, "statemachines/generic/format_2.json5")
