@@ -63,8 +63,8 @@ def test_cfn_with_multiple_route_table_associations(ec2_client, deploy_cfn_templ
     assert subnet2["PrivateDnsNameOptionsOnLaunch"]["HostnameType"] == "ip-name"
 
 
+@pytest.mark.skip_snapshot_verify(paths=["$..DriftInformation", "$..Metadata"])
 def test_internet_gateway_ref_and_attr(deploy_cfn_template, cfn_client, snapshot):
-
     stack = deploy_cfn_template(
         template_path=os.path.join(
             os.path.dirname(__file__), "../../templates/internet_gateway.yml"

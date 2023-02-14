@@ -117,7 +117,7 @@ class EC2InternetGateway(GenericBaseModel):
             return None
         client = aws_stack.connect_to_service("ec2")
         gateways = client.describe_internet_gateways(
-            InternetGatewayIds=[self.props["PhysicalResourceId"]]
+            InternetGatewayIds=[self.physical_resource_id]
         )["InternetGateways"]
         return gateways[0] if gateways else None
 
@@ -128,8 +128,8 @@ class EC2InternetGateway(GenericBaseModel):
     @staticmethod
     def get_deploy_templates():
         def _store_id(result, resource_id, resources, resource_type):
-            resources[resource_id]["PhysicalResourceId"] = result["InternetGateWay"][
-                "InternetGateWayId"
+            resources[resource_id]["PhysicalResourceId"] = result["InternetGateway"][
+                "InternetGatewayId"
             ]
 
         return {
