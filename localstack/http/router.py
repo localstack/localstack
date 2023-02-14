@@ -21,6 +21,8 @@ from typing import (
 from werkzeug import Request, Response
 from werkzeug.routing import BaseConverter, Map, Rule, RuleFactory
 
+from localstack.http.request import get_raw_path
+
 HTTP_METHODS = ("GET", "POST", "PUT", "PATCH", "DELETE", "HEAD", "OPTIONS", "TRACE")
 
 E = TypeVar("E")
@@ -427,7 +429,7 @@ class Router(Generic[E]):
         :return: the HTTP response
         """
         matcher = self.url_map.bind(server_name=request.host)
-        handler, args = matcher.match(request.path, method=request.method)
+        handler, args = matcher.match(get_raw_path(request), method=request.method)
         args.pop("__host__", None)
         return self.dispatcher(request, handler, args)
 

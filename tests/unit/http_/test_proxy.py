@@ -141,6 +141,31 @@ class TestPathForwarder:
         doc = response.json()
         assert doc == {"args": {"q": "yes"}, "form": {"foo": "bar", "baz": "ed"}}
 
+    def test_path_encoding_preservation(self, router_server, httpserver: HTTPServer):
+        router, proxy = router_server
+        backend = httpserver
+
+        def _handler(request: WerkzeugRequest):
+            from localstack.http.request import get_raw_path
+
+            data = {"path": get_raw_path(request), "query": request.query_string.decode("utf-8")}
+            return Response(json.dumps(data), mimetype="application/json")
+
+        backend.expect_request("").respond_with_handler(_handler)
+
+        router.add("/<path:path>", ProxyHandler(backend.url_for("/")))
+
+        response = requests.get(
+            proxy.url
+            + "/arn%3Aaws%3Aservice%3Aeu-west-1%3A000000000000%3Aroot-arn-path%2Fsub-arn-path%2F%2A/%E4%B8%8A%E6%B5%B7%2B%E4%B8%AD%E5%9C%8B?%E4%B8%8A%E6%B5%B7%2B%E4%B8%AD%E5%9C%8B=%E4%B8%8A%E6%B5%B7%2B%E4%B8%AD%E5%9C%8B",
+        )
+        assert response.ok
+        doc = response.json()
+        assert doc == {
+            "path": "/arn%3Aaws%3Aservice%3Aeu-west-1%3A000000000000%3Aroot-arn-path%2Fsub-arn-path%2F%2A/%E4%B8%8A%E6%B5%B7%2B%E4%B8%AD%E5%9C%8B",
+            "query": "%E4%B8%8A%E6%B5%B7%2B%E4%B8%AD%E5%9C%8B=%E4%B8%8A%E6%B5%B7%2B%E4%B8%AD%E5%9C%8B",
+        }
+
 
 class TestProxy:
     def test_proxy_with_custom_client(

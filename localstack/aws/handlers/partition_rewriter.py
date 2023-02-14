@@ -2,7 +2,7 @@ import logging
 import re
 from re import Match
 from typing import Optional
-from urllib.parse import unquote, urlparse
+from urllib.parse import urlparse
 
 from localstack import config
 from localstack.aws.api import RequestContext
@@ -79,7 +79,7 @@ class ArnPartitionRewriteHandler(Handler):
         result_response = forward(
             request=forward_request,
             forward_base_url=config.get_edge_url(),
-            forward_path=get_raw_path(request),
+            forward_path=get_raw_path(forward_request),
             headers=forward_request.headers,
         )
         self.modify_response(result_response, request_region=request_region)
@@ -158,7 +158,7 @@ class ArnPartitionRewriteHandler(Handler):
             return result
         elif isinstance(source, bytes):
             try:
-                decoded = unquote(to_str(source))
+                decoded = to_str(source)
                 adjusted = self._adjust_partition(
                     decoded, static_partition, request_region, encoded=encoded
                 )
