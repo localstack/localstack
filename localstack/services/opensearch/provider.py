@@ -81,6 +81,7 @@ from localstack.aws.api.opensearch import (
 from localstack.config import LOCALSTACK_HOSTNAME
 from localstack.constants import OPENSEARCH_DEFAULT_VERSION
 from localstack.services.opensearch import versions
+from localstack.services.opensearch.cluster import SecurityOptions
 from localstack.services.opensearch.cluster_manager import (
     ClusterManager,
     DomainKey,
@@ -136,6 +137,7 @@ def create_cluster(
     domain_key: DomainKey,
     engine_version: str,
     domain_endpoint_options: Optional[DomainEndpointOptions],
+    security_options: Optional[SecurityOptions],
     preferred_port: Optional[int] = None,
 ):
     """
@@ -148,7 +150,11 @@ def create_cluster(
     manager = cluster_manager()
     engine_version = engine_version or OPENSEARCH_DEFAULT_VERSION
     cluster = manager.create(
-        domain_key.arn, engine_version, domain_endpoint_options, preferred_port
+        arn=domain_key.arn,
+        version=engine_version,
+        endpoint_options=domain_endpoint_options,
+        security_options=security_options,
+        preferred_port=preferred_port,
     )
 
     # FIXME: in AWS, the Endpoint is set once the cluster is running, not before (like here), but our tests and
@@ -432,13 +438,14 @@ class OpensearchProvider(OpensearchApi):
                 region=context.region,
                 account=context.account_id,
             )
+            security_options = SecurityOptions.from_input(advanced_security_options)
 
             # "create" domain data
             store.opensearch_domains[domain_name] = get_domain_status(domain_key)
 
             # lazy-init the cluster (sets the Endpoint and Processing flag of the domain status)
             # TODO handle additional parameters (cluster config,...)
-            create_cluster(domain_key, engine_version, domain_endpoint_options)
+            create_cluster(domain_key, engine_version, domain_endpoint_options, security_options)
 
             # set the tags
             self.add_tags(context, domain_key.arn, tag_list)

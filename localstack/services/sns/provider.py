@@ -495,6 +495,8 @@ class SnsProvider(SnsApi, ServiceLifecycleHook):
         removed_attrs = ["sqs_queue_url"]
         if "FilterPolicyScope" in sub and "FilterPolicy" not in sub:
             removed_attrs.append("FilterPolicyScope")
+        elif "FilterPolicy" in sub and "FilterPolicyScope" not in sub:
+            sub["FilterPolicyScope"] = "MessageAttributes"
 
         attributes = {k: v for k, v in sub.items() if k not in removed_attrs}
         return GetSubscriptionAttributesResponse(Attributes=attributes)
@@ -942,7 +944,7 @@ def extract_tags(topic_arn, tags, is_create_topic_request, store):
 
 def register_sns_api_resource(router: Router):
     """Register the platform endpointmessages retrospection endpoint as an internal LocalStack endpoint."""
-    router.add_route_endpoints(SNSServicePlatformEndpointMessagesApiResource())
+    router.add(SNSServicePlatformEndpointMessagesApiResource())
 
 
 def _format_platform_endpoint_messages(sent_messages: List[Dict[str, str]]):
