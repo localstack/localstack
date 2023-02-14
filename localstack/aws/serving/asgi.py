@@ -1,10 +1,29 @@
+import concurrent.futures.thread
 from asyncio import AbstractEventLoop
-from concurrent.futures import ThreadPoolExecutor
 from typing import Optional
 
 from localstack.aws.gateway import Gateway
 from localstack.aws.serving.wsgi import WsgiGateway
 from localstack.http.asgi import ASGIAdapter
+
+
+class _ThreadPool(concurrent.futures.thread.ThreadPoolExecutor):
+    """
+    This thread pool executor removes the threads it creates from the global ``_thread_queues`` of
+    ``concurrent.futures.thread``, which joins all created threads at python exit and will block interpreter shutdown of
+    any threads are still running, even if they are daemon threads.
+    """
+
+    def _adjust_thread_count(self) -> None:
+        super()._adjust_thread_count()
+
+        for t in self._threads:
+            if not t.daemon:
+                continue
+            try:
+                del concurrent.futures.thread._threads_queues[t]
+            except KeyError:
+                pass
 
 
 class AsgiGateway:
@@ -19,8 +38,9 @@ class AsgiGateway:
     ) -> None:
         self.gateway = gateway
 
-        self.executor = ThreadPoolExecutor(threads, thread_name_prefix="asgi_gw")
+        self.executor = _ThreadPool(threads, thread_name_prefix="asgi_gw")
         self.wsgi = ASGIAdapter(WsgiGateway(gateway), event_loop=event_loop, executor=self.executor)
+        self._closed = False
 
     async def __call__(self, scope, receive, send) -> None:
         """
@@ -30,7 +50,17 @@ class AsgiGateway:
         :param receive: the receive callable
         :param send: the send callable
         """
+        if self._closed:
+            raise RuntimeError("Cannot except new request on closed ASGIGateway")
+
         if scope["type"] == "http":
             return await self.wsgi(scope, receive, send)
 
         raise NotImplementedError(f"{scope['type']} protocol is not implemented")
+
+    def close(self):
+        """
+        Close the ASGIGateway by shutting down the underlying executor.
+        """
+        self._closed = True
+        self.executor.shutdown(wait=False, cancel_futures=True)

@@ -6,7 +6,6 @@ if TYPE_CHECKING:
     from _typeshed.wsgi import WSGIEnvironment
 
 from werkzeug.datastructures import Headers, MultiDict
-from werkzeug.sansio.utils import get_current_url
 from werkzeug.test import encode_multipart
 from werkzeug.wrappers.request import Request as WerkzeugRequest
 
@@ -221,7 +220,51 @@ def get_raw_base_url(request: Request) -> str:
     Returns the base URL (with original URL encoding). This does not include the query string.
     This is the encoding-preserving equivalent to `request.base_url`.
     """
-    return get_current_url(request.scheme, request.host, request.root_path, get_raw_path(request))
+    return get_raw_current_url(
+        request.scheme, request.host, request.root_path, get_raw_path(request)
+    )
+
+
+def get_raw_current_url(
+    scheme: str,
+    host: str,
+    root_path: Optional[str] = None,
+    path: Optional[str] = None,
+    query_string: Optional[bytes] = None,
+) -> str:
+    """
+    `werkzeug.sansio.utils.get_current_url` implementation without
+    any encoding dances.
+    The given paths and query string are directly used without any encodings
+    (to avoid any double encodings).
+    It can be used to recreate the raw URL for a request.
+
+    :param scheme: The protocol the request used, like ``"https"``.
+    :param host: The host the request was made to. See :func:`get_host`.
+    :param root_path: Prefix that the application is mounted under. This
+        is prepended to ``path``.
+    :param path: The path part of the URL after ``root_path``.
+    :param query_string: The portion of the URL after the "?".
+    """
+    url = [scheme, "://", host]
+
+    if root_path is None:
+        url.append("/")
+        return "".join(url)
+
+    url.append(root_path.rstrip("/"))
+    url.append("/")
+
+    if path is None:
+        return "".join(url)
+
+    url.append(path.lstrip("/"))
+
+    if query_string:
+        url.append("?")
+        url.append(query_string)
+
+    return "".join(url)
 
 
 def restore_payload(request: Request) -> bytes:
