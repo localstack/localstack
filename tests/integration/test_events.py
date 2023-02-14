@@ -1611,7 +1611,6 @@ class TestEvents:
                 EventBusName=TEST_EVENT_BUS_NAME,
                 Targets=[
                     {"Id": target_id, "Arn": queue_arn, "InputPath": "$.detail"},
-                    {"Id": f"{target_id}-2", "Arn": queue_arn, "InputPath": "$.detail"},
                 ],
             )
 
