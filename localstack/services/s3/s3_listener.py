@@ -1612,12 +1612,11 @@ class ProxyListenerS3(ProxyListener):
 
         is_object_request = all(
             [
-                "/" in path[1:] or bucket_name_in_host or key,
                 # check if this is an actual put object request, because it could also be
                 # a put bucket request with a path like this: /bucket_name/
                 bucket_name_in_host
                 or key
-                or (len(path[1:].split("/")) > 1 and len(path[1:].split("/")[1]) > 0),
+                or (len(parsed.path[1:].split("/")) > 1 and len(parsed.path[1:].split("/")[1]) > 0),
             ]
         )
 

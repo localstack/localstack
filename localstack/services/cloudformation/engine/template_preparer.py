@@ -3,38 +3,25 @@ import logging
 import os
 
 import boto3
-import yaml
-from moto.cloudformation.utils import yaml_tag_constructor
 from samtranslator.translator.transform import transform as transform_sam
 
+from localstack.services.cloudformation.engine import yaml_parser
 from localstack.services.cloudformation.engine.policy_loader import create_policy_loader
 from localstack.utils.aws import aws_stack
 from localstack.utils.json import clone_safe
 
 LOG = logging.getLogger(__name__)
 
-# create safe yaml loader that parses date strings as string, not date objects
-NoDatesSafeLoader = yaml.SafeLoader
-NoDatesSafeLoader.yaml_implicit_resolvers = {
-    k: [r for r in v if r[0] != "tag:yaml.org,2002:timestamp"]
-    for k, v in NoDatesSafeLoader.yaml_implicit_resolvers.items()
-}
-
 
 def parse_template(template: str) -> dict:
     try:
         return json.loads(template)
     except Exception:
-        # FIXME: removing this still breaks all short-hand intrinsic functions :|
-        yaml.add_multi_constructor("", yaml_tag_constructor, Loader=NoDatesSafeLoader)
         try:
-            return clone_safe(yaml.safe_load(template))
-        except Exception:
-            try:
-                return clone_safe(yaml.load(template, Loader=NoDatesSafeLoader))
-            except Exception as e:
-                LOG.debug("Unable to parse CloudFormation template (%s): %s", e, template)
-                raise
+            return clone_safe(yaml_parser.parse_yaml(template))
+        except Exception as e:
+            LOG.debug("Unable to parse CloudFormation template (%s): %s", e, template)
+            raise
 
 
 def template_to_json(template: str) -> str:

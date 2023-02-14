@@ -8,7 +8,6 @@ import requests
 from botocore.exceptions import ClientError
 
 import localstack.config as config
-from localstack.constants import INTERNAL_RESOURCE_PATH
 from localstack.services.ses.provider import EMAILS_ENDPOINT
 from localstack.utils.strings import short_uid
 
@@ -182,7 +181,7 @@ class TestSES:
         assert "Body" not in contents2
 
         # Ensure all sent messages can be retrieved using the API endpoint
-        emails_url = config.get_edge_url() + INTERNAL_RESOURCE_PATH + EMAILS_ENDPOINT
+        emails_url = config.get_edge_url() + EMAILS_ENDPOINT
         api_contents = requests.get(emails_url).json()
         api_contents = {msg["Id"]: msg for msg in api_contents["messages"]}
         assert len(api_contents) >= 1
@@ -192,16 +191,9 @@ class TestSES:
         assert api_contents[message2_id] == contents2
 
         # Ensure messages can be filtered by email source via the REST endpoint
-        emails_url = (
-            config.get_edge_url()
-            + INTERNAL_RESOURCE_PATH
-            + EMAILS_ENDPOINT
-            + "?email=none@example.com"
-        )
+        emails_url = config.get_edge_url() + EMAILS_ENDPOINT + "?email=none@example.com"
         assert len(requests.get(emails_url).json()["messages"]) == 0
-        emails_url = (
-            config.get_edge_url() + INTERNAL_RESOURCE_PATH + EMAILS_ENDPOINT + f"?email={email}"
-        )
+        emails_url = config.get_edge_url() + EMAILS_ENDPOINT + f"?email={email}"
         assert len(requests.get(emails_url).json()["messages"]) == 2
 
     def test_send_templated_email_can_retrospect(self, ses_client, create_template):

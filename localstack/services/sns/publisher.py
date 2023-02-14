@@ -1,6 +1,7 @@
 import abc
 import ast
 import base64
+import copy
 import datetime
 import hashlib
 import json
@@ -1101,21 +1102,22 @@ class PublishDispatcher:
             notifier = self.batch_topic_notifiers.get(protocol)
             # does the notifier supports batching natively? for now, only SQS supports it
             if notifier:
+                subscriber_ctx = ctx
                 messages_amount_before_filtering = len(ctx.messages)
-                ctx.messages = [
+                filtered_messages = [
                     message
                     for message in ctx.messages
                     if self._should_publish(ctx.store, message, subscriber)
                 ]
-                if not ctx.messages:
+                if not filtered_messages:
                     LOG.debug(
                         "No messages match filter policy, not publishing batch from topic '%s' to subscription '%s'",
                         topic_arn,
                         subscriber["SubscriptionArn"],
                     )
-                    return
+                    continue
 
-                messages_amount = len(ctx.messages)
+                messages_amount = len(filtered_messages)
                 if messages_amount != messages_amount_before_filtering:
                     LOG.debug(
                         "After applying subscription filter, %s out of %s message(s) to be sent to '%s'",
@@ -1123,6 +1125,10 @@ class PublishDispatcher:
                         messages_amount_before_filtering,
                         subscriber["SubscriptionArn"],
                     )
+                    # We need to copy the context to not overwrite the messages after filtering messages, otherwise we
+                    # would filter on the same context for different subscribers
+                    subscriber_ctx = copy.copy(ctx)
+                    subscriber_ctx.messages = filtered_messages
 
                 LOG.debug(
                     "Topic '%s' batch publishing %s messages to subscribed '%s' with protocol '%s' (subscription '%s')",
@@ -1132,7 +1138,9 @@ class PublishDispatcher:
                     subscriber["Protocol"],
                     subscriber["SubscriptionArn"],
                 )
-                self.executor.submit(notifier.publish, context=ctx, subscriber=subscriber)
+                self.executor.submit(
+                    notifier.publish, context=subscriber_ctx, subscriber=subscriber
+                )
             else:
                 # if no batch support, fall back to sending them sequentially
                 notifier = self.topic_notifiers[subscriber["Protocol"]]
