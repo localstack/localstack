@@ -4,7 +4,10 @@ from moto.awslambda import models as moto_awslambda_models
 
 from localstack import config
 from localstack.services.awslambda.lambda_api import handle_lambda_url_invocation
+from localstack.services.awslambda.lambda_utils import get_default_executor_mode
 from localstack.services.edge import ROUTER
+from localstack.services.plugins import ServiceLifecycleHook
+from localstack.utils.analytics import log
 from localstack.utils.aws import arns, aws_stack
 from localstack.utils.aws.request_context import AWS_REGION_REGEX
 from localstack.utils.patch import patch
@@ -13,25 +16,34 @@ from localstack.utils.strings import to_bytes
 
 LOG = logging.getLogger(__name__)
 
-
 # Key for tracking patch applience
 PATCHES_APPLIED = "LAMBDA_PATCHED"
+
+
+class LambdaLifecycleHook(ServiceLifecycleHook):
+    def on_after_init(self):
+        ROUTER.add(
+            "/",
+            host=f"<api_id>.lambda-url.<regex('{AWS_REGION_REGEX}'):region>.<regex('.*'):server>",
+            endpoint=handle_lambda_url_invocation,
+            defaults={"path": ""},
+        )
+        ROUTER.add(
+            "/<path:path>",
+            host=f"<api_id>.lambda-url.<regex('{AWS_REGION_REGEX}'):region>.<regex('.*'):server>",
+            endpoint=handle_lambda_url_invocation,
+        )
 
 
 def start_lambda(port=None, asynchronous=False):
     from localstack.services.awslambda import lambda_api, lambda_utils
     from localstack.services.infra import start_local_api
 
-    ROUTER.add(
-        "/",
-        host=f"<api_id>.lambda-url.<regex('{AWS_REGION_REGEX}'):region>.<regex('.*'):server>",
-        endpoint=handle_lambda_url_invocation,
-        defaults={"path": ""},
-    )
-    ROUTER.add(
-        "/<path:path>",
-        host=f"<api_id>.lambda-url.<regex('{AWS_REGION_REGEX}'):region>.<regex('.*'):server>",
-        endpoint=handle_lambda_url_invocation,
+    log.event(
+        "lambda:config",
+        version="v1",
+        executor_mode=config.LAMBDA_EXECUTOR,
+        default_executor_mode=get_default_executor_mode(),
     )
 
     # print a warning if we're not running in Docker but using Docker based LAMBDA_EXECUTOR

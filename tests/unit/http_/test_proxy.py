@@ -23,25 +23,6 @@ def router_server(serve_asgi_adapter) -> Tuple[Router, HypercornServer]:
     return router, serve_asgi_adapter(app)
 
 
-def echo_request_metadata(request: WerkzeugRequest) -> Response:
-    """
-    Simple request handler that returns the incoming request metadata (method, path, url, headers).
-
-    :param request: the incoming HTTP request
-    :return: an HTTP response
-    """
-    response = Response()
-    response.set_json(
-        {
-            "method": request.method,
-            "path": request.path,
-            "url": request.url,
-            "headers": dict(request.headers),
-        }
-    )
-    return response
-
-
 class TestPathForwarder:
     def test_get_with_path_rule(self, router_server, httpserver: HTTPServer):
         router, proxy = router_server
@@ -130,7 +111,7 @@ class TestPathForwarder:
         headers = response.json()
         assert headers["X-Forwarded-For"] == "127.0.0.1"
 
-        # check that it appends remote address correctly if an header is already present
+        # check that it appends remote address correctly if a header is already present
         response = requests.get(proxy.url + "/echo", headers={"X-Forwarded-For": "127.0.0.2"})
         assert response.ok
         headers = response.json()
@@ -160,12 +141,39 @@ class TestPathForwarder:
         doc = response.json()
         assert doc == {"args": {"q": "yes"}, "form": {"foo": "bar", "baz": "ed"}}
 
+    def test_path_encoding_preservation(self, router_server, httpserver: HTTPServer):
+        router, proxy = router_server
+        backend = httpserver
+
+        def _handler(request: WerkzeugRequest):
+            from localstack.http.request import get_raw_path
+
+            data = {"path": get_raw_path(request), "query": request.query_string.decode("utf-8")}
+            return Response(json.dumps(data), mimetype="application/json")
+
+        backend.expect_request("").respond_with_handler(_handler)
+
+        router.add("/<path:path>", ProxyHandler(backend.url_for("/")))
+
+        response = requests.get(
+            proxy.url
+            + "/arn%3Aaws%3Aservice%3Aeu-west-1%3A000000000000%3Aroot-arn-path%2Fsub-arn-path%2F%2A/%E4%B8%8A%E6%B5%B7%2B%E4%B8%AD%E5%9C%8B?%E4%B8%8A%E6%B5%B7%2B%E4%B8%AD%E5%9C%8B=%E4%B8%8A%E6%B5%B7%2B%E4%B8%AD%E5%9C%8B",
+        )
+        assert response.ok
+        doc = response.json()
+        assert doc == {
+            "path": "/arn%3Aaws%3Aservice%3Aeu-west-1%3A000000000000%3Aroot-arn-path%2Fsub-arn-path%2F%2A/%E4%B8%8A%E6%B5%B7%2B%E4%B8%AD%E5%9C%8B",
+            "query": "%E4%B8%8A%E6%B5%B7%2B%E4%B8%AD%E5%9C%8B=%E4%B8%8A%E6%B5%B7%2B%E4%B8%AD%E5%9C%8B",
+        }
+
 
 class TestProxy:
-    def test_proxy_with_custom_client(self, httpserver: HTTPServer):
+    def test_proxy_with_custom_client(
+        self, httpserver: HTTPServer, httpserver_echo_request_metadata
+    ):
         """The Proxy class allows the injection of a custom HTTP client which can attach default headers to every
         request. this test verifies that this works through the proxy implementation."""
-        httpserver.expect_request("/").respond_with_handler(echo_request_metadata)
+        httpserver.expect_request("/").respond_with_handler(httpserver_echo_request_metadata)
 
         with SimpleRequestsClient() as client:
             client.session.headers["X-My-Custom-Header"] = "hello world"
@@ -186,7 +194,7 @@ class TestProxy:
             assert response.json["method"] == "POST"
             assert response.json["headers"]["X-My-Custom-Header"] == "hello world"
             assert response.json["headers"]["X-Forwarded-For"] == "127.0.0.10"
-            assert response.json["headers"]["Host"] == f"{httpserver.host}:{httpserver.port}"
+            assert response.json["headers"]["Host"] == "127.0.0.1:80"
 
 
 @pytest.mark.parametrize("consume_data", [True, False])

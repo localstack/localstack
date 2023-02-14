@@ -241,6 +241,7 @@ class TestSNSProvider:
         snapshot.match("messages-response", response)
 
     @pytest.mark.aws_validated
+    @pytest.mark.skip_snapshot_verify(paths=["$..Attributes.SubscriptionPrincipal"])
     def test_filter_policy(
         self,
         sns_client,
@@ -308,6 +309,7 @@ class TestSNSProvider:
         assert num_msgs_2 == num_msgs_1
 
     @pytest.mark.aws_validated
+    @pytest.mark.skip_snapshot_verify(paths=["$..Attributes.SubscriptionPrincipal"])
     def test_exists_filter_policy(
         self,
         sns_client,
@@ -432,6 +434,7 @@ class TestSNSProvider:
         assert num_msgs_4 == num_msgs_3
 
     @pytest.mark.aws_validated
+    @pytest.mark.skip_snapshot_verify(paths=["$..Attributes.SubscriptionPrincipal"])
     def test_subscribe_sqs_queue(
         self,
         sns_client,
@@ -3263,3 +3266,114 @@ class TestSNSProvider:
             MessageGroupId="123",
         )
         assert "MessageId" in response
+
+    @pytest.mark.aws_validated
+    @pytest.mark.skip_snapshot_verify(paths=["$..Attributes.SubscriptionPrincipal"])
+    def test_filter_policy_for_batch(
+        self,
+        sns_client,
+        sqs_client,
+        sqs_create_queue,
+        sns_create_topic,
+        sns_create_sqs_subscription,
+        snapshot,
+    ):
+
+        topic_arn = sns_create_topic()["TopicArn"]
+        queue_url_with_filter = sqs_create_queue()
+        subscription_with_filter = sns_create_sqs_subscription(
+            topic_arn=topic_arn, queue_url=queue_url_with_filter
+        )
+        subscription_with_filter_arn = subscription_with_filter["SubscriptionArn"]
+
+        queue_url_no_filter = sqs_create_queue()
+        subscription_no_filter = sns_create_sqs_subscription(
+            topic_arn=topic_arn, queue_url=queue_url_no_filter
+        )
+        subscription_no_filter_arn = subscription_no_filter["SubscriptionArn"]
+
+        filter_policy = {"attr1": [{"numeric": [">", 0, "<=", 100]}]}
+        sns_client.set_subscription_attributes(
+            SubscriptionArn=subscription_with_filter_arn,
+            AttributeName="FilterPolicy",
+            AttributeValue=json.dumps(filter_policy),
+        )
+
+        response_attributes = sns_client.get_subscription_attributes(
+            SubscriptionArn=subscription_with_filter_arn
+        )
+        snapshot.match("subscription-attributes-with-filter", response_attributes)
+
+        response_attributes = sns_client.get_subscription_attributes(
+            SubscriptionArn=subscription_no_filter_arn
+        )
+        snapshot.match("subscription-attributes-no-filter", response_attributes)
+
+        sqs_wait_time = 4 if is_aws_cloud() else 1
+
+        response_before_publish_no_filter = sqs_client.receive_message(
+            QueueUrl=queue_url_with_filter, VisibilityTimeout=0, WaitTimeSeconds=sqs_wait_time
+        )
+        snapshot.match("messages-no-filter-before-publish", response_before_publish_no_filter)
+
+        response_before_publish_filter = sqs_client.receive_message(
+            QueueUrl=queue_url_with_filter, VisibilityTimeout=0, WaitTimeSeconds=sqs_wait_time
+        )
+        snapshot.match("messages-with-filter-before-publish", response_before_publish_filter)
+
+        # publish message that satisfies the filter policy, assert that message is received
+        message = "This is a test message"
+        message_attributes = {"attr1": {"DataType": "Number", "StringValue": "99"}}
+        sns_client.publish_batch(
+            TopicArn=topic_arn,
+            PublishBatchRequestEntries=[
+                {
+                    "Id": "1",
+                    "Message": message,
+                    "MessageAttributes": message_attributes,
+                }
+            ],
+        )
+
+        response_after_publish_no_filter = sqs_client.receive_message(
+            QueueUrl=queue_url_no_filter, VisibilityTimeout=0, WaitTimeSeconds=sqs_wait_time
+        )
+        snapshot.match("messages-no-filter-after-publish-ok", response_after_publish_no_filter)
+        sqs_client.delete_message(
+            QueueUrl=queue_url_no_filter,
+            ReceiptHandle=response_after_publish_no_filter["Messages"][0]["ReceiptHandle"],
+        )
+
+        response_after_publish_filter = sqs_client.receive_message(
+            QueueUrl=queue_url_with_filter, VisibilityTimeout=0, WaitTimeSeconds=sqs_wait_time
+        )
+        snapshot.match("messages-with-filter-after-publish-ok", response_after_publish_filter)
+        sqs_client.delete_message(
+            QueueUrl=queue_url_with_filter,
+            ReceiptHandle=response_after_publish_filter["Messages"][0]["ReceiptHandle"],
+        )
+
+        # publish message that does not satisfy the filter policy, assert that message is not received by the
+        # subscription with the filter and received by the other
+        sns_client.publish_batch(
+            TopicArn=topic_arn,
+            PublishBatchRequestEntries=[
+                {
+                    "Id": "1",
+                    "Message": "This is another test message",
+                    "MessageAttributes": {"attr1": {"DataType": "Number", "StringValue": "111"}},
+                }
+            ],
+        )
+
+        response_after_publish_no_filter = sqs_client.receive_message(
+            QueueUrl=queue_url_no_filter, VisibilityTimeout=0, WaitTimeSeconds=sqs_wait_time
+        )
+        # there should be 1 message in the queue, latest sent
+        snapshot.match("messages-no-filter-after-publish-ok-1", response_after_publish_no_filter)
+
+        response_after_publish_filter = sqs_client.receive_message(
+            QueueUrl=queue_url_with_filter, VisibilityTimeout=0, WaitTimeSeconds=sqs_wait_time
+        )
+        # there should be no messages in this queue
+        snapshot.match("messages-with-filter-after-publish-filtered", response_after_publish_filter)

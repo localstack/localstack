@@ -9,6 +9,7 @@ import time
 from typing import IO
 
 from localstack import config
+from localstack.aws.accounts import get_aws_account_id
 from localstack.aws.api import RequestContext, handler
 from localstack.aws.api.lambda_ import (
     AccountLimit,
@@ -130,9 +131,11 @@ from localstack.aws.api.lambda_ import (
 )
 from localstack.constants import LOCALHOST_HOSTNAME
 from localstack.services.awslambda import api_utils
+from localstack.services.awslambda import hooks as lambda_hooks
 from localstack.services.awslambda.event_source_listeners.event_source_listener import (
     EventSourceListener,
 )
+from localstack.services.awslambda.invocation import AccessDeniedException
 from localstack.services.awslambda.invocation.lambda_models import (
     IMAGE_MAPPING,
     LAMBDA_LIMITS_CREATE_FUNCTION_REQUEST_SIZE,
@@ -173,6 +176,7 @@ from localstack.services.awslambda.invocation.lambda_service import (
 )
 from localstack.services.awslambda.invocation.models import LambdaStore
 from localstack.services.awslambda.lambda_utils import validate_filters
+from localstack.services.awslambda.layerfetcher.layer_fetcher import LayerFetcher
 from localstack.services.awslambda.urlrouter import FunctionUrlRouter
 from localstack.services.edge import ROUTER
 from localstack.services.plugins import ServiceLifecycleHook
@@ -188,6 +192,7 @@ LAMBDA_DEFAULT_TIMEOUT = 3
 LAMBDA_DEFAULT_MEMORY_SIZE = 128
 
 LAMBDA_TAG_LIMIT_PER_RESOURCE = 50
+LAMBDA_LAYERS_LIMIT_PER_FUNCTION = 5
 
 
 class LambdaProvider(LambdaApi, ServiceLifecycleHook):
@@ -195,12 +200,15 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
     create_fn_lock: threading.RLock
     create_layer_lock: threading.RLock
     router: FunctionUrlRouter
+    layer_fetcher: LayerFetcher | None
 
     def __init__(self) -> None:
         self.lambda_service = LambdaService()
         self.create_fn_lock = threading.RLock()
         self.create_layer_lock = threading.RLock()
         self.router = FunctionUrlRouter(ROUTER, self.lambda_service)
+        self.layer_fetcher = None
+        lambda_hooks.inject_layer_fetcher.run(self)
 
     def on_after_init(self):
         self.router.register_routes()
@@ -454,12 +462,15 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
                 Type="User",
             )
 
-    @staticmethod
-    def _validate_layers(new_layers: list[str]):
-        visited_layers = dict()
+    def _validate_layers(self, new_layers: list[str], region: str, account_id: int):
+        if len(new_layers) > LAMBDA_LAYERS_LIMIT_PER_FUNCTION:
+            raise InvalidParameterValueException(
+                "Cannot reference more than 5 layers.", Type="User"
+            )
 
+        visited_layers = dict()
         for layer_version_arn in new_layers:
-            region_name, account_id, layer_name, layer_version = api_utils.parse_layer_arn(
+            layer_region, layer_account_id, layer_name, layer_version = api_utils.parse_layer_arn(
                 layer_version_arn
             )
             if layer_version is None:
@@ -468,16 +479,43 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
                     + r" at 'layers' failed to satisfy constraint: Member must satisfy constraint: [Member must have length less than or equal to 140, Member must have length greater than or equal to 1, Member must satisfy regular expression pattern: (arn:[a-zA-Z0-9-]+:lambda:[a-zA-Z0-9-]+:\d{12}:layer:[a-zA-Z0-9-_]+:[0-9]+)|(arn:[a-zA-Z0-9-]+:lambda:::awslayer:[a-zA-Z0-9-_]+), Member must not be null]",
                 )
 
-            layer = lambda_stores[account_id][region_name].layers.get(layer_name)
-            if layer is None:
-                raise InvalidParameterValueException(
-                    f"Layer version {layer_version_arn} does not exist.", Type="User"
-                )
-            layer_version = layer.layer_versions.get(layer_version)
-            if layer_version is None:
-                raise InvalidParameterValueException(
-                    f"Layer version {layer_version_arn} does not exist.", Type="User"
-                )
+            state = lambda_stores[layer_account_id][layer_region]
+            layer = state.layers.get(layer_name)
+            if layer_account_id == get_aws_account_id():
+                if region and layer_region != region:
+                    raise InvalidParameterValueException(
+                        f"Layers are not in the same region as the function. "
+                        f"Layers are expected to be in region {region}.",
+                        Type="User",
+                    )
+                if layer is None or layer.layer_versions.get(layer_version) is None:
+                    raise InvalidParameterValueException(
+                        f"Layer version {layer_version_arn} does not exist.", Type="User"
+                    )
+            else:  # External layer from other account
+                # TODO: validate IAM layer policy here, allowing access by default for now and only checking region
+                if region and layer_region != region:
+                    # TODO: detect user or role from context when IAM users are implemented
+                    user = "user/localstack-testing"
+                    raise AccessDeniedException(
+                        f"User: arn:aws:iam::{account_id}:{user} is not authorized to perform: lambda:GetLayerVersion on resource: {layer_version_arn} because no resource-based policy allows the lambda:GetLayerVersion action"
+                    )
+                if layer is None:
+                    # Limitation: cannot fetch external layers when using the same account id as the target layer
+                    # because we do not want to trigger the layer fetcher for every non-existing layer.
+                    if self.layer_fetcher is None:
+                        raise NotImplementedError(
+                            "Fetching shared layers from AWS is a pro feature."
+                        )
+
+                    layer = self.layer_fetcher.fetch_layer(layer_version_arn)
+                    if layer is None:
+                        # TODO: detect user or role from context when IAM users are implemented
+                        user = "user/localstack-testing"
+                        raise AccessDeniedException(
+                            f"User: arn:aws:iam::{account_id}:{user} is not authorized to perform: lambda:GetLayerVersion on resource: {layer_version_arn} because no resource-based policy allows the lambda:GetLayerVersion action"
+                        )
+                    state.layers[layer_name] = layer
 
             # only the first two matches in the array are considered for the error message
             layer_arn = ":".join(layer_version_arn.split(":")[:-1])
@@ -520,7 +558,7 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
             self._verify_env_variables(env_vars)
 
         if layers := request.get("Layers", []):
-            self._validate_layers(layers)
+            self._validate_layers(layers, region=context.region, account_id=context.account_id)
 
         if not api_utils.is_role_arn(request.get("Role")):
             raise ValidationException(
@@ -717,7 +755,9 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
         if "Layers" in request:
             new_layers = request["Layers"]
             if new_layers:
-                self._validate_layers(new_layers)
+                self._validate_layers(
+                    new_layers, region=context.region, account_id=context.account_id
+                )
             replace_kwargs["layers"] = self.map_layers(new_layers)
 
         if "ImageConfig" in request:

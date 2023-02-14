@@ -943,7 +943,7 @@
     }
   },
   "tests/integration/s3/test_s3.py::TestS3::test_different_location_constraint": {
-    "recorded-date": "21-09-2022, 13:35:57",
+    "recorded-date": "08-02-2023, 12:03:07",
     "recorded-content": {
       "get_bucket_location_bucket_1": {
         "LocationConstraint": null,
@@ -981,6 +981,18 @@
         "ResponseMetadata": {
           "HTTPHeaders": {},
           "HTTPStatusCode": 200
+        }
+      },
+      "get_bucket_location_non_existent_bucket": {
+        "Error": {
+          "BucketName": "<bucket-name:1>",
+          "Code": "NoSuchBucket",
+          "Message": "The specified bucket does not exist"
+        },
+        "LocationConstraint": null,
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 404
         }
       }
     }

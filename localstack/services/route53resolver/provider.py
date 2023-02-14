@@ -1,6 +1,5 @@
 from datetime import datetime, timezone
 
-from moto.ec2.models import ec2_backends
 from moto.route53resolver.models import Route53ResolverBackend as MotoRoute53ResolverBackend
 from moto.route53resolver.models import route53resolver_backends
 
@@ -80,6 +79,7 @@ from localstack.aws.api.route53resolver import (
     UpdateFirewallRuleResponse,
     ValidationException,
 )
+from localstack.services.ec2.models import get_ec2_backend
 from localstack.services.moto import call_moto
 from localstack.services.route53resolver.models import Route53ResolverStore, route53resolver_stores
 from localstack.services.route53resolver.utils import (
@@ -679,7 +679,7 @@ class Route53ResolverProvider(Route53ResolverApi):
     ) -> ListFirewallConfigsResponse:
         store = self.get_store(context.account_id, context.region)
         firewall_configs = []
-        backend = ec2_backends[context.account_id][context.region]
+        backend = get_ec2_backend(context.account_id, context.region)
         for vpc in backend.vpcs:
             if vpc not in store.firewall_configs:
                 store.get_or_create_firewall_config(vpc, context.region, context.account_id)
@@ -694,7 +694,7 @@ class Route53ResolverProvider(Route53ResolverApi):
         firewall_fail_open: FirewallFailOpenStatus,
     ) -> UpdateFirewallConfigResponse:
         store = self.get_store(context.account_id, context.region)
-        backend = ec2_backends[context.account_id][context.region]
+        backend = get_ec2_backend(context.account_id, context.region)
         for resource_id in backend.vpcs:
             if resource_id not in store.firewall_configs:
                 firewall_config = store.get_or_create_firewall_config(

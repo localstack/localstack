@@ -1,4 +1,301 @@
 {
+  "tests/integration/apigateway/test_apigateway_api.py::TestApiGatewayApi::test_list_and_delete_apis": {
+    "recorded-date": "01-02-2023, 20:16:52",
+    "recorded-content": {
+      "create-rest-api-1": {
+        "apiKeySource": "HEADER",
+        "createdDate": "datetime",
+        "description": "this is my api",
+        "disableExecuteApiEndpoint": false,
+        "endpointConfiguration": {
+          "types": [
+            "EDGE"
+          ]
+        },
+        "id": "<id:1>",
+        "name": "<name:1>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 201
+        }
+      },
+      "create-rest-api-2": {
+        "apiKeySource": "HEADER",
+        "createdDate": "datetime",
+        "description": "this is my api2",
+        "disableExecuteApiEndpoint": false,
+        "endpointConfiguration": {
+          "types": [
+            "EDGE"
+          ]
+        },
+        "id": "<id:2>",
+        "name": "<name:2>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 201
+        }
+      },
+      "get-rest-api-before-delete": {
+        "items": [
+          {
+            "apiKeySource": "HEADER",
+            "createdDate": "datetime",
+            "description": "this is my api",
+            "disableExecuteApiEndpoint": false,
+            "endpointConfiguration": {
+              "types": [
+                "EDGE"
+              ]
+            },
+            "id": "<id:1>",
+            "name": "<name:1>"
+          },
+          {
+            "apiKeySource": "HEADER",
+            "createdDate": "datetime",
+            "description": "this is my api2",
+            "disableExecuteApiEndpoint": false,
+            "endpointConfiguration": {
+              "types": [
+                "EDGE"
+              ]
+            },
+            "id": "<id:2>",
+            "name": "<name:2>"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "delete-rest-api": {
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 202
+        }
+      },
+      "get-rest-api-after-delete": {
+        "items": [
+          {
+            "apiKeySource": "HEADER",
+            "createdDate": "datetime",
+            "description": "this is my api2",
+            "disableExecuteApiEndpoint": false,
+            "endpointConfiguration": {
+              "types": [
+                "EDGE"
+              ]
+            },
+            "id": "<id:2>",
+            "name": "<name:2>"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/integration/apigateway/test_apigateway_api.py::TestApiGatewayApi::test_create_rest_api_with_tags": {
+    "recorded-date": "01-02-2023, 20:11:19",
+    "recorded-content": {
+      "create-rest-api-w-tags": {
+        "apiKeySource": "HEADER",
+        "createdDate": "datetime",
+        "description": "this is my api",
+        "disableExecuteApiEndpoint": false,
+        "endpointConfiguration": {
+          "types": [
+            "EDGE"
+          ]
+        },
+        "id": "<id:1>",
+        "name": "<name:1>",
+        "tags": {
+          "MY_TAG1": "MY_VALUE1"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 201
+        }
+      },
+      "get-rest-api-w-tags": {
+        "apiKeySource": "HEADER",
+        "createdDate": "datetime",
+        "description": "this is my api",
+        "disableExecuteApiEndpoint": false,
+        "endpointConfiguration": {
+          "types": [
+            "EDGE"
+          ]
+        },
+        "id": "<id:1>",
+        "name": "<name:1>",
+        "tags": {
+          "MY_TAG1": "MY_VALUE1"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "get-rest-apis-w-tags": {
+        "items": [
+          {
+            "apiKeySource": "HEADER",
+            "createdDate": "datetime",
+            "description": "this is my api",
+            "disableExecuteApiEndpoint": false,
+            "endpointConfiguration": {
+              "types": [
+                "EDGE"
+              ]
+            },
+            "id": "<id:1>",
+            "name": "<name:1>",
+            "tags": {
+              "MY_TAG1": "MY_VALUE1"
+            }
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/integration/apigateway/test_apigateway_api.py::TestApiGatewayApi::test_update_rest_api_operation_add_remove": {
+    "recorded-date": "01-02-2023, 20:11:40",
+    "recorded-content": {
+      "update-rest-api-add": {
+        "apiKeySource": "HEADER",
+        "binaryMediaTypes": [
+          "image/png",
+          "image/jpeg"
+        ],
+        "createdDate": "datetime",
+        "description": "this is my api",
+        "disableExecuteApiEndpoint": false,
+        "endpointConfiguration": {
+          "types": [
+            "EDGE"
+          ]
+        },
+        "id": "<id:1>",
+        "name": "<name:1>",
+        "tags": {},
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "update-rest-api-replace": {
+        "apiKeySource": "HEADER",
+        "binaryMediaTypes": [
+          "image/jpeg",
+          "image/gif"
+        ],
+        "createdDate": "datetime",
+        "description": "this is my api",
+        "disableExecuteApiEndpoint": false,
+        "endpointConfiguration": {
+          "types": [
+            "EDGE"
+          ]
+        },
+        "id": "<id:1>",
+        "name": "<name:1>",
+        "tags": {},
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "update-rest-api-remove": {
+        "apiKeySource": "HEADER",
+        "binaryMediaTypes": [
+          "image/jpeg"
+        ],
+        "createdDate": "datetime",
+        "disableExecuteApiEndpoint": false,
+        "endpointConfiguration": {
+          "types": [
+            "EDGE"
+          ]
+        },
+        "id": "<id:1>",
+        "name": "<name:1>",
+        "tags": {},
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/integration/apigateway/test_apigateway_api.py::TestApiGatewayApi::test_update_rest_api_behaviour": {
+    "recorded-date": "01-02-2023, 20:27:17",
+    "recorded-content": {
+      "update-rest-api-array": {
+        "apiKeySource": "HEADER",
+        "binaryMediaTypes": [
+          "-"
+        ],
+        "createdDate": "datetime",
+        "description": "this is my api",
+        "disableExecuteApiEndpoint": false,
+        "endpointConfiguration": {
+          "types": [
+            "EDGE"
+          ]
+        },
+        "id": "<id:1>",
+        "name": "<name:1>",
+        "tags": {},
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "update-rest-api-add-base-path": {
+        "Error": {
+          "Code": "BadRequestException",
+          "Message": "Invalid patch path /binaryMediaTypes"
+        },
+        "message": "Invalid patch path /binaryMediaTypes",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "update-rest-api-replace-base-path": {
+        "Error": {
+          "Code": "BadRequestException",
+          "Message": "Invalid patch path /binaryMediaTypes"
+        },
+        "message": "Invalid patch path /binaryMediaTypes",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "update-rest-api-remove-base-path": {
+        "Error": {
+          "Code": "BadRequestException",
+          "Message": "Invalid patch path /binaryMediaTypes"
+        },
+        "message": "Invalid patch path /binaryMediaTypes",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
   "tests/integration/apigateway/test_apigateway_api.py::test_import_rest_api": {
     "recorded-date": "10-01-2023, 20:08:25",
     "recorded-content": {
@@ -17,6 +314,87 @@
         "id": "<id:1>",
         "name": "<name:1>",
         "version": "1.0",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 201
+        }
+      }
+    }
+  },
+  "tests/integration/apigateway/test_apigateway_api.py::TestApiGatewayApi::test_update_rest_api_invalid_api_id": {
+    "recorded-date": "01-02-2023, 22:26:45",
+    "recorded-content": {
+      "not-found-update-rest-api": {
+        "Error": {
+          "Code": "NotFoundException",
+          "Message": "Invalid API identifier specified 111111111111:api_id"
+        },
+        "message": "Invalid API identifier specified 111111111111:api_id",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 404
+        }
+      }
+    }
+  },
+  "tests/integration/apigateway/test_apigateway_api.py::TestApiGatewayApi::test_create_rest_api_with_optional_params": {
+    "recorded-date": "01-02-2023, 23:48:05",
+    "recorded-content": {
+      "create-only-name": {
+        "apiKeySource": "HEADER",
+        "createdDate": "datetime",
+        "disableExecuteApiEndpoint": false,
+        "endpointConfiguration": {
+          "types": [
+            "EDGE"
+          ]
+        },
+        "id": "<id:1>",
+        "name": "<name:1>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 201
+        }
+      },
+      "create-empty-desc": {
+        "Error": {
+          "Code": "BadRequestException",
+          "Message": "Description cannot be an empty string"
+        },
+        "message": "Description cannot be an empty string",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "create-with-version": {
+        "apiKeySource": "HEADER",
+        "createdDate": "datetime",
+        "disableExecuteApiEndpoint": false,
+        "endpointConfiguration": {
+          "types": [
+            "EDGE"
+          ]
+        },
+        "id": "<id:2>",
+        "name": "<name:2>",
+        "version": "v1",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 201
+        }
+      },
+      "create-with-empty-binary-media": {
+        "apiKeySource": "HEADER",
+        "createdDate": "datetime",
+        "disableExecuteApiEndpoint": false,
+        "endpointConfiguration": {
+          "types": [
+            "EDGE"
+          ]
+        },
+        "id": "<id:3>",
+        "name": "<name:3>",
         "ResponseMetadata": {
           "HTTPHeaders": {},
           "HTTPStatusCode": 201

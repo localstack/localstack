@@ -272,7 +272,7 @@ def is_linux():
 def ping(host):
     """Returns True if host responds to a ping request"""
     is_windows = platform.system().lower() == "windows"
-    ping_opts = "-n 1" if is_windows else "-c 1"
+    ping_opts = "-n 1 -w 2000" if is_windows else "-c 1 -W 2"
     args = "ping %s %s" % (ping_opts, host)
     return (
         subprocess.call(args, shell=not is_windows, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
@@ -401,7 +401,12 @@ LEGACY_EDGE_PROXY = is_env_true("LEGACY_EDGE_PROXY")
 
 # whether legacy s3 is enabled
 # TODO change when asf becomes default: os.environ.get("PROVIDER_OVERRIDE_S3", "") == 'legacy'
-LEGACY_S3_PROVIDER = os.environ.get("PROVIDER_OVERRIDE_S3", "") not in ("asf", "asf_pro")
+LEGACY_S3_PROVIDER = os.environ.get("PROVIDER_OVERRIDE_S3", "") not in (
+    "asf",
+    "asf_pro",
+    "v2",
+    "v2_pro",
+)
 
 # Whether to report internal failures as 500 or 501 errors.
 FAIL_FAST = is_env_true("FAIL_FAST")

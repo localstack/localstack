@@ -203,6 +203,36 @@ class TestRouter:
         with pytest.raises(NotFound):
             assert router.dispatch(Request("GET", "/users/12"))
 
+    def test_remove_rules(self):
+        router = Router()
+
+        class MyRoutes:
+            @route("/a")
+            @route("/a2")
+            def route_a(self, request, args):
+                return Response(b"a")
+
+            @route("/b")
+            def route_b(self, request, args):
+                return Response(b"b")
+
+        rules = router.add(MyRoutes())
+
+        assert router.dispatch(Request("GET", "/a")).data == b"a"
+        assert router.dispatch(Request("GET", "/a2")).data == b"a"
+        assert router.dispatch(Request("GET", "/b")).data == b"b"
+
+        router.remove(rules)
+
+        with pytest.raises(NotFound):
+            assert router.dispatch(Request("GET", "/a"))
+
+        with pytest.raises(NotFound):
+            assert router.dispatch(Request("GET", "/a2"))
+
+        with pytest.raises(NotFound):
+            assert router.dispatch(Request("GET", "/b"))
+
     def test_remove_non_existing_rule(self):
         router = Router()
 
@@ -220,6 +250,7 @@ class TestRouter:
         router = Router()
 
         @router.route("/users")
+        @router.route("/alternative-users")
         def user(_: Request, args):
             assert not args
             return Response("user")
@@ -230,6 +261,7 @@ class TestRouter:
             return Response(f"{args['user_id']}")
 
         assert router.dispatch(Request("GET", "/users")).data == b"user"
+        assert router.dispatch(Request("GET", "/alternative-users")).data == b"user"
         assert router.dispatch(Request("GET", "/users/123")).data == b"123"
 
     def test_add_route_endpoint_with_object(self):
@@ -252,7 +284,7 @@ class TestRouter:
 
         api = MyApi()
         router = Router()
-        rules = router.add_route_endpoints(api)
+        rules = router.add(api)
         assert len(rules) == 2
 
         assert router.dispatch(Request("GET", "/users")).data == b"user"
@@ -266,6 +298,11 @@ class TestRouter:
                 # should be inherited
                 return Response(f"{request.path}/do-get")
 
+            @route("/my_api", methods=["HEAD"])
+            def do_head(self, request: Request, _args):
+                # should be inherited
+                return Response(f"{request.path}/do-head")
+
             @route("/my_api", methods=["POST", "PUT"])
             def do_post(self, request: Request, _args):
                 # should be inherited
@@ -273,15 +310,28 @@ class TestRouter:
 
         api = MyApi()
         router = Router()
-        rules = router.add_route_endpoints(api)
-        assert len(rules) == 2
+        rules = router.add(api)
+        assert len(rules) == 3
 
         assert router.dispatch(Request("GET", "/my_api")).data == b"/my_api/do-get"
+        assert router.dispatch(Request("HEAD", "/my_api")).data == b"/my_api/do-head"
         assert router.dispatch(Request("POST", "/my_api")).data == b"/my_api/do-post-or-put"
         assert router.dispatch(Request("PUT", "/my_api")).data == b"/my_api/do-post-or-put"
 
         with pytest.raises(MethodNotAllowed):
             router.dispatch(Request("DELETE", "/my_api"))
+
+    def test_head_requests_are_routed_to_get_handlers(self):
+        @route("/my_api", methods=["GET"])
+        def do_get(request: Request, _args):
+            # should be inherited
+            return Response(f"{request.path}/do-get")
+
+        router = Router()
+        router.add(do_get)
+
+        assert router.dispatch(Request("GET", "/my_api")).data == b"/my_api/do-get"
+        assert router.dispatch(Request("HEAD", "/my_api")).data == b"/my_api/do-get"
 
 
 class TestWsgiIntegration:

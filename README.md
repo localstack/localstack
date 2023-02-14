@@ -1,4 +1,7 @@
-<a href="https://discuss.localstack.cloud/t/localstack-release-v1-3-0/"><img src="https://raw.githubusercontent.com/localstack/localstack/master/.github/images/release.svg"></a>
+<p align="center">
+:zap: We are thrilled to announce <a href="https://discuss.localstack.cloud/t/localstack-release-v1-4-0/214">LocalStack 1.4</a> which brings new features, enhancements and bugfixes :zap:
+</p>
+
 <p align="center">
   <img src="https://raw.githubusercontent.com/localstack/localstack/master/doc/localstack-readme-banner.svg" alt="LocalStack - A fully functional local cloud stack">
 </p>
@@ -17,7 +20,7 @@
 </p>
 
 <p align="center">
-  <i>LocalStack</i> provides an easy-to-use test/mocking framework for developing Cloud applications.
+  LocalStack provides an easy-to-use test/mocking framework for developing cloud applications.
 </p>
 
 <p align="center">
@@ -28,7 +31,7 @@
   <a href="#usage">Usage</a> •
   <a href="#releases">Releases</a> •
   <a href="#contributing">Contributing</a>
-  <br>–<br>
+  <br/>
   <a href="https://docs.localstack.cloud" target="_blank">📖 Docs</a> •
   <a href="https://app.localstack.cloud" target="_blank">💻 Pro version</a> •
   <a href="https://docs.localstack.cloud/user-guide/aws/feature-coverage/" target="_blank">☑️ Feature coverage</a>
@@ -38,9 +41,9 @@
 
 # Overview
 
-[LocalStack 💻](https://localstack.cloud) is a cloud service emulator that runs in a single container on your laptop or in your CI environment. With LocalStack, you can run your AWS applications or Lambdas entirely on your local machine without connecting to a remote cloud provider! Whether you are testing complex CDK applications or Terraform configurations, or just beginning to learn about AWS services, LocalStack helps speed up and simplify your testing and development workflow.
+[LocalStack](https://localstack.cloud) is a cloud service emulator that runs in a single container on your laptop or in your CI environment. With LocalStack, you can run your AWS applications or Lambdas entirely on your local machine without connecting to a remote cloud provider! Whether you are testing complex CDK applications or Terraform configurations, or just beginning to learn about AWS services, LocalStack helps speed up and simplify your testing and development workflow.
 
-LocalStack supports a growing number of AWS services, like AWS Lambda, S3, Dynamodb, Kinesis, SQS, SNS, and **many** more! The [**Pro version** of LocalStack](https://localstack.cloud/pricing) supports additional APIs and advanced features. You can find a comprehensive list of supported APIs on our [☑️ Feature Coverage](https://docs.localstack.cloud/user-guide/aws/feature-coverage/) page.
+LocalStack supports a growing number of AWS services, like AWS Lambda, S3, Dynamodb, Kinesis, SQS, SNS, and many more! The [Pro version of LocalStack](https://localstack.cloud/pricing) supports additional APIs and advanced features. You can find a comprehensive list of supported APIs on our [☑️ Feature Coverage](https://docs.localstack.cloud/user-guide/aws/feature-coverage/) page.
 
 LocalStack also provides additional features to make your life as a cloud developer easier! Check out LocalStack's [Cloud Developer Tools](https://docs.localstack.cloud/user-guide/tools/) for more information.
 
@@ -58,9 +61,9 @@ The easiest way to install LocalStack is via `pip`:
 pip install localstack
 ```
 
-**Note**: Please do **not** use `sudo` or the `root` user - LocalStack should be installed and started entirely under a local non-root user. If you have problems with permissions in macOS High Sierra, install with `pip install --user localstack`
+This installs the `localstack-cli` which is used to run the Docker image that hosts the LocalStack runtime.
 
-It installs the `localstack-cli` which is used to run the Docker image that hosts the LocalStack runtime.
+> **Important**: Do not use `sudo` or run as `root` user. LocalStack must be installed and started entirely under a local non-root user. If you have problems with permissions in macOS High Sierra, install with `pip install --user localstack`
 
 ## Example
 
@@ -75,7 +78,7 @@ Start LocalStack inside a Docker container by running:
   / /___/ /_/ / /__/ /_/ / /___/ / /_/ /_/ / /__/ ,<
  /_____/\____/\___/\__,_/_//____/\__/\__,_/\___/_/|_|
 
- 💻 LocalStack CLI 1.3.0
+ 💻 LocalStack CLI 1.4.0
 
 [20:22:20] starting LocalStack in Docker mode 🐳
 [20:22:21] detaching
@@ -119,7 +122,7 @@ You can run LocalStack through the following options:
 
 ## Usage
 
-To start using LocalStack, check out our documentation on [docs.localstack.cloud](https://docs.localstack.cloud).
+To start using LocalStack, check out our documentation at <https://docs.localstack.cloud>.
 
 - [LocalStack Configuration](https://docs.localstack.cloud/references/configuration/)
 - [LocalStack in CI](https://docs.localstack.cloud/user-guide/ci/)
@@ -188,4 +191,4 @@ Copyright (c) 2017-2023 LocalStack maintainers and contributors.
 
 Copyright (c) 2016 Atlassian and others.
 
-This version of LocalStack is released under the Apache License, Version 2.0 (see LICENSE.txt). By downloading and using this software you agree to the [End-User License Agreement (EULA)](doc/end_user_license_agreement). To know about the external software we use, look at our [third party software tools](doc/third-party-software-tools/README.md) page.
+This version of LocalStack is released under the Apache License, Version 2.0 (see [LICENSE](LICENSE.txt)). By downloading and using this software you agree to the [End-User License Agreement (EULA)](doc/end_user_license_agreement). To know about the external software we use, look at our [third party software tools](doc/third-party-software-tools/README.md) page.
