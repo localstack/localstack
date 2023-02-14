@@ -1596,3 +1596,23 @@ class TestEvents:
                     logGroupName=log_group_name, logStreamName=log_stream["logStreamName"]
                 )
             logs_client.delete_log_group(logGroupName=log_group_name)
+
+    def test_put_target_id_validation(self, sqs_create_queue, events_client, sqs_client, snapshot):
+        rule_name = f"rule-{short_uid()}"
+        queue_url = sqs_create_queue()
+        queue_arn = self._get_queue_arn(queue_url, sqs_client)
+        target_id = "!@#$@!#$"
+
+        events_client.put_rule(Name=rule_name, EventPattern=json.dumps(TEST_EVENT_PATTERN))
+
+        with pytest.raises(ClientError) as e:
+            events_client.put_targets(
+                Rule=rule_name,
+                EventBusName=TEST_EVENT_BUS_NAME,
+                Targets=[
+                    {"Id": target_id, "Arn": queue_arn, "InputPath": "$.detail"},
+                    {"Id": f"{target_id}-2", "Arn": queue_arn, "InputPath": "$.detail"},
+                ],
+            )
+
+        snapshot.match("error", e.value.response)
