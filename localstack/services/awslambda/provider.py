@@ -115,6 +115,7 @@ from localstack.aws.api.lambda_ import (
     ResourceNotFoundException,
     Runtime,
     ServiceException,
+    SnapStart,
     SnapStartApplyOn,
     SnapStartOptimizationStatus,
     SnapStartResponse,
@@ -476,6 +477,21 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
                 Type="User",
             )
 
+    @staticmethod
+    def _validate_snapstart(snap_start: SnapStart, runtime: Runtime):
+        apply_on = snap_start.get("ApplyOn")
+        if apply_on not in [
+            SnapStartApplyOn.PublishedVersions,
+            SnapStartApplyOn.None_,
+        ]:
+            raise ValidationException(
+                f"1 validation error detected: Value '{apply_on}' at 'snapStart.applyOn' failed to satisfy constraint: Member must satisfy enum value set: [PublishedVersions, None]"
+            )
+        if runtime not in SNAP_START_SUPPORTED_RUNTIMES:
+            raise InvalidParameterValueException(
+                f"{runtime} is not supported for SnapStart enabled functions.", Type="User"
+            )
+
     def _validate_layers(self, new_layers: list[str], region: str, account_id: int):
         if len(new_layers) > LAMBDA_LAYERS_LIMIT_PER_FUNCTION:
             raise InvalidParameterValueException(
@@ -596,19 +612,8 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
                 f"Value {request.get('Runtime')} at 'runtime' failed to satisfy constraint: Member must satisfy enum value set: [nodejs12.x, provided, nodejs16.x, nodejs14.x, ruby2.7, java11, dotnet6, go1.x, nodejs18.x, provided.al2, java8, java8.al2, dotnetcore3.1, python3.7, python3.8, python3.9] or be a valid ARN",
                 Type="User",
             )
-        if request.get("SnapStart"):
-            apply_on = request.get("SnapStart").get("ApplyOn")
-            if apply_on not in [
-                SnapStartApplyOn.PublishedVersions,
-                SnapStartApplyOn.None_,
-            ]:
-                raise ValidationException(
-                    f"1 validation error detected: Value '{apply_on}' at 'snapStart.applyOn' failed to satisfy constraint: Member must satisfy enum value set: [PublishedVersions, None]"
-                )
-            if runtime not in SNAP_START_SUPPORTED_RUNTIMES:
-                raise InvalidParameterValueException(
-                    f"{runtime} is not supported for SnapStart enabled functions.", Type="User"
-                )
+        if snap_start := request.get("SnapStart"):
+            self._validate_snapstart(snap_start, runtime)
         state = lambda_stores[context.account_id][context.region]
 
         function_name = request["FunctionName"]
@@ -788,6 +793,14 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
                     Type="User",
                 )
             replace_kwargs["runtime"] = request["Runtime"]
+
+        if snap_start := request.get("SnapStart"):
+            runtime = replace_kwargs.get("runtime") or latest_version_config.runtime
+            self._validate_snapstart(snap_start, runtime)
+            replace_kwargs["snap_start"] = SnapStartResponse(
+                ApplyOn=snap_start.get("ApplyOn", SnapStartApplyOn.None_),
+                OptimizationStatus=SnapStartOptimizationStatus.Off,
+            )
 
         if "Environment" in request:
             if env_vars := request.get("Environment", {}).get("Variables", {}):

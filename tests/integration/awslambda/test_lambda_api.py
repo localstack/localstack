@@ -4694,14 +4694,15 @@ class TestLambdaLayer:
 
 
 @pytest.mark.skipif(condition=is_old_provider(), reason="not supported")
+@pytest.mark.skip_snapshot_verify(
+    paths=[
+        # TODO: new lambda feature: https://docs.aws.amazon.com/lambda/latest/dg/runtimes-update.html
+        "$..CreateFunctionResponse.RuntimeVersionConfig",
+        "$..Configuration.RuntimeVersionConfig",
+        "$..RuntimeVersionConfig",
+    ]
+)
 class TestLambdaSnapStart:
-    @pytest.mark.skip_snapshot_verify(
-        paths=[
-            # TODO: new lambda feature: https://docs.aws.amazon.com/lambda/latest/dg/runtimes-update.html
-            "$..CreateFunctionResponse.RuntimeVersionConfig",
-            "$..Configuration.RuntimeVersionConfig",
-        ]
-    )
     @pytest.mark.aws_validated
     def test_snapstart_lifecycle(self, lambda_client, create_lambda_function, snapshot):
         """Test the API of the SnapStart feature. The optimization behavior is not supported in LocalStack.
@@ -4734,6 +4735,28 @@ class TestLambdaSnapStart:
             FunctionName=f"{function_name}:{version_1}"
         )
         snapshot.match("get_function_response_version_1", get_function_response)
+
+    @pytest.mark.aws_validated
+    def test_snapstart_update_function_configuration(
+        self, lambda_client, create_lambda_function, snapshot
+    ):
+        """Test enabling SnapStart when updating a function."""
+        function_name = f"fn-{short_uid()}"
+        java_jar_with_lib = load_file(TEST_LAMBDA_JAVA_WITH_LIB, mode="rb")
+        create_response = create_lambda_function(
+            func_name=function_name,
+            zip_file=java_jar_with_lib,
+            runtime=Runtime.java11,
+            handler="cloud.localstack.sample.LambdaHandlerWithLib",
+        )
+        snapshot.match("create_function_response", create_response)
+        lambda_client.get_waiter("function_active_v2").wait(FunctionName=function_name)
+
+        update_function_response = lambda_client.update_function_configuration(
+            FunctionName=function_name,
+            SnapStart={"ApplyOn": "PublishedVersions"},
+        )
+        snapshot.match("update_function_response", update_function_response)
 
     @pytest.mark.aws_validated
     def test_snapstart_exceptions(self, lambda_client, lambda_su_role, snapshot):
