@@ -83,22 +83,6 @@ if TYPE_CHECKING:
 LOG = logging.getLogger(__name__)
 
 
-def is_pro_enabled() -> bool:
-    """Return whether the Pro extensions are enabled, i.e., restricted modules can be imported"""
-    try:
-        import localstack_ext.utils.common  # noqa
-
-        return True
-    except Exception:
-        return False
-
-
-# marker to indicate that a test should be skipped if the Pro extensions are enabled
-skip_if_pro_enabled = pytest.mark.skipif(
-    condition=is_pro_enabled(), reason="skipping, as Pro extensions are enabled"
-)
-
-
 def _client(service, region_name=None, aws_access_key_id=None, *, additional_config=None):
     config = botocore.config.Config()
 

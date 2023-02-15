@@ -256,11 +256,16 @@ def cmd_config_validate(file):
 @publish_invocation
 def cmd_config_show(format):
     # TODO: parse values from potential docker-compose file?
-
-    from localstack_ext import config as ext_config
-
     assert config
-    assert ext_config
+
+    try:
+        # only load the ext config if it's available
+        from localstack_ext import config as ext_config
+
+        assert ext_config
+    except ImportError:
+        # the ext package is not available
+        return None
 
     if format == "table":
         print_config_table()
