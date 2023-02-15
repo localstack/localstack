@@ -4694,14 +4694,6 @@ class TestLambdaLayer:
 
 
 @pytest.mark.skipif(condition=is_old_provider(), reason="not supported")
-@pytest.mark.skip_snapshot_verify(
-    paths=[
-        # TODO: new lambda feature: https://docs.aws.amazon.com/lambda/latest/dg/runtimes-update.html
-        "$..CreateFunctionResponse.RuntimeVersionConfig",
-        "$..Configuration.RuntimeVersionConfig",
-        "$..RuntimeVersionConfig",
-    ]
-)
 class TestLambdaSnapStart:
     @pytest.mark.aws_validated
     def test_snapstart_lifecycle(self, lambda_client, create_lambda_function, snapshot):

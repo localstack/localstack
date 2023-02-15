@@ -114,6 +114,7 @@ from localstack.aws.api.lambda_ import (
     ResourceConflictException,
     ResourceNotFoundException,
     Runtime,
+    RuntimeVersionConfig,
     ServiceException,
     SnapStart,
     SnapStartApplyOn,
@@ -693,6 +694,10 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
                     snap_start=SnapStartResponse(
                         ApplyOn=request.get("SnapStart", {}).get("ApplyOn", SnapStartApplyOn.None_),
                         OptimizationStatus=SnapStartOptimizationStatus.Off,
+                    ),
+                    runtime_version_config=RuntimeVersionConfig(
+                        # Limitation: the runtime id (presumably sha256 of image) is currently hardcoded
+                        RuntimeVersionArn=f"arn:aws:lambda:{context.region}::runtime:8eeff65f6809a3ce81507fe733fe09b835899b99481ba22fd75b5a7338290ec1"
                     ),
                     dead_letter_arn=request.get("DeadLetterConfig", {}).get("TargetArn"),
                     state=VersionState(
