@@ -35,6 +35,7 @@ from localstack.utils.sync import wait_until
 from localstack.utils.testutil import create_lambda_archive
 from tests.integration.awslambda.test_lambda import (
     FUNCTION_MAX_UNZIPPED_SIZE,
+    TEST_LAMBDA_JAVA_WITH_LIB,
     TEST_LAMBDA_NODEJS,
     TEST_LAMBDA_PYTHON_ECHO,
     TEST_LAMBDA_PYTHON_ECHO_ZIP,
@@ -4690,3 +4691,64 @@ class TestLambdaLayer:
         snapshot.match(
             "get_layer_version_policy_postdeletes2", get_layer_version_policy_postdeletes2
         )
+
+
+@pytest.mark.skipif(condition=is_old_provider(), reason="not supported")
+class TestLambdaSnapStart:
+    @pytest.mark.skip_snapshot_verify(
+        paths=[
+            # TODO: new lambda feature: https://docs.aws.amazon.com/lambda/latest/dg/runtimes-update.html
+            "$..CreateFunctionResponse.RuntimeVersionConfig",
+            "$..Configuration.RuntimeVersionConfig",
+        ]
+    )
+    # TODO: validate
+    @pytest.mark.aws_validated
+    def test_snapstart_lifecycle(self, lambda_client, create_lambda_function, snapshot):
+        """Test the API of the SnapStart feature. The optimization behavior is not supported in LocalStack."""
+        function_name = f"fn-{short_uid()}"
+        java_jar_with_lib = load_file(TEST_LAMBDA_JAVA_WITH_LIB, mode="rb")
+        create_response = create_lambda_function(
+            func_name=function_name,
+            zip_file=java_jar_with_lib,
+            runtime=Runtime.java11,
+            handler="cloud.localstack.sample.LambdaHandlerWithLib",
+            # TODO: enable SnapStart
+            # SnapStart={"ApplyOn": "PublishedVersions"},
+        )
+        snapshot.match("create_function_response", create_response)
+        lambda_client.get_waiter("function_active_v2").wait(FunctionName=function_name)
+
+        publish_response = lambda_client.publish_version(
+            FunctionName=function_name, Description="version1"
+        )
+        version_1 = publish_response["Version"]
+        lambda_client.get_waiter("published_version_active").wait(
+            FunctionName=function_name, Qualifier=version_1
+        )
+
+        get_function_response = lambda_client.get_function(FunctionName=function_name)
+        snapshot.match("get_function_response_latest", get_function_response)
+
+        get_function_response = lambda_client.get_function(
+            FunctionName=f"{function_name}:{version_1}"
+        )
+        snapshot.match("get_function_response_version_1", get_function_response)
+
+    @pytest.mark.aws_validated
+    def test_snapstart_exceptions(self, lambda_client, lambda_su_role, snapshot):
+        function_name = f"invalid-function-{short_uid()}"
+        zip_file_bytes = create_lambda_archive(load_file(TEST_LAMBDA_PYTHON_ECHO), get_content=True)
+        # Test unsupported runtime
+        # Only supports java11 (2023-02-15): https://docs.aws.amazon.com/lambda/latest/dg/snapstart.html
+        with pytest.raises(ClientError) as e:
+            lambda_client.create_function(
+                FunctionName=function_name,
+                Handler="index.handler",
+                Code={"ZipFile": zip_file_bytes},
+                PackageType="Zip",
+                Role=lambda_su_role,
+                Runtime=Runtime.python3_9,
+                SnapStart={"ApplyOn": "PublishedVersions"},
+            )
+        snapshot.match("create_function_unsupported_snapstart_runtime", e.value.response)

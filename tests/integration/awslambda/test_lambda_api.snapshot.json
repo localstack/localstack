@@ -10942,5 +10942,166 @@
         }
       }
     }
+  },
+  "tests/integration/awslambda/test_lambda_api.py::TestLambdaSnapStart::test_snapstart_exceptions": {
+    "recorded-date": "15-02-2023, 15:59:01",
+    "recorded-content": {
+      "create_function_unsupported_snapstart_runtime": {
+        "Error": {
+          "Code": "InvalidParameterValueException",
+          "Message": "python3.9 is not supported for SnapStart enabled functions."
+        },
+        "Type": "User",
+        "message": "python3.9 is not supported for SnapStart enabled functions.",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/integration/awslambda/test_lambda_api.py::TestLambdaSnapStart::test_snapstart_lifecycle": {
+    "recorded-date": "15-02-2023, 17:02:48",
+    "recorded-content": {
+      "create_function_response": {
+        "CreateEventSourceMappingResponse": null,
+        "CreateFunctionResponse": {
+          "Architectures": [
+            "x86_64"
+          ],
+          "CodeSha256": "<code-sha256:1>",
+          "CodeSize": "<code-size>",
+          "Description": "",
+          "Environment": {
+            "Variables": {}
+          },
+          "EphemeralStorage": {
+            "Size": 512
+          },
+          "FunctionArn": "arn:aws:lambda:<region>:111111111111:function:<function-name:1>",
+          "FunctionName": "<function-name:1>",
+          "Handler": "cloud.localstack.sample.LambdaHandlerWithLib",
+          "LastModified": "date",
+          "MemorySize": 128,
+          "PackageType": "Zip",
+          "RevisionId": "<uuid:1>",
+          "Role": "arn:aws:iam::111111111111:role/<resource:1>",
+          "Runtime": "java11",
+          "RuntimeVersionConfig": {
+            "RuntimeVersionArn": "arn:aws:lambda:<region>::runtime:<resource:2>"
+          },
+          "SnapStart": {
+            "ApplyOn": "None",
+            "OptimizationStatus": "Off"
+          },
+          "State": "Pending",
+          "StateReason": "The function is being created.",
+          "StateReasonCode": "Creating",
+          "Timeout": 30,
+          "TracingConfig": {
+            "Mode": "PassThrough"
+          },
+          "Version": "$LATEST",
+          "ResponseMetadata": {
+            "HTTPHeaders": {},
+            "HTTPStatusCode": 201
+          }
+        }
+      },
+      "get_function_response_latest": {
+        "Code": {
+          "Location": "<location>",
+          "RepositoryType": "S3"
+        },
+        "Configuration": {
+          "Architectures": [
+            "x86_64"
+          ],
+          "CodeSha256": "<code-sha256:1>",
+          "CodeSize": "<code-size>",
+          "Description": "",
+          "Environment": {
+            "Variables": {}
+          },
+          "EphemeralStorage": {
+            "Size": 512
+          },
+          "FunctionArn": "arn:aws:lambda:<region>:111111111111:function:<function-name:1>",
+          "FunctionName": "<function-name:1>",
+          "Handler": "cloud.localstack.sample.LambdaHandlerWithLib",
+          "LastModified": "date",
+          "LastUpdateStatus": "Successful",
+          "MemorySize": 128,
+          "PackageType": "Zip",
+          "RevisionId": "<uuid:2>",
+          "Role": "arn:aws:iam::111111111111:role/<resource:1>",
+          "Runtime": "java11",
+          "RuntimeVersionConfig": {
+            "RuntimeVersionArn": "arn:aws:lambda:<region>::runtime:<resource:2>"
+          },
+          "SnapStart": {
+            "ApplyOn": "None",
+            "OptimizationStatus": "Off"
+          },
+          "State": "Active",
+          "Timeout": 30,
+          "TracingConfig": {
+            "Mode": "PassThrough"
+          },
+          "Version": "$LATEST"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "get_function_response_version_1": {
+        "Code": {
+          "Location": "<location>",
+          "RepositoryType": "S3"
+        },
+        "Configuration": {
+          "Architectures": [
+            "x86_64"
+          ],
+          "CodeSha256": "<code-sha256:1>",
+          "CodeSize": "<code-size>",
+          "Description": "version1",
+          "Environment": {
+            "Variables": {}
+          },
+          "EphemeralStorage": {
+            "Size": 512
+          },
+          "FunctionArn": "arn:aws:lambda:<region>:111111111111:function:<function-name:1>:1",
+          "FunctionName": "<function-name:1>",
+          "Handler": "cloud.localstack.sample.LambdaHandlerWithLib",
+          "LastModified": "date",
+          "LastUpdateStatus": "Successful",
+          "MemorySize": 128,
+          "PackageType": "Zip",
+          "RevisionId": "<uuid:3>",
+          "Role": "arn:aws:iam::111111111111:role/<resource:1>",
+          "Runtime": "java11",
+          "RuntimeVersionConfig": {
+            "RuntimeVersionArn": "arn:aws:lambda:<region>::runtime:<resource:2>"
+          },
+          "SnapStart": {
+            "ApplyOn": "None",
+            "OptimizationStatus": "Off"
+          },
+          "State": "Active",
+          "Timeout": 30,
+          "TracingConfig": {
+            "Mode": "PassThrough"
+          },
+          "Version": "1"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
   }
 }

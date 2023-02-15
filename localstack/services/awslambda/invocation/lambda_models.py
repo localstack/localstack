@@ -78,6 +78,7 @@ IMAGE_MAPPING = {
     "provided": "provided:alami",
     "provided.al2": "provided:al2",
 }
+SNAP_START_SUPPORTED_RUNTIMES = [Runtime.java11]
 
 
 @dataclasses.dataclass(frozen=True)
