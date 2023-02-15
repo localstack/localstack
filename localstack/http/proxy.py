@@ -7,7 +7,7 @@ from werkzeug.datastructures import Headers
 from werkzeug.test import EnvironBuilder
 
 from .client import HttpClient, SimpleRequestsClient
-from .request import restore_payload, set_environment_headers
+from .request import get_raw_path, restore_payload, set_environment_headers
 
 
 def forward(
@@ -77,7 +77,7 @@ class Proxy(HttpClient):
                 headers["X-Forwarded-For"] = f"{client_ip}"
 
         if forward_path is None:
-            forward_path = request.path
+            forward_path = get_raw_path(request)
         if forward_path:
             forward_path = "/" + forward_path.lstrip("/")
 

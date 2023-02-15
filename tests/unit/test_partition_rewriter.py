@@ -96,19 +96,20 @@ def test_arn_partition_rewriting_in_request(internal_call, encoding, origin_part
 def test_arn_partition_rewriting_url_encoding(httpserver, monkeypatch):
     path = "/query%3Aencoded%2Fpath/"
 
-    def echo_path(request: WerkzeugRequest) -> Response:
+    def echo_path(_request: WerkzeugRequest) -> Response:
         response = Response()
         response.set_json(
             {
-                "method": request.method,
-                "raw_path": get_raw_path(request),
-                "url": request.url,
-                "headers": dict(request.headers),
+                "method": _request.method,
+                "raw_path": get_raw_path(_request),
+                "url": _request.url,
+                "headers": dict(_request.headers),
             }
         )
         return response
 
-    httpserver.expect_request(path).respond_with_handler(echo_path)
+    # httpserver matches on the URL-decoded path
+    httpserver.expect_request("/query:encoded/path/").respond_with_handler(echo_path)
 
     def mock_get_edge_url() -> str:
         # Set the forwarding URL to the mock HTTP server
@@ -287,4 +288,103 @@ def test_arn_partition_rewriting_in_response_without_region_and_with_default_reg
         )
         assert response.data == to_bytes(
             json.dumps({"some-data-with-arn": "arn:aws-us-gov:iam::123456789012:ArnInData"})
+        )
+
+
+@pytest.mark.parametrize("internal_call", [True, False])
+@pytest.mark.parametrize("encoding", [byte_encoding, string_encoding])
+@pytest.mark.parametrize("origin_partition", ["aws", "aws-us-gov"])
+def test_arn_partition_rewriting_in_request_and_response(
+    internal_call, encoding, origin_partition, httpserver, monkeypatch
+):
+    handler_data = {}
+
+    def echo(_request: WerkzeugRequest) -> Response:
+        handler_data["received_request"] = _request
+        response = Response()
+        response.set_data(_request.data)
+        response.headers = request.headers
+        handler_data["sent_request"] = response
+        return response
+
+    httpserver.expect_request("").respond_with_handler(echo)
+
+    def mock_get_edge_url() -> str:
+        # Set the forwarding URL to the mock HTTP server
+        return httpserver.url_for("/")
+
+    monkeypatch.setattr(config, "get_edge_url", mock_get_edge_url)
+    data = encoding(
+        json.dumps(
+            {
+                "some-data-with-arn": f"arn:{origin_partition}:apigateway:us-gov-west-1::/restapis/arn-in-body/*"
+            }
+        )
+    )
+
+    # if this test is parameterized to be an internal call, set the internal auth
+    # incoming requests should be rewritten for both, internal and external requests (in contrast to the responses!)
+    if internal_call:
+        headers = mock_aws_request_headers(
+            region_name=origin_partition,
+            access_key=INTERNAL_AWS_ACCESS_KEY_ID,
+            internal=True,
+        )
+    else:
+        headers = {"Host": f"{httpserver.host}:{httpserver.port}"}
+
+    headers[
+        "Arn-Header"
+    ] = f"arn:{origin_partition}:apigateway:us-gov-west-1::/restapis/arn-in-header/*"
+
+    request = Request(
+        method="POST",
+        path=f"/arn%3A{origin_partition}%3Aapigateway%3Aus-gov-west-1%3A%3A%2Frestapis%2Farn-in-path%2F%2A",
+        query_string=f"arn=arn%3A{origin_partition}%3Aapigateway%3Aus-gov-west-1%3A%3A%2Frestapis%2Farn-in-query%2F%2A&"
+        f"arn2=arn%3A{origin_partition}%3Aapigateway%3Aus-gov-west-1%3A%3A%2Frestapis%2Farn-in-query2%2F%2A",
+        body=data,
+        headers=headers,
+    )
+    rewrite_handler = ArnPartitionRewriteHandler()
+    chain = HandlerChain()
+    chain.request_handlers.append(rewrite_handler)
+    context = RequestContext()
+    context.request = request
+    chain.handle(context, Response())
+    if internal_call:
+        assert not chain.terminated
+        assert chain.response.data == b""
+    else:
+        # ensure that the backend system received the "internal" path, query, header, and data (partition is always "AWS")
+        assert (
+            get_raw_path(handler_data["received_request"])
+            == "/arn%3Aaws%3Aapigateway%3Aus-gov-west-1%3A%3A%2Frestapis%2Farn-in-path%2F%2A"
+        )
+        assert (
+            handler_data["received_request"].query_string
+            == b"arn=arn%3Aaws%3Aapigateway%3Aus-gov-west-1%3A%3A%2Frestapis%2Farn-in-query%2F%2A&arn2=arn%3Aaws%3Aapigateway%3Aus-gov-west-1%3A%3A%2Frestapis%2Farn-in-query2%2F%2A"
+        )
+        assert (
+            handler_data["received_request"].headers["Arn-Header"]
+            == "arn:aws:apigateway:us-gov-west-1::/restapis/arn-in-header/*"
+        )
+        assert handler_data["received_request"].data == to_bytes(
+            json.dumps(
+                {"some-data-with-arn": "arn:aws:apigateway:us-gov-west-1::/restapis/arn-in-body/*"}
+            )
+        )
+
+        # ensure the client receives the "external" header, and data (partition is always the one which was sent)
+        received_response = chain.response
+        response_headers = received_response.headers
+        assert (
+            response_headers["Arn-Header"]
+            == "arn:aws-us-gov:apigateway:us-gov-west-1::/restapis/arn-in-header/*"
+        )
+        assert received_response.data == to_bytes(
+            json.dumps(
+                {
+                    "some-data-with-arn": "arn:aws-us-gov:apigateway:us-gov-west-1::/restapis/arn-in-body/*"
+                }
+            )
         )

@@ -4,9 +4,13 @@ from urllib.parse import urlparse
 import requests
 from werkzeug import Request, Response
 from werkzeug.datastructures import Headers
-from werkzeug.sansio.utils import get_current_url
 
-from localstack.http.request import get_raw_base_url, get_raw_path, restore_payload
+from localstack.http.request import (
+    get_raw_base_url,
+    get_raw_current_url,
+    get_raw_path,
+    restore_payload,
+)
 
 
 class HttpClient(abc.ABC):
@@ -64,7 +68,7 @@ class SimpleRequestsClient(HttpClient):
                 scheme, server = parts.scheme, parts.netloc
             else:
                 scheme = request.scheme
-            url = get_current_url(scheme, server, request.root_path, get_raw_path(request))
+            url = get_raw_current_url(scheme, server, request.root_path, get_raw_path(request))
         else:
             url = get_raw_base_url(request)
 
