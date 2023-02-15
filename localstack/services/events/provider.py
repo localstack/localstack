@@ -206,7 +206,7 @@ class EventsProvider(EventsApi, ServiceLifecycleHook):
         rule: RuleName,
         targets: TargetList,
         event_bus_name: EventBusNameOrArn = None,
-    ) -> None:
+    ):
         validation_errors = []
 
         id_regex = re.compile(r"^[\.\-_A-Za-z0-9]+$")
@@ -222,7 +222,7 @@ class EventsProvider(EventsApi, ServiceLifecycleHook):
             message = f"{len(validation_errors)} validation {'errors' if len(validation_errors) > 1 else 'error'} detected: {errors_message}"
             raise CommonServiceException(message=message, code="ValidationException")
 
-        call_moto(context)
+        return call_moto(context)
 
 
 def _get_events_tmp_dir():
