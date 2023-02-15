@@ -5,8 +5,7 @@ from typing import Any, Dict
 
 import airspeed
 
-from localstack.utils.collections import DictProxy
-from localstack.utils.objects import Mock, recurse_object
+from localstack.utils.objects import recurse_object
 from localstack.utils.patch import patch
 
 
@@ -28,20 +27,6 @@ class VelocityUtil:
     def matches(self, regex, subject, *args, **kwargs):
         """Match a regular expression against the given subject string"""
         return re.match(regex, subject)
-
-
-class VtlDict(DictProxy, Mock):
-    """
-    Represents a dict object that defines additional methods like .put(..) for use in VTL templates
-    """
-
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        self._custom_attrs.append("put")
-
-    def put(self, key, value):
-        self._dict[key] = value
-        return value
 
 
 class VtlTemplate:

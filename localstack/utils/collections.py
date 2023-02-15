@@ -6,7 +6,7 @@ and manipulate python collection (dicts, list, sets).
 import logging
 import re
 import sys
-from collections.abc import Mapping, MutableMapping
+from collections.abc import Mapping
 from typing import (
     Any,
     Callable,
@@ -23,9 +23,6 @@ from typing import (
 )
 
 import cachetools
-
-from localstack.utils.json import CustomEncoder
-from localstack.utils.patch import patch
 
 if sys.version_info >= (3, 8):
     from typing import TypedDict, get_args, get_origin
@@ -110,70 +107,6 @@ class HashableJsonDict(ImmutableDict):
         from localstack.utils.json import canonical_json
 
         return hash(canonical_json(self._dict))
-
-
-class DictProxy(MutableMapping):
-    """
-    Generic dict proxy class that can be used to define subclasses of dict with additional methods.
-    It implements the MutableMapping interface and redirects all methods calls to an underlying dict which it wraps.
-
-    The DictProxy class can be extended with additional custom logic as follows:
-
-    class MyDict(DictProxy):
-
-        def __init__(self, *args, **kwargs):
-            super().__init__(*args, **kwargs)
-            self._custom_attrs.append("my_func")
-
-        def my_func(self, key, value):
-            ...
-    """
-
-    def __init__(self, wrapped: dict = None):
-        super().__init__()
-        self._custom_attrs = ["_dict", "__dict__", "__class__"]
-        self._dict = {} if wrapped is None else wrapped
-
-    def __getattribute__(self, item):
-        if item == "_custom_attrs" or item in self._custom_attrs:
-            return super().__getattribute__(item)
-        return getattr(self._dict, item)
-
-    def __setattr__(self, key, value):
-        if key == "_custom_attrs" or key in self._custom_attrs:
-            return super().__setattr__(key, value)
-        return setattr(self._dict, key, value)
-
-    def __getitem__(self, item):
-        return self.__getitem__(item)
-
-    def __setitem__(self, key, value):
-        return self._dict.__setitem__(key, value)
-
-    def __delitem__(self, key):
-        self._dict.__delitem__(key)
-
-    def __iter__(self):
-        return self._dict.__iter__()
-
-    def __dir__(self):
-        return self._dict.__dir__()
-
-    def __len__(self):
-        return self._dict.__len__()
-
-    def __str__(self):
-        return self._dict.__str__()
-
-    def __repr__(self):
-        return self._dict.__repr__()
-
-
-@patch(CustomEncoder.default)
-def _default(fn, self, o):
-    if isinstance(o, DictProxy):
-        return o._dict
-    return fn(self, o)
 
 
 _ListType = TypeVar("_ListType")

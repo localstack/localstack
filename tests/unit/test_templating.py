@@ -2,7 +2,7 @@ import json
 import re
 
 from localstack.services.apigateway.templates import ApiGatewayVtlTemplate
-from localstack.utils.aws.templating import VtlDict, render_velocity_template
+from localstack.utils.aws.templating import render_velocity_template
 
 # template used to transform incoming requests at the API Gateway (forward to Kinesis)
 APIGW_TEMPLATE_TRANSFORM_KINESIS = """{
@@ -162,8 +162,17 @@ class TestMessageTransformationBasic:
         $util.qr($ctx.test.put("foo", "bar"))
         $ctx.test
         """
-        result = render_velocity_template(template, {"ctx": {"test": VtlDict()}})
+        result = render_velocity_template(template, {"ctx": {"test": {}}})
         assert result.strip() == str({"foo": "bar"})
+
+    def test_put_value_to_nested_dict(self):
+        template = r"""
+        $ctx.test.get('a').get('b').put('foo', 'bar')
+        $ctx.test.get('a')
+        """
+        wrapped = {"a": {"b": {"c": "foobar"}}}
+        result = render_velocity_template(template, {"ctx": {"test": wrapped}})
+        assert result.strip() == str({"b": {"c": "foobar", "foo": "bar"}})
 
 
 class TestMessageTransformationApiGateway:
