@@ -24,15 +24,19 @@ class VelocityUtil:
     def qr(self, *args, **kwargs):
         self.quiet(*args, **kwargs)
 
-    def matches(self, regex, subject, *args, **kwargs):
-        """Match a regular expression against the given subject string"""
-        return re.match(regex, subject)
-
 
 class VtlTemplate:
     """Utility class for rendering Velocity templates"""
 
-    def render_vtl(self, template, variables: Dict, as_json=False):
+    def render_vtl(self, template: str, variables: Dict, as_json=False) -> str | dict:
+        """
+        Render the given VTL template against the dict of variables. Note that this is a
+        potentially mutating operation which may change the values of `variables` in-place.
+        :param template: the template string
+        :param variables: dict of variables available to the template
+        :param as_json: whether to return the result as parsed JSON dict
+        :return: the rendered template string value (or dict)
+        """
         if variables is None:
             variables = {}
 

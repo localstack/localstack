@@ -143,20 +143,6 @@ class TestMessageTransformationBasic:
         result = re.sub(r"\s+", " ", result).strip()
         assert result == "loop1 loop3 end"
 
-    def test_match_regex_pattern(self):
-        template = r"""
-        #set($valid = $util.matches("^[a-zA-Z0-9_.+-]+@(?:(?:[a-zA-Z0-9-]+\\.)?[a-zA-Z]+\\.)?(local)\\.stack", $context.stash.email))
-        #if ($valid)
-            matches!
-        #end
-        """
-        result = render_velocity_template(template, {"context": {"stash": {"email": "test123"}}})
-        assert not result.strip()
-        result = render_velocity_template(
-            template, {"context": {"stash": {"email": "test@local.stack"}}}
-        )
-        assert result.strip() == "matches!"
-
     def test_put_value_to_dict(self):
         template = r"""
         $util.qr($ctx.test.put("foo", "bar"))
