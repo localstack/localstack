@@ -359,7 +359,12 @@ def cmd_update_docker_images():
     console.rule("Updating docker images")
 
     all_images = DOCKER_CLIENT.get_docker_image_names(strip_latest=False)
-    image_prefixes = ["localstack/", "lambci/lambda:", "mlupin/docker-lambda:"]
+    image_prefixes = [
+        "localstack/",
+        "lambci/lambda:",
+        "mlupin/docker-lambda:",
+        "public.ecr.aws/lambda",
+    ]
     localstack_images = [
         image
         for image in all_images
@@ -367,6 +372,7 @@ def cmd_update_docker_images():
             image.startswith(image_prefix) or image.startswith(f"docker.io/{image_prefix}")
             for image_prefix in image_prefixes
         )
+        and not image.endswith(":<none>")  # ignore dangling images
     ]
     update_images(localstack_images)
 
