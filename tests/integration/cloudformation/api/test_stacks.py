@@ -538,5 +538,6 @@ def test_events_resource_types(deploy_cfn_template, cfn_client, snapshot):
     stack = deploy_cfn_template(template_path=template_path, max_wait=500)
     events = cfn_client.describe_stack_events(StackName=stack.stack_name)["StackEvents"]
 
-    resource_types = set([event["ResourceType"] for event in events])
-    snapshot.match("resource_types", dict.fromkeys(resource_types, 0))
+    resource_types = list(set([event["ResourceType"] for event in events]))
+    resource_types.sort()
+    snapshot.match("resource_types", resource_types)
