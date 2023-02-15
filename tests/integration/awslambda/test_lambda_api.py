@@ -4752,3 +4752,15 @@ class TestLambdaSnapStart:
                 SnapStart={"ApplyOn": "PublishedVersions"},
             )
         snapshot.match("create_function_unsupported_snapstart_runtime", e.value.response)
+
+        with pytest.raises(ClientError) as e:
+            lambda_client.create_function(
+                FunctionName=function_name,
+                Handler="cloud.localstack.sample.LambdaHandlerWithLib",
+                Code={"ZipFile": zip_file_bytes},
+                PackageType="Zip",
+                Role=lambda_su_role,
+                Runtime=Runtime.java11,
+                SnapStart={"ApplyOn": "invalidOption"},
+            )
+        snapshot.match("create_function_invalid_snapstart_apply", e.value.response)

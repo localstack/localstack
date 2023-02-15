@@ -10944,7 +10944,7 @@
     }
   },
   "tests/integration/awslambda/test_lambda_api.py::TestLambdaSnapStart::test_snapstart_exceptions": {
-    "recorded-date": "15-02-2023, 15:59:01",
+    "recorded-date": "15-02-2023, 18:01:40",
     "recorded-content": {
       "create_function_unsupported_snapstart_runtime": {
         "Error": {
@@ -10953,6 +10953,16 @@
         },
         "Type": "User",
         "message": "python3.9 is not supported for SnapStart enabled functions.",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "create_function_invalid_snapstart_apply": {
+        "Error": {
+          "Code": "ValidationException",
+          "Message": "1 validation error detected: Value 'invalidOption' at 'snapStart.applyOn' failed to satisfy constraint: Member must satisfy enum value set: [PublishedVersions, None]"
+        },
         "ResponseMetadata": {
           "HTTPHeaders": {},
           "HTTPStatusCode": 400
