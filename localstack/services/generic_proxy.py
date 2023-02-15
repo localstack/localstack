@@ -14,7 +14,6 @@ from typing import Dict, List, Optional, Union
 from urllib.parse import urlparse
 
 import requests
-from flask_cors import CORS
 from flask_cors.core import (
     ACL_ALLOW_HEADERS,
     ACL_EXPOSE_HEADERS,
@@ -40,7 +39,6 @@ from localstack.utils.json import json_safe
 from localstack.utils.net import wait_for_port_open
 from localstack.utils.server import http2_server
 from localstack.utils.ssl import create_ssl_cert, install_predefined_cert_if_available
-from localstack.utils.threads import start_thread
 
 # set up logger
 LOG = logging.getLogger(__name__)
@@ -641,35 +639,3 @@ def start_proxy_server(
     if asynchronous and check_port:
         wait_for_port_open(port, sleep_time=0.2, retries=12)
     return result
-
-
-def serve_flask_app(app, port, host=None, cors=True, asynchronous=False):
-    if cors:
-        CORS(app)
-    if not config.DEBUG:
-        logging.getLogger("werkzeug").setLevel(logging.ERROR)
-    if not host:
-        host = "0.0.0.0"
-    ssl_context = None
-    if not config.FORWARD_EDGE_INMEM and config.USE_SSL:
-        _, cert_file_name, key_file_name = create_ssl_cert(serial_number=port)
-        ssl_context = cert_file_name, key_file_name
-    app.config["ENV"] = "development"
-
-    def noecho(*args, **kwargs):
-        pass
-
-    try:
-        import click
-
-        click.echo = noecho
-    except Exception:
-        pass
-
-    def _run(*_):
-        app.run(port=int(port), threaded=True, host=host, ssl_context=ssl_context)
-        return app
-
-    if asynchronous:
-        return start_thread(_run, name="flaskapp")
-    return _run()
