@@ -368,6 +368,14 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
                 region=region,
                 account=account_id,
             )
+            apply_on = current_latest_version.config.snap_start["ApplyOn"]
+            optimization_status = SnapStartOptimizationStatus.Off
+            if apply_on == SnapStartApplyOn.PublishedVersions:
+                optimization_status = SnapStartOptimizationStatus.On
+            snap_start = SnapStartResponse(
+                ApplyOn=apply_on,
+                OptimizationStatus=optimization_status,
+            )
             new_version = dataclasses.replace(
                 current_latest_version,
                 config=dataclasses.replace(
@@ -378,6 +386,7 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
                         code=StateReasonCode.Creating,
                         reason="The function is being created.",
                     ),
+                    snap_start=snap_start,
                     **changes,
                 ),
                 id=new_id,
@@ -592,6 +601,7 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
                 raise InvalidParameterValueException(
                     f"{runtime} is not supported for SnapStart enabled functions.", Type="User"
                 )
+        #     TODO: ApplyOn valid values check
         state = lambda_stores[context.account_id][context.region]
 
         function_name = request["FunctionName"]
@@ -669,7 +679,7 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
                         size=request.get("EphemeralStorage", {}).get("Size", 512)
                     ),
                     snap_start=SnapStartResponse(
-                        ApplyOn=SnapStartApplyOn.None_,
+                        ApplyOn=request.get("SnapStart", {}).get("ApplyOn", SnapStartApplyOn.None_),
                         OptimizationStatus=SnapStartOptimizationStatus.Off,
                     ),
                     dead_letter_arn=request.get("DeadLetterConfig", {}).get("TargetArn"),

@@ -4702,10 +4702,11 @@ class TestLambdaSnapStart:
             "$..Configuration.RuntimeVersionConfig",
         ]
     )
-    # TODO: validate
     @pytest.mark.aws_validated
     def test_snapstart_lifecycle(self, lambda_client, create_lambda_function, snapshot):
-        """Test the API of the SnapStart feature. The optimization behavior is not supported in LocalStack."""
+        """Test the API of the SnapStart feature. The optimization behavior is not supported in LocalStack.
+        Slow (~1-2min) against AWS.
+        """
         function_name = f"fn-{short_uid()}"
         java_jar_with_lib = load_file(TEST_LAMBDA_JAVA_WITH_LIB, mode="rb")
         create_response = create_lambda_function(
@@ -4713,8 +4714,7 @@ class TestLambdaSnapStart:
             zip_file=java_jar_with_lib,
             runtime=Runtime.java11,
             handler="cloud.localstack.sample.LambdaHandlerWithLib",
-            # TODO: enable SnapStart
-            # SnapStart={"ApplyOn": "PublishedVersions"},
+            SnapStart={"ApplyOn": "PublishedVersions"},
         )
         snapshot.match("create_function_response", create_response)
         lambda_client.get_waiter("function_active_v2").wait(FunctionName=function_name)

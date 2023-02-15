@@ -10961,7 +10961,7 @@
     }
   },
   "tests/integration/awslambda/test_lambda_api.py::TestLambdaSnapStart::test_snapstart_lifecycle": {
-    "recorded-date": "15-02-2023, 17:02:48",
+    "recorded-date": "15-02-2023, 17:37:32",
     "recorded-content": {
       "create_function_response": {
         "CreateEventSourceMappingResponse": null,
@@ -10991,7 +10991,7 @@
             "RuntimeVersionArn": "arn:aws:lambda:<region>::runtime:<resource:2>"
           },
           "SnapStart": {
-            "ApplyOn": "None",
+            "ApplyOn": "PublishedVersions",
             "OptimizationStatus": "Off"
           },
           "State": "Pending",
@@ -11040,7 +11040,7 @@
             "RuntimeVersionArn": "arn:aws:lambda:<region>::runtime:<resource:2>"
           },
           "SnapStart": {
-            "ApplyOn": "None",
+            "ApplyOn": "PublishedVersions",
             "OptimizationStatus": "Off"
           },
           "State": "Active",
@@ -11087,8 +11087,8 @@
             "RuntimeVersionArn": "arn:aws:lambda:<region>::runtime:<resource:2>"
           },
           "SnapStart": {
-            "ApplyOn": "None",
-            "OptimizationStatus": "Off"
+            "ApplyOn": "PublishedVersions",
+            "OptimizationStatus": "On"
           },
           "State": "Active",
           "Timeout": 30,
