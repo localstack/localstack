@@ -2,7 +2,7 @@ import dill
 from moto.core import BackendDict
 
 from localstack.services.stores import AccountRegionBundle
-from localstack.services.visitors import ReflectionStateLocator, ServiceBackendCollectorVisitor
+from localstack.state.inspect import ReflectionStateLocator, ServiceBackendCollectorVisitor
 
 PersistenceBackend = AccountRegionBundle | BackendDict | dict
 
@@ -60,7 +60,7 @@ class StorePolice:
         actual backend.
         TODO: revisit this logic upon completion of the visitors refactoring
         """
-        self.state_manager.accept(visitor=self.visitor)
+        self.state_manager.accept_state_visitor(self.visitor)
         backends = self.visitor.collect()
         for backend_type in backends:
             _backend: PersistenceBackend = backends[backend_type]  # noqa
