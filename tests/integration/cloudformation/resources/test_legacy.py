@@ -260,6 +260,10 @@ Resources:
       Type: String
       Name: !Sub "/cdk-bootstrap/${Qualifier}/version"
       Value: "..."
+Outputs:
+ QueueURL:
+  Value:
+   Ref: TestQueue
 """
 
 
@@ -863,9 +867,11 @@ class TestCloudFormation:
     def test_resolve_transitive_placeholders_in_strings(self, sqs_client, deploy_cfn_template):
         queue_name = f"q-{short_uid()}"
         stack_name = f"stack-{short_uid()}"
-        deploy_cfn_template(stack_name=stack_name, template=TEST_TEMPLATE_29 % queue_name)
+        stack = deploy_cfn_template(
+            stack_name=stack_name, template=TEST_TEMPLATE_29 % queue_name, max_wait=500
+        )
 
-        tags = sqs_client.list_queue_tags(QueueUrl=arns.get_sqs_queue_url(queue_name))
+        tags = sqs_client.list_queue_tags(QueueUrl=stack.outputs["QueueURL"])
         test_tag = tags["Tags"]["test"]
         assert test_tag == arns.ssm_parameter_arn("cdk-bootstrap/q123/version")
 
