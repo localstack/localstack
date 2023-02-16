@@ -116,6 +116,7 @@ from localstack.services.s3.utils import (
     get_bucket_from_moto,
     get_header_name,
     get_key_from_moto_bucket,
+    get_object_checksum_for_algorithm,
     is_bucket_name_valid,
     is_canned_acl_bucket_valid,
     is_key_expired,
@@ -357,6 +358,23 @@ class S3Provider(S3Api, ServiceLifecycleHook):
         for request_param, response_param in ALLOWED_HEADER_OVERRIDES.items():
             if request_param_value := request.get(request_param):  # noqa
                 response[response_param] = request_param_value  # noqa
+
+        moto_backend = get_moto_s3_backend(context)
+        moto_bucket = get_bucket_from_moto(moto_backend, bucket=bucket)
+        key_object = get_key_from_moto_bucket(moto_bucket, key=key)
+
+        if checksum_algorithm := key_object.checksum_algorithm:
+            # this is a bug in AWS: it sets the content encoding header to an empty string (parity tested)
+            response["ContentEncoding"] = ""
+
+        if request.get("ChecksumMode") == "ENABLED" and checksum_algorithm:
+            # TODO: moto does not store the checksum of object, there is a TODO there as well
+            # in the meantime, just compute the hash everytime it's requested
+            checksum = get_object_checksum_for_algorithm(
+                checksum_algorithm=checksum_algorithm,
+                data=key_object.value,
+            )
+            response[f"Checksum{checksum_algorithm.upper()}"] = checksum  # noqa
 
         response["AcceptRanges"] = "bytes"
         return response
@@ -993,6 +1011,14 @@ class S3Provider(S3Api, ServiceLifecycleHook):
             response["StorageClass"] = key.storage_class
         if "ObjectSize" in object_attrs:
             response["ObjectSize"] = key.size
+        if "Checksum" in object_attrs and (checksum_algorithm := key.checksum_algorithm):
+            # TODO: moto does not store the checksum of object, there is a TODO there as well
+            # in the meantime, just compute the hash everytime it's requested
+            checksum = get_object_checksum_for_algorithm(
+                checksum_algorithm=checksum_algorithm,
+                data=key.value,
+            )
+            response["Checksum"] = {f"Checksum{checksum_algorithm.upper()}": checksum}  # noqa
 
         response["LastModified"] = key.last_modified
         if version_id := request.get("VersionId"):
