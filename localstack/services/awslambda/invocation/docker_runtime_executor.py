@@ -7,7 +7,7 @@ from pathlib import Path
 from typing import Callable, Dict, Literal, Optional
 
 from localstack import config
-from localstack.aws.api.lambda_ import PackageType, Runtime
+from localstack.aws.api.lambda_ import Architecture, PackageType, Runtime
 from localstack.services.awslambda import hooks as lambda_hooks
 from localstack.services.awslambda.invocation.executor_endpoint import (
     INVOCATION_PORT,
@@ -27,6 +27,7 @@ from localstack.services.awslambda.packages import awslambda_runtime_package
 from localstack.utils.container_networking import get_main_container_name
 from localstack.utils.container_utils.container_client import (
     ContainerConfiguration,
+    DockerPlatform,
     PortMappings,
     VolumeBind,
     VolumeMappings,
@@ -52,6 +53,27 @@ COPY code/ /var/task
 PULLED_IMAGES: set[str] = set()
 
 HOT_RELOADING_ENV_VARIABLE = "LOCALSTACK_HOT_RELOADING_PATHS"
+
+
+"""Map AWS Lambda architecture to Docker platform flags. Example: arm64 => linux/arm64"""
+ARCHITECTURE_PLATFORM_MAPPING: dict[Architecture, DockerPlatform] = dict(
+    {
+        Architecture.x86_64: DockerPlatform.linux_amd64,
+        Architecture.arm64: DockerPlatform.linux_arm64,
+    }
+)
+
+
+def docker_platform(lambda_architecture: Architecture) -> DockerPlatform:
+    """
+    Convert an AWS Lambda architecture into a Docker platform flag. Examples:
+    * docker_platform("x86_64") == "linux/amd64"
+    * docker_platform("arm64") == "linux/arm64"
+
+    :param lambda_architecture: the instruction set that the function supports
+    :return: Docker platform in the format ``os[/arch[/variant]]``
+    """
+    return ARCHITECTURE_PLATFORM_MAPPING[lambda_architecture]
 
 
 def get_image_name_for_function(function_version: FunctionVersion) -> str:
@@ -245,6 +267,7 @@ class DockerRuntimeExecutor(RuntimeExecutor):
             env_vars=env_vars,
             network=network,
             entrypoint=RAPID_ENTRYPOINT,
+            platform=docker_platform(self.function_version.config.architectures[0]),
             additional_flags=config.LAMBDA_DOCKER_FLAGS,
         )
         if self.function_version.config.package_type == PackageType.Zip:

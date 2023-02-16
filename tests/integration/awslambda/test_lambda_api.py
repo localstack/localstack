@@ -18,7 +18,7 @@ from typing import Callable
 import pytest
 import requests
 from botocore.config import Config
-from botocore.exceptions import ClientError
+from botocore.exceptions import ClientError, ParamValidationError
 
 from localstack.aws.api.lambda_ import Architecture, Runtime
 from localstack.testing.aws.lambda_utils import _await_dynamodb_table_active, is_old_provider
@@ -427,6 +427,45 @@ class TestLambdaFunction:
                 Runtime="PYTHON3.9",
             )
         snapshot.match("uppercase_runtime_exc", e.value.response)
+
+        # test empty architectures
+        with pytest.raises(ParamValidationError) as e:
+            lambda_client.create_function(
+                FunctionName=function_name,
+                Handler="index.handler",
+                Code={"ZipFile": zip_file_bytes},
+                PackageType="Zip",
+                Role=lambda_su_role,
+                Runtime=Runtime.python3_9,
+                Architectures=[],
+            )
+        snapshot.match("empty_architectures", e.value)
+
+        # test multiple architectures
+        with pytest.raises(ClientError) as e:
+            lambda_client.create_function(
+                FunctionName=function_name,
+                Handler="index.handler",
+                Code={"ZipFile": zip_file_bytes},
+                PackageType="Zip",
+                Role=lambda_su_role,
+                Runtime=Runtime.python3_9,
+                Architectures=[Architecture.x86_64, Architecture.arm64],
+            )
+        snapshot.match("multiple_architectures", e.value.response)
+
+        # test invalid architecture: capital "X" instead of "x"
+        with pytest.raises(ClientError) as e:
+            lambda_client.create_function(
+                FunctionName=function_name,
+                Handler="index.handler",
+                Code={"ZipFile": zip_file_bytes},
+                PackageType="Zip",
+                Role=lambda_su_role,
+                Runtime=Runtime.python3_9,
+                Architectures=["X86_64"],
+            )
+        snapshot.match("uppercase_architecture", e.value.response)
 
         # test what happens with an invalid zip file
         with pytest.raises(ClientError) as e:
