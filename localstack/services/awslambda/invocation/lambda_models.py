@@ -596,7 +596,6 @@ class VersionFunctionConfiguration:
     internal_revision: str
     ephemeral_storage: LambdaEphemeralStorage
     snap_start: SnapStartResponse
-    runtime_version_config: RuntimeVersionConfig
 
     tracing_config_mode: TracingMode
     code: ArchiveCode
@@ -605,6 +604,7 @@ class VersionFunctionConfiguration:
 
     image: Optional[ImageCode] = None
     image_config: Optional[ImageConfig] = None
+    runtime_version_config: Optional[RuntimeVersionConfig] = None
     last_update: Optional[UpdateStatus] = None
     revision_id: str = dataclasses.field(init=False, default_factory=long_uid)
     layers: list[LayerVersion] = dataclasses.field(default_factory=list)

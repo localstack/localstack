@@ -485,6 +485,7 @@ def map_to_list_response(config: FunctionConfiguration) -> FunctionConfiguration
         "LastUpdateStatus",
         "LastUpdateStatusReason",
         "LastUpdateStatusReasonCode",
+        "RuntimeVersionConfig",
     ]:
         shallow_copy.pop(k, None)
     return shallow_copy

@@ -64,6 +64,11 @@ def environment_length_bytes(e: dict) -> int:
 
 @pytest.mark.skipif(is_old_provider(), reason="focusing on new provider")
 class TestLambdaFunction:
+    @pytest.mark.skip_snapshot_verify(
+        # The RuntimeVersionArn is currently a hardcoded id and therefore does not reflect the ARN resource update
+        # from python3.9 to python3.8 in update_func_conf_response.
+        paths=["$..RuntimeVersionConfig.RuntimeVersionArn"]
+    )
     @pytest.mark.aws_validated
     def test_function_lifecycle(
         self, lambda_client, snapshot, create_lambda_function, lambda_su_role
@@ -1302,13 +1307,15 @@ class TestLambdaAlias:
 
 
 @pytest.mark.skipif(condition=is_old_provider(), reason="not supported")
-# @pytest.mark.skip_snapshot_verify(
-#     paths=[
-#         # new Lambda feature: https://docs.aws.amazon.com/lambda/latest/dg/snapstart.html
-#         "$..SnapStart"
-#     ]
-# )
 class TestLambdaRevisions:
+    @pytest.mark.skip_snapshot_verify(
+        # The RuntimeVersionArn is currently a hardcoded id and therefore does not reflect the ARN resource update
+        # from python3.9 to python3.8 in update_function_configuration_response_rev5.
+        paths=[
+            "update_function_configuration_response_rev5..RuntimeVersionConfig.RuntimeVersionArn",
+            "get_function_response_rev6..RuntimeVersionConfig.RuntimeVersionArn",
+        ]
+    )
     @pytest.mark.aws_validated
     def test_function_revisions_basic(self, lambda_client, create_lambda_function, snapshot):
         """Tests basic revision id lifecycle for creating and updating functions"""

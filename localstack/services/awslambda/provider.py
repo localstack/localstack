@@ -632,6 +632,11 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
             code = None
             image = None
             image_config = None
+            runtime_version_config = RuntimeVersionConfig(
+                # Limitation: the runtime id (presumably sha256 of image) is currently hardcoded
+                # Potential implementation: provide (cached) sha256 hash of used Docker image
+                RuntimeVersionArn=f"arn:aws:lambda:{context.region}::runtime:8eeff65f6809a3ce81507fe733fe09b835899b99481ba22fd75b5a7338290ec1"
+            )
             request_code = request.get("Code")
             if package_type == PackageType.Zip:
                 # TODO verify if correct combination of code is set
@@ -667,6 +672,8 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
                     entrypoint=image_config_req.get("EntryPoint"),
                     working_directory=image_config_req.get("WorkingDirectory"),
                 )
+                # Runtime management controls are not available when providing a custom image
+                runtime_version_config = None
 
             version = FunctionVersion(
                 id=arn,
@@ -695,10 +702,7 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
                         ApplyOn=request.get("SnapStart", {}).get("ApplyOn", SnapStartApplyOn.None_),
                         OptimizationStatus=SnapStartOptimizationStatus.Off,
                     ),
-                    runtime_version_config=RuntimeVersionConfig(
-                        # Limitation: the runtime id (presumably sha256 of image) is currently hardcoded
-                        RuntimeVersionArn=f"arn:aws:lambda:{context.region}::runtime:8eeff65f6809a3ce81507fe733fe09b835899b99481ba22fd75b5a7338290ec1"
-                    ),
+                    runtime_version_config=runtime_version_config,
                     dead_letter_arn=request.get("DeadLetterConfig", {}).get("TargetArn"),
                     state=VersionState(
                         state=State.Pending,
@@ -794,7 +798,7 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
         if "Runtime" in request:
             if request["Runtime"] not in IMAGE_MAPPING:
                 raise InvalidParameterValueException(
-                    f"Value {request.get('Runtime')} at 'runtime' failed to satisfy constraint: Member must satisfy enum value set: [nodejs12.x, provided, nodejs16.x, nodejs14.x, ruby2.7, java11, dotnet6, go1.x, provided.al2, java8, java8.al2, dotnetcore3.1, python3.7, python3.8, python3.9] or be a valid ARN",
+                    f"Value {request.get('Runtime')} at 'runtime' failed to satisfy constraint: Member must satisfy enum value set: [nodejs12.x, provided, nodejs16.x, nodejs14.x, ruby2.7, java11, dotnet6, go1.x, nodejs18.x, provided.al2, java8, java8.al2, dotnetcore3.1, python3.7, python3.8, python3.9] or be a valid ARN",
                     Type="User",
                 )
             replace_kwargs["runtime"] = request["Runtime"]
