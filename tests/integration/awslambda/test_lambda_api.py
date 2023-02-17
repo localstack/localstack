@@ -2113,24 +2113,23 @@ class TestLambdaReservedConcurrency:
     @pytest.mark.aws_validated
     @pytest.mark.skip_snapshot_verify(condition=is_old_provider)
     def test_function_concurrency_exceptions(self, lambda_client, create_lambda_function, snapshot):
+        acc_settings = lambda_client.get_account_settings()
+        reserved_limit = acc_settings["AccountLimit"]["UnreservedConcurrentExecutions"]
+        min_capacity = 100
+        # actual needed capacity on AWS is 101+ (!)
+        # new accounts in an organization have by default a quota of 50 though
+        if reserved_limit <= min_capacity:
+            pytest.skip(
+                "Account limits are too low. You'll need to request a quota increase on AWS for UnreservedConcurrentExecution."
+            )
+
         function_name = f"lambda_func-{short_uid()}"
         create_lambda_function(
             handler_file=TEST_LAMBDA_PYTHON_ECHO,
             func_name=function_name,
             runtime=Runtime.python3_9,
         )
-        acc_settings = lambda_client.get_account_settings()
 
-        if acc_settings["AccountLimit"]["UnreservedConcurrentExecutions"] <= 100:
-            pytest.skip(
-                "Account limits are too low. You'll need to request a quota increase on AWS for UnreservedConcurrentExecution."
-            )
-
-        reserved_limit = acc_settings["AccountLimit"]["UnreservedConcurrentExecutions"]
-        min_capacity = 100
-
-        # actual needed capacity on AWS is 101+ (!)
-        # new accounts in an organization have by default a quota of 50 though
         with pytest.raises(lambda_client.exceptions.ResourceNotFoundException) as e:
             lambda_client.put_function_concurrency(
                 FunctionName="unknown", ReservedConcurrentExecutions=1
@@ -2164,7 +2163,7 @@ class TestLambdaReservedConcurrency:
 
         # maximum limit
         lambda_client.put_function_concurrency(
-            FunctionName=function_name, ReservedConcurrentExecutions=reserved_limit - (min_capacity)
+            FunctionName=function_name, ReservedConcurrentExecutions=reserved_limit - min_capacity
         )
 
     @pytest.mark.aws_validated
@@ -2332,6 +2331,15 @@ class TestLambdaProvisionedConcurrency:
 
     @pytest.mark.aws_validated
     def test_lambda_provisioned_lifecycle(self, lambda_client, create_lambda_function, snapshot):
+        acc_settings = lambda_client.get_account_settings()
+        reserved_limit = acc_settings["AccountLimit"]["UnreservedConcurrentExecutions"]
+        min_capacity = 10
+        extra_provisioned_concurrency = 1
+        if reserved_limit <= (min_capacity + extra_provisioned_concurrency):
+            pytest.skip(
+                "Account limits are too low. You'll need to request a quota increase on AWS for UnreservedConcurrentExecution."
+            )
+
         function_name = f"lambda_func-{short_uid()}"
         create_lambda_function(
             handler_file=TEST_LAMBDA_PYTHON_ECHO,
@@ -2363,7 +2371,7 @@ class TestLambdaProvisionedConcurrency:
         put_provisioned_on_version = lambda_client.put_provisioned_concurrency_config(
             FunctionName=function_name,
             Qualifier=function_version,
-            ProvisionedConcurrentExecutions=1,
+            ProvisionedConcurrentExecutions=extra_provisioned_concurrency,
         )
         snapshot.match("put_provisioned_on_version", put_provisioned_on_version)
         with pytest.raises(lambda_client.exceptions.ResourceConflictException) as e:
@@ -2388,14 +2396,16 @@ class TestLambdaProvisionedConcurrency:
         # now the other way around
 
         put_provisioned_on_alias = lambda_client.put_provisioned_concurrency_config(
-            FunctionName=function_name, Qualifier=alias_name, ProvisionedConcurrentExecutions=1
+            FunctionName=function_name,
+            Qualifier=alias_name,
+            ProvisionedConcurrentExecutions=extra_provisioned_concurrency,
         )
         snapshot.match("put_provisioned_on_alias", put_provisioned_on_alias)
         with pytest.raises(lambda_client.exceptions.ResourceConflictException) as e:
             lambda_client.put_provisioned_concurrency_config(
                 FunctionName=function_name,
                 Qualifier=function_version,
-                ProvisionedConcurrentExecutions=1,
+                ProvisionedConcurrentExecutions=extra_provisioned_concurrency,
             )
         snapshot.match("put_provisioned_on_version_conflict", e.value.response)
 

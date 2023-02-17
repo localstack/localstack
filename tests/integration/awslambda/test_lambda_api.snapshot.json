@@ -4363,12 +4363,95 @@
     }
   },
   "tests/integration/awslambda/test_lambda_api.py::TestLambdaReservedConcurrency::test_function_concurrency_exceptions": {
-    "recorded-date": "17-02-2023, 11:39:57",
-    "recorded-content": {}
+    "recorded-date": "17-02-2023, 12:35:56",
+    "recorded-content": {
+      "put_concurrency_unknown_fn": {
+        "Error": {
+          "Code": "ResourceNotFoundException",
+          "Message": "Function not found: arn:aws:lambda:<region>:111111111111:function:unknown:$LATEST"
+        },
+        "Message": "Function not found: arn:aws:lambda:<region>:111111111111:function:unknown:$LATEST",
+        "Type": "User",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 404
+        }
+      },
+      "put_concurrency_unknown_fn_invalid_concurrency": {
+        "Error": {
+          "Code": "ResourceNotFoundException",
+          "Message": "Function not found: arn:aws:lambda:<region>:111111111111:function:unknown:$LATEST"
+        },
+        "Message": "Function not found: arn:aws:lambda:<region>:111111111111:function:unknown:$LATEST",
+        "Type": "User",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 404
+        }
+      },
+      "put_concurrency_known_fn_concurrency_limit_exceeded": {
+        "Error": {
+          "Code": "InvalidParameterValueException",
+          "Message": "Specified ReservedConcurrentExecutions for function decreases account's UnreservedConcurrentExecution below its minimum value of [100]."
+        },
+        "message": "Specified ReservedConcurrentExecutions for function decreases account's UnreservedConcurrentExecution below its minimum value of [100].",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "put_0_response": {
+        "ReservedConcurrentExecutions": 0,
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "put_1_response": {
+        "ReservedConcurrentExecutions": 1,
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "delete_response": {
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 204
+        }
+      }
+    }
   },
   "tests/integration/awslambda/test_lambda_api.py::TestLambdaReservedConcurrency::test_function_concurrency": {
-    "recorded-date": "17-02-2023, 11:39:57",
-    "recorded-content": {}
+    "recorded-date": "17-02-2023, 12:38:26",
+    "recorded-content": {
+      "put_function_concurrency": {
+        "ReservedConcurrentExecutions": 1,
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "get_function_concurrency": {
+        "ReservedConcurrentExecutions": 1,
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "delete_function_concurrency": {
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 204
+        }
+      },
+      "get_function_concurrency_postdelete": {
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
   },
   "tests/integration/awslambda/test_lambda_api.py::TestLambdaPermissions::test_add_lambda_permission_aws": {
     "recorded-date": "17-02-2023, 11:40:18",
@@ -4756,7 +4839,7 @@
     }
   },
   "tests/integration/awslambda/test_lambda_api.py::TestLambdaSizeLimits::test_large_lambda": {
-    "recorded-date": "30-09-2022, 15:34:46",
+    "recorded-date": "17-02-2023, 12:42:06",
     "recorded-content": {
       "create_function_large_zip": {
         "Architectures": [
@@ -4777,6 +4860,13 @@
         "RevisionId": "<uuid:1>",
         "Role": "arn:aws:iam::111111111111:role/<resource:1>",
         "Runtime": "python3.9",
+        "RuntimeVersionConfig": {
+          "RuntimeVersionArn": "arn:aws:lambda:<region>::runtime:<resource:2>"
+        },
+        "SnapStart": {
+          "ApplyOn": "None",
+          "OptimizationStatus": "Off"
+        },
         "State": "Pending",
         "StateReason": "The function is being created.",
         "StateReasonCode": "Creating",
@@ -6199,14 +6289,14 @@
     }
   },
   "tests/integration/awslambda/test_lambda_api.py::TestLambdaProvisionedConcurrency::test_lambda_provisioned_lifecycle": {
-    "recorded-date": "17-02-2023, 11:40:09",
+    "recorded-date": "17-02-2023, 12:32:55",
     "recorded-content": {
       "publish_version_result": {
         "Architectures": [
           "x86_64"
         ],
-        "CodeSha256": "FpPXBDUwLt1SFHQdKkNXDJPy3+MYxnXuK7BVufrmzlk=",
-        "CodeSize": 264,
+        "CodeSha256": "<code-sha256:1>",
+        "CodeSize": "<code-size>",
         "Description": "",
         "Environment": {
           "Variables": {}
@@ -6214,18 +6304,18 @@
         "EphemeralStorage": {
           "Size": 512
         },
-        "FunctionArn": "arn:aws:lambda:us-east-1:644798471398:function:lambda_func-f012a158:1",
-        "FunctionName": "lambda_func-f012a158",
+        "FunctionArn": "arn:aws:lambda:<region>:111111111111:function:<function-name:1>:1",
+        "FunctionName": "<function-name:1>",
         "Handler": "handler.handler",
-        "LastModified": "2023-02-17T10:40:04.850+0000",
+        "LastModified": "date",
         "LastUpdateStatus": "Successful",
         "MemorySize": 128,
         "PackageType": "Zip",
-        "RevisionId": "66e16a1d-24fa-4e32-940b-65b4969df09c",
-        "Role": "arn:aws:iam::644798471398:role/lambda-autogenerated-5689708c",
+        "RevisionId": "<uuid:1>",
+        "Role": "arn:aws:iam::111111111111:role/<resource:2>",
         "Runtime": "python3.9",
         "RuntimeVersionConfig": {
-          "RuntimeVersionArn": "arn:aws:lambda:us-east-1::runtime:07a48df201798d627f2b950f03bb227aab4a655a1d019c3296406f95937e2525"
+          "RuntimeVersionArn": "arn:aws:lambda:<region>::runtime:<resource:3>"
         },
         "SnapStart": {
           "ApplyOn": "None",
@@ -6238,35 +6328,108 @@
         },
         "Version": "1",
         "ResponseMetadata": {
-          "HTTPHeaders": {
-            "connection": "keep-alive",
-            "content-length": "1207",
-            "content-type": "application/json",
-            "date": "Fri, 17 Feb 2023 10:40:06 GMT",
-            "x-amzn-requestid": "6120238a-bd4e-4c5e-b9c1-8bfe64b1d396"
-          },
-          "HTTPStatusCode": 201,
-          "RequestId": "6120238a-bd4e-4c5e-b9c1-8bfe64b1d396",
-          "RetryAttempts": 0
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 201
         }
       },
       "create_alias_result": {
-        "AliasArn": "arn:aws:lambda:us-east-1:644798471398:function:lambda_func-f012a158:alias-ff4bbe5c",
+        "AliasArn": "arn:aws:lambda:<region>:111111111111:function:<function-name:1>:<alias-name>",
         "Description": "",
         "FunctionVersion": "1",
-        "Name": "alias-ff4bbe5c",
-        "RevisionId": "a4000072-c18e-49fb-aca4-bd4f0aab0056",
+        "Name": "<alias-name>",
+        "RevisionId": "<uuid:2>",
         "ResponseMetadata": {
-          "HTTPHeaders": {
-            "connection": "keep-alive",
-            "content-length": "233",
-            "content-type": "application/json",
-            "date": "Fri, 17 Feb 2023 10:40:07 GMT",
-            "x-amzn-requestid": "71379a0d-f93c-4863-9461-08e06654c528"
-          },
-          "HTTPStatusCode": 201,
-          "RequestId": "71379a0d-f93c-4863-9461-08e06654c528",
-          "RetryAttempts": 0
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 201
+        }
+      },
+      "put_provisioned_on_version": {
+        "AllocatedProvisionedConcurrentExecutions": 0,
+        "AvailableProvisionedConcurrentExecutions": 0,
+        "LastModified": "date",
+        "RequestedProvisionedConcurrentExecutions": 1,
+        "Status": "IN_PROGRESS",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 202
+        }
+      },
+      "put_provisioned_on_alias_versionconflict": {
+        "Error": {
+          "Code": "ResourceConflictException",
+          "Message": "Alias can't be used for Provisioned Concurrency configuration on an already Provisioned version"
+        },
+        "Type": "User",
+        "message": "Alias can't be used for Provisioned Concurrency configuration on an already Provisioned version",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 409
+        }
+      },
+      "delete_provisioned_version": {
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 204
+        }
+      },
+      "get_provisioned_version_postdelete": {
+        "Error": {
+          "Code": "ProvisionedConcurrencyConfigNotFoundException",
+          "Message": "No Provisioned Concurrency Config found for this function"
+        },
+        "Type": "User",
+        "message": "No Provisioned Concurrency Config found for this function",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 404
+        }
+      },
+      "put_provisioned_on_alias": {
+        "AllocatedProvisionedConcurrentExecutions": 0,
+        "AvailableProvisionedConcurrentExecutions": 0,
+        "LastModified": "date",
+        "RequestedProvisionedConcurrentExecutions": 1,
+        "Status": "IN_PROGRESS",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 202
+        }
+      },
+      "put_provisioned_on_version_conflict": {
+        "Error": {
+          "Code": "ResourceConflictException",
+          "Message": "Version is pointed by a Provisioned Concurrency alias"
+        },
+        "Type": "User",
+        "message": "Version is pointed by a Provisioned Concurrency alias",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 409
+        }
+      },
+      "delete_alias_result": {
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 204
+        }
+      },
+      "get_provisioned_alias_postaliasdelete": {
+        "Error": {
+          "Code": "ResourceNotFoundException",
+          "Message": "Cannot find alias arn: arn:aws:lambda:<region>:111111111111:function:<function-name:1>:<alias-name>"
+        },
+        "Message": "Cannot find alias arn: arn:aws:lambda:<region>:111111111111:function:<function-name:1>:<alias-name>",
+        "Type": "User",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 404
+        }
+      },
+      "list_response_postdeletes": {
+        "ProvisionedConcurrencyConfigs": [],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
         }
       }
     }
