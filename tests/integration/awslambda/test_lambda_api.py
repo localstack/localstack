@@ -3834,6 +3834,7 @@ class TestLambdaEventSourceMappings:
         #
         # lambda_client.delete_event_source_mapping(UUID=uuid)
 
+    @pytest.mark.skipif(is_old_provider(), reason="new provider only")
     def test_create_event_source_validation(
         self,
         create_lambda_function,
