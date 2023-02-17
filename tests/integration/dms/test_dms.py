@@ -29,7 +29,7 @@ def deploy_terraform():
 
 
 @pytest.mark.aws_validated
-@pytest.skip("DMS not yet implemented in localstack")
+@pytest.mark.skip
 def test_dms_rds_kinesis(dms_client, kinesis_client, deploy_terraform):
 
     db_name = "test"
