@@ -782,7 +782,7 @@ class TestEvents:
 
         # create rule and target
         rule_name = f"r-{short_uid()}"
-        target_id = f"target-{short_uid}"
+        target_id = f"target-{short_uid()}"
         pattern = json.dumps({"source": ["source-123"], "detail-type": ["type-123"]})
         events_client.put_rule(Name=rule_name, EventPattern=pattern)
         events_client.put_targets(
