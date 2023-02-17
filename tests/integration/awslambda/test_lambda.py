@@ -171,12 +171,12 @@ if is_old_provider():
             "$..Environment",  # missing
             "$..HTTPStatusCode",  # 201 vs 200
             "$..Layers",
-            "$..SnapStart",  # FIXME
+            "$..SnapStart",
         ],
     )
 else:
     pytestmark = pytest.mark.skip_snapshot_verify(
-        paths=["$..CodeSize", "$..SnapStart"],  # FIXME
+        paths=["$..CodeSize"],  # FIXME
     )
 
 
@@ -405,6 +405,7 @@ class TestLambdaBehavior:
         logs_client,
         snapshot,
     ):
+        # Snapshot generation could be flaky against AWS with a small timeout margin (e.g., 1.02 instead of 1.00)
         regex = re.compile(r".*\s(?P<uuid>[-a-z0-9]+) Task timed out after \d.\d+ seconds")
         snapshot.add_transformer(
             KeyValueBasedTransformer(

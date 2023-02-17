@@ -206,7 +206,7 @@
     }
   },
   "tests/integration/awslambda/test_lambda.py::TestLambdaBehavior::test_lambda_invoke_with_timeout": {
-    "recorded-date": "17-02-2023, 14:00:17",
+    "recorded-date": "17-02-2023, 14:20:09",
     "recorded-content": {
       "create-result": {
         "CreateEventSourceMappingResponse": null,
@@ -257,7 +257,7 @@
         "ExecutedVersion": "$LATEST",
         "FunctionError": "Unhandled",
         "Payload": {
-          "errorMessage": "date <timeout_error_msg> Task timed out after 1.02 seconds"
+          "errorMessage": "date <timeout_error_msg> Task timed out after 1.00 seconds"
         },
         "StatusCode": 200,
         "ResponseMetadata": {
