@@ -50,6 +50,7 @@ if TYPE_CHECKING:
     from mypy_boto3_cloudformation import CloudFormationClient
     from mypy_boto3_cloudwatch import CloudWatchClient
     from mypy_boto3_cognito_idp import CognitoIdentityProviderClient
+    from mypy_boto3_dms import DMSClient
     from mypy_boto3_dynamodb import DynamoDBClient, DynamoDBServiceResource
     from mypy_boto3_dynamodbstreams import DynamoDBStreamsClient
     from mypy_boto3_ec2 import EC2Client
@@ -266,6 +267,11 @@ def s3control_client() -> "S3ControlClient":
 @pytest.fixture(scope="class")
 def sqs_client() -> "SQSClient":
     return _client("sqs")
+
+
+@pytest.fixture(scope="class")
+def dms_client() -> "DMSClient":
+    return _client("dms")
 
 
 @pytest.fixture(scope="class")
