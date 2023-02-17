@@ -1,5 +1,5 @@
 import logging
-from typing import Dict, Type
+from typing import Dict, Type, Union
 
 from localstack.utils import testutil
 from localstack.utils.aws import aws_stack
@@ -7,18 +7,20 @@ from localstack.utils.objects import recurse_object
 
 LOG = logging.getLogger(__name__)
 
+TransformResult = Union[dict, str]
+
 
 class Transformer:
     """Abstract class for Fn::Transform intrinsic functions"""
 
-    def transform(self, parameters: dict) -> dict | str:
+    def transform(self, parameters: dict) -> TransformResult:
         """Apply the transformer to the given parameters and return the modified construct"""
 
 
 class AwsIncludeTransformer(Transformer):
     """Implements the 'AWS::Include' transform intrinsic function"""
 
-    def transform(self, parameters: dict) -> dict | str:
+    def transform(self, parameters: dict) -> TransformResult:
         from localstack.services.cloudformation.engine.template_preparer import parse_template
 
         location = parameters.get("Location")

@@ -8,6 +8,8 @@ from localstack.services.cloudformation.service_models import REF_ID_ATTRS, Gene
 from localstack.utils.aws import aws_stack
 from localstack.utils.strings import str_to_bool
 
+TAG_KEY_LOGICAL_ID = "aws:cloudformation:logical-id"
+
 
 class EC2RouteTable(GenericBaseModel):
     @staticmethod
@@ -17,7 +19,7 @@ class EC2RouteTable(GenericBaseModel):
     def fetch_state(self, stack_name, resources):
         client = aws_stack.connect_to_service("ec2")
         tags = self.props.get("Tags") or []
-        tags.append({"Key": "aws:cloudformation:logical-id", "Value": self.logical_resource_id})
+        tags.append({"Key": TAG_KEY_LOGICAL_ID, "Value": self.logical_resource_id})
         tags_filters = map(
             lambda tag: {"Name": f"tag:{tag.get('Key')}", "Values": [tag.get("Value")]}, tags
         )
@@ -38,12 +40,8 @@ class EC2RouteTable(GenericBaseModel):
             resources[resource_id]["PhysicalResourceId"] = result["RouteTable"]["RouteTableId"]
 
         def _get_tags(params, resource_id, **kwargs):
-            result = get_tags_param("route-table")(params, resource_id=resource_id, **kwargs)
-            if result:
-                result[0]["Tags"].append(
-                    {"Key": "aws:cloudformation:logical-id", "Value": resource_id}
-                )
-            return result
+            params.setdefault("Tags", []).append({"Key": TAG_KEY_LOGICAL_ID, "Value": resource_id})
+            return get_tags_param("route-table")(params, resource_id=resource_id, **kwargs)
 
         return {
             "create": {
