@@ -16,9 +16,10 @@ class EC2RouteTable(GenericBaseModel):
 
     def fetch_state(self, stack_name, resources):
         client = aws_stack.connect_to_service("ec2")
+        tags = self.props.get("Tags") or []
+        tags.append({"Key": "aws:cloudformation:logical-id", "Value": self.logical_resource_id})
         tags_filters = map(
-            lambda tag: {"Name": f"tag:{tag.get('Key')}", "Values": [tag.get("Value")]},
-            self.props.get("Tags") or [],
+            lambda tag: {"Name": f"tag:{tag.get('Key')}", "Values": [tag.get("Value")]}, tags
         )
         filters = [
             {"Name": "vpc-id", "Values": [self.props["VpcId"]]},
@@ -36,12 +37,20 @@ class EC2RouteTable(GenericBaseModel):
         def _store_id(result, resource_id, resources, resource_type):
             resources[resource_id]["PhysicalResourceId"] = result["RouteTable"]["RouteTableId"]
 
+        def _get_tags(params, resource_id, **kwargs):
+            result = get_tags_param("route-table")(params, resource_id=resource_id, **kwargs)
+            if result:
+                result[0]["Tags"].append(
+                    {"Key": "aws:cloudformation:logical-id", "Value": resource_id}
+                )
+            return result
+
         return {
             "create": {
                 "function": "create_route_table",
                 "parameters": {
                     "VpcId": "VpcId",
-                    "TagSpecifications": get_tags_param("route-table"),
+                    "TagSpecifications": _get_tags,
                 },
                 "result_handler": _store_id,
             },
