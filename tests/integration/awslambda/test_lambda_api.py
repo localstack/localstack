@@ -2615,12 +2615,6 @@ class TestLambdaPermissions:
         snapshot.match("get_policy", get_policy_result)
 
     @pytest.mark.skipif(condition=is_old_provider(), reason="not supported")
-    @pytest.mark.skip_snapshot_verify(
-        paths=[
-            # new Lambda feature: https://docs.aws.amazon.com/lambda/latest/dg/snapstart.html
-            "$..SnapStart"
-        ]
-    )
     @pytest.mark.aws_validated
     def test_lambda_permission_fn_versioning(
         self, lambda_client, iam_client, create_lambda_function, account_id, snapshot
@@ -4196,7 +4190,6 @@ class TestLambdaLayer:
             )
         snapshot.match("publish_layer_version_exc_partially_invalid_values", e.value.response)
 
-    @pytest.mark.skip_snapshot_verify(paths=["$..SnapStart"])  # FIXME: new lambda feature
     def test_layer_function_exceptions(
         self, lambda_client, create_lambda_function, snapshot, dummylayer, cleanups
     ):
@@ -4328,7 +4321,6 @@ class TestLambdaLayer:
             )
         snapshot.match("create_function_with_layer_in_different_region", e.value.response)
 
-    @pytest.mark.skip_snapshot_verify(paths=["$..SnapStart"])  # FIXME: new lambda feature
     def test_layer_function_quota_exception(
         self, lambda_client, create_lambda_function, snapshot, dummylayer, cleanups
     ):
