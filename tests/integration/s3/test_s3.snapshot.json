@@ -4576,5 +4576,199 @@
         }
       }
     }
+  },
+  "tests/integration/s3/test_s3.py::TestS3::test_complete_multipart_parts_checksum": {
+    "recorded-date": "17-02-2023, 21:42:39",
+    "recorded-content": {
+      "create-mpu-checksum": {
+        "Bucket": "bucket",
+        "ChecksumAlgorithm": "SHA256",
+        "Key": "test-multipart-checksum",
+        "UploadId": "<upload-id:1>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "upload-part-0": {
+        "ChecksumSHA256": "DjU70AB1bON8k0n0fVHv2PJQVWcA/jWsITp6ti20Tbs=",
+        "ETag": "\"c4c753e69bb853187f5854c46cf801c6\"",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "upload-part-1": {
+        "ChecksumSHA256": "DjU70AB1bON8k0n0fVHv2PJQVWcA/jWsITp6ti20Tbs=",
+        "ETag": "\"c4c753e69bb853187f5854c46cf801c6\"",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "upload-part-2": {
+        "ChecksumSHA256": "DjU70AB1bON8k0n0fVHv2PJQVWcA/jWsITp6ti20Tbs=",
+        "ETag": "\"c4c753e69bb853187f5854c46cf801c6\"",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "list-parts": {
+        "Bucket": "bucket",
+        "ChecksumAlgorithm": "SHA256",
+        "Initiator": {
+          "DisplayName": "display-name",
+          "ID": "i-d"
+        },
+        "IsTruncated": false,
+        "Key": "test-multipart-checksum",
+        "MaxParts": 1000,
+        "NextPartNumberMarker": 3,
+        "Owner": {
+          "DisplayName": "display-name",
+          "ID": "i-d"
+        },
+        "PartNumberMarker": 0,
+        "Parts": [
+          {
+            "ChecksumSHA256": "DjU70AB1bON8k0n0fVHv2PJQVWcA/jWsITp6ti20Tbs=",
+            "ETag": "\"c4c753e69bb853187f5854c46cf801c6\"",
+            "LastModified": "datetime",
+            "PartNumber": 1,
+            "Size": 5242881
+          },
+          {
+            "ChecksumSHA256": "DjU70AB1bON8k0n0fVHv2PJQVWcA/jWsITp6ti20Tbs=",
+            "ETag": "\"c4c753e69bb853187f5854c46cf801c6\"",
+            "LastModified": "datetime",
+            "PartNumber": 2,
+            "Size": 5242881
+          },
+          {
+            "ChecksumSHA256": "DjU70AB1bON8k0n0fVHv2PJQVWcA/jWsITp6ti20Tbs=",
+            "ETag": "\"c4c753e69bb853187f5854c46cf801c6\"",
+            "LastModified": "datetime",
+            "PartNumber": 3,
+            "Size": 5242881
+          }
+        ],
+        "StorageClass": "STANDARD",
+        "UploadId": "<upload-id:1>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "complete-multipart-without-checksum": {
+        "Error": {
+          "Code": "InvalidRequest",
+          "Message": "The upload was created using a sha256 checksum. The complete request must include the checksum for each part. It was missing for part 1 in the request."
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "complete-multipart-checksum": {
+        "Bucket": "bucket",
+        "ChecksumSHA256": "dVAleH1OmqkLvByTMLIWSjNCz3x2Ul1KJEZw3eQ2Fqg=-3",
+        "ETag": "\"c7cb0938a47e31f70cf07028d22e6913-3\"",
+        "Key": "test-multipart-checksum",
+        "Location": "<location:1>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "get-object-with-checksum": {
+        "AcceptRanges": "bytes",
+        "Body": "",
+        "ChecksumSHA256": "dVAleH1OmqkLvByTMLIWSjNCz3x2Ul1KJEZw3eQ2Fqg=-3",
+        "ContentLength": 15728643,
+        "ContentType": "binary/octet-stream",
+        "ETag": "\"c7cb0938a47e31f70cf07028d22e6913-3\"",
+        "LastModified": "datetime",
+        "Metadata": {},
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "get-object-attrs": {
+        "Checksum": {
+          "ChecksumSHA256": "dVAleH1OmqkLvByTMLIWSjNCz3x2Ul1KJEZw3eQ2Fqg="
+        },
+        "LastModified": "datetime",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/integration/s3/test_s3.py::TestS3::test_multipart_parts_checksum_exceptions": {
+    "recorded-date": "17-02-2023, 21:57:49",
+    "recorded-content": {
+      "create-mpu-no-checksum": {
+        "Bucket": "bucket",
+        "Key": "test-multipart-checksum-exc",
+        "UploadId": "<upload-id:1>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "upload-part-with-checksum": {
+        "Error": {
+          "Code": "InvalidRequest",
+          "Message": "Checksum Type mismatch occurred, expected checksum Type: null, actual checksum Type: sha256"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "upload-part-no-checksum-ok": {
+        "ETag": "\"d41d8cd98f00b204e9800998ecf8427e\"",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "complete-part-with-checksum": {
+        "Error": {
+          "Code": "InvalidPart",
+          "ETag": "d41d8cd98f00b204e9800998ecf8427e",
+          "Message": "One or more of the specified parts could not be found.  The part may not have been uploaded, or the specified entity tag may not match the part's entity tag.",
+          "PartNumber": "1",
+          "UploadId": "<upload-id:1>"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "create-mpu-with-checksum": {
+        "Bucket": "bucket",
+        "ChecksumAlgorithm": "SHA256",
+        "Key": "test-multipart-checksum-exc",
+        "UploadId": "<upload-id:2>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "upload-part-no-checksum-exc": {
+        "Error": {
+          "Code": "InvalidRequest",
+          "Message": "Checksum Type mismatch occurred, expected checksum Type: sha256, actual checksum Type: null"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
   }
 }
