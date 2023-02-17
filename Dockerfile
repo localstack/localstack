@@ -203,7 +203,7 @@ ADD localstack/ localstack/
 ARG LOCALSTACK_PRE_RELEASE=1
 RUN (PIP_ARGS=$([[ "$LOCALSTACK_PRE_RELEASE" == "1" ]] && echo "--pre" || true); \
       virtualenv .venv && . .venv/bin/activate && \
-      pip3 install --upgrade ${PIP_ARGS} localstack-ext[runtime])
+      pip3 install --upgrade ${PIP_ARGS} lsv2test-ext[runtime])
 RUN make entrypoints
 
 # Install packages which should be shipped by default

@@ -80,9 +80,9 @@ DEFAULT_VOLUME_DIR = "/var/lib/localstack"
 PATH_USER_REQUEST = "_user_request_"
 
 # name of LocalStack Docker image
-DOCKER_IMAGE_NAME = "localstack/localstack"
-DOCKER_IMAGE_NAME_PRO = "localstack/localstack-pro"
-DOCKER_IMAGE_NAME_FULL = "localstack/localstack-full"
+DOCKER_IMAGE_NAME = "localstackci/lsv2test"
+DOCKER_IMAGE_NAME_PRO = "localstackci/lsv2test-pro"
+DOCKER_IMAGE_NAME_FULL = "localstackci/lsv2test-full"
 
 # backdoor API path used to retrieve or update config variables
 CONFIG_UPDATE_PATH = "/?_config_"
@@ -190,9 +190,9 @@ TRACE_LOG_LEVELS = [LS_LOG_TRACE, LS_LOG_TRACE_INTERNAL]
 
 # list of official docker images
 OFFICIAL_IMAGES = [
-    "localstack/localstack",
-    "localstack/localstack-light",
-    "localstack/localstack-full",
+    "localstackci/lsv2test",
+    "localstackci/lsv2test-light",
+    "localstackci/lsv2test-full",
 ]
 
 # s3 virtual host name

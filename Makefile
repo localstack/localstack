@@ -1,4 +1,4 @@
-IMAGE_NAME ?= localstack/localstack
+IMAGE_NAME ?= localstackci/lsv2test
 IMAGE_NAME_PRO ?= $(IMAGE_NAME)-pro
 IMAGE_NAME_LIGHT ?= $(IMAGE_NAME)-light
 IMAGE_NAME_FULL ?= $(IMAGE_NAME)-full
@@ -119,9 +119,9 @@ docker-push-master: 	  ## Push a single platform-specific Docker image to regist
 		test "$$CURRENT_BRANCH" != 'master' && echo "Not on master branch.") || \
 	((test "$$DOCKER_USERNAME" = '' || test "$$DOCKER_PASSWORD" = '' ) && \
 		echo "Skipping docker push as no credentials are provided.") || \
-	(REMOTE_ORIGIN="`git remote -v | grep '/localstack' | grep origin | grep push | awk '{print $$2}'`"; \
-		test "$$REMOTE_ORIGIN" != 'https://github.com/localstack/localstack.git' && \
-		test "$$REMOTE_ORIGIN" != 'git@github.com:localstack/localstack.git' && \
+	(REMOTE_ORIGIN="`git remote -v | grep '/lsv2test' | grep origin | grep push | awk '{print $$2}'`"; \
+		test "$$REMOTE_ORIGIN" != 'https://github.com/localstack/lsv2test.git' && \
+		test "$$REMOTE_ORIGIN" != 'git@github.com:localstack/lsv2test.git' && \
 		echo "This is a fork and not the main repo.") || \
 	( \
 		docker info | grep Username || docker login -u $$DOCKER_USERNAME -p $$DOCKER_PASSWORD; \
@@ -150,9 +150,9 @@ docker-create-push-manifests:	## Create and push manifests for a docker image (d
 		test "$$CURRENT_BRANCH" != 'master' && echo "Not on master branch.") || \
 	((test "$$DOCKER_USERNAME" = '' || test "$$DOCKER_PASSWORD" = '' ) && \
 		echo "Skipping docker manifest push as no credentials are provided.") || \
-	(REMOTE_ORIGIN="`git remote -v | grep '/localstack' | grep origin | grep push | awk '{print $$2}'`"; \
-		test "$$REMOTE_ORIGIN" != 'https://github.com/localstack/localstack.git' && \
-		test "$$REMOTE_ORIGIN" != 'git@github.com:localstack/localstack.git' && \
+	(REMOTE_ORIGIN="`git remote -v | grep '/lsv2test' | grep origin | grep push | awk '{print $$2}'`"; \
+		test "$$REMOTE_ORIGIN" != 'https://github.com/localstack/lsv2test.git' && \
+		test "$$REMOTE_ORIGIN" != 'git@github.com:localstack/lsv2test.git' && \
 		echo "This is a fork and not the main repo.") || \
 	( \
 		docker info | grep Username || docker login -u $$DOCKER_USERNAME -p $$DOCKER_PASSWORD; \
@@ -195,7 +195,7 @@ docker-mount-run:
 
 docker-cp-coverage:
 	@echo 'Extracting .coverage file from Docker image'; \
-		id=$$(docker create localstack/localstack); \
+		id=$$(docker create localstackci/lsv2test); \
 		docker cp $$id:/opt/code/localstack/.coverage .coverage; \
 		docker rm -v $$id
 

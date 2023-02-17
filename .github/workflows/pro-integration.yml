@@ -45,8 +45,8 @@ jobs:
     timeout-minutes: 110
     defaults:
       run:
-        working-directory: localstack-ext
-    environment: localstack-ext-tests
+        working-directory: lsv2test-ext
+    environment: lsv2test-ext-tests
     env:
       GITHUB_API_TOKEN: ${{ secrets.GITHUB_TOKEN }} # used for increased rate-limits when installing packages
     if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository  # skip job if fork PR
@@ -70,7 +70,7 @@ jobs:
                 // strip the leading "refs/" for the API call
                 const apiRef = refName.substr(5)
                 console.log("Checking if companion repo has ref: ", apiRef)
-                await github.rest.git.getRef({owner: "localstack", repo: "localstack-ext", ref: apiRef})
+                await github.rest.git.getRef({owner: "localstack", repo: "lsv2test-ext", ref: apiRef})
                 return true
               } catch (error) {
                   if (error.status == 404) {
@@ -110,14 +110,14 @@ jobs:
       - name: Checkout Pro
         uses: actions/checkout@v2
         with:
-          repository: localstack/localstack-ext
+          repository: localstack/lsv2test-ext
           ref: ${{steps.determine-companion-ref.outputs.result}}
           token: ${{ secrets.PRO_ACCESS_TOKEN }}
-          path: localstack-ext
+          path: lsv2test-ext
       - name: Checkout Open Source
         uses: actions/checkout@v2
         with:
-          path: localstack
+          path: lsv2test
       - name: Set up Python 3.10
         id: setup-python
         uses: actions/setup-python@v2
@@ -138,34 +138,34 @@ jobs:
       - name: Set up system wide dependencies
         run: |
           sudo apt-get install --allow-downgrades libsasl2-dev jq postgresql-14=14.6-0ubuntu0.22.04.1 postgresql-client postgresql-plpython3
-      - name: Cache LocalStack-ext dependencies (venv)
+      - name: Cache lsv2test-ext dependencies (venv)
         uses: actions/cache@v2
         id: ext-cache
         with:
-          path: localstack-ext/.venv
-          key: ${{ runner.os }}-python-${{ steps.setup-python.outputs.python-version }}-venv-${{ hashFiles('localstack-ext/setup.cfg', 'localstack-ext/pyproject.toml', 'localstack/localstack/services/install.py', 'localstack/setup.cfg', 'localstack/localstack/constants.py') }}
-      - name: Install Python Dependencies for LocalStack Pro
+          path: lsv2test-ext/.venv
+          key: ${{ runner.os }}-python-${{ steps.setup-python.outputs.python-version }}-venv-${{ hashFiles('lsv2test-ext/setup.cfg', 'lsv2test-ext/pyproject.toml', 'lsv2test/localstack/services/install.py', 'lsv2test/setup.cfg', 'lsv2test/localstack/constants.py') }}
+      - name: Install Python Dependencies for lsv2test Pro
         run: make install
-      - name: Cache LocalStack community dependencies (venv, static libs)
+      - name: Cache lsv2test community dependencies (venv, static libs)
         uses: actions/cache@v2
         id: os-cache
         with:
           path: |
-            localstack/.venv
-            localstack/.filesystem/usr/lib/localstack
-          key: ${{ runner.os }}-python-${{ steps.setup-python.outputs.python-version }}-venv-${{ hashFiles('localstack-ext/setup.cfg', 'localstack-ext/pyproject.toml', 'localstack/localstack/services/install.py', 'localstack/setup.cfg', 'localstack/localstack/constants.py') }}
-      - name: Install Dependencies for LocalStack Community # lambda tests look for libraries in this virtualenv
-        working-directory: localstack
+            lsv2test/.venv
+            lsv2test/.filesystem/usr/lib/localstack
+          key: ${{ runner.os }}-python-${{ steps.setup-python.outputs.python-version }}-venv-${{ hashFiles('lsv2test-ext/setup.cfg', 'lsv2test-ext/pyproject.toml', 'lsv2test/localstack/services/install.py', 'lsv2test/setup.cfg', 'lsv2test/localstack/constants.py') }}
+      - name: Install Dependencies for lsv2test Community # lambda tests look for libraries in this virtualenv
+        working-directory: lsv2test
         run: |
           make install
-      - name: Link community LocalStack into Pro venv
+      - name: Link community lsv2test into Pro venv
         run: |
           source .venv/bin/activate
-          pip install -e ../localstack[runtime,test]
+          pip install -e ../lsv2test[runtime,test]
       - name: Create Pro Entrypoints
         # Entrypoints need to be generated _after_ the community edition has been linked into the venv
         run: make entrypoints
-      - name: Test LocalStack Pro startup
+      - name: Test lsv2test Pro startup
         env:
           DEBUG: 1
           DNS_ADDRESS: 0
@@ -186,9 +186,9 @@ jobs:
           PYTEST_LOGLEVEL: debug
         run: |
           # Remove the host tmp folder (might contain remnant files with different permissions)
-          sudo rm -rf ../localstack/.filesystem/var/lib/localstack/tmp
+          sudo rm -rf ../lsv2test/.filesystem/var/lib/localstack/tmp
           source .venv/bin/activate
-          python -m pytest --capture=no --reruns 2 --durations=10 --junitxml=target/reports/pytest.xml ../localstack/tests/integration/
+          python -m pytest --capture=no --reruns 2 --durations=10 --junitxml=target/reports/pytest.xml ../lsv2test/tests/integration/
       - name: Run Lambda Tests for lambda executor docker
         env:
           DEBUG: 0
@@ -198,12 +198,12 @@ jobs:
           HOST_TMP_FOLDER: /tmp/localstack
         run: |
           # Remove the host tmp folder (might contain remnant files with different permissions)
-          sudo rm -rf ../localstack/.filesystem/var/lib/localstack/tmp
+          sudo rm -rf ../lsv2test/.filesystem/var/lib/localstack/tmp
           source .venv/bin/activate
           python -m pytest --reruns 2 --durations=10 --show-capture=no --junitxml=target/reports/lambda-docker.xml -o junit_suite_name='lambda-docker' \
-            ../localstack/tests/integration/awslambda/ \
-            ../localstack/tests/integration/test_integration.py \
-            ../localstack/tests/integration/test_apigateway.py
+            ../lsv2test/tests/integration/awslambda/ \
+            ../lsv2test/tests/integration/test_integration.py \
+            ../lsv2test/tests/integration/test_apigateway.py
       - name: Run Lambda Tests for lambda executor docker-reuse
         env:
           DEBUG: 1
@@ -213,15 +213,15 @@ jobs:
           HOST_TMP_FOLDER: /tmp/localstack
         run: |
           # Remove the host tmp folder (might contain remnant files with different permissions)
-          sudo rm -rf ../localstack/.filesystem/var/lib/localstack/tmp
+          sudo rm -rf ../lsv2test/.filesystem/var/lib/localstack/tmp
           source .venv/bin/activate
           python -m pytest --reruns 2 --durations=10 --show-capture=no --junitxml=target/reports/lambda-docker-reuse.xml -o junit_suite_name='lambda-docker-reuse' \
-            ../localstack/tests/integration/awslambda/ \
-            ../localstack/tests/integration/test_integration.py \
-            ../localstack/tests/integration/test_apigateway.py
-      - name: Publish LocalStack Community Integration Test Results
+            ../lsv2test/tests/integration/awslambda/ \
+            ../lsv2test/tests/integration/test_integration.py \
+            ../lsv2test/tests/integration/test_apigateway.py
+      - name: Publish lsv2test Community Integration Test Results
         uses: EnricoMi/publish-unit-test-result-action@v1
         if: always()
         with:
-          files: localstack-ext/target/reports/*.xml
-          check_name: LocalStack integration with Pro
+          files: lsv2test-ext/target/reports/*.xml
+          check_name: lsv2test integration with Pro

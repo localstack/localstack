@@ -16,7 +16,7 @@ from scripts.tinybird.upload_raw_test_metrics_and_coverage import (
     send_metric_report,
 )
 
-PROJECT_SLUG = "github/localstack/localstack"
+PROJECT_SLUG = "github/localstackci/lsv2test"
 MASTER_BRANCH = "master"
 
 
@@ -178,7 +178,7 @@ def collect_workflows_past_30_days():
 
                 # request artificats for the report job
                 artifacts_request = (
-                    f"/api/v2/project/github/localstack/localstack/{job_number}/artifacts"
+                    f"/api/v2/project/github/localstackci/lsv2test/{job_number}/artifacts"
                 )
                 artifacts_data = send_request_to_connection(conn, artifacts_request)
                 if not artifacts_data:

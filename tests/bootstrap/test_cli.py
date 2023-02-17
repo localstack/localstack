@@ -184,7 +184,7 @@ class TestCliContainerLifecycle:
         output = container_client.run_container(
             # CAVEAT: Updates to the Docker image are not immediately reflected when using the latest image from
             # DockerHub in the CI. Re-build the Docker image locally through `make docker-build` for local testing.
-            "localstack/localstack",
+            "localstackci/lsv2test",
             remove=True,
             entrypoint="",
             command=["bin/localstack", "start", "-d"],
