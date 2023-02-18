@@ -43,6 +43,9 @@ class IntrinsicFunctionTemplate(TemplateLoader):
         _THIS_FOLDER, "statemachines/string_operations/string_split.json5"
     )
 
+    # Hash Calculations.
+    HASH: Final[str] = os.path.join(_THIS_FOLDER, "statemachines/hash_calculations/hash.json5")
+
     # Math Operations.
     MATH_RANDOM: Final[str] = os.path.join(
         _THIS_FOLDER, "statemachines/math_operations/math_random.json5"

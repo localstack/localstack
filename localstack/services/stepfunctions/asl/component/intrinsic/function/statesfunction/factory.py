@@ -79,6 +79,10 @@ class StatesFunctionFactory:
             case StatesFunctionNameType.StringSplit:
                 return string_split.StringSplit(arg_list=arg_list)
 
+            # Hash Calculations.
+            case StatesFunctionNameType.Hash:
+                return hash_func.HashFunc(arg_list=arg_list)
+
             # Math Operations.
             case StatesFunctionNameType.MathRandom:
                 return math_random.MathRandom(arg_list=arg_list)
