@@ -17,6 +17,7 @@ from localstack.utils.container_utils.container_client import (
     ContainerClient,
     ContainerException,
     DockerContainerStatus,
+    DockerPlatform,
     NoSuchContainer,
     NoSuchImage,
     NoSuchNetwork,
@@ -213,11 +214,11 @@ class SdkDockerClient(ContainerClient):
         except APIError as e:
             raise ContainerException() from e
 
-    def pull_image(self, docker_image: str) -> None:
+    def pull_image(self, docker_image: str, platform: Optional[DockerPlatform] = None) -> None:
         LOG.debug("Pulling Docker image: %s", docker_image)
         # some path in the docker image string indicates a custom repository
         try:
-            self.client().images.pull(docker_image)
+            self.client().images.pull(docker_image, platform=platform)
         except ImageNotFound:
             raise NoSuchImage(docker_image)
         except APIError as e:
@@ -507,12 +508,13 @@ class SdkDockerClient(ContainerClient):
         workdir: Optional[str] = None,
         privileged: Optional[bool] = None,
         labels: Optional[Dict[str, str]] = None,
+        platform: Optional[DockerPlatform] = None,
     ) -> str:
         LOG.debug("Creating container with attributes: %s", locals())
         extra_hosts = None
         if additional_flags:
             parsed_flags = Util.parse_additional_flags(
-                additional_flags, env_vars, ports, mount_volumes, network
+                additional_flags, env_vars, ports, mount_volumes, network, user, platform
             )
             env_vars = parsed_flags.env_vars
             ports = parsed_flags.ports
@@ -520,6 +522,8 @@ class SdkDockerClient(ContainerClient):
             extra_hosts = parsed_flags.extra_hosts
             network = parsed_flags.network
             labels = parsed_flags.labels
+            user = parsed_flags.user
+            platform = parsed_flags.platform
 
         try:
             kwargs = {}
@@ -558,13 +562,14 @@ class SdkDockerClient(ContainerClient):
                     network=network,
                     volumes=mounts,
                     extra_hosts=extra_hosts,
+                    platform=platform,
                     **kwargs,
                 )
 
             try:
                 container = create_container()
             except ImageNotFound:
-                self.pull_image(image_name)
+                self.pull_image(image_name, platform)
                 container = create_container()
             return container.id
         except ImageNotFound:

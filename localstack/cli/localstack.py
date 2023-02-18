@@ -256,11 +256,16 @@ def cmd_config_validate(file):
 @publish_invocation
 def cmd_config_show(format):
     # TODO: parse values from potential docker-compose file?
-
-    from localstack_ext import config as ext_config
-
     assert config
-    assert ext_config
+
+    try:
+        # only load the ext config if it's available
+        from localstack_ext import config as ext_config
+
+        assert ext_config
+    except ImportError:
+        # the ext package is not available
+        return None
 
     if format == "table":
         print_config_table()
@@ -359,7 +364,12 @@ def cmd_update_docker_images():
     console.rule("Updating docker images")
 
     all_images = DOCKER_CLIENT.get_docker_image_names(strip_latest=False)
-    image_prefixes = ["localstack/", "lambci/lambda:", "mlupin/docker-lambda:"]
+    image_prefixes = [
+        "localstack/",
+        "lambci/lambda:",
+        "mlupin/docker-lambda:",
+        "public.ecr.aws/lambda",
+    ]
     localstack_images = [
         image
         for image in all_images
@@ -367,6 +377,7 @@ def cmd_update_docker_images():
             image.startswith(image_prefix) or image.startswith(f"docker.io/{image_prefix}")
             for image_prefix in image_prefixes
         )
+        and not image.endswith(":<none>")  # ignore dangling images
     ]
     update_images(localstack_images)
 

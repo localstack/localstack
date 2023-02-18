@@ -1,6 +1,7 @@
 import logging
 import os
 import re
+import traceback
 from typing import Dict, Union
 from urllib.parse import parse_qs, parse_qsl, urlencode, urlparse, urlunparse
 
@@ -227,6 +228,30 @@ def download(url: str, path: str, verify_ssl: bool = True, timeout: float = None
         if r is not None:
             r.close()
         s.close()
+
+
+def download_github_artifact(url: str, target_file: str, timeout: int = None):
+    """Download file from main URL or fallback URL (to avoid firewall errors if github.com is blocked).
+    Optionally allows to define a timeout in seconds."""
+
+    def do_download(url, print_error=False):
+        try:
+            download(url, target_file, timeout=timeout)
+            return True
+        except Exception as e:
+            if print_error:
+                LOG.info(
+                    "Unable to download Github artifact from from %s to %s: %s %s"
+                    % (url, target_file, e, traceback.format_exc())
+                )
+
+    result = do_download(url)
+    if not result:
+        # TODO: use regex below to allow different branch names than "master"
+        url = url.replace("https://github.com", "https://cdn.jsdelivr.net/gh")
+        # The URL structure is https://cdn.jsdelivr.net/gh/user/repo@branch/file.js
+        url = url.replace("/raw/master/", "@master/")
+        do_download(url, True)
 
 
 # TODO move to aws_responses.py?

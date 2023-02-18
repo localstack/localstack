@@ -22,6 +22,7 @@ from localstack.services.opensearch import versions
 from localstack.utils.archives import download_and_extract_with_retry
 from localstack.utils.files import chmod_r, load_file, mkdir, rm_rf, save_file
 from localstack.utils.run import run
+from localstack.utils.ssl import create_ssl_cert, install_predefined_cert_if_available
 from localstack.utils.sync import SynchronizedDefaultDict, retry
 
 LOG = logging.getLogger(__name__)
@@ -113,15 +114,10 @@ class OpensearchPackageInstaller(PackageInstaller):
         :param install_dir: root installation directory for OpenSearch which should be configured
         :param parsed_version: parsed semantic version of the OpenSearch installation which should be configured
         """
-        from localstack.services.generic_proxy import (
-            GenericProxy,
-            install_predefined_cert_if_available,
-        )
-
         # create & copy SSL certs to opensearch config dir
         install_predefined_cert_if_available()
         config_path = os.path.join(install_dir, "config")
-        _, cert_file_name, key_file_name = GenericProxy.create_ssl_cert()
+        _, cert_file_name, key_file_name = create_ssl_cert()
         shutil.copyfile(cert_file_name, os.path.join(config_path, "cert.crt"))
         shutil.copyfile(key_file_name, os.path.join(config_path, "cert.key"))
 

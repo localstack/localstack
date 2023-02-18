@@ -15,7 +15,6 @@ from localstack.services.awslambda.lambda_api import (
 from localstack.services.awslambda.lambda_utils import LAMBDA_DEFAULT_HANDLER
 from localstack.services.awslambda.packages import awslambda_go_runtime_package
 from localstack.testing.aws.lambda_utils import is_new_provider, is_old_provider
-from localstack.testing.pytest.fixtures import skip_if_pro_enabled
 from localstack.utils import testutil
 from localstack.utils.archives import download_and_extract
 from localstack.utils.aws import arns, aws_stack
@@ -32,6 +31,22 @@ from tests.integration.awslambda.test_lambda import (
 
 pytestmark = pytest.mark.skipif(
     condition=is_new_provider(), reason="only relevant for old provider"
+)
+
+
+def is_pro_enabled() -> bool:
+    """Return whether the Pro extensions are enabled, i.e., restricted modules can be imported"""
+    try:
+        import localstack_ext.utils.common  # noqa
+
+        return True
+    except Exception:
+        return False
+
+
+# marker to indicate that a test should be skipped if the Pro extensions are enabled
+skip_if_pro_enabled = pytest.mark.skipif(
+    condition=is_pro_enabled(), reason="skipping, as Pro extensions are enabled"
 )
 
 

@@ -1,32 +1,15 @@
+"""Utilities to inspect services and their state containers."""
 import importlib
 import logging
 from functools import singledispatchmethod
-from typing import Any, Dict, List, Optional, Protocol, TypedDict, runtime_checkable
+from typing import Any, Dict, Optional, TypedDict
 
 from moto.core import BackendDict
 
 from localstack.services.stores import AccountRegionBundle
+from localstack.state.core import StateVisitor
 
 LOG = logging.getLogger(__name__)
-
-
-class StateVisitor(Protocol):
-    def visit(self, state_container: Any):
-        """
-        Visit (=do something with) a given state container. A state container can be anything that holds service state.
-        An AccountRegionBundle, a moto BackendDict, or a directory containing assets.
-        """
-        raise NotImplementedError
-
-
-@runtime_checkable
-class StateVisitable(Protocol):
-    def accept(self, visitor: StateVisitor):
-        """
-        Accept a StateVisitor. The implementing method should call visit not necessarily on itself, but can also call
-        the visit method on the state container it holds. The common case is calling visit on the stores of a provider.
-        :param visitor: the StateVisitor
-        """
 
 
 class ServiceBackend(TypedDict, total=False):
@@ -36,7 +19,7 @@ class ServiceBackend(TypedDict, total=False):
     moto: BackendDict | Dict | None
 
 
-class ServiceBackendCollectorVisitor:
+class ServiceBackendCollectorVisitor(StateVisitor):
     """Implementation of StateVisitor meant to collect the backends that a given service use to hold its state."""
 
     store: AccountRegionBundle | None
@@ -67,30 +50,6 @@ class ServiceBackendCollectorVisitor:
         return service_backend
 
 
-def _load_attribute_from_module(module_name: str, attribute_name: str) -> Any | None:
-    """
-    Attempts at getting an attribute from a given module.
-    :return the attribute or None, if the attribute can't be found
-    """
-    try:
-        module = importlib.import_module(module_name)
-        return getattr(module, attribute_name)
-    except (ModuleNotFoundError, AttributeError) as e:
-        LOG.debug(
-            'Unable to get attribute "%s" for module "%s": "%s"', attribute_name, module_name, e
-        )
-        return None
-
-
-def _load_attributes(module_names: List[str], attribute_names: List[str]) -> List:
-    attributes = []
-    for _module, _attribute in zip(module_names, attribute_names):
-        attribute = _load_attribute_from_module(_module, _attribute)
-        if attribute:
-            attributes.append(attribute)
-    return attributes
-
-
 class ReflectionStateLocator:
     """
     Implementation of the StateVisitable protocol that uses reflection to visit and collect anything that hold state
@@ -104,7 +63,7 @@ class ReflectionStateLocator:
         self.provider = provider
         self.service = service or provider.service
 
-    def accept(self, visitor: StateVisitor):
+    def accept_state_visitor(self, visitor: StateVisitor):
         # needed for services like cognito-idp
         service_name: str = self.service.replace("-", "_")
 
@@ -172,3 +131,18 @@ class ReflectionStateLocator:
                 if attribute is not None:
                     LOG.debug("Visiting attribute %s in module %s", attribute_name, module_name)
                     visitor.visit(attribute)
+
+
+def _load_attribute_from_module(module_name: str, attribute_name: str) -> Any | None:
+    """
+    Attempts at getting an attribute from a given module.
+    :return the attribute or None, if the attribute can't be found
+    """
+    try:
+        module = importlib.import_module(module_name)
+        return getattr(module, attribute_name)
+    except (ModuleNotFoundError, AttributeError) as e:
+        LOG.debug(
+            'Unable to get attribute "%s" for module "%s": "%s"', attribute_name, module_name, e
+        )
+        return None
