@@ -21,6 +21,7 @@ from typing import Any, Callable, Dict, List, Optional, Tuple
 from urllib.parse import urlparse
 
 from flask import Flask, Response, jsonify, request
+from flask_cors import CORS
 
 from localstack import config, constants
 from localstack.aws.accounts import get_aws_account_id
@@ -68,8 +69,10 @@ from localstack.utils.http import parse_chunked_data, safe_requests
 from localstack.utils.json import json_safe
 from localstack.utils.patch import patch
 from localstack.utils.run import run, run_for_max_seconds
+from localstack.utils.ssl import create_ssl_cert
 from localstack.utils.strings import long_uid, md5, short_uid, to_bytes, to_str
 from localstack.utils.sync import synchronized
+from localstack.utils.threads import start_thread
 from localstack.utils.time import (
     TIMESTAMP_FORMAT_MICROS,
     TIMESTAMP_READABLE_FORMAT,
@@ -2412,8 +2415,6 @@ def validate_lambda_config():
 
 def serve(port):
     try:
-        from localstack.services import generic_proxy  # moved here to fix circular import errors
-
         # initialize the Lambda executor
         LAMBDA_EXECUTOR.startup()
         # print warnings for potentially incorrect config options
@@ -2422,10 +2423,42 @@ def serve(port):
         # initialize/import plugins - TODO find better place to import plugins! (to be integrated into proper plugin model)
         import localstack.contrib.thundra  # noqa
 
-        generic_proxy.serve_flask_app(app=app, port=port)
+        _serve_flask_app(app=app, port=port)
     except Exception:
         LOG.exception("Error while starting up lambda service")
         raise
+
+
+def _serve_flask_app(app, port, host=None, cors=True, asynchronous=False):
+    if cors:
+        CORS(app)
+    if not config.DEBUG:
+        logging.getLogger("werkzeug").setLevel(logging.ERROR)
+    if not host:
+        host = "0.0.0.0"
+    ssl_context = None
+    if not config.FORWARD_EDGE_INMEM and config.USE_SSL:
+        _, cert_file_name, key_file_name = create_ssl_cert(serial_number=port)
+        ssl_context = cert_file_name, key_file_name
+    app.config["ENV"] = "development"
+
+    def noecho(*args, **kwargs):
+        pass
+
+    try:
+        import click
+
+        click.echo = noecho
+    except Exception:
+        pass
+
+    def _run(*_):
+        app.run(port=int(port), threaded=True, host=host, ssl_context=ssl_context)
+        return app
+
+    if asynchronous:
+        return start_thread(_run, name="flaskapp")
+    return _run()
 
 
 # Config listener

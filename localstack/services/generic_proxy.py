@@ -6,7 +6,6 @@ from __future__ import annotations
 import functools
 import json
 import logging
-import os
 import re
 import socket
 import ssl
@@ -15,7 +14,6 @@ from typing import Dict, List, Optional, Union
 from urllib.parse import urlparse
 
 import requests
-from flask_cors import CORS
 from flask_cors.core import (
     ACL_ALLOW_HEADERS,
     ACL_EXPOSE_HEADERS,
@@ -36,18 +34,14 @@ from localstack.services.messages import Response as RoutingResponse
 from localstack.utils.asyncio import run_sync
 from localstack.utils.aws.aws_responses import LambdaResponse
 from localstack.utils.aws.request_context import RequestContextManager, get_proxy_request_for_thread
-from localstack.utils.crypto import generate_ssl_cert
 from localstack.utils.functions import empty_context_manager
 from localstack.utils.json import json_safe
 from localstack.utils.net import wait_for_port_open
 from localstack.utils.server import http2_server
-from localstack.utils.threads import start_thread
+from localstack.utils.ssl import create_ssl_cert, install_predefined_cert_if_available
 
 # set up logger
 LOG = logging.getLogger(__name__)
-
-# path for test certificate
-SERVER_CERT_PEM_FILE = "server.test.pem"
 
 # CORS constants below
 CORS_ALLOWED_HEADERS = [
@@ -567,21 +561,6 @@ class DuplexSocket(ssl.SSLSocket):
 ssl.SSLContext.sslsocket_class = DuplexSocket
 
 
-class GenericProxy:
-    # TODO: move methods to different class?
-    @classmethod
-    def create_ssl_cert(cls, serial_number=None):
-        cert_pem_file = get_cert_pem_file_path()
-        return generate_ssl_cert(cert_pem_file, serial_number=serial_number)
-
-    @classmethod
-    def get_flask_ssl_context(cls, serial_number=None):
-        if config.USE_SSL:
-            _, cert_file_name, key_file_name = cls.create_ssl_cert(serial_number=serial_number)
-            return cert_file_name, key_file_name
-        return None
-
-
 async def _accept_connection2(self, protocol_factory, conn, extra, sslcontext, *args, **kwargs):
     is_ssl_socket = await run_sync(DuplexSocket.is_ssl_socket, conn)
     if is_ssl_socket is False:
@@ -599,10 +578,6 @@ if hasattr(BaseSelectorEventLoop, "_accept_connection2") and not hasattr(
     _accept_connection2_orig = BaseSelectorEventLoop._accept_connection2
     BaseSelectorEventLoop._accept_connection2 = _accept_connection2
     BaseSelectorEventLoop._ls_patched = True
-
-
-def get_cert_pem_file_path():
-    return config.CUSTOM_SSL_CERT_PATH or os.path.join(config.dirs.cache, SERVER_CERT_PEM_FILE)
 
 
 def start_proxy_server(
@@ -649,7 +624,7 @@ def start_proxy_server(
     ssl_creds = (None, None)
     if use_ssl:
         install_predefined_cert_if_available()
-        _, cert_file_name, key_file_name = GenericProxy.create_ssl_cert(serial_number=port)
+        _, cert_file_name, key_file_name = create_ssl_cert(serial_number=port)
         ssl_creds = (cert_file_name, key_file_name)
 
     result = http2_server.run_server(
@@ -664,46 +639,3 @@ def start_proxy_server(
     if asynchronous and check_port:
         wait_for_port_open(port, sleep_time=0.2, retries=12)
     return result
-
-
-def install_predefined_cert_if_available():
-    try:
-        from localstack_ext.bootstrap import install
-
-        if config.SKIP_SSL_CERT_DOWNLOAD:
-            LOG.debug("Skipping download of local SSL cert, as SKIP_SSL_CERT_DOWNLOAD=1")
-            return
-        install.setup_ssl_cert()
-    except Exception:
-        pass
-
-
-def serve_flask_app(app, port, host=None, cors=True, asynchronous=False):
-    if cors:
-        CORS(app)
-    if not config.DEBUG:
-        logging.getLogger("werkzeug").setLevel(logging.ERROR)
-    if not host:
-        host = "0.0.0.0"
-    ssl_context = None
-    if not config.FORWARD_EDGE_INMEM:
-        ssl_context = GenericProxy.get_flask_ssl_context(serial_number=port)
-    app.config["ENV"] = "development"
-
-    def noecho(*args, **kwargs):
-        pass
-
-    try:
-        import click
-
-        click.echo = noecho
-    except Exception:
-        pass
-
-    def _run(*_):
-        app.run(port=int(port), threaded=True, host=host, ssl_context=ssl_context)
-        return app
-
-    if asynchronous:
-        return start_thread(_run, name="flaskapp")
-    return _run()

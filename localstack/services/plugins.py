@@ -14,6 +14,7 @@ from werkzeug import Request
 from localstack import config
 from localstack.aws.skeleton import DispatchTable
 from localstack.config import ServiceProviderConfig
+from localstack.state import StateLifecycleHook, StateVisitable, StateVisitor
 from localstack.utils.bootstrap import get_enabled_apis, log_duration
 from localstack.utils.functions import call_safe
 from localstack.utils.net import wait_for_port_status
@@ -120,7 +121,7 @@ class ServiceStateException(ServiceException):
     pass
 
 
-class ServiceLifecycleHook:
+class ServiceLifecycleHook(StateLifecycleHook):
     def on_after_init(self):
         pass
 
@@ -130,34 +131,7 @@ class ServiceLifecycleHook:
     def on_before_stop(self):
         pass
 
-    def on_after_inject(self):
-        """Hook triggered after new state has been injected into the provider's store."""
-        pass
-
     def on_exception(self):
-        pass
-
-
-class BackendStateLifecycle(abc.ABC):
-    """
-    Interface that supports the retrieval, injection and restore of the backend for services.
-    """
-
-    @abc.abstractmethod
-    def retrieve_state(self, **kwargs):
-        """Retrieves the backend of a service"""
-
-    @abc.abstractmethod
-    def inject_state(self, **kwargs):
-        """Injects a backend for a service"""
-
-    @abc.abstractmethod
-    def reset_state(self):
-        """Resets a backend for a service"""
-
-    @abc.abstractmethod
-    def on_after_reset(self):
-        """Performed after the reset of a service"""
         pass
 
 
@@ -183,7 +157,6 @@ class Service:
         active=False,
         stop=None,
         lifecycle_hook: ServiceLifecycleHook = None,
-        backend_state_lifecycle: BackendStateLifecycle = None,
     ):
         self.plugin_name = name
         self.start_function = start
@@ -192,7 +165,6 @@ class Service:
         self.default_active = active
         self.stop_function = stop
         self.lifecycle_hook = lifecycle_hook or ServiceLifecycleHook()
-        self.backend_state_lifecycle = backend_state_lifecycle
         self._provider = None
         call_safe(self.lifecycle_hook.on_after_init)
 
@@ -233,6 +205,21 @@ class Service:
 
     def is_enabled(self):
         return True
+
+    def accept_state_visitor(self, visitor: StateVisitor):
+        """
+        Passes the StateVisitor to the ASF provider if it is set and implements the StateVisitable. Otherwise, it uses
+        the ReflectionStateLocator to visit the service state.
+
+        :param visitor: the visitor
+        """
+        if self._provider and isinstance(self._provider, StateVisitable):
+            self._provider.accept_state_visitor(visitor)
+            return
+
+        from localstack.state.inspect import ReflectionStateLocator
+
+        ReflectionStateLocator(service=self.name()).accept_state_visitor(visitor)
 
     @staticmethod
     def for_provider(

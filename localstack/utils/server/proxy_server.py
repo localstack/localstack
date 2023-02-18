@@ -9,6 +9,7 @@ from localstack.utils.asyncio import ensure_event_loop
 from localstack.utils.files import new_tmp_file, save_file
 from localstack.utils.functions import run_safe
 from localstack.utils.numbers import is_number
+from localstack.utils.ssl import create_ssl_cert
 from localstack.utils.threads import TMP_THREADS, FuncThread, start_worker_thread
 
 LOG = logging.getLogger(__name__)
@@ -136,8 +137,6 @@ def _do_start_ssl_proxy(
     """
     import pproxy
 
-    from localstack.services.generic_proxy import GenericProxy
-
     if ":" not in str(target):
         target = f"127.0.0.1:{target}"
     LOG.debug("Starting SSL proxy server %s -> %s", port, target)
@@ -154,7 +153,7 @@ def _do_start_ssl_proxy(
     args = dict(rserver=[remote])
 
     # set SSL contexts
-    _, cert_file_name, key_file_name = GenericProxy.create_ssl_cert()
+    _, cert_file_name, key_file_name = create_ssl_cert()
     for context in pproxy.server.sslcontexts:
         context.load_cert_chain(cert_file_name, key_file_name)
 

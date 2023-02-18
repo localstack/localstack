@@ -32,8 +32,15 @@ def pytest_unconfigure(config):
     print(f"Thread actions: {json.dumps(info_tuples, indent=None)}")
     current_process = psutil.Process()
     children = current_process.children(recursive=True)
-    process_information_list = [
-        {"cmdline": child.cmdline(), "pid": child.pid, "status": child.status()}
-        for child in children
-    ]
+
+    process_information_list = []
+
+    for child in children:
+        try:
+            process_information_list.append(
+                {"cmdline": child.cmdline(), "pid": child.pid, "status": child.status()}
+            )
+        except Exception as e:
+            print(f"Error while collecting process information of {child.pid}: {e}")
+
     print(f"Subprocesses: {json.dumps(process_information_list, indent=None)}")
