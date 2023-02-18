@@ -6,7 +6,7 @@ import re
 from typing import List, Optional
 
 from localstack import config
-from localstack.constants import DEFAULT_VOLUME_DIR, DOCKER_IMAGE_NAME
+from localstack.constants import DEFAULT_VOLUME_DIR
 from localstack.utils.container_utils.container_client import (
     ContainerClient,
     PortMappings,
@@ -17,8 +17,6 @@ from localstack.utils.strings import to_str
 
 LOG = logging.getLogger(__name__)
 
-# Docker image to use when starting up containers for port checks
-PORTS_CHECK_DOCKER_IMAGE = DOCKER_IMAGE_NAME
 
 # port range instance used to reserve Docker container ports
 PORT_START = 1024
@@ -146,7 +144,7 @@ def container_port_can_be_bound(port: int) -> bool:
     ports.add(port, port)
     try:
         result = DOCKER_CLIENT.run_container(
-            PORTS_CHECK_DOCKER_IMAGE,
+            config.PORTS_CHECK_DOCKER_IMAGE,
             entrypoint="",
             command=["echo", "test123"],
             ports=ports,

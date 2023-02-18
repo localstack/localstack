@@ -2,6 +2,7 @@ import logging
 
 from localstack.services.cloudformation.deployment_utils import generate_default_name
 from localstack.services.cloudformation.service_models import GenericBaseModel
+from localstack.services.cloudformation.stores import get_cloudformation_store
 from localstack.utils.aws import aws_stack
 
 LOG = logging.getLogger(__name__)
@@ -75,4 +76,39 @@ class CloudFormationStack(GenericBaseModel):
                 "function": "create_stack",
                 "parameters": get_nested_stack_params,
             }
+        }
+
+
+class CloudFormationMacro(GenericBaseModel):
+    @staticmethod
+    def cloudformation_type():
+        return "AWS::CloudFormation::Macro"
+
+    def get_physical_resource_id(self, attribute=None, **kwargs):
+        return self.props.get("Name")
+
+    def fetch_state(self, stack_name, resources):
+        return get_cloudformation_store().macros.get(self.props.get("Name"))
+
+    @classmethod
+    def get_deploy_templates(cls):
+        def _store_macro(resource_id, resources, resource_type, func, stack_name):
+            resource = resources[resource_id]
+            properties = resource["Properties"]
+            name = properties["Name"]
+            get_cloudformation_store().macros[name] = properties
+
+        def _delete_macro(resource_id, resources, resource_type, func, stack_name):
+            resource = resources[resource_id]
+            properties = resource["Properties"]
+            name = properties["Name"]
+            get_cloudformation_store().macros.pop(name)
+
+        return {
+            "create": {
+                "function": _store_macro,
+            },
+            "delete": {
+                "function": _delete_macro,
+            },
         }

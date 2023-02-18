@@ -29,7 +29,7 @@
     }
   },
   "tests/integration/cloudformation/test_template_engine.py::TestMacros::test_global_scope": {
-    "recorded-date": "05-12-2022, 16:13:58",
+    "recorded-date": "30-01-2023, 20:14:48",
     "recorded-content": {
       "processed_template": {
         "StagesAvailable": [
@@ -46,6 +46,7 @@
           },
           "Parameters": {
             "Substitution": {
+              "Default": "SubstitutionDefault",
               "Type": "String"
             }
           },
@@ -274,7 +275,7 @@
     }
   },
   "tests/integration/cloudformation/test_template_engine.py::TestMacros::test_capabilities_requirements": {
-    "recorded-date": "07-12-2022, 11:47:31",
+    "recorded-date": "30-01-2023, 20:15:46",
     "recorded-content": {
       "error": {
         "Error": {
@@ -350,11 +351,43 @@
     }
   },
   "tests/integration/cloudformation/test_template_engine.py::TestMacros::test_validate_lambda_internals": {
-    "recorded-date": "08-12-2022, 15:02:05",
-    "recorded-content": {}
+    "recorded-date": "30-01-2023, 20:16:45",
+    "recorded-content": {
+      "event": {
+        "Event": {
+          "accountId": "111111111111",
+          "fragment": {
+            "Parameters": {
+              "ExampleParameter": {
+                "Type": "String",
+                "Default": "example-value"
+              }
+            },
+            "Resources": {
+              "Parameter": {
+                "Type": "AWS::SSM::Parameter",
+                "Properties": {
+                  "Value": "<replace-this>",
+                  "Type": "String"
+                }
+              }
+            }
+          },
+          "transformId": "111111111111::PrintInternals",
+          "requestId": "<uuid:1>",
+          "region": "<region>",
+          "params": {
+            "Input": "test-input"
+          },
+          "templateParameterValues": {
+            "ExampleParameter": "example-value"
+          }
+        }
+      }
+    }
   },
   "tests/integration/cloudformation/test_template_engine.py::TestMacros::test_to_validate_template_limit_for_macro": {
-    "recorded-date": "08-12-2022, 09:29:56",
+    "recorded-date": "30-01-2023, 20:17:04",
     "recorded-content": {
       "error_response": {
         "Error": {
@@ -370,7 +403,7 @@
     }
   },
   "tests/integration/cloudformation/test_template_engine.py::TestMacros::test_error_pass_macro_as_reference": {
-    "recorded-date": "08-12-2022, 11:03:51",
+    "recorded-date": "30-01-2023, 20:17:05",
     "recorded-content": {
       "error": {
         "Error": {
@@ -390,7 +423,7 @@
     "recorded-content": {}
   },
   "tests/integration/cloudformation/test_template_engine.py::TestMacros::test_functions_and_references_during_transformation": {
-    "recorded-date": "08-12-2022, 16:15:15",
+    "recorded-date": "30-01-2023, 20:17:55",
     "recorded-content": {
       "event": {
         "Params": {
@@ -412,7 +445,7 @@
     }
   },
   "tests/integration/cloudformation/test_template_engine.py::TestMacros::test_failed_state[return_unsuccessful_with_message.py]": {
-    "recorded-date": "28-12-2022, 09:52:00",
+    "recorded-date": "30-01-2023, 20:18:45",
     "recorded-content": {
       "failed_description": {
         "EventId": "<uuid:1>",
@@ -428,7 +461,7 @@
     }
   },
   "tests/integration/cloudformation/test_template_engine.py::TestMacros::test_failed_state[return_unsuccessful_without_message.py]": {
-    "recorded-date": "28-12-2022, 09:52:50",
+    "recorded-date": "30-01-2023, 20:19:35",
     "recorded-content": {
       "failed_description": {
         "EventId": "<uuid:1>",
@@ -444,7 +477,7 @@
     }
   },
   "tests/integration/cloudformation/test_template_engine.py::TestMacros::test_failed_state[return_invalid_template.py]": {
-    "recorded-date": "28-12-2022, 09:53:49",
+    "recorded-date": "30-01-2023, 20:20:30",
     "recorded-content": {
       "failed_description": {
         "EventId": "<uuid:1>",
@@ -460,7 +493,7 @@
     }
   },
   "tests/integration/cloudformation/test_template_engine.py::TestMacros::test_failed_state[raise_error.py]": {
-    "recorded-date": "28-12-2022, 09:54:39",
+    "recorded-date": "30-01-2023, 20:21:20",
     "recorded-content": {
       "failed_description": {
         "EventId": "<uuid:1>",
@@ -511,6 +544,34 @@
           {
             "Key": "param-value",
             "Value": "param <resolved-value:1>"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/integration/cloudformation/test_template_engine.py::TestMacros::test_macro_deployment": {
+    "recorded-date": "30-01-2023, 20:13:58",
+    "recorded-content": {
+      "stack_outputs": {
+        "MacroRef": "SubstitutionMacro"
+      },
+      "stack_resource_descriptions": {
+        "StackResources": [
+          {
+            "DriftInformation": {
+              "StackResourceDriftStatus": "NOT_CHECKED"
+            },
+            "LogicalResourceId": "Macro",
+            "PhysicalResourceId": "SubstitutionMacro",
+            "ResourceStatus": "CREATE_COMPLETE",
+            "ResourceType": "AWS::CloudFormation::Macro",
+            "StackId": "arn:aws:cloudformation:<region>:111111111111:stack/<stack-name:1>/<resource:1>",
+            "StackName": "<stack-name:1>",
+            "Timestamp": "timestamp"
           }
         ],
         "ResponseMetadata": {

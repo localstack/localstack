@@ -143,6 +143,23 @@ class TestMessageTransformationBasic:
         result = re.sub(r"\s+", " ", result).strip()
         assert result == "loop1 loop3 end"
 
+    def test_put_value_to_dict(self):
+        template = r"""
+        $util.qr($ctx.test.put("foo", "bar"))
+        $ctx.test
+        """
+        result = render_velocity_template(template, {"ctx": {"test": {}}})
+        assert result.strip() == str({"foo": "bar"})
+
+    def test_put_value_to_nested_dict(self):
+        template = r"""
+        $ctx.test.get('a').get('b').put('foo', 'bar')
+        $ctx.test.get('a')
+        """
+        wrapped = {"a": {"b": {"c": "foobar"}}}
+        result = render_velocity_template(template, {"ctx": {"test": wrapped}})
+        assert result.strip() == str({"b": {"c": "foobar", "foo": "bar"}})
+
 
 class TestMessageTransformationApiGateway:
     def test_construct_json_using_define(self):

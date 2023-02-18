@@ -13,6 +13,9 @@ from localstack.services.stepfunctions.asl.component.intrinsic.function.statesfu
 from localstack.services.stepfunctions.asl.component.intrinsic.function.statesfunction.generic import (
     string_format,
 )
+from localstack.services.stepfunctions.asl.component.intrinsic.function.statesfunction.hash_calculations import (
+    hash_func,
+)
 from localstack.services.stepfunctions.asl.component.intrinsic.function.statesfunction.json_manipulation import (
     json_merge,
     json_to_string,

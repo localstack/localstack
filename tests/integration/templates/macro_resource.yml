@@ -12,3 +12,9 @@ Resources:
         Ref: MacroName
       FunctionName:
         Ref: FunctionName
+
+Outputs:
+  MacroRef:
+    Value:
+      Ref: Macro
+

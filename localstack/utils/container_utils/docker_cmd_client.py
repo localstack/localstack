@@ -14,6 +14,7 @@ from localstack.utils.container_utils.container_client import (
     ContainerClient,
     ContainerException,
     DockerContainerStatus,
+    DockerPlatform,
     NoSuchContainer,
     NoSuchImage,
     NoSuchNetwork,
@@ -263,9 +264,11 @@ class CmdDockerClient(ContainerClient):
                 "Docker process returned with errorcode %s" % e.returncode, e.stdout, e.stderr
             ) from e
 
-    def pull_image(self, docker_image: str) -> None:
+    def pull_image(self, docker_image: str, platform: Optional[DockerPlatform] = None) -> None:
         cmd = self._docker_cmd()
         cmd += ["pull", docker_image]
+        if platform:
+            cmd += ["--platform", platform]
         LOG.debug("Pulling image with cmd: %s", cmd)
         try:
             run(cmd)
@@ -616,6 +619,7 @@ class CmdDockerClient(ContainerClient):
         workdir: Optional[str] = None,
         privileged: Optional[bool] = None,
         labels: Optional[Dict[str, str]] = None,
+        platform: Optional[DockerPlatform] = None,
     ) -> Tuple[List[str], str]:
         env_file = None
         cmd = self._docker_cmd() + [action]
@@ -663,6 +667,8 @@ class CmdDockerClient(ContainerClient):
         if labels:
             for key, value in labels.items():
                 cmd += ["--label", f"{key}={value}"]
+        if platform:
+            cmd += ["--platform", platform]
 
         if additional_flags:
             cmd += shlex.split(additional_flags)

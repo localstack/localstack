@@ -2465,5 +2465,49 @@
         }
       }
     }
+  },
+  "tests/integration/awslambda/test_lambda.py::TestLambdaBehavior::test_runtime_introspection_arm": {
+    "recorded-date": "13-02-2023, 14:40:57",
+    "recorded-content": {
+      "invoke_runtime_arm_introspection": {
+        "ExecutedVersion": "$LATEST",
+        "Payload": {
+          "event": {},
+          "user_login_name": "sbx_user1051",
+          "user_whoami": "sbx_user1051",
+          "platform_system": "Linux",
+          "platform_machine": "aarch64",
+          "pwd_filemode": "drwxr-xr-x",
+          "opt_filemode": "drwxr-xr-x"
+        },
+        "StatusCode": 200,
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/integration/awslambda/test_lambda.py::TestLambdaBehavior::test_runtime_introspection_x86": {
+    "recorded-date": "13-02-2023, 14:41:16",
+    "recorded-content": {
+      "invoke_runtime_x86_introspection": {
+        "ExecutedVersion": "$LATEST",
+        "Payload": {
+          "event": {},
+          "user_login_name": "sbx_user1051",
+          "user_whoami": "sbx_user1051",
+          "platform_system": "Linux",
+          "platform_machine": "x86_64",
+          "pwd_filemode": "drwxr-xr-x",
+          "opt_filemode": "drwxr-xr-x"
+        },
+        "StatusCode": 200,
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
   }
 }

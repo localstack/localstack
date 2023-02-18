@@ -551,8 +551,18 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
             )
 
         architectures = request.get("Architectures")
-        if architectures and Architecture.arm64 in architectures:
-            raise ServiceException("ARM64 is currently not supported by this provider")
+        if architectures:
+            if len(architectures) != 1:
+                raise ValidationException(
+                    f"1 validation error detected: Value '[{', '.join(architectures)}]' at 'architectures' failed to "
+                    f"satisfy constraint: Member must have length less than or equal to 1",
+                )
+            if architectures[0] not in [Architecture.x86_64, Architecture.arm64]:
+                raise ValidationException(
+                    f"1 validation error detected: Value '[{', '.join(architectures)}]' at 'architectures' failed to "
+                    f"satisfy constraint: Member must satisfy constraint: [Member must satisfy enum value set: "
+                    f"[x86_64, arm64], Member must not be null]",
+                )
 
         if env_vars := request.get("Environment", {}).get("Variables"):
             self._verify_env_variables(env_vars)
@@ -568,7 +578,7 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
         package_type = request.get("PackageType", PackageType.Zip)
         if package_type == PackageType.Zip and request.get("Runtime") not in IMAGE_MAPPING:
             raise InvalidParameterValueException(
-                f"Value {request.get('Runtime')} at 'runtime' failed to satisfy constraint: Member must satisfy enum value set: [nodejs12.x, provided, nodejs16.x, nodejs14.x, ruby2.7, java11, dotnet6, go1.x, provided.al2, java8, java8.al2, dotnetcore3.1, python3.7, python3.8, python3.9] or be a valid ARN",
+                f"Value {request.get('Runtime')} at 'runtime' failed to satisfy constraint: Member must satisfy enum value set: [nodejs12.x, provided, nodejs16.x, nodejs14.x, ruby2.7, java11, dotnet6, go1.x, nodejs18.x, provided.al2, java8, java8.al2, dotnetcore3.1, python3.7, python3.8, python3.9] or be a valid ARN",
                 Type="User",
             )
         state = lambda_stores[context.account_id][context.region]
@@ -637,7 +647,7 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
                     package_type=package_type,
                     reserved_concurrent_executions=0,
                     environment=env_vars,
-                    architectures=request.get("Architectures") or ["x86_64"],  # TODO
+                    architectures=request.get("Architectures") or [Architecture.x86_64],
                     tracing_config_mode=TracingMode.PassThrough,  # TODO
                     image=image,
                     image_config=image_config,

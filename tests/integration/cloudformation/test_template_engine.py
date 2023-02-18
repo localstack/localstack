@@ -9,7 +9,7 @@ import yaml
 
 from localstack.aws.api.lambda_ import Runtime
 from localstack.services.cloudformation.engine.yaml_parser import parse_yaml
-from localstack.testing.aws.cloudformation_utils import load_template_raw
+from localstack.testing.aws.cloudformation_utils import load_template_file, load_template_raw
 from localstack.utils.aws import arns
 from localstack.utils.common import short_uid
 from localstack.utils.files import load_file
@@ -472,30 +472,103 @@ class TestImportValues:
         # assert cfn_client.list_imports(ExportName=export_name)["Imports"]
 
 
-@pytest.mark.skip(reason="Macros not yet supported")
 class TestMacros:
     @pytest.mark.aws_validated
-    def test_global_scope(
+    def test_macro_deployment(
         self, deploy_cfn_template, cfn_client, create_lambda_function, lambda_client, snapshot
+    ):
+        macro_function_path = os.path.join(
+            os.path.dirname(__file__), "../templates/macros/format_template.py"
+        )
+        macro_name = "SubstitutionMacro"
+
+        func_name = f"test_lambda_{short_uid()}"
+        create_lambda_function(
+            func_name=func_name,
+            handler_file=macro_function_path,
+            runtime=Runtime.python3_9,
+            client=lambda_client,
+        )
+
+        stack_with_macro = deploy_cfn_template(
+            template_path=os.path.join(
+                os.path.dirname(__file__), "../templates/macro_resource.yml"
+            ),
+            parameters={"FunctionName": func_name, "MacroName": macro_name},
+        )
+
+        description = cfn_client.describe_stack_resources(StackName=stack_with_macro.stack_name)
+
+        snapshot.add_transformer(snapshot.transform.cloudformation_api())
+        snapshot.match("stack_outputs", stack_with_macro.outputs)
+        snapshot.match("stack_resource_descriptions", description)
+
+    @pytest.mark.aws_validated
+    @pytest.mark.skip_snapshot_verify(
+        paths=[
+            "$..TemplateBody.Resources.Parameter.LogicalResourceId",
+            "$..TemplateBody.Conditions",
+            "$..TemplateBody.StackId",
+            "$..TemplateBody.StackName",
+            "$..TemplateBody.Transform",
+        ]
+    )
+    def test_global_scope(
+        self,
+        deploy_cfn_template,
+        cfn_client,
+        create_lambda_function,
+        lambda_client,
+        snapshot,
+        cleanups,
     ):
         """
         This test validates the behaviour of a template deployment that includes a global transformation
         """
 
-        new_value = f"new-value-{short_uid()}"
-        stack = deploy_cfn_template(
-            template_path=os.path.join(
-                os.path.dirname(__file__), "../templates/transformation_global_parameter.yml"
-            ),
-            parameters={"Substitution": new_value},
+        macro_function_path = os.path.join(
+            os.path.dirname(__file__), "../templates/macros/format_template.py"
+        )
+        macro_name = "SubstitutionMacro"
+        func_name = f"test_lambda_{short_uid()}"
+        create_lambda_function(
+            func_name=func_name,
+            handler_file=macro_function_path,
+            runtime=Runtime.python3_8,
+            client=lambda_client,
+            timeout=1,
         )
 
+        deploy_cfn_template(
+            template_path=os.path.join(
+                os.path.dirname(__file__), "../templates/macro_resource.yml"
+            ),
+            parameters={"FunctionName": func_name, "MacroName": macro_name},
+        )
+
+        new_value = f"new-value-{short_uid()}"
+        stack_name = f"stake-{short_uid()}"
+        cfn_client.create_stack(
+            StackName=stack_name,
+            Capabilities=["CAPABILITY_AUTO_EXPAND"],
+            TemplateBody=load_template_file(
+                os.path.join(
+                    os.path.dirname(__file__),
+                    "../templates/transformation_global_parameter.yml",
+                )
+            ),
+            Parameters=[{"ParameterKey": "Substitution", "ParameterValue": new_value}],
+        )
+        cleanups.append(lambda: cfn_client.delete_stack(StackName=stack_name))
+        cfn_client.get_waiter("stack_create_complete").wait(StackName=stack_name)
+
         processed_template = cfn_client.get_template(
-            StackName=stack.stack_name, TemplateStage="Processed"
+            StackName=stack_name, TemplateStage="Processed"
         )
         snapshot.add_transformer(snapshot.transform.regex(new_value, "new-value"))
         snapshot.match("processed_template", processed_template)
 
+    @pytest.mark.skip(reason="Snippet macros not yet supported")
     @pytest.mark.aws_validated
     @pytest.mark.parametrize(
         "template_to_transform",
@@ -553,6 +626,7 @@ class TestMacros:
         )
         snapshot.match("processed_template", processed_template)
 
+    @pytest.mark.skip(reason="Snippet macros not yet supported")
     @pytest.mark.aws_validated
     def test_scope_order_and_parameters(
         self,
@@ -571,12 +645,20 @@ class TestMacros:
             os.path.dirname(__file__), "../templates/macros/replace_string.py"
         )
         macro_name = "ReplaceString"
-        create_macro(
-            macro_name,
-            macro_function_path,
-            deploy_cfn_template,
-            create_lambda_function,
-            lambda_client,
+        func_name = f"test_lambda_{short_uid()}"
+        create_lambda_function(
+            func_name=func_name,
+            handler_file=macro_function_path,
+            runtime=Runtime.python3_8,
+            client=lambda_client,
+            timeout=1,
+        )
+
+        deploy_cfn_template(
+            template_path=os.path.join(
+                os.path.dirname(__file__), "../templates/macro_resource.yml"
+            ),
+            parameters={"FunctionName": func_name, "MacroName": macro_name},
         )
 
         stack = deploy_cfn_template(
@@ -592,6 +674,17 @@ class TestMacros:
         snapshot.match("processed_template", processed_template)
 
     @pytest.mark.aws_validated
+    @pytest.mark.skip_snapshot_verify(
+        paths=[
+            "$..TemplateBody.Resources.Parameter.LogicalResourceId",
+            "$..TemplateBody.Conditions",
+            "$..TemplateBody.Parameters",
+            "$..TemplateBody.StackId",
+            "$..TemplateBody.StackName",
+            "$..TemplateBody.Transform",
+            "$..TemplateBody.Resources.Role.LogicalResourceId",
+        ]
+    )
     def test_capabilities_requirements(
         self,
         deploy_cfn_template,
@@ -611,12 +704,20 @@ class TestMacros:
             os.path.dirname(__file__), "../templates/macros/add_role.py"
         )
         macro_name = "AddRole"
-        create_macro(
-            macro_name,
-            macro_function_path,
-            deploy_cfn_template,
-            create_lambda_function,
-            lambda_client,
+        func_name = f"test_lambda_{short_uid()}"
+        create_lambda_function(
+            func_name=func_name,
+            handler_file=macro_function_path,
+            runtime=Runtime.python3_8,
+            client=lambda_client,
+            timeout=1,
+        )
+
+        deploy_cfn_template(
+            template_path=os.path.join(
+                os.path.dirname(__file__), "../templates/macro_resource.yml"
+            ),
+            parameters={"FunctionName": func_name, "MacroName": macro_name},
         )
 
         stack_name = f"stack-{short_uid()}"
@@ -647,6 +748,16 @@ class TestMacros:
         snapshot.match("processed_template", processed_template)
 
     @pytest.mark.aws_validated
+    @pytest.mark.skip_snapshot_verify(
+        paths=[
+            "$..Event.fragment.Conditions",
+            "$..Event.fragment.Outputs",
+            "$..Event.fragment.Resources.Parameter.LogicalResourceId",
+            "$..Event.fragment.StackId",
+            "$..Event.fragment.StackName",
+            "$..Event.fragment.Transform",
+        ]
+    )
     def test_validate_lambda_internals(
         self,
         deploy_cfn_template,
@@ -654,6 +765,7 @@ class TestMacros:
         create_lambda_function,
         lambda_client,
         snapshot,
+        cleanups,
     ):
         """
         The test validates the content of the event pass into the macro lambda
@@ -663,23 +775,38 @@ class TestMacros:
         )
 
         macro_name = "PrintInternals"
-        create_macro(
-            macro_name,
-            macro_function_path,
-            deploy_cfn_template,
-            create_lambda_function,
-            lambda_client,
+        func_name = f"test_lambda_{short_uid()}"
+        create_lambda_function(
+            func_name=func_name,
+            handler_file=macro_function_path,
+            runtime=Runtime.python3_8,
+            client=lambda_client,
+            timeout=1,
         )
 
-        stack = deploy_cfn_template(
+        deploy_cfn_template(
             template_path=os.path.join(
-                os.path.dirname(__file__),
-                "../templates/transformation_print_internals.yml",
+                os.path.dirname(__file__), "../templates/macro_resource.yml"
+            ),
+            parameters={"FunctionName": func_name, "MacroName": macro_name},
+        )
+
+        stack_name = f"stake-{short_uid()}"
+        cfn_client.create_stack(
+            StackName=stack_name,
+            Capabilities=["CAPABILITY_AUTO_EXPAND"],
+            TemplateBody=load_template_file(
+                os.path.join(
+                    os.path.dirname(__file__),
+                    "../templates/transformation_print_internals.yml",
+                )
             ),
         )
+        cleanups.append(lambda: cfn_client.delete_stack(StackName=stack_name))
+        cfn_client.get_waiter("stack_create_complete").wait(StackName=stack_name)
 
         processed_template = cfn_client.get_template(
-            StackName=stack.stack_name, TemplateStage="Processed"
+            StackName=stack_name, TemplateStage="Processed"
         )
         snapshot.match(
             "event",
@@ -702,12 +829,20 @@ class TestMacros:
             os.path.dirname(__file__), "../templates/macros/format_template.py"
         )
         macro_name = "FormatTemplate"
-        create_macro(
-            macro_name,
-            macro_function_path,
-            deploy_cfn_template,
-            create_lambda_function,
-            lambda_client,
+        func_name = f"test_lambda_{short_uid()}"
+        create_lambda_function(
+            func_name=func_name,
+            handler_file=macro_function_path,
+            runtime=Runtime.python3_8,
+            client=lambda_client,
+            timeout=1,
+        )
+
+        deploy_cfn_template(
+            template_path=os.path.join(
+                os.path.dirname(__file__), "../templates/macro_resource.yml"
+            ),
+            parameters={"FunctionName": func_name, "MacroName": macro_name},
         )
 
         template_dict = parse_yaml(
@@ -725,7 +860,7 @@ class TestMacros:
         template = yaml.dump(template_dict)
 
         with pytest.raises(botocore.exceptions.ClientError) as ex:
-            deploy_cfn_template(template=template)
+            cfn_client.create_stack(StackName=f"stack-{short_uid()}", TemplateBody=template)
 
         response = ex.value.response
         response["Error"]["Message"] = response["Error"]["Message"].replace(
@@ -753,6 +888,7 @@ class TestMacros:
                         "../templates/transformation_macro_as_reference.yml",
                     )
                 ),
+                Capabilities=["CAPABILITY_AUTO_EXPAND"],
                 Parameters=[{"ParameterKey": "MacroName", "ParameterValue": "NonExistent"}],
             )
         snapshot.match("error", ex.value.response)
@@ -765,6 +901,7 @@ class TestMacros:
         create_lambda_function,
         lambda_client,
         snapshot,
+        cleanups,
     ):
         """
         This tests shows the state of instrinsic functions during the execution of the macro
@@ -773,24 +910,39 @@ class TestMacros:
             os.path.dirname(__file__), "../templates/macros/print_references.py"
         )
         macro_name = "PrintReferences"
-        create_macro(
-            macro_name,
-            macro_function_path,
-            deploy_cfn_template,
-            create_lambda_function,
-            lambda_client,
+        func_name = f"test_lambda_{short_uid()}"
+        create_lambda_function(
+            func_name=func_name,
+            handler_file=macro_function_path,
+            runtime=Runtime.python3_8,
+            client=lambda_client,
+            timeout=1,
         )
 
-        stack = deploy_cfn_template(
+        deploy_cfn_template(
             template_path=os.path.join(
-                os.path.dirname(__file__),
-                "../templates/transformation_macro_params_as_reference.yml",
+                os.path.dirname(__file__), "../templates/macro_resource.yml"
             ),
-            parameters={"MacroInput": "CreateStackInput"},
+            parameters={"FunctionName": func_name, "MacroName": macro_name},
         )
+
+        stack_name = f"stake-{short_uid()}"
+        cfn_client.create_stack(
+            StackName=stack_name,
+            Capabilities=["CAPABILITY_AUTO_EXPAND"],
+            TemplateBody=load_template_file(
+                os.path.join(
+                    os.path.dirname(__file__),
+                    "../templates/transformation_macro_params_as_reference.yml",
+                )
+            ),
+            Parameters=[{"ParameterKey": "MacroInput", "ParameterValue": "CreateStackInput"}],
+        )
+        cleanups.append(lambda: cfn_client.delete_stack(StackName=stack_name))
+        cfn_client.get_waiter("stack_create_complete").wait(StackName=stack_name)
 
         processed_template = cfn_client.get_template(
-            StackName=stack.stack_name, TemplateStage="Processed"
+            StackName=stack_name, TemplateStage="Processed"
         )
         snapshot.match(
             "event",
@@ -824,12 +976,20 @@ class TestMacros:
         )
 
         macro_name = "Unsuccessful"
-        create_macro(
-            macro_name,
-            macro_function_path,
-            deploy_cfn_template,
-            create_lambda_function,
-            lambda_client,
+        func_name = f"test_lambda_{short_uid()}"
+        create_lambda_function(
+            func_name=func_name,
+            handler_file=macro_function_path,
+            runtime=Runtime.python3_8,
+            client=lambda_client,
+            timeout=1,
+        )
+
+        deploy_cfn_template(
+            template_path=os.path.join(
+                os.path.dirname(__file__), "../templates/macro_resource.yml"
+            ),
+            parameters={"FunctionName": func_name, "MacroName": macro_name},
         )
 
         template = load_file(

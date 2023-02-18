@@ -5,7 +5,6 @@ from urllib.parse import urlparse
 from requests.structures import CaseInsensitiveDict
 
 from localstack import config, constants
-from localstack.services.cloudformation.engine.template_preparer import transform_template
 from localstack.services.s3 import s3_listener, s3_utils
 from localstack.utils.aws import aws_stack
 from localstack.utils.functions import run_safe
@@ -25,8 +24,7 @@ def prepare_template_body(req_data: dict) -> str | bytes | None:  # TODO: mutati
         if modified_template_body:
             req_data.pop("TemplateURL", None)
             req_data["TemplateBody"] = modified_template_body
-    body = get_template_body(req_data)
-    modified_template_body = transform_template(body)
+    modified_template_body = get_template_body(req_data)
     if modified_template_body:
         req_data["TemplateBody"] = modified_template_body
     return modified_template_body

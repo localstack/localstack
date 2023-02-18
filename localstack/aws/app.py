@@ -2,6 +2,7 @@ from localstack.aws import handlers
 from localstack.aws.handlers.metric_handler import MetricHandler
 from localstack.aws.handlers.service_plugin import ServiceLoader
 from localstack.services.plugins import SERVICE_PLUGINS, ServiceManager, ServicePluginManager
+from localstack.utils.ssl import create_ssl_cert, install_predefined_cert_if_available
 
 from .gateway import Gateway
 from .handlers.fallback import EmptyResponseHandler
@@ -86,13 +87,8 @@ def main():
     setup_logging()
 
     if use_ssl:
-        from localstack.services.generic_proxy import (
-            GenericProxy,
-            install_predefined_cert_if_available,
-        )
-
         install_predefined_cert_if_available()
-        _, cert_file_name, key_file_name = GenericProxy.create_ssl_cert(serial_number=port)
+        _, cert_file_name, key_file_name = create_ssl_cert(serial_number=port)
         ssl_creds = (cert_file_name, key_file_name)
     else:
         ssl_creds = None
