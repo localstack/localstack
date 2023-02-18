@@ -16,6 +16,7 @@ from localstack.constants import (
     DEFAULT_PORT_EDGE,
     DEFAULT_SERVICE_PORTS,
     DEFAULT_VOLUME_DIR,
+    DOCKER_IMAGE_NAME,
     ENV_INTERNAL_TEST_COLLECT_METRIC,
     ENV_INTERNAL_TEST_RUN,
     FALSE_STRINGS,
@@ -433,6 +434,11 @@ DOCKER_CMD = os.environ.get("DOCKER_CMD", "").strip() or "docker"
 # use the command line docker client instead of the new sdk version, might get removed in the future
 LEGACY_DOCKER_CLIENT = is_env_true("LEGACY_DOCKER_CLIENT")
 
+# Docker image to use when starting up containers for port checks
+PORTS_CHECK_DOCKER_IMAGE = (
+    os.environ.get("PORTS_CHECK_DOCKER_IMAGE", "").strip() or DOCKER_IMAGE_NAME
+)
+
 # whether to forward edge requests in-memory (instead of via proxy servers listening on backend ports)
 # TODO: this will likely become the default and may get removed in the future
 FORWARD_EDGE_INMEM = True
@@ -825,6 +831,7 @@ CONFIG_ENV_VARS = [
     "OUTBOUND_HTTP_PROXY",
     "OUTBOUND_HTTPS_PROXY",
     "PERSISTENCE",
+    "PORTS_CHECK_DOCKER_IMAGE",
     "REQUESTS_CA_BUNDLE",
     "S3_SKIP_SIGNATURE_VALIDATION",
     "S3_SKIP_KMS_KEY_VALIDATION",
