@@ -122,6 +122,18 @@ def add_dispatch_entry(
         Pickler.match_subclasses_of.add(cls)
 
 
+def remove_dispatch_entry(cls: Type):
+    try:
+        del dill.Pickler.dispatch[cls]
+    except KeyError:
+        pass
+
+    try:
+        Pickler.match_subclasses_of.remove(cls)
+    except KeyError:
+        pass
+
+
 def dumps(obj: Any) -> bytes:
     """
     Pickle an object into bytes using a ``PickleEncoder``.
@@ -295,12 +307,12 @@ class ObjectStateReducer(Generic[_T]):
     def _pickle(self, pickler, obj: _T):
         state = self.get_state(obj)
         # this is a builtin.Certificate which cannot be pickled, but can be restored from data inside the CertBundle
-        self.prepare(state)
+        self.prepare(obj, state)
         return pickler.save_reduce(self._unpickle, (state,), obj=obj)
 
     def _unpickle(self, state: dict) -> dict:
         obj = self.cls.__new__(self.cls)
-        self.restore(state)
+        self.restore(obj, state)
         self.set_state(obj, state)
         return obj
 
@@ -322,18 +334,20 @@ class ObjectStateReducer(Generic[_T]):
         """
         obj.__dict__.update(state)
 
-    def prepare(self, state: Any):
+    def prepare(self, obj: _T, state: Any):
         """
         Can be overwritten by subclasses to prepare the object state for pickling.
 
+        :param obj: the object
         :param state: the object state to serialize
         """
         pass
 
-    def restore(self, state: Any):
+    def restore(self, obj: _T, state: Any):
         """
         Can be overwritten by subclasses to modify the object state to restore any previously removed attributes.
 
-        :param state: the object state to restore
+        :param obj: the object
+        :param state: the object's state to restore
         """
         pass
