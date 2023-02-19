@@ -117,14 +117,14 @@ def reducer(cls: Type, restore: Callable = None, subclasses: bool = False):
 def add_dispatch_entry(
     cls: Type, fn: Callable[[PythonPickler, Any], None], subclasses: bool = False
 ):
-    dill.Pickler.dispatch[cls] = fn
+    Pickler.dispatch_overwrite[cls] = fn
     if subclasses:
         Pickler.match_subclasses_of.add(cls)
 
 
 def remove_dispatch_entry(cls: Type):
     try:
-        del dill.Pickler.dispatch[cls]
+        del Pickler.dispatch_overwrite[cls]
     except KeyError:
         pass
 
@@ -188,7 +188,11 @@ class _SuperclassMatchingTypeDict(MetaCatchingDict):
     """
 
     def __init__(self, seq=None, match_subclasses_of: set[Type] = None):
-        super().__init__(seq)
+        if seq is not None:
+            super().__init__(seq)
+        else:
+            super().__init__()
+
         self.match_subclasses_of = match_subclasses_of or set()
 
     def __missing__(self, key):
@@ -209,12 +213,16 @@ class Pickler(dill.Pickler):
     """
 
     match_subclasses_of: set[Type] = set()
+    dispatch_overwrite: dict[Type, Callable] = {}
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.dispatch = _SuperclassMatchingTypeDict(
-            dill.Pickler.dispatch, match_subclasses_of=Pickler.match_subclasses_of.copy()
-        )
+
+        # create the dispatch table (inherit the dill dispatchers)
+        dispatch = _SuperclassMatchingTypeDict(dill.Pickler.dispatch.copy())
+        dispatch.update(Pickler.dispatch_overwrite.copy())  # makes sure ours take precedence
+        dispatch.match_subclasses_of.update(Pickler.match_subclasses_of.copy())
+        self.dispatch = dispatch
 
 
 class Unpickler(dill.Unpickler):
@@ -224,9 +232,10 @@ class Unpickler(dill.Unpickler):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.dispatch = _SuperclassMatchingTypeDict(
-            dill.Pickler.dispatch, match_subclasses_of=Pickler.match_subclasses_of.copy()
-        )
+        dispatch = _SuperclassMatchingTypeDict(dill.Pickler.dispatch.copy())
+        dispatch.update(Pickler.dispatch_overwrite.copy())  # makes sure ours take precedence
+        dispatch.match_subclasses_of.update(Pickler.match_subclasses_of.copy())
+        self.dispatch = dispatch
 
 
 class PickleEncoder(Encoder):
