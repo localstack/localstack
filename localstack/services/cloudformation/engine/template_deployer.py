@@ -1007,13 +1007,18 @@ class TemplateDeployer:
             resource["Properties"] = resource.get("Properties", clone_safe(resource))
             resource["ResourceType"] = resource.get("ResourceType") or resource.get("Type")
 
+        def _safe_lookup_is_deleted(r_id):
+            """handles the case where self.stack.resource_status(..) fails for whatever reason"""
+            try:
+                return self.stack.resource_status(r_id).get("ResourceStatus") == "DELETE_COMPLETE"
+            except Exception:
+                return True  # just an assumption
+
         # a bit of a workaround until we have a proper dependency graph
         max_cycle = 10  # 10 cycles should be a safe choice for now
         for iteration_cycle in range(1, max_cycle + 1):
             resources = {
-                r_id: r
-                for r_id, r in resources.items()
-                if self.stack.resource_status(r_id).get("ResourceStatus") != "DELETE_COMPLETE"
+                r_id: r for r_id, r in resources.items() if not _safe_lookup_is_deleted(r_id)
             }
             if len(resources) == 0:
                 break
