@@ -315,7 +315,6 @@ class ObjectStateReducer(Generic[_T]):
 
     def _pickle(self, pickler, obj: _T):
         state = self.get_state(obj)
-        # this is a builtin.Certificate which cannot be pickled, but can be restored from data inside the CertBundle
         self.prepare(obj, state)
         return pickler.save_reduce(self._unpickle, (state,), obj=obj)
 

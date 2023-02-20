@@ -97,7 +97,6 @@ class Encoder:
 
         :param obj: the object to encode
         :param file: the file to write the encoded data into
-        :return: the encoded object
         """
         raise NotImplementedError
 
