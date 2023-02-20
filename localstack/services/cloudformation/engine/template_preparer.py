@@ -44,6 +44,10 @@ def template_to_json(template: str) -> str:
 def transform_template(template: dict, parameters: list) -> Dict:
     result = dict(template)
 
+    # apply 'Fn::Transform' intrinsic functions (note: needs to be applied before global
+    #  transforms below, as some utils - incl samtransformer - expect them to be resolved already)
+    result = apply_transform_intrinsic_functions(result)
+
     # apply global transforms
     transformations = format_transforms(result.get("Transform", []))
     for transformation in transformations:
@@ -65,9 +69,6 @@ def transform_template(template: dict, parameters: list) -> Dict:
                 macro=transformation,
                 stack_parameters=parameters,
             )
-
-    # apply 'Fn::Transform' intrinsic functions
-    result = apply_transform_intrinsic_functions(result)
 
     return result
 
