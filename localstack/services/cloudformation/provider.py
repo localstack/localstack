@@ -424,14 +424,6 @@ class CloudformationProvider(CloudformationApi):
             ]  # should then have been set by prepare_template_body
         template = template_preparer.parse_template(req_params["TemplateBody"])
 
-        if (
-            "CAPABILITY_AUTO_EXPAND" not in request.get("Capabilities", [])
-            and "Transform" in template
-        ):
-            raise InsufficientCapabilitiesException(
-                "Requires capabilities : [CAPABILITY_AUTO_EXPAND]"
-            )
-
         parameters = template_preparer.resolve_parameters(
             template.get("Parameters", {}), request.get("Parameters", [])
         )
