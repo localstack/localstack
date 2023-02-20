@@ -49,8 +49,8 @@ def apply_transform_intrinsic_functions(template: dict) -> dict:
             transformer_class = transformers.get(transform_name)
             if transformer_class:
                 transformer = transformer_class()
-                properties = transform.get("Parameters") or {}
-                return transformer.transform(properties)
+                parameters = transform.get("Parameters") or {}
+                return transformer.transform(parameters)
         return obj
 
     return recurse_object(template, _visit)
