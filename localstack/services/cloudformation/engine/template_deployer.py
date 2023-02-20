@@ -1006,11 +1006,37 @@ class TemplateDeployer:
         for key, resource in resources.items():
             resource["Properties"] = resource.get("Properties", clone_safe(resource))
             resource["ResourceType"] = resource.get("ResourceType") or resource.get("Type")
-        for resource_id, resource in resources.items():
-            # TODO: cache condition value in resource details on deployment and use cached value here
-            if evaluate_resource_condition(self, resource):
-                execute_resource_action(resource_id, self, ACTION_DELETE)
-                self.stack.set_resource_status(resource_id, "DELETE_COMPLETE")
+
+        # a bit of a workaround until we have a proper dependency graph
+        max_cycle = 10  # 10 cycles should be a safe choice for now
+        for iteration_cycle in range(1, max_cycle + 1):
+            resources = {
+                r_id: r
+                for r_id, r in resources.items()
+                if self.stack.resource_status(r_id).get("ResourceStatus") != "DELETE_COMPLETE"
+            }
+            if len(resources) == 0:
+                break
+            for resource_id, resource in resources.items():
+                try:
+                    # TODO: cache condition value in resource details on deployment and use cached value here
+                    if evaluate_resource_condition(self, resource):
+                        execute_resource_action(resource_id, self, ACTION_DELETE)
+                        self.stack.set_resource_status(resource_id, "DELETE_COMPLETE")
+                except Exception as e:
+                    if iteration_cycle == max_cycle:
+                        LOG.exception(
+                            "Last cycle failed to delete resource with id %s. Final exception: %s",
+                            resource_id,
+                            e,
+                        )
+                    else:
+                        LOG.warning(
+                            "Failed delete of resource with id %s in iteration cycle %d. Retrying in next cycle.",
+                            resource_id,
+                            iteration_cycle,
+                        )
+
         # update status
         self.stack.set_stack_status("DELETE_COMPLETE")
         self.stack.set_time_attribute("DeletionTime")
