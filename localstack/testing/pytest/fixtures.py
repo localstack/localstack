@@ -1939,12 +1939,12 @@ def create_rest_apigw(apigateway_client):
 
     def _create_apigateway_function(*args, **kwargs):
         response = apigateway_client.create_rest_api(**kwargs)
-        rest_api_id = response.get("id")
-        rest_api_ids.append(rest_api_id)
-        resources = apigateway_client.get_resources(restApiId=rest_api_id)
+        api_id = response.get("id")
+        rest_api_ids.append(api_id)
+        resources = apigateway_client.get_resources(restApiId=api_id)
         root_id = next(item for item in resources["items"] if item["path"] == "/")["id"]
 
-        return response.get("id"), response.get("name"), root_id
+        return api_id, response.get("name"), root_id
 
     yield _create_apigateway_function
 

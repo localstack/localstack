@@ -50,7 +50,6 @@ from localstack.utils.sync import retry
 from tests.integration.apigateway_fixtures import (
     _client,
     api_invoke_url,
-    create_rest_api,
     create_rest_api_deployment,
     create_rest_api_integration,
     create_rest_api_integration_response,
