@@ -1946,4 +1946,3 @@ def create_rest_apigw(apigateway_client):
     for rest_api_id in rest_api_ids:
         with contextlib.suppress(Exception):
             apigateway_client.delete_rest_api(restApiId=rest_api_id)
-
