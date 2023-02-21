@@ -421,14 +421,6 @@ class CloudformationProvider(CloudformationApi):
             ]  # should then have been set by prepare_template_body
         template = template_preparer.parse_template(req_params["TemplateBody"])
 
-        if (
-            "CAPABILITY_AUTO_EXPAND" not in request.get("Capabilities", [])
-            and "Transform" in template
-        ):
-            raise InsufficientCapabilitiesException(
-                "Requires capabilities : [CAPABILITY_AUTO_EXPAND]"
-            )
-
         del req_params["TemplateBody"]  # TODO: stop mutating req_params
         template["StackName"] = stack_name
         # TODO: validate with AWS what this is actually doing?

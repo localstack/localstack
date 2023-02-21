@@ -8,8 +8,6 @@ from localstack.services.cloudformation.service_models import REF_ID_ATTRS, Gene
 from localstack.utils.aws import aws_stack
 from localstack.utils.strings import str_to_bool
 
-TAG_KEY_LOGICAL_ID = "aws:cloudformation:logical-id"
-
 
 class EC2RouteTable(GenericBaseModel):
     @staticmethod
@@ -18,18 +16,10 @@ class EC2RouteTable(GenericBaseModel):
 
     def fetch_state(self, stack_name, resources):
         client = aws_stack.connect_to_service("ec2")
-        tags = self.props.get("Tags") or []
-        tags.append({"Key": TAG_KEY_LOGICAL_ID, "Value": self.logical_resource_id})
-        tags_filters = map(
-            lambda tag: {"Name": f"tag:{tag.get('Key')}", "Values": [tag.get("Value")]}, tags
-        )
-        filters = [
-            {"Name": "vpc-id", "Values": [self.props["VpcId"]]},
-            {"Name": "association.main", "Values": ["false"]},
-        ]
-        filters.extend(tags_filters)
-        route_tables = client.describe_route_tables(Filters=filters)["RouteTables"]
-        return (route_tables or [None])[0]
+        if not self.physical_resource_id:
+            return None
+        result = client.describe_route_tables(RouteTableIds=[self.physical_resource_id])
+        return (result["RouteTables"] or [None])[0]
 
     def get_physical_resource_id(self, attribute=None, **kwargs):
         return self.physical_resource_id or self.props.get("RouteTableId")
@@ -39,16 +29,12 @@ class EC2RouteTable(GenericBaseModel):
         def _store_id(result, resource_id, resources, resource_type):
             resources[resource_id]["PhysicalResourceId"] = result["RouteTable"]["RouteTableId"]
 
-        def _get_tags(params, resource_id, **kwargs):
-            params.setdefault("Tags", []).append({"Key": TAG_KEY_LOGICAL_ID, "Value": resource_id})
-            return get_tags_param("route-table")(params, resource_id=resource_id, **kwargs)
-
         return {
             "create": {
                 "function": "create_route_table",
                 "parameters": {
                     "VpcId": "VpcId",
-                    "TagSpecifications": _get_tags,
+                    "TagSpecifications": get_tags_param("route-table"),
                 },
                 "result_handler": _store_id,
             },
