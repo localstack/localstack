@@ -211,7 +211,7 @@ def test_lambda_proxy_integration(
     rest_api_id = rest_api_creation_response["id"]
     root_resource_id = apigateway_client.get_resources(restApiId=rest_api_id)["items"][0]["id"]
     resource_id = apigateway_client.create_resource(
-        restApiId=rest_api_id, parentId=root_resource_id, pathPart="test-path"
+        restApiId=rest_api_id, parentId=root_resource_id, pathPart="{proxy+}"
     )["id"]
     apigateway_client.put_method(
         restApiId=rest_api_id,
@@ -255,18 +255,28 @@ def test_lambda_proxy_integration(
     response_trailing_slash = retry(invoke_api, sleep=2, retries=10, url=f"{invocation_url}/")
     snapshot.match("invocation-payload-with-trailing-slash", response_trailing_slash.json())
     response_trailing_slash = retry(
-        invoke_api, sleep=2, retries=10, url=f"{invocation_url}?urlparam=test"
+        invoke_api, sleep=2, retries=10, url=f"{invocation_url}?urlparam=test@gmail.com"
     )
     snapshot.match(
         "invocation-payload-without-trailing-slash-and-query-params",
         response_trailing_slash.json(),
     )
     response_trailing_slash = retry(
-        invoke_api, sleep=2, retries=10, url=f"{invocation_url}/?urlparam=test"
+        invoke_api, sleep=2, retries=10, url=f"{invocation_url}/?urlparam=test+alias@gmail.com"
     )
     snapshot.match(
         "invocation-payload-with-trailing-slash-and-query-params",
         response_trailing_slash.json(),
+    )
+    response_path_encoding = retry(
+        invoke_api,
+        sleep=2,
+        retries=10,
+        url=f"{invocation_url}/api/v1/user/test%2Balias@gmail.com",
+    )
+    snapshot.match(
+        "invocation-payload-with-path-encoded-email",
+        response_path_encoding.json(),
     )
 
 
