@@ -31,7 +31,7 @@ class AwsIncludeTransformer(Transformer):
             content = parse_template(content)
             return content
         else:
-            LOG.warning("Unexpected ")
+            LOG.warning("Unexpected Location parameter for AWS::Include transformer: %s", location)
         return parameters
 
 
@@ -39,8 +39,9 @@ class AwsIncludeTransformer(Transformer):
 transformers: Dict[str, Type] = {"AWS::Include": AwsIncludeTransformer}
 
 
-def apply_transform_intrinsic_functions(template: dict) -> dict:
+def apply_transform_intrinsic_functions(template: dict, stack=None) -> dict:
     """Resolve constructs using the 'Fn::Transform' intrinsic function."""
+    from localstack.services.cloudformation.engine.template_deployer import resolve_refs_recursively
 
     def _visit(obj, **_):
         if isinstance(obj, dict) and obj.keys() == {"Fn::Transform"}:
@@ -50,6 +51,8 @@ def apply_transform_intrinsic_functions(template: dict) -> dict:
             if transformer_class:
                 transformer = transformer_class()
                 parameters = transform.get("Parameters") or {}
+                if stack:
+                    resolve_refs_recursively(stack, parameters)
                 return transformer.transform(parameters)
         return obj
 

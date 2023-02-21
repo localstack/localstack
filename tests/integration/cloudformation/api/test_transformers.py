@@ -10,8 +10,8 @@ def test_duplicate_resources(
 ):
     snapshot.add_transformer(snapshot.transform.key_value("id"))
     snapshot.add_transformer(snapshot.transform.key_value("name"))
-
-    api_name = f"api-{short_uid()}"
+    snapshot.add_transformer(snapshot.transform.key_value("aws:cloudformation:stack-id"))
+    snapshot.add_transformer(snapshot.transform.key_value("aws:cloudformation:stack-name"))
 
     # put API spec to S3
     api_spec = """
@@ -24,22 +24,34 @@ def test_duplicate_resources(
     s3_client.put_object(Bucket=s3_bucket, Key="api.yaml", Body=to_bytes(api_spec))
 
     # deploy template
-    template = f"""
+    template = """
+    Parameters:
+      ApiName:
+        Type: String
+      BucketName:
+        Type: String
     Resources:
       RestApi:
         Type: AWS::ApiGateway::RestApi
         Properties:
-          Name: {api_name}
+          Name: !Ref ApiName
           Body:
             'Fn::Transform':
               Name: 'AWS::Include'
               Parameters:
-                Location: s3://{s3_bucket}/api.yaml
+                Location: !Sub "s3://${BucketName}/api.yaml"
+    Outputs:
+      RestApiId:
+        Value: !Ref RestApi
     """
-    deploy_cfn_template(template=template)
+
+    api_name = f"api-{short_uid()}"
+    result = deploy_cfn_template(
+        template=template, parameters={"ApiName": api_name, "BucketName": s3_bucket}
+    )
 
     # assert REST API is created properly
-    result = apigateway_client.get_rest_apis()
-    matching = [api for api in result["items"] if api["name"] == api_name]
-    assert matching
-    snapshot.match("api-details", matching)
+    api_id = result.outputs.get("RestApiId")
+    result = apigateway_client.get_rest_api(restApiId=api_id)
+    assert result
+    snapshot.match("api-details", result)

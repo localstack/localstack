@@ -1,27 +1,29 @@
 {
   "tests/integration/cloudformation/api/test_transformers.py::test_duplicate_resources": {
-    "recorded-date": "17-02-2023, 14:24:10",
+    "recorded-date": "21-02-2023, 09:45:29",
     "recorded-content": {
-      "api-details": [
-        {
-          "id": "<id:1>",
-          "name": "<name:1>",
-          "createdDate": "datetime",
-          "version": "1.2.3",
-          "apiKeySource": "HEADER",
-          "endpointConfiguration": {
-            "types": [
-              "EDGE"
-            ]
-          },
-          "tags": {
-            "aws:cloudformation:logical-id": "RestApi",
-            "aws:cloudformation:stack-id": "arn:aws:cloudformation:<region>:111111111111:stack/stack-8a6438b2/51efa190-aec6-11ed-a8ce-0a8057042631",
-            "aws:cloudformation:stack-name": "stack-8a6438b2"
-          },
-          "disableExecuteApiEndpoint": false
+      "api-details": {
+        "apiKeySource": "HEADER",
+        "createdDate": "datetime",
+        "disableExecuteApiEndpoint": false,
+        "endpointConfiguration": {
+          "types": [
+            "EDGE"
+          ]
+        },
+        "id": "<id:1>",
+        "name": "<name:1>",
+        "tags": {
+          "aws:cloudformation:logical-id": "RestApi",
+          "aws:cloudformation:stack-id": "<aws:cloudformation:stack-id:1>",
+          "aws:cloudformation:stack-name": "<aws:cloudformation:stack-name:1>"
+        },
+        "version": "1.2.3",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
         }
-      ]
+      }
     }
   }
 }
