@@ -1943,4 +1943,6 @@ def create_rest_apigw(apigateway_client):
     yield _create_apigateway_function
 
     for rest_api_id in rest_api_ids:
-        apigateway_client.delete_rest_api(restApiId=rest_api_id)
+        with contextlib.suppress(Exception):
+            apigateway_client.delete_rest_api(restApiId=rest_api_id)
+
