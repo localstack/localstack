@@ -2364,12 +2364,10 @@ def test_rest_api_multi_region(method, url_function, create_rest_apigw):
     apigateway_client_us = _client("apigateway", region_name="us-west-1")
 
     api_eu_id, _, root_resource_eu_id = create_rest_apigw(
-        name="test-eu-region",
-        region_name="eu-west-1"
+        name="test-eu-region", region_name="eu-west-1"
     )
     api_us_id, _, root_resource_us_id = create_rest_apigw(
-        name="test-us-region",
-        region_name="us-west-1"
+        name="test-us-region", region_name="us-west-1"
     )
 
     resource_eu_id, _ = create_rest_resource(
