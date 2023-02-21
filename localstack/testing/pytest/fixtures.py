@@ -1932,6 +1932,7 @@ def sample_backend_dict() -> BackendDict:
 
     return BackendDict(SampleBackend, "sns")
 
+
 @pytest.fixture
 def create_rest_apigw(apigateway_client):
     rest_api_ids = []
