@@ -1937,7 +1937,7 @@ def create_rest_apigw(apigateway_client):
     rest_api_ids = []
 
     def _create_apigateway_function(*args, **kwargs):
-        response = apigateway_client.create_rest_api(apigateway_client, **kwargs)
+        response = apigateway_client.create_rest_api(**kwargs)
         rest_api_ids.append(response["id"])
 
     yield _create_apigateway_function
