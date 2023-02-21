@@ -1931,3 +1931,16 @@ def sample_backend_dict() -> BackendDict:
             self.attributes = {}
 
     return BackendDict(SampleBackend, "sns")
+
+@pytest.fixture
+def create_rest_apigw(apigateway_client):
+    rest_api_ids = []
+
+    def _create_apigateway_function(*args, **kwargs):
+        response = apigateway_client.create_rest_api(apigateway_client, **kwargs)
+        rest_api_ids.append(response["id"])
+
+    yield _create_apigateway_function
+
+    for rest_api_id in rest_api_ids:
+        apigateway_client.delete_rest_api(restApiId=rest_api_id)
