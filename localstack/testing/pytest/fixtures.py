@@ -1934,10 +1934,13 @@ def sample_backend_dict() -> BackendDict:
 
 
 @pytest.fixture
-def create_rest_apigw(apigateway_client):
+def create_rest_apigw():
     rest_api_ids = []
 
-    def _create_apigateway_function(*args, **kwargs):
+    def _create_apigateway_function(**kwargs):
+        region_name = kwargs.pop("region_name", None)
+        apigateway_client = _client("apigateway", region_name)
+
         response = apigateway_client.create_rest_api(**kwargs)
         api_id = response.get("id")
         rest_api_ids.append(api_id)
