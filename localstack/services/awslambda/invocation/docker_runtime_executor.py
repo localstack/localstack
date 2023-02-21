@@ -9,6 +9,7 @@ from typing import Callable, Dict, Literal, Optional
 from localstack import config
 from localstack.aws.api.lambda_ import Architecture, PackageType, Runtime
 from localstack.services.awslambda import hooks as lambda_hooks
+from localstack.services.awslambda import usage
 from localstack.services.awslambda.invocation.executor_endpoint import (
     INVOCATION_PORT,
     ExecutorEndpoint,
@@ -264,6 +265,7 @@ class DockerRuntimeExecutor(RuntimeExecutor):
         return f"{container_name}-{self.id}"
 
     def start(self, env_vars: dict[str, str]) -> None:
+        start_time = time.perf_counter()
         self.executor_endpoint.start()
         network = self._get_network_for_executor()
         container_config = LambdaContainerConfiguration(
@@ -336,6 +338,8 @@ class DockerRuntimeExecutor(RuntimeExecutor):
             for source, target in container_config.copy_folders:
                 CONTAINER_CLIENT.copy_into_container(self.container_name, source, target)
 
+        end_time = time.perf_counter()
+        usage.initduration.record_value(end_time - start_time)
         CONTAINER_CLIENT.start_container(self.container_name)
         self.ip = CONTAINER_CLIENT.get_container_ipv4_for_network(
             container_name_or_id=self.container_name, container_network=network

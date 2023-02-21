@@ -272,6 +272,9 @@ def stop_infra():
     if events.infra_stopping.is_set():
         return
 
+    analytics.usage_log.flush()
+    # analytics.log.event("infra_stop")
+
     # also used to signal shutdown for edge proxy so that any further requests will be rejected
     events.infra_stopping.set()
 

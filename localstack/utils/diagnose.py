@@ -6,7 +6,7 @@ from typing import Dict, List, Union
 
 from localstack import config
 from localstack.constants import DEFAULT_VOLUME_DIR
-from localstack.utils import bootstrap
+from localstack.utils import analytics, bootstrap
 from localstack.utils.container_networking import get_main_container_name
 from localstack.utils.container_utils.container_client import NoSuchImage
 from localstack.utils.docker_utils import DOCKER_CLIENT
@@ -159,3 +159,7 @@ def get_docker_image_details() -> Dict[str, str]:
 
 def get_host_kernel_version() -> str:
     return load_file("/proc/version", "failed").strip()
+
+
+def get_usage():
+    return analytics.usage_log.aggregate()

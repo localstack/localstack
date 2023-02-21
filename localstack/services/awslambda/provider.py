@@ -138,6 +138,7 @@ from localstack.aws.api.lambda_ import (
 from localstack.aws.connect import connect_to
 from localstack.services.awslambda import api_utils
 from localstack.services.awslambda import hooks as lambda_hooks
+from localstack.services.awslambda import usage
 from localstack.services.awslambda.api_utils import STATEMENT_ID_REGEX
 from localstack.services.awslambda.event_source_listeners.event_source_listener import (
     EventSourceListener,
@@ -1065,6 +1066,7 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
         marker: String = None,
         max_items: MaxListItems = None,
     ) -> ListFunctionsResponse:
+        usage.hotreload.increment()
         state = lambda_stores[context.account_id][context.region]
 
         if function_version and function_version != FunctionVersionApi.ALL:
