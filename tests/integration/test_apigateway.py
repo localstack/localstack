@@ -50,7 +50,6 @@ from localstack.utils.sync import retry
 from tests.integration.apigateway_fixtures import (
     _client,
     api_invoke_url,
-    create_rest_api,
     create_rest_api_deployment,
     create_rest_api_integration,
     create_rest_api_integration_response,
@@ -2360,12 +2359,16 @@ def test_apigw_call_api_with_aws_endpoint_url():
 
 @pytest.mark.parametrize("method", ["GET", "ANY"])
 @pytest.mark.parametrize("url_function", [path_based_url, host_based_url])
-def test_rest_api_multi_region(method, url_function):
+def test_rest_api_multi_region(method, url_function, create_rest_apigw):
     apigateway_client_eu = _client("apigateway", region_name="eu-west-1")
     apigateway_client_us = _client("apigateway", region_name="us-west-1")
 
-    api_eu_id, _, root_resource_eu_id = create_rest_api(apigateway_client_eu, name="test-eu-region")
-    api_us_id, _, root_resource_us_id = create_rest_api(apigateway_client_us, name="test-us-region")
+    api_eu_id, _, root_resource_eu_id = create_rest_apigw(
+        name="test-eu-region", region_name="eu-west-1"
+    )
+    api_us_id, _, root_resource_us_id = create_rest_apigw(
+        name="test-us-region", region_name="us-west-1"
+    )
 
     resource_eu_id, _ = create_rest_resource(
         apigateway_client_eu, restApiId=api_eu_id, parentId=root_resource_eu_id, pathPart="demo"
