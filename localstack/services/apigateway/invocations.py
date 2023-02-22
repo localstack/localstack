@@ -206,9 +206,7 @@ def apply_request_parameters_uri(
     return add_query_params_to_url(uri, query_params)
 
 
-def apply_request_parameters_headers(
-    headers: dict, integration: Dict[str, Any]
-):
+def apply_request_parameters_headers(headers: dict, integration: Dict[str, Any]):
     # We only map headers that are defined in the integration request parameters
     # this is the same behavior as AWS
     output_headers = {}
@@ -222,9 +220,9 @@ def apply_request_parameters_headers(
                     if header_value_name:
                         header_value = headers.get(header_value_name)
                     else:
-                        header_value = json.loads(method)
+                        header_value = method.strip("'")
                     output_headers[header_name] = header_value
-            except:
+            except Exception:
                 LOG.warning("Unable to apply request parameter %s", integration)
     return output_headers
 
