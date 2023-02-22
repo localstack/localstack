@@ -6,18 +6,18 @@ from localstack.services.stepfunctions.asl.antlr.runtime.ASLIntrinsicLexer impor
 from localstack.services.stepfunctions.asl.antlr.runtime.ASLIntrinsicParser import (
     ASLIntrinsicParser,
 )
-from localstack.services.stepfunctions.asl.component.intrinsic.program import Program
+from localstack.services.stepfunctions.asl.component.intrinsic.function.function import Function
 from localstack.services.stepfunctions.asl.parse.intrinsic.preprocessor import Preprocessor
 
 
 class IntrinsicParser(abc.ABC):
     @staticmethod
-    def parse(src: str) -> Program:
+    def parse(src: str) -> Function:
         input_stream = InputStream(src)
         lexer = ASLIntrinsicLexer(input_stream)
         stream = CommonTokenStream(lexer)
         parser = ASLIntrinsicParser(stream)
-        tree = parser.compilation_unit()
+        tree = parser.func_decl()
         preprocessor = Preprocessor()
-        program = preprocessor.visit(tree)
-        return program
+        function: Function = preprocessor.visit(tree)
+        return function

@@ -140,7 +140,7 @@ STRINGPATHCONTEXTOBJ
     ;
 
 STRINGPATH
-    : '"$.' (ESC | SAFECODEPOINT)* '"'
+    : '"$' (ESC | SAFECODEPOINT)* '"'
     ;
 
 STRING
