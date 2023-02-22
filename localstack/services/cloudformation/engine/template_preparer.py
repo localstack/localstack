@@ -11,6 +11,9 @@ from localstack.aws.api import CommonServiceException
 from localstack.services.cloudformation.engine import yaml_parser
 from localstack.services.cloudformation.engine.entities import resolve_ssm_parameter_value
 from localstack.services.cloudformation.engine.policy_loader import create_policy_loader
+from localstack.services.cloudformation.engine.transformers import (
+    apply_transform_intrinsic_functions,
+)
 from localstack.services.cloudformation.stores import get_cloudformation_store
 from localstack.utils.aws import aws_stack
 from localstack.utils.json import clone_safe
@@ -37,9 +40,15 @@ def template_to_json(template: str) -> str:
     return json.dumps(template)
 
 
-def transform_template(template: dict, parameters: list) -> Dict:
+# TODO: consider moving to transformers.py as well
+def transform_template(template: dict, parameters: list, stack=None) -> Dict:
     result = dict(template)
 
+    # apply 'Fn::Transform' intrinsic functions (note: needs to be applied before global
+    #  transforms below, as some utils - incl samtransformer - expect them to be resolved already)
+    result = apply_transform_intrinsic_functions(result, stack=stack)
+
+    # apply global transforms
     transformations = format_transforms(result.get("Transform", []))
     for transformation in transformations:
         if not isinstance(transformation["Name"], str):
@@ -144,7 +153,6 @@ def format_transforms(transforms: list | dict | str) -> list[dict]:
      - an object like {Name: transformation, Parameters:{}}
      - a transformation name
      - a list of objects defining a transformation
-
      so the objective of this function is to normalize the list of transformations to apply.
     """
     formatted_transformations = []

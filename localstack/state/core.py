@@ -1,5 +1,6 @@
 """Core concepts of the persistence API."""
-from typing import Any, Protocol, runtime_checkable
+import io
+from typing import IO, Any, Protocol, runtime_checkable
 
 StateContainer = Any
 """While a StateContainer can in principle be anything, localstack currently supports by default the following
@@ -76,3 +77,45 @@ class AssetDirectory:
             raise ValueError("path must be set")
 
         self.path = path
+
+
+class Encoder:
+    def encodes(self, obj: Any) -> bytes:
+        """
+        Encode an object into bytes.
+
+        :param obj: the object to encode
+        :return: the encoded object
+        """
+        b = io.BytesIO()
+        self.encode(obj, b)
+        return b.getvalue()
+
+    def encode(self, obj: Any, file: IO[bytes]):
+        """
+        Encode an object into bytes.
+
+        :param obj: the object to encode
+        :param file: the file to write the encoded data into
+        """
+        raise NotImplementedError
+
+
+class Decoder:
+    def decodes(self, data: bytes) -> Any:
+        """
+        Decode a previously encoded object.
+
+        :param data: the encoded object to decode
+        :return: the decoded object
+        """
+        return self.decode(io.BytesIO(data))
+
+    def decode(self, file: IO[bytes]) -> Any:
+        """
+        Decode a previously encoded object.
+
+        :param file: the io object containing the object to decode
+        :return: the decoded object
+        """
+        raise NotImplementedError

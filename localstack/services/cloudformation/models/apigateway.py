@@ -801,6 +801,8 @@ class GatewayAccount(GenericBaseModel):
         return "AWS::ApiGateway::Account"
 
     def fetch_state(self, stack_name, resources):
+        if not self.physical_resource_id:
+            return None
         client = aws_stack.connect_to_service("apigateway")
         return client.get_account()
 
@@ -823,4 +825,8 @@ class GatewayAccount(GenericBaseModel):
                 args[2], resource["LogicalResourceId"]
             )
 
-        return {"create": {"function": _create}}
+        def _delete(*_, **__):
+            # note: deletion of accounts is currently a no-op
+            pass
+
+        return {"create": {"function": _create}, "delete": {"function": _delete}}

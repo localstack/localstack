@@ -394,7 +394,7 @@ class MockIntegration(BackendIntegration):
     def invoke(self, invocation_context: ApiInvocationContext) -> Response:
         passthrough_behavior = invocation_context.integration.get("passthroughBehavior") or ""
         request_template = invocation_context.integration.get("requestTemplates", {}).get(
-            invocation_context.headers.get(HEADER_CONTENT_TYPE)
+            invocation_context.headers.get(HEADER_CONTENT_TYPE, APPLICATION_JSON)
         )
 
         # based on the configured passthrough behavior and the existence of template or not,
@@ -411,7 +411,7 @@ class MockIntegration(BackendIntegration):
         # request template rendering
         request_payload = self.request_templates.render(invocation_context)
 
-        # mapping is done based on "statusCode" field
+        # mapping is done based on "statusCode" field, we default to 200
         status_code = 200
         if invocation_context.headers.get(HEADER_CONTENT_TYPE) == APPLICATION_JSON:
             try:

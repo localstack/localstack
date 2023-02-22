@@ -47,6 +47,8 @@ jobs:
       run:
         working-directory: localstack-ext
     environment: localstack-ext-tests
+    env:
+      GITHUB_API_TOKEN: ${{ secrets.GITHUB_TOKEN }} # used for increased rate-limits when installing packages
     if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository  # skip job if fork PR
     steps:
       - name: Determine companion-ref

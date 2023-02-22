@@ -11,25 +11,19 @@ from localstack.services.stepfunctions.asl.component.intrinsic.functionname.stat
     StatesFunctionName,
 )
 from localstack.services.stepfunctions.asl.eval.environment import Environment
+from localstack.utils.strings import long_uid
 
 
-class ArrayLength(StatesFunction):
+class StatesFunctionUUID(StatesFunction):
     def __init__(self, arg_list: FunctionArgumentList):
         super().__init__(
-            states_name=StatesFunctionName(function_type=StatesFunctionNameType.ArrayLength),
+            states_name=StatesFunctionName(function_type=StatesFunctionNameType.UUID),
             arg_list=arg_list,
         )
-        if arg_list.size != 1:
+        if len(arg_list.arg_list) != 0:
             raise ValueError(
-                f"Expected 1 argument for function type '{type(self)}', but got: '{arg_list}'."
+                f"Expected no arguments for function type '{type(self)}', but got: '{arg_list}'."
             )
 
     def _eval_body(self, env: Environment) -> None:
-        self.arg_list.eval(env=env)
-
-        array = env.stack.pop()
-        if not isinstance(array, list):
-            raise ValueError(f"Expected an array type, but got '{array}'.")
-
-        length = len(array)
-        env.stack.append(length)
+        env.stack.append(long_uid())

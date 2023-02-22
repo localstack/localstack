@@ -1,4 +1,3 @@
-import json
 from typing import Any, Final
 
 from localstack.services.stepfunctions.asl.component.intrinsic.argument.function_argument_list import (
@@ -19,7 +18,7 @@ from localstack.services.stepfunctions.asl.component.intrinsic.functionname.stat
 from localstack.services.stepfunctions.asl.eval.environment import Environment
 
 
-class StringFormat(StatesFunction):
+class StatesFunctionFormat(StatesFunction):
     _DELIMITER: Final[str] = "{}"
 
     def __init__(self, arg_list: FunctionArgumentList):
@@ -27,7 +26,7 @@ class StringFormat(StatesFunction):
             states_name=StatesFunctionName(function_type=StatesFunctionNameType.Format),
             arg_list=arg_list,
         )
-        if arg_list.size == 0:
+        if arg_list.size > 0:
             raise ValueError(
                 f"Expected at least 1 argument for function type '{type(self)}', but got: '{arg_list}'."
             )
@@ -50,23 +49,6 @@ class StringFormat(StatesFunction):
         string_result: str = ""
         for part in string_format_parts:
             string_result += part
-            if values:
-                value = values.pop()
-                if not isinstance(value, str):
-                    value = self._json_to_literal(value)
-                string_result += value
+            string_result += values.pop()
 
         env.stack.append(string_result)
-
-    @staticmethod
-    def _json_to_literal(value: Any) -> str:
-        if isinstance(value, dict):
-            dict_items = list()
-            for d_key, d_value in value.items():
-                d_value_lit = StringFormat._json_to_literal(d_value)
-                dict_items.append(f"{d_key}={d_value_lit}")
-            return f"{{{', '.join(dict_items)}}}"
-        elif isinstance(value, list):
-            return f"[{', '.join(list(map(StringFormat._json_to_literal, value)))}]"
-        else:
-            return json.dumps(value)
