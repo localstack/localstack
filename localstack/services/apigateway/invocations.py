@@ -183,7 +183,7 @@ def update_content_length(response: Response):
         response.headers["Content-Length"] = str(len(response.content))
 
 
-def apply_request_parameters(
+def apply_request_parameters_uri(
     uri: str, integration: Dict[str, Any], path_params: Dict[str, str], query_params: Dict[str, str]
 ):
     request_parameters = integration.get("requestParameters")
@@ -204,6 +204,29 @@ def apply_request_parameters(
                 query_params.pop(key)
 
     return add_query_params_to_url(uri, query_params)
+
+
+def apply_request_parameters_headers(
+    headers: dict, integration: Dict[str, Any]
+):
+    # We only map headers that are defined in the integration request parameters
+    # this is the same behavior as AWS
+    output_headers = {}
+    request_parameters = integration.get("requestParameters")
+    if request_parameters:
+        for integration, method in request_parameters.items():
+            try:
+                if integration.startswith("integration.request.header"):
+                    header_name = integration.split(".")[-1]
+                    header_value_name = method.split(".")[-1] if "." in method else None
+                    if header_value_name:
+                        header_value = headers.get(header_value_name)
+                    else:
+                        header_value = json.loads(method)
+                    output_headers[header_name] = header_value
+            except:
+                LOG.warning("Unable to apply request parameter %s", integration)
+    return output_headers
 
 
 def apply_response_parameters(invocation_context: ApiInvocationContext):
@@ -380,7 +403,7 @@ def invoke_rest_api_integration_backend(invocation_context: ApiInvocationContext
         # https://docs.aws.amazon.com/apigateway/api-reference/resource/integration/
         elif ("s3:path/" in uri or "s3:action/" in uri) and method == "GET":
             s3 = aws_stack.connect_to_service("s3")
-            uri = apply_request_parameters(
+            uri = apply_request_parameters_uri(
                 uri,
                 integration=integration,
                 path_params=path_params,
@@ -446,6 +469,7 @@ def invoke_rest_api_integration_backend(invocation_context: ApiInvocationContext
                 uri_parts = uri.split(":")
                 app_sync_id = uri_parts[-2].replace(".appsync-api", "")
                 url = urljoin(config.service_url("appsync"), f"graphql/{app_sync_id}")
+                headers = apply_request_parameters_headers(headers, integration)
                 result = common.make_http_request(url, method="POST", headers=headers, data=data)
                 return result
 
@@ -517,7 +541,7 @@ def invoke_rest_api_integration_backend(invocation_context: ApiInvocationContext
         if isinstance(payload, dict):
             payload = json.dumps(payload)
 
-        uri = apply_request_parameters(
+        uri = apply_request_parameters_uri(
             uri,
             integration=integration,
             path_params=path_params,

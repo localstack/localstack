@@ -20,7 +20,7 @@ from localstack.services.apigateway.integration import LambdaProxyIntegration
 from localstack.services.apigateway.invocations import (
     ApiInvocationContext,
     RequestValidator,
-    apply_request_parameters,
+    apply_request_parameters_uri,
 )
 from localstack.services.apigateway.templates import (
     RequestTemplates,
@@ -118,7 +118,7 @@ class ApiGatewayPathsTest(unittest.TestCase):
             "cacheKeyParameters": [],
         }
 
-        uri = apply_request_parameters(
+        uri = apply_request_parameters_uri(
             uri="https://httpbin.org/anything/{proxy}",
             integration=integration,
             path_params={"proxy": "foo/bar/baz"},
