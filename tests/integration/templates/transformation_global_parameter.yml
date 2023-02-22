@@ -16,4 +16,4 @@ Outputs:
       Ref: Parameter
 
 Transform:
-  - SubstitutionMacro
+  Name: SubstitutionMacro

@@ -947,6 +947,11 @@ class GatewayType(str):
     ipsec_1 = "ipsec.1"
 
 
+class HostMaintenance(str):
+    on = "on"
+    off = "off"
+
+
 class HostRecovery(str):
     on = "on"
     off = "off"
@@ -3606,6 +3611,7 @@ class AllocateHostsRequest(ServiceRequest):
     TagSpecifications: Optional[TagSpecificationList]
     HostRecovery: Optional[HostRecovery]
     OutpostArn: Optional[String]
+    HostMaintenance: Optional[HostMaintenance]
 
 
 ResponseHostIdList = List[String]
@@ -6528,7 +6534,7 @@ class ResponseLaunchTemplateData(TypedDict, total=False):
     RamDiskId: Optional[String]
     DisableApiTermination: Optional[Boolean]
     InstanceInitiatedShutdownBehavior: Optional[ShutdownBehavior]
-    UserData: Optional[String]
+    UserData: Optional[SensitiveUserData]
     TagSpecifications: Optional[LaunchTemplateTagSpecificationList]
     ElasticGpuSpecifications: Optional[ElasticGpuSpecificationResponseList]
     ElasticInferenceAccelerators: Optional[LaunchTemplateElasticInferenceAcceleratorResponseList]
@@ -10109,6 +10115,7 @@ class Host(TypedDict, total=False):
     AvailabilityZoneId: Optional[String]
     MemberOfServiceLinkedResourceGroup: Optional[Boolean]
     OutpostArn: Optional[String]
+    HostMaintenance: Optional[HostMaintenance]
 
 
 HostList = List[Host]
@@ -12204,7 +12211,7 @@ class SpotFleetLaunchSpecification(TypedDict, total=False):
     RamdiskId: Optional[String]
     SpotPrice: Optional[String]
     SubnetId: Optional[SubnetId]
-    UserData: Optional[String]
+    UserData: Optional[SensitiveUserData]
     WeightedCapacity: Optional[Double]
     TagSpecifications: Optional[SpotFleetTagSpecificationList]
     InstanceRequirements: Optional[InstanceRequirements]
@@ -12287,7 +12294,7 @@ class RunInstancesMonitoringEnabled(TypedDict, total=False):
 
 
 class LaunchSpecification(TypedDict, total=False):
-    UserData: Optional[String]
+    UserData: Optional[SensitiveUserData]
     SecurityGroups: Optional[GroupIdentifierList]
     AddressingType: Optional[String]
     BlockDeviceMappings: Optional[BlockDeviceMappingList]
@@ -15210,6 +15217,7 @@ class ModifyHostsRequest(ServiceRequest):
     HostRecovery: Optional[HostRecovery]
     InstanceType: Optional[String]
     InstanceFamily: Optional[String]
+    HostMaintenance: Optional[HostMaintenance]
 
 
 UnsuccessfulItemList = List[UnsuccessfulItem]
@@ -16450,7 +16458,7 @@ class RequestSpotLaunchSpecification(TypedDict, total=False):
     Placement: Optional[SpotPlacement]
     RamdiskId: Optional[RamdiskId]
     SubnetId: Optional[SubnetId]
-    UserData: Optional[String]
+    UserData: Optional[SensitiveUserData]
 
 
 class RequestSpotInstancesRequest(ServiceRequest):
@@ -17103,6 +17111,7 @@ class Ec2Api:
         tag_specifications: TagSpecificationList = None,
         host_recovery: HostRecovery = None,
         outpost_arn: String = None,
+        host_maintenance: HostMaintenance = None,
     ) -> AllocateHostsResult:
         raise NotImplementedError
 
@@ -22128,6 +22137,7 @@ class Ec2Api:
         host_recovery: HostRecovery = None,
         instance_type: String = None,
         instance_family: String = None,
+        host_maintenance: HostMaintenance = None,
     ) -> ModifyHostsResult:
         raise NotImplementedError
 

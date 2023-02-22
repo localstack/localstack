@@ -96,6 +96,13 @@ class CancellableStream(Protocol):
         raise NotImplementedError
 
 
+class DockerPlatform(str):
+    """Platform in the format ``os[/arch[/variant]]``"""
+
+    linux_amd64 = "linux/amd64"
+    linux_arm64 = "linux/arm64"
+
+
 # defines the type for port mappings (source->target port range)
 PortRange = Union[List, HashableList]
 
@@ -366,6 +373,7 @@ class ContainerConfiguration:
     network: Optional[str] = None
     dns: Optional[str] = None
     workdir: Optional[str] = None
+    platform: Optional[str] = None
 
 
 @dataclasses.dataclass
@@ -378,6 +386,8 @@ class DockerRunFlags:
     extra_hosts: Optional[Dict[str, str]]
     network: Optional[str]
     labels: Optional[Dict[str, str]]
+    user: Optional[str]
+    platform: Optional[DockerPlatform]
 
 
 class ContainerClient(metaclass=ABCMeta):
@@ -496,7 +506,7 @@ class ContainerClient(metaclass=ABCMeta):
         pass
 
     @abstractmethod
-    def pull_image(self, docker_image: str) -> None:
+    def pull_image(self, docker_image: str, platform: Optional[DockerPlatform] = None) -> None:
         """Pulls an image with a given name from a Docker registry"""
         pass
 
@@ -687,6 +697,7 @@ class ContainerClient(metaclass=ABCMeta):
             additional_flags=container_config.additional_flags,
             workdir=container_config.workdir,
             privileged=container_config.privileged,
+            platform=container_config.platform,
         )
 
     @abstractmethod
@@ -714,6 +725,7 @@ class ContainerClient(metaclass=ABCMeta):
         workdir: Optional[str] = None,
         privileged: Optional[bool] = None,
         labels: Optional[Dict[str, str]] = None,
+        platform: Optional[DockerPlatform] = None,
     ) -> str:
         """Creates a container with the given image
 
@@ -888,6 +900,8 @@ class Util:
         ports: PortMappings = None,
         mounts: List[SimpleVolumeBind] = None,
         network: Optional[str] = None,
+        user: Optional[str] = None,
+        platform: Optional[DockerPlatform] = None,
     ) -> DockerRunFlags:
         """Parses environment, volume and port flags passed as string
         :param additional_flags: String which contains the flag definitions
@@ -895,6 +909,8 @@ class Util:
         :param ports: PortMapping object. Will be modified in place.
         :param mounts: List of mount tuples (host_path, container_path). Will be modified in place.
         :param network: Existing network name (optional). Warning will be printed if network is overwritten in flags.
+        :param user: User to run first process. Warning will be printed if user is overwritten in flags.
+        :param platform: Platform to execute container. Warning will be printed if platform is overwritten in flags.
         :return: A DockerRunFlags object containing the env_vars, ports, mount, extra_hosts, network, and labels.
                 The result will return new objects if respective parameters were None and additional flags contained
                 a flag for that object, the same which are passed otherwise.
@@ -917,6 +933,10 @@ class Util:
                     cur_state = "set-network"
                 elif flag == "--label":
                     cur_state = "add-label"
+                elif flag in ["-u", "--user"]:
+                    cur_state = "user"
+                elif flag == "--platform":
+                    cur_state = "platform"
                 else:
                     raise NotImplementedError(
                         f"Flag {flag} is currently not supported by this Docker client."
@@ -982,6 +1002,18 @@ class Util:
                         labels[key] = value
                     else:
                         LOG.warning("Invalid --label specified, unable to parse: '%s'", flag)
+                elif cur_state == "user":
+                    if user:
+                        LOG.warning(
+                            f"Overwriting Docker container user {user} with new value {flag}"
+                        )
+                    user = flag
+                elif cur_state == "platform":
+                    if platform:
+                        LOG.warning(
+                            f"Overwriting Docker container platform {platform} with new value {flag}"
+                        )
+                    platform = flag
 
                 cur_state = None
 
@@ -992,6 +1024,8 @@ class Util:
             extra_hosts=extra_hosts,
             network=network,
             labels=labels,
+            user=user,
+            platform=platform,
         )
 
     @staticmethod

@@ -139,9 +139,26 @@ class TestMessageTransformationBasic:
         #end
         #return('end')
         """
-        result = render_velocity_template(template, {"context": dict()})
+        result = render_velocity_template(template, {"context": {}})
         result = re.sub(r"\s+", " ", result).strip()
         assert result == "loop1 loop3 end"
+
+    def test_put_value_to_dict(self):
+        template = r"""
+        $util.qr($ctx.test.put("foo", "bar"))
+        $ctx.test
+        """
+        result = render_velocity_template(template, {"ctx": {"test": {}}})
+        assert result.strip() == str({"foo": "bar"})
+
+    def test_put_value_to_nested_dict(self):
+        template = r"""
+        $ctx.test.get('a').get('b').put('foo', 'bar')
+        $ctx.test.get('a')
+        """
+        wrapped = {"a": {"b": {"c": "foobar"}}}
+        result = render_velocity_template(template, {"ctx": {"test": wrapped}})
+        assert result.strip() == str({"b": {"c": "foobar", "foo": "bar"}})
 
 
 class TestMessageTransformationApiGateway:
@@ -233,3 +250,20 @@ class TestMessageTransformationApiGateway:
         variables = {"method": {"request": {"header": {"X-My-Header": "my-header-value"}}}}
         result = ApiGatewayVtlTemplate().render_vtl(template, variables).strip()
         assert result == "my-header-value"
+
+    def test_boolean_in_variable(self):
+        # Inspired by authorizer context from Lambda authorizer:
+        # https://docs.aws.amazon.com/apigateway/latest/developerguide/api-gateway-lambda-authorizer-output.html
+        # The returned values are all stringified. Notice that you cannot set a JSON
+        # object or array as a valid value of any key in the context map.
+        template = '{"booleanKeyTrue": $booleanKeyTrue, "booleanKeyFalse": $booleanKeyFalse}'
+        variables = {
+            "booleanKeyTrue": "true",
+            "booleanKeyFalse": "false",
+        }
+        result = ApiGatewayVtlTemplate().render_vtl(template, variables)
+        assert "true" in result
+        assert "false" in result
+        assert result == '{"booleanKeyTrue": true, "booleanKeyFalse": false}'
+        # test is valid json
+        json.loads(result)

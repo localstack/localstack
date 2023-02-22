@@ -1,3 +1,4 @@
+import ast
 import base64
 import json
 import logging
@@ -269,6 +270,9 @@ class ResponseTemplates(Templates):
 
         # we render the template with the context data and the response content
         variables = self.build_variables_mapping(api_context)
-        response._content = self.render_vtl(template, variables=variables)
+        rendered_tpl = self.render_vtl(template, variables=variables)
+
+        # TODO: we need to do a parity test for templates that generate invalid JSON
+        response._content = json.dumps(ast.literal_eval(rendered_tpl.strip()))
         LOG.info("Endpoint response body after transformations:\n%s", response._content)
         return response._content

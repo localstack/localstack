@@ -187,6 +187,31 @@ jobs:
       - store_test_results:
           path: target/reports/
 
+  itest-sfn-v2-provider:
+    executor: ubuntu-machine-amd64
+    working_directory: /tmp/workspace/repo
+    steps:
+      - attach_workspace:
+          at: /tmp/workspace
+      - run:
+          name: Test SFN V2 provider
+          environment:
+            PROVIDER_OVERRIDE_STEPFUNCTIONS: "v2"
+            TEST_PATH: "tests/integration/stepfunctions/v2/"
+            PYTEST_ARGS: "--reruns 3 --junitxml=target/reports/sfn_v2.xml -o junit_suite_name='sfn_v2'"
+            COVERAGE_ARGS: "-p"
+          command: make test-coverage
+      - run:
+          name: Store coverage results
+          command: mv .coverage.* target/coverage/
+      - persist_to_workspace:
+          root:
+            /tmp/workspace
+          paths:
+            - repo/target/coverage/
+      - store_test_results:
+          path: target/reports/
+
   docker-build:
     parameters:
       platform:
@@ -441,6 +466,9 @@ workflows:
       - itest-s3-asf-provider:
           requires:
             - preflight
+      - itest-sfn-v2-provider:
+          requires:
+            - preflight
       - unit-tests:
           requires:
             - preflight
@@ -488,6 +516,7 @@ workflows:
             - itest-lambda-docker
             - itest-lambda-provider
             - itest-s3-asf-provider
+            - itest-sfn-v2-provider
             - docker-test-amd64
             - docker-test-arm64
             - collect-not-implemented-community
@@ -501,6 +530,7 @@ workflows:
             - itest-lambda-docker
             - itest-lambda-provider
             - itest-s3-asf-provider
+            - itest-sfn-v2-provider
             - docker-test-amd64
             - docker-test-arm64
             - unit-tests

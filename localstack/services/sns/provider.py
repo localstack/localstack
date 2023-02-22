@@ -495,6 +495,8 @@ class SnsProvider(SnsApi, ServiceLifecycleHook):
         removed_attrs = ["sqs_queue_url"]
         if "FilterPolicyScope" in sub and "FilterPolicy" not in sub:
             removed_attrs.append("FilterPolicyScope")
+        elif "FilterPolicy" in sub and "FilterPolicyScope" not in sub:
+            sub["FilterPolicyScope"] = "MessageAttributes"
 
         attributes = {k: v for k, v in sub.items() if k not in removed_attrs}
         return GetSubscriptionAttributesResponse(Attributes=attributes)

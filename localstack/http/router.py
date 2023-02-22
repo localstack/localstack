@@ -21,6 +21,8 @@ from typing import (
 from werkzeug import Request, Response
 from werkzeug.routing import BaseConverter, Map, Rule, RuleFactory
 
+from localstack.http.request import get_raw_path
+
 HTTP_METHODS = ("GET", "POST", "PUT", "PATCH", "DELETE", "HEAD", "OPTIONS", "TRACE")
 
 E = TypeVar("E")
@@ -185,7 +187,8 @@ class Router(Generic[E]):
         """
         Creates a new Rule from the given parameters and adds it to the URL Map.
 
-        :param path: the path pattern to match
+        :param path: the path pattern to match. This path rule, in contrast to the default behavior of Werkzeug, will be
+                        matched against the raw / original (potentially URL-encoded) path.
         :param endpoint: the endpoint to invoke
         :param host: an optional host matching pattern. if not pattern is given, the rule matches any host
         :param methods: the allowed HTTP verbs for this rule
@@ -427,7 +430,12 @@ class Router(Generic[E]):
         :return: the HTTP response
         """
         matcher = self.url_map.bind(server_name=request.host)
-        handler, args = matcher.match(request.path, method=request.method)
+        # Match on the _raw_ path to ensure that converters (like "path") can extract the raw path.
+        # f.e. router.add(/<path:path>, ProxyHandler(...))
+        # If we would use the - already url-decoded - request.path here, a handler would not be able to access
+        # the original (potentially URL-encoded) path.
+        # As a consequence, rules need to match on URL-encoded URLs (f.e. use '%20' instead of ' ').
+        handler, args = matcher.match(get_raw_path(request), method=request.method)
         args.pop("__host__", None)
         return self.dispatcher(request, handler, args)
 

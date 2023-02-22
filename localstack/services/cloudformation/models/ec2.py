@@ -16,17 +16,10 @@ class EC2RouteTable(GenericBaseModel):
 
     def fetch_state(self, stack_name, resources):
         client = aws_stack.connect_to_service("ec2")
-        tags_filters = map(
-            lambda tag: {"Name": f"tag:{tag.get('Key')}", "Values": [tag.get("Value")]},
-            self.props.get("Tags") or [],
-        )
-        filters = [
-            {"Name": "vpc-id", "Values": [self.props["VpcId"]]},
-            {"Name": "association.main", "Values": ["false"]},
-        ]
-        filters.extend(tags_filters)
-        route_tables = client.describe_route_tables(Filters=filters)["RouteTables"]
-        return (route_tables or [None])[0]
+        if not self.physical_resource_id:
+            return None
+        result = client.describe_route_tables(RouteTableIds=[self.physical_resource_id])
+        return (result["RouteTables"] or [None])[0]
 
     def get_physical_resource_id(self, attribute=None, **kwargs):
         return self.physical_resource_id or self.props.get("RouteTableId")
@@ -113,21 +106,30 @@ class EC2InternetGateway(GenericBaseModel):
         return "AWS::EC2::InternetGateway"
 
     def fetch_state(self, stack_name, resources):
+        if not self.physical_resource_id:
+            return None
         client = aws_stack.connect_to_service("ec2")
-        gateways = client.describe_internet_gateways()["InternetGateways"]
-        tags = self.props.get("Tags")
-        gateway = [g for g in gateways if (g.get("Tags") or []) == (tags or [])]
-        return (gateway or [None])[0]
+        gateways = client.describe_internet_gateways(
+            InternetGatewayIds=[self.physical_resource_id]
+        )["InternetGateways"]
+        return gateways[0] if gateways else None
 
-    def get_physical_resource_id(self, attribute=None, **kwargs):
-        return self.props.get("InternetGatewayId")
+    def get_cfn_attribute(self, attribute_name):
+        if attribute_name == "InternetGatewayId":
+            return self.props.get(attribute_name)
 
     @staticmethod
     def get_deploy_templates():
+        def _store_id(result, resource_id, resources, resource_type):
+            resources[resource_id]["PhysicalResourceId"] = result["InternetGateway"][
+                "InternetGatewayId"
+            ]
+
         return {
             "create": {
                 "function": "create_internet_gateway",
                 "parameters": {"TagSpecifications": get_tags_param("internet-gateway")},
+                "result_handler": _store_id,
             }
         }
 
