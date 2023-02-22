@@ -31,7 +31,13 @@ def to_invocation_context(
         url_params = {}
 
     method = request.method
-    path = request.full_path if request.query_string else request.path
+    url_params_stage = url_params.get("stage", "dev")
+    url_params_path = url_params.get("path", request.path)
+    # Base path is not URL-decoded. Example: test%2Balias@gmail.com => test%2Balias@gmail.com
+    path = f"{url_params_stage}/{url_params_path}"
+    if request.query_string:
+        # Parameters are URL-decoded. Example: test%2Balias@gmail.com => test+alias@gmail.com
+        path += f"?{request.query_string.decode()}"
     data = restore_payload(request)
     headers = Headers(request.headers)
 
