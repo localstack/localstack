@@ -20,7 +20,7 @@ jobs:
       with:
         username: ${{ secrets.DOCKERHUB_USERNAME }}
         password: ${{ secrets.DOCKERHUB_PASSWORD }}
-        repository: localstackci/lsv2test
+        repository: localstack/localstack
         short-description: ${{ github.event.repository.description }}
 
     - name: Docker Hub Description - Pro
@@ -28,5 +28,5 @@ jobs:
       with:
         username: ${{ secrets.DOCKERHUB_USERNAME }}
         password: ${{ secrets.DOCKERHUB_PASSWORD }}
-        repository: localstackci/lsv2test-pro
+        repository: localstack/localstack-pro
         short-description: ${{ github.event.repository.description }}

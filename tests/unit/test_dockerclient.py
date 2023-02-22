@@ -26,7 +26,7 @@ class TestDockerClient:
     def test_list_containers(self, run_mock):
         mock_container = {
             "ID": "00000000a1",
-            "Image": "localstackci/lsv2test",
+            "Image": "localstack/localstack",
             "Names": "localstack_main",
             "Labels": "authors=LocalStack Contributors",
             "State": "running",

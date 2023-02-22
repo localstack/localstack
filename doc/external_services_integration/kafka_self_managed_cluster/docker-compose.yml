@@ -52,7 +52,7 @@ services:
 
   localstack:
     container_name: "${LOCALSTACK_DOCKER_NAME-localstack_main}"
-    image: localstackci/lsv2test
+    image: localstack/localstack
     network_mode: bridge
     ports:
       - "4566:4566"
