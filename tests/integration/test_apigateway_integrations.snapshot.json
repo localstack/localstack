@@ -1,6 +1,6 @@
 {
   "tests/integration/test_apigateway_integrations.py::test_lambda_proxy_integration": {
-    "recorded-date": "21-02-2023, 17:32:43",
+    "recorded-date": "22-02-2023, 11:19:13",
     "recorded-content": {
       "rest-api-creation": {
         "apiKeySource": "HEADER",
@@ -339,7 +339,7 @@
         },
         "multiValueQueryStringParameters": {
           "urlparam": [
-            "test@gmail.com"
+            "test"
           ]
         },
         "path": "/test-path",
@@ -347,7 +347,7 @@
           "proxy": "test-path"
         },
         "queryStringParameters": {
-          "urlparam": "test@gmail.com"
+          "urlparam": "test"
         },
         "requestContext": {
           "accountId": "111111111111",
@@ -464,7 +464,7 @@
         },
         "multiValueQueryStringParameters": {
           "urlparam": [
-            "test alias@gmail.com"
+            "test"
           ]
         },
         "path": "/test-path/",
@@ -472,7 +472,7 @@
           "proxy": "test-path"
         },
         "queryStringParameters": {
-          "urlparam": "test alias@gmail.com"
+          "urlparam": "test"
         },
         "requestContext": {
           "accountId": "111111111111",
@@ -588,9 +588,9 @@
           ]
         },
         "multiValueQueryStringParameters": null,
-        "path": "/test-path/api/v1/user/test%2Balias@gmail.com",
+        "path": "/test-path/api/user/test%2Balias@gmail.com/plus/test+alias@gmail.com",
         "pathParameters": {
-          "proxy": "test-path/api/v1/user/test%2Balias@gmail.com"
+          "proxy": "test-path/api/user/test%2Balias@gmail.com/plus/test+alias@gmail.com"
         },
         "queryStringParameters": null,
         "requestContext": {
@@ -614,9 +614,154 @@
             "userAgent": "python-requests/testing",
             "userArn": null
           },
-          "path": "/test/test-path/api/v1/user/test%2Balias@gmail.com",
+          "path": "/test/test-path/api/user/test%2Balias@gmail.com/plus/test+alias@gmail.com",
           "protocol": "HTTP/1.1",
           "requestId": "<uuid:5>",
+          "requestTime": "<request-time>",
+          "requestTimeEpoch": "<request-time-epoch>",
+          "resourceId": "<resource-id:1>",
+          "resourcePath": "/{proxy+}",
+          "stage": "test"
+        },
+        "resource": "/{proxy+}",
+        "stageVariables": null
+      },
+      "invocation-payload-with-params-encoding": {
+        "body": null,
+        "headers": {
+          "Accept": "*/*",
+          "Accept-Encoding": "gzip, deflate",
+          "CloudFront-Forwarded-Proto": "https",
+          "CloudFront-Is-Desktop-Viewer": "true",
+          "CloudFront-Is-Mobile-Viewer": "false",
+          "CloudFront-Is-SmartTV-Viewer": "false",
+          "CloudFront-Is-Tablet-Viewer": "false",
+          "CloudFront-Viewer-ASN": "<cloudfront-asn:1>",
+          "CloudFront-Viewer-Country": "<cloudfront-country:1>",
+          "Host": "<id:1>.execute-api.<region>.amazonaws.com",
+          "User-Agent": "python-requests/testing",
+          "Via": "<via:6>",
+          "X-Amz-Cf-Id": "<cf-id:6>",
+          "X-Amzn-Trace-Id": "<trace-id:6>",
+          "X-Forwarded-For": "<source-ip:1>, <ip>",
+          "X-Forwarded-Port": "443",
+          "X-Forwarded-Proto": "https",
+          "tEsT-HEADeR": "aValUE"
+        },
+        "httpMethod": "GET",
+        "isBase64Encoded": false,
+        "multiValueHeaders": {
+          "Accept": [
+            "*/*"
+          ],
+          "Accept-Encoding": [
+            "gzip, deflate"
+          ],
+          "CloudFront-Forwarded-Proto": [
+            "https"
+          ],
+          "CloudFront-Is-Desktop-Viewer": [
+            "true"
+          ],
+          "CloudFront-Is-Mobile-Viewer": [
+            "false"
+          ],
+          "CloudFront-Is-SmartTV-Viewer": [
+            "false"
+          ],
+          "CloudFront-Is-Tablet-Viewer": [
+            "false"
+          ],
+          "CloudFront-Viewer-ASN": [
+            "<cloudfront-asn:1>"
+          ],
+          "CloudFront-Viewer-Country": [
+            "<cloudfront-country:1>"
+          ],
+          "Host": [
+            "<id:1>.execute-api.<region>.amazonaws.com"
+          ],
+          "User-Agent": [
+            "python-requests/testing"
+          ],
+          "Via": [
+            "<via:6>"
+          ],
+          "X-Amz-Cf-Id": [
+            "<cf-id:6>"
+          ],
+          "X-Amzn-Trace-Id": [
+            "<trace-id:6>"
+          ],
+          "X-Forwarded-For": [
+            "<source-ip:1>, <ip>"
+          ],
+          "X-Forwarded-Port": [
+            "443"
+          ],
+          "X-Forwarded-Proto": [
+            "https"
+          ],
+          "tEsT-HEADeR": [
+            "aValUE"
+          ]
+        },
+        "multiValueQueryStringParameters": {
+          "dateTimeOffset": [
+            "2023-06-12T18:05:10.123456 00:00"
+          ],
+          "email": [
+            "test+alias@gmail.com"
+          ],
+          "plus": [
+            "test alias@gmail.com"
+          ],
+          "url": [
+            "https://www.google.com/"
+          ],
+          "whitespace": [
+            "foo bar"
+          ],
+          "zhash": [
+            "abort/"
+          ]
+        },
+        "path": "/test-path/api",
+        "pathParameters": {
+          "proxy": "test-path/api"
+        },
+        "queryStringParameters": {
+          "dateTimeOffset": "2023-06-12T18:05:10.123456 00:00",
+          "email": "test+alias@gmail.com",
+          "plus": "test alias@gmail.com",
+          "url": "https://www.google.com/",
+          "whitespace": "foo bar",
+          "zhash": "abort/"
+        },
+        "requestContext": {
+          "accountId": "111111111111",
+          "apiId": "<id:1>",
+          "domainName": "<id:1>.execute-api.<region>.amazonaws.com",
+          "domainPrefix": "<id:1>",
+          "extendedRequestId": "<extended-request-id:6>",
+          "httpMethod": "GET",
+          "identity": {
+            "accessKey": null,
+            "accountId": null,
+            "caller": null,
+            "cognitoAuthenticationProvider": null,
+            "cognitoAuthenticationType": null,
+            "cognitoIdentityId": null,
+            "cognitoIdentityPoolId": null,
+            "principalOrgId": null,
+            "sourceIp": "<source-ip:1>",
+            "user": null,
+            "userAgent": "python-requests/testing",
+            "userArn": null
+          },
+          "path": "/test/test-path/api",
+          "protocol": "HTTP/1.1",
+          "requestId": "<uuid:6>",
           "requestTime": "<request-time>",
           "requestTimeEpoch": "<request-time-epoch>",
           "resourceId": "<resource-id:1>",

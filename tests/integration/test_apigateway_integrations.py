@@ -254,30 +254,59 @@ def test_lambda_proxy_integration(
     # invoke rest api with trailing slash
     response_trailing_slash = retry(invoke_api, sleep=2, retries=10, url=f"{invocation_url}/")
     snapshot.match("invocation-payload-with-trailing-slash", response_trailing_slash.json())
-    response_trailing_slash = retry(
-        invoke_api, sleep=2, retries=10, url=f"{invocation_url}?urlparam=test@gmail.com"
+
+    response_no_trailing_slash = retry(
+        invoke_api, sleep=2, retries=10, url=f"{invocation_url}?urlparam=test"
     )
     snapshot.match(
         "invocation-payload-without-trailing-slash-and-query-params",
-        response_trailing_slash.json(),
+        response_no_trailing_slash.json(),
     )
-    response_trailing_slash = retry(
-        invoke_api, sleep=2, retries=10, url=f"{invocation_url}/?urlparam=test+alias@gmail.com"
+
+    response_trailing_slash_param = retry(
+        invoke_api, sleep=2, retries=10, url=f"{invocation_url}/?urlparam=test"
     )
     snapshot.match(
         "invocation-payload-with-trailing-slash-and-query-params",
-        response_trailing_slash.json(),
+        response_trailing_slash_param.json(),
     )
+
+    # invoke rest api with encoded information in URL path
+    path_encoded_emails = "user/test%2Balias@gmail.com/plus/test+alias@gmail.com"
     response_path_encoding = retry(
         invoke_api,
         sleep=2,
         retries=10,
-        url=f"{invocation_url}/api/v1/user/test%2Balias@gmail.com",
+        url=f"{invocation_url}/api/{path_encoded_emails}",
     )
     snapshot.match(
         "invocation-payload-with-path-encoded-email",
         response_path_encoding.json(),
     )
+
+    # invoke rest api with encoded information in URL params
+    url_params = "&".join(
+        [
+            "dateTimeOffset=2023-06-12T18:05:10.123456+00:00",
+            "email=test%2Balias@gmail.com",
+            "plus=test+alias@gmail.com",
+            "url=https://www.google.com/",
+            "whitespace=foo bar",
+            "zhash=abort/#",
+            "ignored=this-does-not-appear-after-the-hash",
+        ]
+    )
+    response_params_encoding = retry(
+        invoke_api,
+        sleep=2,
+        retries=10,
+        url=f"{invocation_url}/api?{url_params}",
+    )
+    snapshot.match(
+        "invocation-payload-with-params-encoding",
+        response_params_encoding.json(),
+    )
+    # TODO: ensure that pathParameters follow the same encoding rules when using non {proxy+} matching
 
 
 #
