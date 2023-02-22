@@ -589,3 +589,41 @@ def test_deleted_changeset(cfn_client, snapshot, cleanups):
     with pytest.raises(cfn_client.exceptions.ChangeSetNotFoundException) as e:
         cfn_client.describe_change_set(StackName=stack_name, ChangeSetName=changeset_id)
     snapshot.match("postdelete_changeset_notfound", e.value)
+
+
+@pytest.mark.aws_validated
+def test_autoexpand_capability_requirement(cfn_client, cleanups):
+    stack_name = f"test-stack-{short_uid()}"
+    changeset_name = f"test-changeset-{short_uid()}"
+    queue_name = f"test-queue-{short_uid()}"
+    cleanups.append(lambda: cfn_client.delete_stack(StackName=stack_name))
+
+    template_body = load_template_raw(
+        os.path.join(os.path.dirname(__file__), "../../templates/cfn_macro_languageextensions.yaml")
+    )
+
+    with pytest.raises(cfn_client.exceptions.InsufficientCapabilitiesException):
+        # requires the capability
+        cfn_client.create_stack(
+            StackName=stack_name,
+            TemplateBody=template_body,
+            Parameters=[
+                {"ParameterKey": "QueueList", "ParameterValue": "faa,fbb,fcc"},
+                {"ParameterKey": "QueueNameParam", "ParameterValue": queue_name},
+            ],
+        )
+
+    # does not require the capability
+    create_changeset_result = cfn_client.create_change_set(
+        StackName=stack_name,
+        ChangeSetName=changeset_name,
+        TemplateBody=template_body,
+        ChangeSetType="CREATE",
+        Parameters=[
+            {"ParameterKey": "QueueList", "ParameterValue": "faa,fbb,fcc"},
+            {"ParameterKey": "QueueNameParam", "ParameterValue": queue_name},
+        ],
+    )
+    cfn_client.get_waiter("change_set_create_complete").wait(
+        ChangeSetName=create_changeset_result["Id"]
+    )

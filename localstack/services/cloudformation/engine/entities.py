@@ -143,8 +143,20 @@ class Stack:
         self.metadata[attribute] = new_time or timestamp_millis()
 
     def add_stack_event(
-        self, resource_id: str, physical_res_id: str, status: str, status_reason: str = None
+        self,
+        resource_id: str = None,
+        physical_res_id: str = None,
+        status: str = "",
+        status_reason: str = "",
     ):
+        resource_id = resource_id or self.stack_name
+        physical_res_id = physical_res_id or self.stack_id
+        resource_type = (
+            self.template.get("Resources", {})
+            .get(resource_id, {})
+            .get("Type", "AWS::CloudFormation::Stack")
+        )
+
         event = {
             "EventId": long_uid(),
             "Timestamp": timestamp_millis(),
@@ -153,7 +165,7 @@ class Stack:
             "LogicalResourceId": resource_id,
             "PhysicalResourceId": physical_res_id,
             "ResourceStatus": status,
-            "ResourceType": "AWS::CloudFormation::Stack",
+            "ResourceType": resource_type,
         }
 
         if status_reason:

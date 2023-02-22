@@ -528,3 +528,16 @@ def test_update_termination_protection(deploy_cfn_template, cfn_client, sns_clie
     )
     res = cfn_client.describe_stacks(StackName=stack.stack_name)
     snapshot.match("describe-stack-2", res)
+
+
+@pytest.mark.aws_validated
+def test_events_resource_types(deploy_cfn_template, cfn_client, snapshot):
+    template_path = os.path.join(
+        os.path.dirname(__file__), "../../templates/cfn_cdk_sample_app.yaml"
+    )
+    stack = deploy_cfn_template(template_path=template_path, max_wait=500)
+    events = cfn_client.describe_stack_events(StackName=stack.stack_name)["StackEvents"]
+
+    resource_types = list(set([event["ResourceType"] for event in events]))
+    resource_types.sort()
+    snapshot.match("resource_types", resource_types)
