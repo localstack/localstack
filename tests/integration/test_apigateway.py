@@ -614,7 +614,9 @@ class TestAPIGateway:
             }
         ]
         api_id = self.create_api_gateway_and_deploy(
-            integration_type="MOCK", integration_responses=responses
+            integration_type="MOCK",
+            integration_responses=responses,
+            stage_name=self.TEST_STAGE_NAME,
         )
 
         # invoke endpoint with Origin header
@@ -2026,6 +2028,7 @@ class TestAPIGateway:
         is_api_key_required=False,
         integration_type=None,
         integration_responses=None,
+        stage_name="staging",
     ):
         response_templates = response_templates or {}
         integration_type = integration_type or "AWS_PROXY"
@@ -2079,7 +2082,7 @@ class TestAPIGateway:
                 **resp_details,
             )
 
-        apigw_client.create_deployment(restApiId=api_id, stageName="staging")
+        apigw_client.create_deployment(restApiId=api_id, stageName=stage_name)
         return api_id
 
     @pytest.mark.parametrize("base_path_type", ["ignore", "prepend", "split"])
