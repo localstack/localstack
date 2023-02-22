@@ -216,9 +216,8 @@ def apply_request_parameters_headers(headers: dict, integration: Dict[str, Any])
             try:
                 if integration.startswith("integration.request.header"):
                     header_name = integration.split(".")[-1]
-                    header_value_name = method.split(".")[-1] if "method.request.header" in method else None
-                    if header_value_name:
-                        header_value = headers.get(header_value_name)
+                    if "method.request.header" in method:
+                        header_value = headers.get(method.split(".")[-1])
                     else:
                         header_value = method.strip("'")
                     output_headers[header_name] = header_value
