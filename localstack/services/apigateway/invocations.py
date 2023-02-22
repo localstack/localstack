@@ -218,7 +218,7 @@ def apply_request_parameters_headers(
             try:
                 if integration.startswith("integration.request.header"):
                     header_name = integration.split(".")[-1]
-                    header_value_name = method.split(".")[-1] if "." in method else None
+                    header_value_name = method.split(".")[-1] if "method.request.header" in method else None
                     if header_value_name:
                         header_value = headers.get(header_value_name)
                     else:
