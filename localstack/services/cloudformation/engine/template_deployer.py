@@ -1462,6 +1462,8 @@ class TemplateDeployer:
             res_change["_deployed"] = is_deployed
             if not is_deployed:
                 return True
+            if action == "Add":
+                return False
             if action == "Modify" and not self.is_updateable(resource):
                 LOG.debug(
                     'Action "update" not yet implemented for CF resource type %s',

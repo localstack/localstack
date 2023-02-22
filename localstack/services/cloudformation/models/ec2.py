@@ -16,17 +16,10 @@ class EC2RouteTable(GenericBaseModel):
 
     def fetch_state(self, stack_name, resources):
         client = aws_stack.connect_to_service("ec2")
-        tags_filters = map(
-            lambda tag: {"Name": f"tag:{tag.get('Key')}", "Values": [tag.get("Value")]},
-            self.props.get("Tags") or [],
-        )
-        filters = [
-            {"Name": "vpc-id", "Values": [self.props["VpcId"]]},
-            {"Name": "association.main", "Values": ["false"]},
-        ]
-        filters.extend(tags_filters)
-        route_tables = client.describe_route_tables(Filters=filters)["RouteTables"]
-        return (route_tables or [None])[0]
+        if not self.physical_resource_id:
+            return None
+        result = client.describe_route_tables(RouteTableIds=[self.physical_resource_id])
+        return (result["RouteTables"] or [None])[0]
 
     def get_physical_resource_id(self, attribute=None, **kwargs):
         return self.physical_resource_id or self.props.get("RouteTableId")

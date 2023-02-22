@@ -35,6 +35,7 @@ def test_cfn_with_multiple_route_tables(ec2_client, deploy_cfn_template):
     vpc_id = result.outputs["VPC"]
 
     resp = ec2_client.describe_route_tables(Filters=[{"Name": "vpc-id", "Values": [vpc_id]}])
+
     # 4 route tables being created (validated against AWS): 3 in template + 1 default = 4
     assert len(resp["RouteTables"]) == 4
 

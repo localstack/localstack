@@ -1196,7 +1196,7 @@ def deploy_cfn_template(
 
         outputs = cfn_client.describe_stacks(StackName=stack_id)["Stacks"][0].get("Outputs", [])
 
-        mapped_outputs = {o["OutputKey"]: o["OutputValue"] for o in outputs}
+        mapped_outputs = {o["OutputKey"]: o.get("OutputValue") for o in outputs}
 
         def _destroy_stack():
             cfn_client.delete_stack(StackName=stack_id)

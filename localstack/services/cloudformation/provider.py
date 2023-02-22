@@ -173,13 +173,10 @@ class CloudformationProvider(CloudformationApi):
             template.get("Parameters", {}), request.get("Parameters", [])
         )
 
+        stack = Stack(request, template)
         try:
-            template = template_preparer.transform_template(
-                template,
-                parameters,
-            )
+            template = template_preparer.transform_template(template, parameters, stack=stack)
         except FailedTransformationException as e:
-            stack = Stack(request, template)
             stack.add_stack_event(
                 stack.stack_name,
                 stack.stack_id,
@@ -249,7 +246,7 @@ class CloudformationProvider(CloudformationApi):
         )
 
         try:
-            template = template_preparer.transform_template(template, parameters)
+            template = template_preparer.transform_template(template, parameters, stack=stack)
         except FailedTransformationException as e:
             stack.add_stack_event(
                 stack.stack_name,
@@ -424,17 +421,11 @@ class CloudformationProvider(CloudformationApi):
             ]  # should then have been set by prepare_template_body
         template = template_preparer.parse_template(req_params["TemplateBody"])
 
-        parameters = template_preparer.resolve_parameters(
-            template.get("Parameters", {}), request.get("Parameters", [])
-        )
-        template = template_preparer.transform_template(template, parameters)
-
         del req_params["TemplateBody"]  # TODO: stop mutating req_params
         template["StackName"] = stack_name
         # TODO: validate with AWS what this is actually doing?
         template["ChangeSetName"] = change_set_name
         state = get_cloudformation_store()
-        #
 
         if change_set_type == "UPDATE":
             # add changeset to existing stack
@@ -467,6 +458,13 @@ class CloudformationProvider(CloudformationApi):
             )
             raise ValidationError(msg)
 
+        # apply template transformations
+        parameters = template_preparer.resolve_parameters(
+            template.get("Parameters", {}), request.get("Parameters", [])
+        )
+        template = template_preparer.transform_template(template, parameters, stack=stack)
+
+        # create change set for the stack and apply changes
         change_set = StackChangeSet(stack, req_params, template)
         deployer = template_deployer.TemplateDeployer(change_set)
         changes = deployer.construct_changes(
