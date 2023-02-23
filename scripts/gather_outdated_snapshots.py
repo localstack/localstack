@@ -1,7 +1,8 @@
 import datetime
 import json
 import os
-import sys
+
+import click
 
 
 def get_outdated_snapshots_for_directory(path: str, date_limit: str) -> dict:
@@ -33,9 +34,21 @@ def get_outdated_snapshots_for_directory(path: str, date_limit: str) -> dict:
     return result
 
 
-if __name__ == "__main__":
-    snapshots = get_outdated_snapshots_for_directory(sys.argv[1], sys.argv[2])
+@click.command()
+@click.argument("path", required=True)
+@click.argument("date_limit", required=True)
+def get_snapshots(path: str, date_limit: str):
+    """
+    Fetches all snapshots in PATH that were recorded before the given DATE_LIMIT
+
+    Returns a JSON with the relevant information
+    """
+    snapshots = get_outdated_snapshots_for_directory(path, date_limit)
     # turn the list of snapshots into a whitespace separated string usable by pytest
     join = " ".join(snapshots["outdated_snapshots"])
     snapshots["pytest_executable_list"] = join
     print(json.dumps(snapshots, default=str))
+
+
+if __name__ == "__main__":
+    get_snapshots()
