@@ -1,3 +1,4 @@
+import contextlib
 import logging
 import os
 import time
@@ -73,6 +74,25 @@ def apigw_create_rest_api(apigateway_client):
         delete_rest_api_retry(apigateway_client, rest_api_id)
 
 
+@pytest.fixture
+def apigw_create_rest_resource(apigateway_client):
+    resource_ids = []
+
+    def _factory(rest_api_id, path_part, parent_id):
+        resource = apigateway_client.create_resource(
+            restApiId=rest_api_id, pathPart=path_part, parentId=parent_id
+        )
+        resource_ids.append((resource["id"], rest_api_id))
+        return resource
+
+    yield _factory
+
+    for resource_id, api_id in resource_ids:
+        with contextlib.suppress(ClientError):
+            apigateway_client.delete_resource(restApiId=api_id, resourceId=resource_id)
+
+
+@pytest.mark.aws_validated
 def test_import_rest_api(import_apigw, snapshot):
     snapshot.add_transformer(snapshot.transform.apigateway_api())
 
@@ -255,3 +275,150 @@ class TestApiGatewayApi:
             apigateway_client.update_rest_api(restApiId="api_id", patchOperations=patch_operations)
         snapshot.match("not-found-update-rest-api", ex.value.response)
         assert ex.value.response["Error"]["Code"] == "NotFoundException"
+
+    @pytest.mark.aws_validated
+    def test_resource_lifecycle(
+        self, apigateway_client, apigw_create_rest_api, apigw_create_rest_resource, snapshot
+    ):
+        response = apigw_create_rest_api(
+            name=f"test-api-{short_uid()}", description="testing resource lifecycle"
+        )
+        api_id = response["id"]
+
+        root_rest_api_resource = apigateway_client.get_resources(restApiId=api_id)
+        snapshot.match("rest-api-root-resource", root_rest_api_resource)
+
+        root_id = root_rest_api_resource["items"][0]["id"]
+
+        resource_response = apigw_create_rest_resource(
+            rest_api_id=api_id, parent_id=root_id, path_part="pets"
+        )
+        resource_id = resource_response["id"]
+
+        snapshot.match("create-resource", resource_response)
+
+        rest_api_resources = apigateway_client.get_resources(restApiId=api_id)
+        snapshot.match("rest-api-resources-after-create", rest_api_resources)
+
+        # only supported path are /parentId and /pathPart with operation `replace`
+        patch_operations = [
+            {"op": "replace", "path": "/pathPart", "value": "dogs"},
+        ]
+
+        update_response = apigateway_client.update_resource(
+            restApiId=api_id, resourceId=resource_id, patchOperations=patch_operations
+        )
+        snapshot.match("update-path-part", update_response)
+
+        get_resource_response = apigateway_client.get_resource(
+            restApiId=api_id, resourceId=resource_id
+        )
+        snapshot.match("get-resp-after-update-path-part", get_resource_response)
+
+        delete_resource_response = apigateway_client.delete_resource(
+            restApiId=api_id, resourceId=resource_id
+        )
+        snapshot.match("del-resource", delete_resource_response)
+
+        rest_api_resources = apigateway_client.get_resources(restApiId=api_id)
+        snapshot.match("rest-api-resources-after-delete", rest_api_resources)
+
+    @pytest.mark.aws_validated
+    @pytest.mark.xfail(reason="Validation not implemented")
+    def test_update_resource_behaviour(
+        self, apigateway_client, apigw_create_rest_api, apigw_create_rest_resource, snapshot
+    ):
+        response = apigw_create_rest_api(
+            name=f"test-api-{short_uid()}", description="testing resource behaviour"
+        )
+        api_id = response["id"]
+
+        root_rest_api_resource = apigateway_client.get_resources(restApiId=api_id)
+        root_id = root_rest_api_resource["items"][0]["id"]
+
+        resource_response = apigw_create_rest_resource(
+            rest_api_id=api_id, parent_id=root_id, path_part="pets"
+        )
+        resource_id = resource_response["id"]
+
+        # try updating a nonexistent resource
+        patch_operations = [
+            {"op": "replace", "path": "/pathPart", "value": "dogs"},
+        ]
+        with pytest.raises(ClientError) as e:
+            apigateway_client.update_resource(
+                restApiId=api_id, resourceId="fake-resource", patchOperations=patch_operations
+            )
+        snapshot.match("nonexistent-resource", e.value.response)
+
+        # only supported path are /parentId and /pathPart with operation `replace`
+        patch_operations = [
+            {"op": "replace", "path": "/invalid", "value": "dogs"},
+        ]
+        with pytest.raises(ClientError) as e:
+            apigateway_client.update_resource(
+                restApiId=api_id, resourceId=resource_id, patchOperations=patch_operations
+            )
+        snapshot.match("invalid-path-part", e.value.response)
+
+        patch_operations = [
+            {"op": "replace", "path": "/parentId", "value": "dogs"},
+        ]
+        with pytest.raises(ClientError) as e:
+            apigateway_client.update_resource(
+                restApiId=api_id, resourceId=resource_id, patchOperations=patch_operations
+            )
+        snapshot.match("invalid-parent-id", e.value.response)
+
+        # create subresource
+        subresource_response = apigw_create_rest_resource(
+            rest_api_id=api_id, parent_id=resource_id, path_part="subpets"
+        )
+        snapshot.match("create-subresource", subresource_response)
+        subresource_id = subresource_response["id"]
+
+        # try setting the parent id of the pets to its own subresource?
+        patch_operations = [
+            {"op": "replace", "path": "/parentId", "value": subresource_id},
+        ]
+        with pytest.raises(ClientError) as e:
+            apigateway_client.update_resource(
+                restApiId=api_id, resourceId=resource_id, patchOperations=patch_operations
+            )
+        snapshot.match("update-parent-id-to-subresource-id", e.value.response)
+
+        patch_operations = [
+            {"op": "replace", "path": "/parentId", "value": root_id},
+        ]
+        update_parent_id_to_root = apigateway_client.update_resource(
+            restApiId=api_id, resourceId=subresource_id, patchOperations=patch_operations
+        )
+
+        snapshot.match("update-parent-id-to-root-id", update_parent_id_to_root)
+
+        patch_operations = [
+            {"op": "replace", "path": "/pathPart", "value": "pets"},
+        ]
+        with pytest.raises(ClientError) as e:
+            apigateway_client.update_resource(
+                restApiId=api_id, resourceId=subresource_id, patchOperations=patch_operations
+            )
+        snapshot.match("update-path-already-exists", e.value.response)
+
+        patch_operations = [
+            {"op": "remove", "path": "/pathPart"},
+        ]
+        with pytest.raises(ClientError) as e:
+            apigateway_client.update_resource(
+                restApiId=api_id, resourceId=subresource_id, patchOperations=patch_operations
+            )
+        snapshot.match("remove-unsupported", e.value.response)
+
+        patch_operations = [
+            {"op": "add", "path": "/pathPart", "value": "added-pets"},
+        ]
+        with pytest.raises(ClientError) as e:
+            apigateway_client.update_resource(
+                restApiId=api_id, resourceId=subresource_id, patchOperations=patch_operations
+            )
+        snapshot.match("add-unsupported", e.value.response)

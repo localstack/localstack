@@ -2,9 +2,10 @@ import io
 import json
 import logging
 from copy import deepcopy
-from typing import IO, Dict
+from typing import IO, Any
 
 from moto.apigateway import models as apigw_models
+from moto.apigateway.models import RestAPI as MotoRestAPI
 from moto.core.utils import camelcase_to_underscores
 
 from localstack.aws.api import RequestContext, ServiceRequest, handler
@@ -41,6 +42,7 @@ from localstack.aws.api.apigateway import (
     PutRestApiRequest,
     RequestValidator,
     RequestValidators,
+    Resource,
     RestApi,
     RestApis,
     String,
@@ -183,10 +185,7 @@ class ApigatewayProvider(ApigatewayApi, ServiceLifecycleHook):
 
             fixed_patch_ops.append(patch_op)
 
-        if not isinstance(rest_api.__dict__, DelSafeDict):
-            rest_api.__dict__ = DelSafeDict(rest_api.__dict__)
-
-        _patch_api_gateway_entity(rest_api.__dict__, fixed_patch_ops)
+        _patch_api_gateway_entity(rest_api, fixed_patch_ops)
 
         # fix data types after patches have been applied
         if rest_api.minimum_compression_size:
@@ -230,6 +229,26 @@ class ApigatewayProvider(ApigatewayApi, ServiceLifecycleHook):
         response: RestApis = call_moto(context)
         for rest_api in response["items"]:
             remove_empty_attributes_from_rest_api(rest_api)
+        return response
+
+    # resources
+
+    def update_resource(
+        self,
+        context: RequestContext,
+        rest_api_id: String,
+        resource_id: String,
+        patch_operations: ListOfPatchOperation = None,
+    ) -> Resource:
+        moto_rest_api = get_moto_rest_api(context, rest_api_id)
+
+        moto_resource = moto_rest_api.resources.get(resource_id)
+        if not moto_resource:
+            raise
+
+        _patch_api_gateway_entity(moto_resource, patch_operations)
+
+        response = moto_resource.to_dict()
         return response
 
     # method responses
@@ -859,6 +878,17 @@ class ApigatewayProvider(ApigatewayApi, ServiceLifecycleHook):
 # ---------------
 
 
+def get_moto_rest_api(context: RequestContext, rest_api_id: str) -> MotoRestAPI:
+    moto_backend = apigw_models.apigateway_backends[context.account_id][context.region]
+    rest_api = moto_backend.apis.get(rest_api_id)
+    if not rest_api:
+        raise NotFoundException(
+            f"Invalid API identifier specified {context.account_id}:{rest_api_id}"
+        )
+
+    return rest_api
+
+
 def remove_empty_attributes_from_rest_api(rest_api: RestApi, remove_tags=True):
     if not rest_api.get("binaryMediaTypes"):
         rest_api.pop("binaryMediaTypes", None)
@@ -901,10 +931,13 @@ def normalize_authorizer(data):
     return entries if is_list else entries[0]
 
 
-def _patch_api_gateway_entity(entity: Dict, patch_operations: ListOfPatchOperation):
+def _patch_api_gateway_entity(entity: Any, patch_operations: ListOfPatchOperation):
+    if not isinstance(entity.__dict__, DelSafeDict):
+        entity.__dict__ = DelSafeDict(entity.__dict__)
+
     not_supported_attributes = {"/id", "/region_name", "/create_date"}
 
-    model_attributes = list(entity.keys())
+    model_attributes = list(entity.__dict__.keys())
     for operation in patch_operations:
         path_start = operation["path"].strip("/").split("/")[0]
         path_start_usc = camelcase_to_underscores(path_start)
@@ -913,7 +946,7 @@ def _patch_api_gateway_entity(entity: Dict, patch_operations: ListOfPatchOperati
         if operation["path"] in not_supported_attributes:
             raise BadRequestException(f"Invalid patch path {operation['path']}")
 
-    apply_json_patch_safe(entity, patch_operations, in_place=True)
+    apply_json_patch_safe(entity.__dict__, patch_operations, in_place=True)
 
 
 def to_authorizer_response_json(api_id, data):
