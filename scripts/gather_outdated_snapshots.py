@@ -39,7 +39,10 @@ def get_outdated_snapshots_for_directory(path: str, date_limit: str) -> dict:
 @click.argument("date_limit", required=True)
 def get_snapshots(path: str, date_limit: str):
     """
-    Fetches all snapshots in PATH that were recorded before the given DATE_LIMIT
+    Fetches all snapshots in PATH that were recorded before the given DATE_LIMIT.
+    Format of the DATE_LIMIT-string must be "DD-MM-YYYY".
+
+    Example usage: python get_snapshots.py ../tests/integration 24-12-2022
 
     Returns a JSON with the relevant information
     """
