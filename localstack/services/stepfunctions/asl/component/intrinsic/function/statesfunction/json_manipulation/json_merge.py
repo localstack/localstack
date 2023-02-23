@@ -17,6 +17,27 @@ from localstack.services.stepfunctions.asl.eval.environment import Environment
 
 
 class JsonMerge(StatesFunction):
+    # Merges two JSON objects into a single object
+    #
+    # For example:
+    # With input
+    # {
+    #    "json1": { "a": {"a1": 1, "a2": 2}, "b": 2, },
+    #    "json2": { "a": {"a3": 1, "a4": 2}, "c": 3 }
+    # }
+    #
+    # Call
+    # "output.$": "States.JsonMerge($.json1, $.json2, false)"
+    #
+    # Returns
+    # {
+    #    "output": {
+    #       "a": {"a3": 1, "a4": 2},
+    #       "b": 2,
+    #       "c": 3
+    #    }
+    # }
+
     def __init__(self, arg_list: FunctionArgumentList):
         super().__init__(
             states_name=StatesFunctionName(function_type=StatesFunctionNameType.JsonMerge),
@@ -30,7 +51,7 @@ class JsonMerge(StatesFunction):
     @staticmethod
     def _validate_is_deep_merge_argument(is_deep_merge: Any) -> None:
         if not isinstance(is_deep_merge, bool):
-            raise ValueError(
+            raise TypeError(
                 f"Expected boolean value for deep merge mode, but got: '{is_deep_merge}'."
             )
         if is_deep_merge:
@@ -43,7 +64,7 @@ class JsonMerge(StatesFunction):
     @staticmethod
     def _validate_merge_argument(argument: Any, num: int) -> None:
         if not isinstance(argument, dict):
-            raise ValueError(f"Expected a JSON object the argument {num}, but got: '{argument}'.")
+            raise TypeError(f"Expected a JSON object the argument {num}, but got: '{argument}'.")
 
     def _eval_body(self, env: Environment) -> None:
         self.arg_list.eval(env=env)

@@ -61,7 +61,7 @@ class HashFunc(StatesFunction):
 
         input_data = env.stack.pop()
         if not isinstance(input_data, str):
-            raise ValueError(
+            raise TypeError(
                 f"Expected string type as input data for function type '{type(self)}', but got: '{input_data}'."
             )
 
