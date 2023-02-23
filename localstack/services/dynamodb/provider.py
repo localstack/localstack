@@ -107,7 +107,11 @@ from localstack.services.dynamodbstreams.dynamodbstreams_api import (
 from localstack.services.edge import ROUTER
 from localstack.services.plugins import ServiceLifecycleHook
 from localstack.utils.aws import arns, aws_stack
-from localstack.utils.aws.arns import extract_account_id_from_arn, extract_region_from_arn
+from localstack.utils.aws.arns import (
+    extract_account_id_from_arn,
+    extract_region_from_arn,
+    get_partition,
+)
 from localstack.utils.aws.aws_stack import get_valid_regions_for_service
 from localstack.utils.collections import select_attributes
 from localstack.utils.common import short_uid, to_bytes
@@ -1296,8 +1300,10 @@ class DynamoDBProvider(DynamodbApi, ServiceLifecycleHook):
         """
         Set the correct account ID and region in ARNs returned by DynamoDB Local.
         """
-        return arn.replace(":ddblocal:", f":{aws_stack.get_region()}:").replace(
-            ":000000000000:", f":{get_aws_account_id()}:"
+        return (
+            arn.replace(":ddblocal:", f":{aws_stack.get_region()}:")
+            .replace(":000000000000:", f":{get_aws_account_id()}:")
+            .replace(":aws:", f":{get_partition(aws_stack.get_region())}:")
         )
 
     def prepare_transact_write_item_records(self, transact_items, existing_items):

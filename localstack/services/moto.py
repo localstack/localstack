@@ -163,6 +163,8 @@ def load_moto_routing_table(service: str) -> Map:
     if isinstance(backend_dict, BackendDict):
         if "us-east-1" in backend_dict[DEFAULT_AWS_ACCOUNT_ID]:
             backend = backend_dict[DEFAULT_AWS_ACCOUNT_ID]["us-east-1"]
+        elif "aws" in backend_dict[DEFAULT_AWS_ACCOUNT_ID]:
+            backend = backend_dict[DEFAULT_AWS_ACCOUNT_ID]["aws"]
         else:
             backend = backend_dict[DEFAULT_AWS_ACCOUNT_ID]["global"]
     else:

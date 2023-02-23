@@ -13,13 +13,17 @@ from localstack.aws.api.s3 import (
     ReplicationConfiguration,
     WebsiteConfiguration,
 )
+from localstack.config import DEFAULT_REGION
 from localstack.constants import DEFAULT_AWS_ACCOUNT_ID
 from localstack.services.stores import AccountRegionBundle, BaseStore, CrossRegionAttribute
+from localstack.utils.aws.arns import get_partition
 
 
 def get_moto_s3_backend(context: RequestContext = None) -> MotoS3Backend:
     account_id = context.account_id if context else DEFAULT_AWS_ACCOUNT_ID
-    return moto_s3_backends[account_id]["global"]
+    region = context.region if context else DEFAULT_REGION
+    partition = get_partition(region)
+    return moto_s3_backends[account_id][partition]
 
 
 class S3Store(BaseStore):

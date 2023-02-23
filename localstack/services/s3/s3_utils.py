@@ -22,7 +22,9 @@ from localstack.constants import (
     TEST_AWS_SECRET_ACCESS_KEY,
 )
 from localstack.utils.auth import HmacV1QueryAuth, S3SigV4QueryAuth
+from localstack.utils.aws.arns import get_partition
 from localstack.utils.aws.aws_responses import requests_error_response_xml_signature_calculation
+from localstack.utils.aws.aws_stack import get_region
 
 LOGGER = logging.getLogger(__name__)
 
@@ -82,7 +84,9 @@ ALLOWED_QUERY_PARAMS = [
 
 
 def get_s3_backend() -> S3Backend:
-    return s3_backends[get_aws_account_id()]["global"]
+    region = get_region()
+    partition = get_partition(region)
+    return s3_backends[get_aws_account_id()][partition]
 
 
 def is_static_website(headers):
