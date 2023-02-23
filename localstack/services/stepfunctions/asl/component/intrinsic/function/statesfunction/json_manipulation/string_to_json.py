@@ -15,10 +15,10 @@ from localstack.services.stepfunctions.asl.component.intrinsic.functionname.stat
 from localstack.services.stepfunctions.asl.eval.environment import Environment
 
 
-class StatesFunctionJsonToString(StatesFunction):
+class StringToJson(StatesFunction):
     def __init__(self, arg_list: FunctionArgumentList):
         super().__init__(
-            states_name=StatesFunctionName(function_type=StatesFunctionNameType.JsonToString),
+            states_name=StatesFunctionName(function_type=StatesFunctionNameType.StringToJson),
             arg_list=arg_list,
         )
         if arg_list.size != 1:
@@ -28,6 +28,10 @@ class StatesFunctionJsonToString(StatesFunction):
 
     def _eval_body(self, env: Environment) -> None:
         self.arg_list.eval(env=env)
-        json_obj: json = env.stack.pop()
-        json_string: str = json.dumps(json_obj)
-        env.stack.append(json_string)
+        string_json: str = env.stack.pop()
+
+        if string_json is not None and string_json.strip():
+            json_obj: json = json.loads(string_json)
+        else:
+            json_obj: json = None
+        env.stack.append(json_obj)

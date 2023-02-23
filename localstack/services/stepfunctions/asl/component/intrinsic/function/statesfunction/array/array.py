@@ -1,4 +1,4 @@
-import json
+from typing import Any
 
 from localstack.services.stepfunctions.asl.component.intrinsic.argument.function_argument_list import (
     FunctionArgumentList,
@@ -15,19 +15,17 @@ from localstack.services.stepfunctions.asl.component.intrinsic.functionname.stat
 from localstack.services.stepfunctions.asl.eval.environment import Environment
 
 
-class StatesFunctionJsonToString(StatesFunction):
+class Array(StatesFunction):
     def __init__(self, arg_list: FunctionArgumentList):
         super().__init__(
-            states_name=StatesFunctionName(function_type=StatesFunctionNameType.JsonToString),
+            states_name=StatesFunctionName(function_type=StatesFunctionNameType.Array),
             arg_list=arg_list,
         )
-        if arg_list.size != 1:
-            raise ValueError(
-                f"Expected 1 argument for function type '{type(self)}', but got: '{arg_list}'."
-            )
 
     def _eval_body(self, env: Environment) -> None:
         self.arg_list.eval(env=env)
-        json_obj: json = env.stack.pop()
-        json_string: str = json.dumps(json_obj)
-        env.stack.append(json_string)
+        values: list[Any] = list()
+        for _ in range(self.arg_list.size):
+            values.append(env.stack.pop())
+        values.reverse()
+        env.stack.append(values)

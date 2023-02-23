@@ -1,4 +1,4 @@
-import json
+from collections import OrderedDict
 
 from localstack.services.stepfunctions.asl.component.intrinsic.argument.function_argument_list import (
     FunctionArgumentList,
@@ -15,10 +15,24 @@ from localstack.services.stepfunctions.asl.component.intrinsic.functionname.stat
 from localstack.services.stepfunctions.asl.eval.environment import Environment
 
 
-class StatesFunctionJsonToString(StatesFunction):
+class ArrayUnique(StatesFunction):
+    # Removes duplicate values from an array and returns an array containing only unique elements
+    #
+    # For example:
+    # With input
+    # {
+    #   "inputArray": [1,2,3,3,3,3,3,3,4]
+    # }
+    #
+    # The call
+    # States.ArrayUnique($.inputArray)
+    #
+    # Returns
+    # [1,2,3,4]
+
     def __init__(self, arg_list: FunctionArgumentList):
         super().__init__(
-            states_name=StatesFunctionName(function_type=StatesFunctionNameType.JsonToString),
+            states_name=StatesFunctionName(function_type=StatesFunctionNameType.ArrayUnique),
             arg_list=arg_list,
         )
         if arg_list.size != 1:
@@ -28,6 +42,13 @@ class StatesFunctionJsonToString(StatesFunction):
 
     def _eval_body(self, env: Environment) -> None:
         self.arg_list.eval(env=env)
-        json_obj: json = env.stack.pop()
-        json_string: str = json.dumps(json_obj)
-        env.stack.append(json_string)
+
+        array = env.stack.pop()
+        if not isinstance(array, list):
+            raise TypeError(f"Expected an array type, but got '{array}'.")
+
+        # Remove duplicates through an ordered set, in this
+        # case we consider they key set of an ordered dict.
+        items_odict = OrderedDict.fromkeys(array).keys()
+        unique_array = list(items_odict)
+        env.stack.append(unique_array)

@@ -7,7 +7,7 @@ from localstack.services.awslambda.lambda_utils import LAMBDA_RUNTIME_PYTHON39
 from localstack.testing.snapshots.transformer import RegexTransformer
 from localstack.utils.strings import short_uid
 from tests.integration.stepfunctions.lambda_functions import lambda_functions
-from tests.integration.stepfunctions.templates import templates
+from tests.integration.stepfunctions.templates.base.base_templates import BaseTemplate
 from tests.integration.stepfunctions.utils import (
     await_execution_aborted,
     await_execution_started,
@@ -45,7 +45,7 @@ class TestSnfApi:
         snf_role_arn = create_iam_role_for_sfn()
         snapshot.add_transformer(RegexTransformer(snf_role_arn, "snf_role_arn"))
 
-        definition = templates.load_sfn_template(templates.BASE_TASK_SEQ_2)
+        definition = BaseTemplate.load_sfn_template(BaseTemplate.BASE_TASK_SEQ_2)
         definition["States"]["State_1"]["Resource"] = lambda_arn_1
         definition["States"]["State_2"]["Resource"] = lambda_arn_1
         definition_str = json.dumps(definition)
@@ -71,7 +71,7 @@ class TestSnfApi:
         snf_role_arn = create_iam_role_for_sfn()
         snapshot.add_transformer(RegexTransformer(snf_role_arn, "snf_role_arn"))
 
-        definition = templates.load_sfn_template(templates.BASE_INVALID_DER)
+        definition = BaseTemplate.load_sfn_template(BaseTemplate.BASE_INVALID_DER)
         definition_str = json.dumps(definition)
 
         sm_name = f"statemachine_{short_uid()}"
@@ -86,7 +86,7 @@ class TestSnfApi:
         snf_role_arn = create_iam_role_for_sfn()
         snapshot.add_transformer(RegexTransformer(snf_role_arn, "snf_role_arn"))
 
-        definition = templates.load_sfn_template(templates.BASE_PASS_RESULT)
+        definition = BaseTemplate.load_sfn_template(BaseTemplate.BASE_PASS_RESULT)
         definition_str = json.dumps(definition)
         sm_name = f"statemachine_{short_uid()}"
 
@@ -109,7 +109,7 @@ class TestSnfApi:
         snf_role_arn = create_iam_role_for_sfn()
         snapshot.add_transformer(RegexTransformer(snf_role_arn, "snf_role_arn"))
 
-        definition = templates.load_sfn_template(templates.BASE_PASS_RESULT)
+        definition = BaseTemplate.load_sfn_template(BaseTemplate.BASE_PASS_RESULT)
         definition_str = json.dumps(definition)
         sm_name = f"statemachine_{short_uid()}"
 
@@ -148,7 +148,7 @@ class TestSnfApi:
         snf_role_arn = create_iam_role_for_sfn()
         snapshot.add_transformer(RegexTransformer(snf_role_arn, "snf_role_arn"))
 
-        definition = templates.load_sfn_template(templates.BASE_PASS_RESULT)
+        definition = BaseTemplate.load_sfn_template(BaseTemplate.BASE_PASS_RESULT)
         definition_str = json.dumps(definition)
         sm_name = f"statemachine_{short_uid()}"
 
@@ -175,7 +175,7 @@ class TestSnfApi:
         snf_role_arn = create_iam_role_for_sfn()
         snapshot.add_transformer(RegexTransformer(snf_role_arn, "snf_role_arn"))
 
-        definition_1 = templates.load_sfn_template(templates.BASE_PASS_RESULT)
+        definition_1 = BaseTemplate.load_sfn_template(BaseTemplate.BASE_PASS_RESULT)
         definition_str_1 = json.dumps(definition_1)
         sm_name = f"statemachine_{short_uid()}"
 
@@ -191,7 +191,7 @@ class TestSnfApi:
         )
         snapshot.match("describe_resp_1", describe_resp_1)
 
-        definition_2 = templates.load_sfn_template(templates.BASE_PASS_RESULT)
+        definition_2 = BaseTemplate.load_sfn_template(BaseTemplate.BASE_PASS_RESULT)
         definition_2["States"]["State_1"]["Result"].update({"Arg2": "Argument2"})
         definition_str_2 = json.dumps(definition_2)
 
@@ -205,7 +205,7 @@ class TestSnfApi:
         snf_role_arn = create_iam_role_for_sfn()
         snapshot.add_transformer(RegexTransformer(snf_role_arn, "snf_role_arn"))
 
-        definition = templates.load_sfn_template(templates.BASE_PASS_RESULT)
+        definition = BaseTemplate.load_sfn_template(BaseTemplate.BASE_PASS_RESULT)
         definition_str = json.dumps(definition)
 
         await_no_state_machines_listed(stepfunctions_client=stepfunctions_client)
@@ -266,7 +266,7 @@ class TestSnfApi:
         snapshot.add_transformer(RegexTransformer(snf_role_arn, "snf_role_arn"))
 
         sm_name: str = f"statemachine_{short_uid()}"
-        definition = templates.load_sfn_template(templates.BASE_PASS_RESULT)
+        definition = BaseTemplate.load_sfn_template(BaseTemplate.BASE_PASS_RESULT)
         definition_str = json.dumps(definition)
 
         creation_resp = create_state_machine(
@@ -298,7 +298,7 @@ class TestSnfApi:
         snapshot.add_transformer(RegexTransformer(snf_role_arn, "snf_role_arn"))
 
         sm_name: str = f"statemachine_{short_uid()}"
-        definition = templates.load_sfn_template(templates.BASE_PASS_RESULT)
+        definition = BaseTemplate.load_sfn_template(BaseTemplate.BASE_PASS_RESULT)
         definition_str = json.dumps(definition)
 
         creation_resp = create_state_machine(
@@ -329,7 +329,7 @@ class TestSnfApi:
         snapshot.add_transformer(RegexTransformer(snf_role_arn, "snf_role_arn"))
 
         sm_name: str = f"statemachine_{short_uid()}"
-        definition = templates.load_sfn_template(templates.BASE_PASS_RESULT)
+        definition = BaseTemplate.load_sfn_template(BaseTemplate.BASE_PASS_RESULT)
         definition_str = json.dumps(definition)
 
         creation_resp = create_state_machine(
@@ -384,7 +384,7 @@ class TestSnfApi:
         snapshot.add_transformer(RegexTransformer(snf_role_arn, "snf_role_arn"))
 
         sm_name: str = f"statemachine_{short_uid()}"
-        definition = templates.load_sfn_template(templates.BASE_WAIT_1_MIN)
+        definition = BaseTemplate.load_sfn_template(BaseTemplate.BASE_WAIT_1_MIN)
         definition_str = json.dumps(definition)
 
         creation_resp = create_state_machine(

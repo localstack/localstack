@@ -1,5 +1,3 @@
-import json
-
 from localstack.services.stepfunctions.asl.component.intrinsic.argument.function_argument_list import (
     FunctionArgumentList,
 )
@@ -15,10 +13,24 @@ from localstack.services.stepfunctions.asl.component.intrinsic.functionname.stat
 from localstack.services.stepfunctions.asl.eval.environment import Environment
 
 
-class StatesFunctionJsonToString(StatesFunction):
+class ArrayLength(StatesFunction):
+    # Returns the length of the array.
+    #
+    # For example:
+    # With input
+    # {
+    #    "inputArray": [1,2,3,4,5,6,7,8,9]
+    # }
+    #
+    # The call
+    # States.ArrayLength($.inputArray)
+    #
+    # Returns
+    # 9
+
     def __init__(self, arg_list: FunctionArgumentList):
         super().__init__(
-            states_name=StatesFunctionName(function_type=StatesFunctionNameType.JsonToString),
+            states_name=StatesFunctionName(function_type=StatesFunctionNameType.ArrayLength),
             arg_list=arg_list,
         )
         if arg_list.size != 1:
@@ -28,6 +40,10 @@ class StatesFunctionJsonToString(StatesFunction):
 
     def _eval_body(self, env: Environment) -> None:
         self.arg_list.eval(env=env)
-        json_obj: json = env.stack.pop()
-        json_string: str = json.dumps(json_obj)
-        env.stack.append(json_string)
+
+        array = env.stack.pop()
+        if not isinstance(array, list):
+            raise TypeError(f"Expected an array type, but got '{array}'.")
+
+        length = len(array)
+        env.stack.append(length)
