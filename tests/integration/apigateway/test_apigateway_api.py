@@ -9,6 +9,7 @@ from botocore.exceptions import ClientError
 
 from localstack.services.apigateway.helpers import TAG_KEY_CUSTOM_ID
 from localstack.testing.aws.util import is_aws_cloud
+from localstack.testing.snapshots.transformer import SortingTransformer
 from localstack.utils.files import load_file
 from localstack.utils.strings import short_uid
 
@@ -280,6 +281,7 @@ class TestApiGatewayApi:
     def test_resource_lifecycle(
         self, apigateway_client, apigw_create_rest_api, apigw_create_rest_resource, snapshot
     ):
+        snapshot.add_transformer(SortingTransformer("items", lambda x: x["path"]))
         response = apigw_create_rest_api(
             name=f"test-api-{short_uid()}", description="testing resource lifecycle"
         )
@@ -299,6 +301,15 @@ class TestApiGatewayApi:
 
         rest_api_resources = apigateway_client.get_resources(restApiId=api_id)
         snapshot.match("rest-api-resources-after-create", rest_api_resources)
+
+        # create subresource
+        subresource_response = apigw_create_rest_resource(
+            rest_api_id=api_id, parent_id=resource_id, path_part="subpets"
+        )
+        snapshot.match("create-subresource", subresource_response)
+
+        rest_api_resources = apigateway_client.get_resources(restApiId=api_id)
+        snapshot.match("rest-api-resources-after-create-sub", rest_api_resources)
 
         # only supported path are /parentId and /pathPart with operation `replace`
         patch_operations = [
@@ -324,7 +335,6 @@ class TestApiGatewayApi:
         snapshot.match("rest-api-resources-after-delete", rest_api_resources)
 
     @pytest.mark.aws_validated
-    @pytest.mark.xfail(reason="Validation not implemented")
     def test_update_resource_behaviour(
         self, apigateway_client, apigw_create_rest_api, apigw_create_rest_resource, snapshot
     ):
@@ -361,8 +371,9 @@ class TestApiGatewayApi:
             )
         snapshot.match("invalid-path-part", e.value.response)
 
+        # try updating a resource with a non-existent parentId
         patch_operations = [
-            {"op": "replace", "path": "/parentId", "value": "dogs"},
+            {"op": "replace", "path": "/parentId", "value": "fake-parent-id"},
         ]
         with pytest.raises(ClientError) as e:
             apigateway_client.update_resource(
@@ -422,3 +433,38 @@ class TestApiGatewayApi:
                 restApiId=api_id, resourceId=subresource_id, patchOperations=patch_operations
             )
         snapshot.match("add-unsupported", e.value.response)
+
+    def test_delete_resource(
+        self, apigateway_client, apigw_create_rest_api, apigw_create_rest_resource, snapshot
+    ):
+        response = apigw_create_rest_api(
+            name=f"test-api-{short_uid()}", description="testing resource behaviour"
+        )
+        api_id = response["id"]
+
+        root_rest_api_resource = apigateway_client.get_resources(restApiId=api_id)
+        root_id = root_rest_api_resource["items"][0]["id"]
+
+        resource_response = apigw_create_rest_resource(
+            rest_api_id=api_id, parent_id=root_id, path_part="pets"
+        )
+        resource_id = resource_response["id"]
+
+        # create subresource
+        subresource_response = apigw_create_rest_resource(
+            rest_api_id=api_id, parent_id=resource_id, path_part="subpets"
+        )
+        subresource_id = subresource_response["id"]
+
+        delete_resource_response = apigateway_client.delete_resource(
+            restApiId=api_id, resourceId=resource_id
+        )
+        snapshot.match("delete-resource", delete_resource_response)
+
+        api_resources = apigateway_client.get_resources(restApiId=api_id)
+        snapshot.match("get-resources", api_resources)
+
+        # try deleting already deleted subresource
+        with pytest.raises(ClientError) as e:
+            apigateway_client.delete_resource(restApiId=api_id, resourceId=subresource_id)
+        snapshot.match("delete-subresource", e.value.response)
