@@ -14,6 +14,20 @@ from localstack.services.stepfunctions.asl.eval.environment import Environment
 
 
 class ArrayPartition(StatesFunction):
+    # Partitions the input array.
+    #
+    # For example:
+    # With input
+    # {
+    #   "inputArray": [1, 2, 3, 4, 5, 6, 7, 8, 9]
+    # }
+    #
+    # The call
+    # States.ArrayPartition($.inputArray,4)
+    #
+    # Returns
+    # [ [1,2,3,4], [5,6,7,8], [9]]
+
     def __init__(self, arg_list: FunctionArgumentList):
         super().__init__(
             states_name=StatesFunctionName(function_type=StatesFunctionNameType.ArrayPartition),
@@ -28,7 +42,7 @@ class ArrayPartition(StatesFunction):
         self.arg_list.eval(env=env)
         chunk_size = env.stack.pop()
         if not isinstance(chunk_size, (int, float)):
-            raise ValueError(f"Expected an integer value as chunk_size, but got {chunk_size}.")
+            raise TypeError(f"Expected an integer value as chunk_size, but got {chunk_size}.")
         chunk_size = round(chunk_size)
         if chunk_size < 0:
             raise ValueError(
@@ -37,7 +51,7 @@ class ArrayPartition(StatesFunction):
 
         array = env.stack.pop()
         if not isinstance(array, list):
-            raise ValueError(f"Expected an array type as first argument, but got {array}.")
+            raise TypeError(f"Expected an array type as first argument, but got {array}.")
 
         chunks = self._to_chunks(array=array, chunk_size=chunk_size)
         env.stack.append(chunks)

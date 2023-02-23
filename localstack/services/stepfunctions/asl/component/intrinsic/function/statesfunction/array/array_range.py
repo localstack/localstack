@@ -14,6 +14,15 @@ from localstack.services.stepfunctions.asl.eval.environment import Environment
 
 
 class ArrayRange(StatesFunction):
+    # Creates a new array containing a specific range of elements.
+    #
+    # For example:
+    # The call
+    # States.ArrayRange(1, 9, 2)
+    #
+    # Returns
+    # [1,3,5,7,9]
+
     def __init__(self, arg_list: FunctionArgumentList):
         super().__init__(
             states_name=StatesFunctionName(function_type=StatesFunctionNameType.ArrayRange),
@@ -29,7 +38,7 @@ class ArrayRange(StatesFunction):
         range_vals = [env.stack.pop(), env.stack.pop(), env.stack.pop()]
         for range_val in range_vals:
             if not isinstance(range_val, (int, float)):
-                raise ValueError(
+                raise TypeError(
                     f"Expected 3 integer arguments for function type '{type(self)}', but got: '{range_vals}'."
                 )
         step = round(range_vals[0])
@@ -42,6 +51,6 @@ class ArrayRange(StatesFunction):
         array = list(range(first, last + 1, step))
 
         if len(array) > 1000:
-            raise RuntimeError(f"Arrays cannot contain more than 1000 items, size: {len(array)}.")
+            raise ValueError(f"Arrays cannot contain more than 1000 items, size: {len(array)}.")
 
         env.stack.append(array)

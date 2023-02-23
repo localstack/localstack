@@ -14,6 +14,21 @@ from localstack.services.stepfunctions.asl.eval.environment import Environment
 
 
 class ArrayGetItem(StatesFunction):
+    # Returns a specified index's value.
+    #
+    # For example:
+    # With input
+    # {
+    #    "inputArray": [1,2,3,4,5,6,7,8,9],
+    #    "index": 5
+    # }
+    #
+    # The call
+    # States.ArrayGetItem($.inputArray, $.index)
+    #
+    # Returns
+    # 6
+
     def __init__(self, arg_list: FunctionArgumentList):
         super().__init__(
             states_name=StatesFunctionName(function_type=StatesFunctionNameType.ArrayGetItem),
@@ -29,11 +44,11 @@ class ArrayGetItem(StatesFunction):
 
         index = env.stack.pop()
         if not isinstance(index, int):
-            raise ValueError(f"Expected an integer index value, but got '{index}'.")
+            raise TypeError(f"Expected an integer index value, but got '{index}'.")
 
         array = env.stack.pop()
         if not isinstance(array, list):
-            raise ValueError(f"Expected an array type, but got '{array}'.")
+            raise TypeError(f"Expected an array type, but got '{array}'.")
 
         item = array[index]
         env.stack.append(item)

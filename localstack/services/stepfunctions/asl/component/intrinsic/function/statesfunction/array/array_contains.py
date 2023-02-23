@@ -14,6 +14,21 @@ from localstack.services.stepfunctions.asl.eval.environment import Environment
 
 
 class ArrayContains(StatesFunction):
+    # Determines if a specific value is present in an array.
+    #
+    # For example:
+    # With input
+    # {
+    #    "inputArray": [1,2,3,4,5,6,7,8,9],
+    #    "lookingFor": 5
+    # }
+    #
+    # The call:
+    # States.ArrayContains($.inputArray, $.lookingFor)
+    #
+    # Returns:
+    # true
+
     def __init__(self, arg_list: FunctionArgumentList):
         super().__init__(
             states_name=StatesFunctionName(function_type=StatesFunctionNameType.ArrayContains),
@@ -29,6 +44,6 @@ class ArrayContains(StatesFunction):
         value = env.stack.pop()
         array = env.stack.pop()
         if not isinstance(array, list):
-            raise ValueError(f"Expected an array type as first argument, but got {array}.")
+            raise TypeError(f"Expected an array type as first argument, but got {array}.")
         contains = value in array
         env.stack.append(contains)

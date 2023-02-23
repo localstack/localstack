@@ -14,6 +14,20 @@ from localstack.services.stepfunctions.asl.eval.environment import Environment
 
 
 class ArrayLength(StatesFunction):
+    # Returns the length of the array.
+    #
+    # For example:
+    # With input
+    # {
+    #    "inputArray": [1,2,3,4,5,6,7,8,9]
+    # }
+    #
+    # The call
+    # States.ArrayLength($.inputArray)
+    #
+    # Returns
+    # 9
+
     def __init__(self, arg_list: FunctionArgumentList):
         super().__init__(
             states_name=StatesFunctionName(function_type=StatesFunctionNameType.ArrayLength),
@@ -29,7 +43,7 @@ class ArrayLength(StatesFunction):
 
         array = env.stack.pop()
         if not isinstance(array, list):
-            raise ValueError(f"Expected an array type, but got '{array}'.")
+            raise TypeError(f"Expected an array type, but got '{array}'.")
 
         length = len(array)
         env.stack.append(length)
