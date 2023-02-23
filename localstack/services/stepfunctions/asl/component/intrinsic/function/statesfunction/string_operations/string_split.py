@@ -16,6 +16,29 @@ from localstack.services.stepfunctions.asl.eval.environment import Environment
 
 
 class StringSplit(StatesFunction):
+    # Splits a string into an array of values.
+    #
+    # For example:
+    # With input
+    # {
+    #   "inputString": "This.is+a,test=string",
+    #   "splitter": ".+,="
+    # }
+    #
+    # The call
+    # {
+    #   "myStringArray.$": "States.StringSplit($.inputString, $.splitter)"
+    # }
+    #
+    # Returns
+    # {"myStringArray": [
+    #   "This",
+    #   "is",
+    #   "a",
+    #   "test",
+    #   "string"
+    # ]}
+
     def __init__(self, arg_list: FunctionArgumentList):
         super().__init__(
             states_name=StatesFunctionName(function_type=StatesFunctionNameType.StringSplit),
