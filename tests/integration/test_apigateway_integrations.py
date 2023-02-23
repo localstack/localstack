@@ -306,7 +306,6 @@ def test_lambda_proxy_integration(
         "invocation-payload-with-params-encoding",
         response_params_encoding.json(),
     )
-    # TODO: ensure that pathParameters follow the same encoding rules when using non {proxy+} matching
 
 
 #

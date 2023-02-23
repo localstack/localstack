@@ -17,6 +17,9 @@ from localstack.utils.aws.aws_responses import LambdaResponse
 LOG = logging.getLogger(__name__)
 
 
+# TODO: with the latest snapshot tests, we might start moving away from the
+# invocation context property decorators and use the url_params directly,
+# something ask for a long time.
 def to_invocation_context(
     request: Request, url_params: Dict[str, Any] = None
 ) -> ApiInvocationContext:
@@ -31,13 +34,16 @@ def to_invocation_context(
         url_params = {}
 
     method = request.method
-    url_params_stage = url_params.get("stage", "dev")
+    url_params_stage = url_params.get("stage")
     url_params_path = url_params.get("path", request.path)
-    # Base path is not URL-decoded. Example: test%2Balias@gmail.com => test%2Balias@gmail.com
-    path = f"{url_params_stage}/{url_params_path}"
+    # Base path is not URL-decoded.
+    # Example: test%2Balias@gmail.com => test%2Balias@gmail.com
+    path = f"/{url_params_stage}/{url_params_path}"
     if request.query_string:
-        # Parameters are URL-decoded. Example: test%2Balias@gmail.com => test+alias@gmail.com
+        # Parameters are URL-decoded.
+        # Example: test%2Balias@gmail.com => test+alias@gmail.com
         path += f"?{request.query_string.decode()}"
+
     data = restore_payload(request)
     headers = Headers(request.headers)
 
