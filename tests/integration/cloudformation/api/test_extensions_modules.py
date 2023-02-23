@@ -138,17 +138,20 @@ class TestExtensionModule:
             "../../templates/registry/module.yml",
         )
 
+        module_bucket_name = f"bucket-module-{short_uid()}"
         stack = deploy_cfn_template(
-            template_path=template_path, parameters={"Name": f"name-{short_uid()}"}, max_wait=300
+            template_path=template_path,
+            parameters={"BucketName": module_bucket_name},
+            max_wait=300,
         )
         resources = cfn_client.describe_stack_resources(StackName=stack.stack_name)[
             "StackResources"
         ]
 
-        snapshot.match("outputs", stack.outputs)
+        snapshot.add_transformer(snapshot.transform.regex(module_bucket_name, "bucket-name-"))
+        snapshot.add_transformer(snapshot.transform.cloudformation_api())
         snapshot.match("resource_description", resources[0])
 
-        cleanups.append(lambda: s3_client.delete_object(Bucket=bucket_name, Key=key_name))
         cleanups.append(
             lambda: cfn_client.deregister_type(
                 TypeName="LocalStack::Testing::TestModule::MODULE", Type="MODULE"
