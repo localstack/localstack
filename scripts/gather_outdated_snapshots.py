@@ -6,7 +6,7 @@ import click
 
 
 def get_outdated_snapshots_for_directory(
-    path: str, date_limit: str, check_sub_directories: bool = True
+    path: str, date_limit: str, check_sub_directories: bool = True, differentiate_parametrized=False
 ) -> dict:
     """
     Fetches all snapshots that were recorded before the given date_limit
@@ -14,8 +14,7 @@ def get_outdated_snapshots_for_directory(
     :param date_limit: All snapshots whose recorded-date is older than date-limit are considered outdated.
             Format of the date-string must be "DD-MM-YYYY".
     :param check_sub_directories: Whether to look for snapshots in subdirectories
-    :param outdated_snapshots: The list of names of outdated snapshots. Used in combination with check_sub_directories
-    to recurse through the directory tree
+    :param differentiate_parametrized: Whether to treat parametrized versions of the same test as different snapshots
     :return: List of test names whose snapshots (if any) are outdated.
     """
 
@@ -23,32 +22,23 @@ def get_outdated_snapshots_for_directory(
     result = {"date": date_limit}
     outdated_snapshots = []
 
-    def do_get_outdated_snapshots(
-        path: str, date_limit: datetime, check_sub_directories: bool = True
-    ):
+    def do_get_outdated_snapshots(path: str):
 
         if not path.endswith("/"):
             path = f"{path}/"
-        for _, sub_dirs, files in os.walk(path):
-            for file in files:
-                if not file.endswith(".snapshot.json"):
-                    continue
-                try:
-                    with open(f"{path}{file}") as f:
-                        json_content: dict = json.load(f)
-                        for name, snapshot in json_content.items():
-                            date = snapshot.get("recorded-date")
-                            date = datetime.datetime.strptime(date, "%d-%m-%Y, %H:%M:%S")
-                            if date < date_limit:
-                                outdated_snapshots.append(name)
-                except FileNotFoundError as e:
-                    print(e)
-                    pass
-            if check_sub_directories:
-                for sub_dir in sub_dirs:
-                    do_get_outdated_snapshots(f"{path}{sub_dir}", date_limit, check_sub_directories)
+        for file in os.listdir(path):
+            if os.path.isdir(f"{path}{file}") and check_sub_directories:
+                do_get_outdated_snapshots(f"{path}{file}")
+            elif file.endswith(".snapshot.json"):
+                with open(f"{path}{file}") as f:
+                    json_content: dict = json.load(f)
+                    for name, snapshot in json_content.items():
+                        date = snapshot.get("recorded-date")
+                        date = datetime.datetime.strptime(date, "%d-%m-%Y, %H:%M:%S")
+                        if date < date_limit:
+                            outdated_snapshots.append(name)
 
-    do_get_outdated_snapshots(path, date_limit, check_sub_directories)
+    do_get_outdated_snapshots(path)
     result["count"] = len(outdated_snapshots)
     result["outdated_snapshots"] = outdated_snapshots
     return result
@@ -78,6 +68,7 @@ def get_snapshots(path: str, date_limit: str, check_sub_dirs):
     join = " ".join(snapshots["outdated_snapshots"])
     snapshots["pytest_executable_list"] = join
     print(json.dumps(snapshots, default=str))
+    print(len(snapshots["outdated_snapshots"]) == len(set(snapshots["outdated_snapshots"])))
 
 
 if __name__ == "__main__":
