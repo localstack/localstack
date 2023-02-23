@@ -6,7 +6,7 @@ import click
 
 
 def get_outdated_snapshots_for_directory(
-    path: str, date_limit: str, check_sub_directories: bool = True, differentiate_parametrized=False
+    path: str, date_limit: str, check_sub_directories: bool = True, combine_parametrized=True
 ) -> dict:
     """
     Fetches all snapshots that were recorded before the given date_limit
@@ -14,8 +14,7 @@ def get_outdated_snapshots_for_directory(
     :param date_limit: All snapshots whose recorded-date is older than date-limit are considered outdated.
             Format of the date-string must be "DD-MM-YYYY".
     :param check_sub_directories: Whether to look for snapshots in subdirectories
-    :param differentiate_parametrized: Whether to treat parametrized versions of the same test as multiple snapshots or
-    not (meaning they are treated as the same one snapshot)
+    :param combine_parametrized: Whether to combine versions of the same test and treat them as the same or not
     :return: List of test names whose snapshots (if any) are outdated.
     """
 
@@ -37,13 +36,12 @@ def get_outdated_snapshots_for_directory(
                         date = snapshot.get("recorded-date")
                         date = datetime.datetime.strptime(date, "%d-%m-%Y, %H:%M:%S")
                         if date < date_limit:
-                            if not differentiate_parametrized:
-
+                            if combine_parametrized:
                                 name = name.split("[")[0]
                             outdated_snapshots.append(name)
 
     do_get_outdated_snapshots(path)
-    # if differentiate_parametrized was True, we end up with duplicates that need to be removed
+    # remove duplicates, e.g. combine_parametrized was False
     outdated_snapshots = set(outdated_snapshots)
     result["count"] = len(outdated_snapshots)
     result["outdated_snapshots"] = outdated_snapshots
@@ -61,23 +59,23 @@ def get_outdated_snapshots_for_directory(
     help="Whether to check sub directories of PATH too",
 )
 @click.option(
-    "--differentiate-parametrized",
+    "--combine-parametrized",
     type=bool,
     required=False,
-    default=False,
-    help="Whether to treat parametrized versions of the same test as multiple snapshots or not, and therefore as single one",
+    default=True,
+    help="If True, parametrized snapshots are treated as one",
 )
-def get_snapshots(path: str, date_limit: str, check_sub_dirs, differentiate_parametrized):
+def get_snapshots(path: str, date_limit: str, check_sub_dirs, combine_parametrized):
     """
     Fetches all snapshots in PATH that were recorded before the given DATE_LIMIT.
     Format of the DATE_LIMIT-string must be "DD-MM-YYYY".
 
-    Example usage: python gather_outdated_snapthos.py ../tests/integration 24-12-2022
+    Example usage: python gather_outdated_snapshots.py ../tests/integration 24-12-2022
 
     Returns a JSON with the relevant information
     """
     snapshots = get_outdated_snapshots_for_directory(
-        path, date_limit, check_sub_dirs, differentiate_parametrized
+        path, date_limit, check_sub_dirs, combine_parametrized
     )
     # turn the list of snapshots into a whitespace separated string usable by pytest
     join = " ".join(snapshots["outdated_snapshots"])
