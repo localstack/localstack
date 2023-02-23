@@ -6,6 +6,7 @@ import datetime
 import hashlib
 import json
 import logging
+import re
 import time
 import traceback
 from concurrent.futures import ThreadPoolExecutor
@@ -30,6 +31,7 @@ from localstack.utils.aws import aws_stack
 from localstack.utils.aws.arns import (
     extract_region_from_arn,
     extract_resource_from_arn,
+    get_partition,
     parse_arn,
     sqs_queue_url_for_arn,
 )
@@ -702,14 +704,14 @@ def get_application_platform_arn_from_endpoint_arn(endpoint_arn: str) -> str:
     """
     Retrieve the application_platform information from the endpoint_arn to build the application platform ARN
     The format of the endpoint is:
-    `arn:aws:sns:{region}:{account_id}:endpoint/{platform_type}/{application_name}/{endpoint_id}`
+    `arn:{partition}:sns:{region}:{account_id}:endpoint/{platform_type}/{application_name}/{endpoint_id}`
     :param endpoint_arn: str
     :return: application_platform_arn: str
     """
     parsed_arn = parse_arn(endpoint_arn)
 
     _, platform_type, app_name, _ = parsed_arn["resource"].split("/")
-    base_arn = f'arn:aws:sns:{parsed_arn["region"]}:{parsed_arn["account"]}'
+    base_arn = f'arn:{get_partition(parsed_arn["region"])}:sns:{parsed_arn["region"]}:{parsed_arn["account"]}'
     return f"{base_arn}:app/{platform_type}/{app_name}"
 
 
@@ -834,7 +836,8 @@ def store_delivery_log(
     message_context: SnsMessage, subscriber: SnsSubscription, success: bool, delivery: dict = None
 ):
     """Store the delivery logs in CloudWatch"""
-    log_group_name = subscriber.get("TopicArn", "").replace("arn:aws:", "").replace(":", "/")
+    subscriber_arn = subscriber.get("TopicArn", "")
+    log_group_name = re.sub("arn:aws[^:]*:", "", subscriber_arn).replace(":", "/")
     log_stream_name = long_uid()
     invocation_time = int(time.time() * 1000)
 

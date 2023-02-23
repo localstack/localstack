@@ -28,7 +28,7 @@ from localstack.services.apigateway.models import ApiGatewayStore, apigateway_st
 from localstack.utils import common
 from localstack.utils.aws import aws_stack, queries
 from localstack.utils.aws import resources as resource_utils
-from localstack.utils.aws.arns import parse_arn
+from localstack.utils.aws.arns import get_partition, parse_arn
 from localstack.utils.aws.aws_responses import requests_error_response_json, requests_response
 from localstack.utils.aws.request_context import MARKER_APIGW_REQUEST_REGION, THREAD_LOCAL
 from localstack.utils.strings import long_uid
@@ -476,8 +476,7 @@ def connect_api_gateway_to_sqs(gateway_name, stage_name, queue_arn, path, region
             "integrations": [
                 {
                     "type": "AWS",
-                    "uri": "arn:aws:apigateway:%s:sqs:path/%s/%s"
-                    % (sqs_region, get_aws_account_id(), queue_name),
+                    "uri": f"arn:{get_partition(region_name)}:apigateway:{sqs_region}:sqs:path/{get_aws_account_id()}/{queue_name}",
                     "requestTemplates": {"application/json": template},
                 }
             ],

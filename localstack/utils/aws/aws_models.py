@@ -1,5 +1,6 @@
 import json
 import logging
+import re
 import time
 from datetime import datetime
 
@@ -425,7 +426,7 @@ class S3Bucket(Component):
         self.notifications = []
 
     def name(self):
-        return self.id.split("arn:aws:s3:::")[-1]
+        return re.match(r"arn:aws[^:]*:s3:::(.*)", self.id).group(1)
 
 
 class S3Notification(Component):
@@ -449,11 +450,12 @@ class EventSource(Component):
         if obj in pool:
             return pool[obj]
         inst = None
-        if obj.startswith("arn:aws:kinesis:"):
+
+        if re.match(r"arn:aws[^:]*:kinesis:.*", obj):
             inst = KinesisStream(obj)
-        elif obj.startswith("arn:aws:lambda:"):
+        elif re.match(r"arn:aws[^:]*:lambda:.*", obj):
             inst = LambdaFunction(obj)
-        elif obj.startswith("arn:aws:dynamodb:"):
+        elif re.match(r"arn:aws[^:]*:dynamodb:.*", obj):
             if "/stream/" in obj:
                 table_id = obj.split("/stream/")[0]
                 table = DynamoDB(table_id)
@@ -461,9 +463,9 @@ class EventSource(Component):
                 inst.table = table
             else:
                 inst = DynamoDB(obj)
-        elif obj.startswith("arn:aws:sqs:"):
+        elif re.match(r"arn:aws[^:]*:sqs:.*", obj):
             inst = SqsQueue(obj)
-        elif obj.startswith("arn:aws:sns:"):
+        elif re.match(r"arn:aws[^:]*:sns:.*", obj):
             inst = SnsTopic(obj)
         elif type:
             for o in EventSource.filter_type(pool, type):

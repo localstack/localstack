@@ -23,6 +23,7 @@ from localstack.aws.api.lambda_ import (
     Runtime,
     TracingConfig,
 )
+from localstack.utils.aws.arns import get_partition
 from localstack.utils.collections import merge_recursive
 
 if TYPE_CHECKING:
@@ -38,12 +39,12 @@ if TYPE_CHECKING:
 
 # Pattern for a full (both with and without qualifier) lambda function ARN
 FULL_FN_ARN_PATTERN = re.compile(
-    r"^arn:aws:lambda:(?P<region_name>[^:]+):(?P<account_id>\d{12}):function:(?P<function_name>[^:]+)(:(?P<qualifier>.*))?$"
+    r"^arn:(aws[a-zA-Z0-9-]*):lambda:(?P<region_name>[^:]+):(?P<account_id>\d{12}):function:(?P<function_name>[^:]+)(:(?P<qualifier>.*))?$"
 )
 
 # Pattern for a full (both with and without qualifier) lambda function ARN
 LAYER_VERSION_ARN_PATTERN = re.compile(
-    r"^arn:aws:lambda:(?P<region_name>[^:]+):(?P<account_id>\d{12}):layer:(?P<layer_name>[^:]+)(:(?P<layer_version>\d+))?$"
+    r"^arn:(aws[a-zA-Z0-9-]*):lambda:(?P<region_name>[^:]+):(?P<account_id>\d{12}):layer:(?P<layer_name>[^:]+)(:(?P<layer_version>\d+))?$"
 )
 
 
@@ -233,6 +234,7 @@ def build_statement(
     statement_id: str,
     action: str,
     principal: str,
+    region: str,
     source_arn: Optional[str] = None,
     source_account: Optional[str] = None,
     principal_org_id: Optional[str] = None,
@@ -252,9 +254,9 @@ def build_statement(
     if principal.endswith(".amazonaws.com"):
         statement["Principal"] = {"Service": principal}
     elif is_aws_account(principal):
-        statement["Principal"] = {"AWS": f"arn:aws:iam::{principal}:root"}
+        statement["Principal"] = {"AWS": f"arn:{get_partition(region)}:iam::{principal}:root"}
     # TODO: potentially validate against IAM?
-    elif principal.startswith("arn:aws:iam:"):
+    elif re.match(r"arn:aws[^:]*:iam:.*", principal):
         statement["Principal"] = {"AWS": principal}
     elif principal == "*":
         statement["Principal"] = principal
@@ -310,7 +312,7 @@ def unqualified_lambda_arn(function_name: str, account: str, region: str):
     :return: Unqualified lambda arn
     """
     # TODO should get partition here, but current way is too expensive (15-120ms) using aws_stack get_partition
-    return f"arn:aws:lambda:{region}:{account}:function:{function_name}"
+    return f"arn:{get_partition(region)}:lambda:{region}:{account}:function:{function_name}"
 
 
 def qualified_lambda_arn(
@@ -557,11 +559,11 @@ def map_layer_out(layer_version: "LayerVersion") -> PublishLayerVersionResponse:
 
 
 def layer_arn(layer_name: str, account: str, region: str):
-    return f"arn:aws:lambda:{region}:{account}:layer:{layer_name}"
+    return f"arn:{get_partition(region)}:lambda:{region}:{account}:layer:{layer_name}"
 
 
 def layer_version_arn(layer_name: str, account: str, region: str, version: str):
-    return f"arn:aws:lambda:{region}:{account}:layer:{layer_name}:{version}"
+    return f"arn:{get_partition(region)}:lambda:{region}:{account}:layer:{layer_name}:{version}"
 
 
 def parse_layer_arn(layer_version_arn: str):

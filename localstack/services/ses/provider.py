@@ -57,6 +57,7 @@ from localstack.services.moto import call_moto
 from localstack.services.plugins import ServiceLifecycleHook
 from localstack.services.ses.models import SentEmail, SentEmailBody
 from localstack.utils.aws import arns, aws_stack
+from localstack.utils.aws.arns import get_partition
 from localstack.utils.files import mkdir
 from localstack.utils.strings import long_uid, to_str
 from localstack.utils.time import timestamp, timestamp_millis
@@ -547,7 +548,7 @@ class SNSEmitter:
         if emit_source_arn:
             event_payload["mail"][
                 "sourceArn"
-            ] = f"arn:aws:ses:{self.context.region}:{self.context.account_id}:identity/{payload.sender_email}"
+            ] = f"arn:{get_partition(self.context.region)}:ses:{self.context.region}:{self.context.account_id}:identity/{payload.sender_email}"
 
         client = self._client_for_topic(sns_topic_arn)
         try:
@@ -571,7 +572,7 @@ class SNSEmitter:
             "mail": {
                 "timestamp": now.isoformat(),
                 "source": payload.sender_email,
-                "sourceArn": f"arn:aws:ses:{self.context.region}:{self.context.account_id}:identity/{payload.sender_email}",
+                "sourceArn": f"arn:{get_partition(self.context.region)}:ses:{self.context.region}:{self.context.account_id}:identity/{payload.sender_email}",
                 "sendingAccountId": self.context.account_id,
                 "destination": payload.destination_addresses,
                 "messageId": payload.message_id,

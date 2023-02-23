@@ -1,5 +1,6 @@
 import json
 import logging
+import re
 from concurrent.futures import ThreadPoolExecutor
 from dataclasses import dataclass
 from typing import Dict, List, Optional, Tuple, TypedDict, Union
@@ -223,7 +224,7 @@ class BaseNotifier:
 
         arn, argument_name = self._get_arn_value_and_name(configuration)
 
-        if not arn.startswith(f"arn:aws:{self.service_name}:"):
+        if not re.match(rf"arn:aws[^:]*:{self.service_name}:.*", arn):
             raise _create_invalid_argument_exc(
                 "The ARN is not well formed", name=argument_name, value=arn
             )

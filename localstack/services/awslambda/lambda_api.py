@@ -1742,7 +1742,7 @@ def invoke_function(function):
     arn = func_arn(function)
 
     # ARN can also contain a qualifier, extract it from there if so
-    m = re.match("(arn:aws:lambda:.*:.*:function:[a-zA-Z0-9-_]+)(:.*)?", arn)
+    m = re.match("(arn:aws[^:*]:lambda:.*:.*:function:[a-zA-Z0-9-_]+)(:.*)?", arn)
     if m and m.group(2):
         qualifier = m.group(2)[1:]
         arn = m.group(1)

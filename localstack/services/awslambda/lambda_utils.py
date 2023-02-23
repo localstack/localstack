@@ -16,7 +16,11 @@ from localstack.aws.accounts import get_aws_account_id
 from localstack.aws.api.lambda_ import FilterCriteria, Runtime
 from localstack.services.awslambda.lambda_models import AwsLambdaStore, awslambda_stores
 from localstack.utils.aws import aws_stack
-from localstack.utils.aws.arns import extract_account_id_from_arn, extract_region_from_arn
+from localstack.utils.aws.arns import (
+    extract_account_id_from_arn,
+    extract_region_from_arn,
+    get_partition,
+)
 from localstack.utils.aws.aws_models import LambdaFunction
 from localstack.utils.aws.aws_responses import flask_error_response_json
 from localstack.utils.container_networking import (
@@ -292,9 +296,9 @@ def generate_lambda_arn(
     account_id: int, region: str, fn_name: str, qualifier: Optional[str] = None
 ):
     if qualifier:
-        return f"arn:aws:lambda:{region}:{account_id}:function:{fn_name}:{qualifier}"
+        return f"arn:{get_partition(region)}:lambda:{region}:{account_id}:function:{fn_name}:{qualifier}"
     else:
-        return f"arn:aws:lambda:{region}:{account_id}:function:{fn_name}"
+        return f"arn:{get_partition(region)}:lambda:{region}:{account_id}:function:{fn_name}"
 
 
 def parse_and_apply_numeric_filter(

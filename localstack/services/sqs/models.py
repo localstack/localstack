@@ -34,6 +34,7 @@ from localstack.services.sqs.utils import (
     global_message_sequence,
 )
 from localstack.services.stores import AccountRegionBundle, BaseStore, LocalAttribute
+from localstack.utils.aws.arns import get_partition
 from localstack.utils.time import now
 
 LOG = logging.getLogger(__name__)
@@ -236,7 +237,7 @@ class SqsQueue:
 
     @property
     def arn(self) -> str:
-        return f"arn:aws:sqs:{self.region}:{self.account_id}:{self.name}"
+        return f"arn:{get_partition(self.region)}:sqs:{self.region}:{self.account_id}:{self.name}"
 
     def url(self, context: RequestContext) -> str:
         """Return queue URL using either SQS_PORT_EXTERNAL (if configured), the SQS_ENDPOINT_STRATEGY (if configured)

@@ -181,6 +181,7 @@ from localstack.services.awslambda.urlrouter import FunctionUrlRouter
 from localstack.services.edge import ROUTER
 from localstack.services.plugins import ServiceLifecycleHook
 from localstack.utils.aws import aws_stack
+from localstack.utils.aws.arns import get_partition
 from localstack.utils.collections import PaginatedList
 from localstack.utils.files import load_file
 from localstack.utils.strings import get_random_hex, long_uid, short_uid, to_bytes, to_str
@@ -498,7 +499,7 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
                     # TODO: detect user or role from context when IAM users are implemented
                     user = "user/localstack-testing"
                     raise AccessDeniedException(
-                        f"User: arn:aws:iam::{account_id}:{user} is not authorized to perform: lambda:GetLayerVersion on resource: {layer_version_arn} because no resource-based policy allows the lambda:GetLayerVersion action"
+                        f"User: arn:{get_partition(region)}:iam::{account_id}:{user} is not authorized to perform: lambda:GetLayerVersion on resource: {layer_version_arn} because no resource-based policy allows the lambda:GetLayerVersion action"
                     )
                 if layer is None:
                     # Limitation: cannot fetch external layers when using the same account id as the target layer
@@ -513,7 +514,7 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
                         # TODO: detect user or role from context when IAM users are implemented
                         user = "user/localstack-testing"
                         raise AccessDeniedException(
-                            f"User: arn:aws:iam::{account_id}:{user} is not authorized to perform: lambda:GetLayerVersion on resource: {layer_version_arn} because no resource-based policy allows the lambda:GetLayerVersion action"
+                            f"User: arn:{get_partition(region)}:iam::{account_id}:{user} is not authorized to perform: lambda:GetLayerVersion on resource: {layer_version_arn} because no resource-based policy allows the lambda:GetLayerVersion action"
                         )
                     state.layers[layer_name] = layer
 
@@ -1066,9 +1067,7 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
                     Runtime=Runtime.nodejs16_x,
                     Handler="index.handler",
                     Code={"ZipFile": code},
-                    Role="arn:aws:iam::{account_id}:role/lambda-test-role".format(
-                        account_id=context.account_id
-                    ),  # TODO: proper role
+                    Role=f"arn:{get_partition(context.region)}:iam::{context.account_id}:role/lambda-test-role",  # TODO: proper role
                 )
 
         time_before = time.perf_counter()
@@ -1802,6 +1801,7 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
             request["StatementId"],
             request["Action"],
             request["Principal"],
+            region=context.region,
             source_arn=request.get("SourceArn"),
             source_account=request.get("SourceAccount"),
             principal_org_id=request.get("PrincipalOrgID"),
@@ -1948,9 +1948,7 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
         state = lambda_stores[context.account_id][context.region]
         # TODO: can there be duplicates?
         csc_id = f"csc-{get_random_hex(17)}"  # e.g. 'csc-077c33b4c19e26036'
-        csc_arn = (
-            f"arn:aws:lambda:{context.region}:{context.account_id}:code-signing-config:{csc_id}"
-        )
+        csc_arn = f"arn:{get_partition(context.region)}:lambda:{context.region}:{context.account_id}:code-signing-config:{csc_id}"
         csc = CodeSigningConfig(
             csc_id=csc_id,
             arn=csc_arn,

@@ -42,9 +42,9 @@ LOG = logging.getLogger(__name__)
 
 # target ARN patterns
 TARGET_REGEX_PATH_S3_URI = (
-    r"^arn:aws:apigateway:[a-zA-Z0-9\-]+:s3:path/(?P<bucket>[^/]+)/(?P<object>.+)$"
+    r"^arn:aws[^:]*:apigateway:[a-zA-Z0-9\-]+:s3:path/(?P<bucket>[^/]+)/(?P<object>.+)$"
 )
-TARGET_REGEX_ACTION_S3_URI = r"^arn:aws:apigateway:[a-zA-Z0-9\-]+:s3:action/(?:GetObject&Bucket\=(?P<bucket>[^&]+)&Key\=(?P<object>.+))$"
+TARGET_REGEX_ACTION_S3_URI = r"^arn:aws[^:]*:apigateway:[a-zA-Z0-9\-]+:s3:action/(?:GetObject&Bucket\=(?P<bucket>[^&]+)&Key\=(?P<object>.+))$"
 
 # TODO: refactor / split up this file into suitable submodules
 
@@ -323,8 +323,8 @@ def invoke_rest_api_integration_backend(invocation_context: ApiInvocationContext
     except Exception:
         path_params = {}
 
-    if (uri.startswith("arn:aws:apigateway:") and ":lambda:path" in uri) or uri.startswith(
-        "arn:aws:lambda"
+    if (re.match(r"arn:aws[^:]*:apigateway:.*", uri) and ":lambda:path" in uri) or re.match(
+        r"arn:aws[^:]*:lambda:.*", uri
     ):
         if integration_type == "AWS_PROXY":
             return LambdaProxyIntegration().invoke(invocation_context)
@@ -413,7 +413,7 @@ def invoke_rest_api_integration_backend(invocation_context: ApiInvocationContext
                 return make_error_response(msg, 400)
 
         if method == "POST":
-            if uri.startswith("arn:aws:apigateway:") and ":sqs:path" in uri:
+            if re.match(r"arn:aws[^:]*:apigateway:.*", uri) and ":sqs:path" in uri:
                 template = integration["requestTemplates"][APPLICATION_JSON]
                 account_id, queue = uri.split("/")[-2:]
                 region_name = uri.split(":")[3]
@@ -433,7 +433,7 @@ def invoke_rest_api_integration_backend(invocation_context: ApiInvocationContext
                     url, method="POST", headers=headers, data=new_request
                 )
                 return result
-            elif uri.startswith("arn:aws:apigateway:") and ":sns:path" in uri:
+            elif re.match(r"arn:aws[^:]*:apigateway:.*", uri) and ":sns:path" in uri:
                 invocation_context.context = helpers.get_event_request_context(invocation_context)
                 invocation_context.stage_variables = helpers.get_stage_variables(invocation_context)
 
@@ -448,7 +448,7 @@ def invoke_rest_api_integration_backend(invocation_context: ApiInvocationContext
         )
 
     elif integration_type == "AWS_PROXY":
-        if uri.startswith("arn:aws:apigateway:") and ":dynamodb:action" in uri:
+        if re.match(r"arn:aws[^:]*:apigateway:.*", uri) and ":dynamodb:action" in uri:
             # arn:aws:apigateway:us-east-1:dynamodb:action/PutItem&Table=MusicCollection
             table_name = uri.split(":dynamodb:action")[1].split("&Table=")[1]
             action = uri.split(":dynamodb:action")[1].split("&Table=")[0]
@@ -477,7 +477,7 @@ def invoke_rest_api_integration_backend(invocation_context: ApiInvocationContext
                 table.put_item(Item=event_data)
                 response = requests_response(event_data)
                 return response
-        if uri.startswith("arn:aws:apigateway:") and ".appsync-api:" in uri:
+        if re.match(r"arn:aws[^:]*:apigateway:.*", uri) and ".appsync-api:" in uri:
             # arn:aws:apigateway:us-east-1:appsyncid.appsync-api:path/graphql
             uri_parts = uri.split(":")
             app_sync_id = uri_parts[-2].replace(".appsync-api", "")

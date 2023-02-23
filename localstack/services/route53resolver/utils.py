@@ -47,7 +47,7 @@ def validate_mutation_protection(mutation_protection):
 
 
 def validate_destination_arn(destination_arn):
-    arn_pattern = r"arn:aws:(kinesis|logs|s3):?(.*)"
+    arn_pattern = r"arn:aws[^:*]*:(kinesis|logs|s3):?(.*)"
     if not re.match(arn_pattern, destination_arn):
         raise ResourceNotFoundException(
             f"[RSLVR-01014] An Amazon Resource Name (ARN) for the destination is required. Trace Id: '{get_trace_id()}'"

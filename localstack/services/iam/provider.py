@@ -56,6 +56,7 @@ from localstack.aws.api.iam import (
 from localstack.constants import INTERNAL_AWS_SECRET_ACCESS_KEY
 from localstack.services.moto import call_moto
 from localstack.utils.aws import aws_stack
+from localstack.utils.aws.arns import get_partition
 from localstack.utils.aws.aws_stack import extract_access_key_id_from_auth_header
 from localstack.utils.common import short_uid
 from localstack.utils.patch import patch
@@ -316,9 +317,7 @@ class IamProvider(IamApi):
             tags={},
             max_session_duration=3600,
         )
-        role.service_linked_role_arn = "arn:aws:iam::{0}:role/aws-service-role/{1}/{2}".format(
-            context.account_id, aws_service_name, role.name
-        )
+        role.service_linked_role_arn = f"arn:{get_partition(context.region)}:iam::{context.account_id}:role/aws-service-role/{aws_service_name}/{role.name}"
 
         res_role = self.moto_role_to_role_type(role)
         return CreateServiceLinkedRoleResponse(Role=res_role)

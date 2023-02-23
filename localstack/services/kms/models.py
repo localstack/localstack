@@ -33,7 +33,7 @@ from localstack.aws.api.kms import (
     UnsupportedOperationException,
 )
 from localstack.services.stores import AccountRegionBundle, BaseStore, LocalAttribute
-from localstack.utils.aws.arns import kms_alias_arn, kms_key_arn, parse_arn
+from localstack.utils.aws.arns import get_partition, kms_alias_arn, kms_key_arn, parse_arn
 from localstack.utils.crypto import decrypt, encrypt
 from localstack.utils.strings import long_uid
 
@@ -659,7 +659,7 @@ class KmsStore(BaseStore):
 
         if key_id not in self.keys:
             if not key_arn:
-                key_arn = f"arn:aws:kms:{self._region_name}:{self._account_id}:key/{key_id}"
+                key_arn = f"arn:{get_partition(self._region_name)}:kms:{self._region_name}:{self._account_id}:key/{key_id}"
             raise NotFoundException(f"Key '{key_arn}' does not exist")
 
         return key_id
