@@ -19,7 +19,7 @@ LOG = logging.getLogger(__name__)
 
 # TODO: with the latest snapshot tests, we might start moving away from the
 # invocation context property decorators and use the url_params directly,
-# something ask for a long time.
+# something asked for a long time.
 def to_invocation_context(
     request: Request, url_params: Dict[str, Any] = None
 ) -> ApiInvocationContext:
