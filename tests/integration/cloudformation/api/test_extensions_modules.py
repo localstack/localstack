@@ -5,7 +5,7 @@ import pytest
 from localstack.utils.strings import short_uid
 
 
-class TestExtensionModule:
+class TestExtensionsModules:
     @pytest.mark.skip(reason="feature not supported")
     def test_crud_module(self, deploy_cfn_template, cfn_client, s3_client, snapshot, cleanups):
         role_stack = "localstack-testing-testmodule-role-stack"

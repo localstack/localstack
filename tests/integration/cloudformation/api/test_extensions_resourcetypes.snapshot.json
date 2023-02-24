@@ -1,5 +1,5 @@
 {
-  "tests/integration/cloudformation/api/test_extensions_resourcetypes.py::TestExtensionResourceTypes::test_crud_resource_type": {
+  "tests/integration/cloudformation/api/test_extensions_resourcetypes.py::TestExtensionsResourceTypes::test_crud_resource_type": {
     "recorded-date": "09-02-2023, 16:23:21",
     "recorded-content": {
       "register_response": {
@@ -96,7 +96,7 @@
       }
     }
   },
-  "tests/integration/cloudformation/api/test_extensions_resourcetypes.py::TestExtensionResourceTypes::test_deploy_resource_type": {
+  "tests/integration/cloudformation/api/test_extensions_resourcetypes.py::TestExtensionsResourceTypes::test_deploy_resource_type": {
     "recorded-date": "24-02-2023, 13:38:11",
     "recorded-content": {}
   }
