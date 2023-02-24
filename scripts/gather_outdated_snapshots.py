@@ -37,6 +37,7 @@ def get_outdated_snapshots_for_directory(
                         date = datetime.datetime.strptime(date, "%d-%m-%Y, %H:%M:%S")
                         if date < date_limit:
                             if combine_parametrized:
+                                # change parametrized tests of the form <mytest[param_value]> to just <mytest>
                                 name = name.split("[")[0]
                             outdated_snapshots.append(name)
 
