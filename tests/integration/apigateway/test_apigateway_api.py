@@ -338,6 +338,7 @@ class TestApiGatewayApi:
     def test_update_resource_behaviour(
         self, apigateway_client, apigw_create_rest_api, apigw_create_rest_resource, snapshot
     ):
+        snapshot.add_transformer(SortingTransformer("items", lambda x: x["path"]))
         response = apigw_create_rest_api(
             name=f"test-api-{short_uid()}", description="testing resource behaviour"
         )
@@ -387,6 +388,26 @@ class TestApiGatewayApi:
         )
         snapshot.match("create-subresource", subresource_response)
         subresource_id = subresource_response["id"]
+
+        # create subresource `pets` under `/pets/subpets`
+        subresource_child_response = apigw_create_rest_resource(
+            rest_api_id=api_id, parent_id=subresource_id, path_part="pets"
+        )
+        snapshot.match("create-subresource-child", subresource_child_response)
+        subresource_child_id = subresource_child_response["id"]
+
+        # try moving a subresource under the root id but with the same name as an existing future sibling
+        # move last resource of `pets/subpets/pets` to `/pets`, already exists
+        patch_operations = [
+            {"op": "replace", "path": "/parentId", "value": root_id},
+        ]
+        with pytest.raises(ClientError) as e:
+            apigateway_client.update_resource(
+                restApiId=api_id, resourceId=subresource_child_id, patchOperations=patch_operations
+            )
+        snapshot.match("existing-future-sibling-path", e.value.response)
+        # clean up that for the rest of the test
+        apigateway_client.delete_resource(restApiId=api_id, resourceId=subresource_child_id)
 
         # try setting the parent id of the pets to its own subresource?
         patch_operations = [

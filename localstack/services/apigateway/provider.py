@@ -295,10 +295,14 @@ class ApigatewayProvider(ApigatewayApi, ServiceLifecycleHook):
         patch_operations: ListOfPatchOperation = None,
     ) -> Resource:
         moto_rest_api = get_moto_rest_api(context, rest_api_id)
-
         moto_resource = moto_rest_api.resources.get(resource_id)
         if not moto_resource:
             raise NotFoundException("Invalid Resource identifier specified")
+
+        store = get_apigateway_store(account_id=context.account_id, region=context.region)
+        api_resources = store.resources_children[rest_api_id]
+        future_path_part = moto_resource.path_part
+        current_parent_id = moto_resource.parent_id
 
         for patch_operation in patch_operations:
             op = patch_operation.get("op")
@@ -311,38 +315,43 @@ class ApigatewayProvider(ApigatewayApi, ServiceLifecycleHook):
                     f"Invalid patch path  '{path}' specified for op '{op}'. Please choose supported operations"
                 )
 
-            store = get_apigateway_store(account_id=context.account_id, region=context.region)
-            api_resources = store.resources_children[rest_api_id]
-            match path:
-                case "/parentId":
-                    value = patch_operation.get("value")
-                    future_parent_resource = moto_rest_api.resources.get(value)
-                    if not future_parent_resource:
-                        raise NotFoundException("Invalid Resource identifier specified")
+            if path == "/parentId":
+                value = patch_operation.get("value")
+                future_parent_resource = moto_rest_api.resources.get(value)
+                if not future_parent_resource:
+                    raise NotFoundException("Invalid Resource identifier specified")
 
-                    children_resources = api_resources.get(resource_id, [])
-                    if value in children_resources:
-                        raise BadRequestException("Resources cannot be cyclical.")
+                children_resources = api_resources.get(resource_id, [])
+                if value in children_resources:
+                    raise BadRequestException("Resources cannot be cyclical.")
 
-                    # remove the resource from its current parent
-                    current_sibling_resources = api_resources[moto_resource.parent_id]
-                    current_sibling_resources.remove(resource_id)
+                new_sibling_resources = api_resources[value]
 
-                    # add it to the new parent children
-                    future_sibling_resources = api_resources[value]
-                    future_sibling_resources.append(resource_id)
+            else:  # path == "/pathPart"
+                future_path_part = patch_operation.get("value")
+                new_sibling_resources = api_resources.get(moto_resource.parent_id, [])
 
-                case "/pathPart":
-                    value = patch_operation.get("value")
-                    sibling_resources = api_resources.get(moto_resource.parent_id, [])
-                    for sibling in sibling_resources:
-                        sibling_resource = moto_rest_api.resources.get(sibling)
-                        if sibling_resource.path_part == value:
-                            raise ConflictException(
-                                f"Another resource with the same parent already has this name: {value}"
-                            )
+            for sibling in new_sibling_resources:
+                sibling_resource = moto_rest_api.resources.get(sibling)
+                if sibling_resource.path_part == future_path_part:
+                    raise ConflictException(
+                        f"Another resource with the same parent already has this name: {future_path_part}"
+                    )
 
+        # TODO: test with multiple patch operations which would not be compatible between each other
         _patch_api_gateway_entity(moto_resource, patch_operations)
+
+        # after setting it, mutate the store
+        if moto_resource.parent_id != current_parent_id:
+            current_sibling_resources = api_resources[current_parent_id]
+            current_sibling_resources.remove(resource_id)
+            # if the parent does not have children anymore, remove from the list
+            if not current_sibling_resources:
+                api_resources.pop(current_parent_id)
+
+        # add it to the new parent children
+        future_sibling_resources = api_resources[moto_resource.parent_id]
+        future_sibling_resources.append(resource_id)
 
         response = moto_resource.to_dict()
         return response

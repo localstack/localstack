@@ -520,7 +520,7 @@
     }
   },
   "tests/integration/apigateway/test_apigateway_api.py::TestApiGatewayApi::test_update_resource_behaviour": {
-    "recorded-date": "24-02-2023, 11:37:12",
+    "recorded-date": "24-02-2023, 17:56:07",
     "recorded-content": {
       "nonexistent-resource": {
         "Error": {
@@ -565,6 +565,27 @@
           "HTTPStatusCode": 201
         }
       },
+      "create-subresource-child": {
+        "id": "<id:2>",
+        "parentId": "<id:1>",
+        "path": "/pets/subpets/pets",
+        "pathPart": "pets",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 201
+        }
+      },
+      "existing-future-sibling-path": {
+        "Error": {
+          "Code": "ConflictException",
+          "Message": "Another resource with the same parent already has this name: pets"
+        },
+        "message": "Another resource with the same parent already has this name: pets",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 409
+        }
+      },
       "update-parent-id-to-subresource-id": {
         "Error": {
           "Code": "BadRequestException",
@@ -578,7 +599,7 @@
       },
       "update-parent-id-to-root-id": {
         "id": "<id:1>",
-        "parentId": "<id:2>",
+        "parentId": "<id:3>",
         "path": "/subpets",
         "pathPart": "subpets",
         "ResponseMetadata": {
@@ -600,12 +621,12 @@
       "resources-after-deletion": {
         "items": [
           {
-            "id": "<id:2>",
+            "id": "<id:3>",
             "path": "/"
           },
           {
             "id": "<id:1>",
-            "parentId": "<id:2>",
+            "parentId": "<id:3>",
             "path": "/subpets",
             "pathPart": "subpets"
           }
