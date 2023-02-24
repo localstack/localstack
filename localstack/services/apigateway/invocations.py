@@ -302,6 +302,9 @@ def invoke_rest_api_integration(invocation_context: ApiInvocationContext):
 
 # TODO: refactor this to have a class per integration type to make it easy to
 # test the encapsulated logic
+
+# this call is patched downstream for backend integrations that are only available
+# in the PRO version
 def invoke_rest_api_integration_backend(invocation_context: ApiInvocationContext):
     # define local aliases from invocation context
     invocation_path = invocation_context.path_with_query_string
