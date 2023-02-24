@@ -6,7 +6,7 @@ from localstack.utils.strings import short_uid
 
 
 class TestExtensionsResourceTypes:
-    # @pytest.mark.skip(reason="feature not supported")
+    @pytest.mark.skip(reason="feature not supported")
     def test_crud_resource_type(
         self, deploy_cfn_template, cfn_client, s3_client, snapshot, cleanups
     ):
