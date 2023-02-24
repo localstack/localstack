@@ -1348,7 +1348,7 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
             raise InvalidParameterValueException("Unrecognized event source.", Type="User")
 
         service = extract_service_from_arn(request.get("EventSourceArn"))
-        if "StartingPosition" not in request and service in ["dynamodb", "kinesis", "kafka"]:
+        if service in ["dynamodb", "kinesis", "kafka"] and "StartingPosition" not in request:
             raise InvalidParameterValueException(
                 "1 validation error detected: Value null at 'startingPosition' failed to satisfy constraint: Member must not be null.",
                 Type="User",
