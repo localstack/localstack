@@ -1,3 +1,5 @@
+from pickle import PicklingError
+
 import dill
 from moto.core import BackendDict
 
@@ -90,6 +92,6 @@ class StorePolice:
     def _pickles(backend: PersistenceBackend) -> bool:
         try:
             pickle.dumps(backend)
-        except TypeError:
+        except (TypeError, PicklingError):
             return False
         return True
