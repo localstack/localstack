@@ -2,6 +2,7 @@ import dill
 from moto.core import BackendDict
 
 from localstack.services.stores import AccountRegionBundle
+from localstack.state import pickle
 from localstack.state.inspect import ReflectionStateLocator, ServiceBackendCollectorVisitor
 
 PersistenceBackend = AccountRegionBundle | BackendDict | dict
@@ -87,4 +88,8 @@ class StorePolice:
 
     @staticmethod
     def _pickles(backend: PersistenceBackend) -> bool:
-        return dill.pickles(backend)
+        try:
+            pickle.dumps(backend)
+        except TypeError:
+            return False
+        return True
