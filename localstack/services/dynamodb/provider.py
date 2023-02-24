@@ -514,11 +514,13 @@ class DynamoDBProvider(DynamodbApi, ServiceLifecycleHook):
         global_table_region = self.get_global_table_region(context, table_name)
 
         result = self._forward_request(context=context, region=global_table_region)
+        table_description: TableDescription = result["Table"]
 
         # Update table properties from LocalStack stores
-        table_props = get_store(context.account_id, context.region).table_properties.get(table_name)
-        if table_props:
-            result.get("Table", {}).update(table_props)
+        if table_props := get_store(context.account_id, context.region).table_properties.get(
+            table_name
+        ):
+            table_description.update(table_props)
 
         store = get_store(context.account_id, context.region)
 
@@ -538,22 +540,21 @@ class DynamoDBProvider(DynamodbApi, ServiceLifecycleHook):
                         RegionName=replicated_region, ReplicaStatus=ReplicaStatus.ACTIVE
                     )
                 )
-        result.get("Table", {}).update({"Replicas": replica_description_list})
+        table_description.update({"Replicas": replica_description_list})
 
         # update only TableId and SSEDescription if present
-        table_definitions = get_store(context.account_id, context.region).table_definitions.get(
-            table_name
-        )
-        if table_definitions:
+        if table_definitions := store.table_definitions.get(table_name):
             for key in ["TableId", "SSEDescription"]:
                 if table_definitions.get(key):
-                    result.get("Table", {})[key] = table_definitions[key]
+                    table_description[key] = table_definitions[key]
             if "TableClass" in table_definitions:
-                result.get("Table", {})["TableClassSummary"] = {
+                table_description["TableClassSummary"] = {
                     "TableClass": table_definitions["TableClass"]
                 }
 
-        return DescribeTableOutput(Table=select_from_typed_dict(TableDescription, result["Table"]))
+        return DescribeTableOutput(
+            Table=select_from_typed_dict(TableDescription, table_description)
+        )
 
     @handler("UpdateTable", expand=False)
     def update_table(
@@ -1247,9 +1248,8 @@ class DynamoDBProvider(DynamodbApi, ServiceLifecycleHook):
                 PointInTimeRecoveryStatus=pit_recovery_status
             ),
         )
-        store.table_properties[table_name] = {
-            "ContinuousBackupsDescription": continuous_backup_description
-        }
+        table_props = store.table_properties.setdefault(table_name, {})
+        table_props["ContinuousBackupsDescription"] = continuous_backup_description
 
         return UpdateContinuousBackupsOutput(
             ContinuousBackupsDescription=continuous_backup_description
