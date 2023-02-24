@@ -1956,7 +1956,6 @@ def create_rest_apigw():
             apigateway_client.delete_rest_api(restApiId=rest_api_id)
 
 
-
 @pytest.fixture
 def appsync_create_api(appsync_client):
     graphql_apis = []
