@@ -758,6 +758,7 @@ class ContainerClient(metaclass=ABCMeta):
         additional_flags: Optional[str] = None,
         workdir: Optional[str] = None,
         privileged: Optional[bool] = None,
+        platform: Optional[DockerPlatform] = None,
     ) -> Tuple[bytes, bytes]:
         """Creates and runs a given docker container
 

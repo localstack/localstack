@@ -601,6 +601,7 @@ class SdkDockerClient(ContainerClient):
         additional_flags: Optional[str] = None,
         workdir: Optional[str] = None,
         privileged: Optional[bool] = None,
+        platform: Optional[DockerPlatform] = None,
     ) -> Tuple[bytes, bytes]:
         LOG.debug("Running container with image: %s", image_name)
         container = None
@@ -626,6 +627,7 @@ class SdkDockerClient(ContainerClient):
                 additional_flags=additional_flags,
                 workdir=workdir,
                 privileged=privileged,
+                platform=platform,
             )
             result = self.start_container(
                 container_name_or_id=container,
