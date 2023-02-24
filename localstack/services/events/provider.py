@@ -217,6 +217,11 @@ class EventsProvider(EventsApi, ServiceLifecycleHook):
                     f"Value '{id}' at 'targets.{index + 1}.member.id' failed to satisfy constraint: Member must satisfy regular expression pattern: [\\.\\-_A-Za-z0-9]+"
                 )
 
+            if len(id) > 64:
+                validation_errors.append(
+                    f"Value '{id}' at 'targets.{index + 1}.member.id' failed to satisfy constraint: Member must have length less than or equal to 64"
+                )
+
         if validation_errors:
             errors_message = "; ".join(validation_errors)
             message = f"{len(validation_errors)} validation {'errors' if len(validation_errors) > 1 else 'error'} detected: {errors_message}"

@@ -18,7 +18,7 @@ from localstack.services.events.provider import _get_events_tmp_dir
 from localstack.testing.aws.util import is_aws_cloud
 from localstack.utils.aws import arns, aws_stack, resources
 from localstack.utils.files import load_file
-from localstack.utils.strings import short_uid, to_str
+from localstack.utils.strings import long_uid, short_uid, to_str
 from localstack.utils.sync import poll_condition, retry
 from localstack.utils.testutil import check_expected_lambda_log_events_length
 
@@ -1598,21 +1598,41 @@ class TestEvents:
             logs_client.delete_log_group(logGroupName=log_group_name)
 
     @pytest.mark.aws_validated
-    def test_put_target_id_validation(self, sqs_create_queue, events_client, sqs_client, snapshot):
+    def test_put_target_id_validation(
+        self, sqs_create_queue, events_put_rule, events_client, sqs_client, snapshot
+    ):
         rule_name = f"rule-{short_uid()}"
         queue_url = sqs_create_queue()
         queue_arn = self._get_queue_arn(queue_url, sqs_client)
+
+        events_put_rule(
+            Name=rule_name, EventPattern=json.dumps(TEST_EVENT_PATTERN), State="ENABLED"
+        )
+
         target_id = "!@#$@!#$"
-
-        events_client.put_rule(Name=rule_name, EventPattern=json.dumps(TEST_EVENT_PATTERN))
-
         with pytest.raises(ClientError) as e:
             events_client.put_targets(
                 Rule=rule_name,
-                EventBusName=TEST_EVENT_BUS_NAME,
                 Targets=[
                     {"Id": target_id, "Arn": queue_arn, "InputPath": "$.detail"},
                 ],
             )
-
         snapshot.match("error", e.value.response)
+
+        target_id = f"{long_uid()}-{long_uid()}-extra"
+        with pytest.raises(ClientError) as e:
+            events_client.put_targets(
+                Rule=rule_name,
+                Targets=[
+                    {"Id": target_id, "Arn": queue_arn, "InputPath": "$.detail"},
+                ],
+            )
+        snapshot.match("length_error", e.value.response)
+
+        target_id = f"test-With_valid.Characters-{short_uid()}"
+        events_client.put_targets(
+            Rule=rule_name,
+            Targets=[
+                {"Id": target_id, "Arn": queue_arn, "InputPath": "$.detail"},
+            ],
+        )
