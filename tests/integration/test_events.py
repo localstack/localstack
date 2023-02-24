@@ -1597,6 +1597,7 @@ class TestEvents:
                 )
             logs_client.delete_log_group(logGroupName=log_group_name)
 
+    @pytest.mark.aws_validated
     def test_put_target_id_validation(self, sqs_create_queue, events_client, sqs_client, snapshot):
         rule_name = f"rule-{short_uid()}"
         queue_url = sqs_create_queue()
