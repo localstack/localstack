@@ -6,7 +6,7 @@ from localstack.utils.strings import short_uid
 
 
 class TestExtensionResourceTypes:
-    @pytest.mark.skip(reason="feature not supported")
+    # @pytest.mark.skip(reason="feature not supported")
     def test_crud_resource_type(
         self, deploy_cfn_template, cfn_client, s3_client, snapshot, cleanups
     ):
@@ -128,6 +128,12 @@ class TestExtensionResourceTypes:
             ClientRequestToken=f"token-{short_uid()}",
         )
 
+        cleanups.append(
+            lambda: cfn_client.deregister_type(
+                TypeName="LocalStack::Testing::DeployableResource", Type="RESOURCE"
+            )
+        )
+
         cfn_client.get_waiter("type_registration_complete").wait(
             RegistrationToken=register_response["RegistrationToken"]
         )
@@ -140,17 +146,14 @@ class TestExtensionResourceTypes:
             "../../templates/registry/resource-provider.yml",
         )
 
+        resource_name = f"name-{short_uid()}"
         stack = deploy_cfn_template(
-            template_path=template_path, parameters={"Name": f"name-{short_uid()}"}, max_wait=300
+            template_path=template_path, parameters={"Name": resource_name}, max_wait=900
         )
         resources = cfn_client.describe_stack_resources(StackName=stack.stack_name)[
             "StackResources"
         ]
 
-        snapshot.match("outputs", stack.outputs)
+        snapshot.add_transformer(snapshot.transform.regex(resource_name, "resource-name"))
+        snapshot.add_transformer(snapshot.transform.cloudformation_api())
         snapshot.match("resource_description", resources[0])
-
-        # TODO Add to cleanups
-        cfn_client.deregister_type(
-            TypeName="LocalStack::Testing::DeployableResource", Type="RESOURCE"
-        )

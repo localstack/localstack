@@ -3,13 +3,8 @@ Parameters:
     Type: String
 
 Resources:
-  Test:
-    Type: LocalStack::Testing::DeployableResource
+  MyCustomResource:
+    Type: "LocalStack::Testing::DeployableResource"
     Properties:
       Name:
         Ref: Name
-
-Outputs:
-  TestRef:
-    Value:
-      Ref: Test

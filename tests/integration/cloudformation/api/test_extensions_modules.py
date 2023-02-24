@@ -126,6 +126,11 @@ class TestExtensionModule:
             ClientRequestToken=f"token-{short_uid()}",
         )
 
+        cleanups.append(
+            lambda: cfn_client.deregister_type(
+                TypeName="LocalStack::Testing::TestModule::MODULE", Type="MODULE"
+            )
+        )
         cfn_client.get_waiter("type_registration_complete").wait(
             RegistrationToken=register_response["RegistrationToken"]
         )
@@ -151,9 +156,3 @@ class TestExtensionModule:
         snapshot.add_transformer(snapshot.transform.regex(module_bucket_name, "bucket-name-"))
         snapshot.add_transformer(snapshot.transform.cloudformation_api())
         snapshot.match("resource_description", resources[0])
-
-        cleanups.append(
-            lambda: cfn_client.deregister_type(
-                TypeName="LocalStack::Testing::TestModule::MODULE", Type="MODULE"
-            )
-        )

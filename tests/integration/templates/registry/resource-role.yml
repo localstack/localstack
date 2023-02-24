@@ -6,7 +6,7 @@ Description: >
 Parameters:
   ResourceType:
     Type: String
-    Default: resource/Localstack-Testing-Testresource
+    Default: resource/Localstack-Testing-TestResource
   ResourceActions:
     Type: String
     Default: initech:CreateReport;initech:DeleteReport
