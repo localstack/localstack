@@ -34,11 +34,17 @@ class IntrinsicFunctionTemplate(TemplateLoader):
     JSON_TO_STRING: Final[str] = os.path.join(
         _THIS_FOLDER, "statemachines/json_manipulation/json_to_string.json5"
     )
+    JSON_MERGE: Final[str] = os.path.join(
+        _THIS_FOLDER, "statemachines/json_manipulation/json_merge.json5"
+    )
 
     # String Operations.
     STRING_SPLIT: Final[str] = os.path.join(
         _THIS_FOLDER, "statemachines/string_operations/string_split.json5"
     )
+
+    # Hash Calculations.
+    HASH: Final[str] = os.path.join(_THIS_FOLDER, "statemachines/hash_calculations/hash.json5")
 
     # Generic.
     FORMAT_1: Final[str] = os.path.join(_THIS_FOLDER, "statemachines/generic/format_1.json5")

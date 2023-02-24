@@ -13,7 +13,11 @@ from localstack.services.stepfunctions.asl.component.intrinsic.function.statesfu
 from localstack.services.stepfunctions.asl.component.intrinsic.function.statesfunction.generic import (
     string_format,
 )
+from localstack.services.stepfunctions.asl.component.intrinsic.function.statesfunction.hash_calculations import (
+    hash_func,
+)
 from localstack.services.stepfunctions.asl.component.intrinsic.function.statesfunction.json_manipulation import (
+    json_merge,
     json_to_string,
     string_to_json,
 )
@@ -60,6 +64,8 @@ class StatesFunctionFactory:
                 return json_to_string.JsonToString(arg_list=arg_list)
             case StatesFunctionNameType.StringToJson:
                 return string_to_json.StringToJson(arg_list=arg_list)
+            case StatesFunctionNameType.JsonMerge:
+                return json_merge.JsonMerge(arg_list=arg_list)
 
             # Unique Id Generation.
             case StatesFunctionNameType.UUID:
@@ -68,6 +74,10 @@ class StatesFunctionFactory:
             # String Operations.
             case StatesFunctionNameType.StringSplit:
                 return string_split.StringSplit(arg_list=arg_list)
+
+            # Hash Calculations.
+            case StatesFunctionNameType.Hash:
+                return hash_func.HashFunc(arg_list=arg_list)
 
             # Generic.
             case StatesFunctionNameType.Format:

@@ -71,6 +71,15 @@ class ASLIntrinsicParserListener(ParseTreeListener):
         pass
 
 
+    # Enter a parse tree produced by ASLIntrinsicParser#func_arg_bool.
+    def enterFunc_arg_bool(self, ctx:ASLIntrinsicParser.Func_arg_boolContext):
+        pass
+
+    # Exit a parse tree produced by ASLIntrinsicParser#func_arg_bool.
+    def exitFunc_arg_bool(self, ctx:ASLIntrinsicParser.Func_arg_boolContext):
+        pass
+
+
     # Enter a parse tree produced by ASLIntrinsicParser#func_arg_json_path.
     def enterFunc_arg_json_path(self, ctx:ASLIntrinsicParser.Func_arg_json_pathContext):
         pass

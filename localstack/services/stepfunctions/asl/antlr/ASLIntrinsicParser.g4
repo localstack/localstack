@@ -39,11 +39,12 @@ func_arg_list
     ;
 
 func_arg
-    : STRING     #func_arg_string
-    | INT        #func_arg_int
-    | NUMBER     #func_arg_float
-    | json_path  #func_arg_json_path
-    | func_decl  #func_arg_func_decl
+    : STRING          #func_arg_string
+    | INT             #func_arg_int
+    | NUMBER          #func_arg_float
+    | (TRUE | FALSE)  #func_arg_bool
+    | json_path       #func_arg_json_path
+    | func_decl       #func_arg_func_decl
     ;
 
 json_path
