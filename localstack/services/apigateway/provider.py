@@ -283,6 +283,10 @@ class ApigatewayProvider(ApigatewayApi, ServiceLifecycleHook):
 
         _delete_children(resource_id)
 
+        # remove the resource as a child from its parent
+        parent_id = moto_resource.parent_id
+        api_resources[parent_id].remove(resource_id)
+
     def update_resource(
         self,
         context: RequestContext,
