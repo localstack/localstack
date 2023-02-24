@@ -4,7 +4,7 @@ import logging
 import re
 import time
 from datetime import datetime, timezone
-from typing import Any, Callable, Dict, List, Optional, Tuple, Union
+from typing import Any, Callable, Dict, List, Optional, Tuple, TypedDict, Union
 from urllib import parse as urlparse
 
 from apispec import APISpec
@@ -139,6 +139,95 @@ class Resolver:
 
     def resolve_references(self) -> dict:
         return self._resolve_references(self.document)
+
+
+class IntegrationParameters(TypedDict):
+    path: Dict[str, str]
+    querystring: Dict[str, str]
+    headers: Dict[str, str]
+
+
+class RequestParametersResolver:
+    """
+    Integration request data mapping expressions
+    https://docs.aws.amazon.com/apigateway/latest/developerguide/request-response-data-mappings.html
+    """
+
+    def resolve(self, context: ApiInvocationContext) -> IntegrationParameters:
+        """
+        Resolve method request parameters into integration request parameters.
+        Integration request parameters, in the form of path variables, query strings
+        or headers, can be mapped from any defined method request parameters
+        and the payload.
+
+        :return: IntegrationParameters
+        """
+        method_request_params: Dict[str, Any] = self.method_request_dict(context)
+
+        # requestParameters: {
+        #     "integration.request.path.pathParam": "method.request.header.Content-Type"
+        #     "integration.request.querystring.who": "method.request.querystring.who",
+        #     "integration.request.header.Content-Type": "'application/json'",
+        # }
+        request_params = context.integration.get("requestParameters", {})
+
+        # resolve all integration request parameters with the already resolved method
+        # request parameters
+        integrations_parameters = {}
+        for k, v in request_params.items():
+            if v.lower() in method_request_params:
+                integrations_parameters[k] = method_request_params[v.lower()]
+            else:
+                # static values
+                integrations_parameters[k] = v.replace("'", "")
+
+        # build the integration parameters
+        result: IntegrationParameters = IntegrationParameters(path={}, querystring={}, headers={})
+        for k, v in integrations_parameters.items():
+            # headers
+            if k.startswith("integration.request.header."):
+                header_name = k.split(".")[-1]
+                result["headers"].update({header_name: v})
+
+            # querystring
+            if k.startswith("integration.request.querystring."):
+                param_name = k.split(".")[-1]
+                result["querystring"].update({param_name: v})
+
+            # path
+            if k.startswith("integration.request.path."):
+                path_name = k.split(".")[-1]
+                result["path"].update({path_name: v})
+
+        return result
+
+    def method_request_dict(self, context: ApiInvocationContext) -> Dict[str, Any]:
+        """
+        Build a dict with all method request parameters and their values.
+        :return: dict with all method request parameters and their values,
+        and all keys in lowercase
+        """
+        params: Dict[str, str] = {}
+
+        # TODO: add support for context variables - include in apiinvocationcontext
+        # TODO: add support for multi-values headers and multi-values querystring
+
+        for k, v in context.query_params().items():
+            params[f"method.request.querystring.{k}"] = v
+
+        for k, v in context.headers.items():
+            params[f"method.request.header.{k}"] = v
+
+        for k, v in context.path_params.items():
+            params[f"method.request.path.{k}"] = v
+
+        for k, v in context.stage_variables.items():
+            params[f"stagevariables.{k}"] = v
+
+        if context.data:
+            params["method.request.body"] = context.data
+
+        return {key.lower(): val for key, val in params.items()}
 
 
 def resolve_references(data: dict, allow_recursive=True) -> dict:

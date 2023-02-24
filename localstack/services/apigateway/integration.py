@@ -14,6 +14,8 @@ from localstack.constants import APPLICATION_JSON, HEADER_CONTENT_TYPE
 from localstack.services.apigateway import helpers
 from localstack.services.apigateway.context import ApiInvocationContext
 from localstack.services.apigateway.helpers import (
+    IntegrationParameters,
+    RequestParametersResolver,
     extract_path_params,
     extract_query_string_params,
     get_event_request_context,
@@ -44,6 +46,7 @@ class BackendIntegration(ABC):
     def __init__(self):
         self.request_templates = RequestTemplates()
         self.response_templates = ResponseTemplates()
+        self.request_params_resolver = RequestParametersResolver()
 
     @abstractmethod
     def invoke(self, invocation_context: ApiInvocationContext):
@@ -56,6 +59,13 @@ class BackendIntegration(ABC):
         response.headers = headers
         response._content = data
         return response
+
+    @classmethod
+    def apply_request_parameters(
+        cls, integration_params: IntegrationParameters, headers: Dict[str, Any]
+    ):
+        for k, v in integration_params.get("headers").items():
+            headers.update({k: v})
 
     @classmethod
     def apply_response_parameters(
@@ -110,8 +120,7 @@ def call_lambda(function_arn: str, event: bytes, asynchronous: bool) -> str:
         Payload=event,
         InvocationType="Event" if asynchronous else "RequestResponse",
     )
-    payload = inv_result.get("Payload")
-    if payload:
+    if payload := inv_result.get("Payload"):
         payload = to_str(payload.read())
         return payload
     return ""
@@ -357,7 +366,6 @@ class LambdaIntegration(BackendIntegration):
 
         if asynchronous:
             response._content = ""
-            response.status_code = 200
         else:
             # depending on the lambda executor sometimes it returns a string and sometimes a dict
             match result:
@@ -374,9 +382,9 @@ class LambdaIntegration(BackendIntegration):
                     parsed_result = json.loads(str(result or "{}"))
             parsed_result = common.json_safe(parsed_result)
             parsed_result = {} if parsed_result is None else parsed_result
-            response.status_code = 200
             response._content = parsed_result
 
+        response.status_code = 200
         # apply custom response template
         invocation_context.response = response
 

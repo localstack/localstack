@@ -1954,3 +1954,26 @@ def create_rest_apigw():
     for rest_api_id in rest_api_ids:
         with contextlib.suppress(Exception):
             apigateway_client.delete_rest_api(restApiId=rest_api_id)
+
+
+@pytest.fixture
+def appsync_create_api(appsync_client):
+    graphql_apis = []
+
+    def factory(**kwargs):
+        if "name" not in kwargs:
+            kwargs["name"] = f"graphql-api-testing-name-{short_uid()}"
+        if not kwargs.get("authenticationType"):
+            kwargs["authenticationType"] = "API_KEY"
+
+        result = appsync_client.create_graphql_api(**kwargs)["graphqlApi"]
+        graphql_apis.append(result["apiId"])
+        return result
+
+    yield factory
+
+    for api in graphql_apis:
+        try:
+            appsync_client.delete_graphql_api(apiId=api)
+        except Exception as e:
+            LOG.debug(f"Error cleaning up AppSync API: {api}, {e}")
