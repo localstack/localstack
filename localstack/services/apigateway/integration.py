@@ -268,7 +268,7 @@ class LambdaProxyIntegration(BackendIntegration):
             func_arn = uri.split(":lambda:path")[1].split("functions/")[1].split("/invocations")[0]
 
         if invocation_context.authorizer_type:
-            invocation_context.context["authorizer"] = invocation_context.auth_context
+            invocation_context.context["authorizer"] = invocation_context.authorizer_result
 
         payload = self.request_templates.render(invocation_context)
 
@@ -343,7 +343,7 @@ class LambdaIntegration(BackendIntegration):
         invocation_context.context = helpers.get_event_request_context(invocation_context)
         invocation_context.stage_variables = helpers.get_stage_variables(invocation_context)
         if invocation_context.authorizer_type:
-            invocation_context.context["authorizer"] = invocation_context.auth_context
+            invocation_context.context["authorizer"] = invocation_context.authorizer_result
 
         func_arn = self._lambda_integration_uri(invocation_context)
         request_templates = RequestTemplates()

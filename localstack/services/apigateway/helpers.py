@@ -822,9 +822,9 @@ def get_event_request_context(invocation_context: ApiInvocationContext):
     }
 
     # set "authorizer" and "identity" event attributes from request context
-    auth_context = invocation_context.auth_context
-    if auth_context:
-        request_context["authorizer"] = auth_context
+    authorizer_result = invocation_context.authorizer_result
+    if authorizer_result:
+        request_context["authorizer"] = authorizer_result
     request_context["identity"].update(invocation_context.auth_identity or {})
 
     if not is_test_invoke_method(method, path):

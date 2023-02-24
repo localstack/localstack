@@ -4,7 +4,7 @@ import json
 import re
 from binascii import crc32
 from struct import pack
-from typing import Dict, Optional, Union
+from typing import Any, Dict, Optional, Union
 from urllib.parse import parse_qs
 
 import xmltodict
@@ -234,11 +234,7 @@ def set_response_content(response, content, headers=None):
     response.headers["Content-Length"] = str(len(response._content))
 
 
-def make_requests_error(*args, **kwargs):
-    return flask_to_requests_response(flask_error_response_xml(*args, **kwargs))
-
-
-def create_sqs_system_attributes(headers):
+def create_sqs_system_attributes(headers: Dict[str, str]) -> Dict[str, Any]:
     system_attributes = {}
     if "X-Amzn-Trace-Id" in headers:
         system_attributes["AWSTraceHeader"] = {
@@ -248,7 +244,7 @@ def create_sqs_system_attributes(headers):
     return system_attributes
 
 
-def parse_query_string(url_or_qs: str, multi_values=False) -> Dict:
+def parse_query_string(url_or_qs: str, multi_values=False) -> Dict[str, str]:
     url_or_qs = str(url_or_qs or "").strip()
     if "://" in url_or_qs and "?" not in url_or_qs:
         url_or_qs = f"{url_or_qs}?"
@@ -259,7 +255,7 @@ def parse_query_string(url_or_qs: str, multi_values=False) -> Dict:
     return result
 
 
-def calculate_crc32(content):
+def calculate_crc32(content: Union[str, bytes]) -> int:
     return crc32(to_bytes(content)) & 0xFFFFFFFF
 
 
