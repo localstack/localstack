@@ -18,8 +18,8 @@ def get_outdated_snapshots_for_directory(
     :return: List of test names whose snapshots (if any) are outdated.
     """
 
-    date_limit = datetime.datetime.strptime(date_limit, "%d-%m-%Y")
     result = {"date": date_limit}
+    date_limit = datetime.datetime.strptime(date_limit, "%d-%m-%Y")
     outdated_snapshots = []
 
     def do_get_outdated_snapshots(path: str):
@@ -70,13 +70,18 @@ def get_snapshots(path: str, date_limit: str, check_sub_dirs, combine_parametriz
     Fetches all snapshots in PATH that were recorded before the given DATE_LIMIT.
     Format of the DATE_LIMIT-string must be "DD-MM-YYYY".
 
-    Example usage: python gather_outdated_snapshots.py ../tests/integration 24-12-2022
-
     Returns a JSON with the relevant information
+
+    \b
+    Example usage:
+    python gather_outdated_snapshots.py ../tests/integration 24-12-2022 | jq .
     """
     snapshots = get_outdated_snapshots_for_directory(
         path, date_limit, check_sub_dirs, combine_parametrized
     )
+    # sorted lists are prettier to read in the console
+    snapshots["outdated_snapshots"] = sorted(snapshots["outdated_snapshots"])
+
     # turn the list of snapshots into a whitespace separated string usable by pytest
     join = " ".join(snapshots["outdated_snapshots"])
     snapshots["pytest_executable_list"] = join
