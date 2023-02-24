@@ -181,8 +181,7 @@ class RequestParametersResolver:
                 # static values
                 integrations_parameters[k] = v.replace("'", "")
 
-        # build the integration parameters dict and not mutate in-place
-        # ApiInvocationContext because.
+        # build the integration parameters
         result: IntegrationParameters = IntegrationParameters(path={}, querystring={}, headers={})
         for k, v in integrations_parameters.items():
             # headers
