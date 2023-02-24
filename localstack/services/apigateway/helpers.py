@@ -155,7 +155,11 @@ class RequestParametersResolver:
 
     def resolve(self, context: ApiInvocationContext) -> IntegrationParameters:
         """
-        Resolve integration request parameters from the integration request parameters
+        Resolve method request parameters into integration request parameters.
+        Integration request parameters, in the form of path variables, query strings
+        or headers, can be mapped from any defined method request parameters
+        and the payload.
+
         :return: IntegrationParameters
         """
         method_request_params: Dict[str, Any] = self.method_request_dict(context)
