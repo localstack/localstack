@@ -1617,6 +1617,7 @@ class TestEvents:
                     {"Id": target_id, "Arn": queue_arn, "InputPath": "$.detail"},
                 ],
             )
+        snapshot.add_transformer(snapshot.transform.regex(target_id, "invalid-target-id"))
         snapshot.match("error", e.value.response)
 
         target_id = f"{long_uid()}-{long_uid()}-extra"
@@ -1627,6 +1628,7 @@ class TestEvents:
                     {"Id": target_id, "Arn": queue_arn, "InputPath": "$.detail"},
                 ],
             )
+        snapshot.add_transformer(snapshot.transform.regex(target_id, "second-invalid-target-id"))
         snapshot.match("length_error", e.value.response)
 
         target_id = f"test-With_valid.Characters-{short_uid()}"

@@ -79,7 +79,7 @@
     }
   },
   "tests/integration/test_events.py::TestEvents::test_put_target_id_validation": {
-    "recorded-date": "24-02-2023, 12:23:16",
+    "recorded-date": "24-02-2023, 14:57:23",
     "recorded-content": {
       "error": {
         "Error": {
@@ -94,7 +94,7 @@
       "length_error": {
         "Error": {
           "Code": "ValidationException",
-          "Message": "1 validation error detected: Value '633c5f4f-3c41-4d72-9363-79c02cccab0f-b8e6c06b-df38-46a0-aa36-b599422deb7d-extra' at 'targets.1.member.id' failed to satisfy constraint: Member must have length less than or equal to 64"
+          "Message": "1 validation error detected: Value 'second-invalid-target-id' at 'targets.1.member.id' failed to satisfy constraint: Member must have length less than or equal to 64"
         },
         "ResponseMetadata": {
           "HTTPHeaders": {},
