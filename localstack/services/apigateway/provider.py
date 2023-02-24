@@ -269,16 +269,17 @@ class ApigatewayProvider(ApigatewayApi, ServiceLifecycleHook):
             raise NotFoundException("Invalid Resource identifier specified")
 
         store = get_apigateway_store(account_id=context.account_id, region=context.region)
+        api_resources = store.resources_children[rest_api_id]
 
         # we need to recursively delete all children resources of the resource we're deleting
 
         def _delete_children(resource_to_delete: str):
-            children = store.resources_children[rest_api_id].get(resource_to_delete, [])
+            children = api_resources.get(resource_to_delete, [])
             for child in children:
                 moto_rest_api.resources.pop(child)
                 _delete_children(child)
 
-            store.resources_children[rest_api_id].pop(resource_to_delete, None)
+            api_resources.pop(resource_to_delete, None)
 
         _delete_children(resource_id)
 
@@ -306,28 +307,30 @@ class ApigatewayProvider(ApigatewayApi, ServiceLifecycleHook):
                     f"Invalid patch path  '{path}' specified for op '{op}'. Please choose supported operations"
                 )
 
+            store = get_apigateway_store(account_id=context.account_id, region=context.region)
+            api_resources = store.resources_children[rest_api_id]
             match path:
                 case "/parentId":
                     value = patch_operation.get("value")
-                    parent_resource = moto_rest_api.resources.get(value)
-                    if not parent_resource:
+                    future_parent_resource = moto_rest_api.resources.get(value)
+                    if not future_parent_resource:
                         raise NotFoundException("Invalid Resource identifier specified")
 
-                    store = get_apigateway_store(
-                        account_id=context.account_id, region=context.region
-                    )
-                    children_resources = store.resources_children[rest_api_id].get(resource_id, [])
+                    children_resources = api_resources.get(resource_id, [])
                     if value in children_resources:
                         raise BadRequestException("Resources cannot be cyclical.")
 
+                    # remove the resource from its current parent
+                    current_sibling_resources = api_resources[moto_resource.parent_id]
+                    current_sibling_resources.remove(resource_id)
+
+                    # add it to the new parent children
+                    future_sibling_resources = api_resources[value]
+                    future_sibling_resources.append(resource_id)
+
                 case "/pathPart":
                     value = patch_operation.get("value")
-                    store = get_apigateway_store(
-                        account_id=context.account_id, region=context.region
-                    )
-                    sibling_resources = store.resources_children[rest_api_id].get(
-                        moto_resource.parent_id, []
-                    )
+                    sibling_resources = api_resources.get(moto_resource.parent_id, [])
                     for sibling in sibling_resources:
                         sibling_resource = moto_rest_api.resources.get(sibling)
                         if sibling_resource.path_part == value:

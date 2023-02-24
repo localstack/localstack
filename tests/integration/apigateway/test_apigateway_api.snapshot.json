@@ -520,7 +520,7 @@
     }
   },
   "tests/integration/apigateway/test_apigateway_api.py::TestApiGatewayApi::test_update_resource_behaviour": {
-    "recorded-date": "23-02-2023, 22:36:17",
+    "recorded-date": "24-02-2023, 11:37:12",
     "recorded-content": {
       "nonexistent-resource": {
         "Error": {
@@ -578,7 +578,7 @@
       },
       "update-parent-id-to-root-id": {
         "id": "<id:1>",
-        "parentId": "<parent-id:2>",
+        "parentId": "<id:2>",
         "path": "/subpets",
         "pathPart": "subpets",
         "ResponseMetadata": {
@@ -595,6 +595,24 @@
         "ResponseMetadata": {
           "HTTPHeaders": {},
           "HTTPStatusCode": 409
+        }
+      },
+      "resources-after-deletion": {
+        "items": [
+          {
+            "id": "<id:2>",
+            "path": "/"
+          },
+          {
+            "id": "<id:1>",
+            "parentId": "<id:2>",
+            "path": "/subpets",
+            "pathPart": "subpets"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
         }
       },
       "remove-unsupported": {

@@ -351,7 +351,7 @@ class TestApiGatewayApi:
         )
         resource_id = resource_response["id"]
 
-        # try updating a nonexistent resource
+        # try updating a non-existent resource
         patch_operations = [
             {"op": "replace", "path": "/pathPart", "value": "dogs"},
         ]
@@ -381,7 +381,7 @@ class TestApiGatewayApi:
             )
         snapshot.match("invalid-parent-id", e.value.response)
 
-        # create subresource
+        # create subresource `subpets` under `/pets`
         subresource_response = apigw_create_rest_resource(
             rest_api_id=api_id, parent_id=resource_id, path_part="subpets"
         )
@@ -398,6 +398,9 @@ class TestApiGatewayApi:
             )
         snapshot.match("update-parent-id-to-subresource-id", e.value.response)
 
+        # move the subresource to be under the root id
+        # we had root -> resource -> subresource - /pets/subpets
+        # we now have root -> resource and root -> subresource -> /pets and /subpets
         patch_operations = [
             {"op": "replace", "path": "/parentId", "value": root_id},
         ]
@@ -407,6 +410,7 @@ class TestApiGatewayApi:
 
         snapshot.match("update-parent-id-to-root-id", update_parent_id_to_root)
 
+        # try changing `/subpets` to `/pets`, but it already exists under  `root`
         patch_operations = [
             {"op": "replace", "path": "/pathPart", "value": "pets"},
         ]
@@ -416,6 +420,12 @@ class TestApiGatewayApi:
             )
         snapshot.match("update-path-already-exists", e.value.response)
 
+        # test deleting the resource `/pets`, its old child (`/subpets`) should not be deleted
+        apigateway_client.delete_resource(restApiId=api_id, resourceId=resource_id)
+        api_resources = apigateway_client.get_resources(restApiId=api_id)
+        snapshot.match("resources-after-deletion", api_resources)
+
+        # try using a non-supported operation `remove`
         patch_operations = [
             {"op": "remove", "path": "/pathPart"},
         ]
@@ -425,6 +435,7 @@ class TestApiGatewayApi:
             )
         snapshot.match("remove-unsupported", e.value.response)
 
+        # try using a non-supported operation `add`
         patch_operations = [
             {"op": "add", "path": "/pathPart", "value": "added-pets"},
         ]
