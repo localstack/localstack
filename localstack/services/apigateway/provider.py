@@ -28,6 +28,8 @@ from localstack.aws.api.apigateway import (
     DocumentationParts,
     ExportResponse,
     GetDocumentationPartsRequest,
+    Integration,
+    IntegrationType,
     ListOfPatchOperation,
     ListOfString,
     MapOfStringToString,
@@ -35,6 +37,7 @@ from localstack.aws.api.apigateway import (
     NotFoundException,
     NullableBoolean,
     NullableInteger,
+    PutIntegrationRequest,
     PutRestApiRequest,
     RequestValidator,
     RequestValidators,
@@ -780,6 +783,18 @@ class ApigatewayProvider(ApigatewayApi, ServiceLifecycleHook):
             put_api_request,
         )
         return self.put_rest_api(put_api_context, put_api_request)
+
+    def put_integration(
+        self, context: RequestContext, request: PutIntegrationRequest
+    ) -> Integration:
+        if request.get("type") == IntegrationType.AWS_PROXY:
+            integration_uri = request.get("uri") or ""
+            if ":lambda:" not in integration_uri and ":firehose:" not in integration_uri:
+                raise BadRequestException(
+                    "Integrations of type 'AWS_PROXY' currently only supports "
+                    "Lambda function and Firehose stream invocations."
+                )
+        return call_moto(context)
 
     def delete_integration(
         self, context: RequestContext, rest_api_id: String, resource_id: String, http_method: String

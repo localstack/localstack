@@ -19,6 +19,7 @@ from localstack.services.apigateway.helpers import (
     extract_path_params,
     extract_query_string_params,
     get_event_request_context,
+    make_error_response,
 )
 from localstack.services.apigateway.templates import (
     MappingTemplates,
@@ -355,8 +356,7 @@ class LambdaIntegration(BackendIntegration):
             invocation_context.context["authorizer"] = invocation_context.authorizer_result
 
         func_arn = self._lambda_integration_uri(invocation_context)
-        request_templates = RequestTemplates()
-        event = request_templates.render(invocation_context) or b""
+        event = self.request_templates.render(invocation_context) or b""
         asynchronous = headers.get("X-Amz-Invocation-Type", "").strip("'") == "Event"
         result = call_lambda(
             function_arn=func_arn, event=to_bytes(event), asynchronous=asynchronous
@@ -388,10 +388,133 @@ class LambdaIntegration(BackendIntegration):
         # apply custom response template
         invocation_context.response = response
 
-        response_templates = ResponseTemplates()
-        response_templates.render(invocation_context)
+        self.response_templates.render(invocation_context)
         invocation_context.response.headers["Content-Length"] = str(len(response.content or ""))
         return invocation_context.response
+
+
+class KinesisIntegration(BackendIntegration):
+    def invoke(self, invocation_context: ApiInvocationContext):
+        integration = invocation_context.integration
+        integration_type_orig = integration.get("type") or integration.get("integrationType") or ""
+        integration_type = integration_type_orig.upper()
+        uri = integration.get("uri") or integration.get("integrationUri") or ""
+
+        if uri.endswith("kinesis:action/PutRecord"):
+            target = "Kinesis_20131202.PutRecord"
+        elif uri.endswith("kinesis:action/PutRecords"):
+            target = "Kinesis_20131202.PutRecords"
+        elif uri.endswith("kinesis:action/ListStreams"):
+            target = "Kinesis_20131202.ListStreams"
+        else:
+            LOG.info(
+                f"Unexpected API Gateway integration URI '{uri}' for integration type {integration_type}",
+            )
+            target = ""
+
+        try:
+            invocation_context.context = helpers.get_event_request_context(invocation_context)
+            invocation_context.stage_variables = helpers.get_stage_variables(invocation_context)
+            payload = self.request_templates.render(invocation_context)
+
+        except Exception as e:
+            LOG.warning("Unable to convert API Gateway payload to str", e)
+            raise
+
+        # forward records to target kinesis stream
+        headers = aws_stack.mock_aws_request_headers(
+            service="kinesis", region_name=invocation_context.region_name
+        )
+        headers["X-Amz-Target"] = target
+
+        result = common.make_http_request(
+            url=config.service_url("kinesis"), data=payload, headers=headers, method="POST"
+        )
+
+        # apply response template
+        invocation_context.response = result
+        self.response_templates.render(invocation_context)
+        return invocation_context.response
+
+
+class DynamoDBIntegration(BackendIntegration):
+    def invoke(self, invocation_context: ApiInvocationContext):
+        method = invocation_context.method
+        data = invocation_context.data
+        integration = invocation_context.integration
+        integration_response = integration.get("integrationResponses", {})
+        response_templates = integration_response.get("200", {}).get("responseTemplates", {})
+        uri = integration.get("uri") or integration.get("integrationUri") or ""
+
+        # example: arn:aws:apigateway:us-east-1:dynamodb:action/PutItem&Table=MusicCollection
+        action = uri.split(":dynamodb:action/")[1].split("&")[0]
+
+        if "PutItem" in action and method == "PUT":
+            table_name = uri.split(":dynamodb:action")[1].split("&Table=")[1]
+            response_template = response_templates.get("application/json")
+
+            if response_template is None:
+                msg = "Invalid response template defined in integration response."
+                LOG.info("%s Existing: %s", msg, response_templates)
+                return make_error_response(msg, 404)
+
+            response_template = json.loads(response_template)
+            if response_template["TableName"] != table_name:
+                # TODO: check if this error is valid (AWS parity)
+                msg = "Invalid table name specified in integration response template."
+                return make_error_response(msg, 404)
+
+            dynamo_client = aws_stack.connect_to_resource("dynamodb")
+            table = dynamo_client.Table(table_name)
+
+            event_data = {}
+            data_dict = json.loads(data)
+            for key, _ in response_template["Item"].items():
+                event_data[key] = data_dict[key]
+
+            table.put_item(Item=event_data)
+            response = requests_response(event_data)
+            return response
+
+        if "Query" in action:
+            template = integration["requestTemplates"].get(APPLICATION_JSON)
+
+            if template is None:
+                msg = "No request template is defined in the integration."
+                LOG.info("%s Existing: %s", msg, response_templates)
+                return make_error_response(msg, 404)
+
+            response_template = response_templates.get(APPLICATION_JSON)
+
+            if response_template is None:
+                msg = "Invalid response template defined in integration response."
+                LOG.info("%s Existing: %s", msg, response_templates)
+                return make_error_response(msg, 404)
+
+            # render request template
+            payload = self.request_templates.render(invocation_context)
+            payload = json.loads(payload)
+
+            # query data from DynamoDB
+            dynamo_client = aws_stack.connect_to_service("dynamodb")
+            response = dynamo_client.query(**payload)
+
+            if "Items" not in response:
+                msg = "Items not found in DynamoDB"
+                LOG.info("%s - existing: %s", msg, response_template)
+                return make_error_response(msg, 404)
+
+            # apply response templates
+            response_content = json.dumps(remove_attributes(response, ["ResponseMetadata"]))
+            response_obj = requests_response(content=response_content)
+            response = self.response_templates.render(invocation_context, response=response_obj)
+
+            # construct final response
+            response = requests_response(response)
+            invocation_context.response = response
+            return response
+
+        raise Exception(f"Unsupported action {action} in API Gateway integration URI {uri}")
 
 
 class MockIntegration(BackendIntegration):

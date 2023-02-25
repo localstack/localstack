@@ -98,6 +98,11 @@ APIGATEWAY_KINESIS_POLICY = {
     "Statement": [{"Effect": "Allow", "Action": "kinesis:*", "Resource": "*"}],
 }
 
+APIGATEWAY_DYNAMODB_POLICY = {
+    "Version": "2012-10-17",
+    "Statement": [{"Effect": "Allow", "Action": "dynamodb:*", "Resource": "*"}],
+}
+
 APIGATEWAY_ASSUME_ROLE_POLICY = {
     "Statement": {
         "Sid": "",
@@ -2031,7 +2036,7 @@ class TestAPIGateway:
         stage_name="staging",
     ):
         response_templates = response_templates or {}
-        integration_type = integration_type or "AWS_PROXY"
+        integration_type = integration_type or "AWS"
         apigw_client = aws_stack.create_external_boto_client("apigateway")
         response = apigw_client.create_rest_api(name="my_api", description="this is my api")
         api_id = response["id"]
@@ -2040,7 +2045,7 @@ class TestAPIGateway:
         root_id = root_resources[0]["id"]
 
         kwargs = {}
-        if integration_type == "AWS_PROXY":
+        if integration_type == "AWS":
             resource_util.create_dynamodb_table("MusicCollection", partition_key="id")
             kwargs[
                 "uri"

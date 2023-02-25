@@ -1,0 +1,56 @@
+{
+  "tests/integration/apigateway/test_apigateway_dynamodb.py::test_rest_api_to_dynamodb_integration": {
+    "recorded-date": "25-02-2023, 19:14:23",
+    "recorded-content": {
+      "create-integration-error": {
+        "Error": {
+          "Code": "BadRequestException",
+          "Message": "Integrations of type 'AWS_PROXY' currently only supports Lambda function and Firehose stream invocations."
+        },
+        "message": "Integrations of type 'AWS_PROXY' currently only supports Lambda function and Firehose stream invocations.",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "result-test": {
+        "Count": 1,
+        "Items": [
+          {
+            "id": {
+              "S": "test"
+            }
+          }
+        ],
+        "ScannedCount": 1
+      },
+      "result-test2": {
+        "Count": 1,
+        "Items": [
+          {
+            "id": {
+              "S": "test2"
+            }
+          }
+        ],
+        "ScannedCount": 1
+      },
+      "result-test 3": {
+        "Count": 1,
+        "Items": [
+          {
+            "id": {
+              "S": "test 3"
+            }
+          }
+        ],
+        "ScannedCount": 1
+      },
+      "result-invalid": {
+        "Count": 0,
+        "Items": [],
+        "ScannedCount": 0
+      }
+    }
+  }
+}

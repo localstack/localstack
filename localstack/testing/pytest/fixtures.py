@@ -439,7 +439,7 @@ def dynamodb_create_table(dynamodb_client, dynamodb_wait_for_table_active):
     def factory(**kwargs):
         kwargs["client"] = dynamodb_client
         if "table_name" not in kwargs:
-            kwargs["table_name"] = "test-table-%s" % short_uid()
+            kwargs["table_name"] = f"test-table-{short_uid()}"
         if "partition_key" not in kwargs:
             kwargs["partition_key"] = "id"
 
@@ -1935,7 +1935,7 @@ def sample_backend_dict() -> BackendDict:
 
 @pytest.fixture
 def create_rest_apigw():
-    rest_api_ids = []
+    rest_apis = []
 
     def _create_apigateway_function(**kwargs):
         region_name = kwargs.pop("region_name", None)
@@ -1943,7 +1943,7 @@ def create_rest_apigw():
 
         response = apigateway_client.create_rest_api(**kwargs)
         api_id = response.get("id")
-        rest_api_ids.append(api_id)
+        rest_apis.append((api_id, region_name))
         resources = apigateway_client.get_resources(restApiId=api_id)
         root_id = next(item for item in resources["items"] if item["path"] == "/")["id"]
 
@@ -1951,8 +1951,9 @@ def create_rest_apigw():
 
     yield _create_apigateway_function
 
-    for rest_api_id in rest_api_ids:
+    for rest_api_id, region_name in rest_apis:
         with contextlib.suppress(Exception):
+            apigateway_client = _client("apigateway", region_name)
             apigateway_client.delete_rest_api(restApiId=rest_api_id)
 
 
