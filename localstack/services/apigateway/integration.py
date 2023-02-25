@@ -356,8 +356,7 @@ class LambdaIntegration(BackendIntegration):
             invocation_context.context["authorizer"] = invocation_context.authorizer_result
 
         func_arn = self._lambda_integration_uri(invocation_context)
-        request_templates = RequestTemplates()
-        event = request_templates.render(invocation_context) or b""
+        event = self.request_templates.render(invocation_context) or b""
         asynchronous = headers.get("X-Amz-Invocation-Type", "").strip("'") == "Event"
         result = call_lambda(
             function_arn=func_arn, event=to_bytes(event), asynchronous=asynchronous
@@ -389,8 +388,7 @@ class LambdaIntegration(BackendIntegration):
         # apply custom response template
         invocation_context.response = response
 
-        response_templates = ResponseTemplates()
-        response_templates.render(invocation_context)
+        self.response_templates.render(invocation_context)
         invocation_context.response.headers["Content-Length"] = str(len(response.content or ""))
         return invocation_context.response
 
@@ -417,8 +415,7 @@ class KinesisIntegration(BackendIntegration):
         try:
             invocation_context.context = helpers.get_event_request_context(invocation_context)
             invocation_context.stage_variables = helpers.get_stage_variables(invocation_context)
-            request_templates = RequestTemplates()
-            payload = request_templates.render(invocation_context)
+            payload = self.request_templates.render(invocation_context)
 
         except Exception as e:
             LOG.warning("Unable to convert API Gateway payload to str", e)
@@ -436,8 +433,7 @@ class KinesisIntegration(BackendIntegration):
 
         # apply response template
         invocation_context.response = result
-        response_templates = ResponseTemplates()
-        response_templates.render(invocation_context)
+        self.response_templates.render(invocation_context)
         return invocation_context.response
 
 
@@ -495,8 +491,8 @@ class DynamoDBIntegration(BackendIntegration):
                 LOG.info("%s Existing: %s", msg, response_templates)
                 return make_error_response(msg, 404)
 
-            request_templates = RequestTemplates()
-            payload = request_templates.render(invocation_context)
+            # render request template
+            payload = self.request_templates.render(invocation_context)
             payload = json.loads(payload)
 
             # query data from DynamoDB
@@ -509,10 +505,9 @@ class DynamoDBIntegration(BackendIntegration):
                 return make_error_response(msg, 404)
 
             # apply response templates
-            response_templates = ResponseTemplates()
             response_content = json.dumps(remove_attributes(response, ["ResponseMetadata"]))
             response_obj = requests_response(content=response_content)
-            response = response_templates.render(invocation_context, response=response_obj)
+            response = self.response_templates.render(invocation_context, response=response_obj)
 
             # construct final response
             response = requests_response(response)

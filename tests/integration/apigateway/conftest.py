@@ -29,7 +29,11 @@ def create_rest_api_with_integration(
     create_iam_role_with_policy,
 ):
     def _factory(
-        integration_uri, req_templates=None, res_templates=None, stage=None, integration_type=None
+        integration_uri,
+        req_templates=None,
+        res_templates=None,
+        integration_type=None,
+        stage=DEFAULT_STAGE_NAME,
     ):
         name = f"test-apigw-{short_uid()}"
         api_id, name, root_id = create_rest_apigw(
@@ -93,7 +97,6 @@ def create_rest_api_with_integration(
         )
 
         deployment_id, _ = create_rest_api_deployment(apigateway_client, restApiId=api_id)
-        stage = stage or DEFAULT_STAGE_NAME
         create_rest_api_stage(
             apigateway_client, restApiId=api_id, stageName=stage, deploymentId=deployment_id
         )

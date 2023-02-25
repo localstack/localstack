@@ -84,8 +84,9 @@ def apply_patches():
 
         return 404, {}, ""
 
-    def apigateway_response_resource_methods(self, request, *args, **kwargs):
-        result = apigateway_response_resource_methods_orig(self, request, *args, **kwargs)
+    @patch(APIGatewayResponse.resource_methods)
+    def apigateway_response_resource_methods(fn, self, request, *args, **kwargs):
+        result = fn(self, request, *args, **kwargs)
 
         if self.method == "PUT" and self._get_param("requestParameters"):
             request_parameters = self._get_param("requestParameters")
@@ -121,8 +122,9 @@ def apply_patches():
                     return result
         return 201, {}, result[2]
 
-    def apigateway_response_integrations(self, request, *args, **kwargs):
-        result = apigateway_response_integrations_orig(self, request, *args, **kwargs)
+    @patch(APIGatewayResponse.integrations)
+    def apigateway_response_integrations(fn, self, request, *args, **kwargs):
+        result = fn(self, request, *args, **kwargs)
 
         if self.method not in ["PUT", "PATCH"]:
             return result
@@ -159,8 +161,9 @@ def apply_patches():
 
         return result
 
+    @patch(APIGatewayResponse.usage_plan_individual)
     def apigateway_response_usage_plan_individual(
-        self, request, full_url, headers, *args, **kwargs
+        fn, self, request, full_url, headers, *args, **kwargs
     ):
         self.setup_class(request, full_url, headers)
         if self.method == "PATCH":
@@ -182,9 +185,7 @@ def apply_patches():
                     api_stages[i] = {"apiId": api_id, "stage": stage}
 
             return 200, {}, json.dumps(usage_plan.to_json())
-        return apigateway_response_usage_plan_individual_orig(
-            self, request, full_url, headers, *args, **kwargs
-        )
+        return fn(self, request, full_url, headers, *args, **kwargs)
 
     def backend_update_deployment(self, function_id, deployment_id, patch_operations):
         rest_api = self.get_rest_api(function_id)
@@ -327,7 +328,8 @@ def apply_patches():
     apigateway_models.Stage.apply_operations = stage_apply_operations
 
     # patch integration error responses
-    def apigateway_models_resource_get_integration(self, method_type):
+    @patch(apigateway_models.Resource.get_integration)
+    def apigateway_models_resource_get_integration(fn, self, method_type):
         resource_method = self.resource_methods.get(method_type, {})
         if not resource_method.method_integration:
             raise NoIntegrationDefined()
@@ -359,8 +361,9 @@ def apply_patches():
 
         return resp
 
-    def individual_deployment(self, request, full_url, headers, *args, **kwargs):
-        result = individual_deployment_orig(self, request, full_url, headers, *args, **kwargs)
+    @patch(APIGatewayResponse.individual_deployment)
+    def individual_deployment(fn, self, request, full_url, headers, *args, **kwargs):
+        result = fn(self, request, full_url, headers, *args, **kwargs)
         if self.method == "PATCH":
             url_path_parts = self.path.split("/")
             function_id = url_path_parts[2]
@@ -392,14 +395,3 @@ def apply_patches():
             if key.lower() == function_id.lower():
                 return self.apis[key]
         raise RestAPINotFound()
-
-    apigateway_models.Resource.get_integration = apigateway_models_resource_get_integration
-    apigateway_response_resource_methods_orig = APIGatewayResponse.resource_methods
-    APIGatewayResponse.resource_methods = apigateway_response_resource_methods
-    individual_deployment_orig = APIGatewayResponse.individual_deployment
-    APIGatewayResponse.individual_deployment = individual_deployment
-    apigateway_response_integrations_orig = APIGatewayResponse.integrations
-    APIGatewayResponse.integrations = apigateway_response_integrations
-
-    apigateway_response_usage_plan_individual_orig = APIGatewayResponse.usage_plan_individual
-    APIGatewayResponse.usage_plan_individual = apigateway_response_usage_plan_individual
