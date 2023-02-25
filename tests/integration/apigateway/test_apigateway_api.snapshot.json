@@ -923,5 +923,119 @@
         }
       }
     }
+  },
+  "tests/integration/apigateway/test_apigateway_api.py::TestApiGatewayApi::test_authorizer_crud_no_api": {
+    "recorded-date": "28-02-2023, 20:06:16",
+    "recorded-content": {
+      "wrong-rest-api-id-create-authorizer": {
+        "Error": {
+          "Code": "ConflictException",
+          "Message": "Unable to complete operation due to concurrent modification. Please try again later."
+        },
+        "message": "Unable to complete operation due to concurrent modification. Please try again later.",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 409
+        }
+      },
+      "wrong-rest-api-id-get-authorizers": {
+        "Error": {
+          "Code": "NotFoundException",
+          "Message": "Invalid API identifier specified 111111111111:test-fake-rest-id"
+        },
+        "message": "Invalid API identifier specified 111111111111:test-fake-rest-id",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 404
+        }
+      }
+    }
+  },
+  "tests/integration/apigateway/test_apigateway_api.py::TestApiGatewayApi::test_doc_arts_crud_no_api": {
+    "recorded-date": "28-02-2023, 20:11:32",
+    "recorded-content": {
+      "wrong-rest-api-id-create-doc-part": {
+        "Error": {
+          "Code": "NotFoundException",
+          "Message": "Invalid API identifier specified 111111111111:test-fake-rest-id"
+        },
+        "message": "Invalid API identifier specified 111111111111:test-fake-rest-id",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 404
+        }
+      },
+      "wrong-rest-api-id-get-doc-parts": {
+        "Error": {
+          "Code": "NotFoundException",
+          "Message": "Invalid API identifier specified 111111111111:test-fake-rest-id"
+        },
+        "message": "Invalid API identifier specified 111111111111:test-fake-rest-id",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 404
+        }
+      }
+    }
+  },
+  "tests/integration/apigateway/test_apigateway_api.py::TestApiGatewayApi::test_validators_crud_no_api": {
+    "recorded-date": "28-02-2023, 20:18:59",
+    "recorded-content": {
+      "wrong-rest-api-id-create-validator": {
+        "Error": {
+          "Code": "BadRequestException",
+          "Message": "Invalid REST API identifier specified"
+        },
+        "message": "Invalid REST API identifier specified",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "wrong-rest-api-id-get-validators": {
+        "Error": {
+          "Code": "NotFoundException",
+          "Message": "Invalid API identifier specified 111111111111:test-fake-rest-id"
+        },
+        "message": "Invalid API identifier specified 111111111111:test-fake-rest-id",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 404
+        }
+      }
+    }
+  },
+  "tests/integration/apigateway/test_apigateway_api.py::TestApiGatewayApi::test_get_api_case_insensitive": {
+    "recorded-date": "01-03-2023, 16:26:45",
+    "recorded-content": {
+      "create-rest-api": {
+        "apiKeySource": "HEADER",
+        "createdDate": "datetime",
+        "description": "lower case api",
+        "disableExecuteApiEndpoint": false,
+        "endpointConfiguration": {
+          "types": [
+            "EDGE"
+          ]
+        },
+        "id": "<id:1>",
+        "name": "<name:1>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 201
+        }
+      },
+      "get-api-upper-case": {
+        "Error": {
+          "Code": "NotFoundException",
+          "Message": "Invalid API identifier specified 111111111111:<upper-id>"
+        },
+        "message": "Invalid API identifier specified 111111111111:<upper-id>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 404
+        }
+      }
+    }
   }
 }

@@ -11,12 +11,13 @@ from apispec import APISpec
 from botocore.utils import InvalidArnException
 from jsonpatch import apply_patch
 from jsonpointer import JsonPointerException
-from moto.apigateway.models import Authorizer, Integration, Resource, RestAPI, apigateway_backends
+from moto.apigateway.models import Integration, Resource, RestAPI, apigateway_backends
 from moto.apigateway.utils import create_id as create_resource_id
 from requests.models import Response
 
 from localstack import config
 from localstack.aws.accounts import get_aws_account_id
+from localstack.aws.api.apigateway import Authorizer
 from localstack.constants import (
     APPLICATION_JSON,
     HEADER_LOCALSTACK_EDGE_URL,
@@ -279,125 +280,9 @@ def get_stage_variables(context: ApiInvocationContext) -> Optional[Dict[str, str
         return {}
 
 
-# -----------------------
-# GATEWAY RESPONSES APIs
-# -----------------------
-
-
-# TODO: merge with to_response_json(..) above
-def gateway_response_to_response_json(item, api_id):
-    base_path = "/restapis/%s/gatewayresponses" % api_id
-    item["_links"] = {
-        "self": {"href": "%s/%s" % (base_path, item["responseType"])},
-        "gatewayresponse:put": {
-            "href": "%s/{response_type}" % base_path,
-            "templated": True,
-        },
-        "gatewayresponse:update": {"href": "%s/%s" % (base_path, item["responseType"])},
-    }
-    item["responseParameters"] = item.get("responseParameters", {})
-    item["responseTemplates"] = item.get("responseTemplates", {})
-    return item
-
-
-def get_gateway_responses(api_id):
-    region_details = get_apigateway_store()
-    result = region_details.gateway_responses.get(api_id, [])
-
-    href = "http://docs.aws.amazon.com/apigateway/latest/developerguide/restapi-gatewayresponse-{rel}.html"
-    base_path = "/restapis/%s/gatewayresponses" % api_id
-
-    result = {
-        "_links": {
-            "curies": {"href": href, "name": "gatewayresponse", "templated": True},
-            "self": {"href": base_path},
-            "first": {"href": base_path},
-            "gatewayresponse:by-type": {
-                "href": "%s/{response_type}" % base_path,
-                "templated": True,
-            },
-            "item": [{"href": "%s/%s" % (base_path, r["responseType"])} for r in result],
-        },
-        "_embedded": {"item": [gateway_response_to_response_json(i, api_id) for i in result]},
-        # Note: Looks like the format required by aws CLI ("item" at top level) differs from the docs:
-        # https://docs.aws.amazon.com/apigateway/api-reference/resource/gateway-responses/
-        "item": [gateway_response_to_response_json(i, api_id) for i in result],
-    }
-    return result
-
-
-def get_gateway_response(api_id, response_type):
-    region_details = get_apigateway_store()
-    responses = region_details.gateway_responses.get(api_id, [])
-    if result := [r for r in responses if r["responseType"] == response_type]:
-        return result[0]
-    return make_error_response(
-        "Gateway response %s for API Gateway %s not found" % (response_type, api_id),
-        code=404,
-    )
-
-
-def put_gateway_response(api_id, response_type, data):
-    region_details = get_apigateway_store()
-    responses = region_details.gateway_responses.setdefault(api_id, [])
-    if existing := ([r for r in responses if r["responseType"] == response_type] or [None])[0]:
-        existing.update(data)
-    else:
-        data["responseType"] = response_type
-        responses.append(data)
-    return data
-
-
-def delete_gateway_response(api_id, response_type):
-    region_details = get_apigateway_store()
-    responses = region_details.gateway_responses.get(api_id) or []
-    region_details.gateway_responses[api_id] = [
-        r for r in responses if r["responseType"] != response_type
-    ]
-    return make_accepted_response()
-
-
-def update_gateway_response(api_id, response_type, data):
-    region_details = get_apigateway_store()
-    responses = region_details.gateway_responses.setdefault(api_id, [])
-
-    existing = ([r for r in responses if r["responseType"] == response_type] or [None])[0]
-    if existing is None:
-        return make_error_response(
-            "Gateway response %s for API Gateway %s not found" % (response_type, api_id),
-            code=404,
-        )
-    return apply_json_patch_safe(existing, data["patchOperations"])
-
-
-def handle_gateway_responses(method, path, data, headers):
-    search_match = re.search(PATH_REGEX_RESPONSES, path)
-    api_id = search_match.group(1)
-    response_type = (search_match.group(2) or "").lstrip("/")
-    if method == "GET":
-        if response_type:
-            return get_gateway_response(api_id, response_type)
-        return get_gateway_responses(api_id)
-    if method == "PUT":
-        return put_gateway_response(api_id, response_type, data)
-    if method == "PATCH":
-        return update_gateway_response(api_id, response_type, data)
-    if method == "DELETE":
-        return delete_gateway_response(api_id, response_type)
-    return make_error_response(
-        "Not implemented for API Gateway gateway responses: %s" % method, code=404
-    )
-
-
 # ---------------
 # UTIL FUNCTIONS
 # ---------------
-
-
-def find_api_subentity_by_id(api_id, entity_id, map_name):
-    region_details = get_apigateway_store()
-    auth_list = getattr(region_details, map_name).get(api_id) or []
-    return ([a for a in auth_list if a["id"] == entity_id] or [None])[0]
 
 
 def path_based_url(api_id: str, stage_name: str, path: str) -> str:
@@ -636,7 +521,9 @@ def apply_json_patch_safe(subject, patch_operations, in_place=True, return_list=
     return (results or [subject])[-1]
 
 
-def import_api_from_openapi_spec(rest_api: RestAPI, body: Dict, query_params: Dict) -> RestAPI:
+def import_api_from_openapi_spec(
+    rest_api: RestAPI, body: Dict, query_params: Dict, account_id: str = None, region: str = None
+) -> Optional[RestAPI]:
     """Import an API from an OpenAPI spec document"""
 
     resolved_schema = resolve_references(body)
@@ -657,9 +544,10 @@ def import_api_from_openapi_spec(rest_api: RestAPI, body: Dict, query_params: Di
     # authorizers map to avoid duplication
     authorizers = {}
 
-    region_details = get_apigateway_store()
+    store = get_apigateway_store(account_id=account_id, region=region)
+    rest_api_container = store.rest_apis[rest_api.id]
 
-    def create_authorizer(path_payload: dict) -> Authorizer:
+    def create_authorizer(path_payload: dict) -> Optional[Authorizer]:
         if "security" not in path_payload:
             return None
 
@@ -678,29 +566,34 @@ def import_api_from_openapi_spec(rest_api: RestAPI, body: Dict, query_params: Di
                     if authorizers.get(security_scheme_name):
                         return authorizers.get(security_scheme_name)
 
+                    # TODO: do we need validation of resources here?
                     authorizer = Authorizer(
-                        authorizer_id=create_resource_id(),
+                        id=create_resource_id(),
                         name=security_scheme_name,
-                        authorizer_type=aws_apigateway_authorizer.get("type", "").upper(),
-                        provider_arns=aws_apigateway_authorizer.get("providerARNs"),
-                        auth_type=security_config.get("x-amazon-apigateway-authtype"),
-                        authorizer_uri=aws_apigateway_authorizer.get("authorizerUri"),
-                        authorizer_credentials=aws_apigateway_authorizer.get(
-                            "authorizerCredentials"
+                        type=aws_apigateway_authorizer.get("type", "").upper(),
+                        authorizerResultTtlInSeconds=aws_apigateway_authorizer.get(
+                            "authorizerResultTtlInSeconds", 300
                         ),
-                        identity_source=aws_apigateway_authorizer.get("identitySource"),
-                        identiy_validation_expression=aws_apigateway_authorizer.get(
-                            "identityValidationExpression"
-                        ),
-                        authorizer_result_ttl=aws_apigateway_authorizer.get(
-                            "authorizerResultTtlInSeconds"
-                        )
-                        or 300,
                     )
+                    if provider_arns := aws_apigateway_authorizer.get("providerARNs"):
+                        authorizer["providerARNs"] = provider_arns
+                    if auth_type := security_config.get("x-amazon-apigateway-authtype"):
+                        authorizer["authType"] = auth_type
+                    if authorizer_uri := aws_apigateway_authorizer.get("authorizerUri"):
+                        authorizer["authorizerUri"] = authorizer_uri
+                    if authorizer_credentials := aws_apigateway_authorizer.get(
+                        "authorizerCredentials"
+                    ):
+                        authorizer["authorizerCredentials"] = authorizer_credentials
+                    if identity_source := aws_apigateway_authorizer.get("identitySource"):
+                        authorizer["identitySource"] = identity_source
+                    if identity_validation_expression := aws_apigateway_authorizer.get(
+                        "identityValidationExpression"
+                    ):
+                        authorizer["identityValidationExpression"] = identity_validation_expression
 
-                    region_details.authorizers.setdefault(rest_api.id, []).append(
-                        authorizer.to_json()
-                    )
+                    rest_api_container.authorizers[authorizer["id"]] = authorizer
+
                     authorizers[security_scheme_name] = authorizer
                     return authorizer
 
@@ -791,15 +684,16 @@ def import_api_from_openapi_spec(rest_api: RestAPI, body: Dict, query_params: Di
             resource.resource_methods[field].method_integration = integration
 
         rest_api.resources[child_id] = resource
+        rest_api_container.resource_children.setdefault(parent_id, []).append(child_id)
         return resource
 
     def create_method_resource(child, method, method_schema):
         return (
             child.add_method(
                 method,
-                authorization_type=authorizer.type,
+                authorization_type=authorizer["type"],
                 api_key_required=None,
-                authorizer_id=authorizer.id,
+                authorizer_id=authorizer["id"],
             )
             if (authorizer := create_authorizer(method_schema))
             else child.add_method(method, None, None)

@@ -21,12 +21,7 @@ from localstack.aws.accounts import get_aws_account_id
 from localstack.aws.api.lambda_ import Runtime
 from localstack.aws.handlers import cors
 from localstack.config import get_edge_url
-from localstack.constants import (
-    APPLICATION_JSON,
-    LOCALHOST_HOSTNAME,
-    TEST_AWS_ACCOUNT_ID,
-    TEST_AWS_REGION_NAME,
-)
+from localstack.constants import APPLICATION_JSON, LOCALHOST_HOSTNAME
 from localstack.services.apigateway.helpers import (
     TAG_KEY_CUSTOM_ID,
     connect_api_gateway_to_sqs,
@@ -830,16 +825,15 @@ class TestAPIGateway:
         response = requests.get(url)
         assert response._content == b'{"echo": "foobar", "response": "mocked"}'
 
-    def test_api_gateway_authorizer_crud(self):
-        apig = aws_stack.create_external_boto_client("apigateway")
-
-        authorizer = apig.create_authorizer(
+    @pytest.mark.xfail(reason="Behaviour is not AWS compliant, need to recreate this test")
+    def test_api_gateway_authorizer_crud(self, apigateway_client):
+        authorizer = apigateway_client.create_authorizer(
             restApiId=self.TEST_API_GATEWAY_ID, **self.TEST_API_GATEWAY_AUTHORIZER
         )
 
         authorizer_id = authorizer.get("id")
 
-        create_result = apig.get_authorizer(
+        create_result = apigateway_client.get_authorizer(
             restApiId=self.TEST_API_GATEWAY_ID, authorizerId=authorizer_id
         )
 
@@ -851,13 +845,13 @@ class TestAPIGateway:
 
         assert create_expected == create_result
 
-        apig.update_authorizer(
+        apigateway_client.update_authorizer(
             restApiId=self.TEST_API_GATEWAY_ID,
             authorizerId=authorizer_id,
             patchOperations=self.TEST_API_GATEWAY_AUTHORIZER_OPS,
         )
 
-        update_result = apig.get_authorizer(
+        update_result = apigateway_client.get_authorizer(
             restApiId=self.TEST_API_GATEWAY_ID, authorizerId=authorizer_id
         )
 
@@ -868,10 +862,14 @@ class TestAPIGateway:
 
         assert update_expected == update_result
 
-        apig.delete_authorizer(restApiId=self.TEST_API_GATEWAY_ID, authorizerId=authorizer_id)
+        apigateway_client.delete_authorizer(
+            restApiId=self.TEST_API_GATEWAY_ID, authorizerId=authorizer_id
+        )
 
         with pytest.raises(Exception):
-            apig.get_authorizer(self.TEST_API_GATEWAY_ID, authorizer_id)
+            apigateway_client.get_authorizer(
+                restApiId=self.TEST_API_GATEWAY_ID, authorizerId=authorizer_id
+            )
 
     def test_apigateway_with_lambda_integration(self, apigateway_client, create_rest_apigw):
         # create Lambda function
@@ -2260,11 +2258,14 @@ class TestAPIGateway:
 
 
 def test_import_swagger_api(apigateway_client):
+    # TODO: refactor test to not access moto resources directly
     api_spec = load_test_resource("openapi.swagger.json")
     api_spec_dict = json.loads(api_spec)
 
-    backend = apigateway_backends[TEST_AWS_ACCOUNT_ID][TEST_AWS_REGION_NAME]
-    api_model = backend.create_rest_api(name="api_name", description="description-1")
+    backend = apigateway_backends[get_aws_account_id()][aws_stack.get_region()]
+    rest_api = apigateway_client.create_rest_api(name="api_name", description="description-1")
+
+    api_model = backend.get_rest_api(rest_api["id"])
 
     imported_api = import_api_from_openapi_spec(api_model, api_spec_dict, {})
 

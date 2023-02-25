@@ -109,6 +109,21 @@ class TestApiGatewayApi:
         snapshot.match("get-rest-api-after-delete", response)
 
     @pytest.mark.aws_validated
+    @pytest.mark.xfail(reason="rest apis are case insensitive for now because of custom id tags")
+    def test_get_api_case_insensitive(self, apigateway_client, apigw_create_rest_api, snapshot):
+        api_name1 = f"test-case-sensitive-apis-{short_uid()}"
+
+        response = apigw_create_rest_api(name=api_name1, description="lower case api")
+        snapshot.match("create-rest-api", response)
+        api_id = response["id"]
+
+        snapshot.add_transformer(snapshot.transform.regex(api_id.upper(), "<upper-id>"))
+
+        with pytest.raises(ClientError) as e:
+            apigateway_client.get_rest_api(restApiId=api_id.upper())
+        snapshot.match("get-api-upper-case", e.value.response)
+
+    @pytest.mark.aws_validated
     def test_create_rest_api_with_optional_params(
         self,
         apigateway_client,
@@ -620,3 +635,52 @@ class TestApiGatewayApi:
             restApiId=api_id, parentId=parent_id, pathPart="{child+}"
         )
         snapshot.match("create-greedy-child-resource", greedy_child_response)
+
+    @pytest.mark.aws_validated
+    def test_authorizer_crud_no_api(self, apigateway_client, snapshot):
+        # maybe move this test to a full lifecycle one
+        # AWS validates the format of the authorizerUri before the restApi existence
+        with pytest.raises(ClientError) as e:
+            apigateway_client.create_authorizer(
+                restApiId="test-fake-rest-id",
+                name="fake-auth-name",
+                type="TOKEN",
+                authorizerUri="arn:aws:apigateway:us-east-1:lambda:path/2015-03-31/functions/arn:aws:lambda:us-east-1:123456789012:function:myApiAuthorizer/invocations",
+                identitySource="method.request.header.Authorization",
+            )
+        snapshot.match("wrong-rest-api-id-create-authorizer", e.value.response)
+
+        with pytest.raises(ClientError) as e:
+            apigateway_client.get_authorizers(restApiId="test-fake-rest-id")
+        snapshot.match("wrong-rest-api-id-get-authorizers", e.value.response)
+
+    @pytest.mark.aws_validated
+    def test_doc_arts_crud_no_api(self, apigateway_client, snapshot):
+        # maybe move this test to a full lifecycle one
+        with pytest.raises(ClientError) as e:
+            apigateway_client.create_documentation_part(
+                restApiId="test-fake-rest-id",
+                location={"type": "API"},
+                properties='{\n\t"info": {\n\t\t"description" : "Your first API with Amazon API Gateway."\n\t}\n}',
+            )
+        snapshot.match("wrong-rest-api-id-create-doc-part", e.value.response)
+
+        with pytest.raises(ClientError) as e:
+            apigateway_client.get_documentation_parts(restApiId="test-fake-rest-id")
+        snapshot.match("wrong-rest-api-id-get-doc-parts", e.value.response)
+
+    @pytest.mark.aws_validated
+    def test_validators_crud_no_api(self, apigateway_client, snapshot):
+        # maybe move this test to a full lifecycle one
+        with pytest.raises(ClientError) as e:
+            apigateway_client.create_request_validator(
+                restApiId="test-fake-rest-id",
+                name="test-validator",
+                validateRequestBody=True,
+                validateRequestParameters=False,
+            )
+        snapshot.match("wrong-rest-api-id-create-validator", e.value.response)
+
+        with pytest.raises(ClientError) as e:
+            apigateway_client.get_request_validators(restApiId="test-fake-rest-id")
+        snapshot.match("wrong-rest-api-id-get-validators", e.value.response)
