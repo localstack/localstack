@@ -285,6 +285,9 @@ class ApigatewayProvider(ApigatewayApi, ServiceLifecycleHook):
 
         # remove the resource as a child from its parent
         parent_id = moto_resource.parent_id
+        if parent_id not in api_resources:
+            # this can happen after restoring the state, and the resource was created before the fix
+            return
         api_resources[parent_id].remove(resource_id)
 
     def update_resource(
@@ -300,7 +303,7 @@ class ApigatewayProvider(ApigatewayApi, ServiceLifecycleHook):
             raise NotFoundException("Invalid Resource identifier specified")
 
         store = get_apigateway_store(account_id=context.account_id, region=context.region)
-        api_resources = store.resources_children[rest_api_id]
+        api_resources = store.resources_children.get(rest_api_id, {})
         future_path_part = moto_resource.path_part
         current_parent_id = moto_resource.parent_id
 
@@ -325,14 +328,14 @@ class ApigatewayProvider(ApigatewayApi, ServiceLifecycleHook):
                 if value in children_resources:
                     raise BadRequestException("Resources cannot be cyclical.")
 
-                new_sibling_resources = api_resources[value]
+                new_sibling_resources = api_resources.get(value, [])
 
             else:  # path == "/pathPart"
                 future_path_part = patch_operation.get("value")
                 new_sibling_resources = api_resources.get(moto_resource.parent_id, [])
 
             for sibling in new_sibling_resources:
-                sibling_resource = moto_rest_api.resources.get(sibling)
+                sibling_resource = moto_rest_api.resources[sibling]
                 if sibling_resource.path_part == future_path_part:
                     raise ConflictException(
                         f"Another resource with the same parent already has this name: {future_path_part}"
@@ -343,11 +346,12 @@ class ApigatewayProvider(ApigatewayApi, ServiceLifecycleHook):
 
         # after setting it, mutate the store
         if moto_resource.parent_id != current_parent_id:
-            current_sibling_resources = api_resources[current_parent_id]
-            current_sibling_resources.remove(resource_id)
-            # if the parent does not have children anymore, remove from the list
-            if not current_sibling_resources:
-                api_resources.pop(current_parent_id)
+            current_sibling_resources = api_resources.get(current_parent_id)
+            if current_sibling_resources:
+                current_sibling_resources.remove(resource_id)
+                # if the parent does not have children anymore, remove from the list
+                if not current_sibling_resources:
+                    api_resources.pop(current_parent_id)
 
         # add it to the new parent children
         future_sibling_resources = api_resources[moto_resource.parent_id]
