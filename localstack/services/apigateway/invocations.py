@@ -481,6 +481,37 @@ def invoke_rest_api_integration_backend(invocation_context: ApiInvocationContext
                 table.put_item(Item=event_data)
                 response = requests_response(event_data)
                 return response
+            elif "Query" in action:
+                template = integration["requestTemplates"][APPLICATION_JSON]
+
+                if template is None:
+                    msg = "No request template is defined in the integration."
+                    LOG.info("%s Existing: %s", msg, response_templates)
+                    return make_error_response(msg, 404)
+
+                response_template = response_templates.get(APPLICATION_JSON)
+
+                if response_template is None:
+                    msg = "Invalid response template defined in integration response."
+                    LOG.info("%s Existing: %s", msg, response_templates)
+                    return make_error_response(msg, 404)
+
+                request_templates = RequestTemplates()
+                payload = request_templates.render(invocation_context)
+                payload = json.loads(payload)
+
+                dynamo_client = aws_stack.connect_to_resource("dynamodb")
+                table = dynamo_client.Table(table_name)
+                response = table.get_item(**payload)
+
+                if "Item" not in response:
+                    msg = "Item not found in DynamoDB."
+                    LOG.info("%s Existing: %s", msg, response_template)
+                    return make_error_response(msg, 404)
+
+                response = requests_response(response["Item"])
+                invocation_context.response = response
+                return response
         else:
             raise Exception(
                 'API Gateway action uri "%s", integration type %s not yet implemented'
