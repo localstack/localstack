@@ -6,7 +6,7 @@ import re
 import subprocess
 import sys
 import threading
-from typing import Dict
+from typing import Dict, List, Optional
 from urllib.parse import urlparse
 
 from requests.models import Response
@@ -44,12 +44,10 @@ from localstack.utils.aws.aws_stack import (
 from localstack.utils.functions import empty_context_manager
 from localstack.utils.http import parse_request_data
 from localstack.utils.http import safe_requests as requests
-from localstack.utils.net import is_port_open
 from localstack.utils.run import is_root, run
 from localstack.utils.server.http2_server import HTTPErrorResponse
 from localstack.utils.server.proxy_server import start_tcp_proxy
 from localstack.utils.strings import to_bytes, truncate
-from localstack.utils.sync import sleep_forever
 from localstack.utils.threads import TMP_THREADS, start_thread
 
 LOG = logging.getLogger(__name__)
@@ -356,7 +354,6 @@ def is_trace_logging_enabled(headers) -> bool:
 
 
 def do_start_edge(bind_address, port, use_ssl, asynchronous=False):
-    start_dns_server(asynchronous=True)
     if config.LEGACY_EDGE_PROXY:
         serve = do_start_edge_proxy
     else:
@@ -411,42 +408,9 @@ def ensure_can_use_sudo():
 def start_component(component: str, port=None):
     if component == "edge":
         return start_edge(port=port)
-    if component == "dns":
-        return start_dns_server()
     if component == "proxy":
         return start_proxy(port=port)
     raise Exception("Unexpected component name '%s' received during start up" % component)
-
-
-def start_dns_server(asynchronous=False):
-    try:
-        # start local DNS server, if present
-        from localstack_ext import config as config_ext
-        from localstack_ext.services import dns_server
-
-        if config_ext.DNS_ADDRESS in config.FALSE_STRINGS:
-            return
-
-        if is_port_open(PORT_DNS):
-            return
-
-        if is_root():
-            result = dns_server.start_servers()
-            if not asynchronous:
-                sleep_forever()
-            return result
-
-        env_vars = {}
-        for env_var in config.CONFIG_ENV_VARS:
-            if env_var.startswith("DNS_"):
-                value = os.environ.get(env_var, None)
-                if value is not None:
-                    env_vars[env_var] = value
-
-        # note: running in a separate process breaks integration with Route53 (to be fixed for local dev mode!)
-        return run_process_as_sudo("dns", PORT_DNS, asynchronous=asynchronous, env_vars=env_vars)
-    except Exception:
-        pass
 
 
 def start_proxy(port, asynchronous=False):
@@ -511,17 +475,16 @@ def start_edge(port=None, use_ssl=True, asynchronous=False):
         "EDGE_FORWARD_URL": config.get_edge_url(),
         "EDGE_BIND_HOST": config.EDGE_BIND_HOST,
     }
-    return run_process_as_sudo("proxy", port, env_vars=env_vars, asynchronous=asynchronous)
+    proxy_module = "localstack.services.edge"
+    proxy_args = ["proxy", str(port)]
+    return run_module_as_sudo(
+        module=proxy_module, arguments=proxy_args, env_vars=env_vars, asynchronous=asynchronous
+    )
 
 
-def run_process_as_sudo(component, port, asynchronous=False, env_vars=None):
-    # make sure we can run sudo commands
-    try:
-        ensure_can_use_sudo()
-    except Exception as e:
-        LOG.error("cannot start service on privileged port %s: %s", port, str(e))
-        return
-
+def run_module_as_sudo(
+    module: str, arguments: Optional[List[str]] = None, asynchronous=False, env_vars=None
+):
     # prepare environment
     env_vars = env_vars or {}
     env_vars["PYTHONPATH"] = f".:{LOCALSTACK_ROOT_FOLDER}"
@@ -530,16 +493,16 @@ def run_process_as_sudo(component, port, asynchronous=False, env_vars=None):
     # start the process as sudo
     sudo_cmd = "sudo -n"
     python_cmd = sys.executable
-    cmd = [
-        sudo_cmd,
-        env_vars_str,
-        python_cmd,
-        "-m",
-        "localstack.services.edge",
-        component,
-        str(port),
-    ]
-    shell_cmd = " ".join(cmd)
+    cmd = [sudo_cmd, env_vars_str, python_cmd, "-m", module]
+    arguments = arguments or []
+    shell_cmd = " ".join(cmd + arguments)
+
+    # make sure we can run sudo commands
+    try:
+        ensure_can_use_sudo()
+    except Exception as e:
+        LOG.error("cannot run command as root (%s): %s ", str(e), shell_cmd)
+        return
 
     def run_command(*_):
         run(shell_cmd, outfile=subprocess.PIPE, print_error=False, env_vars=env_vars)

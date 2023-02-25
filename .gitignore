@@ -62,3 +62,6 @@ api_states
 tmp/
 
 volume/
+
+# ANTLR4 ID plugin.
+gen/

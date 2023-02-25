@@ -10,9 +10,9 @@ from localstack.aws.gateway import Gateway
 from localstack.aws.handlers.proxy import ProxyHandler
 from localstack.aws.serving.asgi import AsgiGateway
 from localstack.logging.setup import setup_hypercorn_logger
-from localstack.services.generic_proxy import GenericProxy, install_predefined_cert_if_available
 from localstack.utils.collections import ensure_list
 from localstack.utils.serving import Server
+from localstack.utils.ssl import create_ssl_cert, install_predefined_cert_if_available
 
 
 class HypercornServer(Server):
@@ -60,7 +60,8 @@ class HypercornServer(Server):
     def do_shutdown(self):
         asyncio.run_coroutine_threadsafe(self._set_closed(), self.loop)
         self._closed.wait(timeout=10)
-        self.loop.shutdown_asyncgens()
+        asyncio.run_coroutine_threadsafe(self.loop.shutdown_asyncgens(), self.loop)
+        self.loop.shutdown_default_executor()
         self.loop.close()
 
     async def _set_closed(self):
@@ -97,7 +98,7 @@ class GatewayServer(HypercornServer):
 
         if use_ssl:
             install_predefined_cert_if_available()
-            _, cert_file_name, key_file_name = GenericProxy.create_ssl_cert(serial_number=port)
+            _, cert_file_name, key_file_name = create_ssl_cert(serial_number=port)
             config.certfile = cert_file_name
             config.keyfile = key_file_name
 
@@ -107,6 +108,10 @@ class GatewayServer(HypercornServer):
 
         # start serving gateway
         super().__init__(app, config, loop)
+
+    def do_shutdown(self):
+        super().do_shutdown()
+        self.app.close()  # noqa (app will be of type AsgiGateway)
 
 
 class ProxyServer(GatewayServer):

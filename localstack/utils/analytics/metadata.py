@@ -119,10 +119,12 @@ def _generate_machine_id() -> str:
 
 def read_api_key_safe():
     try:
+        # FIXME this info (maybe along with other info) should be plugged in by ext instead of importing it here
         from localstack_ext.bootstrap.licensing import read_api_key
 
         return read_api_key(raise_if_missing=False)
-    except Exception:
+    except ImportError:
+        # the ext package is not available, API key cannot be read (or used)
         return None
 
 

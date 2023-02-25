@@ -35,6 +35,7 @@ def test_cfn_with_multiple_route_tables(ec2_client, deploy_cfn_template):
     vpc_id = result.outputs["VPC"]
 
     resp = ec2_client.describe_route_tables(Filters=[{"Name": "vpc-id", "Values": [vpc_id]}])
+
     # 4 route tables being created (validated against AWS): 3 in template + 1 default = 4
     assert len(resp["RouteTables"]) == 4
 
@@ -61,3 +62,23 @@ def test_cfn_with_multiple_route_table_associations(ec2_client, deploy_cfn_templ
     assert subnet1["EnableDns64"] is True
     assert subnet1["MapPublicIpOnLaunch"] is True
     assert subnet2["PrivateDnsNameOptionsOnLaunch"]["HostnameType"] == "ip-name"
+
+
+@pytest.mark.aws_validated
+@pytest.mark.skip_snapshot_verify(paths=["$..DriftInformation", "$..Metadata"])
+def test_internet_gateway_ref_and_attr(deploy_cfn_template, cfn_client, snapshot):
+    stack = deploy_cfn_template(
+        template_path=os.path.join(
+            os.path.dirname(__file__), "../../templates/internet_gateway.yml"
+        )
+    )
+
+    response = cfn_client.describe_stack_resource(
+        StackName=stack.stack_name, LogicalResourceId="Gateway"
+    )
+
+    snapshot.add_transformer(snapshot.transform.key_value("RefAttachment", "internet-gateway-ref"))
+    snapshot.add_transformer(snapshot.transform.cloudformation_api())
+
+    snapshot.match("outputs", stack.outputs)
+    snapshot.match("description", response["StackResourceDetail"])

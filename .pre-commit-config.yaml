@@ -7,7 +7,7 @@ repos:
       - id: black
 
   - repo: https://github.com/pycqa/isort
-    rev: 5.9.1
+    rev: 5.12.0
     hooks:
       - id: isort
         name: isort (python)
@@ -19,7 +19,7 @@ repos:
         types: [pyi]
 
   - repo: https://github.com/pycqa/flake8
-    rev: 3.9.2
+    rev: 6.0.0
     hooks:
       - id: flake8
         entry: pflake8

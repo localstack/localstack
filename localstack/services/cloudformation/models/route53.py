@@ -38,6 +38,10 @@ class Route53RecordSet(GenericBaseModel):
                 "HealthCheckId",
             ]
             attrs = select_attributes(params, attr_names)
+
+            if isinstance(attrs["TTL"], str):
+                attrs["TTL"] = int(attrs["TTL"])
+
             alias_target = attrs.get("AliasTarget", {})
             alias_target["EvaluateTargetHealth"] = alias_target.get("EvaluateTargetHealth", False)
             if "ResourceRecords" in attrs:

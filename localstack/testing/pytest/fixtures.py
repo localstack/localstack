@@ -83,22 +83,6 @@ if TYPE_CHECKING:
 LOG = logging.getLogger(__name__)
 
 
-def is_pro_enabled() -> bool:
-    """Return whether the Pro extensions are enabled, i.e., restricted modules can be imported"""
-    try:
-        import localstack_ext.utils.common  # noqa
-
-        return True
-    except Exception:
-        return False
-
-
-# marker to indicate that a test should be skipped if the Pro extensions are enabled
-skip_if_pro_enabled = pytest.mark.skipif(
-    condition=is_pro_enabled(), reason="skipping, as Pro extensions are enabled"
-)
-
-
 def _client(service, region_name=None, aws_access_key_id=None, *, additional_config=None):
     config = botocore.config.Config()
 
@@ -1212,7 +1196,7 @@ def deploy_cfn_template(
 
         outputs = cfn_client.describe_stacks(StackName=stack_id)["Stacks"][0].get("Outputs", [])
 
-        mapped_outputs = {o["OutputKey"]: o["OutputValue"] for o in outputs}
+        mapped_outputs = {o["OutputKey"]: o.get("OutputValue") for o in outputs}
 
         def _destroy_stack():
             cfn_client.delete_stack(StackName=stack_id)
@@ -1546,10 +1530,23 @@ def create_user(iam_client):
                     attached_policy["PolicyArn"],
                     username,
                 )
+        access_keys = iam_client.list_access_keys(UserName=username)["AccessKeyMetadata"]
+        for access_key in access_keys:
+            try:
+                iam_client.delete_access_key(
+                    UserName=username, AccessKeyId=access_key["AccessKeyId"]
+                )
+            except Exception:
+                LOG.debug(
+                    "Error deleting access key '%s' from user '%s'",
+                    access_key["AccessKeyId"],
+                    username,
+                )
+
         try:
             iam_client.delete_user(UserName=username)
-        except Exception:
-            LOG.debug("Error deleting user '%s' during test cleanup", username)
+        except Exception as e:
+            LOG.debug("Error deleting user '%s' during test cleanup: %s", username, e)
 
 
 @pytest.fixture
@@ -1934,3 +1931,49 @@ def sample_backend_dict() -> BackendDict:
             self.attributes = {}
 
     return BackendDict(SampleBackend, "sns")
+
+
+@pytest.fixture
+def create_rest_apigw():
+    rest_api_ids = []
+
+    def _create_apigateway_function(**kwargs):
+        region_name = kwargs.pop("region_name", None)
+        apigateway_client = _client("apigateway", region_name)
+
+        response = apigateway_client.create_rest_api(**kwargs)
+        api_id = response.get("id")
+        rest_api_ids.append(api_id)
+        resources = apigateway_client.get_resources(restApiId=api_id)
+        root_id = next(item for item in resources["items"] if item["path"] == "/")["id"]
+
+        return api_id, response.get("name"), root_id
+
+    yield _create_apigateway_function
+
+    for rest_api_id in rest_api_ids:
+        with contextlib.suppress(Exception):
+            apigateway_client.delete_rest_api(restApiId=rest_api_id)
+
+
+@pytest.fixture
+def appsync_create_api(appsync_client):
+    graphql_apis = []
+
+    def factory(**kwargs):
+        if "name" not in kwargs:
+            kwargs["name"] = f"graphql-api-testing-name-{short_uid()}"
+        if not kwargs.get("authenticationType"):
+            kwargs["authenticationType"] = "API_KEY"
+
+        result = appsync_client.create_graphql_api(**kwargs)["graphqlApi"]
+        graphql_apis.append(result["apiId"])
+        return result
+
+    yield factory
+
+    for api in graphql_apis:
+        try:
+            appsync_client.delete_graphql_api(apiId=api)
+        except Exception as e:
+            LOG.debug(f"Error cleaning up AppSync API: {api}, {e}")

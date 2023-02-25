@@ -183,6 +183,7 @@ def update_content_length(response: Response):
         response.headers["Content-Length"] = str(len(response.content))
 
 
+# TODO: remove once we migrate all usages to `apply_request_parameters` on BackendIntegration
 def apply_request_parameters(
     uri: str, integration: Dict[str, Any], path_params: Dict[str, str], query_params: Dict[str, str]
 ):
@@ -301,6 +302,9 @@ def invoke_rest_api_integration(invocation_context: ApiInvocationContext):
 
 # TODO: refactor this to have a class per integration type to make it easy to
 # test the encapsulated logic
+
+# this call is patched downstream for backend integrations that are only available
+# in the PRO version
 def invoke_rest_api_integration_backend(invocation_context: ApiInvocationContext):
     # define local aliases from invocation context
     invocation_path = invocation_context.path_with_query_string
@@ -441,13 +445,6 @@ def invoke_rest_api_integration_backend(invocation_context: ApiInvocationContext
                 return apply_request_response_templates(
                     integration_response, response_templates, content_type=APPLICATION_JSON
                 )
-            elif uri.startswith("arn:aws:apigateway:") and ".appsync-api:" in uri:
-                # arn:aws:apigateway:us-east-1:appsyncid.appsync-api:path/graphql
-                uri_parts = uri.split(":")
-                app_sync_id = uri_parts[-2].replace(".appsync-api", "")
-                url = urljoin(config.service_url("appsync"), f"graphql/{app_sync_id}")
-                result = common.make_http_request(url, method="POST", headers=headers, data=data)
-                return result
 
         raise Exception(
             'API Gateway AWS integration action URI "%s", method "%s" not yet implemented'

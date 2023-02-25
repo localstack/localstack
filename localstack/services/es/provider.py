@@ -141,11 +141,12 @@ def _clusterconfig_to_opensearch(
 ) -> Optional[ClusterConfig]:
     if elasticsearch_cluster_config is not None:
         result = cast(ClusterConfig, elasticsearch_cluster_config)
-        result["InstanceType"] = _instancetype_to_opensearch(result.get("InstanceType"))
-        result["DedicatedMasterType"] = _instancetype_to_opensearch(
-            result.get("DedicatedMasterType")
-        )
-        result["WarmType"] = _instancetype_to_opensearch(result.get("WarmType"))
+        if instance_type := result.get("InstanceType"):
+            result["InstanceType"] = _instancetype_to_opensearch(instance_type)
+        if dedicated_master_type := result.get("DedicatedMasterType"):
+            result["DedicatedMasterType"] = _instancetype_to_opensearch(dedicated_master_type)
+        if warm_type := result.get("WarmType"):
+            result["WarmType"] = _instancetype_to_opensearch(warm_type)
         return result
 
 
