@@ -98,6 +98,11 @@ APIGATEWAY_KINESIS_POLICY = {
     "Statement": [{"Effect": "Allow", "Action": "kinesis:*", "Resource": "*"}],
 }
 
+APIGATEWAY_DYNAMODB_POLICY = {
+    "Version": "2012-10-17",
+    "Statement": [{"Effect": "Allow", "Action": "dynamodb:*", "Resource": "*"}],
+}
+
 APIGATEWAY_ASSUME_ROLE_POLICY = {
     "Statement": {
         "Sid": "",
