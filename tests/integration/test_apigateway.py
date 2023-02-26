@@ -103,6 +103,12 @@ APIGATEWAY_DYNAMODB_POLICY = {
     "Statement": [{"Effect": "Allow", "Action": "dynamodb:*", "Resource": "*"}],
 }
 
+APIGATEWAY_LAMBDA_POLICY = {
+    "Version": "2012-10-17",
+    "Statement": [{"Effect": "Allow", "Action": "lambda:*", "Resource": "*"}],
+}
+
+
 APIGATEWAY_ASSUME_ROLE_POLICY = {
     "Statement": {
         "Sid": "",
@@ -110,10 +116,6 @@ APIGATEWAY_ASSUME_ROLE_POLICY = {
         "Principal": {"Service": "apigateway.amazonaws.com"},
         "Action": "sts:AssumeRole",
     }
-}
-APIGATEWAY_LAMBDA_POLICY = {
-    "Version": "2012-10-17",
-    "Statement": [{"Effect": "Allow", "Action": "lambda:*", "Resource": "*"}],
 }
 
 THIS_FOLDER = os.path.dirname(os.path.realpath(__file__))
