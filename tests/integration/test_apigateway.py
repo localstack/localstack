@@ -1325,7 +1325,10 @@ class TestAPIGateway:
             "application/json": json.dumps(
                 {
                     "TableName": "MusicCollection",
-                    "Item": {"id": {"S": "$request.body.id"}, "data": {"S": "$request.body.data"}},
+                    "Item": {
+                        "id": {"S": "$input.path('id')"},
+                        "data": {"S": "$input.path('data')"},
+                    },
                 }
             )
         }
@@ -1349,7 +1352,10 @@ class TestAPIGateway:
             "application/json": json.dumps(
                 {
                     "TableName": "MusicCollection",
-                    "Item": {"id": {"S": "$request.body.id"}, "data": {"S": "$request.body.data"}},
+                    "Item": {
+                        "id": {"S": "$input.path('id')"},
+                        "data": {"S": "$input.path('data')"},
+                    },
                 }
             )
         }
@@ -1402,7 +1408,10 @@ class TestAPIGateway:
             "application/json": json.dumps(
                 {
                     "TableName": "MusicCollection",
-                    "Item": {"id": {"S": "$request.body.id"}, "data": {"S": "$request.body.data"}},
+                    "Item": {
+                        "id": {"S": "$input.path('id')"},
+                        "data": {"S": "$input.path('data')"},
+                    },
                 }
             )
         }

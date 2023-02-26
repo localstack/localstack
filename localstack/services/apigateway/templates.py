@@ -10,7 +10,6 @@ from localstack import config
 from localstack.constants import APPLICATION_JSON
 from localstack.services.apigateway.context import ApiInvocationContext
 from localstack.utils.aws.templating import VelocityUtil, VtlTemplate
-from localstack.utils.functions import run_safe
 from localstack.utils.json import extract_jsonpath, json_safe
 from localstack.utils.strings import to_str
 
@@ -178,13 +177,6 @@ class Templates:
 
     @staticmethod
     def build_variables_mapping(api_context: ApiInvocationContext):
-        # prepare request body
-        request_body = api_context.data
-        if isinstance(request_body, bytes):
-            request_body = to_str(request_body)
-        if isinstance(request_body, str):
-            request_body = run_safe(lambda: json.loads(request_body), _default=request_body)
-
         # TODO: make this (dict) an object so usages of "render_vtl" variables are defined
         return {
             "context": api_context.context or {},
@@ -199,12 +191,6 @@ class Templates:
                     # the template.
                     "header": dict(api_context.headers),
                 },
-            },
-            "request": {
-                "header": dict(api_context.headers),
-                "querystring": api_context.query_params(),
-                "path": api_context.invocation_path,
-                "body": request_body,
             },
         }
 
