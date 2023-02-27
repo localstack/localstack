@@ -629,6 +629,37 @@ class TestS3:
         assert is_sub_dict(sub_dict, response)
 
     @pytest.mark.aws_validated
+    @pytest.mark.skip_snapshot_verify(paths=["$..EncodingType", "$..VersionIdMarker"])
+    def test_list_objects_versions_with_prefix(self, s3_client, s3_bucket, snapshot):
+        snapshot.add_transformer(snapshot.transform.s3_api())
+        objects = [
+            {"Key": "dir/test", "Content": b"content 1"},
+            {"Key": "dir/subdir/test2", "Content": b"content 2"},
+        ]
+        params = [
+            {"Prefix": "dir/", "Delimiter": "/", "Id": 1},
+            {"Prefix": "dir/s", "Delimiter": "/", "Id": 2},
+            {"Prefix": "dir/test", "Delimiter": "/", "Id": 3},
+            {"Prefix": "dir/subdir", "Delimiter": "/", "Id": 4},
+            {"Prefix": "dir/subdir/", "Delimiter": "/", "Id": 5},
+            {"Prefix": "dir/subdir/test2", "Delimiter": "/", "Id": 6},
+        ]
+
+        s3_client.put_bucket_versioning(
+            Bucket=s3_bucket,
+            VersioningConfiguration={"Status": "Enabled"},
+        )
+
+        for obj in objects:
+            s3_client.put_object(Bucket=s3_bucket, Key=obj["Key"], Body=obj["Content"])
+
+        for param in params:
+            response = s3_client.list_object_versions(
+                Bucket=s3_bucket, Delimiter=param["Delimiter"], Prefix=param["Prefix"]
+            )
+            snapshot.match(f"list-object-version-{param['Id']}", response)
+
+    @pytest.mark.aws_validated
     @pytest.mark.skip_snapshot_verify(condition=is_old_provider, path="$..Error.BucketName")
     def test_get_object_no_such_bucket(self, s3_client, snapshot):
         snapshot.add_transformer(snapshot.transform.key_value("BucketName"))
