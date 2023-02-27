@@ -1974,3 +1974,46 @@ def create_user_with_policy(create_policy_generated_document, create_user, aws_c
         return username, keys
 
     return _create_user_with_policy
+
+
+# TODO: Fix
+@pytest.fixture()
+def register_extension(s3_bucket, s3_client, cfn_client):
+    extensions_arns = []
+
+    def _register(extension_name, extension_type, artifact_path):
+        bucket = s3_bucket
+        key = f"artifact-{short_uid()}"
+
+        s3_client.upload_file(artifact_path, bucket, key)
+
+        register_response = cfn_client.register_type(
+            Type=extension_type,
+            TypeName=extension_name,
+            SchemaHandlerPackage=f"s3://{bucket}/{key}",
+        )
+
+        registration_token = register_response["RegistrationToken"]
+        cfn_client.get_waiter("type_registration_complete").wait(
+            RegistrationToken=registration_token
+        )
+
+        describe_response = cfn_client.describe_type_registration(
+            RegistrationToken=registration_token
+        )
+
+        extensions_arns.append(describe_response["TypeArn"])
+        cfn_client.set_type_default_version(Arn=describe_response["TypeVersionArn"])
+
+        return describe_response
+
+    yield _register
+
+    for arn in extensions_arns:
+        versions = cfn_client.list_type_versions(Arn=arn)["TypeVersionSummaries"]
+        for v in versions:
+            try:
+                cfn_client.deregister_type(Arn=v["Arn"])
+            except Exception:
+                continue
+        cfn_client.deregister_type(Arn=arn)

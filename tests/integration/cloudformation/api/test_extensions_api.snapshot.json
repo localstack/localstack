@@ -1,0 +1,559 @@
+{
+  "tests/integration/cloudformation/api/test_extensions_api.py::TestExtensionsApi::test_crud_resource_type[HOOK-LocalStack::Testing::TestHook-hooks/localstack-testing-testhook.zip]": {
+    "recorded-date": "27-02-2023, 15:55:25",
+    "recorded-content": {
+      "register_response": {
+        "RegistrationToken": "<registration-token:1>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "describe_type_response": {
+        "ProgressStatus": "IN_PROGRESS",
+        "TypeArn": "arn:aws:cloudformation:<region>:111111111111:type/hook/LocalStack-Testing-TestHook",
+        "TypeVersionArn": "arn:aws:cloudformation:<region>:111111111111:type/hook/LocalStack-Testing-TestHook/00000004",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "describe_response": {
+        "Arn": "arn:aws:cloudformation:<region>:111111111111:type/hook/LocalStack-Testing-TestHook/00000004",
+        "ConfigurationSchema": {
+          "$schema": "http://json-schema.org/draft-07/schema#",
+          "examples": [
+            {
+              "CloudFormationConfiguration": {
+                "HookConfiguration": {
+                  "TargetStacks": "ALL",
+                  "Properties": {},
+                  "FailureMode": "FAIL"
+                }
+              }
+            }
+          ],
+          "description": "This schema validates the CFN hook type configuration that could be set by customers",
+          "additionalProperties": false,
+          "title": "CloudFormation Hook Type Configuration Schema",
+          "type": "object",
+          "definitions": {
+            "InvocationPoint": {
+              "description": "Invocation points are the point in provisioning workflow where hooks will be executed.",
+              "type": "string",
+              "enum": [
+                "PRE_PROVISION"
+              ]
+            },
+            "HookTarget": {
+              "description": "Hook targets are the destination where hooks will be invoked against.",
+              "additionalProperties": false,
+              "type": "object",
+              "properties": {
+                "InvocationPoint": {
+                  "$ref": "#/definitions/InvocationPoint"
+                },
+                "Action": {
+                  "$ref": "#/definitions/Action"
+                },
+                "TargetName": {
+                  "$ref": "#/definitions/TargetName"
+                }
+              },
+              "required": [
+                "TargetName",
+                "Action",
+                "InvocationPoint"
+              ]
+            },
+            "StackRole": {
+              "pattern": "arn:.+:iam::[0-9]{12}:role/.+",
+              "description": "The Amazon Resource Name (ARN) of the IAM execution role to use to perform stack operations",
+              "type": "string",
+              "maxLength": 256
+            },
+            "Action": {
+              "description": "Target actions are the type of operation hooks will be executed at.",
+              "type": "string",
+              "enum": [
+                "CREATE",
+                "UPDATE",
+                "DELETE"
+              ]
+            },
+            "TargetName": {
+              "minLength": 1,
+              "pattern": "^(?!.*\\*\\?).*$",
+              "description": "Type name of hook target. Hook targets are the destination where hooks will be invoked against.",
+              "type": "string",
+              "maxLength": 256
+            },
+            "StackName": {
+              "pattern": "^[a-zA-Z][-a-zA-Z0-9]*$",
+              "description": "CloudFormation Stack name",
+              "type": "string",
+              "maxLength": 128
+            }
+          },
+          "properties": {
+            "CloudFormationConfiguration": {
+              "additionalProperties": false,
+              "properties": {
+                "HookConfiguration": {
+                  "additionalProperties": false,
+                  "type": "object",
+                  "properties": {
+                    "TargetStacks": {
+                      "default": "NONE",
+                      "description": "Attribute to specify which stacks this hook applies to or should get invoked for",
+                      "type": "string",
+                      "enum": [
+                        "ALL",
+                        "NONE"
+                      ]
+                    },
+                    "StackFilters": {
+                      "description": "Filters to allow hooks to target specific stack attributes",
+                      "additionalProperties": false,
+                      "type": "object",
+                      "properties": {
+                        "FilteringCriteria": {
+                          "default": "ALL",
+                          "description": "Attribute to specify the filtering behavior. ANY will make the Hook pass if one filter matches. ALL will make the Hook pass if all filters match",
+                          "type": "string",
+                          "enum": [
+                            "ALL",
+                            "ANY"
+                          ]
+                        },
+                        "StackNames": {
+                          "description": "List of stack names as filters",
+                          "additionalProperties": false,
+                          "type": "object",
+                          "properties": {
+                            "Exclude": {
+                              "minItems": 1,
+                              "maxItems": 50,
+                              "uniqueItems": true,
+                              "description": "List of stack names that the hook is going to be excluded from",
+                              "insertionOrder": false,
+                              "type": "array",
+                              "items": {
+                                "$ref": "#/definitions/StackName"
+                              }
+                            },
+                            "Include": {
+                              "minItems": 1,
+                              "maxItems": 50,
+                              "uniqueItems": true,
+                              "description": "List of stack names that the hook is going to target",
+                              "insertionOrder": false,
+                              "type": "array",
+                              "items": {
+                                "$ref": "#/definitions/StackName"
+                              }
+                            }
+                          },
+                          "minProperties": 1
+                        },
+                        "StackRoles": {
+                          "description": "List of stack roles that are performing the stack operations.",
+                          "additionalProperties": false,
+                          "type": "object",
+                          "properties": {
+                            "Exclude": {
+                              "minItems": 1,
+                              "maxItems": 50,
+                              "uniqueItems": true,
+                              "description": "List of stack roles that the hook is going to be excluded from",
+                              "insertionOrder": false,
+                              "type": "array",
+                              "items": {
+                                "$ref": "#/definitions/StackRole"
+                              }
+                            },
+                            "Include": {
+                              "minItems": 1,
+                              "maxItems": 50,
+                              "uniqueItems": true,
+                              "description": "List of stack roles that the hook is going to target",
+                              "insertionOrder": false,
+                              "type": "array",
+                              "items": {
+                                "$ref": "#/definitions/StackRole"
+                              }
+                            }
+                          },
+                          "minProperties": 1
+                        }
+                      },
+                      "required": [
+                        "FilteringCriteria"
+                      ]
+                    },
+                    "TargetFilters": {
+                      "oneOf": [
+                        {
+                          "additionalProperties": false,
+                          "type": "object",
+                          "properties": {
+                            "Actions": {
+                              "minItems": 1,
+                              "maxItems": 50,
+                              "uniqueItems": true,
+                              "additionalItems": false,
+                              "description": "List of actions that the hook is going to target",
+                              "insertionOrder": false,
+                              "type": "array",
+                              "items": {
+                                "$ref": "#/definitions/Action"
+                              }
+                            },
+                            "TargetNames": {
+                              "minItems": 1,
+                              "maxItems": 50,
+                              "uniqueItems": true,
+                              "additionalItems": false,
+                              "description": "List of type names that the hook is going to target",
+                              "insertionOrder": false,
+                              "type": "array",
+                              "items": {
+                                "$ref": "#/definitions/TargetName"
+                              }
+                            },
+                            "InvocationPoints": {
+                              "minItems": 1,
+                              "maxItems": 50,
+                              "uniqueItems": true,
+                              "additionalItems": false,
+                              "description": "List of invocation points that the hook is going to target",
+                              "insertionOrder": false,
+                              "type": "array",
+                              "items": {
+                                "$ref": "#/definitions/InvocationPoint"
+                              }
+                            }
+                          },
+                          "minProperties": 1
+                        },
+                        {
+                          "additionalProperties": false,
+                          "type": "object",
+                          "properties": {
+                            "Targets": {
+                              "minItems": 1,
+                              "maxItems": 50,
+                              "uniqueItems": true,
+                              "additionalItems": false,
+                              "description": "List of hook targets",
+                              "type": "array",
+                              "items": {
+                                "$ref": "#/definitions/HookTarget"
+                              }
+                            }
+                          },
+                          "required": [
+                            "Targets"
+                          ]
+                        }
+                      ],
+                      "description": "Attribute to specify which targets should invoke the hook",
+                      "type": "object"
+                    },
+                    "Properties": {
+                      "typeName": "LocalStack::Testing::TestHook",
+                      "description": "Hook runtime properties",
+                      "additionalProperties": false,
+                      "type": "object",
+                      "definitions": {},
+                      "properties": {
+                        "EncryptionAlgorithm": {
+                          "default": "AES256",
+                          "description": "Encryption algorithm for SSE",
+                          "type": "string"
+                        }
+                      }
+                    },
+                    "FailureMode": {
+                      "default": "WARN",
+                      "description": "Attribute to specify CloudFormation behavior on hook failure.",
+                      "type": "string",
+                      "enum": [
+                        "FAIL",
+                        "WARN"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "TargetStacks",
+                    "FailureMode"
+                  ]
+                }
+              },
+              "required": [
+                "HookConfiguration"
+              ]
+            }
+          },
+          "required": [
+            "CloudFormationConfiguration"
+          ],
+          "$id": "https://schema.cloudformation.<region>.amazonaws.com/cloudformation.hook.configuration.schema.v1.json"
+        },
+        "DefaultVersionId": "00000004",
+        "DeprecatedStatus": "LIVE",
+        "Description": "Example resource SSE (Server Side Encryption) verification hook",
+        "DocumentationUrl": "https://github.com/aws-cloudformation/example-sse-hook/blob/master/README.md",
+        "IsDefaultVersion": true,
+        "LastUpdated": "datetime",
+        "Schema": {
+          "typeName": "LocalStack::Testing::TestHook",
+          "description": "Example resource SSE (Server Side Encryption) verification hook",
+          "sourceUrl": "https://github.com/aws-cloudformation/example-sse-hook",
+          "documentationUrl": "https://github.com/aws-cloudformation/example-sse-hook/blob/master/README.md",
+          "typeConfiguration": {
+            "properties": {
+              "EncryptionAlgorithm": {
+                "description": "Encryption algorithm for SSE",
+                "default": "AES256",
+                "type": "string"
+              }
+            },
+            "additionalProperties": false
+          },
+          "required": [],
+          "handlers": {
+            "preCreate": {
+              "targetNames": [
+                "AWS::S3::Bucket"
+              ],
+              "permissions": []
+            },
+            "preUpdate": {
+              "targetNames": [
+                "AWS::S3::Bucket"
+              ],
+              "permissions": []
+            },
+            "preDelete": {
+              "targetNames": [
+                "AWS::S3::Bucket"
+              ],
+              "permissions": []
+            }
+          },
+          "additionalProperties": false
+        },
+        "SourceUrl": "https://github.com/aws-cloudformation/example-sse-hook",
+        "TimeCreated": "datetime",
+        "Type": "HOOK",
+        "TypeName": "LocalStack::Testing::TestHook",
+        "Visibility": "PRIVATE",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "list_response": {
+        "RegistrationTokenList": [],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "deregister_response": {
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/integration/cloudformation/api/test_extensions_api.py::TestExtensionsApi::test_crud_resource_type[RESOURCE-LocalStack::Testing::TestResource-resourcetypes/localstack-testing-testresource.zip]": {
+    "recorded-date": "27-02-2023, 15:53:49",
+    "recorded-content": {
+      "register_response": {
+        "RegistrationToken": "<registration-token:1>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "describe_type_response": {
+        "ProgressStatus": "IN_PROGRESS",
+        "TypeArn": "arn:aws:cloudformation:<region>:111111111111:type/resource/LocalStack-Testing-TestResource",
+        "TypeVersionArn": "arn:aws:cloudformation:<region>:111111111111:type/resource/LocalStack-Testing-TestResource/00000011",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "describe_response": {
+        "Arn": "arn:aws:cloudformation:<region>:111111111111:type/resource/LocalStack-Testing-TestResource/00000011",
+        "DefaultVersionId": "00000011",
+        "DeprecatedStatus": "LIVE",
+        "Description": "An example resource schema demonstrating some basic constructs and validation rules.",
+        "ExecutionRoleArn": "<execution-role-arn:1>",
+        "IsDefaultVersion": true,
+        "LastUpdated": "datetime",
+        "ProvisioningType": "FULLY_MUTABLE",
+        "Schema": {
+          "typeName": "LocalStack::Testing::TestResource",
+          "description": "An example resource schema demonstrating some basic constructs and validation rules.",
+          "sourceUrl": "https://github.com/aws-cloudformation/aws-cloudformation-rpdk.git",
+          "definitions": {},
+          "properties": {
+            "Name": {
+              "type": "string"
+            }
+          },
+          "additionalProperties": false,
+          "required": [
+            "Name"
+          ],
+          "createOnlyProperties": [
+            "/properties/Name"
+          ],
+          "primaryIdentifier": [
+            "/properties/Name"
+          ],
+          "handlers": {
+            "create": {
+              "permissions": []
+            },
+            "read": {
+              "permissions": []
+            },
+            "update": {
+              "permissions": []
+            },
+            "delete": {
+              "permissions": []
+            },
+            "list": {
+              "permissions": []
+            }
+          }
+        },
+        "SourceUrl": "https://github.com/aws-cloudformation/aws-cloudformation-rpdk.git",
+        "TimeCreated": "datetime",
+        "Type": "RESOURCE",
+        "TypeName": "LocalStack::Testing::TestResource",
+        "Visibility": "PRIVATE",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "list_response": {
+        "RegistrationTokenList": [],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "deregister_response": {
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/integration/cloudformation/api/test_extensions_api.py::TestExtensionsApi::test_crud_resource_type[MODULE-LocalStack::Testing::TestModule::MODULE-modules/localstack-testing-testmodule-module.zip]": {
+    "recorded-date": "27-02-2023, 15:54:22",
+    "recorded-content": {
+      "register_response": {
+        "RegistrationToken": "<registration-token:1>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "describe_type_response": {
+        "ProgressStatus": "IN_PROGRESS",
+        "TypeArn": "arn:aws:cloudformation:<region>:111111111111:type/module/LocalStack-Testing-TestModule-MODULE",
+        "TypeVersionArn": "arn:aws:cloudformation:<region>:111111111111:type/module/LocalStack-Testing-TestModule-MODULE/00000009",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "describe_response": {
+        "Arn": "arn:aws:cloudformation:<region>:111111111111:type/module/LocalStack-Testing-TestModule-MODULE/00000009",
+        "DefaultVersionId": "00000009",
+        "DeprecatedStatus": "LIVE",
+        "Description": "Schema for Module Fragment of type LocalStack::Testing::TestModule::MODULE",
+        "IsDefaultVersion": true,
+        "LastUpdated": "datetime",
+        "Schema": {
+          "typeName": "LocalStack::Testing::TestModule::MODULE",
+          "description": "Schema for Module Fragment of type LocalStack::Testing::TestModule::MODULE",
+          "properties": {
+            "Parameters": {
+              "type": "object",
+              "properties": {
+                "BucketName": {
+                  "type": "object",
+                  "properties": {
+                    "Type": {
+                      "type": "string"
+                    },
+                    "Description": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "Type",
+                    "Description"
+                  ],
+                  "description": "Name for the bucket"
+                }
+              }
+            },
+            "Resources": {
+              "properties": {
+                "S3Bucket": {
+                  "type": "object",
+                  "properties": {
+                    "Type": {
+                      "type": "string",
+                      "const": "AWS::S3::Bucket"
+                    },
+                    "Properties": {
+                      "type": "object"
+                    }
+                  }
+                }
+              },
+              "type": "object",
+              "additionalProperties": false
+            }
+          },
+          "additionalProperties": true
+        },
+        "TimeCreated": "datetime",
+        "Type": "MODULE",
+        "TypeName": "LocalStack::Testing::TestModule::MODULE",
+        "Visibility": "PRIVATE",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "list_response": {
+        "RegistrationTokenList": [],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "deregister_response": {
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  }
+}

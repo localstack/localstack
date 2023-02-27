@@ -1,103 +1,19 @@
 {
-  "tests/integration/cloudformation/api/test_extensions_resourcetypes.py::TestExtensionsResourceTypes::test_crud_resource_type": {
-    "recorded-date": "09-02-2023, 16:23:21",
+  "tests/integration/cloudformation/api/test_extensions_resourcetypes.py::TestExtensionsResourceTypes::test_deploy_resource_type": {
+    "recorded-date": "27-02-2023, 15:59:39",
     "recorded-content": {
-      "register_response": {
-        "RegistrationToken": "<registration-token:1>",
-        "ResponseMetadata": {
-          "HTTPHeaders": {},
-          "HTTPStatusCode": 200
-        }
-      },
-      "describe_type_response": {
-        "ProgressStatus": "IN_PROGRESS",
-        "TypeArn": "arn:aws:cloudformation:<region>:111111111111:type/resource/LocalStack-Testing-TestResource",
-        "TypeVersionArn": "arn:aws:cloudformation:<region>:111111111111:type/resource/LocalStack-Testing-TestResource/00000003",
-        "ResponseMetadata": {
-          "HTTPHeaders": {},
-          "HTTPStatusCode": 200
-        }
-      },
-      "describe_response": {
-        "Arn": "arn:aws:cloudformation:<region>:111111111111:type/resource/LocalStack-Testing-TestResource/00000002",
-        "DefaultVersionId": "00000002",
-        "DeprecatedStatus": "DEPRECATED",
-        "Description": "An example resource schema demonstrating some basic constructs and validation rules.",
-        "ExecutionRoleArn": "<execution-role-arn:1>",
-        "IsDefaultVersion": true,
-        "LastUpdated": "datetime",
-        "LoggingConfig": {
-          "LogGroupName": "<log-group-name:1>",
-          "LogRoleArn": "<log-role-arn:1>"
+      "resource_description": {
+        "DriftInformation": {
+          "StackResourceDriftStatus": "NOT_CHECKED"
         },
-        "ProvisioningType": "FULLY_MUTABLE",
-        "Schema": {
-          "typeName": "LocalStack::Testing::TestResource",
-          "description": "An example resource schema demonstrating some basic constructs and validation rules.",
-          "sourceUrl": "https://github.com/aws-cloudformation/aws-cloudformation-rpdk.git",
-          "definitions": {},
-          "properties": {
-            "Name": {
-              "type": "string"
-            }
-          },
-          "additionalProperties": false,
-          "required": [
-            "Name"
-          ],
-          "createOnlyProperties": [
-            "/properties/Name"
-          ],
-          "primaryIdentifier": [
-            "/properties/Name"
-          ],
-          "handlers": {
-            "create": {
-              "permissions": []
-            },
-            "read": {
-              "permissions": []
-            },
-            "update": {
-              "permissions": []
-            },
-            "delete": {
-              "permissions": []
-            },
-            "list": {
-              "permissions": []
-            }
-          }
-        },
-        "SourceUrl": "https://github.com/aws-cloudformation/aws-cloudformation-rpdk.git",
-        "TimeCreated": "datetime",
-        "Type": "RESOURCE",
-        "TypeName": "LocalStack::Testing::TestResource",
-        "Visibility": "PRIVATE",
-        "ResponseMetadata": {
-          "HTTPHeaders": {},
-          "HTTPStatusCode": 200
-        }
-      },
-      "list_response": {
-        "RegistrationTokenList": [
-          "<registration-token:1>"
-        ],
-        "ResponseMetadata": {
-          "HTTPHeaders": {},
-          "HTTPStatusCode": 200
-        }
-      },
-      "deregister_response": {
-        "ResponseMetadata": {
-          "HTTPHeaders": {},
-          "HTTPStatusCode": 200
-        }
+        "LogicalResourceId": "MyCustomResource",
+        "PhysicalResourceId": "Test",
+        "ResourceStatus": "CREATE_COMPLETE",
+        "ResourceType": "LocalStack::Testing::DeployableResource",
+        "StackId": "arn:aws:cloudformation:<region>:111111111111:stack/<stack-name:1>/<resource:1>",
+        "StackName": "<stack-name:1>",
+        "Timestamp": "timestamp"
       }
     }
-  },
-  "tests/integration/cloudformation/api/test_extensions_resourcetypes.py::TestExtensionsResourceTypes::test_deploy_resource_type": {
-    "recorded-date": "24-02-2023, 13:38:11",
-    "recorded-content": {}
   }
 }
