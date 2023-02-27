@@ -258,6 +258,8 @@ def invoke_rest_api_integration(invocation_context: ApiInvocationContext):
         return make_error_response(msg, 400)
 
 
+# This function is patched downstream for backend integrations that are only available
+# in Pro (potentially to be replaced with a runtime hook in the future).
 def invoke_rest_api_integration_backend(invocation_context: ApiInvocationContext):
     # define local aliases from invocation context
     invocation_path = invocation_context.path_with_query_string

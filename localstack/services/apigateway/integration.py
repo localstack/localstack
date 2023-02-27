@@ -492,7 +492,7 @@ class S3Integration(BackendIntegration):
         try:
             object = s3.get_object(Bucket=bucket, Key=object_key)
         except s3.exceptions.NoSuchKey:
-            msg = "Object %s not found" % object_key
+            msg = f"Object {object_key} not found"
             LOG.debug(msg)
             return make_error_response(msg, 404)
 
