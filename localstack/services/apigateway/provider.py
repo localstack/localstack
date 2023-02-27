@@ -93,10 +93,6 @@ class ApigatewayProvider(ApigatewayApi, ServiceLifecycleHook):
         self.router.register_routes()
 
     @staticmethod
-    def _get_moto_backend(context: RequestContext) -> apigw_models.APIGatewayBackend:
-        return apigw_models.apigateway_backends[context.account_id][context.region]
-
-    @staticmethod
     def _remove_rest_api(context: RequestContext, rest_api_id: str) -> None:
         store = get_apigateway_store(account_id=context.account_id, region=context.region)
         # clean up this way until we properly encapsulate RestApi in the store
@@ -139,8 +135,7 @@ class ApigatewayProvider(ApigatewayApi, ServiceLifecycleHook):
         if request.get("description") == "":
             raise BadRequestException("Description cannot be an empty string")
         result = call_moto(context)
-        moto_backend = self._get_moto_backend(context)
-        rest_api = moto_backend.apis.get(result["id"])
+        rest_api = get_moto_rest_api(context, rest_api_id=result["id"])
         rest_api.version = request.get("version")
         response = rest_api.to_dict()
         remove_empty_attributes_from_rest_api(response)
@@ -158,12 +153,7 @@ class ApigatewayProvider(ApigatewayApi, ServiceLifecycleHook):
         rest_api_id: String,
         patch_operations: ListOfPatchOperation = None,
     ) -> RestApi:
-        moto_backend = self._get_moto_backend(context)
-        rest_api = moto_backend.apis.get(rest_api_id)
-        if not rest_api:
-            raise NotFoundException(
-                f"Invalid API identifier specified {context.account_id}:{rest_api_id}"
-            )
+        rest_api = get_moto_rest_api(context, rest_api_id)
 
         fixed_patch_ops = []
         binary_media_types_path = "/binaryMediaTypes"
@@ -212,8 +202,7 @@ class ApigatewayProvider(ApigatewayApi, ServiceLifecycleHook):
 
     @handler("PutRestApi", expand=False)
     def put_rest_api(self, context: RequestContext, request: PutRestApiRequest) -> RestApi:
-        moto_backend = self._get_moto_backend(context)
-        rest_api = moto_backend.apis.get(request["restApiId"])
+        rest_api = get_moto_rest_api(context, request["restApiId"])
         body_data = request["body"].read()
 
         openapi_spec = parse_json_or_yaml(to_str(body_data))

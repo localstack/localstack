@@ -1,4 +1,3 @@
-import contextlib
 import logging
 import os
 import time
@@ -73,24 +72,6 @@ def apigw_create_rest_api(apigateway_client):
     # TODO: might clean up even more resources as we learn? integrations and such?
     for rest_api_id in rest_apis:
         delete_rest_api_retry(apigateway_client, rest_api_id)
-
-
-@pytest.fixture
-def apigw_create_rest_resource(apigateway_client):
-    resource_ids = []
-
-    def _factory(rest_api_id, path_part, parent_id):
-        resource = apigateway_client.create_resource(
-            restApiId=rest_api_id, pathPart=path_part, parentId=parent_id
-        )
-        resource_ids.append((resource["id"], rest_api_id))
-        return resource
-
-    yield _factory
-
-    for resource_id, api_id in resource_ids:
-        with contextlib.suppress(ClientError):
-            apigateway_client.delete_resource(restApiId=api_id, resourceId=resource_id)
 
 
 @pytest.mark.aws_validated
@@ -278,9 +259,7 @@ class TestApiGatewayApi:
         assert ex.value.response["Error"]["Code"] == "NotFoundException"
 
     @pytest.mark.aws_validated
-    def test_resource_lifecycle(
-        self, apigateway_client, apigw_create_rest_api, apigw_create_rest_resource, snapshot
-    ):
+    def test_resource_lifecycle(self, apigateway_client, apigw_create_rest_api, snapshot):
         snapshot.add_transformer(SortingTransformer("items", lambda x: x["path"]))
         response = apigw_create_rest_api(
             name=f"test-api-{short_uid()}", description="testing resource lifecycle"
@@ -292,8 +271,8 @@ class TestApiGatewayApi:
 
         root_id = root_rest_api_resource["items"][0]["id"]
 
-        resource_response = apigw_create_rest_resource(
-            rest_api_id=api_id, parent_id=root_id, path_part="pets"
+        resource_response = apigateway_client.create_resource(
+            restApiId=api_id, parentId=root_id, pathPart="pets"
         )
         resource_id = resource_response["id"]
 
@@ -303,8 +282,8 @@ class TestApiGatewayApi:
         snapshot.match("rest-api-resources-after-create", rest_api_resources)
 
         # create subresource
-        subresource_response = apigw_create_rest_resource(
-            rest_api_id=api_id, parent_id=resource_id, path_part="subpets"
+        subresource_response = apigateway_client.create_resource(
+            restApiId=api_id, parentId=resource_id, pathPart="subpets"
         )
         snapshot.match("create-subresource", subresource_response)
 
@@ -335,9 +314,7 @@ class TestApiGatewayApi:
         snapshot.match("rest-api-resources-after-delete", rest_api_resources)
 
     @pytest.mark.aws_validated
-    def test_update_resource_behaviour(
-        self, apigateway_client, apigw_create_rest_api, apigw_create_rest_resource, snapshot
-    ):
+    def test_update_resource_behaviour(self, apigateway_client, apigw_create_rest_api, snapshot):
         snapshot.add_transformer(SortingTransformer("items", lambda x: x["path"]))
         response = apigw_create_rest_api(
             name=f"test-api-{short_uid()}", description="testing resource behaviour"
@@ -347,8 +324,8 @@ class TestApiGatewayApi:
         root_rest_api_resource = apigateway_client.get_resources(restApiId=api_id)
         root_id = root_rest_api_resource["items"][0]["id"]
 
-        resource_response = apigw_create_rest_resource(
-            rest_api_id=api_id, parent_id=root_id, path_part="pets"
+        resource_response = apigateway_client.create_resource(
+            restApiId=api_id, parentId=root_id, pathPart="pets"
         )
         resource_id = resource_response["id"]
 
@@ -383,15 +360,15 @@ class TestApiGatewayApi:
         snapshot.match("invalid-parent-id", e.value.response)
 
         # create subresource `subpets` under `/pets`
-        subresource_response = apigw_create_rest_resource(
-            rest_api_id=api_id, parent_id=resource_id, path_part="subpets"
+        subresource_response = apigateway_client.create_resource(
+            restApiId=api_id, parentId=resource_id, pathPart="subpets"
         )
         snapshot.match("create-subresource", subresource_response)
         subresource_id = subresource_response["id"]
 
         # create subresource `pets` under `/pets/subpets`
-        subresource_child_response = apigw_create_rest_resource(
-            rest_api_id=api_id, parent_id=subresource_id, path_part="pets"
+        subresource_child_response = apigateway_client.create_resource(
+            restApiId=api_id, parentId=subresource_id, pathPart="pets"
         )
         snapshot.match("create-subresource-child", subresource_child_response)
         subresource_child_id = subresource_child_response["id"]
@@ -466,9 +443,7 @@ class TestApiGatewayApi:
             )
         snapshot.match("add-unsupported", e.value.response)
 
-    def test_delete_resource(
-        self, apigateway_client, apigw_create_rest_api, apigw_create_rest_resource, snapshot
-    ):
+    def test_delete_resource(self, apigateway_client, apigw_create_rest_api, snapshot):
         response = apigw_create_rest_api(
             name=f"test-api-{short_uid()}", description="testing resource behaviour"
         )
@@ -477,14 +452,14 @@ class TestApiGatewayApi:
         root_rest_api_resource = apigateway_client.get_resources(restApiId=api_id)
         root_id = root_rest_api_resource["items"][0]["id"]
 
-        resource_response = apigw_create_rest_resource(
-            rest_api_id=api_id, parent_id=root_id, path_part="pets"
+        resource_response = apigateway_client.create_resource(
+            restApiId=api_id, parentId=root_id, pathPart="pets"
         )
         resource_id = resource_response["id"]
 
         # create subresource
-        subresource_response = apigw_create_rest_resource(
-            rest_api_id=api_id, parent_id=resource_id, path_part="subpets"
+        subresource_response = apigateway_client.create_resource(
+            restApiId=api_id, parentId=resource_id, pathPart="subpets"
         )
         subresource_id = subresource_response["id"]
 
