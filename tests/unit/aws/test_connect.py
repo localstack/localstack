@@ -47,12 +47,12 @@ class TestClientFactory:
         )
         mock.assert_called_once_with(
             service_name="def",
-            region_name=connect_to.get_region_name(),
+            region_name="us-east-1",
             use_ssl=True,
             verify=False,
             endpoint_url="http://localhost:4566",
-            aws_access_key_id="lorem",
-            aws_secret_access_key="ipsum",
+            aws_access_key_id=None,
+            aws_secret_access_key=None,
             aws_session_token=None,
             config=connect_to._config,
         )

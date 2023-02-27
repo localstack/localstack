@@ -4,11 +4,7 @@ import re
 import threading
 from typing import Optional
 
-from localstack.constants import (
-    DEFAULT_AWS_ACCOUNT_ID,
-    INTERNAL_AWS_ACCESS_KEY_ID,
-    TEST_AWS_ACCESS_KEY_ID,
-)
+from localstack.constants import DEFAULT_AWS_ACCOUNT_ID, TEST_AWS_ACCESS_KEY_ID
 
 LOG = logging.getLogger(__name__)
 
@@ -56,10 +52,6 @@ def get_account_id_from_access_key_id(access_key_id: str) -> Optional[str]:
     # If AWS_ACCESS_KEY_ID has a 12-digit integer value, use it as the account ID
     if re.match(r"\d{12}", access_key_id):
         return access_key_id
-
-    # For internal calls, account ID is determined by the resource being accessed
-    elif access_key_id == INTERNAL_AWS_ACCESS_KEY_ID:
-        return None
 
     elif len(access_key_id) >= 20:
         # If AWS_ACCESS_KEY_ID has production AWS credentials, ignore them

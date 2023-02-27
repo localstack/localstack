@@ -6,13 +6,14 @@ LocalStack providers.
 """
 import json
 import logging
+import threading
+from abc import ABC, abstractmethod
 from functools import cache
 from typing import Optional, TypedDict
 
 from boto3.session import Session
 from botocore.client import BaseClient
 from botocore.config import Config
-from botocore.utils import InvalidArnException
 
 from localstack import config
 from localstack.constants import (
@@ -20,7 +21,6 @@ from localstack.constants import (
     INTERNAL_AWS_SECRET_ACCESS_KEY,
     MAX_POOL_CONNECTIONS,
 )
-from localstack.utils.aws.arns import parse_arn
 from localstack.utils.aws.aws_stack import get_local_service_url
 from localstack.utils.aws.request_context import get_region_from_request_context
 
@@ -46,14 +46,14 @@ class InternalRequestParameters(TypedDict):
     https://docs.aws.amazon.com/IAM/latest/UserGuide/reference_policies_condition-keys.html
     """
 
-    source_arn: str
+    source_arn: str | None
     """ARN of resource which is triggering the call"""
 
-    target_account: str
-    """Account ID of the resource being accessed. To be used during create operations."""
-
-    target_arn: str
+    target_arn: str | None
     """ARN of the resource being accessed."""
+
+    service_principal: str | None
+    """Service principal making this call"""
 
 
 def dump_dto(data: InternalRequestParameters) -> str:
@@ -72,7 +72,7 @@ def load_dto(data: str) -> InternalRequestParameters:
 #
 
 
-class ClientFactory:
+class ClientFactory(ABC):
     """
     Factory to build the AWS client.
 
@@ -84,29 +84,38 @@ class ClientFactory:
         self,
         use_ssl: bool = False,
         verify: bool = False,
+        session: Session = None,
+        config: Config = None,
     ):
         """
         :param use_ssl: Whether to use SSL
         :param verify: Whether to verify SSL certificates
+        :param session: Session to be used for client creation. Will create a new session if not provided.
+            Please note that sessions are not generally thread safe.
+            Either create a new session for each factory or make sure the session is not shared with another thread.
+            The factory itself has a lock for the session, so as long as you only use the session in one factory,
+            it should be fine using the factory in a multithreaded context.
+        :param config: Config used as default for client creation.
         """
         self._use_ssl = use_ssl
         self._verify = verify
-        self._config: Config = Config(max_pool_connections=MAX_POOL_CONNECTIONS)
-        self._session: Session = Session()
+        self._config: Config = config or Config(max_pool_connections=MAX_POOL_CONNECTIONS)
+        self._session: Session = session or Session()
+        self._create_client_lock = threading.RLock()
 
     def __call__(self, *args, **kwargs) -> BaseClient:
         return self.get_client(*args, **kwargs)
 
+    @abstractmethod
     def get_client(
         self,
         service_name: str,
         region_name: Optional[str],
         aws_access_key_id: Optional[str] = None,
         aws_secret_access_key: Optional[str] = None,
+        aws_session_token: Optional[str] = None,
         endpoint_url: str = None,
         config: Config = None,
-        *args,
-        **kwargs,
     ):
         raise NotImplementedError()
 
@@ -132,37 +141,51 @@ class ClientFactory:
         aws_session_token: str,
         config: Config,
     ) -> BaseClient:
-        client = self._session.client(
-            service_name=service_name,
-            region_name=region_name,
-            use_ssl=use_ssl,
-            verify=verify,
-            endpoint_url=endpoint_url,
-            aws_access_key_id=aws_access_key_id,
-            aws_secret_access_key=aws_secret_access_key,
-            aws_session_token=aws_session_token,
-            config=config,
-        )
+        """
+        Returns a boto3 client with the given configuration, and the hooks added by `_get_client_post_hook`.
+        This is a cached call, so modifications to the used client will affect others.
+        Please use another instance of the factory, should you want to modify clients.
+        Client creation is behind a lock as it is not generally thread safe.
+
+        :param service_name: Service to build the client for, eg. `s3`
+        :param region_name: Name of the AWS region to be associated with the client
+            If set to None, loads from botocore session.
+        :param aws_access_key_id: Access key to use for the client.
+            If set to None, loads from botocore session.
+        :param aws_secret_access_key: Secret key to use for the client.
+            If set to None, loads from botocore session.
+        :param aws_session_token: Session token to use for the client.
+            Not being used if not set.
+        :param endpoint_url: Full endpoint URL to be used by the client.
+            Defaults to appropriate LocalStack endpoint.
+        :param config: Boto config for advanced use.
+        :return: Boto3 client.
+        """
+        with self._create_client_lock:
+            client = self._session.client(
+                service_name=service_name,
+                region_name=region_name,
+                use_ssl=use_ssl,
+                verify=verify,
+                endpoint_url=endpoint_url,
+                aws_access_key_id=aws_access_key_id,
+                aws_secret_access_key=aws_secret_access_key,
+                aws_session_token=aws_session_token,
+                config=config,
+            )
 
         return self._get_client_post_hook(client)
 
     #
     # Boto session utilities
     #
-
-    def get_partition_for_region(self, region_name: str) -> str:
-        """
-        Return the AWS partition name for a given region, eg. `aws`, `aws-cn`, etc.
-        """
-        return self._session.get_partition_for_region(region_name)
-
-    def get_session_region_name(self) -> str:
+    def _get_session_region(self) -> str:
         """
         Return AWS region as set in the Boto session.
         """
         return self._session.region_name
 
-    def get_region_name(self) -> str:
+    def _get_region(self) -> str:
         """
         Return the AWS region name from following sources, in order of availability.
         - LocalStack request context
@@ -172,22 +195,8 @@ class ClientFactory:
         return (
             get_region_from_request_context()
             or config.DEFAULT_REGION
-            or self.get_session_region_name()
+            or self._get_session_region()  # TODO this will never be called, as DEFAULT_REGION defaults to 'us-east-1'
         )
-
-    def get_session_access_key(self) -> str:
-        """
-        Return AWS access key from the Boto session.
-        """
-        credentials = self._session.get_credentials()
-        return credentials.access_key
-
-    def get_session_secret_key(self) -> str:
-        """
-        Return AWS secret key from the Boto session.
-        """
-        credentials = self._session.get_credentials()
-        return credentials.secret_key
 
 
 class InternalClientFactory(ClientFactory):
@@ -196,7 +205,9 @@ class InternalClientFactory(ClientFactory):
         Register handlers that enable internal data object transfer mechanism
         for internal clients.
         """
-        client.meta.events.register("provide-client-params.*.*", handler=_handler_piggyback_dto)
+        client.meta.events.register(
+            "provide-client-params.*.*", handler=_handler_create_request_parameters
+        )
         client.meta.events.register("before-call.*.*", handler=_handler_inject_dto_header)
 
         return client
@@ -207,6 +218,7 @@ class InternalClientFactory(ClientFactory):
         region_name: Optional[str],
         aws_access_key_id: Optional[str] = None,
         aws_secret_access_key: Optional[str] = None,
+        aws_session_token: Optional[str] = None,
         endpoint_url: str = None,
         config: Config = None,
     ) -> BaseClient:
@@ -217,14 +229,6 @@ class InternalClientFactory(ClientFactory):
         take additional args that start with `_` prefix. These are used to pass
         additional information to LocalStack server during internal calls.
 
-        Note that when `_TargetArn` is used, the account and region from the ARN takes
-        precedence over the region used during client instantiation. The
-        precedence logic happens on the serverside LocalStack handler chain. The
-        ARN must have the account ID and region in it.
-
-        When `_TargetAccount` is used, the specified account ID is used. This
-        takes precedence over `_TargetArn` account ID.
-
         :param service_name: Service to build the client for, eg. `s3`
         :param region_name: Region name. See note above.
             If set to None, loads from botocore session.
@@ -232,6 +236,8 @@ class InternalClientFactory(ClientFactory):
             Defaults to LocalStack internal credentials.
         :param aws_secret_access_key: Secret key to use for the client.
             Defaults to LocalStack internal credentials.
+        :param aws_session_token: Session token to use for the client.
+            Not being used if not set.
         :param endpoint_url: Full endpoint URL to be used by the client.
             Defaults to appropriate LocalStack endpoint.
         :param config: Boto config for advanced use.
@@ -239,13 +245,13 @@ class InternalClientFactory(ClientFactory):
 
         return self._get_client(
             service_name=service_name,
-            region_name=region_name or self.get_region_name(),
+            region_name=region_name or self._get_region(),
             use_ssl=self._use_ssl,
             verify=self._verify,
             endpoint_url=endpoint_url or get_local_service_url(service_name),
             aws_access_key_id=aws_access_key_id or INTERNAL_AWS_ACCESS_KEY_ID,
             aws_secret_access_key=aws_secret_access_key or INTERNAL_AWS_SECRET_ACCESS_KEY,
-            aws_session_token=None,
+            aws_session_token=aws_session_token,
             config=config or self._config,
         )
 
@@ -257,6 +263,7 @@ class ExternalClientFactory(ClientFactory):
         region_name: Optional[str],
         aws_access_key_id: Optional[str] = None,
         aws_secret_access_key: Optional[str] = None,
+        aws_session_token: Optional[str] = None,
         endpoint_url: str = None,
         config: Config = None,
     ) -> BaseClient:
@@ -276,6 +283,8 @@ class ExternalClientFactory(ClientFactory):
             If set to None, loads from botocore session.
         :param aws_secret_access_key: Secret key to use for the client.
             If set to None, loads from botocore session.
+        :param aws_session_token: Session token to use for the client.
+            Not being used if not set.
         :param endpoint_url: Full endpoint URL to be used by the client.
             Defaults to appropriate LocalStack endpoint.
         :param config: Boto config for advanced use.
@@ -283,13 +292,13 @@ class ExternalClientFactory(ClientFactory):
 
         return self._get_client(
             service_name=service_name,
-            region_name=region_name or self.get_region_name(),
+            region_name=region_name or self._get_region(),
             use_ssl=self._use_ssl,
             verify=self._verify,
             endpoint_url=endpoint_url or get_local_service_url(service_name),
-            aws_access_key_id=aws_access_key_id or self.get_session_access_key(),
-            aws_secret_access_key=aws_secret_access_key or self.get_session_secret_key(),
-            aws_session_token=None,
+            aws_access_key_id=aws_access_key_id,
+            aws_secret_access_key=aws_secret_access_key,
+            aws_session_token=aws_session_token,
             config=config or self._config,
         )
 
@@ -302,7 +311,7 @@ connect_externally_to = ExternalClientFactory()
 #
 
 
-def _handler_piggyback_dto(params, model, context, **kwargs):
+def _handler_create_request_parameters(params, model, context, **kwargs):
     """
     Construct the data transfer object at the time of parsing the client
     parameters and proxy it via the Boto context dict.
@@ -313,30 +322,11 @@ def _handler_piggyback_dto(params, model, context, **kwargs):
 
     # Names of arguments that can be passed to Boto API operation functions.
     # These must correspond to entries on the data transfer object.
-    ARG_SOURCE_ARN = "_SourceArn"
-    ARG_TARGET_ARN = "_TargetArn"
-    ARG_TARGET_ACCOUNT = "_TargetAccount"
-
     dto = InternalRequestParameters()
-
-    if ARG_SOURCE_ARN in params:
-        dto["source_arn"] = params.pop(ARG_SOURCE_ARN)
-    if ARG_TARGET_ACCOUNT in params:
-        dto["target_account"] = params.pop(ARG_TARGET_ACCOUNT)
-    if ARG_TARGET_ARN in params:
-        target_arn = params.pop(ARG_TARGET_ARN)
-
-        # ARG_TARGET_ARN can either be a ref to another param or an ARN
-        if target_arn in params:
-            target_arn = params[target_arn]
-
-        try:
-            parse_arn(target_arn)
-            dto["target_arn"] = target_arn
-        except InvalidArnException:
-            LOG.warning(
-                "TargetArn '%s' not an ARN or a valid ref to another parameter." % target_arn
-            )
+    for member in InternalRequestParameters.__annotations__.keys():
+        parameter = f"_{''.join([part.title() for part in member.split('_')])}"
+        if parameter in params:
+            dto[member] = params.pop(parameter)
 
     if dto:
         context["_localstack"] = dto
