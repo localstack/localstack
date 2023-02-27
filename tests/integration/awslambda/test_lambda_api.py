@@ -3834,6 +3834,41 @@ class TestLambdaEventSourceMappings:
         #
         # lambda_client.delete_event_source_mapping(UUID=uuid)
 
+    @pytest.mark.skipif(is_old_provider(), reason="new provider only")
+    def test_create_event_source_validation(
+        self,
+        create_lambda_function,
+        lambda_su_role,
+        dynamodb_client,
+        dynamodb_create_table,
+        lambda_client,
+        snapshot,
+    ):
+        function_name = f"function-{short_uid()}"
+        create_lambda_function(
+            handler_file=TEST_LAMBDA_PYTHON_ECHO,
+            func_name=function_name,
+            runtime=Runtime.python3_9,
+            role=lambda_su_role,
+        )
+
+        table_name = f"table-{short_uid()}"
+        dynamodb_create_table(table_name=table_name, partition_key="id")
+        _await_dynamodb_table_active(dynamodb_client, table_name)
+        update_table_response = dynamodb_client.update_table(
+            TableName=table_name,
+            StreamSpecification={"StreamEnabled": True, "StreamViewType": "NEW_AND_OLD_IMAGES"},
+        )
+        stream_arn = update_table_response["TableDescription"]["LatestStreamArn"]
+
+        with pytest.raises(ClientError) as e:
+            lambda_client.create_event_source_mapping(
+                FunctionName=function_name, EventSourceArn=stream_arn
+            )
+
+        response = e.value.response
+        snapshot.match("error", response)
+
 
 @pytest.mark.skipif(condition=is_old_provider(), reason="not correctly supported")
 class TestLambdaTags:
