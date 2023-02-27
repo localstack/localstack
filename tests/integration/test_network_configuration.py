@@ -18,63 +18,6 @@ from localstack.utils.strings import short_uid
 pytestmark = [pytest.mark.only_localstack]
 
 
-@pytest.fixture
-def patch_hostnames(monkeypatch):
-    """
-    Update both HOSTNAME_EXTERNAL and LOCALSTACK_HOSTNAME to custom values to configure the running localstack instance.
-    """
-    hostname_external = f"external-host-{short_uid()}"
-    localstack_hostname = f"localstack-hostname={short_uid()}"
-    monkeypatch.setattr(config, "HOSTNAME_EXTERNAL", hostname_external)
-    # monkeypatch.setattr(config, "LOCALSTACK_HOSTNAME", localstack_hostname)
-    yield hostname_external, localstack_hostname
-
-
-class TestSQS:
-    def test_off_strategy(self, monkeypatch, sqs_create_queue, patch_hostnames):
-        external_port = "12345"
-
-        monkeypatch.setattr(config, "SQS_ENDPOINT_STRATEGY", "off")
-        monkeypatch.setattr(config, "SQS_PORT_EXTERNAL", external_port)
-
-        external_hostname, localstack_hostname = patch_hostnames
-
-        queue_url = sqs_create_queue()
-
-        assert external_hostname in queue_url
-
-        assert localstack_hostname not in queue_url
-
-    def test_domain_strategy(self, monkeypatch, sqs_create_queue, patch_hostnames):
-        external_port = "12345"
-
-        monkeypatch.setattr(config, "SQS_ENDPOINT_STRATEGY", "domain")
-        monkeypatch.setattr(config, "SQS_PORT_EXTERNAL", external_port)
-
-        external_hostname, localstack_hostname = patch_hostnames
-        queue_url = sqs_create_queue()
-
-        assert constants.LOCALHOST_HOSTNAME in queue_url
-
-        assert external_hostname not in queue_url
-        assert localstack_hostname not in queue_url
-
-    def test_path_strategy(self, monkeypatch, sqs_create_queue, patch_hostnames):
-        external_port = "12345"
-
-        monkeypatch.setattr(config, "SQS_ENDPOINT_STRATEGY", "path")
-        monkeypatch.setattr(config, "SQS_PORT_EXTERNAL", external_port)
-
-        external_hostname, localstack_hostname = patch_hostnames
-        queue_url = sqs_create_queue()
-
-        assert "localhost" in queue_url
-
-        assert constants.LOCALHOST_HOSTNAME not in queue_url
-        assert external_hostname not in queue_url
-        assert localstack_hostname not in queue_url
-
-
 class TestOpenSearch:
     """
     OpenSearch does not respect any customisations and just returns a domain with localhost.localstack.cloud in.
@@ -130,3 +73,128 @@ class TestOpenSearch:
         assert hostname_external not in endpoint
         assert localstack_hostname not in endpoint
         assert constants.LOCALHOST_HOSTNAME not in endpoint
+
+
+class TestS3:
+    @pytest.mark.skipif(
+        condition=config.LEGACY_S3_PROVIDER, reason="Not implemented for legacy provider"
+    )
+    def test_non_us_east_1_location(
+        self, monkeypatch, patch_hostnames, s3_resource, s3_client, cleanups
+    ):
+        monkeypatch.setattr(config, "LEGACY_S3_PROVIDER", False)
+        monkeypatch.setenv("PROVIDER_OVERRIDE_S3", "asf")
+
+        bucket_name = f"bucket-{short_uid()}"
+        res = s3_client.create_bucket(
+            Bucket=bucket_name,
+            CreateBucketConfiguration={
+                "LocationConstraint": "eu-west-1",
+            },
+        )
+
+        def cleanup():
+            bucket = s3_resource.Bucket(bucket_name)
+            bucket.objects.all().delete()
+            bucket.object_versions.all().delete()
+            bucket.delete()
+
+        cleanups.append(cleanup)
+
+        hostname_external, localstack_hostname = patch_hostnames
+
+        url = res["Location"]
+
+        assert hostname_external in url
+
+        assert localstack_hostname not in url
+        assert constants.LOCALHOST_HOSTNAME not in url
+
+    def test_multipart_upload(self, patch_hostnames, s3_bucket, s3_client):
+        key_name = f"key-{short_uid()}"
+        upload_id = s3_client.create_multipart_upload(Bucket=s3_bucket, Key=key_name)["UploadId"]
+        part_etag = s3_client.upload_part(
+            Bucket=s3_bucket, Key=key_name, Body=b"bytes", PartNumber=1, UploadId=upload_id
+        )["ETag"]
+        res = s3_client.complete_multipart_upload(
+            Bucket=s3_bucket,
+            Key=key_name,
+            MultipartUpload={"Parts": [{"ETag": part_etag, "PartNumber": 1}]},
+            UploadId=upload_id,
+        )
+        location = res["Location"]
+
+        hostname_external, localstack_hostname = patch_hostnames
+
+        assert hostname_external in location
+
+        assert localstack_hostname not in location
+        assert constants.LOCALHOST_HOSTNAME not in location
+
+    @pytest.mark.parametrize("method", ["put_object", "get_object", "head_object"])
+    def test_presigned_urls(self, method, patch_hostnames, s3_bucket, s3_client):
+        key_name = f"key-{short_uid()}"
+        url = s3_client.generate_presigned_url(
+            ClientMethod=method, Params=dict(Bucket=s3_bucket, Key=key_name)
+        )
+
+        hostname_external, localstack_hostname = patch_hostnames
+
+        assert constants.LOCALHOST_HOSTNAME in url
+        assert hostname_external not in url
+        assert localstack_hostname not in url
+
+    def test_presigned_post(self, patch_hostnames, s3_bucket, s3_client):
+        key_name = f"key-{short_uid()}"
+        url = s3_client.generate_presigned_post(Bucket=s3_bucket, Key=key_name)["url"]
+
+        hostname_external, localstack_hostname = patch_hostnames
+
+        assert constants.LOCALHOST_HOSTNAME in url
+        assert hostname_external not in url
+        assert localstack_hostname not in url
+
+
+class TestSQS:
+    def test_off_strategy(self, monkeypatch, sqs_create_queue, patch_hostnames):
+        external_port = "12345"
+
+        monkeypatch.setattr(config, "SQS_ENDPOINT_STRATEGY", "off")
+        monkeypatch.setattr(config, "SQS_PORT_EXTERNAL", external_port)
+
+        external_hostname, localstack_hostname = patch_hostnames
+
+        queue_url = sqs_create_queue()
+
+        assert external_hostname in queue_url
+
+        assert localstack_hostname not in queue_url
+
+    def test_domain_strategy(self, monkeypatch, sqs_create_queue, patch_hostnames):
+        external_port = "12345"
+
+        monkeypatch.setattr(config, "SQS_ENDPOINT_STRATEGY", "domain")
+        monkeypatch.setattr(config, "SQS_PORT_EXTERNAL", external_port)
+
+        external_hostname, localstack_hostname = patch_hostnames
+        queue_url = sqs_create_queue()
+
+        assert constants.LOCALHOST_HOSTNAME in queue_url
+
+        assert external_hostname not in queue_url
+        assert localstack_hostname not in queue_url
+
+    def test_path_strategy(self, monkeypatch, sqs_create_queue, patch_hostnames):
+        external_port = "12345"
+
+        monkeypatch.setattr(config, "SQS_ENDPOINT_STRATEGY", "path")
+        monkeypatch.setattr(config, "SQS_PORT_EXTERNAL", external_port)
+
+        external_hostname, localstack_hostname = patch_hostnames
+        queue_url = sqs_create_queue()
+
+        assert "localhost" in queue_url
+
+        assert constants.LOCALHOST_HOSTNAME not in queue_url
+        assert external_hostname not in queue_url
+        assert localstack_hostname not in queue_url
