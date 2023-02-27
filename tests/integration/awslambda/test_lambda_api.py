@@ -2432,7 +2432,15 @@ class TestLambdaProvisionedConcurrency:
 
 @pytest.mark.skip_snapshot_verify(
     condition=is_old_provider,
-    paths=["$..RevisionId", "$..Policy.Statement", "$..PolicyName", "$..PolicyArn", "$..Layers"],
+    paths=[
+        "$..RevisionId",
+        "$..Policy.Statement",
+        "$..PolicyName",
+        "$..PolicyArn",
+        "$..Layers",
+        # mismatching resource index due to SnapStart
+        "$..Statement.Condition.ArnLike.AWS:SourceArn",
+    ],
 )
 class TestLambdaPermissions:
     @pytest.mark.skipif(condition=is_old_provider(), reason="not supported")
@@ -3341,6 +3349,8 @@ class TestLambdaSizeLimits:
             "$..StateReason",
             "$..StateReasonCode",
             "$..VpcConfig",
+            "$..CreateFunctionResponse.RuntimeVersionConfig",
+            "$..CreateFunctionResponse.SnapStart",
         ],
     )
     def test_lambda_envvars_near_limit_succeeds(

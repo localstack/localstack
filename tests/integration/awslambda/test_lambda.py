@@ -210,6 +210,7 @@ class TestLambdaBaseFeatures:
             "$..Code.RepositoryType",
             "$..CodeSize",  # CI reports different code size here,
             "$..Layers",  # PRO
+            "$..RuntimeVersionConfig",
         ],
     )
     @pytest.mark.aws_validated
@@ -451,7 +452,13 @@ class TestLambdaBehavior:
         retry(assert_events, retries=15)
 
     @pytest.mark.skip_snapshot_verify(
-        condition=is_old_provider, paths=["$..Payload", "$..LogResult", "$..Layers"]
+        condition=is_old_provider,
+        paths=[
+            "$..Payload",
+            "$..LogResult",
+            "$..Layers",
+            "$..CreateFunctionResponse.RuntimeVersionConfig",
+        ],
     )
     @pytest.mark.aws_validated
     def test_lambda_invoke_no_timeout(
