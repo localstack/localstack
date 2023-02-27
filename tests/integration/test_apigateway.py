@@ -103,6 +103,12 @@ APIGATEWAY_DYNAMODB_POLICY = {
     "Statement": [{"Effect": "Allow", "Action": "dynamodb:*", "Resource": "*"}],
 }
 
+APIGATEWAY_LAMBDA_POLICY = {
+    "Version": "2012-10-17",
+    "Statement": [{"Effect": "Allow", "Action": "lambda:*", "Resource": "*"}],
+}
+
+
 APIGATEWAY_ASSUME_ROLE_POLICY = {
     "Statement": {
         "Sid": "",
@@ -110,10 +116,6 @@ APIGATEWAY_ASSUME_ROLE_POLICY = {
         "Principal": {"Service": "apigateway.amazonaws.com"},
         "Action": "sts:AssumeRole",
     }
-}
-APIGATEWAY_LAMBDA_POLICY = {
-    "Version": "2012-10-17",
-    "Statement": [{"Effect": "Allow", "Action": "lambda:*", "Resource": "*"}],
 }
 
 THIS_FOLDER = os.path.dirname(os.path.realpath(__file__))
@@ -1295,45 +1297,43 @@ class TestAPIGateway:
         assert model_name == result["name"]
         assert description == result["description"]
 
-        try:
+        with pytest.raises(ClientError) as e:
             apigateway_client.get_model(restApiId=dummy_rest_api_id, modelName=model_name)
-            self.fail("This call should not be successful as the model is not created.")
-        except ClientError as e:
-            assert "NotFoundException" == e.response["Error"]["Code"]
-            assert "Invalid Rest API Id specified" == e.response["Error"]["Message"]
+        assert e.value.response["Error"]["Code"] == "NotFoundException"
+        assert e.value.response["Error"]["Message"] == "Invalid Rest API Id specified"
 
     def test_get_model_with_invalid_name(self, apigateway_client, create_rest_apigw):
         rest_api_id, _, _ = create_rest_apigw(name="my_api", description="this is my api")
 
         # test with an invalid model name
-        try:
+        with pytest.raises(ClientError) as e:
             apigateway_client.get_model(restApiId=rest_api_id, modelName="fake")
-            self.fail("This call should not be successful as the model is not created.")
+        assert "NotFoundException" == e.value.response["Error"]["Code"]
 
-        except ClientError as e:
-            assert "NotFoundException" == e.response["Error"]["Code"]
-
-    def test_put_integration_dynamodb_proxy_validation_without_response_template(self):
-        api_id = self.create_api_gateway_and_deploy({})
+    def test_put_integration_dynamodb_proxy_validation_without_request_template(self):
+        api_id = self.create_api_gateway_and_deploy()
         url = path_based_url(api_id=api_id, stage_name="staging", path="/")
         response = requests.put(
             url,
             json.dumps({"id": "id1", "data": "foobar123"}),
         )
 
-        assert 404 == response.status_code
+        assert 400 == response.status_code
 
-    def test_put_integration_dynamodb_proxy_validation_with_response_template(self):
-        response_templates = {
+    def test_put_integration_dynamodb_proxy_validation_with_request_template(self):
+        request_templates = {
             "application/json": json.dumps(
                 {
                     "TableName": "MusicCollection",
-                    "Item": {"id": "$.Id", "data": "$.data"},
+                    "Item": {
+                        "id": {"S": "$input.path('id')"},
+                        "data": {"S": "$input.path('data')"},
+                    },
                 }
             )
         }
 
-        api_id = self.create_api_gateway_and_deploy(response_templates)
+        api_id = self.create_api_gateway_and_deploy(request_templates=request_templates)
         url = path_based_url(api_id=api_id, stage_name="staging", path="/")
 
         response = requests.put(
@@ -1348,16 +1348,21 @@ class TestAPIGateway:
         assert "foobar123" == result["Item"]["data"]
 
     def test_api_key_required_for_methods(self):
-        response_templates = {
+        request_templates = {
             "application/json": json.dumps(
                 {
                     "TableName": "MusicCollection",
-                    "Item": {"id": "$.Id", "data": "$.data"},
+                    "Item": {
+                        "id": {"S": "$input.path('id')"},
+                        "data": {"S": "$input.path('data')"},
+                    },
                 }
             )
         }
 
-        api_id = self.create_api_gateway_and_deploy(response_templates, True)
+        api_id = self.create_api_gateway_and_deploy(
+            request_templates=request_templates, is_api_key_required=True
+        )
         url = path_based_url(api_id=api_id, stage_name="staging", path="/")
 
         payload = {
@@ -1399,16 +1404,21 @@ class TestAPIGateway:
         assert 200 == response.status_code
 
     def test_multiple_api_keys_validate(self, apigateway_client):
-        response_templates = {
+        request_templates = {
             "application/json": json.dumps(
                 {
                     "TableName": "MusicCollection",
-                    "Item": {"id": "$.Id", "data": "$.data"},
+                    "Item": {
+                        "id": {"S": "$input.path('id')"},
+                        "data": {"S": "$input.path('data')"},
+                    },
                 }
             )
         }
 
-        api_id = self.create_api_gateway_and_deploy(response_templates, True)
+        api_id = self.create_api_gateway_and_deploy(
+            request_templates=request_templates, is_api_key_required=True
+        )
         url = path_based_url(api_id=api_id, stage_name="staging", path="/")
 
         # Create multiple usage plans
@@ -2029,6 +2039,7 @@ class TestAPIGateway:
 
     @staticmethod
     def create_api_gateway_and_deploy(
+        request_templates=None,
         response_templates=None,
         is_api_key_required=False,
         integration_type=None,
@@ -2036,6 +2047,7 @@ class TestAPIGateway:
         stage_name="staging",
     ):
         response_templates = response_templates or {}
+        request_templates = request_templates or {}
         integration_type = integration_type or "AWS"
         apigw_client = aws_stack.create_external_boto_client("apigateway")
         response = apigw_client.create_rest_api(name="my_api", description="this is my api")
@@ -2076,6 +2088,7 @@ class TestAPIGateway:
                 httpMethod=resp_details["httpMethod"],
                 integrationHttpMethod=resp_details["httpMethod"],
                 type=integration_type,
+                requestTemplates=request_templates,
                 **kwargs,
             )
 

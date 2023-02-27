@@ -18,12 +18,11 @@ from localstack.services.apigateway.helpers import (
     extract_query_string_params,
     get_resource_for_path,
 )
-from localstack.services.apigateway.integration import LambdaProxyIntegration
-from localstack.services.apigateway.invocations import (
-    ApiInvocationContext,
-    RequestValidator,
+from localstack.services.apigateway.integration import (
+    LambdaProxyIntegration,
     apply_request_parameters,
 )
+from localstack.services.apigateway.invocations import ApiInvocationContext, RequestValidator
 from localstack.services.apigateway.templates import (
     RequestTemplates,
     ResponseTemplates,
