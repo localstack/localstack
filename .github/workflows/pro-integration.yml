@@ -47,6 +47,8 @@ jobs:
       run:
         working-directory: localstack-ext
     environment: localstack-ext-tests
+    env:
+      GITHUB_API_TOKEN: ${{ secrets.GITHUB_TOKEN }} # used for increased rate-limits when installing packages
     if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository  # skip job if fork PR
     steps:
       - name: Determine companion-ref
@@ -135,7 +137,7 @@ jobs:
           terraform_version: 0.13.7
       - name: Set up system wide dependencies
         run: |
-          sudo apt-get install libsasl2-dev jq
+          sudo apt-get install --allow-downgrades libsasl2-dev jq postgresql-14=14.6-0ubuntu0.22.04.1 postgresql-client postgresql-plpython3
       - name: Cache LocalStack-ext dependencies (venv)
         uses: actions/cache@v2
         id: ext-cache

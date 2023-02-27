@@ -36,6 +36,7 @@ from localstack.aws.api.cloudformation import (
     GetTemplateOutput,
     GetTemplateSummaryInput,
     GetTemplateSummaryOutput,
+    InsufficientCapabilitiesException,
     InvalidChangeSetStatusException,
     ListChangeSetsOutput,
     ListExportsOutput,
@@ -74,6 +75,9 @@ from localstack.services.cloudformation.engine.entities import (
     StackSet,
 )
 from localstack.services.cloudformation.engine.template_deployer import NoStackUpdates
+from localstack.services.cloudformation.engine.template_preparer import (
+    FailedTransformationException,
+)
 from localstack.services.cloudformation.stores import (
     find_change_set,
     find_stack,
@@ -140,9 +144,13 @@ class CloudformationProvider(CloudformationApi):
         # TODO: test what happens when both TemplateUrl and Body are specified
         state = get_cloudformation_store()
         api_utils.prepare_template_body(request)  # TODO: avoid mutating request directly
+        if len(request["TemplateBody"]) > 51200:
+            raise ValidationError(
+                f'1 validation error detected: Value \'{request["TemplateBody"]}\' at \'templateBody\' failed to satisfy constraint: Member must have length less than or equal to 51200'
+            )
+
         template = template_preparer.parse_template(request["TemplateBody"])
         stack_name = template["StackName"] = request.get("StackName")
-        stack = Stack(request, template)  # TODO: proper body handling like in create_change_set
 
         # find existing stack with same name, and remove it if this stack is in DELETED state
         existing = ([s for s in state.stacks.values() if s.stack_name == stack_name] or [None])[0]
@@ -153,6 +161,34 @@ class CloudformationProvider(CloudformationApi):
                 )
             state.stacks.pop(existing.stack_id)
 
+        if (
+            "CAPABILITY_AUTO_EXPAND" not in request.get("Capabilities", [])
+            and "Transform" in template.keys()
+        ):
+            raise InsufficientCapabilitiesException(
+                "Requires capabilities : [CAPABILITY_AUTO_EXPAND]"
+            )
+
+        parameters = template_preparer.resolve_parameters(
+            template.get("Parameters", {}), request.get("Parameters", [])
+        )
+
+        stack = Stack(request, template)
+        try:
+            template = template_preparer.transform_template(template, parameters, stack=stack)
+        except FailedTransformationException as e:
+            stack.add_stack_event(
+                stack.stack_name,
+                stack.stack_id,
+                status="ROLLBACK_IN_PROGRESS",
+                status_reason=e.message,
+            )
+            stack.set_stack_status("ROLLBACK_COMPLETE")
+            state.stacks[stack.stack_id] = stack
+            return CreateStackOutput(StackId=stack.stack_id)
+
+        stack = Stack(request, template)
+        stack.template_body = json.dumps(template)
         state.stacks[stack.stack_id] = stack
         LOG.debug(
             'Creating stack "%s" with %s resources ...',
@@ -161,7 +197,6 @@ class CloudformationProvider(CloudformationApi):
         )
         deployer = template_deployer.TemplateDeployer(stack)
         try:
-            # TODO: create separate step to first resolve parameters
             deployer.deploy_stack()
         except Exception as e:
             stack.set_stack_status("CREATE_FAILED")
@@ -197,8 +232,33 @@ class CloudformationProvider(CloudformationApi):
 
         api_utils.prepare_template_body(request)
         template = template_preparer.parse_template(request["TemplateBody"])
-        new_stack = Stack(request, template)
+
+        if (
+            "CAPABILITY_AUTO_EXPAND" not in request.get("Capabilities", [])
+            and "Transform" in template.keys()
+        ):
+            raise InsufficientCapabilitiesException(
+                "Requires capabilities : [CAPABILITY_AUTO_EXPAND]"
+            )
+
+        parameters = template_preparer.resolve_parameters(
+            template.get("Parameters", {}), request.get("Parameters", [])
+        )
+
+        try:
+            template = template_preparer.transform_template(template, parameters, stack=stack)
+        except FailedTransformationException as e:
+            stack.add_stack_event(
+                stack.stack_name,
+                stack.stack_id,
+                status="ROLLBACK_IN_PROGRESS",
+                status_reason=e.message,
+            )
+            stack.set_stack_status("ROLLBACK_COMPLETE")
+            return CreateStackOutput(StackId=stack.stack_id)
+
         deployer = template_deployer.TemplateDeployer(stack)
+        new_stack = Stack(request, template)
         try:
             deployer.update_stack(new_stack)
         except Exception as e:
@@ -360,10 +420,12 @@ class CloudformationProvider(CloudformationApi):
                 "TemplateBody"
             ]  # should then have been set by prepare_template_body
         template = template_preparer.parse_template(req_params["TemplateBody"])
+
         del req_params["TemplateBody"]  # TODO: stop mutating req_params
         template["StackName"] = stack_name
         # TODO: validate with AWS what this is actually doing?
         template["ChangeSetName"] = change_set_name
+        state = get_cloudformation_store()
 
         if change_set_type == "UPDATE":
             # add changeset to existing stack
@@ -377,7 +439,6 @@ class CloudformationProvider(CloudformationApi):
                 raise ValidationError(
                     f"Stack {stack_name} already exists"
                 )  # stack should not exist yet (TODO: check proper message)
-            state = get_cloudformation_store()
             empty_stack_template = dict(template)
             empty_stack_template["Resources"] = {}
             req_params_copy = clone_stack_params(req_params)
@@ -397,8 +458,14 @@ class CloudformationProvider(CloudformationApi):
             )
             raise ValidationError(msg)
 
+        # apply template transformations
+        parameters = template_preparer.resolve_parameters(
+            template.get("Parameters", {}), request.get("Parameters", [])
+        )
+        template = template_preparer.transform_template(template, parameters, stack=stack)
+
+        # create change set for the stack and apply changes
         change_set = StackChangeSet(stack, req_params, template)
-        # TODO: refactor the flow here
         deployer = template_deployer.TemplateDeployer(change_set)
         changes = deployer.construct_changes(
             stack,
@@ -457,6 +524,7 @@ class CloudformationProvider(CloudformationApi):
             "LastUpdatedTime",
             "DisableRollback",
             "EnableTerminationProtection",
+            "Transform",
         ]
         result = remove_attributes(deepcopy(change_set.metadata), attrs)
         return result

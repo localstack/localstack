@@ -182,6 +182,8 @@ class TestCliContainerLifecycle:
 
     def test_start_cli_within_container(self, runner, container_client):
         output = container_client.run_container(
+            # CAVEAT: Updates to the Docker image are not immediately reflected when using the latest image from
+            # DockerHub in the CI. Re-build the Docker image locally through `make docker-build` for local testing.
             "localstack/localstack",
             remove=True,
             entrypoint="",

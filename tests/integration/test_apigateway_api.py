@@ -294,6 +294,7 @@ def test_put_integration_response_with_response_template(apigateway_client):
     }
 
 
+# TODO: add snapshot test!
 def test_put_integration_validation(apigateway_client):
     response = apigateway_client.create_rest_api(name="my_api", description="this is my api")
     api_id = response["id"]
@@ -309,7 +310,7 @@ def test_put_integration_validation(apigateway_client):
 
     http_types = ["HTTP", "HTTP_PROXY"]
     aws_types = ["AWS", "AWS_PROXY"]
-    types_requiring_integration_method = http_types + aws_types
+    types_requiring_integration_method = http_types + ["AWS"]
     types_not_requiring_integration_method = ["MOCK"]
 
     for _type in types_requiring_integration_method:
@@ -404,35 +405,35 @@ def test_put_integration_validation(apigateway_client):
             )
         assert ex.value.response["Error"]["Code"] == "BadRequestException"
         assert ex.value.response["Error"]["Message"] == "Invalid HTTP endpoint specified for URI"
-    for _type in aws_types:
-        # Ensure that the URI is an ARN
-        with pytest.raises(ClientError) as ex:
-            apigateway_client.put_integration(
-                restApiId=api_id,
-                resourceId=root_id,
-                httpMethod="GET",
-                type=_type,
-                uri="non-valid-arn",
-                integrationHttpMethod="POST",
-            )
-        assert ex.value.response["Error"]["Code"] == "BadRequestException"
-        assert ex.value.response["Error"]["Message"] == "Invalid ARN specified in the request"
-    for _type in aws_types:
-        # Ensure that the URI is a valid ARN
-        with pytest.raises(ClientError) as ex:
-            apigateway_client.put_integration(
-                restApiId=api_id,
-                resourceId=root_id,
-                httpMethod="GET",
-                type=_type,
-                uri="arn:aws:iam::0000000000:role/service-role/asdf",
-                integrationHttpMethod="POST",
-            )
-        assert ex.value.response["Error"]["Code"] == "BadRequestException"
-        assert (
-            ex.value.response["Error"]["Message"] == "AWS ARN for integration must contain path or "
-            "action"
+
+    # Ensure that the URI is an ARN
+    with pytest.raises(ClientError) as ex:
+        apigateway_client.put_integration(
+            restApiId=api_id,
+            resourceId=root_id,
+            httpMethod="GET",
+            type="AWS",
+            uri="non-valid-arn",
+            integrationHttpMethod="POST",
         )
+    assert ex.value.response["Error"]["Code"] == "BadRequestException"
+    assert ex.value.response["Error"]["Message"] == "Invalid ARN specified in the request"
+
+    # Ensure that the URI is a valid ARN
+    with pytest.raises(ClientError) as ex:
+        apigateway_client.put_integration(
+            restApiId=api_id,
+            resourceId=root_id,
+            httpMethod="GET",
+            type="AWS",
+            uri="arn:aws:iam::0000000000:role/service-role/asdf",
+            integrationHttpMethod="POST",
+        )
+    assert ex.value.response["Error"]["Code"] == "BadRequestException"
+    assert (
+        ex.value.response["Error"]["Message"] == "AWS ARN for integration must contain path or "
+        "action"
+    )
 
 
 def test_create_domain_names(apigateway_client):

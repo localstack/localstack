@@ -41,6 +41,10 @@ class StatePass(CommonStateField):
             self.result_path = ResultPath(result_path_src=ResultPath.DEFAULT_PATH)
 
     def _eval_state(self, env: Environment) -> None:
+        if self.parameters:
+            self.parameters.eval(env=env)
+            env.inp = env.stack.pop()
+
         if self.result:
             env.stack.append(self.result.result_obj)
         else:

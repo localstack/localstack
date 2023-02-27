@@ -84,6 +84,7 @@ class SFNStateMachine(GenericBaseModel):
     def get_deploy_templates(cls):
         def _create_params(params, **kwargs):
             def _get_definition(params):
+                # TODO: support "Definition" parameter
                 definition_str = params.get("DefinitionString")
                 s3_location = params.get("DefinitionS3Location")
                 if not definition_str and s3_location:

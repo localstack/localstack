@@ -1,3 +1,7 @@
+Parameters:
+  ExampleParameter:
+    Type: String
+    Default: example-value
 Resources:
   Parameter:
     Type: AWS::SSM::Parameter

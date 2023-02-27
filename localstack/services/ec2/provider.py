@@ -7,6 +7,7 @@ from moto.core.utils import camelcase_to_underscores, underscores_to_camelcase
 from moto.ec2.exceptions import InvalidVpcEndPointIdError
 from moto.ec2.models import SubnetBackend, TransitGatewayAttachmentBackend
 from moto.ec2.models.launch_templates import LaunchTemplate as MotoLaunchTemplate
+from moto.ec2.models.route_tables import RouteTable
 from moto.ec2.models.subnets import Subnet
 
 from localstack.aws.api import RequestContext, handler
@@ -30,8 +31,10 @@ from localstack.aws.api.ec2 import (
     DescribeSubnetsResult,
     DescribeTransitGatewaysRequest,
     DescribeTransitGatewaysResult,
+    DnsOptionsSpecification,
     Ec2Api,
     InstanceType,
+    IpAddressType,
     ModifyLaunchTemplateRequest,
     ModifyLaunchTemplateResult,
     ModifySubnetAttributeRequest,
@@ -185,6 +188,8 @@ class Ec2Provider(Ec2Api, ABC):
         remove_subnet_ids: VpcEndpointSubnetIdList = None,
         add_security_group_ids: VpcEndpointSecurityGroupIdList = None,
         remove_security_group_ids: VpcEndpointSecurityGroupIdList = None,
+        ip_address_type: IpAddressType = None,
+        dns_options: DnsOptionsSpecification = None,
         private_dns_enabled: Boolean = None,
     ) -> ModifyVpcEndpointResult:
         backend = get_ec2_backend(context.account_id, context.region)
@@ -402,6 +407,18 @@ def get_filter_value(fn, self, filter_name):
         "ipv6-cidr-block-association.association-id",
     ):
         return self.ipv6_cidr_block_associations
+    return fn(self, filter_name)
+
+
+# TODO: can be removed once https://github.com/getmoto/moto/pull/5932 is merged
+@patch(RouteTable.get_filter_value)
+def route_table_get_filter_value(fn, self, filter_name):
+    if filter_name == "route.destination-cidr-block":
+        return [
+            route.destination_cidr_block
+            for route in self.routes.values()
+            if route.destination_cidr_block is not None
+        ]
     return fn(self, filter_name)
 
 

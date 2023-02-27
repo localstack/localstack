@@ -17,6 +17,9 @@ from localstack.utils.aws.aws_responses import LambdaResponse
 LOG = logging.getLogger(__name__)
 
 
+# TODO: with the latest snapshot tests, we might start moving away from the
+# invocation context property decorators and use the url_params directly,
+# something asked for a long time.
 def to_invocation_context(
     request: Request, url_params: Dict[str, Any] = None
 ) -> ApiInvocationContext:
@@ -31,7 +34,9 @@ def to_invocation_context(
         url_params = {}
 
     method = request.method
-    path = request.full_path if request.query_string else request.path
+    # Base path is not URL-decoded.
+    # Example: test%2Balias@gmail.com => test%2Balias@gmail.com
+    path = request.environ.get("RAW_URI")
     data = restore_payload(request)
     headers = Headers(request.headers)
 
@@ -103,17 +108,20 @@ class ApigatewayRouter:
             host="<api_id>.execute-api.<regex('.*'):server>",
             endpoint=self.invoke_rest_api,
             defaults={"path": "", "stage": None},
+            strict_slashes=True,
         )
         self.router.add(
             "/<stage>/",
             host="<api_id>.execute-api.<regex('.*'):server>",
             endpoint=self.invoke_rest_api,
             defaults={"path": ""},
+            strict_slashes=False,
         )
         self.router.add(
             "/<stage>/<path:path>",
             host="<api_id>.execute-api.<regex('.*'):server>",
             endpoint=self.invoke_rest_api,
+            strict_slashes=True,
         )
 
         # add the localstack-specific _user_request_ routes
@@ -125,6 +133,7 @@ class ApigatewayRouter:
         self.router.add(
             "/restapis/<api_id>/<stage>/_user_request_/<path:path>",
             endpoint=self.invoke_rest_api,
+            strict_slashes=True,
         )
 
     def invoke_rest_api(self, request: Request, **url_params: Dict[str, Any]) -> Response:

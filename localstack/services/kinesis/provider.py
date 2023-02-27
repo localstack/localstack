@@ -19,6 +19,7 @@ from localstack.aws.api.kinesis import (
     SequenceNumber,
     ShardId,
     StartingPosition,
+    StreamARN,
     StreamName,
     SubscribeToShardEvent,
     SubscribeToShardEventStream,
@@ -116,11 +117,12 @@ class KinesisProvider(KinesisApi, ServiceLifecycleHook):
     def put_record(
         self,
         context: RequestContext,
-        stream_name: StreamName,
         data: Data,
         partition_key: PartitionKey,
+        stream_name: StreamName = None,
         explicit_hash_key: HashKey = None,
         sequence_number_for_ordering: SequenceNumber = None,
+        stream_arn: StreamARN = None,
     ):
         if random() < config.KINESIS_ERROR_PROBABILITY:
             raise ProvisionedThroughputExceededException(
@@ -131,7 +133,11 @@ class KinesisProvider(KinesisApi, ServiceLifecycleHook):
         raise NotImplementedError
 
     def put_records(
-        self, context: RequestContext, records: PutRecordsRequestEntryList, stream_name: StreamName
+        self,
+        context: RequestContext,
+        records: PutRecordsRequestEntryList,
+        stream_name: StreamName = None,
+        stream_arn: StreamARN = None,
     ) -> PutRecordsOutput:
         if random() < config.KINESIS_ERROR_PROBABILITY:
             records_count = len(records) if records is not None else 0

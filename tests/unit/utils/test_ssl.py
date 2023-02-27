@@ -1,7 +1,7 @@
 import pytest
 
 from localstack import config
-from localstack.services.generic_proxy import get_cert_pem_file_path
+from localstack.utils.ssl import get_cert_pem_file_path
 
 
 def test_custom_ssl_cert_path_is_used(monkeypatch):

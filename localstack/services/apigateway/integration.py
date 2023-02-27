@@ -1,22 +1,29 @@
 import base64
 import json
 import logging
+import re
 from abc import ABC, abstractmethod
 from collections import defaultdict
 from http import HTTPStatus
 from typing import Any, Dict, List, Union
+from urllib.parse import urljoin
 
+import requests
 from moto.apigatewayv2.exceptions import BadRequestException
 from requests import Response
 
 from localstack import config
+from localstack.aws.accounts import get_aws_account_id
 from localstack.constants import APPLICATION_JSON, HEADER_CONTENT_TYPE
 from localstack.services.apigateway import helpers
 from localstack.services.apigateway.context import ApiInvocationContext
 from localstack.services.apigateway.helpers import (
+    IntegrationParameters,
+    RequestParametersResolver,
     extract_path_params,
     extract_query_string_params,
     get_event_request_context,
+    make_error_response,
 )
 from localstack.services.apigateway.templates import (
     MappingTemplates,
@@ -27,11 +34,15 @@ from localstack.services.stepfunctions.stepfunctions_utils import await_sfn_exec
 from localstack.utils import common
 from localstack.utils.aws import aws_stack
 from localstack.utils.aws.arns import extract_region_from_arn
-from localstack.utils.aws.aws_responses import LambdaResponse, requests_response
+from localstack.utils.aws.aws_responses import (
+    LambdaResponse,
+    request_response_stream,
+    requests_response,
+)
 from localstack.utils.aws.templating import VtlTemplate
 from localstack.utils.collections import remove_attributes
 from localstack.utils.common import make_http_request, to_str
-from localstack.utils.http import canonicalize_headers, parse_request_data
+from localstack.utils.http import add_query_params_to_url, canonicalize_headers, parse_request_data
 from localstack.utils.json import json_safe
 from localstack.utils.strings import camel_to_snake_case, to_bytes
 
@@ -44,6 +55,7 @@ class BackendIntegration(ABC):
     def __init__(self):
         self.request_templates = RequestTemplates()
         self.response_templates = ResponseTemplates()
+        self.request_params_resolver = RequestParametersResolver()
 
     @abstractmethod
     def invoke(self, invocation_context: ApiInvocationContext):
@@ -56,6 +68,13 @@ class BackendIntegration(ABC):
         response.headers = headers
         response._content = data
         return response
+
+    @classmethod
+    def apply_request_parameters(
+        cls, integration_params: IntegrationParameters, headers: Dict[str, Any]
+    ):
+        for k, v in integration_params.get("headers").items():
+            headers.update({k: v})
 
     @classmethod
     def apply_response_parameters(
@@ -81,26 +100,6 @@ class BackendIntegration(ABC):
         return response
 
 
-class SnsIntegration(BackendIntegration):
-    def invoke(self, invocation_context: ApiInvocationContext) -> Response:
-        invocation_context.context = get_event_request_context(invocation_context)
-        try:
-            payload = self.request_templates.render(invocation_context)
-        except Exception as e:
-            LOG.warning("Failed to apply template for SNS integration", e)
-            raise
-        uri = (
-            invocation_context.integration.get("uri")
-            or invocation_context.integration.get("integrationUri")
-            or ""
-        )
-        region_name = uri.split(":")[3]
-        headers = aws_stack.mock_aws_request_headers(service="sns", region_name=region_name)
-        return make_http_request(
-            config.service_url("sns"), method="POST", headers=headers, data=payload
-        )
-
-
 def call_lambda(function_arn: str, event: bytes, asynchronous: bool) -> str:
     lambda_client = aws_stack.connect_to_service(
         "lambda", region_name=extract_region_from_arn(function_arn)
@@ -110,8 +109,7 @@ def call_lambda(function_arn: str, event: bytes, asynchronous: bool) -> str:
         Payload=event,
         InvocationType="Event" if asynchronous else "RequestResponse",
     )
-    payload = inv_result.get("Payload")
-    if payload:
+    if payload := inv_result.get("Payload"):
         payload = to_str(payload.read())
         return payload
     return ""
@@ -268,7 +266,7 @@ class LambdaProxyIntegration(BackendIntegration):
             func_arn = uri.split(":lambda:path")[1].split("functions/")[1].split("/invocations")[0]
 
         if invocation_context.authorizer_type:
-            invocation_context.context["authorizer"] = invocation_context.auth_context
+            invocation_context.context["authorizer"] = invocation_context.authorizer_result
 
         payload = self.request_templates.render(invocation_context)
 
@@ -343,11 +341,10 @@ class LambdaIntegration(BackendIntegration):
         invocation_context.context = helpers.get_event_request_context(invocation_context)
         invocation_context.stage_variables = helpers.get_stage_variables(invocation_context)
         if invocation_context.authorizer_type:
-            invocation_context.context["authorizer"] = invocation_context.auth_context
+            invocation_context.context["authorizer"] = invocation_context.authorizer_result
 
         func_arn = self._lambda_integration_uri(invocation_context)
-        request_templates = RequestTemplates()
-        event = request_templates.render(invocation_context) or b""
+        event = self.request_templates.render(invocation_context) or b""
         asynchronous = headers.get("X-Amz-Invocation-Type", "").strip("'") == "Event"
         result = call_lambda(
             function_arn=func_arn, event=to_bytes(event), asynchronous=asynchronous
@@ -357,7 +354,6 @@ class LambdaIntegration(BackendIntegration):
 
         if asynchronous:
             response._content = ""
-            response.status_code = 200
         else:
             # depending on the lambda executor sometimes it returns a string and sometimes a dict
             match result:
@@ -374,68 +370,227 @@ class LambdaIntegration(BackendIntegration):
                     parsed_result = json.loads(str(result or "{}"))
             parsed_result = common.json_safe(parsed_result)
             parsed_result = {} if parsed_result is None else parsed_result
-            response.status_code = 200
             response._content = parsed_result
 
+        response.status_code = 200
         # apply custom response template
         invocation_context.response = response
 
-        response_templates = ResponseTemplates()
-        response_templates.render(invocation_context)
+        self.response_templates.render(invocation_context)
         invocation_context.response.headers["Content-Length"] = str(len(response.content or ""))
         return invocation_context.response
 
 
-class MockIntegration(BackendIntegration):
-    @classmethod
-    def check_passthrough_behavior(cls, passthrough_behavior: str, request_template: str):
-        return MappingTemplates(passthrough_behavior).check_passthrough_behavior(request_template)
+class KinesisIntegration(BackendIntegration):
+    def invoke(self, invocation_context: ApiInvocationContext):
+        integration = invocation_context.integration
+        integration_type_orig = integration.get("type") or integration.get("integrationType") or ""
+        integration_type = integration_type_orig.upper()
+        uri = integration.get("uri") or integration.get("integrationUri") or ""
 
-    def invoke(self, invocation_context: ApiInvocationContext) -> Response:
-        passthrough_behavior = invocation_context.integration.get("passthroughBehavior") or ""
-        request_template = invocation_context.integration.get("requestTemplates", {}).get(
-            invocation_context.headers.get(HEADER_CONTENT_TYPE)
-        )
-
-        # based on the configured passthrough behavior and the existence of template or not,
-        # we proceed calling the integration or raise an exception.
-        try:
-            self.check_passthrough_behavior(passthrough_behavior, request_template)
-        except MappingTemplates.UnsupportedMediaType:
-            return MockIntegration._create_response(
-                HTTPStatus.UNSUPPORTED_MEDIA_TYPE.value,
-                headers={"Content-Type": APPLICATION_JSON},
-                data=json.dumps({"message": f"{HTTPStatus.UNSUPPORTED_MEDIA_TYPE.phrase}"}),
+        if uri.endswith("kinesis:action/PutRecord"):
+            target = "Kinesis_20131202.PutRecord"
+        elif uri.endswith("kinesis:action/PutRecords"):
+            target = "Kinesis_20131202.PutRecords"
+        elif uri.endswith("kinesis:action/ListStreams"):
+            target = "Kinesis_20131202.ListStreams"
+        else:
+            LOG.info(
+                f"Unexpected API Gateway integration URI '{uri}' for integration type {integration_type}",
             )
+            target = ""
 
-        # request template rendering
-        request_payload = self.request_templates.render(invocation_context)
+        try:
+            invocation_context.context = helpers.get_event_request_context(invocation_context)
+            invocation_context.stage_variables = helpers.get_stage_variables(invocation_context)
+            payload = self.request_templates.render(invocation_context)
 
-        # mapping is done based on "statusCode" field
-        status_code = 200
-        if invocation_context.headers.get(HEADER_CONTENT_TYPE) == APPLICATION_JSON:
-            try:
-                mock_response = json.loads(request_payload)
-                status_code = mock_response.get("statusCode", status_code)
-            except Exception as e:
-                LOG.warning("failed to deserialize request payload after transformation: %s", e)
-                http_status = HTTPStatus(500)
-                return MockIntegration._create_response(
-                    http_status.value,
-                    headers={"Content-Type": APPLICATION_JSON},
-                    data=json.dumps({"message": f"{http_status.phrase}"}),
-                )
+        except Exception as e:
+            LOG.warning("Unable to convert API Gateway payload to str", e)
+            raise
 
-        # response template
-        response = MockIntegration._create_response(
-            status_code, invocation_context.headers, data=request_payload
+        # forward records to target kinesis stream
+        headers = aws_stack.mock_aws_request_headers(
+            service="kinesis", region_name=invocation_context.region_name
         )
-        response._content = self.response_templates.render(invocation_context, response=response)
-        # apply response parameters
-        response = self.apply_response_parameters(invocation_context, response)
-        if not invocation_context.headers.get(HEADER_CONTENT_TYPE):
-            invocation_context.headers.update({HEADER_CONTENT_TYPE: APPLICATION_JSON})
+        headers["X-Amz-Target"] = target
+
+        result = common.make_http_request(
+            url=config.service_url("kinesis"), data=payload, headers=headers, method="POST"
+        )
+
+        # apply response template
+        invocation_context.response = result
+        self.response_templates.render(invocation_context)
+        return invocation_context.response
+
+
+class DynamoDBIntegration(BackendIntegration):
+    def invoke(self, invocation_context: ApiInvocationContext):
+        integration = invocation_context.integration
+        uri = integration.get("uri") or integration.get("integrationUri") or ""
+
+        # example: arn:aws:apigateway:us-east-1:dynamodb:action/PutItem&Table=MusicCollection
+        action = uri.split(":dynamodb:action/")[1].split("&")[0]
+
+        # render request template
+        payload = self.request_templates.render(invocation_context)
+        payload = json.loads(payload)
+
+        # determine target method via reflection
+        dynamo_client = aws_stack.connect_to_service("dynamodb")
+        method_name = camel_to_snake_case(action)
+        client_method = getattr(dynamo_client, method_name, None)
+        if not client_method:
+            raise Exception(f"Unsupported action {action} in API Gateway integration URI {uri}")
+
+        # run request against DynamoDB backend
+        response = client_method(**payload)
+
+        # apply response templates
+        response_content = json.dumps(remove_attributes(response, ["ResponseMetadata"]))
+        response_obj = requests_response(content=response_content)
+        response = self.response_templates.render(invocation_context, response=response_obj)
+
+        # construct final response
+        response = requests_response(response)
+        invocation_context.response = response
         return response
+
+
+class S3Integration(BackendIntegration):
+    # target ARN patterns
+    TARGET_REGEX_PATH_S3_URI = (
+        r"^arn:aws:apigateway:[a-zA-Z0-9\-]+:s3:path/(?P<bucket>[^/]+)/(?P<object>.+)$"
+    )
+    TARGET_REGEX_ACTION_S3_URI = r"^arn:aws:apigateway:[a-zA-Z0-9\-]+:s3:action/(?:GetObject&Bucket\=(?P<bucket>[^&]+)&Key\=(?P<object>.+))$"
+
+    def invoke(self, invocation_context: ApiInvocationContext):
+        invocation_path = invocation_context.path_with_query_string
+        integration = invocation_context.integration
+        path_params = invocation_context.path_params
+        relative_path, query_string_params = extract_query_string_params(path=invocation_path)
+        uri = integration.get("uri") or integration.get("integrationUri") or ""
+
+        s3 = aws_stack.connect_to_service("s3")
+        uri = apply_request_parameters(
+            uri,
+            integration=integration,
+            path_params=path_params,
+            query_params=query_string_params,
+        )
+        uri_match = re.match(self.TARGET_REGEX_PATH_S3_URI, uri) or re.match(
+            self.TARGET_REGEX_ACTION_S3_URI, uri
+        )
+        if not uri_match:
+            msg = "Request URI does not match s3 specifications"
+            LOG.warning(msg)
+            return make_error_response(msg, 400)
+
+        bucket, object_key = uri_match.group("bucket", "object")
+        LOG.debug("Getting request for bucket %s object %s", bucket, object_key)
+        try:
+            object = s3.get_object(Bucket=bucket, Key=object_key)
+        except s3.exceptions.NoSuchKey:
+            msg = f"Object {object_key} not found"
+            LOG.debug(msg)
+            return make_error_response(msg, 404)
+
+        headers = aws_stack.mock_aws_request_headers(service="s3")
+
+        if object.get("ContentType"):
+            headers["Content-Type"] = object["ContentType"]
+
+        # stream used so large files do not fill memory
+        response = request_response_stream(stream=object["Body"], headers=headers)
+        return response
+
+
+class HTTPIntegration(BackendIntegration):
+    def invoke(self, invocation_context: ApiInvocationContext):
+        invocation_path = invocation_context.path_with_query_string
+        integration = invocation_context.integration
+        path_params = invocation_context.path_params
+        method = invocation_context.method
+        headers = invocation_context.headers
+        relative_path, query_string_params = extract_query_string_params(path=invocation_path)
+        uri = integration.get("uri") or integration.get("integrationUri") or ""
+
+        if ":servicediscovery:" in uri:
+            # check if this is a servicediscovery integration URI
+            client = aws_stack.connect_to_service("servicediscovery")
+            service_id = uri.split("/")[-1]
+            instances = client.list_instances(ServiceId=service_id)["Instances"]
+            instance = (instances or [None])[0]
+            if instance and instance.get("Id"):
+                uri = "http://%s/%s" % (instance["Id"], invocation_path.lstrip("/"))
+
+        # apply custom request template
+        invocation_context.context = helpers.get_event_request_context(invocation_context)
+        invocation_context.stage_variables = helpers.get_stage_variables(invocation_context)
+        request_templates = RequestTemplates()
+        payload = request_templates.render(invocation_context)
+
+        if isinstance(payload, dict):
+            payload = json.dumps(payload)
+
+        uri = apply_request_parameters(
+            uri,
+            integration=integration,
+            path_params=path_params,
+            query_params=query_string_params,
+        )
+        result = requests.request(method=method, url=uri, data=payload, headers=headers)
+        # apply custom response template
+        invocation_context.response = result
+        response_templates = ResponseTemplates()
+        response_templates.render(invocation_context)
+        return invocation_context.response
+
+
+class SQSIntegration(BackendIntegration):
+    def invoke(self, invocation_context: ApiInvocationContext):
+        integration = invocation_context.integration
+        uri = integration.get("uri") or integration.get("integrationUri") or ""
+
+        template = integration["requestTemplates"].get(APPLICATION_JSON)
+        account_id, queue = uri.split("/")[-2:]
+        region_name = uri.split(":")[3]
+        if "GetQueueUrl" in template or "CreateQueue" in template:
+            request_templates = RequestTemplates()
+            payload = request_templates.render(invocation_context)
+            new_request = f"{payload}&QueueName={queue}"
+        else:
+            request_templates = RequestTemplates()
+            payload = request_templates.render(invocation_context)
+            queue_url = f"{config.get_edge_url()}/{account_id}/{queue}"
+            new_request = f"{payload}&QueueUrl={queue_url}"
+        headers = aws_stack.mock_aws_request_headers(service="sqs", region_name=region_name)
+
+        url = urljoin(config.service_url("sqs"), f"{get_aws_account_id()}/{queue}")
+        result = common.make_http_request(url, method="POST", headers=headers, data=new_request)
+        return result
+
+
+class SNSIntegration(BackendIntegration):
+    def invoke(self, invocation_context: ApiInvocationContext) -> Response:
+        # TODO: check if the logic below is accurate - cover with snapshot tests!
+        invocation_context.context = get_event_request_context(invocation_context)
+        invocation_context.stage_variables = helpers.get_stage_variables(invocation_context)
+        integration = invocation_context.integration
+        uri = integration.get("uri") or integration.get("integrationUri") or ""
+
+        try:
+            payload = self.request_templates.render(invocation_context)
+        except Exception as e:
+            LOG.warning("Failed to apply template for SNS integration", e)
+            raise
+        region_name = uri.split(":")[3]
+        headers = aws_stack.mock_aws_request_headers(service="sns", region_name=region_name)
+        result = make_http_request(
+            config.service_url("sns"), method="POST", headers=headers, data=payload
+        )
+        return self.apply_response_parameters(invocation_context, result)
 
 
 class StepFunctionIntegration(BackendIntegration):
@@ -491,7 +646,7 @@ class StepFunctionIntegration(BackendIntegration):
             )
 
         result = method(**payload)
-        result = json_safe(remove_attributes(result, "ResponseMetadata"))
+        result = json_safe(remove_attributes(result, ["ResponseMetadata"]))
         response = StepFunctionIntegration._create_response(
             HTTPStatus.OK.value, aws_stack.mock_aws_request_headers(), data=result
         )
@@ -537,3 +692,79 @@ class StepFunctionIntegration(BackendIntegration):
             "stateMachineArn": request_parameters.get("StateMachineArn"),
             "input": rendered_input,
         }
+
+
+class MockIntegration(BackendIntegration):
+    @classmethod
+    def check_passthrough_behavior(cls, passthrough_behavior: str, request_template: str):
+        return MappingTemplates(passthrough_behavior).check_passthrough_behavior(request_template)
+
+    def invoke(self, invocation_context: ApiInvocationContext) -> Response:
+        passthrough_behavior = invocation_context.integration.get("passthroughBehavior") or ""
+        request_template = invocation_context.integration.get("requestTemplates", {}).get(
+            invocation_context.headers.get(HEADER_CONTENT_TYPE, APPLICATION_JSON)
+        )
+
+        # based on the configured passthrough behavior and the existence of template or not,
+        # we proceed calling the integration or raise an exception.
+        try:
+            self.check_passthrough_behavior(passthrough_behavior, request_template)
+        except MappingTemplates.UnsupportedMediaType:
+            return MockIntegration._create_response(
+                HTTPStatus.UNSUPPORTED_MEDIA_TYPE.value,
+                headers={"Content-Type": APPLICATION_JSON},
+                data=json.dumps({"message": f"{HTTPStatus.UNSUPPORTED_MEDIA_TYPE.phrase}"}),
+            )
+
+        # request template rendering
+        request_payload = self.request_templates.render(invocation_context)
+
+        # mapping is done based on "statusCode" field, we default to 200
+        status_code = 200
+        if invocation_context.headers.get(HEADER_CONTENT_TYPE) == APPLICATION_JSON:
+            try:
+                mock_response = json.loads(request_payload)
+                status_code = mock_response.get("statusCode", status_code)
+            except Exception as e:
+                LOG.warning("failed to deserialize request payload after transformation: %s", e)
+                http_status = HTTPStatus(500)
+                return MockIntegration._create_response(
+                    http_status.value,
+                    headers={"Content-Type": APPLICATION_JSON},
+                    data=json.dumps({"message": f"{http_status.phrase}"}),
+                )
+
+        # response template
+        response = MockIntegration._create_response(
+            status_code, invocation_context.headers, data=request_payload
+        )
+        response._content = self.response_templates.render(invocation_context, response=response)
+        # apply response parameters
+        response = self.apply_response_parameters(invocation_context, response)
+        if not invocation_context.headers.get(HEADER_CONTENT_TYPE):
+            invocation_context.headers.update({HEADER_CONTENT_TYPE: APPLICATION_JSON})
+        return response
+
+
+# TODO: remove once we migrate all usages to `apply_request_parameters` on BackendIntegration
+def apply_request_parameters(
+    uri: str, integration: Dict[str, Any], path_params: Dict[str, str], query_params: Dict[str, str]
+):
+    request_parameters = integration.get("requestParameters")
+    uri = uri or integration.get("uri") or integration.get("integrationUri") or ""
+    if request_parameters:
+        for key in path_params:
+            # check if path_params is present in the integration request parameters
+            request_param_key = f"integration.request.path.{key}"
+            request_param_value = f"method.request.path.{key}"
+            if request_parameters.get(request_param_key) == request_param_value:
+                uri = uri.replace(f"{{{key}}}", path_params[key])
+
+    if integration.get("type") != "HTTP_PROXY" and request_parameters:
+        for key in query_params.copy():
+            request_query_key = f"integration.request.querystring.{key}"
+            request_param_val = f"method.request.querystring.{key}"
+            if request_parameters.get(request_query_key, None) != request_param_val:
+                query_params.pop(key)
+
+    return add_query_params_to_url(uri, query_params)

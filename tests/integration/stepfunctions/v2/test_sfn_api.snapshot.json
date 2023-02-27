@@ -1,5 +1,5 @@
 {
-  "tests/integration/stepfunctions/v2/test_stepfunctions_api.py::TestSnfApi::test_create_delete_valid_sm": {
+  "tests/integration/stepfunctions/v2/test_sfn_api.py::TestSnfApi::test_create_delete_valid_sm": {
     "recorded-date": "06-02-2023, 08:39:41",
     "recorded-content": {
       "creation_resp_1": {
@@ -18,7 +18,7 @@
       }
     }
   },
-  "tests/integration/stepfunctions/v2/test_stepfunctions_api.py::TestSnfApi::test_create_delete_invalid_sm": {
+  "tests/integration/stepfunctions/v2/test_sfn_api.py::TestSnfApi::test_create_delete_invalid_sm": {
     "recorded-date": "06-02-2023, 08:40:15",
     "recorded-content": {
       "invalid_definition_1": {
@@ -34,7 +34,7 @@
       }
     }
   },
-  "tests/integration/stepfunctions/v2/test_stepfunctions_api.py::TestSnfApi::test_delete_nonexistent_sm": {
+  "tests/integration/stepfunctions/v2/test_sfn_api.py::TestSnfApi::test_delete_nonexistent_sm": {
     "recorded-date": "06-02-2023, 08:40:33",
     "recorded-content": {
       "deletion_resp_1": {
@@ -45,7 +45,7 @@
       }
     }
   },
-  "tests/integration/stepfunctions/v2/test_stepfunctions_api.py::TestSnfApi::test_create_exact_duplicate_sm": {
+  "tests/integration/stepfunctions/v2/test_sfn_api.py::TestSnfApi::test_create_exact_duplicate_sm": {
     "recorded-date": "06-02-2023, 08:40:51",
     "recorded-content": {
       "creation_resp_1": {
@@ -162,7 +162,7 @@
       }
     }
   },
-  "tests/integration/stepfunctions/v2/test_stepfunctions_api.py::TestSnfApi::test_create_duplicate_definition_format_sm": {
+  "tests/integration/stepfunctions/v2/test_sfn_api.py::TestSnfApi::test_create_duplicate_definition_format_sm": {
     "recorded-date": "06-02-2023, 08:41:06",
     "recorded-content": {
       "creation_resp_1": {
@@ -218,7 +218,7 @@
       }
     }
   },
-  "tests/integration/stepfunctions/v2/test_stepfunctions_api.py::TestSnfApi::test_create_duplicate_sm_name": {
+  "tests/integration/stepfunctions/v2/test_sfn_api.py::TestSnfApi::test_create_duplicate_sm_name": {
     "recorded-date": "06-02-2023, 08:41:20",
     "recorded-content": {
       "creation_resp_1": {
@@ -274,7 +274,7 @@
       }
     }
   },
-  "tests/integration/stepfunctions/v2/test_stepfunctions_api.py::TestSnfApi::test_start_execution": {
+  "tests/integration/stepfunctions/v2/test_sfn_api.py::TestSnfApi::test_start_execution": {
     "recorded-date": "06-02-2023, 08:45:35",
     "recorded-content": {
       "creation_resp": {
@@ -374,7 +374,7 @@
       }
     }
   },
-  "tests/integration/stepfunctions/v2/test_stepfunctions_api.py::TestSnfApi::test_invalid_start_execution_arn": {
+  "tests/integration/stepfunctions/v2/test_sfn_api.py::TestSnfApi::test_invalid_start_execution_arn": {
     "recorded-date": "06-02-2023, 08:41:51",
     "recorded-content": {
       "creation_resp": {
@@ -398,7 +398,7 @@
       }
     }
   },
-  "tests/integration/stepfunctions/v2/test_stepfunctions_api.py::TestSnfApi::test_invalid_start_execution_input": {
+  "tests/integration/stepfunctions/v2/test_sfn_api.py::TestSnfApi::test_invalid_start_execution_input": {
     "recorded-date": "06-02-2023, 08:42:06",
     "recorded-content": {
       "creation_resp": {
@@ -468,7 +468,7 @@
       }
     }
   },
-  "tests/integration/stepfunctions/v2/test_stepfunctions_api.py::TestSnfApi::test_stop_execution": {
+  "tests/integration/stepfunctions/v2/test_sfn_api.py::TestSnfApi::test_stop_execution": {
     "recorded-date": "06-02-2023, 08:42:21",
     "recorded-content": {
       "creation_resp": {
@@ -537,7 +537,7 @@
       }
     }
   },
-  "tests/integration/stepfunctions/v2/test_stepfunctions_api.py::TestSnfApi::test_list_sms": {
+  "tests/integration/stepfunctions/v2/test_sfn_api.py::TestSnfApi::test_list_sms": {
     "recorded-date": "06-02-2023, 08:57:45",
     "recorded-content": {
       "lst_resp_init": {
