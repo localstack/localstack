@@ -959,6 +959,7 @@ class TestLambdaVersions:
         )
         snapshot.match("publish_result", publish_result)
 
+    @pytest.mark.aws_validated
     def test_publish_with_update(
         self, lambda_client, create_lambda_function_aws, lambda_su_role, snapshot
     ):
@@ -1142,6 +1143,7 @@ class TestLambdaAlias:
         )  # 3 aliases
         snapshot.match("list_aliases_for_fnname_afterdelete", list_aliases_for_fnname_afterdelete)
 
+    @pytest.mark.aws_validated
     def test_notfound_and_invalid_routingconfigs(
         self, create_boto_client, create_lambda_function_aws, snapshot, lambda_su_role
     ):
@@ -3939,6 +3941,7 @@ class TestLambdaTags:
         assert "a_key" not in lambda_client.list_tags(Resource=function_arn)["Tags"]
         assert "b_key" in lambda_client.list_tags(Resource=function_arn)["Tags"]
 
+    @pytest.mark.aws_validated
     def test_tag_limits(self, lambda_client, create_lambda_function, snapshot):
         """test the limit of 50 tags per resource"""
         function_name = f"fn-tag-{short_uid()}"
@@ -4010,6 +4013,7 @@ class TestLambdaTags:
             )
         snapshot.match("tag_resource_latest_exception", e.value.response)
 
+    @pytest.mark.aws_validated
     def test_tag_lifecycle(self, lambda_client, create_lambda_function, snapshot):
         function_name = f"fn-tag-{short_uid()}"
 
@@ -4190,6 +4194,7 @@ class TestLambdaLayer:
             )
         snapshot.match("publish_layer_version_exc_partially_invalid_values", e.value.response)
 
+    @pytest.mark.aws_validated
     def test_layer_function_exceptions(
         self, lambda_client, create_lambda_function, snapshot, dummylayer, cleanups
     ):
