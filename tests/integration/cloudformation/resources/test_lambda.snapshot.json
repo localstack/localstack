@@ -1,12 +1,8 @@
 {
   "tests/integration/cloudformation/resources/test_lambda.py::test_cfn_function_url": {
-    "recorded-date": "26-08-2022, 16:45:07",
+    "recorded-date": "27-02-2023, 17:27:12",
     "recorded-content": {
       "url_resource": {
-        "ResponseMetadata": {
-          "HTTPHeaders": {},
-          "HTTPStatusCode": 200
-        },
         "StackResourceDetail": {
           "DriftInformation": {
             "StackResourceDriftStatus": "NOT_CHECKED"
@@ -19,6 +15,10 @@
           "ResourceType": "AWS::Lambda::Url",
           "StackId": "arn:aws:cloudformation:<region>:111111111111:stack/<stack-name:1>/<resource:2>",
           "StackName": "<stack-name:1>"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
         }
       },
       "url_config": {
@@ -38,11 +38,11 @@
           "Message": "The resource you requested does not exist."
         },
         "Message": "The resource you requested does not exist.",
+        "Type": "User",
         "ResponseMetadata": {
           "HTTPHeaders": {},
           "HTTPStatusCode": 404
-        },
-        "Type": "User"
+        }
       },
       "url_config_arn": {
         "AuthType": "NONE",
@@ -66,7 +66,7 @@
     }
   },
   "tests/integration/cloudformation/resources/test_lambda.py::test_lambda_alias": {
-    "recorded-date": "26-10-2022, 09:50:41",
+    "recorded-date": "27-02-2023, 17:28:29",
     "recorded-content": {
       "stack_resource_descriptions": {
         "StackResources": [
@@ -138,7 +138,7 @@
     }
   },
   "tests/integration/cloudformation/resources/test_lambda.py::TestCfnLambdaIntegrations::test_cfn_lambda_permissions": {
-    "recorded-date": "26-10-2022, 09:57:43",
+    "recorded-date": "27-02-2023, 17:34:08",
     "recorded-content": {
       "stack_resources": {
         "StackResources": [
@@ -233,6 +233,13 @@
           "RevisionId": "<uuid:1>",
           "Role": "arn:aws:iam::111111111111:role/<resource:5>",
           "Runtime": "python3.9",
+          "RuntimeVersionConfig": {
+            "RuntimeVersionArn": "arn:aws:lambda:<region>::runtime:<resource:6>"
+          },
+          "SnapStart": {
+            "ApplyOn": "None",
+            "OptimizationStatus": "Off"
+          },
           "State": "Active",
           "Timeout": 3,
           "TracingConfig": {
@@ -337,7 +344,7 @@
     }
   },
   "tests/integration/cloudformation/resources/test_lambda.py::TestCfnLambdaIntegrations::test_cfn_lambda_sqs_source": {
-    "recorded-date": "26-10-2022, 10:02:25",
+    "recorded-date": "27-02-2023, 17:38:51",
     "recorded-content": {
       "stack_resources": {
         "StackResources": [
@@ -457,6 +464,13 @@
           "RevisionId": "<uuid:2>",
           "Role": "arn:aws:iam::111111111111:role/<resource:4>",
           "Runtime": "python3.9",
+          "RuntimeVersionConfig": {
+            "RuntimeVersionArn": "arn:aws:lambda:<region>::runtime:<resource:5>"
+          },
+          "SnapStart": {
+            "ApplyOn": "None",
+            "OptimizationStatus": "Off"
+          },
           "State": "Active",
           "Timeout": 3,
           "TracingConfig": {
@@ -563,7 +577,7 @@
     }
   },
   "tests/integration/cloudformation/resources/test_lambda.py::test_lambda_code_signing_config": {
-    "recorded-date": "25-10-2022, 11:34:43",
+    "recorded-date": "27-02-2023, 17:28:57",
     "recorded-content": {
       "stack_resource_descriptions": {
         "StackResources": [
@@ -608,7 +622,7 @@
     }
   },
   "tests/integration/cloudformation/resources/test_lambda.py::test_event_invoke_config": {
-    "recorded-date": "25-10-2022, 11:28:22",
+    "recorded-date": "27-02-2023, 17:30:14",
     "recorded-content": {
       "event_invoke_config": {
         "DestinationConfig": {
@@ -627,7 +641,7 @@
     }
   },
   "tests/integration/cloudformation/resources/test_lambda.py::test_lambda_version": {
-    "recorded-date": "26-10-2022, 08:48:16",
+    "recorded-date": "27-02-2023, 17:31:32",
     "recorded-content": {
       "stack_resources": {
         "StackResources": [
@@ -694,6 +708,10 @@
             "RevisionId": "<uuid:1>",
             "Role": "arn:aws:iam::111111111111:role/<resource:4>",
             "Runtime": "python3.9",
+            "SnapStart": {
+              "ApplyOn": "None",
+              "OptimizationStatus": "Off"
+            },
             "Timeout": 3,
             "TracingConfig": {
               "Mode": "PassThrough"
@@ -719,6 +737,10 @@
             "RevisionId": "<uuid:2>",
             "Role": "arn:aws:iam::111111111111:role/<resource:4>",
             "Runtime": "python3.9",
+            "SnapStart": {
+              "ApplyOn": "None",
+              "OptimizationStatus": "Off"
+            },
             "Timeout": 3,
             "TracingConfig": {
               "Mode": "PassThrough"
@@ -756,6 +778,13 @@
           "RevisionId": "<uuid:2>",
           "Role": "arn:aws:iam::111111111111:role/<resource:4>",
           "Runtime": "python3.9",
+          "RuntimeVersionConfig": {
+            "RuntimeVersionArn": "arn:aws:lambda:<region>::runtime:<resource:5>"
+          },
+          "SnapStart": {
+            "ApplyOn": "None",
+            "OptimizationStatus": "Off"
+          },
           "State": "Active",
           "Timeout": 3,
           "TracingConfig": {
@@ -771,7 +800,7 @@
     }
   },
   "tests/integration/cloudformation/resources/test_lambda.py::TestCfnLambdaIntegrations::test_cfn_lambda_dynamodb_source": {
-    "recorded-date": "28-10-2022, 15:32:05",
+    "recorded-date": "27-02-2023, 17:42:01",
     "recorded-content": {
       "stack_resources": {
         "StackResources": [
@@ -828,7 +857,7 @@
               "StackResourceDriftStatus": "NOT_CHECKED"
             },
             "LogicalResourceId": "table8235A42E",
-            "PhysicalResourceId": "<resource:5>",
+            "PhysicalResourceId": "<resource:6>",
             "ResourceStatus": "CREATE_COMPLETE",
             "ResourceType": "AWS::DynamoDB::Table",
             "StackId": "arn:aws:cloudformation:<region>:111111111111:stack/<stack-name:1>/<resource:1>",
@@ -858,7 +887,7 @@
                     "dynamodb:GetShardIterator"
                   ],
                   "Effect": "Allow",
-                  "Resource": "arn:aws:dynamodb:<region>:111111111111:table/<resource:5>/stream/<resource:2>"
+                  "Resource": "arn:aws:dynamodb:<region>:111111111111:table/<resource:6>/stream/<resource:2>"
                 }
               ],
               "Version": "2012-10-17"
@@ -894,6 +923,13 @@
           "RevisionId": "<uuid:2>",
           "Role": "arn:aws:iam::111111111111:role/<resource:4>",
           "Runtime": "python3.9",
+          "RuntimeVersionConfig": {
+            "RuntimeVersionArn": "arn:aws:lambda:<region>::runtime:<resource:5>"
+          },
+          "SnapStart": {
+            "ApplyOn": "None",
+            "OptimizationStatus": "Off"
+          },
           "State": "Active",
           "Timeout": 3,
           "TracingConfig": {
@@ -917,7 +953,7 @@
         "DestinationConfig": {
           "OnFailure": {}
         },
-        "EventSourceArn": "arn:aws:dynamodb:<region>:111111111111:table/<resource:5>/stream/<resource:2>",
+        "EventSourceArn": "arn:aws:dynamodb:<region>:111111111111:table/<resource:6>/stream/<resource:2>",
         "FunctionArn": "arn:aws:lambda:<region>:111111111111:function:<resource:3>",
         "FunctionResponseTypes": [],
         "LastModified": "datetime",
@@ -952,7 +988,7 @@
               "KeyType": "HASH"
             }
           ],
-          "LatestStreamArn": "arn:aws:dynamodb:<region>:111111111111:table/<resource:5>/stream/<resource:2>",
+          "LatestStreamArn": "arn:aws:dynamodb:<region>:111111111111:table/<resource:6>/stream/<resource:2>",
           "LatestStreamLabel": "<resource:2>",
           "ProvisionedThroughput": {
             "NumberOfDecreasesToday": 0,
@@ -963,9 +999,9 @@
             "StreamEnabled": true,
             "StreamViewType": "NEW_AND_OLD_IMAGES"
           },
-          "TableArn": "arn:aws:dynamodb:<region>:111111111111:table/<resource:5>",
+          "TableArn": "arn:aws:dynamodb:<region>:111111111111:table/<resource:6>",
           "TableId": "<uuid:3>",
-          "TableName": "<resource:5>",
+          "TableName": "<resource:6>",
           "TableSizeBytes": 0,
           "TableStatus": "ACTIVE"
         },
@@ -991,11 +1027,11 @@
               "ShardId": "shard-id"
             }
           ],
-          "StreamArn": "arn:aws:dynamodb:<region>:111111111111:table/<resource:5>/stream/<resource:2>",
+          "StreamArn": "arn:aws:dynamodb:<region>:111111111111:table/<resource:6>/stream/<resource:2>",
           "StreamLabel": "<resource:2>",
           "StreamStatus": "ENABLED",
           "StreamViewType": "NEW_AND_OLD_IMAGES",
-          "TableName": "<resource:5>"
+          "TableName": "<resource:6>"
         },
         "ResponseMetadata": {
           "HTTPHeaders": {},
@@ -1056,7 +1092,7 @@
     }
   },
   "tests/integration/cloudformation/resources/test_lambda.py::TestCfnLambdaIntegrations::test_cfn_lambda_kinesis_source": {
-    "recorded-date": "10-11-2022, 19:42:55",
+    "recorded-date": "27-02-2023, 17:44:31",
     "recorded-content": {
       "stack_resources": {
         "StackResources": [
@@ -1183,6 +1219,13 @@
           "RevisionId": "<uuid:2>",
           "Role": "arn:aws:iam::111111111111:role/<resource:4>",
           "Runtime": "python3.9",
+          "RuntimeVersionConfig": {
+            "RuntimeVersionArn": "arn:aws:lambda:<region>::runtime:<resource:5>"
+          },
+          "SnapStart": {
+            "ApplyOn": "None",
+            "OptimizationStatus": "Off"
+          },
           "State": "Active",
           "Timeout": 3,
           "TracingConfig": {

@@ -17,6 +17,7 @@ from localstack.testing.aws.lambda_utils import (
     lambda_role,
     s3_lambda_permission,
 )
+from localstack.testing.aws.util import is_aws_cloud
 from localstack.testing.snapshots.transformer import KeyValueBasedTransformer
 from localstack.utils.strings import short_uid
 from localstack.utils.sync import poll_condition, retry
@@ -371,7 +372,9 @@ class TestDynamoDBEventSourceMapping:
             assert res.get("Messages")
             return res
 
-        messages = retry(verify_failure_received, retries=15, sleep=5, sleep_before=5)
+        # It can take ~3 min against AWS until the message is received
+        sleep = 10 if is_aws_cloud() else 5
+        messages = retry(verify_failure_received, retries=15, sleep=sleep, sleep_before=5)
         snapshot.match("destination_queue_messages", messages)
 
     @pytest.mark.aws_validated
