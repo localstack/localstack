@@ -29,6 +29,7 @@ from localstack.aws.api.events import (
     RuleState,
     ScheduleExpression,
     TagList,
+    TargetList,
 )
 from localstack.constants import APPLICATION_AMZ_JSON_1_1
 from localstack.services.events.models import EventsStore, events_stores
@@ -195,6 +196,35 @@ class EventsProvider(EventsApi, ServiceLifecycleHook):
             error_plural = "errors" if len(errors) > 1 else "error"
             errors_amount = len(errors)
             message = f"{errors_amount} validation {error_plural} detected: {error_description}"
+            raise CommonServiceException(message=message, code="ValidationException")
+
+        return call_moto(context)
+
+    def put_targets(
+        self,
+        context: RequestContext,
+        rule: RuleName,
+        targets: TargetList,
+        event_bus_name: EventBusNameOrArn = None,
+    ):
+        validation_errors = []
+
+        id_regex = re.compile(r"^[\.\-_A-Za-z0-9]+$")
+        for index, target in enumerate(targets):
+            id = target.get("Id")
+            if not id_regex.match(id):
+                validation_errors.append(
+                    f"Value '{id}' at 'targets.{index + 1}.member.id' failed to satisfy constraint: Member must satisfy regular expression pattern: [\\.\\-_A-Za-z0-9]+"
+                )
+
+            if len(id) > 64:
+                validation_errors.append(
+                    f"Value '{id}' at 'targets.{index + 1}.member.id' failed to satisfy constraint: Member must have length less than or equal to 64"
+                )
+
+        if validation_errors:
+            errors_message = "; ".join(validation_errors)
+            message = f"{len(validation_errors)} validation {'errors' if len(validation_errors) > 1 else 'error'} detected: {errors_message}"
             raise CommonServiceException(message=message, code="ValidationException")
 
         return call_moto(context)
