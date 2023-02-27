@@ -376,5 +376,38 @@
         }
       }
     }
+  },
+  "tests/integration/test_dynamodb.py::TestDynamoDB::test_continuous_backup_update": {
+    "recorded-date": "22-02-2023, 21:13:32",
+    "recorded-content": {
+      "update-continuous-backup": {
+        "ContinuousBackupsDescription": {
+          "ContinuousBackupsStatus": "ENABLED",
+          "PointInTimeRecoveryDescription": {
+            "EarliestRestorableDateTime": "datetime",
+            "LatestRestorableDateTime": "datetime",
+            "PointInTimeRecoveryStatus": "ENABLED"
+          }
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "describe-continuous-backup": {
+        "ContinuousBackupsDescription": {
+          "ContinuousBackupsStatus": "ENABLED",
+          "PointInTimeRecoveryDescription": {
+            "EarliestRestorableDateTime": "datetime",
+            "LatestRestorableDateTime": "datetime",
+            "PointInTimeRecoveryStatus": "ENABLED"
+          }
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
   }
 }
