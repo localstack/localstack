@@ -1978,3 +1978,16 @@ def appsync_create_api(appsync_client):
             appsync_client.delete_graphql_api(apiId=api)
         except Exception as e:
             LOG.debug(f"Error cleaning up AppSync API: {api}, {e}")
+
+
+@pytest.fixture
+def patch_hostnames(monkeypatch):
+    """
+    Update both HOSTNAME_EXTERNAL and LOCALSTACK_HOSTNAME to custom values to
+    configure the running localstack instance.
+    """
+    hostname_external = f"external-host-{short_uid()}"
+    localstack_hostname = f"localstack-hostname={short_uid()}"
+    monkeypatch.setattr(config, "HOSTNAME_EXTERNAL", hostname_external)
+    # monkeypatch.setattr(config, "LOCALSTACK_HOSTNAME", localstack_hostname)
+    yield hostname_external, localstack_hostname
