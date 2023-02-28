@@ -17,6 +17,21 @@ from localstack.services.stepfunctions.asl.eval.environment import Environment
 
 
 class MathRandom(StatesFunction):
+    # Returns a random number between the specified start and end number.
+    #
+    # For example:
+    # With input
+    # {
+    #    "start": 1,
+    #    "end": 999
+    # }
+    #
+    # Call
+    # "random.$": "States.MathRandom($.start, $.end)"
+    #
+    # Returns
+    # {"random": 456 }
+
     def __init__(self, arg_list: FunctionArgumentList):
         super().__init__(
             states_name=StatesFunctionName(function_type=StatesFunctionNameType.MathRandom),
@@ -30,7 +45,9 @@ class MathRandom(StatesFunction):
     @staticmethod
     def _validate_integer_value(value: Any, argument_name: str) -> int:
         if not isinstance(value, (int, float)):
-            raise ValueError(f"Expected integer value for {argument_name}, but got: '{value}'.")
+            raise TypeError(f"Expected integer value for {argument_name}, but got: '{value}'.")
+        # If you specify a non-integer value for the start number or end number argument,
+        # Step Functions will round it off to the nearest integer.
         return int(value)
 
     def _eval_body(self, env: Environment) -> None:

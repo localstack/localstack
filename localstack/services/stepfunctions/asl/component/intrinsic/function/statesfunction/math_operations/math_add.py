@@ -16,6 +16,21 @@ from localstack.services.stepfunctions.asl.eval.environment import Environment
 
 
 class MathAdd(StatesFunction):
+    # Returns the sum of two numbers.
+    #
+    # For example:
+    # With input
+    # {
+    #    "value1": 111,
+    #    "step": -1
+    # }
+    #
+    # Call
+    # "value1.$": "States.MathAdd($.value1, $.step)"
+    #
+    # Returns
+    # {"value1": 110 }
+
     def __init__(self, arg_list: FunctionArgumentList):
         super().__init__(
             states_name=StatesFunctionName(function_type=StatesFunctionNameType.MathAdd),
@@ -29,7 +44,9 @@ class MathAdd(StatesFunction):
     @staticmethod
     def _validate_integer_value(value: Any) -> int:
         if not isinstance(value, (int, float)):
-            raise ValueError(f"Expected integer value, but got: '{value}'.")
+            raise TypeError(f"Expected integer value, but got: '{value}'.")
+        # If you specify a non-integer value for one or both the arguments,
+        # Step Functions will round it off to the nearest integer.
         return int(value)
 
     def _eval_body(self, env: Environment) -> None:
