@@ -122,6 +122,8 @@ class TestLambdaRuntimesCommon:
             "$..environment._AWS_XRAY_DAEMON_PORT",
             "$..environment._LAMBDA_TELEMETRY_LOG_FD",  # Only java8, dotnetcore3.1, dotnet6, go1.x
             "$..environment._X_AMZN_TRACE_ID",
+            # Only nodejs18.x (AWS: /etc/pki/tls/certs/ca-bundle.crt, LS: /var/runtime/ca-cert.pem)
+            "$..environment.NODE_EXTRA_CA_CERTS",
             "$..environment.AWS_EXECUTION_ENV",  # Only rust runtime
             "$..environment.LD_LIBRARY_PATH",  # Only rust runtime (additional /var/lang/bin)
             "$..environment.PATH",  # Only rust runtime (additional /var/lang/bin)
