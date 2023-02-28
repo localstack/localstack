@@ -370,7 +370,7 @@
     }
   },
   "tests/integration/cloudformation/api/test_extensions_api.py::TestExtensionsApi::test_crud_extension[RESOURCE-LocalStack::Testing::TestResource-resourcetypes/localstack-testing-testresource.zip]": {
-    "recorded-date": "28-02-2023, 10:29:34",
+    "recorded-date": "28-02-2023, 12:33:19",
     "recorded-content": {
       "register_response": {
         "RegistrationToken": "<registration-token:1>",

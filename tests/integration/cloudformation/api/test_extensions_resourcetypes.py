@@ -38,3 +38,6 @@ class TestExtensionsResourceTypes:
         snapshot.add_transformer(snapshot.transform.regex(resource_name, "resource-name"))
         snapshot.add_transformer(snapshot.transform.cloudformation_api())
         snapshot.match("resource_description", resources[0])
+
+        # Make sure to destroy the stack before unregistration
+        stack.destroy()
