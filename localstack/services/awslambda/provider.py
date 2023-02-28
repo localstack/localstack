@@ -1222,7 +1222,7 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
         for key, value in routing_config_dict.items():
             if value < 0.0 or value >= 1.0:
                 raise ValidationException(
-                    f"1 validation error detected: Value '{{{key}={value}}}' at 'routingConfig.additionalVersionWeights' failed to satisfy constraint: Map value must satisfy constraint: [Member must have value less than or equal to 1.0, Member must have value greater than or equal to 0.0]"
+                    f"1 validation error detected: Value '{{{key}={value}}}' at 'routingConfig.additionalVersionWeights' failed to satisfy constraint: Map value must satisfy constraint: [Member must have value less than or equal to 1.0, Member must have value greater than or equal to 0.0, Member must not be null]"
                 )
             if key == function_version.id.qualifier:
                 raise InvalidParameterValueException(
@@ -1236,7 +1236,7 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
                 )
             if not api_utils.qualifier_is_version(key):
                 raise ValidationException(
-                    f"1 validation error detected: Value '{{{key}={value}}}' at 'routingConfig.additionalVersionWeights' failed to satisfy constraint: Map keys must satisfy constraint: [Member must have length less than or equal to 1024, Member must have length greater than or equal to 1, Member must satisfy regular expression pattern: [0-9]+]"
+                    f"1 validation error detected: Value '{{{key}={value}}}' at 'routingConfig.additionalVersionWeights' failed to satisfy constraint: Map keys must satisfy constraint: [Member must have length less than or equal to 1024, Member must have length greater than or equal to 1, Member must satisfy regular expression pattern: [0-9]+, Member must not be null]"
                 )
 
             # checking if the version in the config exists
