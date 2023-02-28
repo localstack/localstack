@@ -1,11 +1,10 @@
 from typing import Final
 
-from jsonpath_ng import parse
-
 from localstack.services.stepfunctions.asl.component.state.state_choice.comparison.comparison_stmt import (
     ComparisonStmt,
 )
 from localstack.services.stepfunctions.asl.eval.environment import Environment
+from localstack.services.stepfunctions.asl.utils.json_path import JSONPathUtils
 
 
 class NoSuchVariable:
@@ -18,9 +17,8 @@ class Variable(ComparisonStmt):
         self.value: Final[str] = value
 
     def _eval_body(self, env: Environment) -> None:
-        variable_expr = parse(self.value)
         try:
-            value = variable_expr.find(env.inp)
+            value = JSONPathUtils.extract_json(self.value, env.inp)
         except Exception as ex:
             value = NoSuchVariable(f"{self.value}, {ex}")
         env.stack.append(value)
