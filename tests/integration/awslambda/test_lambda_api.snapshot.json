@@ -7129,8 +7129,18 @@
     }
   },
   "tests/integration/awslambda/test_lambda_api.py::TestLambdaPermissions::test_permission_exceptions": {
-    "recorded-date": "17-02-2023, 11:40:14",
+    "recorded-date": "28-02-2023, 11:08:16",
     "recorded-content": {
+      "add_permission_invalid_statement_id": {
+        "Error": {
+          "Code": "ValidationException",
+          "Message": "1 validation error detected: Value 'example.com' at 'statementId' failed to satisfy constraint: Member must satisfy regular expression pattern: ([a-zA-Z0-9-_]+)"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
       "add_permission_fn_qualifier_mismatch": {
         "Error": {
           "Code": "InvalidParameterValueException",

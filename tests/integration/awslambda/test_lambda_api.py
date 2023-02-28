@@ -2458,6 +2458,16 @@ class TestLambdaPermissions:
             runtime=Runtime.python3_9,
         )
 
+        # invalid statement id
+        with pytest.raises(lambda_client.exceptions.ClientError) as e:
+            lambda_client.add_permission(
+                FunctionName=function_name,
+                Action="lambda:InvokeFunction",
+                StatementId="example.com",
+                Principal="s3.amazonaws.com",
+            )
+        snapshot.match("add_permission_invalid_statement_id", e.value.response)
+
         # qualifier mismatch between specified Qualifier and derived ARN from FunctionName
         with pytest.raises(lambda_client.exceptions.InvalidParameterValueException) as e:
             lambda_client.add_permission(

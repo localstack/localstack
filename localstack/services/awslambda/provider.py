@@ -137,6 +137,7 @@ from localstack.aws.api.lambda_ import (
 from localstack.constants import LOCALHOST_HOSTNAME
 from localstack.services.awslambda import api_utils
 from localstack.services.awslambda import hooks as lambda_hooks
+from localstack.services.awslambda.api_utils import STATEMENT_ID_REGEX
 from localstack.services.awslambda.event_source_listeners.event_source_listener import (
     EventSourceListener,
 )
@@ -1846,10 +1847,14 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
                     Type="User",
                 )
 
+        request_sid = request["StatementId"]
+        if not bool(STATEMENT_ID_REGEX.match(request_sid)):
+            raise ValidationException(
+                f"1 validation error detected: Value '{request_sid}' at 'statementId' failed to satisfy constraint: Member must satisfy regular expression pattern: ([a-zA-Z0-9-_]+)"
+            )
         # check for an already existing policy and any conflicts in existing statements
         existing_policy = resolved_fn.permissions.get(resolved_qualifier)
         if existing_policy:
-            request_sid = request["StatementId"]
             if request_sid in [s["Sid"] for s in existing_policy.policy.Statement]:
                 # uniqueness scope: statement id needs to be unique per qualified function ($LATEST, version, or alias)
                 # Counterexample: the same sid can exist within $LATEST, version, and alias
