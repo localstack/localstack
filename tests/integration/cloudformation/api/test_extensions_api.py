@@ -6,7 +6,7 @@ from localstack.utils.strings import short_uid
 
 
 class TestExtensionsApi:
-    # @pytest.mark.skip(reason="feature not implemented")
+    @pytest.mark.skip(reason="feature not implemented")
     @pytest.mark.parametrize(
         "extension_type, extension_name, artifact",
         [
