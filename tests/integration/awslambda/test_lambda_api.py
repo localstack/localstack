@@ -1667,6 +1667,8 @@ pytestmark = pytest.mark.skip_snapshot_verify(
         "$..Environment",  # missing
         "$..HTTPStatusCode",  # 201 vs 200
         "$..Layers",
+        "$..CreateFunctionResponse.RuntimeVersionConfig",
+        "$..CreateFunctionResponse.SnapStart",
     ],
 )
 
@@ -2439,7 +2441,7 @@ class TestLambdaProvisionedConcurrency:
         "$..PolicyArn",
         "$..Layers",
         # mismatching resource index due to SnapStart
-        "$..Statement.Condition.ArnLike.AWS:SourceArn",
+        "$..Statement.Condition.ArnLike.'AWS:SourceArn'",
     ],
 )
 class TestLambdaPermissions:
@@ -3349,8 +3351,6 @@ class TestLambdaSizeLimits:
             "$..StateReason",
             "$..StateReasonCode",
             "$..VpcConfig",
-            "$..CreateFunctionResponse.RuntimeVersionConfig",
-            "$..CreateFunctionResponse.SnapStart",
         ],
     )
     def test_lambda_envvars_near_limit_succeeds(

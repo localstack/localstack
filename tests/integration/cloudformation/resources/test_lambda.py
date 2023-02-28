@@ -587,12 +587,14 @@ class TestCfnLambdaIntegrations:
             "$..StartingPosition",
             "$..StateTransitionReason",
             "$..Topics",
-            # resource index mismatch but should verify otherwise
+            # resource index mismatch due to SnapStart
             "$..StreamDescription.StreamArn",
             "$..StreamDescription.TableName",
             "$..Table.LatestStreamArn",
             "$..Table.TableArn",
             "$..Table.TableName",
+            "$..EventSourceArn",
+            "$..policies..PolicyDocument.Statement..Resource",
         ],
     )
     @pytest.mark.skip_snapshot_verify(
