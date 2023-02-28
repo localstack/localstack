@@ -2,9 +2,11 @@ import io
 import json
 import logging
 from copy import deepcopy
-from typing import IO, Dict
+from typing import IO, Any
 
 from moto.apigateway import models as apigw_models
+from moto.apigateway.models import Resource as MotoResource
+from moto.apigateway.models import RestAPI as MotoRestAPI
 from moto.core.utils import camelcase_to_underscores
 
 from localstack.aws.api import RequestContext, ServiceRequest, handler
@@ -21,6 +23,7 @@ from localstack.aws.api.apigateway import (
     Boolean,
     ClientCertificate,
     ClientCertificates,
+    ConflictException,
     CreateAuthorizerRequest,
     CreateRestApiRequest,
     DocumentationPart,
@@ -41,6 +44,7 @@ from localstack.aws.api.apigateway import (
     PutRestApiRequest,
     RequestValidator,
     RequestValidators,
+    Resource,
     RestApi,
     RestApis,
     String,
@@ -89,8 +93,14 @@ class ApigatewayProvider(ApigatewayApi, ServiceLifecycleHook):
         self.router.register_routes()
 
     @staticmethod
-    def _get_moto_backend(context: RequestContext) -> apigw_models.APIGatewayBackend:
-        return apigw_models.apigateway_backends[context.account_id][context.region]
+    def _remove_rest_api(context: RequestContext, rest_api_id: str) -> None:
+        store = get_apigateway_store(account_id=context.account_id, region=context.region)
+        # clean up this way until we properly encapsulate RestApi in the store
+        store.authorizers.pop(rest_api_id, None)
+        store.validators.pop(rest_api_id, None)
+        store.documentation_parts.pop(rest_api_id, None)
+        store.gateway_responses.pop(rest_api_id, None)
+        store.resources_children.pop(rest_api_id, None)
 
     @handler("TestInvokeMethod", expand=False)
     def test_invoke_method(
@@ -125,8 +135,7 @@ class ApigatewayProvider(ApigatewayApi, ServiceLifecycleHook):
         if request.get("description") == "":
             raise BadRequestException("Description cannot be an empty string")
         result = call_moto(context)
-        moto_backend = self._get_moto_backend(context)
-        rest_api = moto_backend.apis.get(result["id"])
+        rest_api = get_moto_rest_api(context, rest_api_id=result["id"])
         rest_api.version = request.get("version")
         response = rest_api.to_dict()
         remove_empty_attributes_from_rest_api(response)
@@ -144,12 +153,7 @@ class ApigatewayProvider(ApigatewayApi, ServiceLifecycleHook):
         rest_api_id: String,
         patch_operations: ListOfPatchOperation = None,
     ) -> RestApi:
-        moto_backend = self._get_moto_backend(context)
-        rest_api = moto_backend.apis.get(rest_api_id)
-        if not rest_api:
-            raise NotFoundException(
-                f"Invalid API identifier specified {context.account_id}:{rest_api_id}"
-            )
+        rest_api = get_moto_rest_api(context, rest_api_id)
 
         fixed_patch_ops = []
         binary_media_types_path = "/binaryMediaTypes"
@@ -183,10 +187,7 @@ class ApigatewayProvider(ApigatewayApi, ServiceLifecycleHook):
 
             fixed_patch_ops.append(patch_op)
 
-        if not isinstance(rest_api.__dict__, DelSafeDict):
-            rest_api.__dict__ = DelSafeDict(rest_api.__dict__)
-
-        _patch_api_gateway_entity(rest_api.__dict__, fixed_patch_ops)
+        _patch_api_gateway_entity(rest_api, fixed_patch_ops)
 
         # fix data types after patches have been applied
         if rest_api.minimum_compression_size:
@@ -201,8 +202,7 @@ class ApigatewayProvider(ApigatewayApi, ServiceLifecycleHook):
 
     @handler("PutRestApi", expand=False)
     def put_rest_api(self, context: RequestContext, request: PutRestApiRequest) -> RestApi:
-        moto_backend = self._get_moto_backend(context)
-        rest_api = moto_backend.apis.get(request["restApiId"])
+        rest_api = get_moto_rest_api(context, request["restApiId"])
         body_data = request["body"].read()
 
         openapi_spec = parse_json_or_yaml(to_str(body_data))
@@ -223,6 +223,7 @@ class ApigatewayProvider(ApigatewayApi, ServiceLifecycleHook):
             raise NotFoundException(
                 f"Invalid API identifier specified {context.account_id}:{rest_api_id}"
             ) from e
+        self._remove_rest_api(context, rest_api_id=rest_api_id)
 
     def get_rest_apis(
         self, context: RequestContext, position: String = None, limit: NullableInteger = None
@@ -230,6 +231,122 @@ class ApigatewayProvider(ApigatewayApi, ServiceLifecycleHook):
         response: RestApis = call_moto(context)
         for rest_api in response["items"]:
             remove_empty_attributes_from_rest_api(rest_api)
+        return response
+
+    # resources
+
+    def create_resource(
+        self, context: RequestContext, rest_api_id: String, parent_id: String, path_part: String
+    ) -> Resource:
+        response: Resource = call_moto(context)
+        store = get_apigateway_store(account_id=context.account_id, region=context.region)
+
+        # save children to allow easy deletion of all children if we delete a parent route
+        rest_api_resources = store.resources_children.setdefault(rest_api_id, {})
+        children = rest_api_resources.setdefault(parent_id, [])
+        children.append(response["id"])
+
+        return response
+
+    def delete_resource(
+        self, context: RequestContext, rest_api_id: String, resource_id: String
+    ) -> None:
+        moto_rest_api = get_moto_rest_api(context, rest_api_id)
+
+        moto_resource: MotoResource = moto_rest_api.resources.pop(resource_id, None)
+        if not moto_resource:
+            raise NotFoundException("Invalid Resource identifier specified")
+
+        store = get_apigateway_store(account_id=context.account_id, region=context.region)
+        api_resources = store.resources_children[rest_api_id]
+
+        # we need to recursively delete all children resources of the resource we're deleting
+
+        def _delete_children(resource_to_delete: str):
+            children = api_resources.get(resource_to_delete, [])
+            for child in children:
+                moto_rest_api.resources.pop(child)
+                _delete_children(child)
+
+            api_resources.pop(resource_to_delete, None)
+
+        _delete_children(resource_id)
+
+        # remove the resource as a child from its parent
+        parent_id = moto_resource.parent_id
+        if parent_id not in api_resources:
+            # this can happen after restoring the state, and the resource was created before the fix
+            return
+        api_resources[parent_id].remove(resource_id)
+
+    def update_resource(
+        self,
+        context: RequestContext,
+        rest_api_id: String,
+        resource_id: String,
+        patch_operations: ListOfPatchOperation = None,
+    ) -> Resource:
+        moto_rest_api = get_moto_rest_api(context, rest_api_id)
+        moto_resource = moto_rest_api.resources.get(resource_id)
+        if not moto_resource:
+            raise NotFoundException("Invalid Resource identifier specified")
+
+        store = get_apigateway_store(account_id=context.account_id, region=context.region)
+        api_resources = store.resources_children.get(rest_api_id, {})
+        future_path_part = moto_resource.path_part
+        current_parent_id = moto_resource.parent_id
+
+        for patch_operation in patch_operations:
+            op = patch_operation.get("op")
+            if (path := patch_operation.get("path")) not in ("/pathPart", "/parentId"):
+                raise BadRequestException(
+                    f"Invalid patch path  '{path}' specified for op '{op}'. Must be one of: [/parentId, /pathPart]"
+                )
+            if op != "replace":
+                raise BadRequestException(
+                    f"Invalid patch path  '{path}' specified for op '{op}'. Please choose supported operations"
+                )
+
+            if path == "/parentId":
+                value = patch_operation.get("value")
+                future_parent_resource = moto_rest_api.resources.get(value)
+                if not future_parent_resource:
+                    raise NotFoundException("Invalid Resource identifier specified")
+
+                children_resources = api_resources.get(resource_id, [])
+                if value in children_resources:
+                    raise BadRequestException("Resources cannot be cyclical.")
+
+                new_sibling_resources = api_resources.get(value, [])
+
+            else:  # path == "/pathPart"
+                future_path_part = patch_operation.get("value")
+                new_sibling_resources = api_resources.get(moto_resource.parent_id, [])
+
+            for sibling in new_sibling_resources:
+                sibling_resource = moto_rest_api.resources[sibling]
+                if sibling_resource.path_part == future_path_part:
+                    raise ConflictException(
+                        f"Another resource with the same parent already has this name: {future_path_part}"
+                    )
+
+        # TODO: test with multiple patch operations which would not be compatible between each other
+        _patch_api_gateway_entity(moto_resource, patch_operations)
+
+        # after setting it, mutate the store
+        if moto_resource.parent_id != current_parent_id:
+            current_sibling_resources = api_resources.get(current_parent_id)
+            if current_sibling_resources:
+                current_sibling_resources.remove(resource_id)
+                # if the parent does not have children anymore, remove from the list
+                if not current_sibling_resources:
+                    api_resources.pop(current_parent_id)
+
+        # add it to the new parent children
+        future_sibling_resources = api_resources[moto_resource.parent_id]
+        future_sibling_resources.append(resource_id)
+
+        response = moto_resource.to_dict()
         return response
 
     # method responses
@@ -859,6 +976,17 @@ class ApigatewayProvider(ApigatewayApi, ServiceLifecycleHook):
 # ---------------
 
 
+def get_moto_rest_api(context: RequestContext, rest_api_id: str) -> MotoRestAPI:
+    moto_backend = apigw_models.apigateway_backends[context.account_id][context.region]
+    rest_api = moto_backend.apis.get(rest_api_id)
+    if not rest_api:
+        raise NotFoundException(
+            f"Invalid API identifier specified {context.account_id}:{rest_api_id}"
+        )
+
+    return rest_api
+
+
 def remove_empty_attributes_from_rest_api(rest_api: RestApi, remove_tags=True):
     if not rest_api.get("binaryMediaTypes"):
         rest_api.pop("binaryMediaTypes", None)
@@ -901,10 +1029,13 @@ def normalize_authorizer(data):
     return entries if is_list else entries[0]
 
 
-def _patch_api_gateway_entity(entity: Dict, patch_operations: ListOfPatchOperation):
+def _patch_api_gateway_entity(entity: Any, patch_operations: ListOfPatchOperation):
+    if not isinstance(entity.__dict__, DelSafeDict):
+        entity.__dict__ = DelSafeDict(entity.__dict__)
+
     not_supported_attributes = {"/id", "/region_name", "/create_date"}
 
-    model_attributes = list(entity.keys())
+    model_attributes = list(entity.__dict__.keys())
     for operation in patch_operations:
         path_start = operation["path"].strip("/").split("/")[0]
         path_start_usc = camelcase_to_underscores(path_start)
@@ -913,7 +1044,7 @@ def _patch_api_gateway_entity(entity: Dict, patch_operations: ListOfPatchOperati
         if operation["path"] in not_supported_attributes:
             raise BadRequestException(f"Invalid patch path {operation['path']}")
 
-    apply_json_patch_safe(entity, patch_operations, in_place=True)
+    apply_json_patch_safe(entity.__dict__, patch_operations, in_place=True)
 
 
 def to_authorizer_response_json(api_id, data):
