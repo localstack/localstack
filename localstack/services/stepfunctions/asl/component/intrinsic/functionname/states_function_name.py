@@ -1,7 +1,7 @@
 from localstack.services.stepfunctions.asl.component.intrinsic.functionname.function_name import (
     FunctionName,
 )
-from localstack.services.stepfunctions.asl.component.intrinsic.functionname.state_fuinction_name_types import (
+from localstack.services.stepfunctions.asl.component.intrinsic.functionname.state_function_name_types import (
     StatesFunctionNameType,
 )
 

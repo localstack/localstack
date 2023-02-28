@@ -1,0 +1,115 @@
+{
+  "tests/integration/apigateway/test_apigateway_dynamodb.py::test_error_aws_proxy_not_supported": {
+    "recorded-date": "26-02-2023, 12:45:17",
+    "recorded-content": {
+      "create-integration-error": {
+        "Error": {
+          "Code": "BadRequestException",
+          "Message": "Integrations of type 'AWS_PROXY' currently only supports Lambda function and Firehose stream invocations."
+        },
+        "message": "Integrations of type 'AWS_PROXY' currently only supports Lambda function and Firehose stream invocations.",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/integration/apigateway/test_apigateway_dynamodb.py::test_rest_api_to_dynamodb_integration[PutItem]": {
+    "recorded-date": "26-02-2023, 13:03:53",
+    "recorded-content": {
+      "result-put-item": {},
+      "result-scan": {
+        "Count": 4,
+        "Items": [
+          {
+            "id": "test"
+          },
+          {
+            "id": "test 3"
+          },
+          {
+            "id": "test-new"
+          },
+          {
+            "id": "test2"
+          }
+        ],
+        "ScannedCount": 4,
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/integration/apigateway/test_apigateway_dynamodb.py::test_rest_api_to_dynamodb_integration[Query]": {
+    "recorded-date": "26-02-2023, 13:04:46",
+    "recorded-content": {
+      "result-test": {
+        "Count": 1,
+        "Items": [
+          {
+            "id": {
+              "S": "test"
+            }
+          }
+        ],
+        "ScannedCount": 1
+      },
+      "result-test2": {
+        "Count": 1,
+        "Items": [
+          {
+            "id": {
+              "S": "test2"
+            }
+          }
+        ],
+        "ScannedCount": 1
+      },
+      "result-test 3": {
+        "Count": 1,
+        "Items": [
+          {
+            "id": {
+              "S": "test 3"
+            }
+          }
+        ],
+        "ScannedCount": 1
+      },
+      "result-invalid": {
+        "Count": 0,
+        "Items": [],
+        "ScannedCount": 0
+      }
+    }
+  },
+  "tests/integration/apigateway/test_apigateway_dynamodb.py::test_rest_api_to_dynamodb_integration[Scan]": {
+    "recorded-date": "26-02-2023, 12:49:50",
+    "recorded-content": {
+      "result-scan": {
+        "Count": 3,
+        "Items": [
+          {
+            "id": {
+              "S": "test"
+            }
+          },
+          {
+            "id": {
+              "S": "test 3"
+            }
+          },
+          {
+            "id": {
+              "S": "test2"
+            }
+          }
+        ],
+        "ScannedCount": 3
+      }
+    }
+  }
+}

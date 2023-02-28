@@ -1,6 +1,7 @@
 import json
 import os
 import unittest
+from typing import Any, Dict
 from unittest.mock import Mock
 
 import boto3
@@ -9,6 +10,7 @@ import pytest
 from localstack import config
 from localstack.constants import APPLICATION_JSON
 from localstack.services.apigateway.helpers import (
+    RequestParametersResolver,
     Resolver,
     apply_json_patch_safe,
     create_invocation_headers,
@@ -16,12 +18,11 @@ from localstack.services.apigateway.helpers import (
     extract_query_string_params,
     get_resource_for_path,
 )
-from localstack.services.apigateway.integration import LambdaProxyIntegration
-from localstack.services.apigateway.invocations import (
-    ApiInvocationContext,
-    RequestValidator,
+from localstack.services.apigateway.integration import (
+    LambdaProxyIntegration,
     apply_request_parameters,
 )
+from localstack.services.apigateway.invocations import ApiInvocationContext, RequestValidator
 from localstack.services.apigateway.templates import (
     RequestTemplates,
     ResponseTemplates,
@@ -513,3 +514,36 @@ class TestApigatewayEvents:
                 t["is_base64_encoded"],
             )
             assert result == t["expected"]
+
+
+class TestRequestParameterResolver:
+    def test_resolve_request_parameters(self):
+        integration: Dict[str, Any] = {
+            "requestParameters": {
+                "integration.request.path.pathParam": "method.request.path.id",
+                "integration.request.querystring.baz": "method.request.querystring.baz",
+                "integration.request.querystring.token": "method.request.header.Authorization",
+                "integration.request.querystring.env": "stageVariables.enviroment",
+                "integration.request.header.Content-Type": "'application/json'",
+                "integration.request.header.body-header": "method.request.body",
+            }
+        }
+
+        context = ApiInvocationContext(
+            method="POST",
+            path="/foo/bar?baz=test",
+            data="spam_eggs",
+            headers={"Authorization": "Bearer 1234"},
+            stage="local",
+        )
+        context.path_params = {"id": "bar"}
+        context.integration = integration
+        context.stage_variables = {"enviroment": "dev"}
+        resolver = RequestParametersResolver()
+        result = resolver.resolve(context)
+
+        assert result == {
+            "path": {"pathParam": "bar"},
+            "querystring": {"baz": "test", "token": "Bearer 1234", "env": "dev"},
+            "headers": {"Content-Type": "application/json", "body-header": "spam_eggs"},
+        }

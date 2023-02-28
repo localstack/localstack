@@ -31,8 +31,10 @@ from localstack.aws.api.ec2 import (
     DescribeSubnetsResult,
     DescribeTransitGatewaysRequest,
     DescribeTransitGatewaysResult,
+    DnsOptionsSpecification,
     Ec2Api,
     InstanceType,
+    IpAddressType,
     ModifyLaunchTemplateRequest,
     ModifyLaunchTemplateResult,
     ModifySubnetAttributeRequest,
@@ -186,6 +188,8 @@ class Ec2Provider(Ec2Api, ABC):
         remove_subnet_ids: VpcEndpointSubnetIdList = None,
         add_security_group_ids: VpcEndpointSecurityGroupIdList = None,
         remove_security_group_ids: VpcEndpointSecurityGroupIdList = None,
+        ip_address_type: IpAddressType = None,
+        dns_options: DnsOptionsSpecification = None,
         private_dns_enabled: Boolean = None,
     ) -> ModifyVpcEndpointResult:
         backend = get_ec2_backend(context.account_id, context.region)

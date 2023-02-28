@@ -80,6 +80,27 @@ VersionString = str
 VpcEndpointId = str
 
 
+class ActionSeverity(str):
+    HIGH = "HIGH"
+    MEDIUM = "MEDIUM"
+    LOW = "LOW"
+
+
+class ActionStatus(str):
+    PENDING_UPDATE = "PENDING_UPDATE"
+    IN_PROGRESS = "IN_PROGRESS"
+    FAILED = "FAILED"
+    COMPLETED = "COMPLETED"
+    NOT_ELIGIBLE = "NOT_ELIGIBLE"
+    ELIGIBLE = "ELIGIBLE"
+
+
+class ActionType(str):
+    SERVICE_SOFTWARE_UPDATE = "SERVICE_SOFTWARE_UPDATE"
+    JVM_HEAP_SIZE_TUNING = "JVM_HEAP_SIZE_TUNING"
+    JVM_YOUNG_GEN_TUNING = "JVM_YOUNG_GEN_TUNING"
+
+
 class AutoTuneDesiredState(str):
     ENABLED = "ENABLED"
     DISABLED = "DISABLED"
@@ -317,6 +338,12 @@ class RollbackOnDisable(str):
     DEFAULT_ROLLBACK = "DEFAULT_ROLLBACK"
 
 
+class ScheduleAt(str):
+    NOW = "NOW"
+    TIMESTAMP = "TIMESTAMP"
+    OFF_PEAK_WINDOW = "OFF_PEAK_WINDOW"
+
+
 class ScheduledAutoTuneActionType(str):
     JVM_HEAP_SIZE_TUNING = "JVM_HEAP_SIZE_TUNING"
     JVM_YOUNG_GEN_TUNING = "JVM_YOUNG_GEN_TUNING"
@@ -326,6 +353,11 @@ class ScheduledAutoTuneSeverityType(str):
     LOW = "LOW"
     MEDIUM = "MEDIUM"
     HIGH = "HIGH"
+
+
+class ScheduledBy(str):
+    CUSTOMER = "CUSTOMER"
+    SYSTEM = "SYSTEM"
 
 
 class TLSSecurityPolicy(str):
@@ -430,6 +462,17 @@ class ResourceNotFoundException(ServiceException):
     code: str = "ResourceNotFoundException"
     sender_fault: bool = False
     status_code: int = 409
+
+
+Long = int
+SlotList = List[Long]
+
+
+class SlotNotAvailableException(ServiceException):
+    code: str = "SlotNotAvailableException"
+    sender_fault: bool = False
+    status_code: int = 409
+    SlotSuggestions: Optional[SlotList]
 
 
 class ValidationException(ServiceException):
@@ -656,16 +699,19 @@ class AutoTuneOptions(TypedDict, total=False):
     DesiredState: Optional[AutoTuneDesiredState]
     RollbackOnDisable: Optional[RollbackOnDisable]
     MaintenanceSchedules: Optional[AutoTuneMaintenanceScheduleList]
+    UseOffPeakWindow: Optional[Boolean]
 
 
 class AutoTuneOptionsInput(TypedDict, total=False):
     DesiredState: Optional[AutoTuneDesiredState]
     MaintenanceSchedules: Optional[AutoTuneMaintenanceScheduleList]
+    UseOffPeakWindow: Optional[Boolean]
 
 
 class AutoTuneOptionsOutput(TypedDict, total=False):
     State: Optional[AutoTuneState]
     ErrorMessage: Optional[String]
+    UseOffPeakWindow: Optional[Boolean]
 
 
 class AutoTuneStatus(TypedDict, total=False):
@@ -784,6 +830,28 @@ class ConnectionProperties(TypedDict, total=False):
     Endpoint: Optional[Endpoint]
 
 
+class SoftwareUpdateOptions(TypedDict, total=False):
+    AutoSoftwareUpdateEnabled: Optional[Boolean]
+
+
+StartTimeMinutes = int
+StartTimeHours = int
+
+
+class WindowStartTime(TypedDict, total=False):
+    Hours: StartTimeHours
+    Minutes: StartTimeMinutes
+
+
+class OffPeakWindow(TypedDict, total=False):
+    WindowStartTime: Optional[WindowStartTime]
+
+
+class OffPeakWindowOptions(TypedDict, total=False):
+    Enabled: Optional[Boolean]
+    OffPeakWindow: Optional[OffPeakWindow]
+
+
 class DomainEndpointOptions(TypedDict, total=False):
     EnforceHTTPS: Optional[Boolean]
     TLSSecurityPolicy: Optional[TLSSecurityPolicy]
@@ -843,6 +911,8 @@ class CreateDomainRequest(ServiceRequest):
     AdvancedSecurityOptions: Optional[AdvancedSecurityOptionsInput]
     TagList: Optional[TagList]
     AutoTuneOptions: Optional[AutoTuneOptionsInput]
+    OffPeakWindowOptions: Optional[OffPeakWindowOptions]
+    SoftwareUpdateOptions: Optional[SoftwareUpdateOptions]
 
 
 class VPCDerivedInfo(TypedDict, total=False):
@@ -881,6 +951,8 @@ class DomainStatus(TypedDict, total=False):
     AdvancedSecurityOptions: Optional[AdvancedSecurityOptions]
     AutoTuneOptions: Optional[AutoTuneOptionsOutput]
     ChangeProgressDetails: Optional[ChangeProgressDetails]
+    OffPeakWindowOptions: Optional[OffPeakWindowOptions]
+    SoftwareUpdateOptions: Optional[SoftwareUpdateOptions]
 
 
 class CreateDomainResponse(TypedDict, total=False):
@@ -1040,6 +1112,16 @@ class DescribeDomainConfigRequest(ServiceRequest):
     DomainName: DomainName
 
 
+class SoftwareUpdateOptionsStatus(TypedDict, total=False):
+    Options: Optional[SoftwareUpdateOptions]
+    Status: Optional[OptionStatus]
+
+
+class OffPeakWindowOptionsStatus(TypedDict, total=False):
+    Options: Optional[OffPeakWindowOptions]
+    Status: Optional[OptionStatus]
+
+
 class DomainEndpointOptionsStatus(TypedDict, total=False):
     Options: DomainEndpointOptions
     Status: OptionStatus
@@ -1096,6 +1178,8 @@ class DomainConfig(TypedDict, total=False):
     AdvancedSecurityOptions: Optional[AdvancedSecurityOptionsStatus]
     AutoTuneOptions: Optional[AutoTuneOptionsStatus]
     ChangeProgressDetails: Optional[ChangeProgressDetails]
+    OffPeakWindowOptions: Optional[OffPeakWindowOptionsStatus]
+    SoftwareUpdateOptions: Optional[SoftwareUpdateOptionsStatus]
 
 
 class DescribeDomainConfigResponse(TypedDict, total=False):
@@ -1305,9 +1389,6 @@ class DescribeReservedInstancesRequest(ServiceRequest):
     NextToken: Optional[NextToken]
 
 
-Long = int
-
-
 class ReservedInstance(TypedDict, total=False):
     ReservationName: Optional[ReservationToken]
     ReservedInstanceId: Optional[GUID]
@@ -1505,6 +1586,32 @@ class ListPackagesForDomainResponse(TypedDict, total=False):
     NextToken: Optional[String]
 
 
+class ListScheduledActionsRequest(ServiceRequest):
+    DomainName: DomainName
+    MaxResults: Optional[MaxResults]
+    NextToken: Optional[NextToken]
+
+
+class ScheduledAction(TypedDict, total=False):
+    Id: String
+    Type: ActionType
+    Severity: ActionSeverity
+    ScheduledTime: Long
+    Description: Optional[String]
+    ScheduledBy: Optional[ScheduledBy]
+    Status: Optional[ActionStatus]
+    Mandatory: Optional[Boolean]
+    Cancellable: Optional[Boolean]
+
+
+ScheduledActionsList = List[ScheduledAction]
+
+
+class ListScheduledActionsResponse(TypedDict, total=False):
+    ScheduledActions: Optional[ScheduledActionsList]
+    NextToken: Optional[NextToken]
+
+
 class ListTagsRequest(ServiceRequest):
     ARN: ARN
 
@@ -1590,6 +1697,8 @@ class RevokeVpcEndpointAccessResponse(TypedDict, total=False):
 
 class StartServiceSoftwareUpdateRequest(ServiceRequest):
     DomainName: DomainName
+    ScheduleAt: Optional[ScheduleAt]
+    DesiredStartTime: Optional[Long]
 
 
 class StartServiceSoftwareUpdateResponse(TypedDict, total=False):
@@ -1613,6 +1722,8 @@ class UpdateDomainConfigRequest(ServiceRequest):
     AutoTuneOptions: Optional[AutoTuneOptions]
     DryRun: Optional[DryRun]
     DryRunMode: Optional[DryRunMode]
+    OffPeakWindowOptions: Optional[OffPeakWindowOptions]
+    SoftwareUpdateOptions: Optional[SoftwareUpdateOptions]
 
 
 class UpdateDomainConfigResponse(TypedDict, total=False):
@@ -1630,6 +1741,18 @@ class UpdatePackageRequest(ServiceRequest):
 
 class UpdatePackageResponse(TypedDict, total=False):
     PackageDetails: Optional[PackageDetails]
+
+
+class UpdateScheduledActionRequest(ServiceRequest):
+    DomainName: DomainName
+    ActionID: String
+    ActionType: ActionType
+    ScheduleAt: ScheduleAt
+    DesiredStartTime: Optional[Long]
+
+
+class UpdateScheduledActionResponse(TypedDict, total=False):
+    ScheduledAction: Optional[ScheduledAction]
 
 
 class UpdateVpcEndpointRequest(ServiceRequest):
@@ -1710,6 +1833,8 @@ class OpensearchApi:
         advanced_security_options: AdvancedSecurityOptionsInput = None,
         tag_list: TagList = None,
         auto_tune_options: AutoTuneOptionsInput = None,
+        off_peak_window_options: OffPeakWindowOptions = None,
+        software_update_options: SoftwareUpdateOptions = None,
     ) -> CreateDomainResponse:
         raise NotImplementedError
 
@@ -1960,6 +2085,16 @@ class OpensearchApi:
     ) -> ListPackagesForDomainResponse:
         raise NotImplementedError
 
+    @handler("ListScheduledActions")
+    def list_scheduled_actions(
+        self,
+        context: RequestContext,
+        domain_name: DomainName,
+        max_results: MaxResults = None,
+        next_token: NextToken = None,
+    ) -> ListScheduledActionsResponse:
+        raise NotImplementedError
+
     @handler("ListTags")
     def list_tags(self, context: RequestContext, arn: ARN) -> ListTagsResponse:
         raise NotImplementedError
@@ -2016,7 +2151,11 @@ class OpensearchApi:
 
     @handler("StartServiceSoftwareUpdate")
     def start_service_software_update(
-        self, context: RequestContext, domain_name: DomainName
+        self,
+        context: RequestContext,
+        domain_name: DomainName,
+        schedule_at: ScheduleAt = None,
+        desired_start_time: Long = None,
     ) -> StartServiceSoftwareUpdateResponse:
         raise NotImplementedError
 
@@ -2040,6 +2179,8 @@ class OpensearchApi:
         auto_tune_options: AutoTuneOptions = None,
         dry_run: DryRun = None,
         dry_run_mode: DryRunMode = None,
+        off_peak_window_options: OffPeakWindowOptions = None,
+        software_update_options: SoftwareUpdateOptions = None,
     ) -> UpdateDomainConfigResponse:
         raise NotImplementedError
 
@@ -2052,6 +2193,18 @@ class OpensearchApi:
         package_description: PackageDescription = None,
         commit_message: CommitMessage = None,
     ) -> UpdatePackageResponse:
+        raise NotImplementedError
+
+    @handler("UpdateScheduledAction")
+    def update_scheduled_action(
+        self,
+        context: RequestContext,
+        domain_name: DomainName,
+        action_id: String,
+        action_type: ActionType,
+        schedule_at: ScheduleAt,
+        desired_start_time: Long = None,
+    ) -> UpdateScheduledActionResponse:
         raise NotImplementedError
 
     @handler("UpdateVpcEndpoint")

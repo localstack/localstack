@@ -29,12 +29,15 @@ from localstack.aws.api.dynamodb import (
     BatchWriteItemInput,
     BatchWriteItemOutput,
     BillingMode,
+    ContinuousBackupsDescription,
+    ContinuousBackupsStatus,
     CreateGlobalTableOutput,
     CreateTableInput,
     CreateTableOutput,
     DeleteItemInput,
     DeleteItemOutput,
     DeleteTableOutput,
+    DescribeContinuousBackupsOutput,
     DescribeGlobalTableOutput,
     DescribeKinesisStreamingDestinationOutput,
     DescribeTableOutput,
@@ -55,6 +58,9 @@ from localstack.aws.api.dynamodb import (
     ListTagsOfResourceOutput,
     NextTokenString,
     PartiQLBatchRequest,
+    PointInTimeRecoveryDescription,
+    PointInTimeRecoverySpecification,
+    PointInTimeRecoveryStatus,
     PositiveIntegerObject,
     ProvisionedThroughputExceededException,
     PutItemInput,
@@ -73,6 +79,7 @@ from localstack.aws.api.dynamodb import (
     ScanInput,
     ScanOutput,
     StreamArn,
+    TableDescription,
     TableName,
     TagKeyList,
     TagList,
@@ -81,6 +88,7 @@ from localstack.aws.api.dynamodb import (
     TransactGetItemsOutput,
     TransactWriteItemsInput,
     TransactWriteItemsOutput,
+    UpdateContinuousBackupsOutput,
     UpdateGlobalTableOutput,
     UpdateItemInput,
     UpdateItemOutput,
@@ -109,7 +117,7 @@ from localstack.services.plugins import ServiceLifecycleHook
 from localstack.utils.aws import arns, aws_stack
 from localstack.utils.aws.arns import extract_account_id_from_arn, extract_region_from_arn
 from localstack.utils.aws.aws_stack import get_valid_regions_for_service
-from localstack.utils.collections import select_attributes
+from localstack.utils.collections import select_attributes, select_from_typed_dict
 from localstack.utils.common import short_uid, to_bytes
 from localstack.utils.json import BytesEncoder, canonical_json
 from localstack.utils.strings import long_uid, to_str
@@ -506,11 +514,13 @@ class DynamoDBProvider(DynamodbApi, ServiceLifecycleHook):
         global_table_region = self.get_global_table_region(context, table_name)
 
         result = self._forward_request(context=context, region=global_table_region)
+        table_description: TableDescription = result["Table"]
 
         # Update table properties from LocalStack stores
-        table_props = get_store(context.account_id, context.region).table_properties.get(table_name)
-        if table_props:
-            result.get("Table", {}).update(table_props)
+        if table_props := get_store(context.account_id, context.region).table_properties.get(
+            table_name
+        ):
+            table_description.update(table_props)
 
         store = get_store(context.account_id, context.region)
 
@@ -530,22 +540,21 @@ class DynamoDBProvider(DynamodbApi, ServiceLifecycleHook):
                         RegionName=replicated_region, ReplicaStatus=ReplicaStatus.ACTIVE
                     )
                 )
-        result.get("Table", {}).update({"Replicas": replica_description_list})
+        table_description.update({"Replicas": replica_description_list})
 
         # update only TableId and SSEDescription if present
-        table_definitions = get_store(context.account_id, context.region).table_definitions.get(
-            table_name
-        )
-        if table_definitions:
+        if table_definitions := store.table_definitions.get(table_name):
             for key in ["TableId", "SSEDescription"]:
                 if table_definitions.get(key):
-                    result.get("Table", {})[key] = table_definitions[key]
+                    table_description[key] = table_definitions[key]
             if "TableClass" in table_definitions:
-                result.get("Table", {})["TableClassSummary"] = {
+                table_description["TableClassSummary"] = {
                     "TableClass": table_definitions["TableClass"]
                 }
 
-        return result
+        return DescribeTableOutput(
+            Table=select_from_typed_dict(TableDescription, table_description)
+        )
 
     @handler("UpdateTable", expand=False)
     def update_table(
@@ -1198,6 +1207,55 @@ class DynamoDBProvider(DynamodbApi, ServiceLifecycleHook):
         )
 
     #
+    # Continuous Backups
+    #
+
+    def describe_continuous_backups(
+        self, context: RequestContext, table_name: TableName
+    ) -> DescribeContinuousBackupsOutput:
+        self.get_global_table_region(context, table_name)
+        store = get_store(context.account_id, context.region)
+        continuous_backup_description = (
+            store.table_properties.get(table_name, {}).get("ContinuousBackupsDescription")
+        ) or ContinuousBackupsDescription(
+            ContinuousBackupsStatus=ContinuousBackupsStatus.ENABLED,
+            PointInTimeRecoveryDescription=PointInTimeRecoveryDescription(
+                PointInTimeRecoveryStatus=PointInTimeRecoveryStatus.DISABLED
+            ),
+        )
+
+        return DescribeContinuousBackupsOutput(
+            ContinuousBackupsDescription=continuous_backup_description
+        )
+
+    def update_continuous_backups(
+        self,
+        context: RequestContext,
+        table_name: TableName,
+        point_in_time_recovery_specification: PointInTimeRecoverySpecification,
+    ) -> UpdateContinuousBackupsOutput:
+        self.get_global_table_region(context, table_name)
+
+        store = get_store(context.account_id, context.region)
+        pit_recovery_status = (
+            PointInTimeRecoveryStatus.ENABLED
+            if point_in_time_recovery_specification["PointInTimeRecoveryEnabled"]
+            else PointInTimeRecoveryStatus.DISABLED
+        )
+        continuous_backup_description = ContinuousBackupsDescription(
+            ContinuousBackupsStatus=ContinuousBackupsStatus.ENABLED,
+            PointInTimeRecoveryDescription=PointInTimeRecoveryDescription(
+                PointInTimeRecoveryStatus=pit_recovery_status
+            ),
+        )
+        table_props = store.table_properties.setdefault(table_name, {})
+        table_props["ContinuousBackupsDescription"] = continuous_backup_description
+
+        return UpdateContinuousBackupsOutput(
+            ContinuousBackupsDescription=continuous_backup_description
+        )
+
+    #
     # Helpers
     #
 
@@ -1271,7 +1329,7 @@ class DynamoDBProvider(DynamodbApi, ServiceLifecycleHook):
 
         # DynamoDBLocal namespaces based on the value of Credentials
         # Since we want to namespace by both account ID and region, use an aggregate key
-        # We also replace the region to keep compatibilty with NoSQL Workbench
+        # We also replace the region to keep compatibility with NoSQL Workbench
         headers["Authorization"] = re.sub(
             AUTH_CREDENTIAL_REGEX,
             rf"Credential={key}/\2/{region_name}/\4/",

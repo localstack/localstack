@@ -181,6 +181,7 @@ from localstack.services.awslambda.urlrouter import FunctionUrlRouter
 from localstack.services.edge import ROUTER
 from localstack.services.plugins import ServiceLifecycleHook
 from localstack.utils.aws import aws_stack
+from localstack.utils.aws.arns import extract_service_from_arn
 from localstack.utils.collections import PaginatedList
 from localstack.utils.files import load_file
 from localstack.utils.strings import get_random_hex, long_uid, short_uid, to_bytes, to_str
@@ -1345,6 +1346,13 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
     ) -> EventSourceMappingConfiguration:
         if "EventSourceArn" not in request:
             raise InvalidParameterValueException("Unrecognized event source.", Type="User")
+
+        service = extract_service_from_arn(request.get("EventSourceArn"))
+        if service in ["dynamodb", "kinesis", "kafka"] and "StartingPosition" not in request:
+            raise InvalidParameterValueException(
+                "1 validation error detected: Value null at 'startingPosition' failed to satisfy constraint: Member must not be null.",
+                Type="User",
+            )
 
         state = lambda_stores[context.account_id][context.region]
         function_name = request["FunctionName"]

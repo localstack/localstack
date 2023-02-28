@@ -297,7 +297,8 @@ def remove_attributes(obj: Dict, attributes: List[str], recursive: bool = False)
             return o
 
         return recurse_object(obj, _remove)
-    attributes = attributes if is_list_or_tuple(attributes) else [attributes]
+
+    attributes = ensure_list(attributes)
     for attr in attributes:
         obj.pop(attr, None)
     return obj

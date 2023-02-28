@@ -10925,5 +10925,22 @@
         }
       }
     }
+  },
+  "tests/integration/awslambda/test_lambda_api.py::TestLambdaEventSourceMappings::test_create_event_source_validation": {
+    "recorded-date": "15-02-2023, 11:03:02",
+    "recorded-content": {
+      "error": {
+        "Error": {
+          "Code": "InvalidParameterValueException",
+          "Message": "1 validation error detected: Value null at 'startingPosition' failed to satisfy constraint: Member must not be null."
+        },
+        "Type": "User",
+        "message": "1 validation error detected: Value null at 'startingPosition' failed to satisfy constraint: Member must not be null.",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
   }
 }

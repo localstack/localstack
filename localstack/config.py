@@ -1111,7 +1111,6 @@ def init_directories() -> Directories:
 
         # deprecation path
         DATA_DIR = dirs.data
-        os.environ["DATA_DIR"] = dirs.data  # still needed for external tools
 
     return dirs
 
