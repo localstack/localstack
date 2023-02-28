@@ -17,6 +17,20 @@ from localstack.services.stepfunctions.asl.eval.environment import Environment
 
 
 class Base64Encode(StatesFunction):
+    # Decodes data based on MIME Base64 encoding scheme.
+    #
+    # For example:
+    # With input
+    # {
+    #   "base64": "RGF0YSB0byBlbmNvZGU="
+    # }
+    #
+    # The call
+    # "data.$": "States.Base64Decode($.base64)"
+    #
+    # Returns
+    # {"data": "Decoded data"}
+
     MAX_INPUT_CHAR_LEN: Final[int] = 10_000
 
     def __init__(self, arg_list: FunctionArgumentList):
