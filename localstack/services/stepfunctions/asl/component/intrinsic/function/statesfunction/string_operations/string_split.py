@@ -6,7 +6,7 @@ from localstack.services.stepfunctions.asl.component.intrinsic.argument.function
 from localstack.services.stepfunctions.asl.component.intrinsic.function.statesfunction.states_function import (
     StatesFunction,
 )
-from localstack.services.stepfunctions.asl.component.intrinsic.functionname.state_fuinction_name_types import (
+from localstack.services.stepfunctions.asl.component.intrinsic.functionname.state_function_name_types import (
     StatesFunctionNameType,
 )
 from localstack.services.stepfunctions.asl.component.intrinsic.functionname.states_function_name import (
@@ -16,6 +16,29 @@ from localstack.services.stepfunctions.asl.eval.environment import Environment
 
 
 class StringSplit(StatesFunction):
+    # Splits a string into an array of values.
+    #
+    # For example:
+    # With input
+    # {
+    #   "inputString": "This.is+a,test=string",
+    #   "splitter": ".+,="
+    # }
+    #
+    # The call
+    # {
+    #   "myStringArray.$": "States.StringSplit($.inputString, $.splitter)"
+    # }
+    #
+    # Returns
+    # {"myStringArray": [
+    #   "This",
+    #   "is",
+    #   "a",
+    #   "test",
+    #   "string"
+    # ]}
+
     def __init__(self, arg_list: FunctionArgumentList):
         super().__init__(
             states_name=StatesFunctionName(function_type=StatesFunctionNameType.StringSplit),

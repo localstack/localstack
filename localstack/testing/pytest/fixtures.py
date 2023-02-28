@@ -439,7 +439,7 @@ def dynamodb_create_table(dynamodb_client, dynamodb_wait_for_table_active):
     def factory(**kwargs):
         kwargs["client"] = dynamodb_client
         if "table_name" not in kwargs:
-            kwargs["table_name"] = "test-table-%s" % short_uid()
+            kwargs["table_name"] = f"test-table-{short_uid()}"
         if "partition_key" not in kwargs:
             kwargs["partition_key"] = "id"
 
@@ -1196,7 +1196,7 @@ def deploy_cfn_template(
 
         outputs = cfn_client.describe_stacks(StackName=stack_id)["Stacks"][0].get("Outputs", [])
 
-        mapped_outputs = {o["OutputKey"]: o["OutputValue"] for o in outputs}
+        mapped_outputs = {o["OutputKey"]: o.get("OutputValue") for o in outputs}
 
         def _destroy_stack():
             cfn_client.delete_stack(StackName=stack_id)
@@ -1931,3 +1931,50 @@ def sample_backend_dict() -> BackendDict:
             self.attributes = {}
 
     return BackendDict(SampleBackend, "sns")
+
+
+@pytest.fixture
+def create_rest_apigw():
+    rest_apis = []
+
+    def _create_apigateway_function(**kwargs):
+        region_name = kwargs.pop("region_name", None)
+        apigateway_client = _client("apigateway", region_name)
+
+        response = apigateway_client.create_rest_api(**kwargs)
+        api_id = response.get("id")
+        rest_apis.append((api_id, region_name))
+        resources = apigateway_client.get_resources(restApiId=api_id)
+        root_id = next(item for item in resources["items"] if item["path"] == "/")["id"]
+
+        return api_id, response.get("name"), root_id
+
+    yield _create_apigateway_function
+
+    for rest_api_id, region_name in rest_apis:
+        with contextlib.suppress(Exception):
+            apigateway_client = _client("apigateway", region_name)
+            apigateway_client.delete_rest_api(restApiId=rest_api_id)
+
+
+@pytest.fixture
+def appsync_create_api(appsync_client):
+    graphql_apis = []
+
+    def factory(**kwargs):
+        if "name" not in kwargs:
+            kwargs["name"] = f"graphql-api-testing-name-{short_uid()}"
+        if not kwargs.get("authenticationType"):
+            kwargs["authenticationType"] = "API_KEY"
+
+        result = appsync_client.create_graphql_api(**kwargs)["graphqlApi"]
+        graphql_apis.append(result["apiId"])
+        return result
+
+    yield factory
+
+    for api in graphql_apis:
+        try:
+            appsync_client.delete_graphql_api(apiId=api)
+        except Exception as e:
+            LOG.debug(f"Error cleaning up AppSync API: {api}, {e}")

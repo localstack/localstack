@@ -1397,6 +1397,12 @@ class TestDockerPorts:
         assert is_container_port_reserved(port)
         assert container_port_can_be_bound(port)
 
+        # reservation should work on privileged port
+        port = reserve_available_container_port(duration=1, port_start=1, port_end=1024)
+        assert is_container_port_reserved(port)
+        assert container_port_can_be_bound(port)
+        assert not is_port_available_for_containers(port)
+
     def test_container_port_can_be_bound(self, docker_client, monkeypatch):
         if isinstance(docker_client, CmdDockerClient):
             pytest.skip("Running test only for one Docker executor")

@@ -1,10 +1,12 @@
+from collections import OrderedDict
+
 from localstack.services.stepfunctions.asl.component.intrinsic.argument.function_argument_list import (
     FunctionArgumentList,
 )
 from localstack.services.stepfunctions.asl.component.intrinsic.function.statesfunction.states_function import (
     StatesFunction,
 )
-from localstack.services.stepfunctions.asl.component.intrinsic.functionname.state_fuinction_name_types import (
+from localstack.services.stepfunctions.asl.component.intrinsic.functionname.state_function_name_types import (
     StatesFunctionNameType,
 )
 from localstack.services.stepfunctions.asl.component.intrinsic.functionname.states_function_name import (
@@ -14,6 +16,19 @@ from localstack.services.stepfunctions.asl.eval.environment import Environment
 
 
 class ArrayUnique(StatesFunction):
+    # Removes duplicate values from an array and returns an array containing only unique elements
+    #
+    # For example:
+    # With input
+    # {
+    #   "inputArray": [1,2,3,3,3,3,3,3,4]
+    # }
+    #
+    # The call
+    # States.ArrayUnique($.inputArray)
+    #
+    # Returns
+    # [1,2,3,4]
     def __init__(self, arg_list: FunctionArgumentList):
         super().__init__(
             states_name=StatesFunctionName(function_type=StatesFunctionNameType.ArrayUnique),
@@ -29,8 +44,10 @@ class ArrayUnique(StatesFunction):
 
         array = env.stack.pop()
         if not isinstance(array, list):
-            raise ValueError(f"Expected an array type, but got '{array}'.")
+            raise TypeError(f"Expected an array type, but got '{array}'.")
 
-        items_set = set(array)
-        unique_array = list(items_set)
+        # Remove duplicates through an ordered set, in this
+        # case we consider they key set of an ordered dict.
+        items_odict = OrderedDict.fromkeys(array).keys()
+        unique_array = list(items_odict)
         env.stack.append(unique_array)

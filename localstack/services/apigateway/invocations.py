@@ -1,15 +1,10 @@
 import json
 import logging
-import re
-from typing import Any, Dict, Union
-from urllib.parse import urljoin
+from typing import Dict
 
-import requests
 from jsonschema import ValidationError, validate
 from requests.models import Response
 
-from localstack import config
-from localstack.aws.accounts import get_aws_account_id
 from localstack.constants import APPLICATION_JSON
 from localstack.services.apigateway import helpers
 from localstack.services.apigateway.context import ApiInvocationContext
@@ -20,33 +15,20 @@ from localstack.services.apigateway.helpers import (
     make_error_response,
 )
 from localstack.services.apigateway.integration import (
+    DynamoDBIntegration,
+    HTTPIntegration,
+    KinesisIntegration,
     LambdaIntegration,
     LambdaProxyIntegration,
     MockIntegration,
-    SnsIntegration,
+    S3Integration,
+    SNSIntegration,
+    SQSIntegration,
     StepFunctionIntegration,
 )
-from localstack.services.apigateway.templates import (
-    RequestTemplates,
-    ResponseTemplates,
-    VtlTemplate,
-)
-from localstack.utils import common
 from localstack.utils.aws import aws_stack
-from localstack.utils.aws.aws_responses import request_response_stream, requests_response
-
-# set up logger
-from localstack.utils.http import add_query_params_to_url
 
 LOG = logging.getLogger(__name__)
-
-# target ARN patterns
-TARGET_REGEX_PATH_S3_URI = (
-    r"^arn:aws:apigateway:[a-zA-Z0-9\-]+:s3:path/(?P<bucket>[^/]+)/(?P<object>.+)$"
-)
-TARGET_REGEX_ACTION_S3_URI = r"^arn:aws:apigateway:[a-zA-Z0-9\-]+:s3:action/(?:GetObject&Bucket\=(?P<bucket>[^&]+)&Key\=(?P<object>.+))$"
-
-# TODO: refactor / split up this file into suitable submodules
 
 
 class AuthorizationError(Exception):
@@ -183,29 +165,6 @@ def update_content_length(response: Response):
         response.headers["Content-Length"] = str(len(response.content))
 
 
-def apply_request_parameters(
-    uri: str, integration: Dict[str, Any], path_params: Dict[str, str], query_params: Dict[str, str]
-):
-    request_parameters = integration.get("requestParameters")
-    uri = uri or integration.get("uri") or integration.get("integrationUri") or ""
-    if request_parameters:
-        for key in path_params:
-            # check if path_params is present in the integration request parameters
-            request_param_key = f"integration.request.path.{key}"
-            request_param_value = f"method.request.path.{key}"
-            if request_parameters.get(request_param_key) == request_param_value:
-                uri = uri.replace(f"{{{key}}}", path_params[key])
-
-    if integration.get("type") != "HTTP_PROXY" and request_parameters:
-        for key in query_params.copy():
-            request_query_key = f"integration.request.querystring.{key}"
-            request_param_val = f"method.request.querystring.{key}"
-            if request_parameters.get(request_query_key, None) != request_param_val:
-                query_params.pop(key)
-
-    return add_query_params_to_url(uri, query_params)
-
-
 def apply_response_parameters(invocation_context: ApiInvocationContext):
     response = invocation_context.response
     integration = invocation_context.integration
@@ -299,18 +258,15 @@ def invoke_rest_api_integration(invocation_context: ApiInvocationContext):
         return make_error_response(msg, 400)
 
 
-# TODO: refactor this to have a class per integration type to make it easy to
-# test the encapsulated logic
+# This function is patched downstream for backend integrations that are only available
+# in Pro (potentially to be replaced with a runtime hook in the future).
 def invoke_rest_api_integration_backend(invocation_context: ApiInvocationContext):
     # define local aliases from invocation context
     invocation_path = invocation_context.path_with_query_string
     method = invocation_context.method
-    data = invocation_context.data
     headers = invocation_context.headers
     resource_path = invocation_context.resource_path
     integration = invocation_context.integration
-    integration_response = integration.get("integrationResponses", {})
-    response_templates = integration_response.get("200", {}).get("responseTemplates", {})
     # extract integration type and path parameters
     relative_path, query_string_params = extract_query_string_params(path=invocation_path)
     integration_type_orig = integration.get("type") or integration.get("integrationType") or ""
@@ -318,10 +274,11 @@ def invoke_rest_api_integration_backend(invocation_context: ApiInvocationContext
     uri = integration.get("uri") or integration.get("integrationUri") or ""
 
     try:
-        path_params = extract_path_params(path=relative_path, extracted_path=resource_path)
-        invocation_context.path_params = path_params
+        invocation_context.path_params = extract_path_params(
+            path=relative_path, extracted_path=resource_path
+        )
     except Exception:
-        path_params = {}
+        invocation_context.path_params = {}
 
     if (uri.startswith("arn:aws:apigateway:") and ":lambda:path" in uri) or uri.startswith(
         "arn:aws:lambda"
@@ -331,230 +288,35 @@ def invoke_rest_api_integration_backend(invocation_context: ApiInvocationContext
         elif integration_type == "AWS":
             return LambdaIntegration().invoke(invocation_context)
 
-        raise Exception(
-            f'API Gateway integration type "{integration_type}", action "{uri}", method "{method}"'
-        )
-
     elif integration_type == "AWS":
         if "kinesis:action/" in uri:
-            if uri.endswith("kinesis:action/PutRecord"):
-                target = "Kinesis_20131202.PutRecord"
-            elif uri.endswith("kinesis:action/PutRecords"):
-                target = "Kinesis_20131202.PutRecords"
-            elif uri.endswith("kinesis:action/ListStreams"):
-                target = "Kinesis_20131202.ListStreams"
-            else:
-                LOG.info(
-                    f"Unexpected API Gateway integration URI '{uri}' for integration type {integration_type}",
-                )
-                target = ""
+            return KinesisIntegration().invoke(invocation_context)
 
-            try:
-                invocation_context.context = helpers.get_event_request_context(invocation_context)
-                invocation_context.stage_variables = helpers.get_stage_variables(invocation_context)
-                request_templates = RequestTemplates()
-                payload = request_templates.render(invocation_context)
-
-            except Exception as e:
-                LOG.warning("Unable to convert API Gateway payload to str", e)
-                raise
-
-            # forward records to target kinesis stream
-            headers = aws_stack.mock_aws_request_headers(
-                service="kinesis", region_name=invocation_context.region_name
-            )
-            headers["X-Amz-Target"] = target
-
-            result = common.make_http_request(
-                url=config.service_url("kinesis"), data=payload, headers=headers, method="POST"
-            )
-
-            # apply response template
-            invocation_context.response = result
-            response_templates = ResponseTemplates()
-            response_templates.render(invocation_context)
-            return invocation_context.response
-
-        elif "states:action/" in uri:
+        if "states:action/" in uri:
             return StepFunctionIntegration().invoke(invocation_context)
-        # https://docs.aws.amazon.com/apigateway/api-reference/resource/integration/
-        elif ("s3:path/" in uri or "s3:action/" in uri) and method == "GET":
-            s3 = aws_stack.connect_to_service("s3")
-            uri = apply_request_parameters(
-                uri,
-                integration=integration,
-                path_params=path_params,
-                query_params=query_string_params,
-            )
-            uri_match = re.match(TARGET_REGEX_PATH_S3_URI, uri) or re.match(
-                TARGET_REGEX_ACTION_S3_URI, uri
-            )
-            if uri_match:
-                bucket, object_key = uri_match.group("bucket", "object")
-                LOG.debug("Getting request for bucket %s object %s", bucket, object_key)
-                try:
-                    object = s3.get_object(Bucket=bucket, Key=object_key)
-                except s3.exceptions.NoSuchKey:
-                    msg = "Object %s not found" % object_key
-                    LOG.debug(msg)
-                    return make_error_response(msg, 404)
 
-                headers = aws_stack.mock_aws_request_headers(service="s3")
+        if ":dynamodb:action" in uri:
+            return DynamoDBIntegration().invoke(invocation_context)
 
-                if object.get("ContentType"):
-                    headers["Content-Type"] = object["ContentType"]
+        if "s3:path/" in uri or "s3:action/" in uri:
+            return S3Integration().invoke(invocation_context)
 
-                # stream used so large files do not fill memory
-                response = request_response_stream(stream=object["Body"], headers=headers)
-                return response
-            else:
-                msg = "Request URI does not match s3 specifications"
-                LOG.warning(msg)
-                return make_error_response(msg, 400)
+        if method == "POST" and ":sqs:path" in uri:
+            return SQSIntegration().invoke(invocation_context)
 
-        if method == "POST":
-            if uri.startswith("arn:aws:apigateway:") and ":sqs:path" in uri:
-                template = integration["requestTemplates"][APPLICATION_JSON]
-                account_id, queue = uri.split("/")[-2:]
-                region_name = uri.split(":")[3]
-                if "GetQueueUrl" in template or "CreateQueue" in template:
-                    request_templates = RequestTemplates()
-                    payload = request_templates.render(invocation_context)
-                    new_request = f"{payload}&QueueName={queue}"
-                else:
-                    request_templates = RequestTemplates()
-                    payload = request_templates.render(invocation_context)
-                    queue_url = f"{config.get_edge_url()}/{account_id}/{queue}"
-                    new_request = f"{payload}&QueueUrl={queue_url}"
-                headers = aws_stack.mock_aws_request_headers(service="sqs", region_name=region_name)
-
-                url = urljoin(config.service_url("sqs"), f"{get_aws_account_id()}/{queue}")
-                result = common.make_http_request(
-                    url, method="POST", headers=headers, data=new_request
-                )
-                return result
-            elif uri.startswith("arn:aws:apigateway:") and ":sns:path" in uri:
-                invocation_context.context = helpers.get_event_request_context(invocation_context)
-                invocation_context.stage_variables = helpers.get_stage_variables(invocation_context)
-
-                integration_response = SnsIntegration().invoke(invocation_context)
-                return apply_request_response_templates(
-                    integration_response, response_templates, content_type=APPLICATION_JSON
-                )
-
-        raise Exception(
-            'API Gateway AWS integration action URI "%s", method "%s" not yet implemented'
-            % (uri, method)
-        )
-
-    elif integration_type == "AWS_PROXY":
-        if uri.startswith("arn:aws:apigateway:") and ":dynamodb:action" in uri:
-            # arn:aws:apigateway:us-east-1:dynamodb:action/PutItem&Table=MusicCollection
-            table_name = uri.split(":dynamodb:action")[1].split("&Table=")[1]
-            action = uri.split(":dynamodb:action")[1].split("&Table=")[0]
-
-            if "PutItem" in action and method == "PUT":
-                response_template = response_templates.get("application/json")
-
-                if response_template is None:
-                    msg = "Invalid response template defined in integration response."
-                    LOG.info("%s Existing: %s", msg, response_templates)
-                    return make_error_response(msg, 404)
-
-                response_template = json.loads(response_template)
-                if response_template["TableName"] != table_name:
-                    msg = "Invalid table name specified in integration response template."
-                    return make_error_response(msg, 404)
-
-                dynamo_client = aws_stack.connect_to_resource("dynamodb")
-                table = dynamo_client.Table(table_name)
-
-                event_data = {}
-                data_dict = json.loads(data)
-                for key, _ in response_template["Item"].items():
-                    event_data[key] = data_dict[key]
-
-                table.put_item(Item=event_data)
-                response = requests_response(event_data)
-                return response
-        if uri.startswith("arn:aws:apigateway:") and ".appsync-api:" in uri:
-            # arn:aws:apigateway:us-east-1:appsyncid.appsync-api:path/graphql
-            uri_parts = uri.split(":")
-            app_sync_id = uri_parts[-2].replace(".appsync-api", "")
-            url = urljoin(config.service_url("appsync"), f"graphql/{app_sync_id}")
-            result = common.make_http_request(url, method="POST", headers=headers, data=data)
-            return result
-        else:
-            raise Exception(
-                'API Gateway action uri "%s", integration type %s not yet implemented'
-                % (uri, integration_type)
-            )
+        if method == "POST" and ":sns:path" in uri:
+            return SNSIntegration().invoke(invocation_context)
 
     elif integration_type in ["HTTP_PROXY", "HTTP"]:
-
-        if ":servicediscovery:" in uri:
-            # check if this is a servicediscovery integration URI
-            client = aws_stack.connect_to_service("servicediscovery")
-            service_id = uri.split("/")[-1]
-            instances = client.list_instances(ServiceId=service_id)["Instances"]
-            instance = (instances or [None])[0]
-            if instance and instance.get("Id"):
-                uri = "http://%s/%s" % (instance["Id"], invocation_path.lstrip("/"))
-
-        # apply custom request template
-        invocation_context.context = helpers.get_event_request_context(invocation_context)
-        invocation_context.stage_variables = helpers.get_stage_variables(invocation_context)
-        request_templates = RequestTemplates()
-        payload = request_templates.render(invocation_context)
-
-        if isinstance(payload, dict):
-            payload = json.dumps(payload)
-
-        uri = apply_request_parameters(
-            uri,
-            integration=integration,
-            path_params=path_params,
-            query_params=query_string_params,
-        )
-        result = requests.request(method=method, url=uri, data=payload, headers=headers)
-        # apply custom response template
-        invocation_context.response = result
-        response_templates = ResponseTemplates()
-        response_templates.render(invocation_context)
-        return invocation_context.response
+        return HTTPIntegration().invoke(invocation_context)
 
     elif integration_type == "MOCK":
-        mock_integration = MockIntegration()
-        return mock_integration.invoke(invocation_context)
+        return MockIntegration().invoke(invocation_context)
 
     if method == "OPTIONS":
         # fall back to returning CORS headers if this is an OPTIONS request
         return get_cors_response(headers)
 
     raise Exception(
-        'API Gateway integration type "%s", method "%s", URI "%s" not yet implemented'
-        % (integration_type, method, uri)
+        f'API Gateway integration type "{integration_type}", method "{method}", URI "{uri}" not yet implemented'
     )
-
-
-def apply_request_response_templates(
-    data: Union[Response, bytes],
-    templates: Dict[str, str],
-    content_type: str = None,
-    as_json: bool = False,
-):
-    """Apply the matching request/response template (if it exists) to the payload data and return the result"""
-
-    content_type = content_type or APPLICATION_JSON
-    is_response = isinstance(data, Response)
-    templates = templates or {}
-    template = templates.get(content_type)
-    if not template:
-        return data
-    content = (data.content if is_response else data) or ""
-    result = VtlTemplate().render_vtl(template, content, as_json=as_json)
-    if is_response:
-        data._content = result
-        update_content_length(data)
-        return data
-    return result
