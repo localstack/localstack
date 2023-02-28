@@ -1,6 +1,6 @@
 {
-  "tests/integration/cloudformation/api/test_extensions_api.py::TestExtensionsApi::test_crud_resource_type[HOOK-LocalStack::Testing::TestHook-hooks/localstack-testing-testhook.zip]": {
-    "recorded-date": "27-02-2023, 15:55:25",
+  "tests/integration/cloudformation/api/test_extensions_api.py::TestExtensionsApi::test_crud_extension[HOOK-LocalStack::Testing::TestHook-hooks/localstack-testing-testhook.zip]": {
+    "recorded-date": "28-02-2023, 10:31:12",
     "recorded-content": {
       "register_response": {
         "RegistrationToken": "<registration-token:1>",
@@ -12,14 +12,14 @@
       "describe_type_response": {
         "ProgressStatus": "IN_PROGRESS",
         "TypeArn": "arn:aws:cloudformation:<region>:111111111111:type/hook/LocalStack-Testing-TestHook",
-        "TypeVersionArn": "arn:aws:cloudformation:<region>:111111111111:type/hook/LocalStack-Testing-TestHook/00000004",
+        "TypeVersionArn": "arn:aws:cloudformation:<region>:111111111111:type/hook/LocalStack-Testing-TestHook/<default-version-id:1>",
         "ResponseMetadata": {
           "HTTPHeaders": {},
           "HTTPStatusCode": 200
         }
       },
       "describe_response": {
-        "Arn": "arn:aws:cloudformation:<region>:111111111111:type/hook/LocalStack-Testing-TestHook/00000004",
+        "Arn": "arn:aws:cloudformation:<region>:111111111111:type/hook/LocalStack-Testing-TestHook/<default-version-id:1>",
         "ConfigurationSchema": {
           "$schema": "http://json-schema.org/draft-07/schema#",
           "examples": [
@@ -300,7 +300,7 @@
           ],
           "$id": "https://schema.cloudformation.<region>.amazonaws.com/cloudformation.hook.configuration.schema.v1.json"
         },
-        "DefaultVersionId": "00000004",
+        "DefaultVersionId": "<default-version-id:1>",
         "DeprecatedStatus": "LIVE",
         "Description": "Example resource SSE (Server Side Encryption) verification hook",
         "DocumentationUrl": "https://github.com/aws-cloudformation/example-sse-hook/blob/master/README.md",
@@ -369,8 +369,8 @@
       }
     }
   },
-  "tests/integration/cloudformation/api/test_extensions_api.py::TestExtensionsApi::test_crud_resource_type[RESOURCE-LocalStack::Testing::TestResource-resourcetypes/localstack-testing-testresource.zip]": {
-    "recorded-date": "27-02-2023, 15:53:49",
+  "tests/integration/cloudformation/api/test_extensions_api.py::TestExtensionsApi::test_crud_extension[RESOURCE-LocalStack::Testing::TestResource-resourcetypes/localstack-testing-testresource.zip]": {
+    "recorded-date": "28-02-2023, 10:29:34",
     "recorded-content": {
       "register_response": {
         "RegistrationToken": "<registration-token:1>",
@@ -382,15 +382,15 @@
       "describe_type_response": {
         "ProgressStatus": "IN_PROGRESS",
         "TypeArn": "arn:aws:cloudformation:<region>:111111111111:type/resource/LocalStack-Testing-TestResource",
-        "TypeVersionArn": "arn:aws:cloudformation:<region>:111111111111:type/resource/LocalStack-Testing-TestResource/00000011",
+        "TypeVersionArn": "arn:aws:cloudformation:<region>:111111111111:type/resource/LocalStack-Testing-TestResource/<default-version-id:1>",
         "ResponseMetadata": {
           "HTTPHeaders": {},
           "HTTPStatusCode": 200
         }
       },
       "describe_response": {
-        "Arn": "arn:aws:cloudformation:<region>:111111111111:type/resource/LocalStack-Testing-TestResource/00000011",
-        "DefaultVersionId": "00000011",
+        "Arn": "arn:aws:cloudformation:<region>:111111111111:type/resource/LocalStack-Testing-TestResource/<default-version-id:1>",
+        "DefaultVersionId": "<default-version-id:1>",
         "DeprecatedStatus": "LIVE",
         "Description": "An example resource schema demonstrating some basic constructs and validation rules.",
         "ExecutionRoleArn": "<execution-role-arn:1>",
@@ -460,8 +460,8 @@
       }
     }
   },
-  "tests/integration/cloudformation/api/test_extensions_api.py::TestExtensionsApi::test_crud_resource_type[MODULE-LocalStack::Testing::TestModule::MODULE-modules/localstack-testing-testmodule-module.zip]": {
-    "recorded-date": "27-02-2023, 15:54:22",
+  "tests/integration/cloudformation/api/test_extensions_api.py::TestExtensionsApi::test_crud_extension[MODULE-LocalStack::Testing::TestModule::MODULE-modules/localstack-testing-testmodule-module.zip]": {
+    "recorded-date": "28-02-2023, 10:30:08",
     "recorded-content": {
       "register_response": {
         "RegistrationToken": "<registration-token:1>",
@@ -473,15 +473,15 @@
       "describe_type_response": {
         "ProgressStatus": "IN_PROGRESS",
         "TypeArn": "arn:aws:cloudformation:<region>:111111111111:type/module/LocalStack-Testing-TestModule-MODULE",
-        "TypeVersionArn": "arn:aws:cloudformation:<region>:111111111111:type/module/LocalStack-Testing-TestModule-MODULE/00000009",
+        "TypeVersionArn": "arn:aws:cloudformation:<region>:111111111111:type/module/LocalStack-Testing-TestModule-MODULE/<default-version-id:1>",
         "ResponseMetadata": {
           "HTTPHeaders": {},
           "HTTPStatusCode": 200
         }
       },
       "describe_response": {
-        "Arn": "arn:aws:cloudformation:<region>:111111111111:type/module/LocalStack-Testing-TestModule-MODULE/00000009",
-        "DefaultVersionId": "00000009",
+        "Arn": "arn:aws:cloudformation:<region>:111111111111:type/module/LocalStack-Testing-TestModule-MODULE/<default-version-id:1>",
+        "DefaultVersionId": "<default-version-id:1>",
         "DeprecatedStatus": "LIVE",
         "Description": "Schema for Module Fragment of type LocalStack::Testing::TestModule::MODULE",
         "IsDefaultVersion": true,

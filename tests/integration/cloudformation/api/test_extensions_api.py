@@ -6,7 +6,7 @@ from localstack.utils.strings import short_uid
 
 
 class TestExtensionsApi:
-    @pytest.mark.skip(reason="feature not implemented")
+    # @pytest.mark.skip(reason="feature not implemented")
     @pytest.mark.parametrize(
         "extension_type, extension_name, artifact",
         [
@@ -23,7 +23,7 @@ class TestExtensionsApi:
             ("HOOK", "LocalStack::Testing::TestHook", "hooks/localstack-testing-testhook.zip"),
         ],
     )
-    def test_crud_resource_type(
+    def test_crud_extension(
         self,
         deploy_cfn_template,
         s3_bucket,
@@ -49,6 +49,9 @@ class TestExtensionsApi:
 
         snapshot.add_transformer(
             snapshot.transform.key_value("RegistrationToken", "registration-token")
+        )
+        snapshot.add_transformer(
+            snapshot.transform.key_value("DefaultVersionId", "default-version-id")
         )
         snapshot.add_transformer(snapshot.transform.key_value("LogRoleArn", "log-role-arn"))
         snapshot.add_transformer(snapshot.transform.key_value("LogGroupName", "log-group-name"))
