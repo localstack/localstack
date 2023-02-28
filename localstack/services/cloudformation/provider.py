@@ -335,8 +335,7 @@ class CloudformationProvider(CloudformationApi):
             return stack_not_found_error(stack_name)
 
         return GetTemplateOutput(
-            TemplateBody=stack.template_body,
-            StagesAvailable=[TemplateStage.Original, TemplateStage.Processed],
+            TemplateBody=json.dumps(stack.latest_template_raw()),
         )
 
     @handler("GetTemplateSummary", expand=False)
