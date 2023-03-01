@@ -1,2 +1,6 @@
 {
+  "tests/integration/cloudformation/api/test_extensions_hooks.py::TestExtensionsHooks::test_hook_deployment": {
+    "recorded-date": "01-03-2023, 14:02:14",
+    "recorded-content": {}
+  }
 }
