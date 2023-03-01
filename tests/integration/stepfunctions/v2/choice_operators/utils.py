@@ -1,6 +1,7 @@
 import json
 from typing import Any, Final
 
+from localstack.services.stepfunctions.asl.utils.json_path import JSONPathUtils
 from localstack.testing.snapshots.transformer import RegexTransformer
 from localstack.utils.strings import short_uid
 from tests.integration.stepfunctions.templates.choiceoperators.choice_operators_templates import (
@@ -66,6 +67,7 @@ def create_and_test_comparison_function(
         COT.COMPARISON_OPERATOR_PLACEHOLDER, comparison_func_name
     )
 
+    input_output_cases: list[dict[str, Any]] = list()
     for i, (variable, value) in enumerate(comparisons):
         exec_input = json.dumps({COT.VARIABLE_KEY: variable, COT.VALUE_KEY: value})
 
@@ -77,13 +79,11 @@ def create_and_test_comparison_function(
         creation_resp = create_state_machine(
             name=f"{base_sm_name}_{i}", definition=new_definition_str, roleArn=snf_role_arn
         )
-        snapshot.add_transformer(snapshot.transform.sfn_sm_create_arn(creation_resp, i))
         state_machine_arn = creation_resp["stateMachineArn"]
 
         exec_resp = stepfunctions_client.start_execution(
             stateMachineArn=state_machine_arn, input=exec_input
         )
-        snapshot.add_transformer(snapshot.transform.sfn_sm_exec_arn(exec_resp, i))
         execution_arn = exec_resp["executionArn"]
 
         await_execution_success(
@@ -91,4 +91,8 @@ def create_and_test_comparison_function(
         )
 
         exec_hist_resp = stepfunctions_client.get_execution_history(executionArn=execution_arn)
-        snapshot.match(f"exec_hist_resp_{i}", exec_hist_resp)
+        output = JSONPathUtils.extract_json(
+            "$.events[*].executionSucceededEventDetails.output", exec_hist_resp
+        )
+        input_output_cases.append({"input": exec_input, "output": output})
+    snapshot.match("cases", input_output_cases)
