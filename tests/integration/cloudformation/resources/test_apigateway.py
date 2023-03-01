@@ -8,6 +8,7 @@ from localstack import constants
 from localstack.utils.common import short_uid
 from localstack.utils.files import load_file
 from localstack.utils.run import to_str
+from localstack.utils.strings import to_bytes
 from localstack.utils.testutil import create_zip_file
 from tests.integration.apigateway_fixtures import api_invoke_url
 
@@ -354,7 +355,7 @@ def test_api_gateway_with_policy_as_dict(deploy_cfn_template, apigateway_client,
     rest_api = apigateway_client.get_rest_api(restApiId=stack.outputs.get("MyApiId"))
 
     # note: API Gateway seems to perform double-escaping of the policy document for REST APIs, if specified as dict
-    policy = rest_api["policy"].replace(r"\"", '"')
+    policy = to_bytes(rest_api["policy"]).decode("unicode_escape")
     rest_api["policy"] = json.loads(policy)
 
     snapshot.match("rest-api", rest_api)

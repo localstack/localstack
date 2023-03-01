@@ -71,7 +71,7 @@
     }
   },
   "tests/integration/cloudformation/resources/test_apigateway.py::test_api_gateway_with_policy_as_dict": {
-    "recorded-date": "01-03-2023, 22:58:34",
+    "recorded-date": "01-03-2023, 23:36:31",
     "recorded-content": {
       "rest-api": {
         "apiKeySource": "HEADER",
