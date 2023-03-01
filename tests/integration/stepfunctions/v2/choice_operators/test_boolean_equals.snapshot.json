@@ -1,9 +1,9 @@
 {
   "tests/integration/stepfunctions/v2/choice_operators/test_boolean_equals.py::TestBooleanEquals::test_boolean_equals": {
-    "recorded-date": "01-03-2023, 10:16:48",
+    "recorded-date": "01-03-2023, 10:33:46",
     "recorded-content": {
-      "cases": {
-        "case_0": {
+      "cases": [
+        {
           "input": {
             "Variable": null,
             "Value": true
@@ -12,7 +12,7 @@
             "TestResult.$": "ConditionFalse"
           }
         },
-        "case_1": {
+        {
           "input": {
             "Variable": null,
             "Value": false
@@ -21,97 +21,7 @@
             "TestResult.$": "ConditionFalse"
           }
         },
-        "case_10": {
-          "input": {
-            "Variable": "",
-            "Value": true
-          },
-          "output": {
-            "TestResult.$": "ConditionFalse"
-          }
-        },
-        "case_11": {
-          "input": {
-            "Variable": "",
-            "Value": false
-          },
-          "output": {
-            "TestResult.$": "ConditionFalse"
-          }
-        },
-        "case_12": {
-          "input": {
-            "Variable": " ",
-            "Value": true
-          },
-          "output": {
-            "TestResult.$": "ConditionFalse"
-          }
-        },
-        "case_13": {
-          "input": {
-            "Variable": " ",
-            "Value": false
-          },
-          "output": {
-            "TestResult.$": "ConditionFalse"
-          }
-        },
-        "case_14": {
-          "input": {
-            "Variable": "HelloWorld",
-            "Value": true
-          },
-          "output": {
-            "TestResult.$": "ConditionFalse"
-          }
-        },
-        "case_15": {
-          "input": {
-            "Variable": "HelloWorld",
-            "Value": false
-          },
-          "output": {
-            "TestResult.$": "ConditionFalse"
-          }
-        },
-        "case_16": {
-          "input": {
-            "Variable": "2023-02-24 12:15:56.832957",
-            "Value": true
-          },
-          "output": {
-            "TestResult.$": "ConditionFalse"
-          }
-        },
-        "case_17": {
-          "input": {
-            "Variable": "2023-02-24 12:15:56.832957",
-            "Value": false
-          },
-          "output": {
-            "TestResult.$": "ConditionFalse"
-          }
-        },
-        "case_18": {
-          "input": {
-            "Variable": "2023-02-24 12:15:56",
-            "Value": true
-          },
-          "output": {
-            "TestResult.$": "ConditionFalse"
-          }
-        },
-        "case_19": {
-          "input": {
-            "Variable": "2023-02-24 12:15:56",
-            "Value": false
-          },
-          "output": {
-            "TestResult.$": "ConditionFalse"
-          }
-        },
-        "case_2": {
+        {
           "input": {
             "Variable": 0,
             "Value": true
@@ -120,7 +30,160 @@
             "TestResult.$": "ConditionFalse"
           }
         },
-        "case_20": {
+        {
+          "input": {
+            "Variable": 0,
+            "Value": false
+          },
+          "output": {
+            "TestResult.$": "ConditionFalse"
+          }
+        },
+        {
+          "input": {
+            "Variable": 0.0,
+            "Value": true
+          },
+          "output": {
+            "TestResult.$": "ConditionFalse"
+          }
+        },
+        {
+          "input": {
+            "Variable": 0.0,
+            "Value": false
+          },
+          "output": {
+            "TestResult.$": "ConditionFalse"
+          }
+        },
+        {
+          "input": {
+            "Variable": 1,
+            "Value": true
+          },
+          "output": {
+            "TestResult.$": "ConditionFalse"
+          }
+        },
+        {
+          "input": {
+            "Variable": 1,
+            "Value": false
+          },
+          "output": {
+            "TestResult.$": "ConditionFalse"
+          }
+        },
+        {
+          "input": {
+            "Variable": 1.1,
+            "Value": true
+          },
+          "output": {
+            "TestResult.$": "ConditionFalse"
+          }
+        },
+        {
+          "input": {
+            "Variable": 1.1,
+            "Value": false
+          },
+          "output": {
+            "TestResult.$": "ConditionFalse"
+          }
+        },
+        {
+          "input": {
+            "Variable": "",
+            "Value": true
+          },
+          "output": {
+            "TestResult.$": "ConditionFalse"
+          }
+        },
+        {
+          "input": {
+            "Variable": "",
+            "Value": false
+          },
+          "output": {
+            "TestResult.$": "ConditionFalse"
+          }
+        },
+        {
+          "input": {
+            "Variable": " ",
+            "Value": true
+          },
+          "output": {
+            "TestResult.$": "ConditionFalse"
+          }
+        },
+        {
+          "input": {
+            "Variable": " ",
+            "Value": false
+          },
+          "output": {
+            "TestResult.$": "ConditionFalse"
+          }
+        },
+        {
+          "input": {
+            "Variable": "HelloWorld",
+            "Value": true
+          },
+          "output": {
+            "TestResult.$": "ConditionFalse"
+          }
+        },
+        {
+          "input": {
+            "Variable": "HelloWorld",
+            "Value": false
+          },
+          "output": {
+            "TestResult.$": "ConditionFalse"
+          }
+        },
+        {
+          "input": {
+            "Variable": "2023-02-24 12:15:56.832957",
+            "Value": true
+          },
+          "output": {
+            "TestResult.$": "ConditionFalse"
+          }
+        },
+        {
+          "input": {
+            "Variable": "2023-02-24 12:15:56.832957",
+            "Value": false
+          },
+          "output": {
+            "TestResult.$": "ConditionFalse"
+          }
+        },
+        {
+          "input": {
+            "Variable": "2023-02-24 12:15:56",
+            "Value": true
+          },
+          "output": {
+            "TestResult.$": "ConditionFalse"
+          }
+        },
+        {
+          "input": {
+            "Variable": "2023-02-24 12:15:56",
+            "Value": false
+          },
+          "output": {
+            "TestResult.$": "ConditionFalse"
+          }
+        },
+        {
           "input": {
             "Variable": "2023-02-24",
             "Value": true
@@ -129,7 +192,7 @@
             "TestResult.$": "ConditionFalse"
           }
         },
-        "case_21": {
+        {
           "input": {
             "Variable": "2023-02-24",
             "Value": false
@@ -138,7 +201,7 @@
             "TestResult.$": "ConditionFalse"
           }
         },
-        "case_22": {
+        {
           "input": {
             "Variable": [],
             "Value": true
@@ -147,7 +210,7 @@
             "TestResult.$": "ConditionFalse"
           }
         },
-        "case_23": {
+        {
           "input": {
             "Variable": [],
             "Value": false
@@ -156,7 +219,7 @@
             "TestResult.$": "ConditionFalse"
           }
         },
-        "case_24": {
+        {
           "input": {
             "Variable": [
               ""
@@ -167,7 +230,7 @@
             "TestResult.$": "ConditionFalse"
           }
         },
-        "case_25": {
+        {
           "input": {
             "Variable": [
               ""
@@ -178,7 +241,7 @@
             "TestResult.$": "ConditionFalse"
           }
         },
-        "case_26": {
+        {
           "input": {
             "Variable": {},
             "Value": true
@@ -187,7 +250,7 @@
             "TestResult.$": "ConditionFalse"
           }
         },
-        "case_27": {
+        {
           "input": {
             "Variable": {},
             "Value": false
@@ -196,7 +259,7 @@
             "TestResult.$": "ConditionFalse"
           }
         },
-        "case_28": {
+        {
           "input": {
             "Variable": {
               "A": 0
@@ -207,7 +270,7 @@
             "TestResult.$": "ConditionFalse"
           }
         },
-        "case_29": {
+        {
           "input": {
             "Variable": {
               "A": 0
@@ -218,16 +281,7 @@
             "TestResult.$": "ConditionFalse"
           }
         },
-        "case_3": {
-          "input": {
-            "Variable": 0,
-            "Value": false
-          },
-          "output": {
-            "TestResult.$": "ConditionFalse"
-          }
-        },
-        "case_30": {
+        {
           "input": {
             "Variable": true,
             "Value": true
@@ -236,7 +290,7 @@
             "TestResult.$": "ConditionTrue"
           }
         },
-        "case_31": {
+        {
           "input": {
             "Variable": false,
             "Value": true
@@ -245,7 +299,7 @@
             "TestResult.$": "ConditionFalse"
           }
         },
-        "case_32": {
+        {
           "input": {
             "Variable": false,
             "Value": true
@@ -254,7 +308,7 @@
             "TestResult.$": "ConditionFalse"
           }
         },
-        "case_33": {
+        {
           "input": {
             "Variable": false,
             "Value": false
@@ -262,69 +316,15 @@
           "output": {
             "TestResult.$": "ConditionTrue"
           }
-        },
-        "case_4": {
-          "input": {
-            "Variable": 0.0,
-            "Value": true
-          },
-          "output": {
-            "TestResult.$": "ConditionFalse"
-          }
-        },
-        "case_5": {
-          "input": {
-            "Variable": 0.0,
-            "Value": false
-          },
-          "output": {
-            "TestResult.$": "ConditionFalse"
-          }
-        },
-        "case_6": {
-          "input": {
-            "Variable": 1,
-            "Value": true
-          },
-          "output": {
-            "TestResult.$": "ConditionFalse"
-          }
-        },
-        "case_7": {
-          "input": {
-            "Variable": 1,
-            "Value": false
-          },
-          "output": {
-            "TestResult.$": "ConditionFalse"
-          }
-        },
-        "case_8": {
-          "input": {
-            "Variable": 1.1,
-            "Value": true
-          },
-          "output": {
-            "TestResult.$": "ConditionFalse"
-          }
-        },
-        "case_9": {
-          "input": {
-            "Variable": 1.1,
-            "Value": false
-          },
-          "output": {
-            "TestResult.$": "ConditionFalse"
-          }
         }
-      }
+      ]
     }
   },
   "tests/integration/stepfunctions/v2/choice_operators/test_boolean_equals.py::TestBooleanEquals::test_boolean_equals_path": {
-    "recorded-date": "01-03-2023, 10:17:21",
+    "recorded-date": "01-03-2023, 10:34:21",
     "recorded-content": {
-      "cases": {
-        "case_0": {
+      "cases": [
+        {
           "input": {
             "Variable": null,
             "Value": true
@@ -333,7 +333,7 @@
             "TestResult.$": "ConditionFalse"
           }
         },
-        "case_1": {
+        {
           "input": {
             "Variable": null,
             "Value": false
@@ -342,97 +342,7 @@
             "TestResult.$": "ConditionFalse"
           }
         },
-        "case_10": {
-          "input": {
-            "Variable": "",
-            "Value": true
-          },
-          "output": {
-            "TestResult.$": "ConditionFalse"
-          }
-        },
-        "case_11": {
-          "input": {
-            "Variable": "",
-            "Value": false
-          },
-          "output": {
-            "TestResult.$": "ConditionFalse"
-          }
-        },
-        "case_12": {
-          "input": {
-            "Variable": " ",
-            "Value": true
-          },
-          "output": {
-            "TestResult.$": "ConditionFalse"
-          }
-        },
-        "case_13": {
-          "input": {
-            "Variable": " ",
-            "Value": false
-          },
-          "output": {
-            "TestResult.$": "ConditionFalse"
-          }
-        },
-        "case_14": {
-          "input": {
-            "Variable": "HelloWorld",
-            "Value": true
-          },
-          "output": {
-            "TestResult.$": "ConditionFalse"
-          }
-        },
-        "case_15": {
-          "input": {
-            "Variable": "HelloWorld",
-            "Value": false
-          },
-          "output": {
-            "TestResult.$": "ConditionFalse"
-          }
-        },
-        "case_16": {
-          "input": {
-            "Variable": "2023-02-24 12:15:56.832957",
-            "Value": true
-          },
-          "output": {
-            "TestResult.$": "ConditionFalse"
-          }
-        },
-        "case_17": {
-          "input": {
-            "Variable": "2023-02-24 12:15:56.832957",
-            "Value": false
-          },
-          "output": {
-            "TestResult.$": "ConditionFalse"
-          }
-        },
-        "case_18": {
-          "input": {
-            "Variable": "2023-02-24 12:15:56",
-            "Value": true
-          },
-          "output": {
-            "TestResult.$": "ConditionFalse"
-          }
-        },
-        "case_19": {
-          "input": {
-            "Variable": "2023-02-24 12:15:56",
-            "Value": false
-          },
-          "output": {
-            "TestResult.$": "ConditionFalse"
-          }
-        },
-        "case_2": {
+        {
           "input": {
             "Variable": 0,
             "Value": true
@@ -441,7 +351,160 @@
             "TestResult.$": "ConditionFalse"
           }
         },
-        "case_20": {
+        {
+          "input": {
+            "Variable": 0,
+            "Value": false
+          },
+          "output": {
+            "TestResult.$": "ConditionFalse"
+          }
+        },
+        {
+          "input": {
+            "Variable": 0.0,
+            "Value": true
+          },
+          "output": {
+            "TestResult.$": "ConditionFalse"
+          }
+        },
+        {
+          "input": {
+            "Variable": 0.0,
+            "Value": false
+          },
+          "output": {
+            "TestResult.$": "ConditionFalse"
+          }
+        },
+        {
+          "input": {
+            "Variable": 1,
+            "Value": true
+          },
+          "output": {
+            "TestResult.$": "ConditionFalse"
+          }
+        },
+        {
+          "input": {
+            "Variable": 1,
+            "Value": false
+          },
+          "output": {
+            "TestResult.$": "ConditionFalse"
+          }
+        },
+        {
+          "input": {
+            "Variable": 1.1,
+            "Value": true
+          },
+          "output": {
+            "TestResult.$": "ConditionFalse"
+          }
+        },
+        {
+          "input": {
+            "Variable": 1.1,
+            "Value": false
+          },
+          "output": {
+            "TestResult.$": "ConditionFalse"
+          }
+        },
+        {
+          "input": {
+            "Variable": "",
+            "Value": true
+          },
+          "output": {
+            "TestResult.$": "ConditionFalse"
+          }
+        },
+        {
+          "input": {
+            "Variable": "",
+            "Value": false
+          },
+          "output": {
+            "TestResult.$": "ConditionFalse"
+          }
+        },
+        {
+          "input": {
+            "Variable": " ",
+            "Value": true
+          },
+          "output": {
+            "TestResult.$": "ConditionFalse"
+          }
+        },
+        {
+          "input": {
+            "Variable": " ",
+            "Value": false
+          },
+          "output": {
+            "TestResult.$": "ConditionFalse"
+          }
+        },
+        {
+          "input": {
+            "Variable": "HelloWorld",
+            "Value": true
+          },
+          "output": {
+            "TestResult.$": "ConditionFalse"
+          }
+        },
+        {
+          "input": {
+            "Variable": "HelloWorld",
+            "Value": false
+          },
+          "output": {
+            "TestResult.$": "ConditionFalse"
+          }
+        },
+        {
+          "input": {
+            "Variable": "2023-02-24 12:15:56.832957",
+            "Value": true
+          },
+          "output": {
+            "TestResult.$": "ConditionFalse"
+          }
+        },
+        {
+          "input": {
+            "Variable": "2023-02-24 12:15:56.832957",
+            "Value": false
+          },
+          "output": {
+            "TestResult.$": "ConditionFalse"
+          }
+        },
+        {
+          "input": {
+            "Variable": "2023-02-24 12:15:56",
+            "Value": true
+          },
+          "output": {
+            "TestResult.$": "ConditionFalse"
+          }
+        },
+        {
+          "input": {
+            "Variable": "2023-02-24 12:15:56",
+            "Value": false
+          },
+          "output": {
+            "TestResult.$": "ConditionFalse"
+          }
+        },
+        {
           "input": {
             "Variable": "2023-02-24",
             "Value": true
@@ -450,7 +513,7 @@
             "TestResult.$": "ConditionFalse"
           }
         },
-        "case_21": {
+        {
           "input": {
             "Variable": "2023-02-24",
             "Value": false
@@ -459,7 +522,7 @@
             "TestResult.$": "ConditionFalse"
           }
         },
-        "case_22": {
+        {
           "input": {
             "Variable": [],
             "Value": true
@@ -468,7 +531,7 @@
             "TestResult.$": "ConditionFalse"
           }
         },
-        "case_23": {
+        {
           "input": {
             "Variable": [],
             "Value": false
@@ -477,7 +540,7 @@
             "TestResult.$": "ConditionFalse"
           }
         },
-        "case_24": {
+        {
           "input": {
             "Variable": [
               ""
@@ -488,7 +551,7 @@
             "TestResult.$": "ConditionFalse"
           }
         },
-        "case_25": {
+        {
           "input": {
             "Variable": [
               ""
@@ -499,7 +562,7 @@
             "TestResult.$": "ConditionFalse"
           }
         },
-        "case_26": {
+        {
           "input": {
             "Variable": {},
             "Value": true
@@ -508,7 +571,7 @@
             "TestResult.$": "ConditionFalse"
           }
         },
-        "case_27": {
+        {
           "input": {
             "Variable": {},
             "Value": false
@@ -517,7 +580,7 @@
             "TestResult.$": "ConditionFalse"
           }
         },
-        "case_28": {
+        {
           "input": {
             "Variable": {
               "A": 0
@@ -528,7 +591,7 @@
             "TestResult.$": "ConditionFalse"
           }
         },
-        "case_29": {
+        {
           "input": {
             "Variable": {
               "A": 0
@@ -539,16 +602,7 @@
             "TestResult.$": "ConditionFalse"
           }
         },
-        "case_3": {
-          "input": {
-            "Variable": 0,
-            "Value": false
-          },
-          "output": {
-            "TestResult.$": "ConditionFalse"
-          }
-        },
-        "case_30": {
+        {
           "input": {
             "Variable": true,
             "Value": true
@@ -557,7 +611,7 @@
             "TestResult.$": "ConditionTrue"
           }
         },
-        "case_31": {
+        {
           "input": {
             "Variable": false,
             "Value": true
@@ -566,7 +620,7 @@
             "TestResult.$": "ConditionFalse"
           }
         },
-        "case_32": {
+        {
           "input": {
             "Variable": false,
             "Value": true
@@ -575,7 +629,7 @@
             "TestResult.$": "ConditionFalse"
           }
         },
-        "case_33": {
+        {
           "input": {
             "Variable": false,
             "Value": false
@@ -583,62 +637,8 @@
           "output": {
             "TestResult.$": "ConditionTrue"
           }
-        },
-        "case_4": {
-          "input": {
-            "Variable": 0.0,
-            "Value": true
-          },
-          "output": {
-            "TestResult.$": "ConditionFalse"
-          }
-        },
-        "case_5": {
-          "input": {
-            "Variable": 0.0,
-            "Value": false
-          },
-          "output": {
-            "TestResult.$": "ConditionFalse"
-          }
-        },
-        "case_6": {
-          "input": {
-            "Variable": 1,
-            "Value": true
-          },
-          "output": {
-            "TestResult.$": "ConditionFalse"
-          }
-        },
-        "case_7": {
-          "input": {
-            "Variable": 1,
-            "Value": false
-          },
-          "output": {
-            "TestResult.$": "ConditionFalse"
-          }
-        },
-        "case_8": {
-          "input": {
-            "Variable": 1.1,
-            "Value": true
-          },
-          "output": {
-            "TestResult.$": "ConditionFalse"
-          }
-        },
-        "case_9": {
-          "input": {
-            "Variable": 1.1,
-            "Value": false
-          },
-          "output": {
-            "TestResult.$": "ConditionFalse"
-          }
         }
-      }
+      ]
     }
   }
 }
