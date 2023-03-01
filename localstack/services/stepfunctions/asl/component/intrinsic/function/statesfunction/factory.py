@@ -21,6 +21,10 @@ from localstack.services.stepfunctions.asl.component.intrinsic.function.statesfu
     json_to_string,
     string_to_json,
 )
+from localstack.services.stepfunctions.asl.component.intrinsic.function.statesfunction.math_operations import (
+    math_add,
+    math_random,
+)
 from localstack.services.stepfunctions.asl.component.intrinsic.function.statesfunction.states_function import (
     StatesFunction,
 )
@@ -78,6 +82,12 @@ class StatesFunctionFactory:
             # Hash Calculations.
             case StatesFunctionNameType.Hash:
                 return hash_func.HashFunc(arg_list=arg_list)
+
+            # Math Operations.
+            case StatesFunctionNameType.MathRandom:
+                return math_random.MathRandom(arg_list=arg_list)
+            case StatesFunctionNameType.MathAdd:
+                return math_add.MathAdd(arg_list=arg_list)
 
             # Generic.
             case StatesFunctionNameType.Format:

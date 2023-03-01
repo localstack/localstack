@@ -38,7 +38,6 @@ class StringFormat(StatesFunction):
     #
     # Return
     # Hello, my name is Arnav.
-
     _DELIMITER: Final[str] = "{}"
 
     def __init__(self, arg_list: FunctionArgumentList):
