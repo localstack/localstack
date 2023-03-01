@@ -3,7 +3,7 @@ DOCKER_PLATFORM ?= linux/amd64
 DOCKER_RUST_IMAGE ?= rust:1.67.1
 
 # x86 cross-build on ARM hosts are killed due to memory issues: https://github.com/rust-lang/cargo/issues/10781#issuecomment-1351670409
-# Slow workaround takes ~5 to build on an M1 MacBook Pro: --config net.git-fetch-with-cli=true
+# Slow workaround takes ~5min to build on an M1 MacBook Pro: --config net.git-fetch-with-cli=true
 ARM_CROSS_BUILD_WORKAROUND ?= --config net.git-fetch-with-cli=true
 
 # Overview: https://doc.rust-lang.org/nightly/rustc/platform-support.html
