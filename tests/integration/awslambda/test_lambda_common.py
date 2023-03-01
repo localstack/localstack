@@ -50,6 +50,10 @@ class TestLambdaRuntimesCommon:
     To selectively execute runtimes, use the runtimes parameter of multiruntime. Example: runtimes=[Runtime.go1_x]
     """
 
+    # TODO: refactor builds:
+    # * Remove specific hashes and `touch -t` since we're not actually checking size & hash of the zip files anymore
+    # * Create a generic parametrizable Makefile per runtime (possibly with an option to provide a specific one)
+
     @pytest.mark.aws_validated
     @pytest.mark.multiruntime(scenario="echo")
     def test_echo_invoke(self, lambda_client, multiruntime_lambda):
