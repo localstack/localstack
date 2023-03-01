@@ -156,28 +156,24 @@ def fixture_snapshot(snapshot):
 
 
 # some more common ones that usually don't work in the old provider
-if is_old_provider():
-    pytestmark = pytest.mark.skip_snapshot_verify(
-        paths=[
-            "$..Architectures",
-            "$..EphemeralStorage",
-            "$..LastUpdateStatus",
-            "$..MemorySize",
-            "$..State",
-            "$..StateReason",
-            "$..StateReasonCode",
-            "$..VpcConfig",
-            "$..CodeSigningConfig",
-            "$..Environment",  # missing
-            "$..HTTPStatusCode",  # 201 vs 200
-            "$..Layers",
-            "$..SnapStart",
-        ],
-    )
-else:
-    pytestmark = pytest.mark.skip_snapshot_verify(
-        paths=["$..CodeSize"],  # FIXME
-    )
+pytestmark = pytest.mark.skip_snapshot_verify(
+    condition=is_old_provider,
+    paths=[
+        "$..Architectures",
+        "$..EphemeralStorage",
+        "$..LastUpdateStatus",
+        "$..MemorySize",
+        "$..State",
+        "$..StateReason",
+        "$..StateReasonCode",
+        "$..VpcConfig",
+        "$..CodeSigningConfig",
+        "$..Environment",  # missing
+        "$..HTTPStatusCode",  # 201 vs 200
+        "$..Layers",
+        "$..SnapStart",
+    ],
+)
 
 
 class TestLambdaBaseFeatures:
@@ -208,7 +204,6 @@ class TestLambdaBaseFeatures:
             "$..Tags",
             "$..Configuration.RevisionId",
             "$..Code.RepositoryType",
-            "$..CodeSize",  # CI reports different code size here,
             "$..Layers",  # PRO
             "$..RuntimeVersionConfig",
         ],
