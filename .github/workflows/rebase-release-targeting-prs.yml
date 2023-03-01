@@ -1,4 +1,4 @@
-name: Rebase PRs targeting release branches
+name: Rebase PRs targeting Release Branches
 on:
   push:
     branches:

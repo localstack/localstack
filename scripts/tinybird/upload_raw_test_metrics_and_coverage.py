@@ -252,7 +252,6 @@ def main():
     token = os.environ.get("TINYBIRD_PARITY_ANALYTICS_TOKEN", "")
     metric_report = os.environ.get("METRIC_REPORT_PATH", "")
     community_impl_coverage = os.environ.get("COMMUNITY_IMPL_COV_PATH", "")
-    pro_impl_coverage = os.environ.get("PRO_IMPL_COV_PATH", "")
 
     missing_info = (
         "missing data, please check the available ENVs that are required to run the script"
@@ -269,16 +268,20 @@ def main():
         print(missing_info)
         print("missing COMMUNITY_IMPL_COV_PATH")
         return
-    if not pro_impl_coverage:
-        print(missing_info)
-        print("missing PRO_IMPL_COV_PATH")
-        return
+
     # create one timestamp that will be used for all the data sent
     timestamp: str = datetime.datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S")
 
+    # TODO re-enable pro tests (but these should be sent by the pro pipeline)
+    # pro_impl_coverage = os.environ.get("PRO_IMPL_COV_PATH", "")
+    # if not pro_impl_coverage:
+    #     print(missing_info)
+    #     print("missing PRO_IMPL_COV_PATH")
+    #     return
+    # send_implemented_coverage(pro_impl_coverage, timestamp=timestamp, type="pro")
+
     send_metric_report(metric_report, timestamp)
     send_implemented_coverage(community_impl_coverage, timestamp=timestamp, type="community")
-    send_implemented_coverage(pro_impl_coverage, timestamp=timestamp, type="pro")
 
 
 if __name__ == "__main__":

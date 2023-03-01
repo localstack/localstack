@@ -1,4 +1,4 @@
-name: integration-tests-against-pro
+name: Community Integration Tests against Pro
 on:
   workflow_dispatch:
     inputs:
@@ -108,19 +108,19 @@ jobs:
             console.log("Ext repo does not have a companion ref. Using default: ", DEFAULT_REF)
             return DEFAULT_REF
       - name: Checkout Pro
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
         with:
           repository: localstack/localstack-ext
           ref: ${{steps.determine-companion-ref.outputs.result}}
           token: ${{ secrets.PRO_ACCESS_TOKEN }}
           path: localstack-ext
       - name: Checkout Open Source
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
         with:
           path: localstack
       - name: Set up Python 3.10
         id: setup-python
-        uses: actions/setup-python@v2
+        uses: actions/setup-python@v4
         with:
           python-version: '3.10'
       - name: Set up Node 14.x
@@ -140,7 +140,7 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y --allow-downgrades libsasl2-dev jq postgresql-14=14.7-0ubuntu0.22.04.1 postgresql-client postgresql-plpython3
       - name: Cache LocalStack-ext dependencies (venv)
-        uses: actions/cache@v2
+        uses: actions/cache@v3
         id: ext-cache
         with:
           path: localstack-ext/.venv
@@ -148,7 +148,7 @@ jobs:
       - name: Install Python Dependencies for LocalStack Pro
         run: make install
       - name: Cache LocalStack community dependencies (venv, static libs)
-        uses: actions/cache@v2
+        uses: actions/cache@v3
         id: os-cache
         with:
           path: |
