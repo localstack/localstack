@@ -10,6 +10,10 @@ from localstack.services.stepfunctions.asl.component.intrinsic.function.statesfu
     array_range,
     array_unique,
 )
+from localstack.services.stepfunctions.asl.component.intrinsic.function.statesfunction.encoding_decoding import (
+    base_64_decode,
+    base_64_encode,
+)
 from localstack.services.stepfunctions.asl.component.intrinsic.function.statesfunction.generic import (
     string_format,
 )
@@ -82,6 +86,12 @@ class StatesFunctionFactory:
             # Hash Calculations.
             case StatesFunctionNameType.Hash:
                 return hash_func.HashFunc(arg_list=arg_list)
+
+            # Encoding and Decoding.
+            case StatesFunctionNameType.Base64Encode:
+                return base_64_encode.Base64Encode(arg_list=arg_list)
+            case StatesFunctionNameType.Base64Decode:
+                return base_64_decode.Base64Decode(arg_list=arg_list)
 
             # Math Operations.
             case StatesFunctionNameType.MathRandom:

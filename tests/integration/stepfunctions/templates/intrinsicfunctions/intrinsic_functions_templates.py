@@ -43,6 +43,14 @@ class IntrinsicFunctionTemplate(TemplateLoader):
         _THIS_FOLDER, "statemachines/string_operations/string_split.json5"
     )
 
+    # Encode and Decode.
+    BASE_64_ENCODE: Final[str] = os.path.join(
+        _THIS_FOLDER, "statemachines/encode_decode/base64encode.json5"
+    )
+    BASE_64_DECODE: Final[str] = os.path.join(
+        _THIS_FOLDER, "statemachines/encode_decode/base64decode.json5"
+    )
+
     # Hash Calculations.
     HASH: Final[str] = os.path.join(_THIS_FOLDER, "statemachines/hash_calculations/hash.json5")
 
