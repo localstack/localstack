@@ -67,7 +67,7 @@ def create_and_test_comparison_function(
         COT.COMPARISON_OPERATOR_PLACEHOLDER, comparison_func_name
     )
 
-    input_output_cases: dict[str, Any] = dict()
+    input_output_cases: list[dict[str, Any]] = list()
     for i, (variable, value) in enumerate(comparisons):
         exec_input = json.dumps({COT.VARIABLE_KEY: variable, COT.VALUE_KEY: value})
 
@@ -94,5 +94,5 @@ def create_and_test_comparison_function(
         output = JSONPathUtils.extract_json(
             "$.events[*].executionSucceededEventDetails.output", exec_hist_resp
         )
-        input_output_cases[f"case_{i}"] = {"input": exec_input, "output": output}
+        input_output_cases.append({"input": exec_input, "output": output})
     snapshot.match("cases", input_output_cases)
