@@ -23,6 +23,9 @@ class ApiGatewayStore(BaseStore):
     # maps (API id) -> [gateway_responses]
     gateway_responses: Dict[str, List[Dict]] = LocalAttribute(default=dict)
 
+    # maps (API id) -> Resource id -> its children Resource id
+    resources_children: Dict[str, Dict[str, List[str]]] = LocalAttribute(default=dict)
+
     # account details
     account: Dict[str, Any] = LocalAttribute(default=dict)
 

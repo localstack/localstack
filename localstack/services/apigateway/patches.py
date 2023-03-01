@@ -1,6 +1,5 @@
 import json
 import logging
-from typing import Dict, Optional, Tuple
 
 from moto.apigateway import models as apigateway_models
 from moto.apigateway.exceptions import (
@@ -12,8 +11,7 @@ from moto.apigateway.responses import APIGatewayResponse
 from moto.core.utils import camelcase_to_underscores
 
 from localstack.services.apigateway.helpers import TAG_KEY_CUSTOM_ID, apply_json_patch_safe
-from localstack.utils.collections import ensure_list
-from localstack.utils.common import DelSafeDict, str_to_bool, to_str
+from localstack.utils.common import str_to_bool, to_str
 from localstack.utils.patch import patch
 
 LOG = logging.getLogger(__name__)
@@ -37,52 +35,6 @@ def apply_patches():
 
     apigateway_models_Stage_init_orig = apigateway_models.Stage.__init__
     apigateway_models.Stage.__init__ = apigateway_models_Stage_init
-
-    def _patch_api_gateway_entity(self, entity: Dict) -> Optional[Tuple[int, Dict, str]]:
-        not_supported_attributes = ["/id", "/region_name", "/create_date"]
-
-        patch_operations = self._get_param("patchOperations")
-
-        model_attributes = list(entity.keys())
-        for operation in patch_operations:
-            path_start = operation["path"].strip("/").split("/")[0]
-            path_start_usc = camelcase_to_underscores(path_start)
-            if path_start not in model_attributes and path_start_usc in model_attributes:
-                operation["path"] = operation["path"].replace(path_start, path_start_usc)
-            if operation["path"] in not_supported_attributes:
-                msg = f'Invalid patch path {operation["path"]}'
-                return 400, {}, msg
-
-        apply_json_patch_safe(entity, patch_operations, in_place=True)
-        # apply some type fixes - TODO refactor/generalize
-        if "disable_execute_api_endpoint" in entity:
-            entity["disableExecuteApiEndpoint"] = bool(entity.pop("disable_execute_api_endpoint"))
-        if "binary_media_types" in entity:
-            entity["binaryMediaTypes"] = ensure_list(entity.pop("binary_media_types"))
-
-    def apigateway_response_resource_individual(self, request, full_url, headers):
-        if request.method in ["GET", "DELETE"]:
-            return apigateway_response_resource_individual_orig(self, request, full_url, headers)
-        if request.method == "POST":
-            _, _, result = apigateway_response_resource_individual_orig(
-                self, request, full_url, headers
-            )
-            return 201, {}, result
-
-        self.setup_class(request, full_url, headers)
-        function_id = self.path.replace("/restapis/", "", 1).split("/")[0]
-
-        if self.method == "PATCH":
-            resource_id = self.path.split("/")[4]
-            resource = self.backend.get_resource(function_id, resource_id)
-            if not isinstance(resource.__dict__, DelSafeDict):
-                resource.__dict__ = DelSafeDict(resource.__dict__)
-            result = _patch_api_gateway_entity(self, resource.__dict__)
-            if result is not None:
-                return result
-            return 200, {}, json.dumps(resource.to_dict())
-
-        return 404, {}, ""
 
     @patch(APIGatewayResponse.resource_methods)
     def apigateway_response_resource_methods(fn, self, request, *args, **kwargs):
@@ -295,12 +247,12 @@ def apply_patches():
             ),
         }
 
-        def cast_value(value, value_type):
-            if value is None:
-                return value
+        def cast_value(_value, value_type):
+            if _value is None:
+                return _value
             if value_type == bool:
-                return str(value) in {"true", "True"}
-            return value_type(value)
+                return str(_value) in {"true", "True"}
+            return value_type(_value)
 
         method_settings = getattr(self, camelcase_to_underscores("methodSettings"), {})
         setattr(self, camelcase_to_underscores("methodSettings"), method_settings)
@@ -334,9 +286,6 @@ def apply_patches():
         if not resource_method.method_integration:
             raise NoIntegrationDefined()
         return resource_method.method_integration
-
-    apigateway_response_resource_individual_orig = APIGatewayResponse.resource_individual
-    APIGatewayResponse.resource_individual = apigateway_response_resource_individual
 
     if not hasattr(apigateway_models.APIGatewayBackend, "update_deployment"):
         apigateway_models.APIGatewayBackend.update_deployment = backend_update_deployment
