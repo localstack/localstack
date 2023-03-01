@@ -8,7 +8,7 @@ from botocore.utils import ArnParser
 from localstack import config
 from localstack.aws.api.opensearch import DomainEndpointOptions, EngineType
 from localstack.config import EDGE_BIND_HOST
-from localstack.constants import LOCALHOST, LOCALHOST_HOSTNAME
+from localstack.constants import LOCALHOST
 from localstack.services.opensearch import versions
 from localstack.services.opensearch.cluster import (
     CustomEndpoint,
@@ -28,6 +28,7 @@ from localstack.utils.common import (
     start_thread,
 )
 from localstack.utils.serving import Server
+from localstack.utils.urls import localstack_host
 
 LOG = logging.getLogger(__name__)
 
@@ -115,11 +116,16 @@ def build_cluster_endpoint(
                 assigned_port = external_service_ports.reserve_port()
         else:
             assigned_port = external_service_ports.reserve_port()
-        return f"{config.LOCALSTACK_HOSTNAME}:{assigned_port}"
+
+        host_definition = localstack_host(use_localstack_hostname=True, custom_port=assigned_port)
+        return host_definition.host_and_port()
     if config.OPENSEARCH_ENDPOINT_STRATEGY == "path":
-        return f"{config.LOCALSTACK_HOSTNAME}:{config.EDGE_PORT}/{engine_domain}/{domain_key.region}/{domain_key.domain_name}"
+        host_definition = localstack_host(use_localstack_hostname=True)
+        return f"{host_definition.host_and_port()}/{engine_domain}/{domain_key.region}/{domain_key.domain_name}"
+
     # or through a subdomain (domain-name.region.opensearch.localhost.localstack.cloud)
-    return f"{domain_key.domain_name}.{domain_key.region}.{engine_domain}.{LOCALHOST_HOSTNAME}:{config.EDGE_PORT}"
+    host_definition = localstack_host(use_localhost_cloud=True)
+    return f"{domain_key.domain_name}.{domain_key.region}.{engine_domain}.{host_definition.host_and_port()}"
 
 
 def determine_custom_endpoint(

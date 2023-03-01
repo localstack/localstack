@@ -17,7 +17,7 @@ class HostDefinition:
     host: str
     port: int
 
-    def __str__(self):
+    def host_and_port(self):
         return f"{self.host}:{self.port}"
 
 

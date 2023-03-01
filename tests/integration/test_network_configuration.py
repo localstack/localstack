@@ -50,7 +50,10 @@ class TestOpenSearch:
 
         hostname_external, localstack_hostname = patch_hostnames
 
-        assert "127.0.0.1" in endpoint
+        if config.is_in_docker:
+            assert constants.LOCALHOST in endpoint
+        else:
+            assert "127.0.0.1" in endpoint
 
         assert hostname_external not in endpoint
         assert localstack_hostname not in endpoint
