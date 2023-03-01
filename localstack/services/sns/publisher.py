@@ -37,7 +37,7 @@ from localstack.utils.aws.aws_responses import create_sqs_system_attributes
 from localstack.utils.aws.dead_letter_queue import sns_error_to_dead_letter_queue
 from localstack.utils.cloudwatch.cloudwatch_util import store_cloudwatch_logs
 from localstack.utils.objects import not_none_or
-from localstack.utils.strings import long_uid, md5, to_bytes
+from localstack.utils.strings import long_uid, md5, to_bytes, to_str
 from localstack.utils.time import timestamp_millis
 
 LOG = logging.getLogger(__name__)
@@ -184,7 +184,7 @@ class LambdaTopicPublisher(TopicPublisher):
             if payload:
                 delivery = {
                     "statusCode": status_code,
-                    "providerResponse": payload.read(),
+                    "providerResponse": to_str(payload.read()),
                 }
                 store_delivery_log(context.message, subscriber, success=True, delivery=delivery)
 
