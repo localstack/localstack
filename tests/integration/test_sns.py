@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+import contextlib
 import json
 import logging
 import queue
@@ -136,6 +137,7 @@ class TestSNSSubscription:
 
         sns_client.publish(TopicArn=topic_arn, Subject=subject, Message=message)
 
+        # access events sent by lambda
         events = retry(
             check_expected_lambda_log_events_length,
             retries=10,
@@ -3377,3 +3379,166 @@ class TestSNSProvider:
         )
         # there should be no messages in this queue
         snapshot.match("messages-with-filter-after-publish-filtered", response_after_publish_filter)
+
+
+class TestSNSPublishDelivery:
+    @pytest.mark.aws_validated
+    @pytest.mark.skip_snapshot_verify(
+        paths=[
+            "$.get-topic-attrs.Attributes.DeliveryPolicy",
+            "$.get-topic-attrs.Attributes.EffectiveDeliveryPolicy",
+            "$.get-topic-attrs.Attributes.Policy.Statement..Action",  # SNS:Receive is added by moto but not returned in AWS
+        ]
+    )
+    def test_delivery_lambda(
+        self,
+        sns_client,
+        sns_create_topic,
+        sns_subscription,
+        lambda_client,
+        lambda_su_role,
+        create_lambda_function,
+        logs_client,
+        iam_client,
+        create_role,
+        create_policy,
+        snapshot,
+    ):
+        snapshot.add_transformers_list(
+            [
+                snapshot.transform.key_value(
+                    "dwellTimeMs", reference_replacement=False, value_replacement="<time-ms>"
+                ),
+                snapshot.transform.key_value("nextBackwardToken"),
+                snapshot.transform.key_value("nextForwardToken"),
+            ]
+        )
+        function_name = f"lambda-function-{short_uid()}"
+        permission_id = f"test-statement-{short_uid()}"
+        subject = "[Subject] Test subject"
+        message = "Hello world."
+        topic_name = f"test-topic-{short_uid()}"
+        topic_arn = sns_create_topic(Name=topic_name)["TopicArn"]
+        parsed_arn = parse_arn(topic_arn)
+        account_id = parsed_arn["account"]
+        region = parsed_arn["region"]
+        role_name = f"SNSSuccessFeedback-{short_uid()}"
+        policy_name = f"SNSSuccessFeedback-policy-{short_uid()}"
+
+        # enable Success Feedback from SNS to be sent to CloudWatch
+        # TODO: this is enabled by default in LS
+        trust_policy = {
+            "Version": "2012-10-17",
+            "Statement": [
+                {
+                    "Effect": "Allow",
+                    "Principal": {"Service": "sns.amazonaws.com"},
+                    "Action": "sts:AssumeRole",
+                }
+            ],
+        }
+        cloudwatch_policy = {
+            "Version": "2012-10-17",
+            "Statement": [
+                {
+                    "Effect": "Allow",
+                    "Action": [
+                        "logs:CreateLogGroup",
+                        "logs:CreateLogStream",
+                        "logs:PutLogEvents",
+                        "logs:PutMetricFilter",
+                        "logs:PutRetentionPolicy",
+                    ],
+                    "Resource": ["*"],
+                }
+            ],
+        }
+
+        role_response = create_role(
+            RoleName=role_name, AssumeRolePolicyDocument=json.dumps(trust_policy)
+        )
+        role_arn = role_response["Role"]["Arn"]
+        policy_arn = create_policy(
+            PolicyName=policy_name, PolicyDocument=json.dumps(cloudwatch_policy)
+        )["Policy"]["Arn"]
+        iam_client.attach_role_policy(RoleName=role_name, PolicyArn=policy_arn)
+        if is_aws_cloud():
+            # wait for the policy to be properly attached
+            time.sleep(20)
+
+        sns_client.set_topic_attributes(
+            TopicArn=topic_arn,
+            AttributeName="LambdaSuccessFeedbackRoleArn",
+            AttributeValue=role_arn,
+        )
+
+        sns_client.set_topic_attributes(
+            TopicArn=topic_arn,
+            AttributeName="LambdaSuccessFeedbackSampleRate",
+            AttributeValue="100",
+        )
+
+        topic_attributes = sns_client.get_topic_attributes(TopicArn=topic_arn)
+        snapshot.match("get-topic-attrs", topic_attributes)
+
+        lambda_creation_response = create_lambda_function(
+            func_name=function_name,
+            handler_file=TEST_LAMBDA_PYTHON_ECHO,
+            runtime=Runtime.python3_7,
+            role=lambda_su_role,
+        )
+        lambda_arn = lambda_creation_response["CreateFunctionResponse"]["FunctionArn"]
+        lambda_client.add_permission(
+            FunctionName=function_name,
+            StatementId=permission_id,
+            Action="lambda:InvokeFunction",
+            Principal="sns.amazonaws.com",
+            SourceArn=topic_arn,
+        )
+
+        subscription = sns_subscription(
+            TopicArn=topic_arn,
+            Protocol="lambda",
+            Endpoint=lambda_arn,
+        )
+
+        def check_subscription():
+            subscription_arn = subscription["SubscriptionArn"]
+            subscription_attrs = sns_client.get_subscription_attributes(
+                SubscriptionArn=subscription_arn
+            )
+            assert subscription_attrs["Attributes"]["PendingConfirmation"] == "false"
+
+        retry(check_subscription, retries=PUBLICATION_RETRIES, sleep=PUBLICATION_TIMEOUT)
+
+        sns_client.publish(TopicArn=topic_arn, Subject=subject, Message=message)
+
+        log_group_name = f"sns/{region}/{account_id}/{topic_name}"
+
+        def get_log_events():
+            log_streams = logs_client.describe_log_streams(logGroupName=log_group_name)[
+                "logStreams"
+            ]
+            assert len(log_streams) == 1
+            log_events = logs_client.get_log_events(
+                logGroupName=log_group_name,
+                logStreamName=log_streams[0]["logStreamName"],
+            )
+            assert len(log_events["events"]) == 1
+            # the default retention is 30 days, so delete the logGroup to clean up AWS
+            with contextlib.suppress(ClientError):
+                logs_client.delete_log_group(logGroupName=log_group_name)
+            return log_events
+
+        sleep_time = 5 if is_aws_cloud() else 0.3
+        events = retry(get_log_events, retries=10, sleep=sleep_time)
+
+        # we need to decode the providerResponse to be able to properly match on the response
+        # test would raise an error anyway if it's not a JSON string
+        msg = json.loads(events["events"][0]["message"])
+        events["events"][0]["message"] = msg
+        events["events"][0]["message"]["delivery"]["providerResponse"] = json.loads(
+            msg["delivery"]["providerResponse"]
+        )
+
+        snapshot.match("delivery-events", events)

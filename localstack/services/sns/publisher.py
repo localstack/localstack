@@ -180,11 +180,13 @@ class LambdaTopicPublisher(TopicPublisher):
             )
             status_code = inv_result.get("StatusCode")
             payload = inv_result.get("Payload")
-
             if payload:
                 delivery = {
                     "statusCode": status_code,
-                    "providerResponse": payload.read(),
+                    # TODO: normally, this is the lambda RequestId (invocation id)
+                    # but we don't get it from the response, this could change if we set the RequestId when we receive
+                    # the request instead of when sending the response. For now, mock it with a random UUID
+                    "providerResponse": json.dumps({"lambdaRequestId": long_uid()}),
                 }
                 store_delivery_log(context.message, subscriber, success=True, delivery=delivery)
 
@@ -834,13 +836,15 @@ def store_delivery_log(
     message_context: SnsMessage, subscriber: SnsSubscription, success: bool, delivery: dict = None
 ):
     """Store the delivery logs in CloudWatch"""
+    # TODO: this is enabled by default in LocalStack, but not in AWS
+    # TODO: validate format of `delivery` for each Publisher
     log_group_name = subscriber.get("TopicArn", "").replace("arn:aws:", "").replace(":", "/")
     log_stream_name = long_uid()
     invocation_time = int(time.time() * 1000)
 
     delivery = not_none_or(delivery, {})
-    delivery["deliveryId"] = (long_uid(),)
-    delivery["destination"] = (subscriber.get("Endpoint", ""),)
+    delivery["deliveryId"] = long_uid()
+    delivery["destination"] = subscriber.get("Endpoint", "")
     delivery["dwellTimeMs"] = 200
     if not success:
         delivery["attemps"] = 1
