@@ -34,7 +34,7 @@ TYPE_COMPARISONS_VARS: Final[list[Any]] = [
 @pytest.mark.skip_snapshot_verify(
     paths=["$..loggingConfiguration", "$..tracingConfiguration", "$..previousEventId"]
 )
-class TestBooleanEquals:
+class TestNumerics:
     def test_numeric_equals(
         self,
         stepfunctions_client,
