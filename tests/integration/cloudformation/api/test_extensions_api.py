@@ -89,7 +89,7 @@ class TestExtensionsApi:
     @pytest.mark.skip(reason="test not completed")
     def test_extension_versioning(self, s3_client, s3_bucket, cfn_client, snapshot):
         """
-        This tests validates some of the api behaviours and errors resulting of creating and deleting versions of extensions.
+        This tests validates some api behaviours and errors resulting of creating and deleting versions of extensions.
         The process of this test:
         - register twice the same extension to have multiple versions
         - set the last one as a default one.
