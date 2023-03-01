@@ -45,15 +45,16 @@ def snapshot_transformers(snapshot):
 class TestLambdaRuntimesCommon:
     """
     Directly correlates to the structure found in tests.integration.awslambda.functions.common
-
-    each scenario has the following folder structure
-
-    ./common/<scenario>/runtime/
-
-    runtime can either be directly one of the supported runtimes (e.g. in case of version specific compilation instructions) or one of the keys in RUNTIMES_AGGREGATED
-
+    Each scenario has the following folder structure: ./common/<scenario>/runtime/
+    Runtime can either be directly one of the supported runtimes (e.g. in case of version specific compilation instructions) or one of the keys in RUNTIMES_AGGREGATED
+    To selectively execute runtimes, use the runtimes parameter of multiruntime. Example: runtimes=[Runtime.go1_x]
     """
 
+    # TODO: refactor builds:
+    # * Remove specific hashes and `touch -t` since we're not actually checking size & hash of the zip files anymore
+    # * Create a generic parametrizable Makefile per runtime (possibly with an option to provide a specific one)
+
+    @pytest.mark.aws_validated
     @pytest.mark.multiruntime(scenario="echo")
     def test_echo_invoke(self, lambda_client, multiruntime_lambda):
         # provided lambdas take a little longer for large payloads, hence timeout to 5s
@@ -130,6 +131,7 @@ class TestLambdaRuntimesCommon:
             "$..CodeSha256",  # works locally but unfortunately still produces a different hash in CI
         ]
     )
+    @pytest.mark.aws_validated
     @pytest.mark.multiruntime(scenario="introspection")
     def test_introspection_invoke(self, lambda_client, multiruntime_lambda, snapshot):
         create_function_result = multiruntime_lambda.create_function(
@@ -167,6 +169,7 @@ class TestLambdaRuntimesCommon:
             "$..CodeSha256",  # works locally but unfortunately still produces a different hash in CI
         ]
     )
+    @pytest.mark.aws_validated
     @pytest.mark.multiruntime(scenario="uncaughtexception")
     def test_uncaught_exception_invoke(self, lambda_client, multiruntime_lambda, snapshot):
         # unfortunately the stack trace is quite unreliable and changes when AWS updates the runtime transparently
@@ -192,9 +195,9 @@ class TestLambdaRuntimesCommon:
     @pytest.mark.skip_snapshot_verify(
         paths=[
             "$..CodeSha256",  # works locally but unfortunately still produces a different hash in CI
-            "$..SnapStart",  # FIXME needs to be added to CreateFunction + all snapshots regenerated
         ]
     )
+    @pytest.mark.aws_validated
     # this does only work on al2 lambdas, except provided.al2.
     # Source: https://docs.aws.amazon.com/lambda/latest/dg/runtimes-modify.html#runtime-wrapper
     @pytest.mark.multiruntime(

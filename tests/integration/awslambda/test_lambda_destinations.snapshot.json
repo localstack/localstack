@@ -121,7 +121,7 @@
     }
   },
   "tests/integration/awslambda/test_lambda_destinations.py::TestLambdaDestinationSqs::test_assess_lambda_destination_invocation[payload0]": {
-    "recorded-date": "01-09-2022, 09:09:20",
+    "recorded-date": "27-02-2023, 16:02:33",
     "recorded-content": {
       "put_function_event_invoke_config": {
         "DestinationConfig": {
@@ -183,7 +183,7 @@
     }
   },
   "tests/integration/awslambda/test_lambda_destinations.py::TestLambdaDestinationSqs::test_assess_lambda_destination_invocation[payload1]": {
-    "recorded-date": "01-09-2022, 09:12:37",
+    "recorded-date": "27-02-2023, 16:08:45",
     "recorded-content": {
       "put_function_event_invoke_config": {
         "DestinationConfig": {
@@ -242,7 +242,7 @@
     }
   },
   "tests/integration/awslambda/test_lambda_destinations.py::TestLambdaDLQ::test_dead_letter_queue": {
-    "recorded-date": "23-11-2022, 21:22:49",
+    "recorded-date": "27-02-2023, 16:00:54",
     "recorded-content": {
       "create_lambda_with_dlq": {
         "CreateEventSourceMappingResponse": null,
@@ -271,6 +271,13 @@
           "RevisionId": "<uuid:1>",
           "Role": "arn:aws:iam::111111111111:role/<resource:2>",
           "Runtime": "python3.9",
+          "RuntimeVersionConfig": {
+            "RuntimeVersionArn": "arn:aws:lambda:<region>::runtime:<resource:3>"
+          },
+          "SnapStart": {
+            "ApplyOn": "None",
+            "OptimizationStatus": "Off"
+          },
           "State": "Pending",
           "StateReason": "The function is being created.",
           "StateReasonCode": "Creating",
@@ -344,6 +351,13 @@
         "RevisionId": "<uuid:3>",
         "Role": "arn:aws:iam::111111111111:role/<resource:2>",
         "Runtime": "python3.9",
+        "RuntimeVersionConfig": {
+          "RuntimeVersionArn": "arn:aws:lambda:<region>::runtime:<resource:3>"
+        },
+        "SnapStart": {
+          "ApplyOn": "None",
+          "OptimizationStatus": "Off"
+        },
         "State": "Active",
         "Timeout": 30,
         "TracingConfig": {
@@ -387,7 +401,7 @@
     }
   },
   "tests/integration/awslambda/test_lambda_destinations.py::TestLambdaDestinationSqs::test_retries": {
-    "recorded-date": "16-12-2022, 09:15:27",
+    "recorded-date": "27-02-2023, 16:12:55",
     "recorded-content": {
       "queue_destination_payload": {
         "Messages": [
@@ -436,7 +450,7 @@
     }
   },
   "tests/integration/awslambda/test_lambda_destinations.py::TestLambdaDestinationSqs::test_maxeventage": {
-    "recorded-date": "16-12-2022, 11:42:55",
+    "recorded-date": "27-02-2023, 16:14:27",
     "recorded-content": {
       "no_retry_failure_message": {
         "Attributes": {
