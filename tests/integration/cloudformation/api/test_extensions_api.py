@@ -2,6 +2,7 @@ import os
 import re
 
 import botocore
+import botocore.errorfactory
 import botocore.exceptions
 import pytest
 
@@ -87,6 +88,17 @@ class TestExtensionsApi:
 
     @pytest.mark.skip(reason="test not completed")
     def test_extension_versioning(self, s3_client, s3_bucket, cfn_client, snapshot):
+        """
+        This tests validates some of the api behaviours and errors resulting of creating and deleting versions of extensions.
+        The process of this test:
+        - register twice the same extension to have multiple versions
+        - set the last one as a default one.
+        - try to delete the whole extension.
+        - try to delete a version of the extension that doesn't exist.
+        - delete the first version of the extension.
+        - try to delete the last available version using the version arn.
+        - delete the whole extension.
+        """
         bucket_name = s3_bucket
         artifact_path = os.path.join(
             os.path.dirname(__file__),
@@ -123,14 +135,14 @@ class TestExtensionsApi:
         )
         snapshot.match("set_default_response", set_default_response)
 
-        with pytest.raises(botocore.errorfactory.CFNRegistryException) as e:
+        with pytest.raises(botocore.errorfactory.ClientError) as e:
             cfn_client.deregister_type(
                 Type="MODULE", TypeName="LocalStack::Testing::TestModule::MODULE"
             )
         snapshot.match("multiple_versions_error", e.value.response)
 
         arn = versions_response["TypeVersionSummaries"][1]["Arn"]
-        with pytest.raises(botocore.exceptions.TypeNotFound) as e:
+        with pytest.raises(botocore.errorfactory.ClientError) as e:
             arn = re.sub(r"/\d{8}", "99999999", arn)
             cfn_client.deregister_type(Arn=arn)
         snapshot.match("version_not_found_error", e.value.response)
@@ -140,8 +152,8 @@ class TestExtensionsApi:
         )
         snapshot.match("delete_unused_version_response", delete_first_version_response)
 
-        with pytest.raises(botocore.errorfactory.CFNRegistryException) as e:
-            cfn_client.deregister_type(Arn=versions_response["TypeVersionSummaries"][0]["Arn"])
+        with pytest.raises(botocore.errorfactory.ClientError) as e:
+            cfn_client.deregister_type(Arn=versions_response["TypeVersionSummaries"][1]["Arn"])
         snapshot.match("error_for_deleting_default_with_arn", e.value.response)
 
         delete_default_response = cfn_client.deregister_type(
@@ -151,6 +163,10 @@ class TestExtensionsApi:
 
     @pytest.mark.skip(reason="feature not implemented")
     def test_extension_not_complete(self, s3_client, s3_bucket, cfn_client, snapshot):
+        """
+        This tests validates the error of Extension not found using the describe_type operation when the registration
+        of the extension is still in progress.
+        """
         bucket_name = s3_bucket
         artifact_path = os.path.join(
             os.path.dirname(__file__),
@@ -165,7 +181,7 @@ class TestExtensionsApi:
             SchemaHandlerPackage=f"s3://{bucket_name}/{key_name}",
         )
 
-        with pytest.raises(Exception) as e:
+        with pytest.raises(botocore.errorfactory.ClientError) as e:
             cfn_client.describe_type(Type="HOOK", TypeName="LocalStack::Testing::TestHook")
         snapshot.match("not_found_error", e.value)
 
