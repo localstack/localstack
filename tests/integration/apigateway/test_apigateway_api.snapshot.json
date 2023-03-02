@@ -1240,7 +1240,7 @@
     }
   },
   "tests/integration/apigateway/test_apigateway_api.py::TestApiGatewayApi::test_update_method_validation": {
-    "recorded-date": "26-02-2023, 15:01:45",
+    "recorded-date": "02-03-2023, 16:58:33",
     "recorded-content": {
       "wrong-rest-api": {
         "Error": {
@@ -1291,6 +1291,17 @@
         "ResponseMetadata": {
           "HTTPHeaders": {},
           "HTTPStatusCode": 200
+        }
+      },
+      "unsupported-path": {
+        "Error": {
+          "Code": "BadRequestException",
+          "Message": "Invalid patch path /httpMethod"
+        },
+        "message": "Invalid patch path /httpMethod",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
         }
       },
       "wrong-path-request-parameters": {

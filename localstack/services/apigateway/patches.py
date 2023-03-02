@@ -36,25 +36,6 @@ def apply_patches():
     apigateway_models_Stage_init_orig = apigateway_models.Stage.__init__
     apigateway_models.Stage.__init__ = apigateway_models_Stage_init
 
-    @patch(APIGatewayResponse.resource_methods)
-    def apigateway_response_resource_methods(fn, self, request, *args, **kwargs):
-        result = fn(self, request, *args, **kwargs)
-
-        if len(result) != 3:
-            return result
-
-        if self.method == "PATCH":
-            patch_operations = self._get_param("patchOperations")
-            url_path_parts = self.path.split("/")
-            function_id = url_path_parts[2]
-            resource_id = url_path_parts[4]
-            method_type = url_path_parts[6]
-            method = self.backend.get_method(function_id, resource_id, method_type)
-            method.apply_operations(patch_operations)
-            return 200, {}, json.dumps(method.to_json())
-
-        return 201, {}, result[2]
-
     @patch(APIGatewayResponse.integrations)
     def apigateway_response_integrations(fn, self, request, *args, **kwargs):
         result = fn(self, request, *args, **kwargs)

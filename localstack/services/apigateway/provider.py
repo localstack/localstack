@@ -419,10 +419,10 @@ class ApigatewayProvider(ApigatewayApi, ServiceLifecycleHook):
                     "Parameter names must be unique across querystring, header and path"
                 )
         need_authorizer_id = authorization_type in ("CUSTOM", "COGNITO_USER_POOLS")
-
+        store = get_apigateway_store(account_id=context.account_id, region=context.region)
+        rest_api_container = store.rest_apis[rest_api_id]
         if need_authorizer_id and (
-            not authorizer_id
-            or not find_api_subentity_by_id(rest_api_id, authorizer_id, "authorizers")
+            not authorizer_id or authorizer_id not in rest_api_container.authorizers
         ):
             # TODO: will be cleaner with https://github.com/localstack/localstack/pull/7750
             raise BadRequestException(
@@ -430,9 +430,7 @@ class ApigatewayProvider(ApigatewayApi, ServiceLifecycleHook):
                 "Setting the authorization type to CUSTOM or COGNITO_USER_POOLS requires a valid authorizer."
             )
 
-        if request_validator_id and not find_api_subentity_by_id(
-            rest_api_id, request_validator_id, "validators"
-        ):
+        if request_validator_id and request_validator_id not in rest_api_container.validators:
             raise BadRequestException("Invalid Request Validator identifier specified")
 
         if request_models:
@@ -470,7 +468,8 @@ class ApigatewayProvider(ApigatewayApi, ServiceLifecycleHook):
 
         if not (moto_method := moto_resource.resource_methods.get(http_method)):
             raise NotFoundException("Invalid Method identifier specified")
-
+        store = get_apigateway_store(account_id=context.account_id, region=context.region)
+        rest_api = store.rest_apis[rest_api_id]
         applicable_patch_operations = []
         for patch_operation in patch_operations:
             op = patch_operation.get("op")
@@ -506,9 +505,7 @@ class ApigatewayProvider(ApigatewayApi, ServiceLifecycleHook):
                 applicable_patch_operations.append(patch_op)
                 continue
 
-            elif path == "/requestValidatorId" and not find_api_subentity_by_id(
-                rest_api_id, value, "validators"
-            ):
+            elif path == "/requestValidatorId" and value not in rest_api.validators:
                 raise BadRequestException("Invalid Request Validator identifier specified")
 
             elif path.startswith("/requestModels/"):

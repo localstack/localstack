@@ -690,7 +690,6 @@ class TestApiGatewayApi:
         self,
         apigateway_client,
         apigw_create_rest_api,
-        apigw_create_rest_resource,
         snapshot,
     ):
         response = apigw_create_rest_api(
@@ -723,7 +722,6 @@ class TestApiGatewayApi:
         self,
         apigateway_client,
         apigw_create_rest_api,
-        apigw_create_rest_resource,
         snapshot,
     ):
         response = apigw_create_rest_api(
@@ -771,7 +769,6 @@ class TestApiGatewayApi:
         self,
         apigateway_client,
         apigw_create_rest_api,
-        apigw_create_rest_resource,
         snapshot,
     ):
         response = apigw_create_rest_api(
@@ -852,7 +849,6 @@ class TestApiGatewayApi:
         self,
         apigateway_client,
         apigw_create_rest_api,
-        apigw_create_rest_resource,
         snapshot,
     ):
         # see https://www.linkedin.com/pulse/updating-aws-cli-patch-operations-rest-api-yitzchak-meirovich/
@@ -929,7 +925,6 @@ class TestApiGatewayApi:
         self,
         apigateway_client,
         apigw_create_rest_api,
-        apigw_create_rest_resource,
         snapshot,
     ):
         response = apigw_create_rest_api(
@@ -990,6 +985,19 @@ class TestApiGatewayApi:
             patchOperations=patch_operations_add,
         )
         snapshot.match("unsupported-operation", unsupported_operation_resp)
+
+        # unsupported path
+        with pytest.raises(ClientError) as e:
+            patch_operations_add = [
+                {"op": "add", "path": "/httpMethod", "value": "PUT"},
+            ]
+            apigateway_client.update_method(
+                restApiId=api_id,
+                resourceId=root_id,
+                httpMethod="ANY",
+                patchOperations=patch_operations_add,
+            )
+        snapshot.match("unsupported-path", e.value.response)
 
         # wrong path for requestParameters
         with pytest.raises(ClientError) as e:
