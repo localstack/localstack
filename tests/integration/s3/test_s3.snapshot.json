@@ -4934,5 +4934,72 @@
         }
       }
     }
+  },
+  "tests/integration/s3/test_s3.py::TestS3::test_s3_sse_validate_kms_key_state": {
+    "recorded-date": "02-03-2023, 20:16:36",
+    "recorded-content": {
+      "create-kms-key": {
+        "AWSAccountId": "111111111111",
+        "Arn": "arn:aws:kms:<region>:111111111111:key/<uuid:1>",
+        "CreationDate": "datetime",
+        "CustomerMasterKeySpec": "SYMMETRIC_DEFAULT",
+        "Description": "<description:1>",
+        "Enabled": true,
+        "EncryptionAlgorithms": [
+          "SYMMETRIC_DEFAULT"
+        ],
+        "KeyId": "<uuid:1>",
+        "KeyManager": "CUSTOMER",
+        "KeySpec": "SYMMETRIC_DEFAULT",
+        "KeyState": "Enabled",
+        "KeyUsage": "ENCRYPT_DECRYPT",
+        "MultiRegion": false,
+        "Origin": "AWS_KMS"
+      },
+      "success-put-object-sse": {
+        "ETag": "\"e68bbef73b652d1dc50bf77e0d79db33\"",
+        "SSEKMSKeyId": "arn:aws:kms:<region>:111111111111:key/<uuid:1>",
+        "ServerSideEncryption": "aws:kms",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "success-get-object-sse": {
+        "AcceptRanges": "bytes",
+        "Body": "test-sse",
+        "ContentLength": 8,
+        "ContentType": "binary/octet-stream",
+        "ETag": "\"e68bbef73b652d1dc50bf77e0d79db33\"",
+        "LastModified": "datetime",
+        "Metadata": {},
+        "SSEKMSKeyId": "arn:aws:kms:<region>:111111111111:key/<uuid:1>",
+        "ServerSideEncryption": "aws:kms",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "get-obj-disabled-key": {
+        "Error": {
+          "Code": "KMS.DisabledException",
+          "Message": "arn:aws:kms:<region>:111111111111:key/<uuid:1> is disabled."
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "put-obj-disabled-key": {
+        "Error": {
+          "Code": "KMS.DisabledException",
+          "Message": "arn:aws:kms:<region>:111111111111:key/<uuid:1> is disabled."
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
   }
 }
