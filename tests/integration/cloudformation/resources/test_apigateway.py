@@ -8,6 +8,7 @@ from localstack import constants
 from localstack.utils.common import short_uid
 from localstack.utils.files import load_file
 from localstack.utils.run import to_str
+from localstack.utils.strings import to_bytes
 from localstack.utils.testutil import create_zip_file
 from tests.integration.apigateway_fixtures import api_invoke_url
 
@@ -315,3 +316,46 @@ def test_update_usage_plan(deploy_cfn_template, cfn_client, apigateway_client):
     usage_plan = apigateway_client.get_usage_plan(usagePlanId=stack.outputs["UsagePlanId"])
 
     assert 7000 == usage_plan["quota"]["limit"]
+
+
+def test_api_gateway_with_policy_as_dict(deploy_cfn_template, apigateway_client, snapshot):
+    template = """
+    Parameters:
+      RestApiName:
+        Type: String
+    Resources:
+      MyApi:
+        Type: AWS::ApiGateway::RestApi
+        Properties:
+          Name: !Ref RestApiName
+          Policy:
+            Version: "2012-10-17"
+            Statement:
+            - Sid: AllowInvokeAPI
+              Action: "*"
+              Effect: Allow
+              Principal:
+                AWS: "*"
+              Resource: "*"
+    Outputs:
+      MyApiId:
+        Value: !Ref MyApi
+    """
+
+    rest_api_name = f"api-{short_uid()}"
+    stack = deploy_cfn_template(
+        template=template,
+        parameters={"RestApiName": rest_api_name},
+    )
+
+    snapshot.add_transformer(snapshot.transform.cloudformation_api())
+    snapshot.add_transformer(snapshot.transform.apigateway_api())
+    snapshot.add_transformer(snapshot.transform.regex(stack.stack_name, "stack-name"))
+
+    rest_api = apigateway_client.get_rest_api(restApiId=stack.outputs.get("MyApiId"))
+
+    # note: API Gateway seems to perform double-escaping of the policy document for REST APIs, if specified as dict
+    policy = to_bytes(rest_api["policy"]).decode("unicode_escape")
+    rest_api["policy"] = json.loads(policy)
+
+    snapshot.match("rest-api", rest_api)
