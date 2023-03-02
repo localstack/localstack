@@ -443,6 +443,7 @@ class TestApiGatewayApi:
             )
         snapshot.match("add-unsupported", e.value.response)
 
+    @pytest.mark.aws_validated
     def test_delete_resource(self, apigateway_client, apigw_create_rest_api, snapshot):
         response = apigw_create_rest_api(
             name=f"test-api-{short_uid()}", description="testing resource behaviour"
@@ -475,3 +476,147 @@ class TestApiGatewayApi:
         with pytest.raises(ClientError) as e:
             apigateway_client.delete_resource(restApiId=api_id, resourceId=subresource_id)
         snapshot.match("delete-subresource", e.value.response)
+
+    @pytest.mark.aws_validated
+    def test_create_resource_parent_invalid(
+        self, apigateway_client, apigw_create_rest_api, snapshot
+    ):
+        response = apigw_create_rest_api(
+            name=f"test-api-{short_uid()}", description="testing resource parent"
+        )
+        api_id = response["id"]
+
+        # create subresource with wrong parent
+        with pytest.raises(ClientError) as e:
+            apigateway_client.create_resource(
+                restApiId=api_id, parentId="fake-resource-id", pathPart="subpets"
+            )
+        snapshot.match("wrong-resource-parent-id", e.value.response)
+
+    @pytest.mark.aws_validated
+    def test_create_proxy_resource(self, apigateway_client, apigw_create_rest_api, snapshot):
+        # test following docs
+        # https://docs.aws.amazon.com/apigateway/latest/developerguide/api-gateway-method-settings-method-request.html#api-gateway-proxy-resource
+        snapshot.add_transformer(SortingTransformer("items", lambda x: x["path"]))
+        response = apigw_create_rest_api(
+            name=f"test-api-{short_uid()}", description="testing resource proxy"
+        )
+        api_id = response["id"]
+        root_rest_api_resource = apigateway_client.get_resources(restApiId=api_id)
+        root_id = root_rest_api_resource["items"][0]["id"]
+
+        # creating `/{proxy+}` resource
+        base_proxy_response = apigateway_client.create_resource(
+            restApiId=api_id, parentId=root_id, pathPart="{proxy+}"
+        )
+        snapshot.match("create-base-proxy-resource", base_proxy_response)
+
+        # creating `/parent` resource, sibling to `/{proxy+}`
+        proxy_sibling_response = apigateway_client.create_resource(
+            restApiId=api_id, parentId=root_id, pathPart="parent"
+        )
+        proxy_sibling_id = proxy_sibling_response["id"]
+        snapshot.match("create-proxy-sibling-resource", proxy_sibling_id)
+
+        # creating `/parent/{proxy+}` resource
+        proxy_sibling_proxy_child_response = apigateway_client.create_resource(
+            restApiId=api_id, parentId=proxy_sibling_id, pathPart="{proxy+}"
+        )
+        proxy_child_id = proxy_sibling_proxy_child_response["id"]
+        snapshot.match(
+            "create-proxy-sibling-proxy-child-resource", proxy_sibling_proxy_child_response
+        )
+
+        # creating `/parent/child` resource, sibling to `/parent/{proxy+}`
+        proxy_sibling_static_child_response = apigateway_client.create_resource(
+            restApiId=api_id, parentId=proxy_sibling_id, pathPart="child"
+        )
+        dynamic_child_id = proxy_sibling_static_child_response["id"]
+        snapshot.match(
+            "create-proxy-sibling-static-child-resource", proxy_sibling_static_child_response
+        )
+
+        # creating `/parent/child/{proxy+}` resource
+        dynamic_child_proxy_child_response = apigateway_client.create_resource(
+            restApiId=api_id, parentId=dynamic_child_id, pathPart="{proxy+}"
+        )
+        snapshot.match("create-static-child-proxy-resource", dynamic_child_proxy_child_response)
+
+        # list all resources
+        result_api_resource = apigateway_client.get_resources(restApiId=api_id)
+        snapshot.match("all-resources", result_api_resource)
+
+        # to allow nested route testing, we will delete `/parent/{proxy+}` to allow creation of a dynamic {child}
+        apigateway_client.delete_resource(restApiId=api_id, resourceId=proxy_child_id)
+
+        # creating `/parent/{child}` resource, as its sibling `/parent/{proxy+}` is now deleted
+        proxy_sibling_dynamic_child_response = apigateway_client.create_resource(
+            restApiId=api_id, parentId=proxy_sibling_id, pathPart="{child}"
+        )
+        dynamic_child_id = proxy_sibling_dynamic_child_response["id"]
+        snapshot.match(
+            "create-proxy-sibling-dynamic-child-resource", proxy_sibling_dynamic_child_response
+        )
+
+        # creating `/parent/{child}/{proxy+}` resource
+        dynamic_child_proxy_child_response = apigateway_client.create_resource(
+            restApiId=api_id, parentId=dynamic_child_id, pathPart="{proxy+}"
+        )
+        snapshot.match("create-dynamic-child-proxy-resource", dynamic_child_proxy_child_response)
+
+        result_api_resource = apigateway_client.get_resources(restApiId=api_id)
+        snapshot.match("all-resources-2", result_api_resource)
+
+    @pytest.mark.aws_validated
+    def test_create_proxy_resource_validation(
+        self, apigateway_client, apigw_create_rest_api, snapshot
+    ):
+        # test following docs
+        # https://docs.aws.amazon.com/apigateway/latest/developerguide/api-gateway-method-settings-method-request.html#api-gateway-proxy-resource
+        snapshot.add_transformer(SortingTransformer("items", lambda x: x["path"]))
+        response = apigw_create_rest_api(
+            name=f"test-api-{short_uid()}", description="testing resource proxy"
+        )
+        api_id = response["id"]
+        root_rest_api_resource = apigateway_client.get_resources(restApiId=api_id)
+        root_id = root_rest_api_resource["items"][0]["id"]
+
+        # creating `/{proxy+}` resource
+        base_proxy_response = apigateway_client.create_resource(
+            restApiId=api_id, parentId=root_id, pathPart="{proxy+}"
+        )
+        base_proxy_id = base_proxy_response["id"]
+        snapshot.match("create-base-proxy-resource", base_proxy_response)
+
+        # try creating `/{dynamic}` resource, sibling to `/{proxy+}`
+        with pytest.raises(ClientError) as e:
+            apigateway_client.create_resource(
+                restApiId=api_id, parentId=root_id, pathPart="{dynamic}"
+            )
+        snapshot.match("create-proxy-dynamic-sibling-resource", e.value.response)
+
+        # try creating `/{proxy+}/child` resource, child to `/{proxy+}`
+        with pytest.raises(ClientError) as e:
+            apigateway_client.create_resource(
+                restApiId=api_id, parentId=base_proxy_id, pathPart="child"
+            )
+        snapshot.match("create-proxy-static-child-resource", e.value.response)
+
+        # try creating `/{proxy+}/{child}` resource, dynamic child to `/{proxy+}`
+        with pytest.raises(ClientError) as e:
+            apigateway_client.create_resource(
+                restApiId=api_id, parentId=base_proxy_id, pathPart="{child}"
+            )
+        snapshot.match("create-proxy-dynamic-child-resource", e.value.response)
+
+        # creating `/parent` static resource
+        parent_response = apigateway_client.create_resource(
+            restApiId=api_id, parentId=root_id, pathPart="parent"
+        )
+        parent_id = parent_response["id"]
+
+        # create `/parent/{child+}` resource, dynamic greedy child to `/parent`
+        greedy_child_response = apigateway_client.create_resource(
+            restApiId=api_id, parentId=parent_id, pathPart="{child+}"
+        )
+        snapshot.match("create-greedy-child-resource", greedy_child_response)

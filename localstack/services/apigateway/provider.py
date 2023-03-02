@@ -238,14 +238,35 @@ class ApigatewayProvider(ApigatewayApi, ServiceLifecycleHook):
     def create_resource(
         self, context: RequestContext, rest_api_id: String, parent_id: String, path_part: String
     ) -> Resource:
-        response: Resource = call_moto(context)
+        moto_rest_api = get_moto_rest_api(context, rest_api_id)
+        parent_moto_resource: MotoResource = moto_rest_api.resources.get(parent_id, None)
+        # validate here if the parent exists. Moto would first create then validate, which would lead to the resource
+        # being created anyway
+        if not parent_moto_resource:
+            raise NotFoundException("Invalid Resource identifier specified")
+
+        parent_path = parent_moto_resource.path_part
+        if is_greedy_path(parent_path):
+            raise BadRequestException(
+                f"Cannot create a child of a resource with a greedy path variable: {parent_path}"
+            )
+
         store = get_apigateway_store(account_id=context.account_id, region=context.region)
+        rest_api_resources = store.resources_children.setdefault(rest_api_id, {})
+        parent_children = rest_api_resources.setdefault(parent_id, [])
+
+        if is_variable_path(path_part):
+            for sibling in parent_children:
+                sibling_resource: MotoResource = moto_rest_api.resources.get(sibling, None)
+                if is_variable_path(sibling_resource.path_part):
+                    raise BadRequestException(
+                        f"A sibling ({sibling_resource.path_part}) of this resource already has a variable path part -- only one is allowed"
+                    )
+
+        response: Resource = call_moto(context)
 
         # save children to allow easy deletion of all children if we delete a parent route
-        rest_api_resources = store.resources_children.setdefault(rest_api_id, {})
-        children = rest_api_resources.setdefault(parent_id, [])
-        children.append(response["id"])
-
+        parent_children.append(response["id"])
         return response
 
     def delete_resource(
@@ -1002,6 +1023,14 @@ def remove_empty_attributes_from_rest_api(rest_api: RestApi, remove_tags=True):
         rest_api.pop("version", None)
     if not rest_api.get("description"):
         rest_api.pop("description", None)
+
+
+def is_greedy_path(path_part: str) -> bool:
+    return path_part.startswith("{") and path_part.endswith("+}")
+
+
+def is_variable_path(path_part: str) -> bool:
+    return path_part.startswith("{") and path_part.endswith("}")
 
 
 def create_custom_context(
