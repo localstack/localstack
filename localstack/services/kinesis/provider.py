@@ -1,4 +1,5 @@
 import logging
+import os
 import time
 from random import random
 
@@ -28,6 +29,7 @@ from localstack.aws.api.kinesis import (
 from localstack.constants import LOCALHOST
 from localstack.services.kinesis.models import KinesisStore, kinesis_stores
 from localstack.services.plugins import ServiceLifecycleHook
+from localstack.state import AssetDirectory, StateVisitor
 from localstack.utils.aws import arns, aws_stack
 from localstack.utils.time import now_utc
 
@@ -46,6 +48,10 @@ def find_stream_for_consumer(consumer_arn):
 
 
 class KinesisProvider(KinesisApi, ServiceLifecycleHook):
+    def accept_state_visitor(self, visitor: StateVisitor):
+        visitor.visit(kinesis_stores)
+        visitor.visit(AssetDirectory(os.path.join(config.dirs.data, "kinesis")))
+
     @staticmethod
     def get_store(account_id: str, region_name: str) -> KinesisStore:
         return kinesis_stores[account_id][region_name]

@@ -361,6 +361,9 @@ DATA_DIR = os.environ.get("DATA_DIR", "").strip()
 # whether localstack should persist service state across localstack runs
 PERSISTENCE = is_env_true("PERSISTENCE")
 
+# the save strategy used if `PERSISTENCE=1` (on_shutdown, on_request, scheduled)
+SAVE_STRATEGY = os.environ.get("SAVE_STRATEGY", "").upper()
+
 # whether to clear config.dirs.tmp on startup and shutdown
 CLEAR_TMP_FOLDER = is_env_not_false("CLEAR_TMP_FOLDER")
 
@@ -833,6 +836,7 @@ CONFIG_ENV_VARS = [
     "PERSISTENCE",
     "PORTS_CHECK_DOCKER_IMAGE",
     "REQUESTS_CA_BUNDLE",
+    "SAVE_STRATEGY",
     "S3_SKIP_SIGNATURE_VALIDATION",
     "S3_SKIP_KMS_KEY_VALIDATION",
     "SERVICES",

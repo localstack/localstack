@@ -100,7 +100,6 @@ from localstack.aws.api.dynamodb import (
 from localstack.aws.forwarder import get_request_forwarder_http
 from localstack.constants import AUTH_CREDENTIAL_REGEX, LOCALHOST, TEST_AWS_SECRET_ACCESS_KEY
 from localstack.http import Response
-from localstack.state import AssetDirectory, StateVisitor
 from localstack.services.dynamodb import server
 from localstack.services.dynamodb.models import DynamoDBStore, dynamodb_stores
 from localstack.services.dynamodb.server import start_dynamodb, wait_for_dynamodb
@@ -116,6 +115,7 @@ from localstack.services.dynamodbstreams.dynamodbstreams_api import (
 )
 from localstack.services.edge import ROUTER
 from localstack.services.plugins import ServiceLifecycleHook
+from localstack.state import AssetDirectory, StateVisitor
 from localstack.utils.aws import arns, aws_stack
 from localstack.utils.aws.arns import extract_account_id_from_arn, extract_region_from_arn
 from localstack.utils.aws.aws_stack import get_valid_regions_for_service
