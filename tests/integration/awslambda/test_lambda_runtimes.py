@@ -88,6 +88,8 @@ pytestmark = pytest.mark.skip_snapshot_verify(
         "$..Environment",  # missing
         "$..HTTPStatusCode",  # 201 vs 200
         "$..Layers",
+        "$..CreateFunctionResponse.RuntimeVersionConfig",
+        "$..CreateFunctionResponse.SnapStart",
     ],
 )
 

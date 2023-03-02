@@ -35,6 +35,7 @@ from localstack.utils.sync import wait_until
 from localstack.utils.testutil import create_lambda_archive
 from tests.integration.awslambda.test_lambda import (
     FUNCTION_MAX_UNZIPPED_SIZE,
+    TEST_LAMBDA_JAVA_WITH_LIB,
     TEST_LAMBDA_NODEJS,
     TEST_LAMBDA_PYTHON_ECHO,
     TEST_LAMBDA_PYTHON_ECHO_ZIP,
@@ -63,6 +64,11 @@ def environment_length_bytes(e: dict) -> int:
 
 @pytest.mark.skipif(is_old_provider(), reason="focusing on new provider")
 class TestLambdaFunction:
+    @pytest.mark.skip_snapshot_verify(
+        # The RuntimeVersionArn is currently a hardcoded id and therefore does not reflect the ARN resource update
+        # from python3.9 to python3.8 in update_func_conf_response.
+        paths=["$..RuntimeVersionConfig.RuntimeVersionArn"]
+    )
     @pytest.mark.aws_validated
     def test_function_lifecycle(
         self, lambda_client, snapshot, create_lambda_function, lambda_su_role
@@ -953,6 +959,7 @@ class TestLambdaVersions:
         )
         snapshot.match("publish_result", publish_result)
 
+    @pytest.mark.aws_validated
     def test_publish_with_update(
         self, lambda_client, create_lambda_function_aws, lambda_su_role, snapshot
     ):
@@ -1136,6 +1143,7 @@ class TestLambdaAlias:
         )  # 3 aliases
         snapshot.match("list_aliases_for_fnname_afterdelete", list_aliases_for_fnname_afterdelete)
 
+    @pytest.mark.aws_validated
     def test_notfound_and_invalid_routingconfigs(
         self, create_boto_client, create_lambda_function_aws, snapshot, lambda_su_role
     ):
@@ -1301,13 +1309,15 @@ class TestLambdaAlias:
 
 
 @pytest.mark.skipif(condition=is_old_provider(), reason="not supported")
-@pytest.mark.skip_snapshot_verify(
-    paths=[
-        # new Lambda feature: https://docs.aws.amazon.com/lambda/latest/dg/snapstart.html
-        "$..SnapStart"
-    ]
-)
 class TestLambdaRevisions:
+    @pytest.mark.skip_snapshot_verify(
+        # The RuntimeVersionArn is currently a hardcoded id and therefore does not reflect the ARN resource update
+        # from python3.9 to python3.8 in update_function_configuration_response_rev5.
+        paths=[
+            "update_function_configuration_response_rev5..RuntimeVersionConfig.RuntimeVersionArn",
+            "get_function_response_rev6..RuntimeVersionConfig.RuntimeVersionArn",
+        ]
+    )
     @pytest.mark.aws_validated
     def test_function_revisions_basic(self, lambda_client, create_lambda_function, snapshot):
         """Tests basic revision id lifecycle for creating and updating functions"""
@@ -1657,6 +1667,8 @@ pytestmark = pytest.mark.skip_snapshot_verify(
         "$..Environment",  # missing
         "$..HTTPStatusCode",  # 201 vs 200
         "$..Layers",
+        "$..CreateFunctionResponse.RuntimeVersionConfig",
+        "$..CreateFunctionResponse.SnapStart",
     ],
 )
 
@@ -2105,24 +2117,23 @@ class TestLambdaReservedConcurrency:
     @pytest.mark.aws_validated
     @pytest.mark.skip_snapshot_verify(condition=is_old_provider)
     def test_function_concurrency_exceptions(self, lambda_client, create_lambda_function, snapshot):
+        acc_settings = lambda_client.get_account_settings()
+        reserved_limit = acc_settings["AccountLimit"]["UnreservedConcurrentExecutions"]
+        min_capacity = 100
+        # actual needed capacity on AWS is 101+ (!)
+        # new accounts in an organization have by default a quota of 50 though
+        if reserved_limit <= min_capacity:
+            pytest.skip(
+                "Account limits are too low. You'll need to request a quota increase on AWS for UnreservedConcurrentExecution."
+            )
+
         function_name = f"lambda_func-{short_uid()}"
         create_lambda_function(
             handler_file=TEST_LAMBDA_PYTHON_ECHO,
             func_name=function_name,
             runtime=Runtime.python3_9,
         )
-        acc_settings = lambda_client.get_account_settings()
 
-        if acc_settings["AccountLimit"]["UnreservedConcurrentExecutions"] <= 100:
-            pytest.skip(
-                "Account limits are too low. You'll need to request a quota increase on AWS for UnreservedConcurrentExecution."
-            )
-
-        reserved_limit = acc_settings["AccountLimit"]["UnreservedConcurrentExecutions"]
-        min_capacity = 100
-
-        # actual needed capacity on AWS is 101+ (!)
-        # new accounts in an organization have by default a quota of 50 though
         with pytest.raises(lambda_client.exceptions.ResourceNotFoundException) as e:
             lambda_client.put_function_concurrency(
                 FunctionName="unknown", ReservedConcurrentExecutions=1
@@ -2156,7 +2167,7 @@ class TestLambdaReservedConcurrency:
 
         # maximum limit
         lambda_client.put_function_concurrency(
-            FunctionName=function_name, ReservedConcurrentExecutions=reserved_limit - (min_capacity)
+            FunctionName=function_name, ReservedConcurrentExecutions=reserved_limit - min_capacity
         )
 
     @pytest.mark.aws_validated
@@ -2324,6 +2335,15 @@ class TestLambdaProvisionedConcurrency:
 
     @pytest.mark.aws_validated
     def test_lambda_provisioned_lifecycle(self, lambda_client, create_lambda_function, snapshot):
+        acc_settings = lambda_client.get_account_settings()
+        reserved_limit = acc_settings["AccountLimit"]["UnreservedConcurrentExecutions"]
+        min_capacity = 10
+        extra_provisioned_concurrency = 1
+        if reserved_limit <= (min_capacity + extra_provisioned_concurrency):
+            pytest.skip(
+                "Account limits are too low. You'll need to request a quota increase on AWS for UnreservedConcurrentExecution."
+            )
+
         function_name = f"lambda_func-{short_uid()}"
         create_lambda_function(
             handler_file=TEST_LAMBDA_PYTHON_ECHO,
@@ -2355,7 +2375,7 @@ class TestLambdaProvisionedConcurrency:
         put_provisioned_on_version = lambda_client.put_provisioned_concurrency_config(
             FunctionName=function_name,
             Qualifier=function_version,
-            ProvisionedConcurrentExecutions=1,
+            ProvisionedConcurrentExecutions=extra_provisioned_concurrency,
         )
         snapshot.match("put_provisioned_on_version", put_provisioned_on_version)
         with pytest.raises(lambda_client.exceptions.ResourceConflictException) as e:
@@ -2380,14 +2400,16 @@ class TestLambdaProvisionedConcurrency:
         # now the other way around
 
         put_provisioned_on_alias = lambda_client.put_provisioned_concurrency_config(
-            FunctionName=function_name, Qualifier=alias_name, ProvisionedConcurrentExecutions=1
+            FunctionName=function_name,
+            Qualifier=alias_name,
+            ProvisionedConcurrentExecutions=extra_provisioned_concurrency,
         )
         snapshot.match("put_provisioned_on_alias", put_provisioned_on_alias)
         with pytest.raises(lambda_client.exceptions.ResourceConflictException) as e:
             lambda_client.put_provisioned_concurrency_config(
                 FunctionName=function_name,
                 Qualifier=function_version,
-                ProvisionedConcurrentExecutions=1,
+                ProvisionedConcurrentExecutions=extra_provisioned_concurrency,
             )
         snapshot.match("put_provisioned_on_version_conflict", e.value.response)
 
@@ -2412,7 +2434,15 @@ class TestLambdaProvisionedConcurrency:
 
 @pytest.mark.skip_snapshot_verify(
     condition=is_old_provider,
-    paths=["$..RevisionId", "$..Policy.Statement", "$..PolicyName", "$..PolicyArn", "$..Layers"],
+    paths=[
+        "$..RevisionId",
+        "$..Policy.Statement",
+        "$..PolicyName",
+        "$..PolicyArn",
+        "$..Layers",
+        # mismatching resource index due to SnapStart
+        "$..Statement.Condition.ArnLike.'AWS:SourceArn'",
+    ],
 )
 class TestLambdaPermissions:
     @pytest.mark.skipif(condition=is_old_provider(), reason="not supported")
@@ -2427,6 +2457,16 @@ class TestLambdaPermissions:
             func_name=function_name,
             runtime=Runtime.python3_9,
         )
+
+        # invalid statement id
+        with pytest.raises(lambda_client.exceptions.ClientError) as e:
+            lambda_client.add_permission(
+                FunctionName=function_name,
+                Action="lambda:InvokeFunction",
+                StatementId="example.com",
+                Principal="s3.amazonaws.com",
+            )
+        snapshot.match("add_permission_invalid_statement_id", e.value.response)
 
         # qualifier mismatch between specified Qualifier and derived ARN from FunctionName
         with pytest.raises(lambda_client.exceptions.InvalidParameterValueException) as e:
@@ -2597,12 +2637,6 @@ class TestLambdaPermissions:
         snapshot.match("get_policy", get_policy_result)
 
     @pytest.mark.skipif(condition=is_old_provider(), reason="not supported")
-    @pytest.mark.skip_snapshot_verify(
-        paths=[
-            # new Lambda feature: https://docs.aws.amazon.com/lambda/latest/dg/snapstart.html
-            "$..SnapStart"
-        ]
-    )
     @pytest.mark.aws_validated
     def test_lambda_permission_fn_versioning(
         self, lambda_client, iam_client, create_lambda_function, account_id, snapshot
@@ -3927,6 +3961,7 @@ class TestLambdaTags:
         assert "a_key" not in lambda_client.list_tags(Resource=function_arn)["Tags"]
         assert "b_key" in lambda_client.list_tags(Resource=function_arn)["Tags"]
 
+    @pytest.mark.aws_validated
     def test_tag_limits(self, lambda_client, create_lambda_function, snapshot):
         """test the limit of 50 tags per resource"""
         function_name = f"fn-tag-{short_uid()}"
@@ -3998,6 +4033,7 @@ class TestLambdaTags:
             )
         snapshot.match("tag_resource_latest_exception", e.value.response)
 
+    @pytest.mark.aws_validated
     def test_tag_lifecycle(self, lambda_client, create_lambda_function, snapshot):
         function_name = f"fn-tag-{short_uid()}"
 
@@ -4178,7 +4214,7 @@ class TestLambdaLayer:
             )
         snapshot.match("publish_layer_version_exc_partially_invalid_values", e.value.response)
 
-    @pytest.mark.skip_snapshot_verify(paths=["$..SnapStart"])  # FIXME: new lambda feature
+    @pytest.mark.aws_validated
     def test_layer_function_exceptions(
         self, lambda_client, create_lambda_function, snapshot, dummylayer, cleanups
     ):
@@ -4310,7 +4346,6 @@ class TestLambdaLayer:
             )
         snapshot.match("create_function_with_layer_in_different_region", e.value.response)
 
-    @pytest.mark.skip_snapshot_verify(paths=["$..SnapStart"])  # FIXME: new lambda feature
     def test_layer_function_quota_exception(
         self, lambda_client, create_lambda_function, snapshot, dummylayer, cleanups
     ):
@@ -4690,3 +4725,91 @@ class TestLambdaLayer:
         snapshot.match(
             "get_layer_version_policy_postdeletes2", get_layer_version_policy_postdeletes2
         )
+
+
+@pytest.mark.skipif(condition=is_old_provider(), reason="not supported")
+class TestLambdaSnapStart:
+    @pytest.mark.aws_validated
+    def test_snapstart_lifecycle(self, lambda_client, create_lambda_function, snapshot):
+        """Test the API of the SnapStart feature. The optimization behavior is not supported in LocalStack.
+        Slow (~1-2min) against AWS.
+        """
+        function_name = f"fn-{short_uid()}"
+        java_jar_with_lib = load_file(TEST_LAMBDA_JAVA_WITH_LIB, mode="rb")
+        create_response = create_lambda_function(
+            func_name=function_name,
+            zip_file=java_jar_with_lib,
+            runtime=Runtime.java11,
+            handler="cloud.localstack.sample.LambdaHandlerWithLib",
+            SnapStart={"ApplyOn": "PublishedVersions"},
+        )
+        snapshot.match("create_function_response", create_response)
+        lambda_client.get_waiter("function_active_v2").wait(FunctionName=function_name)
+
+        publish_response = lambda_client.publish_version(
+            FunctionName=function_name, Description="version1"
+        )
+        version_1 = publish_response["Version"]
+        lambda_client.get_waiter("published_version_active").wait(
+            FunctionName=function_name, Qualifier=version_1
+        )
+
+        get_function_response = lambda_client.get_function(FunctionName=function_name)
+        snapshot.match("get_function_response_latest", get_function_response)
+
+        get_function_response = lambda_client.get_function(
+            FunctionName=f"{function_name}:{version_1}"
+        )
+        snapshot.match("get_function_response_version_1", get_function_response)
+
+    @pytest.mark.aws_validated
+    def test_snapstart_update_function_configuration(
+        self, lambda_client, create_lambda_function, snapshot
+    ):
+        """Test enabling SnapStart when updating a function."""
+        function_name = f"fn-{short_uid()}"
+        java_jar_with_lib = load_file(TEST_LAMBDA_JAVA_WITH_LIB, mode="rb")
+        create_response = create_lambda_function(
+            func_name=function_name,
+            zip_file=java_jar_with_lib,
+            runtime=Runtime.java11,
+            handler="cloud.localstack.sample.LambdaHandlerWithLib",
+        )
+        snapshot.match("create_function_response", create_response)
+        lambda_client.get_waiter("function_active_v2").wait(FunctionName=function_name)
+
+        update_function_response = lambda_client.update_function_configuration(
+            FunctionName=function_name,
+            SnapStart={"ApplyOn": "PublishedVersions"},
+        )
+        snapshot.match("update_function_response", update_function_response)
+
+    @pytest.mark.aws_validated
+    def test_snapstart_exceptions(self, lambda_client, lambda_su_role, snapshot):
+        function_name = f"invalid-function-{short_uid()}"
+        zip_file_bytes = create_lambda_archive(load_file(TEST_LAMBDA_PYTHON_ECHO), get_content=True)
+        # Test unsupported runtime
+        # Only supports java11 (2023-02-15): https://docs.aws.amazon.com/lambda/latest/dg/snapstart.html
+        with pytest.raises(ClientError) as e:
+            lambda_client.create_function(
+                FunctionName=function_name,
+                Handler="index.handler",
+                Code={"ZipFile": zip_file_bytes},
+                PackageType="Zip",
+                Role=lambda_su_role,
+                Runtime=Runtime.python3_9,
+                SnapStart={"ApplyOn": "PublishedVersions"},
+            )
+        snapshot.match("create_function_unsupported_snapstart_runtime", e.value.response)
+
+        with pytest.raises(ClientError) as e:
+            lambda_client.create_function(
+                FunctionName=function_name,
+                Handler="cloud.localstack.sample.LambdaHandlerWithLib",
+                Code={"ZipFile": zip_file_bytes},
+                PackageType="Zip",
+                Role=lambda_su_role,
+                Runtime=Runtime.java11,
+                SnapStart={"ApplyOn": "invalidOption"},
+            )
+        snapshot.match("create_function_invalid_snapstart_apply", e.value.response)

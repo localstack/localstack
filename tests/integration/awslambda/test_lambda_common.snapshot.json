@@ -1,6 +1,6 @@
 {
   "tests/integration/awslambda/test_lambda_common.py::TestLambdaRuntimesCommon::test_introspection_invoke[nodejs12.x]": {
-    "recorded-date": "23-11-2022, 13:29:54",
+    "recorded-date": "27-02-2023, 15:49:15",
     "recorded-content": {
       "create_function_result": {
         "Architectures": [
@@ -26,6 +26,13 @@
         "RevisionId": "<uuid:1>",
         "Role": "arn:aws:iam::111111111111:role/<resource:1>",
         "Runtime": "nodejs12.x",
+        "RuntimeVersionConfig": {
+          "RuntimeVersionArn": "arn:aws:lambda:<region>::runtime:<resource:2>"
+        },
+        "SnapStart": {
+          "ApplyOn": "None",
+          "OptimizationStatus": "Off"
+        },
         "State": "Pending",
         "StateReason": "The function is being created.",
         "StateReasonCode": "Creating",
@@ -130,7 +137,7 @@
     }
   },
   "tests/integration/awslambda/test_lambda_common.py::TestLambdaRuntimesCommon::test_introspection_invoke[nodejs14.x]": {
-    "recorded-date": "23-11-2022, 13:29:56",
+    "recorded-date": "27-02-2023, 15:49:18",
     "recorded-content": {
       "create_function_result": {
         "Architectures": [
@@ -156,6 +163,13 @@
         "RevisionId": "<uuid:1>",
         "Role": "arn:aws:iam::111111111111:role/<resource:1>",
         "Runtime": "nodejs14.x",
+        "RuntimeVersionConfig": {
+          "RuntimeVersionArn": "arn:aws:lambda:<region>::runtime:<resource:2>"
+        },
+        "SnapStart": {
+          "ApplyOn": "None",
+          "OptimizationStatus": "Off"
+        },
         "State": "Pending",
         "StateReason": "The function is being created.",
         "StateReasonCode": "Creating",
@@ -260,7 +274,7 @@
     }
   },
   "tests/integration/awslambda/test_lambda_common.py::TestLambdaRuntimesCommon::test_introspection_invoke[nodejs16.x]": {
-    "recorded-date": "23-11-2022, 13:29:58",
+    "recorded-date": "27-02-2023, 15:49:21",
     "recorded-content": {
       "create_function_result": {
         "Architectures": [
@@ -286,6 +300,13 @@
         "RevisionId": "<uuid:1>",
         "Role": "arn:aws:iam::111111111111:role/<resource:1>",
         "Runtime": "nodejs16.x",
+        "RuntimeVersionConfig": {
+          "RuntimeVersionArn": "arn:aws:lambda:<region>::runtime:<resource:2>"
+        },
+        "SnapStart": {
+          "ApplyOn": "None",
+          "OptimizationStatus": "Off"
+        },
         "State": "Pending",
         "StateReason": "The function is being created.",
         "StateReasonCode": "Creating",
@@ -390,7 +411,7 @@
     }
   },
   "tests/integration/awslambda/test_lambda_common.py::TestLambdaRuntimesCommon::test_introspection_invoke[python3.7]": {
-    "recorded-date": "23-11-2022, 13:29:48",
+    "recorded-date": "27-02-2023, 15:49:06",
     "recorded-content": {
       "create_function_result": {
         "Architectures": [
@@ -416,6 +437,13 @@
         "RevisionId": "<uuid:1>",
         "Role": "arn:aws:iam::111111111111:role/<resource:1>",
         "Runtime": "python3.7",
+        "RuntimeVersionConfig": {
+          "RuntimeVersionArn": "arn:aws:lambda:<region>::runtime:<resource:2>"
+        },
+        "SnapStart": {
+          "ApplyOn": "None",
+          "OptimizationStatus": "Off"
+        },
         "State": "Pending",
         "StateReason": "The function is being created.",
         "StateReasonCode": "Creating",
@@ -514,7 +542,7 @@
     }
   },
   "tests/integration/awslambda/test_lambda_common.py::TestLambdaRuntimesCommon::test_introspection_invoke[python3.8]": {
-    "recorded-date": "23-11-2022, 13:29:50",
+    "recorded-date": "27-02-2023, 15:49:09",
     "recorded-content": {
       "create_function_result": {
         "Architectures": [
@@ -540,6 +568,13 @@
         "RevisionId": "<uuid:1>",
         "Role": "arn:aws:iam::111111111111:role/<resource:1>",
         "Runtime": "python3.8",
+        "RuntimeVersionConfig": {
+          "RuntimeVersionArn": "arn:aws:lambda:<region>::runtime:<resource:2>"
+        },
+        "SnapStart": {
+          "ApplyOn": "None",
+          "OptimizationStatus": "Off"
+        },
         "State": "Pending",
         "StateReason": "The function is being created.",
         "StateReasonCode": "Creating",
@@ -644,7 +679,7 @@
     }
   },
   "tests/integration/awslambda/test_lambda_common.py::TestLambdaRuntimesCommon::test_introspection_invoke[python3.9]": {
-    "recorded-date": "23-11-2022, 13:29:52",
+    "recorded-date": "27-02-2023, 15:49:12",
     "recorded-content": {
       "create_function_result": {
         "Architectures": [
@@ -670,6 +705,13 @@
         "RevisionId": "<uuid:1>",
         "Role": "arn:aws:iam::111111111111:role/<resource:1>",
         "Runtime": "python3.9",
+        "RuntimeVersionConfig": {
+          "RuntimeVersionArn": "arn:aws:lambda:<region>::runtime:<resource:2>"
+        },
+        "SnapStart": {
+          "ApplyOn": "None",
+          "OptimizationStatus": "Off"
+        },
         "State": "Pending",
         "StateReason": "The function is being created.",
         "StateReasonCode": "Creating",
@@ -774,7 +816,7 @@
     }
   },
   "tests/integration/awslambda/test_lambda_common.py::TestLambdaRuntimesCommon::test_introspection_invoke[ruby2.7]": {
-    "recorded-date": "23-11-2022, 13:30:02",
+    "recorded-date": "27-02-2023, 15:49:28",
     "recorded-content": {
       "create_function_result": {
         "Architectures": [
@@ -800,6 +842,13 @@
         "RevisionId": "<uuid:1>",
         "Role": "arn:aws:iam::111111111111:role/<resource:1>",
         "Runtime": "ruby2.7",
+        "RuntimeVersionConfig": {
+          "RuntimeVersionArn": "arn:aws:lambda:<region>::runtime:<resource:2>"
+        },
+        "SnapStart": {
+          "ApplyOn": "None",
+          "OptimizationStatus": "Off"
+        },
         "State": "Pending",
         "StateReason": "The function is being created.",
         "StateReasonCode": "Creating",
@@ -908,7 +957,7 @@
     }
   },
   "tests/integration/awslambda/test_lambda_common.py::TestLambdaRuntimesCommon::test_introspection_invoke[java8]": {
-    "recorded-date": "23-11-2022, 13:30:25",
+    "recorded-date": "27-02-2023, 15:49:51",
     "recorded-content": {
       "create_function_result": {
         "Architectures": [
@@ -934,6 +983,13 @@
         "RevisionId": "<uuid:1>",
         "Role": "arn:aws:iam::111111111111:role/<resource:1>",
         "Runtime": "java8",
+        "RuntimeVersionConfig": {
+          "RuntimeVersionArn": "arn:aws:lambda:<region>::runtime:<resource:2>"
+        },
+        "SnapStart": {
+          "ApplyOn": "None",
+          "OptimizationStatus": "Off"
+        },
         "State": "Pending",
         "StateReason": "The function is being created.",
         "StateReasonCode": "Creating",
@@ -1038,7 +1094,7 @@
     }
   },
   "tests/integration/awslambda/test_lambda_common.py::TestLambdaRuntimesCommon::test_introspection_invoke[java8.al2]": {
-    "recorded-date": "23-11-2022, 13:30:31",
+    "recorded-date": "27-02-2023, 15:50:00",
     "recorded-content": {
       "create_function_result": {
         "Architectures": [
@@ -1064,6 +1120,13 @@
         "RevisionId": "<uuid:1>",
         "Role": "arn:aws:iam::111111111111:role/<resource:1>",
         "Runtime": "java8.al2",
+        "RuntimeVersionConfig": {
+          "RuntimeVersionArn": "arn:aws:lambda:<region>::runtime:<resource:2>"
+        },
+        "SnapStart": {
+          "ApplyOn": "None",
+          "OptimizationStatus": "Off"
+        },
         "State": "Pending",
         "StateReason": "The function is being created.",
         "StateReasonCode": "Creating",
@@ -1166,7 +1229,7 @@
     }
   },
   "tests/integration/awslambda/test_lambda_common.py::TestLambdaRuntimesCommon::test_introspection_invoke[java11]": {
-    "recorded-date": "23-11-2022, 13:30:37",
+    "recorded-date": "27-02-2023, 15:50:19",
     "recorded-content": {
       "create_function_result": {
         "Architectures": [
@@ -1192,6 +1255,13 @@
         "RevisionId": "<uuid:1>",
         "Role": "arn:aws:iam::111111111111:role/<resource:1>",
         "Runtime": "java11",
+        "RuntimeVersionConfig": {
+          "RuntimeVersionArn": "arn:aws:lambda:<region>::runtime:<resource:2>"
+        },
+        "SnapStart": {
+          "ApplyOn": "None",
+          "OptimizationStatus": "Off"
+        },
         "State": "Pending",
         "StateReason": "The function is being created.",
         "StateReasonCode": "Creating",
@@ -1294,13 +1364,13 @@
     }
   },
   "tests/integration/awslambda/test_lambda_common.py::TestLambdaRuntimesCommon::test_introspection_invoke[go1.x]": {
-    "recorded-date": "23-11-2022, 13:31:05",
+    "recorded-date": "27-02-2023, 15:50:42",
     "recorded-content": {
       "create_function_result": {
         "Architectures": [
           "x86_64"
         ],
-        "CodeSha256": "ElaqZ3vc40BIziwnNowuXMWrN3+4NPjLwMCCv1zfykg=",
+        "CodeSha256": "EVxqKUhMTC8LAXQ90Vo5gXZ4gcQO/orXJIYTgwAkMow=",
         "CodeSize": "<code-size>",
         "Description": "",
         "Environment": {
@@ -1320,6 +1390,13 @@
         "RevisionId": "<uuid:1>",
         "Role": "arn:aws:iam::111111111111:role/<resource:1>",
         "Runtime": "go1.x",
+        "RuntimeVersionConfig": {
+          "RuntimeVersionArn": "arn:aws:lambda:<region>::runtime:<resource:2>"
+        },
+        "SnapStart": {
+          "ApplyOn": "None",
+          "OptimizationStatus": "Off"
+        },
         "State": "Pending",
         "StateReason": "The function is being created.",
         "StateReasonCode": "Creating",
@@ -1426,13 +1503,13 @@
     }
   },
   "tests/integration/awslambda/test_lambda_common.py::TestLambdaRuntimesCommon::test_introspection_invoke[dotnet6]": {
-    "recorded-date": "23-11-2022, 13:30:51",
+    "recorded-date": "27-02-2023, 15:50:26",
     "recorded-content": {
       "create_function_result": {
         "Architectures": [
           "x86_64"
         ],
-        "CodeSha256": "EN2qdeZgTKkfpE37f/UE/xEjmT67XROIiGLW4Ubaxbs=",
+        "CodeSha256": "pPNT1m9LVvHF5KD5w6+6D/DiPlGL//7uJyhOHcHcoOE=",
         "CodeSize": "<code-size>",
         "Description": "",
         "Environment": {
@@ -1452,6 +1529,13 @@
         "RevisionId": "<uuid:1>",
         "Role": "arn:aws:iam::111111111111:role/<resource:1>",
         "Runtime": "dotnet6",
+        "RuntimeVersionConfig": {
+          "RuntimeVersionArn": "arn:aws:lambda:<region>::runtime:<resource:2>"
+        },
+        "SnapStart": {
+          "ApplyOn": "None",
+          "OptimizationStatus": "Off"
+        },
         "State": "Pending",
         "StateReason": "The function is being created.",
         "StateReasonCode": "Creating",
@@ -1560,13 +1644,13 @@
     }
   },
   "tests/integration/awslambda/test_lambda_common.py::TestLambdaRuntimesCommon::test_introspection_invoke[dotnetcore3.1]": {
-    "recorded-date": "23-11-2022, 13:30:44",
+    "recorded-date": "27-02-2023, 15:50:23",
     "recorded-content": {
       "create_function_result": {
         "Architectures": [
           "x86_64"
         ],
-        "CodeSha256": "dk2zuRfKIAOV3aZPdSvxUKi0pn+l99PNfPZmqHQKgks=",
+        "CodeSha256": "6kJ/nxnpFtFFnAfxqgjvQuueIKv4aH2qFl8qhr3o2Vo=",
         "CodeSize": "<code-size>",
         "Description": "",
         "Environment": {
@@ -1586,6 +1670,13 @@
         "RevisionId": "<uuid:1>",
         "Role": "arn:aws:iam::111111111111:role/<resource:1>",
         "Runtime": "dotnetcore3.1",
+        "RuntimeVersionConfig": {
+          "RuntimeVersionArn": "arn:aws:lambda:<region>::runtime:<resource:2>"
+        },
+        "SnapStart": {
+          "ApplyOn": "None",
+          "OptimizationStatus": "Off"
+        },
         "State": "Pending",
         "StateReason": "The function is being created.",
         "StateReasonCode": "Creating",
@@ -1686,13 +1777,13 @@
     }
   },
   "tests/integration/awslambda/test_lambda_common.py::TestLambdaRuntimesCommon::test_introspection_invoke[provided]": {
-    "recorded-date": "23-11-2022, 13:33:14",
+    "recorded-date": "27-02-2023, 15:50:46",
     "recorded-content": {
       "create_function_result": {
         "Architectures": [
           "x86_64"
         ],
-        "CodeSha256": "Y7ZV7rCjWc7PuVjQhLnuakSFU0AKpeZ51/mOfjGtqw0=",
+        "CodeSha256": "AwbdeLHglRbrp3WlhEE3stQ1MNXdw/2UsN8tYC262as=",
         "CodeSize": "<code-size>",
         "Description": "",
         "Environment": {
@@ -1712,6 +1803,13 @@
         "RevisionId": "<uuid:1>",
         "Role": "arn:aws:iam::111111111111:role/<resource:1>",
         "Runtime": "provided",
+        "RuntimeVersionConfig": {
+          "RuntimeVersionArn": "arn:aws:lambda:<region>::runtime:<resource:2>"
+        },
+        "SnapStart": {
+          "ApplyOn": "None",
+          "OptimizationStatus": "Off"
+        },
         "State": "Pending",
         "StateReason": "The function is being created.",
         "StateReasonCode": "Creating",
@@ -1808,13 +1906,13 @@
     }
   },
   "tests/integration/awslambda/test_lambda_common.py::TestLambdaRuntimesCommon::test_introspection_invoke[provided.al2]": {
-    "recorded-date": "23-11-2022, 13:33:17",
+    "recorded-date": "27-02-2023, 15:50:50",
     "recorded-content": {
       "create_function_result": {
         "Architectures": [
           "x86_64"
         ],
-        "CodeSha256": "Y7ZV7rCjWc7PuVjQhLnuakSFU0AKpeZ51/mOfjGtqw0=",
+        "CodeSha256": "AwbdeLHglRbrp3WlhEE3stQ1MNXdw/2UsN8tYC262as=",
         "CodeSize": "<code-size>",
         "Description": "",
         "Environment": {
@@ -1834,6 +1932,13 @@
         "RevisionId": "<uuid:1>",
         "Role": "arn:aws:iam::111111111111:role/<resource:1>",
         "Runtime": "provided.al2",
+        "RuntimeVersionConfig": {
+          "RuntimeVersionArn": "arn:aws:lambda:<region>::runtime:<resource:2>"
+        },
+        "SnapStart": {
+          "ApplyOn": "None",
+          "OptimizationStatus": "Off"
+        },
         "State": "Pending",
         "StateReason": "The function is being created.",
         "StateReasonCode": "Creating",
@@ -1930,7 +2035,7 @@
     }
   },
   "tests/integration/awslambda/test_lambda_common.py::TestLambdaRuntimesCommon::test_uncaught_exception_invoke[python3.7]": {
-    "recorded-date": "23-11-2022, 13:33:18",
+    "recorded-date": "27-02-2023, 15:50:53",
     "recorded-content": {
       "create_function_result": {
         "Architectures": [
@@ -1951,6 +2056,13 @@
         "RevisionId": "<uuid:1>",
         "Role": "arn:aws:iam::111111111111:role/<resource:1>",
         "Runtime": "python3.7",
+        "RuntimeVersionConfig": {
+          "RuntimeVersionArn": "arn:aws:lambda:<region>::runtime:<resource:2>"
+        },
+        "SnapStart": {
+          "ApplyOn": "None",
+          "OptimizationStatus": "Off"
+        },
         "State": "Pending",
         "StateReason": "The function is being created.",
         "StateReasonCode": "Creating",
@@ -1981,7 +2093,7 @@
     }
   },
   "tests/integration/awslambda/test_lambda_common.py::TestLambdaRuntimesCommon::test_uncaught_exception_invoke[python3.8]": {
-    "recorded-date": "23-11-2022, 13:33:20",
+    "recorded-date": "27-02-2023, 15:50:56",
     "recorded-content": {
       "create_function_result": {
         "Architectures": [
@@ -2002,6 +2114,13 @@
         "RevisionId": "<uuid:1>",
         "Role": "arn:aws:iam::111111111111:role/<resource:1>",
         "Runtime": "python3.8",
+        "RuntimeVersionConfig": {
+          "RuntimeVersionArn": "arn:aws:lambda:<region>::runtime:<resource:2>"
+        },
+        "SnapStart": {
+          "ApplyOn": "None",
+          "OptimizationStatus": "Off"
+        },
         "State": "Pending",
         "StateReason": "The function is being created.",
         "StateReasonCode": "Creating",
@@ -2032,7 +2151,7 @@
     }
   },
   "tests/integration/awslambda/test_lambda_common.py::TestLambdaRuntimesCommon::test_uncaught_exception_invoke[python3.9]": {
-    "recorded-date": "23-11-2022, 13:33:22",
+    "recorded-date": "27-02-2023, 15:50:58",
     "recorded-content": {
       "create_function_result": {
         "Architectures": [
@@ -2053,6 +2172,13 @@
         "RevisionId": "<uuid:1>",
         "Role": "arn:aws:iam::111111111111:role/<resource:1>",
         "Runtime": "python3.9",
+        "RuntimeVersionConfig": {
+          "RuntimeVersionArn": "arn:aws:lambda:<region>::runtime:<resource:2>"
+        },
+        "SnapStart": {
+          "ApplyOn": "None",
+          "OptimizationStatus": "Off"
+        },
         "State": "Pending",
         "StateReason": "The function is being created.",
         "StateReasonCode": "Creating",
@@ -2084,7 +2210,7 @@
     }
   },
   "tests/integration/awslambda/test_lambda_common.py::TestLambdaRuntimesCommon::test_uncaught_exception_invoke[nodejs12.x]": {
-    "recorded-date": "23-11-2022, 13:33:24",
+    "recorded-date": "27-02-2023, 15:51:01",
     "recorded-content": {
       "create_function_result": {
         "Architectures": [
@@ -2105,6 +2231,13 @@
         "RevisionId": "<uuid:1>",
         "Role": "arn:aws:iam::111111111111:role/<resource:1>",
         "Runtime": "nodejs12.x",
+        "RuntimeVersionConfig": {
+          "RuntimeVersionArn": "arn:aws:lambda:<region>::runtime:<resource:2>"
+        },
+        "SnapStart": {
+          "ApplyOn": "None",
+          "OptimizationStatus": "Off"
+        },
         "State": "Pending",
         "StateReason": "The function is being created.",
         "StateReasonCode": "Creating",
@@ -2135,7 +2268,7 @@
     }
   },
   "tests/integration/awslambda/test_lambda_common.py::TestLambdaRuntimesCommon::test_uncaught_exception_invoke[nodejs14.x]": {
-    "recorded-date": "23-11-2022, 13:33:26",
+    "recorded-date": "27-02-2023, 15:51:04",
     "recorded-content": {
       "create_function_result": {
         "Architectures": [
@@ -2156,6 +2289,13 @@
         "RevisionId": "<uuid:1>",
         "Role": "arn:aws:iam::111111111111:role/<resource:1>",
         "Runtime": "nodejs14.x",
+        "RuntimeVersionConfig": {
+          "RuntimeVersionArn": "arn:aws:lambda:<region>::runtime:<resource:2>"
+        },
+        "SnapStart": {
+          "ApplyOn": "None",
+          "OptimizationStatus": "Off"
+        },
         "State": "Pending",
         "StateReason": "The function is being created.",
         "StateReasonCode": "Creating",
@@ -2186,7 +2326,7 @@
     }
   },
   "tests/integration/awslambda/test_lambda_common.py::TestLambdaRuntimesCommon::test_uncaught_exception_invoke[nodejs16.x]": {
-    "recorded-date": "23-11-2022, 13:33:28",
+    "recorded-date": "27-02-2023, 15:51:06",
     "recorded-content": {
       "create_function_result": {
         "Architectures": [
@@ -2207,6 +2347,13 @@
         "RevisionId": "<uuid:1>",
         "Role": "arn:aws:iam::111111111111:role/<resource:1>",
         "Runtime": "nodejs16.x",
+        "RuntimeVersionConfig": {
+          "RuntimeVersionArn": "arn:aws:lambda:<region>::runtime:<resource:2>"
+        },
+        "SnapStart": {
+          "ApplyOn": "None",
+          "OptimizationStatus": "Off"
+        },
         "State": "Pending",
         "StateReason": "The function is being created.",
         "StateReasonCode": "Creating",
@@ -2237,7 +2384,7 @@
     }
   },
   "tests/integration/awslambda/test_lambda_common.py::TestLambdaRuntimesCommon::test_uncaught_exception_invoke[java8]": {
-    "recorded-date": "23-11-2022, 13:33:54",
+    "recorded-date": "27-02-2023, 15:51:22",
     "recorded-content": {
       "create_function_result": {
         "Architectures": [
@@ -2258,6 +2405,13 @@
         "RevisionId": "<uuid:1>",
         "Role": "arn:aws:iam::111111111111:role/<resource:1>",
         "Runtime": "java8",
+        "RuntimeVersionConfig": {
+          "RuntimeVersionArn": "arn:aws:lambda:<region>::runtime:<resource:2>"
+        },
+        "SnapStart": {
+          "ApplyOn": "None",
+          "OptimizationStatus": "Off"
+        },
         "State": "Pending",
         "StateReason": "The function is being created.",
         "StateReasonCode": "Creating",
@@ -2288,7 +2442,7 @@
     }
   },
   "tests/integration/awslambda/test_lambda_common.py::TestLambdaRuntimesCommon::test_uncaught_exception_invoke[java8.al2]": {
-    "recorded-date": "23-11-2022, 13:34:01",
+    "recorded-date": "27-02-2023, 15:51:30",
     "recorded-content": {
       "create_function_result": {
         "Architectures": [
@@ -2309,6 +2463,13 @@
         "RevisionId": "<uuid:1>",
         "Role": "arn:aws:iam::111111111111:role/<resource:1>",
         "Runtime": "java8.al2",
+        "RuntimeVersionConfig": {
+          "RuntimeVersionArn": "arn:aws:lambda:<region>::runtime:<resource:2>"
+        },
+        "SnapStart": {
+          "ApplyOn": "None",
+          "OptimizationStatus": "Off"
+        },
         "State": "Pending",
         "StateReason": "The function is being created.",
         "StateReasonCode": "Creating",
@@ -2339,7 +2500,7 @@
     }
   },
   "tests/integration/awslambda/test_lambda_common.py::TestLambdaRuntimesCommon::test_uncaught_exception_invoke[java11]": {
-    "recorded-date": "23-11-2022, 13:34:07",
+    "recorded-date": "27-02-2023, 15:51:39",
     "recorded-content": {
       "create_function_result": {
         "Architectures": [
@@ -2360,6 +2521,13 @@
         "RevisionId": "<uuid:1>",
         "Role": "arn:aws:iam::111111111111:role/<resource:1>",
         "Runtime": "java11",
+        "RuntimeVersionConfig": {
+          "RuntimeVersionArn": "arn:aws:lambda:<region>::runtime:<resource:2>"
+        },
+        "SnapStart": {
+          "ApplyOn": "None",
+          "OptimizationStatus": "Off"
+        },
         "State": "Pending",
         "StateReason": "The function is being created.",
         "StateReasonCode": "Creating",
@@ -2390,7 +2558,7 @@
     }
   },
   "tests/integration/awslambda/test_lambda_common.py::TestLambdaRuntimesCommon::test_uncaught_exception_invoke[ruby2.7]": {
-    "recorded-date": "23-11-2022, 13:33:31",
+    "recorded-date": "27-02-2023, 15:51:12",
     "recorded-content": {
       "create_function_result": {
         "Architectures": [
@@ -2411,6 +2579,13 @@
         "RevisionId": "<uuid:1>",
         "Role": "arn:aws:iam::111111111111:role/<resource:1>",
         "Runtime": "ruby2.7",
+        "RuntimeVersionConfig": {
+          "RuntimeVersionArn": "arn:aws:lambda:<region>::runtime:<resource:2>"
+        },
+        "SnapStart": {
+          "ApplyOn": "None",
+          "OptimizationStatus": "Off"
+        },
         "State": "Pending",
         "StateReason": "The function is being created.",
         "StateReasonCode": "Creating",
@@ -2441,13 +2616,13 @@
     }
   },
   "tests/integration/awslambda/test_lambda_common.py::TestLambdaRuntimesCommon::test_uncaught_exception_invoke[go1.x]": {
-    "recorded-date": "23-11-2022, 13:34:29",
+    "recorded-date": "27-02-2023, 15:52:45",
     "recorded-content": {
       "create_function_result": {
         "Architectures": [
           "x86_64"
         ],
-        "CodeSha256": "SCDyyKP0IKATEQD0LxqsAgguOGEwDlDUReehN6Q04jo=",
+        "CodeSha256": "/HENxf/w1A4pmZiS4KE4hBXNPfJ/oBi/5boLUW40gbM=",
         "CodeSize": "<code-size>",
         "Description": "",
         "EphemeralStorage": {
@@ -2462,6 +2637,13 @@
         "RevisionId": "<uuid:1>",
         "Role": "arn:aws:iam::111111111111:role/<resource:1>",
         "Runtime": "go1.x",
+        "RuntimeVersionConfig": {
+          "RuntimeVersionArn": "arn:aws:lambda:<region>::runtime:<resource:2>"
+        },
+        "SnapStart": {
+          "ApplyOn": "None",
+          "OptimizationStatus": "Off"
+        },
         "State": "Pending",
         "StateReason": "The function is being created.",
         "StateReasonCode": "Creating",
@@ -2491,13 +2673,13 @@
     }
   },
   "tests/integration/awslambda/test_lambda_common.py::TestLambdaRuntimesCommon::test_uncaught_exception_invoke[provided]": {
-    "recorded-date": "23-11-2022, 13:36:07",
+    "recorded-date": "27-02-2023, 15:52:49",
     "recorded-content": {
       "create_function_result": {
         "Architectures": [
           "x86_64"
         ],
-        "CodeSha256": "xXa38Z7WlUt+krqrOM+f9lrEn9J6mbv34BighGH4ZhY=",
+        "CodeSha256": "mdyx6lX3eKXegmh4CuAtIYkz2zQio3aJPab0U7RUi+g=",
         "CodeSize": "<code-size>",
         "Description": "",
         "EphemeralStorage": {
@@ -2512,6 +2694,13 @@
         "RevisionId": "<uuid:1>",
         "Role": "arn:aws:iam::111111111111:role/<resource:1>",
         "Runtime": "provided",
+        "RuntimeVersionConfig": {
+          "RuntimeVersionArn": "arn:aws:lambda:<region>::runtime:<resource:2>"
+        },
+        "SnapStart": {
+          "ApplyOn": "None",
+          "OptimizationStatus": "Off"
+        },
         "State": "Pending",
         "StateReason": "The function is being created.",
         "StateReasonCode": "Creating",
@@ -2529,7 +2718,7 @@
         "ExecutedVersion": "$LATEST",
         "FunctionError": "Unhandled",
         "Payload": {
-          "errorType": "&alloc::boxed::Box<dyn std::error::Error+core::marker::Sync+core::marker::Send>",
+          "errorType": "&alloc::boxed::Box<dyn core::error::Error + core::marker::Send + core::marker::Sync>",
           "errorMessage": "Error: \"some_error_msg\""
         },
         "StatusCode": 200,
@@ -2541,13 +2730,13 @@
     }
   },
   "tests/integration/awslambda/test_lambda_common.py::TestLambdaRuntimesCommon::test_uncaught_exception_invoke[provided.al2]": {
-    "recorded-date": "23-11-2022, 13:36:10",
+    "recorded-date": "27-02-2023, 15:52:52",
     "recorded-content": {
       "create_function_result": {
         "Architectures": [
           "x86_64"
         ],
-        "CodeSha256": "xXa38Z7WlUt+krqrOM+f9lrEn9J6mbv34BighGH4ZhY=",
+        "CodeSha256": "mdyx6lX3eKXegmh4CuAtIYkz2zQio3aJPab0U7RUi+g=",
         "CodeSize": "<code-size>",
         "Description": "",
         "EphemeralStorage": {
@@ -2562,6 +2751,13 @@
         "RevisionId": "<uuid:1>",
         "Role": "arn:aws:iam::111111111111:role/<resource:1>",
         "Runtime": "provided.al2",
+        "RuntimeVersionConfig": {
+          "RuntimeVersionArn": "arn:aws:lambda:<region>::runtime:<resource:2>"
+        },
+        "SnapStart": {
+          "ApplyOn": "None",
+          "OptimizationStatus": "Off"
+        },
         "State": "Pending",
         "StateReason": "The function is being created.",
         "StateReasonCode": "Creating",
@@ -2579,7 +2775,7 @@
         "ExecutedVersion": "$LATEST",
         "FunctionError": "Unhandled",
         "Payload": {
-          "errorType": "&alloc::boxed::Box<dyn std::error::Error+core::marker::Sync+core::marker::Send>",
+          "errorType": "&alloc::boxed::Box<dyn core::error::Error + core::marker::Send + core::marker::Sync>",
           "errorMessage": "Error: \"some_error_msg\""
         },
         "StatusCode": 200,
@@ -2591,13 +2787,13 @@
     }
   },
   "tests/integration/awslambda/test_lambda_common.py::TestLambdaRuntimesCommon::test_uncaught_exception_invoke[dotnet6]": {
-    "recorded-date": "23-11-2022, 13:39:29",
+    "recorded-date": "27-02-2023, 15:51:45",
     "recorded-content": {
       "create_function_result": {
         "Architectures": [
           "x86_64"
         ],
-        "CodeSha256": "SRo/CNHtnjkN6EflAqg029GSsLIRRmtwsjCskIu9Ncs=",
+        "CodeSha256": "RMNx39qSLuPzRpcE2Zo1OTMltH+9HJZ5LISmiqSukB0=",
         "CodeSize": "<code-size>",
         "Description": "",
         "EphemeralStorage": {
@@ -2612,6 +2808,13 @@
         "RevisionId": "<uuid:1>",
         "Role": "arn:aws:iam::111111111111:role/<resource:1>",
         "Runtime": "dotnet6",
+        "RuntimeVersionConfig": {
+          "RuntimeVersionArn": "arn:aws:lambda:<region>::runtime:<resource:2>"
+        },
+        "SnapStart": {
+          "ApplyOn": "None",
+          "OptimizationStatus": "Off"
+        },
         "State": "Pending",
         "StateReason": "The function is being created.",
         "StateReasonCode": "Creating",
@@ -2642,13 +2845,13 @@
     }
   },
   "tests/integration/awslambda/test_lambda_common.py::TestLambdaRuntimesCommon::test_uncaught_exception_invoke[dotnetcore3.1]": {
-    "recorded-date": "23-11-2022, 13:34:14",
+    "recorded-date": "27-02-2023, 15:51:42",
     "recorded-content": {
       "create_function_result": {
         "Architectures": [
           "x86_64"
         ],
-        "CodeSha256": "o9MV1/KnGpxyzwAx8gRhiXsChrGsEni72ZZJKJhP6lw=",
+        "CodeSha256": "evIqWg7Cz43b2UaEV0G1j2bm0dAVkDzyRRlBK5OY0lY=",
         "CodeSize": "<code-size>",
         "Description": "",
         "EphemeralStorage": {
@@ -2663,6 +2866,13 @@
         "RevisionId": "<uuid:1>",
         "Role": "arn:aws:iam::111111111111:role/<resource:1>",
         "Runtime": "dotnetcore3.1",
+        "RuntimeVersionConfig": {
+          "RuntimeVersionArn": "arn:aws:lambda:<region>::runtime:<resource:2>"
+        },
+        "SnapStart": {
+          "ApplyOn": "None",
+          "OptimizationStatus": "Off"
+        },
         "State": "Pending",
         "StateReason": "The function is being created.",
         "StateReasonCode": "Creating",
@@ -2693,71 +2903,71 @@
     }
   },
   "tests/integration/awslambda/test_lambda_common.py::TestLambdaRuntimesCommon::test_echo_invoke[python3.7]": {
-    "recorded-date": "23-11-2022, 13:25:05",
+    "recorded-date": "27-02-2023, 15:45:48",
     "recorded-content": {}
   },
   "tests/integration/awslambda/test_lambda_common.py::TestLambdaRuntimesCommon::test_echo_invoke[python3.8]": {
-    "recorded-date": "23-11-2022, 13:25:10",
+    "recorded-date": "27-02-2023, 15:45:55",
     "recorded-content": {}
   },
   "tests/integration/awslambda/test_lambda_common.py::TestLambdaRuntimesCommon::test_echo_invoke[python3.9]": {
-    "recorded-date": "23-11-2022, 13:25:15",
+    "recorded-date": "27-02-2023, 15:46:02",
     "recorded-content": {}
   },
   "tests/integration/awslambda/test_lambda_common.py::TestLambdaRuntimesCommon::test_echo_invoke[nodejs12.x]": {
-    "recorded-date": "23-11-2022, 13:25:18",
+    "recorded-date": "27-02-2023, 15:46:09",
     "recorded-content": {}
   },
   "tests/integration/awslambda/test_lambda_common.py::TestLambdaRuntimesCommon::test_echo_invoke[nodejs14.x]": {
-    "recorded-date": "23-11-2022, 13:25:22",
+    "recorded-date": "27-02-2023, 15:46:20",
     "recorded-content": {}
   },
   "tests/integration/awslambda/test_lambda_common.py::TestLambdaRuntimesCommon::test_echo_invoke[nodejs16.x]": {
-    "recorded-date": "23-11-2022, 13:25:26",
+    "recorded-date": "27-02-2023, 15:46:28",
     "recorded-content": {}
   },
   "tests/integration/awslambda/test_lambda_common.py::TestLambdaRuntimesCommon::test_echo_invoke[ruby2.7]": {
-    "recorded-date": "23-11-2022, 13:25:34",
+    "recorded-date": "27-02-2023, 15:46:42",
     "recorded-content": {}
   },
   "tests/integration/awslambda/test_lambda_common.py::TestLambdaRuntimesCommon::test_echo_invoke[java8]": {
-    "recorded-date": "23-11-2022, 13:26:17",
+    "recorded-date": "27-02-2023, 15:47:00",
     "recorded-content": {}
   },
   "tests/integration/awslambda/test_lambda_common.py::TestLambdaRuntimesCommon::test_echo_invoke[java8.al2]": {
-    "recorded-date": "23-11-2022, 13:26:25",
+    "recorded-date": "27-02-2023, 15:47:11",
     "recorded-content": {}
   },
   "tests/integration/awslambda/test_lambda_common.py::TestLambdaRuntimesCommon::test_echo_invoke[java11]": {
-    "recorded-date": "23-11-2022, 13:26:32",
+    "recorded-date": "27-02-2023, 15:47:23",
     "recorded-content": {}
   },
   "tests/integration/awslambda/test_lambda_common.py::TestLambdaRuntimesCommon::test_echo_invoke[dotnetcore3.1]": {
-    "recorded-date": "23-11-2022, 13:27:40",
+    "recorded-date": "27-02-2023, 15:47:29",
     "recorded-content": {}
   },
   "tests/integration/awslambda/test_lambda_common.py::TestLambdaRuntimesCommon::test_echo_invoke[dotnet6]": {
-    "recorded-date": "23-11-2022, 13:28:54",
+    "recorded-date": "27-02-2023, 15:47:36",
     "recorded-content": {}
   },
   "tests/integration/awslambda/test_lambda_common.py::TestLambdaRuntimesCommon::test_echo_invoke[go1.x]": {
-    "recorded-date": "23-11-2022, 13:29:29",
+    "recorded-date": "27-02-2023, 15:48:42",
     "recorded-content": {}
   },
   "tests/integration/awslambda/test_lambda_common.py::TestLambdaRuntimesCommon::test_echo_invoke[provided]": {
-    "recorded-date": "23-11-2022, 13:29:38",
+    "recorded-date": "27-02-2023, 15:48:52",
     "recorded-content": {}
   },
   "tests/integration/awslambda/test_lambda_common.py::TestLambdaRuntimesCommon::test_echo_invoke[provided.al2]": {
-    "recorded-date": "23-11-2022, 13:29:45",
+    "recorded-date": "27-02-2023, 15:49:03",
     "recorded-content": {}
   },
   "tests/integration/awslambda/test_lambda_common.py::TestLambdaRuntimesCommon::test_echo_invoke[nodejs18.x]": {
-    "recorded-date": "23-11-2022, 13:25:30",
+    "recorded-date": "27-02-2023, 15:46:35",
     "recorded-content": {}
   },
   "tests/integration/awslambda/test_lambda_common.py::TestLambdaRuntimesCommon::test_introspection_invoke[nodejs18.x]": {
-    "recorded-date": "23-11-2022, 13:30:00",
+    "recorded-date": "27-02-2023, 15:49:24",
     "recorded-content": {
       "create_function_result": {
         "Architectures": [
@@ -2783,6 +2993,13 @@
         "RevisionId": "<uuid:1>",
         "Role": "arn:aws:iam::111111111111:role/<resource:1>",
         "Runtime": "nodejs18.x",
+        "RuntimeVersionConfig": {
+          "RuntimeVersionArn": "arn:aws:lambda:<region>::runtime:<resource:2>"
+        },
+        "SnapStart": {
+          "ApplyOn": "None",
+          "OptimizationStatus": "Off"
+        },
         "State": "Pending",
         "StateReason": "The function is being created.",
         "StateReasonCode": "Creating",
@@ -2887,7 +3104,7 @@
     }
   },
   "tests/integration/awslambda/test_lambda_common.py::TestLambdaRuntimesCommon::test_uncaught_exception_invoke[nodejs18.x]": {
-    "recorded-date": "23-11-2022, 13:33:29",
+    "recorded-date": "27-02-2023, 15:51:10",
     "recorded-content": {
       "create_function_result": {
         "Architectures": [
@@ -2908,6 +3125,13 @@
         "RevisionId": "<uuid:1>",
         "Role": "arn:aws:iam::111111111111:role/<resource:1>",
         "Runtime": "nodejs18.x",
+        "RuntimeVersionConfig": {
+          "RuntimeVersionArn": "arn:aws:lambda:<region>::runtime:<resource:2>"
+        },
+        "SnapStart": {
+          "ApplyOn": "None",
+          "OptimizationStatus": "Off"
+        },
         "State": "Pending",
         "StateReason": "The function is being created.",
         "StateReasonCode": "Creating",
@@ -2938,13 +3162,13 @@
     }
   },
   "tests/integration/awslambda/test_lambda_common.py::TestLambdaRuntimesCommon::test_runtime_wrapper_invoke[nodejs12.x]": {
-    "recorded-date": "09-01-2023, 15:40:22",
+    "recorded-date": "27-02-2023, 15:52:55",
     "recorded-content": {
       "create_function_result": {
         "Architectures": [
           "x86_64"
         ],
-        "CodeSha256": "okIko96ihrSGmEPmnhh46sowBsBdl37dYpXkzQCLABw=",
+        "CodeSha256": "7Kp9bB7d81J5cxZrK9PzbM/luXLmI68YXbXlIbPMMWk=",
         "CodeSize": "<code-size>",
         "Description": "",
         "Environment": {
@@ -2964,6 +3188,9 @@
         "RevisionId": "<uuid:1>",
         "Role": "arn:aws:iam::111111111111:role/<resource:1>",
         "Runtime": "nodejs12.x",
+        "RuntimeVersionConfig": {
+          "RuntimeVersionArn": "arn:aws:lambda:<region>::runtime:<resource:2>"
+        },
         "SnapStart": {
           "ApplyOn": "None",
           "OptimizationStatus": "Off"
@@ -2984,13 +3211,13 @@
     }
   },
   "tests/integration/awslambda/test_lambda_common.py::TestLambdaRuntimesCommon::test_runtime_wrapper_invoke[nodejs14.x]": {
-    "recorded-date": "09-01-2023, 15:40:24",
+    "recorded-date": "27-02-2023, 15:52:58",
     "recorded-content": {
       "create_function_result": {
         "Architectures": [
           "x86_64"
         ],
-        "CodeSha256": "gfhrdY+Hpo6BL4QWCvD+JiEwJXGjnaqClGvJTQSK1Tg=",
+        "CodeSha256": "1CCL+mA9dhOFe98gl0DP/p5jSStv0+OzxHBZjTdLYwI=",
         "CodeSize": "<code-size>",
         "Description": "",
         "Environment": {
@@ -3010,6 +3237,9 @@
         "RevisionId": "<uuid:1>",
         "Role": "arn:aws:iam::111111111111:role/<resource:1>",
         "Runtime": "nodejs14.x",
+        "RuntimeVersionConfig": {
+          "RuntimeVersionArn": "arn:aws:lambda:<region>::runtime:<resource:2>"
+        },
         "SnapStart": {
           "ApplyOn": "None",
           "OptimizationStatus": "Off"
@@ -3030,13 +3260,13 @@
     }
   },
   "tests/integration/awslambda/test_lambda_common.py::TestLambdaRuntimesCommon::test_runtime_wrapper_invoke[nodejs16.x]": {
-    "recorded-date": "09-01-2023, 15:40:26",
+    "recorded-date": "27-02-2023, 15:53:01",
     "recorded-content": {
       "create_function_result": {
         "Architectures": [
           "x86_64"
         ],
-        "CodeSha256": "W5k3JfmXcqE5YANLxP+oJy48FDb1xNqNzVGY+QFkzDE=",
+        "CodeSha256": "S/Qw+/13v5feqoexcZziFhGCCJuLXYdK/APm/4HirOE=",
         "CodeSize": "<code-size>",
         "Description": "",
         "Environment": {
@@ -3056,6 +3286,9 @@
         "RevisionId": "<uuid:1>",
         "Role": "arn:aws:iam::111111111111:role/<resource:1>",
         "Runtime": "nodejs16.x",
+        "RuntimeVersionConfig": {
+          "RuntimeVersionArn": "arn:aws:lambda:<region>::runtime:<resource:2>"
+        },
         "SnapStart": {
           "ApplyOn": "None",
           "OptimizationStatus": "Off"
@@ -3076,13 +3309,13 @@
     }
   },
   "tests/integration/awslambda/test_lambda_common.py::TestLambdaRuntimesCommon::test_runtime_wrapper_invoke[nodejs18.x]": {
-    "recorded-date": "09-01-2023, 15:40:30",
+    "recorded-date": "27-02-2023, 15:53:04",
     "recorded-content": {
       "create_function_result": {
         "Architectures": [
           "x86_64"
         ],
-        "CodeSha256": "NVjeBVHSLYSTQ61qv5jjKkx/C+ZlD65Fp6yKxAXLIWs=",
+        "CodeSha256": "+XDjR2nTpssauodt+UlbzBP7CNWmfoHCl3WidmvnPHc=",
         "CodeSize": "<code-size>",
         "Description": "",
         "Environment": {
@@ -3102,6 +3335,9 @@
         "RevisionId": "<uuid:1>",
         "Role": "arn:aws:iam::111111111111:role/<resource:1>",
         "Runtime": "nodejs18.x",
+        "RuntimeVersionConfig": {
+          "RuntimeVersionArn": "arn:aws:lambda:<region>::runtime:<resource:2>"
+        },
         "SnapStart": {
           "ApplyOn": "None",
           "OptimizationStatus": "Off"

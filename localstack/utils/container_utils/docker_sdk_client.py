@@ -242,7 +242,13 @@ class SdkDockerClient(ContainerClient):
         except APIError as e:
             raise ContainerException() from e
 
-    def build_image(self, dockerfile_path: str, image_name: str, context_path: str = None):
+    def build_image(
+        self,
+        dockerfile_path: str,
+        image_name: str,
+        context_path: str = None,
+        platform: Optional[DockerPlatform] = None,
+    ):
         try:
             dockerfile_path = Util.resolve_dockerfile_path(dockerfile_path)
             context_path = context_path or os.path.dirname(dockerfile_path)
@@ -252,6 +258,7 @@ class SdkDockerClient(ContainerClient):
                 dockerfile=dockerfile_path,
                 tag=image_name,
                 rm=True,
+                platform=platform,
             )
         except APIError as e:
             raise ContainerException("Unable to build Docker image") from e

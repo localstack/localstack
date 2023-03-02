@@ -296,11 +296,20 @@ class CmdDockerClient(ContainerClient):
                 f"Docker process returned with errorcode {e.returncode}", e.stdout, e.stderr
             ) from e
 
-    def build_image(self, dockerfile_path: str, image_name: str, context_path: str = None):
+    def build_image(
+        self,
+        dockerfile_path: str,
+        image_name: str,
+        context_path: str = None,
+        platform: Optional[DockerPlatform] = None,
+    ):
         cmd = self._docker_cmd()
         dockerfile_path = Util.resolve_dockerfile_path(dockerfile_path)
         context_path = context_path or os.path.dirname(dockerfile_path)
-        cmd += ["build", "-t", image_name, "-f", dockerfile_path, context_path]
+        cmd += ["build", "-t", image_name, "-f", dockerfile_path]
+        if platform:
+            cmd += ["--platform", platform]
+        cmd += [context_path]
         LOG.debug("Building Docker image: %s", cmd)
         try:
             run(cmd)

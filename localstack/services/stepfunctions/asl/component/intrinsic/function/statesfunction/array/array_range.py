@@ -22,7 +22,6 @@ class ArrayRange(StatesFunction):
     #
     # Returns
     # [1,3,5,7,9]
-
     def __init__(self, arg_list: FunctionArgumentList):
         super().__init__(
             states_name=StatesFunctionName(function_type=StatesFunctionNameType.ArrayRange),
