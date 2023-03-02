@@ -1,6 +1,6 @@
 {
   "tests/integration/cloudformation/api/test_stacks.py::TestStacksApi::test_stack_description_special_chars": {
-    "recorded-date": "05-08-2022, 13:03:43",
+    "recorded-date": "02-03-2023, 22:20:03",
     "recorded-content": {
       "describe_stack": {
         "Capabilities": [
@@ -27,13 +27,9 @@
     }
   },
   "tests/integration/cloudformation/api/test_stacks.py::TestStacksApi::test_get_template[yaml]": {
-    "recorded-date": "11-08-2022, 10:55:10",
+    "recorded-date": "02-03-2023, 22:20:04",
     "recorded-content": {
       "describe_stacks": {
-        "ResponseMetadata": {
-          "HTTPHeaders": {},
-          "HTTPStatusCode": 200
-        },
         "Stacks": [
           {
             "Capabilities": [
@@ -62,40 +58,93 @@
             "StackStatus": "CREATE_COMPLETE",
             "Tags": []
           }
-        ]
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
       },
       "template_original": {
+        "TemplateBody": {
+          "ChangeSetName": "<change-set-name:1>",
+          "Outputs": {
+            "TopicName": {
+              "Value": {
+                "Fn::GetAtt": [
+                  "topic69831491",
+                  "TopicName"
+                ]
+              }
+            }
+          },
+          "Resources": {
+            "topic69831491": {
+              "Type": "AWS::SNS::Topic"
+            }
+          },
+          "StackName": "<stack-name:1>"
+        },
         "ResponseMetadata": {
           "HTTPHeaders": {},
           "HTTPStatusCode": 200
-        },
-        "StagesAvailable": [
-          "Original",
-          "Processed"
-        ],
-        "TemplateBody": "Resources:\n  topic69831491:\n    Type: AWS::SNS::Topic\nOutputs:\n  TopicName:\n    Value:\n      Fn::GetAtt:\n        - topic69831491\n        - TopicName\n"
+        }
       },
       "template_processed": {
+        "TemplateBody": {
+          "ChangeSetName": "<change-set-name:1>",
+          "Outputs": {
+            "TopicName": {
+              "Value": {
+                "Fn::GetAtt": [
+                  "topic69831491",
+                  "TopicName"
+                ]
+              }
+            }
+          },
+          "Resources": {
+            "topic69831491": {
+              "Type": "AWS::SNS::Topic"
+            }
+          },
+          "StackName": "<stack-name:1>"
+        },
         "ResponseMetadata": {
           "HTTPHeaders": {},
           "HTTPStatusCode": 200
+        }
+      },
+      "template_body": {
+        "TemplateBody": {
+          "ChangeSetName": "<change-set-name:1>",
+          "Outputs": {
+            "TopicName": {
+              "Value": {
+                "Fn::GetAtt": [
+                  "topic69831491",
+                  "TopicName"
+                ]
+              }
+            }
+          },
+          "Resources": {
+            "topic69831491": {
+              "Type": "AWS::SNS::Topic"
+            }
+          },
+          "StackName": "<stack-name:1>"
         },
-        "StagesAvailable": [
-          "Original",
-          "Processed"
-        ],
-        "TemplateBody": "Resources:\n  topic69831491:\n    Type: AWS::SNS::Topic\nOutputs:\n  TopicName:\n    Value:\n      Fn::GetAtt:\n        - topic69831491\n        - TopicName\n"
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
       }
     }
   },
   "tests/integration/cloudformation/api/test_stacks.py::TestStacksApi::test_get_template[json]": {
-    "recorded-date": "11-08-2022, 10:55:35",
+    "recorded-date": "02-03-2023, 22:20:05",
     "recorded-content": {
       "describe_stacks": {
-        "ResponseMetadata": {
-          "HTTPHeaders": {},
-          "HTTPStatusCode": 200
-        },
         "Stacks": [
           {
             "Capabilities": [
@@ -124,18 +173,15 @@
             "StackStatus": "CREATE_COMPLETE",
             "Tags": []
           }
-        ]
-      },
-      "template_original": {
+        ],
         "ResponseMetadata": {
           "HTTPHeaders": {},
           "HTTPStatusCode": 200
-        },
-        "StagesAvailable": [
-          "Original",
-          "Processed"
-        ],
+        }
+      },
+      "template_original": {
         "TemplateBody": {
+          "ChangeSetName": "<change-set-name:1>",
           "Outputs": {
             "TopicName": {
               "Value": {
@@ -150,19 +196,17 @@
             "topic69831491": {
               "Type": "AWS::SNS::Topic"
             }
-          }
+          },
+          "StackName": "<stack-name:1>"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
         }
       },
       "template_processed": {
-        "ResponseMetadata": {
-          "HTTPHeaders": {},
-          "HTTPStatusCode": 200
-        },
-        "StagesAvailable": [
-          "Original",
-          "Processed"
-        ],
         "TemplateBody": {
+          "ChangeSetName": "<change-set-name:1>",
           "Outputs": {
             "TopicName": {
               "Value": {
@@ -177,13 +221,43 @@
             "topic69831491": {
               "Type": "AWS::SNS::Topic"
             }
-          }
+          },
+          "StackName": "<stack-name:1>"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "template_body": {
+        "TemplateBody": {
+          "ChangeSetName": "<change-set-name:1>",
+          "Outputs": {
+            "TopicName": {
+              "Value": {
+                "Fn::GetAtt": [
+                  "topic69831491",
+                  "TopicName"
+                ]
+              }
+            }
+          },
+          "Resources": {
+            "topic69831491": {
+              "Type": "AWS::SNS::Topic"
+            }
+          },
+          "StackName": "<stack-name:1>"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
         }
       }
     }
   },
   "tests/integration/cloudformation/api/test_stacks.py::TestStacksApi::test_stack_update_resources": {
-    "recorded-date": "30-08-2022, 00:13:26",
+    "recorded-date": "02-03-2023, 22:20:07",
     "recorded-content": {
       "stack_created": {
         "Capabilities": [
@@ -203,7 +277,7 @@
         "Parameters": [
           {
             "ParameterKey": "ApiName",
-            "ParameterValue": "test_12395eb4"
+            "ParameterValue": "test_31f97efe"
           }
         ],
         "RollbackConfiguration": {},
@@ -213,6 +287,11 @@
         "Tags": []
       },
       "stack_updated": {
+        "Capabilities": [
+          "CAPABILITY_AUTO_EXPAND",
+          "CAPABILITY_IAM",
+          "CAPABILITY_NAMED_IAM"
+        ],
         "ChangeSetId": "arn:aws:cloudformation:<region>:111111111111:changeSet/<resource:3>",
         "CreationTime": "datetime",
         "DisableRollback": false,
@@ -225,7 +304,7 @@
         "Parameters": [
           {
             "ParameterKey": "ApiName",
-            "ParameterValue": "test_5a3df175"
+            "ParameterValue": "test_f13a06f5"
           }
         ],
         "RollbackConfiguration": {},
@@ -235,10 +314,6 @@
         "Tags": []
       },
       "stack_resources": {
-        "ResponseMetadata": {
-          "HTTPHeaders": {},
-          "HTTPStatusCode": 200
-        },
         "StackResources": [
           {
             "DriftInformation": {
@@ -257,19 +332,23 @@
               "StackResourceDriftStatus": "NOT_CHECKED"
             },
             "LogicalResourceId": "Bucket",
-            "PhysicalResourceId": "<stack-name:1>-bucket-10xf2vf1pqap8",
+            "PhysicalResourceId": "<stack-name:1>-bucket-5979c4ab",
             "ResourceStatus": "CREATE_COMPLETE",
             "ResourceType": "AWS::S3::Bucket",
             "StackId": "arn:aws:cloudformation:<region>:111111111111:stack/<stack-name:1>/<resource:2>",
             "StackName": "<stack-name:1>",
             "Timestamp": "timestamp"
           }
-        ]
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
       }
     }
   },
   "tests/integration/cloudformation/api/test_stacks.py::TestStacksApi::test_list_events_after_deployment": {
-    "recorded-date": "05-10-2022, 13:33:55",
+    "recorded-date": "02-03-2023, 22:20:11",
     "recorded-content": {
       "events": {
         "StackEvents": [
@@ -278,7 +357,6 @@
             "LogicalResourceId": "<stack-name:1>",
             "PhysicalResourceId": "arn:aws:cloudformation:<region>:111111111111:stack/<stack-name:1>/<resource:1>",
             "ResourceStatus": "REVIEW_IN_PROGRESS",
-            "ResourceStatusReason": "User Initiated",
             "ResourceType": "AWS::CloudFormation::Stack",
             "StackId": "arn:aws:cloudformation:<region>:111111111111:stack/<stack-name:1>/<resource:1>",
             "StackName": "<stack-name:1>",
@@ -289,48 +367,7 @@
             "LogicalResourceId": "<stack-name:1>",
             "PhysicalResourceId": "arn:aws:cloudformation:<region>:111111111111:stack/<stack-name:1>/<resource:1>",
             "ResourceStatus": "CREATE_IN_PROGRESS",
-            "ResourceStatusReason": "User Initiated",
             "ResourceType": "AWS::CloudFormation::Stack",
-            "StackId": "arn:aws:cloudformation:<region>:111111111111:stack/<stack-name:1>/<resource:1>",
-            "StackName": "<stack-name:1>",
-            "Timestamp": "timestamp"
-          },
-          {
-            "EventId": "topic123-CREATE_IN_PROGRESS-date",
-            "LogicalResourceId": "topic123",
-            "PhysicalResourceId": "",
-            "ResourceProperties": {
-              "TopicName": "<resource:2>"
-            },
-            "ResourceStatus": "CREATE_IN_PROGRESS",
-            "ResourceType": "AWS::SNS::Topic",
-            "StackId": "arn:aws:cloudformation:<region>:111111111111:stack/<stack-name:1>/<resource:1>",
-            "StackName": "<stack-name:1>",
-            "Timestamp": "timestamp"
-          },
-          {
-            "EventId": "topic123-CREATE_IN_PROGRESS-date",
-            "LogicalResourceId": "topic123",
-            "PhysicalResourceId": "arn:aws:sns:<region>:111111111111:<resource:2>",
-            "ResourceProperties": {
-              "TopicName": "<resource:2>"
-            },
-            "ResourceStatus": "CREATE_IN_PROGRESS",
-            "ResourceStatusReason": "Resource creation Initiated",
-            "ResourceType": "AWS::SNS::Topic",
-            "StackId": "arn:aws:cloudformation:<region>:111111111111:stack/<stack-name:1>/<resource:1>",
-            "StackName": "<stack-name:1>",
-            "Timestamp": "timestamp"
-          },
-          {
-            "EventId": "topic123-CREATE_COMPLETE-date",
-            "LogicalResourceId": "topic123",
-            "PhysicalResourceId": "arn:aws:sns:<region>:111111111111:<resource:2>",
-            "ResourceProperties": {
-              "TopicName": "<resource:2>"
-            },
-            "ResourceStatus": "CREATE_COMPLETE",
-            "ResourceType": "AWS::SNS::Topic",
             "StackId": "arn:aws:cloudformation:<region>:111111111111:stack/<stack-name:1>/<resource:1>",
             "StackName": "<stack-name:1>",
             "Timestamp": "timestamp"
@@ -344,6 +381,16 @@
             "StackId": "arn:aws:cloudformation:<region>:111111111111:stack/<stack-name:1>/<resource:1>",
             "StackName": "<stack-name:1>",
             "Timestamp": "timestamp"
+          },
+          {
+            "EventId": "<uuid:4>",
+            "LogicalResourceId": "topic123",
+            "PhysicalResourceId": "arn:aws:sns:<region>:111111111111:<resource:2>",
+            "ResourceStatus": "CREATE_COMPLETE",
+            "ResourceType": "AWS::SNS::Topic",
+            "StackId": "arn:aws:cloudformation:<region>:111111111111:stack/<stack-name:1>/<resource:1>",
+            "StackName": "<stack-name:1>",
+            "Timestamp": "timestamp"
           }
         ],
         "ResponseMetadata": {
@@ -354,7 +401,7 @@
     }
   },
   "tests/integration/cloudformation/api/test_stacks.py::TestStacksApi::test_stack_lifecycle": {
-    "recorded-date": "11-10-2022, 13:34:32",
+    "recorded-date": "02-03-2023, 22:20:01",
     "recorded-content": {
       "creation": {
         "Capabilities": [
@@ -442,7 +489,7 @@
     }
   },
   "tests/integration/cloudformation/api/test_stacks.py::test_updating_an_updated_stack_sets_status": {
-    "recorded-date": "02-12-2022, 11:19:41",
+    "recorded-date": "02-03-2023, 22:20:14",
     "recorded-content": {
       "describe-result": {
         "Stacks": [
@@ -463,12 +510,12 @@
             "NotificationARNs": [],
             "Parameters": [
               {
-                "ParameterKey": "Topic2Name",
-                "ParameterValue": "topic-2"
-              },
-              {
                 "ParameterKey": "Topic1Name",
                 "ParameterValue": "topic-1"
+              },
+              {
+                "ParameterKey": "Topic2Name",
+                "ParameterValue": "topic-2"
               },
               {
                 "ParameterKey": "Topic3Name",
@@ -490,7 +537,7 @@
     }
   },
   "tests/integration/cloudformation/api/test_stacks.py::test_update_termination_protection": {
-    "recorded-date": "04-01-2023, 16:23:22",
+    "recorded-date": "02-03-2023, 22:20:16",
     "recorded-content": {
       "describe-stack-1": {
         "Stacks": [
@@ -565,7 +612,7 @@
     }
   },
   "tests/integration/cloudformation/api/test_stacks.py::test_events_resource_types": {
-    "recorded-date": "15-02-2023, 10:46:53",
+    "recorded-date": "02-03-2023, 22:20:17",
     "recorded-content": {
       "resource_types": [
         "AWS::CloudFormation::Stack",
