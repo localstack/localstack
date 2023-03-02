@@ -1,6 +1,23 @@
 {
   "tests/integration/cloudformation/api/test_extensions_hooks.py::TestExtensionsHooks::test_hook_deployment": {
-    "recorded-date": "01-03-2023, 14:02:14",
-    "recorded-content": {}
+    "recorded-date": "02-03-2023, 16:26:10",
+    "recorded-content": {
+      "event_error": {
+        "EventId": "myb3B4550BC-9abd0be5-15ba-41e9-a5ab-d7ca18683a36",
+        "HookFailureMode": "FAIL",
+        "HookInvocationPoint": "PRE_PROVISION",
+        "HookStatus": "HOOK_FAILED",
+        "HookStatusReason": "Hook failed with message: Lambda handler threw an uncaught exception: Unable to import module 'localstack_testing_deployablehook.handlers': No module named 'cloudformation_cli_python_lib'",
+        "HookType": "LocalStack::Testing::DeployableHook",
+        "LogicalResourceId": "myb3B4550BC",
+        "PhysicalResourceId": "",
+        "ResourceStatus": "CREATE_IN_PROGRESS",
+        "ResourceType": "AWS::S3::Bucket",
+        "StackId": "arn:aws:cloudformation:<region>:111111111111:stack/<stack-name:1>/<resource:1>",
+        "StackName": "<stack-name:1>",
+        "Timestamp": "timestamp"
+      }
+    }
   }
 }
+ as e
