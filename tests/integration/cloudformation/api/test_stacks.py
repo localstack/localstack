@@ -92,7 +92,7 @@ class TestStacksApi:
 
         template_body = cfn_client.get_template(StackName=stack.stack_id)
         snapshot.match("template_body", template_body)
-        
+
     @pytest.mark.aws_validated
     @pytest.mark.skip_snapshot_verify(
         paths=["$..ParameterValue", "$..PhysicalResourceId", "$..Capabilities"]
