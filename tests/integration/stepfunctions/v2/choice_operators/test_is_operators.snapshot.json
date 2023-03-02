@@ -1605,7 +1605,7 @@
     }
   },
   "tests/integration/stepfunctions/v2/choice_operators/test_is_operators.py::TestIsOperators::test_is_timestamp": {
-    "recorded-date": "01-03-2023, 10:32:37",
+    "recorded-date": "02-03-2023, 17:53:07",
     "recorded-content": {
       "cases": [
         {
@@ -1623,7 +1623,7 @@
             "Value": false
           },
           "output": {
-            "TestResult.$": "ConditionTrue"
+            "TestResult.$": "ConditionFalse"
           }
         },
         {
@@ -1641,7 +1641,7 @@
             "Value": false
           },
           "output": {
-            "TestResult.$": "ConditionTrue"
+            "TestResult.$": "ConditionFalse"
           }
         },
         {
@@ -1659,7 +1659,7 @@
             "Value": false
           },
           "output": {
-            "TestResult.$": "ConditionTrue"
+            "TestResult.$": "ConditionFalse"
           }
         },
         {
@@ -1677,7 +1677,7 @@
             "Value": false
           },
           "output": {
-            "TestResult.$": "ConditionTrue"
+            "TestResult.$": "ConditionFalse"
           }
         },
         {
@@ -1695,7 +1695,7 @@
             "Value": false
           },
           "output": {
-            "TestResult.$": "ConditionTrue"
+            "TestResult.$": "ConditionFalse"
           }
         },
         {
@@ -1704,7 +1704,7 @@
             "Value": true
           },
           "output": {
-            "TestResult.$": "ConditionTrue"
+            "TestResult.$": "ConditionFalse"
           }
         },
         {
@@ -1713,7 +1713,7 @@
             "Value": false
           },
           "output": {
-            "TestResult.$": "ConditionFalse"
+            "TestResult.$": "ConditionTrue"
           }
         },
         {
@@ -1722,7 +1722,7 @@
             "Value": true
           },
           "output": {
-            "TestResult.$": "ConditionTrue"
+            "TestResult.$": "ConditionFalse"
           }
         },
         {
@@ -1731,7 +1731,7 @@
             "Value": false
           },
           "output": {
-            "TestResult.$": "ConditionFalse"
+            "TestResult.$": "ConditionTrue"
           }
         },
         {
@@ -1740,7 +1740,7 @@
             "Value": true
           },
           "output": {
-            "TestResult.$": "ConditionTrue"
+            "TestResult.$": "ConditionFalse"
           }
         },
         {
@@ -1749,7 +1749,7 @@
             "Value": false
           },
           "output": {
-            "TestResult.$": "ConditionFalse"
+            "TestResult.$": "ConditionTrue"
           }
         },
         {
@@ -1758,7 +1758,7 @@
             "Value": true
           },
           "output": {
-            "TestResult.$": "ConditionTrue"
+            "TestResult.$": "ConditionFalse"
           }
         },
         {
@@ -1767,7 +1767,7 @@
             "Value": false
           },
           "output": {
-            "TestResult.$": "ConditionFalse"
+            "TestResult.$": "ConditionTrue"
           }
         },
         {
@@ -1776,7 +1776,7 @@
             "Value": true
           },
           "output": {
-            "TestResult.$": "ConditionTrue"
+            "TestResult.$": "ConditionFalse"
           }
         },
         {
@@ -1785,7 +1785,7 @@
             "Value": false
           },
           "output": {
-            "TestResult.$": "ConditionFalse"
+            "TestResult.$": "ConditionTrue"
           }
         },
         {
@@ -1794,7 +1794,7 @@
             "Value": true
           },
           "output": {
-            "TestResult.$": "ConditionTrue"
+            "TestResult.$": "ConditionFalse"
           }
         },
         {
@@ -1803,7 +1803,7 @@
             "Value": false
           },
           "output": {
-            "TestResult.$": "ConditionFalse"
+            "TestResult.$": "ConditionTrue"
           }
         },
         {
@@ -1821,7 +1821,7 @@
             "Value": false
           },
           "output": {
-            "TestResult.$": "ConditionTrue"
+            "TestResult.$": "ConditionFalse"
           }
         },
         {
@@ -1843,7 +1843,7 @@
             "Value": false
           },
           "output": {
-            "TestResult.$": "ConditionTrue"
+            "TestResult.$": "ConditionFalse"
           }
         },
         {
@@ -1861,7 +1861,7 @@
             "Value": false
           },
           "output": {
-            "TestResult.$": "ConditionTrue"
+            "TestResult.$": "ConditionFalse"
           }
         },
         {
@@ -1883,7 +1883,7 @@
             "Value": false
           },
           "output": {
-            "TestResult.$": "ConditionTrue"
+            "TestResult.$": "ConditionFalse"
           }
         },
         {
@@ -1919,7 +1919,7 @@
             "Value": false
           },
           "output": {
-            "TestResult.$": "ConditionTrue"
+            "TestResult.$": "ConditionFalse"
           }
         }
       ]

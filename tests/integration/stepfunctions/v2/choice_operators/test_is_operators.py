@@ -110,6 +110,6 @@ class TestIsOperators:
             create_iam_role_for_sfn,
             create_state_machine,
             snapshot,
-            "IsString",
+            "IsTimestamp",
             comparisons=TYPE_COMPARISONS,
         )
