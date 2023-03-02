@@ -2,6 +2,7 @@
 import logging
 
 from werkzeug.datastructures import Headers
+from werkzeug.exceptions import HTTPException
 
 from localstack.http import Response
 
@@ -27,12 +28,18 @@ class InternalFailureHandler(ExceptionHandler):
             # response already set
             return
 
+        if isinstance(exception, HTTPException):
+            response.status_code = exception.code
+            response.headers.update(exception.get_headers())
+            response.set_json({"error": exception.name, "message": exception.description})
+            return
+
         LOG.debug("setting internal failure response for %s", exception)
         response.status_code = 500
         response.set_json(
             {
-                "message": "Unexpected exception",
-                "error": str(exception),
+                "error": "Unexpected exception",
+                "message": str(exception),
                 "type": str(exception.__class__.__name__),
             }
         )
