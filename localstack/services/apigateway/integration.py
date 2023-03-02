@@ -403,7 +403,10 @@ class KinesisIntegration(BackendIntegration):
         try:
             invocation_context.context = helpers.get_event_request_context(invocation_context)
             invocation_context.stage_variables = helpers.get_stage_variables(invocation_context)
-            payload = self.request_templates.render(invocation_context)
+
+            # TODO: add support for websocket request template expressions
+            # for now we just the default key ("default")
+            payload = self.request_templates.render(invocation_context, "default")
 
         except Exception as e:
             LOG.warning("Unable to convert API Gateway payload to str", e)
