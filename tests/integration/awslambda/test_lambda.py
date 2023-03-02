@@ -156,28 +156,24 @@ def fixture_snapshot(snapshot):
 
 
 # some more common ones that usually don't work in the old provider
-if is_old_provider():
-    pytestmark = pytest.mark.skip_snapshot_verify(
-        paths=[
-            "$..Architectures",
-            "$..EphemeralStorage",
-            "$..LastUpdateStatus",
-            "$..MemorySize",
-            "$..State",
-            "$..StateReason",
-            "$..StateReasonCode",
-            "$..VpcConfig",
-            "$..CodeSigningConfig",
-            "$..Environment",  # missing
-            "$..HTTPStatusCode",  # 201 vs 200
-            "$..Layers",
-            "$..SnapStart",  # FIXME
-        ],
-    )
-else:
-    pytestmark = pytest.mark.skip_snapshot_verify(
-        paths=["$..CodeSize", "$..SnapStart"],  # FIXME
-    )
+pytestmark = pytest.mark.skip_snapshot_verify(
+    condition=is_old_provider,
+    paths=[
+        "$..Architectures",
+        "$..EphemeralStorage",
+        "$..LastUpdateStatus",
+        "$..MemorySize",
+        "$..State",
+        "$..StateReason",
+        "$..StateReasonCode",
+        "$..VpcConfig",
+        "$..CodeSigningConfig",
+        "$..Environment",  # missing
+        "$..HTTPStatusCode",  # 201 vs 200
+        "$..Layers",
+        "$..SnapStart",
+    ],
+)
 
 
 class TestLambdaBaseFeatures:
@@ -208,8 +204,8 @@ class TestLambdaBaseFeatures:
             "$..Tags",
             "$..Configuration.RevisionId",
             "$..Code.RepositoryType",
-            "$..CodeSize",  # CI reports different code size here,
             "$..Layers",  # PRO
+            "$..RuntimeVersionConfig",
         ],
     )
     @pytest.mark.aws_validated
@@ -405,6 +401,7 @@ class TestLambdaBehavior:
         logs_client,
         snapshot,
     ):
+        # Snapshot generation could be flaky against AWS with a small timeout margin (e.g., 1.02 instead of 1.00)
         regex = re.compile(r".*\s(?P<uuid>[-a-z0-9]+) Task timed out after \d.\d+ seconds")
         snapshot.add_transformer(
             KeyValueBasedTransformer(
@@ -450,7 +447,13 @@ class TestLambdaBehavior:
         retry(assert_events, retries=15)
 
     @pytest.mark.skip_snapshot_verify(
-        condition=is_old_provider, paths=["$..Payload", "$..LogResult", "$..Layers"]
+        condition=is_old_provider,
+        paths=[
+            "$..Payload",
+            "$..LogResult",
+            "$..Layers",
+            "$..CreateFunctionResponse.RuntimeVersionConfig",
+        ],
     )
     @pytest.mark.aws_validated
     def test_lambda_invoke_no_timeout(

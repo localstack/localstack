@@ -38,7 +38,6 @@ class StringSplit(StatesFunction):
     #   "test",
     #   "string"
     # ]}
-
     def __init__(self, arg_list: FunctionArgumentList):
         super().__init__(
             states_name=StatesFunctionName(function_type=StatesFunctionNameType.StringSplit),

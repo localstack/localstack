@@ -1,12 +1,8 @@
 {
   "tests/integration/awslambda/test_lambda_integration_dynamodbstreams.py::TestDynamoDBEventSourceMapping::test_dynamodb_event_source_mapping": {
-    "recorded-date": "05-09-2022, 11:16:26",
+    "recorded-date": "27-02-2023, 18:33:49",
     "recorded-content": {
       "create-table-result": {
-        "ResponseMetadata": {
-          "HTTPHeaders": {},
-          "HTTPStatusCode": 200
-        },
         "TableDescription": {
           "AttributeDefinitions": [
             {
@@ -35,6 +31,10 @@
           "TableName": "<resource:1>",
           "TableSizeBytes": 0,
           "TableStatus": "CREATING"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
         }
       },
       "create_event_source_mapping_response": {
@@ -52,15 +52,15 @@
         "MaximumRecordAgeInSeconds": -1,
         "MaximumRetryAttempts": 1,
         "ParallelizationFactor": 1,
-        "ResponseMetadata": {
-          "HTTPHeaders": {},
-          "HTTPStatusCode": 202
-        },
         "StartingPosition": "TRIM_HORIZON",
         "State": "Creating",
         "StateTransitionReason": "User action",
         "TumblingWindowInSeconds": 0,
-        "UUID": "<uuid:2>"
+        "UUID": "<uuid:2>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 202
+        }
       },
       "event_logs": [
         {
@@ -95,13 +95,9 @@
     }
   },
   "tests/integration/awslambda/test_lambda_integration_dynamodbstreams.py::TestDynamoDBEventSourceMapping::test_disabled_dynamodb_event_source_mapping": {
-    "recorded-date": "05-09-2022, 11:17:35",
+    "recorded-date": "27-02-2023, 18:34:59",
     "recorded-content": {
       "dynamodb_create_table_result": {
-        "ResponseMetadata": {
-          "HTTPHeaders": {},
-          "HTTPStatusCode": 200
-        },
         "TableDescription": {
           "AttributeDefinitions": [
             {
@@ -136,6 +132,10 @@
           "TableName": "<resource:2>",
           "TableSizeBytes": 0,
           "TableStatus": "CREATING"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
         }
       },
       "create_event_source_mapping_result": {
@@ -153,15 +153,15 @@
         "MaximumRecordAgeInSeconds": -1,
         "MaximumRetryAttempts": -1,
         "ParallelizationFactor": 1,
-        "ResponseMetadata": {
-          "HTTPHeaders": {},
-          "HTTPStatusCode": 202
-        },
         "StartingPosition": "TRIM_HORIZON",
         "State": "Creating",
         "StateTransitionReason": "User action",
         "TumblingWindowInSeconds": 0,
-        "UUID": "<uuid:2>"
+        "UUID": "<uuid:2>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 202
+        }
       },
       "update_event_source_mapping_result": {
         "BatchSize": 100,
@@ -178,26 +178,22 @@
         "MaximumRecordAgeInSeconds": -1,
         "MaximumRetryAttempts": -1,
         "ParallelizationFactor": 1,
-        "ResponseMetadata": {
-          "HTTPHeaders": {},
-          "HTTPStatusCode": 202
-        },
         "StartingPosition": "TRIM_HORIZON",
         "State": "Disabling",
         "StateTransitionReason": "User action",
         "TumblingWindowInSeconds": 0,
-        "UUID": "<uuid:2>"
+        "UUID": "<uuid:2>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 202
+        }
       }
     }
   },
   "tests/integration/awslambda/test_lambda_integration_dynamodbstreams.py::TestDynamoDBEventSourceMapping::test_deletion_event_source_mapping_with_dynamodb": {
-    "recorded-date": "05-09-2022, 11:18:03",
+    "recorded-date": "27-02-2023, 18:35:29",
     "recorded-content": {
       "create_dynamodb_table_response": {
-        "ResponseMetadata": {
-          "HTTPHeaders": {},
-          "HTTPStatusCode": 200
-        },
         "TableDescription": {
           "AttributeDefinitions": [
             {
@@ -232,6 +228,10 @@
           "TableName": "<resource:2>",
           "TableSizeBytes": 0,
           "TableStatus": "CREATING"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
         }
       },
       "create_event_source_mapping_result": {
@@ -249,15 +249,15 @@
         "MaximumRecordAgeInSeconds": -1,
         "MaximumRetryAttempts": -1,
         "ParallelizationFactor": 1,
-        "ResponseMetadata": {
-          "HTTPHeaders": {},
-          "HTTPStatusCode": 202
-        },
         "StartingPosition": "TRIM_HORIZON",
         "State": "Creating",
         "StateTransitionReason": "User action",
         "TumblingWindowInSeconds": 0,
-        "UUID": "<uuid:2>"
+        "UUID": "<uuid:2>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 202
+        }
       },
       "list_event_source_mapping_result": {
         "EventSourceMappings": [
@@ -291,13 +291,9 @@
     }
   },
   "tests/integration/awslambda/test_lambda_integration_dynamodbstreams.py::TestDynamoDBEventSourceMapping::test_dynamodb_event_source_mapping_with_on_failure_destination_config": {
-    "recorded-date": "05-09-2022, 14:48:19",
+    "recorded-date": "27-02-2023, 18:36:42",
     "recorded-content": {
       "update_table_response": {
-        "ResponseMetadata": {
-          "HTTPHeaders": {},
-          "HTTPStatusCode": 200
-        },
         "TableDescription": {
           "AttributeDefinitions": [
             {
@@ -333,6 +329,10 @@
           "TableName": "<resource:2>",
           "TableSizeBytes": 0,
           "TableStatus": "UPDATING"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
         }
       },
       "create_event_source_mapping_response": {
@@ -352,15 +352,15 @@
         "MaximumRecordAgeInSeconds": -1,
         "MaximumRetryAttempts": 1,
         "ParallelizationFactor": 1,
-        "ResponseMetadata": {
-          "HTTPHeaders": {},
-          "HTTPStatusCode": 202
-        },
         "StartingPosition": "TRIM_HORIZON",
         "State": "Creating",
         "StateTransitionReason": "User action",
         "TumblingWindowInSeconds": 0,
-        "UUID": "<uuid:2>"
+        "UUID": "<uuid:2>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 202
+        }
       },
       "destination_queue_messages": {
         "Messages": [
@@ -402,13 +402,9 @@
     }
   },
   "tests/integration/awslambda/test_lambda_integration_dynamodbstreams.py::TestDynamoDBEventSourceMapping::test_dynamodb_event_filter[item_to_put10-None-filter0-1]": {
-    "recorded-date": "05-09-2022, 15:50:30",
+    "recorded-date": "27-02-2023, 18:37:56",
     "recorded-content": {
       "table_creation_response": {
-        "ResponseMetadata": {
-          "HTTPHeaders": {},
-          "HTTPStatusCode": 200
-        },
         "TableDescription": {
           "AttributeDefinitions": [
             {
@@ -437,6 +433,10 @@
           "TableName": "<resource:1>",
           "TableSizeBytes": 0,
           "TableStatus": "CREATING"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
         }
       },
       "create_event_source_mapping_response": {
@@ -465,15 +465,15 @@
         "MaximumRecordAgeInSeconds": -1,
         "MaximumRetryAttempts": 1,
         "ParallelizationFactor": 1,
-        "ResponseMetadata": {
-          "HTTPHeaders": {},
-          "HTTPStatusCode": 202
-        },
         "StartingPosition": "TRIM_HORIZON",
         "State": "Creating",
         "StateTransitionReason": "User action",
         "TumblingWindowInSeconds": 0,
-        "UUID": "<uuid:2>"
+        "UUID": "<uuid:2>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 202
+        }
       },
       "lambda-log-events": [
         {
@@ -544,13 +544,9 @@
     }
   },
   "tests/integration/awslambda/test_lambda_integration_dynamodbstreams.py::TestDynamoDBEventSourceMapping::test_dynamodb_event_filter[item_to_put11-item_to_put21-filter1-2]": {
-    "recorded-date": "05-09-2022, 15:51:35",
+    "recorded-date": "27-02-2023, 18:39:17",
     "recorded-content": {
       "table_creation_response": {
-        "ResponseMetadata": {
-          "HTTPHeaders": {},
-          "HTTPStatusCode": 200
-        },
         "TableDescription": {
           "AttributeDefinitions": [
             {
@@ -579,6 +575,10 @@
           "TableName": "<resource:1>",
           "TableSizeBytes": 0,
           "TableStatus": "CREATING"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
         }
       },
       "create_event_source_mapping_response": {
@@ -608,15 +608,15 @@
         "MaximumRecordAgeInSeconds": -1,
         "MaximumRetryAttempts": 1,
         "ParallelizationFactor": 1,
-        "ResponseMetadata": {
-          "HTTPHeaders": {},
-          "HTTPStatusCode": 202
-        },
         "StartingPosition": "TRIM_HORIZON",
         "State": "Creating",
         "StateTransitionReason": "User action",
         "TumblingWindowInSeconds": 0,
-        "UUID": "<uuid:2>"
+        "UUID": "<uuid:2>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 202
+        }
       },
       "lambda-log-events": [
         {
@@ -717,13 +717,9 @@
     }
   },
   "tests/integration/awslambda/test_lambda_integration_dynamodbstreams.py::TestDynamoDBEventSourceMapping::test_dynamodb_event_filter[item_to_put12-item_to_put22-filter2-1]": {
-    "recorded-date": "05-09-2022, 15:52:28",
+    "recorded-date": "27-02-2023, 18:40:56",
     "recorded-content": {
       "table_creation_response": {
-        "ResponseMetadata": {
-          "HTTPHeaders": {},
-          "HTTPStatusCode": 200
-        },
         "TableDescription": {
           "AttributeDefinitions": [
             {
@@ -752,6 +748,10 @@
           "TableName": "<resource:1>",
           "TableSizeBytes": 0,
           "TableStatus": "CREATING"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
         }
       },
       "create_event_source_mapping_response": {
@@ -783,15 +783,15 @@
         "MaximumRecordAgeInSeconds": -1,
         "MaximumRetryAttempts": 1,
         "ParallelizationFactor": 1,
-        "ResponseMetadata": {
-          "HTTPHeaders": {},
-          "HTTPStatusCode": 202
-        },
         "StartingPosition": "TRIM_HORIZON",
         "State": "Creating",
         "StateTransitionReason": "User action",
         "TumblingWindowInSeconds": 0,
-        "UUID": "<uuid:2>"
+        "UUID": "<uuid:2>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 202
+        }
       },
       "lambda-log-events": [
         {
@@ -856,13 +856,9 @@
     }
   },
   "tests/integration/awslambda/test_lambda_integration_dynamodbstreams.py::TestDynamoDBEventSourceMapping::test_dynamodb_event_filter[item_to_put13-item_to_put23-filter3-1]": {
-    "recorded-date": "05-09-2022, 15:53:29",
+    "recorded-date": "27-02-2023, 18:42:11",
     "recorded-content": {
       "table_creation_response": {
-        "ResponseMetadata": {
-          "HTTPHeaders": {},
-          "HTTPStatusCode": 200
-        },
         "TableDescription": {
           "AttributeDefinitions": [
             {
@@ -891,6 +887,10 @@
           "TableName": "<resource:1>",
           "TableSizeBytes": 0,
           "TableStatus": "CREATING"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
         }
       },
       "create_event_source_mapping_response": {
@@ -925,15 +925,15 @@
         "MaximumRecordAgeInSeconds": -1,
         "MaximumRetryAttempts": 1,
         "ParallelizationFactor": 1,
-        "ResponseMetadata": {
-          "HTTPHeaders": {},
-          "HTTPStatusCode": 202
-        },
         "StartingPosition": "TRIM_HORIZON",
         "State": "Creating",
         "StateTransitionReason": "User action",
         "TumblingWindowInSeconds": 0,
-        "UUID": "<uuid:2>"
+        "UUID": "<uuid:2>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 202
+        }
       },
       "lambda-log-events": [
         {
@@ -998,13 +998,9 @@
     }
   },
   "tests/integration/awslambda/test_lambda_integration_dynamodbstreams.py::TestDynamoDBEventSourceMapping::test_dynamodb_event_filter[item_to_put14-item_to_put24-filter4-0]": {
-    "recorded-date": "05-09-2022, 15:53:48",
+    "recorded-date": "27-02-2023, 18:42:34",
     "recorded-content": {
       "table_creation_response": {
-        "ResponseMetadata": {
-          "HTTPHeaders": {},
-          "HTTPStatusCode": 200
-        },
         "TableDescription": {
           "AttributeDefinitions": [
             {
@@ -1033,6 +1029,10 @@
           "TableName": "<resource:1>",
           "TableSizeBytes": 0,
           "TableStatus": "CREATING"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
         }
       },
       "create_event_source_mapping_response": {
@@ -1072,28 +1072,24 @@
         "MaximumRecordAgeInSeconds": -1,
         "MaximumRetryAttempts": 1,
         "ParallelizationFactor": 1,
-        "ResponseMetadata": {
-          "HTTPHeaders": {},
-          "HTTPStatusCode": 202
-        },
         "StartingPosition": "TRIM_HORIZON",
         "State": "Creating",
         "StateTransitionReason": "User action",
         "TumblingWindowInSeconds": 0,
-        "UUID": "<uuid:2>"
+        "UUID": "<uuid:2>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 202
+        }
       },
       "lambda-log-events": [],
       "lambda-multiple-log-events": []
     }
   },
   "tests/integration/awslambda/test_lambda_integration_dynamodbstreams.py::TestDynamoDBEventSourceMapping::test_dynamodb_event_filter[item_to_put15-item_to_put25-filter5-0]": {
-    "recorded-date": "05-09-2022, 15:54:08",
+    "recorded-date": "27-02-2023, 18:42:58",
     "recorded-content": {
       "table_creation_response": {
-        "ResponseMetadata": {
-          "HTTPHeaders": {},
-          "HTTPStatusCode": 200
-        },
         "TableDescription": {
           "AttributeDefinitions": [
             {
@@ -1122,6 +1118,10 @@
           "TableName": "<resource:1>",
           "TableSizeBytes": 0,
           "TableStatus": "CREATING"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
         }
       },
       "create_event_source_mapping_response": {
@@ -1163,28 +1163,24 @@
         "MaximumRecordAgeInSeconds": -1,
         "MaximumRetryAttempts": 1,
         "ParallelizationFactor": 1,
-        "ResponseMetadata": {
-          "HTTPHeaders": {},
-          "HTTPStatusCode": 202
-        },
         "StartingPosition": "TRIM_HORIZON",
         "State": "Creating",
         "StateTransitionReason": "User action",
         "TumblingWindowInSeconds": 0,
-        "UUID": "<uuid:2>"
+        "UUID": "<uuid:2>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 202
+        }
       },
       "lambda-log-events": [],
       "lambda-multiple-log-events": []
     }
   },
   "tests/integration/awslambda/test_lambda_integration_dynamodbstreams.py::TestDynamoDBEventSourceMapping::test_dynamodb_event_filter[item_to_put16-item_to_put26-filter6-1]": {
-    "recorded-date": "05-09-2022, 15:55:30",
+    "recorded-date": "27-02-2023, 18:43:59",
     "recorded-content": {
       "table_creation_response": {
-        "ResponseMetadata": {
-          "HTTPHeaders": {},
-          "HTTPStatusCode": 200
-        },
         "TableDescription": {
           "AttributeDefinitions": [
             {
@@ -1213,6 +1209,10 @@
           "TableName": "<resource:1>",
           "TableSizeBytes": 0,
           "TableStatus": "CREATING"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
         }
       },
       "create_event_source_mapping_response": {
@@ -1249,15 +1249,15 @@
         "MaximumRecordAgeInSeconds": -1,
         "MaximumRetryAttempts": 1,
         "ParallelizationFactor": 1,
-        "ResponseMetadata": {
-          "HTTPHeaders": {},
-          "HTTPStatusCode": 202
-        },
         "StartingPosition": "TRIM_HORIZON",
         "State": "Creating",
         "StateTransitionReason": "User action",
         "TumblingWindowInSeconds": 0,
-        "UUID": "<uuid:2>"
+        "UUID": "<uuid:2>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 202
+        }
       },
       "lambda-log-events": [
         {
@@ -1328,36 +1328,36 @@
     }
   },
   "tests/integration/awslambda/test_lambda_integration_dynamodbstreams.py::TestDynamoDBEventSourceMapping::test_dynamodb_invalid_event_filter[single-string]": {
-    "recorded-date": "05-09-2022, 15:07:24",
+    "recorded-date": "27-02-2023, 18:44:12",
     "recorded-content": {
       "exception_event_source_creation": {
         "Error": {
           "Code": "InvalidParameterValueException",
           "Message": "Invalid filter pattern definition."
         },
+        "Type": "User",
+        "message": "Invalid filter pattern definition.",
         "ResponseMetadata": {
           "HTTPHeaders": {},
           "HTTPStatusCode": 400
-        },
-        "Type": "User",
-        "message": "Invalid filter pattern definition."
+        }
       }
     }
   },
   "tests/integration/awslambda/test_lambda_integration_dynamodbstreams.py::TestDynamoDBEventSourceMapping::test_dynamodb_invalid_event_filter[[{\"eventName\": [\"INSERT\"=123}]]": {
-    "recorded-date": "05-09-2022, 15:07:34",
+    "recorded-date": "27-02-2023, 18:44:25",
     "recorded-content": {
       "exception_event_source_creation": {
         "Error": {
           "Code": "InvalidParameterValueException",
           "Message": "Invalid filter pattern definition."
         },
+        "Type": "User",
+        "message": "Invalid filter pattern definition.",
         "ResponseMetadata": {
           "HTTPHeaders": {},
           "HTTPStatusCode": 400
-        },
-        "Type": "User",
-        "message": "Invalid filter pattern definition."
+        }
       }
     }
   }
