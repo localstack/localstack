@@ -114,7 +114,12 @@ from localstack.aws.api.lambda_ import (
     ResourceConflictException,
     ResourceNotFoundException,
     Runtime,
+    RuntimeVersionConfig,
     ServiceException,
+    SnapStart,
+    SnapStartApplyOn,
+    SnapStartOptimizationStatus,
+    SnapStartResponse,
     State,
     StatementId,
     StateReasonCode,
@@ -132,6 +137,7 @@ from localstack.aws.api.lambda_ import (
 from localstack.constants import LOCALHOST_HOSTNAME
 from localstack.services.awslambda import api_utils
 from localstack.services.awslambda import hooks as lambda_hooks
+from localstack.services.awslambda.api_utils import STATEMENT_ID_REGEX
 from localstack.services.awslambda.event_source_listeners.event_source_listener import (
     EventSourceListener,
 )
@@ -141,6 +147,7 @@ from localstack.services.awslambda.invocation.lambda_models import (
     LAMBDA_LIMITS_CREATE_FUNCTION_REQUEST_SIZE,
     LAMBDA_LIMITS_MAX_FUNCTION_ENVVAR_SIZE_BYTES,
     LAMBDA_MINIMUM_UNRESERVED_CONCURRENCY,
+    SNAP_START_SUPPORTED_RUNTIMES,
     AliasRoutingConfig,
     CodeSigningConfig,
     EventInvokeConfig,
@@ -364,6 +371,14 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
                 region=region,
                 account=account_id,
             )
+            apply_on = current_latest_version.config.snap_start["ApplyOn"]
+            optimization_status = SnapStartOptimizationStatus.Off
+            if apply_on == SnapStartApplyOn.PublishedVersions:
+                optimization_status = SnapStartOptimizationStatus.On
+            snap_start = SnapStartResponse(
+                ApplyOn=apply_on,
+                OptimizationStatus=optimization_status,
+            )
             new_version = dataclasses.replace(
                 current_latest_version,
                 config=dataclasses.replace(
@@ -374,6 +389,7 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
                         code=StateReasonCode.Creating,
                         reason="The function is being created.",
                     ),
+                    snap_start=snap_start,
                     **changes,
                 ),
                 id=new_id,
@@ -461,6 +477,21 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
             raise InvalidParameterValueException(
                 f"Lambda was unable to configure your environment variables because the environment variables you have provided exceeded the 4KB limit. String measured: {dumped_env_vars}",
                 Type="User",
+            )
+
+    @staticmethod
+    def _validate_snapstart(snap_start: SnapStart, runtime: Runtime):
+        apply_on = snap_start.get("ApplyOn")
+        if apply_on not in [
+            SnapStartApplyOn.PublishedVersions,
+            SnapStartApplyOn.None_,
+        ]:
+            raise ValidationException(
+                f"1 validation error detected: Value '{apply_on}' at 'snapStart.applyOn' failed to satisfy constraint: Member must satisfy enum value set: [PublishedVersions, None]"
+            )
+        if runtime not in SNAP_START_SUPPORTED_RUNTIMES:
+            raise InvalidParameterValueException(
+                f"{runtime} is not supported for SnapStart enabled functions.", Type="User"
             )
 
     def _validate_layers(self, new_layers: list[str], region: str, account_id: int):
@@ -577,11 +608,14 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
                 + " at 'role' failed to satisfy constraint: Member must satisfy regular expression pattern: arn:(aws[a-zA-Z-]*)?:iam::\\d{12}:role/?[a-zA-Z_0-9+=,.@\\-_/]+"
             )
         package_type = request.get("PackageType", PackageType.Zip)
-        if package_type == PackageType.Zip and request.get("Runtime") not in IMAGE_MAPPING:
+        runtime = request.get("Runtime")
+        if package_type == PackageType.Zip and runtime not in IMAGE_MAPPING:
             raise InvalidParameterValueException(
                 f"Value {request.get('Runtime')} at 'runtime' failed to satisfy constraint: Member must satisfy enum value set: [nodejs12.x, provided, nodejs16.x, nodejs14.x, ruby2.7, java11, dotnet6, go1.x, nodejs18.x, provided.al2, java8, java8.al2, dotnetcore3.1, python3.7, python3.8, python3.9] or be a valid ARN",
                 Type="User",
             )
+        if snap_start := request.get("SnapStart"):
+            self._validate_snapstart(snap_start, runtime)
         state = lambda_stores[context.account_id][context.region]
 
         function_name = request["FunctionName"]
@@ -599,6 +633,11 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
             code = None
             image = None
             image_config = None
+            runtime_version_config = RuntimeVersionConfig(
+                # Limitation: the runtime id (presumably sha256 of image) is currently hardcoded
+                # Potential implementation: provide (cached) sha256 hash of used Docker image
+                RuntimeVersionArn=f"arn:aws:lambda:{context.region}::runtime:8eeff65f6809a3ce81507fe733fe09b835899b99481ba22fd75b5a7338290ec1"
+            )
             request_code = request.get("Code")
             if package_type == PackageType.Zip:
                 # TODO verify if correct combination of code is set
@@ -634,6 +673,8 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
                     entrypoint=image_config_req.get("EntryPoint"),
                     working_directory=image_config_req.get("WorkingDirectory"),
                 )
+                # Runtime management controls are not available when providing a custom image
+                runtime_version_config = None
 
             version = FunctionVersion(
                 id=arn,
@@ -658,6 +699,11 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
                     ephemeral_storage=LambdaEphemeralStorage(
                         size=request.get("EphemeralStorage", {}).get("Size", 512)
                     ),
+                    snap_start=SnapStartResponse(
+                        ApplyOn=request.get("SnapStart", {}).get("ApplyOn", SnapStartApplyOn.None_),
+                        OptimizationStatus=SnapStartOptimizationStatus.Off,
+                    ),
+                    runtime_version_config=runtime_version_config,
                     dead_letter_arn=request.get("DeadLetterConfig", {}).get("TargetArn"),
                     state=VersionState(
                         state=State.Pending,
@@ -753,10 +799,18 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
         if "Runtime" in request:
             if request["Runtime"] not in IMAGE_MAPPING:
                 raise InvalidParameterValueException(
-                    f"Value {request.get('Runtime')} at 'runtime' failed to satisfy constraint: Member must satisfy enum value set: [nodejs12.x, provided, nodejs16.x, nodejs14.x, ruby2.7, java11, dotnet6, go1.x, provided.al2, java8, java8.al2, dotnetcore3.1, python3.7, python3.8, python3.9] or be a valid ARN",
+                    f"Value {request.get('Runtime')} at 'runtime' failed to satisfy constraint: Member must satisfy enum value set: [nodejs12.x, provided, nodejs16.x, nodejs14.x, ruby2.7, java11, dotnet6, go1.x, nodejs18.x, provided.al2, java8, java8.al2, dotnetcore3.1, python3.7, python3.8, python3.9] or be a valid ARN",
                     Type="User",
                 )
             replace_kwargs["runtime"] = request["Runtime"]
+
+        if snap_start := request.get("SnapStart"):
+            runtime = replace_kwargs.get("runtime") or latest_version_config.runtime
+            self._validate_snapstart(snap_start, runtime)
+            replace_kwargs["snap_start"] = SnapStartResponse(
+                ApplyOn=snap_start.get("ApplyOn", SnapStartApplyOn.None_),
+                OptimizationStatus=SnapStartOptimizationStatus.Off,
+            )
 
         if "Environment" in request:
             if env_vars := request.get("Environment", {}).get("Variables", {}):
@@ -1169,7 +1223,7 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
         for key, value in routing_config_dict.items():
             if value < 0.0 or value >= 1.0:
                 raise ValidationException(
-                    f"1 validation error detected: Value '{{{key}={value}}}' at 'routingConfig.additionalVersionWeights' failed to satisfy constraint: Map value must satisfy constraint: [Member must have value less than or equal to 1.0, Member must have value greater than or equal to 0.0]"
+                    f"1 validation error detected: Value '{{{key}={value}}}' at 'routingConfig.additionalVersionWeights' failed to satisfy constraint: Map value must satisfy constraint: [Member must have value less than or equal to 1.0, Member must have value greater than or equal to 0.0, Member must not be null]"
                 )
             if key == function_version.id.qualifier:
                 raise InvalidParameterValueException(
@@ -1183,7 +1237,7 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
                 )
             if not api_utils.qualifier_is_version(key):
                 raise ValidationException(
-                    f"1 validation error detected: Value '{{{key}={value}}}' at 'routingConfig.additionalVersionWeights' failed to satisfy constraint: Map keys must satisfy constraint: [Member must have length less than or equal to 1024, Member must have length greater than or equal to 1, Member must satisfy regular expression pattern: [0-9]+]"
+                    f"1 validation error detected: Value '{{{key}={value}}}' at 'routingConfig.additionalVersionWeights' failed to satisfy constraint: Map keys must satisfy constraint: [Member must have length less than or equal to 1024, Member must have length greater than or equal to 1, Member must satisfy regular expression pattern: [0-9]+, Member must not be null]"
                 )
 
             # checking if the version in the config exists
@@ -1793,10 +1847,14 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
                     Type="User",
                 )
 
+        request_sid = request["StatementId"]
+        if not bool(STATEMENT_ID_REGEX.match(request_sid)):
+            raise ValidationException(
+                f"1 validation error detected: Value '{request_sid}' at 'statementId' failed to satisfy constraint: Member must satisfy regular expression pattern: ([a-zA-Z0-9-_]+)"
+            )
         # check for an already existing policy and any conflicts in existing statements
         existing_policy = resolved_fn.permissions.get(resolved_qualifier)
         if existing_policy:
-            request_sid = request["StatementId"]
             if request_sid in [s["Sid"] for s in existing_policy.policy.Statement]:
                 # uniqueness scope: statement id needs to be unique per qualified function ($LATEST, version, or alias)
                 # Counterexample: the same sid can exist within $LATEST, version, and alias

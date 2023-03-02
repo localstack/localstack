@@ -24,6 +24,8 @@ from localstack.aws.api.lambda_ import (
     PackageType,
     ProvisionedConcurrencyStatusEnum,
     Runtime,
+    RuntimeVersionConfig,
+    SnapStartResponse,
     State,
     StateReasonCode,
     TracingMode,
@@ -77,6 +79,7 @@ IMAGE_MAPPING = {
     "provided": "provided:alami",
     "provided.al2": "provided:al2",
 }
+SNAP_START_SUPPORTED_RUNTIMES = [Runtime.java11]
 
 
 @dataclasses.dataclass(frozen=True)
@@ -592,6 +595,7 @@ class VersionFunctionConfiguration:
     # internal revision is updated when runtime restart is necessary
     internal_revision: str
     ephemeral_storage: LambdaEphemeralStorage
+    snap_start: SnapStartResponse
 
     tracing_config_mode: TracingMode
     code: ArchiveCode
@@ -600,6 +604,7 @@ class VersionFunctionConfiguration:
 
     image: Optional[ImageCode] = None
     image_config: Optional[ImageConfig] = None
+    runtime_version_config: Optional[RuntimeVersionConfig] = None
     last_update: Optional[UpdateStatus] = None
     revision_id: str = dataclasses.field(init=False, default_factory=long_uid)
     layers: list[LayerVersion] = dataclasses.field(default_factory=list)

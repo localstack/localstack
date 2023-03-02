@@ -13,6 +13,16 @@ from localstack.utils.strings import to_bytes, to_str
 from localstack.utils.sync import retry, wait_until
 from localstack.utils.testutil import get_lambda_log_events
 
+pytestmark = pytest.mark.skip_snapshot_verify(
+    condition=is_old_provider,
+    paths=[
+        # Generally unsupported in old provider
+        "$..Configuration.RuntimeVersionConfig",
+        "$..Configuration.SnapStart",
+        "$..Versions..SnapStart",
+    ],
+)
+
 
 @pytest.mark.skipif(condition=is_new_provider(), reason="not implemented yet")
 @pytest.mark.aws_validated
@@ -577,6 +587,14 @@ class TestCfnLambdaIntegrations:
             "$..StartingPosition",
             "$..StateTransitionReason",
             "$..Topics",
+            # resource index mismatch due to SnapStart
+            "$..StreamDescription.StreamArn",
+            "$..StreamDescription.TableName",
+            "$..Table.LatestStreamArn",
+            "$..Table.TableArn",
+            "$..Table.TableName",
+            "$..EventSourceArn",
+            "$..policies..PolicyDocument.Statement..Resource",
         ],
     )
     @pytest.mark.skip_snapshot_verify(

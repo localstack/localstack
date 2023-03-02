@@ -29,7 +29,6 @@ class ArrayUnique(StatesFunction):
     #
     # Returns
     # [1,2,3,4]
-
     def __init__(self, arg_list: FunctionArgumentList):
         super().__init__(
             states_name=StatesFunctionName(function_type=StatesFunctionNameType.ArrayUnique),

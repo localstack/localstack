@@ -3,8 +3,9 @@ import logging
 from typing import Dict, List
 
 from botocore.utils import InvalidArnException
+from moto.core.utils import camelcase_to_pascal, underscores_to_camelcase
 from moto.sns import sns_backends
-from moto.sns.models import MAXIMUM_MESSAGE_LENGTH
+from moto.sns.models import MAXIMUM_MESSAGE_LENGTH, SNSBackend
 from moto.sns.utils import is_e164
 
 from localstack.aws.accounts import get_aws_account_id
@@ -108,6 +109,10 @@ class SnsProvider(SnsApi, ServiceLifecycleHook):
     @staticmethod
     def get_store() -> SnsStore:
         return sns_stores[get_aws_account_id()][aws_stack.get_region()]
+
+    @staticmethod
+    def _get_moto_backend(context: RequestContext) -> SNSBackend:
+        return sns_backends[context.account_id][context.region]
 
     def add_permission(
         self,
@@ -258,9 +263,17 @@ class SnsProvider(SnsApi, ServiceLifecycleHook):
     def get_topic_attributes(
         self, context: RequestContext, topic_arn: topicARN
     ) -> GetTopicAttributesResponse:
-        moto_response = call_moto(context)
-        # todo fix some attributes by moto, see snapshot
-        return GetTopicAttributesResponse(**moto_response)
+        moto_response: GetTopicAttributesResponse = call_moto(context)
+        # TODO: fix some attributes by moto, see snapshot
+        # TODO: very hacky way to get the attributes we need instead of a moto patch
+        # would need more work to have the proper format out of moto, maybe extract the model to our store
+        moto_backend = self._get_moto_backend(context)
+        moto_topic_model = moto_backend.topics.get(topic_arn)
+        for attr in vars(moto_topic_model):
+            if "success_feedback" in attr:
+                key = camelcase_to_pascal(underscores_to_camelcase(attr))
+                moto_response["Attributes"][key] = getattr(moto_topic_model, attr)
+        return moto_response
 
     def publish_batch(
         self,
@@ -290,7 +303,7 @@ class SnsProvider(SnsApi, ServiceLifecycleHook):
                 raise InvalidParameterException(
                     "Invalid parameter: The MessageGroupId parameter is required for FIFO topics"
                 )
-            moto_sns_backend = sns_backends[context.account_id][context.region]
+            moto_sns_backend = self._get_moto_backend(context)
             if moto_sns_backend.get_topic(arn=topic_arn).content_based_deduplication == "false":
                 if not all(
                     ["MessageDeduplicationId" in entry for entry in publish_batch_request_entries]
@@ -441,7 +454,7 @@ class SnsProvider(SnsApi, ServiceLifecycleHook):
         except CommonServiceException as e:
             # TODO: this was unclear in the old provider, check against aws and moto
             if "DuplicateEndpoint" in e.code:
-                moto_sns_backend = sns_backends[context.account_id][context.region]
+                moto_sns_backend = self._get_moto_backend(context)
                 for e in moto_sns_backend.platform_endpoints.values():
                     if e.token == token:
                         if custom_user_data and custom_user_data != e.custom_user_data:
@@ -544,7 +557,7 @@ class SnsProvider(SnsApi, ServiceLifecycleHook):
                 raise InvalidParameterException(
                     "Invalid parameter: The MessageGroupId parameter is required for FIFO topics",
                 )
-            moto_sns_backend = sns_backends[context.account_id][context.region]
+            moto_sns_backend = self._get_moto_backend(context)
             if (
                 moto_sns_backend.get_topic(arn=topic_or_target_arn).content_based_deduplication
                 == "false"
@@ -584,7 +597,7 @@ class SnsProvider(SnsApi, ServiceLifecycleHook):
 
         if not phone_number:
             if is_endpoint_publish:
-                moto_sns_backend = sns_backends[context.account_id][context.region]
+                moto_sns_backend = self._get_moto_backend(context)
                 if target_arn not in moto_sns_backend.platform_endpoints:
                     raise InvalidParameterException(
                         "Invalid parameter: TargetArn Reason: No endpoint found for the target arn specified"
