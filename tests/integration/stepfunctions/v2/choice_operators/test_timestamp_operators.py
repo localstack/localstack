@@ -31,8 +31,8 @@ TYPE_COMPARISONS_VARS: Final[list[Any]] = [
     True,
 ]
 
-T0: Final[str] = "2023-02-24 12:15:56.832956"
-T1: Final[str] = "2023-02-24 12:15:56.832957"
+T0: Final[str] = "2012-10-09T19:00:55Z"
+T1: Final[str] = "2012-10-09T19:00:56Z"
 BASE_COMPARISONS: Final[list[tuple[str, str]]] = [(T0, T0), (T0, T1), (T1, T0)]
 
 
