@@ -156,20 +156,66 @@ class TestFundamental:
         for run_config in run_configs:
             self._record_execution(stepfunctions_client, snapshot, statemachine_arn, run_config)
 
-    def test_batch_lambda_cdk(self, deploy_cfn_template):
-        """
-        Based on the "batch-lambda-cdk" sample workflow on serverlessland.com
-        """
-        raise Exception("TODO")
-
-    def test_request_response_cdk(self, deploy_cfn_template):
-        """
-        Based on the "request-response-cdk" sample workflow on serverlessland.com
-        """
-        raise Exception("TODO")
-
-    def test_step_functions_calling_api_gateway(self, deploy_cfn_template):
+    @pytest.mark.skip_snapshot_verify(
+        condition=is_old_provider, paths=["$..Headers", "$..StatusText"]
+    )
+    @pytest.mark.aws_validated
+    def test_step_functions_calling_api_gateway(
+        self, deploy_cfn_template, stepfunctions_client, snapshot
+    ):
         """
         Based on the "step-functions-calling-api-gateway" sample workflow on serverlessland.com
         """
-        raise Exception("TODO")
+        deployment = deploy_cfn_template(
+            template_path=os.path.join(
+                THIS_FOLDER, "./templates/step-functions-calling-api-gateway.yaml"
+            ),
+            max_wait=240,
+        )
+        statemachine_arn = deployment.outputs["StateMachineArn"]
+        statemachine_name = deployment.outputs["StateMachineName"]
+        role_name = deployment.outputs["RoleName"]
+
+        snapshot.add_transformer(snapshot.transform.regex(role_name, "<role-name>"))
+        snapshot.add_transformer(
+            snapshot.transform.regex(statemachine_name, "<state-machine-name>")
+        )
+        snapshot.add_transformer(
+            snapshot.transform.key_value("X-Amz-Cf-Pop", reference_replacement=False)
+        )
+        snapshot.add_transformer(
+            snapshot.transform.key_value("X-Amz-Cf-Id", reference_replacement=False)
+        )
+        snapshot.add_transformer(
+            snapshot.transform.key_value("X-Amzn-Trace-Id", reference_replacement=False)
+        )
+        snapshot.add_transformer(
+            snapshot.transform.key_value("x-amz-apigw-id", reference_replacement=False)
+        )
+        snapshot.add_transformer(
+            snapshot.transform.key_value("x-amzn-RequestId", reference_replacement=False)
+        )
+        snapshot.add_transformer(snapshot.transform.key_value("Date", reference_replacement=False))
+        snapshot.add_transformer(snapshot.transform.key_value("Via", reference_replacement=False))
+        snapshot.add_transformer(snapshot.transform.key_value("ApiEndpoint"), priority=-1)
+
+        describe_statemachine = stepfunctions_client.describe_state_machine(
+            stateMachineArn=statemachine_arn
+        )
+        snapshot.match("describe_statemachine", describe_statemachine)
+
+        run_configs = [
+            {
+                "name": "success",
+                "input": {"fail": True},
+                "terminal_state": ExecutionStatus.FAILED,
+            },
+            {
+                "name": "failure",
+                "input": {"fail": False},
+                "terminal_state": ExecutionStatus.SUCCEEDED,
+            },
+        ]
+
+        for run_config in run_configs:
+            self._record_execution(stepfunctions_client, snapshot, statemachine_arn, run_config)
