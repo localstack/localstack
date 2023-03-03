@@ -1,23 +1,16 @@
-import datetime
-from typing import Any, Optional
-
-import dateutil
+from typing import Any
 
 from localstack.services.stepfunctions.asl.component.state.state_choice.comparison.comparison_operator_type import (
     ComparisonOperatorType,
+)
+from localstack.services.stepfunctions.asl.component.state.state_choice.comparison.operator.implementations.is_operator import (
+    IsTimestamp,
 )
 from localstack.services.stepfunctions.asl.component.state.state_choice.comparison.operator.operator import (
     Operator,
 )
 from localstack.services.stepfunctions.asl.eval.environment import Environment
 from localstack.services.stepfunctions.asl.utils.json_path import JSONPathUtils
-
-
-def _timestamp_of_string(string: str) -> Optional[datetime.datetime]:
-    try:
-        return dateutil.parser.parse(string)
-    except Exception:
-        return None
 
 
 class TimestampEquals(Operator):
@@ -30,9 +23,9 @@ class TimestampEquals(Operator):
         variable = env.stack.pop()
         res = False
         if isinstance(variable, str):
-            a = _timestamp_of_string(variable)
+            a = IsTimestamp.string_to_timestamp(variable)
             if a is not None:
-                b = _timestamp_of_string(value)
+                b = IsTimestamp.string_to_timestamp(value)
                 res = a == b
         env.stack.append(res)
 
@@ -58,9 +51,9 @@ class TimestampGreaterThan(Operator):
         variable = env.stack.pop()
         res = False
         if isinstance(variable, str):
-            a = _timestamp_of_string(variable)
+            a = IsTimestamp.string_to_timestamp(variable)
             if a is not None:
-                b = _timestamp_of_string(value)
+                b = IsTimestamp.string_to_timestamp(value)
                 res = a > b
         env.stack.append(res)
 
@@ -86,9 +79,9 @@ class TimestampGreaterThanEquals(Operator):
         variable = env.stack.pop()
         res = False
         if isinstance(variable, str):
-            a = _timestamp_of_string(variable)
+            a = IsTimestamp.string_to_timestamp(variable)
             if a is not None:
-                b = _timestamp_of_string(value)
+                b = IsTimestamp.string_to_timestamp(value)
                 res = a >= b
         env.stack.append(res)
 
@@ -114,9 +107,9 @@ class TimestampLessThan(Operator):
         variable = env.stack.pop()
         res = False
         if isinstance(variable, str):
-            a = _timestamp_of_string(variable)
+            a = IsTimestamp.string_to_timestamp(variable)
             if a is not None:
-                b = _timestamp_of_string(value)
+                b = IsTimestamp.string_to_timestamp(value)
                 res = a < b
         env.stack.append(res)
 
@@ -142,9 +135,9 @@ class TimestampLessThanEquals(Operator):
         variable = env.stack.pop()
         res = False
         if isinstance(variable, str):
-            a = _timestamp_of_string(variable)
+            a = IsTimestamp.string_to_timestamp(variable)
             if a is not None:
-                b = _timestamp_of_string(value)
+                b = IsTimestamp.string_to_timestamp(value)
                 res = a <= b
         env.stack.append(res)
 
