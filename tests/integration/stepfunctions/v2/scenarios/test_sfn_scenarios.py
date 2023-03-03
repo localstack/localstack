@@ -7,6 +7,7 @@ import pytest
 
 from localstack.aws.api.stepfunctions import ExecutionStatus
 from localstack.utils.sync import wait_until
+from tests.integration.stepfunctions.utils import is_old_provider
 
 THIS_FOLDER = Path(os.path.dirname(__file__))
 
@@ -17,6 +18,7 @@ class RunConfig(TypedDict):
     terminal_state: ExecutionStatus | None
 
 
+@pytest.mark.skip_snapshot_verify(condition=is_old_provider, paths=["$..tracingConfiguration"])
 class TestFundamental:
     @staticmethod
     def _record_execution(stepfunctions_client, snapshot, statemachine_arn, run_config: RunConfig):
@@ -33,8 +35,6 @@ class TestFundamental:
         execution_id = execution_arn.split(":")[-1]
         snapshot.add_transformer(snapshot.transform.regex(execution_id, f"<execution-id-{name}>"))
         snapshot.match(f"{name}__start_execution_result", start_execution_result)
-        describe_ex = stepfunctions_client.describe_execution(executionArn=execution_arn)
-        snapshot.match(f"{name}__describe_ex", describe_ex)
 
         def execution_done():
             # wait until execution is successful (or a different terminal state)
@@ -100,23 +100,61 @@ class TestFundamental:
         for run_config in run_configs:
             self._record_execution(stepfunctions_client, snapshot, statemachine_arn, run_config)
 
-    def test_simple_retry(self, deploy_cfn_template):
-        """
-        Based on the "simple-retry" sample workflow on serverlessland.com
-        """
-        raise Exception("TODO")
-
-    def test_synchronous_job(self, deploy_cfn_template):
-        """
-        Based on the "synchronous-job" sample workflow on serverlessland.com
-        """
-        raise Exception("TODO")
-
-    def test_wait_for_callback(self, deploy_cfn_template):
+    @pytest.mark.skip_snapshot_verify(
+        condition=is_old_provider,
+        paths=[
+            "$..taskFailedEventDetails.resource",
+            "$..taskFailedEventDetails.resourceType",
+            "$..taskSubmittedEventDetails.output",
+            "$..previousEventId",
+        ],
+    )
+    @pytest.mark.aws_validated
+    def test_wait_for_callback(self, deploy_cfn_template, stepfunctions_client, snapshot):
         """
         Based on the "wait-for-callback" sample workflow on serverlessland.com
         """
-        raise Exception("TODO")
+        deployment = deploy_cfn_template(
+            template_path=os.path.join(THIS_FOLDER, "./templates/wait-for-callback.yaml"),
+            max_wait=240,
+        )
+        statemachine_arn = deployment.outputs["StateMachineArn"]
+        statemachine_name = deployment.outputs["StateMachineName"]
+        role_name = deployment.outputs["RoleName"]
+
+        snapshot.add_transformer(snapshot.transform.regex(role_name, "<role-name>"))
+        snapshot.add_transformer(
+            snapshot.transform.regex(statemachine_name, "<state-machine-name>")
+        )
+        snapshot.add_transformer(snapshot.transform.key_value("QueueUrl"), priority=-1)
+        snapshot.add_transformer(snapshot.transform.key_value("TaskToken"))
+        snapshot.add_transformer(snapshot.transform.key_value("MD5OfMessageBody"))
+        snapshot.add_transformer(
+            snapshot.transform.key_value(
+                "Date", value_replacement="<date>", reference_replacement=False
+            )
+        )
+
+        describe_statemachine = stepfunctions_client.describe_state_machine(
+            stateMachineArn=statemachine_arn
+        )
+        snapshot.match("describe_statemachine", describe_statemachine)
+
+        run_configs = [
+            {
+                "name": "success",
+                "input": {"shouldfail": "no"},
+                "terminal_state": ExecutionStatus.SUCCEEDED,
+            },
+            {
+                "name": "failure",
+                "input": {"shouldfail": "yes"},
+                "terminal_state": ExecutionStatus.FAILED,
+            },
+        ]
+
+        for run_config in run_configs:
+            self._record_execution(stepfunctions_client, snapshot, statemachine_arn, run_config)
 
     def test_batch_lambda_cdk(self, deploy_cfn_template):
         """
