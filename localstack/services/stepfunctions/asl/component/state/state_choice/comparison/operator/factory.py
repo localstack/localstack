@@ -14,5 +14,5 @@ class OperatorFactory:
     def get(typ: ComparisonOperatorType) -> Operator:
         op = Operator.get((str(typ)), raise_if_missing=False)
         if op is None:
-            raise NotImplementedError(f"{ComparisonOperatorType} is not supported.")
+            raise NotImplementedError(f"{typ} is not supported.")
         return op
