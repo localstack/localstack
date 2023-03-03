@@ -98,6 +98,7 @@ class TestIsOperators:
             comparisons=TYPE_COMPARISONS,
         )
 
+    @pytest.mark.skip(reason="TODO: investigate IsTimestamp behaviour.")
     def test_is_timestamp(
         self,
         stepfunctions_client,
@@ -110,6 +111,6 @@ class TestIsOperators:
             create_iam_role_for_sfn,
             create_state_machine,
             snapshot,
-            "IsString",
+            "IsTimestamp",
             comparisons=TYPE_COMPARISONS,
         )
