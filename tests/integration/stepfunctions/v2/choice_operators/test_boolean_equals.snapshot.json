@@ -1,6 +1,6 @@
 {
   "tests/integration/stepfunctions/v2/choice_operators/test_boolean_equals.py::TestBooleanEquals::test_boolean_equals": {
-    "recorded-date": "01-03-2023, 10:33:46",
+    "recorded-date": "03-03-2023, 19:54:02",
     "recorded-content": {
       "cases": [
         {
@@ -149,7 +149,7 @@
         },
         {
           "input": {
-            "Variable": "2023-02-24 12:15:56.832957",
+            "Variable": "2012-10-09T19:00:55",
             "Value": true
           },
           "output": {
@@ -158,7 +158,7 @@
         },
         {
           "input": {
-            "Variable": "2023-02-24 12:15:56.832957",
+            "Variable": "2012-10-09T19:00:55",
             "Value": false
           },
           "output": {
@@ -167,7 +167,7 @@
         },
         {
           "input": {
-            "Variable": "2023-02-24 12:15:56",
+            "Variable": "date",
             "Value": true
           },
           "output": {
@@ -176,7 +176,7 @@
         },
         {
           "input": {
-            "Variable": "2023-02-24 12:15:56",
+            "Variable": "date",
             "Value": false
           },
           "output": {
@@ -321,7 +321,7 @@
     }
   },
   "tests/integration/stepfunctions/v2/choice_operators/test_boolean_equals.py::TestBooleanEquals::test_boolean_equals_path": {
-    "recorded-date": "01-03-2023, 10:34:21",
+    "recorded-date": "03-03-2023, 19:54:39",
     "recorded-content": {
       "cases": [
         {
@@ -470,7 +470,7 @@
         },
         {
           "input": {
-            "Variable": "2023-02-24 12:15:56.832957",
+            "Variable": "2012-10-09T19:00:55",
             "Value": true
           },
           "output": {
@@ -479,7 +479,7 @@
         },
         {
           "input": {
-            "Variable": "2023-02-24 12:15:56.832957",
+            "Variable": "2012-10-09T19:00:55",
             "Value": false
           },
           "output": {
@@ -488,7 +488,7 @@
         },
         {
           "input": {
-            "Variable": "2023-02-24 12:15:56",
+            "Variable": "date",
             "Value": true
           },
           "output": {
@@ -497,7 +497,7 @@
         },
         {
           "input": {
-            "Variable": "2023-02-24 12:15:56",
+            "Variable": "date",
             "Value": false
           },
           "output": {

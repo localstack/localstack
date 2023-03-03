@@ -69,5 +69,45 @@
         }
       }
     }
+  },
+  "tests/integration/cloudformation/resources/test_apigateway.py::test_api_gateway_with_policy_as_dict": {
+    "recorded-date": "01-03-2023, 23:36:31",
+    "recorded-content": {
+      "rest-api": {
+        "apiKeySource": "HEADER",
+        "createdDate": "datetime",
+        "disableExecuteApiEndpoint": false,
+        "endpointConfiguration": {
+          "types": [
+            "EDGE"
+          ]
+        },
+        "id": "<id:1>",
+        "name": "<name:1>",
+        "policy": {
+          "Statement": [
+            {
+              "Action": "*",
+              "Effect": "Allow",
+              "Principal": {
+                "AWS": "*"
+              },
+              "Resource": "*",
+              "Sid": "AllowInvokeAPI"
+            }
+          ],
+          "Version": "2012-10-17"
+        },
+        "tags": {
+          "aws:cloudformation:logical-id": "MyApi",
+          "aws:cloudformation:stack-id": "arn:aws:cloudformation:<region>:111111111111:stack/stack-name/<resource:1>",
+          "aws:cloudformation:stack-name": "stack-name"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
   }
 }
