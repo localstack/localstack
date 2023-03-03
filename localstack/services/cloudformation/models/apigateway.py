@@ -148,7 +148,7 @@ class GatewayRestAPI(GenericBaseModel):
                     "DisableExecuteApiEndpoint",
                 ],
             )
-            kwargs = keys_to_lower(kwargs)
+            kwargs = keys_to_lower(kwargs, skip_children_of=["policy"])
             kwargs["tags"] = {tag["key"]: tag["value"] for tag in kwargs.get("tags", [])}
 
             cfn_client = aws_stack.connect_to_service("cloudformation")
@@ -160,6 +160,8 @@ class GatewayRestAPI(GenericBaseModel):
                     "aws:cloudformation:stack-id": stack_id,
                 }
             )
+            if isinstance(kwargs.get("policy"), dict):
+                kwargs["policy"] = json.dumps(kwargs["policy"])
 
             result = client.create_rest_api(**kwargs)
 
