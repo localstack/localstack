@@ -1,0 +1,563 @@
+{
+  "tests/integration/stepfunctions/v2/scenarios/test_sfn_scenarios.py::TestFundamental::test_path_based_on_data": {
+    "recorded-date": "03-03-2023, 07:48:10",
+    "recorded-content": {
+      "describe_statemachine": {
+        "creationDate": "datetime",
+        "definition": {
+          "StartAt": "Choice State",
+          "States": {
+            "Choice State": {
+              "Type": "Choice",
+              "Choices": [
+                {
+                  "Not": {
+                    "Variable": "$.type",
+                    "StringEquals": "Private"
+                  },
+                  "Next": "NEXT_STATE_ONE"
+                },
+                {
+                  "Variable": "$.value",
+                  "NumericEquals": 0,
+                  "Next": "NEXT_STATE_TWO"
+                },
+                {
+                  "And": [
+                    {
+                      "Variable": "$.value",
+                      "NumericGreaterThanEquals": 20
+                    },
+                    {
+                      "Variable": "$.value",
+                      "NumericLessThan": 30
+                    }
+                  ],
+                  "Next": "NEXT_STATE_TWO"
+                }
+              ],
+              "Default": "DEFAULT_STATE"
+            },
+            "DEFAULT_STATE": {
+              "Type": "Pass",
+              "End": true
+            },
+            "NEXT_STATE_ONE": {
+              "Type": "Pass",
+              "End": true
+            },
+            "NEXT_STATE_TWO": {
+              "Type": "Pass",
+              "End": true
+            }
+          }
+        },
+        "loggingConfiguration": {
+          "includeExecutionData": false,
+          "level": "OFF"
+        },
+        "name": "<state-machine-name>",
+        "roleArn": "arn:aws:iam::111111111111:role/<role-name>",
+        "stateMachineArn": "arn:aws:states:<region>:111111111111:stateMachine:<state-machine-name>",
+        "status": "ACTIVE",
+        "tracingConfiguration": {
+          "enabled": false
+        },
+        "type": "STANDARD",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "first_path__start_execution_result": {
+        "executionArn": "arn:aws:states:<region>:111111111111:execution:<state-machine-name>:<execution-id-first_path>",
+        "startDate": "datetime",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "first_path__describe_ex": {
+        "executionArn": "arn:aws:states:<region>:111111111111:execution:<state-machine-name>:<execution-id-first_path>",
+        "input": {
+          "type": "Public",
+          "value": 3
+        },
+        "inputDetails": {
+          "included": true
+        },
+        "name": "<execution-id-first_path>",
+        "output": {
+          "type": "Public",
+          "value": 3
+        },
+        "outputDetails": {
+          "included": true
+        },
+        "startDate": "datetime",
+        "stateMachineArn": "arn:aws:states:<region>:111111111111:stateMachine:<state-machine-name>",
+        "status": "SUCCEEDED",
+        "stopDate": "datetime",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "first_path__describe_ex_done": {
+        "executionArn": "arn:aws:states:<region>:111111111111:execution:<state-machine-name>:<execution-id-first_path>",
+        "input": {
+          "type": "Public",
+          "value": 3
+        },
+        "inputDetails": {
+          "included": true
+        },
+        "name": "<execution-id-first_path>",
+        "output": {
+          "type": "Public",
+          "value": 3
+        },
+        "outputDetails": {
+          "included": true
+        },
+        "startDate": "datetime",
+        "stateMachineArn": "arn:aws:states:<region>:111111111111:stateMachine:<state-machine-name>",
+        "status": "SUCCEEDED",
+        "stopDate": "datetime",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "first_path__execution_history": {
+        "events": [
+          {
+            "executionStartedEventDetails": {
+              "input": {
+                "type": "Public",
+                "value": 3
+              },
+              "inputDetails": {
+                "truncated": false
+              },
+              "roleArn": "arn:aws:iam::111111111111:role/<role-name>"
+            },
+            "id": 1,
+            "previousEventId": 0,
+            "timestamp": "timestamp",
+            "type": "ExecutionStarted"
+          },
+          {
+            "id": 2,
+            "previousEventId": 0,
+            "stateEnteredEventDetails": {
+              "input": {
+                "type": "Public",
+                "value": 3
+              },
+              "inputDetails": {
+                "truncated": false
+              },
+              "name": "Choice State"
+            },
+            "timestamp": "timestamp",
+            "type": "ChoiceStateEntered"
+          },
+          {
+            "id": 3,
+            "previousEventId": 2,
+            "stateExitedEventDetails": {
+              "name": "Choice State",
+              "output": {
+                "type": "Public",
+                "value": 3
+              },
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "timestamp": "timestamp",
+            "type": "ChoiceStateExited"
+          },
+          {
+            "id": 4,
+            "previousEventId": 3,
+            "stateEnteredEventDetails": {
+              "input": {
+                "type": "Public",
+                "value": 3
+              },
+              "inputDetails": {
+                "truncated": false
+              },
+              "name": "NEXT_STATE_ONE"
+            },
+            "timestamp": "timestamp",
+            "type": "PassStateEntered"
+          },
+          {
+            "id": 5,
+            "previousEventId": 4,
+            "stateExitedEventDetails": {
+              "name": "NEXT_STATE_ONE",
+              "output": {
+                "type": "Public",
+                "value": 3
+              },
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "timestamp": "timestamp",
+            "type": "PassStateExited"
+          },
+          {
+            "executionSucceededEventDetails": {
+              "output": {
+                "type": "Public",
+                "value": 3
+              },
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "id": 6,
+            "previousEventId": 5,
+            "timestamp": "timestamp",
+            "type": "ExecutionSucceeded"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "second_path__start_execution_result": {
+        "executionArn": "arn:aws:states:<region>:111111111111:execution:<state-machine-name>:<execution-id-second_path>",
+        "startDate": "datetime",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "second_path__describe_ex": {
+        "executionArn": "arn:aws:states:<region>:111111111111:execution:<state-machine-name>:<execution-id-second_path>",
+        "input": {
+          "type": "Private",
+          "value": 25
+        },
+        "inputDetails": {
+          "included": true
+        },
+        "name": "<execution-id-second_path>",
+        "output": {
+          "type": "Private",
+          "value": 25
+        },
+        "outputDetails": {
+          "included": true
+        },
+        "startDate": "datetime",
+        "stateMachineArn": "arn:aws:states:<region>:111111111111:stateMachine:<state-machine-name>",
+        "status": "SUCCEEDED",
+        "stopDate": "datetime",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "second_path__describe_ex_done": {
+        "executionArn": "arn:aws:states:<region>:111111111111:execution:<state-machine-name>:<execution-id-second_path>",
+        "input": {
+          "type": "Private",
+          "value": 25
+        },
+        "inputDetails": {
+          "included": true
+        },
+        "name": "<execution-id-second_path>",
+        "output": {
+          "type": "Private",
+          "value": 25
+        },
+        "outputDetails": {
+          "included": true
+        },
+        "startDate": "datetime",
+        "stateMachineArn": "arn:aws:states:<region>:111111111111:stateMachine:<state-machine-name>",
+        "status": "SUCCEEDED",
+        "stopDate": "datetime",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "second_path__execution_history": {
+        "events": [
+          {
+            "executionStartedEventDetails": {
+              "input": {
+                "type": "Private",
+                "value": 25
+              },
+              "inputDetails": {
+                "truncated": false
+              },
+              "roleArn": "arn:aws:iam::111111111111:role/<role-name>"
+            },
+            "id": 1,
+            "previousEventId": 0,
+            "timestamp": "timestamp",
+            "type": "ExecutionStarted"
+          },
+          {
+            "id": 2,
+            "previousEventId": 0,
+            "stateEnteredEventDetails": {
+              "input": {
+                "type": "Private",
+                "value": 25
+              },
+              "inputDetails": {
+                "truncated": false
+              },
+              "name": "Choice State"
+            },
+            "timestamp": "timestamp",
+            "type": "ChoiceStateEntered"
+          },
+          {
+            "id": 3,
+            "previousEventId": 2,
+            "stateExitedEventDetails": {
+              "name": "Choice State",
+              "output": {
+                "type": "Private",
+                "value": 25
+              },
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "timestamp": "timestamp",
+            "type": "ChoiceStateExited"
+          },
+          {
+            "id": 4,
+            "previousEventId": 3,
+            "stateEnteredEventDetails": {
+              "input": {
+                "type": "Private",
+                "value": 25
+              },
+              "inputDetails": {
+                "truncated": false
+              },
+              "name": "NEXT_STATE_TWO"
+            },
+            "timestamp": "timestamp",
+            "type": "PassStateEntered"
+          },
+          {
+            "id": 5,
+            "previousEventId": 4,
+            "stateExitedEventDetails": {
+              "name": "NEXT_STATE_TWO",
+              "output": {
+                "type": "Private",
+                "value": 25
+              },
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "timestamp": "timestamp",
+            "type": "PassStateExited"
+          },
+          {
+            "executionSucceededEventDetails": {
+              "output": {
+                "type": "Private",
+                "value": 25
+              },
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "id": 6,
+            "previousEventId": 5,
+            "timestamp": "timestamp",
+            "type": "ExecutionSucceeded"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "default_path__start_execution_result": {
+        "executionArn": "arn:aws:states:<region>:111111111111:execution:<state-machine-name>:<execution-id-default_path>",
+        "startDate": "datetime",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "default_path__describe_ex": {
+        "executionArn": "arn:aws:states:<region>:111111111111:execution:<state-machine-name>:<execution-id-default_path>",
+        "input": {
+          "type": "Private",
+          "value": 3
+        },
+        "inputDetails": {
+          "included": true
+        },
+        "name": "<execution-id-default_path>",
+        "output": {
+          "type": "Private",
+          "value": 3
+        },
+        "outputDetails": {
+          "included": true
+        },
+        "startDate": "datetime",
+        "stateMachineArn": "arn:aws:states:<region>:111111111111:stateMachine:<state-machine-name>",
+        "status": "SUCCEEDED",
+        "stopDate": "datetime",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "default_path__describe_ex_done": {
+        "executionArn": "arn:aws:states:<region>:111111111111:execution:<state-machine-name>:<execution-id-default_path>",
+        "input": {
+          "type": "Private",
+          "value": 3
+        },
+        "inputDetails": {
+          "included": true
+        },
+        "name": "<execution-id-default_path>",
+        "output": {
+          "type": "Private",
+          "value": 3
+        },
+        "outputDetails": {
+          "included": true
+        },
+        "startDate": "datetime",
+        "stateMachineArn": "arn:aws:states:<region>:111111111111:stateMachine:<state-machine-name>",
+        "status": "SUCCEEDED",
+        "stopDate": "datetime",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "default_path__execution_history": {
+        "events": [
+          {
+            "executionStartedEventDetails": {
+              "input": {
+                "type": "Private",
+                "value": 3
+              },
+              "inputDetails": {
+                "truncated": false
+              },
+              "roleArn": "arn:aws:iam::111111111111:role/<role-name>"
+            },
+            "id": 1,
+            "previousEventId": 0,
+            "timestamp": "timestamp",
+            "type": "ExecutionStarted"
+          },
+          {
+            "id": 2,
+            "previousEventId": 0,
+            "stateEnteredEventDetails": {
+              "input": {
+                "type": "Private",
+                "value": 3
+              },
+              "inputDetails": {
+                "truncated": false
+              },
+              "name": "Choice State"
+            },
+            "timestamp": "timestamp",
+            "type": "ChoiceStateEntered"
+          },
+          {
+            "id": 3,
+            "previousEventId": 2,
+            "stateExitedEventDetails": {
+              "name": "Choice State",
+              "output": {
+                "type": "Private",
+                "value": 3
+              },
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "timestamp": "timestamp",
+            "type": "ChoiceStateExited"
+          },
+          {
+            "id": 4,
+            "previousEventId": 3,
+            "stateEnteredEventDetails": {
+              "input": {
+                "type": "Private",
+                "value": 3
+              },
+              "inputDetails": {
+                "truncated": false
+              },
+              "name": "DEFAULT_STATE"
+            },
+            "timestamp": "timestamp",
+            "type": "PassStateEntered"
+          },
+          {
+            "id": 5,
+            "previousEventId": 4,
+            "stateExitedEventDetails": {
+              "name": "DEFAULT_STATE",
+              "output": {
+                "type": "Private",
+                "value": 3
+              },
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "timestamp": "timestamp",
+            "type": "PassStateExited"
+          },
+          {
+            "executionSucceededEventDetails": {
+              "output": {
+                "type": "Private",
+                "value": 3
+              },
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "id": 6,
+            "previousEventId": 5,
+            "timestamp": "timestamp",
+            "type": "ExecutionSucceeded"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  }
+}
