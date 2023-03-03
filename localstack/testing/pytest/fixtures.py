@@ -20,7 +20,7 @@ from botocore.regions import EndpointResolver
 from moto.core import BackendDict, BaseBackend
 from pytest_httpserver import HTTPServer
 
-from localstack import config
+from localstack import config, constants
 from localstack.aws.accounts import get_aws_account_id
 from localstack.constants import TEST_AWS_ACCESS_KEY_ID, TEST_AWS_SECRET_ACCESS_KEY
 from localstack.services.stores import (
@@ -1981,13 +1981,51 @@ def appsync_create_api(appsync_client):
 
 
 @pytest.fixture
-def patch_hostnames(monkeypatch):
-    """
-    Update both HOSTNAME_EXTERNAL and LOCALSTACK_HOSTNAME to custom values to
-    configure the running localstack instance.
-    """
+def assert_host_customisation(monkeypatch):
     hostname_external = f"external-host-{short_uid()}"
     localstack_hostname = f"localstack-hostname={short_uid()}"
     monkeypatch.setattr(config, "HOSTNAME_EXTERNAL", hostname_external)
     # monkeypatch.setattr(config, "LOCALSTACK_HOSTNAME", localstack_hostname)
-    yield hostname_external, localstack_hostname
+
+    def asserter(
+        url: str,
+        *,
+        use_hostname_external: bool = False,
+        use_localstack_hostname: bool = False,
+        use_localstack_cloud: bool = False,
+        use_localhost: bool = False,
+        custom_host: Optional[str] = None,
+    ):
+        if use_hostname_external:
+            assert hostname_external in url
+
+            assert localstack_hostname not in url
+            assert constants.LOCALHOST_HOSTNAME not in url
+            assert constants.LOCALHOST not in url
+        elif use_localstack_hostname:
+            assert localstack_hostname in url
+
+            assert hostname_external not in url
+            assert constants.LOCALHOST_HOSTNAME not in url
+            assert constants.LOCALHOST not in url
+        elif use_localstack_cloud:
+            assert constants.LOCALHOST_HOSTNAME in url
+
+            assert hostname_external not in url
+            assert localstack_hostname not in url
+        elif use_localhost:
+            assert constants.LOCALHOST in url
+
+            assert constants.LOCALHOST_HOSTNAME not in url
+            assert hostname_external not in url
+            assert localstack_hostname not in url
+        elif custom_host is not None:
+            assert custom_host in url
+
+            assert constants.LOCALHOST_HOSTNAME not in url
+            assert hostname_external not in url
+            assert localstack_hostname not in url
+        else:
+            raise ValueError("no assertions made")
+
+    yield asserter
