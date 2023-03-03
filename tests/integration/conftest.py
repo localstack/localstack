@@ -22,7 +22,6 @@ from tests.integration.apigateway.apigateway_fixtures import delete_rest_api, im
 from tests.integration.test_es import install_async as es_install_async
 from tests.integration.test_opensearch import install_async as opensearch_install_async
 from tests.integration.test_terraform import TestTerraform
-from tests.store_police import StorePolice, StorePoliceResult
 
 logger = logging.getLogger(__name__)
 
@@ -34,8 +33,14 @@ startup_monitor_event = mp.Event()  # event that can be triggered to start local
 # collection of functions that should be executed to initialize tests
 test_init_functions = set()
 
+pytest_plugins = []
 if config.is_collect_metrics_mode():
-    pytest_plugins = "localstack.testing.pytest.metric_collection"
+    pytest_plugins.append("localstack.testing.pytest.metric_collection")
+
+TEST_CHECK_PERSISTENCE = True
+
+if TEST_CHECK_PERSISTENCE:
+    pytest_plugins.append("localstack.testing.pytest.persistence")
 
 
 @pytest.hookimpl()
@@ -194,7 +199,6 @@ def import_apigw(aws_client):
 
     for rest_api_id in rest_api_ids:
         delete_rest_api(aws_client.apigateway, restApiId=rest_api_id)
-
 
 @pytest.fixture(scope="session")
 def aws_session():
