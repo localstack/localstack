@@ -16,6 +16,7 @@ jobs:
 
       - name: Set up system wide dependencies
         run: |
+          sudo apt-get update
           sudo apt-get install libsasl2-dev jq
 
       - name: Set up Python 3.8
