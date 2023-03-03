@@ -9,7 +9,7 @@ from localstack.utils.strings import short_uid
 
 
 class TestExtensionsHooks:
-    @pytest.mark.skip(reason="test not finished")
+    @pytest.mark.skip(reason="feature not implemented")
     def test_hook_deployment(self, register_extension, cfn_client, snapshot, cleanups):
         artifact_path = os.path.join(
             os.path.dirname(__file__),
@@ -21,13 +21,6 @@ class TestExtensionsHooks:
             artifact_path=artifact_path,
         )
 
-        template = load_template_file(
-            os.path.join(
-                os.path.dirname(__file__),
-                "../../templates/s3_bucket_name.yml",
-            )
-        )
-
         extension_configuration = json.dumps(
             {
                 "CloudFormationConfiguration": {
@@ -35,9 +28,15 @@ class TestExtensionsHooks:
                 }
             }
         )
-
         cfn_client.set_type_configuration(
             TypeArn=extension["TypeArn"], Configuration=extension_configuration
+        )
+
+        template = load_template_file(
+            os.path.join(
+                os.path.dirname(__file__),
+                "../../templates/s3_bucket_name.yml",
+            )
         )
 
         stack_name = f"stack-{short_uid()}"
