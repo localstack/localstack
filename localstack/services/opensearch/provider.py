@@ -433,8 +433,16 @@ class OpensearchProvider(OpensearchApi):
 
                         engine_version = domain_status.get("EngineVersion")
                         domain_endpoint_options = domain_status.get("DomainEndpointOptions", {})
+                        security_options = SecurityOptions.from_input(
+                            domain_status.get("AdvancedSecurityOptions")
+                        )
+
                         create_cluster(
-                            domain_key, engine_version, domain_endpoint_options, preferred_port
+                            domain_key=domain_key,
+                            engine_version=engine_version,
+                            domain_endpoint_options=domain_endpoint_options,
+                            security_options=security_options,
+                            preferred_port=preferred_port,
                         )
                     except Exception:
                         LOG.exception(f"Could not restore domain {domain_name} in region {region}.")
