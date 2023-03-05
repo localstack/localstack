@@ -1,6 +1,7 @@
 import copy
 import json
 import logging
+import os.path
 import random
 import re
 import time
@@ -114,6 +115,7 @@ from localstack.services.dynamodbstreams.dynamodbstreams_api import (
 )
 from localstack.services.edge import ROUTER
 from localstack.services.plugins import ServiceLifecycleHook
+from localstack.state import AssetDirectory, StateVisitor
 from localstack.utils.aws import arns, aws_stack
 from localstack.utils.aws.arns import extract_account_id_from_arn, extract_region_from_arn
 from localstack.utils.aws.aws_stack import get_valid_regions_for_service
@@ -346,6 +348,10 @@ def modify_context_region(context: RequestContext, region: str):
 class DynamoDBProvider(DynamodbApi, ServiceLifecycleHook):
     def __init__(self):
         self.request_forwarder = get_request_forwarder_http(self.get_forward_url)
+
+    def accept_state_visitor(self, visitor: StateVisitor):
+        visitor.visit(dynamodb_stores)
+        visitor.visit(AssetDirectory(os.path.join(config.dirs.data, "dynamodb")))
 
     def on_after_init(self):
         # add response processor specific to ddblocal
