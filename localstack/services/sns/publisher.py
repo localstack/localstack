@@ -1068,7 +1068,12 @@ class PublishDispatcher:
         Validate that the message should be relayed to the subscriber, depending on the filter policy and the
         subscription status
         """
-        if not subscriber["PendingConfirmation"] == "false":
+        # FIXME: for now, send to email even if not confirmed, as we do not send the token to confirm to email
+        # subscriptions
+        if (
+            not subscriber["PendingConfirmation"] == "false"
+            and "email" not in subscriber["Protocol"]
+        ):
             return
 
         subscriber_arn = subscriber["SubscriptionArn"]

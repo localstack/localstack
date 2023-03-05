@@ -3349,5 +3349,34 @@
         }
       }
     }
+  },
+  "tests/integration/test_sns.py::TestSNSProvider::test_subscribe_sms_endpoint": {
+    "recorded-date": "05-03-2023, 15:29:28",
+    "recorded-content": {
+      "subscribe-sms-endpoint": {
+        "SubscriptionArn": "arn:aws:sns:<region>:111111111111:<resource:2>:<resource:1>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "subscribe-sms-attrs": {
+        "Attributes": {
+          "ConfirmationWasAuthenticated": "true",
+          "Endpoint": "+123123123",
+          "Owner": "111111111111",
+          "PendingConfirmation": "false",
+          "Protocol": "sms",
+          "RawMessageDelivery": "false",
+          "SubscriptionArn": "arn:aws:sns:<region>:111111111111:<resource:2>:<resource:1>",
+          "SubscriptionPrincipal": "<sub-principal>",
+          "TopicArn": "arn:aws:sns:<region>:111111111111:<resource:2>"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
   }
 }

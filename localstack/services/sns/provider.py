@@ -729,9 +729,12 @@ class SnsProvider(SnsApi, ServiceLifecycleHook):
                 topic_arn=topic_arn,
                 subscription_arn=subscription_arn,
             )
-        elif protocol in ["sqs", "lambda"]:
-            # Auto-confirm sqs and lambda subscriptions for now
+        elif protocol not in ["email", "email-json"]:
+            # Only HTTP(S) and email subscriptions are not auto validated
+            # Except if the endpoint and the topic are not in the same AWS account, then you'd need to manually confirm
+            # the subscription with the token
             # TODO: revisit for multi-account
+            # TODO: test with AWS for email & email-json confirmation message
             subscription["PendingConfirmation"] = "false"
             subscription["ConfirmationWasAuthenticated"] = "true"
         return SubscribeResponse(SubscriptionArn=subscription_arn)

@@ -593,23 +593,35 @@ class TestSNSProvider:
         snapshot.match("list-after-update-tags", tags)
 
     @pytest.mark.only_localstack
-    def test_topic_subscription(self, sns_client, sns_create_topic, sns_subscription):
+    def test_topic_email_subscription_confirmation(
+        self, sns_client, sns_create_topic, sns_subscription
+    ):
+        # FIXME: we do not send the token to the email endpoint, so they cannot validate it
+        # create AWS validated test for format
+        # for now, access internals
         topic_arn = sns_create_topic()["TopicArn"]
         subscription = sns_subscription(
             TopicArn=topic_arn,
             Protocol="email",
             Endpoint="localstack@yopmail.com",
         )
-        sns_backend = SnsProvider.get_store()
+        subscription_arn = subscription["SubscriptionArn"]
+        parsed_arn = parse_arn(subscription_arn)
+        store = SnsProvider.get_store(account_id=parsed_arn["account"], region=parsed_arn["region"])
+
+        sub_attr = sns_client.get_subscription_attributes(SubscriptionArn=subscription_arn)
+        assert sub_attr["Attributes"]["PendingConfirmation"] == "true"
 
         def check_subscription():
-            subscription_arn = subscription["SubscriptionArn"]
-            subscription_obj = sns_backend.subscription_status[subscription_arn]
-            assert subscription_obj["Status"] == "Not Subscribed"
+            topic_tokens = store.subscription_tokens.get(topic_arn, {})
+            for token, sub_arn in topic_tokens.items():
+                if sub_arn == subscription_arn:
+                    sns_client.confirm_subscription(TopicArn=topic_arn, Token=token)
 
-            _token = subscription_obj["Token"]
-            sns_client.confirm_subscription(TopicArn=topic_arn, Token=_token)
-            assert subscription_obj["Status"] == "Subscribed"
+            sub_attributes = sns_client.get_subscription_attributes(
+                SubscriptionArn=subscription_arn
+            )
+            assert sub_attributes["Attributes"]["PendingConfirmation"] == "false"
 
         retry(check_subscription, retries=PUBLICATION_RETRIES, sleep=PUBLICATION_TIMEOUT)
 
@@ -633,7 +645,7 @@ class TestSNSProvider:
 
             return subscription_attrs["PendingConfirmation"] == "false"
 
-        # SQS subscriptions are auto confirmed if they are from the user and in the same region
+        # SQS subscriptions are auto confirmed if the endpoint and the topic are in the same AWS account
         assert poll_condition(check_subscription, timeout=5)
 
     @pytest.mark.aws_validated
@@ -759,6 +771,7 @@ class TestSNSProvider:
             assert request.path.endswith("/subscription")
             assert event["Type"] == "SubscriptionConfirmation"
             assert event["TopicArn"] == topic_arn
+            sns_client.confirm_subscription(TopicArn=topic_arn, Token=event["Token"])
 
         wait_for_port_closed(server.port)
 
@@ -1126,6 +1139,19 @@ class TestSNSProvider:
                 sns_client.unsubscribe(SubscriptionArn=subscription["SubscriptionArn"])
             for server in servers:
                 server.stop()
+
+    @pytest.mark.aws_validated
+    @pytest.mark.skip_snapshot_verify(paths=["$..Attributes.SubscriptionPrincipal"])
+    def test_subscribe_sms_endpoint(self, sns_client, sns_create_topic, sns_subscription, snapshot):
+        phone_number = "+123123123"
+        topic_arn = sns_create_topic()["TopicArn"]
+        response = sns_subscription(TopicArn=topic_arn, Protocol="sms", Endpoint=phone_number)
+        snapshot.match("subscribe-sms-endpoint", response)
+
+        sub_attrs = sns_client.get_subscription_attributes(
+            SubscriptionArn=response["SubscriptionArn"]
+        )
+        snapshot.match("subscribe-sms-attrs", sub_attrs)
 
     @pytest.mark.only_localstack
     def test_publish_sms_endpoint(self, sns_client, sns_create_topic, sns_subscription):
