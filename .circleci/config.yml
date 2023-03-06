@@ -369,7 +369,7 @@ jobs:
           path: scripts/implementation_coverage_full.csv
           destination: community/implementation_coverage_full.csv
 
-  docker-push:
+  push:
     executor: ubuntu-machine-amd64
     working_directory: /tmp/workspace/repo
     steps:
@@ -410,6 +410,14 @@ jobs:
             make docker-create-push-manifests
             # Push to Amazon Public ECR
             MANIFEST_IMAGE_NAME="public.ecr.aws/localstack/localstack" make docker-create-push-manifests
+      - run:
+          name: Publish a dev release
+          command: |
+            source .venv/bin/activate
+            bin/release-helper.sh set-ver $(bin/release-helper.sh next-dev-ver)
+            make publish
+
+
 
 workflows:
   main:
@@ -477,7 +485,7 @@ workflows:
             - docker-test-arm64
             - collect-not-implemented
             - unit-tests
-      - docker-push:
+      - push:
           filters:
             branches:
               only: master
