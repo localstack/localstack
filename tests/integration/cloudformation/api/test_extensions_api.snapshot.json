@@ -646,5 +646,42 @@
     "recorded-content": {
       "not_found_error": "An error occurred (TypeNotFoundException) when calling the DescribeType operation: The type 'LocalStack::Testing::TestHook' cannot be found."
     }
+  },
+  "tests/integration/cloudformation/api/test_extensions_api.py::TestExtensionsApi::test_extension_type_configuration": {
+    "recorded-date": "06-03-2023, 15:33:33",
+    "recorded-content": {
+      "set_type_configuration_response": {
+        "ConfigurationArn": "arn:aws:cloudformation:<region>:111111111111:type-configuration/hook/LocalStack-Testing-DeployableHook/default",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "batch_describe_configurations_errors": "An error occurred (ValidationError) when calling the BatchDescribeTypeConfigurations operation: 1 validation error detected: Value null at 'typeConfigurationIdentifiers' failed to satisfy constraint: Member must not be null",
+      "batch_describe_configurations": {
+        "Errors": [],
+        "TypeConfigurations": [
+          {
+            "Alias": "default",
+            "Arn": "arn:aws:cloudformation:<region>:111111111111:type-configuration/hook/LocalStack-Testing-DeployableHook/default",
+            "Configuration": {
+              "CloudFormationConfiguration": {
+                "HookConfiguration": {
+                  "TargetStacks": "ALL",
+                  "FailureMode": "FAIL"
+                }
+              }
+            },
+            "LastUpdated": "datetime",
+            "TypeArn": "arn:aws:cloudformation:<region>:111111111111:type/hook/LocalStack-Testing-DeployableHook"
+          }
+        ],
+        "UnprocessedTypeConfigurations": [],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
   }
 }

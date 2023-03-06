@@ -1,3 +1,4 @@
+import json
 import os
 import re
 
@@ -192,3 +193,40 @@ class TestExtensionsApi:
             Type="HOOK",
             TypeName="LocalStack::Testing::TestHook",
         )
+
+    @pytest.mark.skip(reason="feature not implemented")
+    def test_extension_type_configuration(self, register_extension, cfn_client, snapshot):
+        artifact_path = os.path.join(
+            os.path.dirname(__file__),
+            "../artifacts/extensions/hooks/localstack-testing-deployablehook.zip",
+        )
+        extension = register_extension(
+            extension_type="HOOK",
+            extension_name="LocalStack::Testing::DeployableHook",
+            artifact_path=artifact_path,
+        )
+
+        extension_configuration = json.dumps(
+            {
+                "CloudFormationConfiguration": {
+                    "HookConfiguration": {"TargetStacks": "ALL", "FailureMode": "FAIL"}
+                }
+            }
+        )
+        response_set_configuration = cfn_client.set_type_configuration(
+            TypeArn=extension["TypeArn"], Configuration=extension_configuration
+        )
+        snapshot.match("set_type_configuration_response", response_set_configuration)
+
+        with pytest.raises(botocore.errorfactory.ClientError) as e:
+            cfn_client.batch_describe_type_configurations(TypeConfigurationIdentifiers=[{}])
+        snapshot.match("batch_describe_configurations_errors", e.value)
+
+        describe = cfn_client.batch_describe_type_configurations(
+            TypeConfigurationIdentifiers=[
+                {
+                    "TypeArn": extension["TypeArn"],
+                },
+            ]
+        )
+        snapshot.match("batch_describe_configurations", describe)

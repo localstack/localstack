@@ -1,7 +1,7 @@
 import json
 import os
 
-import botocore
+import botocore.exceptions
 import pytest
 
 from localstack.testing.aws.cloudformation_utils import load_template_file
@@ -10,7 +10,10 @@ from localstack.utils.strings import short_uid
 
 class TestExtensionsHooks:
     @pytest.mark.skip(reason="feature not implemented")
-    def test_hook_deployment(self, register_extension, cfn_client, snapshot, cleanups):
+    @pytest.mark.parametrize("failure_mode", ["FAIL", "WARN"])
+    def test_hook_deployment(
+        self, failure_mode, register_extension, cfn_client, snapshot, cleanups
+    ):
         artifact_path = os.path.join(
             os.path.dirname(__file__),
             "../artifacts/extensions/hooks/localstack-testing-deployablehook.zip",
@@ -24,7 +27,7 @@ class TestExtensionsHooks:
         extension_configuration = json.dumps(
             {
                 "CloudFormationConfiguration": {
-                    "HookConfiguration": {"TargetStacks": "ALL", "FailureMode": "FAIL"}
+                    "HookConfiguration": {"TargetStacks": "ALL", "FailureMode": failure_mode}
                 }
             }
         )
@@ -47,8 +50,11 @@ class TestExtensionsHooks:
         )
         cleanups.append(lambda: cfn_client.delete_stack(StackName=stack_name))
 
-        with pytest.raises(botocore.exceptions.WaiterError):
+        if failure_mode == "WARN":
             cfn_client.get_waiter("stack_create_complete").wait(StackName=stack_name)
+        else:
+            with pytest.raises(botocore.exceptions.WaiterError):
+                cfn_client.get_waiter("stack_create_complete").wait(StackName=stack_name)
 
         events = cfn_client.describe_stack_events(StackName=stack_name)["StackEvents"]
 

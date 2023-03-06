@@ -1,13 +1,33 @@
 {
-  "tests/integration/cloudformation/api/test_extensions_hooks.py::TestExtensionsHooks::test_hook_deployment": {
-    "recorded-date": "03-03-2023, 13:33:46",
+  "tests/integration/cloudformation/api/test_extensions_hooks.py::TestExtensionsHooks::test_hook_deployment[FAIL]": {
+    "recorded-date": "06-03-2023, 15:00:08",
     "recorded-content": {
       "event_error": {
-        "EventId": "myb3B4550BC-7cb57c6f-f895-48b7-ac13-2fa3366301e0",
+        "EventId": "myb3B4550BC-c83dd440-a485-48d7-a301-03f580e2eb6e",
         "HookFailureMode": "FAIL",
         "HookInvocationPoint": "PRE_PROVISION",
         "HookStatus": "HOOK_COMPLETE_FAILED",
         "HookStatusReason": "Hook failed with message: Intentional fail",
+        "HookType": "LocalStack::Testing::DeployableHook",
+        "LogicalResourceId": "myb3B4550BC",
+        "PhysicalResourceId": "",
+        "ResourceStatus": "CREATE_IN_PROGRESS",
+        "ResourceType": "AWS::S3::Bucket",
+        "StackId": "arn:aws:cloudformation:<region>:111111111111:stack/<stack-name:1>/<resource:1>",
+        "StackName": "<stack-name:1>",
+        "Timestamp": "timestamp"
+      }
+    }
+  },
+  "tests/integration/cloudformation/api/test_extensions_hooks.py::TestExtensionsHooks::test_hook_deployment[WARN]": {
+    "recorded-date": "06-03-2023, 15:01:59",
+    "recorded-content": {
+      "event_error": {
+        "EventId": "myb3B4550BC-e518633f-f754-4ac4-9e06-679471f41aab",
+        "HookFailureMode": "WARN",
+        "HookInvocationPoint": "PRE_PROVISION",
+        "HookStatus": "HOOK_COMPLETE_FAILED",
+        "HookStatusReason": "Hook failed with message: Intentional fail. Failure was ignored under WARN mode.",
         "HookType": "LocalStack::Testing::DeployableHook",
         "LogicalResourceId": "myb3B4550BC",
         "PhysicalResourceId": "",
