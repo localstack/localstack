@@ -18,6 +18,10 @@ class RunConfig(TypedDict):
     terminal_state: ExecutionStatus | None
 
 
+@pytest.mark.skipif(
+    condition=not is_old_provider() and os.environ.get("TEST_TARGET") != "AWS_CLOUD",
+    reason="Not supported yet.",
+)
 @pytest.mark.skip_snapshot_verify(condition=is_old_provider, paths=["$..tracingConfiguration"])
 class TestFundamental:
     @staticmethod
