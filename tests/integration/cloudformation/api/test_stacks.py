@@ -66,6 +66,9 @@ class TestStacksApi:
 
     @pytest.mark.aws_validated
     @pytest.mark.parametrize("fileformat", ["yaml", "json"])
+    @pytest.mark.skip_snapshot_verify(
+        paths=["$..TemplateBody.ChangeSetName", "$..TemplateBody.StackName"]
+    )
     def test_get_template(self, cfn_client, deploy_cfn_template, snapshot, fileformat):
         snapshot.add_transformer(snapshot.transform.cloudformation_api())
 

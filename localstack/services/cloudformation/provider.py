@@ -336,6 +336,7 @@ class CloudformationProvider(CloudformationApi):
 
         return GetTemplateOutput(
             TemplateBody=json.dumps(stack.latest_template_raw()),
+            StagesAvailable=[TemplateStage.Original, TemplateStage.Processed],
         )
 
     @handler("GetTemplateSummary", expand=False)

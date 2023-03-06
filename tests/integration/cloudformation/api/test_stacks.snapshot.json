@@ -27,7 +27,7 @@
     }
   },
   "tests/integration/cloudformation/api/test_stacks.py::TestStacksApi::test_get_template[yaml]": {
-    "recorded-date": "03-03-2023, 22:53:35",
+    "recorded-date": "06-03-2023, 22:19:22",
     "recorded-content": {
       "describe_stacks": {
         "Stacks": [
@@ -100,7 +100,7 @@
     }
   },
   "tests/integration/cloudformation/api/test_stacks.py::TestStacksApi::test_get_template[json]": {
-    "recorded-date": "03-03-2023, 22:53:53",
+    "recorded-date": "06-03-2023, 22:19:39",
     "recorded-content": {
       "describe_stacks": {
         "Stacks": [
