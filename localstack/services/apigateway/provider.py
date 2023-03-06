@@ -39,6 +39,8 @@ from localstack.aws.api.apigateway import (
     MapOfStringToString,
     Method,
     MethodResponse,
+    Model,
+    Models,
     NotFoundException,
     NullableBoolean,
     NullableInteger,
@@ -132,7 +134,11 @@ class ApigatewayProvider(ApigatewayApi, ServiceLifecycleHook):
         response: RestApi = rest_api.to_dict()
         remove_empty_attributes_from_rest_api(response)
         store = get_apigateway_store(account_id=context.account_id, region=context.region)
-        store.rest_apis[result["id"]] = RestApiContainer(rest_api=response)
+        rest_api_container = RestApiContainer(rest_api=response)
+        store.rest_apis[result["id"]] = rest_api_container
+        # add the 2 default models
+        rest_api_container.models["Empty"] = DEFAULT_EMPTY_MODEL
+        rest_api_container.models["Error"] = DEFAULT_ERROR_MODEL
 
         return response
 
@@ -1207,6 +1213,96 @@ class ApigatewayProvider(ApigatewayApi, ServiceLifecycleHook):
             items=paginated_list, warnings=moto_response.get("warnings"), position=next_token
         )
 
+    def create_model(
+        self,
+        context: RequestContext,
+        rest_api_id: String,
+        name: String,
+        content_type: String,
+        description: String = None,
+        schema: String = None,
+    ) -> Model:
+        store = get_apigateway_store(account_id=context.account_id, region=context.region)
+        if rest_api_id not in store.rest_apis:
+            raise
+
+        model_id = short_uid()[:6]  # length 6 to make TF tests pass
+        model = Model(
+            id=model_id, name=name, contentType=content_type, description=description, schema=schema
+        )
+        store.rest_apis[rest_api_id].models[name] = model
+        return model
+
+    def get_models(
+        self,
+        context: RequestContext,
+        rest_api_id: String,
+        position: String = None,
+        limit: NullableInteger = None,
+    ) -> Models:
+        store = get_apigateway_store(account_id=context.account_id, region=context.region)
+        if rest_api_id not in store.rest_apis:
+            raise
+
+        models = list(store.rest_apis[rest_api_id].models.values())
+        return Models(items=models)
+
+    def get_model(
+        self,
+        context: RequestContext,
+        rest_api_id: String,
+        model_name: String,
+        flatten: Boolean = None,
+    ) -> Model:
+        store = get_apigateway_store(account_id=context.account_id, region=context.region)
+        if rest_api_id not in store.rest_apis:
+            raise
+
+        if not (model := store.rest_apis[rest_api_id].models.get(model_name)):
+            raise
+
+        return model
+
+    def update_model(
+        self,
+        context: RequestContext,
+        rest_api_id: String,
+        model_name: String,
+        patch_operations: ListOfPatchOperation = None,
+    ) -> Model:
+        # manually update the model, not need for JSON patch, only 2 path supported with replace operation
+        # /schema
+        # /description
+        store = get_apigateway_store(account_id=context.account_id, region=context.region)
+        if rest_api_id not in store.rest_apis:
+            raise
+
+        if not (model := store.rest_apis[rest_api_id].models.get(model_name)):
+            raise
+
+        for operation in patch_operations:
+            if (path := operation.get("path")) not in ("/schema", "/description"):
+                raise
+            if operation.get("op") != "replace":
+                continue
+
+            key = path.strip("/")
+            # TODO: validate
+            model[key] = operation.get("value", "")
+
+        return model
+
+    def delete_model(
+        self, context: RequestContext, rest_api_id: String, model_name: String
+    ) -> None:
+        store = get_apigateway_store(account_id=context.account_id, region=context.region)
+        if rest_api_id not in store.rest_apis:
+            raise
+
+        model = store.rest_apis[rest_api_id].models.pop(model_name, None)
+        if not model:
+            raise "?"
+
 
 # ---------------
 # UTIL FUNCTIONS
@@ -1363,6 +1459,36 @@ def to_response_json(model_type, data, api_id=None, self_link=None, id_attr=None
     }
     result["_links"]["%s:delete" % model_type] = {"href": self_link}
     return result
+
+
+DEFAULT_EMPTY_MODEL = Model(
+    id=short_uid()[:6],
+    name="Empty",
+    contentType="application/json",
+    description="This is a default empty schema model",
+    schema=json.dumps(
+        {
+            "$schema": "http://json-schema.org/draft-04/schema#",
+            "title": "Empty Schema",
+            "type": "object",
+        }
+    ),
+)
+
+DEFAULT_ERROR_MODEL = Model(
+    id=short_uid()[:6],
+    name="Error",
+    contentType="application/json",
+    description="This is a default error schema model",
+    schema=json.dumps(
+        {
+            "$schema": "http://json-schema.org/draft-04/schema#",
+            "title": "Error Schema",
+            "type": "object",
+            "properties": {"message": {"type": "string"}},
+        }
+    ),
+)
 
 
 # TODO: maybe extract this in its own files, or find a better generalizable way
