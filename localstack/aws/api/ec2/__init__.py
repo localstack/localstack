@@ -106,6 +106,7 @@ DoubleWithConstraints = float
 DrainSeconds = int
 EfaSupportedFlag = bool
 EgressOnlyInternetGatewayId = str
+EipAllocationPublicIp = str
 ElasticGpuId = str
 ElasticInferenceAcceleratorCount = int
 ElasticIpAssociationId = str
@@ -484,6 +485,7 @@ class BootModeType(str):
 class BootModeValues(str):
     legacy_bios = "legacy-bios"
     uefi = "uefi"
+    uefi_preferred = "uefi-preferred"
 
 
 class BundleTaskState(str):
@@ -1046,6 +1048,11 @@ class InstanceAttributeName(str):
 class InstanceAutoRecoveryState(str):
     disabled = "disabled"
     default = "default"
+
+
+class InstanceBootModeValues(str):
+    legacy_bios = "legacy-bios"
+    uefi = "uefi"
 
 
 class InstanceEventWindowState(str):
@@ -3770,7 +3777,7 @@ class AssignPrivateNatGatewayAddressResult(TypedDict, total=False):
 class AssociateAddressRequest(ServiceRequest):
     AllocationId: Optional[AllocationId]
     InstanceId: Optional[InstanceId]
-    PublicIp: Optional[String]
+    PublicIp: Optional[EipAllocationPublicIp]
     AllowReassociation: Optional[Boolean]
     DryRun: Optional[Boolean]
     NetworkInterfaceId: Optional[NetworkInterfaceId]
@@ -5348,7 +5355,7 @@ class CreateCoipPoolResult(TypedDict, total=False):
 
 
 class CreateCustomerGatewayRequest(ServiceRequest):
-    BgpAsn: Integer
+    BgpAsn: Optional[Integer]
     PublicIp: Optional[String]
     CertificateArn: Optional[String]
     Type: GatewayType
@@ -10860,6 +10867,7 @@ class Instance(TypedDict, total=False):
     Ipv6Address: Optional[String]
     TpmSupport: Optional[String]
     MaintenanceOptions: Optional[InstanceMaintenanceOptions]
+    CurrentInstanceBootMode: Optional[InstanceBootModeValues]
 
 
 InstanceList = List[Instance]
@@ -13515,7 +13523,7 @@ class DisableVpcClassicLinkResult(TypedDict, total=False):
 
 class DisassociateAddressRequest(ServiceRequest):
     AssociationId: Optional[ElasticIpAssociationId]
-    PublicIp: Optional[String]
+    PublicIp: Optional[EipAllocationPublicIp]
     DryRun: Optional[Boolean]
 
 
@@ -15256,6 +15264,7 @@ class ModifyImageAttributeRequest(ServiceRequest):
     DryRun: Optional[Boolean]
     OrganizationArns: Optional[OrganizationArnStringList]
     OrganizationalUnitArns: Optional[OrganizationalUnitArnStringList]
+    ImdsSupport: Optional[AttributeValue]
 
 
 class ModifyInstanceAttributeRequest(ServiceRequest):
@@ -17183,7 +17192,7 @@ class Ec2Api:
         context: RequestContext,
         allocation_id: AllocationId = None,
         instance_id: InstanceId = None,
-        public_ip: String = None,
+        public_ip: EipAllocationPublicIp = None,
         allow_reassociation: Boolean = None,
         dry_run: Boolean = None,
         network_interface_id: NetworkInterfaceId = None,
@@ -21185,7 +21194,7 @@ class Ec2Api:
         self,
         context: RequestContext,
         association_id: ElasticIpAssociationId = None,
-        public_ip: String = None,
+        public_ip: EipAllocationPublicIp = None,
         dry_run: Boolean = None,
     ) -> None:
         raise NotImplementedError
@@ -22173,6 +22182,7 @@ class Ec2Api:
         dry_run: Boolean = None,
         organization_arns: OrganizationArnStringList = None,
         organizational_unit_arns: OrganizationalUnitArnStringList = None,
+        imds_support: AttributeValue = None,
     ) -> None:
         raise NotImplementedError
 
