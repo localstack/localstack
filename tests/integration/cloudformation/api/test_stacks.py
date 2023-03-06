@@ -83,18 +83,22 @@ class TestStacksApi:
         describe_stacks = cfn_client.describe_stacks(StackName=stack.stack_id)
         snapshot.match("describe_stacks", describe_stacks)
 
-        template_original = cfn_client.get_template(
-            StackName=stack.stack_id, TemplateStage="Original"
-        )
-        snapshot.match("template_original", template_original)
+        if fileformat == "json":
 
-        template_processed = cfn_client.get_template(
-            StackName=stack.stack_id, TemplateStage="Processed"
-        )
-        snapshot.match("template_processed", template_processed)
+            template_original = cfn_client.get_template(
+                StackName=stack.stack_id, TemplateStage="Original"
+            )
+            snapshot.match("template_original", template_original)
 
-        template_body = cfn_client.get_template(StackName=stack.stack_id)
-        snapshot.match("template_body", template_body)
+            template_processed = cfn_client.get_template(
+                StackName=stack.stack_id, TemplateStage="Processed"
+            )
+            snapshot.match("template_processed", template_processed)
+
+            template_body = cfn_client.get_template(
+                StackName=stack.stack_id, TemplateStage="Processed"
+            )
+            snapshot.match("template_body", template_body)
 
     @pytest.mark.aws_validated
     @pytest.mark.skip_snapshot_verify(

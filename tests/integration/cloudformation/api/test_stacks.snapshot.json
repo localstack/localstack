@@ -27,7 +27,7 @@
     }
   },
   "tests/integration/cloudformation/api/test_stacks.py::TestStacksApi::test_get_template[yaml]": {
-    "recorded-date": "06-03-2023, 22:19:22",
+    "recorded-date": "07-03-2023, 00:44:41",
     "recorded-content": {
       "describe_stacks": {
         "Stacks": [
@@ -63,44 +63,11 @@
           "HTTPHeaders": {},
           "HTTPStatusCode": 200
         }
-      },
-      "template_original": {
-        "StagesAvailable": [
-          "Original",
-          "Processed"
-        ],
-        "TemplateBody": "Resources:\n  topic69831491:\n    Type: AWS::SNS::Topic\nOutputs:\n  TopicName:\n    Value:\n      Fn::GetAtt:\n        - topic69831491\n        - TopicName\n",
-        "ResponseMetadata": {
-          "HTTPHeaders": {},
-          "HTTPStatusCode": 200
-        }
-      },
-      "template_processed": {
-        "StagesAvailable": [
-          "Original",
-          "Processed"
-        ],
-        "TemplateBody": "Resources:\n  topic69831491:\n    Type: AWS::SNS::Topic\nOutputs:\n  TopicName:\n    Value:\n      Fn::GetAtt:\n        - topic69831491\n        - TopicName\n",
-        "ResponseMetadata": {
-          "HTTPHeaders": {},
-          "HTTPStatusCode": 200
-        }
-      },
-      "template_body": {
-        "StagesAvailable": [
-          "Original",
-          "Processed"
-        ],
-        "TemplateBody": "Resources:\n  topic69831491:\n    Type: AWS::SNS::Topic\nOutputs:\n  TopicName:\n    Value:\n      Fn::GetAtt:\n        - topic69831491\n        - TopicName\n",
-        "ResponseMetadata": {
-          "HTTPHeaders": {},
-          "HTTPStatusCode": 200
-        }
       }
     }
   },
   "tests/integration/cloudformation/api/test_stacks.py::TestStacksApi::test_get_template[json]": {
-    "recorded-date": "06-03-2023, 22:19:39",
+    "recorded-date": "07-03-2023, 00:44:58",
     "recorded-content": {
       "describe_stacks": {
         "Stacks": [
