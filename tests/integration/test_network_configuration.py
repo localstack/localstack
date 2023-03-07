@@ -5,9 +5,15 @@ external breaking behaviour. In the future we can update this test suite to
 correspond to the behaviour we want, and we get a todo list of things to
 change 😂
 """
+import json
+
 import pytest
+from botocore.auth import SigV4Auth
 
 from localstack import config
+from localstack.aws.api.lambda_ import Runtime
+from localstack.testing.aws.lambda_utils import is_new_provider, is_old_provider
+from localstack.utils.files import new_tmp_file, save_file
 from localstack.utils.strings import short_uid
 
 # TODO: how do we test `localstack_hostname` - this variable configures the
@@ -178,3 +184,57 @@ class TestSQS:
 
         assert_host_customisation(queue_url, use_localhost=True)
         assert queue_name in queue_url
+
+
+class TestLambda:
+    @pytest.mark.skipif(condition=is_old_provider(), reason="Not implemented for legacy provider")
+    def test_function_url(self, assert_host_customisation, lambda_client, create_lambda_function):
+        function_name = f"function-{short_uid()}"
+        handler_code = ""
+        handler_file = new_tmp_file()
+        save_file(handler_file, handler_code)
+
+        create_lambda_function(
+            func_name=function_name,
+            handler_file=handler_file,
+            runtime=Runtime.python3_9,
+        )
+
+        function_url = lambda_client.create_function_url_config(
+            FunctionName=function_name,
+            AuthType="NONE",
+        )["FunctionUrl"]
+
+        assert_host_customisation(function_url, use_localstack_cloud=True)
+
+    @pytest.mark.skipif(condition=is_new_provider(), reason="Not implemented for new provider")
+    def test_http_api_for_function_url(
+        self, assert_host_customisation, create_lambda_function, aws_http_client_factory
+    ):
+        function_name = f"function-{short_uid()}"
+        handler_code = ""
+        handler_file = new_tmp_file()
+        save_file(handler_file, handler_code)
+
+        create_lambda_function(
+            func_name=function_name,
+            handler_file=handler_file,
+            runtime=Runtime.python3_9,
+        )
+
+        client = aws_http_client_factory("lambda", signer_factory=SigV4Auth)
+        url = f"/2021-10-31/functions/{function_name}/url"
+        r = client.post(
+            url,
+            data=json.dumps(
+                {
+                    "AuthType": "NONE",
+                }
+            ),
+            params={"Qualifier": "$LATEST"},
+        )
+        r.raise_for_status()
+
+        function_url = r.json()["FunctionUrl"]
+
+        assert_host_customisation(function_url, use_localstack_cloud=True)

@@ -134,7 +134,6 @@ from localstack.aws.api.lambda_ import (
     UpdateFunctionUrlConfigResponse,
     Version,
 )
-from localstack.constants import LOCALHOST_HOSTNAME
 from localstack.services.awslambda import api_utils
 from localstack.services.awslambda import hooks as lambda_hooks
 from localstack.services.awslambda.api_utils import STATEMENT_ID_REGEX
@@ -193,6 +192,7 @@ from localstack.utils.collections import PaginatedList
 from localstack.utils.files import load_file
 from localstack.utils.strings import get_random_hex, long_uid, short_uid, to_bytes, to_str
 from localstack.utils.sync import poll_condition
+from localstack.utils.urls import localstack_host
 
 LOG = logging.getLogger(__name__)
 
@@ -1632,12 +1632,16 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
 
         # create function URL config
         url_id = api_utils.generate_random_url_id()
+
+        host_definition = localstack_host(
+            use_localhost_cloud=True, custom_port=config.EDGE_PORT_HTTP or config.EDGE_PORT
+        )
         fn.function_url_configs[normalized_qualifier] = FunctionUrlConfig(
             function_arn=function_arn,
             function_name=function_name,
             cors=cors,
             url_id=url_id,
-            url=f"http://{url_id}.lambda-url.{context.region}.{LOCALHOST_HOSTNAME}:{config.EDGE_PORT_HTTP or config.EDGE_PORT}/",  # TODO: https support
+            url=f"http://{url_id}.lambda-url.{context.region}.{host_definition.host_and_port()}/",  # TODO: https support
             auth_type=auth_type,
             creation_time=api_utils.generate_lambda_date(),
             last_modified_time=api_utils.generate_lambda_date(),
