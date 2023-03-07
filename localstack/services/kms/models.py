@@ -14,7 +14,7 @@ from typing import Dict, List
 from cryptography.exceptions import InvalidSignature
 from cryptography.hazmat.primitives import hashes
 from cryptography.hazmat.primitives import serialization as crypto_serialization
-from cryptography.hazmat.primitives.asymmetric import ec, padding, rsa
+from cryptography.hazmat.primitives.asymmetric import ec, padding, utils, rsa
 
 from localstack.aws.accounts import get_aws_account_id
 from localstack.aws.api import CommonServiceException
@@ -263,11 +263,11 @@ class KmsKey:
         kwargs = {}
 
         if "SHA_256" in signing_algorithm:
-            kwargs["algorithm"] = hashes.SHA256()
+            kwargs["algorithm"] = utils.Prehashed(hashes.SHA256())
         elif "SHA_384" in signing_algorithm:
-            kwargs["algorithm"] = hashes.SHA384()
+            kwargs["algorithm"] = utils.Prehashed(hashes.SHA384())
         elif "SHA_512" in signing_algorithm:
-            kwargs["algorithm"] = hashes.SHA512()
+            kwargs["algorithm"] = utils.Prehashed(hashes.SHA512())
         else:
             LOG.warning("Unsupported hash type in SigningAlgorithm '%s'", signing_algorithm)
 
