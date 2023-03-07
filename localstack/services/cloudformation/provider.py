@@ -334,17 +334,16 @@ class CloudformationProvider(CloudformationApi):
         if not stack:
             return stack_not_found_error(stack_name)
 
+        template_body = None
         try:
             json.loads(stack.template)
-            return GetTemplateOutput(
-                TemplateBody=json.dumps(stack.latest_template_raw()),
-                StagesAvailable=[TemplateStage.Original, TemplateStage.Processed],
-            )
+            template_body = json.dumps(stack.latest_template_raw())
         except Exception:
-            return GetTemplateOutput(
-                TemplateBody=stack.template_body,
-                StagesAvailable=[TemplateStage.Original, TemplateStage.Processed],
-            )
+            template_body = stack.template_body
+        return GetTemplateOutput(
+            TemplateBody=template_body,
+            StagesAvailable=[TemplateStage.Original, TemplateStage.Processed],
+        )
 
     @handler("GetTemplateSummary", expand=False)
     def get_template_summary(
