@@ -14,7 +14,7 @@ from typing import Dict, List
 from cryptography.exceptions import InvalidSignature
 from cryptography.hazmat.primitives import hashes
 from cryptography.hazmat.primitives import serialization as crypto_serialization
-from cryptography.hazmat.primitives.asymmetric import ec, padding, utils, rsa
+from cryptography.hazmat.primitives.asymmetric import ec, padding, rsa, utils
 
 from localstack.aws.accounts import get_aws_account_id
 from localstack.aws.api import CommonServiceException
