@@ -51,7 +51,7 @@ from localstack.aws.api.ses import (
     VerificationStatus,
 )
 from localstack.constants import TEST_AWS_SECRET_ACCESS_KEY
-from localstack.http import Resource
+from localstack.http import Resource, Response
 from localstack.services.internal import DeprecatedResource, get_internal_apis
 from localstack.services.moto import call_moto
 from localstack.services.plugins import ServiceLifecycleHook
@@ -128,7 +128,10 @@ class SesServiceApiResource:
     - GET param `email`: filter for `source` field in SES message
     """
 
-    def on_get(self, request):
+    def on_get(self, request, message_id=None):
+        if message_id is not None:
+            return EMAILS[message_id]
+
         filter_source = request.args.get("email")
         messages = []
 
@@ -139,6 +142,13 @@ class SesServiceApiResource:
         return {
             "messages": messages,
         }
+
+    def on_delete(self, request, message_id=None):
+        if message_id is not None:
+            del EMAILS[message_id]
+        else:
+            EMAILS.clear()
+        return Response(status=204)
 
 
 def register_ses_api_resource():
@@ -151,12 +161,12 @@ def register_ses_api_resource():
         ses_service_api_resource = SesServiceApiResource()
         get_internal_apis().add(
             Resource(
-                "/_localstack/ses",
+                "/_localstack/ses/<message_id>",
                 DeprecatedResource(
                     ses_service_api_resource,
-                    previous_path="/_localstack/ses",
+                    previous_path="/_localstack/ses/<message_id>",
                     deprecation_version="1.4.0",
-                    new_path="/_aws/ses/",
+                    new_path="/_aws/ses/<message_id>",
                 ),
             )
         )
