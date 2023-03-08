@@ -682,7 +682,6 @@ LAMBDA_DEV_PORT_EXPOSE = is_env_true("LAMBDA_DEV_PORT_EXPOSE")
 
 # INTERNAL debugging options
 # There are NO stability guarantees and they may break at any time.
-# LAMBDA_INIT_VERBOSE = is_env_true("LAMBDA_INIT_VERBOSE")
 LAMBDA_INIT_DEBUG = is_env_true("LAMBDA_INIT_DEBUG")
 LAMBDA_INIT_BIN_PATH = os.environ.get("LAMBDA_INIT_BIN_PATH")
 LAMBDA_INIT_BOOTSTRAP_PATH = os.environ.get("LAMBDA_INIT_BOOTSTRAP_PATH")
