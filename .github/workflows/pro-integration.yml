@@ -1,4 +1,4 @@
-name: integration-tests-against-pro
+name: Community integration tests against Pro build
 on:
   workflow_dispatch:
     inputs:
