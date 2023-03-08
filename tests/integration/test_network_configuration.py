@@ -8,6 +8,8 @@ change 😂
 import json
 
 import pytest
+import requests
+import xmltodict
 from botocore.auth import SigV4Auth
 
 from localstack import config
@@ -110,20 +112,26 @@ class TestS3:
 
         assert_host_customisation(res["Location"], use_hostname_external=True)
 
-    @pytest.mark.parametrize("method", ["put_object", "get_object", "head_object"])
-    def test_presigned_urls(self, method, s3_bucket, s3_client, assert_host_customisation):
+    def test_201_response(self, s3_bucket, s3_client, assert_host_customisation):
         key_name = f"key-{short_uid()}"
-        url = s3_client.generate_presigned_url(
-            ClientMethod=method, Params=dict(Bucket=s3_bucket, Key=key_name)
+        body = "body"
+        presigned_request = s3_client.generate_presigned_post(
+            Bucket=s3_bucket,
+            Key=key_name,
+            Fields={"success_action_status": "201"},
+            Conditions=[{"bucket": s3_bucket}, ["eq", "$success_action_status", "201"]],
         )
+        files = {"file": ("my-file", body)}
+        res = requests.post(
+            presigned_request["url"],
+            data=presigned_request["fields"],
+            files=files,
+            verify=False,
+        )
+        res.raise_for_status()
+        json_response = xmltodict.parse(res.content)["PostResponse"]
 
-        assert_host_customisation(url, use_localstack_cloud=True)
-
-    def test_presigned_post(self, s3_bucket, s3_client, assert_host_customisation):
-        key_name = f"key-{short_uid()}"
-        url = s3_client.generate_presigned_post(Bucket=s3_bucket, Key=key_name)["url"]
-
-        assert_host_customisation(url, use_localstack_cloud=True)
+        assert_host_customisation(json_response["Location"], use_hostname_external=True)
 
 
 class TestSQS:

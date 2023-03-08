@@ -64,6 +64,7 @@ from localstack.utils.strings import (
     to_str,
 )
 from localstack.utils.time import timestamp_millis
+from localstack.utils.urls import localstack_host
 from localstack.utils.xml import strip_xmlns
 
 # backend port (configured in s3_starter.py on startup)
@@ -1346,6 +1347,7 @@ class ProxyListenerS3(ProxyListener):
 
     @staticmethod
     def get_201_response(key, bucket_name):
+        host_definition = localstack_host(use_hostname_external=True)
         return """
                 <PostResponse>
                     <Location>{protocol}://{host}/{encoded_key}</Location>
@@ -1355,7 +1357,7 @@ class ProxyListenerS3(ProxyListener):
                 </PostResponse>
                 """.format(
             protocol=get_service_protocol(),
-            host=config.HOSTNAME_EXTERNAL,
+            host=host_definition.host,
             encoded_key=quote(key, safe=""),
             key=key,
             bucket=bucket_name,
