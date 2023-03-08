@@ -125,27 +125,28 @@ class SesServiceApiResource:
     This is registered as a LocalStack internal HTTP resource.
 
     This endpoint accepts:
-    - GET param `email`: filter for `source` field in SES message
+    - GET param `id`: filter for `id` field in SES message
+    - GET param `email`: filter for `source` field in SES message, when `id` filter is specified then filters on both
     """
 
-    def on_get(self, request, message_id=None):
-        if message_id is not None:
-            return EMAILS[message_id]
-
+    def on_get(self, request):
+        filter_id = request.args.get("id")
         filter_source = request.args.get("email")
         messages = []
 
         for msg in EMAILS.values():
-            if filter_source in (msg.get("Source"), None, ""):
-                messages.append(msg)
+            if filter_id in (msg.get("Id"), None, ""):
+                if filter_source in (msg.get("Source"), None, ""):
+                    messages.append(msg)
 
         return {
             "messages": messages,
         }
 
-    def on_delete(self, request, message_id=None):
-        if message_id is not None:
-            del EMAILS[message_id]
+    def on_delete(self, request):
+        filter_id = request.args.get("id")
+        if filter_id is not None:
+            del EMAILS[filter_id]
         else:
             EMAILS.clear()
         return Response(status=204)
@@ -161,12 +162,12 @@ def register_ses_api_resource():
         ses_service_api_resource = SesServiceApiResource()
         get_internal_apis().add(
             Resource(
-                "/_localstack/ses/<message_id>",
+                "/_localstack/ses",
                 DeprecatedResource(
                     ses_service_api_resource,
-                    previous_path="/_localstack/ses/<message_id>",
+                    previous_path="/_localstack/ses",
                     deprecation_version="1.4.0",
-                    new_path="/_aws/ses/<message_id>",
+                    new_path="/_aws/ses",
                 ),
             )
         )

@@ -182,10 +182,10 @@ class TestSES:
 
         # Ensure all sent messages can be retrieved using the API endpoint
         emails_url = config.get_edge_url() + "/_localstack/ses/"
-        api_contents = [
-            requests.get(emails_url + message1_id).json(),
-            requests.get(emails_url + message2_id).json(),
-        ]
+        print(requests.get(emails_url + f"?id={message1_id}").json())
+        api_contents = []
+        api_contents.extend(requests.get(emails_url + f"?id={message1_id}").json()["messages"])
+        api_contents.extend(requests.get(emails_url + f"?id={message2_id}").json()["messages"])
         api_contents = {msg["Id"]: msg for msg in api_contents}
         assert len(api_contents) >= 1
         assert message1_id in api_contents
@@ -199,15 +199,10 @@ class TestSES:
         emails_url = config.get_edge_url() + EMAILS_ENDPOINT + f"?email={email}"
         assert len(requests.get(emails_url).json()["messages"]) == 2
 
-        assert (
-            requests.delete("http://localhost:4566/_localstack/ses/" + message1_id).status_code
-            == 204
-        )
-        assert (
-            requests.delete("http://localhost:4566/_localstack/ses/" + message2_id).status_code
-            == 204
-        )
-        assert requests.get("http://localhost:4566/_aws/ses").json() == {"messages": []}
+        emails_url = config.get_edge_url() + "/_localstack/ses/"
+        assert requests.delete(emails_url + f"?id={message1_id}").status_code == 204
+        assert requests.delete(emails_url + f"?id={message2_id}").status_code == 204
+        assert requests.get(emails_url).json() == {"messages": []}
 
     def test_send_templated_email_can_retrospect(self, ses_client, create_template):
         # Test that sent emails can be retrospected through saved file and API access
@@ -237,7 +232,7 @@ class TestSES:
         assert '{"A key": "A value"}' == contents["TemplateData"]
         assert ["success@example.com"] == contents["Destination"]["ToAddresses"]
 
-        api_contents = requests.get("http://localhost:4566/_aws/ses").json()
+        api_contents = requests.get("http://localhost:4566/_localstack/ses").json()
         api_contents = {msg["Id"]: msg for msg in api_contents["messages"]}
         assert message_id in api_contents
         assert api_contents[message_id] == contents
