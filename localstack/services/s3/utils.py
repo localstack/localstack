@@ -222,13 +222,14 @@ def capitalize_header_name_from_snake_case(header_name: str) -> str:
     return "-".join([part.capitalize() for part in header_name.split("-")])
 
 
-def validate_kms_key_id(kms_key: str, bucket: FakeBucket):
+def validate_kms_key_id(kms_key: str, bucket: FakeBucket) -> None:
     """
     Validate that the KMS key used to encrypt the object is valid
     :param kms_key: the KMS key id or ARN
     :param bucket: the targeted bucket
-    :raise
-    :return:
+    :raise KMS.DisabledException if the key is disabled
+    :raise KMS.NotFoundException if the key is not in the same region or does not exist
+    :return: the key ARN if found and enabled
     """
     try:
         parsed_arn = parse_arn(kms_key)
@@ -251,7 +252,12 @@ def validate_kms_key_id(kms_key: str, bucket: FakeBucket):
     # the KMS key should be in the same region as the bucket, create the client in the bucket region
     kms_client = aws_stack.connect_to_service("kms", region_name=bucket.region_name)
     try:
-        kms_client.describe_key(KeyId=kms_key)
+        key = kms_client.describe_key(KeyId=kms_key)
+        if not key["KeyMetadata"]["Enabled"]:
+            raise CommonServiceException(
+                code="KMS.DisabledException", message=f'{key["KeyMetadata"]["Arn"]} is disabled.'
+            )
+
     except ClientError as e:
         if e.response["Error"]["Code"] == "NotFoundException":
             raise CommonServiceException(

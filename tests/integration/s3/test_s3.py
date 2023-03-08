@@ -2933,6 +2933,96 @@ class TestS3:
         snapshot.match("copy-obj-wrong-kms-key", e.value.response)
 
     @pytest.mark.aws_validated
+    @pytest.mark.skip_snapshot_verify(
+        paths=[
+            "$..ETag",  # the ETag is different as we don't encrypt the object with the KMS key
+        ]
+    )
+    @pytest.mark.xfail(
+        condition=LEGACY_S3_PROVIDER, reason="Validation not implemented in legacy provider"
+    )
+    def test_s3_sse_validate_kms_key_state(
+        self,
+        s3_client,
+        s3_bucket,
+        kms_client,
+        kms_create_key,
+        monkeypatch,
+        snapshot,
+    ):
+        snapshot.add_transformer(snapshot.transform.key_value("Description"))
+        data = b"test-sse"
+
+        # create key in the same region as the bucket
+        kms_key = kms_create_key()
+        # snapshot the KMS key to save the UUID for replacement in Error message.
+        snapshot.match("create-kms-key", kms_key)
+        key_name = "put-object-with-sse"
+        put_object_with_sse = s3_client.put_object(
+            Bucket=s3_bucket,
+            Key=key_name,
+            Body=data,
+            ServerSideEncryption="aws:kms",
+            SSEKMSKeyId=kms_key["KeyId"],
+        )
+        snapshot.match("success-put-object-sse", put_object_with_sse)
+
+        get_object_with_sse = s3_client.get_object(
+            Bucket=s3_bucket,
+            Key=key_name,
+        )
+        snapshot.match("success-get-object-sse", get_object_with_sse)
+
+        # disable the key
+        kms_client.disable_key(KeyId=kms_key["KeyId"])
+
+        # test whether the validation is skipped when not disabling the validation
+        if not is_aws_cloud():
+            get_object = s3_client.get_object(Bucket=s3_bucket, Key=key_name)
+            assert get_object["ResponseMetadata"]["HTTPStatusCode"] == 200
+
+            response = s3_client.put_object(
+                Bucket=s3_bucket,
+                Key="test-sse-kms-disabled-key-no-check",
+                Body=data,
+                ServerSideEncryption="aws:kms",
+                SSEKMSKeyId=kms_key["KeyId"],
+            )
+            assert response["ResponseMetadata"]["HTTPStatusCode"] == 200
+
+        # activating the validation, for AWS parity
+        monkeypatch.setattr(config, "S3_SKIP_KMS_KEY_VALIDATION", False)
+
+        # disable the key, try to put an object
+        kms_client.disable_key(KeyId=kms_key["KeyId"])
+
+        def _is_key_disabled():
+            key = kms_client.describe_key(KeyId=kms_key["KeyId"])
+            assert not key["KeyMetadata"]["Enabled"]
+
+        retry(_is_key_disabled, retries=3, sleep=0.5)
+        if is_aws_cloud():
+            # time for the key state to be propagated
+            time.sleep(5)
+
+        with pytest.raises(ClientError) as e:
+            s3_client.get_object(
+                Bucket=s3_bucket,
+                Key=key_name,
+            )
+        snapshot.match("get-obj-disabled-key", e.value.response)
+
+        with pytest.raises(ClientError) as e:
+            s3_client.put_object(
+                Bucket=s3_bucket,
+                Key="key-is-deactivated",
+                Body=data,
+                ServerSideEncryption="aws:kms",
+                SSEKMSKeyId=kms_key["KeyId"],
+            )
+        snapshot.match("put-obj-disabled-key", e.value.response)
+
+    @pytest.mark.aws_validated
     @pytest.mark.xfail(
         condition=LEGACY_S3_PROVIDER, reason="Validation not implemented in legacy provider"
     )
