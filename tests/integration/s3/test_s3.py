@@ -4832,7 +4832,7 @@ class TestS3PresignedUrl:
         use_virtual_address,
     ):
         # PHP SDK accepts a bucket name with a forward slash when generating a pre-signed URL
-        # however the signature does not match afterwards
+        # however the signature will not match afterwards (in AWS or with LocalStack)
         # the error message was misleading, because by default we remove the double slash from the path, and we did not
         # calculate the same signature as AWS
         object_key = "temp.txt"
