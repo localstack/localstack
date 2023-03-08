@@ -4,6 +4,7 @@ import json
 import logging
 import os
 import re
+import socket
 import time
 from typing import TYPE_CHECKING, Any, Callable, Dict, List, Optional, Tuple
 
@@ -1983,9 +1984,9 @@ def appsync_create_api(appsync_client):
 @pytest.fixture
 def assert_host_customisation(monkeypatch):
     hostname_external = f"external-host-{short_uid()}"
-    localstack_hostname = f"localstack-hostname-{short_uid()}"
+    localstack_hostname = socket.gethostname()
     monkeypatch.setattr(config, "HOSTNAME_EXTERNAL", hostname_external)
-    # monkeypatch.setattr(config, "LOCALSTACK_HOSTNAME", localstack_hostname)
+    monkeypatch.setattr(config, "LOCALSTACK_HOSTNAME", localstack_hostname)
 
     def asserter(
         url: str,

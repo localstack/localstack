@@ -64,7 +64,7 @@ class TestOpenSearch:
         opensearch_wait_for_cluster(domain_name)
         endpoint = res["DomainStatus"]["Endpoint"]
 
-        assert_host_customisation(endpoint, use_localhost=True)
+        assert_host_customisation(endpoint, use_localstack_hostname=True)
 
 
 class TestS3:
