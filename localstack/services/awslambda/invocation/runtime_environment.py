@@ -119,6 +119,11 @@ class RuntimeEnvironment:
             env_vars["AWS_EXECUTION_ENV"] = f"Aws_Lambda_{self.function_version.config.runtime}"
         if self.function_version.config.environment:
             env_vars.update(self.function_version.config.environment)
+        if config.LAMBDA_INIT_DEBUG:
+            # Disable dropping privileges because it breaks debugging
+            env_vars["LOCALSTACK_USER"] = ""
+        if config.LAMBDA_INIT_USER:
+            env_vars["LOCALSTACK_USER"] = config.LAMBDA_INIT_USER
         return env_vars
 
     # Lifecycle methods
