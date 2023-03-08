@@ -1958,6 +1958,27 @@ def create_rest_apigw():
 
 
 @pytest.fixture
+def create_rest_apigw_openapi():
+    rest_apis = []
+
+    def _create_apigateway_function(**kwargs):
+        region_name = kwargs.pop("region_name", None)
+        apigateway_client = _client("apigateway", region_name)
+
+        response = apigateway_client.import_rest_api(**kwargs)
+        api_id = response.get("id")
+        rest_apis.append((api_id, region_name))
+        return api_id, response
+
+    yield _create_apigateway_function
+
+    for rest_api_id, region_name in rest_apis:
+        with contextlib.suppress(Exception):
+            apigateway_client = _client("apigateway", region_name)
+            apigateway_client.delete_rest_api(restApiId=rest_api_id)
+
+
+@pytest.fixture
 def appsync_create_api(appsync_client):
     graphql_apis = []
 
