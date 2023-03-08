@@ -28,17 +28,23 @@ def is_redhat() -> bool:
     return "rhel" in load_file("/etc/os-release", "")
 
 
-def get_arch() -> str:
+def standardized_arch(arch: str):
     """
-    Returns the current machine architecture
-    :return: "amd64" when x86_64, "arm64" if aarch64, platform.machine() otherwise
+    Returns LocalStack standardised machine architecture name.
     """
-    arch = platform.machine()
     if arch == "x86_64":
         return "amd64"
     if arch == "aarch64":
         return "arm64"
     return arch
+
+
+def get_arch() -> str:
+    """
+    Returns the current machine architecture.
+    """
+    arch = platform.machine()
+    return standardized_arch(arch)
 
 
 def get_os() -> str:
