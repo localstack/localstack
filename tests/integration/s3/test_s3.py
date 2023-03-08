@@ -5199,7 +5199,15 @@ class TestS3DeepArchive:
         response = s3_client.head_object(Bucket=bucket_name, Key=object_key)
         if 'ongoing-request="false"' in response.get("Restore", ""):
             # if the restoring happens in LocalStack (or was fast in AWS) we can retrieve the object
-            response = s3_client.get_object(Bucket=bucket_name, Key=object_key)
+            restore_bucket_name = f"bucket-{short_uid()}"
+            s3_client.create_bucket(Bucket=restore_bucket_name)
+
+            s3_client.copy_object(
+                CopySource={"Bucket": bucket_name, "Key": object_key},
+                Bucket=restore_bucket_name,
+                Key=object_key,
+            )
+            response = s3_client.get_object(Bucket=restore_bucket_name, Key=object_key)
             assert "etag" in response.get("ResponseMetadata").get("HTTPHeaders")
 
 
