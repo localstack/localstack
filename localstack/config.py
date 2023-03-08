@@ -680,6 +680,14 @@ LAMBDA_KEEPALIVE_MS = int(os.environ.get("LAMBDA_KEEPALIVE_MS", "600000"))
 # reach the container via its IPv4 (e.g., macOS https://docs.docker.com/desktop/networking/#i-cannot-ping-my-containers)
 LAMBDA_DEV_PORT_EXPOSE = is_env_true("LAMBDA_DEV_PORT_EXPOSE")
 
+# INTERNAL debugging options
+# There are NO stability guarantees and they may break at any time.
+LAMBDA_INIT_DEBUG = is_env_true("LAMBDA_INIT_DEBUG")
+LAMBDA_INIT_BIN_PATH = os.environ.get("LAMBDA_INIT_BIN_PATH")
+LAMBDA_INIT_BOOTSTRAP_PATH = os.environ.get("LAMBDA_INIT_BOOTSTRAP_PATH")
+LAMBDA_INIT_DELVE_PATH = os.environ.get("LAMBDA_INIT_DELVE_PATH")
+LAMBDA_INIT_DELVE_PORT = int(os.environ.get("LAMBDA_INIT_DELVE_PORT") or 40000)
+
 # Adding Stepfunctions default port
 LOCAL_PORT_STEPFUNCTIONS = int(os.environ.get("LOCAL_PORT_STEPFUNCTIONS") or 8083)
 # Stepfunctions lambda endpoint override
@@ -813,6 +821,11 @@ CONFIG_ENV_VARS = [
     "LAMBDA_EXECUTOR",
     "LAMBDA_FALLBACK_URL",
     "LAMBDA_FORWARD_URL",
+    "LAMBDA_INIT_DEBUG",
+    "LAMBDA_INIT_BIN_PATH",
+    "LAMBDA_INIT_BOOTSTRAP_PATH",
+    "LAMBDA_INIT_DELVE_PATH",
+    "LAMBDA_INIT_DELVE_PORT",
     "LAMBDA_RUNTIME_IMAGE_MAPPING",
     "LAMBDA_JAVA_OPTS",
     "LAMBDA_REMOTE_DOCKER",
