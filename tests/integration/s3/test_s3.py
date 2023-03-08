@@ -4824,6 +4824,10 @@ class TestS3PresignedUrl:
 
     @pytest.mark.aws_validated
     @pytest.mark.parametrize("use_virtual_address", [True, False])
+    @pytest.mark.xfail(
+        condition=is_old_provider(),
+        reason="Not implemented in legacy provider",
+    )
     def test_pre_signed_url_forward_slash_bucket(
         self,
         s3_client,

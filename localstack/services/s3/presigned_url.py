@@ -537,15 +537,15 @@ class S3SigV4SignatureContext:
         self.request_query_string = qs
 
         if forwarded_from_virtual_host_addressed_request(self._headers):
+            # FIXME: maybe move this so it happens earlier in the chain when using virtual host?
+            if not is_bucket_name_valid(self._bucket):
+                raise InvalidBucketName(BucketName=self._bucket)
             netloc = self._headers.get(S3_VIRTUAL_HOST_FORWARDED_HEADER)
             self.host = netloc
             self._original_host = netloc
             self.signed_headers["host"] = netloc
             # the request comes from the Virtual Host router, we need to remove the bucket from the path
             splitted_path = self.request.path.split("/", maxsplit=2)
-            # FIXME: maybe move this so it happens earlier in the chain when using virtual host?
-            if not is_bucket_name_valid(splitted_path[0]):
-                raise InvalidBucketName(BucketName=splitted_path[0])
             self.path = f"/{splitted_path[-1]}"
 
         else:
