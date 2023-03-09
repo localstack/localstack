@@ -198,7 +198,7 @@ class TestSES:
         emails_url = config.get_edge_url() + EMAILS_ENDPOINT + f"?email={email}"
         assert len(requests.get(emails_url).json()["messages"]) == 2
 
-        emails_url = config.get_edge_url() + "/_localstack/ses/"
+        emails_url = config.get_edge_url() + EMAILS_ENDPOINT
         assert requests.delete(emails_url + f"?id={message1_id}").status_code == 204
         assert requests.delete(emails_url + f"?id={message2_id}").status_code == 204
         assert requests.get(emails_url).json() == {"messages": []}
