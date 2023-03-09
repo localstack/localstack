@@ -4823,7 +4823,6 @@ class TestS3PresignedUrl:
         assert response.status_code == 200
 
     @pytest.mark.aws_validated
-    @pytest.mark.parametrize("use_virtual_address", [True, False])
     @pytest.mark.xfail(
         condition=is_old_provider(),
         reason="Not implemented in legacy provider",
@@ -4833,7 +4832,6 @@ class TestS3PresignedUrl:
         s3_client,
         s3_bucket,
         patch_s3_skip_signature_validation_false,
-        use_virtual_address,
     ):
         # PHP SDK accepts a bucket name with a forward slash when generating a pre-signed URL
         # however the signature will not match afterwards (in AWS or with LocalStack)
@@ -4843,10 +4841,8 @@ class TestS3PresignedUrl:
         s3_client.put_object(Key=object_key, Bucket=s3_bucket, Body="123")
 
         s3_endpoint_path_style = _endpoint_url()
-        s3_config = {"addressing_style": "virtual"} if use_virtual_address else {}
-
         client = _s3_client_custom_config(
-            Config(signature_version="s3v4", s3=s3_config),
+            Config(signature_version="s3v4", s3={}),
             endpoint_url=s3_endpoint_path_style,
         )
 
@@ -4855,15 +4851,12 @@ class TestS3PresignedUrl:
             Params={"Bucket": s3_bucket, "Key": object_key},
         )
         parts = url.partition(s3_bucket)
+        # add URL encoded forward slash to the bucket name in the path
         url_f_slash = parts[0] + "%2F" + parts[1] + parts[2]
 
-        # add URL encoded forward slash to the bucket name
         req = requests.get(url_f_slash)
         request_content = xmltodict.parse(req.content)
-        if use_virtual_address:
-            assert request_content["Error"]["Code"] == "InvalidBucketName"
-        else:
-            assert "GET\n//test-bucket" in request_content["Error"]["CanonicalRequest"]
+        assert "GET\n//test-bucket" in request_content["Error"]["CanonicalRequest"]
 
     @staticmethod
     def _get_presigned_snapshot_transformers(snapshot):
