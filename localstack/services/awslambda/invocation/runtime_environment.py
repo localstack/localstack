@@ -130,9 +130,7 @@ class RuntimeEnvironment:
             # LOCALSTACK_USER conditionally added below
         }
         # Conditionally added environment variables
-        # TODO: Can handler be None?
-        # _HANDLER=/application for an image-based lambda function when handler is set to string 'FROM_IMAGE':
-        # https://github.com/aws-samples/aws-cdk-examples/tree/master/python/lambda-from-container
+        # config.handler is None for image lambdas and will be populated at runtime (e.g., by RIE)
         if self.function_version.config.handler:
             env_vars["_HANDLER"] = self.function_version.config.handler
         # Not defined for custom runtimes (e.g., provided, provided.al2)
