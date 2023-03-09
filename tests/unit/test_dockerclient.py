@@ -67,6 +67,7 @@ def test_argument_parsing():
     test_port_string = "-p 80:8080/udp"
     test_port_string_with_host = "-p 127.0.0.1:6000:7000/tcp"
     test_port_string_many_to_one = "-p 9230-9231:9230"
+    test_port_random = "-p :9229"
     test_env_string = "-e TEST_ENV_VAR=test_string=123"
     test_mount_string = "-v /var/test:/opt/test"
     test_network_string = "--network bridge"
@@ -79,6 +80,7 @@ def test_argument_parsing():
             test_mount_string,
             test_port_string_with_host,
             test_port_string_many_to_one,
+            test_port_random,
             test_network_string,
             test_user_string,
             test_platform_string,
@@ -94,7 +96,7 @@ def test_argument_parsing():
         argument_string, env_vars, ports, mounts, network, user, platform
     )
     assert env_vars == {"TEST_ENV_VAR": "test_string=123"}
-    assert ports.to_str() == "-p 80:8080/udp -p 6000:7000 -p 9230-9231:9230"
+    assert ports.to_str() == "-p 80:8080/udp -p 6000:7000 -p 9230-9231:9230 -p :9229"
     assert mounts == [("/var/test", "/opt/test")]
     assert flags.network == "bridge"
     assert flags.user == "sbx_user1051"
@@ -177,12 +179,13 @@ class TestPortMappings:
 
         port_mappings = PortMappings()
         flags = extract_port_flags(
-            "foo -p 1234:1234 bar -p 80-90:81-91 baz", port_mappings=port_mappings
+            "foo -p 1234:1234 bar -p 80-90:81-91 baz -p :9229 qux", port_mappings=port_mappings
         )
         assert flags == "foo  bar  baz"
         mapping_str = port_mappings.to_str()
         assert "-p 1234:1234" in mapping_str
         assert "-p 80-90:81-91" in mapping_str
+        assert "-p :9229" in mapping_str
 
     def test_overlapping_port_ranges(self):
         port_mappings = PortMappings()
