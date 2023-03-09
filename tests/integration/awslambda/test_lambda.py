@@ -319,6 +319,9 @@ class TestLambdaBehavior:
             "$..Payload.platform_system",
             "$..Payload.stackTrace",
             "$..Payload.paths",
+            "$..Payload.pwd",
+            "$..Payload.user_login_name",
+            "$..Payload.user_whoami",
         ],
     )
     @pytest.mark.skip_snapshot_verify(
