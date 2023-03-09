@@ -141,7 +141,7 @@ class PortMappings:
                 else:
                     self.add(port[0] + i, mapped)
             return
-        if port is None or int(port) <= 0:
+        if port is not None and int(port) <= 0:
             raise Exception(f"Unable to add mapping for invalid port: {port}")
         if self.contains(port):
             return
@@ -218,6 +218,8 @@ class PortMappings:
                         (bind_address, host_ports) if bind_address else host_ports,
                     )
                 ]
+            elif k[0] is None:
+                return [(f"{v[0]}{protocol}", k[0])]
             return [
                 (
                     f"{container_port}{protocol}",
@@ -974,15 +976,20 @@ class Util:
                             "Host part of port mappings are ignored currently in additional flags"
                         )
                         _, host_port, container_port = port_split
+                    if host_port == '':
+                        host_port = None
                     else:
                         raise ValueError("Invalid port string provided: %s", flag)
-                    host_port_split = host_port.split("-")
-                    if len(host_port_split) == 2:
-                        host_port = [int(host_port_split[0]), int(host_port_split[1])]
-                    elif len(host_port_split) == 1:
-                        host_port = int(host_port)
-                    else:
-                        raise ValueError("Invalid port string provided: %s", flag)
+                    # Adding "-p :<PORT>" or "-p <HOST>::<PORT>" to LAMBDA_DOCKER_FLAGS will result in host_port
+                    # being set to None. This will make docker map the container port to  a random port on the host.
+                    if host_port is not None:
+                        host_port_split = host_port.split("-")
+                        if len(host_port_split) == 2:
+                            host_port = [int(host_port_split[0]), int(host_port_split[1])]
+                        elif len(host_port_split) == 1:
+                            host_port = int(host_port)
+                        else:
+                            raise ValueError("Invalid port string provided: %s", flag)
                     if "/" in container_port:
                         container_port, protocol = container_port.split("/")
                     ports = ports if ports is not None else PortMappings()
