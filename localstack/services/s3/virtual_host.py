@@ -2,7 +2,7 @@ import copy
 import logging
 from urllib.parse import urlsplit, urlunsplit
 
-from localstack.config import HOSTNAME_EXTERNAL, LEGACY_S3_PROVIDER
+from localstack.config import LEGACY_S3_PROVIDER
 from localstack.constants import LOCALHOST, LOCALHOST_HOSTNAME
 from localstack.http import Request, Response
 from localstack.http.proxy import Proxy
@@ -10,6 +10,7 @@ from localstack.runtime import hooks
 from localstack.services.edge import ROUTER
 from localstack.services.s3.utils import S3_VIRTUAL_HOST_FORWARDED_HEADER
 from localstack.utils.aws.request_context import AWS_REGION_REGEX
+from localstack.utils.urls import localstack_host
 
 LOG = logging.getLogger(__name__)
 
@@ -85,8 +86,9 @@ class S3VirtualHostProxyHandler:
         # if the user specifies a custom hostname for LocalStack, this name may not be resolvable by
         # LocalStack. We are proxying the request to ourself, so replace their custom hostname with
         # `localhost.localstack.cloud` which also matches the PATH matchers.
-        if HOSTNAME_EXTERNAL != LOCALHOST:
-            netloc = netloc.replace(HOSTNAME_EXTERNAL, LOCALHOST_HOSTNAME)
+        host_definition = localstack_host(use_hostname_external=True)
+        if host_definition.host != LOCALHOST:
+            netloc = netloc.replace(host_definition.host, LOCALHOST_HOSTNAME)
 
         return urlunsplit((splitted.scheme, netloc, path, splitted.query, splitted.fragment))
 
@@ -98,15 +100,16 @@ def register_virtual_host_routes():
 
     """
     s3_proxy_handler = S3VirtualHostProxyHandler()
+    host_definition = localstack_host(use_hostname_external=True)
     # Add additional routes if the user specifies a custom HOSTNAME_EXTERNAL
     # as we should match on these routes, and also match on localhost.localstack.cloud
     # to maintain backwards compatibility.
-    if HOSTNAME_EXTERNAL != LOCALHOST:
+    if host_definition.host != LOCALHOST:
         ROUTER.add(
             path="/",
             host=VHOST_REGEX_PATTERN.format(
                 aws_region_regex=AWS_REGION_REGEX,
-                hostname=HOSTNAME_EXTERNAL,
+                hostname=host_definition.host,
             ),
             endpoint=s3_proxy_handler,
             defaults={"path": "/"},
@@ -116,7 +119,7 @@ def register_virtual_host_routes():
             path="/<path:path>",
             host=VHOST_REGEX_PATTERN.format(
                 aws_region_regex=AWS_REGION_REGEX,
-                hostname=HOSTNAME_EXTERNAL,
+                hostname=host_definition.host,
             ),
             endpoint=s3_proxy_handler,
         )
@@ -125,7 +128,7 @@ def register_virtual_host_routes():
             path="/<regex('.+'):bucket>",
             host=PATH_WITH_REGION_PATTERN.format(
                 aws_region_regex=AWS_REGION_REGEX,
-                hostname=HOSTNAME_EXTERNAL,
+                hostname=host_definition.host,
             ),
             endpoint=s3_proxy_handler,
             defaults={"path": "/"},
@@ -135,7 +138,7 @@ def register_virtual_host_routes():
             path="/<regex('.+'):bucket>/<path:path>",
             host=PATH_WITH_REGION_PATTERN.format(
                 aws_region_regex=AWS_REGION_REGEX,
-                hostname=HOSTNAME_EXTERNAL,
+                hostname=host_definition.host,
             ),
             endpoint=s3_proxy_handler,
         )
