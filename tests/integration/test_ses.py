@@ -181,7 +181,7 @@ class TestSES:
         assert "Body" not in contents2
 
         # Ensure all sent messages can be retrieved using the API endpoint
-        emails_url = config.get_edge_url() + "/_localstack/ses/"
+        emails_url = config.get_edge_url() + EMAILS_ENDPOINT
         api_contents = []
         api_contents.extend(requests.get(emails_url + f"?id={message1_id}").json()["messages"])
         api_contents.extend(requests.get(emails_url + f"?id={message2_id}").json()["messages"])
