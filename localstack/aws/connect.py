@@ -9,7 +9,7 @@ import logging
 import threading
 from abc import ABC, abstractmethod
 from functools import cache
-from typing import Optional, TypedDict
+from typing import TYPE_CHECKING, Optional, TypedDict
 
 from boto3.session import Session
 from botocore.client import BaseClient
@@ -24,7 +24,59 @@ from localstack.constants import (
 from localstack.utils.aws.aws_stack import get_local_service_url
 from localstack.utils.aws.request_context import get_region_from_request_context
 
+if TYPE_CHECKING:
+    from mypy_boto3_acm import ACMClient
+    from mypy_boto3_apigateway import APIGatewayClient
+    from mypy_boto3_cloudformation import CloudFormationClient
+    from mypy_boto3_cloudwatch import CloudWatchClient
+    from mypy_boto3_cognito_idp import CognitoIdentityProviderClient
+    from mypy_boto3_dynamodb import DynamoDBClient
+    from mypy_boto3_dynamodbstreams import DynamoDBStreamsClient
+    from mypy_boto3_ec2 import EC2Client
+    from mypy_boto3_ecr import ECRClient
+    from mypy_boto3_es import ElasticsearchServiceClient
+    from mypy_boto3_events import EventBridgeClient
+    from mypy_boto3_firehose import FirehoseClient
+    from mypy_boto3_iam import IAMClient
+    from mypy_boto3_kinesis import KinesisClient
+    from mypy_boto3_kms import KMSClient
+    from mypy_boto3_lambda import LambdaClient
+    from mypy_boto3_logs import CloudWatchLogsClient
+    from mypy_boto3_opensearch import OpenSearchServiceClient
+    from mypy_boto3_redshift import RedshiftClient
+    from mypy_boto3_resource_groups import ResourceGroupsClient
+    from mypy_boto3_resourcegroupstaggingapi import ResourceGroupsTaggingAPIClient
+    from mypy_boto3_route53 import Route53Client
+    from mypy_boto3_route53resolver import Route53ResolverClient
+    from mypy_boto3_s3 import S3Client
+    from mypy_boto3_s3control import S3ControlClient
+    from mypy_boto3_secretsmanager import SecretsManagerClient
+    from mypy_boto3_ses import SESClient
+    from mypy_boto3_sns import SNSClient
+    from mypy_boto3_sqs import SQSClient
+    from mypy_boto3_ssm import SSMClient
+    from mypy_boto3_stepfunctions import SFNClient
+    from mypy_boto3_sts import STSClient
+    from mypy_boto3_transcribe import TranscribeClient
+
+
 LOG = logging.getLogger(__name__)
+
+
+def attribute_name_to_service_name(attribute_name):
+    """
+    Converts a python-compatible attribute name to the boto service name
+    :param attribute_name: Python compatible attribute name. In essential the service name, if it is a python keyword
+        prefixed by `aws`, and all `-` replaced by `_`.
+    :return:
+    """
+    if attribute_name.startswith("aws"):
+        # remove aws prefix for services named like a keyword.
+        # Most notably, "awslambda" -> "lambda"
+        attribute_name = attribute_name[3:]
+    # replace all _ with -: cognito_idp -> cognito-idp
+    return attribute_name.replace("_", "-")
+
 
 #
 # Data transfer object
@@ -49,9 +101,6 @@ class InternalRequestParameters(TypedDict):
     source_arn: str | None
     """ARN of resource which is triggering the call"""
 
-    target_arn: str | None
-    """ARN of the resource being accessed."""
-
     service_principal: str | None
     """Service principal making this call"""
 
@@ -70,6 +119,54 @@ def load_dto(data: str) -> InternalRequestParameters:
 #
 # Factory
 #
+class ServiceClientResult:
+    """
+    TODO
+    """
+
+    acm: "ACMClient"
+    apigateway: "APIGatewayClient"
+    awslambda: "LambdaClient"
+    cloudformation: "CloudFormationClient"
+    cloudwatch: "CloudWatchClient"
+    cognito_idp: "CognitoIdentityProviderClient"
+    dynamodb: "DynamoDBClient"
+    dynamodbstreams: "DynamoDBStreamsClient"
+    ec2: "EC2Client"
+    ecr: "ECRClient"
+    es: "ElasticsearchServiceClient"
+    events: "EventBridgeClient"
+    firehose: "FirehoseClient"
+    iam: "IAMClient"
+    kinesis: "KinesisClient"
+    kms: "KMSClient"
+    logs: "CloudWatchLogsClient"
+    opensearch: "OpenSearchServiceClient"
+    redshift: "RedshiftClient"
+    resource_groups: "ResourceGroupsClient"
+    resourcegroupstaggingapi: "ResourceGroupsTaggingAPIClient"
+    route53: "Route53Client"
+    route53resolver: "Route53ResolverClient"
+    s3: "S3Client"
+    s3control: "S3ControlClient"
+    secretsmanager: "SecretsManagerClient"
+    ses: "SESClient"
+    sns: "SNSClient"
+    sqs: "SQSClient"
+    ssm: "SSMClient"
+    stepfunctions: "SFNClient"
+    sts: "STSClient"
+    transcribe: "TranscribeClient"
+
+    def __init__(
+        self, *, factory: "ClientFactory", client_creation_params: dict[str, str | Config | None]
+    ):
+        self._factory = factory
+        self._client_creation_params = client_creation_params
+
+    def __getattr__(self, service: str):
+        service = attribute_name_to_service_name(service)
+        return self._factory.get_client(service_name=service, **self._client_creation_params)
 
 
 class ClientFactory(ABC):
@@ -103,8 +200,41 @@ class ClientFactory(ABC):
         self._session: Session = session or Session()
         self._create_client_lock = threading.RLock()
 
-    def __call__(self, *args, **kwargs) -> BaseClient:
-        return self.get_client(*args, **kwargs)
+    def __call__(
+        self,
+        *,
+        region_name: Optional[str] = None,
+        aws_access_key_id: Optional[str] = None,
+        aws_secret_access_key: Optional[str] = None,
+        aws_session_token: Optional[str] = None,
+        endpoint_url: str = None,
+        config: Config = None,
+    ) -> ServiceClientResult:
+        """
+        Get back an object which lets you select the typed service you want to access with the given attributes
+
+        :param region_name: Name of the AWS region to be associated with the client
+            If set to None, loads from botocore session.
+        :param aws_access_key_id: Access key to use for the client.
+            If set to None, loads from botocore session.
+        :param aws_secret_access_key: Secret key to use for the client.
+            If set to None, loads from botocore session.
+        :param aws_session_token: Session token to use for the client.
+            Not being used if not set.
+        :param endpoint_url: Full endpoint URL to be used by the client.
+            Defaults to appropriate LocalStack endpoint.
+        :param config: Boto config for advanced use.
+        :return: Service Region Client Creator
+        """
+        params = {
+            "region_name": region_name,
+            "aws_access_key_id": aws_access_key_id,
+            "aws_secret_access_key": aws_secret_access_key,
+            "aws_session_token": aws_session_token,
+            "endpoint_url": endpoint_url,
+            "config": config,
+        }
+        return ServiceClientResult(factory=self, client_creation_params=params)
 
     @abstractmethod
     def get_client(
@@ -128,6 +258,8 @@ class ClientFactory(ABC):
         """
         return client
 
+    # TODO @cache here might result in a memory leak, as it keeps a reference to `self`
+    # We might need an alternative caching decorator with a weak ref to `self`
     @cache
     def _get_client(
         self,
