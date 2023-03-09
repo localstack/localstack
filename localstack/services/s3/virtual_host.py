@@ -2,8 +2,8 @@ import copy
 import logging
 from urllib.parse import urlsplit, urlunsplit
 
-from localstack.config import LEGACY_S3_PROVIDER
-from localstack.constants import LOCALHOST_HOSTNAME
+from localstack.config import HOSTNAME_EXTERNAL, LEGACY_S3_PROVIDER
+from localstack.constants import LOCALHOST, LOCALHOST_HOSTNAME
 from localstack.http import Request, Response
 from localstack.http.proxy import Proxy
 from localstack.runtime import hooks
@@ -14,12 +14,12 @@ from localstack.utils.aws.request_context import AWS_REGION_REGEX
 LOG = logging.getLogger(__name__)
 
 # virtual-host style: https://{bucket-name}.s3.{region}.localhost.localstack.cloud.com/{key-name}
-VHOST_REGEX_PATTERN = f"<regex('.*'):bucket>.s3.<regex('({AWS_REGION_REGEX}\\.)?'):region>{LOCALHOST_HOSTNAME}<regex('(?::\\d+)?'):port>"
+VHOST_REGEX_PATTERN = "<regex('.*'):bucket>.s3.<regex('({aws_region_regex}\\.)?'):region>{hostname}<regex('(?::\\d+)?'):port>"
 
 # path addressed request with the region in the hostname
 # https://s3.{region}.localhost.localstack.cloud.com/{bucket-name}/{key-name}
 PATH_WITH_REGION_PATTERN = (
-    f"s3.<regex('({AWS_REGION_REGEX}\\.)'):region>{LOCALHOST_HOSTNAME}<regex('(?::\\d+)?'):port>"
+    "s3.<regex('({aws_region_regex}\\.)'):region>{hostname}<regex('(?::\\d+)?'):port>"
 )
 
 
@@ -32,7 +32,6 @@ class S3VirtualHostProxyHandler:
     def __call__(self, request: Request, **kwargs) -> Response:
         # TODO region pattern currently not working -> removing it from url
         rewritten_url = self._rewrite_url(request.url, kwargs.get("bucket"), kwargs.get("region"))
-
         LOG.debug(f"Rewritten original host url: {request.url} to path-style url: {rewritten_url}")
 
         forward_to_url = urlsplit(rewritten_url)
@@ -62,6 +61,10 @@ class S3VirtualHostProxyHandler:
 
         If the region is contained in the host-name we remove it (for now) as moto cannot handle the region correctly
 
+        If the url contains a customised hostname, for example if the user sets `HOSTNAME_EXTERNAL` then re-write the
+        host to localhost.localstack.cloud since the request is coming from inside LocalStack itself, and `HOSTNAME_EXTERNAL`
+        may not be resolvable.
+
         :param url: the original url
         :param bucket: the bucket name
         :param region: the region name
@@ -79,6 +82,12 @@ class S3VirtualHostProxyHandler:
         if region:
             netloc = netloc.replace(f"{region}", "")
 
+        # if the user specifies a custom hostname for LocalStack, this name may not be resolvable by
+        # LocalStack. We are proxying the request to ourself, so replace their custom hostname with
+        # `localhost.localstack.cloud` which also matches the PATH matchers.
+        if HOSTNAME_EXTERNAL != LOCALHOST:
+            netloc = netloc.replace(HOSTNAME_EXTERNAL, LOCALHOST_HOSTNAME)
+
         return urlunsplit((splitted.scheme, netloc, path, splitted.query, splitted.fragment))
 
 
@@ -89,28 +98,82 @@ def register_virtual_host_routes():
 
     """
     s3_proxy_handler = S3VirtualHostProxyHandler()
+    # Add additional routes if the user specifies a custom HOSTNAME_EXTERNAL
+    # as we should match on these routes, and also match on localhost.localstack.cloud
+    # to maintain backwards compatibility.
+    if HOSTNAME_EXTERNAL != LOCALHOST:
+        ROUTER.add(
+            path="/",
+            host=VHOST_REGEX_PATTERN.format(
+                aws_region_regex=AWS_REGION_REGEX,
+                hostname=HOSTNAME_EXTERNAL,
+            ),
+            endpoint=s3_proxy_handler,
+            defaults={"path": "/"},
+        )
+
+        ROUTER.add(
+            path="/<path:path>",
+            host=VHOST_REGEX_PATTERN.format(
+                aws_region_regex=AWS_REGION_REGEX,
+                hostname=HOSTNAME_EXTERNAL,
+            ),
+            endpoint=s3_proxy_handler,
+        )
+
+        ROUTER.add(
+            path="/<regex('.+'):bucket>",
+            host=PATH_WITH_REGION_PATTERN.format(
+                aws_region_regex=AWS_REGION_REGEX,
+                hostname=HOSTNAME_EXTERNAL,
+            ),
+            endpoint=s3_proxy_handler,
+            defaults={"path": "/"},
+        )
+
+        ROUTER.add(
+            path="/<regex('.+'):bucket>/<path:path>",
+            host=PATH_WITH_REGION_PATTERN.format(
+                aws_region_regex=AWS_REGION_REGEX,
+                hostname=HOSTNAME_EXTERNAL,
+            ),
+            endpoint=s3_proxy_handler,
+        )
+
     ROUTER.add(
         path="/",
-        host=VHOST_REGEX_PATTERN,
+        host=VHOST_REGEX_PATTERN.format(
+            aws_region_regex=AWS_REGION_REGEX,
+            hostname=LOCALHOST_HOSTNAME,
+        ),
         endpoint=s3_proxy_handler,
         defaults={"path": "/"},
     )
 
     ROUTER.add(
         path="/<path:path>",
-        host=VHOST_REGEX_PATTERN,
+        host=VHOST_REGEX_PATTERN.format(
+            aws_region_regex=AWS_REGION_REGEX,
+            hostname=LOCALHOST_HOSTNAME,
+        ),
         endpoint=s3_proxy_handler,
     )
 
     ROUTER.add(
         path="/<regex('.+'):bucket>",
-        host=PATH_WITH_REGION_PATTERN,
+        host=PATH_WITH_REGION_PATTERN.format(
+            aws_region_regex=AWS_REGION_REGEX,
+            hostname=LOCALHOST_HOSTNAME,
+        ),
         endpoint=s3_proxy_handler,
         defaults={"path": "/"},
     )
 
     ROUTER.add(
         path="/<regex('.+'):bucket>/<path:path>",
-        host=PATH_WITH_REGION_PATTERN,
+        host=PATH_WITH_REGION_PATTERN.format(
+            aws_region_regex=AWS_REGION_REGEX,
+            hostname=LOCALHOST_HOSTNAME,
+        ),
         endpoint=s3_proxy_handler,
     )
