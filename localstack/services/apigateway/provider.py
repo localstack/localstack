@@ -1224,7 +1224,18 @@ class ApigatewayProvider(ApigatewayApi, ServiceLifecycleHook):
     ) -> Model:
         store = get_apigateway_store(account_id=context.account_id, region=context.region)
         if rest_api_id not in store.rest_apis:
-            raise
+            raise NotFoundException(
+                f"Invalid API identifier specified {context.account_id}:{rest_api_id}"
+            )
+
+        if name in store.rest_apis[rest_api_id].models:
+            raise ConflictException("Model name already exists for this REST API")
+
+        if not schema:
+            # TODO: maybe add more validation around the schema, valid json string?
+            raise BadRequestException(
+                "Model schema must have at least 1 property or array items defined"
+            )
 
         model_id = short_uid()[:6]  # length 6 to make TF tests pass
         model = Model(
@@ -1242,7 +1253,9 @@ class ApigatewayProvider(ApigatewayApi, ServiceLifecycleHook):
     ) -> Models:
         store = get_apigateway_store(account_id=context.account_id, region=context.region)
         if rest_api_id not in store.rest_apis:
-            raise
+            raise NotFoundException(
+                f"Invalid API identifier specified {context.account_id}:{rest_api_id}"
+            )
 
         models = list(store.rest_apis[rest_api_id].models.values())
         return Models(items=models)
@@ -1255,11 +1268,10 @@ class ApigatewayProvider(ApigatewayApi, ServiceLifecycleHook):
         flatten: Boolean = None,
     ) -> Model:
         store = get_apigateway_store(account_id=context.account_id, region=context.region)
-        if rest_api_id not in store.rest_apis:
-            raise
-
-        if not (model := store.rest_apis[rest_api_id].models.get(model_name)):
-            raise
+        if rest_api_id not in store.rest_apis or not (
+            model := store.rest_apis[rest_api_id].models.get(model_name)
+        ):
+            raise NotFoundException(f"Invalid model name specified: {model_name}")
 
         return model
 
@@ -1296,12 +1308,10 @@ class ApigatewayProvider(ApigatewayApi, ServiceLifecycleHook):
         self, context: RequestContext, rest_api_id: String, model_name: String
     ) -> None:
         store = get_apigateway_store(account_id=context.account_id, region=context.region)
-        if rest_api_id not in store.rest_apis:
-            raise
-
-        model = store.rest_apis[rest_api_id].models.pop(model_name, None)
-        if not model:
-            raise "?"
+        if rest_api_id not in store.rest_apis or not (
+            store.rest_apis[rest_api_id].models.pop(model_name, None)
+        ):
+            raise NotFoundException(f"Invalid model name specified: {model_name}")
 
 
 # ---------------
