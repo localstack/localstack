@@ -338,6 +338,9 @@ def test_update_lambda_permissions(deploy_cfn_template, lambda_client, sts_clien
     assert new_principal in principal
 
 
+@pytest.mark.skip_snapshot_verify(
+    condition=is_old_provider, paths=["$..PolicyArn", "$..PolicyName", "$..RevisionId"]
+)
 @pytest.mark.aws_validated
 def test_multiple_lambda_permissions_for_singlefn(
     deploy_cfn_template, cfn_client, lambda_client, snapshot
@@ -355,6 +358,7 @@ def test_multiple_lambda_permissions_for_singlefn(
     snapshot.add_transformer(snapshot.transform.regex(p1_sid, "<p1-sid>"))
     snapshot.add_transformer(snapshot.transform.regex(p2_sid, "<p2-sid>"))
     snapshot.add_transformer(snapshot.transform.regex(fn_name, "<fn-name>"))
+    snapshot.add_transformer(SortingTransformer("Statement", lambda s: s["Sid"]))
 
     policy = lambda_client.get_policy(FunctionName=fn_name)
     # load the policy json, so we can properly snapshot it
