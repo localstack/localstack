@@ -28,6 +28,7 @@ default_log_levels = {
     "localstack.request": logging.INFO,
     "localstack.request.internal": logging.WARNING,
     "localstack.state.inspect": logging.INFO,
+    "localstack_persistence": logging.INFO,
 }
 
 trace_log_levels = {
