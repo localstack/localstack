@@ -1228,6 +1228,9 @@ class ApigatewayProvider(ApigatewayApi, ServiceLifecycleHook):
                 f"Invalid API identifier specified {context.account_id}:{rest_api_id}"
             )
 
+        if not name:
+            raise BadRequestException("Model name must be non-empty")
+
         if name in store.rest_apis[rest_api_id].models:
             raise ConflictException("Model name already exists for this REST API")
 
@@ -1242,6 +1245,7 @@ class ApigatewayProvider(ApigatewayApi, ServiceLifecycleHook):
             id=model_id, name=name, contentType=content_type, description=description, schema=schema
         )
         store.rest_apis[rest_api_id].models[name] = model
+        remove_empty_attributes_from_model(model)
         return model
 
     def get_models(
@@ -1257,7 +1261,10 @@ class ApigatewayProvider(ApigatewayApi, ServiceLifecycleHook):
                 f"Invalid API identifier specified {context.account_id}:{rest_api_id}"
             )
 
-        models = list(store.rest_apis[rest_api_id].models.values())
+        models = [
+            remove_empty_attributes_from_model(model)
+            for model in store.rest_apis[rest_api_id].models.values()
+        ]
         return Models(items=models)
 
     def get_model(
@@ -1286,22 +1293,30 @@ class ApigatewayProvider(ApigatewayApi, ServiceLifecycleHook):
         # /schema
         # /description
         store = get_apigateway_store(account_id=context.account_id, region=context.region)
-        if rest_api_id not in store.rest_apis:
-            raise
-
-        if not (model := store.rest_apis[rest_api_id].models.get(model_name)):
-            raise
+        if rest_api_id not in store.rest_apis or not (
+            model := store.rest_apis[rest_api_id].models.get(model_name)
+        ):
+            raise NotFoundException(f"Invalid model name specified: {model_name}")
 
         for operation in patch_operations:
-            if (path := operation.get("path")) not in ("/schema", "/description"):
-                raise
+            path = operation.get("path")
             if operation.get("op") != "replace":
-                continue
+                raise BadRequestException(
+                    f"Invalid patch path  '{path}' specified for op 'add'. Please choose supported operations"
+                )
+            if path not in ("/schema", "/description"):
+                raise BadRequestException(
+                    f"Invalid patch path  '{path}' specified for op 'replace'. Must be one of: [/description, /schema]"
+                )
 
             key = path.strip("/")
-            # TODO: validate
-            model[key] = operation.get("value", "")
-
+            value = operation.get("value", "")
+            if key == "schema" and not value:
+                raise BadRequestException(
+                    "Model schema must have at least 1 property or array items defined"
+                )
+            model[key] = value
+        remove_empty_attributes_from_model(model)
         return model
 
     def delete_model(
@@ -1330,7 +1345,7 @@ def get_moto_rest_api(context: RequestContext, rest_api_id: str) -> MotoRestAPI:
     return rest_api
 
 
-def remove_empty_attributes_from_rest_api(rest_api: RestApi, remove_tags=True):
+def remove_empty_attributes_from_rest_api(rest_api: RestApi, remove_tags=True) -> RestApi:
     if not rest_api.get("binaryMediaTypes"):
         rest_api.pop("binaryMediaTypes", None)
 
@@ -1346,8 +1361,10 @@ def remove_empty_attributes_from_rest_api(rest_api: RestApi, remove_tags=True):
     if not rest_api.get("description"):
         rest_api.pop("description", None)
 
+    return rest_api
 
-def remove_empty_attributes_from_method(method: Method):
+
+def remove_empty_attributes_from_method(method: Method) -> Method:
     if not method.get("methodResponses"):
         method.pop("methodResponses", None)
 
@@ -1356,6 +1373,15 @@ def remove_empty_attributes_from_method(method: Method):
 
     if not method.get("requestParameters"):
         method.pop("requestParameters", None)
+
+    return method
+
+
+def remove_empty_attributes_from_model(model: Model) -> Model:
+    if not model.get("description"):
+        model.pop("description", None)
+
+    return model
 
 
 def is_greedy_path(path_part: str) -> bool:

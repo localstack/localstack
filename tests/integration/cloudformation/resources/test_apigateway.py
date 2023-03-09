@@ -266,10 +266,11 @@ def test_cfn_apigateway_rest_api(deploy_cfn_template, apigateway_client):
     assert len(apis) == 1
 
     rs = apigateway_client.get_models(restApiId=apis[0]["id"])
-    assert len(rs["items"]) == 1
+    assert len(rs["items"]) == 3
 
     stack_2.destroy()
 
+    rs = apigateway_client.get_rest_apis()
     apis = [item for item in rs["items"] if item["name"] == "DemoApi_dev"]
     assert not apis
 

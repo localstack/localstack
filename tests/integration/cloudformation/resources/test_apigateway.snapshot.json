@@ -109,5 +109,9 @@
         }
       }
     }
+  },
+  "tests/integration/cloudformation/resources/test_apigateway.py::test_cfn_apigateway_rest_api": {
+    "recorded-date": "09-03-2023, 19:29:49",
+    "recorded-content": {}
   }
 }
