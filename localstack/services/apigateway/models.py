@@ -1,5 +1,15 @@
 from typing import Any, Dict, List
 
+from requests.structures import CaseInsensitiveDict
+
+from localstack.aws.api.apigateway import (
+    Authorizer,
+    DocumentationPart,
+    GatewayResponse,
+    Model,
+    RequestValidator,
+    RestApi,
+)
 from localstack.services.stores import (
     AccountRegionBundle,
     BaseStore,
@@ -9,22 +19,36 @@ from localstack.services.stores import (
 from localstack.utils.aws import arns
 
 
+class RestApiContainer:
+    # contains the RestApi dictionary. We're not making use of it yet, still using moto data.
+    rest_api: RestApi
+    # maps AuthorizerId -> Authorizer
+    authorizers: Dict[str, Authorizer]
+    # maps RequestValidatorId -> RequestValidator
+    validators: Dict[str, RequestValidator]
+    # map DocumentationPartId -> DocumentationPart
+    documentation_parts: Dict[str, DocumentationPart]
+    # not used yet, still in moto
+    gateway_responses: Dict[str, GatewayResponse]
+    # not used yet, still in moto
+    models: Dict[str, Model]
+    # maps ResourceId of a Resource to its children ResourceIds
+    resource_children: Dict[str, List[str]]
+
+    def __init__(self, rest_api: RestApi):
+        self.rest_api = rest_api
+        self.authorizers = {}
+        self.validators = {}
+        self.documentation_parts = {}
+        self.gateway_responses = {}
+        self.models = {}
+        self.resource_children = {}
+
+
 class ApiGatewayStore(BaseStore):
-    # TODO: introduce a RestAPI class to encapsulate the variables below
-    # maps (API id) -> [authorizers]
-    authorizers: Dict[str, List[Dict]] = LocalAttribute(default=dict)
-
-    # maps (API id) -> [validators]
-    validators: Dict[str, List[Dict]] = LocalAttribute(default=dict)
-
-    # maps (API id) -> [documentation_parts]
-    documentation_parts: Dict[str, List[Dict]] = LocalAttribute(default=dict)
-
-    # maps (API id) -> [gateway_responses]
-    gateway_responses: Dict[str, List[Dict]] = LocalAttribute(default=dict)
-
-    # maps (API id) -> Resource id -> its children Resource id
-    resources_children: Dict[str, Dict[str, List[str]]] = LocalAttribute(default=dict)
+    # maps (API id) -> RestApiContainer
+    # TODO: remove CaseInsensitiveDict, and lower the value of the ID when getting it from the tags
+    rest_apis: Dict[str, RestApiContainer] = LocalAttribute(default=CaseInsensitiveDict)
 
     # account details
     account: Dict[str, Any] = LocalAttribute(default=dict)

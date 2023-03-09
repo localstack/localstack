@@ -332,6 +332,7 @@ def apply_patches():
         """
         tags = tags or {}
         result = fn(self, *args, tags=tags, **kwargs)
+        # TODO: lower the custom_id when getting it from the tags, as AWS is case insensitive
         if custom_id := tags.get(TAG_KEY_CUSTOM_ID):
             self.apis.pop(result.id)
             result.id = custom_id
