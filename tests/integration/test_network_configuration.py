@@ -163,13 +163,10 @@ class TestSQS:
 
         assert_host_customisation(queue_url, use_hostname_external=True)
         assert queue_name in queue_url
+        assert f":{external_port}" in queue_url
 
-    @pytest.mark.parametrize("external_port", [0, 12345])
-    def test_domain_strategy(
-        self, external_port, monkeypatch, sqs_create_queue, assert_host_customisation
-    ):
+    def test_domain_strategy(self, monkeypatch, sqs_create_queue, assert_host_customisation):
         monkeypatch.setattr(config, "SQS_ENDPOINT_STRATEGY", "domain")
-        monkeypatch.setattr(config, "SQS_PORT_EXTERNAL", external_port)
 
         queue_name = f"queue-{short_uid()}"
         queue_url = sqs_create_queue(QueueName=queue_name)
@@ -177,12 +174,8 @@ class TestSQS:
         assert_host_customisation(queue_url, use_localstack_cloud=True)
         assert queue_name in queue_url
 
-    @pytest.mark.parametrize("external_port", [0, 12345])
-    def test_path_strategy(
-        self, external_port, monkeypatch, sqs_create_queue, assert_host_customisation
-    ):
+    def test_path_strategy(self, monkeypatch, sqs_create_queue, assert_host_customisation):
         monkeypatch.setattr(config, "SQS_ENDPOINT_STRATEGY", "path")
-        monkeypatch.setattr(config, "SQS_PORT_EXTERNAL", external_port)
 
         queue_name = f"queue-{short_uid()}"
         queue_url = sqs_create_queue(QueueName=queue_name)
