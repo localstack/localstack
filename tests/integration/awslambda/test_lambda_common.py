@@ -102,29 +102,29 @@ class TestLambdaRuntimesCommon:
         assert json.loads(invoke_result["Payload"].read()) == {}
         assert not invoke_result.get("FunctionError")
 
-    # skip snapshots of LS specific env variables / xray variables
+    # skip snapshots of LS specific env variables
     @pytest.mark.skip_snapshot_verify(
         paths=[
+            # LocalStack API
+            "$..environment.LOCALSTACK_HOSTNAME",
+            "$..environment.EDGE_PORT",
+            "$..environment.AWS_ENDPOINT_URL",
+            # TODO: unset RIE API vars in RIE
+            "$..environment.AWS_LAMBDA_FUNCTION_TIMEOUT",
+            # AWS SDK container credentials:
+            # https://docs.aws.amazon.com/sdkref/latest/guide/feature-container-credentials.html
             "$..environment.AWS_CONTAINER_AUTHORIZATION_TOKEN",
             "$..environment.AWS_CONTAINER_CREDENTIALS_FULL_URI",
-            "$..environment.AWS_ENDPOINT_URL",
-            "$..environment.AWS_LAMBDA_FUNCTION_TIMEOUT",
+            # TODO: xray
             "$..environment.AWS_XRAY_CONTEXT_MISSING",
             "$..environment.AWS_XRAY_DAEMON_ADDRESS",
-            "$..environment.EDGE_PORT",
-            "$..environment.HOME",
-            "$..environment.HOSTNAME",
-            "$..environment.LOCALSTACK_HOSTNAME",
-            "$..environment.LOCALSTACK_RUNTIME_ENDPOINT",
-            "$..environment.LOCALSTACK_RUNTIME_ID",
-            "$..environment.RUNTIME_ROOT",
-            "$..environment.TASK_ROOT",
             "$..environment._AWS_XRAY_DAEMON_ADDRESS",
             "$..environment._AWS_XRAY_DAEMON_PORT",
-            "$..environment._LAMBDA_TELEMETRY_LOG_FD",  # Only java8, dotnetcore3.1, dotnet6, go1.x
             "$..environment._X_AMZN_TRACE_ID",
-            # Only nodejs18.x (AWS: /etc/pki/tls/certs/ca-bundle.crt, LS: /var/runtime/ca-cert.pem)
+            # Specific runtimes
+            # TODO: Only nodejs18.x: AWS=/etc/pki/tls/certs/ca-bundle.crt LS=var/runtime/ca-cert.pem
             "$..environment.NODE_EXTRA_CA_CERTS",
+            "$..environment._LAMBDA_TELEMETRY_LOG_FD",  # Only java8, dotnetcore3.1, dotnet6, go1.x
             "$..environment.AWS_EXECUTION_ENV",  # Only rust runtime
             "$..environment.LD_LIBRARY_PATH",  # Only rust runtime (additional /var/lang/bin)
             "$..environment.PATH",  # Only rust runtime (additional /var/lang/bin)
