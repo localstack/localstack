@@ -1368,12 +1368,11 @@ class ProxyListenerS3(ProxyListener):
     def _update_location(content, bucket_name):
         bucket_name = normalize_bucket_name(bucket_name)
 
-        host = config.HOSTNAME_EXTERNAL
-        if ":" not in host:
-            host = f"{host}:{config.service_port('s3')}"
+        host_definition = localstack_host(use_hostname_external=True)
         return re.sub(
             r"<Location>\s*([a-zA-Z0-9\-]+)://[^/]+/([^<]+)\s*</Location>",
-            r"<Location>%s://%s/%s/\2</Location>" % (get_service_protocol(), host, bucket_name),
+            r"<Location>%s://%s/%s/\2</Location>"
+            % (get_service_protocol(), host_definition.host_and_port(), bucket_name),
             content,
             flags=re.MULTILINE,
         )
