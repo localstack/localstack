@@ -74,11 +74,8 @@ class TestS3:
         condition=config.LEGACY_S3_PROVIDER, reason="Not implemented for legacy provider"
     )
     def test_non_us_east_1_location(
-        self, monkeypatch, s3_resource, s3_client, cleanups, assert_host_customisation
+        self, s3_resource, s3_client, cleanups, assert_host_customisation
     ):
-        monkeypatch.setattr(config, "LEGACY_S3_PROVIDER", False)
-        monkeypatch.setenv("PROVIDER_OVERRIDE_S3", "asf")
-
         bucket_name = f"bucket-{short_uid()}"
         res = s3_client.create_bucket(
             Bucket=bucket_name,

@@ -172,7 +172,7 @@ jobs:
           name: Test ASF S3 provider
           environment:
             PROVIDER_OVERRIDE_S3: "asf"
-            TEST_PATH: "tests/integration/s3/"
+            TEST_PATH: "tests/integration/s3/ tests/integration/test_network_configuration.py::TestS3"
             PYTEST_ARGS: "--reruns 3 --junitxml=target/reports/s3_asf.xml -o junit_suite_name='s3_asf'"
             COVERAGE_ARGS: "-p"
           command: make test-coverage
