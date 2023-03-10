@@ -378,6 +378,9 @@ class DockerRuntimeExecutor(RuntimeExecutor):
         if function_version.config.code:
             function_version.config.code.prepare_for_execution()
             image_name = resolver.get_image_for_runtime(function_version.config.runtime)
+            # TODO: think about cross-architecture compatibility between x86 and ARM
+            # It appears that eagerly pulling images here is not strictly necessary but helps to detect image-related
+            # issues early. This cache needs to be architecture-aware to work properly for cross architecture lambdas.
             if image_name not in PULLED_IMAGES:
                 CONTAINER_CLIENT.pull_image(image_name)
                 PULLED_IMAGES.add(image_name)
