@@ -252,7 +252,7 @@ class SqsQueue:
             host_url = f"{scheme}://{region}queue.{constants.LOCALHOST_HOSTNAME}:{config.EDGE_PORT}"
         elif config.SQS_ENDPOINT_STRATEGY == "path":
             # https?://localhost:4566/queue/us-east-1/00000000000/my-queue (us-east-1)
-            host_url = f"{context.request.host_url}/queue/{self.region}"
+            host_url = f"{context.request.host_url}queue/{self.region}"
         else:
             if config.SQS_PORT_EXTERNAL:
                 host_url = external_service_url("sqs")
