@@ -554,7 +554,9 @@ def import_api_from_openapi_spec(
         security_schemes = path_payload.get("security")
         for security_scheme in security_schemes:
             for security_scheme_name, _ in security_scheme.items():
-                security_definitions = body.get("securityDefinitions") or {}
+                security_definitions = body.get("securityDefinitions") or body.get(
+                    "components", {}
+                ).get("securitySchemes", {})
                 if security_scheme_name in security_definitions:
                     security_config = security_definitions.get(security_scheme_name)
                     aws_apigateway_authorizer = security_config.get(
