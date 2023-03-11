@@ -528,6 +528,11 @@ class TestSNSProvider:
         fake_arn = f"{topic_arn}-fake"
         message = "This is a test message"
 
+        # test to send a message with no subscribers
+        response = sns_client.publish(TopicArn=topic_arn, Message=message)
+        snapshot.match("success", response)
+
+        # test to send to a nonexistent topic
         with pytest.raises(ClientError) as e:
             sns_client.publish(TopicArn=fake_arn, Message=message)
 
@@ -588,23 +593,35 @@ class TestSNSProvider:
         snapshot.match("list-after-update-tags", tags)
 
     @pytest.mark.only_localstack
-    def test_topic_subscription(self, sns_client, sns_create_topic, sns_subscription):
+    def test_topic_email_subscription_confirmation(
+        self, sns_client, sns_create_topic, sns_subscription
+    ):
+        # FIXME: we do not send the token to the email endpoint, so they cannot validate it
+        # create AWS validated test for format
+        # for now, access internals
         topic_arn = sns_create_topic()["TopicArn"]
         subscription = sns_subscription(
             TopicArn=topic_arn,
             Protocol="email",
             Endpoint="localstack@yopmail.com",
         )
-        sns_backend = SnsProvider.get_store()
+        subscription_arn = subscription["SubscriptionArn"]
+        parsed_arn = parse_arn(subscription_arn)
+        store = SnsProvider.get_store(account_id=parsed_arn["account"], region=parsed_arn["region"])
+
+        sub_attr = sns_client.get_subscription_attributes(SubscriptionArn=subscription_arn)
+        assert sub_attr["Attributes"]["PendingConfirmation"] == "true"
 
         def check_subscription():
-            subscription_arn = subscription["SubscriptionArn"]
-            subscription_obj = sns_backend.subscription_status[subscription_arn]
-            assert subscription_obj["Status"] == "Not Subscribed"
+            topic_tokens = store.subscription_tokens.get(topic_arn, {})
+            for token, sub_arn in topic_tokens.items():
+                if sub_arn == subscription_arn:
+                    sns_client.confirm_subscription(TopicArn=topic_arn, Token=token)
 
-            _token = subscription_obj["Token"]
-            sns_client.confirm_subscription(TopicArn=topic_arn, Token=_token)
-            assert subscription_obj["Status"] == "Subscribed"
+            sub_attributes = sns_client.get_subscription_attributes(
+                SubscriptionArn=subscription_arn
+            )
+            assert sub_attributes["Attributes"]["PendingConfirmation"] == "false"
 
         retry(check_subscription, retries=PUBLICATION_RETRIES, sleep=PUBLICATION_TIMEOUT)
 
@@ -628,7 +645,7 @@ class TestSNSProvider:
 
             return subscription_attrs["PendingConfirmation"] == "false"
 
-        # SQS subscriptions are auto confirmed if they are from the user and in the same region
+        # SQS subscriptions are auto confirmed if the endpoint and the topic are in the same AWS account
         assert poll_condition(check_subscription, timeout=5)
 
     @pytest.mark.aws_validated
@@ -754,6 +771,7 @@ class TestSNSProvider:
             assert request.path.endswith("/subscription")
             assert event["Type"] == "SubscriptionConfirmation"
             assert event["TopicArn"] == topic_arn
+            sns_client.confirm_subscription(TopicArn=topic_arn, Token=event["Token"])
 
         wait_for_port_closed(server.port)
 
@@ -1055,34 +1073,85 @@ class TestSNSProvider:
         number_of_endpoints = 4
 
         servers = []
+        try:
+            for _ in range(number_of_endpoints):
+                server = HTTPServer()
+                server.start()
+                servers.append(server)
+                server.expect_request("/").respond_with_handler(handler)
+                http_endpoint = server.url_for("/")
+                wait_for_port_open(http_endpoint)
 
-        for _ in range(number_of_endpoints):
-            server = HTTPServer()
-            server.start()
-            servers.append(server)
-            server.expect_request("/").respond_with_handler(handler)
-            http_endpoint = server.url_for("/")
-            wait_for_port_open(http_endpoint)
+                sns_subscription(TopicArn=topic_arn, Protocol="http", Endpoint=http_endpoint)
 
-            sns_subscription(TopicArn=topic_arn, Protocol="http", Endpoint=http_endpoint)
+            # fetch subscription information
+            subscription_list = sns_client.list_subscriptions_by_topic(TopicArn=topic_arn)
+            assert subscription_list["ResponseMetadata"]["HTTPStatusCode"] == 200
+            assert (
+                len(subscription_list["Subscriptions"]) == number_of_endpoints
+            ), f"unexpected number of subscriptions {subscription_list}"
 
-        # fetch subscription information
-        subscription_list = sns_client.list_subscriptions_by_topic(TopicArn=topic_arn)
-        assert subscription_list["ResponseMetadata"]["HTTPStatusCode"] == 200
-        assert (
-            len(subscription_list["Subscriptions"]) == number_of_endpoints
-        ), f"unexpected number of subscriptions {subscription_list}"
+            tokens = []
+            for _ in range(number_of_endpoints):
+                request = _requests.get(timeout=2)
+                request_data = request.get_json(True)
+                tokens.append(request_data["Token"])
+                assert request_data["TopicArn"] == topic_arn
 
-        for _ in range(number_of_endpoints):
-            request = _requests.get(timeout=2)
-            assert request.get_json(True)["TopicArn"] == topic_arn
+            with pytest.raises(queue.Empty):
+                # make sure only four requests are received
+                _requests.get(timeout=1)
 
-        with pytest.raises(queue.Empty):
-            # make sure only four requests are received
-            _requests.get(timeout=1)
+            # assert the first subscription is pending confirmation
+            sub_1 = subscription_list["Subscriptions"][0]
+            sub_1_attrs = sns_client.get_subscription_attributes(
+                SubscriptionArn=sub_1["SubscriptionArn"]
+            )
+            assert sub_1_attrs["Attributes"]["PendingConfirmation"] == "true"
 
-        for server in servers:
-            server.stop()
+            # assert the second subscription is pending confirmation
+            sub_2 = subscription_list["Subscriptions"][1]
+            sub_2_attrs = sns_client.get_subscription_attributes(
+                SubscriptionArn=sub_2["SubscriptionArn"]
+            )
+            assert sub_2_attrs["Attributes"]["PendingConfirmation"] == "true"
+
+            # confirm the first subscription
+            response = sns_client.confirm_subscription(TopicArn=topic_arn, Token=tokens[0])
+            # assert the confirmed subscription is the first one
+            assert response["SubscriptionArn"] == sub_1["SubscriptionArn"]
+
+            # assert the first subscription is confirmed
+            sub_1_attrs = sns_client.get_subscription_attributes(
+                SubscriptionArn=sub_1["SubscriptionArn"]
+            )
+            assert sub_1_attrs["Attributes"]["PendingConfirmation"] == "false"
+
+            # assert the second subscription is NOT confirmed
+            sub_2_attrs = sns_client.get_subscription_attributes(
+                SubscriptionArn=sub_2["SubscriptionArn"]
+            )
+            assert sub_2_attrs["Attributes"]["PendingConfirmation"] == "true"
+
+        finally:
+            subscription_list = sns_client.list_subscriptions_by_topic(TopicArn=topic_arn)
+            for subscription in subscription_list["Subscriptions"]:
+                sns_client.unsubscribe(SubscriptionArn=subscription["SubscriptionArn"])
+            for server in servers:
+                server.stop()
+
+    @pytest.mark.aws_validated
+    @pytest.mark.skip_snapshot_verify(paths=["$..Attributes.SubscriptionPrincipal"])
+    def test_subscribe_sms_endpoint(self, sns_client, sns_create_topic, sns_subscription, snapshot):
+        phone_number = "+123123123"
+        topic_arn = sns_create_topic()["TopicArn"]
+        response = sns_subscription(TopicArn=topic_arn, Protocol="sms", Endpoint=phone_number)
+        snapshot.match("subscribe-sms-endpoint", response)
+
+        sub_attrs = sns_client.get_subscription_attributes(
+            SubscriptionArn=response["SubscriptionArn"]
+        )
+        snapshot.match("subscribe-sms-attrs", sub_attrs)
 
     @pytest.mark.only_localstack
     def test_publish_sms_endpoint(self, sns_client, sns_create_topic, sns_subscription):
@@ -3379,6 +3448,35 @@ class TestSNSProvider:
         )
         # there should be no messages in this queue
         snapshot.match("messages-with-filter-after-publish-filtered", response_after_publish_filter)
+
+    @pytest.mark.aws_validated
+    @pytest.mark.skip_snapshot_verify(
+        paths=["$.invalid-token.Error.Message"]  # validate the token shape
+    )
+    def test_sns_confirm_subscription_wrong_token(self, sns_client, sns_create_topic, snapshot):
+        topic_arn = sns_create_topic()["TopicArn"]
+
+        with pytest.raises(ClientError) as e:
+            wrong_topic = topic_arn[:-1] + "i"
+            sns_client.confirm_subscription(
+                TopicArn=wrong_topic,
+                Token="51b2ff3edb475b7d91550e0ab6edf0c1de2a34e6ebaf6c2262a001bcb7e051c43aa00022ceecce70bd2a67b2042da8d8eb47fef7a4e4e942d23e7fa56146b9ee35da040b4b8af564cc4184a7391c834cb75d75c22981f776ad1ce8805e9bab29da2329985337bb8095627907b46c8577c8440556b6f86582a954758026f41fc62041c4b3f67b0f5921232b5dae5aaca1",
+            )
+
+        snapshot.match("topic-not-exists", e.value.response)
+
+        with pytest.raises(ClientError) as e:
+            sns_client.confirm_subscription(TopicArn=topic_arn, Token="randomtoken")
+
+        snapshot.match("invalid-token", e.value.response)
+
+        with pytest.raises(ClientError) as e:
+            sns_client.confirm_subscription(
+                TopicArn=topic_arn,
+                Token="51b2ff3edb475b7d91550e0ab6edf0c1de2a34e6ebaf6c2262a001bcb7e051c43aa00022ceecce70bd2a67b2042da8d8eb47fef7a4e4e942d23e7fa56146b9ee35da040b4b8af564cc4184a7391c834cb75d75c22981f776ad1ce8805e9bab29da2329985337bb8095627907b46c8577c8440556b6f86582a954758026f41fc62041c4b3f67b0f5921232b5dae5aaca1",
+            )
+
+        snapshot.match("token-not-exists", e.value.response)
 
 
 class TestSNSPublishDelivery:

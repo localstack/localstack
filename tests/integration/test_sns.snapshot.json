@@ -597,8 +597,15 @@
     }
   },
   "tests/integration/test_sns.py::TestSNSProvider::test_unknown_topic_publish": {
-    "recorded-date": "09-08-2022, 11:30:15",
+    "recorded-date": "04-03-2023, 21:35:42",
     "recorded-content": {
+      "success": {
+        "MessageId": "<uuid:1>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
       "error": {
         "Error": {
           "Code": "NotFound",
@@ -3298,6 +3305,73 @@
         ],
         "nextBackwardToken": "<next-backward-token:1>",
         "nextForwardToken": "<next-forward-token:1>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/integration/test_sns.py::TestSNSProvider::test_sns_confirm_subscription_wrong_token": {
+    "recorded-date": "04-03-2023, 21:28:49",
+    "recorded-content": {
+      "topic-not-exists": {
+        "Error": {
+          "Code": "InvalidParameter",
+          "Message": "Invalid parameter: Token",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "invalid-token": {
+        "Error": {
+          "Code": "InvalidParameter",
+          "Message": "Invalid token",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "token-not-exists": {
+        "Error": {
+          "Code": "InvalidParameter",
+          "Message": "Invalid parameter: Token",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/integration/test_sns.py::TestSNSProvider::test_subscribe_sms_endpoint": {
+    "recorded-date": "05-03-2023, 15:29:28",
+    "recorded-content": {
+      "subscribe-sms-endpoint": {
+        "SubscriptionArn": "arn:aws:sns:<region>:111111111111:<resource:2>:<resource:1>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "subscribe-sms-attrs": {
+        "Attributes": {
+          "ConfirmationWasAuthenticated": "true",
+          "Endpoint": "+123123123",
+          "Owner": "111111111111",
+          "PendingConfirmation": "false",
+          "Protocol": "sms",
+          "RawMessageDelivery": "false",
+          "SubscriptionArn": "arn:aws:sns:<region>:111111111111:<resource:2>:<resource:1>",
+          "SubscriptionPrincipal": "<sub-principal>",
+          "TopicArn": "arn:aws:sns:<region>:111111111111:<resource:2>"
+        },
         "ResponseMetadata": {
           "HTTPHeaders": {},
           "HTTPStatusCode": 200

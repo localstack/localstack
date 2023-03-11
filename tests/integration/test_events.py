@@ -585,6 +585,7 @@ class TestEvents:
         self,
         stepfunctions_client,
         sns_create_topic,
+        sns_client,
         sqs_client,
         sqs_create_queue,
         sqs_queue_arn,
@@ -624,7 +625,18 @@ class TestEvents:
         )["stateMachineArn"]
 
         topic_arn = sns_create_topic(Name=topic_name)["TopicArn"]
-        sns_subscription(TopicArn=topic_arn, Protocol="http", Endpoint=http_endpoint)
+        subscription = sns_subscription(TopicArn=topic_arn, Protocol="http", Endpoint=http_endpoint)
+
+        assert poll_condition(lambda: len(httpserver.log) >= 1, timeout=5)
+        sub_request, _ = httpserver.log[0]
+        payload = sub_request.get_json(force=True)
+        assert payload["Type"] == "SubscriptionConfirmation"
+        token = payload["Token"]
+        sns_client.confirm_subscription(TopicArn=topic_arn, Token=token)
+        sub_attrs = sns_client.get_subscription_attributes(
+            SubscriptionArn=subscription["SubscriptionArn"]
+        )
+        assert sub_attrs["Attributes"]["PendingConfirmation"] == "false"
 
         queue_url = sqs_create_queue(QueueName=queue_name)
         fifo_queue_url = sqs_create_queue(
