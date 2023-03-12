@@ -299,6 +299,13 @@ class DockerRuntimeExecutor(RuntimeExecutor):
             if container_config.ports is None:
                 container_config.ports = PortMappings()
             container_config.ports.add(self.executor_endpoint.container_port, INVOCATION_PORT)
+
+        if config.LAMBDA_INIT_DEBUG:
+            container_config.entrypoint = "/debug-bootstrap.sh"
+            if not container_config.ports:
+                container_config.ports = PortMappings()
+            container_config.ports.add(config.LAMBDA_INIT_DELVE_PORT, config.LAMBDA_INIT_DELVE_PORT)
+
         CONTAINER_CLIENT.create_container_from_config(container_config)
         if (
             not config.LAMBDA_PREBUILD_IMAGES
@@ -307,6 +314,18 @@ class DockerRuntimeExecutor(RuntimeExecutor):
             CONTAINER_CLIENT.copy_into_container(
                 self.container_name, f"{str(get_runtime_client_path())}/.", "/"
             )
+            # tiny bit inefficient since we actually overwrite the init, but otherwise the path might not exist
+            if config.LAMBDA_INIT_DEBUG:
+                CONTAINER_CLIENT.copy_into_container(
+                    self.container_name, config.LAMBDA_INIT_BIN_PATH, "/var/rapid/init"
+                )
+                CONTAINER_CLIENT.copy_into_container(
+                    self.container_name, config.LAMBDA_INIT_DELVE_PATH, "/var/rapid/dlv"
+                )
+                CONTAINER_CLIENT.copy_into_container(
+                    self.container_name, config.LAMBDA_INIT_BOOTSTRAP_PATH, "/debug-bootstrap.sh"
+                )
+
         if not config.LAMBDA_PREBUILD_IMAGES:
             # copy_folders should be empty here if package type is not zip
             for source, target in container_config.copy_folders:

@@ -86,7 +86,7 @@ class LambdaFunction(GenericBaseModel):
 
     @staticmethod
     def get_lambda_code_param(params, _include_arch=False, **kwargs):
-        code = params.get("Code", {})
+        code = params.get("Code", {}).copy()
         zip_file = code.get("ZipFile")
         if zip_file and not is_base64(zip_file) and not is_zip_file(to_bytes(zip_file)):
             tmp_dir = new_tmp_dir()
@@ -153,7 +153,6 @@ class LambdaFunction(GenericBaseModel):
                     "VpcConfig": "VpcConfig"
                     # TODO add missing fields
                 },
-                "defaults": {"Role": "test_role"},
                 "types": {"Timeout": int, "MemorySize": int},
                 "result_handler": result_handler,
             },
@@ -243,14 +242,23 @@ class LambdaPermission(GenericBaseModel):
         return "AWS::Lambda::Permission"
 
     def fetch_state(self, stack_name, resources):
+        if not self.physical_resource_id:
+            return None
+
         props = self.props
         func_name = props.get("FunctionName")
         lambda_client = aws_stack.connect_to_service("lambda")
-        return lambda_client.get_policy(FunctionName=func_name)
+        policy = lambda_client.get_policy(FunctionName=func_name)
+        if not policy:
+            return None
 
-    def get_physical_resource_id(self, attribute=None, **kwargs):
-        # return statement ID here to indicate that the resource has been deployed
-        return self.props.get("Sid")
+        loaded_policy = json.loads(policy["Policy"])
+        statements = loaded_policy.get("Statement", [])
+        matched_statements = [s for s in statements if s["Sid"] == self.physical_resource_id]
+        if not matched_statements:
+            return None
+
+        return statements[0]
 
     def update_resource(self, new_resource, stack_name, resources):
         props = new_resource["Properties"]
@@ -258,11 +266,10 @@ class LambdaPermission(GenericBaseModel):
         update_config_props = select_attributes(props, parameters_to_select)
 
         client = aws_stack.connect_to_service("lambda")
-        sid = new_resource["PhysicalResourceId"]
-
-        client.remove_permission(FunctionName=update_config_props["FunctionName"], StatementId=sid)
-
-        return client.add_permission(StatementId=sid, **update_config_props)
+        client.remove_permission(
+            FunctionName=update_config_props["FunctionName"], StatementId=self.physical_resource_id
+        )
+        return client.add_permission(StatementId=self.physical_resource_id, **update_config_props)
 
     @staticmethod
     def get_deploy_templates():
@@ -435,7 +442,7 @@ class LambdaCodeSigningConfig(GenericBaseModel):
 
     def get_cfn_attribute(self, attribute_name):
         if attribute_name == "CodeSigningConfigId":
-            return self.props()["CodeSigningConfigId"]
+            return self.props["CodeSigningConfigId"]
 
         return self.physical_resource_id
 

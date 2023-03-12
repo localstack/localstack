@@ -43,8 +43,27 @@ class IntrinsicFunctionTemplate(TemplateLoader):
         _THIS_FOLDER, "statemachines/string_operations/string_split.json5"
     )
 
+    # Encode and Decode.
+    BASE_64_ENCODE: Final[str] = os.path.join(
+        _THIS_FOLDER, "statemachines/encode_decode/base64encode.json5"
+    )
+    BASE_64_DECODE: Final[str] = os.path.join(
+        _THIS_FOLDER, "statemachines/encode_decode/base64decode.json5"
+    )
+
     # Hash Calculations.
     HASH: Final[str] = os.path.join(_THIS_FOLDER, "statemachines/hash_calculations/hash.json5")
+
+    # Math Operations.
+    MATH_RANDOM: Final[str] = os.path.join(
+        _THIS_FOLDER, "statemachines/math_operations/math_random.json5"
+    )
+    MATH_RANDOM_SEEDED: Final[str] = os.path.join(
+        _THIS_FOLDER, "statemachines/math_operations/math_random_seeded.json5"
+    )
+    MATH_ADD: Final[str] = os.path.join(
+        _THIS_FOLDER, "statemachines/math_operations/math_add.json5"
+    )
 
     # Generic.
     FORMAT_1: Final[str] = os.path.join(_THIS_FOLDER, "statemachines/generic/format_1.json5")

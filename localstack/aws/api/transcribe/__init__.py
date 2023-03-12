@@ -458,6 +458,7 @@ class CreateVocabularyFilterRequest(ServiceRequest):
     Words: Optional[Words]
     VocabularyFilterFileUri: Optional[Uri]
     Tags: Optional[TagList]
+    DataAccessRoleArn: Optional[DataAccessRoleArn]
 
 
 class CreateVocabularyFilterResponse(TypedDict, total=False):
@@ -475,6 +476,7 @@ class CreateVocabularyRequest(ServiceRequest):
     Phrases: Optional[Phrases]
     VocabularyFileUri: Optional[Uri]
     Tags: Optional[TagList]
+    DataAccessRoleArn: Optional[DataAccessRoleArn]
 
 
 class CreateVocabularyResponse(TypedDict, total=False):
@@ -993,6 +995,7 @@ class UpdateVocabularyFilterRequest(ServiceRequest):
     VocabularyFilterName: VocabularyFilterName
     Words: Optional[Words]
     VocabularyFilterFileUri: Optional[Uri]
+    DataAccessRoleArn: Optional[DataAccessRoleArn]
 
 
 class UpdateVocabularyFilterResponse(TypedDict, total=False):
@@ -1006,6 +1009,7 @@ class UpdateVocabularyRequest(ServiceRequest):
     LanguageCode: LanguageCode
     Phrases: Optional[Phrases]
     VocabularyFileUri: Optional[Uri]
+    DataAccessRoleArn: Optional[DataAccessRoleArn]
 
 
 class UpdateVocabularyResponse(TypedDict, total=False):
@@ -1062,6 +1066,7 @@ class TranscribeApi:
         phrases: Phrases = None,
         vocabulary_file_uri: Uri = None,
         tags: TagList = None,
+        data_access_role_arn: DataAccessRoleArn = None,
     ) -> CreateVocabularyResponse:
         raise NotImplementedError
 
@@ -1074,6 +1079,7 @@ class TranscribeApi:
         words: Words = None,
         vocabulary_filter_file_uri: Uri = None,
         tags: TagList = None,
+        data_access_role_arn: DataAccessRoleArn = None,
     ) -> CreateVocabularyFilterResponse:
         raise NotImplementedError
 
@@ -1343,6 +1349,7 @@ class TranscribeApi:
         language_code: LanguageCode,
         phrases: Phrases = None,
         vocabulary_file_uri: Uri = None,
+        data_access_role_arn: DataAccessRoleArn = None,
     ) -> UpdateVocabularyResponse:
         raise NotImplementedError
 
@@ -1353,5 +1360,6 @@ class TranscribeApi:
         vocabulary_filter_name: VocabularyFilterName,
         words: Words = None,
         vocabulary_filter_file_uri: Uri = None,
+        data_access_role_arn: DataAccessRoleArn = None,
     ) -> UpdateVocabularyFilterResponse:
         raise NotImplementedError

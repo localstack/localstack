@@ -1,4 +1,6 @@
 import logging
+import os
+import threading
 from typing import Dict, List, Optional, Tuple
 
 from localstack import config
@@ -107,46 +109,72 @@ class KinesisMockServer(Server):
         LOG.info(line.rstrip())
 
 
-def create_kinesis_mock_server(
-    account_id: str, port=None, persist_path: Optional[str] = None
-) -> KinesisMockServer:
-    """
-    Creates a new Kinesis Mock server instance. Installs Kinesis Mock on the host first if necessary.
-    Introspects on the host config to determine server configuration:
-    config.dirs.data -> if set, the server runs with persistence using the path to store data
-    config.LS_LOG -> configure kinesis mock log level (defaults to INFO)
-    config.KINESIS_LATENCY -> configure stream latency (in milliseconds)
-    config.KINESIS_INITIALIZE_STREAMS -> Initialize the given streams on startup
-    """
-    port = port or get_free_tcp_port()
-    kinesismock_package.install()
-    kinesis_mock_bin_path = kinesismock_package.get_installer().get_executable_path()
-    persist_path = (
-        f"{config.dirs.data}/kinesis" if not persist_path and config.dirs.data else persist_path
-    )
-    if persist_path:
+class KinesisServerManager:
+    default_startup_timeout = 60
+
+    def __init__(self):
+        self._lock = threading.RLock()
+        self._servers: dict[str, KinesisMockServer] = {}
+
+    def get_server_for_account(self, account_id: str) -> KinesisMockServer:
+        if account_id in self._servers:
+            return self._servers[account_id]
+
+        with self._lock:
+            if account_id in self._servers:
+                return self._servers[account_id]
+
+            LOG.info("Creating kinesis backend for account %s", account_id)
+            self._servers[account_id] = self._create_kinesis_mock_server(account_id)
+            self._servers[account_id].start()
+            if not self._servers[account_id].wait_is_up(timeout=self.default_startup_timeout):
+                raise TimeoutError("gave up waiting for kinesis backend to start up")
+            return self._servers[account_id]
+
+    def shutdown_all(self):
+        with self._lock:
+            while self._servers:
+                account_id, server = self._servers.popitem()
+                LOG.info("Shutting down kinesis backend for account %s", account_id)
+                server.shutdown()
+
+    def _create_kinesis_mock_server(self, account_id: str) -> KinesisMockServer:
+        """
+        Creates a new Kinesis Mock server instance. Installs Kinesis Mock on the host first if necessary.
+        Introspects on the host config to determine server configuration:
+        config.dirs.data -> if set, the server runs with persistence using the path to store data
+        config.LS_LOG -> configure kinesis mock log level (defaults to INFO)
+        config.KINESIS_LATENCY -> configure stream latency (in milliseconds)
+        config.KINESIS_INITIALIZE_STREAMS -> Initialize the given streams on startup
+        """
+        port = get_free_tcp_port()
+        kinesismock_package.install()
+        kinesis_mock_bin_path = kinesismock_package.get_installer().get_executable_path()
+
+        # kinesis-mock stores state in json files <account_id>.json, so we can dump everything into `kinesis/`
+        persist_path = os.path.join(config.dirs.data, "kinesis")
         mkdir(persist_path)
 
-    if config.LS_LOG:
-        if config.LS_LOG == "warning":
-            log_level = "WARN"
+        if config.LS_LOG:
+            if config.LS_LOG == "warning":
+                log_level = "WARN"
+            else:
+                log_level = config.LS_LOG.upper()
         else:
-            log_level = config.LS_LOG.upper()
-    else:
-        log_level = "INFO"
+            log_level = "INFO"
 
-    latency = config.KINESIS_LATENCY + "ms"
-    initialize_streams = (
-        config.KINESIS_INITIALIZE_STREAMS if config.KINESIS_INITIALIZE_STREAMS else None
-    )
+        latency = config.KINESIS_LATENCY + "ms"
+        initialize_streams = (
+            config.KINESIS_INITIALIZE_STREAMS if config.KINESIS_INITIALIZE_STREAMS else None
+        )
 
-    server = KinesisMockServer(
-        port=port,
-        bin_path=kinesis_mock_bin_path,
-        log_level=log_level,
-        latency=latency,
-        initialize_streams=initialize_streams,
-        data_dir=persist_path,
-        account_id=account_id,
-    )
-    return server
+        server = KinesisMockServer(
+            port=port,
+            bin_path=kinesis_mock_bin_path,
+            log_level=log_level,
+            latency=latency,
+            initialize_streams=initialize_streams,
+            data_dir=persist_path,
+            account_id=account_id,
+        )
+        return server

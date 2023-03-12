@@ -125,7 +125,7 @@ from localstack.services.s3.utils import (
     verify_checksum,
 )
 from localstack.services.s3.website_hosting import register_website_hosting_routes
-from localstack.utils.aws import aws_stack
+from localstack.utils.aws import arns, aws_stack
 from localstack.utils.aws.arns import s3_bucket_name
 from localstack.utils.collections import get_safe
 from localstack.utils.patch import patch
@@ -363,6 +363,9 @@ class S3Provider(S3Api, ServiceLifecycleHook):
         moto_bucket = get_bucket_from_moto(moto_backend, bucket=bucket)
         key_object = get_key_from_moto_bucket(moto_bucket, key=key)
 
+        if not config.S3_SKIP_KMS_KEY_VALIDATION and key_object.kms_key_id:
+            validate_kms_key_id(kms_key=key_object.kms_key_id, bucket=moto_bucket)
+
         if checksum_algorithm := key_object.checksum_algorithm:
             # this is a bug in AWS: it sets the content encoding header to an empty string (parity tested)
             response["ContentEncoding"] = ""
@@ -389,10 +392,10 @@ class S3Provider(S3Api, ServiceLifecycleHook):
             verify_checksum(checksum_algorithm, context.request.data, request)
 
         moto_backend = get_moto_s3_backend(context)
-        bucket = get_bucket_from_moto(moto_backend, bucket=request["Bucket"])
+        moto_bucket = get_bucket_from_moto(moto_backend, bucket=request["Bucket"])
 
         if not config.S3_SKIP_KMS_KEY_VALIDATION and (sse_kms_key_id := request.get("SSEKMSKeyId")):
-            validate_kms_key_id(sse_kms_key_id, bucket)
+            validate_kms_key_id(sse_kms_key_id, moto_bucket)
 
         try:
             response: PutObjectOutput = call_moto(context)
@@ -407,12 +410,21 @@ class S3Provider(S3Api, ServiceLifecycleHook):
 
         # moto interprets the Expires in query string for presigned URL as an Expires header and use it for the object
         # we set it to the correctly parsed value in Request, else we remove it from moto metadata
-        key_object = get_key_from_moto_bucket(bucket, key=request["Key"])
+        key_object = get_key_from_moto_bucket(moto_bucket, key=request["Key"])
         if expires := request.get("Expires"):
             key_object.set_expiry(expires)
         elif "expires" in key_object.metadata:  # if it got added from query string parameter
             metadata = {k: v for k, v in key_object.metadata.items() if k != "expires"}
             key_object.set_metadata(metadata, replace=True)
+
+        if key_object.kms_key_id:
+            # set the proper format of the key to be an ARN
+            key_object.kms_key_id = arns.kms_key_arn(
+                key_id=key_object.kms_key_id,
+                account_id=moto_bucket.account_id,
+                region_name=moto_bucket.region_name,
+            )
+            response["SSEKMSKeyId"] = key_object.kms_key_id
 
         self._notify(context)
 

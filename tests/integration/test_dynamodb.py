@@ -8,12 +8,17 @@ import pytest
 from boto3.dynamodb.conditions import Key
 from boto3.dynamodb.types import STRING
 
+from localstack.aws.api.dynamodb import (
+    ContinuousBackupsUnavailableException,
+    PointInTimeRecoverySpecification,
+)
 from localstack.constants import TEST_AWS_SECRET_ACCESS_KEY
 from localstack.services.dynamodbstreams.dynamodbstreams_api import get_kinesis_stream_name
 from localstack.testing.snapshots.transformer import SortingTransformer
 from localstack.utils import testutil
 from localstack.utils.aws import arns, aws_stack, queries, resources
 from localstack.utils.common import json_safe, long_uid, retry, short_uid
+from localstack.utils.sync import poll_condition
 
 from .test_kinesis import get_shard_iterator
 
@@ -1609,6 +1614,45 @@ class TestDynamoDB:
             "Records"
         ]
         snapshot.match("GetRecordsAfterUpdate", records[1]["dynamodb"]["NewImage"])
+
+    @pytest.mark.skip_snapshot_verify(
+        paths=[
+            "$..PointInTimeRecoveryDescription..EarliestRestorableDateTime",
+            "$..PointInTimeRecoveryDescription..LatestRestorableDateTime",
+        ]
+    )
+    def test_continuous_backup_update(self, dynamodb_create_table, dynamodb_client, snapshot):
+        table_name = f"table-{short_uid()}"
+        dynamodb_create_table(
+            table_name=table_name,
+            partition_key=PARTITION_KEY,
+        )
+
+        def wait_for_continuous_backend():
+            try:
+                dynamodb_client.update_continuous_backups(
+                    TableName=table_name,
+                    PointInTimeRecoverySpecification=PointInTimeRecoverySpecification(
+                        PointInTimeRecoveryEnabled=True
+                    ),
+                )
+                return True
+            except ContinuousBackupsUnavailableException:
+                return False
+
+        assert poll_condition(wait_for_continuous_backend, timeout=10)
+
+        response = dynamodb_client.update_continuous_backups(
+            TableName=table_name,
+            PointInTimeRecoverySpecification=PointInTimeRecoverySpecification(
+                PointInTimeRecoveryEnabled=True
+            ),
+        )
+
+        snapshot.match("update-continuous-backup", response)
+
+        response = dynamodb_client.describe_continuous_backups(TableName=table_name)
+        snapshot.match("describe-continuous-backup", response)
 
 
 def delete_table(name):

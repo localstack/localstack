@@ -137,7 +137,8 @@ jobs:
           terraform_version: 0.13.7
       - name: Set up system wide dependencies
         run: |
-          sudo apt-get install --allow-downgrades libsasl2-dev jq postgresql-14=14.6-0ubuntu0.22.04.1 postgresql-client postgresql-plpython3
+          sudo apt-get update
+          sudo apt-get install -y --allow-downgrades libsasl2-dev jq postgresql-14=14.7-0ubuntu0.22.04.1 postgresql-client postgresql-plpython3
       - name: Cache LocalStack-ext dependencies (venv)
         uses: actions/cache@v2
         id: ext-cache

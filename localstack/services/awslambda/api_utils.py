@@ -80,6 +80,8 @@ VERSION_REGEX = re.compile(r"^[0-9]+$")
 # Rules: https://docs.aws.amazon.com/lambda/latest/dg/API_CreateAlias.html#SSS-CreateAlias-request-Name
 # The original regex from AWS misses ^ and $ in the second regex, which allowed for partial substring matches
 ALIAS_REGEX = re.compile(r"(?!^[0-9]+)(^[a-zA-Z0-9-_]+$)")
+# Permission statement id
+STATEMENT_ID_REGEX = re.compile(r"^[a-zA-Z0-9-_]+$")
 
 
 URL_CHAR_SET = string.ascii_lowercase + string.digits
@@ -468,6 +470,8 @@ def map_config_out(
         PackageType=version.config.package_type,
         TracingConfig=TracingConfig(Mode=version.config.tracing_config_mode),
         EphemeralStorage=EphemeralStorage(Size=version.config.ephemeral_storage.size),
+        SnapStart=version.config.snap_start,
+        RuntimeVersionConfig=version.config.runtime_version_config,
         **optional_kwargs,
     )
     return func_conf
@@ -483,6 +487,7 @@ def map_to_list_response(config: FunctionConfiguration) -> FunctionConfiguration
         "LastUpdateStatus",
         "LastUpdateStatusReason",
         "LastUpdateStatusReasonCode",
+        "RuntimeVersionConfig",
     ]:
         shallow_copy.pop(k, None)
     return shallow_copy
@@ -570,10 +575,11 @@ def parse_layer_arn(layer_version_arn: str):
     )
 
 
-# TODO: save list of valid runtimes somewhere
+# TODO: use list of valid runtimes from botocore through validators. See:
+#  https://github.com/localstack/localstack/pull/7675#discussion_r1107777058
 def validate_layer_runtime(compatible_runtime: str) -> str | None:
     if compatible_runtime is not None and compatible_runtime not in RUNTIMES:
-        return f"Value '{compatible_runtime}' at 'compatibleRuntime' failed to satisfy constraint: Member must satisfy enum value set: [ruby2.6, dotnetcore1.0, python3.7, nodejs8.10, nasa, ruby2.7, python2.7-greengrass, dotnetcore2.0, python3.8, dotnet6, dotnetcore2.1, python3.9, java11, nodejs6.10, provided, dotnetcore3.1, java17, nodejs, nodejs4.3, java8.al2, go1.x, go1.9, byol, nodejs10.x, python3.10, java8, nodejs12.x, nodejs8.x, nodejs14.x, nodejs8.9, nodejs16.x, provided.al2, nodejs4.3-edge, nodejs18.x, python3.4, ruby2.5, python3.6, python2.7]"
+        return f"Value '{compatible_runtime}' at 'compatibleRuntime' failed to satisfy constraint: Member must satisfy enum value set: [ruby2.6, dotnetcore1.0, python3.7, nodejs8.10, nasa, ruby2.7, python2.7-greengrass, dotnetcore2.0, python3.8, dotnet6, dotnetcore2.1, python3.9, java11, nodejs6.10, provided, dotnetcore3.1, java17, nodejs, nodejs4.3, java8.al2, go1.x, nodejs20.x, go1.9, byol, nodejs10.x, python3.10, java8, nodejs12.x, nodejs8.x, nodejs14.x, nodejs8.9, nodejs16.x, provided.al2, nodejs4.3-edge, nodejs18.x, ruby3.2, python3.4, ruby2.5, python3.6, python2.7]"
     return None
 
 

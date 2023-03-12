@@ -13,6 +13,16 @@ from localstack.utils.strings import to_bytes, to_str
 from localstack.utils.sync import retry, wait_until
 from localstack.utils.testutil import get_lambda_log_events
 
+pytestmark = pytest.mark.skip_snapshot_verify(
+    condition=is_old_provider,
+    paths=[
+        # Generally unsupported in old provider
+        "$..Configuration.RuntimeVersionConfig",
+        "$..Configuration.SnapStart",
+        "$..Versions..SnapStart",
+    ],
+)
+
 
 @pytest.mark.skipif(condition=is_new_provider(), reason="not implemented yet")
 @pytest.mark.aws_validated
@@ -328,6 +338,34 @@ def test_update_lambda_permissions(deploy_cfn_template, lambda_client, sts_clien
     assert new_principal in principal
 
 
+@pytest.mark.skip_snapshot_verify(
+    condition=is_old_provider, paths=["$..PolicyArn", "$..PolicyName", "$..RevisionId"]
+)
+@pytest.mark.aws_validated
+def test_multiple_lambda_permissions_for_singlefn(
+    deploy_cfn_template, cfn_client, lambda_client, snapshot
+):
+    deploy = deploy_cfn_template(
+        template_path=os.path.join(
+            os.path.dirname(__file__), "../../templates/cfn_lambda_permission_multiple.yaml"
+        ),
+        max_wait=240,
+    )
+    fn_name = deploy.outputs["LambdaName"]
+    p1_sid = deploy.outputs["PermissionLambda"]
+    p2_sid = deploy.outputs["PermissionStates"]
+
+    snapshot.add_transformer(snapshot.transform.regex(p1_sid, "<p1-sid>"))
+    snapshot.add_transformer(snapshot.transform.regex(p2_sid, "<p2-sid>"))
+    snapshot.add_transformer(snapshot.transform.regex(fn_name, "<fn-name>"))
+    snapshot.add_transformer(SortingTransformer("Statement", lambda s: s["Sid"]))
+
+    policy = lambda_client.get_policy(FunctionName=fn_name)
+    # load the policy json, so we can properly snapshot it
+    policy["Policy"] = json.loads(policy["Policy"])
+    snapshot.match("policy", policy)
+
+
 class TestCfnLambdaIntegrations:
     @pytest.mark.skip_snapshot_verify(
         paths=[
@@ -577,6 +615,14 @@ class TestCfnLambdaIntegrations:
             "$..StartingPosition",
             "$..StateTransitionReason",
             "$..Topics",
+            # resource index mismatch due to SnapStart
+            "$..StreamDescription.StreamArn",
+            "$..StreamDescription.TableName",
+            "$..Table.LatestStreamArn",
+            "$..Table.TableArn",
+            "$..Table.TableName",
+            "$..EventSourceArn",
+            "$..policies..PolicyDocument.Statement..Resource",
         ],
     )
     @pytest.mark.skip_snapshot_verify(

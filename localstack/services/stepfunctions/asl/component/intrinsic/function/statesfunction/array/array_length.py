@@ -27,7 +27,6 @@ class ArrayLength(StatesFunction):
     #
     # Returns
     # 9
-
     def __init__(self, arg_list: FunctionArgumentList):
         super().__init__(
             states_name=StatesFunctionName(function_type=StatesFunctionNameType.ArrayLength),

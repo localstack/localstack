@@ -78,6 +78,9 @@ class AssetDirectory:
 
         self.path = path
 
+    def __str__(self):
+        return self.path
+
 
 class Encoder:
     def encodes(self, obj: Any) -> bytes:

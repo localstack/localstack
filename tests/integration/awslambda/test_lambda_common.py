@@ -45,15 +45,16 @@ def snapshot_transformers(snapshot):
 class TestLambdaRuntimesCommon:
     """
     Directly correlates to the structure found in tests.integration.awslambda.functions.common
-
-    each scenario has the following folder structure
-
-    ./common/<scenario>/runtime/
-
-    runtime can either be directly one of the supported runtimes (e.g. in case of version specific compilation instructions) or one of the keys in RUNTIMES_AGGREGATED
-
+    Each scenario has the following folder structure: ./common/<scenario>/runtime/
+    Runtime can either be directly one of the supported runtimes (e.g. in case of version specific compilation instructions) or one of the keys in RUNTIMES_AGGREGATED
+    To selectively execute runtimes, use the runtimes parameter of multiruntime. Example: runtimes=[Runtime.go1_x]
     """
 
+    # TODO: refactor builds:
+    # * Remove specific hashes and `touch -t` since we're not actually checking size & hash of the zip files anymore
+    # * Create a generic parametrizable Makefile per runtime (possibly with an option to provide a specific one)
+
+    @pytest.mark.aws_validated
     @pytest.mark.multiruntime(scenario="echo")
     def test_echo_invoke(self, lambda_client, multiruntime_lambda):
         # provided lambdas take a little longer for large payloads, hence timeout to 5s
@@ -101,33 +102,36 @@ class TestLambdaRuntimesCommon:
         assert json.loads(invoke_result["Payload"].read()) == {}
         assert not invoke_result.get("FunctionError")
 
-    # skip snapshots of LS specific env variables / xray variables
+    # skip snapshots of LS specific env variables
     @pytest.mark.skip_snapshot_verify(
         paths=[
+            # LocalStack API
+            "$..environment.LOCALSTACK_HOSTNAME",
+            "$..environment.EDGE_PORT",
+            "$..environment.AWS_ENDPOINT_URL",
+            # TODO: unset RIE API vars in RIE
+            "$..environment.AWS_LAMBDA_FUNCTION_TIMEOUT",
+            # AWS SDK container credentials:
+            # https://docs.aws.amazon.com/sdkref/latest/guide/feature-container-credentials.html
             "$..environment.AWS_CONTAINER_AUTHORIZATION_TOKEN",
             "$..environment.AWS_CONTAINER_CREDENTIALS_FULL_URI",
-            "$..environment.AWS_ENDPOINT_URL",
-            "$..environment.AWS_LAMBDA_FUNCTION_TIMEOUT",
+            # TODO: xray
             "$..environment.AWS_XRAY_CONTEXT_MISSING",
             "$..environment.AWS_XRAY_DAEMON_ADDRESS",
-            "$..environment.EDGE_PORT",
-            "$..environment.HOME",
-            "$..environment.HOSTNAME",
-            "$..environment.LOCALSTACK_HOSTNAME",
-            "$..environment.LOCALSTACK_RUNTIME_ENDPOINT",
-            "$..environment.LOCALSTACK_RUNTIME_ID",
-            "$..environment.RUNTIME_ROOT",
-            "$..environment.TASK_ROOT",
             "$..environment._AWS_XRAY_DAEMON_ADDRESS",
             "$..environment._AWS_XRAY_DAEMON_PORT",
-            "$..environment._LAMBDA_TELEMETRY_LOG_FD",  # Only java8, dotnetcore3.1, dotnet6, go1.x
             "$..environment._X_AMZN_TRACE_ID",
+            # Specific runtimes
+            # TODO: Only nodejs18.x: AWS=/etc/pki/tls/certs/ca-bundle.crt LS=var/runtime/ca-cert.pem
+            "$..environment.NODE_EXTRA_CA_CERTS",
+            "$..environment._LAMBDA_TELEMETRY_LOG_FD",  # Only java8, dotnetcore3.1, dotnet6, go1.x
             "$..environment.AWS_EXECUTION_ENV",  # Only rust runtime
             "$..environment.LD_LIBRARY_PATH",  # Only rust runtime (additional /var/lang/bin)
             "$..environment.PATH",  # Only rust runtime (additional /var/lang/bin)
             "$..CodeSha256",  # works locally but unfortunately still produces a different hash in CI
         ]
     )
+    @pytest.mark.aws_validated
     @pytest.mark.multiruntime(scenario="introspection")
     def test_introspection_invoke(self, lambda_client, multiruntime_lambda, snapshot):
         create_function_result = multiruntime_lambda.create_function(
@@ -165,6 +169,7 @@ class TestLambdaRuntimesCommon:
             "$..CodeSha256",  # works locally but unfortunately still produces a different hash in CI
         ]
     )
+    @pytest.mark.aws_validated
     @pytest.mark.multiruntime(scenario="uncaughtexception")
     def test_uncaught_exception_invoke(self, lambda_client, multiruntime_lambda, snapshot):
         # unfortunately the stack trace is quite unreliable and changes when AWS updates the runtime transparently
@@ -190,9 +195,9 @@ class TestLambdaRuntimesCommon:
     @pytest.mark.skip_snapshot_verify(
         paths=[
             "$..CodeSha256",  # works locally but unfortunately still produces a different hash in CI
-            "$..SnapStart",  # FIXME needs to be added to CreateFunction + all snapshots regenerated
         ]
     )
+    @pytest.mark.aws_validated
     # this does only work on al2 lambdas, except provided.al2.
     # Source: https://docs.aws.amazon.com/lambda/latest/dg/runtimes-modify.html#runtime-wrapper
     @pytest.mark.multiruntime(

@@ -214,6 +214,7 @@ class ShellCommandThread(FuncThread):
         stop_listener: Callable = None,
         strip_color: bool = False,
         name: Optional[str] = None,
+        cwd: Optional[str] = None,
     ):
         params = params if params is not None else {}
         env_vars = env_vars if env_vars is not None else {}
@@ -230,6 +231,7 @@ class ShellCommandThread(FuncThread):
         self.stop_listener = stop_listener
         self.strip_color = strip_color
         self.started = threading.Event()
+        self.cwd = cwd
         FuncThread.__init__(
             self, self.run_cmd, params, quiet=quiet, name=(name or "shell-cmd-thread")
         )
@@ -274,6 +276,7 @@ class ShellCommandThread(FuncThread):
                 env_vars=self.env_vars,
                 inherit_cwd=self.inherit_cwd,
                 inherit_env=self.inherit_env,
+                cwd=self.cwd,
             )
             self.started.set()
             if outfile:

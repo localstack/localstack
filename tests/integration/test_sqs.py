@@ -3097,6 +3097,14 @@ class TestSqsQueryApi:
         assert response.ok
         assert "foobar" in response.text
 
+    def test_queue_url_format_path_strategy(self, sqs_create_queue, monkeypatch):
+        monkeypatch.setattr(config, "SQS_ENDPOINT_STRATEGY", "path")
+        queue_name = f"path_queue_{short_uid()}"
+        queue_url = sqs_create_queue(QueueName=queue_name)
+        assert (
+            f"localhost:4566/queue/{get_region()}/{get_aws_account_id()}/{queue_name}" in queue_url
+        )
+
     @pytest.mark.aws_validated
     def test_overwrite_queue_url_in_params(self, sqs_create_queue, sqs_http_client):
         # here, queue1 url simply serves as AWS endpoint but we pass queue2 url in the request arg

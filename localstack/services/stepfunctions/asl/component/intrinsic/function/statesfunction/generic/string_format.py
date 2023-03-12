@@ -38,7 +38,6 @@ class StringFormat(StatesFunction):
     #
     # Return
     # Hello, my name is Arnav.
-
     _DELIMITER: Final[str] = "{}"
 
     def __init__(self, arg_list: FunctionArgumentList):
@@ -51,9 +50,8 @@ class StringFormat(StatesFunction):
                 f"Expected at least 1 argument for function type '{type(self)}', but got: '{arg_list}'."
             )
         if not isinstance(arg_list.arg_list[0], FunctionArgumentString):
-            raise TypeError(
-                f"Expected the first argument for function type '{type(self)}' "
-                f"to be a string, but got: '{arg_list.arg_list[0]}'."
+            raise ValueError(
+                f"Expected the first argument for function type '{type(self)}' to be a string, but got: '{arg_list.arg_list[0]}'."
             )
 
     def _eval_body(self, env: Environment) -> None:

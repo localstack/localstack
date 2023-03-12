@@ -1,6 +1,6 @@
 {
   "tests/integration/awslambda/test_lambda_integration_kinesis.py::TestKinesisSource::test_create_kinesis_event_source_mapping": {
-    "recorded-date": "31-08-2022, 16:49:34",
+    "recorded-date": "27-02-2023, 16:54:02",
     "recorded-content": {
       "create_event_source_mapping_response": {
         "BatchSize": 100,
@@ -17,15 +17,15 @@
         "MaximumRecordAgeInSeconds": -1,
         "MaximumRetryAttempts": -1,
         "ParallelizationFactor": 1,
-        "ResponseMetadata": {
-          "HTTPHeaders": {},
-          "HTTPStatusCode": 202
-        },
         "StartingPosition": "LATEST",
         "State": "Creating",
         "StateTransitionReason": "User action",
         "TumblingWindowInSeconds": 0,
-        "UUID": "<uuid:1>"
+        "UUID": "<uuid:1>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 202
+        }
       },
       "kinesis_records": {
         "Records": [
@@ -194,7 +194,7 @@
     }
   },
   "tests/integration/awslambda/test_lambda_integration_kinesis.py::TestKinesisSource::test_kinesis_event_source_mapping_with_async_invocation": {
-    "recorded-date": "31-08-2022, 17:29:57",
+    "recorded-date": "27-02-2023, 16:55:08",
     "recorded-content": {
       "create_event_source_mapping_response": {
         "BatchSize": 10,
@@ -211,15 +211,15 @@
         "MaximumRecordAgeInSeconds": -1,
         "MaximumRetryAttempts": -1,
         "ParallelizationFactor": 1,
-        "ResponseMetadata": {
-          "HTTPHeaders": {},
-          "HTTPStatusCode": 202
-        },
         "StartingPosition": "LATEST",
         "State": "Creating",
         "StateTransitionReason": "User action",
         "TumblingWindowInSeconds": 0,
-        "UUID": "<uuid:1>"
+        "UUID": "<uuid:1>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 202
+        }
       },
       "invocation_events": [
         {
@@ -560,7 +560,7 @@
     }
   },
   "tests/integration/awslambda/test_lambda_integration_kinesis.py::TestKinesisSource::test_kinesis_event_source_trim_horizon": {
-    "recorded-date": "31-08-2022, 17:46:37",
+    "recorded-date": "27-02-2023, 16:56:17",
     "recorded-content": {
       "create_event_source_mapping_response": {
         "BatchSize": 10,
@@ -577,15 +577,15 @@
         "MaximumRecordAgeInSeconds": -1,
         "MaximumRetryAttempts": -1,
         "ParallelizationFactor": 1,
-        "ResponseMetadata": {
-          "HTTPHeaders": {},
-          "HTTPStatusCode": 202
-        },
         "StartingPosition": "TRIM_HORIZON",
         "State": "Creating",
         "StateTransitionReason": "User action",
         "TumblingWindowInSeconds": 0,
-        "UUID": "<uuid:1>"
+        "UUID": "<uuid:1>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 202
+        }
       },
       "invocation_events": [
         {
@@ -1093,7 +1093,7 @@
     }
   },
   "tests/integration/awslambda/test_lambda_integration_kinesis.py::TestKinesisSource::test_disable_kinesis_event_source_mapping": {
-    "recorded-date": "01-09-2022, 11:31:14",
+    "recorded-date": "27-02-2023, 16:59:49",
     "recorded-content": {
       "create_event_source_mapping_response": {
         "BatchSize": 10,
@@ -1110,15 +1110,15 @@
         "MaximumRecordAgeInSeconds": -1,
         "MaximumRetryAttempts": -1,
         "ParallelizationFactor": 1,
-        "ResponseMetadata": {
-          "HTTPHeaders": {},
-          "HTTPStatusCode": 202
-        },
         "StartingPosition": "LATEST",
         "State": "Creating",
         "StateTransitionReason": "User action",
         "TumblingWindowInSeconds": 0,
-        "UUID": "<uuid:1>"
+        "UUID": "<uuid:1>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 202
+        }
       },
       "invocation_events": [
         {
@@ -1289,7 +1289,7 @@
     }
   },
   "tests/integration/awslambda/test_lambda_integration_kinesis.py::TestKinesisSource::test_kinesis_event_source_mapping_with_on_failure_destination_config": {
-    "recorded-date": "01-09-2022, 12:38:29",
+    "recorded-date": "27-02-2023, 17:01:08",
     "recorded-content": {
       "create_event_source_mapping_response": {
         "BatchSize": 1,
@@ -1308,15 +1308,15 @@
         "MaximumRecordAgeInSeconds": -1,
         "MaximumRetryAttempts": 1,
         "ParallelizationFactor": 1,
-        "ResponseMetadata": {
-          "HTTPHeaders": {},
-          "HTTPStatusCode": 202
-        },
         "StartingPosition": "TRIM_HORIZON",
         "State": "Creating",
         "StateTransitionReason": "User action",
         "TumblingWindowInSeconds": 0,
-        "UUID": "<uuid:1>"
+        "UUID": "<uuid:1>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 202
+        }
       },
       "sqs_payload": {
         "Messages": [

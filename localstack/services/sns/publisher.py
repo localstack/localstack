@@ -180,11 +180,13 @@ class LambdaTopicPublisher(TopicPublisher):
             )
             status_code = inv_result.get("StatusCode")
             payload = inv_result.get("Payload")
-
             if payload:
                 delivery = {
                     "statusCode": status_code,
-                    "providerResponse": payload.read(),
+                    # TODO: normally, this is the lambda RequestId (invocation id)
+                    # but we don't get it from the response, this could change if we set the RequestId when we receive
+                    # the request instead of when sending the response. For now, mock it with a random UUID
+                    "providerResponse": json.dumps({"lambdaRequestId": long_uid()}),
                 }
                 store_delivery_log(context.message, subscriber, success=True, delivery=delivery)
 
@@ -510,9 +512,7 @@ class ApplicationTopicPublisher(TopicPublisher):
     def _publish(self, context: SnsPublishContext, subscriber: SnsSubscription):
         endpoint_arn = subscriber["Endpoint"]
         message = self.prepare_message(context.message, subscriber)
-        cache = context.store.platform_endpoint_messages[endpoint_arn] = (
-            context.store.platform_endpoint_messages.get(endpoint_arn) or []
-        )
+        cache = context.store.platform_endpoint_messages.setdefault(endpoint_arn, [])
         cache.append(message)
 
         if (
@@ -652,9 +652,7 @@ class ApplicationEndpointPublisher(EndpointPublisher):
 
     def _publish(self, context: SnsPublishContext, endpoint: str):
         message = self.prepare_message(context.message, endpoint)
-        cache = context.store.platform_endpoint_messages[endpoint] = (
-            context.store.platform_endpoint_messages.get(endpoint) or []
-        )
+        cache = context.store.platform_endpoint_messages.setdefault(endpoint, [])
         cache.append(message)
 
         if (
@@ -834,13 +832,15 @@ def store_delivery_log(
     message_context: SnsMessage, subscriber: SnsSubscription, success: bool, delivery: dict = None
 ):
     """Store the delivery logs in CloudWatch"""
+    # TODO: this is enabled by default in LocalStack, but not in AWS
+    # TODO: validate format of `delivery` for each Publisher
     log_group_name = subscriber.get("TopicArn", "").replace("arn:aws:", "").replace(":", "/")
     log_stream_name = long_uid()
     invocation_time = int(time.time() * 1000)
 
     delivery = not_none_or(delivery, {})
-    delivery["deliveryId"] = (long_uid(),)
-    delivery["destination"] = (subscriber.get("Endpoint", ""),)
+    delivery["deliveryId"] = long_uid()
+    delivery["destination"] = subscriber.get("Endpoint", "")
     delivery["dwellTimeMs"] = 200
     if not success:
         delivery["attemps"] = 1
@@ -1059,13 +1059,25 @@ class PublishDispatcher:
         self.executor.shutdown(wait=False)
 
     def _should_publish(
-        self, store: SnsStore, message_ctx: SnsMessage, subscriber: SnsSubscription
+        self,
+        subscription_filter_policy: dict[str, dict],
+        message_ctx: SnsMessage,
+        subscriber: SnsSubscription,
     ):
         """
-        Validate that the message should be relayed to the subscriber, depending on the filter policy
+        Validate that the message should be relayed to the subscriber, depending on the filter policy and the
+        subscription status
         """
+        # FIXME: for now, send to email even if not confirmed, as we do not send the token to confirm to email
+        # subscriptions
+        if (
+            not subscriber["PendingConfirmation"] == "false"
+            and "email" not in subscriber["Protocol"]
+        ):
+            return
+
         subscriber_arn = subscriber["SubscriptionArn"]
-        filter_policy = store.subscription_filter_policy.get(subscriber_arn)
+        filter_policy = subscription_filter_policy.get(subscriber_arn)
         if not filter_policy:
             return True
         # default value is `MessageAttributes`
@@ -1081,9 +1093,9 @@ class PublishDispatcher:
                 )
 
     def publish_to_topic(self, ctx: SnsPublishContext, topic_arn: str) -> None:
-        subscriptions = ctx.store.sns_subscriptions.get(topic_arn, [])
+        subscriptions = ctx.store.get_topic_subscriptions(topic_arn)
         for subscriber in subscriptions:
-            if self._should_publish(ctx.store, ctx.message, subscriber):
+            if self._should_publish(ctx.store.subscription_filter_policy, ctx.message, subscriber):
                 notifier = self.topic_notifiers[subscriber["Protocol"]]
                 LOG.debug(
                     "Topic '%s' publishing '%s' to subscribed '%s' with protocol '%s' (subscription '%s')",
@@ -1096,7 +1108,7 @@ class PublishDispatcher:
                 self.executor.submit(notifier.publish, context=ctx, subscriber=subscriber)
 
     def publish_batch_to_topic(self, ctx: SnsBatchPublishContext, topic_arn: str) -> None:
-        subscriptions = ctx.store.sns_subscriptions.get(topic_arn, [])
+        subscriptions = ctx.store.get_topic_subscriptions(topic_arn)
         for subscriber in subscriptions:
             protocol = subscriber["Protocol"]
             notifier = self.batch_topic_notifiers.get(protocol)
@@ -1107,7 +1119,9 @@ class PublishDispatcher:
                 filtered_messages = [
                     message
                     for message in ctx.messages
-                    if self._should_publish(ctx.store, message, subscriber)
+                    if self._should_publish(
+                        ctx.store.subscription_filter_policy, message, subscriber
+                    )
                 ]
                 if not filtered_messages:
                     LOG.debug(
@@ -1145,7 +1159,9 @@ class PublishDispatcher:
                 # if no batch support, fall back to sending them sequentially
                 notifier = self.topic_notifiers[subscriber["Protocol"]]
                 for message in ctx.messages:
-                    if self._should_publish(ctx.store, message, subscriber):
+                    if self._should_publish(
+                        ctx.store.subscription_filter_policy, message, subscriber
+                    ):
                         individual_ctx = SnsPublishContext(
                             message=message, store=ctx.store, request_headers=ctx.request_headers
                         )
@@ -1191,18 +1207,17 @@ class PublishDispatcher:
         :param subscription_arn: the ARN of the subscriber
         :return: None
         """
-        subscriptions: List[SnsSubscription] = ctx.store.sns_subscriptions.get(topic_arn, [])
-        for subscriber in subscriptions:
-            if subscriber["SubscriptionArn"] == subscription_arn:
-                notifier = self.topic_notifiers[subscriber["Protocol"]]
-                LOG.debug(
-                    "Topic '%s' publishing '%s' to subscribed '%s' with protocol '%s' (Id='%s', Subscription='%s')",
-                    topic_arn,
-                    ctx.message.type,
-                    subscription_arn,
-                    subscriber["Protocol"],
-                    ctx.message.message_id,
-                    subscriber.get("Endpoint"),
-                )
-                self.executor.submit(notifier.publish, context=ctx, subscriber=subscriber)
-                return
+        subscriber = ctx.store.subscriptions.get(subscription_arn)
+        if not subscriber:
+            return
+        notifier = self.topic_notifiers[subscriber["Protocol"]]
+        LOG.debug(
+            "Topic '%s' publishing '%s' to subscribed '%s' with protocol '%s' (Id='%s', Subscription='%s')",
+            topic_arn,
+            ctx.message.type,
+            subscription_arn,
+            subscriber["Protocol"],
+            ctx.message.message_id,
+            subscriber.get("Endpoint"),
+        )
+        self.executor.submit(notifier.publish, context=ctx, subscriber=subscriber)

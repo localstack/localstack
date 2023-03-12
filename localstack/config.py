@@ -361,6 +361,12 @@ DATA_DIR = os.environ.get("DATA_DIR", "").strip()
 # whether localstack should persist service state across localstack runs
 PERSISTENCE = is_env_true("PERSISTENCE")
 
+# the strategy for loading snapshots from disk when `PERSISTENCE=1` is used (on_startup, on_request, manual)
+SNAPSHOT_LOAD_STRATEGY = os.environ.get("SNAPSHOT_LOAD_STRATEGY", "").upper()
+
+# the strategy saving snapshots to disk when `PERSISTENCE=1` is used (on_shutdown, on_request, scheduled, manual)
+SNAPSHOT_SAVE_STRATEGY = os.environ.get("SNAPSHOT_SAVE_STRATEGY", "").upper()
+
 # whether to clear config.dirs.tmp on startup and shutdown
 CLEAR_TMP_FOLDER = is_env_not_false("CLEAR_TMP_FOLDER")
 
@@ -674,6 +680,16 @@ LAMBDA_KEEPALIVE_MS = int(os.environ.get("LAMBDA_KEEPALIVE_MS", "600000"))
 # reach the container via its IPv4 (e.g., macOS https://docs.docker.com/desktop/networking/#i-cannot-ping-my-containers)
 LAMBDA_DEV_PORT_EXPOSE = is_env_true("LAMBDA_DEV_PORT_EXPOSE")
 
+# INTERNAL debugging options
+# There are NO stability guarantees and they may break at any time.
+LAMBDA_INIT_DEBUG = is_env_true("LAMBDA_INIT_DEBUG")
+LAMBDA_INIT_BIN_PATH = os.environ.get("LAMBDA_INIT_BIN_PATH")
+LAMBDA_INIT_BOOTSTRAP_PATH = os.environ.get("LAMBDA_INIT_BOOTSTRAP_PATH")
+LAMBDA_INIT_DELVE_PATH = os.environ.get("LAMBDA_INIT_DELVE_PATH")
+LAMBDA_INIT_DELVE_PORT = int(os.environ.get("LAMBDA_INIT_DELVE_PORT") or 40000)
+# Alternative user or empty string to skip dropping privileges
+LAMBDA_INIT_USER = os.environ.get("LAMBDA_INIT_USER")
+
 # Adding Stepfunctions default port
 LOCAL_PORT_STEPFUNCTIONS = int(os.environ.get("LOCAL_PORT_STEPFUNCTIONS") or 8083)
 # Stepfunctions lambda endpoint override
@@ -807,6 +823,12 @@ CONFIG_ENV_VARS = [
     "LAMBDA_EXECUTOR",
     "LAMBDA_FALLBACK_URL",
     "LAMBDA_FORWARD_URL",
+    "LAMBDA_INIT_DEBUG",
+    "LAMBDA_INIT_BIN_PATH",
+    "LAMBDA_INIT_BOOTSTRAP_PATH",
+    "LAMBDA_INIT_DELVE_PATH",
+    "LAMBDA_INIT_DELVE_PORT",
+    "LAMBDA_INIT_USER",
     "LAMBDA_RUNTIME_IMAGE_MAPPING",
     "LAMBDA_JAVA_OPTS",
     "LAMBDA_REMOTE_DOCKER",
@@ -838,6 +860,8 @@ CONFIG_ENV_VARS = [
     "SERVICES",
     "SKIP_INFRA_DOWNLOADS",
     "SKIP_SSL_CERT_DOWNLOAD",
+    "SNAPSHOT_LOAD_STRATEGY",
+    "SNAPSHOT_SAVE_STRATEGY",
     "SQS_DELAY_PURGE_RETRY",
     "SQS_DELAY_RECENTLY_DELETED",
     "SQS_ENDPOINT_STRATEGY",

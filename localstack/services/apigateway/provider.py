@@ -2,9 +2,11 @@ import io
 import json
 import logging
 from copy import deepcopy
-from typing import IO, Dict
+from typing import IO, Any
 
 from moto.apigateway import models as apigw_models
+from moto.apigateway.models import Resource as MotoResource
+from moto.apigateway.models import RestAPI as MotoRestAPI
 from moto.core.utils import camelcase_to_underscores
 
 from localstack.aws.api import RequestContext, ServiceRequest, handler
@@ -21,6 +23,7 @@ from localstack.aws.api.apigateway import (
     Boolean,
     ClientCertificate,
     ClientCertificates,
+    ConflictException,
     CreateAuthorizerRequest,
     CreateRestApiRequest,
     DocumentationPart,
@@ -41,6 +44,7 @@ from localstack.aws.api.apigateway import (
     PutRestApiRequest,
     RequestValidator,
     RequestValidators,
+    Resource,
     RestApi,
     RestApis,
     String,
@@ -55,11 +59,11 @@ from localstack.constants import APPLICATION_JSON
 from localstack.services.apigateway.helpers import (
     OpenApiExporter,
     apply_json_patch_safe,
-    find_api_subentity_by_id,
     get_apigateway_store,
     import_api_from_openapi_spec,
 )
 from localstack.services.apigateway.invocations import invoke_rest_api_from_request
+from localstack.services.apigateway.models import RestApiContainer
 from localstack.services.apigateway.patches import apply_patches
 from localstack.services.apigateway.router_asf import ApigatewayRouter, to_invocation_context
 from localstack.services.edge import ROUTER
@@ -87,10 +91,6 @@ class ApigatewayProvider(ApigatewayApi, ServiceLifecycleHook):
     def on_after_init(self):
         apply_patches()
         self.router.register_routes()
-
-    @staticmethod
-    def _get_moto_backend(context: RequestContext) -> apigw_models.APIGatewayBackend:
-        return apigw_models.apigateway_backends[context.account_id][context.region]
 
     @handler("TestInvokeMethod", expand=False)
     def test_invoke_method(
@@ -125,11 +125,12 @@ class ApigatewayProvider(ApigatewayApi, ServiceLifecycleHook):
         if request.get("description") == "":
             raise BadRequestException("Description cannot be an empty string")
         result = call_moto(context)
-        moto_backend = self._get_moto_backend(context)
-        rest_api = moto_backend.apis.get(result["id"])
+        rest_api = get_moto_rest_api(context, rest_api_id=result["id"])
         rest_api.version = request.get("version")
-        response = rest_api.to_dict()
+        response: RestApi = rest_api.to_dict()
         remove_empty_attributes_from_rest_api(response)
+        store = get_apigateway_store(account_id=context.account_id, region=context.region)
+        store.rest_apis[result["id"]] = RestApiContainer(rest_api=response)
 
         return response
 
@@ -144,12 +145,7 @@ class ApigatewayProvider(ApigatewayApi, ServiceLifecycleHook):
         rest_api_id: String,
         patch_operations: ListOfPatchOperation = None,
     ) -> RestApi:
-        moto_backend = self._get_moto_backend(context)
-        rest_api = moto_backend.apis.get(rest_api_id)
-        if not rest_api:
-            raise NotFoundException(
-                f"Invalid API identifier specified {context.account_id}:{rest_api_id}"
-            )
+        rest_api = get_moto_rest_api(context, rest_api_id)
 
         fixed_patch_ops = []
         binary_media_types_path = "/binaryMediaTypes"
@@ -183,10 +179,7 @@ class ApigatewayProvider(ApigatewayApi, ServiceLifecycleHook):
 
             fixed_patch_ops.append(patch_op)
 
-        if not isinstance(rest_api.__dict__, DelSafeDict):
-            rest_api.__dict__ = DelSafeDict(rest_api.__dict__)
-
-        _patch_api_gateway_entity(rest_api.__dict__, fixed_patch_ops)
+        _patch_api_gateway_entity(rest_api, fixed_patch_ops)
 
         # fix data types after patches have been applied
         if rest_api.minimum_compression_size:
@@ -197,26 +190,35 @@ class ApigatewayProvider(ApigatewayApi, ServiceLifecycleHook):
 
         response = rest_api.to_dict()
         remove_empty_attributes_from_rest_api(response, remove_tags=False)
+        store = get_apigateway_store(account_id=context.account_id, region=context.region)
+        store.rest_apis[rest_api_id].rest_api = response
         return response
 
     @handler("PutRestApi", expand=False)
     def put_rest_api(self, context: RequestContext, request: PutRestApiRequest) -> RestApi:
-        moto_backend = self._get_moto_backend(context)
-        rest_api = moto_backend.apis.get(request["restApiId"])
         body_data = request["body"].read()
+        rest_api = get_moto_rest_api(context, request["restApiId"])
 
         openapi_spec = parse_json_or_yaml(to_str(body_data))
         rest_api = import_api_from_openapi_spec(
-            rest_api, openapi_spec, context.request.values.to_dict()
+            rest_api,
+            openapi_spec,
+            context.request.values.to_dict(),
+            account_id=context.account_id,
+            region=context.region,
         )
 
         response = rest_api.to_dict()
         remove_empty_attributes_from_rest_api(response)
+        store = get_apigateway_store(account_id=context.account_id, region=context.region)
+        store.rest_apis[request["restApiId"]].rest_api = response
         # TODO: verify this
         return to_rest_api_response_json(response)
 
     def delete_rest_api(self, context: RequestContext, rest_api_id: String) -> None:
         try:
+            store = get_apigateway_store(context.account_id, context.region)
+            store.rest_apis.pop(rest_api_id, None)
             call_moto(context)
         except KeyError as e:
             # moto raises a key error if we're trying to delete an API that doesn't exist
@@ -230,6 +232,144 @@ class ApigatewayProvider(ApigatewayApi, ServiceLifecycleHook):
         response: RestApis = call_moto(context)
         for rest_api in response["items"]:
             remove_empty_attributes_from_rest_api(rest_api)
+        return response
+
+    # resources
+
+    def create_resource(
+        self, context: RequestContext, rest_api_id: String, parent_id: String, path_part: String
+    ) -> Resource:
+        moto_rest_api = get_moto_rest_api(context, rest_api_id)
+        parent_moto_resource: MotoResource = moto_rest_api.resources.get(parent_id, None)
+        # validate here if the parent exists. Moto would first create then validate, which would lead to the resource
+        # being created anyway
+        if not parent_moto_resource:
+            raise NotFoundException("Invalid Resource identifier specified")
+
+        parent_path = parent_moto_resource.path_part
+        if is_greedy_path(parent_path):
+            raise BadRequestException(
+                f"Cannot create a child of a resource with a greedy path variable: {parent_path}"
+            )
+
+        store = get_apigateway_store(account_id=context.account_id, region=context.region)
+        rest_api = store.rest_apis.get(rest_api_id)
+        children = rest_api.resource_children.setdefault(parent_id, [])
+
+        if is_variable_path(path_part):
+            for sibling in children:
+                sibling_resource: MotoResource = moto_rest_api.resources.get(sibling, None)
+                if is_variable_path(sibling_resource.path_part):
+                    raise BadRequestException(
+                        f"A sibling ({sibling_resource.path_part}) of this resource already has a variable path part -- only one is allowed"
+                    )
+
+        response: Resource = call_moto(context)
+
+        # save children to allow easy deletion of all children if we delete a parent route
+        children.append(response["id"])
+
+        return response
+
+    def delete_resource(
+        self, context: RequestContext, rest_api_id: String, resource_id: String
+    ) -> None:
+        moto_rest_api = get_moto_rest_api(context, rest_api_id)
+
+        moto_resource: MotoResource = moto_rest_api.resources.pop(resource_id, None)
+        if not moto_resource:
+            raise NotFoundException("Invalid Resource identifier specified")
+
+        store = get_apigateway_store(account_id=context.account_id, region=context.region)
+        rest_api = store.rest_apis.get(rest_api_id)
+        api_resources = rest_api.resource_children
+        # we need to recursively delete all children resources of the resource we're deleting
+
+        def _delete_children(resource_to_delete: str):
+            children = api_resources.get(resource_to_delete, [])
+            for child in children:
+                moto_rest_api.resources.pop(child)
+                _delete_children(child)
+
+            api_resources.pop(resource_to_delete, None)
+
+        _delete_children(resource_id)
+
+        # remove the resource as a child from its parent
+        parent_id = moto_resource.parent_id
+        api_resources[parent_id].remove(resource_id)
+
+    def update_resource(
+        self,
+        context: RequestContext,
+        rest_api_id: String,
+        resource_id: String,
+        patch_operations: ListOfPatchOperation = None,
+    ) -> Resource:
+        moto_rest_api = get_moto_rest_api(context, rest_api_id)
+        moto_resource = moto_rest_api.resources.get(resource_id)
+        if not moto_resource:
+            raise NotFoundException("Invalid Resource identifier specified")
+
+        store = get_apigateway_store(account_id=context.account_id, region=context.region)
+
+        rest_api = store.rest_apis.get(rest_api_id)
+        api_resources = rest_api.resource_children
+
+        future_path_part = moto_resource.path_part
+        current_parent_id = moto_resource.parent_id
+
+        for patch_operation in patch_operations:
+            op = patch_operation.get("op")
+            if (path := patch_operation.get("path")) not in ("/pathPart", "/parentId"):
+                raise BadRequestException(
+                    f"Invalid patch path  '{path}' specified for op '{op}'. Must be one of: [/parentId, /pathPart]"
+                )
+            if op != "replace":
+                raise BadRequestException(
+                    f"Invalid patch path  '{path}' specified for op '{op}'. Please choose supported operations"
+                )
+
+            if path == "/parentId":
+                value = patch_operation.get("value")
+                future_parent_resource = moto_rest_api.resources.get(value)
+                if not future_parent_resource:
+                    raise NotFoundException("Invalid Resource identifier specified")
+
+                children_resources = api_resources.get(resource_id, [])
+                if value in children_resources:
+                    raise BadRequestException("Resources cannot be cyclical.")
+
+                new_sibling_resources = api_resources.get(value, [])
+
+            else:  # path == "/pathPart"
+                future_path_part = patch_operation.get("value")
+                new_sibling_resources = api_resources.get(moto_resource.parent_id, [])
+
+            for sibling in new_sibling_resources:
+                sibling_resource = moto_rest_api.resources[sibling]
+                if sibling_resource.path_part == future_path_part:
+                    raise ConflictException(
+                        f"Another resource with the same parent already has this name: {future_path_part}"
+                    )
+
+        # TODO: test with multiple patch operations which would not be compatible between each other
+        _patch_api_gateway_entity(moto_resource, patch_operations)
+
+        # after setting it, mutate the store
+        if moto_resource.parent_id != current_parent_id:
+            current_sibling_resources = api_resources.get(current_parent_id)
+            if current_sibling_resources:
+                current_sibling_resources.remove(resource_id)
+                # if the parent does not have children anymore, remove from the list
+                if not current_sibling_resources:
+                    api_resources.pop(current_parent_id)
+
+        # add it to the new parent children
+        future_sibling_resources = api_resources[moto_resource.parent_id]
+        future_sibling_resources.append(resource_id)
+
+        response = moto_resource.to_dict()
         return response
 
     # method responses
@@ -248,18 +388,26 @@ class ApigatewayProvider(ApigatewayApi, ServiceLifecycleHook):
     def create_authorizer(
         self, context: RequestContext, request: CreateAuthorizerRequest
     ) -> Authorizer:
-        region_details = get_apigateway_store()
-
+        # TODO: add validation
         api_id = request["restApiId"]
+        store = get_apigateway_store(account_id=context.account_id, region=context.region)
+        if api_id not in store.rest_apis:
+            # this seems like a weird exception to throw, but couldn't get anything different
+            # we might need to have a look again
+            raise ConflictException(
+                "Unable to complete operation due to concurrent modification. Please try again later."
+            )
+
         authorizer_id = short_uid()[:6]  # length 6 to make TF tests pass
-        result = deepcopy(request)
+        authorizer = deepcopy(select_from_typed_dict(Authorizer, request))
+        authorizer["id"] = authorizer_id
+        authorizer["authorizerResultTtlInSeconds"] = int(
+            authorizer.get("authorizerResultTtlInSeconds", 300)
+        )
+        store.rest_apis[api_id].authorizers[authorizer_id] = authorizer
 
-        result["id"] = authorizer_id
-        result = normalize_authorizer(result)
-        region_details.authorizers.setdefault(api_id, []).append(result)
-
-        result = to_authorizer_response_json(api_id, result)
-        return Authorizer(**result)
+        response = to_authorizer_response_json(api_id, authorizer)
+        return response
 
     def get_authorizers(
         self,
@@ -268,18 +416,29 @@ class ApigatewayProvider(ApigatewayApi, ServiceLifecycleHook):
         position: String = None,
         limit: NullableInteger = None,
     ) -> Authorizers:
-        # TODO add paging
-        region_details = get_apigateway_store()
+        # TODO add paging, validation
+        store = get_apigateway_store(account_id=context.account_id, region=context.region)
+        if not (rest_api_container := store.rest_apis.get(rest_api_id)):
+            raise NotFoundException(
+                f"Invalid API identifier specified {context.account_id}:{rest_api_id}"
+            )
 
-        auth_list = region_details.authorizers.get(rest_api_id) or []
-
-        result = [to_authorizer_response_json(rest_api_id, a) for a in auth_list]
+        result = [
+            to_authorizer_response_json(rest_api_id, a)
+            for a in rest_api_container.authorizers.values()
+        ]
         return Authorizers(items=result)
 
     def get_authorizer(
         self, context: RequestContext, rest_api_id: String, authorizer_id: String
     ) -> Authorizer:
-        authorizer = find_api_subentity_by_id(rest_api_id, authorizer_id, "authorizers")
+        store = get_apigateway_store(account_id=context.account_id, region=context.region)
+        rest_api_container = store.rest_apis.get(rest_api_id)
+        # TODO: validate the restAPI id to remove the conditional
+        authorizer = (
+            rest_api_container.authorizers.get(authorizer_id) if rest_api_container else None
+        )
+
         if authorizer is None:
             raise NotFoundException(f"Authorizer not found: {authorizer_id}")
         return to_authorizer_response_json(rest_api_id, authorizer)
@@ -287,13 +446,11 @@ class ApigatewayProvider(ApigatewayApi, ServiceLifecycleHook):
     def delete_authorizer(
         self, context: RequestContext, rest_api_id: String, authorizer_id: String
     ) -> None:
-        region_details = get_apigateway_store()
-
-        auth_list = region_details.authorizers.get(rest_api_id, [])
-        for i in range(len(auth_list)):
-            if auth_list[i]["id"] == authorizer_id:
-                del auth_list[i]
-                break
+        # TODO: add validation if authorizer does not exist
+        store = get_apigateway_store(account_id=context.account_id, region=context.region)
+        rest_api_container = store.rest_apis.get(rest_api_id)
+        if rest_api_container:
+            rest_api_container.authorizers.pop(authorizer_id, None)
 
     def update_authorizer(
         self,
@@ -302,22 +459,28 @@ class ApigatewayProvider(ApigatewayApi, ServiceLifecycleHook):
         authorizer_id: String,
         patch_operations: ListOfPatchOperation = None,
     ) -> Authorizer:
-        region_details = get_apigateway_store()
+        # TODO: add validation
+        store = get_apigateway_store(account_id=context.account_id, region=context.region)
+        rest_api_container = store.rest_apis.get(rest_api_id)
+        # TODO: validate the restAPI id to remove the conditional
+        authorizer = (
+            rest_api_container.authorizers.get(authorizer_id) if rest_api_container else None
+        )
 
-        authorizer = find_api_subentity_by_id(rest_api_id, authorizer_id, "authorizers")
         if authorizer is None:
             raise NotFoundException(f"Authorizer not found: {authorizer_id}")
 
-        result = apply_json_patch_safe(authorizer, patch_operations)
-        result = normalize_authorizer(result)
+        patched_authorizer = apply_json_patch_safe(authorizer, patch_operations)
+        # terraform sends this as a string in patch, so convert to int
+        patched_authorizer["authorizerResultTtlInSeconds"] = int(
+            patched_authorizer.get("authorizerResultTtlInSeconds", 300)
+        )
 
-        auth_list = region_details.authorizers[rest_api_id]
-        for i in range(len(auth_list)):
-            if auth_list[i]["id"] == authorizer_id:
-                auth_list[i] = result
+        # store the updated Authorizer
+        rest_api_container.authorizers[authorizer_id] = patched_authorizer
 
-        result = to_authorizer_response_json(rest_api_id, result)
-        return Authorizer(**result)
+        result = to_authorizer_response_json(rest_api_id, patched_authorizer)
+        return result
 
     # accounts
 
@@ -342,23 +505,36 @@ class ApigatewayProvider(ApigatewayApi, ServiceLifecycleHook):
     def get_documentation_parts(
         self, context: RequestContext, request: GetDocumentationPartsRequest
     ) -> DocumentationParts:
-        region_details = get_apigateway_store()
-
-        # This function returns either a list or a single entity (depending on the path)
+        # TODO: add validation
         api_id = request["restApiId"]
-        auth_list = region_details.documentation_parts.get(api_id) or []
+        store = get_apigateway_store(account_id=context.account_id, region=context.region)
+        if not (rest_api_container := store.rest_apis.get(api_id)):
+            raise NotFoundException(
+                f"Invalid API identifier specified {context.account_id}:{api_id}"
+            )
 
-        result = [to_documentation_part_response_json(api_id, a) for a in auth_list]
-        result = {"item": result}
-        return result
+        result = [
+            to_documentation_part_response_json(api_id, a)
+            for a in rest_api_container.documentation_parts.values()
+        ]
+        return DocumentationParts(items=result)
 
     def get_documentation_part(
         self, context: RequestContext, rest_api_id: String, documentation_part_id: String
     ) -> DocumentationPart:
-        entity = find_api_subentity_by_id(rest_api_id, documentation_part_id, "documentation_parts")
-        if entity is None:
+        # TODO: add validation
+        store = get_apigateway_store(account_id=context.account_id, region=context.region)
+        rest_api_container = store.rest_apis.get(rest_api_id)
+        # TODO: validate the restAPI id to remove the conditional
+        documentation_part = (
+            rest_api_container.documentation_parts.get(documentation_part_id)
+            if rest_api_container
+            else None
+        )
+
+        if documentation_part is None:
             raise NotFoundException(f"Documentation part not found: {documentation_part_id}")
-        return to_documentation_part_response_json(rest_api_id, entity)
+        return to_documentation_part_response_json(rest_api_id, documentation_part)
 
     def create_documentation_part(
         self,
@@ -367,19 +543,20 @@ class ApigatewayProvider(ApigatewayApi, ServiceLifecycleHook):
         location: DocumentationPartLocation,
         properties: String,
     ) -> DocumentationPart:
-        region_details = get_apigateway_store()
-
         entity_id = short_uid()[:6]  # length 6 for AWS parity / Terraform compatibility
-        entry = {
-            "id": entity_id,
-            "restApiId": rest_api_id,
-            "location": location,
-            "properties": properties,
-        }
+        store = get_apigateway_store(account_id=context.account_id, region=context.region)
+        if not (rest_api_container := store.rest_apis.get(rest_api_id)):
+            raise NotFoundException(
+                f"Invalid API identifier specified {context.account_id}:{rest_api_id}"
+            )
+        doc_part = DocumentationPart(
+            id=entity_id,
+            location=location,
+            properties=properties,
+        )
+        rest_api_container.documentation_parts[entity_id] = doc_part
 
-        region_details.documentation_parts.setdefault(rest_api_id, []).append(entry)
-
-        result = to_documentation_part_response_json(rest_api_id, entry)
+        result = to_documentation_part_response_json(rest_api_id, doc_part)
         return DocumentationPart(**result)
 
     def update_documentation_part(
@@ -389,32 +566,34 @@ class ApigatewayProvider(ApigatewayApi, ServiceLifecycleHook):
         documentation_part_id: String,
         patch_operations: ListOfPatchOperation = None,
     ) -> DocumentationPart:
-        region_details = get_apigateway_store()
+        # TODO: add validation
+        store = get_apigateway_store(account_id=context.account_id, region=context.region)
+        rest_api_container = store.rest_apis.get(rest_api_id)
+        # TODO: validate the restAPI id to remove the conditional
+        doc_part = (
+            rest_api_container.documentation_parts.get(documentation_part_id)
+            if rest_api_container
+            else None
+        )
 
-        entity = find_api_subentity_by_id(rest_api_id, documentation_part_id, "documentation_parts")
-        if entity is None:
+        if doc_part is None:
             raise NotFoundException(f"Documentation part not found: {documentation_part_id}")
 
-        result = apply_json_patch_safe(entity, patch_operations)
+        patched_doc_part = apply_json_patch_safe(doc_part, patch_operations)
 
-        auth_list = region_details.documentation_parts[rest_api_id]
-        for i in range(len(auth_list)):
-            if auth_list[i]["id"] == documentation_part_id:
-                auth_list[i] = result
+        rest_api_container.documentation_parts[documentation_part_id] = patched_doc_part
 
-        result = to_documentation_part_response_json(rest_api_id, result)
-        return DocumentationPart(**result)
+        result = to_documentation_part_response_json(rest_api_id, patched_doc_part)
+        return result
 
     def delete_documentation_part(
         self, context: RequestContext, rest_api_id: String, documentation_part_id: String
     ) -> None:
-        region_details = get_apigateway_store()
-
-        auth_list = region_details.documentation_parts[rest_api_id]
-        for i in range(len(auth_list)):
-            if auth_list[i]["id"] == documentation_part_id:
-                del auth_list[i]
-                break
+        # TODO: add validation if document_part does not exist, or rest_api
+        store = get_apigateway_store(account_id=context.account_id, region=context.region)
+        rest_api_container = store.rest_apis.get(rest_api_id)
+        if rest_api_container:
+            rest_api_container.documentation_parts.pop(documentation_part_id, None)
 
     # base path mappings
 
@@ -637,27 +816,36 @@ class ApigatewayProvider(ApigatewayApi, ServiceLifecycleHook):
         position: String = None,
         limit: NullableInteger = None,
     ) -> RequestValidators:
-        region_details = get_apigateway_store()
+        # TODO: add validation and pagination?
+        store = get_apigateway_store(account_id=context.account_id, region=context.region)
+        if not (rest_api_container := store.rest_apis.get(rest_api_id)):
+            raise NotFoundException(
+                f"Invalid API identifier specified {context.account_id}:{rest_api_id}"
+            )
 
-        auth_list = region_details.validators.get(rest_api_id) or []
-
-        result = [to_validator_response_json(rest_api_id, a) for a in auth_list]
+        result = [
+            to_validator_response_json(rest_api_id, a)
+            for a in rest_api_container.validators.values()
+        ]
         return RequestValidators(items=result)
 
     def get_request_validator(
         self, context: RequestContext, rest_api_id: String, request_validator_id: String
     ) -> RequestValidator:
-        region_details = get_apigateway_store()
-
-        auth_list = region_details.validators.get(rest_api_id) or []
-        validator = ([a for a in auth_list if a["id"] == request_validator_id] or [None])[0]
+        store = get_apigateway_store(account_id=context.account_id, region=context.region)
+        rest_api_container = store.rest_apis.get(rest_api_id)
+        # TODO: validate the restAPI id to remove the conditional
+        validator = (
+            rest_api_container.validators.get(request_validator_id) if rest_api_container else None
+        )
 
         if validator is None:
             raise NotFoundException(
                 f"Validator {request_validator_id} for API Gateway {rest_api_id} not found"
             )
+
         result = to_validator_response_json(rest_api_id, validator)
-        return RequestValidator(**result)
+        return result
 
     def create_request_validator(
         self,
@@ -667,21 +855,24 @@ class ApigatewayProvider(ApigatewayApi, ServiceLifecycleHook):
         validate_request_body: Boolean = None,
         validate_request_parameters: Boolean = None,
     ) -> RequestValidator:
-        region_details = get_apigateway_store()
-
+        # TODO: add validation (ex: name cannot be blank)
+        store = get_apigateway_store(account_id=context.account_id, region=context.region)
+        if not (rest_api_container := store.rest_apis.get(rest_api_id)):
+            raise BadRequestException("Invalid REST API identifier specified")
         # length 6 for AWS parity and TF compatibility
         validator_id = short_uid()[:6]
 
-        entry = {
-            "id": validator_id,
-            "name": name,
-            "restApiId": rest_api_id,
-            "validateRequestBody": validate_request_body,
-            "validateRequestParameters": validate_request_parameters,
-        }
-        region_details.validators.setdefault(rest_api_id, []).append(entry)
+        validator = RequestValidator(
+            id=validator_id,
+            name=name,
+            validateRequestBody=validate_request_body,
+            validateRequestParameters=validate_request_parameters,
+        )
 
-        return RequestValidator(**entry)
+        rest_api_container.validators[validator_id] = validator
+
+        # missing to_validator_response_json ?
+        return validator
 
     def update_request_validator(
         self,
@@ -690,40 +881,39 @@ class ApigatewayProvider(ApigatewayApi, ServiceLifecycleHook):
         request_validator_id: String,
         patch_operations: ListOfPatchOperation = None,
     ) -> RequestValidator:
-        region_details = get_apigateway_store()
-
-        auth_list = region_details.validators.get(rest_api_id) or []
-        validator = ([a for a in auth_list if a["id"] == request_validator_id] or [None])[0]
+        # TODO: add validation
+        store = get_apigateway_store(account_id=context.account_id, region=context.region)
+        rest_api_container = store.rest_apis.get(rest_api_id)
+        # TODO: validate the restAPI id to remove the conditional
+        validator = (
+            rest_api_container.validators.get(request_validator_id) if rest_api_container else None
+        )
 
         if validator is None:
             raise NotFoundException(
                 f"Validator {request_validator_id} for API Gateway {rest_api_id} not found"
             )
 
-        result = apply_json_patch_safe(validator, patch_operations)
+        patched_validator = apply_json_patch_safe(validator, patch_operations)
+        rest_api_container.validators[request_validator_id] = patched_validator
 
-        entry_list = region_details.validators[rest_api_id]
-        for i in range(len(entry_list)):
-            if entry_list[i]["id"] == request_validator_id:
-                entry_list[i] = result
-
-        result = to_validator_response_json(rest_api_id, result)
-        return RequestValidator(**result)
+        result = to_validator_response_json(rest_api_id, patched_validator)
+        return result
 
     def delete_request_validator(
         self, context: RequestContext, rest_api_id: String, request_validator_id: String
     ) -> None:
-        region_details = get_apigateway_store()
+        # TODO: add validation if rest api does not exist
+        store = get_apigateway_store(account_id=context.account_id, region=context.region)
+        rest_api_container = store.rest_apis.get(rest_api_id)
+        if not rest_api_container:
+            return
 
-        auth_list = region_details.validators.get(rest_api_id, [])
-        for i in range(len(auth_list)):
-            if auth_list[i]["id"] == request_validator_id:
-                del auth_list[i]
-                return
-
-        raise NotFoundException(
-            f"Validator {request_validator_id} for API Gateway {rest_api_id} not found"
-        )
+        validator = rest_api_container.validators.pop(request_validator_id, None)
+        if not validator:
+            raise NotFoundException(
+                f"Validator {request_validator_id} for API Gateway {rest_api_id} not found"
+            )
 
     # tags
 
@@ -859,6 +1049,17 @@ class ApigatewayProvider(ApigatewayApi, ServiceLifecycleHook):
 # ---------------
 
 
+def get_moto_rest_api(context: RequestContext, rest_api_id: str) -> MotoRestAPI:
+    moto_backend = apigw_models.apigateway_backends[context.account_id][context.region]
+    rest_api = moto_backend.apis.get(rest_api_id)
+    if not rest_api:
+        raise NotFoundException(
+            f"Invalid API identifier specified {context.account_id}:{rest_api_id}"
+        )
+
+    return rest_api
+
+
 def remove_empty_attributes_from_rest_api(rest_api: RestApi, remove_tags=True):
     if not rest_api.get("binaryMediaTypes"):
         rest_api.pop("binaryMediaTypes", None)
@@ -876,6 +1077,14 @@ def remove_empty_attributes_from_rest_api(rest_api: RestApi, remove_tags=True):
         rest_api.pop("description", None)
 
 
+def is_greedy_path(path_part: str) -> bool:
+    return path_part.startswith("{") and path_part.endswith("+}")
+
+
+def is_variable_path(path_part: str) -> bool:
+    return path_part.startswith("{") and path_part.endswith("}")
+
+
 def create_custom_context(
     context: RequestContext, action: str, parameters: ServiceRequest
 ) -> RequestContext:
@@ -890,21 +1099,13 @@ def create_custom_context(
     return ctx
 
 
-def normalize_authorizer(data):
-    is_list = isinstance(data, list)
-    entries = ensure_list(data)
-    for i in range(len(entries)):
-        entry = deepcopy(entries[i])
-        # terraform sends this as a string in patch, so convert to int
-        entry["authorizerResultTtlInSeconds"] = int(entry.get("authorizerResultTtlInSeconds", 300))
-        entries[i] = entry
-    return entries if is_list else entries[0]
+def _patch_api_gateway_entity(entity: Any, patch_operations: ListOfPatchOperation):
+    if not isinstance(entity.__dict__, DelSafeDict):
+        entity.__dict__ = DelSafeDict(entity.__dict__)
 
-
-def _patch_api_gateway_entity(entity: Dict, patch_operations: ListOfPatchOperation):
     not_supported_attributes = {"/id", "/region_name", "/create_date"}
 
-    model_attributes = list(entity.keys())
+    model_attributes = list(entity.__dict__.keys())
     for operation in patch_operations:
         path_start = operation["path"].strip("/").split("/")[0]
         path_start_usc = camelcase_to_underscores(path_start)
@@ -913,7 +1114,7 @@ def _patch_api_gateway_entity(entity: Dict, patch_operations: ListOfPatchOperati
         if operation["path"] in not_supported_attributes:
             raise BadRequestException(f"Invalid patch path {operation['path']}")
 
-    apply_json_patch_safe(entity, patch_operations, in_place=True)
+    apply_json_patch_safe(entity.__dict__, patch_operations, in_place=True)
 
 
 def to_authorizer_response_json(api_id, data):

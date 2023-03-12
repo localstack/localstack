@@ -156,28 +156,24 @@ def fixture_snapshot(snapshot):
 
 
 # some more common ones that usually don't work in the old provider
-if is_old_provider():
-    pytestmark = pytest.mark.skip_snapshot_verify(
-        paths=[
-            "$..Architectures",
-            "$..EphemeralStorage",
-            "$..LastUpdateStatus",
-            "$..MemorySize",
-            "$..State",
-            "$..StateReason",
-            "$..StateReasonCode",
-            "$..VpcConfig",
-            "$..CodeSigningConfig",
-            "$..Environment",  # missing
-            "$..HTTPStatusCode",  # 201 vs 200
-            "$..Layers",
-            "$..SnapStart",  # FIXME
-        ],
-    )
-else:
-    pytestmark = pytest.mark.skip_snapshot_verify(
-        paths=["$..CodeSize", "$..SnapStart"],  # FIXME
-    )
+pytestmark = pytest.mark.skip_snapshot_verify(
+    condition=is_old_provider,
+    paths=[
+        "$..Architectures",
+        "$..EphemeralStorage",
+        "$..LastUpdateStatus",
+        "$..MemorySize",
+        "$..State",
+        "$..StateReason",
+        "$..StateReasonCode",
+        "$..VpcConfig",
+        "$..CodeSigningConfig",
+        "$..Environment",  # missing
+        "$..HTTPStatusCode",  # 201 vs 200
+        "$..Layers",
+        "$..SnapStart",
+    ],
+)
 
 
 class TestLambdaBaseFeatures:
@@ -208,8 +204,8 @@ class TestLambdaBaseFeatures:
             "$..Tags",
             "$..Configuration.RevisionId",
             "$..Code.RepositoryType",
-            "$..CodeSize",  # CI reports different code size here,
             "$..Layers",  # PRO
+            "$..RuntimeVersionConfig",
         ],
     )
     @pytest.mark.aws_validated
@@ -310,11 +306,6 @@ class TestLambdaBaseFeatures:
 
 
 class TestLambdaBehavior:
-    @pytest.mark.aws_validated
-    @pytest.mark.skip_snapshot_verify(
-        # TODO: run lambdas as user `sbx_user1051`
-        paths=["$..Payload.user_login_name", "$..Payload.user_whoami"]
-    )
     @pytest.mark.skip_snapshot_verify(
         condition=is_old_provider,
         paths=[
@@ -324,41 +315,62 @@ class TestLambdaBehavior:
             "$..Payload.errorMessage",
             "$..Payload.errorType",
             "$..Payload.event",
-            "$..Payload.opt_filemode",
             "$..Payload.platform_machine",
             "$..Payload.platform_system",
-            "$..Payload.pwd_filemode",
             "$..Payload.stackTrace",
+            "$..Payload.paths",
+            "$..Payload.pwd",
+            "$..Payload.user_login_name",
+            "$..Payload.user_whoami",
         ],
     )
+    @pytest.mark.skip_snapshot_verify(
+        paths=[
+            # fixable by setting /tmp permissions to 700
+            "$..Payload.paths._tmp_mode",
+            # requires creating a new user `slicer` and chown /var/task
+            "$..Payload.paths._var_task_gid",
+            "$..Payload.paths._var_task_owner",
+            "$..Payload.paths._var_task_uid",
+        ],
+    )
+    @pytest.mark.aws_validated
     def test_runtime_introspection_x86(self, lambda_client, create_lambda_function, snapshot):
         func_name = f"test_lambda_x86_{short_uid()}"
         create_lambda_function(
             func_name=func_name,
             handler_file=TEST_LAMBDA_INTROSPECT_PYTHON,
             runtime=Runtime.python3_9,
+            timeout=9,
             Architectures=[Architecture.x86_64],
         )
 
         invoke_result = lambda_client.invoke(FunctionName=func_name)
         snapshot.match("invoke_runtime_x86_introspection", invoke_result)
 
-    @pytest.mark.aws_validated
-    @pytest.mark.skip_snapshot_verify(
-        # TODO: run lambdas as user `sbx_user1051`
-        paths=["$..Payload.user_login_name", "$..Payload.user_whoami"]
-    )
     @pytest.mark.skipif(is_old_provider(), reason="unsupported in old provider")
     @pytest.mark.skipif(
         not is_arm_compatible() and not is_aws(),
         reason="ARM architecture not supported on this host",
     )
+    @pytest.mark.skip_snapshot_verify(
+        paths=[
+            # fixable by setting /tmp permissions to 700
+            "$..Payload.paths._tmp_mode",
+            # requires creating a new user `slicer` and chown /var/task
+            "$..Payload.paths._var_task_gid",
+            "$..Payload.paths._var_task_owner",
+            "$..Payload.paths._var_task_uid",
+        ],
+    )
+    @pytest.mark.aws_validated
     def test_runtime_introspection_arm(self, lambda_client, create_lambda_function, snapshot):
         func_name = f"test_lambda_arm_{short_uid()}"
         create_lambda_function(
             func_name=func_name,
             handler_file=TEST_LAMBDA_INTROSPECT_PYTHON,
             runtime=Runtime.python3_9,
+            timeout=9,
             Architectures=[Architecture.arm64],
         )
 
@@ -405,6 +417,7 @@ class TestLambdaBehavior:
         logs_client,
         snapshot,
     ):
+        # Snapshot generation could be flaky against AWS with a small timeout margin (e.g., 1.02 instead of 1.00)
         regex = re.compile(r".*\s(?P<uuid>[-a-z0-9]+) Task timed out after \d.\d+ seconds")
         snapshot.add_transformer(
             KeyValueBasedTransformer(
@@ -450,7 +463,13 @@ class TestLambdaBehavior:
         retry(assert_events, retries=15)
 
     @pytest.mark.skip_snapshot_verify(
-        condition=is_old_provider, paths=["$..Payload", "$..LogResult", "$..Layers"]
+        condition=is_old_provider,
+        paths=[
+            "$..Payload",
+            "$..LogResult",
+            "$..Layers",
+            "$..CreateFunctionResponse.RuntimeVersionConfig",
+        ],
     )
     @pytest.mark.aws_validated
     def test_lambda_invoke_no_timeout(
