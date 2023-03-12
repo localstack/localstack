@@ -17,6 +17,7 @@ LOG = logging.getLogger(__name__)
 # parent directory of this file
 PARENT_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 OPENAPI_SPEC_PULUMI_JSON = os.path.join(PARENT_DIR, "files", "openapi.spec.pulumi.json")
+OPENAPI_SPEC_TF_JSON = os.path.join(PARENT_DIR, "files", "openapi.spec.tf.json")
 
 
 @pytest.fixture(autouse=True)
@@ -82,6 +83,75 @@ def test_import_rest_api(import_apigw, snapshot):
     response, root_id = import_apigw(body=spec_file, failOnWarnings=True)
 
     snapshot.match("import_rest_api", response)
+
+
+@pytest.mark.aws_validated
+@pytest.mark.skip_snapshot_verify(
+    paths=[
+        "$.resources.items..resourceMethods",
+        "$.method-response-get.responseModels",
+        "$.method-response-get.responseParameters",
+        "$.integration-get.cacheNamespace",
+        "$.integration-get.contentHandling",
+        "$.integration-get.httpMethod",
+        "$.integration-get.integrationResponses",
+        "$.integration-get.passthroughBehavior",
+        "$.integration-get.requestParameters",
+        "$.integration-get.requestTemplates",
+        "$.integration-get.timeoutInMillis",
+        "$.integration-get.type",
+        "$.integration-get.uri",
+        "$.integration-response-get.responseParameters",
+        "$.integration-response-get.responseTemplates",
+        "$.method-response-options.responseModels",
+        "$.method-response-options.responseParameters",
+        "$.integration-options.cacheNamespace",
+        "$.integration-options.passthroughBehavior",
+        "$.integration-options.timeoutInMillis",
+        "$.integration-options.type",
+        "$.integration-options.httpMethod",
+        "$.integration-options.integrationResponses",
+        "$.integration-options.requestParameters",
+        "$.integration-response-options.responseParameters",
+        "$.integration-response-options.responseTemplates",
+    ]
+)
+def test_import_tf_rest_api(apigateway_client, import_apigw, snapshot):
+    snapshot.add_transformer(snapshot.transform.apigateway_api())
+
+    spec_file = load_file(OPENAPI_SPEC_TF_JSON)
+    response, root_id = import_apigw(body=spec_file, failOnWarnings=True)
+
+    snapshot.match("import_tf_rest_api", response)
+    rest_api_id = response["id"]
+
+    response = apigateway_client.get_resources(restApiId=rest_api_id)
+    snapshot.match("resources", response)
+
+    for http_method in response["items"][0]["resourceMethods"]:
+        snapshot_http_key = http_method.lower()
+        response = apigateway_client.get_method_response(
+            restApiId=rest_api_id,
+            resourceId=root_id,
+            httpMethod=http_method,
+            statusCode="200",
+        )
+        snapshot.match(f"method-response-{snapshot_http_key}", response)
+
+        response = apigateway_client.get_integration(
+            restApiId=rest_api_id,
+            resourceId=root_id,
+            httpMethod=http_method,
+        )
+        snapshot.match(f"integration-{snapshot_http_key}", response)
+
+        response = apigateway_client.get_integration_response(
+            restApiId=rest_api_id,
+            resourceId=root_id,
+            httpMethod=http_method,
+            statusCode="200",
+        )
+        snapshot.match(f"integration-response-{snapshot_http_key}", response)
 
 
 class TestApiGatewayApi:

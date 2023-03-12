@@ -196,8 +196,8 @@ class ApigatewayProvider(ApigatewayApi, ServiceLifecycleHook):
 
     @handler("PutRestApi", expand=False)
     def put_rest_api(self, context: RequestContext, request: PutRestApiRequest) -> RestApi:
-        rest_api = get_moto_rest_api(context, request["restApiId"])
         body_data = request["body"].read()
+        rest_api = get_moto_rest_api(context, request["restApiId"])
 
         openapi_spec = parse_json_or_yaml(to_str(body_data))
         rest_api = import_api_from_openapi_spec(

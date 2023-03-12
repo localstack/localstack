@@ -532,7 +532,7 @@ def import_api_from_openapi_spec(
     # 1. validate the "mode" property of the spec document, "merge" or "overwrite"
     # 2. validate the document type, "swagger" or "openapi"
 
-    rest_api.version = resolved_schema.get("info", {}).get("version")
+    rest_api.version = str(resolved_schema.get("info", {}).get("version")) or None
     # XXX for some reason this makes cf tests fail that's why is commented.
     # test_cfn_handle_serverless_api_resource
     # rest_api.name = resolved_schema.get("info", {}).get("title")
