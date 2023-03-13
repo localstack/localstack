@@ -389,5 +389,20 @@
         }
       }
     }
+  },
+  "tests/integration/test_kms.py::TestKMS::test_create_alias": {
+    "recorded-date": "11-03-2023, 13:11:50",
+    "recorded-content": {
+      "create_alias": {
+        "Error": {
+          "Code": "ValidationException",
+          "Message": "Alias must start with the prefix \"alias/\". Please see https://docs.aws.amazon.com/kms/latest/developerguide/kms-alias.html"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
   }
 }

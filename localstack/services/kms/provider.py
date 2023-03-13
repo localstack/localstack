@@ -712,6 +712,7 @@ class KmsProvider(KmsApi, ServiceLifecycleHook):
     def create_alias(self, context: RequestContext, request: CreateAliasRequest) -> None:
         store = self._get_store(context)
         alias_name = request["AliasName"]
+        validate_alias_name(alias_name)
         if alias_name in store.aliases:
             alias_arn = store.aliases.get(alias_name).metadata["AliasArn"]
             # AWS itself uses AliasArn instead of AliasName in this exception.
