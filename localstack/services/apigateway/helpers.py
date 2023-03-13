@@ -591,11 +591,11 @@ def import_api_from_openapi_spec(
                     ):
                         authorizer["authorizerCredentials"] = authorizer_credentials
                     if authorizer_type == "TOKEN":
-                        authorizer[
-                            "identitySource"
-                        ] = f"method.request.header.{security_config.get('name')}"
+                        header_name = security_config.get('name')
+                        authorizer["identitySource"] = f"method.request.header.{header_name}"
                     elif identity_source := aws_apigateway_authorizer.get("identitySource"):
-                        # Applicable for the authorizer of the request and jwt type only.
+                        # https://docs.aws.amazon.com/apigateway/latest/developerguide/api-gateway-swagger-extensions-authorizer.html
+                        # Applicable for the authorizer of the request and jwt type only
                         authorizer["identitySource"] = identity_source
                     if identity_validation_expression := aws_apigateway_authorizer.get(
                         "identityValidationExpression"
