@@ -376,13 +376,7 @@ if not os.environ.get("PROVIDER_OVERRIDE_S3"):
     os.environ["PROVIDER_OVERRIDE_S3"] = "asf"
 
 # whether legacy s3 is enabled
-# TODO change when asf becomes default: os.environ.get("PROVIDER_OVERRIDE_S3", "") == 'legacy'
-LEGACY_S3_PROVIDER = os.environ.get("PROVIDER_OVERRIDE_S3", "") not in (
-    "asf",
-    "asf_pro",
-    "v2",
-    "v2_pro",
-)
+LEGACY_S3_PROVIDER = os.environ.get("PROVIDER_OVERRIDE_S3", "") == "legacy"
 
 # Whether to report internal failures as 500 or 501 errors.
 FAIL_FAST = is_env_true("FAIL_FAST")
