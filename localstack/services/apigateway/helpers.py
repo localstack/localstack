@@ -488,9 +488,11 @@ def apply_json_patch_safe(subject, patch_operations, in_place=True, return_list=
                 target = subject.get(path.strip("/"))
                 target = target or common.extract_from_jsonpointer_path(subject, path)
                 if not isinstance(target, list):
-                    # for "add" operations, we should ensure that the path target is a list instance
-                    value = [] if target is None else [target]
-                    common.assign_to_path(subject, path, value=value, delimiter="/")
+                    # for `add` operation, if the target does not exist, set it to an empty dict (default behaviour)
+                    # previous behaviour was an empty list. Revisit this if issues arise.
+                    # TODO: we are assigning a value, even if not `in_place=True`
+                    common.assign_to_path(subject, path, value={}, delimiter="/")
+
                 target = common.extract_from_jsonpointer_path(subject, path)
                 if isinstance(target, list) and not path.endswith("/-"):
                     # if "path" is an attribute name pointing to an array in "subject", and we're running

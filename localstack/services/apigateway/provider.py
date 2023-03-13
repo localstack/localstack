@@ -35,7 +35,9 @@ from localstack.aws.api.apigateway import (
     IntegrationType,
     ListOfPatchOperation,
     ListOfString,
+    MapOfStringToBoolean,
     MapOfStringToString,
+    Method,
     MethodResponse,
     NotFoundException,
     NullableBoolean,
@@ -370,6 +372,153 @@ class ApigatewayProvider(ApigatewayApi, ServiceLifecycleHook):
         future_sibling_resources.append(resource_id)
 
         response = moto_resource.to_dict()
+        return response
+
+    # resource method
+
+    def get_method(
+        self, context: RequestContext, rest_api_id: String, resource_id: String, http_method: String
+    ) -> Method:
+        response: Method = call_moto(context)
+        remove_empty_attributes_from_method(response)
+        return response
+
+    def put_method(
+        self,
+        context: RequestContext,
+        rest_api_id: String,
+        resource_id: String,
+        http_method: String,
+        authorization_type: String,
+        authorizer_id: String = None,
+        api_key_required: Boolean = None,
+        operation_name: String = None,
+        request_parameters: MapOfStringToBoolean = None,
+        request_models: MapOfStringToString = None,
+        request_validator_id: String = None,
+        authorization_scopes: ListOfString = None,
+    ) -> Method:
+        # TODO: add missing validation? check order of validation as well
+        moto_backend = apigw_models.apigateway_backends[context.account_id][context.region]
+        moto_rest_api: MotoRestAPI = moto_backend.apis.get(rest_api_id)
+        if not moto_rest_api or not moto_rest_api.resources.get(resource_id):
+            raise NotFoundException("Invalid Resource identifier specified")
+
+        if http_method not in ("GET", "PUT", "POST", "DELETE", "PATCH", "OPTIONS", "HEAD", "ANY"):
+            raise BadRequestException(
+                "Invalid HttpMethod specified. "
+                "Valid options are GET,PUT,POST,DELETE,PATCH,OPTIONS,HEAD,ANY"
+            )
+
+        if request_parameters:
+            request_parameters_names = {
+                name.rsplit(".", maxsplit=1)[-1] for name in request_parameters.keys()
+            }
+            if len(request_parameters_names) != len(request_parameters):
+                raise BadRequestException(
+                    "Parameter names must be unique across querystring, header and path"
+                )
+        need_authorizer_id = authorization_type in ("CUSTOM", "COGNITO_USER_POOLS")
+        store = get_apigateway_store(account_id=context.account_id, region=context.region)
+        rest_api_container = store.rest_apis[rest_api_id]
+        if need_authorizer_id and (
+            not authorizer_id or authorizer_id not in rest_api_container.authorizers
+        ):
+            # TODO: will be cleaner with https://github.com/localstack/localstack/pull/7750
+            raise BadRequestException(
+                "Invalid authorizer ID specified. "
+                "Setting the authorization type to CUSTOM or COGNITO_USER_POOLS requires a valid authorizer."
+            )
+
+        if request_validator_id and request_validator_id not in rest_api_container.validators:
+            raise BadRequestException("Invalid Request Validator identifier specified")
+
+        if request_models:
+            for content_type, model_name in request_models.items():
+                # FIXME: add Empty model to rest api at creation
+                if model_name == "Empty":
+                    continue
+                if model_name not in moto_rest_api.models:
+                    raise BadRequestException(f"Invalid model identifier specified: {model_name}")
+
+        response: Method = call_moto(context)
+        remove_empty_attributes_from_method(response)
+
+        # this is straight from the moto patch, did not test it yet but has the same functionality
+        # FIXME: check if still necessary after testing Authorizers
+        if need_authorizer_id and "authorizerId" not in response:
+            response["authorizerId"] = authorizer_id
+
+        return response
+
+    def update_method(
+        self,
+        context: RequestContext,
+        rest_api_id: String,
+        resource_id: String,
+        http_method: String,
+        patch_operations: ListOfPatchOperation = None,
+    ) -> Method:
+        # see https://www.linkedin.com/pulse/updating-aws-cli-patch-operations-rest-api-yitzchak-meirovich/
+        # for path construction
+        moto_backend = apigw_models.apigateway_backends[context.account_id][context.region]
+        moto_rest_api: MotoRestAPI = moto_backend.apis.get(rest_api_id)
+        if not moto_rest_api or not (moto_resource := moto_rest_api.resources.get(resource_id)):
+            raise NotFoundException("Invalid Resource identifier specified")
+
+        if not (moto_method := moto_resource.resource_methods.get(http_method)):
+            raise NotFoundException("Invalid Method identifier specified")
+        store = get_apigateway_store(account_id=context.account_id, region=context.region)
+        rest_api = store.rest_apis[rest_api_id]
+        applicable_patch_operations = []
+        for patch_operation in patch_operations:
+            op = patch_operation.get("op")
+            path = patch_operation.get("path")
+            # if the path is not supported at all, raise an Exception
+            if len(path.split("/")) > 3 or not any(
+                path.startswith(s_path) for s_path in UPDATE_METHOD_PATCH_PATHS["supported_paths"]
+            ):
+                raise BadRequestException(f"Invalid patch path {path}")
+
+            # if the path is not supported by the operation, ignore it and skip
+            op_supported_path = UPDATE_METHOD_PATCH_PATHS.get(op, [])
+            if not any(path.startswith(s_path) for s_path in op_supported_path):
+                continue
+
+            value = patch_operation.get("value")
+            if op not in ("add", "replace"):
+                # skip
+                applicable_patch_operations.append(patch_operation)
+                continue
+
+            if path == "/authorizationType" and value in ("CUSTOM", "COGNITO_USER_POOLS"):
+                # TODO: test with 2 operations adding this
+                raise BadRequestException(
+                    "Invalid authorizer ID specified. "
+                    "Setting the authorization type to CUSTOM or COGNITO_USER_POOLS requires a valid authorizer."
+                )
+
+            if any(
+                path.startswith(s_path) for s_path in ("/apiKeyRequired", "/requestParameters/")
+            ):
+                patch_op = {"op": op, "path": path, "value": str_to_bool(value)}
+                applicable_patch_operations.append(patch_op)
+                continue
+
+            elif path == "/requestValidatorId" and value not in rest_api.validators:
+                raise BadRequestException("Invalid Request Validator identifier specified")
+
+            elif path.startswith("/requestModels/"):
+                if value != "Empty" and value not in moto_rest_api.models:
+                    raise BadRequestException(f"Invalid model identifier specified: {value}")
+
+            applicable_patch_operations.append(patch_operation)
+
+        # TODO: test with multiple patch operations which would not be compatible between each other
+        _patch_api_gateway_entity(moto_method, applicable_patch_operations)
+
+        response = moto_method.to_json()
+        remove_empty_attributes_from_method(response)
         return response
 
     # method responses
@@ -1077,6 +1226,17 @@ def remove_empty_attributes_from_rest_api(rest_api: RestApi, remove_tags=True):
         rest_api.pop("description", None)
 
 
+def remove_empty_attributes_from_method(method: Method):
+    if not method.get("methodResponses"):
+        method.pop("methodResponses", None)
+
+    if not method.get("requestModels"):
+        method.pop("requestModels", None)
+
+    if not method.get("requestParameters"):
+        method.pop("requestParameters", None)
+
+
 def is_greedy_path(path_part: str) -> bool:
     return path_part.startswith("{") and path_part.endswith("+}")
 
@@ -1188,3 +1348,37 @@ def to_response_json(model_type, data, api_id=None, self_link=None, id_attr=None
     }
     result["_links"]["%s:delete" % model_type] = {"href": self_link}
     return result
+
+
+# TODO: maybe extract this in its own files, or find a better generalizable way
+UPDATE_METHOD_PATCH_PATHS = {
+    "supported_paths": [
+        "/authorizationScopes",
+        "/authorizationType",
+        "/authorizerId",
+        "/apiKeyRequired",
+        "/operationName",
+        "/requestParameters/",
+        "/requestModels/",
+        "/requestValidatorId",
+    ],
+    "add": [
+        "/authorizationScopes",
+        "/requestParameters/",
+        "/requestModels/",
+    ],
+    "remove": [
+        "/authorizationScopes",
+        "/requestParameters/",
+        "/requestModels/",
+    ],
+    "replace": [
+        "/authorizationType",
+        "/authorizerId",
+        "/apiKeyRequired",
+        "/operationName",
+        "/requestParameters/",
+        "/requestModels/",
+        "/requestValidatorId",
+    ],
+}
