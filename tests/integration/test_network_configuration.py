@@ -18,11 +18,6 @@ from localstack.testing.aws.lambda_utils import is_new_provider, is_old_provider
 from localstack.utils.files import new_tmp_file, save_file
 from localstack.utils.strings import short_uid
 
-# TODO: how do we test `localstack_hostname` - this variable configures the
-# host that services make requests to when starting up (e.g. opensearch) and
-# they won't start if we override the variable.
-
-
 pytestmark = [pytest.mark.only_localstack]
 
 
