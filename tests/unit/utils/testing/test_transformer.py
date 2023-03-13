@@ -46,6 +46,26 @@ class TestTransformer:
 
         assert json.loads(tmp) == expected_key_value_reference
 
+    def test_key_value_replacement_with_falsy_value(self):
+        input = {
+            "hello": "world",
+            "somenumber": 0,
+        }
+
+        key_value = TransformerUtility.key_value(
+            "somenumber", "placeholder", reference_replacement=False
+        )
+
+        expected_key_value = {
+            "hello": "world",
+            "somenumber": "placeholder",
+        }
+
+        copied = copy.deepcopy(input)
+        ctx = TransformContext()
+        assert key_value.transform(copied, ctx=ctx) == expected_key_value
+        assert ctx.serialized_replacements == []
+
     @pytest.mark.parametrize("type", ["key_value", "jsonpath"])
     def test_replacement_with_reference(self, type):
         input = {
