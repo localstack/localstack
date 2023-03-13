@@ -25,6 +25,7 @@ FirewallDomainName = str
 FirewallRuleGroupPolicy = str
 Ip = str
 IpAddressCount = int
+Ipv6 = str
 ListDomainMaxResults = int
 ListFirewallConfigsMaxResult = int
 ListResolverConfigsMaxResult = int
@@ -58,6 +59,7 @@ class Action(str):
 class AutodefinedReverseFlag(str):
     ENABLE = "ENABLE"
     DISABLE = "DISABLE"
+    USE_LOCAL_RESOURCE_SETTING = "USE_LOCAL_RESOURCE_SETTING"
 
 
 class BlockOverrideDnsType(str):
@@ -91,6 +93,7 @@ class FirewallDomainUpdateOperation(str):
 class FirewallFailOpenStatus(str):
     ENABLED = "ENABLED"
     DISABLED = "DISABLED"
+    USE_LOCAL_RESOURCE_SETTING = "USE_LOCAL_RESOURCE_SETTING"
 
 
 class FirewallRuleGroupAssociationStatus(str):
@@ -116,6 +119,7 @@ class IpAddressStatus(str):
     FAILED_RESOURCE_GONE = "FAILED_RESOURCE_GONE"
     DELETING = "DELETING"
     DELETE_FAILED_FAS_EXPIRED = "DELETE_FAILED_FAS_EXPIRED"
+    UPDATING = "UPDATING"
 
 
 class MutationProtectionStatus(str):
@@ -128,6 +132,8 @@ class ResolverAutodefinedReverseStatus(str):
     ENABLED = "ENABLED"
     DISABLING = "DISABLING"
     DISABLED = "DISABLED"
+    UPDATING_TO_USE_LOCAL_RESOURCE_SETTING = "UPDATING_TO_USE_LOCAL_RESOURCE_SETTING"
+    USE_LOCAL_RESOURCE_SETTING = "USE_LOCAL_RESOURCE_SETTING"
 
 
 class ResolverDNSSECValidationStatus(str):
@@ -135,6 +141,8 @@ class ResolverDNSSECValidationStatus(str):
     ENABLED = "ENABLED"
     DISABLING = "DISABLING"
     DISABLED = "DISABLED"
+    UPDATING_TO_USE_LOCAL_RESOURCE_SETTING = "UPDATING_TO_USE_LOCAL_RESOURCE_SETTING"
+    USE_LOCAL_RESOURCE_SETTING = "USE_LOCAL_RESOURCE_SETTING"
 
 
 class ResolverEndpointDirection(str):
@@ -149,6 +157,12 @@ class ResolverEndpointStatus(str):
     AUTO_RECOVERING = "AUTO_RECOVERING"
     ACTION_NEEDED = "ACTION_NEEDED"
     DELETING = "DELETING"
+
+
+class ResolverEndpointType(str):
+    IPV6 = "IPV6"
+    IPV4 = "IPV4"
+    DUALSTACK = "DUALSTACK"
 
 
 class ResolverQueryLogConfigAssociationError(str):
@@ -208,6 +222,7 @@ class SortOrder(str):
 class Validation(str):
     ENABLE = "ENABLE"
     DISABLE = "DISABLE"
+    USE_LOCAL_RESOURCE_SETTING = "USE_LOCAL_RESOURCE_SETTING"
 
 
 class AccessDeniedException(ServiceException):
@@ -354,6 +369,7 @@ class IpAddressUpdate(TypedDict, total=False):
     IpId: Optional[ResourceId]
     SubnetId: Optional[SubnetId]
     Ip: Optional[Ip]
+    Ipv6: Optional[Ipv6]
 
 
 class AssociateResolverEndpointIpAddressRequest(ServiceRequest):
@@ -377,6 +393,7 @@ class ResolverEndpoint(TypedDict, total=False):
     StatusMessage: Optional[StatusMessage]
     CreationTime: Optional[Rfc3339TimeString]
     ModificationTime: Optional[Rfc3339TimeString]
+    ResolverEndpointType: Optional[ResolverEndpointType]
 
 
 class AssociateResolverEndpointIpAddressResponse(TypedDict, total=False):
@@ -503,6 +520,7 @@ class CreateFirewallRuleResponse(TypedDict, total=False):
 class IpAddressRequest(TypedDict, total=False):
     SubnetId: SubnetId
     Ip: Optional[Ip]
+    Ipv6: Optional[Ipv6]
 
 
 IpAddressesRequest = List[IpAddressRequest]
@@ -515,6 +533,7 @@ class CreateResolverEndpointRequest(ServiceRequest):
     Direction: ResolverEndpointDirection
     IpAddresses: IpAddressesRequest
     Tags: Optional[TagList]
+    ResolverEndpointType: Optional[ResolverEndpointType]
 
 
 class CreateResolverEndpointResponse(TypedDict, total=False):
@@ -546,8 +565,9 @@ class CreateResolverQueryLogConfigResponse(TypedDict, total=False):
 
 
 class TargetAddress(TypedDict, total=False):
-    Ip: Ip
+    Ip: Optional[Ip]
     Port: Optional[Port]
+    Ipv6: Optional[Ipv6]
 
 
 TargetList = List[TargetAddress]
@@ -858,6 +878,7 @@ class IpAddressResponse(TypedDict, total=False):
     IpId: Optional[ResourceId]
     SubnetId: Optional[SubnetId]
     Ip: Optional[Ip]
+    Ipv6: Optional[Ipv6]
     Status: Optional[IpAddressStatus]
     StatusMessage: Optional[StatusMessage]
     CreationTime: Optional[Rfc3339TimeString]
@@ -1169,6 +1190,14 @@ class UpdateFirewallRuleResponse(TypedDict, total=False):
     FirewallRule: Optional[FirewallRule]
 
 
+class UpdateIpAddress(TypedDict, total=False):
+    IpId: ResourceId
+    Ipv6: Ipv6
+
+
+UpdateIpAddresses = List[UpdateIpAddress]
+
+
 class UpdateResolverConfigRequest(ServiceRequest):
     ResourceId: ResourceId
     AutodefinedReverseFlag: AutodefinedReverseFlag
@@ -1190,6 +1219,8 @@ class UpdateResolverDnssecConfigResponse(TypedDict, total=False):
 class UpdateResolverEndpointRequest(ServiceRequest):
     ResolverEndpointId: ResourceId
     Name: Optional[Name]
+    ResolverEndpointType: Optional[ResolverEndpointType]
+    UpdateIpAddresses: Optional[UpdateIpAddresses]
 
 
 class UpdateResolverEndpointResponse(TypedDict, total=False):
@@ -1296,6 +1327,7 @@ class Route53ResolverApi:
         ip_addresses: IpAddressesRequest,
         name: Name = None,
         tags: TagList = None,
+        resolver_endpoint_type: ResolverEndpointType = None,
     ) -> CreateResolverEndpointResponse:
         raise NotImplementedError
 
@@ -1729,7 +1761,12 @@ class Route53ResolverApi:
 
     @handler("UpdateResolverEndpoint")
     def update_resolver_endpoint(
-        self, context: RequestContext, resolver_endpoint_id: ResourceId, name: Name = None
+        self,
+        context: RequestContext,
+        resolver_endpoint_id: ResourceId,
+        name: Name = None,
+        resolver_endpoint_type: ResolverEndpointType = None,
+        update_ip_addresses: UpdateIpAddresses = None,
     ) -> UpdateResolverEndpointResponse:
         raise NotImplementedError
 
