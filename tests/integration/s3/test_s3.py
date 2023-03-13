@@ -5200,7 +5200,7 @@ class TestS3DeepArchive:
         if 'ongoing-request="false"' in response.get("Restore", ""):
             # if the restoring happens in LocalStack (or was fast in AWS) we can retrieve the object
             restore_bucket_name = f"bucket-{short_uid()}"
-            s3_client.create_bucket(Bucket=restore_bucket_name)
+            s3_create_bucket(Bucket=restore_bucket_name)
 
             s3_client.copy_object(
                 CopySource={"Bucket": bucket_name, "Key": object_key},
