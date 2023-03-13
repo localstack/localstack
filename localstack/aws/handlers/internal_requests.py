@@ -20,7 +20,7 @@ class InternalRequestParamsEnricher(Handler):
     def __call__(self, chain: HandlerChain, context: RequestContext, response: Response):
         if header := context.request.headers.get(INTERNAL_REQUEST_PARAMS_HEADER):
             try:
-                dto = load_dto(header)
+                dto = MappingProxyType(load_dto(header))
             except Exception as e:
                 LOG.error("Error loading request parameters '%s', Error: %s", header, e)
                 return
