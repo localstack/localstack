@@ -58,11 +58,15 @@ class RequestValidator:
             return True
 
         # check if there is a validator for this request
-        validator = self.apigateway_client.get_request_validator(
-            restApiId=self.context.api_id, requestValidatorId=resource["requestValidatorId"]
-        )
-        if validator is None:
-            return True
+        try:
+            validator = self.apigateway_client.get_request_validator(
+                restApiId=self.context.api_id, requestValidatorId=resource["requestValidatorId"]
+            )
+        except ClientError as e:
+            if "NotFoundException" in e:
+                return True
+
+            raise
 
         # are we validating the body?
         if self.should_validate_body(validator):
