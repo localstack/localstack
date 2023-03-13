@@ -1321,7 +1321,7 @@
     }
   },
   "tests/integration/apigateway/test_apigateway_api.py::TestApiGatewayApi::test_update_method": {
-    "recorded-date": "25-02-2023, 18:10:42",
+    "recorded-date": "13-03-2023, 23:24:55",
     "recorded-content": {
       "put-method-response": {
         "apiKeyRequired": false,
@@ -1363,9 +1363,27 @@
           "HTTPStatusCode": 200
         }
       },
+      "update-method-replace-authorizer": {
+        "apiKeyRequired": true,
+        "authorizationType": "CUSTOM",
+        "authorizerId": "<authorizer-id:1>",
+        "httpMethod": "ANY",
+        "operationName": "ReplacedOperationName",
+        "requestModels": {
+          "application/json": "Empty"
+        },
+        "requestParameters": {
+          "method.request.querystring.optional": false
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
       "update-method-remove": {
         "apiKeyRequired": true,
-        "authorizationType": "AWS_IAM",
+        "authorizationType": "CUSTOM",
+        "authorizerId": "<authorizer-id:1>",
         "httpMethod": "ANY",
         "operationName": "ReplacedOperationName",
         "ResponseMetadata": {

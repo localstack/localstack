@@ -923,6 +923,7 @@ class TestApiGatewayApi:
     ):
         # see https://www.linkedin.com/pulse/updating-aws-cli-patch-operations-rest-api-yitzchak-meirovich/
         # for patch path
+        snapshot.add_transformer(snapshot.transform.key_value("authorizerId"))
         response = apigw_create_rest_api(
             name=f"test-api-{short_uid()}", description="testing update method"
         )
@@ -973,6 +974,27 @@ class TestApiGatewayApi:
             patchOperations=patch_operations_replace,
         )
         snapshot.match("update-method-replace", update_method_response_replace)
+
+        authorizer = apigateway_client.create_authorizer(
+            restApiId=api_id,
+            name="authorizer-test",
+            type="TOKEN",
+            authorizerUri="arn:aws:apigateway:us-east-1:lambda:path/2015-03-31/functions/arn:aws:lambda:us-east-1:123456789012:function:myApiAuthorizer/invocations",
+            identitySource="method.request.header.Authorization",
+        )
+
+        patch_operations_replace_auth = [
+            {"op": "replace", "path": "/authorizationType", "value": "CUSTOM"},
+            {"op": "replace", "path": "/authorizerId", "value": authorizer["id"]},
+        ]
+
+        update_method_response_replace_auth = apigateway_client.update_method(
+            restApiId=api_id,
+            resourceId=root_id,
+            httpMethod="ANY",
+            patchOperations=patch_operations_replace_auth,
+        )
+        snapshot.match("update-method-replace-authorizer", update_method_response_replace_auth)
 
         patch_operations_remove = [
             {
