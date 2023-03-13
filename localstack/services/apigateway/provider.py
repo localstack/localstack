@@ -494,7 +494,6 @@ class ApigatewayProvider(ApigatewayApi, ServiceLifecycleHook):
                 continue
 
             if path == "/authorizationType" and value in ("CUSTOM", "COGNITO_USER_POOLS"):
-                # TODO: test with 2 operations adding this
                 modifying_auth_type = True
 
             elif path == "/authorizerId":
@@ -522,6 +521,13 @@ class ApigatewayProvider(ApigatewayApi, ServiceLifecycleHook):
                     "Invalid authorizer ID specified. "
                     "Setting the authorization type to CUSTOM or COGNITO_USER_POOLS requires a valid authorizer."
                 )
+        elif modified_authorizer_id:
+            if moto_method.authorization_type not in ("CUSTOM", "COGNITO_USER_POOLS"):
+                # AWS will ignore this patch if the method does not have a proper authorization type
+                # filter the patches to remove the modified authorizerId
+                applicable_patch_operations = [
+                    op for op in applicable_patch_operations if op.get("path") != "/authorizerId"
+                ]
 
         # TODO: test with multiple patch operations which would not be compatible between each other
         _patch_api_gateway_entity(moto_method, applicable_patch_operations)

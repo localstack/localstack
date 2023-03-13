@@ -984,8 +984,8 @@ class TestApiGatewayApi:
         )
 
         patch_operations_replace_auth = [
-            {"op": "replace", "path": "/authorizationType", "value": "CUSTOM"},
             {"op": "replace", "path": "/authorizerId", "value": authorizer["id"]},
+            {"op": "replace", "path": "/authorizationType", "value": "CUSTOM"},
         ]
 
         update_method_response_replace_auth = apigateway_client.update_method(
@@ -1145,6 +1145,32 @@ class TestApiGatewayApi:
                 patchOperations=patch_operations_add,
             )
         snapshot.match("wrong-auth-type", e.value.response)
+
+        # add auth id when method has NONE, AWS will ignore it
+        patch_operations_add = [
+            {"op": "replace", "path": "/authorizerId", "value": "abc123"},
+        ]
+        response = apigateway_client.update_method(
+            restApiId=api_id,
+            resourceId=root_id,
+            httpMethod="ANY",
+            patchOperations=patch_operations_add,
+        )
+        snapshot.match("skip-auth-id-with-wrong-type", response)
+
+        # add auth type without real authorizer id?
+        with pytest.raises(ClientError) as e:
+            patch_operations_add = [
+                {"op": "replace", "path": "/authorizationType", "value": "CUSTOM"},
+                {"op": "replace", "path": "/authorizerId", "value": "abc123"},
+            ]
+            apigateway_client.update_method(
+                restApiId=api_id,
+                resourceId=root_id,
+                httpMethod="ANY",
+                patchOperations=patch_operations_add,
+            )
+        snapshot.match("wrong-auth-id", e.value.response)
 
         # replace wrong validator id
         with pytest.raises(ClientError) as e:
