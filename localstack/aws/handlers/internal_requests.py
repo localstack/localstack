@@ -1,4 +1,5 @@
 import logging
+from types import MappingProxyType
 
 from localstack.http import Response
 

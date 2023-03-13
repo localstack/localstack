@@ -2,7 +2,6 @@
 import logging
 import re
 import threading
-from typing import Optional
 
 from localstack.constants import DEFAULT_AWS_ACCOUNT_ID, TEST_AWS_ACCESS_KEY_ID
 

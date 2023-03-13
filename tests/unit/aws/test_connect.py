@@ -1,10 +1,7 @@
-import os
 from unittest.mock import ANY, MagicMock, patch
 
-import botocore.config
 import pytest
 
-from localstack import config
 from localstack.aws.api import RequestContext
 from localstack.aws.chain import Handler, HandlerChain
 from localstack.aws.connect import (
@@ -330,40 +327,3 @@ class TestClientFactory:
         clients.awslambda.list_functions()
 
         assert test_params == expected_result
-
-
-# TODO this should be moved to a generic fixture for all integration tests
-# this is only a demonstration how a fixture could look like, and that the approach matches our requirements
-class TestFactoryTestUsage:
-    @pytest.fixture(scope="module")
-    def test_client_factory(self):
-        return ExternalClientFactory()
-
-    @pytest.fixture(scope="class")
-    def clients(self, test_client_factory):
-        """Clients fixture which will allow all kind of clients to be initialized"""
-        botocore_config = botocore.config.Config()
-
-        # can't set the timeouts to 0 like in the AWS CLI because the underlying http client requires values > 0
-        if os.environ.get("TEST_DISABLE_RETRIES_AND_TIMEOUTS"):
-            botocore_config = botocore_config.merge(
-                botocore.config.Config(
-                    connect_timeout=1_000, read_timeout=1_000, retries={"total_max_attempts": 1}
-                )
-            )
-
-        if os.environ.get("TEST_TARGET") == "AWS_CLOUD":
-            return test_client_factory(config=botocore_config)
-
-        return test_client_factory(
-            region_name="us-east-1",
-            aws_access_key_id="test",
-            aws_secret_access_key="test",
-            endpoint_url=config.get_edge_url(),
-            config=botocore_config,
-        )
-
-    @pytest.mark.skip
-    def test_something_with_boto_clients(self, clients):
-        functions = clients.awslambda.list_functions()
-        print(functions)
