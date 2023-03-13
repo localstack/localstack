@@ -1,5 +1,4 @@
 import os
-from contextlib import contextmanager
 from unittest.mock import ANY, MagicMock, patch
 
 import botocore.config
@@ -7,31 +6,41 @@ import pytest
 
 from localstack import config
 from localstack.aws.api import RequestContext
-from localstack.aws.chain import HandlerChain
+from localstack.aws.chain import Handler, HandlerChain
 from localstack.aws.connect import (
     ExternalClientFactory,
     InternalClientFactory,
     attribute_name_to_service_name,
 )
 from localstack.aws.gateway import Gateway
-from localstack.aws.handlers import add_internal_request_params
+from localstack.aws.handlers import add_internal_request_params, add_region_from_header
 from localstack.http import Response
 from localstack.http.hypercorn import GatewayServer
+from localstack.utils.aws.aws_stack import extract_access_key_id_from_auth_header
 from localstack.utils.net import get_free_tcp_port
-from localstack.utils.serving import Server
-
-
-@contextmanager
-def server_context(server: Server):
-    server.start()
-    server.wait_is_up(timeout=10)
-    try:
-        yield server
-    finally:
-        server.shutdown()
 
 
 class TestClientFactory:
+    @pytest.fixture
+    def create_dummy_request_parameter_gateway(self):
+        server = None
+
+        def _create(request_handlers: list[Handler]) -> str:
+            nonlocal server
+            gateway = Gateway()
+            gateway.request_handlers.append(add_internal_request_params)
+            for handler in request_handlers:
+                gateway.request_handlers.append(handler)
+            port = get_free_tcp_port()
+            server = GatewayServer(gateway, port, "127.0.0.1", use_ssl=True)
+            server.start()
+            server.wait_is_up(timeout=10)
+            return f"http://localhost:{port}"
+
+        yield _create
+        if server:
+            server.shutdown()
+
     def test_internal_client_dto_is_registered(self):
         factory = InternalClientFactory()
         factory._session = MagicMock()
@@ -139,7 +148,7 @@ class TestClientFactory:
         factory_2 = InternalClientFactory()
         assert factory().s3 != factory_2().s3
 
-    def test_internal_request_parameters(self):
+    def test_internal_request_parameters(self, create_dummy_request_parameter_gateway):
         internal_dto = None
 
         def echo_request_handler(_: HandlerChain, context: RequestContext, response: Response):
@@ -148,59 +157,183 @@ class TestClientFactory:
             response.status_code = 200
             response.headers = context.request.headers
 
-        # setup gateway
-        gateway = Gateway()
-        gateway.request_handlers.append(add_internal_request_params)
-        gateway.request_handlers.append(echo_request_handler)
-        port = get_free_tcp_port()
-        server = GatewayServer(gateway, port, "127.0.0.1", use_ssl=True)
+        endpoint_url = create_dummy_request_parameter_gateway([echo_request_handler])
 
-        # create client
-        with server_context(server):
-            sent_dto = {
-                "service_principal": "apigateway",
-                "source_arn": "arn:aws:apigateway:us-east-1::/apis/api-id",
-            }
-            internal_factory = InternalClientFactory()
-            internal_lambda_client = internal_factory(
-                endpoint_url=f"http://localhost:{port}"
-            ).awslambda
-            internal_lambda_client.list_functions(
-                _ServicePrincipal=sent_dto["service_principal"], _SourceArn=sent_dto["source_arn"]
-            )
-            assert internal_dto == sent_dto
-            external_factory = ExternalClientFactory()
-            external_lambda_client = external_factory(
-                endpoint_url=f"http://localhost:{port}"
-            ).awslambda
-            external_lambda_client.list_functions()
-            assert internal_dto is None
+        sent_dto = {
+            "service_principal": "apigateway",
+            "source_arn": "arn:aws:apigateway:us-east-1::/apis/api-id",
+        }
+        internal_factory = InternalClientFactory()
+        internal_lambda_client = internal_factory(endpoint_url=endpoint_url).awslambda
+        internal_lambda_client.list_functions(
+            _ServicePrincipal=sent_dto["service_principal"], _SourceArn=sent_dto["source_arn"]
+        )
+        assert internal_dto == sent_dto
+        external_factory = ExternalClientFactory()
+        external_lambda_client = external_factory(endpoint_url=endpoint_url).awslambda
+        external_lambda_client.list_functions()
+        assert internal_dto is None
 
-    def test_internal_call(self):
+    def test_internal_call(self, create_dummy_request_parameter_gateway):
         """Test the creation of a strictly internal client"""
-        pass
+        # TODO add utility to simplify (second iteration)
+        factory = InternalClientFactory()
+        test_params = {}
 
-    def test_internal_call_from_principal(self):
+        def echo_request_handler(_: HandlerChain, context: RequestContext, response: Response):
+            test_params["is_internal"] = context.is_internal_call
+            if context.internal_request_params:
+                test_params.update(context.internal_request_params)
+            response.status_code = 200
+
+        endpoint_url = create_dummy_request_parameter_gateway([echo_request_handler])
+
+        factory(endpoint_url=endpoint_url).awslambda.list_functions()
+
+        assert test_params == {"is_internal": True}
+
+    def test_internal_call_from_principal(self, create_dummy_request_parameter_gateway):
         """Test the creation of a client based on some principal credentials"""
-        pass
 
-    def test_internal_call_from_role(self):
-        """Test the creation of a client assuming a role"""
-        pass
+        factory = InternalClientFactory()
+        test_params = {}
 
-    def test_internal_call_from_service(self):
+        def echo_request_handler(_: HandlerChain, context: RequestContext, response: Response):
+            test_params["is_internal"] = context.is_internal_call
+            if context.internal_request_params:
+                test_params.update(context.internal_request_params)
+            test_params["access_key_id"] = extract_access_key_id_from_auth_header(
+                context.request.headers
+            )
+            response.status_code = 200
+
+        endpoint_url = create_dummy_request_parameter_gateway([echo_request_handler])
+
+        factory(
+            endpoint_url=endpoint_url,
+            aws_access_key_id="AKIAQAAAAAAALX6GRE2E",
+            aws_secret_access_key="something",
+        ).awslambda.list_functions()
+
+        assert test_params == {"is_internal": True, "access_key_id": "AKIAQAAAAAAALX6GRE2E"}
+
+    def test_internal_call_from_role(self, create_dummy_request_parameter_gateway):
+        """Test the creation of a client living in the apigateway service assuming a role and creating a client with it"""
+        factory = InternalClientFactory()
+        test_params = {}
+
+        def echo_request_handler(_: HandlerChain, context: RequestContext, response: Response):
+            test_params["is_internal"] = context.is_internal_call
+            if context.internal_request_params:
+                test_params.update(context.internal_request_params)
+            if "sts" in context.request.headers["Authorization"]:
+                response.set_response(
+                    b"<?xml version='1.0' encoding='utf-8'?>\n<AssumeRoleResponse xmlns=\"https://sts.amazonaws.com/doc/2011-06-15/\"><AssumeRoleResult><Credentials><AccessKeyId>ASIAQAAAAAAAKZ4L3POJ</AccessKeyId><SecretAccessKey>JuXSf5FLeQ359frafiJ4JpjDEoB7HQLnLQEFBRlM</SecretAccessKey><SessionToken>FQoGZXIvYXdzEBYaDCjqXzwpBOq025tqq/z0qkio4HkWpvPGsLW3y4G5kcPcKpPrJ1ZVnnVMcx7JP35kzhPssefI7P08HuQKjX15L7r+mFoPCBHVZYqx5yqflWM7Di6vOfWm51DMY6RCe7cXH/n5SwSxeb0RQokIKMOZ0jK+bZN2KPqmWaH4hkAaDAsFGVBgpuEpNZm4VU75m29kxoUw2//6aTMoxgIFzuwb22dNidJYdoxzLFcAy89kJaYYYQjJ/SFKtZPlgSaekEMr6E4VCr+g9zHVUlO33YLTLaxlb3pf/+Dgq8CJCpmBo/suHJFPvfYH5zdsvUlKcczd7Svyr8RqxjbexG8uXH4=</SessionToken><Expiration>2023-03-13T11:29:08.200000Z</Expiration></Credentials><AssumedRoleUser><AssumedRoleId>AROAQAAAAAAANUGUEO76V:test-session</AssumedRoleId><Arn>arn:aws:sts::000000000000:assumed-role/test-role/test-session</Arn></AssumedRoleUser><PackedPolicySize>6</PackedPolicySize></AssumeRoleResult><ResponseMetadata><RequestId>P3CY3HH8R03LT28I31X212IQWLSY0WCECRPXPSMOTFVUAV3I8Q5A</RequestId></ResponseMetadata></AssumeRoleResponse>"
+                )
+            else:
+                test_params["access_key_id"] = extract_access_key_id_from_auth_header(
+                    context.request.headers
+                )
+            response.status_code = 200
+
+        endpoint_url = create_dummy_request_parameter_gateway([echo_request_handler])
+
+        # TODO this should be extracted into a utility for the next iteration
+        response = factory(endpoint_url=endpoint_url).sts.assume_role(
+            RoleArn="arn:aws:iam::000000000000:role/test-role",
+            RoleSessionName="test-session",
+            _ServicePrincipal="apigateway",
+        )
+        assert test_params == {"is_internal": True, "service_principal": "apigateway"}
+        credentials = response["Credentials"]
+        test_params = {}
+
+        factory(
+            endpoint_url=endpoint_url,
+            aws_access_key_id=credentials["AccessKeyId"],
+            aws_secret_access_key=credentials["SecretAccessKey"],
+            aws_session_token=credentials["SessionToken"],
+        ).awslambda.list_functions()
+
+        assert test_params == {"is_internal": True, "access_key_id": "ASIAQAAAAAAAKZ4L3POJ"}
+
+    def test_internal_call_from_service(self, create_dummy_request_parameter_gateway):
         """Test the creation of a client from a service on behalf of some resource"""
-        pass
+        factory = InternalClientFactory()
+        test_params = {}
 
-    def test_external_call_to_provider(self):
+        def echo_request_handler(_: HandlerChain, context: RequestContext, response: Response):
+            test_params["is_internal"] = context.is_internal_call
+            if context.internal_request_params:
+                test_params.update(context.internal_request_params)
+            response.status_code = 200
+
+        endpoint_url = create_dummy_request_parameter_gateway([echo_request_handler])
+        clients = factory(
+            endpoint_url=endpoint_url,
+        )
+
+        expected_result = {
+            "is_internal": True,
+            "service_principal": "apigatway",
+            "source_arn": "arn:aws:apigateway:us-east-1::/apis/a1a1a1a1",
+        }
+        clients.awslambda.list_functions(
+            _ServicePrincipal=expected_result["service_principal"],
+            _SourceArn=expected_result["source_arn"],
+        )
+
+        assert test_params == expected_result
+
+    def test_external_call_to_provider(self, create_dummy_request_parameter_gateway):
         """Test the creation of a client to be used to connect to a downstream provider implementation"""
-        pass
+        factory = ExternalClientFactory()
+        test_params = {}
 
-    def test_external_call_from_test(self):
+        def echo_request_handler(_: HandlerChain, context: RequestContext, response: Response):
+            test_params["is_internal"] = context.is_internal_call
+            test_params["params"] = context.internal_request_params
+            response.status_code = 200
+
+        endpoint_url = create_dummy_request_parameter_gateway([echo_request_handler])
+        clients = factory(
+            endpoint_url=endpoint_url,
+        )
+
+        expected_result = {"is_internal": False, "params": None}
+        clients.awslambda.list_functions()
+
+        assert test_params == expected_result
+
+    def test_external_call_from_test(self, create_dummy_request_parameter_gateway):
         """Test the creation of a client to be used to connect in a test"""
-        pass
+        factory = ExternalClientFactory()
+        test_params = {}
+
+        def echo_request_handler(_: HandlerChain, context: RequestContext, response: Response):
+            test_params["is_internal"] = context.is_internal_call
+            test_params["params"] = context.internal_request_params
+            test_params["region"] = context.region
+            response.status_code = 200
+
+        endpoint_url = create_dummy_request_parameter_gateway(
+            [add_region_from_header, echo_request_handler]
+        )
+        clients = factory(
+            region_name="eu-central-1",
+            endpoint_url=endpoint_url,
+            aws_access_key_id="test",
+            aws_secret_access_key="test",
+        )
+
+        expected_result = {"is_internal": False, "params": None, "region": "eu-central-1"}
+        clients.awslambda.list_functions()
+
+        assert test_params == expected_result
 
 
+# TODO this should be moved to a generic fixture for all integration tests
+# this is only a demonstration how a fixture could look like, and that the approach matches our requirements
 class TestFactoryTestUsage:
     @pytest.fixture(scope="module")
     def test_client_factory(self):
@@ -227,8 +360,10 @@ class TestFactoryTestUsage:
             aws_access_key_id="test",
             aws_secret_access_key="test",
             endpoint_url=config.get_edge_url(),
+            config=botocore_config,
         )
 
+    @pytest.mark.skip
     def test_something_with_boto_clients(self, clients):
         functions = clients.awslambda.list_functions()
         print(functions)

@@ -260,6 +260,7 @@ class ClientFactory(ABC):
 
     # TODO @cache here might result in a memory leak, as it keeps a reference to `self`
     # We might need an alternative caching decorator with a weak ref to `self`
+    # Otherwise factories might never be garbage collected
     @cache
     def _get_client(
         self,
@@ -460,8 +461,7 @@ def _handler_create_request_parameters(params, model, context, **kwargs):
         if parameter in params:
             dto[member] = params.pop(parameter)
 
-    if dto:
-        context["_localstack"] = dto
+    context["_localstack"] = dto
 
 
 def _handler_inject_dto_header(model, params, request_signer, context, **kwargs):
@@ -469,5 +469,5 @@ def _handler_inject_dto_header(model, params, request_signer, context, **kwargs)
     Retrieve the data transfer object from the Boto context dict and serialise
     it as part of the request headers.
     """
-    if dto := context.pop("_localstack", None):
+    if (dto := context.pop("_localstack", None)) is not None:
         params["headers"][INTERNAL_REQUEST_PARAMS_HEADER] = dump_dto(dto)
