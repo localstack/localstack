@@ -1,6 +1,7 @@
 import logging
 import os
 
+from localstack import config
 from localstack.runtime import hooks
 from localstack.utils.analytics import log
 
@@ -70,3 +71,32 @@ def _publish_config_as_analytics_event():
     present_env_vars = {env_var: 1 for env_var in PRESENCE_ENV_VAR if os.getenv(env_var)}
 
     log.event("config", env_vars=env_vars, set_vars=present_env_vars)
+
+
+class LocalstackContainerInfo:
+    def get_image_variant(self) -> str:
+        for f in os.listdir("/usr/lib/localstack"):
+            if f.startswith(".") and f.endswith("-version"):
+                return f[1:-8]
+        return "unknown"
+
+    def has_docker_socket(self) -> bool:
+        return os.path.exists("/run/docker.sock")
+
+    def to_dict(self):
+        return {
+            "variant": self.get_image_variant(),
+            "has_docker_socket": self.has_docker_socket(),
+        }
+
+
+@hooks.on_infra_start()
+def _publish_container_info():
+    if not config.is_in_docker:
+        return
+
+    try:
+        log.event("container_info", payload=LocalstackContainerInfo().to_dict())
+    except Exception as e:
+        if config.DEBUG_ANALYTICS:
+            LOG.debug("error gathering container information: %s", e)
