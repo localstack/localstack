@@ -9,7 +9,7 @@ import logging
 import threading
 from abc import ABC, abstractmethod
 from functools import cache
-from typing import TYPE_CHECKING, Optional, TypedDict
+from typing import TYPE_CHECKING, Any, Optional, TypedDict
 
 from boto3.session import Session
 from botocore.client import BaseClient
@@ -106,9 +106,8 @@ class InternalRequestParameters(TypedDict):
 
 
 def dump_dto(data: InternalRequestParameters) -> str:
-    # TODO@viren: Minification can be improved using custom JSONEncoder that uses shortened keys
-
     # To produce a compact JSON representation of DTO, remove spaces from separators
+    # If possible, we could use a custom encoder to further decrease header size in the future
     return json.dumps(data, separators=(",", ":"))
 
 
@@ -119,9 +118,10 @@ def load_dto(data: str) -> InternalRequestParameters:
 #
 # Factory
 #
-class ServiceClientResult:
+class ServiceLevelClientFactory:
     """
-    TODO
+    A service level client factory, preseeded with parameters for the boto3 client creation.
+    Will create any service client with parameters already provided by the ClientFactory.
     """
 
     acm: "ACMClient"
@@ -209,7 +209,7 @@ class ClientFactory(ABC):
         aws_session_token: Optional[str] = None,
         endpoint_url: str = None,
         config: Config = None,
-    ) -> ServiceClientResult:
+    ) -> ServiceLevelClientFactory:
         """
         Get back an object which lets you select the typed service you want to access with the given attributes
 
@@ -234,7 +234,7 @@ class ClientFactory(ABC):
             "endpoint_url": endpoint_url,
             "config": config,
         }
-        return ServiceClientResult(factory=self, client_creation_params=params)
+        return ServiceLevelClientFactory(factory=self, client_creation_params=params)
 
     @abstractmethod
     def get_client(
@@ -326,9 +326,7 @@ class ClientFactory(ABC):
         - Boto session
         """
         return (
-            get_region_from_request_context()
-            or config.DEFAULT_REGION
-            or self._get_session_region()  # TODO this will never be called, as DEFAULT_REGION defaults to 'us-east-1'
+            get_region_from_request_context() or self._get_session_region() or config.DEFAULT_REGION
         )
 
 
@@ -444,13 +442,19 @@ connect_externally_to = ExternalClientFactory()
 #
 
 
-def _handler_create_request_parameters(params, model, context, **kwargs):
+def _handler_create_request_parameters(params: dict[str, Any], context: dict[str, Any], **kwargs):
     """
     Construct the data transfer object at the time of parsing the client
     parameters and proxy it via the Boto context dict.
 
     This handler enables the use of additional keyword parameters in Boto API
     operation functions.
+
+    It uses the `InternalRequestParameters` type annotations to handle supported parameters.
+    The keys supported by this type will be converted to method parameters by prefixing it with an underscore `_`
+    and converting the snake case to camel case.
+    Example:
+        service_principal -> _ServicePrincipal
     """
 
     # Names of arguments that can be passed to Boto API operation functions.
@@ -464,7 +468,7 @@ def _handler_create_request_parameters(params, model, context, **kwargs):
     context["_localstack"] = dto
 
 
-def _handler_inject_dto_header(model, params, request_signer, context, **kwargs):
+def _handler_inject_dto_header(params: dict[str, Any], context: dict[str, Any], **kwargs):
     """
     Retrieve the data transfer object from the Boto context dict and serialise
     it as part of the request headers.
