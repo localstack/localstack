@@ -264,6 +264,7 @@ class ResponseTemplates(Templates):
 
         # we only support JSON templates for now - if there is no template we return
         # the response as is
+        # TODO - support other content types, besides application/json!
         template = response_templates.get(APPLICATION_JSON, {})
         if not template:
             return response._content

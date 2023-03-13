@@ -1,5 +1,7 @@
 # -*- coding: utf-8 -*-
 
+# TODO: split up the tests in this file into more specific test sub-modules
+
 import base64
 import json
 import os
@@ -42,7 +44,7 @@ from localstack.utils.http import safe_requests as requests
 from localstack.utils.json import clone, json_safe
 from localstack.utils.strings import short_uid, to_str
 from localstack.utils.sync import retry
-from tests.integration.apigateway_fixtures import (
+from tests.integration.apigateway.apigateway_fixtures import (
     _client,
     api_invoke_url,
     create_rest_api_deployment,
@@ -59,9 +61,13 @@ from tests.integration.apigateway_fixtures import (
     update_rest_api_deployment,
     update_rest_api_stage,
 )
-
-from ..unit.test_apigateway import load_test_resource
-from .awslambda.test_lambda import (
+from tests.integration.apigateway.conftest import (
+    APIGATEWAY_ASSUME_ROLE_POLICY,
+    APIGATEWAY_LAMBDA_POLICY,
+    APIGATEWAY_STEPFUNCTIONS_POLICY,
+    STEPFUNCTIONS_ASSUME_ROLE_POLICY,
+)
+from tests.integration.awslambda.test_lambda import (
     TEST_LAMBDA_AWS_PROXY,
     TEST_LAMBDA_HTTP_RUST,
     TEST_LAMBDA_LIBS,
@@ -71,55 +77,15 @@ from .awslambda.test_lambda import (
     TEST_LAMBDA_PYTHON,
     TEST_LAMBDA_PYTHON_ECHO,
 )
-
-STEPFUNCTIONS_ASSUME_ROLE_POLICY = {
-    "Version": "2012-10-17",
-    "Statement": [
-        {
-            "Effect": "Allow",
-            "Principal": {"Service": "states.amazonaws.com"},
-            "Action": "sts:AssumeRole",
-        }
-    ],
-}
-
-APIGATEWAY_STEPFUNCTIONS_POLICY = {
-    "Version": "2012-10-17",
-    "Statement": [{"Effect": "Allow", "Action": "states:*", "Resource": "*"}],
-}
-
-APIGATEWAY_KINESIS_POLICY = {
-    "Version": "2012-10-17",
-    "Statement": [{"Effect": "Allow", "Action": "kinesis:*", "Resource": "*"}],
-}
-
-APIGATEWAY_DYNAMODB_POLICY = {
-    "Version": "2012-10-17",
-    "Statement": [{"Effect": "Allow", "Action": "dynamodb:*", "Resource": "*"}],
-}
-
-APIGATEWAY_LAMBDA_POLICY = {
-    "Version": "2012-10-17",
-    "Statement": [{"Effect": "Allow", "Action": "lambda:*", "Resource": "*"}],
-}
-
-
-APIGATEWAY_ASSUME_ROLE_POLICY = {
-    "Statement": {
-        "Sid": "",
-        "Effect": "Allow",
-        "Principal": {"Service": "apigateway.amazonaws.com"},
-        "Action": "sts:AssumeRole",
-    }
-}
+from tests.unit.test_apigateway import load_test_resource
 
 THIS_FOLDER = os.path.dirname(os.path.realpath(__file__))
-TEST_SWAGGER_FILE_JSON = os.path.join(THIS_FOLDER, "files", "swagger.json")
-TEST_SWAGGER_FILE_YAML = os.path.join(THIS_FOLDER, "files", "swagger.yaml")
-TEST_IMPORT_REST_API_FILE = os.path.join(THIS_FOLDER, "files", "pets.json")
-TEST_IMPORT_PETSTORE_SWAGGER = os.path.join(THIS_FOLDER, "files", "petstore-swagger.json")
-TEST_IMPORT_MOCK_INTEGRATION = os.path.join(THIS_FOLDER, "files", "openapi-mock.json")
-TEST_IMPORT_REST_API_ASYNC_LAMBDA = os.path.join(THIS_FOLDER, "files", "api_definition.yaml")
+TEST_SWAGGER_FILE_JSON = os.path.join(THIS_FOLDER, "../files", "swagger.json")
+TEST_SWAGGER_FILE_YAML = os.path.join(THIS_FOLDER, "../files", "swagger.yaml")
+TEST_IMPORT_REST_API_FILE = os.path.join(THIS_FOLDER, "../files", "pets.json")
+TEST_IMPORT_PETSTORE_SWAGGER = os.path.join(THIS_FOLDER, "../files", "petstore-swagger.json")
+TEST_IMPORT_MOCK_INTEGRATION = os.path.join(THIS_FOLDER, "../files", "openapi-mock.json")
+TEST_IMPORT_REST_API_ASYNC_LAMBDA = os.path.join(THIS_FOLDER, "../files", "api_definition.yaml")
 
 ApiGatewayLambdaProxyIntegrationTestResult = namedtuple(
     "ApiGatewayLambdaProxyIntegrationTestResult",

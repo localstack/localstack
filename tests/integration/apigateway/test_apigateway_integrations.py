@@ -9,7 +9,7 @@ from localstack.utils.aws import arns, aws_stack
 from localstack.utils.strings import short_uid
 from localstack.utils.sync import retry
 from localstack.utils.testutil import create_lambda_function
-from tests.integration.apigateway_fixtures import (
+from tests.integration.apigateway.apigateway_fixtures import (
     api_invoke_url,
     create_rest_api_integration,
     create_rest_resource,
@@ -308,6 +308,7 @@ def test_lambda_proxy_integration(
     )
 
 
+# TODO - remove the code below?
 #
 # def test_aws_integration_dynamodb(apigateway_client):
 #     if settings.TEST_SERVER_MODE:

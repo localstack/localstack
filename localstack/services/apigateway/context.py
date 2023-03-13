@@ -93,6 +93,7 @@ class ApiInvocationContext:
         self.path_params = {}
         self.route = None
         self.ws_route = None
+        self.response = None
 
     @property
     def resource_id(self) -> Optional[str]:

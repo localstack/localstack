@@ -10,7 +10,7 @@ from localstack.utils.files import load_file
 from localstack.utils.run import to_str
 from localstack.utils.strings import to_bytes
 from localstack.utils.testutil import create_zip_file
-from tests.integration.apigateway_fixtures import api_invoke_url
+from tests.integration.apigateway.apigateway_fixtures import api_invoke_url
 
 TEST_TEMPLATE_1 = """
 AWSTemplateFormatVersion: '2010-09-09'
