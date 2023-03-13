@@ -1650,3 +1650,51 @@ class TestEvents:
                 {"Id": target_id, "Arn": queue_arn, "InputPath": "$.detail"},
             ],
         )
+
+    @pytest.mark.aws_validated
+    def test_should_ignore_schedules_for_put_event(
+        self, create_lambda_function, lambda_client, events_client, logs_client
+    ):
+        """Regression test for https://github.com/localstack/localstack/issues/7847"""
+        fn_name = f"test-event-fn-{short_uid()}"
+        create_lambda_function(
+            func_name=fn_name,
+            handler_file=TEST_LAMBDA_PYTHON_ECHO,
+            runtime=Runtime.python3_9,
+            client=lambda_client,
+        )
+
+        lambda_client.add_permission(
+            FunctionName=fn_name,
+            StatementId="AllowFnInvokeStatement",
+            Action="lambda:InvokeFunction",
+            Principal="events.amazonaws.com",
+        )
+
+        fn_arn = lambda_client.get_function(FunctionName=fn_name)["Configuration"]["FunctionArn"]
+        events_client.put_rule(
+            Name="ScheduledLambda", ScheduleExpression="rate(1 minute)"
+        )  # every minute, can't go lower than that
+        events_client.put_targets(
+            Rule="ScheduledLambda", Targets=[{"Id": "calllambda1", "Arn": fn_arn}]
+        )
+
+        events_client.put_events(
+            Entries=[
+                {
+                    "Source": "MySource",
+                    "DetailType": "CustomType",
+                    "Detail": json.dumps({"message": "manually invoked"}),
+                }
+            ]
+        )
+
+        def check_invocation():
+            events_after = logs_client.filter_log_events(logGroupName=f"/aws/lambda/{fn_name}")
+            # the custom sent event should NOT trigger the lambda (!)
+            assert len([e for e in events_after["events"] if "START" in e["message"]]) >= 1
+            assert (
+                len([e for e in events_after["events"] if "manually invoked" in e["message"]]) == 0
+            )
+
+        retry(check_invocation, sleep=5, retries=15)
