@@ -139,7 +139,7 @@ def kms():
     return Service.for_provider(provider)
 
 
-@aws_provider(api="lambda")
+@aws_provider(api="lambda", name="legacy")
 def awslambda():
     from localstack.services.awslambda import lambda_starter
 
@@ -160,7 +160,7 @@ def awslambda_asf():
     return Service.for_provider(provider)
 
 
-@aws_provider(api="lambda", name="v2")
+@aws_provider(api="lambda", name="default")
 def awslambda_v2():
     from localstack.services.awslambda.provider import LambdaProvider
 
