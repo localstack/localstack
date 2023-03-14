@@ -933,46 +933,48 @@ class Util:
 
         flags = shlex.split(additional_flags)
 
-        # TODO: order parser setup alphabetically
+        # Configure parser
         parser = NoExitArgumentParser(description="Docker run flags parser")
-        parser.add_argument(
-            "--platform",
-            type=DockerPlatform,
-            help="Docker platform (e.g., linux/amd64 or linux/arm64)",
-        )
-        parser.add_argument(
-            "-l", "--label", help="Add container meta data", dest="labels", action="append"
-        )
-        parser.add_argument("-u", "--user", help="Username or UID to execute first process")
-        parser.add_argument(
-            "-e", "--env", help="Set environment variables", dest="envs", action="append"
-        )
-        parser.add_argument(
-            "-v", "--volume", help="Bind mount a volume", dest="volumes", action="append"
-        )
-        parser.add_argument(
-            "-p",
-            "--publish",
-            help="Publish container port(s) to the host",
-            dest="ports",
-            action="append",
-        )
         parser.add_argument(
             "--add-host",
             help="Add a custom host-to-IP mapping (host:ip)",
             dest="add_hosts",
             action="append",
         )
+        parser.add_argument(
+            "--env", "-e", help="Set environment variables", dest="envs", action="append"
+        )
+        parser.add_argument(
+            "--label", "-l", help="Add container meta data", dest="labels", action="append"
+        )
         parser.add_argument("--network", help="Connect a container to a network")
+        parser.add_argument(
+            "--platform",
+            type=DockerPlatform,
+            help="Docker platform (e.g., linux/amd64 or linux/arm64)",
+        )
         parser.add_argument(
             "--privileged",
             type=bool,
             help="Give extended privileges to this container",
             action=BooleanOptionalAction,
         )
+        parser.add_argument(
+            "--publish",
+            "-p",
+            help="Publish container port(s) to the host",
+            dest="publish_ports",
+            action="append",
+        )
+        parser.add_argument("--user", "-u", help="Username or UID to execute first process")
+        parser.add_argument(
+            "--volume", "-v", help="Bind mount a volume", dest="volumes", action="append"
+        )
 
+        # Parse
         args = parser.parse_args(flags)
 
+        # Post-process parsed flags
         if args.add_hosts:
             for add_host in args.add_hosts:
                 extra_hosts = extra_hosts if extra_hosts is not None else {}
@@ -1008,8 +1010,14 @@ class Util:
             )
             platform = args.platform
 
-        if args.ports:
-            for port_mapping in args.ports:
+        if args.privileged is not None:
+            LOG.warning(
+                f"Overwriting Docker container privileged flag {privileged} with new value {args.privileged}"
+            )
+            privileged = True
+
+        if args.publish_ports:
+            for port_mapping in args.publish_ports:
                 port_split = port_mapping.split(":")
                 protocol = "tcp"
                 if len(port_split) == 2:
@@ -1032,12 +1040,6 @@ class Util:
                     container_port, protocol = container_port.split("/")
                 ports = ports if ports is not None else PortMappings()
                 ports.add(host_port, int(container_port), protocol)
-
-        if args.privileged is not None:
-            LOG.warning(
-                f"Overwriting Docker container privileged flag {privileged} with new value {args.privileged}"
-            )
-            privileged = True
 
         if args.user:
             LOG.warning(
