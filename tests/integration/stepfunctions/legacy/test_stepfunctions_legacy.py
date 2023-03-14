@@ -661,6 +661,7 @@ def test_default_logging_configuration(iam_client, create_state_machine, stepfun
         iam_client.delete_role(RoleName=role_name)
 
 
+@pytest.mark.skip("Does not work against Pro in new pipeline.")
 def test_aws_sdk_task(sfn_execution_role, stepfunctions_client, iam_client, sns_client):
     statemachine_definition = {
         "StartAt": "CreateTopicTask",
@@ -741,6 +742,7 @@ def test_aws_sdk_task(sfn_execution_role, stepfunctions_client, iam_client, sns_
         stepfunctions_client.delete_state_machine(stateMachineArn=machine_arn)
 
 
+@pytest.mark.skip("Does not work against Pro in new pipeline.")
 def test_aws_sdk_task_delete_s3_object(
     stepfunctions_client, s3_bucket, iam_client, sns_client, s3_client, sfn_execution_role
 ):
