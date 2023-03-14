@@ -570,6 +570,7 @@ def import_api_from_openapi_spec(
                     if authorizers.get(security_scheme_name):
                         return authorizers.get(security_scheme_name)
 
+                    authorizer_type = aws_apigateway_authorizer.get("type", "").upper()
                     # TODO: do we need validation of resources here?
                     authorizer = Authorizer(
                         id=create_resource_id(),
@@ -589,7 +590,12 @@ def import_api_from_openapi_spec(
                         "authorizerCredentials"
                     ):
                         authorizer["authorizerCredentials"] = authorizer_credentials
-                    if identity_source := aws_apigateway_authorizer.get("identitySource"):
+                    if authorizer_type == "TOKEN":
+                        header_name = security_config.get("name")
+                        authorizer["identitySource"] = f"method.request.header.{header_name}"
+                    elif identity_source := aws_apigateway_authorizer.get("identitySource"):
+                        # https://docs.aws.amazon.com/apigateway/latest/developerguide/api-gateway-swagger-extensions-authorizer.html
+                        # Applicable for the authorizer of the request and jwt type only
                         authorizer["identitySource"] = identity_source
                     if identity_validation_expression := aws_apigateway_authorizer.get(
                         "identityValidationExpression"
