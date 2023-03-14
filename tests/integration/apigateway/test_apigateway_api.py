@@ -836,6 +836,70 @@ class TestApiGatewayApi:
         snapshot.match("req-params-same-name", e.value.response)
 
     @pytest.mark.aws_validated
+    def test_put_method_model(
+        self,
+        apigateway_client,
+        apigw_create_rest_api,
+        snapshot,
+    ):
+        response = apigw_create_rest_api(
+            name=f"test-api-{short_uid()}", description="testing resource method model"
+        )
+        api_id = response["id"]
+        root_rest_api_resource = apigateway_client.get_resources(restApiId=api_id)
+        root_id = root_rest_api_resource["items"][0]["id"]
+
+        create_model = apigateway_client.create_model(
+            name="MySchema",
+            restApiId=api_id,
+            contentType="application/json",
+            description="",
+            schema=json.dumps({"title": "MySchema", "type": "object"}),
+        )
+        snapshot.match("create-model", create_model)
+
+        create_model_2 = apigateway_client.create_model(
+            name="MySchemaTwo",
+            restApiId=api_id,
+            contentType="application/json",
+            description="",
+            schema=json.dumps({"title": "MySchemaTwo", "type": "object"}),
+        )
+        snapshot.match("create-model-2", create_model_2)
+
+        put_method_response = apigateway_client.put_method(
+            restApiId=api_id,
+            resourceId=root_id,
+            httpMethod="ANY",
+            authorizationType="NONE",
+            requestModels={"application/json": "MySchema"},
+        )
+        snapshot.match("put-method-request-models", put_method_response)
+
+        with pytest.raises(ClientError) as e:
+            apigateway_client.delete_model(restApiId=api_id, modelName="MySchema")
+        snapshot.match("delete-model-used", e.value.response)
+
+        patch_operations = [
+            {"op": "replace", "path": "/requestModels/application~1json", "value": "MySchemaTwo"},
+        ]
+
+        update_method_model = apigateway_client.update_method(
+            restApiId=api_id,
+            resourceId=root_id,
+            httpMethod="ANY",
+            patchOperations=patch_operations,
+        )
+        snapshot.match("update-method-model", update_method_model)
+
+        delete_model = apigateway_client.delete_model(restApiId=api_id, modelName="MySchema")
+        snapshot.match("delete-model-unused", delete_model)
+
+        with pytest.raises(ClientError) as e:
+            apigateway_client.delete_model(restApiId=api_id, modelName="MySchemaTwo")
+        snapshot.match("delete-model-used-2", e.value.response)
+
+    @pytest.mark.aws_validated
     def test_put_method_validation(
         self,
         apigateway_client,

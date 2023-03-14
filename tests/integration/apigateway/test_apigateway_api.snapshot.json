@@ -1855,5 +1855,88 @@
         }
       }
     }
+  },
+  "tests/integration/apigateway/test_apigateway_api.py::TestApiGatewayApi::test_put_method_model": {
+    "recorded-date": "14-03-2023, 02:42:49",
+    "recorded-content": {
+      "create-model": {
+        "contentType": "application/json",
+        "id": "<id:1>",
+        "name": "<name:1>",
+        "schema": {
+          "title": "<name:1>",
+          "type": "object"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 201
+        }
+      },
+      "create-model-2": {
+        "contentType": "application/json",
+        "id": "<id:2>",
+        "name": "<name:1>Two",
+        "schema": {
+          "title": "<name:1>Two",
+          "type": "object"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 201
+        }
+      },
+      "put-method-request-models": {
+        "apiKeyRequired": false,
+        "authorizationType": "NONE",
+        "httpMethod": "ANY",
+        "requestModels": {
+          "application/json": "<name:1>"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 201
+        }
+      },
+      "delete-model-used": {
+        "Error": {
+          "Code": "ConflictException",
+          "Message": "Cannot delete model '<name:1>', is referenced in method request: //ANY"
+        },
+        "message": "Cannot delete model '<name:1>', is referenced in method request: //ANY",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 409
+        }
+      },
+      "update-method-model": {
+        "apiKeyRequired": false,
+        "authorizationType": "NONE",
+        "httpMethod": "ANY",
+        "requestModels": {
+          "application/json": "<name:1>Two"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "delete-model-unused": {
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 202
+        }
+      },
+      "delete-model-used-2": {
+        "Error": {
+          "Code": "ConflictException",
+          "Message": "Cannot delete model '<name:1>Two', is referenced in method request: //ANY"
+        },
+        "message": "Cannot delete model '<name:1>Two', is referenced in method request: //ANY",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 409
+        }
+      }
+    }
   }
 }

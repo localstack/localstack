@@ -439,6 +439,7 @@ class ApigatewayProvider(ApigatewayApi, ServiceLifecycleHook):
         if request_validator_id and request_validator_id not in rest_api_container.validators:
             raise BadRequestException("Invalid Request Validator identifier specified")
 
+        models_to_add = []
         if request_models:
             for content_type, model_name in request_models.items():
                 # FIXME: add Empty model to rest api at creation
@@ -447,8 +448,17 @@ class ApigatewayProvider(ApigatewayApi, ServiceLifecycleHook):
                 if model_name not in rest_api_container.models:
                     raise BadRequestException(f"Invalid model identifier specified: {model_name}")
 
+                models_to_add.append(model_name)
+
         response: Method = call_moto(context)
         remove_empty_attributes_from_method(response)
+
+        # TODO: refactor into function for more resources to add (RequestValidator has the same functionality)
+        resource_path = moto_rest_api.resources[resource_id].get_path()
+        for model_name in models_to_add:
+            path_for_model = rest_api_container.models_in_use.setdefault(model_name, [])
+            # TODO: need to reconstruct full path from here, validate
+            path_for_model.append(f"/{resource_path}{http_method}")
 
         # this is straight from the moto patch, did not test it yet but has the same functionality
         # FIXME: check if still necessary after testing Authorizers
@@ -1323,10 +1333,21 @@ class ApigatewayProvider(ApigatewayApi, ServiceLifecycleHook):
         self, context: RequestContext, rest_api_id: String, model_name: String
     ) -> None:
         store = get_apigateway_store(account_id=context.account_id, region=context.region)
-        if rest_api_id not in store.rest_apis or not (
-            store.rest_apis[rest_api_id].models.pop(model_name, None)
+
+        if (
+            rest_api_id not in store.rest_apis
+            or model_name not in store.rest_apis[rest_api_id].models
         ):
             raise NotFoundException(f"Invalid model name specified: {model_name}")
+
+        models_in_use = store.rest_apis[rest_api_id].models_in_use
+        if model_name in models_in_use:
+            raise ConflictException(
+                f"Cannot delete model '{model_name}', is referenced in method request: {models_in_use[model_name][0]}"
+            )
+
+        store.rest_apis[rest_api_id].models.pop(model_name, None)
+        store.rest_apis[rest_api_id].models_in_use.pop(model_name, None)
 
 
 # ---------------
