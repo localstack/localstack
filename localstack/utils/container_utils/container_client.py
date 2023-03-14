@@ -1,4 +1,3 @@
-import argparse
 import dataclasses
 import io
 import ipaddress
@@ -14,7 +13,7 @@ from enum import Enum, unique
 from pathlib import Path
 from typing import Dict, List, NamedTuple, Optional, Tuple, Union
 
-from localstack.utils.no_exit_argument_parser import NoExitArgumentParser
+from localstack.utils.no_exit_argument_parser import BooleanOptionalAction, NoExitArgumentParser
 
 if sys.version_info >= (3, 8):
     from typing import Literal, Protocol, get_args
@@ -970,8 +969,7 @@ class Util:
             "--privileged",
             type=bool,
             help="Give extended privileges to this container",
-            # TODO: implement polyfill for pre-Python 3.9
-            action=argparse.BooleanOptionalAction,
+            action=BooleanOptionalAction,
         )
 
         args = parser.parse_args(flags)
