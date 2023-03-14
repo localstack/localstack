@@ -149,6 +149,18 @@ class S3Bucket(GenericBaseModel):
                     },
                 )
 
+        def _put_bucket_cors_configuration(resource_id, resources, resource_type, func, stack_name):
+            s3_client = aws_stack.connect_to_service("s3")
+            resource = resources[resource_id]
+            props = resource["Properties"]
+            bucket_name = props.get("BucketName")
+            cors_configuration = props.get("CorsConfiguration")
+            if cors_configuration:
+                s3_client.put_bucket_cors(
+                    Bucket=bucket_name,
+                    CORSConfiguration=cors_configuration,
+                )
+
         def _create_bucket(resource_id, resources, resource_type, func, stack_name):
             s3_client = aws_stack.connect_to_service("s3")
             resource = resources[resource_id]
@@ -177,6 +189,7 @@ class S3Bucket(GenericBaseModel):
                     "parameters": s3_bucket_notification_config,
                 },
                 {"function": _put_bucket_versioning},
+                {"function": _put_bucket_cors_configuration},
                 {"function": _add_bucket_tags},
             ],
             "delete": [
