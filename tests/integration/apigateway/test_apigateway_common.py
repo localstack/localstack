@@ -22,6 +22,7 @@ class TestApiGatewayCommon:
         apigateway_client,
         create_lambda_function,
         create_rest_apigw,
+        apigw_redeploy_api,
         lambda_client,
         snapshot,
     ):
@@ -90,11 +91,9 @@ class TestApiGatewayCommon:
             statusCode="200",
         )
 
-        deployment_id = apigateway_client.create_deployment(restApiId=api_id)["id"]
-
-        stage = apigateway_client.create_stage(
-            restApiId=api_id, stageName="local", deploymentId=deployment_id
-        )["stageName"]
+        stage_name = "local"
+        deploy_1 = apigateway_client.create_deployment(restApiId=api_id, stageName=stage_name)
+        snapshot.match("deploy-1", deploy_1)
 
         source_arn = f"arn:aws:execute-api:{region}:{account_id}:{api_id}/*/*/test/*"
 
@@ -106,11 +105,10 @@ class TestApiGatewayCommon:
             SourceArn=source_arn,
         )
 
-        url = api_invoke_url(api_id, stage=stage, path="/test/value")
+        url = api_invoke_url(api_id, stage=stage_name, path="/test/value")
         response = requests.post(url, json={"test": "test"})
         assert response.ok
         assert json.loads(response.json()["body"]) == {"test": "test"}
-        # TODO: need to redeploy
 
         response = apigateway_client.update_method(
             restApiId=api_id,
@@ -131,10 +129,12 @@ class TestApiGatewayCommon:
         )
         snapshot.match("change-request-path-names", response)
 
-        # this shows that the name in method.request.path don't really matter in AWS
+        apigw_redeploy_api(rest_api_id=api_id, stage_name=stage_name)
+
         response = requests.post(url, json={"test": "test"})
-        assert response.ok
-        assert json.loads(response.json()["body"]) == {"test": "test"}
+        # FIXME: for now, not implemented in LocalStack, we don't validate RequestParameters yet
+        # assert response.status_code == 400
+        snapshot.match("missing-required-request-params", response.json())
 
         # create Model schema to validate body
         apigateway_client.create_model(
@@ -163,11 +163,32 @@ class TestApiGatewayCommon:
             ],
         )
         snapshot.match("add-schema", response)
+
+        response = apigateway_client.update_method(
+            restApiId=api_id,
+            resourceId=resource_id,
+            httpMethod="POST",
+            patchOperations=[
+                {
+                    "op": "add",
+                    "path": "/requestParameters/method.request.path.test",
+                    "value": "true",
+                },
+                {
+                    "op": "remove",
+                    "path": "/requestParameters/method.request.path.issuer",
+                    "value": "true",
+                },
+            ],
+        )
+        snapshot.match("revert-request-path-names", response)
+
+        apigw_redeploy_api(rest_api_id=api_id, stage_name=stage_name)
+
         # the validator should then check against this schema and fail
         response = requests.post(url, json={"test": "test"})
-        print(response, response.content)
-        # assert response.ok
-        # assert json.loads(response.json()["body"]) == {"test": "test"}
+        assert response.status_code == 400
+        snapshot.match("invalid-request-body", response.json())
 
         # remove the validator from the method
         response = apigateway_client.update_method(
@@ -183,6 +204,8 @@ class TestApiGatewayCommon:
             ],
         )
         snapshot.match("remove-validator", response)
+
+        apigw_redeploy_api(rest_api_id=api_id, stage_name=stage_name)
 
         response = requests.post(url, json={"test": "test"})
         assert response.ok
