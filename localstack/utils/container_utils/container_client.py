@@ -789,6 +789,7 @@ class ContainerClient(metaclass=ABCMeta):
         dns: Optional[str] = None,
         additional_flags: Optional[str] = None,
         workdir: Optional[str] = None,
+        platform: Optional[DockerPlatform] = None,
         privileged: Optional[bool] = None,
         ulimits: Optional[List[Ulimit]] = None,
     ) -> Tuple[bytes, bytes]:

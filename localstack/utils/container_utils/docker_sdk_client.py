@@ -626,11 +626,21 @@ class SdkDockerClient(ContainerClient):
         dns: Optional[str] = None,
         additional_flags: Optional[str] = None,
         workdir: Optional[str] = None,
+        platform: Optional[DockerPlatform] = None,
         privileged: Optional[bool] = None,
+        ulimits: Optional[List[Ulimit]] = None,
     ) -> Tuple[bytes, bytes]:
         LOG.debug("Running container with image: %s", image_name)
         container = None
         try:
+            kwargs = {}
+            if ulimits:
+                kwargs["ulimits"] = [
+                    docker.types.Ulimit(
+                        name=ulimit["name"], soft=ulimit["soft_limit"], hard=ulimit["hard_limit"]
+                    )
+                    for ulimit in ulimits
+                ]
             container = self.create_container(
                 image_name,
                 name=name,
@@ -652,6 +662,8 @@ class SdkDockerClient(ContainerClient):
                 additional_flags=additional_flags,
                 workdir=workdir,
                 privileged=privileged,
+                platform=platform,
+                **kwargs,
             )
             result = self.start_container(
                 container_name_or_id=container,
