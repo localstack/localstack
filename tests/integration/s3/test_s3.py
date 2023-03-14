@@ -6033,6 +6033,34 @@ class TestS3StaticWebsiteHosting:
         ]
 
 
+class TestS3Routing:
+    def test_access_favicon_via_aws_endpoints(self, s3_bucket, s3_client):
+        """Assert that /favicon.ico objects can be created/accessed/deleted using amazonaws host headers"""
+
+        s3_key = "favicon.ico"
+        content = b"test 123"
+        s3_client.put_object(Bucket=s3_bucket, Key=s3_key, Body=content)
+        s3_client.head_object(Bucket=s3_bucket, Key=s3_key)
+
+        url = f"{config.get_edge_url()}/{s3_key}"
+        headers = aws_stack.mock_aws_request_headers("s3")
+        headers["host"] = f"{s3_bucket}.s3.amazonaws.com"
+
+        # get object via *.amazonaws.com host header
+        result = requests.get(url, headers=headers)
+        assert result.ok
+        assert result.content == content
+
+        # delete object via *.amazonaws.com host header
+        result = requests.delete(url, headers=headers)
+        assert result.ok
+
+        # assert that object has been deleted
+        with pytest.raises(ClientError) as exc:
+            s3_client.head_object(Bucket=s3_bucket, Key=s3_key)
+        assert exc.value.response["Error"]["Message"] == "Not Found"
+
+
 def _anon_client(service: str):
     conf = Config(signature_version=UNSIGNED)
     if os.environ.get("TEST_TARGET") == "AWS_CLOUD":
