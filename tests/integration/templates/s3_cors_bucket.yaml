@@ -1,0 +1,22 @@
+Resources:
+  LocalBucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName: test-cors-bucket
+      AccessControl: PublicRead
+      CorsConfiguration:
+        CORSRules:
+          - AllowedHeaders:
+              - '*'
+              - x-amz-*
+            AllowedMethods:
+              - GET
+            AllowedOrigins:
+              - '*'
+            ExposeHeaders:
+              - Date
+            ID: "test-cors-id"
+            MaxAgeSeconds: 3600
+Outputs:
+  BucketName:
+    Value: !Ref LocalBucket
