@@ -263,6 +263,12 @@ class SnsProvider(SnsApi, ServiceLifecycleHook):
     def get_topic_attributes(
         self, context: RequestContext, topic_arn: topicARN
     ) -> GetTopicAttributesResponse:
+        store = self.get_store(account_id=context.account_id, region=context.region)
+        if topic_arn not in store.topic_subscriptions:
+            raise NotFoundException(
+                "Topic does not exist",
+            )
+
         moto_response: GetTopicAttributesResponse = call_moto(context)
         # TODO: fix some attributes by moto, see snapshot
         # TODO: very hacky way to get the attributes we need instead of a moto patch
