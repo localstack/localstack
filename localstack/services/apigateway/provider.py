@@ -444,7 +444,7 @@ class ApigatewayProvider(ApigatewayApi, ServiceLifecycleHook):
                 # FIXME: add Empty model to rest api at creation
                 if model_name == "Empty":
                     continue
-                if model_name not in moto_rest_api.models:
+                if model_name not in rest_api_container.models:
                     raise BadRequestException(f"Invalid model identifier specified: {model_name}")
 
         response: Method = call_moto(context)
@@ -516,7 +516,7 @@ class ApigatewayProvider(ApigatewayApi, ServiceLifecycleHook):
                 raise BadRequestException("Invalid Request Validator identifier specified")
 
             elif path.startswith("/requestModels/"):
-                if value != "Empty" and value not in moto_rest_api.models:
+                if value != "Empty" and value not in rest_api.models:
                     raise BadRequestException(f"Invalid model identifier specified: {value}")
 
             applicable_patch_operations.append(patch_operation)
