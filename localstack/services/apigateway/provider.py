@@ -471,6 +471,8 @@ class ApigatewayProvider(ApigatewayApi, ServiceLifecycleHook):
         store = get_apigateway_store(account_id=context.account_id, region=context.region)
         rest_api = store.rest_apis[rest_api_id]
         applicable_patch_operations = []
+        modifying_auth_type = False
+        modified_authorizer_id = False
         for patch_operation in patch_operations:
             op = patch_operation.get("op")
             path = patch_operation.get("path")
@@ -492,11 +494,10 @@ class ApigatewayProvider(ApigatewayApi, ServiceLifecycleHook):
                 continue
 
             if path == "/authorizationType" and value in ("CUSTOM", "COGNITO_USER_POOLS"):
-                # TODO: test with 2 operations adding this
-                raise BadRequestException(
-                    "Invalid authorizer ID specified. "
-                    "Setting the authorization type to CUSTOM or COGNITO_USER_POOLS requires a valid authorizer."
-                )
+                modifying_auth_type = True
+
+            elif path == "/authorizerId":
+                modified_authorizer_id = value
 
             if any(
                 path.startswith(s_path) for s_path in ("/apiKeyRequired", "/requestParameters/")
@@ -513,6 +514,20 @@ class ApigatewayProvider(ApigatewayApi, ServiceLifecycleHook):
                     raise BadRequestException(f"Invalid model identifier specified: {value}")
 
             applicable_patch_operations.append(patch_operation)
+
+        if modifying_auth_type:
+            if not modified_authorizer_id or modified_authorizer_id not in rest_api.authorizers:
+                raise BadRequestException(
+                    "Invalid authorizer ID specified. "
+                    "Setting the authorization type to CUSTOM or COGNITO_USER_POOLS requires a valid authorizer."
+                )
+        elif modified_authorizer_id:
+            if moto_method.authorization_type not in ("CUSTOM", "COGNITO_USER_POOLS"):
+                # AWS will ignore this patch if the method does not have a proper authorization type
+                # filter the patches to remove the modified authorizerId
+                applicable_patch_operations = [
+                    op for op in applicable_patch_operations if op.get("path") != "/authorizerId"
+                ]
 
         # TODO: test with multiple patch operations which would not be compatible between each other
         _patch_api_gateway_entity(moto_method, applicable_patch_operations)

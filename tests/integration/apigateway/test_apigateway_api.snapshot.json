@@ -1321,7 +1321,7 @@
     }
   },
   "tests/integration/apigateway/test_apigateway_api.py::TestApiGatewayApi::test_update_method": {
-    "recorded-date": "25-02-2023, 18:10:42",
+    "recorded-date": "13-03-2023, 23:31:44",
     "recorded-content": {
       "put-method-response": {
         "apiKeyRequired": false,
@@ -1363,9 +1363,27 @@
           "HTTPStatusCode": 200
         }
       },
+      "update-method-replace-authorizer": {
+        "apiKeyRequired": true,
+        "authorizationType": "CUSTOM",
+        "authorizerId": "<authorizer-id:1>",
+        "httpMethod": "ANY",
+        "operationName": "ReplacedOperationName",
+        "requestModels": {
+          "application/json": "Empty"
+        },
+        "requestParameters": {
+          "method.request.querystring.optional": false
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
       "update-method-remove": {
         "apiKeyRequired": true,
-        "authorizationType": "AWS_IAM",
+        "authorizationType": "CUSTOM",
+        "authorizerId": "<authorizer-id:1>",
         "httpMethod": "ANY",
         "operationName": "ReplacedOperationName",
         "ResponseMetadata": {
@@ -1376,7 +1394,7 @@
     }
   },
   "tests/integration/apigateway/test_apigateway_api.py::TestApiGatewayApi::test_update_method_validation": {
-    "recorded-date": "02-03-2023, 16:58:33",
+    "recorded-date": "13-03-2023, 23:36:56",
     "recorded-content": {
       "wrong-rest-api": {
         "Error": {
@@ -1472,6 +1490,26 @@
         }
       },
       "wrong-auth-type": {
+        "Error": {
+          "Code": "BadRequestException",
+          "Message": "Invalid authorizer ID specified. Setting the authorization type to CUSTOM or COGNITO_USER_POOLS requires a valid authorizer."
+        },
+        "message": "Invalid authorizer ID specified. Setting the authorization type to CUSTOM or COGNITO_USER_POOLS requires a valid authorizer.",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "skip-auth-id-with-wrong-type": {
+        "apiKeyRequired": false,
+        "authorizationType": "NONE",
+        "httpMethod": "ANY",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "wrong-auth-id": {
         "Error": {
           "Code": "BadRequestException",
           "Message": "Invalid authorizer ID specified. Setting the authorization type to CUSTOM or COGNITO_USER_POOLS requires a valid authorizer."
