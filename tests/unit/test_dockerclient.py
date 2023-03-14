@@ -9,6 +9,7 @@ from localstack import config
 from localstack.utils.bootstrap import extract_port_flags
 from localstack.utils.container_utils.container_client import (
     DockerContainerStatus,
+    DockerPlatform,
     PortMappings,
     Util,
 )
@@ -64,50 +65,59 @@ class TestDockerClient:
 
 
 def test_argument_parsing():
-    test_port_string = "-p 80:8080/udp"
-    test_port_string_with_host = "-p 127.0.0.1:6000:7000/tcp"
-    test_port_string_many_to_one = "-p 9230-9231:9230"
     test_env_string = "-e TEST_ENV_VAR=test_string=123"
     test_mount_string = "-v /var/test:/opt/test"
     test_network_string = "--network bridge"
-    test_user_string = "-u sbx_user1051"
     test_platform_string = "--platform linux/arm64"
     test_privileged_string = "--privileged"
+    test_port_string = "-p 80:8080/udp"
+    test_port_string_with_host = "-p 127.0.0.1:6000:7000/tcp"
+    test_port_string_many_to_one = "-p 9230-9231:9230"
+    test_user_string = "-u sbx_user1051"
     argument_string = " ".join(
         [
-            test_port_string,
             test_env_string,
             test_mount_string,
+            test_network_string,
+            test_port_string,
             test_port_string_with_host,
             test_port_string_many_to_one,
-            test_network_string,
-            test_user_string,
             test_platform_string,
             test_privileged_string,
+            test_user_string,
         ]
     )
     env_vars = {}
-    ports = PortMappings()
     mounts = []
     network = "host"
-    user = "root"
-    platform = "linux/amd64"
+    platform = DockerPlatform.linux_amd64
     privileged = False
+    ports = PortMappings()
+    user = "root"
     flags = Util.parse_additional_flags(
-        argument_string, env_vars, ports, mounts, network, user, platform, privileged
+        argument_string,
+        env_vars=env_vars,
+        mounts=mounts,
+        network=network,
+        platform=platform,
+        privileged=privileged,
+        ports=ports,
+        user=user,
     )
     assert env_vars == {"TEST_ENV_VAR": "test_string=123"}
-    assert ports.to_str() == "-p 80:8080/udp -p 6000:7000 -p 9230-9231:9230"
     assert mounts == [("/var/test", "/opt/test")]
     assert flags.network == "bridge"
-    assert flags.user == "sbx_user1051"
     assert flags.platform == "linux/arm64"
     assert flags.privileged
+    assert ports.to_str() == "-p 80:8080/udp -p 6000:7000 -p 9230-9231:9230"
+    assert flags.user == "sbx_user1051"
 
     argument_string = (
         "--add-host host.docker.internal:host-gateway --add-host arbitrary.host:127.0.0.1"
     )
-    flags = Util.parse_additional_flags(argument_string, env_vars, ports, mounts)
+    flags = Util.parse_additional_flags(
+        argument_string, env_vars=env_vars, ports=ports, mounts=mounts
+    )
     assert {
         "host.docker.internal": "host-gateway",
         "arbitrary.host": "127.0.0.1",
@@ -115,10 +125,10 @@ def test_argument_parsing():
 
     with pytest.raises(NotImplementedError):
         argument_string = "--somerandomargument"
-        Util.parse_additional_flags(argument_string, env_vars, ports, mounts)
+        Util.parse_additional_flags(argument_string, env_vars=env_vars, mounts=mounts, ports=ports)
     with pytest.raises(ValueError):
         argument_string = "--publish 80:80:80:80"
-        Util.parse_additional_flags(argument_string, env_vars, ports, mounts)
+        Util.parse_additional_flags(argument_string, env_vars=env_vars, mounts=mounts, ports=ports)
 
     # Test windows paths
     argument_string = r'-v "C:\Users\SomeUser\SomePath:/var/task"'

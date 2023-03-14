@@ -380,17 +380,20 @@ class ContainerConfiguration:
 
 @dataclasses.dataclass
 class DockerRunFlags:
-    """Class to capture Docker run flags for a container"""
+    """Class to capture Docker run/create flags for a container.
+    run: https://docs.docker.com/engine/reference/commandline/run/
+    create: https://docs.docker.com/engine/reference/commandline/create/
+    """
 
     env_vars: Optional[Dict[str, str]]
-    ports: Optional[PortMappings]
-    mounts: Optional[List[SimpleVolumeBind]]
     extra_hosts: Optional[Dict[str, str]]
-    network: Optional[str]
     labels: Optional[Dict[str, str]]
-    user: Optional[str]
+    mounts: Optional[List[SimpleVolumeBind]]
+    network: Optional[str]
     platform: Optional[DockerPlatform]
     privileged: Optional[bool]
+    ports: Optional[PortMappings]
+    user: Optional[str]
 
 
 class ContainerClient(metaclass=ABCMeta):
@@ -906,33 +909,29 @@ class Util:
     @staticmethod
     def parse_additional_flags(
         additional_flags: str,
-        env_vars: Dict[str, str] = None,
-        ports: PortMappings = None,
-        mounts: List[SimpleVolumeBind] = None,
+        env_vars: Optional[Dict[str, str]] = None,
+        labels: Optional[Dict[str, str]] = None,
+        mounts: Optional[List[SimpleVolumeBind]] = None,
         network: Optional[str] = None,
-        user: Optional[str] = None,
         platform: Optional[DockerPlatform] = None,
+        ports: Optional[PortMappings] = None,
         privileged: Optional[bool] = None,
+        user: Optional[str] = None,
     ) -> DockerRunFlags:
-        """Parses environment, volume and port flags passed as string.
-        See Docker CLI reference for inspiration: https://docs.docker.com/engine/reference/commandline/create/
-        :param additional_flags: String which contains the flag definitions
+        """Parses additional CLI-formatted Docker flags, which could overwrite provided defaults.
+        :param additional_flags: String which contains the flag definitions inspired by the Docker CLI reference:
+                                 https://docs.docker.com/engine/reference/commandline/run/
         :param env_vars: Dict with env vars. Will be modified in place.
-        :param ports: PortMapping object. Will be modified in place.
+        :param labels: Dict with labels. Will be modified in place.
         :param mounts: List of mount tuples (host_path, container_path). Will be modified in place.
         :param network: Existing network name (optional). Warning will be printed if network is overwritten in flags.
-        :param user: User to run first process. Warning will be printed if user is overwritten in flags.
         :param platform: Platform to execute container. Warning will be printed if platform is overwritten in flags.
+        :param ports: PortMapping object. Will be modified in place.
         :param privileged: Run the container in privileged mode. Warning will be printed if overwritten in flags.
-        :return: A DockerRunFlags object containing the env_vars, ports, mount, extra_hosts, network, and labels.
-                The result will return new objects if respective parameters were None and additional flags contained
-                a flag for that object, the same which are passed otherwise.
+        :param user: User to run first process. Warning will be printed if user is overwritten in flags.
+        :return: A DockerRunFlags object that will return new objects if respective parameters were None and
+                additional flags contained a flag for that object or the same which are passed otherwise.
         """
-        extra_hosts = None
-        labels = {}
-
-        flags = shlex.split(additional_flags)
-
         # Configure parser
         parser = NoExitArgumentParser(description="Docker run flags parser")
         parser.add_argument(
@@ -972,9 +971,11 @@ class Util:
         )
 
         # Parse
+        flags = shlex.split(additional_flags)
         args = parser.parse_args(flags)
 
         # Post-process parsed flags
+        extra_hosts = None
         if args.add_hosts:
             for add_host in args.add_hosts:
                 extra_hosts = extra_hosts if extra_hosts is not None else {}
@@ -988,6 +989,7 @@ class Util:
                 env_vars[lhs] = rhs
 
         if args.labels:
+            labels = labels if labels is not None else {}
             for label in args.labels:
                 key, _, value = label.partition("=")
                 # Only consider non-empty labels
@@ -1068,14 +1070,14 @@ class Util:
 
         return DockerRunFlags(
             env_vars=env_vars,
-            ports=ports,
-            mounts=mounts,
             extra_hosts=extra_hosts,
-            network=network,
             labels=labels,
-            user=user,
+            mounts=mounts,
+            ports=ports,
+            network=network,
             platform=platform,
             privileged=privileged,
+            user=user,
         )
 
     @staticmethod
