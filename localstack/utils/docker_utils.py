@@ -2,7 +2,6 @@ import functools
 import logging
 import platform
 import random
-import re
 from typing import List, Optional
 
 from localstack import config
@@ -102,9 +101,6 @@ def get_host_path_for_path_in_docker(path):
     :param path: Path to be replaced (subpath of DEFAULT_VOLUME_DIR)
     :return: Path on the host
     """
-    if config.LEGACY_DIRECTORIES:
-        return re.sub(r"^%s/(.*)$" % config.dirs.tmp, r"%s/\1" % config.dirs.functions, path)
-
     if config.is_in_docker:
         volume = get_default_volume_dir_mount()
 
