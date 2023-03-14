@@ -23,6 +23,7 @@ class TestApiGatewayCommon:
         create_lambda_function,
         create_rest_apigw,
         lambda_client,
+        snapshot,
     ):
         # TODO: create fixture which will provide basic integrations where we can test behaviour
         # see once we have more cases how we can regroup functionality into one or several fixtures
@@ -109,8 +110,9 @@ class TestApiGatewayCommon:
         response = requests.post(url, json={"test": "test"})
         assert response.ok
         assert json.loads(response.json()["body"]) == {"test": "test"}
+        # TODO: need to redeploy
 
-        apigateway_client.update_method(
+        response = apigateway_client.update_method(
             restApiId=api_id,
             resourceId=resource_id,
             httpMethod="POST",
@@ -127,7 +129,9 @@ class TestApiGatewayCommon:
                 },
             ],
         )
+        snapshot.match("change-request-path-names", response)
 
+        # this shows that the name in method.request.path don't really matter in AWS
         response = requests.post(url, json={"test": "test"})
         assert response.ok
         assert json.loads(response.json()["body"]) == {"test": "test"}
@@ -137,10 +141,20 @@ class TestApiGatewayCommon:
             restApiId=api_id,
             name="testSchema",
             contentType="application/json",
-            schema=json.dumps({}),
+            schema=json.dumps(
+                {
+                    "title": "testSchema",
+                    "type": "object",
+                    "properties": {
+                        "a": {"type": "number"},
+                        "b": {"type": "number"},
+                    },
+                    "required": ["a", "b"],
+                }
+            ),
         )
         # then attach the schema to the method
-        apigateway_client.update_method(
+        response = apigateway_client.update_method(
             restApiId=api_id,
             resourceId=resource_id,
             httpMethod="POST",
@@ -148,9 +162,15 @@ class TestApiGatewayCommon:
                 {"op": "add", "path": "/requestModels/application~1json", "value": "testSchema"},
             ],
         )
-        # the validator should then check against this schema
+        snapshot.match("add-schema", response)
+        # the validator should then check against this schema and fail
+        response = requests.post(url, json={"test": "test"})
+        print(response, response.content)
+        # assert response.ok
+        # assert json.loads(response.json()["body"]) == {"test": "test"}
 
-        apigateway_client.update_method(
+        # remove the validator from the method
+        response = apigateway_client.update_method(
             restApiId=api_id,
             resourceId=resource_id,
             httpMethod="POST",
@@ -162,6 +182,8 @@ class TestApiGatewayCommon:
                 },
             ],
         )
+        snapshot.match("remove-validator", response)
+
         response = requests.post(url, json={"test": "test"})
         assert response.ok
         assert json.loads(response.json()["body"]) == {"test": "test"}
