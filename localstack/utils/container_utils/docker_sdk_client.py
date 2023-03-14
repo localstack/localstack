@@ -24,6 +24,7 @@ from localstack.utils.container_utils.container_client import (
     PortMappings,
     RegistryConnectionError,
     SimpleVolumeBind,
+    Ulimit,
     Util,
 )
 from localstack.utils.strings import to_bytes, to_str
@@ -516,6 +517,7 @@ class SdkDockerClient(ContainerClient):
         privileged: Optional[bool] = None,
         labels: Optional[Dict[str, str]] = None,
         platform: Optional[DockerPlatform] = None,
+        ulimits: Optional[List[Ulimit]] = None,
     ) -> str:
         LOG.debug("Creating container with attributes: %s", locals())
         extra_hosts = None
@@ -528,6 +530,7 @@ class SdkDockerClient(ContainerClient):
                 platform=platform,
                 privileged=privileged,
                 ports=ports,
+                ulimits=ulimits,
                 user=user,
             )
             env_vars = parsed_flags.env_vars
@@ -538,6 +541,7 @@ class SdkDockerClient(ContainerClient):
             platform = parsed_flags.platform
             privileged = parsed_flags.privileged
             ports = parsed_flags.ports
+            ulimits = parsed_flags.ulimits
             user = parsed_flags.user
 
         try:
@@ -558,6 +562,13 @@ class SdkDockerClient(ContainerClient):
                 kwargs["privileged"] = True
             if labels:
                 kwargs["labels"] = labels
+            if ulimits:
+                kwargs["ulimits"] = [
+                    docker.types.Ulimit(
+                        name=ulimit.name, soft=ulimit.soft_limit, hard=ulimit.hard_limit
+                    )
+                    for ulimit in ulimits
+                ]
             mounts = None
             if mount_volumes:
                 mounts = Util.convert_mount_list_to_dict(mount_volumes)

@@ -11,7 +11,7 @@ import tempfile
 from abc import ABCMeta, abstractmethod
 from enum import Enum, unique
 from pathlib import Path
-from typing import Dict, List, NamedTuple, Optional, Tuple, Union
+from typing import Dict, List, NamedTuple, Optional, Tuple, TypedDict, Union
 
 from localstack.utils.no_exit_argument_parser import BooleanOptionalAction, NoExitArgumentParser
 
@@ -103,6 +103,23 @@ class DockerPlatform(str):
 
     linux_amd64 = "linux/amd64"
     linux_arm64 = "linux/arm64"
+
+
+class Ulimit(TypedDict, total=False):
+    """The ``ulimit`` settings for the container.
+    See https://www.tutorialspoint.com/setting-ulimit-values-on-docker-containers
+    """
+
+    name: str
+    soft_limit: int
+    hard_limit: Optional[int] = None
+
+    def __repr__(self):
+        """Format: <type>=<soft limit>[:<hard limit>]"""
+        ulimit_string = f"{self.name}={self.soft_limit}"
+        if self.hard_limit:
+            ulimit_string += f":{self.hard_limit}"
+        return ulimit_string
 
 
 # defines the type for port mappings (source->target port range)
@@ -376,6 +393,7 @@ class ContainerConfiguration:
     dns: Optional[str] = None
     workdir: Optional[str] = None
     platform: Optional[str] = None
+    ulimits: Optional[List[Ulimit]] = None
 
 
 @dataclasses.dataclass
@@ -393,6 +411,7 @@ class DockerRunFlags:
     platform: Optional[DockerPlatform]
     privileged: Optional[bool]
     ports: Optional[PortMappings]
+    ulimits: Optional[List[Ulimit]]
     user: Optional[str]
 
 
@@ -771,6 +790,7 @@ class ContainerClient(metaclass=ABCMeta):
         additional_flags: Optional[str] = None,
         workdir: Optional[str] = None,
         privileged: Optional[bool] = None,
+        ulimits: Optional[List[Ulimit]] = None,
     ) -> Tuple[bytes, bytes]:
         """Creates and runs a given docker container
 
@@ -917,6 +937,7 @@ class Util:
         ports: Optional[PortMappings] = None,
         privileged: Optional[bool] = None,
         user: Optional[str] = None,
+        ulimits: Optional[List[Ulimit]] = None,
     ) -> DockerRunFlags:
         """Parses additional CLI-formatted Docker flags, which could overwrite provided defaults.
         :param additional_flags: String which contains the flag definitions inspired by the Docker CLI reference:
@@ -928,6 +949,7 @@ class Util:
         :param platform: Platform to execute container. Warning will be printed if platform is overwritten in flags.
         :param ports: PortMapping object. Will be modified in place.
         :param privileged: Run the container in privileged mode. Warning will be printed if overwritten in flags.
+        :param ulimits: ulimit options in the format <type>=<soft limit>[:<hard limit>]
         :param user: User to run first process. Warning will be printed if user is overwritten in flags.
         :return: A DockerRunFlags object that will return new objects if respective parameters were None and
                 additional flags contained a flag for that object or the same which are passed otherwise.
@@ -956,6 +978,7 @@ class Util:
             "--privileged",
             type=bool,
             help="Give extended privileges to this container",
+            # TODO: could replace with 'store_true'
             action=BooleanOptionalAction,
         )
         parser.add_argument(
@@ -964,6 +987,9 @@ class Util:
             help="Publish container port(s) to the host",
             dest="publish_ports",
             action="append",
+        )
+        parser.add_argument(
+            "--ulimit", help="Container ulimit settings", dest="ulimits", action="append"
         )
         parser.add_argument("--user", "-u", help="Username or UID to execute first process")
         parser.add_argument(
@@ -1043,6 +1069,19 @@ class Util:
                 ports = ports if ports is not None else PortMappings()
                 ports.add(host_port, int(container_port), protocol)
 
+        if args.ulimits:
+            ulimits = ulimits if ulimits is not None else []
+            ulimits_dict = {ul["name"]: ul for ul in ulimits}
+            for ulimit in args.ulimits:
+                name, _, rhs = ulimit.partition("=")
+                soft, _, hard = rhs.partition(":")
+                hard_limit = int(hard) if hard else int(soft)
+                new_ulimit = Ulimit(name=name, soft_limit=int(soft), hard_limit=hard_limit)
+                if ulimits_dict.get(name):
+                    LOG.warning(f"Overwriting Docker ulimit {new_ulimit}")
+                ulimits_dict[name] = new_ulimit
+            ulimits = list(ulimits_dict.values())
+
         if args.user:
             LOG.warning(
                 "Overwriting Docker user '%s' with new value '%s'",
@@ -1077,6 +1116,7 @@ class Util:
             network=network,
             platform=platform,
             privileged=privileged,
+            ulimits=ulimits,
             user=user,
         )
 
