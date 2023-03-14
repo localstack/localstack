@@ -13,7 +13,7 @@ from enum import Enum, unique
 from pathlib import Path
 from typing import Dict, List, NamedTuple, Optional, Tuple, TypedDict, Union
 
-from localstack.utils.no_exit_argument_parser import BooleanOptionalAction, NoExitArgumentParser
+from localstack.utils.no_exit_argument_parser import NoExitArgumentParser
 
 if sys.version_info >= (3, 8):
     from typing import Literal, Protocol, get_args
@@ -976,10 +976,8 @@ class Util:
         )
         parser.add_argument(
             "--privileged",
-            type=bool,
             help="Give extended privileges to this container",
-            # TODO: could replace with 'store_true'
-            action=BooleanOptionalAction,
+            action="store_true",
         )
         parser.add_argument(
             "--publish",
