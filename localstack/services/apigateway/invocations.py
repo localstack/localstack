@@ -82,11 +82,13 @@ class RequestValidator:
         return True
 
     def validate_body(self, resource):
-        # we need a model to validate the body
+        # if there's no model to validate the body, use the Empty model
+        # https://docs.aws.amazon.com/cdk/api/v1/docs/@aws-cdk_aws-apigateway.EmptyModel.html
         if "requestModels" not in resource or not resource["requestModels"]:
-            return False
+            schema_name = "Empty"
+        else:
+            schema_name = resource["requestModels"].get(APPLICATION_JSON)
 
-        schema_name = resource["requestModels"].get(APPLICATION_JSON)
         try:
             model = self.apigateway_client.get_model(
                 restApiId=self.context.api_id,
