@@ -940,9 +940,8 @@ class Util:
             type=DockerPlatform,
             help="Docker platform (e.g., linux/amd64 or linux/arm64)",
         )
-        # TODO: add -l shortcut for parity with Docker API
         parser.add_argument(
-            "--label", help="Add container meta data", dest="labels", action="append"
+            "-l", "--label", help="Add container meta data", dest="labels", action="append"
         )
         parser.add_argument("-u", "--user", help="Username or UID to execute first process")
         parser.add_argument(
