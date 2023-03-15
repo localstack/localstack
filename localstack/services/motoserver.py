@@ -47,8 +47,8 @@ def get_moto_server() -> MotoServer:
 @patch(DomainDispatcherApplication.get_application)
 def get_application(fn, self, environ, *args, **kwargs):
     """
-    Fix an upstream issue where moto treats "/favicon.ico" as a special path, which can
-    break clients attempting to upload favicon.ico files to S3 buckets.
+    Patch to fix an upstream issue where moto treats "/favicon.ico" as a special path, which
+    can break clients attempting to upload favicon.ico files to S3 buckets.
     """
     if environ.get("PATH_INFO") == "/favicon.ico":
         environ["PATH_INFO"] = "/"
