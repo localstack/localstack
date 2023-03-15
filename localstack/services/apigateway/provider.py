@@ -488,6 +488,9 @@ class ApigatewayProvider(ApigatewayApi, ServiceLifecycleHook):
         modifying_auth_type = False
         modified_authorizer_id = False
         models_before_patch = set(moto_method.request_models.values())
+
+        moto_request_models = moto_method.request_models or {}
+        models_before_patch = set(moto_request_models.values())
         for patch_operation in patch_operations:
             op = patch_operation.get("op")
             path = patch_operation.get("path")
@@ -547,7 +550,8 @@ class ApigatewayProvider(ApigatewayApi, ServiceLifecycleHook):
         # TODO: test with multiple patch operations which would not be compatible between each other
         _patch_api_gateway_entity(moto_method, applicable_patch_operations)
 
-        models_after_patch = set(moto_method.request_models.values())
+        moto_request_models = moto_method.request_models or {}
+        models_after_patch = set(moto_request_models.values())
         if models_before_patch != models_after_patch:
             method_path = f"{moto_resource.get_path()}/{http_method}"
             to_remove = models_before_patch - models_after_patch
@@ -564,6 +568,29 @@ class ApigatewayProvider(ApigatewayApi, ServiceLifecycleHook):
         response = moto_method.to_json()
         remove_empty_attributes_from_method(response)
         return response
+
+    def delete_method(
+        self, context: RequestContext, rest_api_id: String, resource_id: String, http_method: String
+    ) -> None:
+        moto_backend = apigw_models.apigateway_backends[context.account_id][context.region]
+        moto_rest_api: MotoRestAPI = moto_backend.apis.get(rest_api_id)
+        if not moto_rest_api or not (moto_resource := moto_rest_api.resources.get(resource_id)):
+            raise NotFoundException("Invalid Resource identifier specified")
+
+        if not (moto_method := moto_resource.resource_methods.get(http_method)):
+            raise NotFoundException("Invalid Method identifier specified")
+
+        moto_request_models = moto_method.request_models or {}
+        models_not_used = set(moto_request_models.values())
+        call_moto(context)
+
+        store = get_apigateway_store(account_id=context.account_id, region=context.region)
+        rest_api = store.rest_apis[rest_api_id]
+        method_path = f"{moto_resource.get_path()}/{http_method}"
+        for model_name in models_not_used:
+            in_use = rest_api.models_in_use.get(model_name)
+            if in_use and method_path in in_use:
+                in_use.remove(method_path)
 
     # method responses
 

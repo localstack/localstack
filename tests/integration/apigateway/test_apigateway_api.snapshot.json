@@ -1175,7 +1175,7 @@
     }
   },
   "tests/integration/apigateway/test_apigateway_api.py::TestApiGatewayApi::test_method_lifecycle": {
-    "recorded-date": "24-02-2023, 19:17:18",
+    "recorded-date": "15-03-2023, 12:06:26",
     "recorded-content": {
       "put-base-method-response": {
         "apiKeyRequired": false,
@@ -1199,6 +1199,28 @@
         "ResponseMetadata": {
           "HTTPHeaders": {},
           "HTTPStatusCode": 204
+        }
+      },
+      "get-deleted-method-response": {
+        "Error": {
+          "Code": "NotFoundException",
+          "Message": "Invalid Method identifier specified"
+        },
+        "message": "Invalid Method identifier specified",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 404
+        }
+      },
+      "delete-deleted-method-response": {
+        "Error": {
+          "Code": "NotFoundException",
+          "Message": "Invalid Method identifier specified"
+        },
+        "message": "Invalid Method identifier specified",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 404
         }
       }
     }
@@ -1857,7 +1879,7 @@
     }
   },
   "tests/integration/apigateway/test_apigateway_api.py::TestApiGatewayApi::test_put_method_model": {
-    "recorded-date": "15-03-2023, 02:12:34",
+    "recorded-date": "15-03-2023, 12:12:59",
     "recorded-content": {
       "create-model": {
         "contentType": "application/json",
@@ -1978,6 +2000,18 @@
         "ResponseMetadata": {
           "HTTPHeaders": {},
           "HTTPStatusCode": 409
+        }
+      },
+      "delete-method-using-model-2": {
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 204
+        }
+      },
+      "delete-model-unused-2": {
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 202
         }
       }
     }

@@ -788,6 +788,14 @@ class TestApiGatewayApi:
         )
         snapshot.match("del-base-method-response", del_base_method_response)
 
+        with pytest.raises(ClientError) as e:
+            apigateway_client.get_method(restApiId=api_id, resourceId=root_id, httpMethod="ANY")
+        snapshot.match("get-deleted-method-response", e.value.response)
+
+        with pytest.raises(ClientError) as e:
+            apigateway_client.delete_method(restApiId=api_id, resourceId=root_id, httpMethod="ANY")
+        snapshot.match("delete-deleted-method-response", e.value.response)
+
     @pytest.mark.aws_validated
     def test_method_request_parameters(
         self,
@@ -938,6 +946,16 @@ class TestApiGatewayApi:
         with pytest.raises(ClientError) as e:
             apigateway_client.delete_model(restApiId=api_id, modelName="MySchemaTwo")
         snapshot.match("delete-model-used-by-method-1", e.value.response)
+
+        # delete the Method using MySchemaTwo
+        delete_method = apigateway_client.delete_method(
+            restApiId=api_id, resourceId=root_id, httpMethod="ANY"
+        )
+        snapshot.match("delete-method-using-model-2", delete_method)
+
+        # assert we can now delete MySchemaTwo
+        delete_model = apigateway_client.delete_model(restApiId=api_id, modelName="MySchemaTwo")
+        snapshot.match("delete-model-unused-2", delete_model)
 
     @pytest.mark.aws_validated
     def test_put_method_validation(
