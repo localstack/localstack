@@ -565,7 +565,7 @@ class SdkDockerClient(ContainerClient):
             if ulimits:
                 kwargs["ulimits"] = [
                     docker.types.Ulimit(
-                        name=ulimit["name"], soft=ulimit["soft_limit"], hard=ulimit["hard_limit"]
+                        name=ulimit.name, soft=ulimit.soft_limit, hard=ulimit.hard_limit
                     )
                     for ulimit in ulimits
                 ]
@@ -637,7 +637,7 @@ class SdkDockerClient(ContainerClient):
             if ulimits:
                 kwargs["ulimits"] = [
                     docker.types.Ulimit(
-                        name=ulimit["name"], soft=ulimit["soft_limit"], hard=ulimit["hard_limit"]
+                        name=ulimit.name, soft=ulimit.soft_limit, hard=ulimit.hard_limit
                     )
                     for ulimit in ulimits
                 ]

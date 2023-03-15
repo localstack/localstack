@@ -1,6 +1,6 @@
 import argparse
 import logging
-from typing import NoReturn
+from typing import NoReturn, Optional
 
 LOG = logging.getLogger(__name__)
 
@@ -10,7 +10,7 @@ LOG = logging.getLogger(__name__)
 # Limitations of error cases: https://stackoverflow.com/a/67891066/6875981
 # Subclassing workaround example: https://stackoverflow.com/a/59072378/6875981
 class NoExitArgumentParser(argparse.ArgumentParser):
-    def exit(self, status: int = ..., message: str | None = ...) -> NoReturn:
+    def exit(self, status: int = ..., message: Optional[str] = ...) -> NoReturn:
         LOG.warning(f"Error in argument parser but preventing exit: {message}")
 
     def error(self, message: str) -> NoReturn:

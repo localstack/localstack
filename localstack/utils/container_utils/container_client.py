@@ -11,7 +11,7 @@ import tempfile
 from abc import ABCMeta, abstractmethod
 from enum import Enum, unique
 from pathlib import Path
-from typing import Dict, List, NamedTuple, Optional, Tuple, TypedDict, Union
+from typing import Dict, List, NamedTuple, Optional, Tuple, Union
 
 from localstack.utils.no_exit_argument_parser import NoExitArgumentParser
 
@@ -105,7 +105,8 @@ class DockerPlatform(str):
     linux_arm64 = "linux/arm64"
 
 
-class Ulimit(TypedDict, total=False):
+@dataclasses.dataclass
+class Ulimit:
     """The ``ulimit`` settings for the container.
     See https://www.tutorialspoint.com/setting-ulimit-values-on-docker-containers
     """
@@ -1070,7 +1071,7 @@ class Util:
 
         if args.ulimits:
             ulimits = ulimits if ulimits is not None else []
-            ulimits_dict = {ul["name"]: ul for ul in ulimits}
+            ulimits_dict = {ul.name: ul for ul in ulimits}
             for ulimit in args.ulimits:
                 name, _, rhs = ulimit.partition("=")
                 soft, _, hard = rhs.partition(":")
