@@ -136,7 +136,7 @@ ARG TARGETARCH
 # Install build dependencies to base
 RUN apt-get update && apt-get install -y autoconf automake cmake libsasl2-dev \
         g++ gcc libffi-dev libkrb5-dev libssl-dev \
-        postgresql-server-dev-11 libpq-dev
+        postgresql-server-dev-13 libpq-dev
 
 # Install timescaledb into postgresql
 RUN (cd /tmp && git clone https://github.com/timescale/timescaledb.git) && \
@@ -184,8 +184,8 @@ LABEL description="LocalStack Docker image"
 COPY --from=builder /opt/code/localstack/ /opt/code/localstack/
 
 # Copy in postgresql extensions
-COPY --from=builder /usr/share/postgresql/11/extension /usr/share/postgresql/11/extension
-COPY --from=builder /usr/lib/postgresql/11/lib /usr/lib/postgresql/11/lib
+COPY --from=builder /usr/share/postgresql/13/extension /usr/share/postgresql/13/extension
+COPY --from=builder /usr/lib/postgresql/13/lib /usr/lib/postgresql/13/lib
 
 RUN if [ -e /usr/bin/aws ]; then mv /usr/bin/aws /usr/bin/aws.bk; fi; ln -s /opt/code/localstack/.venv/bin/aws /usr/bin/aws
 
