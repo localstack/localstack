@@ -43,7 +43,7 @@ class S3VirtualHostProxyHandler:
         copied_headers[S3_VIRTUAL_HOST_FORWARDED_HEADER] = request.headers["host"]
         # do not preserve the Host when forwarding (to avoid an endless loop)
         with Proxy(
-            forward_base_url=f"{forward_to_url.scheme}://{forward_to_url.netloc}",
+            forward_base_url=config.get_edge_url(),
             preserve_host=False,
         ) as proxy:
             forwarded = proxy.forward(
