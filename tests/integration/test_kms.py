@@ -465,7 +465,6 @@ class TestKMS:
         key_id = kms_create_key(KeyUsage="SIGN_VERIFY", KeySpec="RSA_4096")["KeyId"]
         with pytest.raises(ClientError) as exc:
             kms_client.encrypt(
-                MessageType="RAW",
                 Plaintext="hello",
                 KeyId=key_id,
                 EncryptionAlgorithm="RSAES_OAEP_SHA_256",
