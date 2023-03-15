@@ -383,9 +383,6 @@ if TMP_FOLDER.startswith("/var/folders/") and os.path.exists("/private%s" % TMP_
 # temporary folder of the host (required when running in Docker). Fall back to local tmp folder if not set
 HOST_TMP_FOLDER = os.environ.get("HOST_TMP_FOLDER", TMP_FOLDER)
 
-# whether to use the old directory structure and mounting config
-LEGACY_DIRECTORIES = is_env_true("LEGACY_DIRECTORIES")
-
 # whether to enable verbose debug logging
 LS_LOG = eval_log_type("LS_LOG")
 DEBUG = is_env_true("DEBUG") or LS_LOG in TRACE_LOG_LEVELS
@@ -1130,56 +1127,15 @@ SERVICE_PROVIDER_CONFIG = ServiceProviderConfig("default")
 SERVICE_PROVIDER_CONFIG.load_from_environment()
 
 
-def init_legacy_directories() -> Directories:
-    global PERSISTENCE
-    from localstack import constants
-
-    constants.DEFAULT_VOLUME_DIR = "/tmp/localstack"
-
-    if DATA_DIR:
-        PERSISTENCE = True
-
-    if is_in_docker:
-        dirs = Directories.legacy_for_container()
-    else:
-        dirs = Directories.legacy_from_config()
-
-    dirs.mkdirs()
-    return dirs
-
-
 def init_directories() -> Directories:
-    global DATA_DIR, PERSISTENCE
-
-    if DATA_DIR:
-        # deprecation path: DATA_DIR being set means persistence is activated, but we're ignoring the path set in
-        # DATA_DIR
-        os.environ["PERSISTENCE"] = "1"
-        PERSISTENCE = True
-
+    # FIXME: should also consider when the config.py is loaded from the CLI which does not necessarily imply
+    #  host mode. this may prove quite tricky to do.
     if is_in_docker:
-        dirs = Directories.for_container()
+        return Directories.for_container()
     else:
-        dirs = Directories.for_host()
-
-    if PERSISTENCE:
-        if DATA_DIR:
-            LOG.warning(
-                "Persistence mode was activated using the DATA_DIR variable. DATA_DIR is deprecated and "
-                "its value is ignored. The data is instead stored into %s in the LocalStack volume.",
-                dirs.data,
-            )
-
-        # deprecation path
-        DATA_DIR = dirs.data
-
-    return dirs
+        return Directories.for_host()
 
 
 # initialize directories
 dirs: Directories
-if LEGACY_DIRECTORIES:
-    CLEAR_TMP_FOLDER = False
-    dirs = init_legacy_directories()
-else:
-    dirs = init_directories()
+dirs = init_directories()

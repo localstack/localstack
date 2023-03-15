@@ -10,7 +10,6 @@ from functools import wraps
 from typing import Dict, Iterable, List, Optional, Set
 
 from localstack import config, constants
-from localstack.config import Directories
 from localstack.constants import DEFAULT_VOLUME_DIR
 from localstack.runtime import hooks
 from localstack.utils.container_networking import get_main_container_name
@@ -580,30 +579,7 @@ def configure_container(container: LocalstackContainer):
 
 
 def configure_volume_mounts(container: LocalstackContainer):
-    if not config.LEGACY_DIRECTORIES:
-        container.volumes.add(VolumeBind(config.VOLUME_DIR, DEFAULT_VOLUME_DIR))
-        return
-
-    source_dirs = config.dirs
-    target_dirs = Directories.legacy_for_container()
-
-    # default shared directories
-    for name in Directories.default_bind_mounts:
-        src = getattr(source_dirs, name, None)
-        target = getattr(target_dirs, name, None)
-        if src and target:
-            container.volumes.add(VolumeBind(src, target))
-
-    # shared tmp folder
-    container.volumes.add(VolumeBind(source_dirs.tmp, target_dirs.tmp))
-
-    # set the HOST_TMP_FOLDER for the legacy dirs / legacy lambda function mounting
-    container.env_vars["HOST_TMP_FOLDER"] = source_dirs.functions
-
-    # data_dir mounting and environment variables
-    if source_dirs.data:
-        container.volumes.add(VolumeBind(source_dirs.data, target_dirs.data))
-        container.env_vars["DATA_DIR"] = target_dirs.data
+    container.volumes.add(VolumeBind(config.VOLUME_DIR, DEFAULT_VOLUME_DIR))
 
 
 @log_duration()
