@@ -1673,7 +1673,7 @@ class TestAPIGateway:
             assert 200 == result.status_code
             assert re.search(
                 "http://.*localhost.*/person/123",
-                content["request_url"],
+                content["url"],
             )
 
         for use_hostname in [True, False]:
