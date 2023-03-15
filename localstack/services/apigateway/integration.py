@@ -449,7 +449,7 @@ class DynamoDBIntegration(BackendIntegration):
 
         # apply response templates
         response_content = json.dumps(remove_attributes(response, ["ResponseMetadata"]))
-        invocation_context.response = response_obj = requests_response(content=response_content)
+        response_obj = requests_response(content=response_content)
         response = self.response_templates.render(invocation_context, response=response_obj)
 
         # construct final response
