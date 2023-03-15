@@ -864,17 +864,35 @@ class TestSNSProvider:
         snapshot.match("response-with-empty-subject", e.value.response)
 
     @pytest.mark.aws_validated
+    @pytest.mark.skip_snapshot_verify(
+        paths=[
+            "$.get-topic-attrs.Attributes.DeliveryPolicy",
+            "$.get-topic-attrs.Attributes.EffectiveDeliveryPolicy",
+            "$.get-topic-attrs.Attributes.Policy.Statement..Action",  # SNS:Receive is added by moto but not returned in AWS
+        ]
+    )
     def test_create_topic_test_arn(self, sns_create_topic, sns_client, snapshot):
         topic_name = "topic-test-create"
         response = sns_create_topic(Name=topic_name)
         snapshot.match("create-topic", response)
-        topic_arn_params = response["TopicArn"].split(":")
-        testutil.response_arn_matches_partition(sns_client, response["TopicArn"])
+        topic_arn = response["TopicArn"]
+        topic_arn_params = topic_arn.split(":")
+        testutil.response_arn_matches_partition(sns_client, topic_arn)
         # we match the response but need to be sure the resource name is the same
         assert topic_arn_params[5] == topic_name
 
         if not is_aws_cloud():
             assert topic_arn_params[4] == get_aws_account_id()
+
+        topic_attrs = sns_client.get_topic_attributes(TopicArn=topic_arn)
+        snapshot.match("get-topic-attrs", topic_attrs)
+
+        response = sns_client.delete_topic(TopicArn=topic_arn)
+        snapshot.match("delete-topic", response)
+
+        with pytest.raises(ClientError) as e:
+            sns_client.get_topic_attributes(TopicArn=topic_arn)
+        snapshot.match("topic-not-exists", e.value.response)
 
     @pytest.mark.aws_validated
     def test_publish_message_by_target_arn(
