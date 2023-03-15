@@ -1,20 +1,16 @@
-import json
 import logging
 import os
 import time
 from operator import itemgetter
 
 import pytest
-import requests
 from botocore.exceptions import ClientError
 
-from localstack.aws.accounts import get_aws_account_id
-from localstack.services.apigateway.helpers import TAG_KEY_CUSTOM_ID, path_based_url
+from localstack.services.apigateway.helpers import TAG_KEY_CUSTOM_ID
 from localstack.testing.aws.util import is_aws_cloud
 from localstack.testing.snapshots.transformer import SortingTransformer
 from localstack.utils.files import load_file
 from localstack.utils.strings import short_uid
-from tests.integration.apigateway.test_apigateway_basic import TEST_IMPORT_PETSTORE_SWAGGER
 
 LOG = logging.getLogger(__name__)
 
