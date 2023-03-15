@@ -1,7 +1,7 @@
 ARG IMAGE_TYPE=community
 
 # java-builder: Stage to build a custom JRE (with jlink)
-FROM python:3.10.8-slim-buster@sha256:6f0a9332035a0268cdca0bfecb509ec17db855e3d079d134373b3bf5bfb9e98f as java-builder
+FROM python:3.10.10-slim-bullseye@sha256:875d13333257e9f7ac2caf391bc8182fdd43c9c19d6a49fe27166eb42142c68a as java-builder
 ARG TARGETARCH
 
 # install OpenJDK 11
@@ -38,7 +38,7 @@ jdk.localedata --include-locales en,th \
 
 
 # base: Stage which installs necessary runtime dependencies (OS packages, java, maven,...)
-FROM python:3.10.8-slim-buster@sha256:6f0a9332035a0268cdca0bfecb509ec17db855e3d079d134373b3bf5bfb9e98f as base
+FROM python:3.10.10-slim-bullseye@sha256:875d13333257e9f7ac2caf391bc8182fdd43c9c19d6a49fe27166eb42142c68a as base
 ARG TARGETARCH
 
 # Install runtime OS package dependencies
