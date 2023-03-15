@@ -589,7 +589,7 @@ class VersionFunctionConfiguration:
     memory_size: int
     handler: str
     package_type: PackageType
-    reserved_concurrent_executions: int
+    # reserved_concurrent_executions: Optional[int]
     environment: dict[str, str]
     architectures: list[Architecture]
     # internal revision is updated when runtime restart is necessary

@@ -687,7 +687,6 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
                     memory_size=request.get("MemorySize", LAMBDA_DEFAULT_MEMORY_SIZE),
                     handler=request.get("Handler"),
                     package_type=package_type,
-                    reserved_concurrent_executions=0,
                     environment=env_vars,
                     architectures=request.get("Architectures") or [Architecture.x86_64],
                     tracing_config_mode=TracingMode.PassThrough,  # TODO
@@ -1141,6 +1140,8 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
             return InvocationResponse(StatusCode=202)
         try:
             invocation_result = result.result()
+        # except TooManyRequestsException:
+        #     raise
         except Exception as e:
             LOG.error("Error while invoking lambda", exc_info=e)
             # TODO map to correct exception
@@ -2206,6 +2207,8 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
                 code_size_sum += fn_version.config.code.code_size
             if fn.reserved_concurrent_executions is not None:
                 reserved_concurrency_sum += fn.reserved_concurrent_executions
+            for c in fn.provisioned_concurrency_configs.values():
+                reserved_concurrency_sum += c.provisioned_concurrent_executions
         for layer in state.layers.values():
             for layer_version in layer.layer_versions.values():
                 code_size_sum += layer_version.code.code_size
@@ -2318,11 +2321,15 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
         manager = self.lambda_service.get_lambda_version_manager(fn_arn)
 
         fn.provisioned_concurrency_configs[qualifier] = provisioned_config
-        manager.provisioned_state = ProvisionedConcurrencyState(
-            allocated=provisioned_concurrent_executions,
-            available=provisioned_concurrent_executions,
-            status=ProvisionedConcurrencyStatusEnum.READY,
+
+        manager.provisioned_state = ProvisionedConcurrencyState()
+        manager.update_provisioned_concurrency_config(
+            provisioned_config.provisioned_concurrent_executions
         )
+        #     allocated=provisioned_concurrent_executions,
+        #     available=provisioned_concurrent_executions,
+        #     status=ProvisionedConcurrencyStatusEnum.READY,
+        # )
 
         return PutProvisionedConcurrencyConfigResponse(
             RequestedProvisionedConcurrentExecutions=provisioned_config.provisioned_concurrent_executions,
@@ -2447,6 +2454,11 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
         # delete is idempotent and doesn't actually care about the provisioned concurrency config not existing
         if provisioned_config:
             fn.provisioned_concurrency_configs.pop(qualifier)
+            fn_arn = api_utils.qualified_lambda_arn(
+                function_name, qualifier, context.account_id, context.region
+            )
+            manager = self.lambda_service.get_lambda_version_manager(fn_arn)
+            manager.update_provisioned_concurrency_config(0)
 
     # =======================================
     # =======  Event Invoke Config   ========

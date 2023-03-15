@@ -6148,7 +6148,7 @@
     }
   },
   "tests/integration/awslambda/test_lambda_api.py::TestLambdaProvisionedConcurrency::test_provisioned_concurrency_exceptions": {
-    "recorded-date": "17-02-2023, 11:40:04",
+    "recorded-date": "15-03-2023, 15:21:53",
     "recorded-content": {
       "publish_version_result": {
         "Architectures": [
@@ -6322,6 +6322,16 @@
         "ResponseMetadata": {
           "HTTPHeaders": {},
           "HTTPStatusCode": 204
+        }
+      },
+      "put_provisioned_invalid_param_0": {
+        "Error": {
+          "Code": "ValidationException",
+          "Message": "1 validation error detected: Value '0' at 'provisionedConcurrentExecutions' failed to satisfy constraint: Member must have value greater than or equal to 1"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
         }
       },
       "put_provisioned_functionname_doesnotexist_alias": {

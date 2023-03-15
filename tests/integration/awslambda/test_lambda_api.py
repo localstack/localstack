@@ -2208,8 +2208,11 @@ class TestLambdaProvisionedConcurrency:
     # TODO: test shorthand ARN
     @pytest.mark.aws_validated
     def test_provisioned_concurrency_exceptions(
-        self, lambda_client, create_lambda_function, snapshot
+        self, create_boto_client, create_lambda_function, snapshot
     ):
+        lambda_client = create_boto_client(
+            "lambda", additional_config=Config(parameter_validation=False)
+        )
         function_name = f"lambda_func-{short_uid()}"
         create_lambda_function(
             handler_file=TEST_LAMBDA_PYTHON_ECHO,
@@ -2297,6 +2300,15 @@ class TestLambdaProvisionedConcurrency:
         snapshot.match("delete_provisioned_config_doesnotexist", delete_nonexistent)
 
         ### PUT
+
+        # is provisioned = 0 equal to deleted? => no, invalid
+        with pytest.raises(Exception) as e:
+            lambda_client.put_provisioned_concurrency_config(
+                FunctionName=function_name,
+                Qualifier=function_version,
+                ProvisionedConcurrentExecutions=0,
+            )
+        snapshot.match("put_provisioned_invalid_param_0", e.value.response)
 
         # function does not exist
         with pytest.raises(lambda_client.exceptions.ResourceNotFoundException) as e:

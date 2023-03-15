@@ -10,7 +10,7 @@ from datetime import datetime
 from hashlib import sha256
 from pathlib import PurePosixPath, PureWindowsPath
 from threading import RLock
-from typing import TYPE_CHECKING, Dict, Optional
+from typing import TYPE_CHECKING, Optional
 
 from localstack import config
 from localstack.aws.api.lambda_ import (
@@ -58,16 +58,20 @@ LAMBDA_DEFAULT_MEMORY_SIZE = 128
 
 class LambdaService:
     # mapping from qualified ARN to version manager
-    lambda_running_versions: Dict[str, LambdaVersionManager]
-    lambda_starting_versions: Dict[str, LambdaVersionManager]
+    lambda_running_versions: dict[str, LambdaVersionManager]
+    lambda_starting_versions: dict[str, LambdaVersionManager]
     lambda_version_manager_lock: RLock
     task_executor: Executor
+
+    # TODO: replace with thread-safe version
+    concurrency_tracker: dict[str, int]
 
     def __init__(self) -> None:
         self.lambda_running_versions = {}
         self.lambda_starting_versions = {}
         self.lambda_version_manager_lock = RLock()
         self.task_executor = ThreadPoolExecutor()
+        self.concurrency_tracker = dict()
 
     def stop(self) -> None:
         """
@@ -126,8 +130,13 @@ class LambdaService:
                     qualified_arn,
                     version_manager.state,
                 )
+            state = lambda_stores[function_version.id.account][function_version.id.region]
+            fn = state.functions.get(function_version.id.function_name)
             version_manager = LambdaVersionManager(
-                function_arn=qualified_arn, function_version=function_version, lambda_service=self
+                function_arn=qualified_arn,
+                function_version=function_version,
+                lambda_service=self,
+                function=fn,
             )
             self.lambda_starting_versions[qualified_arn] = version_manager
         self.task_executor.submit(version_manager.start)
@@ -151,8 +160,13 @@ class LambdaService:
                     qualified_arn,
                     version_manager.state,
                 )
+            state = lambda_stores[function_version.id.account][function_version.id.region]
+            fn = state.functions.get(function_version.id.function_name)
             version_manager = LambdaVersionManager(
-                function_arn=qualified_arn, function_version=function_version, lambda_service=self
+                function_arn=qualified_arn,
+                function_version=function_version,
+                lambda_service=self,
+                function=fn,
             )
             self.lambda_starting_versions[qualified_arn] = version_manager
         version_manager.start()
@@ -314,6 +328,24 @@ class LambdaService:
             self.task_executor.submit(
                 destroy_code_if_not_used, old_version.function_version.config.code, function
             )
+
+    # TODO: rework these to be thread-safe and/or in a custom class
+    def get_concurrent_invocations_count(self, account_id: str):
+        return self.concurrency_tracker.setdefault(account_id, 0)
+
+    def decr_concurrent_invocations_count(self, account_id: str):
+        new_val = self.concurrency_tracker.setdefault(account_id, 0) - 1
+        if new_val < 0:
+            LOG.warning(
+                "Attempted to set invocation concurrency to a negative value (%s).", new_val
+            )
+            self.concurrency_tracker[account_id] = 0
+        self.concurrency_tracker[account_id] = new_val
+
+    def incr_concurrent_invocations_count(self, account_id: str):
+        self.concurrency_tracker[account_id] = (
+            self.concurrency_tracker.setdefault(account_id, 0) + 1
+        )
 
 
 def is_code_used(code: S3Code, function: Function) -> bool:

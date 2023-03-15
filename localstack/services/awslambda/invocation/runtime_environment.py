@@ -192,8 +192,11 @@ class RuntimeEnvironment:
                 raise InvalidStatusException("Runtime Handler can only be set ready while running")
             self.status = RuntimeStatus.READY
 
-            self.keepalive_timer = Timer(config.LAMBDA_KEEPALIVE_MS / 1000, self.keepalive_passed)
-            self.keepalive_timer.start()
+            if self.initialization_type == "on-demand":
+                self.keepalive_timer = Timer(
+                    config.LAMBDA_KEEPALIVE_MS / 1000, self.keepalive_passed
+                )
+                self.keepalive_timer.start()
 
     def keepalive_passed(self) -> None:
         LOG.debug(
