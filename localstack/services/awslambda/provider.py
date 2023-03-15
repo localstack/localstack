@@ -2262,6 +2262,11 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
         qualifier: Qualifier,
         provisioned_concurrent_executions: PositiveInteger,
     ) -> PutProvisionedConcurrencyConfigResponse:
+        if provisioned_concurrent_executions <= 0:
+            raise ValidationException(
+                f"1 validation error detected: Value '{provisioned_concurrent_executions}' at 'provisionedConcurrentExecutions' failed to satisfy constraint: Member must have value greater than or equal to 1"
+            )
+
         if qualifier == "$LATEST":
             raise InvalidParameterValueException(
                 "Provisioned Concurrency Configs cannot be applied to unpublished function versions.",

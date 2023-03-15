@@ -381,7 +381,6 @@ class LambdaVersionManager(ServiceEndpoint):
                         invocation_result=InvocationError(
                             queued_invocation.invocation_id,
                             payload=None,
-                            # payload=to_bytes("{}"),
                             executed_version=None,
                             logs=None,
                         ),
@@ -672,7 +671,8 @@ class LambdaVersionManager(ServiceEndpoint):
             self.destination_execution_pool.submit(
                 self.process_event_destinations,
                 invocation_result=invocation_result,
-                original_invocation=running_invocation,
+                queued_invocation=running_invocation.invocation,
+                last_invoke_time=running_invocation.invocation.invocation.invoke_time,
                 original_payload=running_invocation.invocation.invocation.payload,
             )
 
