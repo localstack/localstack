@@ -581,7 +581,6 @@ class Layer:
 @dataclasses.dataclass(frozen=True)
 class VersionFunctionConfiguration:
     # fields
-    # name: str
     description: str
     role: str
     timeout: int
@@ -589,7 +588,6 @@ class VersionFunctionConfiguration:
     memory_size: int
     handler: str
     package_type: PackageType
-    # reserved_concurrent_executions: Optional[int]
     environment: dict[str, str]
     architectures: list[Architecture]
     # internal revision is updated when runtime restart is necessary

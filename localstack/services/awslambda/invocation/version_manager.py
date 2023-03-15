@@ -441,8 +441,12 @@ class LambdaVersionManager(ServiceEndpoint):
                         # try next environment
                         environment = None
             except Exception as e:
-                # TODO: propagate unexpected errors (!)
-                LOG.debug("FAILED FIX THIS", exc_info=True)
+                # TODO: propagate unexpected errors
+                LOG.debug(
+                    "Unexpected exception in invocation loop for function version %s",
+                    self.function_version.qualified_arn,
+                    exc_info=True,
+                )
                 if queued_invocation.result_future:
                     queued_invocation.result_future.set_exception(e)
 

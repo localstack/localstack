@@ -1140,8 +1140,6 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
             return InvocationResponse(StatusCode=202)
         try:
             invocation_result = result.result()
-        # except TooManyRequestsException:
-        #     raise
         except Exception as e:
             LOG.error("Error while invoking lambda", exc_info=e)
             # TODO map to correct exception
@@ -2326,10 +2324,6 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
         manager.update_provisioned_concurrency_config(
             provisioned_config.provisioned_concurrent_executions
         )
-        #     allocated=provisioned_concurrent_executions,
-        #     available=provisioned_concurrent_executions,
-        #     status=ProvisionedConcurrencyStatusEnum.READY,
-        # )
 
         return PutProvisionedConcurrencyConfigResponse(
             RequestedProvisionedConcurrentExecutions=provisioned_config.provisioned_concurrent_executions,
