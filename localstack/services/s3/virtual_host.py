@@ -69,6 +69,7 @@ class S3VirtualHostProxyHandler:
         :param domain: the domain name
         :param bucket: the bucket name
         :param region: the region name
+        :param port: the port number (if specified in the original request URL), or an empty string
         :return: re-written url as string
         """
         splitted = urlsplit(url)
