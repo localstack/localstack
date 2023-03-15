@@ -207,7 +207,7 @@ class ResponseSerializer(abc.ABC):
 
         # if the operation has a streaming output, handle the serialization differently
         if operation_model.has_event_stream_output:
-            return self._serialize_event_stream(response, operation_model, mime_type)
+            return self._serialize_event_stream(response, operation_model, mime_type, request_id)
 
         serialized_response = self._create_default_response(operation_model, mime_type)
         shape = operation_model.output_shape
@@ -260,7 +260,9 @@ class ResponseSerializer(abc.ABC):
         shape = operation_model.service_model.shape_for_error_code(error.code)
         serialized_response.status_code = error.status_code
 
-        self._serialize_error(error, serialized_response, shape, operation_model, mime_type)
+        self._serialize_error(
+            error, serialized_response, shape, operation_model, mime_type, request_id
+        )
         serialized_response = self._prepare_additional_traits_in_response(
             serialized_response, operation_model, request_id
         )
@@ -284,6 +286,7 @@ class ResponseSerializer(abc.ABC):
         shape: Shape,
         operation_model: OperationModel,
         mime_type: str,
+        request_id: str,
     ) -> Optional[str]:
         """
         Actually serializes the given params for the given shape to a string for the transmission in the body of the
@@ -369,7 +372,7 @@ class ResponseSerializer(abc.ABC):
                 )
                 # execute additional response traits (might be modifying the response)
                 serialized_event_response = self._prepare_additional_traits_in_response(
-                    serialized_event_response, operation_model
+                    serialized_event_response, operation_model, request_id
                 )
                 # encode the event and yield it
                 yield self._encode_event_payload(
@@ -612,8 +615,8 @@ class BaseXMLResponseSerializer(ResponseSerializer):
 
         error_tag = ETree.SubElement(root, "Error")
         self._add_error_tags(error, error_tag, mime_type)
-        request_id = ETree.SubElement(root, "RequestId")
-        request_id.text = request_id
+        request_id_element = ETree.SubElement(root, "RequestId")
+        request_id_element.text = request_id
 
         self._add_additional_error_tags(error, root, shape, mime_type)
 
@@ -660,9 +663,10 @@ class BaseXMLResponseSerializer(ResponseSerializer):
         shape: Shape,
         operation_model: OperationModel,
         mime_type: str,
+        request_id: str,
     ) -> Optional[str]:
         root = self._serialize_body_params_to_xml(params, shape, operation_model, mime_type)
-        self._prepare_additional_traits_in_xml(root)
+        self._prepare_additional_traits_in_xml(root, request_id)
         return self._node_to_string(root, mime_type)
 
     def _serialize_body_params_to_xml(
@@ -837,7 +841,7 @@ class BaseXMLResponseSerializer(ResponseSerializer):
         node = ETree.SubElement(xmlnode, name)
         node.text = str(params)
 
-    def _prepare_additional_traits_in_xml(self, root: Optional[ETree.Element]):
+    def _prepare_additional_traits_in_xml(self, root: Optional[ETree.Element], request_id: str):
         """
         Prepares the XML root node before being serialized with additional traits (like the Response ID in the Query
         protocol).
@@ -890,7 +894,13 @@ class BaseRestResponseSerializer(ResponseSerializer, ABC):
         # Do not process the body payload in this case (setting a body could also manipulate the headers)
         if operation_model.http.get("method") != "HEAD":
             self._serialize_payload(
-                payload_params, response, shape, shape_members, operation_model, mime_type
+                payload_params,
+                response,
+                shape,
+                shape_members,
+                operation_model,
+                mime_type,
+                request_id,
             )
         self._serialize_content_type(response, shape, shape_members, mime_type)
         self._prepare_additional_traits_in_response(response, operation_model, request_id)
@@ -903,6 +913,7 @@ class BaseRestResponseSerializer(ResponseSerializer, ABC):
         shape_members: dict,
         operation_model: OperationModel,
         mime_type: str,
+        request_id: str,
     ) -> None:
         """
         Serializes the given payload.
@@ -941,7 +952,11 @@ class BaseRestResponseSerializer(ResponseSerializer, ABC):
                 response.set_response(
                     self._encode_payload(
                         self._serialize_body_params(
-                            body_params, shape_members[payload_member], operation_model, mime_type
+                            body_params,
+                            shape_members[payload_member],
+                            operation_model,
+                            mime_type,
+                            request_id,
                         )
                     )
                 )
@@ -949,7 +964,9 @@ class BaseRestResponseSerializer(ResponseSerializer, ABC):
             # Otherwise, we use the "traditional" way of serializing the whole parameters dict recursively.
             response.set_response(
                 self._encode_payload(
-                    self._serialize_body_params(parameters, shape, operation_model, mime_type)
+                    self._serialize_body_params(
+                        parameters, shape, operation_model, mime_type, request_id
+                    )
                 )
             )
 
@@ -1089,7 +1106,9 @@ class QueryResponseSerializer(BaseXMLResponseSerializer):
         """
         response.set_response(
             self._encode_payload(
-                self._serialize_body_params(parameters, shape, operation_model, mime_type)
+                self._serialize_body_params(
+                    parameters, shape, operation_model, mime_type, request_id
+                )
             )
         )
 
@@ -1114,12 +1133,12 @@ class QueryResponseSerializer(BaseXMLResponseSerializer):
             root.append(node)
         return root
 
-    def _prepare_additional_traits_in_xml(self, root: Optional[ETree.Element]):
+    def _prepare_additional_traits_in_xml(self, root: Optional[ETree.Element], request_id: str):
         # Add the response metadata here (it's not defined in the specs)
         # For the ec2 and the query protocol, the root cannot be None at this time.
         response_metadata = ETree.SubElement(root, "ResponseMetadata")
-        request_id = ETree.SubElement(response_metadata, "RequestId")
-        request_id.text = request_id
+        request_id_element = ETree.SubElement(response_metadata, "RequestId")
+        request_id_element.text = request_id
 
 
 class EC2ResponseSerializer(QueryResponseSerializer):
@@ -1159,11 +1178,11 @@ class EC2ResponseSerializer(QueryResponseSerializer):
         errors_tag = ETree.SubElement(root, "Errors")
         error_tag = ETree.SubElement(errors_tag, "Error")
         self._add_error_tags(error, error_tag, mime_type)
-        request_id = ETree.SubElement(root, "RequestID")
-        request_id.text = request_id
+        request_id_element = ETree.SubElement(root, "RequestID")
+        request_id_element.text = request_id
         response.set_response(self._encode_payload(self._node_to_string(root, mime_type)))
 
-    def _prepare_additional_traits_in_xml(self, root: Optional[ETree.Element]):
+    def _prepare_additional_traits_in_xml(self, root: Optional[ETree.Element], request_id: str):
         # The EC2 protocol does not use the root output shape, therefore we need to remove the hierarchy level
         # below the root level
         if len(root) > 0:
@@ -1174,8 +1193,8 @@ class EC2ResponseSerializer(QueryResponseSerializer):
 
         # Add the requestId here (it's not defined in the specs)
         # For the ec2 and the query protocol, the root cannot be None at this time.
-        request_id = ETree.SubElement(root, "requestId")
-        request_id.text = request_id
+        request_id_element = ETree.SubElement(root, "requestId")
+        request_id_element.text = request_id
 
 
 class JSONResponseSerializer(ResponseSerializer):
@@ -1248,11 +1267,16 @@ class JSONResponseSerializer(ResponseSerializer):
             if json_version is not None:
                 response.headers["Content-Type"] = "application/x-amz-json-%s" % json_version
         response.set_response(
-            self._serialize_body_params(parameters, shape, operation_model, mime_type)
+            self._serialize_body_params(parameters, shape, operation_model, mime_type, request_id)
         )
 
     def _serialize_body_params(
-        self, params: dict, shape: Shape, operation_model: OperationModel, mime_type: str
+        self,
+        params: dict,
+        shape: Shape,
+        operation_model: OperationModel,
+        mime_type: str,
+        request_id: str,
     ) -> Optional[str]:
         body = {}
         if shape is not None:
@@ -1456,7 +1480,13 @@ class S3ResponseSerializer(RestXMLResponseSerializer):
         # If the response is a redirection, the body should be empty as well
         if operation_model.http.get("method") != "HEAD" and not 300 <= response.status_code < 400:
             self._serialize_payload(
-                payload_params, response, shape, shape_members, operation_model, mime_type
+                payload_params,
+                response,
+                shape,
+                shape_members,
+                operation_model,
+                mime_type,
+                request_id,
             )
         self._serialize_content_type(response, shape, shape_members, mime_type)
         self._prepare_additional_traits_in_response(response, operation_model, request_id)
@@ -1527,7 +1557,7 @@ class S3ResponseSerializer(RestXMLResponseSerializer):
     def _create_empty_node(xmlnode: ETree.Element, name: str) -> None:
         ETree.SubElement(xmlnode, name)
 
-    def _prepare_additional_traits_in_xml(self, root: Optional[ETree.Element]):
+    def _prepare_additional_traits_in_xml(self, root: Optional[ETree.Element], request_id: str):
         # some tools (Serverless) require a newline after the "<?xml ...>\n" preamble line, e.g., for LocationConstraint
         if root and not root.tail:
             root.tail = "\n"
@@ -1670,9 +1700,7 @@ def aws_response_serializer(service: str, operation: str):
                     return response
 
                 return serializer.serialize_to_response(
-                    response,
-                    operation_model,
-                    request.headers,
+                    response, operation_model, request.headers, request_id
                 )
 
             except ServiceException as e:

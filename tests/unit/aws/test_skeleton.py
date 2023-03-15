@@ -188,7 +188,7 @@ def test_skeleton_e2e_sqs_send_message():
     # Test the ResponseMetadata and delete it afterwards
     assert "ResponseMetadata" in parsed_response
     assert "RequestId" in parsed_response["ResponseMetadata"]
-    assert len(parsed_response["ResponseMetadata"]["RequestId"]) == 52
+    assert len(parsed_response["ResponseMetadata"]["RequestId"]) == 36
     assert "HTTPStatusCode" in parsed_response["ResponseMetadata"]
     assert parsed_response["ResponseMetadata"]["HTTPStatusCode"] == 200
     del parsed_response["ResponseMetadata"]
@@ -243,7 +243,7 @@ def test_skeleton_e2e_sqs_send_message_not_implemented(api_class, oracle_message
     # Test the ResponseMetadata
     assert "ResponseMetadata" in parsed_response
     assert "RequestId" in parsed_response["ResponseMetadata"]
-    assert len(parsed_response["ResponseMetadata"]["RequestId"]) == 52
+    assert len(parsed_response["ResponseMetadata"]["RequestId"]) == 36
     assert "HTTPStatusCode" in parsed_response["ResponseMetadata"]
     assert parsed_response["ResponseMetadata"]["HTTPStatusCode"] == 501
 

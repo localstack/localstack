@@ -189,7 +189,7 @@ class Skeleton:
         context.service_exception = exception
 
         return self.serializer.serialize_error_to_response(
-            exception, context.operation, context.request.headers
+            exception, context.operation, context.request.headers, context.request_id
         )
 
     def on_not_implemented_error(

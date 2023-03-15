@@ -3,7 +3,6 @@ import sys
 from typing import Any, NamedTuple, Optional, Type, Union
 
 from localstack.aws.connect import InternalRequestParameters
-
 from localstack.utils.strings import long_uid
 
 if sys.version_info >= (3, 8):
