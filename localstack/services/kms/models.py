@@ -157,15 +157,12 @@ class KmsCryptoKey:
         if key_spec == "SYMMETRIC_DEFAULT":
             return
 
-        public_format = None
         if key_spec.startswith("RSA"):
             key_size = RSA_CRYPTO_KEY_LENGTHS.get(key_spec)
             self.key = rsa.generate_private_key(public_exponent=65537, key_size=key_size)
-            public_format = crypto_serialization.PublicFormat.PKCS1
         elif key_spec.startswith("ECC"):
             curve = ECC_CURVES.get(key_spec)
             self.key = ec.generate_private_key(curve)
-            public_format = crypto_serialization.PublicFormat.SubjectPublicKeyInfo
         else:
             # Currently we do not support HMAC keys - symmetric keys that are used for GenerateMac / VerifyMac.
             # We also do not support SM2 - asymmetric keys both suitable for ENCRYPT_DECRYPT and SIGN_VERIFY,
@@ -178,7 +175,8 @@ class KmsCryptoKey:
             crypto_serialization.NoEncryption(),
         )
         self.public_key = self.key.public_key().public_bytes(
-            crypto_serialization.Encoding.DER, public_format
+            crypto_serialization.Encoding.DER,
+            crypto_serialization.PublicFormat.SubjectPublicKeyInfo,
         )
 
 

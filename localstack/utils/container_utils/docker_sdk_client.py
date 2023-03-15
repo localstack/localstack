@@ -521,7 +521,14 @@ class SdkDockerClient(ContainerClient):
         extra_hosts = None
         if additional_flags:
             parsed_flags = Util.parse_additional_flags(
-                additional_flags, env_vars, ports, mount_volumes, network, user, platform
+                additional_flags,
+                env_vars,
+                ports,
+                mount_volumes,
+                network,
+                user,
+                platform,
+                privileged,
             )
             env_vars = parsed_flags.env_vars
             ports = parsed_flags.ports
@@ -531,6 +538,7 @@ class SdkDockerClient(ContainerClient):
             labels = parsed_flags.labels
             user = parsed_flags.user
             platform = parsed_flags.platform
+            privileged = parsed_flags.privileged
 
         try:
             kwargs = {}

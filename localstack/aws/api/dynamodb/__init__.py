@@ -29,7 +29,8 @@ ConsumedCapacityUnits = float
 ContributorInsightsRule = str
 CsvDelimiter = str
 CsvHeader = str
-Double = float
+DeletionProtectionEnabled = bool
+DoubleObject = float
 ErrorMessage = str
 ExceptionDescription = str
 ExceptionName = str
@@ -584,7 +585,7 @@ class AutoScalingTargetTrackingScalingPolicyConfigurationDescription(TypedDict, 
     DisableScaleIn: Optional[BooleanObject]
     ScaleInCooldown: Optional[IntegerObject]
     ScaleOutCooldown: Optional[IntegerObject]
-    TargetValue: Double
+    TargetValue: DoubleObject
 
 
 class AutoScalingPolicyDescription(TypedDict, total=False):
@@ -601,7 +602,7 @@ class AutoScalingTargetTrackingScalingPolicyConfigurationUpdate(TypedDict, total
     DisableScaleIn: Optional[BooleanObject]
     ScaleInCooldown: Optional[IntegerObject]
     ScaleOutCooldown: Optional[IntegerObject]
-    TargetValue: Double
+    TargetValue: DoubleObject
 
 
 class AutoScalingPolicyUpdate(TypedDict, total=False):
@@ -698,14 +699,14 @@ class SourceTableFeatureDetails(TypedDict, total=False):
 
 ItemCount = int
 TableCreationDateTime = datetime
-Long = int
+LongObject = int
 
 
 class SourceTableDetails(TypedDict, total=False):
     TableName: TableName
     TableId: TableId
     TableArn: Optional[TableArn]
-    TableSizeBytes: Optional[Long]
+    TableSizeBytes: Optional[LongObject]
     KeySchema: KeySchema
     TableCreationDateTime: TableCreationDateTime
     ProvisionedThroughput: ProvisionedThroughput
@@ -1065,6 +1066,7 @@ class CreateTableInput(ServiceRequest):
     SSESpecification: Optional[SSESpecification]
     Tags: Optional[TagList]
     TableClass: Optional[TableClass]
+    DeletionProtectionEnabled: Optional[DeletionProtectionEnabled]
 
 
 class RestoreSummary(TypedDict, total=False):
@@ -1092,8 +1094,8 @@ class GlobalSecondaryIndexDescription(TypedDict, total=False):
     IndexStatus: Optional[IndexStatus]
     Backfilling: Optional[Backfilling]
     ProvisionedThroughput: Optional[ProvisionedThroughputDescription]
-    IndexSizeBytes: Optional[Long]
-    ItemCount: Optional[Long]
+    IndexSizeBytes: Optional[LongObject]
+    ItemCount: Optional[LongObject]
     IndexArn: Optional[String]
 
 
@@ -1104,8 +1106,8 @@ class LocalSecondaryIndexDescription(TypedDict, total=False):
     IndexName: Optional[IndexName]
     KeySchema: Optional[KeySchema]
     Projection: Optional[Projection]
-    IndexSizeBytes: Optional[Long]
-    ItemCount: Optional[Long]
+    IndexSizeBytes: Optional[LongObject]
+    ItemCount: Optional[LongObject]
     IndexArn: Optional[String]
 
 
@@ -1119,8 +1121,8 @@ class TableDescription(TypedDict, total=False):
     TableStatus: Optional[TableStatus]
     CreationDateTime: Optional[Date]
     ProvisionedThroughput: Optional[ProvisionedThroughputDescription]
-    TableSizeBytes: Optional[Long]
-    ItemCount: Optional[Long]
+    TableSizeBytes: Optional[LongObject]
+    ItemCount: Optional[LongObject]
     TableArn: Optional[String]
     TableId: Optional[TableId]
     BillingModeSummary: Optional[BillingModeSummary]
@@ -1135,6 +1137,7 @@ class TableDescription(TypedDict, total=False):
     SSEDescription: Optional[SSEDescription]
     ArchivalSummary: Optional[ArchivalSummary]
     TableClassSummary: Optional[TableClassSummary]
+    DeletionProtectionEnabled: Optional[DeletionProtectionEnabled]
 
 
 class CreateTableOutput(TypedDict, total=False):
@@ -1255,6 +1258,9 @@ class DescribeContributorInsightsOutput(TypedDict, total=False):
 
 class DescribeEndpointsRequest(ServiceRequest):
     pass
+
+
+Long = int
 
 
 class Endpoint(TypedDict, total=False):
@@ -1400,7 +1406,7 @@ class ImportTableDescription(TypedDict, total=False):
     TableCreationParameters: Optional[TableCreationParameters]
     StartTime: Optional[ImportStartTime]
     EndTime: Optional[ImportEndTime]
-    ProcessedSizeBytes: Optional[Long]
+    ProcessedSizeBytes: Optional[LongObject]
     ProcessedItemCount: Optional[ProcessedItemCount]
     ImportedItemCount: Optional[ImportedItemCount]
     FailureCode: Optional[FailureCode]
@@ -2079,6 +2085,7 @@ class UpdateTableInput(ServiceRequest):
     SSESpecification: Optional[SSESpecification]
     ReplicaUpdates: Optional[ReplicationGroupUpdateList]
     TableClass: Optional[TableClass]
+    DeletionProtectionEnabled: Optional[DeletionProtectionEnabled]
 
 
 class UpdateTableOutput(TypedDict, total=False):
@@ -2165,6 +2172,7 @@ class DynamodbApi:
         sse_specification: SSESpecification = None,
         tags: TagList = None,
         table_class: TableClass = None,
+        deletion_protection_enabled: DeletionProtectionEnabled = None,
     ) -> CreateTableOutput:
         raise NotImplementedError
 
@@ -2620,6 +2628,7 @@ class DynamodbApi:
         sse_specification: SSESpecification = None,
         replica_updates: ReplicationGroupUpdateList = None,
         table_class: TableClass = None,
+        deletion_protection_enabled: DeletionProtectionEnabled = None,
     ) -> UpdateTableOutput:
         raise NotImplementedError
 

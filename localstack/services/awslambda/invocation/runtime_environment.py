@@ -87,38 +87,62 @@ class RuntimeEnvironment:
         """
         credentials = self.get_credentials()
         env_vars = {
-            # Runtime API specifics
-            "LOCALSTACK_RUNTIME_ID": self.id,
-            "LOCALSTACK_RUNTIME_ENDPOINT": self.runtime_executor.get_runtime_endpoint(),
-            # General Lambda Environment Variables
-            "AWS_LAMBDA_LOG_GROUP_NAME": self.get_log_group_name(),
-            "AWS_LAMBDA_LOG_STREAM_NAME": self.get_log_stream_name(),
-            "AWS_LAMBDA_FUNCTION_NAME": self.function_version.id.function_name,
-            "AWS_LAMBDA_FUNCTION_TIMEOUT": self.function_version.config.timeout,
-            "AWS_LAMBDA_FUNCTION_MEMORY_SIZE": self.function_version.config.memory_size,  # TODO use correct memory size
-            "AWS_LAMBDA_FUNCTION_VERSION": self.function_version.id.qualifier,
+            # 1) Public AWS defined runtime environment variables (in same order):
+            # https://docs.aws.amazon.com/lambda/latest/dg/configuration-envvars.html
+            # a) Reserved environment variables
+            # _HANDLER conditionally added below
+            # TODO: _X_AMZN_TRACE_ID
             "AWS_DEFAULT_REGION": self.function_version.id.region,
             "AWS_REGION": self.function_version.id.region,
-            "TASK_ROOT": "/var/task",  # TODO custom runtimes?
-            "RUNTIME_ROOT": "/var/runtime",  # TODO custom runtimes?
+            # AWS_EXECUTION_ENV conditionally added below
+            "AWS_LAMBDA_FUNCTION_NAME": self.function_version.id.function_name,
+            "AWS_LAMBDA_FUNCTION_MEMORY_SIZE": self.function_version.config.memory_size,
+            "AWS_LAMBDA_FUNCTION_VERSION": self.function_version.id.qualifier,
             "AWS_LAMBDA_INITIALIZATION_TYPE": self.initialization_type,
-            "TZ": ":UTC",  # TODO does this have to match local system time? format?
+            "AWS_LAMBDA_LOG_GROUP_NAME": self.get_log_group_name(),
+            "AWS_LAMBDA_LOG_STREAM_NAME": self.get_log_stream_name(),
             # Access IDs for role
             "AWS_ACCESS_KEY_ID": credentials["AccessKeyId"],
             "AWS_SECRET_ACCESS_KEY": credentials["SecretAccessKey"],
             "AWS_SESSION_TOKEN": credentials["SessionToken"],
-            # TODO xray
-            # LocalStack endpoint specifics
+            # AWS_LAMBDA_RUNTIME_API is set in the runtime interface emulator (RIE)
+            "LAMBDA_TASK_ROOT": "/var/task",
+            "LAMBDA_RUNTIME_DIR": "/var/runtime",
+            # b) Unreserved environment variables
+            # LANG
+            # LD_LIBRARY_PATH
+            # NODE_PATH
+            # PYTHONPATH
+            # GEM_PATH
+            "AWS_XRAY_CONTEXT_MISSING": "LOG_ERROR",
+            # TODO: AWS_XRAY_DAEMON_ADDRESS
+            # AWS_LAMBDA_DOTNET_PREJIT
+            "TZ": ":UTC",
+            # 2) Public AWS RIE interface: https://github.com/aws/aws-lambda-runtime-interface-emulator
+            "AWS_LAMBDA_FUNCTION_TIMEOUT": self.function_version.config.timeout,
+            # 3) Public LocalStack endpoint
             "LOCALSTACK_HOSTNAME": self.runtime_executor.get_endpoint_from_executor(),
             "EDGE_PORT": str(config.EDGE_PORT),
             "AWS_ENDPOINT_URL": f"http://{self.runtime_executor.get_endpoint_from_executor()}:{config.EDGE_PORT}",
+            # 4) Internal LocalStack runtime API
+            "LOCALSTACK_RUNTIME_ID": self.id,
+            "LOCALSTACK_RUNTIME_ENDPOINT": self.runtime_executor.get_runtime_endpoint(),
+            # LOCALSTACK_USER conditionally added below
         }
+        # Conditionally added environment variables
+        # config.handler is None for image lambdas and will be populated at runtime (e.g., by RIE)
         if self.function_version.config.handler:
             env_vars["_HANDLER"] = self.function_version.config.handler
+        # Not defined for custom runtimes (e.g., provided, provided.al2)
         if self.function_version.config.runtime:
             env_vars["AWS_EXECUTION_ENV"] = f"Aws_Lambda_{self.function_version.config.runtime}"
         if self.function_version.config.environment:
             env_vars.update(self.function_version.config.environment)
+        if config.LAMBDA_INIT_DEBUG:
+            # Disable dropping privileges because it breaks debugging
+            env_vars["LOCALSTACK_USER"] = ""
+        if config.LAMBDA_INIT_USER:
+            env_vars["LOCALSTACK_USER"] = config.LAMBDA_INIT_USER
         return env_vars
 
     # Lifecycle methods

@@ -72,6 +72,7 @@ def test_argument_parsing():
     test_network_string = "--network bridge"
     test_user_string = "-u sbx_user1051"
     test_platform_string = "--platform linux/arm64"
+    test_privileged_string = "--privileged"
     argument_string = " ".join(
         [
             test_port_string,
@@ -82,6 +83,7 @@ def test_argument_parsing():
             test_network_string,
             test_user_string,
             test_platform_string,
+            test_privileged_string,
         ]
     )
     env_vars = {}
@@ -90,8 +92,9 @@ def test_argument_parsing():
     network = "host"
     user = "root"
     platform = "linux/amd64"
+    privileged = False
     flags = Util.parse_additional_flags(
-        argument_string, env_vars, ports, mounts, network, user, platform
+        argument_string, env_vars, ports, mounts, network, user, platform, privileged
     )
     assert env_vars == {"TEST_ENV_VAR": "test_string=123"}
     assert ports.to_str() == "-p 80:8080/udp -p 6000:7000 -p 9230-9231:9230"
@@ -99,6 +102,7 @@ def test_argument_parsing():
     assert flags.network == "bridge"
     assert flags.user == "sbx_user1051"
     assert flags.platform == "linux/arm64"
+    assert flags.privileged
 
     argument_string = (
         "--add-host host.docker.internal:host-gateway --add-host arbitrary.host:127.0.0.1"
@@ -142,6 +146,12 @@ def test_argument_parsing():
     argument_string = r'-v "/tmp/test.jar:/tmp/foo bar/test.jar" --network mynet123'
     flags = Util.parse_additional_flags(argument_string)
     assert flags.network == "mynet123"
+
+    # Test privileged flag
+    assert not flags.privileged
+    argument_string = r"--privileged"
+    flags = Util.parse_additional_flags(argument_string)
+    assert flags.privileged
 
     # Test labels
     argument_string = r"--label foo=bar.123"

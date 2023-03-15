@@ -924,6 +924,142 @@
       }
     }
   },
+  "tests/integration/apigateway/test_apigateway_api.py::test_import_tf_rest_api": {
+    "recorded-date": "02-03-2023, 21:45:22",
+    "recorded-content": {
+      "import_tf_rest_api": {
+        "apiKeySource": "HEADER",
+        "createdDate": "datetime",
+        "disableExecuteApiEndpoint": false,
+        "endpointConfiguration": {
+          "types": [
+            "EDGE"
+          ]
+        },
+        "id": "<id:1>",
+        "name": "<name:1>",
+        "version": "1",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 201
+        }
+      },
+      "resources": {
+        "items": [
+          {
+            "id": "<id:2>",
+            "path": "/",
+            "resourceMethods": {
+              "GET": {},
+              "OPTIONS": {}
+            }
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "method-response-get": {
+        "responseModels": {
+          "application/json": "Empty"
+        },
+        "responseParameters": {
+          "method.response.header.Access-Control-Allow-Origin": false
+        },
+        "statusCode": "200",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "integration-get": {
+        "cacheKeyParameters": [],
+        "cacheNamespace": "<id:2>",
+        "contentHandling": "CONVERT_TO_TEXT",
+        "httpMethod": "POST",
+        "integrationResponses": {
+          "200": {
+            "responseParameters": {
+              "method.response.header.Access-Control-Allow-Origin": "'*'"
+            },
+            "statusCode": "200"
+          }
+        },
+        "passthroughBehavior": "WHEN_NO_MATCH",
+        "timeoutInMillis": 29000,
+        "type": "AWS_PROXY",
+        "uri": "arn:aws:apigateway:us-west-2:lambda:path/2015-03-31/functions/arn:aws:lambda:us-west-2:000000000000:function:s3OnObjectCreatedLambda-60c92b6/invocations",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "integration-response-get": {
+        "responseParameters": {
+          "method.response.header.Access-Control-Allow-Origin": "'*'"
+        },
+        "statusCode": "200",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "method-response-options": {
+        "responseModels": {
+          "application/json": "Empty"
+        },
+        "responseParameters": {
+          "method.response.header.Access-Control-Allow-Headers": false,
+          "method.response.header.Access-Control-Allow-Methods": false,
+          "method.response.header.Access-Control-Allow-Origin": false
+        },
+        "statusCode": "200",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "integration-options": {
+        "cacheKeyParameters": [],
+        "cacheNamespace": "<id:2>",
+        "integrationResponses": {
+          "200": {
+            "responseParameters": {
+              "method.response.header.Access-Control-Allow-Headers": "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token'",
+              "method.response.header.Access-Control-Allow-Methods": "'GET,OPTIONS'",
+              "method.response.header.Access-Control-Allow-Origin": "'*'"
+            },
+            "statusCode": "200"
+          }
+        },
+        "passthroughBehavior": "WHEN_NO_MATCH",
+        "requestTemplates": {
+          "application/json": {
+            "statusCode": 200
+          }
+        },
+        "timeoutInMillis": 29000,
+        "type": "MOCK",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "integration-response-options": {
+        "responseParameters": {
+          "method.response.header.Access-Control-Allow-Headers": "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token'",
+          "method.response.header.Access-Control-Allow-Methods": "'GET,OPTIONS'",
+          "method.response.header.Access-Control-Allow-Origin": "'*'"
+        },
+        "statusCode": "200",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
   "tests/integration/apigateway/test_apigateway_api.py::TestApiGatewayApi::test_authorizer_crud_no_api": {
     "recorded-date": "28-02-2023, 20:06:16",
     "recorded-content": {
@@ -1034,6 +1170,365 @@
         "ResponseMetadata": {
           "HTTPHeaders": {},
           "HTTPStatusCode": 404
+        }
+      }
+    }
+  },
+  "tests/integration/apigateway/test_apigateway_api.py::TestApiGatewayApi::test_method_lifecycle": {
+    "recorded-date": "24-02-2023, 19:17:18",
+    "recorded-content": {
+      "put-base-method-response": {
+        "apiKeyRequired": false,
+        "authorizationType": "NONE",
+        "httpMethod": "ANY",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 201
+        }
+      },
+      "get-base-method-response": {
+        "apiKeyRequired": false,
+        "authorizationType": "NONE",
+        "httpMethod": "ANY",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "del-base-method-response": {
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 204
+        }
+      }
+    }
+  },
+  "tests/integration/apigateway/test_apigateway_api.py::TestApiGatewayApi::test_method_request_parameters": {
+    "recorded-date": "24-02-2023, 19:25:22",
+    "recorded-content": {
+      "put-method-request-params-response": {
+        "apiKeyRequired": false,
+        "authorizationType": "NONE",
+        "httpMethod": "ANY",
+        "requestParameters": {
+          "method.request.header.h_optional": false,
+          "method.request.header.h_required": true,
+          "method.request.querystring.q_optional": false,
+          "method.request.querystring.q_required": true
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 201
+        }
+      },
+      "get-method-request-params-response": {
+        "apiKeyRequired": false,
+        "authorizationType": "NONE",
+        "httpMethod": "ANY",
+        "requestParameters": {
+          "method.request.header.h_optional": false,
+          "method.request.header.h_required": true,
+          "method.request.querystring.q_optional": false,
+          "method.request.querystring.q_required": true
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "req-params-same-name": {
+        "Error": {
+          "Code": "BadRequestException",
+          "Message": "Parameter names must be unique across querystring, header and path"
+        },
+        "message": "Parameter names must be unique across querystring, header and path",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/integration/apigateway/test_apigateway_api.py::TestApiGatewayApi::test_put_method_validation": {
+    "recorded-date": "25-02-2023, 17:49:08",
+    "recorded-content": {
+      "wrong-api": {
+        "Error": {
+          "Code": "NotFoundException",
+          "Message": "Invalid Resource identifier specified"
+        },
+        "message": "Invalid Resource identifier specified",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 404
+        }
+      },
+      "wrong-resource": {
+        "Error": {
+          "Code": "NotFoundException",
+          "Message": "Invalid Resource identifier specified"
+        },
+        "message": "Invalid Resource identifier specified",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 404
+        }
+      },
+      "wrong-method": {
+        "Error": {
+          "Code": "BadRequestException",
+          "Message": "Invalid HttpMethod specified. Valid options are GET,PUT,POST,DELETE,PATCH,OPTIONS,HEAD,ANY"
+        },
+        "message": "Invalid HttpMethod specified. Valid options are GET,PUT,POST,DELETE,PATCH,OPTIONS,HEAD,ANY",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "missing-authorizer-id": {
+        "Error": {
+          "Code": "BadRequestException",
+          "Message": "Invalid authorizer ID specified. Setting the authorization type to CUSTOM or COGNITO_USER_POOLS requires a valid authorizer."
+        },
+        "message": "Invalid authorizer ID specified. Setting the authorization type to CUSTOM or COGNITO_USER_POOLS requires a valid authorizer.",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "invalid-request-validator": {
+        "Error": {
+          "Code": "BadRequestException",
+          "Message": "Invalid Request Validator identifier specified"
+        },
+        "message": "Invalid Request Validator identifier specified",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "invalid-model-name": {
+        "Error": {
+          "Code": "BadRequestException",
+          "Message": "Invalid model identifier specified: petModel"
+        },
+        "message": "Invalid model identifier specified: petModel",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/integration/apigateway/test_apigateway_api.py::TestApiGatewayApi::test_update_method": {
+    "recorded-date": "13-03-2023, 23:31:44",
+    "recorded-content": {
+      "put-method-response": {
+        "apiKeyRequired": false,
+        "authorizationType": "NONE",
+        "httpMethod": "ANY",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 201
+        }
+      },
+      "update-method-add": {
+        "apiKeyRequired": false,
+        "authorizationType": "NONE",
+        "httpMethod": "ANY",
+        "requestModels": {
+          "application/json": "Empty"
+        },
+        "requestParameters": {
+          "method.request.querystring.optional": true
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "update-method-replace": {
+        "apiKeyRequired": true,
+        "authorizationType": "AWS_IAM",
+        "httpMethod": "ANY",
+        "operationName": "ReplacedOperationName",
+        "requestModels": {
+          "application/json": "Empty"
+        },
+        "requestParameters": {
+          "method.request.querystring.optional": false
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "update-method-replace-authorizer": {
+        "apiKeyRequired": true,
+        "authorizationType": "CUSTOM",
+        "authorizerId": "<authorizer-id:1>",
+        "httpMethod": "ANY",
+        "operationName": "ReplacedOperationName",
+        "requestModels": {
+          "application/json": "Empty"
+        },
+        "requestParameters": {
+          "method.request.querystring.optional": false
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "update-method-remove": {
+        "apiKeyRequired": true,
+        "authorizationType": "CUSTOM",
+        "authorizerId": "<authorizer-id:1>",
+        "httpMethod": "ANY",
+        "operationName": "ReplacedOperationName",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/integration/apigateway/test_apigateway_api.py::TestApiGatewayApi::test_update_method_validation": {
+    "recorded-date": "13-03-2023, 23:36:56",
+    "recorded-content": {
+      "wrong-rest-api": {
+        "Error": {
+          "Code": "NotFoundException",
+          "Message": "Invalid Resource identifier specified"
+        },
+        "message": "Invalid Resource identifier specified",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 404
+        }
+      },
+      "wrong-resource-id": {
+        "Error": {
+          "Code": "NotFoundException",
+          "Message": "Invalid Resource identifier specified"
+        },
+        "message": "Invalid Resource identifier specified",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 404
+        }
+      },
+      "method-does-not-exist": {
+        "Error": {
+          "Code": "NotFoundException",
+          "Message": "Invalid Method identifier specified"
+        },
+        "message": "Invalid Method identifier specified",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 404
+        }
+      },
+      "put-method-response": {
+        "apiKeyRequired": true,
+        "authorizationType": "NONE",
+        "httpMethod": "ANY",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 201
+        }
+      },
+      "unsupported-operation": {
+        "apiKeyRequired": true,
+        "authorizationType": "NONE",
+        "httpMethod": "ANY",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "unsupported-path": {
+        "Error": {
+          "Code": "BadRequestException",
+          "Message": "Invalid patch path /httpMethod"
+        },
+        "message": "Invalid patch path /httpMethod",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "wrong-path-request-parameters": {
+        "Error": {
+          "Code": "BadRequestException",
+          "Message": "Invalid patch path /requestParameters"
+        },
+        "message": "Invalid patch path /requestParameters",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "wrong-path-request-models": {
+        "Error": {
+          "Code": "BadRequestException",
+          "Message": "Invalid patch path /requestModels/application/json"
+        },
+        "message": "Invalid patch path /requestModels/application/json",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "wrong-value-type": {
+        "apiKeyRequired": false,
+        "authorizationType": "NONE",
+        "httpMethod": "ANY",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "wrong-auth-type": {
+        "Error": {
+          "Code": "BadRequestException",
+          "Message": "Invalid authorizer ID specified. Setting the authorization type to CUSTOM or COGNITO_USER_POOLS requires a valid authorizer."
+        },
+        "message": "Invalid authorizer ID specified. Setting the authorization type to CUSTOM or COGNITO_USER_POOLS requires a valid authorizer.",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "skip-auth-id-with-wrong-type": {
+        "apiKeyRequired": false,
+        "authorizationType": "NONE",
+        "httpMethod": "ANY",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "wrong-auth-id": {
+        "Error": {
+          "Code": "BadRequestException",
+          "Message": "Invalid authorizer ID specified. Setting the authorization type to CUSTOM or COGNITO_USER_POOLS requires a valid authorizer."
+        },
+        "message": "Invalid authorizer ID specified. Setting the authorization type to CUSTOM or COGNITO_USER_POOLS requires a valid authorizer.",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "wrong-req-validator-id": {
+        "Error": {
+          "Code": "BadRequestException",
+          "Message": "Invalid Request Validator identifier specified"
+        },
+        "message": "Invalid Request Validator identifier specified",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
         }
       }
     }

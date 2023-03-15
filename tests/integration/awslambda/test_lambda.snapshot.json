@@ -2582,7 +2582,7 @@
     }
   },
   "tests/integration/awslambda/test_lambda.py::TestLambdaBehavior::test_runtime_introspection_arm": {
-    "recorded-date": "17-02-2023, 14:00:04",
+    "recorded-date": "08-03-2023, 14:18:06",
     "recorded-content": {
       "invoke_runtime_arm_introspection": {
         "ExecutedVersion": "$LATEST",
@@ -2592,8 +2592,25 @@
           "user_whoami": "sbx_user1051",
           "platform_system": "Linux",
           "platform_machine": "aarch64",
-          "pwd_filemode": "drwxr-xr-x",
-          "opt_filemode": "drwxr-xr-x"
+          "pwd": "/var/task",
+          "paths": {
+            "_var_task_mode": "drwxr-xr-x",
+            "_var_task_uid": 998,
+            "_var_task_owner": "slicer",
+            "_var_task_gid": 995,
+            "_opt_mode": "drwxr-xr-x",
+            "_opt_uid": 0,
+            "_opt_owner": "root",
+            "_opt_gid": 0,
+            "_tmp_mode": "drwx------",
+            "_tmp_uid": 993,
+            "_tmp_owner": "sbx_user1051",
+            "_tmp_gid": 990,
+            "_lambda-entrypoint.sh_mode": "-rwxr-xr-x",
+            "_lambda-entrypoint.sh_uid": 0,
+            "_lambda-entrypoint.sh_owner": "root",
+            "_lambda-entrypoint.sh_gid": 0
+          }
         },
         "StatusCode": 200,
         "ResponseMetadata": {
@@ -2604,7 +2621,7 @@
     }
   },
   "tests/integration/awslambda/test_lambda.py::TestLambdaBehavior::test_runtime_introspection_x86": {
-    "recorded-date": "17-02-2023, 14:00:01",
+    "recorded-date": "08-03-2023, 14:16:54",
     "recorded-content": {
       "invoke_runtime_x86_introspection": {
         "ExecutedVersion": "$LATEST",
@@ -2614,8 +2631,25 @@
           "user_whoami": "sbx_user1051",
           "platform_system": "Linux",
           "platform_machine": "x86_64",
-          "pwd_filemode": "drwxr-xr-x",
-          "opt_filemode": "drwxr-xr-x"
+          "pwd": "/var/task",
+          "paths": {
+            "_var_task_mode": "drwxr-xr-x",
+            "_var_task_uid": 998,
+            "_var_task_owner": "slicer",
+            "_var_task_gid": 995,
+            "_opt_mode": "drwxr-xr-x",
+            "_opt_uid": 0,
+            "_opt_owner": "root",
+            "_opt_gid": 0,
+            "_tmp_mode": "drwx------",
+            "_tmp_uid": 993,
+            "_tmp_owner": "sbx_user1051",
+            "_tmp_gid": 990,
+            "_lambda-entrypoint.sh_mode": "-rwxr-xr-x",
+            "_lambda-entrypoint.sh_uid": 0,
+            "_lambda-entrypoint.sh_owner": "root",
+            "_lambda-entrypoint.sh_gid": 0
+          }
         },
         "StatusCode": 200,
         "ResponseMetadata": {

@@ -169,7 +169,7 @@ class RegexTransformer:
 class KeyValueBasedTransformer:
     def __init__(
         self,
-        match_fn: Callable[[str, str], Optional[str]],
+        match_fn: Callable[[str, Any], Optional[str]],
         replacement: str,
         replace_reference: bool = True,
     ):
@@ -179,7 +179,7 @@ class KeyValueBasedTransformer:
 
     def transform(self, input_data: dict, *, ctx: TransformContext) -> dict:
         for k, v in input_data.items():
-            if match_result := self.match_fn(k, v):
+            if (match_result := self.match_fn(k, v)) is not None:
                 if self.replace_reference:
                     _register_serialized_reference_replacement(
                         ctx, reference_value=match_result, replacement=self.replacement

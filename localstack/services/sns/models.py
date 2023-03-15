@@ -88,11 +88,13 @@ class SnsSubscription(TypedDict):
 
 
 class SnsStore(BaseStore):
-    # maps topic ARN to topic's subscriptions
-    sns_subscriptions: Dict[str, List[SnsSubscription]] = LocalAttribute(default=dict)
+    # maps topic ARN to subscriptions ARN
+    topic_subscriptions: Dict[str, List[str]] = LocalAttribute(default=dict)
+    # maps subscription ARN to SnsSubscription
+    subscriptions: Dict[str, SnsSubscription] = LocalAttribute(default=dict)
 
-    # maps subscription ARN to subscription status
-    subscription_status: Dict[str, Dict] = LocalAttribute(default=dict)
+    # maps topic Arn to subscription validation token to subscription ARN
+    subscription_tokens: Dict[str, Dict[str, str]] = LocalAttribute(default=dict)
 
     # maps topic ARN to list of tags
     sns_tags: Dict[str, List[Dict]] = LocalAttribute(default=dict)
@@ -105,6 +107,15 @@ class SnsStore(BaseStore):
 
     # filter policy are stored as JSON string in subscriptions, store the decoded result Dict
     subscription_filter_policy: Dict[subscriptionARN, Dict] = LocalAttribute(default=dict)
+
+    def get_topic_subscriptions(self, topic_arn: str) -> List[SnsSubscription]:
+        topic_subscriptions = self.topic_subscriptions.get(topic_arn, [])
+        subscriptions = [
+            subscription
+            for subscription_arn in topic_subscriptions
+            if (subscription := self.subscriptions.get(subscription_arn))
+        ]
+        return subscriptions
 
 
 sns_stores = AccountRegionBundle("sns", SnsStore)

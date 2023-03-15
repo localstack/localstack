@@ -388,6 +388,7 @@ class DockerRunFlags:
     labels: Optional[Dict[str, str]]
     user: Optional[str]
     platform: Optional[DockerPlatform]
+    privileged: Optional[bool]
 
 
 class ContainerClient(metaclass=ABCMeta):
@@ -909,6 +910,7 @@ class Util:
         network: Optional[str] = None,
         user: Optional[str] = None,
         platform: Optional[DockerPlatform] = None,
+        privileged: Optional[bool] = None,
     ) -> DockerRunFlags:
         """Parses environment, volume and port flags passed as string
         :param additional_flags: String which contains the flag definitions
@@ -918,6 +920,7 @@ class Util:
         :param network: Existing network name (optional). Warning will be printed if network is overwritten in flags.
         :param user: User to run first process. Warning will be printed if user is overwritten in flags.
         :param platform: Platform to execute container. Warning will be printed if platform is overwritten in flags.
+        :param privileged: Run the container in privileged mode. Warning will be printed if overwritten in flags.
         :return: A DockerRunFlags object containing the env_vars, ports, mount, extra_hosts, network, and labels.
                 The result will return new objects if respective parameters were None and additional flags contained
                 a flag for that object, the same which are passed otherwise.
@@ -944,6 +947,14 @@ class Util:
                     cur_state = "user"
                 elif flag == "--platform":
                     cur_state = "platform"
+                elif flag == "--privileged":
+                    # Since this is a boolean flag with just one token, the
+                    # override is done here rather than the else block
+                    if privileged is not None:
+                        LOG.warning(
+                            f"Overwriting Docker container privileged flag {privileged} with new value {flag}"
+                        )
+                    privileged = True
                 else:
                     raise NotImplementedError(
                         f"Flag {flag} is currently not supported by this Docker client."
@@ -1021,7 +1032,6 @@ class Util:
                             f"Overwriting Docker container platform {platform} with new value {flag}"
                         )
                     platform = flag
-
                 cur_state = None
 
         return DockerRunFlags(
@@ -1033,6 +1043,7 @@ class Util:
             labels=labels,
             user=user,
             platform=platform,
+            privileged=privileged,
         )
 
     @staticmethod

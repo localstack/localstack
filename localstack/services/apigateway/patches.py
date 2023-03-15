@@ -11,7 +11,7 @@ from moto.apigateway.responses import APIGatewayResponse
 from moto.core.utils import camelcase_to_underscores
 
 from localstack.services.apigateway.helpers import TAG_KEY_CUSTOM_ID, apply_json_patch_safe
-from localstack.utils.common import str_to_bool, to_str
+from localstack.utils.common import str_to_bool
 from localstack.utils.patch import patch
 
 LOG = logging.getLogger(__name__)
@@ -35,44 +35,6 @@ def apply_patches():
 
     apigateway_models_Stage_init_orig = apigateway_models.Stage.__init__
     apigateway_models.Stage.__init__ = apigateway_models_Stage_init
-
-    @patch(APIGatewayResponse.resource_methods)
-    def apigateway_response_resource_methods(fn, self, request, *args, **kwargs):
-        result = fn(self, request, *args, **kwargs)
-
-        if self.method == "PUT" and self._get_param("requestParameters"):
-            request_parameters = self._get_param("requestParameters")
-            url_path_parts = self.path.split("/")
-            function_id = url_path_parts[2]
-            resource_id = url_path_parts[4]
-            method_type = url_path_parts[6]
-            resource = self.backend.get_resource(function_id, resource_id)
-            resource.resource_methods[method_type].request_parameters = request_parameters
-            method = resource.resource_methods[method_type]
-            result = 201, {}, json.dumps(method.to_json())
-        if len(result) != 3:
-            return result
-
-        if self.method == "PATCH":
-            patch_operations = self._get_param("patchOperations")
-            url_path_parts = self.path.split("/")
-            function_id = url_path_parts[2]
-            resource_id = url_path_parts[4]
-            method_type = url_path_parts[6]
-            method = self.backend.get_method(function_id, resource_id, method_type)
-            method.apply_operations(patch_operations)
-            return 200, {}, json.dumps(method.to_json())
-
-        authorization_type = self._get_param("authorizationType")
-        if authorization_type in ["CUSTOM", "COGNITO_USER_POOLS"]:
-            data = json.loads(result[2])
-            if not data.get("authorizerId"):
-                payload = json.loads(to_str(request.data))
-                if "authorizerId" in payload:
-                    data["authorizerId"] = payload["authorizerId"]
-                    result = result[0], result[1], json.dumps(data)
-                    return result
-        return 201, {}, result[2]
 
     @patch(APIGatewayResponse.integrations)
     def apigateway_response_integrations(fn, self, request, *args, **kwargs):
@@ -177,41 +139,6 @@ def apply_patches():
         ) = backend_model_apply_operations
 
     # fix data types for some json-patch operation values
-
-    def method_apply_operations(self, patch_operations):
-        params = self.request_parameters or {}
-        bool_params_prefixes = ["method.request.querystring", "method.request.header"]
-
-        for param, value in params.items():
-            for param_prefix in bool_params_prefixes:
-                if param.startswith(param_prefix):
-                    params[param] = str_to_bool(value)
-
-        for op in patch_operations:
-            path = op["path"]
-            value = op["value"]
-            if op["op"] == "replace":
-                if "/httpMethod" in path:
-                    self.http_method = value
-                if "/authorizationType" in path:
-                    self.authorization_type = value
-                if "/authorizerId" in path:
-                    self.authorizer_id = value
-                if "/authorizationScopes" in path:
-                    self.authorization_scopes = value
-                if "/apiKeyRequired" in path:
-                    self.api_key_required = str_to_bool(value) or False
-                if "/requestParameters" in path:
-                    self.request_parameters = value
-                if "/requestModels" in path:
-                    self.request_models = value
-                if "/operationName" in path:
-                    self.operation_name = value
-                if "/requestValidatorId" in path:
-                    self.request_validator_id = value
-        return self
-
-    apigateway_models.Method.apply_operations = method_apply_operations
 
     def method_response_apply_operations(self, patch_operations):
         result = method_response_apply_operations_orig(self, patch_operations)

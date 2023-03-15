@@ -176,7 +176,7 @@ def assign_to_path(target, path: str, value, delimiter: str = "."):
             target,
         )
         return
-    path_end = int(parts[-1]) if is_number(parts[-1]) else parts[-1]
+    path_end = int(parts[-1]) if is_number(parts[-1]) else parts[-1].replace("~1", "/")
     parent[path_end] = value
     return target
 
