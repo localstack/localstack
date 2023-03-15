@@ -140,7 +140,7 @@ RUN apt-get update && apt-get install -y autoconf automake cmake libsasl2-dev \
 
 # Install timescaledb into postgresql
 RUN (cd /tmp && git clone https://github.com/timescale/timescaledb.git) && \
-    (cd /tmp/timescaledb && git checkout 2.3.1 && ./bootstrap -DREGRESS_CHECKS=OFF && \
+    (cd /tmp/timescaledb && git checkout 2.10.1 && ./bootstrap -DREGRESS_CHECKS=OFF && \
       cd build && make && make install)
 
 # init environment and cache some dependencies
