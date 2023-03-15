@@ -37,6 +37,7 @@ def test_http_integration(apigateway_client, create_rest_apigw):
         resourceId=root_id,
         httpMethod="GET",
         type="HTTP",
+        # TODO: replace httpbin.org requests with httpserver/echo_http_server fixture
         uri="http://httpbin.org/robots.txt",
         integrationHttpMethod="GET",
     )
@@ -330,6 +331,7 @@ def test_put_integration_responses(apigateway_client):
         resourceId=root_id,
         httpMethod="GET",
         type="HTTP",
+        # TODO: replace httpbin.org requests with httpserver/echo_http_server fixture
         uri="http://httpbin.org/robots.txt",
         integrationHttpMethod="POST",
     )
@@ -412,6 +414,7 @@ def test_put_integration_responses(apigateway_client):
         resourceId=root_id,
         httpMethod="PUT",
         type="HTTP",
+        # TODO: replace httpbin.org requests with httpserver/echo_http_server fixture
         uri="http://httpbin.org/robots.txt",
         integrationHttpMethod="POST",
     )
@@ -475,6 +478,7 @@ def test_put_integration_response_with_response_template(apigateway_client):
         resourceId=root_id,
         httpMethod="GET",
         type="HTTP",
+        # TODO: replace httpbin.org requests with httpserver/echo_http_server fixture
         uri="http://httpbin.org/robots.txt",
         integrationHttpMethod="POST",
     )
@@ -522,6 +526,8 @@ def test_put_integration_validation(apigateway_client):
     aws_types = ["AWS", "AWS_PROXY"]
     types_requiring_integration_method = http_types + ["AWS"]
     types_not_requiring_integration_method = ["MOCK"]
+
+    # TODO: replace httpbin.org requests below with httpserver/echo_http_server fixture
 
     for _type in types_requiring_integration_method:
         # Ensure that integrations of these types fail if no integrationHttpMethod is provided

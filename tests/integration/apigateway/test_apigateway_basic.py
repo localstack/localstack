@@ -14,9 +14,7 @@ import xmltodict
 from botocore.exceptions import ClientError
 from jsonpatch import apply_patch
 from moto.apigateway import apigateway_backends
-from pytest_httpserver import HTTPServer
 from requests.structures import CaseInsensitiveDict
-from werkzeug import Request, Response
 
 from localstack import config
 from localstack.aws.accounts import get_aws_account_id
@@ -41,7 +39,7 @@ from localstack.utils.aws import resources as resource_util
 from localstack.utils.collections import select_attributes
 from localstack.utils.files import load_file
 from localstack.utils.http import safe_requests as requests
-from localstack.utils.json import clone, json_safe
+from localstack.utils.json import clone
 from localstack.utils.strings import short_uid, to_str
 from localstack.utils.sync import retry
 from tests.integration.apigateway.apigateway_fixtures import (
@@ -96,23 +94,6 @@ ApiGatewayLambdaProxyIntegrationTestResult = namedtuple(
         "path_with_replace",
     ],
 )
-
-
-@pytest.fixture(scope="function")
-def echo_http_server(httpserver: HTTPServer):
-    def _echo(request: Request) -> Response:
-        result = {
-            "data": request.data or "{}",
-            "headers": dict(request.headers),
-            "request_url": request.url,
-        }
-        response_body = json.dumps(json_safe(result))
-        return Response(response_body, status=200)
-
-    httpserver.expect_request("").respond_with_handler(_echo)
-    http_endpoint = httpserver.url_for("/")
-
-    yield http_endpoint
 
 
 class TestAPIGateway:

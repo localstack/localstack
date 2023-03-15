@@ -99,14 +99,12 @@ def test_cfn_apigateway_aws_integration(
     assert mappings[0] == "(none)"
 
 
-@pytest.mark.skip_offline
 @pytest.mark.aws_validated
-def test_cfn_apigateway_swagger_import(deploy_cfn_template, apigateway_client):
+def test_cfn_apigateway_swagger_import(deploy_cfn_template, apigateway_client, echo_http_server):
     api_name = f"rest-api-{short_uid()}"
-    int_uri = "http://httpbin.org/post"
     deploy_cfn_template(
         template=TEST_TEMPLATE_1,
-        parameters={"ApiName": api_name, "IntegrationUri": int_uri},
+        parameters={"ApiName": api_name, "IntegrationUri": f"{echo_http_server}/post"},
     )
 
     # get API details
@@ -122,7 +120,7 @@ def test_cfn_apigateway_swagger_import(deploy_cfn_template, apigateway_client):
     assert result.ok
     content = json.loads(to_str(result.content))
     assert content["data"] == "test 123"
-    assert content["url"].endswith("/post")
+    assert content["request_url"].endswith("/post")
 
 
 @pytest.mark.only_localstack

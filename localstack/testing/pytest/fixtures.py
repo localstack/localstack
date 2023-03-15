@@ -19,6 +19,7 @@ from botocore.exceptions import ClientError
 from botocore.regions import EndpointResolver
 from moto.core import BackendDict, BaseBackend
 from pytest_httpserver import HTTPServer
+from werkzeug import Request, Response
 
 from localstack import config
 from localstack.aws.accounts import get_aws_account_id
@@ -39,6 +40,7 @@ from localstack.utils.aws.resources import create_dynamodb_table
 from localstack.utils.collections import ensure_list
 from localstack.utils.functions import run_safe
 from localstack.utils.http import safe_requests as requests
+from localstack.utils.json import json_safe
 from localstack.utils.net import wait_for_port_open
 from localstack.utils.strings import short_uid, to_str
 from localstack.utils.sync import ShortCircuitWaitException, poll_condition, retry, wait_until
@@ -1999,3 +2001,20 @@ def appsync_create_api(appsync_client):
             appsync_client.delete_graphql_api(apiId=api)
         except Exception as e:
             LOG.debug(f"Error cleaning up AppSync API: {api}, {e}")
+
+
+@pytest.fixture(scope="function")
+def echo_http_server(httpserver: HTTPServer):
+    def _echo(request: Request) -> Response:
+        result = {
+            "data": request.data or "{}",
+            "headers": dict(request.headers),
+            "request_url": request.url,
+        }
+        response_body = json.dumps(json_safe(result))
+        return Response(response_body, status=200)
+
+    httpserver.expect_request("").respond_with_handler(_echo)
+    http_endpoint = httpserver.url_for("/")
+
+    return http_endpoint
