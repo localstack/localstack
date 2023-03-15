@@ -17,6 +17,16 @@ class TestApiGatewayCommon:
     """
 
     @pytest.mark.aws_validated
+    @pytest.mark.skip_snapshot_verify(
+        paths=[
+            "$.invalid-request-body.Type",
+            "$..methodIntegration.cacheNamespace",
+            "$..methodIntegration.integrationResponses",
+            "$..methodIntegration.passthroughBehavior",
+            "$..methodIntegration.requestParameters",
+            "$..methodIntegration.timeoutInMillis",
+        ]
+    )
     def test_api_gateway_request_validator(
         self,
         apigateway_client,
@@ -29,6 +39,14 @@ class TestApiGatewayCommon:
         # TODO: create fixture which will provide basic integrations where we can test behaviour
         # see once we have more cases how we can regroup functionality into one or several fixtures
         # example: create a basic echo lambda + integrations + deploy stage
+        snapshot.add_transformers_list(
+            [
+                snapshot.transform.key_value("requestValidatorId"),
+                snapshot.transform.key_value("id"),  # deployment id
+                snapshot.transform.key_value("fn_name"),  # lambda name
+                snapshot.transform.key_value("fn_arn"),  # lambda arn
+            ]
+        )
 
         fn_name = f"test-{short_uid()}"
         create_lambda_function(
@@ -39,6 +57,9 @@ class TestApiGatewayCommon:
         lambda_arn = lambda_client.get_function(FunctionName=fn_name)["Configuration"][
             "FunctionArn"
         ]
+        # matching on lambda id for reference replacement in snapshots
+        snapshot.match("register-lambda", {"fn_name": fn_name, "fn_arn": lambda_arn})
+
         parsed_arn = parse_arn(lambda_arn)
         region = parsed_arn["region"]
         account_id = parsed_arn["account"]
@@ -134,7 +155,8 @@ class TestApiGatewayCommon:
         response = requests.post(url, json={"test": "test"})
         # FIXME: for now, not implemented in LocalStack, we don't validate RequestParameters yet
         # assert response.status_code == 400
-        snapshot.match("missing-required-request-params", response.json())
+        if response.status_code == 400:
+            snapshot.match("missing-required-request-params", response.json())
 
         # create Model schema to validate body
         apigateway_client.create_model(

@@ -513,6 +513,11 @@ class ApigatewayProvider(ApigatewayApi, ServiceLifecycleHook):
                 continue
 
             elif path == "/requestValidatorId" and value not in rest_api.validators:
+                if not value:
+                    # you can remove a requestValidator by passing an empty string as a value
+                    patch_op = {"op": "remove", "path": path, "value": value}
+                    applicable_patch_operations.append(patch_op)
+                    continue
                 raise BadRequestException("Invalid Request Validator identifier specified")
 
             elif path.startswith("/requestModels/"):

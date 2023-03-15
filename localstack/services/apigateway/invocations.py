@@ -102,7 +102,7 @@ class RequestValidator:
             validate(instance=json.loads(self.context.data), schema=json.loads(model["schema"]))
             return True
         except ValidationError as e:
-            LOG.warning("failed to validate request body", e)
+            LOG.warning("failed to validate request body %s", e)
             return False
 
     # TODO implement parameters and headers
