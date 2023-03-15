@@ -532,7 +532,6 @@ class KmsProvider(KmsApi, ServiceLifecycleHook):
         result.pop("Plaintext")
         return GenerateDataKeyWithoutPlaintextResponse(**result)
 
-    # Currently LocalStack only calculates SHA256 digests no matter what the signing algorithm is.
     @handler("Sign", expand=False)
     def sign(self, context: RequestContext, request: SignRequest) -> SignResponse:
         key = self._get_key(context, request.get("KeyId"))
