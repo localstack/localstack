@@ -60,25 +60,20 @@ def test_bucket_versioning(cfn_client, deploy_cfn_template, s3_client):
     assert bucket_version["Status"] == "Enabled"
 
 
-def test_cors_configuration(cfn_client, deploy_cfn_template, s3_client):
+def test_cors_configuration(cfn_client, deploy_cfn_template, s3_client, snapshot):
+    snapshot.add_transformer(snapshot.transform.cloudformation_api())
+    snapshot.add_transformer(snapshot.transform.s3_api())
+
+    bucket_name = f"ls-bucket-{short_uid()}"
     result = deploy_cfn_template(
-        template_path=os.path.join(os.path.dirname(__file__), "../../templates/s3_cors_bucket.yaml")
+        template_path=os.path.join(
+            os.path.dirname(__file__), "../../templates/s3_cors_bucket.yaml"
+        ),
+        parameters={"BucketName": bucket_name},
+        max_wait=300,
     )
     assert "BucketName" in result.outputs
     bucket_name = result.outputs["BucketName"]
-    print(bucket_name)
     cors_info = s3_client.get_bucket_cors(Bucket=bucket_name)
 
-    expected_cors_info = [
-        {
-            "ID": "test-cors-id",
-            "AllowedHeaders": ["*", "x-amz-*"],
-            "AllowedMethods": ["GET"],
-            "AllowedOrigins": ["*"],
-            "ExposeHeaders": ["Date"],
-            "MaxAgeSeconds": 3600,
-        }
-    ]
-
-    assert bucket_name == "test-cors-bucket"
-    assert cors_info["CORSRules"] == expected_cors_info
+    snapshot.match("cors_info", cors_info)

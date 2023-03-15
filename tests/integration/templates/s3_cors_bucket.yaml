@@ -1,8 +1,11 @@
+Parameters:
+  BucketName:
+    Type: String
 Resources:
   LocalBucket:
     Type: AWS::S3::Bucket
     Properties:
-      BucketName: test-cors-bucket
+      BucketName: !Ref BucketName
       AccessControl: PublicRead
       CorsConfiguration:
         CORSRules:

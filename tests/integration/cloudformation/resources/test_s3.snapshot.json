@@ -1,0 +1,6 @@
+{
+  "tests/integration/cloudformation/resources/test_s3.py::test_cors_configuration": {
+    "recorded-date": "15-03-2023, 23:33:02",
+    "recorded-content": {}
+  }
+}
