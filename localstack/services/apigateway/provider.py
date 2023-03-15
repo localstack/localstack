@@ -453,12 +453,11 @@ class ApigatewayProvider(ApigatewayApi, ServiceLifecycleHook):
         response: Method = call_moto(context)
         remove_empty_attributes_from_method(response)
 
-        # TODO: refactor into function for more resources to add (RequestValidator has the same functionality)
-        resource_path = moto_rest_api.resources[resource_id].get_path()
+        # TODO: validate path format
+        method_path = f"/{moto_rest_api.resources[resource_id].get_path()}{http_method}"
         for model_name in models_to_add:
-            path_for_model = rest_api_container.models_in_use.setdefault(model_name, [])
-            # TODO: need to reconstruct full path from here, validate
-            path_for_model.append(f"/{resource_path}{http_method}")
+            paths_for_model = rest_api_container.models_in_use.setdefault(model_name, [])
+            paths_for_model.append(method_path)
 
         # this is straight from the moto patch, did not test it yet but has the same functionality
         # FIXME: check if still necessary after testing Authorizers
@@ -489,6 +488,7 @@ class ApigatewayProvider(ApigatewayApi, ServiceLifecycleHook):
         applicable_patch_operations = []
         modifying_auth_type = False
         modified_authorizer_id = False
+        models_before_patch = set(moto_method.request_models.values())
         for patch_operation in patch_operations:
             op = patch_operation.get("op")
             path = patch_operation.get("path")
@@ -547,6 +547,21 @@ class ApigatewayProvider(ApigatewayApi, ServiceLifecycleHook):
 
         # TODO: test with multiple patch operations which would not be compatible between each other
         _patch_api_gateway_entity(moto_method, applicable_patch_operations)
+
+        models_after_patch = set(moto_method.request_models.values())
+        if models_before_patch != models_after_patch:
+            # TODO: validate path format
+            method_path = f"/{moto_resource.get_path()}{http_method}"
+            to_remove = models_before_patch - models_after_patch
+            for model_name in to_remove:
+                in_use = rest_api.models_in_use.get(model_name)
+                if in_use and method_path in in_use:
+                    in_use.remove(method_path)
+
+            to_add = models_after_patch - models_before_patch
+            for model_name in to_add:
+                paths_for_model = rest_api.models_in_use.setdefault(model_name, [])
+                paths_for_model.append(method_path)
 
         response = moto_method.to_json()
         remove_empty_attributes_from_method(response)
@@ -1341,9 +1356,9 @@ class ApigatewayProvider(ApigatewayApi, ServiceLifecycleHook):
             raise NotFoundException(f"Invalid model name specified: {model_name}")
 
         models_in_use = store.rest_apis[rest_api_id].models_in_use
-        if model_name in models_in_use:
+        if in_use := models_in_use.get(model_name):
             raise ConflictException(
-                f"Cannot delete model '{model_name}', is referenced in method request: {models_in_use[model_name][0]}"
+                f"Cannot delete model '{model_name}', is referenced in method request: {in_use[0]}"
             )
 
         store.rest_apis[rest_api_id].models.pop(model_name, None)
@@ -1411,6 +1426,15 @@ def is_greedy_path(path_part: str) -> bool:
 
 def is_variable_path(path_part: str) -> bool:
     return path_part.startswith("{") and path_part.endswith("}")
+
+
+def mark_model_in_use(
+    rest_api: RestApiContainer, model_name: str, resource_path: str, http_method: str
+):
+    # TODO: refactor into function for more resources to add (RequestValidator has the same functionality)
+    paths_for_model = rest_api.models_in_use.setdefault(model_name, [])
+    # TODO: need to reconstruct full path from here, validate
+    paths_for_model.append(f"/{resource_path}{http_method}")
 
 
 def create_custom_context(
