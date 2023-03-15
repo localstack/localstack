@@ -899,6 +899,46 @@ class TestApiGatewayApi:
             apigateway_client.delete_model(restApiId=api_id, modelName="MySchemaTwo")
         snapshot.match("delete-model-used-2", e.value.response)
 
+        # create a subresource using MySchemaTwo
+        resource = apigateway_client.create_resource(
+            restApiId=api_id, parentId=root_id, pathPart="test"
+        )
+        put_method_response = apigateway_client.put_method(
+            restApiId=api_id,
+            resourceId=resource["id"],
+            httpMethod="ANY",
+            authorizationType="NONE",
+            requestModels={"application/json": "MySchemaTwo"},
+        )
+        snapshot.match("put-method-2-request-models", put_method_response)
+
+        # assert that the error raised gives the path of the subresource
+        with pytest.raises(ClientError) as e:
+            apigateway_client.delete_model(restApiId=api_id, modelName="MySchemaTwo")
+        snapshot.match("delete-model-used-by-2-method", e.value.response)
+
+        patch_operations = [
+            {"op": "remove", "path": "/requestModels/application~1json", "value": "MySchemaTwo"},
+        ]
+
+        # remove the Model from the subresource
+        update_method_model = apigateway_client.update_method(
+            restApiId=api_id,
+            resourceId=resource["id"],
+            httpMethod="ANY",
+            patchOperations=patch_operations,
+        )
+        snapshot.match("update-method-model-2", update_method_model)
+
+        if is_aws_cloud():
+            # just to be sure the change is properly set in AWS
+            time.sleep(3)
+
+        # assert that the error raised gives the path of the resource now
+        with pytest.raises(ClientError) as e:
+            apigateway_client.delete_model(restApiId=api_id, modelName="MySchemaTwo")
+        snapshot.match("delete-model-used-by-method-1", e.value.response)
+
     @pytest.mark.aws_validated
     def test_put_method_validation(
         self,

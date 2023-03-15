@@ -453,8 +453,7 @@ class ApigatewayProvider(ApigatewayApi, ServiceLifecycleHook):
         response: Method = call_moto(context)
         remove_empty_attributes_from_method(response)
 
-        # TODO: validate path format
-        method_path = f"/{moto_rest_api.resources[resource_id].get_path()}{http_method}"
+        method_path = f"{moto_rest_api.resources[resource_id].get_path()}/{http_method}"
         for model_name in models_to_add:
             paths_for_model = rest_api_container.models_in_use.setdefault(model_name, [])
             paths_for_model.append(method_path)
@@ -550,8 +549,7 @@ class ApigatewayProvider(ApigatewayApi, ServiceLifecycleHook):
 
         models_after_patch = set(moto_method.request_models.values())
         if models_before_patch != models_after_patch:
-            # TODO: validate path format
-            method_path = f"/{moto_resource.get_path()}{http_method}"
+            method_path = f"{moto_resource.get_path()}/{http_method}"
             to_remove = models_before_patch - models_after_patch
             for model_name in to_remove:
                 in_use = rest_api.models_in_use.get(model_name)
@@ -1358,7 +1356,7 @@ class ApigatewayProvider(ApigatewayApi, ServiceLifecycleHook):
         models_in_use = store.rest_apis[rest_api_id].models_in_use
         if in_use := models_in_use.get(model_name):
             raise ConflictException(
-                f"Cannot delete model '{model_name}', is referenced in method request: {in_use[0]}"
+                f"Cannot delete model '{model_name}', is referenced in method request: {in_use[-1]}"
             )
 
         store.rest_apis[rest_api_id].models.pop(model_name, None)
