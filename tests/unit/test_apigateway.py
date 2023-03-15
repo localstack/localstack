@@ -166,6 +166,14 @@ class ApiGatewayPathsTest(unittest.TestCase):
     def test_request_validate_body_with_no_request_model(self):
         apigateway_client = self._mock_client()
         apigateway_client.get_request_validator.return_value = {"validateRequestBody": True}
+        empty_schema = json.dumps(
+            {
+                "$schema": "http://json-schema.org/draft-04/schema#",
+                "title": "Empty Schema",
+                "type": "object",
+            }
+        )
+        apigateway_client.get_model.return_value = {"schema": empty_schema}
         ctx = ApiInvocationContext("POST", "/", '{"id":"1"}', {})
         ctx.api_id = "deadbeef"
         ctx.resource = {
@@ -177,7 +185,7 @@ class ApiGatewayPathsTest(unittest.TestCase):
             }
         }
         validator = RequestValidator(ctx, apigateway_client)
-        self.assertFalse(validator.is_request_valid())
+        self.assertTrue(validator.is_request_valid())
 
     def test_request_validate_body_with_no_model_for_schema_name(self):
         apigateway_client = self._mock_client()
