@@ -380,6 +380,11 @@ class TestLambdaBehavior:
         invoke_result = lambda_client.invoke(FunctionName=func_name)
         snapshot.match("invoke_runtime_arm_introspection", invoke_result)
 
+    @pytest.mark.skipif(
+        not use_docker(),
+        reason="Monkeypatching of Docker flags not applicable if run locally",
+    )
+    @pytest.mark.skip_snapshot_verify(condition=is_old_provider, paths=["$..LogResult"])
     @pytest.mark.aws_validated
     def test_runtime_ulimits(self, lambda_client, create_lambda_function, snapshot, monkeypatch):
         """We consider ulimits parity as opt-in because development environments could hit these limits unlike in
