@@ -53,7 +53,7 @@ def localstack(debug, profile):
     from localstack.utils.files import cache_dir
 
     # overwrite the config variable here to defer import of cache_dir
-    if not config.LEGACY_DIRECTORIES and not os.environ.get("LOCALSTACK_VOLUME_DIR", "").strip():
+    if not os.environ.get("LOCALSTACK_VOLUME_DIR", "").strip():
         config.VOLUME_DIR = str(cache_dir() / "volume")
 
 

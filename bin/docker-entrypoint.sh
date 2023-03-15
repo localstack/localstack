@@ -35,25 +35,6 @@ elif [[ -f /usr/lib/localstack/.light-version ]] || [[ -f /usr/lib/localstack/.f
     echo ""
 fi
 
-# FIXME: remove with 2.0
-# the Dockerfile creates .marker file that will be overwritten if a volume is mounted into /tmp/localstack
-if [ ! -f /tmp/localstack/.marker ]; then
-    # unless LEGACY_DIRECTORIES is explicitly set to 1, print an error message and exit with a non-zero exit code
-    if [[ -z ${LEGACY_DIRECTORIES} ]] || [[ ${LEGACY_DIRECTORIES} == "0" ]]; then
-        echo "ERROR"
-        echo "============================================================================"
-        echo "  It seems you are mounting the LocalStack volume into /tmp/localstack."
-        echo "  This will break the LocalStack container! Please update your volume mount"
-        echo "  destination to /var/lib/localstack."
-        echo "  You can suppress this error by setting LEGACY_DIRECTORIES=1."
-        echo ""
-        echo "  See: https://github.com/localstack/localstack/issues/6398"
-        echo "============================================================================"
-        echo ""
-        exit 1
-    fi
-fi
-
 # This stores the PID of supervisord for us after forking
 suppid=0
 
@@ -91,10 +72,6 @@ test -d ${LOG_DIR} || mkdir -p ${LOG_DIR}
 
 cat /dev/null > ${LOG_DIR}/localstack_infra.log
 cat /dev/null > ${LOG_DIR}/localstack_infra.err
-
-# FIXME for backwards compatibility with LEGACY_DIRECTORIES=1
-test -f /tmp/localstack_infra.log || ln -s ${LOG_DIR}/localstack_infra.log /tmp/localstack_infra.log
-test -f /tmp/localstack_infra.err || ln -s ${LOG_DIR}/localstack_infra.err /tmp/localstack_infra.err
 
 # run modern runtime init scripts before starting localstack
 test -d /etc/localstack/init/boot.d && /opt/code/localstack/.venv/bin/python -m localstack.runtime.init BOOT
