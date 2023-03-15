@@ -1507,8 +1507,8 @@ class S3ResponseSerializer(RestXMLResponseSerializer):
         )
         root = ETree.Element("Error", attr)
         self._add_error_tags(error, root, mime_type)
-        request_id = ETree.SubElement(root, "RequestId")
-        request_id.text = request_id
+        request_id_element = ETree.SubElement(root, "RequestId")
+        request_id_element.text = request_id
         self._add_additional_error_tags(error, root, shape, mime_type)
 
         response.set_response(self._encode_payload(self._node_to_string(root, mime_type)))
