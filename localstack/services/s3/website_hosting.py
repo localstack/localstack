@@ -19,7 +19,7 @@ from localstack.aws.api.s3 import (
     RoutingRules,
     WebsiteConfiguration,
 )
-from localstack.aws.protocol.serializer import gen_amzn_requestid_long
+from localstack.aws.protocol.serializer import gen_amzn_requestid
 from localstack.constants import S3_STATIC_WEBSITE_HOSTNAME
 from localstack.http import Request, Response, Router
 from localstack.http.dispatcher import Handler
@@ -90,7 +90,9 @@ def _website_handler(
     :return: Response object
     """
     if request.method != "GET":
-        return Response(_create_405_error_string(request.method), status=405)
+        return Response(
+            _create_405_error_string(request.method, request_id=gen_amzn_requestid()), status=405
+        )
 
     try:
         return _serve_key(request, bucket_name, path)
@@ -101,6 +103,7 @@ def _website_handler(
             code=e.code,
             message=e.message,
             resource_name=resource_name,
+            request_id=gen_amzn_requestid(),
             from_error_document=getattr(e, "ErrorDocumentKey", None),
         )
         return Response(response_body, status=e.status_code)
@@ -343,7 +346,7 @@ def _flatten_html_response(fn: Callable[[...], str]):
 
 @_flatten_html_response
 def _create_404_error_string(
-    code: str, message: str, resource_name: str, from_error_document: str = None
+    code: str, message: str, resource_name: str, request_id: str, from_error_document: str = None
 ) -> str:
     # TODO: the nested error could be permission related
     #  permission are not enforced currently
@@ -356,7 +359,7 @@ def _create_404_error_string(
             <li>Code: {code}</li>
             <li>Message: {message}</li>
             <li>{resource_key}: {resource_name}</li>
-            <li>RequestId: {gen_amzn_requestid_long()}</li>
+            <li>RequestId: {request_id}</li>
             <li>HostId: h6t23Wl2Ndijztq+COn9kvx32omFVRLLtwk36D6+2/CIYSey+Uox6kBxRgcnAASsgnGwctU6zzU=</li>
         </ul>
         {_create_nested_404_error_string(from_error_document)}
@@ -379,7 +382,7 @@ def _create_nested_404_error_string(error_document_key: str) -> str:
 
 
 @_flatten_html_response
-def _create_405_error_string(method: str) -> str:
+def _create_405_error_string(method: str, request_id: str) -> str:
     return f"""<html>
     <head><title>405 Method Not Allowed</title></head>
     <body>
@@ -389,7 +392,7 @@ def _create_405_error_string(method: str) -> str:
             <li>Message: The specified method is not allowed against this resource.</li>
             <li>Method: {method.upper()}</li>
             <li>ResourceType: OBJECT</li>
-            <li>RequestId: {gen_amzn_requestid_long()}</li>
+            <li>RequestId: {request_id}</li>
             <li>HostId: h6t23Wl2Ndijztq+COn9kvx32omFVRLLtwk36D6+2/CIYSey+Uox6kBxRgcnAASsgnGwctU6zzU=</li>
         </ul>
         <hr/>

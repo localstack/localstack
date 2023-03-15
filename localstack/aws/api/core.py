@@ -4,6 +4,8 @@ from typing import Any, NamedTuple, Optional, Type, Union
 
 from localstack.aws.connect import InternalRequestParameters
 
+from localstack.utils.strings import long_uid
+
 if sys.version_info >= (3, 8):
     from typing import Protocol, TypedDict
 else:
@@ -91,6 +93,8 @@ class RequestContext:
     """The region the request is made to."""
     account_id: Optional[str]
     """The account the request is made from."""
+    request_id: Optional[str]
+    """The request ID"""
     service_request: Optional[ServiceRequest]
     """The AWS operation parameters."""
     service_response: Optional[ServiceResponse]
@@ -106,6 +110,7 @@ class RequestContext:
         self.region = None
         self.account_id = None
         self.request = None
+        self.request_id = long_uid()
         self.service_request = None
         self.service_response = None
         self.service_exception = None
