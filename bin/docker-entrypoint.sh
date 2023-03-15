@@ -76,48 +76,9 @@ cat /dev/null > ${LOG_DIR}/localstack_infra.err
 # run modern runtime init scripts before starting localstack
 test -d /etc/localstack/init/boot.d && /opt/code/localstack/.venv/bin/python -m localstack.runtime.init BOOT
 
+# TODO: maybe we can simplify this by making supervisord block the main process?
 supervisord -c /etc/supervisord.conf &
 suppid="$!"
-
-
-# FIXME: remove with 2.0
-if [[ ! $INIT_SCRIPTS_PATH ]]
-then
-  INIT_SCRIPTS_PATH=/docker-entrypoint-initaws.d
-fi
-# check if the init script directory exists (by default it does not)
-if [ -d "$INIT_SCRIPTS_PATH" ]; then
-    # unless LEGACY_INIT_DIR is explicitly set to 1 print a prominent warning
-    if [[ -z ${LEGACY_INIT_DIR} ]] || [[ ${LEGACY_INIT_DIR} == "0" ]]; then
-        echo "WARNING"
-        echo "============================================================================"
-        echo "  It seems you are using an init script in $INIT_SCRIPTS_PATH."
-        echo "  The INIT_SCRIPTS_PATH have been deprecated with v1.1.0 and will be removed in future releases"
-        echo "  of LocalStack. Please use /etc/localstack/init/ready.d instead."
-        echo "  You can suppress this warning by setting LEGACY_INIT_DIR=1."
-        echo ""
-        echo "  See: https://github.com/localstack/localstack/issues/7257"
-        echo "============================================================================"
-        echo ""
-    fi
-fi
-function run_startup_scripts {
-  until grep -q '^Ready.' ${LOG_DIR}/localstack_infra.log >/dev/null 2>&1 ; do
-    echo "Waiting for all LocalStack services to be ready"
-    sleep 7
-  done
-
-  curl -XPUT -s -H "Content-Type: application/json" -d '{"features:initScripts":"initializing"}' "http://localhost:$EDGE_PORT/_localstack/health" > /dev/null
-  for f in $INIT_SCRIPTS_PATH/*; do
-    case "$f" in
-      *.sh)     echo "$0: running $f"; . "$f" ;;
-      *)        echo "$0: ignoring $f" ;;
-    esac
-    echo
-  done
-  curl -XPUT -s -H "Content-Type: application/json" -d '{"features:initScripts":"initialized"}' "http://localhost:$EDGE_PORT/_localstack/health" > /dev/null
-}
-run_startup_scripts &
 
 # Run tail on the localstack log files forever until we are told to terminate
 if [ "$DISABLE_TERM_HANDLER" == "" ]; then
