@@ -50,7 +50,7 @@ COPY aws-lambda-rie {rapid_entrypoint}
 COPY code/ /var/task
 """
 
-PULLED_IMAGES: set[str] = set()
+PULLED_IMAGES: set[(str, DockerPlatform)] = set()
 
 HOT_RELOADING_ENV_VARIABLE = "LOCALSTACK_HOT_RELOADING_PATHS"
 
@@ -380,9 +380,11 @@ class DockerRuntimeExecutor(RuntimeExecutor):
         if function_version.config.code:
             function_version.config.code.prepare_for_execution()
             image_name = resolver.get_image_for_runtime(function_version.config.runtime)
-            if image_name not in PULLED_IMAGES:
-                CONTAINER_CLIENT.pull_image(image_name)
-                PULLED_IMAGES.add(image_name)
+            platform = docker_platform(function_version.config.architectures[0])
+            # Pull image for a given platform upon function creation such that invocations do not time out.
+            if (image_name, platform) not in PULLED_IMAGES:
+                CONTAINER_CLIENT.pull_image(image_name, platform)
+                PULLED_IMAGES.add((image_name, platform))
             if config.LAMBDA_PREBUILD_IMAGES:
                 target_path = function_version.config.code.get_unzipped_code_location()
                 prepare_image(target_path, function_version)
