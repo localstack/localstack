@@ -453,8 +453,10 @@ class DynamoDBIntegration(BackendIntegration):
         response = self.response_templates.render(invocation_context, response=response_obj)
 
         # construct final response
-        response = requests_response(response)
-        invocation_context.response = response
+        # TODO: set response header based on response templates
+        headers = {HEADER_CONTENT_TYPE: APPLICATION_JSON}
+        response = requests_response(response, headers=headers)
+
         return response
 
 

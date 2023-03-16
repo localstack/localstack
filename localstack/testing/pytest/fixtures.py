@@ -19,6 +19,7 @@ from botocore.exceptions import ClientError
 from botocore.regions import EndpointResolver
 from moto.core import BackendDict, BaseBackend
 from pytest_httpserver import HTTPServer
+from werkzeug import Request, Response
 
 from localstack import config
 from localstack.aws.accounts import get_aws_account_id
@@ -31,7 +32,7 @@ from localstack.services.stores import (
     LocalAttribute,
 )
 from localstack.testing.aws.cloudformation_utils import load_template_file, render_template
-from localstack.testing.aws.util import get_lambda_logs
+from localstack.testing.aws.util import get_lambda_logs, is_aws_cloud
 from localstack.utils import testutil
 from localstack.utils.aws import aws_stack
 from localstack.utils.aws.client import SigningHttpClient
@@ -39,6 +40,7 @@ from localstack.utils.aws.resources import create_dynamodb_table
 from localstack.utils.collections import ensure_list
 from localstack.utils.functions import run_safe
 from localstack.utils.http import safe_requests as requests
+from localstack.utils.json import json_safe
 from localstack.utils.net import wait_for_port_open
 from localstack.utils.strings import short_uid, to_str
 from localstack.utils.sync import ShortCircuitWaitException, poll_condition, retry, wait_until
@@ -81,6 +83,9 @@ if TYPE_CHECKING:
     from mypy_boto3_transcribe import TranscribeClient
 
 LOG = logging.getLogger(__name__)
+
+# URL of public HTTP echo server, used primarily for AWS parity/snapshot testing
+PUBLIC_HTTP_ECHO_SERVER_URL = "http://httpbin.org"
 
 
 def _client(service, region_name=None, aws_access_key_id=None, *, additional_config=None):
@@ -1999,3 +2004,34 @@ def appsync_create_api(appsync_client):
             appsync_client.delete_graphql_api(apiId=api)
         except Exception as e:
             LOG.debug(f"Error cleaning up AppSync API: {api}, {e}")
+
+
+@pytest.fixture
+def echo_http_server(httpserver: HTTPServer):
+    """Spins up a local HTTP echo server and returns the endpoint URL"""
+
+    def _echo(request: Request) -> Response:
+        result = {
+            "data": request.data or "{}",
+            "headers": dict(request.headers),
+            "url": request.url,
+            "method": request.method,
+        }
+        response_body = json.dumps(json_safe(result))
+        return Response(response_body, status=200)
+
+    httpserver.expect_request("").respond_with_handler(_echo)
+    http_endpoint = httpserver.url_for("/")
+
+    return http_endpoint
+
+
+@pytest.fixture
+def echo_http_server_post(echo_http_server):
+    """
+    Returns an HTTP echo server URL for POST requests that work both locally and for parity tests (against real AWS)
+    """
+    if is_aws_cloud():
+        return f"{PUBLIC_HTTP_ECHO_SERVER_URL}/post"
+
+    return f"{echo_http_server}/post"

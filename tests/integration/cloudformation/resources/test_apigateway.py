@@ -10,7 +10,7 @@ from localstack.utils.files import load_file
 from localstack.utils.run import to_str
 from localstack.utils.strings import to_bytes
 from localstack.utils.testutil import create_zip_file
-from tests.integration.apigateway_fixtures import api_invoke_url
+from tests.integration.apigateway.apigateway_fixtures import api_invoke_url
 
 TEST_TEMPLATE_1 = """
 AWSTemplateFormatVersion: '2010-09-09'
@@ -99,14 +99,14 @@ def test_cfn_apigateway_aws_integration(
     assert mappings[0] == "(none)"
 
 
-@pytest.mark.skip_offline
 @pytest.mark.aws_validated
-def test_cfn_apigateway_swagger_import(deploy_cfn_template, apigateway_client):
+def test_cfn_apigateway_swagger_import(
+    deploy_cfn_template, apigateway_client, echo_http_server_post
+):
     api_name = f"rest-api-{short_uid()}"
-    int_uri = "http://httpbin.org/post"
     deploy_cfn_template(
         template=TEST_TEMPLATE_1,
-        parameters={"ApiName": api_name, "IntegrationUri": int_uri},
+        parameters={"ApiName": api_name, "IntegrationUri": echo_http_server_post},
     )
 
     # get API details

@@ -17,7 +17,7 @@ from localstack.constants import ENV_INTERNAL_TEST_RUN
 from localstack.runtime import events
 from localstack.services import infra
 from localstack.utils.common import safe_requests
-from tests.integration.apigateway_fixtures import delete_rest_api, import_rest_api
+from tests.integration.apigateway.apigateway_fixtures import delete_rest_api, import_rest_api
 from tests.integration.test_es import install_async as es_install_async
 from tests.integration.test_opensearch import install_async as opensearch_install_async
 from tests.integration.test_terraform import TestTerraform

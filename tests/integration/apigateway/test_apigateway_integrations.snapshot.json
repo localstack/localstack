@@ -1,5 +1,5 @@
 {
-  "tests/integration/test_apigateway_integrations.py::test_lambda_proxy_integration": {
+  "tests/integration/apigateway/test_apigateway_integrations.py::test_lambda_proxy_integration": {
     "recorded-date": "22-02-2023, 11:19:13",
     "recorded-content": {
       "rest-api-creation": {
