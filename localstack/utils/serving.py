@@ -125,9 +125,9 @@ class Server(abc.ABC):
             if self._started.is_set():
                 return False
 
-            self._thread = self.do_start_thread()
-            self._started.set()
-            return True
+        _thread = self.do_start_thread()
+        self._set_thread_started(_thread)
+        return True
 
     def join(self, timeout=None):
         """
@@ -163,8 +163,11 @@ class Server(abc.ABC):
         can be overridden to if the subclass wants to return its own thread.
         """
 
-        def _run(*_):
+        def _run(*_, _thread):
             try:
+                # make sure to set the startup flags here, allowing servers to call is_running() within do_run()
+                self._set_thread_started(_thread)
+
                 return self.do_run()
             except StopServer:
                 LOG.debug("stopping server %s", self.url)
@@ -186,3 +189,11 @@ class Server(abc.ABC):
         Called when shutdown() is performed. (Should be overridden by subclasses).
         """
         pass
+
+    def _set_thread_started(self, _thread: FuncThread):
+        """
+        Helper method that updates self._thread and sets the self._started flag, using the lifecycle lock
+        """
+        with self._lifecycle_lock:
+            self._thread = _thread
+            self._started.set()

@@ -1880,7 +1880,7 @@ def ses_verify_identity(ses_client):
 
 
 @pytest.fixture
-def cleanups(ec2_client):
+def cleanups():
     cleanup_fns = []
 
     yield cleanup_fns
