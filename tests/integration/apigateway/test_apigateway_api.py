@@ -1,3 +1,4 @@
+import json
 import logging
 import os
 import time
@@ -1013,6 +1014,7 @@ class TestApiGatewayApi:
         )
         snapshot.match("update-method-remove", update_method_response_remove)
 
+    @pytest.mark.aws_validated
     def test_update_method_validation(
         self,
         apigateway_client,
@@ -1184,3 +1186,217 @@ class TestApiGatewayApi:
                 patchOperations=patch_operations_add,
             )
         snapshot.match("wrong-req-validator-id", e.value.response)
+
+    @pytest.mark.aws_validated
+    def test_model_lifecycle(
+        self,
+        apigateway_client,
+        apigw_create_rest_api,
+        snapshot,
+    ):
+        snapshot.add_transformer(SortingTransformer("items", lambda x: x["name"]))
+        # taken from https://docs.aws.amazon.com/apigateway/latest/api/API_CreateModel.html#API_CreateModel_Examples
+        response = apigw_create_rest_api(
+            name=f"test-api-{short_uid()}", description="testing resource model lifecycle"
+        )
+        api_id = response["id"]
+
+        create_model_response = apigateway_client.create_model(
+            name="CalcOutput",
+            restApiId=api_id,
+            contentType="application/json",
+            description="Calc output model",
+            schema='{\n\t"title": "Calc output",\n\t"type": "object",\n\t"properties": {\n\t\t"a": {\n\t\t\t"type": "number"\n\t\t},\n\t\t"b": {\n\t\t\t"type": "number"\n\t\t},\n\t\t"op": {\n\t\t\t"description": "operation of +, -, * or /",\n\t\t\t"type": "string"\n\t\t},\n\t\t"c": {\n\t\t    "type": "number"\n\t\t}\n\t},\n\t"required": ["a", "b", "op"]\n}\n',
+        )
+        snapshot.match("create-model", create_model_response)
+
+        get_models_response = apigateway_client.get_models(restApiId=api_id)
+        snapshot.match("get-models", get_models_response)
+
+        # manually assert the presence of 2 default models, Error and Empty, as snapshots will replace names
+        model_names = [model["name"] for model in get_models_response["items"]]
+        assert "Error" in model_names
+        assert "Empty" in model_names
+
+        get_model_response = apigateway_client.get_model(restApiId=api_id, modelName="CalcOutput")
+        snapshot.match("get-model", get_model_response)
+
+        del_model_response = apigateway_client.delete_model(
+            restApiId=api_id, modelName="CalcOutput"
+        )
+        snapshot.match("del-model", del_model_response)
+
+    @pytest.mark.aws_validated
+    def test_model_validation(
+        self,
+        apigateway_client,
+        apigw_create_rest_api,
+        snapshot,
+    ):
+        response = apigw_create_rest_api(
+            name=f"test-api-{short_uid()}", description="testing resource model lifecycle"
+        )
+        api_id = response["id"]
+
+        fake_api_id = "abcde0"
+
+        with pytest.raises(ClientError) as e:
+            apigateway_client.create_model(
+                name="MySchema",
+                restApiId=fake_api_id,
+                contentType="application/json",
+                description="Test model",
+                schema=json.dumps({"title": "MySchema", "type": "object"}),
+            )
+
+        snapshot.match("create-model-wrong-id", e.value.response)
+
+        with pytest.raises(ClientError) as e:
+            apigateway_client.get_models(restApiId=fake_api_id)
+        snapshot.match("get-models-wrong-id", e.value.response)
+
+        with pytest.raises(ClientError) as e:
+            apigateway_client.get_model(restApiId=fake_api_id, modelName="MySchema")
+        snapshot.match("get-model-wrong-id", e.value.response)
+
+        with pytest.raises(ClientError) as e:
+            apigateway_client.delete_model(restApiId=fake_api_id, modelName="MySchema")
+        snapshot.match("del-model-wrong-id", e.value.response)
+
+        # assert that creating a model with an empty description works
+        response = apigateway_client.create_model(
+            name="MySchema",
+            restApiId=api_id,
+            contentType="application/json",
+            description="",
+            schema=json.dumps({"title": "MySchema", "type": "object"}),
+        )
+        assert response["ResponseMetadata"]["HTTPStatusCode"] == 201
+
+        with pytest.raises(ClientError) as e:
+            apigateway_client.create_model(
+                name="MySchema",
+                restApiId=api_id,
+                contentType="application/json",
+                description="",
+                schema=json.dumps({"title": "MySchema", "type": "object"}),
+            )
+        snapshot.match("create-model-already-exists", e.value.response)
+
+        with pytest.raises(ClientError) as e:
+            apigateway_client.create_model(
+                name="",
+                restApiId=api_id,
+                contentType="application/json",
+                description="",
+                schema=json.dumps({"title": "MySchema", "type": "object"}),
+            )
+        snapshot.match("create-model-empty-name", e.value.response)
+
+        with pytest.raises(ClientError) as e:
+            apigateway_client.create_model(
+                name="MyEmptySchema",
+                restApiId=api_id,
+                contentType="application/json",
+                description="",
+                schema="",
+            )
+
+        snapshot.match("create-model-empty-schema", e.value.response)
+
+        with pytest.raises(ClientError) as e:
+            apigateway_client.create_model(
+                name="MyEmptySchema",
+                restApiId=api_id,
+                contentType="application/json",
+                description="",
+            )
+
+        snapshot.match("create-model-no-schema-json", e.value.response)
+
+        with pytest.raises(ClientError) as e:
+            apigateway_client.create_model(
+                name="MyEmptySchemaXml",
+                restApiId=api_id,
+                contentType="application/xml",
+                description="",
+            )
+
+        snapshot.match("create-model-no-schema-xml", e.value.response)
+
+    @pytest.mark.aws_validated
+    def test_update_model(
+        self,
+        apigateway_client,
+        apigw_create_rest_api,
+        snapshot,
+    ):
+        response = apigw_create_rest_api(
+            name=f"test-api-{short_uid()}", description="testing update resource model"
+        )
+        api_id = response["id"]
+
+        fake_api_id = "abcde0"
+        updated_schema = json.dumps({"title": "Updated schema", "type": "object"})
+        patch_operations = [
+            {"op": "replace", "path": "/schema", "value": updated_schema},
+            {"op": "replace", "path": "/description", "value": ""},
+        ]
+
+        with pytest.raises(ClientError) as e:
+            apigateway_client.update_model(
+                restApiId=fake_api_id,
+                modelName="mySchema",
+                patchOperations=patch_operations,
+            )
+
+        snapshot.match("update-model-wrong-id", e.value.response)
+
+        response = apigateway_client.create_model(
+            name="MySchema",
+            restApiId=api_id,
+            contentType="application/json",
+            description="",
+            schema=json.dumps({"title": "MySchema", "type": "object"}),
+        )
+        snapshot.match("create-model", response)
+
+        response = apigateway_client.update_model(
+            restApiId=api_id,
+            modelName="MySchema",
+            patchOperations=patch_operations,
+        )
+        snapshot.match("update-model", response)
+
+        with pytest.raises(ClientError) as e:
+            patch_operations = [{"op": "add", "path": "/wrong-path", "value": "not supported op"}]
+            apigateway_client.update_model(
+                restApiId=api_id,
+                modelName="MySchema",
+                patchOperations=patch_operations,
+            )
+
+        snapshot.match("update-model-invalid-op", e.value.response)
+
+        with pytest.raises(ClientError) as e:
+            patch_operations = [
+                {"op": "replace", "path": "/name", "value": "invalid"},
+            ]
+            apigateway_client.update_model(
+                restApiId=api_id,
+                modelName="MySchema",
+                patchOperations=patch_operations,
+            )
+
+        snapshot.match("update-model-invalid-path", e.value.response)
+
+        with pytest.raises(ClientError) as e:
+            patch_operations = [
+                {"op": "replace", "path": "/schema", "value": ""},
+            ]
+            apigateway_client.update_model(
+                restApiId=api_id,
+                modelName="MySchema",
+                patchOperations=patch_operations,
+            )
+        snapshot.match("update-model-empty-schema", e.value.response)

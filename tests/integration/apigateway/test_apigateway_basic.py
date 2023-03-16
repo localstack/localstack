@@ -1016,64 +1016,6 @@ class TestAPIGateway:
         lambda_client = aws_stack.create_external_boto_client("lambda")
         lambda_client.delete_function(FunctionName=lambda_name)
 
-    def test_create_model(self, create_rest_apigw, apigateway_client):
-        rest_api_id, _, _ = create_rest_apigw(name="my_api", description="this is my api")
-        dummy_rest_api_id = "_non_existing_"
-        model_name = "testModel"
-        description = "test model"
-        content_type = "application/json"
-
-        # success case with valid params
-        response = apigateway_client.create_model(
-            restApiId=rest_api_id,
-            name=model_name,
-            description=description,
-            contentType=content_type,
-        )
-        assert model_name == response["name"]
-        assert description == response["description"]
-
-        with pytest.raises(Exception) as ctx:
-            apigateway_client.create_model(
-                restApiId=dummy_rest_api_id,
-                name=model_name,
-                description=description,
-                contentType=content_type,
-            )
-        assert "NotFoundException" == ctx.value.response["Error"]["Code"]
-        assert "Invalid Rest API Id specified" == ctx.value.response["Error"]["Message"]
-
-        with pytest.raises(Exception) as ctx:
-            apigateway_client.create_model(
-                restApiId=dummy_rest_api_id,
-                name="",
-                description=description,
-                contentType=content_type,
-            )
-        assert "BadRequestException" == ctx.value.response["Error"]["Code"]
-        assert "No Model Name specified" == ctx.value.response["Error"]["Message"]
-
-    def test_get_api_models(self, apigateway_client, create_rest_apigw):
-        rest_api_id, _, _ = create_rest_apigw(name="my_api", description="this is my api")
-        model_name = "testModel"
-        description = "test model"
-        content_type = "application/json"
-        # when no models are present
-        result = apigateway_client.get_models(restApiId=rest_api_id)
-        assert [] == result["items"]
-        # add a model
-        apigateway_client.create_model(
-            restApiId=rest_api_id,
-            name=model_name,
-            description=description,
-            contentType=content_type,
-        )
-
-        # get models after adding
-        result = apigateway_client.get_models(restApiId=rest_api_id)
-        assert model_name == result["items"][0]["name"]
-        assert description == result["items"][0]["description"]
-
     def test_request_validator(self, apigateway_client, create_rest_apigw):
         rest_api_id, _, _ = create_rest_apigw(name="my_api", description="this is my api")
         # CREATE
@@ -1221,38 +1163,6 @@ class TestAPIGateway:
             patchOperations=[{"op": "add", "path": "/features/-", "value": "foobar"}]
         )
         assert "foobar" in result["features"]
-
-    def test_get_model_by_name(self, apigateway_client, create_rest_apigw):
-        rest_api_id, _, _ = create_rest_apigw(name="my_api", description="this is my api")
-        dummy_rest_api_id = "_non_existing_"
-        model_name = "testModel"
-        description = "test model"
-        content_type = "application/json"
-        # add a model
-        apigateway_client.create_model(
-            restApiId=rest_api_id,
-            name=model_name,
-            description=description,
-            contentType=content_type,
-        )
-
-        # get models after adding
-        result = apigateway_client.get_model(restApiId=rest_api_id, modelName=model_name)
-        assert model_name == result["name"]
-        assert description == result["description"]
-
-        with pytest.raises(ClientError) as e:
-            apigateway_client.get_model(restApiId=dummy_rest_api_id, modelName=model_name)
-        assert e.value.response["Error"]["Code"] == "NotFoundException"
-        assert e.value.response["Error"]["Message"] == "Invalid Rest API Id specified"
-
-    def test_get_model_with_invalid_name(self, apigateway_client, create_rest_apigw):
-        rest_api_id, _, _ = create_rest_apigw(name="my_api", description="this is my api")
-
-        # test with an invalid model name
-        with pytest.raises(ClientError) as e:
-            apigateway_client.get_model(restApiId=rest_api_id, modelName="fake")
-        assert "NotFoundException" == e.value.response["Error"]["Code"]
 
     def test_put_integration_dynamodb_proxy_validation_without_request_template(self):
         api_id = self.create_api_gateway_and_deploy()

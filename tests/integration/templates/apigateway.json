@@ -68,7 +68,9 @@
             "Properties": {
                 "RestApiId": {
                     "Ref": "AGRA16EMH"
-                }
+                },
+                "ContentType": "application/json",
+                "Schema": "{\\n\\t\"title\": \"Calc output\",\\n\\t\"type\": \"object\"}"
             },
             "Metadata": {
                 "AWS::CloudFormation::Designer": {

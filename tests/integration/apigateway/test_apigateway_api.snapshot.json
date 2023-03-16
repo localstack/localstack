@@ -1532,5 +1532,328 @@
         }
       }
     }
+  },
+  "tests/integration/apigateway/test_apigateway_api.py::TestApiGatewayApi::test_model_lifecycle": {
+    "recorded-date": "06-03-2023, 16:18:23",
+    "recorded-content": {
+      "create-model": {
+        "contentType": "application/json",
+        "description": "Calc output model",
+        "id": "<id:1>",
+        "name": "<name:1>",
+        "schema": {
+          "title": "Calc output",
+          "type": "object",
+          "properties": {
+            "a": {
+              "type": "number"
+            },
+            "b": {
+              "type": "number"
+            },
+            "op": {
+              "description": "operation of +, -, * or /",
+              "type": "string"
+            },
+            "c": {
+              "type": "number"
+            }
+          },
+          "required": [
+            "a",
+            "b",
+            "op"
+          ]
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 201
+        }
+      },
+      "get-models": {
+        "items": [
+          {
+            "contentType": "application/json",
+            "description": "Calc output model",
+            "id": "<id:1>",
+            "name": "<name:1>",
+            "schema": {
+              "title": "Calc output",
+              "type": "object",
+              "properties": {
+                "a": {
+                  "type": "number"
+                },
+                "b": {
+                  "type": "number"
+                },
+                "op": {
+                  "description": "operation of +, -, * or /",
+                  "type": "string"
+                },
+                "c": {
+                  "type": "number"
+                }
+              },
+              "required": [
+                "a",
+                "b",
+                "op"
+              ]
+            }
+          },
+          {
+            "contentType": "application/json",
+            "description": "This is a default empty schema model",
+            "id": "<id:2>",
+            "name": "<name:2>",
+            "schema": {
+              "$schema": "http://json-schema.org/draft-04/schema#",
+              "title": "<name:2> Schema",
+              "type": "object"
+            }
+          },
+          {
+            "contentType": "application/json",
+            "description": "This is a default error schema model",
+            "id": "<id:3>",
+            "name": "<name:3>",
+            "schema": {
+              "$schema": "http://json-schema.org/draft-04/schema#",
+              "title": "<name:3> Schema",
+              "type": "object",
+              "properties": {
+                "message": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "get-model": {
+        "contentType": "application/json",
+        "description": "Calc output model",
+        "id": "<id:1>",
+        "name": "<name:1>",
+        "schema": {
+          "title": "Calc output",
+          "type": "object",
+          "properties": {
+            "a": {
+              "type": "number"
+            },
+            "b": {
+              "type": "number"
+            },
+            "op": {
+              "description": "operation of +, -, * or /",
+              "type": "string"
+            },
+            "c": {
+              "type": "number"
+            }
+          },
+          "required": [
+            "a",
+            "b",
+            "op"
+          ]
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "del-model": {
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 202
+        }
+      }
+    }
+  },
+  "tests/integration/apigateway/test_apigateway_api.py::TestApiGatewayApi::test_model_validation": {
+    "recorded-date": "09-03-2023, 19:13:20",
+    "recorded-content": {
+      "create-model-wrong-id": {
+        "Error": {
+          "Code": "NotFoundException",
+          "Message": "Invalid API identifier specified 111111111111:abcde0"
+        },
+        "message": "Invalid API identifier specified 111111111111:abcde0",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 404
+        }
+      },
+      "get-models-wrong-id": {
+        "Error": {
+          "Code": "NotFoundException",
+          "Message": "Invalid API identifier specified 111111111111:abcde0"
+        },
+        "message": "Invalid API identifier specified 111111111111:abcde0",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 404
+        }
+      },
+      "get-model-wrong-id": {
+        "Error": {
+          "Code": "NotFoundException",
+          "Message": "Invalid model name specified: MySchema"
+        },
+        "message": "Invalid model name specified: MySchema",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 404
+        }
+      },
+      "del-model-wrong-id": {
+        "Error": {
+          "Code": "NotFoundException",
+          "Message": "Invalid model name specified: MySchema"
+        },
+        "message": "Invalid model name specified: MySchema",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 404
+        }
+      },
+      "create-model-already-exists": {
+        "Error": {
+          "Code": "ConflictException",
+          "Message": "Model name already exists for this REST API"
+        },
+        "message": "Model name already exists for this REST API",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 409
+        }
+      },
+      "create-model-empty-name": {
+        "Error": {
+          "Code": "BadRequestException",
+          "Message": "Model name must be non-empty"
+        },
+        "message": "Model name must be non-empty",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "create-model-empty-schema": {
+        "Error": {
+          "Code": "BadRequestException",
+          "Message": "Model schema must have at least 1 property or array items defined"
+        },
+        "message": "Model schema must have at least 1 property or array items defined",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "create-model-no-schema-json": {
+        "Error": {
+          "Code": "BadRequestException",
+          "Message": "Model schema must have at least 1 property or array items defined"
+        },
+        "message": "Model schema must have at least 1 property or array items defined",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "create-model-no-schema-xml": {
+        "Error": {
+          "Code": "BadRequestException",
+          "Message": "Model schema must have at least 1 property or array items defined"
+        },
+        "message": "Model schema must have at least 1 property or array items defined",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/integration/apigateway/test_apigateway_api.py::TestApiGatewayApi::test_update_model": {
+    "recorded-date": "09-03-2023, 19:39:34",
+    "recorded-content": {
+      "update-model-wrong-id": {
+        "Error": {
+          "Code": "NotFoundException",
+          "Message": "Invalid model name specified: mySchema"
+        },
+        "message": "Invalid model name specified: mySchema",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 404
+        }
+      },
+      "create-model": {
+        "contentType": "application/json",
+        "id": "<id:1>",
+        "name": "<name:1>",
+        "schema": {
+          "title": "<name:1>",
+          "type": "object"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 201
+        }
+      },
+      "update-model": {
+        "contentType": "application/json",
+        "id": "<id:1>",
+        "name": "<name:1>",
+        "schema": {
+          "title": "Updated schema",
+          "type": "object"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "update-model-invalid-op": {
+        "Error": {
+          "Code": "BadRequestException",
+          "Message": "Invalid patch path  '/wrong-path' specified for op 'add'. Please choose supported operations"
+        },
+        "message": "Invalid patch path  '/wrong-path' specified for op 'add'. Please choose supported operations",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "update-model-invalid-path": {
+        "Error": {
+          "Code": "BadRequestException",
+          "Message": "Invalid patch path  '/name' specified for op 'replace'. Must be one of: [/description, /schema]"
+        },
+        "message": "Invalid patch path  '/name' specified for op 'replace'. Must be one of: [/description, /schema]",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "update-model-empty-schema": {
+        "Error": {
+          "Code": "BadRequestException",
+          "Message": "Model schema must have at least 1 property or array items defined"
+        },
+        "message": "Model schema must have at least 1 property or array items defined",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
   }
 }
