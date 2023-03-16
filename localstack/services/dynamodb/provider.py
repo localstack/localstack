@@ -889,7 +889,7 @@ class DynamoDBProvider(DynamodbApi, ServiceLifecycleHook):
                 unprocessed[table_name] = []
             for key in ["PutRequest", "DeleteRequest"]:
                 if any(unprocessed_items[key]):
-                    unprocessed_items[table_name].append({key: unprocessed_items[key]})
+                    unprocessed[table_name].append({key: unprocessed_items[key]})
             for key in list(unprocessed.keys()):
                 if not unprocessed.get(key):
                     del unprocessed[key]
