@@ -1536,7 +1536,16 @@ class TestLambdaConcurrency:
         lambda_client.delete_function_concurrency(FunctionName=func_name)
         lambda_client.invoke(FunctionName=fn_arn, InvocationType="RequestResponse")
 
-        # TODO: snapshot logs & request ID for correlation
+        def assert_events():
+            log_events = logs_client.filter_log_events(
+                logGroupName=f"/aws/lambda/{func_name}",
+            )["events"]
+            assert len([e["message"] for e in log_events if e["message"].startswith("REPORT")]) == 3
+
+        retry(assert_events, retries=120, sleep=2)
+
+        # TODO: snapshot logs & request ID for correlation after request id gets propagated
+        #  https://github.com/localstack/localstack/pull/7874
 
     @pytest.mark.aws_validated
     def test_reserved_concurrency(
