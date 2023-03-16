@@ -6,7 +6,7 @@ import requests
 from localstack.services.awslambda.lambda_utils import LAMBDA_RUNTIME_PYTHON39
 from localstack.utils.aws.arns import parse_arn
 from localstack.utils.strings import short_uid
-from tests.integration.apigateway_fixtures import api_invoke_url
+from tests.integration.apigateway.apigateway_fixtures import api_invoke_url
 from tests.integration.awslambda.test_lambda import TEST_LAMBDA_AWS_PROXY
 
 

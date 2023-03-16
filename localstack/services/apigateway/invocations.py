@@ -84,10 +84,10 @@ class RequestValidator:
     def validate_body(self, resource):
         # if there's no model to validate the body, use the Empty model
         # https://docs.aws.amazon.com/cdk/api/v1/docs/@aws-cdk_aws-apigateway.EmptyModel.html
-        if "requestModels" not in resource or not resource["requestModels"]:
+        if not (request_models := resource.get("requestModels")):
             schema_name = "Empty"
         else:
-            schema_name = resource["requestModels"].get(APPLICATION_JSON)
+            schema_name = request_models.get(APPLICATION_JSON, "Empty")
 
         try:
             model = self.apigateway_client.get_model(
@@ -95,6 +95,7 @@ class RequestValidator:
                 modelName=schema_name,
             )
         except ClientError as e:
+            # This should not happen, as we validate that we cannot delete a Model if it's used
             LOG.exception("An exception occurred while trying to validate the request: %s", e)
             return False
 
@@ -103,6 +104,10 @@ class RequestValidator:
             return True
         except ValidationError as e:
             LOG.warning("failed to validate request body %s", e)
+            return False
+        except json.JSONDecodeError as e:
+            # TODO: for now, it could also be the loading of the schema failing but it will be validated at some point
+            LOG.warning("failed to validate request body, request data is not valid JSON %s", e)
             return False
 
     # TODO implement parameters and headers

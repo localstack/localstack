@@ -186,6 +186,10 @@ class ApiGatewayPathsTest(unittest.TestCase):
         }
         validator = RequestValidator(ctx, apigateway_client)
         self.assertTrue(validator.is_request_valid())
+        apigateway_client.get_request_validator.assert_called_with(
+            restApiId="deadbeef", requestValidatorId="112233"
+        )
+        apigateway_client.get_model.assert_called_with(restApiId="deadbeef", modelName="Empty")
 
     def test_request_validate_body_with_no_model_for_schema_name(self):
         apigateway_client = self._mock_client()
