@@ -10,6 +10,7 @@ from typing import Dict, TypeVar
 import pytest
 from botocore.response import StreamingBody
 
+from localstack import config
 from localstack.aws.api.lambda_ import Architecture, Runtime
 from localstack.services.awslambda.lambda_api import use_docker
 from localstack.testing.aws.lambda_utils import (
@@ -23,9 +24,10 @@ from localstack.testing.aws.util import create_client_with_keys
 from localstack.testing.pytest.snapshot import is_aws
 from localstack.testing.snapshots.transformer import KeyValueBasedTransformer
 from localstack.testing.snapshots.transformer_utility import PATTERN_UUID
-from localstack.utils import files, testutil
+from localstack.utils import files, platform, testutil
 from localstack.utils.files import load_file
 from localstack.utils.http import safe_requests
+from localstack.utils.platform import standardized_arch
 from localstack.utils.strings import short_uid, to_bytes, to_str
 from localstack.utils.sync import retry, wait_until
 from localstack.utils.testutil import create_lambda_archive
@@ -376,6 +378,37 @@ class TestLambdaBehavior:
 
         invoke_result = lambda_client.invoke(FunctionName=func_name)
         snapshot.match("invoke_runtime_arm_introspection", invoke_result)
+
+    @pytest.mark.skipif(is_old_provider(), reason="unsupported in old provider")
+    @pytest.mark.skipif(
+        not use_docker(),
+        reason="Monkeypatching of Docker-related flag not applicable if run locally",
+    )
+    @pytest.mark.only_localstack
+    def test_ignore_architecture(
+        self, lambda_client, create_lambda_function, snapshot, monkeypatch
+    ):
+        """Test configuration to ignore lambda architecture by creating a lambda with non-native architecture."""
+        monkeypatch.setattr(config, "LAMBDA_IGNORE_ARCHITECTURE", True)
+
+        # Assumes that LocalStack runs on native Docker host architecture
+        # This assumption could be violated when using remote Lambda executors
+        native_arch = platform.get_arch()
+        non_native_architecture = (
+            Architecture.x86_64 if native_arch == "arm64" else Architecture.arm64
+        )
+        func_name = f"test_lambda_arch_{short_uid()}"
+        create_lambda_function(
+            func_name=func_name,
+            handler_file=TEST_LAMBDA_INTROSPECT_PYTHON,
+            runtime=Runtime.python3_9,
+            Architectures=[non_native_architecture],
+        )
+
+        invoke_result = lambda_client.invoke(FunctionName=func_name)
+        payload = json.loads(to_str(invoke_result["Payload"].read()))
+        lambda_arch = standardized_arch(payload.get("platform_machine"))
+        assert lambda_arch == native_arch
 
     @pytest.mark.skip_snapshot_verify(
         condition=is_old_provider, paths=["$..Payload", "$..LogResult"]

@@ -64,15 +64,17 @@ ARCHITECTURE_PLATFORM_MAPPING: dict[Architecture, DockerPlatform] = dict(
 )
 
 
-def docker_platform(lambda_architecture: Architecture) -> DockerPlatform:
+def docker_platform(lambda_architecture: Architecture) -> DockerPlatform | None:
     """
     Convert an AWS Lambda architecture into a Docker platform flag. Examples:
     * docker_platform("x86_64") == "linux/amd64"
     * docker_platform("arm64") == "linux/arm64"
 
     :param lambda_architecture: the instruction set that the function supports
-    :return: Docker platform in the format ``os[/arch[/variant]]``
+    :return: Docker platform in the format ``os[/arch[/variant]]`` or None if configured to ignore the architecture
     """
+    if config.LAMBDA_IGNORE_ARCHITECTURE:
+        return None
     return ARCHITECTURE_PLATFORM_MAPPING[lambda_architecture]
 
 

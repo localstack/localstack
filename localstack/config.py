@@ -645,6 +645,10 @@ LAMBDA_DOCKER_DNS = os.environ.get("LAMBDA_DOCKER_DNS", "").strip()
 # additional flags passed to Lambda Docker run/create commands
 LAMBDA_DOCKER_FLAGS = os.environ.get("LAMBDA_DOCKER_FLAGS", "").strip()
 
+# Enable this flag to run cross-platform compatible lambda functions natively (i.e., Docker selects architecture) and
+# ignore the AWS architectures (i.e., x86_64, arm64) configured for the lambda function.
+LAMBDA_IGNORE_ARCHITECTURE = is_env_true("LAMBDA_IGNORE_ARCHITECTURE")
+
 # prebuild images before execution? Increased cold start time on the tradeoff of increased time until lambda is ACTIVE
 LAMBDA_PREBUILD_IMAGES = is_env_true("LAMBDA_PREBUILD_IMAGES")
 
