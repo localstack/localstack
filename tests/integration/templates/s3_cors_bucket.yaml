@@ -1,14 +1,9 @@
-Parameters:
-  BucketName:
-    Type: String
 Resources:
   LocalBucket:
     Type: AWS::S3::Bucket
     Properties:
-      BucketName: !Ref BucketName
-      AccessControl: PublicRead
       CorsConfiguration:
-        CORSRules:
+        CorsRules:
           - AllowedHeaders:
               - '*'
               - x-amz-*
@@ -16,10 +11,10 @@ Resources:
               - GET
             AllowedOrigins:
               - '*'
-            ExposeHeaders:
+            ExposedHeaders:
               - Date
-            ID: "test-cors-id"
-            MaxAgeSeconds: 3600
+            Id: "test-cors-id"
+            MaxAge: 3600
 Outputs:
   BucketName:
     Value: !Ref LocalBucket

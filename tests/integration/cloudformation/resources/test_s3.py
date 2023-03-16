@@ -64,15 +64,11 @@ def test_cors_configuration(cfn_client, deploy_cfn_template, s3_client, snapshot
     snapshot.add_transformer(snapshot.transform.cloudformation_api())
     snapshot.add_transformer(snapshot.transform.s3_api())
 
-    bucket_name = f"ls-bucket-{short_uid()}"
     result = deploy_cfn_template(
         template_path=os.path.join(
             os.path.dirname(__file__), "../../templates/s3_cors_bucket.yaml"
         ),
-        parameters={"BucketName": bucket_name},
-        max_wait=300,
     )
-    assert "BucketName" in result.outputs
     bucket_name = result.outputs["BucketName"]
     cors_info = s3_client.get_bucket_cors(Bucket=bucket_name)
 
