@@ -1,5 +1,9 @@
 
-export const handler = async (event) => {
+export const handler = async (event, context, callback) => {
+   context.getRemainingTimeInMillis();
+   if (callback) {
+    callback();
+   }
    console.log(JSON.stringify(event))
    return {
      statusCode: 200,
