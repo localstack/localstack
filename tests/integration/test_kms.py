@@ -387,6 +387,14 @@ class TestKMS:
         assert result.get("KeyId")
 
     @pytest.mark.aws_validated
+    @pytest.mark.skip_snapshot_verify(
+        paths=[
+            "$..Signature",
+            "$..KeyId",
+            "$..Error.Message",
+            "$..message",
+        ]
+    )
     @pytest.mark.parametrize(
         "key_spec,sign_algo",
         [
@@ -396,12 +404,11 @@ class TestKMS:
             ("RSA_4096", "RSASSA_PKCS1_V1_5_SHA_256"),
             ("RSA_4096", "RSASSA_PKCS1_V1_5_SHA_512"),
             ("ECC_NIST_P256", "ECDSA_SHA_256"),
-            ("ECC_NIST_P256", "ECDSA_SHA_384"),
+            ("ECC_NIST_P384", "ECDSA_SHA_384"),
             ("ECC_SECG_P256K1", "ECDSA_SHA_256"),
-            ("ECC_SECG_P256K1", "ECDSA_SHA_512"),
         ],
     )
-    def test_sign_verify(self, kms_client, kms_create_key, key_spec, sign_algo):
+    def test_sign_verify(self, kms_client, kms_create_key, snapshot, key_spec, sign_algo):
         hash_algo = get_hash_algorithm(sign_algo)
         hasher = getattr(hashlib, hash_algo.replace("_", "").lower())
 
@@ -416,21 +423,26 @@ class TestKMS:
         bad_message = b"bad message 321"
 
         # Ensure raw messages can be signed and verified
-        signature = kms_client.sign(MessageType="RAW", Message=plaintext, **kwargs)["Signature"]
-        assert kms_client.verify(
-            MessageType="RAW", Signature=signature, Message=plaintext, **kwargs
-        )["SignatureValid"]
+        signature = kms_client.sign(MessageType="RAW", Message=plaintext, **kwargs)
+        snapshot.match("signature", signature)
+        verification = kms_client.verify(
+            MessageType="RAW", Signature=signature["Signature"], Message=plaintext, **kwargs
+        )
+        snapshot.match("verification", verification)
+        assert verification["SignatureValid"]
 
         # Ensure pre-hashed messages can be signed and verified
-        signature = kms_client.sign(MessageType="DIGEST", Message=digest, **kwargs)["Signature"]
-        assert kms_client.verify(
-            MessageType="DIGEST", Signature=signature, Message=digest, **kwargs
-        )["SignatureValid"]
+        signature = kms_client.sign(MessageType="DIGEST", Message=digest, **kwargs)
+        verification = kms_client.verify(
+            MessageType="DIGEST", Signature=signature["Signature"], Message=digest, **kwargs
+        )
+        assert verification["SignatureValid"]
 
         # Ensure bad digest raises during signing
         with pytest.raises(ClientError) as exc:
             kms_client.sign(MessageType="DIGEST", Message=plaintext, **kwargs)
         assert exc.match("ValidationException")
+        snapshot.match("bad-digest", exc.value.response)
 
         # Ensure bad signature raises during verify
         with pytest.raises(ClientError) as exc:
@@ -438,16 +450,22 @@ class TestKMS:
                 MessageType="RAW", Signature=bad_signature, Message=plaintext, **kwargs
             )
         assert exc.match("KMSInvalidSignatureException")
+        snapshot.match("bad-signature", exc.value.response)
 
         # Ensure bad message raises during verify
         with pytest.raises(ClientError) as exc:
-            kms_client.verify(MessageType="RAW", Signature=signature, Message=bad_message, **kwargs)
+            kms_client.verify(
+                MessageType="RAW", Signature=signature["Signature"], Message=bad_message, **kwargs
+            )
         assert exc.match("KMSInvalidSignatureException")
 
         # Ensure bad digest raises during verify
         with pytest.raises(ClientError) as exc:
             kms_client.verify(
-                MessageType="DIGEST", Signature=signature, Message=bad_message, **kwargs
+                MessageType="DIGEST",
+                Signature=signature["Signature"],
+                Message=bad_message,
+                **kwargs,
             )
         assert exc.match("ValidationException")
 
@@ -476,10 +494,6 @@ class TestKMS:
         [
             ("SYMMETRIC_DEFAULT", "SYMMETRIC_DEFAULT"),
             ("RSA_2048", "RSAES_OAEP_SHA_256"),
-            ("ECC_NIST_P256", "RSAES_OAEP_SHA_1"),
-            ("ECC_SECG_P256K1", "RSAES_OAEP_SHA_256"),
-            # ("HMAC_256", "SYMMETRIC_DEFAULT"),  # currently not supported in LocalStack
-            # ("SM2", "SM2PKE"),  # currently not supported in LocalStack
         ],
     )
     def test_encrypt_decrypt(self, kms_client, kms_create_key, key_spec, algo):
