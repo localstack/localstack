@@ -1453,15 +1453,6 @@ def is_variable_path(path_part: str) -> bool:
     return path_part.startswith("{") and path_part.endswith("}")
 
 
-def mark_model_in_use(
-    rest_api: RestApiContainer, model_name: str, resource_path: str, http_method: str
-):
-    # TODO: refactor into function for more resources to add (RequestValidator has the same functionality)
-    paths_for_model = rest_api.models_in_use.setdefault(model_name, [])
-    # TODO: need to reconstruct full path from here, validate
-    paths_for_model.append(f"/{resource_path}{http_method}")
-
-
 def create_custom_context(
     context: RequestContext, action: str, parameters: ServiceRequest
 ) -> RequestContext:
