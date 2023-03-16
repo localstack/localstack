@@ -83,8 +83,7 @@ def start_s3(port=None, backend_port=None, asynchronous=None, update_listener=No
 
     apply_patches()
 
-    if not config.LEGACY_EDGE_PROXY:
-        add_gateway_compatibility_handlers()
+    add_gateway_compatibility_handlers()
 
     return start_moto_server(
         key="s3",
