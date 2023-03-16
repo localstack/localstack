@@ -1309,8 +1309,8 @@ class ApigatewayProvider(ApigatewayApi, ServiceLifecycleHook):
                     f"Invalid patch path  '{path}' specified for op 'replace'. Must be one of: [/description, /schema]"
                 )
 
-            key = path.strip("/")
-            value = operation.get("value", "")
+            key = path[1:]  # remove the leading slash
+            value = operation.get("value")
             if key == "schema" and not value:
                 raise BadRequestException(
                     "Model schema must have at least 1 property or array items defined"
