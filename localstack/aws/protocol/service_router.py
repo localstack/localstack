@@ -186,10 +186,6 @@ def legacy_rules(request: Request) -> Optional[str]:
 
     # TODO The remaining rules here are special S3 rules - needs to be discussed how these should be handled.
     #      Some are similar to other rules and not that greedy, others are nearly general fallbacks.
-    # This is ListBuckets, at the root path
-    if path == "/":
-        return "s3"
-
     stripped = path.strip("/")
     if method in ["GET", "HEAD"] and stripped:
         # assume that this is an S3 GET request with URL path `/<bucket>/<key ...>`

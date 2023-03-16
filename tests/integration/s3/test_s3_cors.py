@@ -9,6 +9,7 @@ from localstack import config
 from localstack.aws.handlers.cors import ALLOWED_CORS_ORIGINS
 from localstack.config import LEGACY_S3_PROVIDER
 from localstack.constants import LOCALHOST_HOSTNAME, S3_VIRTUAL_HOSTNAME
+from localstack.utils.aws import aws_stack
 from localstack.utils.strings import short_uid
 
 
@@ -147,14 +148,17 @@ class TestS3Cors:
 
         url = f"{config.get_edge_url()}/"
         origin = ALLOWED_CORS_ORIGINS[0]
-
+        # we need to "sign" the request so that our service name parser recognize ListBuckets as an S3 operation
+        # if the request isn't signed, AWS will redirect to https://aws.amazon.com/s3/
+        headers = aws_stack.mock_aws_request_headers("s3")
+        headers["Origin"] = origin
         response = requests.options(
-            url, headers={"Origin": origin, "Access-Control-Request-Method": "GET"}
+            url, headers={**headers, "Access-Control-Request-Method": "GET"}
         )
         assert response.ok
         assert response.headers["Access-Control-Allow-Origin"] == origin
 
-        response = requests.get(url, headers={"Origin": origin})
+        response = requests.get(url, headers=headers)
         assert response.status_code == 200
         assert response.headers["Access-Control-Allow-Origin"] == origin
         # assert that we're getting ListBuckets result
