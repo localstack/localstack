@@ -404,37 +404,27 @@ class LambdaService:
             if reserved_concurrency is not None:
                 return min(reserved_concurrency - current_count_of_reserved_function_invocations, 0)
 
-            account_region_reserved_concurrency = sum(
-                [
-                    fn
-                    for fn in store.functions.values()
-                    if fn.reserved_concurrent_executions is not None
-                ]
-            )
+            account_region_reserved_concurrency = 0
+            unreserved_account_region_invocations = 0
+            for fn in store.functions.values():
+                if fn.reserved_concurrent_executions is not None:
+                    account_region_reserved_concurrency += fn.reserved_concurrent_executions
+                else:
+                    account_region_reserved_concurrency += sum(
+                        [
+                            provisioned_configs.provisioned_concurrent_executions
+                            for provisioned_configs in fn.provisioned_concurrency_configs.values()
+                        ]
+                    )
+                    unreserved_account_region_invocations += tracker.function_concurrency[
+                        fn.latest().id.unqualified_arn()
+                    ]
 
-            account_region_provisioned_concurrency = sum(
-                [
-                    concurrency_config.provisioned_concurrent_executions
-                    for fn in store.functions.values()
-                    if fn.reserved_concurrent_executions is not None
-                    for concurrency_config in fn.provisioned_concurrency_configs.values()
-                ]
-            )
-            unreserved_account_region_invocations = sum(
-                [
-                    tracker.function_concurrency[fn.latest().id.unqualified_arn()]
-                    for fn in store.functions.values()
-                    if fn.reserved_concurrent_executions is None
-                ]
-            )
-
-            unreserved_account_concurrency = (
-                store.settings.concurrent_executions
-                - account_region_reserved_concurrency
-                - account_region_provisioned_concurrency
+            unreserved_concurrency = (
+                store.settings.concurrent_executions - account_region_reserved_concurrency
             )
             available_unreserved_concurrency = (
-                unreserved_account_concurrency - unreserved_account_region_invocations
+                unreserved_concurrency - unreserved_account_region_invocations
             )
             if available_unreserved_concurrency < 0:
                 LOG.warning(

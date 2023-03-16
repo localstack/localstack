@@ -428,9 +428,10 @@ class LambdaVersionManager(ServiceEndpoint):
                             environment.id,
                         )
                         self.running_invocations.pop(queued_invocation.invocation_id, None)
-                        self.lambda_service.report_invocation_end(
-                            self.function_version.id.unqualified_arn()
-                        )
+                        if environment.initialization_type == "on-demand":
+                            self.lambda_service.report_invocation_end(
+                                self.function_version.id.unqualified_arn()
+                            )
                         # try next environment
                         environment = None
             except Exception as e:
@@ -676,7 +677,8 @@ class LambdaVersionManager(ServiceEndpoint):
         # mark executor available again
         executor.invocation_done()
         self.available_environments.put(executor)
-        self.lambda_service.report_invocation_end(self.function_version.id.unqualified_arn())
+        if executor.initialization_type == "on-demand":
+            self.lambda_service.report_invocation_end(self.function_version.id.unqualified_arn())
 
     # Service Endpoint implementation
     def invocation_result(self, invoke_id: str, invocation_result: InvocationResult) -> None:

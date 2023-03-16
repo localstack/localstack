@@ -178,7 +178,7 @@ class RuntimeEnvironment:
         with self.status_lock:
             if self.status != RuntimeStatus.STARTING:
                 raise InvalidStatusException(
-                    "Runtime Handler can only be set active while starting"
+                    f"Runtime Handler can only be set active while starting. Current status: {self.status}"
                 )
             self.status = RuntimeStatus.READY
             if self.startup_timer:
