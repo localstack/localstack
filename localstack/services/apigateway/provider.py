@@ -487,8 +487,6 @@ class ApigatewayProvider(ApigatewayApi, ServiceLifecycleHook):
         applicable_patch_operations = []
         modifying_auth_type = False
         modified_authorizer_id = False
-        models_before_patch = set(moto_method.request_models.values())
-
         moto_request_models = moto_method.request_models or {}
         models_before_patch = set(moto_request_models.values())
         for patch_operation in patch_operations:
