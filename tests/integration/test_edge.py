@@ -1,18 +1,17 @@
+# FIXME: these are remnants of the legacy edge proxy. these tests should somehow be migrated to
+#  instead either test the LocalstackAwsGateway (integration), or functionality of the http server (unit).
 import io
 import json
 import os
-import urllib
 
 import pytest
 import requests
 import xmltodict
-from quart import request as quart_request
 from requests.models import Request as RequestsRequest
 
 from localstack import config
 from localstack.aws.accounts import get_aws_account_id
 from localstack.constants import APPLICATION_JSON, HEADER_LOCALSTACK_EDGE_URL
-from localstack.http.request import get_full_raw_path
 from localstack.services.generic_proxy import (
     MessageModifyingProxyListener,
     ProxyListener,
@@ -53,9 +52,7 @@ class TestEdgeAPI:
         edge_url = config.get_edge_url()
         self._invoke_s3_via_edge(edge_url)
 
-    @pytest.mark.xfail(
-        condition=not config.LEGACY_EDGE_PROXY, reason="failing with new HTTP gateway (only in CI)"
-    )
+    @pytest.mark.xfail(reason="failing in CI")  # TODO verify this
     def test_invoke_s3_multipart_request(self):
         edge_url = config.get_edge_url()
         self._invoke_s3_via_edge_multipart_form(edge_url)
@@ -361,28 +358,3 @@ class TestEdgeAPI:
                 response = requests.get(f"{url}/2015-03-31/functions", headers=headers)
                 assert response
                 assert "Functions" in json.loads(to_str(response.content))
-
-    @pytest.mark.skipif(
-        condition=not config.LEGACY_EDGE_PROXY, reason="only relevant for old edge proxy"
-    )
-    def test_forward_raw_path(self, monkeypatch):
-        class MyListener(ProxyListener):
-            def forward_request(self, method, path, data, headers):
-                _path = get_full_raw_path(quart_request)
-                return {"method": method, "path": _path}
-
-        # start listener and configure EDGE_FORWARD_URL
-        port = get_free_tcp_port()
-        forward_url = f"http://localhost:{port}"
-        listener = MyListener()
-        proxy = start_proxy_server(port, update_listener=listener, use_ssl=True)
-        monkeypatch.setattr(config, "EDGE_FORWARD_URL", forward_url)
-
-        # run test request, assert that raw request path is forwarded
-        test_arn = "arn:aws:test:resource/test"
-        raw_path = f"/test/{urllib.parse.quote(test_arn)}/bar?q1=foo&q2=bar"
-        url = f"{config.get_edge_url()}{raw_path}"
-        response = requests.get(url)
-        expected = {"method": "GET", "path": raw_path}
-        assert json.loads(to_str(response.content)) == expected
-        proxy.stop()

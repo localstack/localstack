@@ -184,10 +184,6 @@ class BackendState:
         backend = get_s3_backend()
         bucket = backend.buckets.get(bucket_name)
         if not bucket:
-            # note: adding a switch here to be able to handle both, moto's MissingBucket with the
-            # legacy edge proxy, as well as our custom CommonServiceException with the new Gateway.
-            if config.LEGACY_EDGE_PROXY:
-                raise MissingBucket()
             raise NoSuchBucket()
         return bucket
 
