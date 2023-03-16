@@ -266,7 +266,9 @@ class KmsKey:
         elif "SHA_512" in signing_algorithm:
             hasher = hashes.SHA512()
         else:
-            LOG.exception("Unsupported hash type in SigningAlgorithm '%s'", signing_algorithm)
+            raise ValidationException(
+                f"Unsupported hash type in SigningAlgorithm '{signing_algorithm}'"
+            )
 
         if message_type == MessageType.DIGEST:
             kwargs["algorithm"] = utils.Prehashed(hasher)
