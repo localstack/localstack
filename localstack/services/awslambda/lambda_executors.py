@@ -1577,7 +1577,7 @@ class LambdaExecutorLocal(LambdaExecutor):
         cmd = [
             "node",
             "-e",
-            f'const res = require("{main_file}").{function}({event_json_string},{context_json_string}); '
+            f'const context = {context_json_string}; context.getRemainingTimeInMillis = () => 6000; const callback = () => 0; const res = require("{main_file}").{function}({event_json_string}, context, callback); '
             f"const log = (rs) => console.log(JSON.stringify(rs)); "
             "res && res.then ? res.then(r => log(r)) : log(res)",
         ]
