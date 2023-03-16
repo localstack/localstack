@@ -5,6 +5,7 @@ import io
 import logging
 import random
 import uuid
+from collections import defaultdict
 from concurrent.futures import Executor, Future, ThreadPoolExecutor
 from datetime import datetime
 from hashlib import sha256
@@ -21,6 +22,7 @@ from localstack.aws.api.lambda_ import (
     ResourceNotFoundException,
     State,
 )
+from localstack.services.awslambda import api_utils
 from localstack.services.awslambda.api_utils import (
     lambda_arn,
     qualified_lambda_arn,
@@ -56,6 +58,20 @@ LAMBDA_DEFAULT_TIMEOUT_SECONDS = 3
 LAMBDA_DEFAULT_MEMORY_SIZE = 128
 
 
+# TODO: scope to account & region instead?
+class ConcurrencyTracker:
+    """account-scoped concurrency tracker that keeps track of the number of running invocations per function"""
+
+    lock: RLock
+
+    # function unqualified ARN => number of currently running invocations
+    function_concurrency: dict[str, int]
+
+    def __init__(self):
+        self.function_concurrency = defaultdict(int)
+        self.lock = RLock()
+
+
 class LambdaService:
     # mapping from qualified ARN to version manager
     lambda_running_versions: dict[str, LambdaVersionManager]
@@ -63,15 +79,15 @@ class LambdaService:
     lambda_version_manager_lock: RLock
     task_executor: Executor
 
-    # TODO: replace with thread-safe version
-    concurrency_tracker: dict[str, int]
+    # account => concurrency tracker
+    _concurrency_trackers: dict[str, ConcurrencyTracker]
 
     def __init__(self) -> None:
         self.lambda_running_versions = {}
         self.lambda_starting_versions = {}
         self.lambda_version_manager_lock = RLock()
         self.task_executor = ThreadPoolExecutor()
-        self.concurrency_tracker = dict()
+        self._concurrency_trackers = defaultdict(ConcurrencyTracker)
 
     def stop(self) -> None:
         """
@@ -329,23 +345,108 @@ class LambdaService:
                 destroy_code_if_not_used, old_version.function_version.config.code, function
             )
 
-    # TODO: rework these to be thread-safe and/or in a custom class
-    def get_concurrent_invocations_count(self, account_id: str):
-        return self.concurrency_tracker.setdefault(account_id, 0)
+    def report_invocation_start(self, unqualified_function_arn: str):
+        """
+        Track beginning of a new function invocation.
+        Always make sure this is followed by a call to report_invocation_end downstream
 
-    def decr_concurrent_invocations_count(self, account_id: str):
-        new_val = self.concurrency_tracker.setdefault(account_id, 0) - 1
-        if new_val < 0:
-            LOG.warning(
-                "Attempted to set invocation concurrency to a negative value (%s).", new_val
+        :param unqualified_function_arn: e.g. arn:aws:lambda:us-east-1:123456789012:function:concurrency-fn
+        """
+        fn_parts = api_utils.FULL_FN_ARN_PATTERN.search(unqualified_function_arn).groupdict()
+        account = fn_parts["account_id"]
+
+        tracker = self._concurrency_trackers[account]
+        with tracker.lock:
+            tracker.function_concurrency[unqualified_function_arn] += 1
+
+    def report_invocation_end(self, unqualified_function_arn: str):
+        """
+        Track end of a function invocation. Should have a corresponding report_invocation_start call upstream
+
+        :param unqualified_function_arn: e.g. arn:aws:lambda:us-east-1:123456789012:function:concurrency-fn
+        """
+        fn_parts = api_utils.FULL_FN_ARN_PATTERN.search(unqualified_function_arn).groupdict()
+        account = fn_parts["account_id"]
+
+        tracker = self._concurrency_trackers[account]
+        with tracker.lock:
+            tracker.function_concurrency[unqualified_function_arn] -= 1
+            if tracker.function_concurrency[unqualified_function_arn] < 0:
+                LOG.warning(
+                    "Invalid function concurrency state detected for function: %s | recorded concurrency: %d",
+                    unqualified_function_arn,
+                    tracker.function_concurrency[unqualified_function_arn],
+                )
+                raise Exception(
+                    "Invalid function concurrency state"
+                )  # TODO: remove this before merge
+
+    def get_available_fn_concurrency(self, unqualified_function_arn: str) -> int:
+        """
+        Calculate available capacity for new invocations in the function's account & region.
+        If the function has a reserved concurrency set, only this pool of reserved concurrency is considered.
+        Otherwise all unreserved concurrent invocations in the function's account/region are aggregated and checked against the current account settings.
+        """
+        fn_parts = api_utils.FULL_FN_ARN_PATTERN.search(unqualified_function_arn).groupdict()
+        region = fn_parts["region_name"]
+        account = fn_parts["account_id"]
+        function_name = fn_parts["function_name"]
+
+        tracker = self._concurrency_trackers[account]
+
+        store = lambda_stores[account][region]
+        reserved_concurrency = store.functions[function_name].reserved_concurrent_executions
+
+        with tracker.lock:
+            current_count_of_reserved_function_invocations = tracker.function_concurrency[
+                unqualified_function_arn
+            ]
+            if reserved_concurrency is not None:
+                return min(reserved_concurrency - current_count_of_reserved_function_invocations, 0)
+
+            account_region_reserved_concurrency = sum(
+                [
+                    fn
+                    for fn in store.functions.values()
+                    if fn.reserved_concurrent_executions is not None
+                ]
             )
-            self.concurrency_tracker[account_id] = 0
-        self.concurrency_tracker[account_id] = new_val
 
-    def incr_concurrent_invocations_count(self, account_id: str):
-        self.concurrency_tracker[account_id] = (
-            self.concurrency_tracker.setdefault(account_id, 0) + 1
-        )
+            account_region_provisioned_concurrency = sum(
+                [
+                    concurrency_config.provisioned_concurrent_executions
+                    for fn in store.functions.values()
+                    if fn.reserved_concurrent_executions is not None
+                    for concurrency_config in fn.provisioned_concurrency_configs.values()
+                ]
+            )
+            unreserved_account_region_invocations = sum(
+                [
+                    tracker.function_concurrency[fn.latest().id.unqualified_arn()]
+                    for fn in store.functions.values()
+                    if fn.reserved_concurrent_executions is None
+                ]
+            )
+
+            unreserved_account_concurrency = (
+                store.settings.concurrent_executions
+                - account_region_reserved_concurrency
+                - account_region_provisioned_concurrency
+            )
+            available_unreserved_concurrency = (
+                unreserved_account_concurrency - unreserved_account_region_invocations
+            )
+            if available_unreserved_concurrency < 0:
+                LOG.warning(
+                    "Invalid function concurrency state detected for function: %s | available unreserved concurrency: %d",
+                    unqualified_function_arn,
+                    available_unreserved_concurrency,
+                )
+                raise Exception(
+                    "Invalid function concurrency state"
+                )  # TODO: remove this before merge
+
+            return available_unreserved_concurrency
 
 
 def is_code_used(code: S3Code, function: Function) -> bool:

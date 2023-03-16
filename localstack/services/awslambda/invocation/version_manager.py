@@ -213,29 +213,26 @@ class LambdaVersionManager(ServiceEndpoint):
             state=State.Inactive, code=StateReasonCode.Idle, reason="Shutting down"
         )
         self.shutdown_event.set()
-        self.provisioning_pool.shutdown(cancel_futures=True)
-        self.destination_execution_pool.shutdown(
-            cancel_futures=True
-        )  # TODO: give it a grace period waiting, otherwise fail
+        self.provisioning_pool.shutdown(wait=False, cancel_futures=True)
+        self.destination_execution_pool.shutdown(wait=False, cancel_futures=True)
 
         self.queued_invocations.put(QUEUE_SHUTDOWN)
         self.available_environments.put(QUEUE_SHUTDOWN)
-        if self.invocation_thread:
-            try:
-                self.invocation_thread.stop()
-                self.invocation_thread.join(timeout=5.0)
-                LOG.debug("Thread stopped '%s'", self.function_arn)
-            except TimeoutError:
-                LOG.warning("Thread did not stop after 5s '%s'", self.function_arn)
 
         futures_exenv_shutdown = []
         for environment in list(self.all_environments.values()):
             futures_exenv_shutdown.append(
                 self.execution_env_pool.submit(self.stop_environment, environment)
             )
-        concurrent.futures.wait(futures_exenv_shutdown)
+        if self.invocation_thread:
+            try:
+                self.invocation_thread.join(timeout=5.0)
+                LOG.debug("Thread stopped '%s'", self.function_arn)
+            except TimeoutError:
+                LOG.warning("Thread did not stop after 5s '%s'", self.function_arn)
 
-        self.execution_env_pool.shutdown(cancel_futures=True)
+        concurrent.futures.wait(futures_exenv_shutdown, timeout=3)
+        self.execution_env_pool.shutdown(wait=False, cancel_futures=True)
         self.log_handler.stop()
         get_runtime_executor().cleanup_version(self.function_version)
 
@@ -267,7 +264,6 @@ class LambdaVersionManager(ServiceEndpoint):
         def scale_environments(*args, **kwargs):
             futures = []
             if diff > 0:
-                # Create MORE
                 for _ in range(diff):
                     runtime_environment = RuntimeEnvironment(
                         function_version=self.function_version,
@@ -283,7 +279,6 @@ class LambdaVersionManager(ServiceEndpoint):
                     futures.append(self.provisioning_pool.submit(start_provisioning_env))
 
             elif diff < 0:
-                # DELETE diff
                 provisioned_envs = [
                     e
                     for e in self.all_environments.values()
@@ -298,7 +293,6 @@ class LambdaVersionManager(ServiceEndpoint):
             concurrent.futures.wait(futures)
 
             if target_provisioned_environments == 0:
-                # delete
                 self.provisioned_state = None
             else:
                 self.provisioned_state.available = provisioned_concurrent_executions
@@ -316,6 +310,8 @@ class LambdaVersionManager(ServiceEndpoint):
                 RuntimeStatus.RUNNING,
             ]
         )
+
+        # TODO: invocation number instead of considered
         if (
             self.function.reserved_concurrent_executions is not None
             and considered_envs >= self.function.reserved_concurrent_executions
@@ -329,8 +325,7 @@ class LambdaVersionManager(ServiceEndpoint):
             service_endpoint=self,
         )
         self.all_environments[runtime_environment.id] = runtime_environment
-        # TODO async?
-        runtime_environment.start()
+        self.execution_env_pool.submit(runtime_environment.start)
 
     def stop_environment(self, environment: RuntimeEnvironment) -> None:
         try:
@@ -401,9 +396,13 @@ class LambdaVersionManager(ServiceEndpoint):
                             )
                             return
 
-                        self.lambda_service.incr_concurrent_invocations_count(
-                            self.function_version.id.account
-                        )
+                        # TODO: untested assumption(!)
+                        #   because provisioned concurrency affects the unreserved
+                        if environment.initialization_type == "on-demand":
+                            self.lambda_service.report_invocation_start(
+                                self.function_version.id.unqualified_arn()
+                            )
+
                         self.running_invocations[
                             queued_invocation.invocation_id
                         ] = RunningInvocation(
@@ -429,8 +428,8 @@ class LambdaVersionManager(ServiceEndpoint):
                             environment.id,
                         )
                         self.running_invocations.pop(queued_invocation.invocation_id, None)
-                        self.lambda_service.decr_concurrent_invocations_count(
-                            self.function_version.id.account
+                        self.lambda_service.report_invocation_end(
+                            self.function_version.id.unqualified_arn()
                         )
                         # try next environment
                         environment = None
@@ -452,11 +451,10 @@ class LambdaVersionManager(ServiceEndpoint):
             invocation_id = str(uuid.uuid4())
         if invocation.invocation_type == "RequestResponse":
             if (
-                self.function.reserved_concurrent_executions is not None
-                and self.lambda_service.get_concurrent_invocations_count(
-                    self.function_version.id.account
+                self.lambda_service.get_available_fn_concurrency(
+                    self.function_version.id.unqualified_arn()
                 )
-                >= self.function.reserved_concurrent_executions
+                <= 0
             ):
                 raise TooManyRequestsException(
                     "Rate Exceeded.",
@@ -527,7 +525,9 @@ class LambdaVersionManager(ServiceEndpoint):
                 source_arn=self.function_arn,
                 dlq_arn=self.function_version.config.dead_letter_arn,
                 event=json.loads(to_str(original_payload)),
-                error=InvocationException(message="hi", result=to_str(invocation_result.payload)),
+                error=InvocationException(
+                    message="hi", result=to_str(invocation_result.payload)
+                ),  # TODO: check message
             )
 
         # 2. Handle actual destination setup
@@ -676,7 +676,7 @@ class LambdaVersionManager(ServiceEndpoint):
         # mark executor available again
         executor.invocation_done()
         self.available_environments.put(executor)
-        self.lambda_service.decr_concurrent_invocations_count(self.function_version.id.account)
+        self.lambda_service.report_invocation_end(self.function_version.id.unqualified_arn())
 
     # Service Endpoint implementation
     def invocation_result(self, invoke_id: str, invocation_result: InvocationResult) -> None:
