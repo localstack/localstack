@@ -1,6 +1,5 @@
 import json
 import os
-import platform
 from typing import Literal
 
 from localstack.utils.common import to_str
@@ -127,7 +126,3 @@ def is_new_provider():
     return os.environ.get("TEST_TARGET") != "AWS_CLOUD" and os.environ.get(
         "PROVIDER_OVERRIDE_LAMBDA"
     ) in ["asf", "v2"]
-
-
-def is_arm_compatible():
-    return platform.machine() == "arm64"

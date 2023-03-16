@@ -16,7 +16,6 @@ from localstack.services.awslambda.lambda_api import use_docker
 from localstack.testing.aws.lambda_utils import (
     concurrency_update_done,
     get_invoke_init_type,
-    is_arm_compatible,
     is_old_provider,
     update_done,
 )
@@ -27,7 +26,7 @@ from localstack.testing.snapshots.transformer_utility import PATTERN_UUID
 from localstack.utils import files, platform, testutil
 from localstack.utils.files import load_file
 from localstack.utils.http import safe_requests
-from localstack.utils.platform import standardized_arch
+from localstack.utils.platform import is_arm_compatible, standardized_arch
 from localstack.utils.strings import short_uid, to_bytes, to_str
 from localstack.utils.sync import retry, wait_until
 from localstack.utils.testutil import create_lambda_archive
