@@ -1,12 +1,8 @@
 {
   "tests/integration/test_logs.py::TestCloudWatchLogs::test_put_subscription_filter_lambda": {
-    "recorded-date": "08-06-2022, 11:51:14",
+    "recorded-date": "17-03-2023, 13:55:00",
     "recorded-content": {
       "add_permission": {
-        "ResponseMetadata": {
-          "HTTPHeaders": {},
-          "HTTPStatusCode": 201
-        },
         "Statement": {
           "Sid": "<resource:1>",
           "Effect": "Allow",
@@ -23,6 +19,10 @@
               "AWS:SourceArn": "arn:aws:logs:<region>:111111111111:log-group:<log-group-name:1>:<resource:2>"
             }
           }
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 201
         }
       },
       "put_subscription_filter": {
@@ -34,12 +34,12 @@
       "describe_subscription_filter": {
         "subscriptionFilters": [
           {
-            "filterName": "test",
-            "logGroupName": "<log-group-name:1>",
-            "filterPattern": "",
+            "creationTime": "timestamp",
             "destinationArn": "arn:aws:lambda:<region>:111111111111:function:<resource:1>",
             "distribution": "ByLogStream",
-            "creationTime": "timestamp"
+            "filterName": "test",
+            "filterPattern": "",
+            "logGroupName": "<log-group-name:1>"
           }
         ],
         "ResponseMetadata": {
@@ -49,18 +49,14 @@
       },
       "list_all_log_events": [
         {
-          "logStreamName": "<log-stream-name:1>",
+          "id": "id",
           "timestamp": "timestamp",
-          "message": "test",
-          "ingestionTime": "timestamp",
-          "eventId": "event_id"
+          "message": "test"
         },
         {
-          "logStreamName": "<log-stream-name:1>",
+          "id": "id",
           "timestamp": "timestamp",
-          "message": "test 2",
-          "ingestionTime": "timestamp",
-          "eventId": "event_id"
+          "message": "test 2"
         }
       ]
     }
