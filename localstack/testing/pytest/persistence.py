@@ -38,7 +38,7 @@ def pytest_runtest_call(item: Item) -> None:
     result = collector.try_pickle_state_containers(marker.dirty)
     marker.clear()
 
-    if result:
+    if result.errors:
         raise PicklingTestException(result)
 
 
