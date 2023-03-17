@@ -190,6 +190,24 @@ class TestSNSProvider:
         snapshot.match("exception", e.value.response)
 
     @pytest.mark.aws_validated
+    def test_unsubscribe_from_non_existing_subscription(
+        self,
+        sns_client,
+        sns_create_topic,
+        sqs_create_queue,
+        sqs_client,
+        sns_create_sqs_subscription,
+        snapshot,
+    ):
+        topic_arn = sns_create_topic()["TopicArn"]
+        queue_url = sqs_create_queue()
+        subscription = sns_create_sqs_subscription(topic_arn=topic_arn, queue_url=queue_url)
+        sns_client.unsubscribe(SubscriptionArn=subscription["SubscriptionArn"])
+        # unsubscribing a second time
+        response = sns_client.unsubscribe(SubscriptionArn=subscription["SubscriptionArn"])
+        snapshot.match("empty-unsubscribe", response)
+
+    @pytest.mark.aws_validated
     def test_attribute_raw_subscribe(
         self,
         sqs_client,

@@ -480,7 +480,11 @@ class SnsProvider(SnsApi, ServiceLifecycleHook):
 
         # pop the subscription at the end, to avoid race condition by iterating over the topic subscriptions
         subscription = store.subscriptions.get(subscription_arn)
-        # TODO: can it be None? or moto raises an error?
+
+        if not subscription:
+            # unsubscribe is idempotent, so unsubscribing from a non-existing topic does nothing
+            return
+
         if subscription["Protocol"] in ["http", "https"]:
             # TODO: actually validate this (re)subscribe behaviour somehow (localhost.run?)
             #  we might need to save the sub token in the store

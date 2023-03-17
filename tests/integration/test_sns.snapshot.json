@@ -3452,5 +3452,16 @@
         }
       }
     }
+  },
+  "tests/integration/test_sns.py::TestSNSProvider::test_unsubscribe_from_non_existing_subscription": {
+    "recorded-date": "17-03-2023, 19:35:30",
+    "recorded-content": {
+      "empty-unsubscribe": {
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
   }
 }
