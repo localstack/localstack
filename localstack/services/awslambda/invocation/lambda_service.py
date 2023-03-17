@@ -377,9 +377,6 @@ class LambdaService:
                     unqualified_function_arn,
                     tracker.function_concurrency[unqualified_function_arn],
                 )
-                raise Exception(
-                    "Invalid function concurrency state"
-                )  # TODO: remove this before merge
 
     def get_available_fn_concurrency(self, unqualified_function_arn: str) -> int:
         """
@@ -432,9 +429,6 @@ class LambdaService:
                     unqualified_function_arn,
                     available_unreserved_concurrency,
                 )
-                raise Exception(
-                    "Invalid function concurrency state"
-                )  # TODO: remove this before merge
 
             return available_unreserved_concurrency
 

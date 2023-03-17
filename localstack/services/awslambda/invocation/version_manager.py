@@ -271,12 +271,7 @@ class LambdaVersionManager(ServiceEndpoint):
                         service_endpoint=self,
                     )
                     self.all_environments[runtime_environment.id] = runtime_environment
-
-                    def start_provisioning_env():
-                        runtime_environment.start()
-                        self.set_environment_ready(runtime_environment.id)
-
-                    futures.append(self.provisioning_pool.submit(start_provisioning_env))
+                    futures.append(self.provisioning_pool.submit(runtime_environment.start))
 
             elif diff < 0:
                 provisioned_envs = [
