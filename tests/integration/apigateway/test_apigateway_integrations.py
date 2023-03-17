@@ -2,14 +2,16 @@ import json
 
 import pytest
 import requests
+from botocore.exceptions import ClientError
 
+from localstack.aws.accounts import get_aws_account_id
 from localstack.services.apigateway.helpers import path_based_url
 from localstack.services.awslambda.lambda_utils import LAMBDA_RUNTIME_PYTHON39
 from localstack.utils.aws import arns, aws_stack
 from localstack.utils.strings import short_uid
 from localstack.utils.sync import retry
 from localstack.utils.testutil import create_lambda_function
-from tests.integration.apigateway_fixtures import (
+from tests.integration.apigateway.apigateway_fixtures import (
     api_invoke_url,
     create_rest_api_integration,
     create_rest_resource,
@@ -35,6 +37,7 @@ def test_http_integration(apigateway_client, create_rest_apigw):
         resourceId=root_id,
         httpMethod="GET",
         type="HTTP",
+        # TODO: replace httpbin.org requests with httpserver/echo_http_server fixture
         uri="http://httpbin.org/robots.txt",
         integrationHttpMethod="GET",
     )
@@ -308,6 +311,348 @@ def test_lambda_proxy_integration(
     )
 
 
+def test_put_integration_responses(apigateway_client):
+    response = apigateway_client.create_rest_api(name="my_api", description="this is my api")
+    api_id = response["id"]
+
+    resources = apigateway_client.get_resources(restApiId=api_id)
+    root_id = [resource for resource in resources["items"] if resource["path"] == "/"][0]["id"]
+
+    apigateway_client.put_method(
+        restApiId=api_id, resourceId=root_id, httpMethod="GET", authorizationType="none"
+    )
+
+    apigateway_client.put_method_response(
+        restApiId=api_id, resourceId=root_id, httpMethod="GET", statusCode="200"
+    )
+
+    apigateway_client.put_integration(
+        restApiId=api_id,
+        resourceId=root_id,
+        httpMethod="GET",
+        type="HTTP",
+        # TODO: replace httpbin.org requests with httpserver/echo_http_server fixture
+        uri="http://httpbin.org/robots.txt",
+        integrationHttpMethod="POST",
+    )
+
+    response = apigateway_client.put_integration_response(
+        restApiId=api_id,
+        resourceId=root_id,
+        httpMethod="GET",
+        statusCode="200",
+        selectionPattern="foobar",
+        responseTemplates={},
+    )
+
+    # this is hard to match against, so remove it
+    response["ResponseMetadata"].pop("HTTPHeaders", None)
+    response["ResponseMetadata"].pop("RetryAttempts", None)
+    response["ResponseMetadata"].pop("RequestId", None)
+    assert response == (
+        {
+            "statusCode": "200",
+            "selectionPattern": "foobar",
+            "ResponseMetadata": {"HTTPStatusCode": 201},
+            "responseTemplates": {},  # Note: TF compatibility
+        }
+    )
+
+    response = apigateway_client.get_integration_response(
+        restApiId=api_id, resourceId=root_id, httpMethod="GET", statusCode="200"
+    )
+    # this is hard to match against, so remove it
+    response["ResponseMetadata"].pop("HTTPHeaders", None)
+    response["ResponseMetadata"].pop("RetryAttempts", None)
+    response["ResponseMetadata"].pop("RequestId", None)
+    assert response == (
+        {
+            "statusCode": "200",
+            "selectionPattern": "foobar",
+            "ResponseMetadata": {"HTTPStatusCode": 200},
+            "responseTemplates": {},  # Note: TF compatibility
+        }
+    )
+
+    response = apigateway_client.get_method(restApiId=api_id, resourceId=root_id, httpMethod="GET")
+    # this is hard to match against, so remove it
+    response["ResponseMetadata"].pop("HTTPHeaders", None)
+    response["ResponseMetadata"].pop("RetryAttempts", None)
+    response["ResponseMetadata"].pop("RequestId", None)
+    assert response["methodIntegration"]["integrationResponses"] == (
+        {
+            "200": {
+                "responseTemplates": {},  # Note: TF compatibility
+                "selectionPattern": "foobar",
+                "statusCode": "200",
+            }
+        }
+    )
+
+    url = path_based_url(api_id=api_id, stage_name="local", path="/")
+    response = requests.get(url, data=json.dumps({"egg": "ham"}))
+    assert response.ok
+
+    apigateway_client.delete_integration_response(
+        restApiId=api_id, resourceId=root_id, httpMethod="GET", statusCode="200"
+    )
+
+    response = apigateway_client.get_method(restApiId=api_id, resourceId=root_id, httpMethod="GET")
+    assert response["methodIntegration"]["integrationResponses"] == {}
+
+    # adding a new method and performing put integration with contentHandling as CONVERT_TO_BINARY
+    apigateway_client.put_method(
+        restApiId=api_id, resourceId=root_id, httpMethod="PUT", authorizationType="none"
+    )
+
+    apigateway_client.put_method_response(
+        restApiId=api_id, resourceId=root_id, httpMethod="PUT", statusCode="200"
+    )
+
+    apigateway_client.put_integration(
+        restApiId=api_id,
+        resourceId=root_id,
+        httpMethod="PUT",
+        type="HTTP",
+        # TODO: replace httpbin.org requests with httpserver/echo_http_server fixture
+        uri="http://httpbin.org/robots.txt",
+        integrationHttpMethod="POST",
+    )
+
+    response = apigateway_client.put_integration_response(
+        restApiId=api_id,
+        resourceId=root_id,
+        httpMethod="PUT",
+        statusCode="200",
+        selectionPattern="foobar",
+        responseTemplates={},
+        contentHandling="CONVERT_TO_BINARY",
+    )
+
+    # this is hard to match against, so remove it
+    response["ResponseMetadata"].pop("HTTPHeaders", None)
+    response["ResponseMetadata"].pop("RetryAttempts", None)
+    response["ResponseMetadata"].pop("RequestId", None)
+    assert response == (
+        {
+            "statusCode": "200",
+            "selectionPattern": "foobar",
+            "ResponseMetadata": {"HTTPStatusCode": 201},
+            "responseTemplates": {},  # Note: TF compatibility
+            "contentHandling": "CONVERT_TO_BINARY",
+        }
+    )
+
+    response = apigateway_client.get_integration_response(
+        restApiId=api_id, resourceId=root_id, httpMethod="PUT", statusCode="200"
+    )
+    # this is hard to match against, so remove it
+    response["ResponseMetadata"].pop("HTTPHeaders", None)
+    response["ResponseMetadata"].pop("RetryAttempts", None)
+    response["ResponseMetadata"].pop("RequestId", None)
+    assert response == (
+        {
+            "statusCode": "200",
+            "selectionPattern": "foobar",
+            "ResponseMetadata": {"HTTPStatusCode": 200},
+            "responseTemplates": {},  # Note: TF compatibility
+            "contentHandling": "CONVERT_TO_BINARY",
+        }
+    )
+
+
+def test_put_integration_response_with_response_template(apigateway_client):
+    response = apigateway_client.create_rest_api(name="my_api", description="this is my api")
+    api_id = response["id"]
+    resources = apigateway_client.get_resources(restApiId=api_id)
+    root_id = [resource for resource in resources["items"] if resource["path"] == "/"][0]["id"]
+
+    apigateway_client.put_method(
+        restApiId=api_id, resourceId=root_id, httpMethod="GET", authorizationType="NONE"
+    )
+    apigateway_client.put_method_response(
+        restApiId=api_id, resourceId=root_id, httpMethod="GET", statusCode="200"
+    )
+    apigateway_client.put_integration(
+        restApiId=api_id,
+        resourceId=root_id,
+        httpMethod="GET",
+        type="HTTP",
+        # TODO: replace httpbin.org requests with httpserver/echo_http_server fixture
+        uri="http://httpbin.org/robots.txt",
+        integrationHttpMethod="POST",
+    )
+
+    apigateway_client.put_integration_response(
+        restApiId=api_id,
+        resourceId=root_id,
+        httpMethod="GET",
+        statusCode="200",
+        selectionPattern="foobar",
+        responseTemplates={"application/json": json.dumps({"data": "test"})},
+    )
+
+    response = apigateway_client.get_integration_response(
+        restApiId=api_id, resourceId=root_id, httpMethod="GET", statusCode="200"
+    )
+
+    # this is hard to match against, so remove it
+    response["ResponseMetadata"].pop("HTTPHeaders", None)
+    response["ResponseMetadata"].pop("RetryAttempts", None)
+    response["ResponseMetadata"].pop("RequestId", None)
+    assert response == {
+        "statusCode": "200",
+        "selectionPattern": "foobar",
+        "ResponseMetadata": {"HTTPStatusCode": 200},
+        "responseTemplates": {"application/json": json.dumps({"data": "test"})},
+    }
+
+
+# TODO: add snapshot test!
+def test_put_integration_validation(apigateway_client):
+    response = apigateway_client.create_rest_api(name="my_api", description="this is my api")
+    api_id = response["id"]
+    resources = apigateway_client.get_resources(restApiId=api_id)
+    root_id = [resource for resource in resources["items"] if resource["path"] == "/"][0]["id"]
+
+    apigateway_client.put_method(
+        restApiId=api_id, resourceId=root_id, httpMethod="GET", authorizationType="NONE"
+    )
+    apigateway_client.put_method_response(
+        restApiId=api_id, resourceId=root_id, httpMethod="GET", statusCode="200"
+    )
+
+    http_types = ["HTTP", "HTTP_PROXY"]
+    aws_types = ["AWS", "AWS_PROXY"]
+    types_requiring_integration_method = http_types + ["AWS"]
+    types_not_requiring_integration_method = ["MOCK"]
+
+    # TODO: replace httpbin.org requests below with httpserver/echo_http_server fixture
+
+    for _type in types_requiring_integration_method:
+        # Ensure that integrations of these types fail if no integrationHttpMethod is provided
+        with pytest.raises(ClientError) as ex:
+            apigateway_client.put_integration(
+                restApiId=api_id,
+                resourceId=root_id,
+                httpMethod="GET",
+                type=_type,
+                uri="http://httpbin.org/robots.txt",
+            )
+        assert ex.value.response["Error"]["Code"] == "BadRequestException"
+        assert (
+            ex.value.response["Error"]["Message"]
+            == "Enumeration value for HttpMethod must be non-empty"
+        )
+
+    for _type in types_not_requiring_integration_method:
+        # Ensure that integrations of these types do not need the integrationHttpMethod
+        apigateway_client.put_integration(
+            restApiId=api_id,
+            resourceId=root_id,
+            httpMethod="GET",
+            type=_type,
+            uri="http://httpbin.org/robots.txt",
+        )
+    for _type in http_types:
+        # Ensure that it works fine when providing the integrationHttpMethod-argument
+        apigateway_client.put_integration(
+            restApiId=api_id,
+            resourceId=root_id,
+            httpMethod="GET",
+            type=_type,
+            uri="http://httpbin.org/robots.txt",
+            integrationHttpMethod="POST",
+        )
+    for _type in ["AWS"]:
+        # Ensure that it works fine when providing the integrationHttpMethod + credentials
+        apigateway_client.put_integration(
+            restApiId=api_id,
+            resourceId=root_id,
+            credentials="arn:aws:iam::{}:role/service-role/testfunction-role-oe783psq".format(
+                get_aws_account_id()
+            ),
+            httpMethod="GET",
+            type=_type,
+            uri="arn:aws:apigateway:us-west-2:s3:path/b/k",
+            integrationHttpMethod="POST",
+        )
+    for _type in aws_types:
+        # Ensure that credentials are not required when URI points to a Lambda stream
+        apigateway_client.put_integration(
+            restApiId=api_id,
+            resourceId=root_id,
+            httpMethod="GET",
+            type=_type,
+            uri="arn:aws:apigateway:eu-west-1:lambda:path/2015-03-31/functions/arn:aws:lambda:eu"
+            "-west-1:012345678901:function:MyLambda/invocations",
+            integrationHttpMethod="POST",
+        )
+    for _type in ["AWS_PROXY"]:
+        # Ensure that aws_proxy does not support S3
+        with pytest.raises(ClientError) as ex:
+            apigateway_client.put_integration(
+                restApiId=api_id,
+                resourceId=root_id,
+                credentials="arn:aws:iam::{}:role/service-role/testfunction-role-oe783psq".format(
+                    get_aws_account_id()
+                ),
+                httpMethod="GET",
+                type=_type,
+                uri="arn:aws:apigateway:us-west-2:s3:path/b/k",
+                integrationHttpMethod="POST",
+            )
+        assert ex.value.response["Error"]["Code"] == "BadRequestException"
+        assert (
+            ex.value.response["Error"]["Message"] == "Integrations of type 'AWS_PROXY' "
+            "currently only supports Lambda function "
+            "and Firehose stream invocations."
+        )
+    for _type in http_types:
+        # Ensure that the URI is valid HTTP
+        with pytest.raises(ClientError) as ex:
+            apigateway_client.put_integration(
+                restApiId=api_id,
+                resourceId=root_id,
+                httpMethod="GET",
+                type=_type,
+                uri="non-valid-http",
+                integrationHttpMethod="POST",
+            )
+        assert ex.value.response["Error"]["Code"] == "BadRequestException"
+        assert ex.value.response["Error"]["Message"] == "Invalid HTTP endpoint specified for URI"
+
+    # Ensure that the URI is an ARN
+    with pytest.raises(ClientError) as ex:
+        apigateway_client.put_integration(
+            restApiId=api_id,
+            resourceId=root_id,
+            httpMethod="GET",
+            type="AWS",
+            uri="non-valid-arn",
+            integrationHttpMethod="POST",
+        )
+    assert ex.value.response["Error"]["Code"] == "BadRequestException"
+    assert ex.value.response["Error"]["Message"] == "Invalid ARN specified in the request"
+
+    # Ensure that the URI is a valid ARN
+    with pytest.raises(ClientError) as ex:
+        apigateway_client.put_integration(
+            restApiId=api_id,
+            resourceId=root_id,
+            httpMethod="GET",
+            type="AWS",
+            uri="arn:aws:iam::0000000000:role/service-role/asdf",
+            integrationHttpMethod="POST",
+        )
+    assert ex.value.response["Error"]["Code"] == "BadRequestException"
+    assert (
+        ex.value.response["Error"]["Message"] == "AWS ARN for integration must contain path or "
+        "action"
+    )
+
+
+# TODO - remove the code below?
 #
 # def test_aws_integration_dynamodb(apigateway_client):
 #     if settings.TEST_SERVER_MODE:

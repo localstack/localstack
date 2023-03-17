@@ -264,6 +264,8 @@ class ResponseTemplates(Templates):
 
         # we only support JSON templates for now - if there is no template we return
         # the response as is
+        # TODO - support other content types, besides application/json (based on `Accept` request header)
+        # see https://docs.aws.amazon.com/apigateway/latest/developerguide/request-response-data-mappings.html#selecting-mapping-templates
         template = response_templates.get(APPLICATION_JSON, {})
         if not template:
             return response._content

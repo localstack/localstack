@@ -6,6 +6,7 @@ from unittest.mock import Mock
 
 import boto3
 import pytest
+from botocore.exceptions import ClientError
 
 from localstack import config
 from localstack.constants import APPLICATION_JSON
@@ -181,7 +182,10 @@ class ApiGatewayPathsTest(unittest.TestCase):
     def test_request_validate_body_with_no_model_for_schema_name(self):
         apigateway_client = self._mock_client()
         apigateway_client.get_request_validator.return_value = {"validateRequestBody": True}
-        apigateway_client.get_model.return_value = None
+        apigateway_client.get_model.side_effect = ClientError(
+            error_response={"Error": {"Code": "NotFoundException", "Message": ""}},
+            operation_name="GetModel",
+        )
         ctx = ApiInvocationContext("POST", "/", '{"id":"1"}', {})
         ctx.api_id = "deadbeef"
         ctx.resource = {

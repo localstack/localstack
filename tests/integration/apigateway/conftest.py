@@ -2,7 +2,7 @@ import pytest
 
 from localstack.constants import APPLICATION_JSON
 from localstack.utils.strings import short_uid
-from tests.integration.apigateway_fixtures import (
+from tests.integration.apigateway.apigateway_fixtures import (
     create_rest_api_deployment,
     create_rest_api_integration,
     create_rest_api_integration_response,
@@ -11,14 +11,49 @@ from tests.integration.apigateway_fixtures import (
     create_rest_resource,
     create_rest_resource_method,
 )
-from tests.integration.test_apigateway import (
-    APIGATEWAY_ASSUME_ROLE_POLICY,
-    APIGATEWAY_DYNAMODB_POLICY,
-    APIGATEWAY_KINESIS_POLICY,
-)
 
 # default name used for created REST API stages
 DEFAULT_STAGE_NAME = "dev"
+
+STEPFUNCTIONS_ASSUME_ROLE_POLICY = {
+    "Version": "2012-10-17",
+    "Statement": [
+        {
+            "Effect": "Allow",
+            "Principal": {"Service": "states.amazonaws.com"},
+            "Action": "sts:AssumeRole",
+        }
+    ],
+}
+
+APIGATEWAY_STEPFUNCTIONS_POLICY = {
+    "Version": "2012-10-17",
+    "Statement": [{"Effect": "Allow", "Action": "states:*", "Resource": "*"}],
+}
+
+APIGATEWAY_KINESIS_POLICY = {
+    "Version": "2012-10-17",
+    "Statement": [{"Effect": "Allow", "Action": "kinesis:*", "Resource": "*"}],
+}
+
+APIGATEWAY_LAMBDA_POLICY = {
+    "Version": "2012-10-17",
+    "Statement": [{"Effect": "Allow", "Action": "lambda:*", "Resource": "*"}],
+}
+
+APIGATEWAY_DYNAMODB_POLICY = {
+    "Version": "2012-10-17",
+    "Statement": [{"Effect": "Allow", "Action": "dynamodb:*", "Resource": "*"}],
+}
+
+APIGATEWAY_ASSUME_ROLE_POLICY = {
+    "Statement": {
+        "Sid": "",
+        "Effect": "Allow",
+        "Principal": {"Service": "apigateway.amazonaws.com"},
+        "Action": "sts:AssumeRole",
+    }
+}
 
 
 @pytest.fixture

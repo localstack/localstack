@@ -2,6 +2,7 @@ import json
 import logging
 from typing import Dict
 
+from botocore.exceptions import ClientError
 from jsonschema import ValidationError, validate
 from requests.models import Response
 
@@ -82,11 +83,13 @@ class RequestValidator:
             return False
 
         schema_name = resource["requestModels"].get(APPLICATION_JSON)
-        model = self.apigateway_client.get_model(
-            restApiId=self.context.api_id,
-            modelName=schema_name,
-        )
-        if not model:
+        try:
+            model = self.apigateway_client.get_model(
+                restApiId=self.context.api_id,
+                modelName=schema_name,
+            )
+        except ClientError as e:
+            LOG.exception("An exception occurred while trying to validate the request: %s", e)
             return False
 
         try:
