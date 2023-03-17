@@ -30,12 +30,10 @@ class RestApiContainer:
     documentation_parts: Dict[str, DocumentationPart]
     # not used yet, still in moto
     gateway_responses: Dict[str, GatewayResponse]
-    # not used yet, still in moto
+    # maps Model name -> Model
     models: Dict[str, Model]
     # maps ResourceId of a Resource to its children ResourceIds
     resource_children: Dict[str, List[str]]
-    # maps ModelId to Resource methods using it
-    models_in_use: Dict[str, List[str]]
 
     def __init__(self, rest_api: RestApi):
         self.rest_api = rest_api
@@ -45,7 +43,6 @@ class RestApiContainer:
         self.gateway_responses = {}
         self.models = {}
         self.resource_children = {}
-        self.models_in_use = {}
 
 
 class ApiGatewayStore(BaseStore):

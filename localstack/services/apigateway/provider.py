@@ -439,7 +439,6 @@ class ApigatewayProvider(ApigatewayApi, ServiceLifecycleHook):
         if request_validator_id and request_validator_id not in rest_api_container.validators:
             raise BadRequestException("Invalid Request Validator identifier specified")
 
-        models_to_add = []
         if request_models:
             for content_type, model_name in request_models.items():
                 # FIXME: add Empty model to rest api at creation
@@ -448,15 +447,8 @@ class ApigatewayProvider(ApigatewayApi, ServiceLifecycleHook):
                 if model_name not in rest_api_container.models:
                     raise BadRequestException(f"Invalid model identifier specified: {model_name}")
 
-                models_to_add.append(model_name)
-
         response: Method = call_moto(context)
         remove_empty_attributes_from_method(response)
-
-        method_path = f"{moto_rest_api.resources[resource_id].get_path()}/{http_method}"
-        for model_name in models_to_add:
-            paths_for_model = rest_api_container.models_in_use.setdefault(model_name, [])
-            paths_for_model.append(method_path)
 
         # this is straight from the moto patch, did not test it yet but has the same functionality
         # FIXME: check if still necessary after testing Authorizers
@@ -487,8 +479,6 @@ class ApigatewayProvider(ApigatewayApi, ServiceLifecycleHook):
         applicable_patch_operations = []
         modifying_auth_type = False
         modified_authorizer_id = False
-        moto_request_models = moto_method.request_models or {}
-        models_before_patch = set(moto_request_models.values())
         for patch_operation in patch_operations:
             op = patch_operation.get("op")
             path = patch_operation.get("path")
@@ -548,21 +538,6 @@ class ApigatewayProvider(ApigatewayApi, ServiceLifecycleHook):
         # TODO: test with multiple patch operations which would not be compatible between each other
         _patch_api_gateway_entity(moto_method, applicable_patch_operations)
 
-        moto_request_models = moto_method.request_models or {}
-        models_after_patch = set(moto_request_models.values())
-        if models_before_patch != models_after_patch:
-            method_path = f"{moto_resource.get_path()}/{http_method}"
-            to_remove = models_before_patch - models_after_patch
-            for model_name in to_remove:
-                in_use = rest_api.models_in_use.get(model_name)
-                if in_use and method_path in in_use:
-                    in_use.remove(method_path)
-
-            to_add = models_after_patch - models_before_patch
-            for model_name in to_add:
-                paths_for_model = rest_api.models_in_use.setdefault(model_name, [])
-                paths_for_model.append(method_path)
-
         response = moto_method.to_json()
         remove_empty_attributes_from_method(response)
         return response
@@ -575,20 +550,10 @@ class ApigatewayProvider(ApigatewayApi, ServiceLifecycleHook):
         if not moto_rest_api or not (moto_resource := moto_rest_api.resources.get(resource_id)):
             raise NotFoundException("Invalid Resource identifier specified")
 
-        if not (moto_method := moto_resource.resource_methods.get(http_method)):
+        if not (moto_resource.resource_methods.get(http_method)):
             raise NotFoundException("Invalid Method identifier specified")
 
-        moto_request_models = moto_method.request_models or {}
-        models_not_used = set(moto_request_models.values())
         call_moto(context)
-
-        store = get_apigateway_store(account_id=context.account_id, region=context.region)
-        rest_api = store.rest_apis[rest_api_id]
-        method_path = f"{moto_resource.get_path()}/{http_method}"
-        for model_name in models_not_used:
-            in_use = rest_api.models_in_use.get(model_name)
-            if in_use and method_path in in_use:
-                in_use.remove(method_path)
 
     # method responses
 
@@ -1378,14 +1343,10 @@ class ApigatewayProvider(ApigatewayApi, ServiceLifecycleHook):
         ):
             raise NotFoundException(f"Invalid model name specified: {model_name}")
 
-        models_in_use = store.rest_apis[rest_api_id].models_in_use
-        if in_use := models_in_use.get(model_name):
-            raise ConflictException(
-                f"Cannot delete model '{model_name}', is referenced in method request: {in_use[-1]}"
-            )
+        moto_rest_api = get_moto_rest_api(context, rest_api_id)
+        validate_model_in_use(moto_rest_api, model_name)
 
         store.rest_apis[rest_api_id].models.pop(model_name, None)
-        store.rest_apis[rest_api_id].models_in_use.pop(model_name, None)
 
 
 # ---------------
@@ -1449,6 +1410,16 @@ def is_greedy_path(path_part: str) -> bool:
 
 def is_variable_path(path_part: str) -> bool:
     return path_part.startswith("{") and path_part.endswith("}")
+
+
+def validate_model_in_use(moto_rest_api: MotoRestAPI, model_name: str) -> None:
+    for resource in moto_rest_api.resources.values():
+        for method in resource.resource_methods.values():
+            if model_name in set(method.request_models.values()):
+                path = f"{resource.get_path()}/{method.http_method}"
+                raise ConflictException(
+                    f"Cannot delete model '{model_name}', is referenced in method request: {path}"
+                )
 
 
 def create_custom_context(

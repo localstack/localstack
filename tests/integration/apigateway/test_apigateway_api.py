@@ -844,6 +844,12 @@ class TestApiGatewayApi:
         snapshot.match("req-params-same-name", e.value.response)
 
     @pytest.mark.aws_validated
+    @pytest.mark.skip_snapshot_verify(
+        paths=[
+            "$.delete-model-used-by-2-method.Error.Message",
+            "$.delete-model-used-by-2-method.message",  # we can't guarantee the last method will be the same as AWS
+        ]
+    )
     def test_put_method_model(
         self,
         apigateway_client,
