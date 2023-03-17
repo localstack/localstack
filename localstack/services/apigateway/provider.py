@@ -61,6 +61,7 @@ from localstack.aws.api.apigateway import (
 from localstack.aws.forwarder import NotImplementedAvoidFallbackError, create_aws_request_context
 from localstack.constants import APPLICATION_JSON
 from localstack.services.apigateway.helpers import (
+    EMPTY_MODEL,
     OpenApiExporter,
     apply_json_patch_safe,
     get_apigateway_store,
@@ -137,7 +138,7 @@ class ApigatewayProvider(ApigatewayApi, ServiceLifecycleHook):
         rest_api_container = RestApiContainer(rest_api=response)
         store.rest_apis[result["id"]] = rest_api_container
         # add the 2 default models
-        rest_api_container.models["Empty"] = DEFAULT_EMPTY_MODEL
+        rest_api_container.models[EMPTY_MODEL] = DEFAULT_EMPTY_MODEL
         rest_api_container.models["Error"] = DEFAULT_ERROR_MODEL
 
         return response
@@ -442,7 +443,7 @@ class ApigatewayProvider(ApigatewayApi, ServiceLifecycleHook):
         if request_models:
             for content_type, model_name in request_models.items():
                 # FIXME: add Empty model to rest api at creation
-                if model_name == "Empty":
+                if model_name == EMPTY_MODEL:
                     continue
                 if model_name not in rest_api_container.models:
                     raise BadRequestException(f"Invalid model identifier specified: {model_name}")
@@ -513,10 +514,15 @@ class ApigatewayProvider(ApigatewayApi, ServiceLifecycleHook):
                 continue
 
             elif path == "/requestValidatorId" and value not in rest_api.validators:
+                if not value:
+                    # you can remove a requestValidator by passing an empty string as a value
+                    patch_op = {"op": "remove", "path": path, "value": value}
+                    applicable_patch_operations.append(patch_op)
+                    continue
                 raise BadRequestException("Invalid Request Validator identifier specified")
 
             elif path.startswith("/requestModels/"):
-                if value != "Empty" and value not in rest_api.models:
+                if value != EMPTY_MODEL and value not in rest_api.models:
                     raise BadRequestException(f"Invalid model identifier specified: {value}")
 
             applicable_patch_operations.append(patch_operation)
@@ -1499,7 +1505,7 @@ def to_response_json(model_type, data, api_id=None, self_link=None, id_attr=None
 
 DEFAULT_EMPTY_MODEL = Model(
     id=short_uid()[:6],
-    name="Empty",
+    name=EMPTY_MODEL,
     contentType="application/json",
     description="This is a default empty schema model",
     schema=json.dumps(

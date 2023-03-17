@@ -139,3 +139,17 @@ def create_rest_api_with_integration(
         return api_id
 
     yield _factory
+
+
+@pytest.fixture
+def apigw_redeploy_api(apigateway_client):
+    def _factory(rest_api_id: str, stage_name: str):
+        deployment_id = apigateway_client.create_deployment(restApiId=rest_api_id)["id"]
+
+        apigateway_client.update_stage(
+            restApiId=rest_api_id,
+            stageName=stage_name,
+            patchOperations=[{"op": "replace", "path": "/deploymentId", "value": deployment_id}],
+        )
+
+    return _factory
