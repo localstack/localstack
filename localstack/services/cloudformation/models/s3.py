@@ -66,6 +66,17 @@ class S3Bucket(GenericBaseModel):
             """Convert a CloudFormation ACL string (e.g., 'PublicRead') to an S3 ACL string (e.g., 'public-read')"""
             return re.sub("(?<!^)(?=[A-Z])", "-", acl).lower()
 
+        def transform_cfn_cors(cors_config):
+            cors_config["CORSRules"] = cors_config.pop("CorsRules")
+            for rule in cors_config["CORSRules"]:
+                if rule["Id"] is not None:
+                    rule["ID"] = rule.pop("Id")
+                if rule["MaxAge"] is not None:
+                    rule["MaxAgeSeconds"] = rule.pop("MaxAge")
+                if rule["ExposedHeaders"] is not None:
+                    rule["ExposeHeaders"] = rule.pop("ExposedHeaders")
+            return cors_config
+
         def s3_bucket_notification_config(params, **kwargs):
             notif_config = params.get("NotificationConfiguration")
             if not notif_config:
@@ -154,7 +165,7 @@ class S3Bucket(GenericBaseModel):
             resource = resources[resource_id]
             props = resource["Properties"]
             bucket_name = props.get("BucketName")
-            cors_configuration = props.get("CorsConfiguration")
+            cors_configuration = transform_cfn_cors(props.get("CorsConfiguration"))
             if cors_configuration:
                 s3_client.put_bucket_cors(
                     Bucket=bucket_name,
