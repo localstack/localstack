@@ -8,13 +8,12 @@ import struct
 import uuid
 from collections import namedtuple
 from dataclasses import dataclass
-from hashlib import sha256
 from typing import Dict, List
 
 from cryptography.exceptions import InvalidSignature
 from cryptography.hazmat.primitives import hashes
 from cryptography.hazmat.primitives import serialization as crypto_serialization
-from cryptography.hazmat.primitives.asymmetric import ec, padding, rsa
+from cryptography.hazmat.primitives.asymmetric import ec, padding, rsa, utils
 
 from localstack.aws.accounts import get_aws_account_id
 from localstack.aws.api import CommonServiceException
@@ -229,16 +228,14 @@ class KmsKey:
     def decrypt(self, ciphertext: Ciphertext) -> bytes:
         return decrypt(self.crypto_key.key_material, ciphertext.ciphertext, ciphertext.iv)
 
-    def _get_digest(self, data: bytes) -> bytes:
-        return sha256(data).digest()
-
     def sign(
         self, data: bytes, message_type: MessageType, signing_algorithm: SigningAlgorithmSpec
     ) -> bytes:
-        kwargs = self._construct_sign_verify_kwargs(signing_algorithm)
-        if message_type != MessageType.DIGEST:
-            data = self._get_digest(data)
-        return self.crypto_key.key.sign(data=data, **kwargs)
+        kwargs = self._construct_sign_verify_kwargs(signing_algorithm, message_type)
+        try:
+            return self.crypto_key.key.sign(data=data, **kwargs)
+        except ValueError as exc:
+            raise ValidationException(str(exc))
 
     def verify(
         self,
@@ -247,27 +244,36 @@ class KmsKey:
         signing_algorithm: SigningAlgorithmSpec,
         signature: bytes,
     ) -> bool:
-        kwargs = self._construct_sign_verify_kwargs(signing_algorithm)
-        if message_type != MessageType.DIGEST:
-            data = self._get_digest(data)
+        kwargs = self._construct_sign_verify_kwargs(signing_algorithm, message_type)
         try:
             self.crypto_key.key.public_key().verify(signature=signature, data=data, **kwargs)
             return True
+        except ValueError as exc:
+            raise ValidationException(str(exc))
         except InvalidSignature:
             # AWS itself raises this exception without any additional message.
             raise KMSInvalidSignatureException()
 
-    def _construct_sign_verify_kwargs(self, signing_algorithm: SigningAlgorithmSpec) -> Dict:
+    def _construct_sign_verify_kwargs(
+        self, signing_algorithm: SigningAlgorithmSpec, message_type: MessageType
+    ) -> Dict:
         kwargs = {}
 
         if "SHA_256" in signing_algorithm:
-            kwargs["algorithm"] = hashes.SHA256()
+            hasher = hashes.SHA256()
         elif "SHA_384" in signing_algorithm:
-            kwargs["algorithm"] = hashes.SHA384()
+            hasher = hashes.SHA384()
         elif "SHA_512" in signing_algorithm:
-            kwargs["algorithm"] = hashes.SHA512()
+            hasher = hashes.SHA512()
         else:
-            LOG.warning("Unsupported hash type in SigningAlgorithm '%s'", signing_algorithm)
+            raise ValidationException(
+                f"Unsupported hash type in SigningAlgorithm '{signing_algorithm}'"
+            )
+
+        if message_type == MessageType.DIGEST:
+            kwargs["algorithm"] = utils.Prehashed(hasher)
+        else:
+            kwargs["algorithm"] = hasher
 
         if signing_algorithm.startswith("ECDSA"):
             kwargs["signature_algorithm"] = ec.ECDSA(algorithm=kwargs.pop("algorithm", None))
@@ -278,7 +284,7 @@ class KmsKey:
                 kwargs["padding"] = padding.PKCS1v15()
             elif "PSS" in signing_algorithm:
                 kwargs["padding"] = padding.PSS(
-                    mgf=padding.MGF1(hashes.SHA256()), salt_length=padding.PSS.MAX_LENGTH
+                    mgf=padding.MGF1(hasher), salt_length=padding.PSS.MAX_LENGTH
                 )
             else:
                 LOG.warning("Unsupported padding in SigningAlgorithm '%s'", signing_algorithm)
