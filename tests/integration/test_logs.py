@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+import base64
 import gzip
 import json
 import re
@@ -222,11 +223,10 @@ class TestCloudWatchLogs:
             KeyValueBasedTransformer(
                 lambda k, v: (
                     v
-                    if k == "eventId"
-                    and (isinstance(v, str) and re.match(re.compile(r"^[0-9]+$"), v))
+                    if k == "id" and (isinstance(v, str) and re.match(re.compile(r"^[0-9]+$"), v))
                     else None
                 ),
-                replacement="event_id",
+                replacement="id",
                 replace_reference=False,
             ),
         )
@@ -277,14 +277,25 @@ class TestCloudWatchLogs:
 
         def check_invocation():
             events = testutil.list_all_log_events(
-                log_group_name=logs_log_group, logs_client=logs_client
+                log_group_name=f"/aws/lambda/{test_lambda_name}", logs_client=logs_client
             )
-            assert len(events) == 2
-            events.sort(key=lambda k: k.get("message"))
-            snapshot.match("list_all_log_events", events)
-            assert isinstance(events[0]["eventId"], str)
-            assert "test" == events[0]["message"]
-            assert "test 2" in events[1]["message"]
+            # we only are interested in events that contain "awslogs"
+            filtered_events = []
+            for e in events:
+                if "awslogs" in e["message"]:
+                    # the message will look like this:
+                    # {"messageType":"DATA_MESSAGE","owner":"000000000000","logGroup":"log-group",
+                    #  "logStream":"log-stream","subscriptionFilters":["test"],
+                    #  "logEvents":[{"id":"7","timestamp":1679056073581,"message":"test"},
+                    #               {"id":"8","timestamp":1679056073581,"message":"test 2"}]}
+                    data = json.loads(e["message"])["awslogs"]["data"].encode("utf-8")
+                    decoded_data = gzip.decompress(base64.b64decode(data)).decode("utf-8")
+                    for log_event in json.loads(decoded_data)["logEvents"]:
+                        filtered_events.append(log_event)
+            assert len(filtered_events) == 2
+
+            filtered_events.sort(key=lambda k: k.get("message"))
+            snapshot.match("list_all_log_events", filtered_events)
 
         retry(check_invocation, retries=6, sleep=3.0)
 
