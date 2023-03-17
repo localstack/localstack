@@ -10,6 +10,7 @@ from localstack.constants import APPLICATION_JSON
 from localstack.services.apigateway import helpers
 from localstack.services.apigateway.context import ApiInvocationContext
 from localstack.services.apigateway.helpers import (
+    EMPTY_MODEL,
     extract_path_params,
     extract_query_string_params,
     get_cors_response,
@@ -85,9 +86,9 @@ class RequestValidator:
         # if there's no model to validate the body, use the Empty model
         # https://docs.aws.amazon.com/cdk/api/v1/docs/@aws-cdk_aws-apigateway.EmptyModel.html
         if not (request_models := resource.get("requestModels")):
-            schema_name = "Empty"
+            schema_name = EMPTY_MODEL
         else:
-            schema_name = request_models.get(APPLICATION_JSON, "Empty")
+            schema_name = request_models.get(APPLICATION_JSON, EMPTY_MODEL)
 
         try:
             model = self.apigateway_client.get_model(
@@ -95,7 +96,6 @@ class RequestValidator:
                 modelName=schema_name,
             )
         except ClientError as e:
-            # This should not happen, as we validate that we cannot delete a Model if it's used
             LOG.exception("An exception occurred while trying to validate the request: %s", e)
             return False
 
