@@ -8,7 +8,7 @@ VENV_DIR ?= .venv
 PIP_CMD ?= pip3
 TEST_PATH ?= .
 PYTEST_LOGLEVEL ?=
-MAIN_CONTAINER_NAME ?= localstack_main
+MAIN_CONTAINER_NAME ?= localstack-main
 
 MAJOR_VERSION = $(shell echo ${IMAGE_TAG} | cut -d '.' -f1)
 MINOR_VERSION = $(shell echo ${IMAGE_TAG} | cut -d '.' -f2)
