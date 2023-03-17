@@ -147,6 +147,18 @@ DEPRECATIONS = [
         "1.4.0",
         "This feature will not be supported in the future. Please remove this environment variable.",
     ),
+    # Since 2.0.0 - HOSTNAME_EXTERNAL will be replaced with LOCALSTACK_HOST
+    EnvVarDeprecation(
+        "HOSTNAME_EXTERNAL",
+        "2.0.0",
+        "This configuration will be migrated to LOCALSTACK_HOST",
+    ),
+    # Since 2.0.0 - LOCALSTAKCK_HOST will be replaced with LOCALSTACK_HOST
+    EnvVarDeprecation(
+        "LOCALSTACK_HOSTNAME",
+        "2.0.0",
+        "This configuration will be migrated to LOCALSTACK_HOST",
+    ),
 ]
 
 

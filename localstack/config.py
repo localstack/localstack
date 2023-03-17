@@ -317,10 +317,15 @@ DEFAULT_REGION = (
 )
 
 # expose services on a specific host externally
+# DEPRECATED:  since v2.0.0 as we are moving to LOCALSTACK_HOST
 HOSTNAME_EXTERNAL = os.environ.get("HOSTNAME_EXTERNAL", "").strip() or LOCALHOST
 
 # name of the host under which the LocalStack services are available
+# DEPRECATED: if the user sets this since v2.0.0 as we are moving to LOCALSTACK_HOST
 LOCALSTACK_HOSTNAME = os.environ.get("LOCALSTACK_HOSTNAME", "").strip() or LOCALHOST
+
+# configuration of hostnames the user can use to access LocalStack
+LOCALSTACK_HOST = os.environ.get("LOCALSTACK_HOST")
 
 # directory for persisting data (TODO: deprecated, simply use PERSISTENCE=1)
 DATA_DIR = os.environ.get("DATA_DIR", "").strip()
