@@ -3,7 +3,7 @@ import json
 
 import pytest
 
-from localstack.testing.snapshots.transformer import TransformContext
+from localstack.testing.snapshots.transformer import SortingTransformer, TransformContext
 from localstack.testing.snapshots.transformer_utility import TransformerUtility
 
 
@@ -175,3 +175,34 @@ class TestTransformer:
             }
         }
         assert expected == json.loads(output)
+
+    def test_nested_sorting_transformer(self):
+        input = {
+            "subsegments": [
+                {
+                    "name": "mysubsegment",
+                    "subsegments": [
+                        {"name": "b"},
+                        {"name": "a"},
+                    ],
+                }
+            ],
+        }
+
+        expected = {
+            "subsegments": [
+                {
+                    "name": "mysubsegment",
+                    "subsegments": [
+                        {"name": "a"},
+                        {"name": "b"},
+                    ],
+                }
+            ],
+        }
+
+        transformer = SortingTransformer("subsegments", lambda s: s["name"])
+
+        ctx = TransformContext()
+        output = transformer.transform(input, ctx=ctx)
+        assert output == expected
