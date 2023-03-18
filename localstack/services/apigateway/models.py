@@ -30,7 +30,7 @@ class RestApiContainer:
     documentation_parts: Dict[str, DocumentationPart]
     # not used yet, still in moto
     gateway_responses: Dict[str, GatewayResponse]
-    # not used yet, still in moto
+    # maps Model name -> Model
     models: Dict[str, Model]
     # maps ResourceId of a Resource to its children ResourceIds
     resource_children: Dict[str, List[str]]

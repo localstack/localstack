@@ -548,6 +548,19 @@ class ApigatewayProvider(ApigatewayApi, ServiceLifecycleHook):
         remove_empty_attributes_from_method(response)
         return response
 
+    def delete_method(
+        self, context: RequestContext, rest_api_id: String, resource_id: String, http_method: String
+    ) -> None:
+        moto_backend = apigw_models.apigateway_backends[context.account_id][context.region]
+        moto_rest_api: MotoRestAPI = moto_backend.apis.get(rest_api_id)
+        if not moto_rest_api or not (moto_resource := moto_rest_api.resources.get(resource_id)):
+            raise NotFoundException("Invalid Resource identifier specified")
+
+        if not (moto_resource.resource_methods.get(http_method)):
+            raise NotFoundException("Invalid Method identifier specified")
+
+        call_moto(context)
+
     # method responses
 
     @handler("UpdateMethodResponse", expand=False)
@@ -1329,10 +1342,17 @@ class ApigatewayProvider(ApigatewayApi, ServiceLifecycleHook):
         self, context: RequestContext, rest_api_id: String, model_name: String
     ) -> None:
         store = get_apigateway_store(account_id=context.account_id, region=context.region)
-        if rest_api_id not in store.rest_apis or not (
-            store.rest_apis[rest_api_id].models.pop(model_name, None)
+
+        if (
+            rest_api_id not in store.rest_apis
+            or model_name not in store.rest_apis[rest_api_id].models
         ):
             raise NotFoundException(f"Invalid model name specified: {model_name}")
+
+        moto_rest_api = get_moto_rest_api(context, rest_api_id)
+        validate_model_in_use(moto_rest_api, model_name)
+
+        store.rest_apis[rest_api_id].models.pop(model_name, None)
 
 
 # ---------------
@@ -1396,6 +1416,16 @@ def is_greedy_path(path_part: str) -> bool:
 
 def is_variable_path(path_part: str) -> bool:
     return path_part.startswith("{") and path_part.endswith("}")
+
+
+def validate_model_in_use(moto_rest_api: MotoRestAPI, model_name: str) -> None:
+    for resource in moto_rest_api.resources.values():
+        for method in resource.resource_methods.values():
+            if model_name in set(method.request_models.values()):
+                path = f"{resource.get_path()}/{method.http_method}"
+                raise ConflictException(
+                    f"Cannot delete model '{model_name}', is referenced in method request: {path}"
+                )
 
 
 def create_custom_context(

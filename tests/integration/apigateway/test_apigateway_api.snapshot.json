@@ -1175,7 +1175,7 @@
     }
   },
   "tests/integration/apigateway/test_apigateway_api.py::TestApiGatewayApi::test_method_lifecycle": {
-    "recorded-date": "24-02-2023, 19:17:18",
+    "recorded-date": "15-03-2023, 12:06:26",
     "recorded-content": {
       "put-base-method-response": {
         "apiKeyRequired": false,
@@ -1199,6 +1199,28 @@
         "ResponseMetadata": {
           "HTTPHeaders": {},
           "HTTPStatusCode": 204
+        }
+      },
+      "get-deleted-method-response": {
+        "Error": {
+          "Code": "NotFoundException",
+          "Message": "Invalid Method identifier specified"
+        },
+        "message": "Invalid Method identifier specified",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 404
+        }
+      },
+      "delete-deleted-method-response": {
+        "Error": {
+          "Code": "NotFoundException",
+          "Message": "Invalid Method identifier specified"
+        },
+        "message": "Invalid Method identifier specified",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 404
         }
       }
     }
@@ -1852,6 +1874,144 @@
         "ResponseMetadata": {
           "HTTPHeaders": {},
           "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/integration/apigateway/test_apigateway_api.py::TestApiGatewayApi::test_put_method_model": {
+    "recorded-date": "15-03-2023, 12:12:59",
+    "recorded-content": {
+      "create-model": {
+        "contentType": "application/json",
+        "id": "<id:1>",
+        "name": "<name:1>",
+        "schema": {
+          "title": "<name:1>",
+          "type": "object"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 201
+        }
+      },
+      "create-model-2": {
+        "contentType": "application/json",
+        "id": "<id:2>",
+        "name": "<name:1>Two",
+        "schema": {
+          "title": "<name:1>Two",
+          "type": "object"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 201
+        }
+      },
+      "put-method-request-models": {
+        "apiKeyRequired": false,
+        "authorizationType": "NONE",
+        "httpMethod": "ANY",
+        "requestModels": {
+          "application/json": "<name:1>"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 201
+        }
+      },
+      "delete-model-used": {
+        "Error": {
+          "Code": "ConflictException",
+          "Message": "Cannot delete model '<name:1>', is referenced in method request: //ANY"
+        },
+        "message": "Cannot delete model '<name:1>', is referenced in method request: //ANY",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 409
+        }
+      },
+      "update-method-model": {
+        "apiKeyRequired": false,
+        "authorizationType": "NONE",
+        "httpMethod": "ANY",
+        "requestModels": {
+          "application/json": "<name:1>Two"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "delete-model-unused": {
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 202
+        }
+      },
+      "delete-model-used-2": {
+        "Error": {
+          "Code": "ConflictException",
+          "Message": "Cannot delete model '<name:1>Two', is referenced in method request: //ANY"
+        },
+        "message": "Cannot delete model '<name:1>Two', is referenced in method request: //ANY",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 409
+        }
+      },
+      "put-method-2-request-models": {
+        "apiKeyRequired": false,
+        "authorizationType": "NONE",
+        "httpMethod": "ANY",
+        "requestModels": {
+          "application/json": "<name:1>Two"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 201
+        }
+      },
+      "delete-model-used-by-2-method": {
+        "Error": {
+          "Code": "ConflictException",
+          "Message": "Cannot delete model '<name:1>Two', is referenced in method request: /test/ANY"
+        },
+        "message": "Cannot delete model '<name:1>Two', is referenced in method request: /test/ANY",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 409
+        }
+      },
+      "update-method-model-2": {
+        "apiKeyRequired": false,
+        "authorizationType": "NONE",
+        "httpMethod": "ANY",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "delete-model-used-by-method-1": {
+        "Error": {
+          "Code": "ConflictException",
+          "Message": "Cannot delete model '<name:1>Two', is referenced in method request: //ANY"
+        },
+        "message": "Cannot delete model '<name:1>Two', is referenced in method request: //ANY",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 409
+        }
+      },
+      "delete-method-using-model-2": {
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 204
+        }
+      },
+      "delete-model-unused-2": {
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 202
         }
       }
     }
