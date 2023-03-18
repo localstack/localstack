@@ -177,12 +177,13 @@ class TransformerUtility:
         return [
             TransformerUtility.key_value("resourceId"),
             TransformerUtility.key_value("sourceIp"),
-
             TransformerUtility.jsonpath("$..requestContext.accountId", "account-id"),
             TransformerUtility.jsonpath("$..requestContext.apiId", "api-id"),
             TransformerUtility.jsonpath("$..requestContext.domainName", "domain-name"),
             TransformerUtility.jsonpath("$..requestContext.domainPrefix", "domain-prefix"),
-            TransformerUtility.jsonpath("$..requestContext.extendedRequestId", "extended-request-id"),
+            TransformerUtility.jsonpath(
+                "$..requestContext.extendedRequestId", "extended-request-id"
+            ),
             TransformerUtility.jsonpath("$..requestContext.requestId", "request-id"),
             TransformerUtility.jsonpath(
                 "$..requestContext.requestTime",
@@ -201,18 +202,22 @@ class TransformerUtility:
                 replace_reference=False,
             ),
             TransformerUtility.jsonpath("$..multiValueHeaders.Host[*]", "host"),
-            TransformerUtility.jsonpath("$..multiValueHeaders.X-Forwarded-For[*]", "x-forwarded-for"),
-            TransformerUtility.jsonpath("$..multiValueHeaders.X-Forwarded-Port[*]", "x-forwarded-port"),
-            TransformerUtility.jsonpath("$..multiValueHeaders.X-Forwarded-Proto[*]",
-                "x-forwarded-proto"),
-            TransformerUtility.jsonpath("$..multiValueHeaders.X-Amzn-Trace-Id[*]", "x-amzn-trace-id"),
-            TransformerUtility.jsonpath("$..multiValueHeaders.authorization[*]",
-                "authorization"),
+            TransformerUtility.jsonpath(
+                "$..multiValueHeaders.X-Forwarded-For[*]", "x-forwarded-for"
+            ),
+            TransformerUtility.jsonpath(
+                "$..multiValueHeaders.X-Forwarded-Port[*]", "x-forwarded-port"
+            ),
+            TransformerUtility.jsonpath(
+                "$..multiValueHeaders.X-Forwarded-Proto[*]", "x-forwarded-proto"
+            ),
+            TransformerUtility.jsonpath(
+                "$..multiValueHeaders.X-Amzn-Trace-Id[*]", "x-amzn-trace-id"
+            ),
+            TransformerUtility.jsonpath("$..multiValueHeaders.authorization[*]", "authorization"),
             TransformerUtility.jsonpath("$..multiValueHeaders.User-Agent[*]", "user-agent"),
-            TransformerUtility.regex(r"python-requests/\d+\.\d+(\.\d+)?","python-requests/x.x.x")
-
+            TransformerUtility.regex(r"python-requests/\d+\.\d+(\.\d+)?", "python-requests/x.x.x"),
         ]
-
 
     @staticmethod
     def cloudformation_api():
