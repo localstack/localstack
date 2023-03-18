@@ -112,7 +112,7 @@ def _get_allowed_cors_origins() -> List[str]:
     # Add allowed origins for localhost domains, using different protocol/port combinations.
     # If a different port is configured for EDGE_PORT_HTTP, add it to allowed origins as well
     for protocol in {"http", "https"}:
-        for port in _ALLOWED_INTERNAL_PORTS:
+        for port in _get_allowed_cors_ports():
             result.append(f"{protocol}://{LOCALHOST}:{port}")
             result.append(f"{protocol}://{LOCALHOST_HOSTNAME}:{port}")
 
