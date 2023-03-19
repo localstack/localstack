@@ -40,9 +40,15 @@ class SdkDockerClient(ContainerClient):
 
     def __init__(self):
         try:
+            print("!get client")  # TODO: CI debugging
+            LOG.debug("Get Docker client from environment")
             self.docker_client = docker.from_env()
             logging.getLogger("urllib3").setLevel(logging.INFO)
-        except DockerException:
+            print("!get client", self.docker_client)  # TODO: CI debugging
+            LOG.debug("Created Docker client: %s", self.docker_client)
+        except DockerException as e:
+            print("!ERR", e, type(e))  # TODO: CI debugging
+            LOG.exception("Unable to created Docker client")
             self.docker_client = None
 
     def client(self):
