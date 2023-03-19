@@ -797,7 +797,6 @@ def test_create_execute_api_vpc_endpoint(
         endpoint = endpoint.replace(
             host_header, f"{get_main_endpoint_from_container()}:{config.get_edge_port_http()}"
         )
-    print("!endpoint", endpoint, host_header)
     lambda_code = textwrap.dedent(
         f"""
     def handler(event, context):
