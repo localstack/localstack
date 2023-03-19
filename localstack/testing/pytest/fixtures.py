@@ -1911,7 +1911,7 @@ def ec2_create_security_group(ec2_client):
         try:
             ec2_client.delete_security_group(GroupId=sg_group_id)
         except Exception as e:
-            LOG.debug(f"Error cleaning up ec2 security group: {sg_group_id}, {e}")
+            LOG.debug("Error cleaning up EC2 security group: %s, %s", sg_group_id, e)
 
 
 @pytest.fixture
