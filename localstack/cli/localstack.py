@@ -143,6 +143,11 @@ def cmd_start(docker: bool, host: bool, no_banner: bool, detached: bool):
         console.rule("LocalStack Runtime Log (press [bold][yellow]CTRL-C[/yellow][/bold] to quit)")
 
     if host:
+        # from here we abandon the regular CLI control path and start treating the process like a localstack
+        # runtime process
+        os.environ["LOCALSTACK_CLI"] = "0"
+        config.dirs = config.init_directories()
+
         try:
             bootstrap.start_infra_locally()
         except ImportError:

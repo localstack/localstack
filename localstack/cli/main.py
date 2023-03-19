@@ -1,3 +1,9 @@
+import os
+
+# indicate to the environment we are starting from the CLI
+os.environ["LOCALSTACK_CLI"] = "1"
+
+
 def main():
     # config profiles are the first thing that need to be loaded
     from .profiles import set_profile_from_sys_argv
