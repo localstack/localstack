@@ -59,9 +59,6 @@ class Directories:
     init: str
     logs: str
 
-    # these are the folders mounted into the container by default when the CLI is used
-    default_bind_mounts = ["var_libs", "cache", "tmp", "data", "init", "logs"]
-
     def __init__(
         self,
         static_libs: str,
