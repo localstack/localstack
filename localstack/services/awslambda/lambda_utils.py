@@ -185,7 +185,6 @@ def store_lambda_logs(
 
 
 def get_main_endpoint_from_container() -> str:
-    global DOCKER_MAIN_CONTAINER_IP
     if config.HOSTNAME_FROM_LAMBDA:
         return config.HOSTNAME_FROM_LAMBDA
     return get_endpoint_for_network(network=get_container_network_for_lambda())
