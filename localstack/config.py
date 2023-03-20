@@ -24,7 +24,6 @@ from localstack.constants import (
     LOCALHOST_IP,
     LOCALSTACK_ROOT_FOLDER,
     LOG_LEVELS,
-    MODULE_MAIN_PATH,
     TRACE_LOG_LEVELS,
     TRUE_STRINGS,
 )
@@ -59,9 +58,6 @@ class Directories:
     config: str
     init: str
     logs: str
-
-    # these are the folders mounted into the container by default when the CLI is used
-    default_bind_mounts = ["var_libs", "cache", "tmp", "data", "init", "logs"]
 
     def __init__(
         self,
@@ -150,60 +146,31 @@ class Directories:
         )
 
     @staticmethod
-    def legacy_from_config():
-        """Returns Localstack directory paths from the config/environment variables defined by the config."""
-        # Note that the entries should be unique, as further downstream in docker_utils.py we're removing
-        # duplicate host paths in the volume mounts via `dict(mount_volumes)`.
+    def for_cli() -> "Directories":
+        """Returns directories used for when running localstack CLI commands from the host system. Unlike
+        ``for_container``, these here need to be cross-platform. Ideally, this should not be needed at all,
+        because the localstack runtime and CLI do not share any control paths. There are a handful of
+        situations where directories or files may be created lazily for CLI commands. Some paths are
+        intentionally set to None to provoke errors if these paths are used from the CLI - which they
+        shouldn't. This is a symptom of not having a clear separation between CLI/runtime code, which will
+        be a future project."""
+        import tempfile
 
-        # legacy config variables inlined
-        INSTALL_DIR_INFRA = os.path.join(MODULE_MAIN_PATH, "infra")
-        # ephemeral cache dir that persists across reboots
-        CACHE_DIR = os.environ.get("CACHE_DIR", os.path.join(TMP_FOLDER, "cache")).strip()
-        # libs cache dir that persists across reboots
-        VAR_LIBS_DIR = os.environ.get("VAR_LIBS_DIR", os.path.join(TMP_FOLDER, "var_libs")).strip()
+        from localstack.utils import files
+
+        tmp_dir = os.path.join(tempfile.gettempdir(), "localstack-cli")
+        cache_dir = (files.cache_dir() / "cli").absolute()
 
         return Directories(
-            static_libs=INSTALL_DIR_INFRA,
-            var_libs=VAR_LIBS_DIR,
-            cache=CACHE_DIR,
-            tmp=TMP_FOLDER,  # TODO: should inherit from root value for /var/lib/localstack (e.g., MOUNT_ROOT)
-            functions=HOST_TMP_FOLDER,  # TODO: rename variable/consider a volume
-            data=DATA_DIR,
-            config=CONFIG_DIR,
-            init=None,  # TODO: introduce environment variable
-            logs=TMP_FOLDER,  # TODO: add variable
-        )
-
-    @staticmethod
-    def legacy_for_container() -> "Directories":
-        """
-        Returns Localstack directory paths as they are defined within the container. Everything shared and writable
-        lives in /var/lib/localstack or /tmp/localstack.
-
-        :returns: Directories object
-        """
-        # only set CONTAINER_VAR_LIBS_FOLDER/CONTAINER_CACHE_FOLDER inside the container to redirect var_libs/cache to
-        # another directory to avoid override by host mount
-        var_libs = (
-            os.environ.get("CONTAINER_VAR_LIBS_FOLDER", "").strip() or "/tmp/localstack/var_libs"
-        )
-        cache = os.environ.get("CONTAINER_CACHE_FOLDER", "").strip() or "/tmp/localstack/cache"
-        tmp = (
-            os.environ.get("CONTAINER_TMP_FOLDER", "").strip() or "/tmp/localstack"
-        )  # TODO: discuss movement to /var/lib/localstack/tmp
-        data_dir = os.environ.get("CONTAINER_DATA_DIR_FOLDER", "").strip() or (
-            DATA_DIR if in_docker() else "/tmp/localstack_data"
-        )  # TODO: move to /var/lib/localstack/data
-        return Directories(
-            static_libs=os.path.join(MODULE_MAIN_PATH, "infra"),
-            var_libs=var_libs,
-            cache=cache,
-            tmp=tmp,
-            functions=HOST_TMP_FOLDER,  # TODO: move to /var/lib/localstack/tmp
-            data=data_dir,
-            config=None,  # config directory is host-only
-            logs="/tmp/localstack/logs",
-            init="/docker-entrypoint-initaws.d",
+            static_libs=None,
+            var_libs=None,
+            cache=str(cache_dir),  # used by analytics metadata
+            tmp=tmp_dir,
+            functions=None,
+            data=os.path.join(tmp_dir, "state"),  # used by localstack_ext config TODO: remove
+            logs=os.path.join(tmp_dir, "logs"),  # used for container logs
+            config=None,  # in the context of the CLI, config.CONFIG_DIR should be used
+            init=None,
         )
 
     def mkdirs(self):
@@ -1128,11 +1095,12 @@ SERVICE_PROVIDER_CONFIG.load_from_environment()
 
 
 def init_directories() -> Directories:
-    # FIXME: should also consider when the config.py is loaded from the CLI which does not necessarily imply
-    #  host mode. this may prove quite tricky to do.
     if is_in_docker:
         return Directories.for_container()
     else:
+        if is_env_true("LOCALSTACK_CLI"):
+            return Directories.for_cli()
+
         return Directories.for_host()
 
 
