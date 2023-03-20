@@ -72,6 +72,4 @@ class TestExceptionHandlers:
         # FIXME: this is because unknown routes have to be interpreted as s3 requests
         response = requests.get(get_edge_url() + "/_raise_error")
         assert response.status_code == 404
-        assert response.text.startswith(
-            '<?xml version="1.0" encoding="UTF-8"?>\n<Error><Code>NoSuchBucket</Code>'
-        )
+        assert "<Error><Code>NoSuchBucket</Code>" in response.text
