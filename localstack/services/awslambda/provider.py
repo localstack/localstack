@@ -204,19 +204,12 @@ LAMBDA_TAG_LIMIT_PER_RESOURCE = 50
 LAMBDA_LAYERS_LIMIT_PER_FUNCTION = 5
 
 
-@dataclasses.dataclass
-class LambdaPersistenceContext:
-    # TODO: extend for more detailed comparisons
-    functions_pre_restore: list[str] = dataclasses.field(default_factory=list)
-
-
 class LambdaProvider(LambdaApi, ServiceLifecycleHook):
     lambda_service: LambdaService
     create_fn_lock: threading.RLock
     create_layer_lock: threading.RLock
     router: FunctionUrlRouter
     layer_fetcher: LayerFetcher | None
-    lambda_persistence_context: LambdaPersistenceContext
 
     def __init__(self) -> None:
         self.lambda_service = LambdaService()
@@ -225,31 +218,21 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
         self.router = FunctionUrlRouter(ROUTER, self.lambda_service)
         self.layer_fetcher = None
         lambda_hooks.inject_layer_fetcher.run(self)
-        self.lambda_persistence_context = LambdaPersistenceContext()
 
     def accept_state_visitor(self, visitor: StateVisitor):
         visitor.visit(lambda_stores)
 
-    def on_before_state_load(self):
-        for account_id, account_bundle in lambda_stores.items():
-            for region_name, state in account_bundle.items():
-                for fn in state.functions.values():
-                    self.lambda_persistence_context.functions_pre_restore.append(
-                        fn.latest().id.unqualified_arn()
-                    )
-
     def on_after_state_load(self):
         # TODO: provisioned concurrency
-        # TODO: detect new versions
-        # TODO: detect changes
         for account_id, account_bundle in lambda_stores.items():
             for region_name, state in account_bundle.items():
                 for fn in state.functions.values():
-                    # only restore functions that have been loaded and were not in the store before
-                    if (
-                        fn.latest().id.unqualified_arn()
-                        not in self.lambda_persistence_context.functions_pre_restore
-                    ):
+                    # only start functions that don't have a version manager yet
+                    try:
+                        self.lambda_service.get_lambda_version_manager(
+                            fn.latest().id.qualified_arn()
+                        )
+                    except ValueError:
                         for fn_version in fn.versions.values():
                             # restore the "Pending" state for every function version and start it
                             new_state = VersionState(
