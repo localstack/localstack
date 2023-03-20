@@ -2193,11 +2193,11 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
         context: RequestContext,
     ) -> GetAccountSettingsResponse:
         state = lambda_stores[context.account_id][context.region]
-        settings = state.settings
 
         fn_count = 0
         code_size_sum = 0
         reserved_concurrency_sum = 0
+        # TODO: fix calculation
         for fn in state.functions.values():
             fn_count += 1
             for fn_version in fn.versions.values():
@@ -2211,11 +2211,11 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
                 code_size_sum += layer_version.code.code_size
         return GetAccountSettingsResponse(
             AccountLimit=AccountLimit(
-                TotalCodeSize=settings.total_code_size,
-                CodeSizeZipped=settings.code_size_zipped,
-                CodeSizeUnzipped=settings.code_size_unzipped,
-                ConcurrentExecutions=settings.concurrent_executions,
-                UnreservedConcurrentExecutions=settings.concurrent_executions
+                TotalCodeSize=config.LAMBDA_LIMITS_TOTAL_CODE_SIZE,
+                CodeSizeZipped=config.LAMBDA_LIMITS_CODE_SIZE_ZIPPED,
+                CodeSizeUnzipped=config.LAMBDA_LIMITS_CODE_SIZE_UNZIPPED,
+                ConcurrentExecutions=config.LAMBDA_LIMITS_CONCURRENT_EXECUTIONS,
+                UnreservedConcurrentExecutions=config.LAMBDA_LIMITS_CONCURRENT_EXECUTIONS
                 - reserved_concurrency_sum,
             ),
             AccountUsage=AccountUsage(
@@ -2271,6 +2271,7 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
                 "Provisioned Concurrency Configs cannot be applied to unpublished function versions.",
                 Type="User",
             )
+
         function_name, qualifier = api_utils.get_name_and_qualifier(
             function_name, qualifier, context.region
         )
@@ -2280,7 +2281,25 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
         provisioned_config = self._get_provisioned_config(context, function_name, qualifier)
 
         if provisioned_config:
-            pass  # TODO: test
+            pass  # TODO: merge?
+
+        other_provisioned_sum = sum(
+            [
+                provisioned_configs.provisioned_concurrent_executions
+                for provisioned_qualifier, provisioned_configs in fn.provisioned_concurrency_configs.items()
+                if provisioned_qualifier != qualifier
+            ]
+        )
+
+        if (
+            fn.reserved_concurrent_executions is not None
+            and fn.reserved_concurrent_executions
+            < other_provisioned_sum + provisioned_concurrent_executions
+        ):
+            raise InvalidParameterValueException(
+                "Requested Provisioned Concurrency should not be greater than the reservedConcurrentExecution for function",
+                Type="User",
+            )
 
         provisioned_config = ProvisionedConcurrencyConfiguration(
             provisioned_concurrent_executions, api_utils.generate_lambda_date()
@@ -3224,6 +3243,17 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
         ) < config.LAMBDA_LIMITS_MINIMUM_UNRESERVED_CONCURRENCY:
             raise InvalidParameterValueException(
                 f"Specified ReservedConcurrentExecutions for function decreases account's UnreservedConcurrentExecution below its minimum value of [{config.LAMBDA_LIMITS_MINIMUM_UNRESERVED_CONCURRENCY}]."
+            )
+
+        total_provisioned_concurrency = sum(
+            [
+                provisioned_configs.provisioned_concurrent_executions
+                for provisioned_configs in fn.provisioned_concurrency_configs.values()
+            ]
+        )
+        if total_provisioned_concurrency > reserved_concurrent_executions:
+            raise InvalidParameterValueException(
+                f" ReservedConcurrentExecutions  {reserved_concurrent_executions} should not be lower than function's total provisioned concurrency [{total_provisioned_concurrency}]."
             )
 
         fn.reserved_concurrent_executions = reserved_concurrent_executions

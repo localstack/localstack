@@ -445,6 +445,7 @@ class LambdaVersionManager(ServiceEndpoint):
         if invocation_id is None:
             invocation_id = str(uuid.uuid4())
         if invocation.invocation_type == "RequestResponse":
+            # TODO: check for free provisioned concurrency and skip queue
             if (
                 self.lambda_service.get_available_fn_concurrency(
                     self.function_version.id.unqualified_arn()
