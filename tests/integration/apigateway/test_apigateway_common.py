@@ -20,7 +20,6 @@ class TestApiGatewayCommon:
     @pytest.mark.skip_snapshot_verify(
         paths=[
             "$.invalid-request-body.Type",
-            "$..methodIntegration.cacheNamespace",
             "$..methodIntegration.integrationResponses",
             "$..methodIntegration.passthroughBehavior",
             "$..methodIntegration.requestParameters",
@@ -42,6 +41,7 @@ class TestApiGatewayCommon:
         snapshot.add_transformers_list(
             [
                 snapshot.transform.key_value("requestValidatorId"),
+                snapshot.transform.key_value("cacheNamespace"),
                 snapshot.transform.key_value("id"),  # deployment id
                 snapshot.transform.key_value("fn_name"),  # lambda name
                 snapshot.transform.key_value("fn_arn"),  # lambda arn
@@ -246,6 +246,7 @@ class TestApiGatewayCommon:
                 ],
             )
             snapshot.match(f"remove-validator-{http_method}", response)
+            print(response)
 
         apigw_redeploy_api(rest_api_id=api_id, stage_name=stage_name)
 

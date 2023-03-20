@@ -20,7 +20,7 @@
         "httpMethod": "POST",
         "methodIntegration": {
           "cacheKeyParameters": [],
-          "cacheNamespace": "nygb1k",
+          "cacheNamespace": "<cache-namespace:1>",
           "httpMethod": "POST",
           "integrationResponses": {
             "200": {
@@ -55,7 +55,7 @@
         "httpMethod": "GET",
         "methodIntegration": {
           "cacheKeyParameters": [],
-          "cacheNamespace": "nygb1k",
+          "cacheNamespace": "<cache-namespace:1>",
           "httpMethod": "POST",
           "integrationResponses": {
             "200": {
@@ -90,7 +90,7 @@
         "httpMethod": "POST",
         "methodIntegration": {
           "cacheKeyParameters": [],
-          "cacheNamespace": "nygb1k",
+          "cacheNamespace": "<cache-namespace:1>",
           "httpMethod": "POST",
           "integrationResponses": {
             "200": {
@@ -125,7 +125,7 @@
         "httpMethod": "POST",
         "methodIntegration": {
           "cacheKeyParameters": [],
-          "cacheNamespace": "nygb1k",
+          "cacheNamespace": "<cache-namespace:1>",
           "httpMethod": "POST",
           "integrationResponses": {
             "200": {
@@ -163,7 +163,7 @@
         "httpMethod": "GET",
         "methodIntegration": {
           "cacheKeyParameters": [],
-          "cacheNamespace": "nygb1k",
+          "cacheNamespace": "<cache-namespace:1>",
           "httpMethod": "POST",
           "integrationResponses": {
             "200": {
@@ -197,7 +197,7 @@
         "httpMethod": "POST",
         "methodIntegration": {
           "cacheKeyParameters": [],
-          "cacheNamespace": "nygb1k",
+          "cacheNamespace": "<cache-namespace:1>",
           "httpMethod": "POST",
           "integrationResponses": {
             "200": {
