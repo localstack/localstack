@@ -16,6 +16,7 @@ from localstack.services.awslambda.lambda_api import use_docker
 from localstack.testing.aws.lambda_utils import (
     concurrency_update_done,
     get_invoke_init_type,
+    is_old_local_executor,
     is_old_provider,
     update_done,
 )
@@ -380,8 +381,8 @@ class TestLambdaBehavior:
 
     @pytest.mark.skipif(is_old_provider(), reason="unsupported in old provider")
     @pytest.mark.skipif(
-        not use_docker(),
-        reason="Monkeypatching of Docker-related flag not applicable if run locally",
+        is_old_local_executor(),
+        reason="Monkey-patching of Docker flags is not applicable because no new container is spawned",
     )
     @pytest.mark.only_localstack
     def test_ignore_architecture(
