@@ -2658,5 +2658,60 @@
         }
       }
     }
+  },
+  "tests/integration/awslambda/test_lambda.py::TestLambdaBehavior::test_runtime_ulimits": {
+    "recorded-date": "15-03-2023, 00:11:15",
+    "recorded-content": {
+      "invoke_runtime_ulimits": {
+        "ExecutedVersion": "$LATEST",
+        "Payload": {
+          "RLIMIT_AS": [
+            -1,
+            -1
+          ],
+          "RLIMIT_CORE": [
+            -1,
+            -1
+          ],
+          "RLIMIT_CPU": [
+            -1,
+            -1
+          ],
+          "RLIMIT_DATA": [
+            -1,
+            -1
+          ],
+          "RLIMIT_FSIZE": [
+            -1,
+            -1
+          ],
+          "RLIMIT_MEMLOCK": [
+            65536,
+            65536
+          ],
+          "RLIMIT_NOFILE": [
+            1024,
+            1024
+          ],
+          "RLIMIT_NPROC": [
+            735,
+            735
+          ],
+          "RLIMIT_RSS": [
+            -1,
+            -1
+          ],
+          "RLIMIT_STACK": [
+            8388608,
+            -1
+          ]
+        },
+        "StatusCode": 200,
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
   }
 }

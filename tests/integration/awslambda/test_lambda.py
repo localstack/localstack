@@ -83,6 +83,7 @@ TEST_LAMBDA_TIMEOUT_PYTHON = os.path.join(THIS_FOLDER, "functions/lambda_timeout
 TEST_LAMBDA_TIMEOUT_ENV_PYTHON = os.path.join(THIS_FOLDER, "functions/lambda_timeout_env.py")
 TEST_LAMBDA_SLEEP_ENVIRONMENT = os.path.join(THIS_FOLDER, "functions/lambda_sleep_environment.py")
 TEST_LAMBDA_INTROSPECT_PYTHON = os.path.join(THIS_FOLDER, "functions/lambda_introspect.py")
+TEST_LAMBDA_ULIMITS = os.path.join(THIS_FOLDER, "functions/lambda_ulimits.py")
 TEST_LAMBDA_VERSION = os.path.join(THIS_FOLDER, "functions/lambda_version.py")
 
 TEST_GOLANG_LAMBDA_URL_TEMPLATE = "https://github.com/localstack/awslamba-go-runtime/releases/download/v{version}/example-handler-{os}-{arch}.tar.gz"
@@ -378,6 +379,31 @@ class TestLambdaBehavior:
 
         invoke_result = lambda_client.invoke(FunctionName=func_name)
         snapshot.match("invoke_runtime_arm_introspection", invoke_result)
+
+    @pytest.mark.skipif(
+        is_old_local_executor(),
+        reason="Monkey-patching of Docker flags is not applicable because no new container is spawned",
+    )
+    @pytest.mark.skip_snapshot_verify(condition=is_old_provider, paths=["$..LogResult"])
+    @pytest.mark.aws_validated
+    def test_runtime_ulimits(self, lambda_client, create_lambda_function, snapshot, monkeypatch):
+        """We consider ulimits parity as opt-in because development environments could hit these limits unlike in
+        optimized production deployments."""
+        monkeypatch.setattr(
+            config,
+            "LAMBDA_DOCKER_FLAGS",
+            "--ulimit nofile=1024:1024 --ulimit nproc=735:735 --ulimit core=-1:-1 --ulimit stack=8388608:-1",
+        )
+
+        func_name = f"test_lambda_ulimits_{short_uid()}"
+        create_lambda_function(
+            func_name=func_name,
+            handler_file=TEST_LAMBDA_ULIMITS,
+            runtime=Runtime.python3_9,
+        )
+
+        invoke_result = lambda_client.invoke(FunctionName=func_name)
+        snapshot.match("invoke_runtime_ulimits", invoke_result)
 
     @pytest.mark.skipif(is_old_provider(), reason="unsupported in old provider")
     @pytest.mark.skipif(

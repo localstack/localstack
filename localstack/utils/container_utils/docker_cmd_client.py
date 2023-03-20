@@ -22,6 +22,7 @@ from localstack.utils.container_utils.container_client import (
     PortMappings,
     RegistryConnectionError,
     SimpleVolumeBind,
+    Ulimit,
     Util,
     VolumeBind,
 )
@@ -629,6 +630,7 @@ class CmdDockerClient(ContainerClient):
         privileged: Optional[bool] = None,
         labels: Optional[Dict[str, str]] = None,
         platform: Optional[DockerPlatform] = None,
+        ulimits: Optional[List[Ulimit]] = None,
     ) -> Tuple[List[str], str]:
         env_file = None
         cmd = self._docker_cmd() + [action]
@@ -678,6 +680,10 @@ class CmdDockerClient(ContainerClient):
                 cmd += ["--label", f"{key}={value}"]
         if platform:
             cmd += ["--platform", platform]
+        if ulimits:
+            cmd += list(
+                itertools.chain.from_iterable(["--ulimits", str(ulimit)] for ulimit in ulimits)
+            )
 
         if additional_flags:
             cmd += shlex.split(additional_flags)
