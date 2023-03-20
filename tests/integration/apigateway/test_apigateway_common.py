@@ -20,7 +20,6 @@ class TestApiGatewayCommon:
     @pytest.mark.skip_snapshot_verify(
         paths=[
             "$.invalid-request-body.Type",
-            "$..methodIntegration.cacheNamespace",
             "$..methodIntegration.integrationResponses",
             "$..methodIntegration.passthroughBehavior",
             "$..methodIntegration.requestParameters",
@@ -42,6 +41,7 @@ class TestApiGatewayCommon:
         snapshot.add_transformers_list(
             [
                 snapshot.transform.key_value("requestValidatorId"),
+                snapshot.transform.key_value("cacheNamespace"),
                 snapshot.transform.key_value("id"),  # deployment id
                 snapshot.transform.key_value("fn_name"),  # lambda name
                 snapshot.transform.key_value("fn_arn"),  # lambda arn
@@ -81,36 +81,37 @@ class TestApiGatewayCommon:
             validateRequestBody=True,
         )["id"]
 
-        apigateway_client.put_method(
-            restApiId=api_id,
-            resourceId=resource_id,
-            httpMethod="POST",
-            authorizationType="NONE",
-            requestValidatorId=validator_id,
-            requestParameters={"method.request.path.test": True},
-        )
+        for http_method in ("GET", "POST"):
+            apigateway_client.put_method(
+                restApiId=api_id,
+                resourceId=resource_id,
+                httpMethod=http_method,
+                authorizationType="NONE",
+                requestValidatorId=validator_id,
+                requestParameters={"method.request.path.test": True},
+            )
 
-        apigateway_client.put_integration(
-            restApiId=api_id,
-            resourceId=resource_id,
-            httpMethod="POST",
-            integrationHttpMethod="POST",
-            type="AWS_PROXY",
-            uri=f"arn:aws:apigateway:{region}:lambda:path//2015-03-31/functions/"
-            f"{lambda_arn}/invocations",
-        )
-        apigateway_client.put_method_response(
-            restApiId=api_id,
-            resourceId=resource_id,
-            httpMethod="POST",
-            statusCode="200",
-        )
-        apigateway_client.put_integration_response(
-            restApiId=api_id,
-            resourceId=resource_id,
-            httpMethod="POST",
-            statusCode="200",
-        )
+            apigateway_client.put_integration(
+                restApiId=api_id,
+                resourceId=resource_id,
+                httpMethod=http_method,
+                integrationHttpMethod="POST",
+                type="AWS_PROXY",
+                uri=f"arn:aws:apigateway:{region}:lambda:path//2015-03-31/functions/"
+                f"{lambda_arn}/invocations",
+            )
+            apigateway_client.put_method_response(
+                restApiId=api_id,
+                resourceId=resource_id,
+                httpMethod=http_method,
+                statusCode="200",
+            )
+            apigateway_client.put_integration_response(
+                restApiId=api_id,
+                resourceId=resource_id,
+                httpMethod=http_method,
+                statusCode="200",
+            )
 
         stage_name = "local"
         deploy_1 = apigateway_client.create_deployment(restApiId=api_id, stageName=stage_name)
@@ -130,6 +131,10 @@ class TestApiGatewayCommon:
         response = requests.post(url, json={"test": "test"})
         assert response.ok
         assert json.loads(response.json()["body"]) == {"test": "test"}
+
+        # GET request with an empty body
+        response_get = requests.get(url)
+        assert response_get.ok
 
         response = apigateway_client.update_method(
             restApiId=api_id,
@@ -175,17 +180,23 @@ class TestApiGatewayCommon:
                 }
             ),
         )
-        # then attach the schema to the method
-        response = apigateway_client.update_method(
-            restApiId=api_id,
-            resourceId=resource_id,
-            httpMethod="POST",
-            patchOperations=[
-                {"op": "add", "path": "/requestModels/application~1json", "value": "testSchema"},
-            ],
-        )
-        snapshot.match("add-schema", response)
+        # then attach the schema to the methods
+        for http_method in ("GET", "POST"):
+            response = apigateway_client.update_method(
+                restApiId=api_id,
+                resourceId=resource_id,
+                httpMethod=http_method,
+                patchOperations=[
+                    {
+                        "op": "add",
+                        "path": "/requestModels/application~1json",
+                        "value": "testSchema",
+                    },
+                ],
+            )
+            snapshot.match(f"add-schema-{http_method}", response)
 
+        # revert the path validation for POST method
         response = apigateway_client.update_method(
             restApiId=api_id,
             resourceId=resource_id,
@@ -212,23 +223,37 @@ class TestApiGatewayCommon:
         assert response.status_code == 400
         snapshot.match("invalid-request-body", response.json())
 
-        # remove the validator from the method
-        response = apigateway_client.update_method(
-            restApiId=api_id,
-            resourceId=resource_id,
-            httpMethod="POST",
-            patchOperations=[
-                {
-                    "op": "replace",
-                    "path": "/requestValidatorId",
-                    "value": "",
-                },
-            ],
-        )
-        snapshot.match("remove-validator", response)
+        # GET request with an empty body
+        response_get = requests.get(url)
+        assert response_get.status_code == 400
+
+        # GET request with an empty body, content type JSON
+        response_get = requests.get(url, headers={"Content-Type": "application/json"})
+        assert response_get.status_code == 400
+
+        # remove the validator from the methods
+        for http_method in ("GET", "POST"):
+            response = apigateway_client.update_method(
+                restApiId=api_id,
+                resourceId=resource_id,
+                httpMethod=http_method,
+                patchOperations=[
+                    {
+                        "op": "replace",
+                        "path": "/requestValidatorId",
+                        "value": "",
+                    },
+                ],
+            )
+            snapshot.match(f"remove-validator-{http_method}", response)
+            print(response)
 
         apigw_redeploy_api(rest_api_id=api_id, stage_name=stage_name)
 
         response = requests.post(url, json={"test": "test"})
         assert response.ok
         assert json.loads(response.json()["body"]) == {"test": "test"}
+
+        # GET request with an empty body
+        response_get = requests.get(url)
+        assert response_get.ok
