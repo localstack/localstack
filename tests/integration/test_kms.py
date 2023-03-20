@@ -257,6 +257,37 @@ class TestKMS:
         assert len(grants_after) == len(grants_before) + 1
 
     @pytest.mark.aws_validated
+    def test_create_grant_with_same_name_two_keys(self, kms_client, kms_create_key, user_arn):
+        first_key_id = kms_create_key()["KeyId"]
+        second_key_id = kms_create_key()["KeyId"]
+
+        grant_name = "TestGrantName"
+
+        first_grant = kms_client.create_grant(
+            KeyId=first_key_id,
+            GranteePrincipal=user_arn,
+            Name=grant_name,
+            Operations=["Decrypt", "DescribeKey"],
+        )
+        assert "GrantId" in first_grant
+        assert "GrantToken" in first_grant
+
+        second_grant = kms_client.create_grant(
+            KeyId=second_key_id,
+            GranteePrincipal=user_arn,
+            Name=grant_name,
+            Operations=["Decrypt", "DescribeKey"],
+        )
+        assert "GrantId" in second_grant
+        assert "GrantToken" in second_grant
+
+        first_grants_after = kms_client.list_grants(KeyId=first_key_id)["Grants"]
+        assert len(first_grants_after) == 1
+
+        second_grants_after = kms_client.list_grants(KeyId=second_key_id)["Grants"]
+        assert len(second_grants_after) == 1
+
+    @pytest.mark.aws_validated
     def test_revoke_grant(self, kms_client, kms_grant_and_key):
         grant = kms_grant_and_key[0]
         key_id = kms_grant_and_key[1]["KeyId"]
