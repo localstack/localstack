@@ -1618,6 +1618,80 @@ class TestLambdaConcurrency:
         msg = retry(get_msg_from_queue, retries=10, sleep=2)
         snapshot.match("msg", msg)
 
+    @pytest.mark.aws_validated
+    def test_reserved_provisioned_overlap(
+        self, lambda_client, logs_client, create_lambda_function, snapshot
+    ):
+        func_name = f"test_lambda_{short_uid()}"
+
+        create_lambda_function(
+            func_name=func_name,
+            handler_file=TEST_LAMBDA_INVOCATION_TYPE,
+            runtime=Runtime.python3_9,
+            client=lambda_client,
+        )
+
+        v1 = lambda_client.publish_version(FunctionName=func_name)
+
+        put_provisioned = lambda_client.put_provisioned_concurrency_config(
+            FunctionName=func_name, Qualifier=v1["Version"], ProvisionedConcurrentExecutions=2
+        )
+        snapshot.match("put_provisioned_5", put_provisioned)
+
+        get_provisioned_prewait = lambda_client.get_provisioned_concurrency_config(
+            FunctionName=func_name, Qualifier=v1["Version"]
+        )
+        snapshot.match("get_provisioned_prewait", get_provisioned_prewait)
+        assert wait_until(concurrency_update_done(lambda_client, func_name, v1["Version"]))
+        get_provisioned_postwait = lambda_client.get_provisioned_concurrency_config(
+            FunctionName=func_name, Qualifier=v1["Version"]
+        )
+        snapshot.match("get_provisioned_postwait", get_provisioned_postwait)
+
+        with pytest.raises(lambda_client.exceptions.InvalidParameterValueException) as e:
+            lambda_client.put_function_concurrency(
+                FunctionName=func_name, ReservedConcurrentExecutions=1
+            )
+        snapshot.match("reserved_lower_than_provisioned_exc", e.value.response)
+        lambda_client.put_function_concurrency(
+            FunctionName=func_name, ReservedConcurrentExecutions=2
+        )
+        get_concurrency = lambda_client.get_function_concurrency(FunctionName=func_name)
+        snapshot.match("get_concurrency", get_concurrency)
+
+        # absolute limit, this means there is no free function execution for any invoke that doesn't have provisioned concurrency (!)
+        with pytest.raises(lambda_client.exceptions.TooManyRequestsException) as e:
+            lambda_client.invoke(FunctionName=func_name)
+        snapshot.match("reserved_equals_provisioned_latest_invoke_exc", e.value.response)
+
+        # passes since the version has a provisioned concurrency config set
+        invoke_result1 = lambda_client.invoke(FunctionName=func_name, Qualifier=v1["Version"])
+        result1 = json.loads(to_str(invoke_result1["Payload"].read()))
+        assert result1 == "provisioned-concurrency"
+
+        # try to add a new provisioned concurrency config to another qualifier on the same function
+        update_func_config = lambda_client.update_function_configuration(
+            FunctionName=func_name, Timeout=15
+        )
+        snapshot.match("update_func_config", update_func_config)
+        lambda_client.get_waiter("function_updated_v2").wait(FunctionName=func_name)
+
+        v2 = lambda_client.publish_version(FunctionName=func_name)
+        assert v1["Version"] != v2["Version"]
+        # doesn't work because the reserved function concurrency is 2 and we already have a total provisioned sum of 2
+        with pytest.raises(lambda_client.exceptions.InvalidParameterValueException) as e:
+            lambda_client.put_provisioned_concurrency_config(
+                FunctionName=func_name, Qualifier=v2["Version"], ProvisionedConcurrentExecutions=1
+            )
+        snapshot.match("reserved_equals_provisioned_another_provisioned_exc", e.value.response)
+
+        # updating the provisioned concurrency config of v1 to 3 (from 2) should also not work
+        with pytest.raises(lambda_client.exceptions.InvalidParameterValueException) as e:
+            lambda_client.put_provisioned_concurrency_config(
+                FunctionName=func_name, Qualifier=v1["Version"], ProvisionedConcurrentExecutions=3
+            )
+        snapshot.match("reserved_equals_provisioned_increase_provisioned_exc", e.value.response)
+
 
 @pytest.mark.skipif(condition=is_old_provider(), reason="not supported")
 class TestLambdaVersions:
