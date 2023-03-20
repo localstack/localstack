@@ -150,10 +150,10 @@ class Directories:
         """Returns directories used for when running localstack CLI commands from the host system. Unlike
         ``for_container``, these here need to be cross-platform. Ideally, this should not be needed at all,
         because the localstack runtime and CLI do not share any control paths. There are a handful of
-        situations where directories or files may be created lazily for CLI commands. `mkdirs` should
-        certainly never be called with these directories. Some paths are intentionally set to None to
-        provoke errors if these paths are used from the CLI - which they shouldn't. This is a symptom of
-        not having a clear separation between CLI/runtime code, which will be a future project."""
+        situations where directories or files may be created lazily for CLI commands. Some paths are
+        intentionally set to None to provoke errors if these paths are used from the CLI - which they
+        shouldn't. This is a symptom of not having a clear separation between CLI/runtime code, which will
+        be a future project."""
         import tempfile
 
         from localstack.utils import files
