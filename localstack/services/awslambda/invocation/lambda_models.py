@@ -82,6 +82,7 @@ IMAGE_MAPPING = {
 SNAP_START_SUPPORTED_RUNTIMES = [Runtime.java11]
 
 
+# TODO: maybe we should make this more "transient" by always initializing to Pending and *not* persisting it?
 @dataclasses.dataclass(frozen=True)
 class VersionState:
     state: State
@@ -518,11 +519,6 @@ class ServiceEndpoint(abc.ABC):
         :param executor_id: Executor ID this error report is for
         """
         raise NotImplementedError()
-
-
-@dataclasses.dataclass
-class EventSourceMapping:
-    ...
 
 
 @dataclasses.dataclass(frozen=True)

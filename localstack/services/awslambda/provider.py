@@ -187,6 +187,7 @@ from localstack.services.awslambda.layerfetcher.layer_fetcher import LayerFetche
 from localstack.services.awslambda.urlrouter import FunctionUrlRouter
 from localstack.services.edge import ROUTER
 from localstack.services.plugins import ServiceLifecycleHook
+from localstack.state import StateVisitor
 from localstack.utils.aws import aws_stack
 from localstack.utils.aws.arns import extract_service_from_arn
 from localstack.utils.collections import PaginatedList
@@ -203,12 +204,19 @@ LAMBDA_TAG_LIMIT_PER_RESOURCE = 50
 LAMBDA_LAYERS_LIMIT_PER_FUNCTION = 5
 
 
+@dataclasses.dataclass
+class LambdaPersistenceContext:
+    # TODO: extend for more detailed comparisons
+    functions_pre_restore: list[str] = dataclasses.field(default_factory=list)
+
+
 class LambdaProvider(LambdaApi, ServiceLifecycleHook):
     lambda_service: LambdaService
     create_fn_lock: threading.RLock
     create_layer_lock: threading.RLock
     router: FunctionUrlRouter
     layer_fetcher: LayerFetcher | None
+    lambda_persistence_context: LambdaPersistenceContext
 
     def __init__(self) -> None:
         self.lambda_service = LambdaService()
@@ -217,6 +225,48 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
         self.router = FunctionUrlRouter(ROUTER, self.lambda_service)
         self.layer_fetcher = None
         lambda_hooks.inject_layer_fetcher.run(self)
+        self.lambda_persistence_context = LambdaPersistenceContext()
+
+    def accept_state_visitor(self, visitor: StateVisitor):
+        visitor.visit(lambda_stores)
+
+    def on_before_state_load(self):
+        for account_id, account_bundle in lambda_stores.items():
+            for region_name, state in account_bundle.items():
+                for fn in state.functions.values():
+                    self.lambda_persistence_context.functions_pre_restore.append(
+                        fn.latest().id.unqualified_arn()
+                    )
+
+    def on_after_state_load(self):
+        # TODO: provisioned concurrency
+        # TODO: detect new versions
+        # TODO: detect changes
+        for account_id, account_bundle in lambda_stores.items():
+            for region_name, state in account_bundle.items():
+                for fn in state.functions.values():
+                    # only restore functions that have been loaded and were not in the store before
+                    if (
+                        fn.latest().id.unqualified_arn()
+                        not in self.lambda_persistence_context.functions_pre_restore
+                    ):
+                        for fn_version in fn.versions.values():
+                            # restore the "Pending" state for every function version and start it
+                            new_state = VersionState(
+                                state=State.Pending,
+                                code=StateReasonCode.Creating,
+                                reason="The function is being created.",
+                            )
+                            new_config = dataclasses.replace(fn_version.config, state=new_state)
+                            new_version = dataclasses.replace(fn_version, config=new_config)
+                            fn.versions[fn_version.id.qualifier] = new_version
+                            self.lambda_service.create_function_version(fn_version)
+
+                            # Restore event source listeners
+                            for esm in state.event_source_mappings.values():
+                                EventSourceListener.start_listeners_for_asf(
+                                    esm, self.lambda_service
+                                )
 
     def on_after_init(self):
         self.router.register_routes()
