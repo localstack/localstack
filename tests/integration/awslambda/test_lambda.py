@@ -381,8 +381,8 @@ class TestLambdaBehavior:
         snapshot.match("invoke_runtime_arm_introspection", invoke_result)
 
     @pytest.mark.skipif(
-        not use_docker(),
-        reason="Monkeypatching of Docker flags not applicable if run locally",
+        is_old_local_executor(),
+        reason="Monkey-patching of Docker flags is not applicable because no new container is spawned",
     )
     @pytest.mark.skip_snapshot_verify(condition=is_old_provider, paths=["$..LogResult"])
     @pytest.mark.aws_validated
