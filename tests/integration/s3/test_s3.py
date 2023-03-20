@@ -39,7 +39,7 @@ from localstack.services.awslambda.lambda_utils import (
     LAMBDA_RUNTIME_NODEJS14X,
     LAMBDA_RUNTIME_PYTHON39,
 )
-from localstack.services.s3 import s3_utils
+from localstack.services.s3 import constants as s3_constants
 from localstack.testing.aws.util import is_aws_cloud
 from localstack.testing.pytest.fixtures import _client
 from localstack.testing.snapshots.transformer_utility import TransformerUtility
@@ -6103,7 +6103,7 @@ class TestS3BucketPolicies:
         assert received_content == content
 
         # enable moto bucket policy enforcement, assert that the get_object(..) request fails
-        monkeypatch.setattr(s3_utils, "ENABLE_MOTO_BUCKET_POLICY_ENFORCEMENT", True)
+        monkeypatch.setattr(s3_constants, "ENABLE_MOTO_BUCKET_POLICY_ENFORCEMENT", True)
 
         with pytest.raises(ClientError) as exc:
             s3_client.get_object(Bucket=s3_bucket, Key="test/123")

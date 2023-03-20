@@ -7,7 +7,6 @@ from typing import Dict
 from urllib import parse as urlparse
 from urllib.parse import parse_qs, urlencode
 
-import moto.s3.models as moto_s3_models
 from botocore.awsrequest import create_request_object
 from botocore.compat import urlsplit
 from botocore.credentials import Credentials
@@ -24,7 +23,6 @@ from localstack.constants import (
 )
 from localstack.utils.auth import HmacV1QueryAuth, S3SigV4QueryAuth
 from localstack.utils.aws.aws_responses import requests_error_response_xml_signature_calculation
-from localstack.utils.patch import patch
 
 LOGGER = logging.getLogger(__name__)
 
@@ -81,11 +79,6 @@ ALLOWED_QUERY_PARAMS = [
     "uploadid",
     "partnumber",
 ]
-
-# Whether to enable S3 bucket policy enforcement in moto - currently disabled, as some recent CDK versions
-# are creating bucket policies that enforce aws:SecureTransport, which makes the CDK deployment fail.
-# TODO: potentially look into making configurable
-ENABLE_MOTO_BUCKET_POLICY_ENFORCEMENT = False
 
 
 def get_s3_backend() -> S3Backend:
@@ -471,16 +464,3 @@ def authenticate_presign_url_signv4(method, path, headers, data, url, query_para
                 message="Request has expired",
                 expires=query_params["X-Amz-Expires"][0],
             )
-
-
-@patch(moto_s3_models.FakeBucket.get_permission)
-def bucket_get_permission(fn, self, *args, **kwargs):
-    """
-    Apply a patch to disable/enable enforcement of S3 bucket policies
-    """
-    from moto.iam.access_control import PermissionResult
-
-    if not ENABLE_MOTO_BUCKET_POLICY_ENFORCEMENT:
-        return PermissionResult.PERMITTED
-
-    return fn(self, *args, **kwargs)
