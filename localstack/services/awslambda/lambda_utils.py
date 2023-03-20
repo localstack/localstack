@@ -14,7 +14,6 @@ from flask import Response
 from localstack import config
 from localstack.aws.accounts import get_aws_account_id
 from localstack.aws.api.lambda_ import FilterCriteria, Runtime
-from localstack.constants import LOCALHOST
 from localstack.services.awslambda.lambda_models import AwsLambdaStore, awslambda_stores
 from localstack.utils.aws import aws_stack
 from localstack.utils.aws.arns import extract_account_id_from_arn, extract_region_from_arn
@@ -188,9 +187,6 @@ def store_lambda_logs(
 def get_main_endpoint_from_container() -> str:
     if config.HOSTNAME_FROM_LAMBDA:
         return config.HOSTNAME_FROM_LAMBDA
-    if config.LAMBDA_EXECUTOR == "local":
-        # special case: return localhost for local Lambda executor (TODO remove after full switch to v2 provider)
-        return LOCALHOST
     return get_endpoint_for_network(network=get_container_network_for_lambda())
 
 

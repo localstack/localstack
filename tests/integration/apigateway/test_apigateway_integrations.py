@@ -9,12 +9,13 @@ from botocore.exceptions import ClientError
 
 from localstack import config
 from localstack.aws.accounts import get_aws_account_id
-from localstack.constants import APPLICATION_JSON
+from localstack.constants import APPLICATION_JSON, LOCALHOST
 from localstack.services.apigateway.helpers import path_based_url
 from localstack.services.awslambda.lambda_utils import (
     LAMBDA_RUNTIME_PYTHON39,
     get_main_endpoint_from_container,
 )
+from localstack.testing.aws.lambda_utils import is_old_provider
 from localstack.testing.aws.util import is_aws_cloud
 from localstack.utils.aws import arns, aws_stack
 from localstack.utils.strings import short_uid, to_bytes, to_str
@@ -794,9 +795,12 @@ def test_create_execute_api_vpc_endpoint(
 
     # create Lambda function that invokes the API GW (private VPC endpoint not accessible from outside of AWS)
     if not is_aws_cloud():
-        endpoint = endpoint.replace(
-            host_header, f"{get_main_endpoint_from_container()}:{config.get_edge_port_http()}"
-        )
+        if config.LAMBDA_EXECUTOR == "local" and is_old_provider():
+            # special case: return localhost for local Lambda executor (TODO remove after full switch to v2 provider)
+            api_host = LOCALHOST
+        else:
+            api_host = get_main_endpoint_from_container()
+        endpoint = endpoint.replace(host_header, f"{api_host}:{config.get_edge_port_http()}")
     lambda_code = textwrap.dedent(
         f"""
     def handler(event, context):
