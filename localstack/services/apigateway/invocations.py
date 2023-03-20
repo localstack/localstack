@@ -100,7 +100,10 @@ class RequestValidator:
             return False
 
         try:
-            validate(instance=json.loads(self.context.data), schema=json.loads(model["schema"]))
+            # if the body is empty, replace it with an empty JSON body
+            validate(
+                instance=json.loads(self.context.data or "{}"), schema=json.loads(model["schema"])
+            )
             return True
         except ValidationError as e:
             LOG.warning("failed to validate request body %s", e)
