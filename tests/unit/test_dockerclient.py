@@ -168,6 +168,9 @@ class TestArgumentParsing:
         argument_string = r'--label ""'  # assert that we gracefully handle invalid labels
         flags = Util.parse_additional_flags(argument_string)
         assert flags.labels == {}
+        argument_string = r"--label =bar"  # assert that we ignore empty labels
+        flags = Util.parse_additional_flags(argument_string)
+        assert flags.labels == {}
 
     def test_network(self):
         argument_string = r'-v "/tmp/test.jar:/tmp/foo bar/test.jar" --network mynet123'

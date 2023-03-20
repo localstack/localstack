@@ -956,6 +956,9 @@ class Util:
         :return: A DockerRunFlags object that will return new objects if respective parameters were None and
                 additional flags contained a flag for that object or the same which are passed otherwise.
         """
+        # Argparse refactoring opportunity: custom argparse actions can be used to modularize parsing (e.g., key=value)
+        # https://docs.python.org/3/library/argparse.html#action
+
         # Configure parser
         parser = NoExitArgumentParser(description="Docker run flags parser")
         parser.add_argument(
