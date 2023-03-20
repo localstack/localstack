@@ -679,6 +679,28 @@ LAMBDA_REMOVE_CONTAINERS = (
 # defaults to 600_000 ms => 10 minutes
 LAMBDA_KEEPALIVE_MS = int(os.environ.get("LAMBDA_KEEPALIVE_MS", "600000"))
 
+# Concurrency limits. Like on AWS these apply per account and region.
+# per account/region: there can be at most <LAMBDA_LIMITS_CONCURRENT_EXECUTIONS> concurrent invocations.
+LAMBDA_LIMITS_CONCURRENT_EXECUTIONS = int(
+    os.environ.get("LAMBDA_LIMITS_CONCURRENT_EXECUTIONS"), 1_000
+)
+# per account/region: there must be at least <LAMBDA_LIMITS_MINIMUM_UNRESERVED_CONCURRENCY> unreserved concurrency.
+LAMBDA_LIMITS_MINIMUM_UNRESERVED_CONCURRENCY = int(
+    os.environ.get("LAMBDA_LIMITS_MINIMUM_UNRESERVED_CONCURRENCY"), 100
+)
+
+LAMBDA_LIMITS_TOTAL_CODE_SIZE = int(os.environ.get("LAMBDA_LIMITS_TOTAL_CODE_SIZE"), 80_530_636_800)
+LAMBDA_LIMITS_CODE_SIZE_ZIPPED = int(os.environ.get("LAMBDA_LIMITS_CODE_SIZE_ZIPPED"), 52_428_800)
+LAMBDA_LIMITS_CODE_SIZE_UNZIPPED = int(
+    os.environ.get("LAMBDA_LIMITS_CODE_SIZE_UNZIPPED"), 262_144_000
+)
+LAMBDA_LIMITS_CREATE_FUNCTION_REQUEST_SIZE = int(
+    os.environ.get("LAMBDA_LIMITS_CREATE_FUNCTION_REQUEST_SIZE"), 69_905_067
+)
+LAMBDA_LIMITS_MAX_FUNCTION_ENVVAR_SIZE_BYTES = int(
+    os.environ.get("LAMBDA_LIMITS_MAX_FUNCTION_ENVVAR_SIZE_BYTES"), 4 * 1024
+)
+
 # DEV | Only for LS developers. Only applicable to new Lambda provider.
 # whether to explicitly expose port in lambda container when invoking functions in host mode for systems that cannot
 # reach the container via its IPv4 (e.g., macOS https://docs.docker.com/desktop/networking/#i-cannot-ping-my-containers)

@@ -29,7 +29,6 @@ from localstack.services.awslambda.api_utils import (
     qualifier_is_alias,
 )
 from localstack.services.awslambda.invocation.lambda_models import (
-    LAMBDA_LIMITS_CODE_SIZE_UNZIPPED_DEFAULT,
     ArchiveCode,
     Function,
     FunctionVersion,
@@ -484,9 +483,9 @@ def store_lambda_archive(
         )
     # check unzipped size
     unzipped_size = get_unzipped_size(zip_file=io.BytesIO(archive_file))
-    if unzipped_size >= LAMBDA_LIMITS_CODE_SIZE_UNZIPPED_DEFAULT:
+    if unzipped_size >= config.LAMBDA_LIMITS_CODE_SIZE_UNZIPPED:
         raise InvalidParameterValueException(
-            f"Unzipped size must be smaller than {LAMBDA_LIMITS_CODE_SIZE_UNZIPPED_DEFAULT} bytes",
+            f"Unzipped size must be smaller than {config.LAMBDA_LIMITS_CODE_SIZE_UNZIPPED} bytes",
             Type="User",
         )
     # store all buckets in us-east-1 for now

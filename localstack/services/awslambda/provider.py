@@ -143,9 +143,6 @@ from localstack.services.awslambda.event_source_listeners.event_source_listener 
 from localstack.services.awslambda.invocation import AccessDeniedException
 from localstack.services.awslambda.invocation.lambda_models import (
     IMAGE_MAPPING,
-    LAMBDA_LIMITS_CREATE_FUNCTION_REQUEST_SIZE,
-    LAMBDA_LIMITS_MAX_FUNCTION_ENVVAR_SIZE_BYTES,
-    LAMBDA_MINIMUM_UNRESERVED_CONCURRENCY,
     SNAP_START_SUPPORTED_RUNTIMES,
     AliasRoutingConfig,
     CodeSigningConfig,
@@ -472,7 +469,10 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
     @staticmethod
     def _verify_env_variables(env_vars: dict[str, str]):
         dumped_env_vars = json.dumps(env_vars, separators=(",", ":"))
-        if len(dumped_env_vars.encode("utf-8")) > LAMBDA_LIMITS_MAX_FUNCTION_ENVVAR_SIZE_BYTES:
+        if (
+            len(dumped_env_vars.encode("utf-8"))
+            > config.LAMBDA_LIMITS_MAX_FUNCTION_ENVVAR_SIZE_BYTES
+        ):
             raise InvalidParameterValueException(
                 f"Lambda was unable to configure your environment variables because the environment variables you have provided exceeded the 4KB limit. String measured: {dumped_env_vars}",
                 Type="User",
@@ -576,9 +576,9 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
         context: RequestContext,
         request: CreateFunctionRequest,
     ) -> FunctionConfiguration:
-        if context.request.content_length > LAMBDA_LIMITS_CREATE_FUNCTION_REQUEST_SIZE:
+        if context.request.content_length > config.LAMBDA_LIMITS_CREATE_FUNCTION_REQUEST_SIZE:
             raise RequestEntityTooLargeException(
-                f"Request must be smaller than {LAMBDA_LIMITS_CREATE_FUNCTION_REQUEST_SIZE} bytes for the CreateFunction operation"
+                f"Request must be smaller than {config.LAMBDA_LIMITS_CREATE_FUNCTION_REQUEST_SIZE} bytes for the CreateFunction operation"
             )
 
         architectures = request.get("Architectures")
@@ -3221,9 +3221,9 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
 
         if (
             unreserved_concurrent_executions - reserved_concurrent_executions
-        ) < LAMBDA_MINIMUM_UNRESERVED_CONCURRENCY:
+        ) < config.LAMBDA_LIMITS_MINIMUM_UNRESERVED_CONCURRENCY:
             raise InvalidParameterValueException(
-                f"Specified ReservedConcurrentExecutions for function decreases account's UnreservedConcurrentExecution below its minimum value of [{LAMBDA_MINIMUM_UNRESERVED_CONCURRENCY}]."
+                f"Specified ReservedConcurrentExecutions for function decreases account's UnreservedConcurrentExecution below its minimum value of [{config.LAMBDA_LIMITS_MINIMUM_UNRESERVED_CONCURRENCY}]."
             )
 
         fn.reserved_concurrent_executions = reserved_concurrent_executions
