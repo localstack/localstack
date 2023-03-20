@@ -4,6 +4,7 @@ import json
 import logging
 import os
 import re
+import socket
 import time
 from typing import TYPE_CHECKING, Any, Callable, Dict, List, Optional, Tuple
 
@@ -21,7 +22,7 @@ from moto.core import BackendDict, BaseBackend
 from pytest_httpserver import HTTPServer
 from werkzeug import Request, Response
 
-from localstack import config
+from localstack import config, constants
 from localstack.aws.accounts import get_aws_account_id
 from localstack.constants import TEST_AWS_ACCESS_KEY_ID, TEST_AWS_SECRET_ACCESS_KEY
 from localstack.services.stores import (
@@ -2004,6 +2005,69 @@ def appsync_create_api(appsync_client):
             appsync_client.delete_graphql_api(apiId=api)
         except Exception as e:
             LOG.debug(f"Error cleaning up AppSync API: {api}, {e}")
+
+
+@pytest.fixture
+def assert_host_customisation(monkeypatch):
+    hostname_external = f"external-host-{short_uid()}"
+    # `LOCALSTACK_HOSTNAME` is really an internal variable that has been
+    # exposed to the user at some point in the past. It is used by some
+    # services that start resources (e.g. OpenSearch) to determine if the
+    # service has been started correctly (i.e. a health check). This means that
+    # the value must be resolvable by LocalStack or else the service resources
+    # won't start properly.
+    #
+    # One hostname that's always resolvable is the hostname of the process
+    # running LocalStack, so use that here.
+    #
+    # Note: We cannot use `localhost` since we explicitly check that the URL
+    # passed in does not contain `localhost`, unless it is requried to.
+    localstack_hostname = socket.gethostname()
+    monkeypatch.setattr(config, "HOSTNAME_EXTERNAL", hostname_external)
+    monkeypatch.setattr(config, "LOCALSTACK_HOSTNAME", localstack_hostname)
+
+    def asserter(
+        url: str,
+        *,
+        use_hostname_external: bool = False,
+        use_localstack_hostname: bool = False,
+        use_localstack_cloud: bool = False,
+        use_localhost: bool = False,
+        custom_host: Optional[str] = None,
+    ):
+        if use_hostname_external:
+            assert hostname_external in url
+
+            assert localstack_hostname not in url
+            assert constants.LOCALHOST_HOSTNAME not in url
+            assert constants.LOCALHOST not in url
+        elif use_localstack_hostname:
+            assert localstack_hostname in url
+
+            assert hostname_external not in url
+            assert constants.LOCALHOST_HOSTNAME not in url
+            assert constants.LOCALHOST not in url
+        elif use_localstack_cloud:
+            assert constants.LOCALHOST_HOSTNAME in url
+
+            assert hostname_external not in url
+            assert localstack_hostname not in url
+        elif use_localhost:
+            assert constants.LOCALHOST in url
+
+            assert constants.LOCALHOST_HOSTNAME not in url
+            assert hostname_external not in url
+            assert localstack_hostname not in url
+        elif custom_host is not None:
+            assert custom_host in url
+
+            assert constants.LOCALHOST_HOSTNAME not in url
+            assert hostname_external not in url
+            assert localstack_hostname not in url
+        else:
+            raise ValueError("no assertions made")
+
+    yield asserter
 
 
 @pytest.fixture

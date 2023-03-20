@@ -147,7 +147,7 @@ jobs:
           name: Test ASF Lambda provider
           environment:
             PROVIDER_OVERRIDE_LAMBDA: "asf"
-            TEST_PATH: "tests/integration/awslambda/test_lambda.py tests/integration/awslambda/test_lambda_api.py tests/integration/awslambda/test_lambda_common.py tests/integration/awslambda/test_lambda_integration_sqs.py tests/integration/cloudformation/resources/test_lambda.py tests/integration/awslambda/test_lambda_integration_dynamodbstreams.py tests/integration/awslambda/test_lambda_integration_kinesis.py tests/integration/awslambda/test_lambda_developer_tools.py"
+            TEST_PATH: "tests/integration/awslambda/test_lambda.py tests/integration/awslambda/test_lambda_api.py tests/integration/awslambda/test_lambda_common.py tests/integration/awslambda/test_lambda_integration_sqs.py tests/integration/cloudformation/resources/test_lambda.py tests/integration/awslambda/test_lambda_integration_dynamodbstreams.py tests/integration/awslambda/test_lambda_integration_kinesis.py tests/integration/awslambda/test_lambda_developer_tools.py tests/integration/test_network_configuration.py::TestLambda"
             PYTEST_ARGS: "--reruns 3 --junitxml=target/reports/lambda_asf.xml -o junit_suite_name='lambda_asf'"
             COVERAGE_ARGS: "-p"
           command: make test-coverage
@@ -172,7 +172,7 @@ jobs:
           name: Test ASF S3 provider
           environment:
             PROVIDER_OVERRIDE_S3: "asf"
-            TEST_PATH: "tests/integration/s3/"
+            TEST_PATH: "tests/integration/s3/ tests/integration/test_network_configuration.py::TestS3"
             PYTEST_ARGS: "--reruns 3 --junitxml=target/reports/s3_asf.xml -o junit_suite_name='s3_asf'"
             COVERAGE_ARGS: "-p"
           command: make test-coverage

@@ -94,7 +94,6 @@ from localstack.aws.handlers import (
     preprocess_request,
     serve_custom_service_request_handlers,
 )
-from localstack.constants import LOCALHOST_HOSTNAME
 from localstack.services.edge import ROUTER
 from localstack.services.moto import call_moto
 from localstack.services.plugins import ServiceLifecycleHook
@@ -130,6 +129,7 @@ from localstack.utils.aws.arns import s3_bucket_name
 from localstack.utils.collections import get_safe
 from localstack.utils.patch import patch
 from localstack.utils.strings import short_uid
+from localstack.utils.urls import localstack_host
 
 LOG = logging.getLogger(__name__)
 
@@ -166,8 +166,13 @@ class UnexpectedContent(CommonServiceException):
 
 def get_full_default_bucket_location(bucket_name):
     if config.HOSTNAME_EXTERNAL != config.LOCALHOST:
-        return f"{config.get_protocol()}://{config.HOSTNAME_EXTERNAL}:{config.get_edge_port_http()}/{bucket_name}/"
-    return f"{config.get_protocol()}://{bucket_name}.s3.{LOCALHOST_HOSTNAME}:{config.get_edge_port_http()}/"
+        host_definition = localstack_host(
+            use_hostname_external=True, custom_port=config.get_edge_port_http()
+        )
+        return f"{config.get_protocol()}://{host_definition.host_and_port()}/{bucket_name}/"
+    else:
+        host_definition = localstack_host(use_localhost_cloud=True)
+        return f"{config.get_protocol()}://{bucket_name}.s3.{host_definition.host_and_port()}/"
 
 
 class S3Provider(S3Api, ServiceLifecycleHook):

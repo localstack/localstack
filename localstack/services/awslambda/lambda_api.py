@@ -25,7 +25,7 @@ from flask_cors import CORS
 
 from localstack import config, constants
 from localstack.aws.accounts import get_aws_account_id
-from localstack.constants import APPLICATION_JSON, LOCALHOST_HOSTNAME
+from localstack.constants import APPLICATION_JSON
 from localstack.http import Request
 from localstack.http import Response as HttpResponse
 from localstack.services.awslambda import lambda_executors
@@ -81,6 +81,7 @@ from localstack.utils.time import (
     now_utc,
     timestamp,
 )
+from localstack.utils.urls import localstack_host
 
 LOG = logging.getLogger(__name__)
 
@@ -1511,7 +1512,10 @@ def create_url_config(function):
 
     custom_id = md5(str(random()))
     region_name = aws_stack.get_region()
-    url = f"http://{custom_id}.lambda-url.{region_name}.{LOCALHOST_HOSTNAME}:{config.EDGE_PORT_HTTP or config.EDGE_PORT}/"
+    host_definition = localstack_host(
+        use_localhost_cloud=True, custom_port=config.EDGE_PORT_HTTP or config.EDGE_PORT
+    )
+    url = f"http://{custom_id}.lambda-url.{region_name}.{host_definition.host_and_port()}/"
     # TODO: HTTPS support
 
     data = json.loads(to_str(request.data))
