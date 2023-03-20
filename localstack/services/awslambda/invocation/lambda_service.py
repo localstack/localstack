@@ -390,47 +390,52 @@ class LambdaService:
         function_name = fn_parts["function_name"]
 
         tracker = self._concurrency_trackers[account]
-
         store = lambda_stores[account][region]
-        reserved_concurrency = store.functions[function_name].reserved_concurrent_executions
 
         with tracker.lock:
-            current_count_of_reserved_function_invocations = tracker.function_concurrency[
-                unqualified_function_arn
-            ]
-            if reserved_concurrency is not None:
-                return min(reserved_concurrency - current_count_of_reserved_function_invocations, 0)
+            # reserved concurrency set => reserved concurrent executions only limited by local function limit
+            if store.functions[function_name].reserved_concurrent_executions is not None:
+                fn = store.functions[function_name]
+                available_unreserved_concurrency = (
+                    fn.reserved_concurrent_executions - self._calculate_used_concurrency_for_fn(fn)
+                )
+            # no reserved concurrency set. => consider account/region-global state instead
+            else:
+                available_unreserved_concurrency = store.settings.concurrent_executions - sum(
+                    [self._calculate_used_concurrency_for_fn(fn) for fn in store.functions.values()]
+                )
 
-            account_region_reserved_concurrency = 0
-            unreserved_account_region_invocations = 0
-            for fn in store.functions.values():
-                if fn.reserved_concurrent_executions is not None:
-                    account_region_reserved_concurrency += fn.reserved_concurrent_executions
-                else:
-                    account_region_reserved_concurrency += sum(
-                        [
-                            provisioned_configs.provisioned_concurrent_executions
-                            for provisioned_configs in fn.provisioned_concurrency_configs.values()
-                        ]
-                    )
-                    unreserved_account_region_invocations += tracker.function_concurrency[
-                        fn.latest().id.unqualified_arn()
-                    ]
-
-            unreserved_concurrency = (
-                store.settings.concurrent_executions - account_region_reserved_concurrency
-            )
-            available_unreserved_concurrency = (
-                unreserved_concurrency - unreserved_account_region_invocations
-            )
             if available_unreserved_concurrency < 0:
                 LOG.warning(
                     "Invalid function concurrency state detected for function: %s | available unreserved concurrency: %d",
                     unqualified_function_arn,
                     available_unreserved_concurrency,
                 )
-
+                return 0
             return available_unreserved_concurrency
+
+    def _calculate_used_concurrency_for_fn(self, fn: Function) -> int:
+        """
+        Calculate the total used concurrency for a function
+
+        :return: sum of function's provisioned concurrency and unreserved+unprovisioned invocations (e.g. spillover)
+        """
+        tracker = self._concurrency_trackers[fn.latest().id.unqualified_arn()]
+
+        reserved_concurrency = fn.reserved_concurrent_executions
+        if reserved_concurrency:
+            return reserved_concurrency
+
+        provisioned_concurrency_sum_for_fn = sum(
+            [
+                provisioned_configs.provisioned_concurrent_executions
+                for provisioned_configs in fn.provisioned_concurrency_configs.values()
+            ]
+        )
+        return (
+            provisioned_concurrency_sum_for_fn
+            + tracker.function_concurrency[fn.latest().id.unqualified_arn()]
+        )
 
 
 def is_code_used(code: S3Code, function: Function) -> bool:

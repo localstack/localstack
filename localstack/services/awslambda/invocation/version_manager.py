@@ -247,8 +247,16 @@ class LambdaVersionManager(ServiceEndpoint):
         :param provisioned_concurrent_executions: set to 0 to stop all provisioned environments
         """
 
-        if self.provisioned_state == ProvisionedConcurrencyStatusEnum.IN_PROGRESS:
-            raise ServiceException("Not working yet.")
+        if (
+            self.provisioned_state
+            and self.provisioned_state.status == ProvisionedConcurrencyStatusEnum.IN_PROGRESS
+        ):
+            raise ServiceException(
+                "Updating provisioned concurrency configuration while IN_PROGRESS is not supported yet."
+            )
+
+        if not self.provisioned_state:
+            self.provisioned_state = ProvisionedConcurrencyState()
 
         # create plan
         current_provisioned_environments = len(
@@ -306,10 +314,13 @@ class LambdaVersionManager(ServiceEndpoint):
             ]
         )
 
-        # TODO: invocation number instead of considered
+        # we should never spawn more execution environments than we can have concurrent invocations
         if (
             self.function.reserved_concurrent_executions is not None
-            and considered_envs >= self.function.reserved_concurrent_executions
+            and considered_envs
+            >= self.lambda_service.get_available_fn_concurrency(
+                self.function.latest().id.unqualified_arn()
+            )
         ):
             return
 
@@ -391,8 +402,7 @@ class LambdaVersionManager(ServiceEndpoint):
                             )
                             return
 
-                        # TODO: untested assumption(!)
-                        #   because provisioned concurrency affects the unreserved
+                        # skip invocation tracking for provisioned invocations since they are always statically part of the reserved concurrency
                         if environment.initialization_type == "on-demand":
                             self.lambda_service.report_invocation_start(
                                 self.function_version.id.unqualified_arn()

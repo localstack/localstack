@@ -162,7 +162,6 @@ from localstack.services.awslambda.invocation.lambda_models import (
     LayerPolicyStatement,
     LayerVersion,
     ProvisionedConcurrencyConfiguration,
-    ProvisionedConcurrencyState,
     RequestEntityTooLargeException,
     ResourcePolicy,
     UpdateStatus,
@@ -2325,7 +2324,6 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
 
         fn.provisioned_concurrency_configs[qualifier] = provisioned_config
 
-        manager.provisioned_state = ProvisionedConcurrencyState()
         manager.update_provisioned_concurrency_config(
             provisioned_config.provisioned_concurrent_executions
         )
