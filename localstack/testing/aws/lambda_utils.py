@@ -1,8 +1,8 @@
 import json
 import os
-import platform
 from typing import Literal
 
+from localstack.services.awslambda.lambda_api import use_docker
 from localstack.utils.common import to_str
 from localstack.utils.sync import ShortCircuitWaitException, retry
 from localstack.utils.testutil import get_lambda_log_events
@@ -117,6 +117,14 @@ def _get_lambda_invocation_events(logs_client, function_name, expected_num_event
     return retry(get_events, retries=retries, sleep_before=2)
 
 
+def is_old_local_executor() -> bool:
+    """Returns True if running in local executor mode and False otherwise.
+    The new provider ignores the LAMBDA_EXECUTOR flag and `not use_docker()` covers the fallback case if
+    the Docker socket is not available.
+    """
+    return is_old_provider() and not use_docker()
+
+
 def is_old_provider():
     return os.environ.get("TEST_TARGET") != "AWS_CLOUD" and os.environ.get(
         "PROVIDER_OVERRIDE_LAMBDA"
@@ -127,7 +135,3 @@ def is_new_provider():
     return os.environ.get("TEST_TARGET") != "AWS_CLOUD" and os.environ.get(
         "PROVIDER_OVERRIDE_LAMBDA"
     ) in ["asf", "v2"]
-
-
-def is_arm_compatible():
-    return platform.machine() == "arm64"
