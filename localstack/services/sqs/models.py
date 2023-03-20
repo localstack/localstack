@@ -21,7 +21,6 @@ from localstack.aws.api.sqs import (
     ReceiptHandleIsInvalid,
     TagMap,
 )
-from localstack.config import get_protocol
 from localstack.services.sqs import constants as sqs_constants
 from localstack.services.sqs.exceptions import (
     InvalidAttributeValue,
@@ -240,8 +239,7 @@ class SqsQueue:
         return f"arn:aws:sqs:{self.region}:{self.account_id}:{self.name}"
 
     def url(self, context: RequestContext) -> str:
-        """Return queue URL using either SQS_PORT_EXTERNAL (if configured), the SQS_ENDPOINT_STRATEGY (if configured)
-        or based on the 'Host' request header"""
+        """Return queue URL using the SQS_ENDPOINT_STRATEGY (if configured) or based on the 'Host' request header"""
 
         host_url = context.request.host_url
 
@@ -256,12 +254,6 @@ class SqsQueue:
         elif config.SQS_ENDPOINT_STRATEGY == "path":
             # https?://localhost:4566/queue/us-east-1/00000000000/my-queue (us-east-1)
             host_url = f"{context.request.host_url}queue/{self.region}"
-        else:
-            if config.SQS_PORT_EXTERNAL:
-                host_definition = localstack_host(
-                    use_hostname_external=True, custom_port=config.SQS_PORT_EXTERNAL
-                )
-                host_url = f"{get_protocol()}://{host_definition.host_and_port()}"
 
         return "{host}/{account_id}/{name}".format(
             host=host_url.rstrip("/"),

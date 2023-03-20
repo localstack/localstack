@@ -612,9 +612,6 @@ SQS_DELAY_PURGE_RETRY = is_env_true("SQS_DELAY_PURGE_RETRY")
 # Used to toggle QueueDeletedRecently errors when re-creating a queue within 60 seconds of deleting it
 SQS_DELAY_RECENTLY_DELETED = is_env_true("SQS_DELAY_RECENTLY_DELETED")
 
-# expose SQS on a specific port externally
-SQS_PORT_EXTERNAL = int(os.environ.get("SQS_PORT_EXTERNAL") or 0)
-
 # Strategy used when creating SQS queue urls. can be "off", "domain", or "path"
 SQS_ENDPOINT_STRATEGY = os.environ.get("SQS_ENDPOINT_STRATEGY", "") or "off"
 
@@ -865,7 +862,6 @@ CONFIG_ENV_VARS = [
     "SQS_DELAY_PURGE_RETRY",
     "SQS_DELAY_RECENTLY_DELETED",
     "SQS_ENDPOINT_STRATEGY",
-    "SQS_PORT_EXTERNAL",
     "STEPFUNCTIONS_LAMBDA_ENDPOINT",
     "SYNCHRONOUS_KINESIS_EVENTS",
     "SYNCHRONOUS_SNS_EVENTS",
@@ -996,9 +992,6 @@ populate_config_env_var_names()
 
 def service_port(service_key: str, external: bool = False) -> int:
     service_key = service_key.lower()
-    if external:
-        if service_key == "sqs" and SQS_PORT_EXTERNAL:
-            return SQS_PORT_EXTERNAL
     if FORWARD_EDGE_INMEM:
         if service_key == "elasticsearch":
             # TODO Elasticsearch domains are a special case - we do not want to route them through

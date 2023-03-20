@@ -131,7 +131,6 @@ class TestSQS:
     Test all combinations of:
 
     * endpoint_strategy
-    * sqs_port_external
     * hostname_external
     """
 
@@ -145,20 +144,6 @@ class TestSQS:
 
         assert_host_customisation(queue_url, use_localhost=True)
         assert queue_name in queue_url
-
-    def test_off_strategy_with_external_port(
-        self, monkeypatch, sqs_create_queue, assert_host_customisation
-    ):
-        external_port = 12345
-        monkeypatch.setattr(config, "SQS_ENDPOINT_STRATEGY", "off")
-        monkeypatch.setattr(config, "SQS_PORT_EXTERNAL", external_port)
-
-        queue_name = f"queue-{short_uid()}"
-        queue_url = sqs_create_queue(QueueName=queue_name)
-
-        assert_host_customisation(queue_url, use_hostname_external=True)
-        assert queue_name in queue_url
-        assert f":{external_port}" in queue_url
 
     def test_domain_strategy(self, monkeypatch, sqs_create_queue, assert_host_customisation):
         monkeypatch.setattr(config, "SQS_ENDPOINT_STRATEGY", "domain")

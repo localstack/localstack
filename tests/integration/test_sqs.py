@@ -1029,15 +1029,13 @@ class TestSqsProvider:
     @pytest.mark.only_localstack
     def test_external_hostname(self, monkeypatch, sqs_client, sqs_create_queue):
         external_host = "external-host"
-        external_port = "12345"
 
         monkeypatch.setattr(config, "SQS_ENDPOINT_STRATEGY", "off")
-        monkeypatch.setattr(config, "SQS_PORT_EXTERNAL", external_port)
         monkeypatch.setattr(config, "HOSTNAME_EXTERNAL", external_host)
 
         queue_url = sqs_create_queue()
 
-        assert f"{external_host}:{external_port}" in queue_url
+        assert external_host in queue_url
 
         message_body = "external_host_test"
         sqs_client.send_message(QueueUrl=queue_url, MessageBody=message_body)
