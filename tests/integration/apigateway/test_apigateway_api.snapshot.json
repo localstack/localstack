@@ -2015,5 +2015,408 @@
         }
       }
     }
+  },
+  "tests/integration/apigateway/test_apigateway_api.py::TestApiGatewayApiRequestValidator::test_create_request_validator": {
+    "recorded-date": "20-03-2023, 21:53:42",
+    "recorded-content": {
+      "create-rest-api": {
+        "apiKeySource": "HEADER",
+        "createdDate": "datetime",
+        "description": "my api",
+        "disableExecuteApiEndpoint": false,
+        "endpointConfiguration": {
+          "types": [
+            "EDGE"
+          ]
+        },
+        "id": "<id:1>",
+        "name": "<name:1>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 201
+        }
+      },
+      "create-request-validator": {
+        "id": "<id:2>",
+        "name": "<name:2>",
+        "validateRequestBody": false,
+        "validateRequestParameters": false,
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 201
+        }
+      }
+    }
+  },
+  "tests/integration/apigateway/test_apigateway_api.py::TestApiGatewayApiRequestValidator::test_get_request_validator": {
+    "recorded-date": "20-03-2023, 21:54:06",
+    "recorded-content": {
+      "create-rest-api": {
+        "apiKeySource": "HEADER",
+        "createdDate": "datetime",
+        "description": "my api",
+        "disableExecuteApiEndpoint": false,
+        "endpointConfiguration": {
+          "types": [
+            "EDGE"
+          ]
+        },
+        "id": "<id:1>",
+        "name": "<name:1>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 201
+        }
+      },
+      "create-request-validator": {
+        "id": "<id:2>",
+        "name": "<name:2>",
+        "validateRequestBody": false,
+        "validateRequestParameters": false,
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 201
+        }
+      },
+      "get-request-validators": {
+        "id": "<id:2>",
+        "name": "<name:2>",
+        "validateRequestBody": false,
+        "validateRequestParameters": false,
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/integration/apigateway/test_apigateway_api.py::TestApiGatewayApiRequestValidator::test_invalid_get_request_validator": {
+    "recorded-date": "20-03-2023, 21:54:19",
+    "recorded-content": {
+      "get-request-validators-invalid-api-id": {
+        "Error": {
+          "Code": "NotFoundException",
+          "Message": "Invalid Request Validator identifier specified"
+        },
+        "message": "Invalid Request Validator identifier specified",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 404
+        }
+      },
+      "get-request-validators-invalid-validator-id": {
+        "Error": {
+          "Code": "NotFoundException",
+          "Message": "Invalid Request Validator identifier specified"
+        },
+        "message": "Invalid Request Validator identifier specified",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 404
+        }
+      }
+    }
+  },
+  "tests/integration/apigateway/test_apigateway_api.py::TestApiGatewayApiRequestValidator::test_get_request_validators": {
+    "recorded-date": "20-03-2023, 21:55:00",
+    "recorded-content": {
+      "create-rest-api": {
+        "apiKeySource": "HEADER",
+        "createdDate": "datetime",
+        "description": "my api",
+        "disableExecuteApiEndpoint": false,
+        "endpointConfiguration": {
+          "types": [
+            "EDGE"
+          ]
+        },
+        "id": "<id:1>",
+        "name": "<name:1>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 201
+        }
+      },
+      "create-request-validator": {
+        "id": "<id:2>",
+        "name": "<name:2>",
+        "validateRequestBody": false,
+        "validateRequestParameters": false,
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 201
+        }
+      },
+      "get-request-validators": {
+        "items": [
+          {
+            "id": "<id:2>",
+            "name": "<name:2>",
+            "validateRequestBody": false,
+            "validateRequestParameters": false
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/integration/apigateway/test_apigateway_api.py::TestApiGatewayApiRequestValidator::test_invalid_get_request_validators": {
+    "recorded-date": "20-03-2023, 21:55:00",
+    "recorded-content": {
+      "get-invalid-request-validators": {
+        "Error": {
+          "Code": "NotFoundException",
+          "Message": "Invalid API identifier specified 111111111111:api_id"
+        },
+        "message": "Invalid API identifier specified 111111111111:api_id",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 404
+        }
+      }
+    }
+  },
+  "tests/integration/apigateway/test_apigateway_api.py::TestApiGatewayApiRequestValidator::test_delete_request_validator": {
+    "recorded-date": "20-03-2023, 21:55:26",
+    "recorded-content": {
+      "create-rest-api": {
+        "apiKeySource": "HEADER",
+        "createdDate": "datetime",
+        "description": "my api",
+        "disableExecuteApiEndpoint": false,
+        "endpointConfiguration": {
+          "types": [
+            "EDGE"
+          ]
+        },
+        "id": "<id:1>",
+        "name": "<name:1>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 201
+        }
+      },
+      "create-request-validator": {
+        "id": "<id:2>",
+        "name": "<name:2>",
+        "validateRequestBody": false,
+        "validateRequestParameters": false,
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 201
+        }
+      },
+      "get-request-validators-before-delete": {
+        "items": [
+          {
+            "id": "<id:2>",
+            "name": "<name:2>",
+            "validateRequestBody": false,
+            "validateRequestParameters": false
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "delete-request-validator": {
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 202
+        }
+      },
+      "get-request-validators-after-delete": {
+        "items": [],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/integration/apigateway/test_apigateway_api.py::TestApiGatewayApiRequestValidator::test_invalid_delete_request_validator": {
+    "recorded-date": "20-03-2023, 21:55:53",
+    "recorded-content": {
+      "delete-request-validator-invalid-api-id": {
+        "Error": {
+          "Code": "NotFoundException",
+          "Message": "Invalid Request Validator identifier specified"
+        },
+        "message": "Invalid Request Validator identifier specified",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 404
+        }
+      },
+      "delete-request-validator-invalid-validator-id": {
+        "Error": {
+          "Code": "NotFoundException",
+          "Message": "Invalid Request Validator identifier specified"
+        },
+        "message": "Invalid Request Validator identifier specified",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 404
+        }
+      }
+    }
+  },
+  "tests/integration/apigateway/test_apigateway_api.py::TestApiGatewayApiRequestValidator::test_update_request_validator": {
+    "recorded-date": "20-03-2023, 21:56:24",
+    "recorded-content": {
+      "create-rest-api": {
+        "apiKeySource": "HEADER",
+        "createdDate": "datetime",
+        "description": "my api",
+        "disableExecuteApiEndpoint": false,
+        "endpointConfiguration": {
+          "types": [
+            "EDGE"
+          ]
+        },
+        "id": "<id:1>",
+        "name": "<name:1>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 201
+        }
+      },
+      "create-request-validator": {
+        "id": "<id:2>",
+        "name": "<name:2>",
+        "validateRequestBody": false,
+        "validateRequestParameters": false,
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 201
+        }
+      },
+      "get-request-validators-before-update": {
+        "id": "<id:2>",
+        "name": "<name:2>",
+        "validateRequestBody": false,
+        "validateRequestParameters": false,
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "update-request-validator": {
+        "id": "<id:2>",
+        "name": "<name:2>",
+        "validateRequestBody": true,
+        "validateRequestParameters": false,
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "get-request-validators-after-update": {
+        "id": "<id:2>",
+        "name": "<name:2>",
+        "validateRequestBody": true,
+        "validateRequestParameters": false,
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/integration/apigateway/test_apigateway_api.py::TestApiGatewayApiRequestValidator::test_create_request_validator_invalid_api_id": {
+    "recorded-date": "20-03-2023, 21:56:24",
+    "recorded-content": {
+      "invalid-create-request-validator": {
+        "Error": {
+          "Code": "BadRequestException",
+          "Message": "Invalid REST API identifier specified"
+        },
+        "message": "Invalid REST API identifier specified",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/integration/apigateway/test_apigateway_api.py::TestApiGatewayApiRequestValidator::test_invalid_update_request_validator_operations": {
+    "recorded-date": "20-03-2023, 21:56:49",
+    "recorded-content": {
+      "create-rest-api": {
+        "apiKeySource": "HEADER",
+        "createdDate": "datetime",
+        "description": "my api",
+        "disableExecuteApiEndpoint": false,
+        "endpointConfiguration": {
+          "types": [
+            "EDGE"
+          ]
+        },
+        "id": "<id:1>",
+        "name": "<name:1>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 201
+        }
+      },
+      "create-request-validator": {
+        "id": "<id:2>",
+        "name": "<name:2>",
+        "validateRequestBody": false,
+        "validateRequestParameters": false,
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 201
+        }
+      },
+      "update-request-validator-invalid-add-operation": {
+        "Error": {
+          "Code": "BadRequestException",
+          "Message": "Invalid patch path  '/validateRequestBody' specified for op 'add'. Please choose supported operations"
+        },
+        "message": "Invalid patch path  '/validateRequestBody' specified for op 'add'. Please choose supported operations",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "update-request-validator-invalid-remove-operation": {
+        "Error": {
+          "Code": "BadRequestException",
+          "Message": "Invalid patch path  '/validateRequestBody' specified for op 'remove'. Please choose supported operations"
+        },
+        "message": "Invalid patch path  '/validateRequestBody' specified for op 'remove'. Please choose supported operations",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "update-request-validator-invalid-path": {
+        "Error": {
+          "Code": "BadRequestException",
+          "Message": "Invalid patch path  '/invalidPath' specified for op 'replace'. Must be one of: [/name, /validateRequestParameters, /validateRequestBody]"
+        },
+        "message": "Invalid patch path  '/invalidPath' specified for op 'replace'. Must be one of: [/name, /validateRequestParameters, /validateRequestBody]",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "update-request-validator-empty-name-value": {
+        "Error": {
+          "Code": "BadRequestException",
+          "Message": "Request Validator name cannot be blank"
+        },
+        "message": "Request Validator name cannot be blank",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
   }
 }

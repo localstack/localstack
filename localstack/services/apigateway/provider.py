@@ -1029,9 +1029,7 @@ class ApigatewayProvider(ApigatewayApi, ServiceLifecycleHook):
         )
 
         if validator is None:
-            raise NotFoundException(
-                f"Validator {request_validator_id} for API Gateway {rest_api_id} not found"
-            )
+            raise NotFoundException("Invalid Request Validator identifier specified")
 
         result = to_validator_response_json(rest_api_id, validator)
         return result
