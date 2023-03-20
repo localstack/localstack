@@ -305,33 +305,22 @@ class LambdaVersionManager(ServiceEndpoint):
         self.provisioning_thread = start_thread(scale_environments)
 
     def start_environment(self):
-        considered_envs = self.count_environment_by_status(
-            [
-                RuntimeStatus.INACTIVE,
-                RuntimeStatus.READY,
-                RuntimeStatus.STARTING,
-                RuntimeStatus.RUNNING,
-            ]
-        )
-
         # we should never spawn more execution environments than we can have concurrent invocations
+        # so only start an environment when we have at least one available concurrency left
         if (
-            self.function.reserved_concurrent_executions is not None
-            and considered_envs
-            >= self.lambda_service.get_available_fn_concurrency(
+            self.lambda_service.get_available_fn_concurrency(
                 self.function.latest().id.unqualified_arn()
             )
+            > 0
         ):
-            return
-
-        LOG.debug("Starting new environment")
-        runtime_environment = RuntimeEnvironment(
-            function_version=self.function_version,
-            initialization_type="on-demand",
-            service_endpoint=self,
-        )
-        self.all_environments[runtime_environment.id] = runtime_environment
-        self.execution_env_pool.submit(runtime_environment.start)
+            LOG.debug("Starting new environment")
+            runtime_environment = RuntimeEnvironment(
+                function_version=self.function_version,
+                initialization_type="on-demand",
+                service_endpoint=self,
+            )
+            self.all_environments[runtime_environment.id] = runtime_environment
+            self.execution_env_pool.submit(runtime_environment.start)
 
     def stop_environment(self, environment: RuntimeEnvironment) -> None:
         try:
