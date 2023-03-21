@@ -153,11 +153,29 @@ DEPRECATIONS = [
         "2.0.0",
         "This configuration will be migrated to LOCALSTACK_HOST",
     ),
-    # Since 2.0.0 - LOCALSTAKCK_HOST will be replaced with LOCALSTACK_HOST
+    # Since 2.0.0 - LOCALSTACK_HOST will be replaced with LOCALSTACK_HOST
     EnvVarDeprecation(
         "LOCALSTACK_HOSTNAME",
         "2.0.0",
         "This configuration will be migrated to LOCALSTACK_HOST",
+    ),
+    # Since 2.0.0 - redefined as EDGE_BIND
+    EnvVarDeprecation(
+        "EDGE_BIND_HOST",
+        "2.0.0",
+        "This configuration will be migrated to EDGE_BIND",
+    ),
+    # Since 2.0.0 - redefined as EDGE_BIND
+    EnvVarDeprecation(
+        "EDGE_PORT",
+        "2.0.0",
+        "This configuration will be migrated to EDGE_BIND",
+    ),
+    # Since 2.0.0 - redefined as EDGE_BIND
+    EnvVarDeprecation(
+        "EDGE_PORT_HTTP",
+        "2.0.0",
+        "This configuration will be migrated to EDGE_BIND",
     ),
 ]
 
