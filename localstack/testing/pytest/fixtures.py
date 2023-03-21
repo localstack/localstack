@@ -2008,7 +2008,7 @@ def appsync_create_api(appsync_client):
 
 
 # parameter indicates whether LOCALSTACK_HOST should be set
-@pytest.fixture(params=[False, True])
+@pytest.fixture(params=[False, True], ids=["without-localstack-host", "with-localstack-host"])
 def assert_host_customisation(request, monkeypatch):
     use_localstack_host = request.param
     hostname_external = f"external-host-{short_uid()}"
