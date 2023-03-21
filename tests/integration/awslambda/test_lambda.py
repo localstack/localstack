@@ -1527,13 +1527,21 @@ class TestLambdaConcurrency:
             FunctionName=fn_arn, InvocationType="Event", Payload=json.dumps({"wait": 10})
         )
 
-        time.sleep(2)  # waiting to make sure the two events are actually already in the "queue"
+        time.sleep(4)  # make sure one is already in the "queue" and one is being executed
 
         with pytest.raises(lambda_client.exceptions.TooManyRequestsException) as e:
             lambda_client.invoke(FunctionName=fn_arn, InvocationType="RequestResponse")
         snapshot.match("too_many_requests_exc", e.value.response)
 
-        lambda_client.delete_function_concurrency(FunctionName=func_name)
+        with pytest.raises(lambda_client.exceptions.InvalidParameterValueException) as e:
+            lambda_client.put_function_concurrency(
+                FunctionName=fn_arn, ReservedConcurrentExecutions=2
+            )
+        snapshot.match("put_function_concurrency_qualified_arn_exc", e.value.response)
+
+        lambda_client.put_function_concurrency(
+            FunctionName=func_name, ReservedConcurrentExecutions=2
+        )
         lambda_client.invoke(FunctionName=fn_arn, InvocationType="RequestResponse")
 
         def assert_events():

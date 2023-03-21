@@ -3221,7 +3221,15 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
         function_name: FunctionName,
         reserved_concurrent_executions: ReservedConcurrentExecutions,
     ) -> Concurrency:
-        function_name = api_utils.get_function_name(function_name, context.region)
+        function_name, qualifier = api_utils.get_name_and_qualifier(
+            function_name, None, context.region
+        )
+        if qualifier:
+            raise InvalidParameterValueException(
+                "This operation is permitted on Lambda functions only. Aliases and versions do not support this operation. Please specify either a function name or an unqualified function ARN.",
+                Type="User",
+            )
+
         state = lambda_stores[context.account_id][context.region]
         fn = state.functions.get(function_name)
         if not fn:

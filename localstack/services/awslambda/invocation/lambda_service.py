@@ -396,12 +396,15 @@ class LambdaService:
             if store.functions[function_name].reserved_concurrent_executions is not None:
                 fn = store.functions[function_name]
                 available_unreserved_concurrency = (
-                    fn.reserved_concurrent_executions - self._calculate_used_concurrency_for_fn(fn)
+                    fn.reserved_concurrent_executions - self._calculate_used_concurrency(fn)
                 )
             # no reserved concurrency set. => consider account/region-global state instead
             else:
-                available_unreserved_concurrency = store.settings.concurrent_executions - sum(
-                    [self._calculate_used_concurrency_for_fn(fn) for fn in store.functions.values()]
+                available_unreserved_concurrency = config.LAMBDA_LIMITS_CONCURRENT_EXECUTIONS - sum(
+                    [
+                        self._calculate_actual_reserved_concurrency(fn)
+                        for fn in store.functions.values()
+                    ]
                 )
 
             if available_unreserved_concurrency < 0:
@@ -413,28 +416,32 @@ class LambdaService:
                 return 0
             return available_unreserved_concurrency
 
-    def _calculate_used_concurrency_for_fn(self, fn: Function) -> int:
+    def _calculate_actual_reserved_concurrency(self, fn: Function) -> int:
         """
-        Calculate the total used concurrency for a function
-
-        :return: sum of function's provisioned concurrency and unreserved+unprovisioned invocations (e.g. spillover)
+        Calculates how much of the "global" concurrency pool this function takes up.
+        This is either the reserved concurrency or its actual used concurrency (which can never exceed the reserved concurrency).
         """
-        tracker = self._concurrency_trackers[fn.latest().id.unqualified_arn()]
-
         reserved_concurrency = fn.reserved_concurrent_executions
         if reserved_concurrency:
             return reserved_concurrency
 
+        return self._calculate_used_concurrency(fn)
+
+    def _calculate_used_concurrency(self, fn: Function) -> int:
+        """
+        Calculates the total used concurrency for a function in its own scope, i.e. without potentially considering reserved concurrency
+
+        :return: sum of function's provisioned concurrency and unreserved+unprovisioned invocations (e.g. spillover)
+        """
         provisioned_concurrency_sum_for_fn = sum(
             [
                 provisioned_configs.provisioned_concurrent_executions
                 for provisioned_configs in fn.provisioned_concurrency_configs.values()
             ]
         )
-        return (
-            provisioned_concurrency_sum_for_fn
-            + tracker.function_concurrency[fn.latest().id.unqualified_arn()]
-        )
+        tracker = self._concurrency_trackers[fn.latest().id.account]
+        tracked_concurrency = tracker.function_concurrency[fn.latest().id.unqualified_arn()]
+        return provisioned_concurrency_sum_for_fn + tracked_concurrency
 
 
 def is_code_used(code: S3Code, function: Function) -> bool:
