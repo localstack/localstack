@@ -355,6 +355,8 @@ HOSTNAME_EXTERNAL = os.environ.get("HOSTNAME_EXTERNAL", "").strip() or LOCALHOST
 # name of the host under which the LocalStack services are available
 LOCALSTACK_HOSTNAME = os.environ.get("LOCALSTACK_HOSTNAME", "").strip() or LOCALHOST
 
+LOCALSTACK_HOST = os.environ.get("LOCALSTACK_HOST", "")
+
 # directory for persisting data (TODO: deprecated, simply use PERSISTENCE=1)
 DATA_DIR = os.environ.get("DATA_DIR", "").strip()
 

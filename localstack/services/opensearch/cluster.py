@@ -31,6 +31,7 @@ from localstack.utils.common import (
 from localstack.utils.run import FuncThread
 from localstack.utils.serving import Server
 from localstack.utils.sync import poll_condition
+from localstack.utils.urls import localstack_host
 
 LOG = logging.getLogger(__name__)
 INTERNAL_USER_AUTH = ("localstack-internal", "localstack-internal")
@@ -332,6 +333,11 @@ class OpensearchCluster(Server):
     def health(self) -> Optional[str]:
         return get_cluster_health_status(self.url, auth=self.auth)
 
+    @property
+    def endpoint(self) -> str:
+        host_definition = localstack_host(custom_port=self.port)
+        return f"{self.protocol}://{host_definition.host_and_port()}"
+
     def do_start_thread(self) -> FuncThread:
         self._ensure_installed()
         directories = resolve_directories(version=self.version, cluster_path=self.arn)
@@ -573,8 +579,12 @@ class EdgeProxiedOpensearchCluster(Server):
         return super().is_up()
 
     def health(self):
-        """calls the health endpoint of cluster through the proxy, making sure implicitly that both are running"""
-        return get_cluster_health_status(self.url, self.auth)
+        """calls the health endpoint of cluster"""
+        return get_cluster_health_status(self.cluster.url, self.auth)
+
+    @property
+    def endpoint(self) -> str:
+        return self.url
 
     def _backend_cluster(self) -> OpensearchCluster:
         return OpensearchCluster(

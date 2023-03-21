@@ -2007,8 +2007,10 @@ def appsync_create_api(appsync_client):
             LOG.debug(f"Error cleaning up AppSync API: {api}, {e}")
 
 
-@pytest.fixture
-def assert_host_customisation(monkeypatch):
+# parameter indicates whether LOCALSTACK_HOST should be set
+@pytest.fixture(params=[False, True])
+def assert_host_customisation(request, monkeypatch):
+    use_localstack_host = request.param
     hostname_external = f"external-host-{short_uid()}"
     # `LOCALSTACK_HOSTNAME` is really an internal variable that has been
     # exposed to the user at some point in the past. It is used by some
@@ -2023,8 +2025,12 @@ def assert_host_customisation(monkeypatch):
     # Note: We cannot use `localhost` since we explicitly check that the URL
     # passed in does not contain `localhost`, unless it is requried to.
     localstack_hostname = socket.gethostname()
+    localstack_host = f"localstack-host-{short_uid()}"
+
     monkeypatch.setattr(config, "HOSTNAME_EXTERNAL", hostname_external)
     monkeypatch.setattr(config, "LOCALSTACK_HOSTNAME", localstack_hostname)
+    if use_localstack_host:
+        monkeypatch.setattr(config, "LOCALSTACK_HOST", localstack_host)
 
     def asserter(
         url: str,
@@ -2035,7 +2041,14 @@ def assert_host_customisation(monkeypatch):
         use_localhost: bool = False,
         custom_host: Optional[str] = None,
     ):
-        if use_hostname_external:
+        if use_localstack_host:
+            assert localstack_host in url
+
+            assert localstack_hostname not in url
+            assert hostname_external not in url
+            assert constants.LOCALHOST_HOSTNAME not in url
+            assert constants.LOCALHOST not in url
+        elif use_hostname_external:
             assert hostname_external in url
 
             assert localstack_hostname not in url
@@ -2067,6 +2080,11 @@ def assert_host_customisation(monkeypatch):
         else:
             raise ValueError("no assertions made")
 
+    # attach some metadata to the function about what values are present, which
+    # helps for debugging
+    asserter.use_localstack_host = use_localstack_host
+    asserter.hostname_external = hostname_external
+    asserter.localstack_hostname = localstack_hostname
     yield asserter
 
 

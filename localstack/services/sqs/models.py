@@ -241,8 +241,7 @@ class SqsQueue:
     def url(self, context: RequestContext) -> str:
         """Return queue URL using the SQS_ENDPOINT_STRATEGY (if configured) or based on the 'Host' request header"""
 
-        host_url = context.request.host_url
-
+        host_definition = localstack_host()
         if config.SQS_ENDPOINT_STRATEGY == "domain":
             # queue.localhost.localstack.cloud:4566/000000000000/my-queue (us-east-1)
             # or us-east-2.queue.localhost.localstack.cloud:4566/000000000000/my-queue
@@ -253,7 +252,9 @@ class SqsQueue:
             host_url = f"{scheme}://{region}queue.{host_definition.host_and_port()}"
         elif config.SQS_ENDPOINT_STRATEGY == "path":
             # https?://localhost:4566/queue/us-east-1/00000000000/my-queue (us-east-1)
-            host_url = f"{context.request.host_url}queue/{self.region}"
+            host_url = f"{host_definition.host_and_port()}/queue/{self.region}"
+        else:
+            host_url = host_definition.to_url(context.request.scheme)
 
         return "{host}/{account_id}/{name}".format(
             host=host_url.rstrip("/"),

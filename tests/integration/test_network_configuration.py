@@ -46,10 +46,7 @@ class TestOpenSearch:
         opensearch_wait_for_cluster(domain_name)
         endpoint = res["DomainStatus"]["Endpoint"]
 
-        if config.is_in_docker:
-            assert_host_customisation(endpoint, use_localhost=True)
-        else:
-            assert_host_customisation(endpoint, custom_host="127.0.0.1")
+        assert_host_customisation(endpoint, use_localhost=True)
 
     def test_path_strategy(
         self, monkeypatch, opensearch_client, opensearch_wait_for_cluster, assert_host_customisation
