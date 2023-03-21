@@ -1031,9 +1031,13 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
         function_name, qualifier = api_utils.get_name_and_qualifier(
             function_name, qualifier, context.region
         )
-        fn = self._get_function(
-            function_name=function_name, account_id=context.account_id, region=context.region
-        )
+        state = lambda_stores[context.account_id][context.region]
+        fn = state.functions.get(function_name)
+        if not fn:
+            raise ResourceNotFoundException(
+                f"Function not found: {api_utils.qualified_lambda_arn(function_name, qualifier, context.account_id, context.region)}",
+                Type="User",
+            )
         alias_name = None
         if qualifier and api_utils.qualifier_is_alias(qualifier):
             if qualifier not in fn.aliases:
@@ -2296,8 +2300,11 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
 
         provisioned_config = self._get_provisioned_config(context, function_name, qualifier)
 
-        if provisioned_config:
-            pass  # TODO: merge?
+        if provisioned_config:  # TODO: merge?
+            # TODO: add a test for partial updates (if possible)
+            LOG.warning(
+                "Partial update of provisioned concurrency config is currently not supported."
+            )
 
         other_provisioned_sum = sum(
             [
