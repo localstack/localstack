@@ -137,7 +137,8 @@ def run_authorizer(invocation_context: ApiInvocationContext, authorizer: Dict):
 
 
 def authorize_invocation(invocation_context: ApiInvocationContext):
-    client = aws_stack.connect_to_service("apigateway")
+    region_name = invocation_context.region_name or aws_stack.get_region()
+    client = aws_stack.connect_to_service("apigateway", region_name=region_name)
     authorizers = client.get_authorizers(restApiId=invocation_context.api_id, limit=100).get(
         "items", []
     )

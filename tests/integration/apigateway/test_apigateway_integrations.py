@@ -1,22 +1,34 @@
+import contextlib
 import json
+import textwrap
+from urllib.parse import urlparse
 
 import pytest
 import requests
 from botocore.exceptions import ClientError
 
+from localstack import config
 from localstack.aws.accounts import get_aws_account_id
+from localstack.constants import APPLICATION_JSON, LOCALHOST
 from localstack.services.apigateway.helpers import path_based_url
-from localstack.services.awslambda.lambda_utils import LAMBDA_RUNTIME_PYTHON39
+from localstack.services.awslambda.lambda_utils import (
+    LAMBDA_RUNTIME_PYTHON39,
+    get_main_endpoint_from_container,
+)
+from localstack.testing.aws.lambda_utils import is_old_provider
+from localstack.testing.aws.util import is_aws_cloud
 from localstack.utils.aws import arns, aws_stack
-from localstack.utils.strings import short_uid
+from localstack.utils.strings import short_uid, to_bytes, to_str
 from localstack.utils.sync import retry
 from localstack.utils.testutil import create_lambda_function
 from tests.integration.apigateway.apigateway_fixtures import (
     api_invoke_url,
+    create_rest_api_deployment,
     create_rest_api_integration,
     create_rest_resource,
     create_rest_resource_method,
 )
+from tests.integration.apigateway.conftest import DEFAULT_STAGE_NAME
 from tests.integration.awslambda.test_lambda import TEST_LAMBDA_AWS_PROXY, TEST_LAMBDA_HELLO_WORLD
 
 
@@ -650,6 +662,191 @@ def test_put_integration_validation(apigateway_client):
         ex.value.response["Error"]["Message"] == "AWS ARN for integration must contain path or "
         "action"
     )
+
+
+@pytest.fixture
+def default_vpc(ec2_client):
+    vpcs = ec2_client.describe_vpcs()
+    for vpc in vpcs["Vpcs"]:
+        if vpc.get("IsDefault"):
+            return vpc
+    raise Exception("Default VPC not found")
+
+
+@pytest.fixture
+def create_vpc_endpoint(ec2_client, default_vpc):
+    endpoints = []
+
+    def _create(**kwargs):
+        kwargs.setdefault("VpcId", default_vpc["VpcId"])
+        result = ec2_client.create_vpc_endpoint(**kwargs)
+        endpoints.append(result["VpcEndpoint"]["VpcEndpointId"])
+        return result["VpcEndpoint"]
+
+    yield _create
+
+    for endpoint in endpoints:
+        with contextlib.suppress(Exception):
+            ec2_client.delete_vpc_endpoints(VpcEndpointIds=[endpoint])
+
+
+@pytest.mark.skip_snapshot_verify(
+    paths=["$..endpointConfiguration.types", "$..policy.Statement..Resource"]
+)
+def test_create_execute_api_vpc_endpoint(
+    create_rest_api_with_integration,
+    dynamodb_create_table,
+    create_vpc_endpoint,
+    default_vpc,
+    create_lambda_function,
+    ec2_create_security_group,
+    ec2_client,
+    apigateway_client,
+    dynamodb_resource,
+    lambda_client,
+    snapshot,
+):
+    poll_sleep = 5 if is_aws_cloud() else 1
+    # TODO: create a re-usable ec2_api() transformer
+    snapshot.add_transformer(snapshot.transform.key_value("DnsName"))
+    snapshot.add_transformer(snapshot.transform.key_value("GroupId"))
+    snapshot.add_transformer(snapshot.transform.key_value("GroupName"))
+    snapshot.add_transformer(snapshot.transform.key_value("SubnetIds"))
+    snapshot.add_transformer(snapshot.transform.key_value("VpcId"))
+    snapshot.add_transformer(snapshot.transform.key_value("VpcEndpointId"))
+    snapshot.add_transformer(snapshot.transform.key_value("HostedZoneId"))
+    snapshot.add_transformer(snapshot.transform.key_value("id"))
+    snapshot.add_transformer(snapshot.transform.key_value("name"))
+
+    # create table
+    table = dynamodb_create_table()["TableDescription"]
+    table_name = table["TableName"]
+
+    # insert items
+    dynamodb_table = dynamodb_resource.Table(table_name)
+    item_ids = ("test", "test2", "test 3")
+    for item_id in item_ids:
+        dynamodb_table.put_item(Item={"id": item_id})
+
+    # construct request mapping template
+    request_templates = {APPLICATION_JSON: json.dumps({"TableName": table_name})}
+
+    # deploy REST API with integration
+    region_name = apigateway_client.meta.region_name
+    integration_uri = f"arn:aws:apigateway:{region_name}:dynamodb:action/Scan"
+    api_id = create_rest_api_with_integration(
+        integration_uri=integration_uri,
+        req_templates=request_templates,
+        integration_type="AWS",
+    )
+
+    # get service names
+    service_name = f"com.amazonaws.{region_name}.execute-api"
+    service_names = ec2_client.describe_vpc_endpoint_services()["ServiceNames"]
+    assert service_name in service_names
+
+    # create security group
+    vpc_id = default_vpc["VpcId"]
+    security_group = ec2_create_security_group(
+        VpcId=vpc_id, Description="Test SG for API GW", ports=[443]
+    )
+    security_group = security_group["GroupId"]
+    subnets = ec2_client.describe_subnets(Filters=[{"Name": "vpc-id", "Values": [vpc_id]}])
+    subnets = [sub["SubnetId"] for sub in subnets["Subnets"]]
+
+    # get or create execute-api VPC endpoint
+    endpoints = ec2_client.describe_vpc_endpoints(MaxResults=1000)["VpcEndpoints"]
+    matching = [ep for ep in endpoints if ep["ServiceName"] == service_name]
+    if matching:
+        endpoint_id = matching[0]["VpcEndpointId"]
+    else:
+        result = create_vpc_endpoint(
+            ServiceName=service_name,
+            VpcEndpointType="Interface",
+            SubnetIds=subnets,
+            SecurityGroupIds=[security_group],
+        )
+        endpoint_id = result["VpcEndpointId"]
+
+    # wait until VPC endpoint is in state "available"
+    def _check_available():
+        result = ec2_client.describe_vpc_endpoints(VpcEndpointIds=[endpoint_id])
+        endpoint_details = result["VpcEndpoints"][0]
+        # may have multiple entries in AWS
+        endpoint_details["DnsEntries"] = endpoint_details["DnsEntries"][:1]
+        endpoint_details.pop("SubnetIds", None)
+        endpoint_details.pop("NetworkInterfaceIds", None)
+        assert endpoint_details["State"] == "available"
+        snapshot.match("endpoint-details", endpoint_details)
+
+    retry(_check_available, retries=30, sleep=poll_sleep)
+
+    # update API with VPC endpoint
+    patches = [
+        {"op": "replace", "path": "/endpointConfiguration/types/EDGE", "value": "PRIVATE"},
+        {"op": "add", "path": "/endpointConfiguration/vpcEndpointIds", "value": endpoint_id},
+    ]
+    apigateway_client.update_rest_api(restApiId=api_id, patchOperations=patches)
+
+    # create Lambda that invokes API via VPC endpoint (required as the endpoint is only accessible within the VPC)
+    subdomain = f"{api_id}-{endpoint_id}"
+    endpoint = api_invoke_url(subdomain, stage=DEFAULT_STAGE_NAME, path="/test")
+    host_header = urlparse(endpoint).netloc
+
+    # create Lambda function that invokes the API GW (private VPC endpoint not accessible from outside of AWS)
+    if not is_aws_cloud():
+        if config.LAMBDA_EXECUTOR == "local" and is_old_provider():
+            # special case: return localhost for local Lambda executor (TODO remove after full switch to v2 provider)
+            api_host = LOCALHOST
+        else:
+            api_host = get_main_endpoint_from_container()
+        endpoint = endpoint.replace(host_header, f"{api_host}:{config.get_edge_port_http()}")
+    lambda_code = textwrap.dedent(
+        f"""
+    def handler(event, context):
+        import requests
+        headers = {{"content-type": "application/json", "host": "{host_header}"}}
+        result = requests.post("{endpoint}", headers=headers)
+        return {{"content": result.content.decode("utf-8"), "code": result.status_code}}
+    """
+    )
+    func_name = f"test-{short_uid()}"
+    vpc_config = {
+        "SubnetIds": subnets,
+        "SecurityGroupIds": [security_group],
+    }
+    create_lambda_function(
+        func_name=func_name, handler_file=lambda_code, timeout=10, VpcConfig=vpc_config
+    )
+
+    # create resource policy
+    statement = {
+        "Version": "2012-10-17",
+        "Statement": [
+            {
+                "Effect": "Allow",
+                "Principal": "*",
+                "Action": "execute-api:Invoke",
+                "Resource": ["execute-api:/*"],
+            }
+        ],
+    }
+    patches = [{"op": "replace", "path": "/policy", "value": json.dumps(statement)}]
+    result = apigateway_client.update_rest_api(restApiId=api_id, patchOperations=patches)
+    result["policy"] = json.loads(to_bytes(result["policy"]).decode("unicode_escape"))
+    snapshot.match("api-details", result)
+
+    # re-deploy API
+    create_rest_api_deployment(apigateway_client, restApiId=api_id, stageName=DEFAULT_STAGE_NAME)
+
+    def _invoke_api():
+        result = lambda_client.invoke(FunctionName=func_name, Payload="{}")
+        result = json.loads(to_str(result["Payload"].read()))
+        items = json.loads(result["content"])["Items"]
+        assert len(items) == len(item_ids)
+
+    # invoke Lambda and assert result
+    retry(_invoke_api, retries=15, sleep=poll_sleep)
 
 
 # TODO - remove the code below?

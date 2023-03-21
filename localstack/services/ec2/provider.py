@@ -1,3 +1,4 @@
+import json
 import re
 from abc import ABC
 from datetime import datetime, timezone
@@ -5,9 +6,16 @@ from datetime import datetime, timezone
 from botocore.parsers import ResponseParserError
 from moto.core.utils import camelcase_to_underscores, underscores_to_camelcase
 from moto.ec2.exceptions import InvalidVpcEndPointIdError
-from moto.ec2.models import SubnetBackend, TransitGatewayAttachmentBackend
+from moto.ec2.models import (
+    EC2Backend,
+    SubnetBackend,
+    TransitGatewayAttachmentBackend,
+    VPCBackend,
+    ec2_backends,
+)
 from moto.ec2.models.launch_templates import LaunchTemplate as MotoLaunchTemplate
 from moto.ec2.models.subnets import Subnet
+from moto.ec2.models.vpcs import VPCEndPoint
 
 from localstack.aws.api import RequestContext, handler
 from localstack.aws.api.ec2 import (
@@ -30,7 +38,13 @@ from localstack.aws.api.ec2 import (
     DescribeSubnetsResult,
     DescribeTransitGatewaysRequest,
     DescribeTransitGatewaysResult,
+    DescribeVpcEndpointServicesRequest,
+    DescribeVpcEndpointServicesResult,
+    DescribeVpcEndpointsRequest,
+    DescribeVpcEndpointsResult,
+    DnsOptions,
     DnsOptionsSpecification,
+    DnsRecordIpType,
     Ec2Api,
     InstanceType,
     IpAddressType,
@@ -68,7 +82,7 @@ from localstack.services.ec2.models import get_ec2_backend
 from localstack.services.moto import call_moto
 from localstack.utils.aws import aws_stack
 from localstack.utils.patch import patch
-from localstack.utils.strings import first_char_to_upper, long_uid
+from localstack.utils.strings import first_char_to_upper, long_uid, short_uid
 
 # additional subnet attributes not yet supported upstream
 ADDITIONAL_SUBNET_ATTRS = ("private_dns_name_options_on_launch", "enable_dns64")
@@ -381,6 +395,66 @@ class Ec2Provider(Ec2Api, ABC):
 
         return result
 
+    @handler("DescribeVpcEndpointServices", expand=False)
+    def describe_vpc_endpoint_services(
+        self,
+        context: RequestContext,
+        request: DescribeVpcEndpointServicesRequest,
+    ) -> DescribeVpcEndpointServicesResult:
+        ep_services = VPCBackend._collect_default_endpoint_services(
+            account_id=context.account_id, region=context.region
+        )
+
+        moto_backend = get_moto_backend(context)
+        service_names = [s["ServiceName"] for s in ep_services]
+        execute_api_name = f"com.amazonaws.{context.region}.execute-api"
+
+        if execute_api_name not in service_names:
+            # ensure that the service entry for execute-api exists
+            zones = moto_backend.describe_availability_zones()
+            zones = [zone.name for zone in zones]
+            private_dns_name = f"*.execute-api.{context.region}.amazonaws.com"
+            service = {
+                "ServiceName": execute_api_name,
+                "ServiceId": f"vpce-svc-{short_uid()}",
+                "ServiceType": [{"ServiceType": "Interface"}],
+                "AvailabilityZones": zones,
+                "Owner": "amazon",
+                "BaseEndpointDnsNames": [f"execute-api.{context.region}.vpce.amazonaws.com"],
+                "PrivateDnsName": private_dns_name,
+                "PrivateDnsNames": [{"PrivateDnsName": private_dns_name}],
+                "VpcEndpointPolicySupported": True,
+                "AcceptanceRequired": False,
+                "ManagesVpcEndpoints": False,
+                "PrivateDnsNameVerificationState": "verified",
+                "SupportedIpAddressTypes": ["ipv4"],
+            }
+            ep_services.append(service)
+
+        return call_moto(context)
+
+    @handler("DescribeVpcEndpoints", expand=False)
+    def describe_vpc_endpoints(
+        self,
+        context: RequestContext,
+        request: DescribeVpcEndpointsRequest,
+    ) -> DescribeVpcEndpointsResult:
+        result: DescribeVpcEndpointsResult = call_moto(context)
+
+        for endpoint in result.get("VpcEndpoints"):
+            endpoint.setdefault("DnsOptions", DnsOptions(DnsRecordIpType=DnsRecordIpType.ipv4))
+            endpoint.setdefault("IpAddressType", IpAddressType.ipv4)
+            endpoint.setdefault("RequesterManaged", False)
+            endpoint.setdefault("RouteTableIds", [])
+            # AWS parity: Version should not be contained in the policy response
+            policy = endpoint.get("PolicyDocument")
+            if policy and '"Version":' in policy:
+                policy = json.loads(policy)
+                policy.pop("Version", None)
+                endpoint["PolicyDocument"] = json.dumps(policy)
+
+        return result
+
 
 @patch(SubnetBackend.modify_subnet_attribute)
 def modify_subnet_attribute(fn, self, subnet_id, attr_name, attr_value):
@@ -399,6 +473,11 @@ def modify_subnet_attribute(fn, self, subnet_id, attr_name, attr_value):
     return fn(self, subnet_id, attr_name, attr_value)
 
 
+def get_moto_backend(context: RequestContext) -> EC2Backend:
+    """Get the moto EC2 backend for the given request context"""
+    return ec2_backends[context.account_id][context.region]
+
+
 @patch(Subnet.get_filter_value)
 def get_filter_value(fn, self, filter_name):
     if filter_name in (
@@ -414,3 +493,8 @@ def delete_transit_gateway_vpc_attachment(fn, self, transit_gateway_attachment_i
     transit_gateway_attachment = self.transit_gateway_attachments.get(transit_gateway_attachment_id)
     transit_gateway_attachment.state = "deleted"
     return transit_gateway_attachment
+
+
+# fix a bug in upstream moto where a space is encoded in the "Statement" key - TODO remove once fixed upstream
+if "Statement " in VPCEndPoint.DEFAULT_POLICY:
+    VPCEndPoint.DEFAULT_POLICY["Statement"] = VPCEndPoint.DEFAULT_POLICY.pop("Statement ")

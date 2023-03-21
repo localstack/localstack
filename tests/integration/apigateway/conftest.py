@@ -85,6 +85,7 @@ def create_rest_api_with_integration(
             resourceId=resource_id,
             httpMethod="POST",
             authorizationType="NONE",
+            apiKeyRequired=False,
         )
 
         # set AWS policy to give API GW access to backend resources

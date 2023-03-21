@@ -1881,6 +1881,41 @@ def ses_verify_identity(ses_client):
 
 
 @pytest.fixture
+def ec2_create_security_group(ec2_client):
+    ec2_sgs = []
+
+    def factory(ports=None, **kwargs):
+        if "GroupName" not in kwargs:
+            kwargs["GroupName"] = f"test-sg-{short_uid()}"
+        security_group = ec2_client.create_security_group(**kwargs)
+
+        permissions = [
+            {
+                "FromPort": port,
+                "IpProtocol": "tcp",
+                "IpRanges": [{"CidrIp": "0.0.0.0/0"}],
+                "ToPort": port,
+            }
+            for port in ports or []
+        ]
+        ec2_client.authorize_security_group_ingress(
+            GroupName=kwargs["GroupName"],
+            IpPermissions=permissions,
+        )
+
+        ec2_sgs.append(security_group["GroupId"])
+        return security_group
+
+    yield factory
+
+    for sg_group_id in ec2_sgs:
+        try:
+            ec2_client.delete_security_group(GroupId=sg_group_id)
+        except Exception as e:
+            LOG.debug("Error cleaning up EC2 security group: %s, %s", sg_group_id, e)
+
+
+@pytest.fixture
 def cleanups(ec2_client):
     cleanup_fns = []
 
