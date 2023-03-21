@@ -21,11 +21,7 @@ from localstack.utils.strings import short_uid
 pytestmark = [pytest.mark.only_localstack]
 
 
-class TestOpenSearch:
-    """
-    OpenSearch does not respect any customisations and just returns a domain with localhost.localstack.cloud in.
-    """
-
+class TestOpensearch:
     def test_default_strategy(
         self, opensearch_client, opensearch_wait_for_cluster, assert_host_customisation
     ):
@@ -55,6 +51,48 @@ class TestOpenSearch:
 
         domain_name = f"domain-{short_uid()}"
         res = opensearch_client.create_domain(DomainName=domain_name)
+        opensearch_wait_for_cluster(domain_name)
+        endpoint = res["DomainStatus"]["Endpoint"]
+
+        assert_host_customisation(endpoint, use_localstack_hostname=True)
+
+
+class TestElasticsearch:
+    def test_default_strategy(
+        self, opensearch_client, opensearch_wait_for_cluster, assert_host_customisation
+    ):
+        domain_name = f"domain-{short_uid()}"
+        res = opensearch_client.create_domain(
+            DomainName=domain_name, EngineVersion="Elasticsearch_6.8"
+        )
+        opensearch_wait_for_cluster(domain_name)
+        endpoint = res["DomainStatus"]["Endpoint"]
+
+        assert_host_customisation(endpoint, use_localstack_cloud=True)
+
+    def test_port_strategy(
+        self, monkeypatch, opensearch_client, opensearch_wait_for_cluster, assert_host_customisation
+    ):
+        monkeypatch.setattr(config, "OPENSEARCH_ENDPOINT_STRATEGY", "port")
+
+        domain_name = f"domain-{short_uid()}"
+        res = opensearch_client.create_domain(
+            DomainName=domain_name, EngineVersion="Elasticsearch_6.8"
+        )
+        opensearch_wait_for_cluster(domain_name)
+        endpoint = res["DomainStatus"]["Endpoint"]
+
+        assert_host_customisation(endpoint, use_localhost=True)
+
+    def test_path_strategy(
+        self, monkeypatch, opensearch_client, opensearch_wait_for_cluster, assert_host_customisation
+    ):
+        monkeypatch.setattr(config, "OPENSEARCH_ENDPOINT_STRATEGY", "path")
+
+        domain_name = f"domain-{short_uid()}"
+        res = opensearch_client.create_domain(
+            DomainName=domain_name, EngineVersion="Elasticsearch_6.8"
+        )
         opensearch_wait_for_cluster(domain_name)
         endpoint = res["DomainStatus"]["Endpoint"]
 
