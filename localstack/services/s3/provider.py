@@ -97,6 +97,7 @@ from localstack.aws.handlers import (
 from localstack.services.edge import ROUTER
 from localstack.services.moto import call_moto
 from localstack.services.plugins import ServiceLifecycleHook
+from localstack.services.s3 import constants as s3_constants
 from localstack.services.s3.cors import S3CorsHandler
 from localstack.services.s3.models import S3Store, get_moto_s3_backend, s3_stores
 from localstack.services.s3.notifications import NotificationDispatcher, S3EventNotificationContext
@@ -106,10 +107,6 @@ from localstack.services.s3.presigned_url import (
     validate_post_policy,
 )
 from localstack.services.s3.utils import (
-    ALLOWED_HEADER_OVERRIDES,
-    VALID_ACL_PREDEFINED_GROUPS,
-    VALID_GRANTEE_PERMISSIONS,
-    VALID_STORAGE_CLASSES,
     _create_invalid_argument_exc,
     capitalize_header_name_from_snake_case,
     get_bucket_from_moto,
@@ -360,7 +357,7 @@ class S3Provider(S3Api, ServiceLifecycleHook):
         if "VersionId" in response and bucket not in self.get_store().bucket_versioning_status:
             response.pop("VersionId")
 
-        for request_param, response_param in ALLOWED_HEADER_OVERRIDES.items():
+        for request_param, response_param in s3_constants.ALLOWED_HEADER_OVERRIDES.items():
             if request_param_value := request.get(request_param):  # noqa
                 response[response_param] = request_param_value  # noqa
 
@@ -516,7 +513,7 @@ class S3Provider(S3Api, ServiceLifecycleHook):
 
         if (
             storage_class := request.get("StorageClass")
-        ) and storage_class not in VALID_STORAGE_CLASSES:
+        ) and storage_class not in s3_constants.VALID_STORAGE_CLASSES:
             raise InvalidStorageClass(
                 "The storage class you specified is not valid",
                 StorageClassRequested=storage_class,
@@ -1079,7 +1076,7 @@ def validate_grantee_in_headers(grant: str, grantees: str) -> None:
                 "Argument format not recognized", get_header_name(grant), grantee
             )
             raise ex
-        elif grantee_type == "uri" and grantee_id not in VALID_ACL_PREDEFINED_GROUPS:
+        elif grantee_type == "uri" and grantee_id not in s3_constants.VALID_ACL_PREDEFINED_GROUPS:
             ex = _create_invalid_argument_exc("Invalid group uri", "uri", grantee_id)
             raise ex
         elif grantee_type == "id" and not is_valid_canonical_id(grantee_id):
@@ -1101,7 +1098,7 @@ def validate_acl_acp(acp: AccessControlPolicy) -> None:
         raise ex
 
     for grant in acp["Grants"]:
-        if grant.get("Permission") not in VALID_GRANTEE_PERMISSIONS:
+        if grant.get("Permission") not in s3_constants.VALID_GRANTEE_PERMISSIONS:
             raise MalformedACLError(
                 "The XML you provided was not well-formed or did not validate against our published schema"
             )
@@ -1118,7 +1115,8 @@ def validate_acl_acp(acp: AccessControlPolicy) -> None:
             )
         elif (
             grant_type == GranteeType.Group
-            and (grant_uri := grantee.get("URI", "")) not in VALID_ACL_PREDEFINED_GROUPS
+            and (grant_uri := grantee.get("URI", ""))
+            not in s3_constants.VALID_ACL_PREDEFINED_GROUPS
         ):
             ex = _create_invalid_argument_exc("Invalid group uri", "Group/URI", grant_uri)
             raise ex
@@ -1249,15 +1247,16 @@ def _create_redirect_for_post_request(
 
 def apply_moto_patches():
     # importing here in case we need InvalidObjectState from `localstack.aws.api.s3`
+    import moto.s3.models as moto_s3_models
+    from moto.iam.access_control import PermissionResult
     from moto.s3.exceptions import InvalidObjectState
-    from moto.s3.models import STORAGE_CLASS
 
     if not os.environ.get("MOTO_S3_DEFAULT_KEY_BUFFER_SIZE"):
         os.environ["MOTO_S3_DEFAULT_KEY_BUFFER_SIZE"] = str(S3_MAX_FILE_SIZE_BYTES)
 
     # TODO: fix upstream
-    STORAGE_CLASS.clear()
-    STORAGE_CLASS.extend(VALID_STORAGE_CLASSES)
+    moto_s3_models.STORAGE_CLASS.clear()
+    moto_s3_models.STORAGE_CLASS.extend(s3_constants.VALID_STORAGE_CLASSES)
 
     @patch(moto_s3_responses.S3Response.key_response)
     def _fix_key_response(fn, self, *args, **kwargs):
@@ -1370,6 +1369,16 @@ def apply_moto_patches():
         Requests going to moto will never be subdomain based, as they passed through the VirtualHost forwarder
         """
         return False
+
+    @patch(moto_s3_models.FakeBucket.get_permission)
+    def bucket_get_permission(fn, self, *args, **kwargs):
+        """
+        Apply a patch to disable/enable enforcement of S3 bucket policies
+        """
+        if not s3_constants.ENABLE_MOTO_BUCKET_POLICY_ENFORCEMENT:
+            return PermissionResult.PERMITTED
+
+        return fn(self, *args, **kwargs)
 
 
 def register_custom_handlers():

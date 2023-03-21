@@ -11,6 +11,7 @@ from moto.s3.utils import undo_clean_key_name
 
 from localstack import config
 from localstack.services.infra import start_moto_server
+from localstack.services.s3 import constants as s3_constants
 from localstack.services.s3 import s3_listener, s3_utils
 from localstack.utils.aws import aws_stack
 from localstack.utils.collections import get_safe
@@ -96,6 +97,8 @@ def start_s3(port=None, backend_port=None, asynchronous=None, update_listener=No
 
 
 def apply_patches():
+    from moto.iam.access_control import PermissionResult
+
     if TMP_STATE.get(PATCHES_APPLIED, False):
         return
 
@@ -380,3 +383,13 @@ def apply_patches():
             # fixes an issue where upstream also encodes "/", which should not be the case
             return urllib.parse.quote(self.name, safe="/")
         return self.name
+
+    @patch(s3_models.FakeBucket.get_permission)
+    def bucket_get_permission(fn, self, *args, **kwargs):
+        """
+        Apply a patch to disable/enable enforcement of S3 bucket policies
+        """
+        if not s3_constants.ENABLE_MOTO_BUCKET_POLICY_ENFORCEMENT:
+            return PermissionResult.PERMITTED
+
+        return fn(self, *args, **kwargs)
