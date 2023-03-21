@@ -1026,7 +1026,14 @@ class TestAPIGateway:
         # LIST
         result = apigateway_client.get_request_validators(restApiId=rest_api_id)
         assert 200 == result["ResponseMetadata"]["HTTPStatusCode"]
-        assert [{"id": validator_id, "name": name}] == result["items"]
+        assert [
+            {
+                "id": validator_id,
+                "name": name,
+                "validateRequestBody": False,
+                "validateRequestParameters": False,
+            }
+        ] == result["items"]
         # GET
         result = apigateway_client.get_request_validator(
             restApiId=rest_api_id, requestValidatorId=validator_id
