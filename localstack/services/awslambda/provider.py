@@ -729,7 +729,9 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
                     reserved_concurrent_executions=0,
                     environment=env_vars,
                     architectures=request.get("Architectures") or [Architecture.x86_64],
-                    tracing_config_mode=TracingMode.PassThrough,  # TODO
+                    tracing_config_mode=request.get("TracingConfig", {}).get(
+                        "Mode", TracingMode.PassThrough
+                    ),
                     image=image,
                     image_config=image_config,
                     code=code,
@@ -871,6 +873,11 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
                 entrypoint=new_image_config.get("EntryPoint"),
                 working_directory=new_image_config.get("WorkingDirectory"),
             )
+
+        if "TracingConfig" in request:
+            new_mode = request.get("TracingConfig", {}).get("Mode")
+            if new_mode:
+                replace_kwargs["tracing_config_mode"] = new_mode
 
         new_latest_version = dataclasses.replace(
             latest_version,
