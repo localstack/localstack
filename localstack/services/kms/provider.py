@@ -274,17 +274,18 @@ class KmsProvider(KmsApi, ServiceLifecycleHook):
         # KeyId can potentially hold one of multiple different types of key identifiers. Here we find a key no
         # matter which type of id is used.
         key = store.get_key(request.get("KeyId"))
-        request["KeyId"] = key.metadata.get("KeyId")
+        key_id = key.metadata.get("KeyId")
+        request["KeyId"] = key_id
         self._validate_grant_request(request, store)
         grant_name = request.get("Name")
-        if grant_name and grant_name in store.grant_names:
-            grant = store.grants[store.grant_names[grant_name]]
+        if grant_name and (grant_name, key_id) in store.grant_names:
+            grant = store.grants[store.grant_names[(grant_name, key_id)]]
         else:
             grant = KmsGrant(request)
             grant_id = grant.metadata["GrantId"]
             store.grants[grant_id] = grant
             if grant_name:
-                store.grant_names[grant_name] = grant_id
+                store.grant_names[(grant_name, key_id)] = grant_id
             store.grant_tokens[grant.token] = grant_id
 
         # At the moment we do not support multiple GrantTokens for grant creation request. Instead, we always use
@@ -379,7 +380,7 @@ class KmsProvider(KmsApi, ServiceLifecycleHook):
         # In AWS grants have one or more tokens. But we have a simplified modeling of grants, where they have exactly
         # one token.
         store.grant_tokens.pop(grant.token)
-        store.grant_names.pop(grant.metadata.get("Name"), None)
+        store.grant_names.pop((grant.metadata.get("Name"), key_id), None)
         store.grants.pop(grant_id)
 
     def revoke_grant(

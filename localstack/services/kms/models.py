@@ -8,7 +8,7 @@ import struct
 import uuid
 from collections import namedtuple
 from dataclasses import dataclass
-from typing import Dict, List
+from typing import Dict, List, Tuple
 
 from cryptography.exceptions import InvalidSignature
 from cryptography.hazmat.primitives import hashes
@@ -517,8 +517,8 @@ class KmsStore(BaseStore):
     #
     # maps grant ids to grants
     grants: Dict[str, KmsGrant] = LocalAttribute(default=dict)
-    # maps from grant names (used for idempotency) to grant ids
-    grant_names: Dict[str, str] = LocalAttribute(default=dict)
+    # maps from (grant names (used for idempotency), key id) to grant ids
+    grant_names: Dict[Tuple[str, str], str] = LocalAttribute(default=dict)
     # maps grant tokens to grant ids
     grant_tokens: Dict[str, str] = LocalAttribute(default=dict)
 
