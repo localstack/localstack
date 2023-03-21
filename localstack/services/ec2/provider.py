@@ -411,7 +411,6 @@ class Ec2Provider(Ec2Api, ABC):
 
         if execute_api_name not in service_names:
             # ensure that the service entry for execute-api exists
-            service_names.append(execute_api_name)
             zones = moto_backend.describe_availability_zones()
             zones = [zone.name for zone in zones]
             private_dns_name = f"*.execute-api.{context.region}.amazonaws.com"
