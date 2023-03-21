@@ -9,7 +9,7 @@ from localstack.testing.aws.lambda_utils import is_old_provider
 from localstack.utils.strings import short_uid, to_str
 
 TEST_LAMBDA_XRAY_TRACEID = os.path.join(
-    os.path.dirname(__file__), "./functions/xray-tracing-traceid.py"
+    os.path.dirname(__file__), "./functions/xray_tracing_traceid.py"
 )
 
 
