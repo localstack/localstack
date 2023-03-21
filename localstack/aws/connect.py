@@ -165,9 +165,9 @@ T = TypeVar("T")
 
 
 class MetadataRequestInjector(Generic[T]):
-    def __init__(self, client: T):
+    def __init__(self, client: T, params: dict[str, str] | None = None):
         self._client = client
-        self._params = None
+        self._params = params
 
     def __getattr__(self, item):
         target = getattr(self._client, item)
@@ -180,14 +180,25 @@ class MetadataRequestInjector(Generic[T]):
 
     def request_metadata(
         self, source_arn: str | None = None, service_principal: str | None = None
-    ) -> Union[T, "MetadataRequestInjector[T]"]:
+    ) -> T:
+        """
+        Provides request metadata to this client.
+        Identical as if providing _ServicePrincipal and _SourceArn directly to the operation arguments but typing
+        compatible.
+        Cannot be called on objects where the parameters are already set.
+
+        :param source_arn: Arn on which behalf the calls of this client shall be made
+        :param service_principal: Service principal on which behalf the calls of this client shall be made
+        :return: A new version of the MetadataRequestInjector
+        """
+        if self._params is not None:
+            raise TypeError("Request_data cannot be called on it's own return value")
         params = {}
         if source_arn:
             params["_SourceArn"] = source_arn
         if service_principal:
             params["_ServicePrincipal"] = service_principal
-        self._params = params
-        return self
+        return MetadataRequestInjector(client=self._client, params=params)
 
 
 #
