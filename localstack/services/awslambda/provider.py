@@ -1033,11 +1033,17 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
         )
         state = lambda_stores[context.account_id][context.region]
         fn = state.functions.get(function_name)
-        if not fn:
-            raise ResourceNotFoundException(
-                f"Function not found: {api_utils.qualified_lambda_arn(function_name, qualifier, context.account_id, context.region)}",
-                Type="User",
-            )
+        if fn is None:
+            if qualifier is None:
+                raise ResourceNotFoundException(
+                    f"Function not found: {api_utils.unqualified_lambda_arn(function_name, context.account_id, context.region)}",
+                    Type="User",
+                )
+            else:
+                raise ResourceNotFoundException(
+                    f"Function not found: {api_utils.qualified_lambda_arn(function_name, qualifier, context.account_id, context.region)}",
+                    Type="User",
+                )
         alias_name = None
         if qualifier and api_utils.qualifier_is_alias(qualifier):
             if qualifier not in fn.aliases:
