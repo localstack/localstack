@@ -102,8 +102,11 @@ class MetadataRequestInjector(Generic[T]):
     ) -> T:
         """
         Provides request metadata to this client.
-        Identical as if providing _ServicePrincipal and _SourceArn directly to the operation arguments but typing
+        Identical to providing _ServicePrincipal and _SourceArn directly as operation arguments but typing
         compatible.
+        
+        Raw example: lambda_client.invoke(FunctionName="fn", _SourceArn="...")
+        Injector example: lambda_client.request_metadata(source_arn="...").invoke(FunctionName="fn")
         Cannot be called on objects where the parameters are already set.
 
         :param source_arn: Arn on which behalf the calls of this client shall be made
