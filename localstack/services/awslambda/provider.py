@@ -253,9 +253,9 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
                                 exc_info=True,
                             )
 
-                    # Restore event source listeners
-                    for esm in state.event_source_mappings.values():
-                        EventSourceListener.start_listeners_for_asf(esm, self.lambda_service)
+                # Restore event source listeners
+                for esm in state.event_source_mappings.values():
+                    EventSourceListener.start_listeners_for_asf(esm, self.lambda_service)
 
     def on_after_init(self):
         self.router.register_routes()
