@@ -186,6 +186,7 @@ from localstack.services.awslambda.layerfetcher.layer_fetcher import LayerFetche
 from localstack.services.awslambda.urlrouter import FunctionUrlRouter
 from localstack.services.edge import ROUTER
 from localstack.services.plugins import ServiceLifecycleHook
+from localstack.state import StateVisitor
 from localstack.utils.aws import aws_stack
 from localstack.utils.aws.arns import extract_service_from_arn
 from localstack.utils.collections import PaginatedList
@@ -217,6 +218,44 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
         self.router = FunctionUrlRouter(ROUTER, self.lambda_service)
         self.layer_fetcher = None
         lambda_hooks.inject_layer_fetcher.run(self)
+
+    def accept_state_visitor(self, visitor: StateVisitor):
+        visitor.visit(lambda_stores)
+
+    def on_before_state_load(self):
+        self.lambda_service.stop()
+
+    def on_after_state_load(self):
+        self.lambda_service = LambdaService()
+
+        # TODO: provisioned concurrency
+        for account_id, account_bundle in lambda_stores.items():
+            for region_name, state in account_bundle.items():
+                for fn in state.functions.values():
+                    for fn_version in fn.versions.values():
+                        # restore the "Pending" state for every function version and start it
+                        try:
+                            new_state = VersionState(
+                                state=State.Pending,
+                                code=StateReasonCode.Creating,
+                                reason="The function is being created.",
+                            )
+                            new_config = dataclasses.replace(fn_version.config, state=new_state)
+                            new_version = dataclasses.replace(fn_version, config=new_config)
+                            fn.versions[fn_version.id.qualifier] = new_version
+                            self.lambda_service.create_function_version(fn_version).result(
+                                timeout=5
+                            )
+                        except Exception:
+                            LOG.warning(
+                                "Failed to restore function version %s",
+                                fn_version.id.qualified_arn(),
+                                exc_info=True,
+                            )
+
+                # Restore event source listeners
+                for esm in state.event_source_mappings.values():
+                    EventSourceListener.start_listeners_for_asf(esm, self.lambda_service)
 
     def on_after_init(self):
         self.router.register_routes()

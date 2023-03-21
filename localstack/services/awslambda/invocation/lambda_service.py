@@ -111,7 +111,7 @@ class LambdaService:
 
         return version_manager
 
-    def create_function_version(self, function_version: FunctionVersion) -> None:
+    def create_function_version(self, function_version: FunctionVersion) -> Future[None]:
         """
         Creates a new function version (manager), and puts it in the startup dict
 
@@ -130,7 +130,7 @@ class LambdaService:
                 function_arn=qualified_arn, function_version=function_version, lambda_service=self
             )
             self.lambda_starting_versions[qualified_arn] = version_manager
-        self.task_executor.submit(version_manager.start)
+        return self.task_executor.submit(version_manager.start)
 
     def publish_version(self, function_version: FunctionVersion):
         """
@@ -238,7 +238,7 @@ class LambdaService:
             )
         )
 
-    def update_version(self, new_version: FunctionVersion) -> None:
+    def update_version(self, new_version: FunctionVersion) -> Future[None]:
         """
         Updates a given version. Will perform a rollover, so the old version will be active until the new one is ready
         to be invoked

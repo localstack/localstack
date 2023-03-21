@@ -158,6 +158,7 @@ class LambdaVersionManager(ServiceEndpoint):
         )
 
     def start(self) -> None:
+        new_state = None
         try:
             invocation_thread = Thread(target=self.invocation_loop)
             invocation_thread.start()
@@ -167,23 +168,24 @@ class LambdaVersionManager(ServiceEndpoint):
 
             # code and reason not set for success scenario because only failed states provide this field:
             # https://docs.aws.amazon.com/lambda/latest/dg/API_GetFunctionConfiguration.html#SSS-GetFunctionConfiguration-response-LastUpdateStatusReasonCode
-            self.state = VersionState(state=State.Active)
+            new_state = VersionState(state=State.Active)
             LOG.debug(
-                f"Lambda '{self.function_arn}' (id {self.function_version.config.internal_revision}) changed to active"
+                f"Changing Lambda '{self.function_arn}' (id {self.function_version.config.internal_revision}) to active"
             )
         except Exception as e:
-            self.state = VersionState(
+            new_state = VersionState(
                 state=State.Failed,
                 code=StateReasonCode.InternalError,
                 reason=f"Error while creating lambda: {e}",
             )
             LOG.debug(
-                f"Lambda '{self.function_arn}' changed to failed. Reason: %s", e, exc_info=True
+                f"Changing Lambda '{self.function_arn}' to failed. Reason: %s", e, exc_info=True
             )
         finally:
-            self.lambda_service.update_version_state(
-                function_version=self.function_version, new_state=self.state
-            )
+            if new_state:
+                self.lambda_service.update_version_state(
+                    function_version=self.function_version, new_state=new_state
+                )
 
     def stop(self) -> None:
         LOG.debug("Stopping lambda version '%s'", self.function_arn)
