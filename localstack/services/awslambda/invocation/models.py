@@ -1,6 +1,5 @@
 from localstack.aws.api.lambda_ import EventSourceMappingConfiguration
 from localstack.services.awslambda.invocation.lambda_models import (
-    AccountSettings,
     CodeSigningConfig,
     Function,
     Layer,
@@ -20,9 +19,6 @@ class LambdaStore(BaseStore):
 
     # maps layer names to Layers
     layers: dict[str, Layer] = LocalAttribute(default=dict)
-
-    # region-specific account settings/limits
-    settings: AccountSettings = LocalAttribute(default=AccountSettings)
 
 
 lambda_stores = AccountRegionBundle("lambda", LambdaStore)

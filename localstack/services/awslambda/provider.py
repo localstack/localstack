@@ -143,9 +143,6 @@ from localstack.services.awslambda.event_source_listeners.event_source_listener 
 from localstack.services.awslambda.invocation import AccessDeniedException
 from localstack.services.awslambda.invocation.lambda_models import (
     IMAGE_MAPPING,
-    LAMBDA_LIMITS_CREATE_FUNCTION_REQUEST_SIZE,
-    LAMBDA_LIMITS_MAX_FUNCTION_ENVVAR_SIZE_BYTES,
-    LAMBDA_MINIMUM_UNRESERVED_CONCURRENCY,
     SNAP_START_SUPPORTED_RUNTIMES,
     AliasRoutingConfig,
     CodeSigningConfig,
@@ -162,7 +159,6 @@ from localstack.services.awslambda.invocation.lambda_models import (
     LayerPolicyStatement,
     LayerVersion,
     ProvisionedConcurrencyConfiguration,
-    ProvisionedConcurrencyState,
     RequestEntityTooLargeException,
     ResourcePolicy,
     UpdateStatus,
@@ -265,7 +261,7 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
         self.lambda_service.stop()
 
     @staticmethod
-    def _get_function(function_name: str, account_id: str, region: str):
+    def _get_function(function_name: str, account_id: str, region: str) -> Function:
         state = lambda_stores[account_id][region]
         function = state.functions.get(function_name)
         if not function:
@@ -283,7 +279,7 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
     @staticmethod
     def _get_function_version(
         function_name: str, qualifier: str | None, account_id: str, region: str
-    ):
+    ) -> FunctionVersion:
         state = lambda_stores[account_id][region]
         function = state.functions.get(function_name)
         qualifier_or_latest = qualifier or "$LATEST"
@@ -512,7 +508,10 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
     @staticmethod
     def _verify_env_variables(env_vars: dict[str, str]):
         dumped_env_vars = json.dumps(env_vars, separators=(",", ":"))
-        if len(dumped_env_vars.encode("utf-8")) > LAMBDA_LIMITS_MAX_FUNCTION_ENVVAR_SIZE_BYTES:
+        if (
+            len(dumped_env_vars.encode("utf-8"))
+            > config.LAMBDA_LIMITS_MAX_FUNCTION_ENVVAR_SIZE_BYTES
+        ):
             raise InvalidParameterValueException(
                 f"Lambda was unable to configure your environment variables because the environment variables you have provided exceeded the 4KB limit. String measured: {dumped_env_vars}",
                 Type="User",
@@ -616,9 +615,9 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
         context: RequestContext,
         request: CreateFunctionRequest,
     ) -> FunctionConfiguration:
-        if context.request.content_length > LAMBDA_LIMITS_CREATE_FUNCTION_REQUEST_SIZE:
+        if context.request.content_length > config.LAMBDA_LIMITS_CREATE_FUNCTION_REQUEST_SIZE:
             raise RequestEntityTooLargeException(
-                f"Request must be smaller than {LAMBDA_LIMITS_CREATE_FUNCTION_REQUEST_SIZE} bytes for the CreateFunction operation"
+                f"Request must be smaller than {config.LAMBDA_LIMITS_CREATE_FUNCTION_REQUEST_SIZE} bytes for the CreateFunction operation"
             )
 
         architectures = request.get("Architectures")
@@ -726,7 +725,6 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
                     memory_size=request.get("MemorySize", LAMBDA_DEFAULT_MEMORY_SIZE),
                     handler=request.get("Handler"),
                     package_type=package_type,
-                    reserved_concurrent_executions=0,
                     environment=env_vars,
                     architectures=request.get("Architectures") or [Architecture.x86_64],
                     tracing_config_mode=request.get("TracingConfig", {}).get(
@@ -1079,20 +1077,39 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
         function_name, qualifier = api_utils.get_name_and_qualifier(
             function_name, qualifier, context.region
         )
+        state = lambda_stores[context.account_id][context.region]
+        fn = state.functions.get(function_name)
+        if fn is None:
+            if qualifier is None:
+                raise ResourceNotFoundException(
+                    f"Function not found: {api_utils.unqualified_lambda_arn(function_name, context.account_id, context.region)}",
+                    Type="User",
+                )
+            else:
+                raise ResourceNotFoundException(
+                    f"Function not found: {api_utils.qualified_lambda_arn(function_name, qualifier, context.account_id, context.region)}",
+                    Type="User",
+                )
+        alias_name = None
+        if qualifier and api_utils.qualifier_is_alias(qualifier):
+            if qualifier not in fn.aliases:
+                alias_arn = api_utils.qualified_lambda_arn(
+                    function_name, qualifier, context.account_id, context.region
+                )
+                raise ResourceNotFoundException(f"Function not found: {alias_arn}", Type="User")
+            alias_name = qualifier
+            qualifier = fn.aliases[alias_name].function_version
+
         version = self._get_function_version(
             function_name=function_name,
             qualifier=qualifier,
             account_id=context.account_id,
             region=context.region,
         )
-        fn = self._get_function(
-            function_name=function_name, account_id=context.account_id, region=context.region
-        )
         tags = self._get_tags(fn)
         additional_fields = {}
         if tags:
             additional_fields["Tags"] = tags
-        # TODO what if no version?
         code_location = None
         if code := version.config.code:
             code_location = FunctionCodeLocation(
@@ -1106,7 +1123,9 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
             )
 
         return GetFunctionResponse(
-            Configuration=api_utils.map_config_out(version, return_qualified_arn=bool(qualifier)),
+            Configuration=api_utils.map_config_out(
+                version, return_qualified_arn=bool(qualifier), alias_name=alias_name
+            ),
             Code=code_location,  # TODO
             **additional_fields
             # Concurrency={},  # TODO
@@ -1430,8 +1449,13 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
                 new_routing_config = self._create_routing_config_model(routing_config_dict)
             changes |= {"routing_configuration": new_routing_config}
         # even if no changes are done, we have to update revision id for some reason
+        old_alias = alias
         alias = dataclasses.replace(alias, **changes)
         function.aliases[name] = alias
+
+        # TODO: signal lambda service that pointer potentially changed
+        self.lambda_service.update_alias(old_alias=old_alias, new_alias=alias, function=function)
+
         return api_utils.map_alias_out(alias=alias, function=function)
 
     # =======================================
@@ -2241,27 +2265,29 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
         context: RequestContext,
     ) -> GetAccountSettingsResponse:
         state = lambda_stores[context.account_id][context.region]
-        settings = state.settings
 
         fn_count = 0
         code_size_sum = 0
         reserved_concurrency_sum = 0
+        # TODO: fix calculation (see lambda service get_available_fn_concurrency etc)
         for fn in state.functions.values():
             fn_count += 1
             for fn_version in fn.versions.values():
                 code_size_sum += fn_version.config.code.code_size
             if fn.reserved_concurrent_executions is not None:
                 reserved_concurrency_sum += fn.reserved_concurrent_executions
+            for c in fn.provisioned_concurrency_configs.values():
+                reserved_concurrency_sum += c.provisioned_concurrent_executions
         for layer in state.layers.values():
             for layer_version in layer.layer_versions.values():
                 code_size_sum += layer_version.code.code_size
         return GetAccountSettingsResponse(
             AccountLimit=AccountLimit(
-                TotalCodeSize=settings.total_code_size,
-                CodeSizeZipped=settings.code_size_zipped,
-                CodeSizeUnzipped=settings.code_size_unzipped,
-                ConcurrentExecutions=settings.concurrent_executions,
-                UnreservedConcurrentExecutions=settings.concurrent_executions
+                TotalCodeSize=config.LAMBDA_LIMITS_TOTAL_CODE_SIZE,
+                CodeSizeZipped=config.LAMBDA_LIMITS_CODE_SIZE_ZIPPED,
+                CodeSizeUnzipped=config.LAMBDA_LIMITS_CODE_SIZE_UNZIPPED,
+                ConcurrentExecutions=config.LAMBDA_LIMITS_CONCURRENT_EXECUTIONS,
+                UnreservedConcurrentExecutions=config.LAMBDA_LIMITS_CONCURRENT_EXECUTIONS
                 - reserved_concurrency_sum,
             ),
             AccountUsage=AccountUsage(
@@ -2307,11 +2333,17 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
         qualifier: Qualifier,
         provisioned_concurrent_executions: PositiveInteger,
     ) -> PutProvisionedConcurrencyConfigResponse:
+        if provisioned_concurrent_executions <= 0:
+            raise ValidationException(
+                f"1 validation error detected: Value '{provisioned_concurrent_executions}' at 'provisionedConcurrentExecutions' failed to satisfy constraint: Member must have value greater than or equal to 1"
+            )
+
         if qualifier == "$LATEST":
             raise InvalidParameterValueException(
                 "Provisioned Concurrency Configs cannot be applied to unpublished function versions.",
                 Type="User",
             )
+
         function_name, qualifier = api_utils.get_name_and_qualifier(
             function_name, qualifier, context.region
         )
@@ -2320,8 +2352,29 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
 
         provisioned_config = self._get_provisioned_config(context, function_name, qualifier)
 
-        if provisioned_config:
-            pass  # TODO: test
+        if provisioned_config:  # TODO: merge?
+            # TODO: add a test for partial updates (if possible)
+            LOG.warning(
+                "Partial update of provisioned concurrency config is currently not supported."
+            )
+
+        other_provisioned_sum = sum(
+            [
+                provisioned_configs.provisioned_concurrent_executions
+                for provisioned_qualifier, provisioned_configs in fn.provisioned_concurrency_configs.items()
+                if provisioned_qualifier != qualifier
+            ]
+        )
+
+        if (
+            fn.reserved_concurrent_executions is not None
+            and fn.reserved_concurrent_executions
+            < other_provisioned_sum + provisioned_concurrent_executions
+        ):
+            raise InvalidParameterValueException(
+                "Requested Provisioned Concurrency should not be greater than the reservedConcurrentExecution for function",
+                Type="User",
+            )
 
         provisioned_config = ProvisionedConcurrencyConfiguration(
             provisioned_concurrent_executions, api_utils.generate_lambda_date()
@@ -2364,10 +2417,9 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
         manager = self.lambda_service.get_lambda_version_manager(fn_arn)
 
         fn.provisioned_concurrency_configs[qualifier] = provisioned_config
-        manager.provisioned_state = ProvisionedConcurrencyState(
-            allocated=provisioned_concurrent_executions,
-            available=provisioned_concurrent_executions,
-            status=ProvisionedConcurrencyStatusEnum.READY,
+
+        manager.update_provisioned_concurrency_config(
+            provisioned_config.provisioned_concurrent_executions
         )
 
         return PutProvisionedConcurrencyConfigResponse(
@@ -2397,6 +2449,7 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
                 "No Provisioned Concurrency Config found for this function", Type="User"
             )
 
+        # TODO: make this compatible with alias pointer migration on update
         if api_utils.qualifier_is_alias(qualifier):
             state = lambda_stores[context.account_id][context.region]
             fn = state.functions.get(function_name)
@@ -2493,6 +2546,11 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
         # delete is idempotent and doesn't actually care about the provisioned concurrency config not existing
         if provisioned_config:
             fn.provisioned_concurrency_configs.pop(qualifier)
+            fn_arn = api_utils.qualified_lambda_arn(
+                function_name, qualifier, context.account_id, context.region
+            )
+            manager = self.lambda_service.get_lambda_version_manager(fn_arn)
+            manager.update_provisioned_concurrency_config(0)
 
     # =======================================
     # =======  Event Invoke Config   ========
@@ -3239,7 +3297,15 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
         function_name: FunctionName,
         reserved_concurrent_executions: ReservedConcurrentExecutions,
     ) -> Concurrency:
-        function_name = api_utils.get_function_name(function_name, context.region)
+        function_name, qualifier = api_utils.get_name_and_qualifier(
+            function_name, None, context.region
+        )
+        if qualifier:
+            raise InvalidParameterValueException(
+                "This operation is permitted on Lambda functions only. Aliases and versions do not support this operation. Please specify either a function name or an unqualified function ARN.",
+                Type="User",
+            )
+
         state = lambda_stores[context.account_id][context.region]
         fn = state.functions.get(function_name)
         if not fn:
@@ -3258,9 +3324,20 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
 
         if (
             unreserved_concurrent_executions - reserved_concurrent_executions
-        ) < LAMBDA_MINIMUM_UNRESERVED_CONCURRENCY:
+        ) < config.LAMBDA_LIMITS_MINIMUM_UNRESERVED_CONCURRENCY:
             raise InvalidParameterValueException(
-                f"Specified ReservedConcurrentExecutions for function decreases account's UnreservedConcurrentExecution below its minimum value of [{LAMBDA_MINIMUM_UNRESERVED_CONCURRENCY}]."
+                f"Specified ReservedConcurrentExecutions for function decreases account's UnreservedConcurrentExecution below its minimum value of [{config.LAMBDA_LIMITS_MINIMUM_UNRESERVED_CONCURRENCY}]."
+            )
+
+        total_provisioned_concurrency = sum(
+            [
+                provisioned_configs.provisioned_concurrent_executions
+                for provisioned_configs in fn.provisioned_concurrency_configs.values()
+            ]
+        )
+        if total_provisioned_concurrency > reserved_concurrent_executions:
+            raise InvalidParameterValueException(
+                f" ReservedConcurrentExecutions  {reserved_concurrent_executions} should not be lower than function's total provisioned concurrency [{total_provisioned_concurrency}]."
             )
 
         fn.reserved_concurrent_executions = reserved_concurrent_executions

@@ -43,9 +43,7 @@ def get_invoke_init_type(
 ) -> Literal["on-demand", "provisioned-concurrency"]:
     """check the environment in the lambda for AWS_LAMBDA_INITIALIZATION_TYPE indicating ondemand/provisioned"""
     invoke_result = client.invoke(FunctionName=function_name, Qualifier=qualifier)
-    return json.loads(to_str(invoke_result["Payload"].read()))["environment"][
-        "AWS_LAMBDA_INITIALIZATION_TYPE"
-    ]
+    return json.loads(to_str(invoke_result["Payload"].read()))
 
 
 lambda_role = {

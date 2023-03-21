@@ -5,12 +5,13 @@ import io
 import logging
 import random
 import uuid
+from collections import defaultdict
 from concurrent.futures import Executor, Future, ThreadPoolExecutor
 from datetime import datetime
 from hashlib import sha256
 from pathlib import PurePosixPath, PureWindowsPath
 from threading import RLock
-from typing import TYPE_CHECKING, Dict, Optional
+from typing import TYPE_CHECKING, Optional
 
 from localstack import config
 from localstack.aws.api.lambda_ import (
@@ -21,13 +22,13 @@ from localstack.aws.api.lambda_ import (
     ResourceNotFoundException,
     State,
 )
+from localstack.services.awslambda import api_utils
 from localstack.services.awslambda.api_utils import (
     lambda_arn,
     qualified_lambda_arn,
     qualifier_is_alias,
 )
 from localstack.services.awslambda.invocation.lambda_models import (
-    LAMBDA_LIMITS_CODE_SIZE_UNZIPPED_DEFAULT,
     ArchiveCode,
     Function,
     FunctionVersion,
@@ -37,6 +38,7 @@ from localstack.services.awslambda.invocation.lambda_models import (
     InvocationResult,
     S3Code,
     UpdateStatus,
+    VersionAlias,
     VersionState,
 )
 from localstack.services.awslambda.invocation.models import lambda_stores
@@ -56,18 +58,36 @@ LAMBDA_DEFAULT_TIMEOUT_SECONDS = 3
 LAMBDA_DEFAULT_MEMORY_SIZE = 128
 
 
+# TODO: scope to account & region instead?
+class ConcurrencyTracker:
+    """account-scoped concurrency tracker that keeps track of the number of running invocations per function"""
+
+    lock: RLock
+
+    # function unqualified ARN => number of currently running invocations
+    function_concurrency: dict[str, int]
+
+    def __init__(self):
+        self.function_concurrency = defaultdict(int)
+        self.lock = RLock()
+
+
 class LambdaService:
     # mapping from qualified ARN to version manager
-    lambda_running_versions: Dict[str, LambdaVersionManager]
-    lambda_starting_versions: Dict[str, LambdaVersionManager]
+    lambda_running_versions: dict[str, LambdaVersionManager]
+    lambda_starting_versions: dict[str, LambdaVersionManager]
     lambda_version_manager_lock: RLock
     task_executor: Executor
+
+    # account => concurrency tracker
+    _concurrency_trackers: dict[str, ConcurrencyTracker]
 
     def __init__(self) -> None:
         self.lambda_running_versions = {}
         self.lambda_starting_versions = {}
         self.lambda_version_manager_lock = RLock()
         self.task_executor = ThreadPoolExecutor()
+        self._concurrency_trackers = defaultdict(ConcurrencyTracker)
 
     def stop(self) -> None:
         """
@@ -126,8 +146,13 @@ class LambdaService:
                     qualified_arn,
                     version_manager.state,
                 )
+            state = lambda_stores[function_version.id.account][function_version.id.region]
+            fn = state.functions.get(function_version.id.function_name)
             version_manager = LambdaVersionManager(
-                function_arn=qualified_arn, function_version=function_version, lambda_service=self
+                function_arn=qualified_arn,
+                function_version=function_version,
+                lambda_service=self,
+                function=fn,
             )
             self.lambda_starting_versions[qualified_arn] = version_manager
         return self.task_executor.submit(version_manager.start)
@@ -151,8 +176,13 @@ class LambdaService:
                     qualified_arn,
                     version_manager.state,
                 )
+            state = lambda_stores[function_version.id.account][function_version.id.region]
+            fn = state.functions.get(function_version.id.function_name)
             version_manager = LambdaVersionManager(
-                function_arn=qualified_arn, function_version=function_version, lambda_service=self
+                function_arn=qualified_arn,
+                function_version=function_version,
+                lambda_service=self,
+                function=fn,
             )
             self.lambda_starting_versions[qualified_arn] = version_manager
         version_manager.start()
@@ -315,6 +345,127 @@ class LambdaService:
                 destroy_code_if_not_used, old_version.function_version.config.code, function
             )
 
+    def report_invocation_start(self, unqualified_function_arn: str):
+        """
+        Track beginning of a new function invocation.
+        Always make sure this is followed by a call to report_invocation_end downstream
+
+        :param unqualified_function_arn: e.g. arn:aws:lambda:us-east-1:123456789012:function:concurrency-fn
+        """
+        fn_parts = api_utils.FULL_FN_ARN_PATTERN.search(unqualified_function_arn).groupdict()
+        account = fn_parts["account_id"]
+
+        tracker = self._concurrency_trackers[account]
+        with tracker.lock:
+            tracker.function_concurrency[unqualified_function_arn] += 1
+
+    def report_invocation_end(self, unqualified_function_arn: str):
+        """
+        Track end of a function invocation. Should have a corresponding report_invocation_start call upstream
+
+        :param unqualified_function_arn: e.g. arn:aws:lambda:us-east-1:123456789012:function:concurrency-fn
+        """
+        fn_parts = api_utils.FULL_FN_ARN_PATTERN.search(unqualified_function_arn).groupdict()
+        account = fn_parts["account_id"]
+
+        tracker = self._concurrency_trackers[account]
+        with tracker.lock:
+            tracker.function_concurrency[unqualified_function_arn] -= 1
+            if tracker.function_concurrency[unqualified_function_arn] < 0:
+                LOG.warning(
+                    "Invalid function concurrency state detected for function: %s | recorded concurrency: %d",
+                    unqualified_function_arn,
+                    tracker.function_concurrency[unqualified_function_arn],
+                )
+
+    def get_available_fn_concurrency(self, unqualified_function_arn: str) -> int:
+        """
+        Calculate available capacity for new invocations in the function's account & region.
+        If the function has a reserved concurrency set, only this pool of reserved concurrency is considered.
+        Otherwise all unreserved concurrent invocations in the function's account/region are aggregated and checked against the current account settings.
+        """
+        fn_parts = api_utils.FULL_FN_ARN_PATTERN.search(unqualified_function_arn).groupdict()
+        region = fn_parts["region_name"]
+        account = fn_parts["account_id"]
+        function_name = fn_parts["function_name"]
+
+        tracker = self._concurrency_trackers[account]
+        store = lambda_stores[account][region]
+
+        with tracker.lock:
+            # reserved concurrency set => reserved concurrent executions only limited by local function limit
+            if store.functions[function_name].reserved_concurrent_executions is not None:
+                fn = store.functions[function_name]
+                available_unreserved_concurrency = (
+                    fn.reserved_concurrent_executions - self._calculate_used_concurrency(fn)
+                )
+            # no reserved concurrency set. => consider account/region-global state instead
+            else:
+                available_unreserved_concurrency = config.LAMBDA_LIMITS_CONCURRENT_EXECUTIONS - sum(
+                    [
+                        self._calculate_actual_reserved_concurrency(fn)
+                        for fn in store.functions.values()
+                    ]
+                )
+
+            if available_unreserved_concurrency < 0:
+                LOG.warning(
+                    "Invalid function concurrency state detected for function: %s | available unreserved concurrency: %d",
+                    unqualified_function_arn,
+                    available_unreserved_concurrency,
+                )
+                return 0
+            return available_unreserved_concurrency
+
+    def _calculate_actual_reserved_concurrency(self, fn: Function) -> int:
+        """
+        Calculates how much of the "global" concurrency pool this function takes up.
+        This is either the reserved concurrency or its actual used concurrency (which can never exceed the reserved concurrency).
+        """
+        reserved_concurrency = fn.reserved_concurrent_executions
+        if reserved_concurrency:
+            return reserved_concurrency
+
+        return self._calculate_used_concurrency(fn)
+
+    def _calculate_used_concurrency(self, fn: Function) -> int:
+        """
+        Calculates the total used concurrency for a function in its own scope, i.e. without potentially considering reserved concurrency
+
+        :return: sum of function's provisioned concurrency and unreserved+unprovisioned invocations (e.g. spillover)
+        """
+        provisioned_concurrency_sum_for_fn = sum(
+            [
+                provisioned_configs.provisioned_concurrent_executions
+                for provisioned_configs in fn.provisioned_concurrency_configs.values()
+            ]
+        )
+        tracker = self._concurrency_trackers[fn.latest().id.account]
+        tracked_concurrency = tracker.function_concurrency[fn.latest().id.unqualified_arn()]
+        return provisioned_concurrency_sum_for_fn + tracked_concurrency
+
+    def update_alias(self, old_alias: VersionAlias, new_alias: VersionAlias, function: Function):
+        # if pointer changed, need to restart provisioned
+        provisioned_concurrency_config = function.provisioned_concurrency_configs.get(
+            old_alias.name
+        )
+        if (
+            old_alias.function_version != new_alias.function_version
+            and provisioned_concurrency_config is not None
+        ):
+            LOG.warning("Deprovisioning")
+            fn_version_old = function.versions.get(old_alias.function_version)
+            vm_old = self.get_lambda_version_manager(function_arn=fn_version_old.qualified_arn)
+            fn_version_new = function.versions.get(new_alias.function_version)
+            vm_new = self.get_lambda_version_manager(function_arn=fn_version_new.qualified_arn)
+
+            # TODO: we might need to pull provisioned concurrency state a bit more out of the version manager for get_provisioned_concurrency_config
+            # TODO: make this fully async
+            vm_old.update_provisioned_concurrency_config(0).result(timeout=4)  # sync
+            vm_new.update_provisioned_concurrency_config(
+                provisioned_concurrency_config.provisioned_concurrent_executions
+            )  # async again
+
 
 def is_code_used(code: S3Code, function: Function) -> bool:
     """
@@ -362,9 +513,9 @@ def store_lambda_archive(
         )
     # check unzipped size
     unzipped_size = get_unzipped_size(zip_file=io.BytesIO(archive_file))
-    if unzipped_size >= LAMBDA_LIMITS_CODE_SIZE_UNZIPPED_DEFAULT:
+    if unzipped_size >= config.LAMBDA_LIMITS_CODE_SIZE_UNZIPPED:
         raise InvalidParameterValueException(
-            f"Unzipped size must be smaller than {LAMBDA_LIMITS_CODE_SIZE_UNZIPPED_DEFAULT} bytes",
+            f"Unzipped size must be smaller than {config.LAMBDA_LIMITS_CODE_SIZE_UNZIPPED} bytes",
             Type="User",
         )
     # store all buckets in us-east-1 for now

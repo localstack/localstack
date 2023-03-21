@@ -11,6 +11,7 @@ from typing import IO, TYPE_CHECKING, Dict, Optional, TypedDict
 
 from botocore.exceptions import ClientError
 
+from localstack import config
 from localstack.aws.api import CommonServiceException
 from localstack.aws.api.lambda_ import (
     AllowedPublishers,
@@ -577,7 +578,6 @@ class Layer:
 @dataclasses.dataclass(frozen=True)
 class VersionFunctionConfiguration:
     # fields
-    # name: str
     description: str
     role: str
     timeout: int
@@ -585,7 +585,6 @@ class VersionFunctionConfiguration:
     memory_size: int
     handler: str
     package_type: PackageType
-    reserved_concurrent_executions: int
     environment: dict[str, str]
     architectures: list[Architecture]
     # internal revision is updated when runtime restart is necessary
@@ -662,19 +661,10 @@ class RequestEntityTooLargeException(CommonServiceException):
 
 # note: we might at some point want to generalize these limits across all services and fetch them from there
 
-LAMBDA_LIMITS_TOTAL_CODE_SIZE_DEFAULT = 80530636800
-LAMBDA_LIMITS_CODE_SIZE_ZIPPED_DEFAULT = 52428800
-LAMBDA_LIMITS_CODE_SIZE_UNZIPPED_DEFAULT = 262144000
-LAMBDA_LIMITS_CONCURRENT_EXECUTIONS_DEFAULT = 150
-LAMBDA_LIMITS_CREATE_FUNCTION_REQUEST_SIZE = 69905067
-LAMBDA_LIMITS_MAX_FUNCTION_ENVVAR_SIZE_BYTES = 4 * 1024
-
-LAMBDA_MINIMUM_UNRESERVED_CONCURRENCY = 100
-
 
 @dataclasses.dataclass
 class AccountSettings:
-    total_code_size: int = LAMBDA_LIMITS_TOTAL_CODE_SIZE_DEFAULT
-    code_size_zipped: int = LAMBDA_LIMITS_CODE_SIZE_ZIPPED_DEFAULT
-    code_size_unzipped: int = LAMBDA_LIMITS_CODE_SIZE_UNZIPPED_DEFAULT
-    concurrent_executions: int = LAMBDA_LIMITS_CONCURRENT_EXECUTIONS_DEFAULT
+    total_code_size: int = config.LAMBDA_LIMITS_TOTAL_CODE_SIZE
+    code_size_zipped: int = config.LAMBDA_LIMITS_CODE_SIZE_ZIPPED
+    code_size_unzipped: int = config.LAMBDA_LIMITS_CODE_SIZE_UNZIPPED
+    concurrent_executions: int = config.LAMBDA_LIMITS_CONCURRENT_EXECUTIONS
