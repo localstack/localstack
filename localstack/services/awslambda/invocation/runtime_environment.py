@@ -95,6 +95,7 @@ class RuntimeEnvironment:
             # https://docs.aws.amazon.com/lambda/latest/dg/configuration-envvars.html
             # a) Reserved environment variables
             # _HANDLER conditionally added below
+            # TODO: _X_AMZN_TRACE_ID
             "AWS_DEFAULT_REGION": self.function_version.id.region,
             "AWS_REGION": self.function_version.id.region,
             # AWS_EXECUTION_ENV conditionally added below
