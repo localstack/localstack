@@ -1056,6 +1056,26 @@ class TestLambdaAlias:
         snapshot.match("create_alias_1_1", create_alias_1_1)
         get_alias_1_1 = lambda_client.get_alias(FunctionName=function_name, Name="aliasname1_1")
         snapshot.match("get_alias_1_1", get_alias_1_1)
+        get_function_alias_1_1 = lambda_client.get_function(
+            FunctionName=function_name, Qualifier="aliasname1_1"
+        )
+        snapshot.match("get_function_alias_1_1", get_function_alias_1_1)
+        get_function_byarn_alias_1_1 = lambda_client.get_function(
+            FunctionName=create_alias_1_1["AliasArn"]
+        )
+        snapshot.match("get_function_byarn_alias_1_1", get_function_byarn_alias_1_1)
+
+        with pytest.raises(lambda_client.exceptions.ResourceNotFoundException) as e:
+            lambda_client.get_function(FunctionName=function_name, Qualifier="aliasdoesnotexist")
+        snapshot.match("get_function_alias_notfound_exc", e.value.response)
+
+        with pytest.raises(lambda_client.exceptions.ResourceNotFoundException) as e:
+            lambda_client.get_function(
+                FunctionName=create_alias_1_1["AliasArn"].replace(
+                    "aliasname1_1", "aliasdoesnotexist"
+                )
+            )
+        snapshot.match("get_function_alias_byarn_notfound_exc", e.value.response)
 
         create_alias_1_2 = lambda_client.create_alias(
             FunctionName=function_name,

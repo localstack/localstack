@@ -38,6 +38,7 @@ from localstack.services.awslambda.invocation.lambda_models import (
     InvocationResult,
     S3Code,
     UpdateStatus,
+    VersionAlias,
     VersionState,
 )
 from localstack.services.awslambda.invocation.models import lambda_stores
@@ -442,6 +443,28 @@ class LambdaService:
         tracker = self._concurrency_trackers[fn.latest().id.account]
         tracked_concurrency = tracker.function_concurrency[fn.latest().id.unqualified_arn()]
         return provisioned_concurrency_sum_for_fn + tracked_concurrency
+
+    def update_alias(self, old_alias: VersionAlias, new_alias: VersionAlias, function: Function):
+        # if pointer changed, need to restart provisioned
+        provisioned_concurrency_config = function.provisioned_concurrency_configs.get(
+            old_alias.name
+        )
+        if (
+            old_alias.function_version != new_alias.function_version
+            and provisioned_concurrency_config is not None
+        ):
+            LOG.warning("Deprovisioning")
+            fn_version_old = function.versions.get(old_alias.function_version)
+            vm_old = self.get_lambda_version_manager(function_arn=fn_version_old.qualified_arn)
+            fn_version_new = function.versions.get(new_alias.function_version)
+            vm_new = self.get_lambda_version_manager(function_arn=fn_version_new.qualified_arn)
+
+            # TODO: we might need to pull provisioned concurrency state a bit more out of the version manager for get_provisioned_concurrency_config
+            # TODO: make this fully async
+            vm_old.update_provisioned_concurrency_config(0).result(timeout=4)  # sync
+            vm_new.update_provisioned_concurrency_config(
+                provisioned_concurrency_config.provisioned_concurrent_executions
+            )  # async again
 
 
 def is_code_used(code: S3Code, function: Function) -> bool:

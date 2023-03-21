@@ -1543,7 +1543,7 @@
     }
   },
   "tests/integration/awslambda/test_lambda.py::TestLambdaConcurrency::test_lambda_provisioned_concurrency_moves_with_alias": {
-    "recorded-date": "04-10-2022, 08:21:47",
+    "recorded-date": "21-03-2023, 08:47:38",
     "recorded-content": {
       "create-result": {
         "CreateEventSourceMappingResponse": null,
@@ -1569,6 +1569,13 @@
           "RevisionId": "<uuid:1>",
           "Role": "arn:aws:iam::111111111111:role/<resource:1>",
           "Runtime": "python3.8",
+          "RuntimeVersionConfig": {
+            "RuntimeVersionArn": "arn:aws:lambda:<region>::runtime:<resource:2>"
+          },
+          "SnapStart": {
+            "ApplyOn": "None",
+            "OptimizationStatus": "Off"
+          },
           "State": "Pending",
           "StateReason": "The function is being created.",
           "StateReasonCode": "Creating",
@@ -1606,6 +1613,13 @@
         "RevisionId": "<uuid:2>",
         "Role": "arn:aws:iam::111111111111:role/<resource:1>",
         "Runtime": "python3.8",
+        "RuntimeVersionConfig": {
+          "RuntimeVersionArn": "arn:aws:lambda:<region>::runtime:<resource:2>"
+        },
+        "SnapStart": {
+          "ApplyOn": "None",
+          "OptimizationStatus": "Off"
+        },
         "State": "Active",
         "Timeout": 2,
         "TracingConfig": {
@@ -1640,6 +1654,13 @@
         "RevisionId": "<uuid:3>",
         "Role": "arn:aws:iam::111111111111:role/<resource:1>",
         "Runtime": "python3.8",
+        "RuntimeVersionConfig": {
+          "RuntimeVersionArn": "arn:aws:lambda:<region>::runtime:<resource:2>"
+        },
+        "SnapStart": {
+          "ApplyOn": "None",
+          "OptimizationStatus": "Off"
+        },
         "State": "Active",
         "Timeout": 2,
         "TracingConfig": {
@@ -1674,6 +1695,13 @@
         "RevisionId": "<uuid:3>",
         "Role": "arn:aws:iam::111111111111:role/<resource:1>",
         "Runtime": "python3.8",
+        "RuntimeVersionConfig": {
+          "RuntimeVersionArn": "arn:aws:lambda:<region>::runtime:<resource:2>"
+        },
+        "SnapStart": {
+          "ApplyOn": "None",
+          "OptimizationStatus": "Off"
+        },
         "State": "Active",
         "Timeout": 2,
         "TracingConfig": {
@@ -1724,6 +1752,13 @@
           "RevisionId": "<uuid:3>",
           "Role": "arn:aws:iam::111111111111:role/<resource:1>",
           "Runtime": "python3.8",
+          "RuntimeVersionConfig": {
+            "RuntimeVersionArn": "arn:aws:lambda:<region>::runtime:<resource:2>"
+          },
+          "SnapStart": {
+            "ApplyOn": "None",
+            "OptimizationStatus": "Off"
+          },
           "State": "Active",
           "Timeout": 2,
           "TracingConfig": {
@@ -1764,6 +1799,13 @@
           "RevisionId": "<uuid:5>",
           "Role": "arn:aws:iam::111111111111:role/<resource:1>",
           "Runtime": "python3.8",
+          "RuntimeVersionConfig": {
+            "RuntimeVersionArn": "arn:aws:lambda:<region>::runtime:<resource:2>"
+          },
+          "SnapStart": {
+            "ApplyOn": "None",
+            "OptimizationStatus": "Off"
+          },
           "State": "Active",
           "Timeout": 2,
           "TracingConfig": {
@@ -1799,6 +1841,13 @@
         "RevisionId": "<uuid:6>",
         "Role": "arn:aws:iam::111111111111:role/<resource:1>",
         "Runtime": "python3.8",
+        "RuntimeVersionConfig": {
+          "RuntimeVersionArn": "arn:aws:lambda:<region>::runtime:<resource:2>"
+        },
+        "SnapStart": {
+          "ApplyOn": "None",
+          "OptimizationStatus": "Off"
+        },
         "State": "Active",
         "Timeout": 10,
         "TracingConfig": {
@@ -1833,6 +1882,13 @@
         "RevisionId": "<uuid:7>",
         "Role": "arn:aws:iam::111111111111:role/<resource:1>",
         "Runtime": "python3.8",
+        "RuntimeVersionConfig": {
+          "RuntimeVersionArn": "arn:aws:lambda:<region>::runtime:<resource:2>"
+        },
+        "SnapStart": {
+          "ApplyOn": "None",
+          "OptimizationStatus": "Off"
+        },
         "State": "Active",
         "Timeout": 10,
         "TracingConfig": {

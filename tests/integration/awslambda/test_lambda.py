@@ -1255,8 +1255,7 @@ class TestLambdaConcurrency:
         deleted_concurrency_result = lambda_client.get_function_concurrency(FunctionName=func_name)
         snapshot.match("get_function_concurrency_deleted", deleted_concurrency_result)
 
-    # TODO: validate with new provider
-    @pytest.mark.skipif(not is_old_provider(), reason="Not yet implemented")
+    @pytest.mark.skip(reason="Requires prefer-provisioned feature")
     @pytest.mark.aws_validated
     def test_lambda_concurrency_block(self, snapshot, create_lambda_function, lambda_client):
         """
@@ -1321,7 +1320,6 @@ class TestLambdaConcurrency:
             )
         snapshot.match("invoke_latest_second_exc", e.value.response)
 
-    # TODO: validate with new provider
     @pytest.mark.skipif(not is_old_provider(), reason="Not yet implemented")
     @pytest.mark.skipif(condition=is_aws(), reason="very slow (only execute when needed)")
     @pytest.mark.aws_validated
@@ -1339,7 +1337,7 @@ class TestLambdaConcurrency:
 
         create_result = create_lambda_function(
             func_name=func_name,
-            handler_file=TEST_LAMBDA_INTROSPECT_PYTHON,
+            handler_file=TEST_LAMBDA_INVOCATION_TYPE,
             runtime=Runtime.python3_8,
             client=lambda_client,
             timeout=2,

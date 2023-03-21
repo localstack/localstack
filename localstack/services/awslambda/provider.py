@@ -222,7 +222,7 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
         self.lambda_service.stop()
 
     @staticmethod
-    def _get_function(function_name: str, account_id: str, region: str):
+    def _get_function(function_name: str, account_id: str, region: str) -> Function:
         state = lambda_stores[account_id][region]
         function = state.functions.get(function_name)
         if not function:
@@ -240,7 +240,7 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
     @staticmethod
     def _get_function_version(
         function_name: str, qualifier: str | None, account_id: str, region: str
-    ):
+    ) -> FunctionVersion:
         state = lambda_stores[account_id][region]
         function = state.functions.get(function_name)
         qualifier_or_latest = qualifier or "$LATEST"
@@ -1031,20 +1031,29 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
         function_name, qualifier = api_utils.get_name_and_qualifier(
             function_name, qualifier, context.region
         )
+        fn = self._get_function(
+            function_name=function_name, account_id=context.account_id, region=context.region
+        )
+        alias_name = None
+        if qualifier and api_utils.qualifier_is_alias(qualifier):
+            if qualifier not in fn.aliases:
+                alias_arn = api_utils.qualified_lambda_arn(
+                    function_name, qualifier, context.account_id, context.region
+                )
+                raise ResourceNotFoundException(f"Function not found: {alias_arn}", Type="User")
+            alias_name = qualifier
+            qualifier = fn.aliases[alias_name].function_version
+
         version = self._get_function_version(
             function_name=function_name,
             qualifier=qualifier,
             account_id=context.account_id,
             region=context.region,
         )
-        fn = self._get_function(
-            function_name=function_name, account_id=context.account_id, region=context.region
-        )
         tags = self._get_tags(fn)
         additional_fields = {}
         if tags:
             additional_fields["Tags"] = tags
-        # TODO what if no version?
         code_location = None
         if code := version.config.code:
             code_location = FunctionCodeLocation(
@@ -1058,7 +1067,9 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
             )
 
         return GetFunctionResponse(
-            Configuration=api_utils.map_config_out(version, return_qualified_arn=bool(qualifier)),
+            Configuration=api_utils.map_config_out(
+                version, return_qualified_arn=bool(qualifier), alias_name=alias_name
+            ),
             Code=code_location,  # TODO
             **additional_fields
             # Concurrency={},  # TODO
@@ -1382,8 +1393,13 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
                 new_routing_config = self._create_routing_config_model(routing_config_dict)
             changes |= {"routing_configuration": new_routing_config}
         # even if no changes are done, we have to update revision id for some reason
+        old_alias = alias
         alias = dataclasses.replace(alias, **changes)
         function.aliases[name] = alias
+
+        # TODO: signal lambda service that pointer potentially changed
+        self.lambda_service.update_alias(old_alias=old_alias, new_alias=alias, function=function)
+
         return api_utils.map_alias_out(alias=alias, function=function)
 
     # =======================================
@@ -2197,7 +2213,7 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
         fn_count = 0
         code_size_sum = 0
         reserved_concurrency_sum = 0
-        # TODO: fix calculation
+        # TODO: fix calculation (see lambda service get_available_fn_concurrency etc)
         for fn in state.functions.values():
             fn_count += 1
             for fn_version in fn.versions.values():
@@ -2374,6 +2390,7 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
                 "No Provisioned Concurrency Config found for this function", Type="User"
             )
 
+        # TODO: make this compatible with alias pointer migration on update
         if api_utils.qualifier_is_alias(qualifier):
             state = lambda_stores[context.account_id][context.region]
             fn = state.functions.get(function_name)

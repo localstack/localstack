@@ -236,7 +236,9 @@ class LambdaVersionManager(ServiceEndpoint):
         self.log_handler.stop()
         get_runtime_executor().cleanup_version(self.function_version)
 
-    def update_provisioned_concurrency_config(self, provisioned_concurrent_executions: int) -> None:
+    def update_provisioned_concurrency_config(
+        self, provisioned_concurrent_executions: int
+    ) -> Future[None]:
         """
         TODO: implement update while in progress (see test_provisioned_concurrency test)
         TODO: loop until diff == 0 and retry to remove/add diff environments
@@ -303,6 +305,7 @@ class LambdaVersionManager(ServiceEndpoint):
                 self.provisioned_state.status = ProvisionedConcurrencyStatusEnum.READY
 
         self.provisioning_thread = start_thread(scale_environments)
+        return self.provisioning_thread.result_future
 
     def start_environment(self):
         # we should never spawn more execution environments than we can have concurrent invocations
