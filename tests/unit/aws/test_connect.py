@@ -259,8 +259,6 @@ class TestClientFactory:
             aws_secret_access_key="something",
         ).awslambda.list_functions()
 
-        factory().awslambda.request_metadata(service_principal="apigatway").list_functions()
-
         assert test_params == {"is_internal": True, "access_key_id": "AKIAQAAAAAAALX6GRE2E"}
 
     def test_internal_call_from_role(self, create_dummy_request_parameter_gateway):
