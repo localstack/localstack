@@ -232,32 +232,26 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
         for account_id, account_bundle in lambda_stores.items():
             for region_name, state in account_bundle.items():
                 for fn in state.functions.values():
-                    # only start functions that don't have a version manager yet
-                    try:
-                        self.lambda_service.get_lambda_version_manager(
-                            fn.latest().id.qualified_arn()
-                        )
-                    except ValueError:
-                        for fn_version in fn.versions.values():
-                            # restore the "Pending" state for every function version and start it
-                            try:
-                                new_state = VersionState(
-                                    state=State.Pending,
-                                    code=StateReasonCode.Creating,
-                                    reason="The function is being created.",
-                                )
-                                new_config = dataclasses.replace(fn_version.config, state=new_state)
-                                new_version = dataclasses.replace(fn_version, config=new_config)
-                                fn.versions[fn_version.id.qualifier] = new_version
-                                self.lambda_service.create_function_version(fn_version).result(
-                                    timeout=5
-                                )
-                            except Exception:
-                                LOG.warning(
-                                    "Failed to restore function version %s",
-                                    fn_version.id.qualified_arn(),
-                                    exc_info=True,
-                                )
+                    for fn_version in fn.versions.values():
+                        # restore the "Pending" state for every function version and start it
+                        try:
+                            new_state = VersionState(
+                                state=State.Pending,
+                                code=StateReasonCode.Creating,
+                                reason="The function is being created.",
+                            )
+                            new_config = dataclasses.replace(fn_version.config, state=new_state)
+                            new_version = dataclasses.replace(fn_version, config=new_config)
+                            fn.versions[fn_version.id.qualifier] = new_version
+                            self.lambda_service.create_function_version(fn_version).result(
+                                timeout=5
+                            )
+                        except Exception:
+                            LOG.warning(
+                                "Failed to restore function version %s",
+                                fn_version.id.qualified_arn(),
+                                exc_info=True,
+                            )
 
                     # Restore event source listeners
                     for esm in state.event_source_mappings.values():
