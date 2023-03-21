@@ -76,7 +76,7 @@ ALLOWED_CORS_RESPONSE_HEADERS = [
 ]
 
 
-def _get_allowed_cors_internal_domains() -> Set[int]:
+def _get_allowed_cors_internal_domains() -> Set[str]:
     """
     Construct the list of allowed internal domains for CORS enforcement purposes
     Defined as function to allow easier testing with monkeypatch of config values

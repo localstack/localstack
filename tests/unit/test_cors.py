@@ -1,8 +1,6 @@
 from werkzeug.datastructures import Headers
 
 from localstack import config
-
-# from localstack.aws.handlers.cors import _get_allowed_cors_origins, CorsEnforcer
 from localstack.aws.handlers import cors
 
 
@@ -38,9 +36,7 @@ def test_dynamic_allowed_cors_origins_different_ports(monkeypatch):
     # test dynamic allowed origins for default config (edge port 4566)
     monkeypatch.setattr(config, "EDGE_PORT", 4566)
     monkeypatch.setattr(config, "EDGE_PORT_HTTP", 0)
-    # monkeypatch.setattr(config, "EXTRA_CORS_ALLOWED_ORIGINS", f"https://{test_domain}")
     monkeypatch.setattr(cors, "_ALLOWED_INTERNAL_PORTS", cors._get_allowed_cors_ports())
-    # monkeypatch.setattr(cors, "ALLOWED_CORS_ORIGINS", cors._get_allowed_cors_origins())
 
     assert _origin_allowed("http://test.s3-website.localhost.localstack.cloud:4566")
     assert _origin_allowed("http://test.s3-website.localhost.localstack.cloud")
