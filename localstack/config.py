@@ -477,6 +477,9 @@ DISABLE_PREFLIGHT_PROCESSING = is_env_true("DISABLE_PREFLIGHT_PROCESSING")
 DISABLE_EVENTS = is_env_true("DISABLE_EVENTS")
 DEBUG_ANALYTICS = is_env_true("DEBUG_ANALYTICS")
 
+# whether to log fine-grained debugging information for the handler chain
+DEBUG_HANDLER_CHAIN = is_env_true("DEBUG_HANDLER_CHAIN")
+
 # whether to eagerly start services
 EAGER_SERVICE_LOADING = is_env_true("EAGER_SERVICE_LOADING")
 
@@ -785,6 +788,7 @@ CONFIG_ENV_VARS = [
     "CFN_ENABLE_RESOLVE_REFS_IN_MODELS",
     "CUSTOM_SSL_CERT_PATH",
     "DEBUG",
+    "DEBUG_HANDLER_CHAIN",
     "DEFAULT_REGION",
     "DEVELOP",
     "DEVELOP_PORT",

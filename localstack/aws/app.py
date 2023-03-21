@@ -1,6 +1,9 @@
+from localstack import config
 from localstack.aws import handlers
+from localstack.aws.chain import HandlerChain
 from localstack.aws.handlers.metric_handler import MetricHandler
 from localstack.aws.handlers.service_plugin import ServiceLoader
+from localstack.aws.trace import TracingHandlerChain
 from localstack.services.plugins import SERVICE_PLUGINS, ServiceManager, ServicePluginManager
 from localstack.utils.ssl import create_ssl_cert, install_predefined_cert_if_available
 
@@ -70,6 +73,13 @@ class LocalstackAwsGateway(Gateway):
                 metric_collector.update_metric_collection,
             ]
         )
+
+    def new_chain(self) -> HandlerChain:
+        if config.DEBUG_HANDLER_CHAIN:
+            return TracingHandlerChain(
+                self.request_handlers, self.response_handlers, self.exception_handlers
+            )
+        return super().new_chain()
 
 
 def main():
