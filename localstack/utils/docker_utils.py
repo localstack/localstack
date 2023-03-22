@@ -14,6 +14,7 @@ from localstack.utils.container_utils.container_client import (
 )
 from localstack.utils.net import PortNotAvailableException, PortRange
 from localstack.utils.strings import to_str
+from localstack.utils.sync import synchronized
 
 LOG = logging.getLogger(__name__)
 
@@ -228,29 +229,29 @@ def reserve_available_container_port(
     )
 
 
+@synchronized(_State.ports_check_docker_image_lock)
 def _get_ports_check_docker_image() -> str:
     """
     Determine the Docker image to use for Docker port availability checks.
     Uses either PORTS_CHECK_DOCKER_IMAGE (if configured), or otherwise inspects the running container's image.
     """
-    with _State.ports_check_docker_image_lock:
-        if not _State.ports_check_docker_image:
-            if config.PORTS_CHECK_DOCKER_IMAGE:
-                # explicit configuration takes precedence
-                _docker_image = config.PORTS_CHECK_DOCKER_IMAGE
-            elif not config.is_in_docker:
-                # use default image for host mode
+    if not _State.ports_check_docker_image:
+        if config.PORTS_CHECK_DOCKER_IMAGE:
+            # explicit configuration takes precedence
+            _docker_image = config.PORTS_CHECK_DOCKER_IMAGE
+        elif not config.is_in_docker:
+            # use default image for host mode
+            _docker_image = DOCKER_IMAGE_NAME
+        else:
+            try:
+                # inspect the running container to determine the image
+                container = DOCKER_CLIENT.inspect_container(get_current_container_id())
+                _docker_image = container["Config"]["Image"]
+            except Exception:
+                # fall back to using the default Docker image
                 _docker_image = DOCKER_IMAGE_NAME
-            else:
-                try:
-                    # inspect the running container to determine the image
-                    container = DOCKER_CLIENT.inspect_container(get_current_container_id())
-                    _docker_image = container["Config"]["Image"]
-                except Exception:
-                    # fall back to using the default Docker image
-                    _docker_image = DOCKER_IMAGE_NAME
-            _State.ports_check_docker_image = _docker_image
-        return _State.ports_check_docker_image
+        _State.ports_check_docker_image = _docker_image
+    return _State.ports_check_docker_image
 
 
 DOCKER_CLIENT: ContainerClient = create_docker_client()
