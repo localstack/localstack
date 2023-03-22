@@ -9906,7 +9906,7 @@
     }
   },
   "tests/integration/awslambda/test_lambda_api.py::TestLambdaEventInvokeConfig::test_lambda_eventinvokeconfig_lifecycle": {
-    "recorded-date": "17-02-2023, 11:39:34",
+    "recorded-date": "22-03-2023, 18:49:13",
     "recorded-content": {
       "put_invokeconfig_retries_0": {
         "DestinationConfig": {
@@ -10061,6 +10061,19 @@
         }
       },
       "put_published_invokeconfig": {
+        "DestinationConfig": {
+          "OnFailure": {},
+          "OnSuccess": {}
+        },
+        "FunctionArn": "arn:aws:lambda:<region>:111111111111:function:<function-name:1>:1",
+        "LastModified": "datetime",
+        "MaximumEventAgeInSeconds": 120,
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "get_published_invokeconfig": {
         "DestinationConfig": {
           "OnFailure": {},
           "OnSuccess": {}

@@ -7,7 +7,7 @@ import pytest
 
 from localstack import config
 from localstack.aws.api.lambda_ import Runtime
-from localstack.testing.aws.lambda_utils import is_new_provider, is_old_provider
+from localstack.testing.aws.lambda_utils import is_old_provider
 from localstack.testing.aws.util import is_aws_cloud
 from localstack.utils.strings import short_uid, to_bytes, to_str
 from localstack.utils.sync import retry, wait_until
@@ -104,12 +104,6 @@ class TestLambdaDestinationSqs:
             "$..stackTrace",
         ],
     )
-    @pytest.mark.skip_snapshot_verify(
-        condition=is_new_provider,
-        paths=[
-            "$..approximateInvokeCount",  # TODO: retry support
-        ],
-    )
     @pytest.mark.parametrize(
         "payload",
         [
@@ -142,12 +136,12 @@ class TestLambdaDestinationSqs:
         create_lambda_function(
             handler_file=TEST_LAMBDA_PYTHON,
             func_name=lambda_name,
-            libs=TEST_LAMBDA_LIBS,
             role=lambda_su_role,
         )
 
         put_event_invoke_config_response = lambda_client.put_function_event_invoke_config(
             FunctionName=lambda_name,
+            MaximumRetryAttempts=0,
             DestinationConfig={
                 "OnSuccess": {"Destination": queue_arn},
                 "OnFailure": {"Destination": queue_arn},
@@ -162,10 +156,70 @@ class TestLambdaDestinationSqs:
         )
 
         def receive_message():
-            rs = sqs_client.receive_message(QueueUrl=queue_url, MessageAttributeNames=["All"])
+            rs = sqs_client.receive_message(
+                QueueUrl=queue_url, WaitTimeSeconds=2, MessageAttributeNames=["All"]
+            )
             assert len(rs["Messages"]) > 0
             return rs
 
+        receive_message_result = retry(receive_message, retries=120, sleep=1)
+        snapshot.match("receive_message_result", receive_message_result)
+
+    @pytest.mark.skipif(
+        condition=is_old_provider(), reason="config variable only supported in new provider"
+    )
+    def test_lambda_destination_default_retries(
+        self,
+        lambda_client,
+        sqs_client,
+        create_lambda_function,
+        sqs_create_queue,
+        sqs_queue_arn,
+        lambda_su_role,
+        snapshot,
+        monkeypatch,
+    ):
+        snapshot.add_transformer(snapshot.transform.lambda_api())
+        snapshot.add_transformer(snapshot.transform.sqs_api())
+        snapshot.add_transformer(snapshot.transform.key_value("MD5OfBody"))
+
+        if not is_aws_cloud():
+            monkeypatch.setattr(config, "LAMBDA_RETRY_BASE_DELAY_SECONDS", 5)
+
+        # create DLQ and Lambda function
+        queue_name = f"test-{short_uid()}"
+        lambda_name = f"test-{short_uid()}"
+        queue_url = sqs_create_queue(QueueName=queue_name)
+        queue_arn = sqs_queue_arn(queue_url)
+        create_lambda_function(
+            handler_file=TEST_LAMBDA_PYTHON,
+            func_name=lambda_name,
+            role=lambda_su_role,
+        )
+
+        put_event_invoke_config_response = lambda_client.put_function_event_invoke_config(
+            FunctionName=lambda_name,
+            DestinationConfig={
+                "OnSuccess": {"Destination": queue_arn},
+                "OnFailure": {"Destination": queue_arn},
+            },
+        )
+        snapshot.match("put_function_event_invoke_config", put_event_invoke_config_response)
+
+        lambda_client.invoke(
+            FunctionName=lambda_name,
+            Payload=json.dumps({lambda_integration.MSG_BODY_RAISE_ERROR_FLAG: 1}),
+            InvocationType="Event",
+        )
+
+        def receive_message():
+            rs = sqs_client.receive_message(
+                QueueUrl=queue_url, WaitTimeSeconds=2, MessageAttributeNames=["All"]
+            )
+            assert len(rs["Messages"]) > 0
+            return rs
+
+        # this will take at least 3 minutes on AWS
         receive_message_result = retry(receive_message, retries=120, sleep=3)
         snapshot.match("receive_message_result", receive_message_result)
 

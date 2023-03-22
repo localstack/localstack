@@ -1764,6 +1764,11 @@ class TestLambdaEventInvokeConfig:
         )
         snapshot.match("put_published_invokeconfig", put_published_invokeconfig)
 
+        get_published_invokeconfig = lambda_client.get_function_event_invoke_config(
+            FunctionName=function_name, Qualifier=publish_version_result["Version"]
+        )
+        snapshot.match("get_published_invokeconfig", get_published_invokeconfig)
+
         # list paging
         list_paging_single = lambda_client.list_function_event_invoke_configs(
             FunctionName=function_name, MaxItems=1
