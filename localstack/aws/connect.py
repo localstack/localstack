@@ -104,7 +104,7 @@ class MetadataRequestInjector(Generic[T]):
         Provides request metadata to this client.
         Identical to providing _ServicePrincipal and _SourceArn directly as operation arguments but typing
         compatible.
-        
+
         Raw example: lambda_client.invoke(FunctionName="fn", _SourceArn="...")
         Injector example: lambda_client.request_metadata(source_arn="...").invoke(FunctionName="fn")
         Cannot be called on objects where the parameters are already set.
