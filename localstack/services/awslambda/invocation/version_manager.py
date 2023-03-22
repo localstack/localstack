@@ -576,6 +576,8 @@ class LambdaVersionManager(ServiceEndpoint):
             )
 
             max_retry_attempts = event_invoke_config.maximum_retry_attempts
+            if max_retry_attempts is None:
+                max_retry_attempts = 2  # default
             previous_retry_attempts = queued_invocation.retries
 
             if self.function.reserved_concurrent_executions == 0:
