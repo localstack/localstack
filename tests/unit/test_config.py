@@ -1,5 +1,4 @@
 import os
-import sys
 from contextlib import contextmanager
 from typing import Any, Dict
 
@@ -140,21 +139,6 @@ class TestEdgeVariablesDerivedCorrectly:
     tests run after these ones to import the wrong config. Instead, we test the
     function that populates the configuration variables.
     """
-
-    @pytest.fixture
-    def configure_environment(self, monkeypatch):
-        def inner(**envars):
-            import importlib
-
-            for name, value in envars.items():
-                monkeypatch.setenv(name, value)
-
-            del sys.modules["localstack.config"]
-            cfg = importlib.import_module("localstack.config")
-
-            return cfg
-
-        return inner
 
     @pytest.fixture
     def default_ip(self):
