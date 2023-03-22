@@ -9,7 +9,7 @@ fi
 
 # the Dockerfile creates .pro-version file for the pro image and .bigdata-pro-version for the bigdata image.
 # When trying to activate pro features with any other version, a warning is printed.
-if [[ $LOCALSTACK_API_KEY ]] && [[ ! -f /usr/lib/localstack/.*pro-version ]]; then
+if [[ $LOCALSTACK_API_KEY ]] && ! compgen -G /usr/lib/localstack/.*pro-version >/dev/null; then
     echo "WARNING"
     echo "============================================================================"
     echo "  It seems you are trying to use the LocalStack Pro version without using "
