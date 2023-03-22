@@ -212,7 +212,7 @@ class RequestTemplates(Templates):
             return api_context.data_as_string()
 
         variables = self.build_variables_mapping(api_context)
-        result = self.render_vtl(template, variables=variables)
+        result = self.render_vtl(template.strip(), variables=variables)
         LOG.info(f"Endpoint request body after transformations:\n{result}")
         return result
 

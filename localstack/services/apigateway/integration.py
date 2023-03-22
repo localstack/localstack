@@ -401,12 +401,19 @@ class KinesisIntegration(BackendIntegration):
             target = ""
 
         try:
+            # xXx this "event" request context is used in multiple places, we probably
+            # want to refactor this into a model class
             invocation_context.context = helpers.get_event_request_context(invocation_context)
             invocation_context.stage_variables = helpers.get_stage_variables(invocation_context)
 
-            # TODO: add support for websocket request template expressions
-            # for now we just the default key ("default")
-            payload = self.request_templates.render(invocation_context, "default")
+            # integration type "AWS" is only supported for WebSocket APIs. The
+            # integration can be anything, it just means it's called by a websocket
+            # connection.
+            if integration_type == "AWS":
+                template_key = (
+                    invocation_context.integration.get("TemplateSelectionExpression") or None
+                )
+            payload = self.request_templates.render(invocation_context, template_key)
 
         except Exception as e:
             LOG.warning("Unable to convert API Gateway payload to str", e)
