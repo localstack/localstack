@@ -454,13 +454,8 @@ def populate_legacy_edge_configuration(
         port = int(localstack_host.split(":")[-1])
         edge_bind = f"{default_ip}:{port}"
     else:
-        if "," in edge_bind:
-            components = edge_bind.split(",")
-            edge_bind = ",".join([parse_edge_bind(component.strip()) for component in components])
-        else:
-            # if the user specifies a port
-            # e.g. ":4566" should become "<default_ip>:4566"
-            edge_bind = parse_edge_bind(edge_bind)
+        components = edge_bind.split(",")
+        edge_bind = ",".join([parse_edge_bind(component.strip()) for component in components])
 
     assert edge_bind is not None
     assert localstack_host is not None
