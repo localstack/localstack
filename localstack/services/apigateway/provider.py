@@ -1029,9 +1029,7 @@ class ApigatewayProvider(ApigatewayApi, ServiceLifecycleHook):
         )
 
         if validator is None:
-            raise NotFoundException(
-                f"Validator {request_validator_id} for API Gateway {rest_api_id} not found"
-            )
+            raise NotFoundException("Invalid Request Validator identifier specified")
 
         result = to_validator_response_json(rest_api_id, validator)
         return result
@@ -1054,8 +1052,8 @@ class ApigatewayProvider(ApigatewayApi, ServiceLifecycleHook):
         validator = RequestValidator(
             id=validator_id,
             name=name,
-            validateRequestBody=validate_request_body,
-            validateRequestParameters=validate_request_parameters,
+            validateRequestBody=validate_request_body or False,
+            validateRequestParameters=validate_request_parameters or False,
         )
 
         rest_api_container.validators[validator_id] = validator
@@ -1083,11 +1081,33 @@ class ApigatewayProvider(ApigatewayApi, ServiceLifecycleHook):
                 f"Validator {request_validator_id} for API Gateway {rest_api_id} not found"
             )
 
-        patched_validator = apply_json_patch_safe(validator, patch_operations)
-        rest_api_container.validators[request_validator_id] = patched_validator
+        for patch_operation in patch_operations:
+            path = patch_operation.get("path")
+            operation = patch_operation.get("op")
+            if operation != "replace":
+                raise BadRequestException(
+                    f"Invalid patch path  '{path}' specified for op '{operation}'. "
+                    f"Please choose supported operations"
+                )
+            if path not in ("/name", "/validateRequestBody", "/validateRequestParameters"):
+                raise BadRequestException(
+                    f"Invalid patch path  '{path}' specified for op 'replace'. "
+                    f"Must be one of: [/name, /validateRequestParameters, /validateRequestBody]"
+                )
 
-        result = to_validator_response_json(rest_api_id, patched_validator)
-        return result
+            key = path[1:]
+            value = patch_operation.get("value")
+            if key == "name" and not value:
+                raise BadRequestException("Request Validator name cannot be blank")
+
+            elif key in ("validateRequestParameters", "validateRequestBody"):
+                value = value and value.lower() == "true" or False
+
+            rest_api_container.validators[request_validator_id][key] = value
+
+        return to_validator_response_json(
+            rest_api_id, rest_api_container.validators[request_validator_id]
+        )
 
     def delete_request_validator(
         self, context: RequestContext, rest_api_id: String, request_validator_id: String
@@ -1096,13 +1116,11 @@ class ApigatewayProvider(ApigatewayApi, ServiceLifecycleHook):
         store = get_apigateway_store(account_id=context.account_id, region=context.region)
         rest_api_container = store.rest_apis.get(rest_api_id)
         if not rest_api_container:
-            return
+            raise NotFoundException("Invalid Request Validator identifier specified")
 
         validator = rest_api_container.validators.pop(request_validator_id, None)
         if not validator:
-            raise NotFoundException(
-                f"Validator {request_validator_id} for API Gateway {rest_api_id} not found"
-            )
+            raise NotFoundException("Invalid Request Validator identifier specified")
 
     # tags
 

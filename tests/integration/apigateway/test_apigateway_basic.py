@@ -1016,40 +1016,6 @@ class TestAPIGateway:
         lambda_client = aws_stack.create_external_boto_client("lambda")
         lambda_client.delete_function(FunctionName=lambda_name)
 
-    def test_request_validator(self, apigateway_client, create_rest_apigw):
-        rest_api_id, _, _ = create_rest_apigw(name="my_api", description="this is my api")
-        # CREATE
-        name = "validator123"
-        result = apigateway_client.create_request_validator(restApiId=rest_api_id, name=name)
-        assert 201 == result["ResponseMetadata"]["HTTPStatusCode"]
-        validator_id = result["id"]
-        # LIST
-        result = apigateway_client.get_request_validators(restApiId=rest_api_id)
-        assert 200 == result["ResponseMetadata"]["HTTPStatusCode"]
-        assert [{"id": validator_id, "name": name}] == result["items"]
-        # GET
-        result = apigateway_client.get_request_validator(
-            restApiId=rest_api_id, requestValidatorId=validator_id
-        )
-        assert 200 == result["ResponseMetadata"]["HTTPStatusCode"]
-        assert select_attributes(result, ["id", "name"]) == {"id": validator_id, "name": name}
-        # UPDATE
-        result = apigateway_client.update_request_validator(
-            restApiId=rest_api_id, requestValidatorId=validator_id, patchOperations=[]
-        )
-        # DELETE
-        apigateway_client.delete_request_validator(
-            restApiId=rest_api_id, requestValidatorId=validator_id
-        )
-        with pytest.raises(Exception):
-            apigateway_client.get_request_validator(
-                restApiId=rest_api_id, requestValidatorId=validator_id
-            )
-        with pytest.raises(Exception):
-            apigateway_client.delete_request_validator(
-                restApiId=rest_api_id, requestValidatorId=validator_id
-            )
-
     def test_base_path_mapping(self, apigateway_client, create_rest_apigw):
         rest_api_id, _, _ = create_rest_apigw(name="my_api", description="this is my api")
 
