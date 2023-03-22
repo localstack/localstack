@@ -17,7 +17,7 @@ if [[ $LOCALSTACK_API_KEY ]] && ! compgen -G /usr/lib/localstack/.*pro-version >
     echo "  LocalStack will only start with community services enabled."
     echo "  To fix this warning, use localstack/localstack-pro instead."
     echo ""
-    echo "  See: https://github.com/localstack/localstack/issues/7257"
+    echo "  See: https://github.com/localstack/localstack/issues/7882"
     echo "============================================================================"
     echo ""
 elif [[ -f /usr/lib/localstack/.light-version ]] || [[ -f /usr/lib/localstack/.full-version ]]; then
