@@ -7,19 +7,17 @@ then
   EDGE_PORT=4566
 fi
 
-# FIXME: remove with 2.0
-# the Dockerfile creates .pro-version file for the pro image. When trying to activate pro features with any other
-# version, an error is printed.
-if [[ $LOCALSTACK_API_KEY ]] && [[ ! -f /usr/lib/localstack/.pro-version ]]; then
+# the Dockerfile creates .pro-version file for the pro image and .bigdata-pro-version for the bigdata image.
+# When trying to activate pro features with any other version, a warning is printed.
+if [[ $LOCALSTACK_API_KEY ]] && ! compgen -G /usr/lib/localstack/.*pro-version >/dev/null; then
     echo "WARNING"
     echo "============================================================================"
-    echo "  It seems you are using the LocalStack Pro version without using the"
-    echo "  dedicated Pro image."
-    echo "  Future versions will only support running LocalStack Pro with the"
-    echo "  dedicated image."
+    echo "  It seems you are trying to use the LocalStack Pro version without using "
+    echo "  the dedicated Pro image."
+    echo "  LocalStack will only start with community services enabled."
     echo "  To fix this warning, use localstack/localstack-pro instead."
     echo ""
-    echo "  See: https://github.com/localstack/localstack/issues/7257"
+    echo "  See: https://github.com/localstack/localstack/issues/7882"
     echo "============================================================================"
     echo ""
 elif [[ -f /usr/lib/localstack/.light-version ]] || [[ -f /usr/lib/localstack/.full-version ]]; then
