@@ -1532,7 +1532,7 @@ class TestApiGatewayApi:
 
 class TestApiGatewayApiRequestValidator:
     @pytest.mark.aws_validated
-    def test_create_request_validator(self, apigateway_client, apigw_create_rest_api, snapshot):
+    def test_request_validator_lifecycle(self, apigateway_client, apigw_create_rest_api, snapshot):
         response = apigw_create_rest_api(
             name=f"test-api-{short_uid()}",
             description="my api",
@@ -1540,30 +1540,61 @@ class TestApiGatewayApiRequestValidator:
         snapshot.match("create-rest-api", response)
         api_id = response["id"]
 
-        response = apigateway_client.create_request_validator(
-            restApiId=api_id, name=f"test-validator-{short_uid()}"
-        )
-        snapshot.match("create-request-validator", response)
-
-    @pytest.mark.aws_validated
-    def test_get_request_validator(self, apigateway_client, apigw_create_rest_api, snapshot):
-        response = apigw_create_rest_api(
-            name=f"test-api-{short_uid()}",
-            description="my api",
-        )
-        snapshot.match("create-rest-api", response)
-        api_id = response["id"]
-
+        # create a request validator for an API
         response = apigateway_client.create_request_validator(
             restApiId=api_id, name=f"test-validator-{short_uid()}"
         )
         snapshot.match("create-request-validator", response)
         validator_id = response["id"]
 
+        # get detail of a specific request validator corresponding to an API
         response = apigateway_client.get_request_validator(
             restApiId=api_id, requestValidatorId=validator_id
         )
+        snapshot.match("get-request-validator", response)
+
+        # get list of all request validators in the API
+        response = apigateway_client.get_request_validators(restApiId=api_id)
         snapshot.match("get-request-validators", response)
+
+        # update request validators with different set of patch operations
+        patch_operations = [
+            {"op": "replace", "path": "/validateRequestBody", "value": "true"},
+        ]
+        response = apigateway_client.update_request_validator(
+            restApiId=api_id, requestValidatorId=validator_id, patchOperations=patch_operations
+        )
+        snapshot.match("update-request-validator-with-value", response)
+
+        patch_operations = [
+            {"op": "replace", "path": "/validateRequestBody"},
+        ]
+        response = apigateway_client.update_request_validator(
+            restApiId=api_id, requestValidatorId=validator_id, patchOperations=patch_operations
+        )
+        snapshot.match("update-request-validator-without-value", response)
+
+        response = apigateway_client.get_request_validator(
+            restApiId=api_id, requestValidatorId=validator_id
+        )
+        snapshot.match("get-request-validators-after-update-operation", response)
+
+        # delete request validator
+        response = apigateway_client.delete_request_validator(
+            restApiId=api_id, requestValidatorId=validator_id
+        )
+        snapshot.match("delete-request-validator", response)
+
+        # try fetching details of the deleted request validator
+        with pytest.raises(ClientError) as e:
+            apigateway_client.get_request_validator(
+                restApiId=api_id, requestValidatorId=validator_id
+            )
+        snapshot.match("get-deleted-request-validator", e.value.response)
+
+        # check list of all request validators in the API
+        response = apigateway_client.get_request_validators(restApiId=api_id)
+        snapshot.match("get-request-validators-after-delete", response)
 
     @pytest.mark.aws_validated
     def test_invalid_get_request_validator(
@@ -1593,55 +1624,12 @@ class TestApiGatewayApiRequestValidator:
         snapshot.match("get-request-validators-invalid-validator-id", e.value.response)
 
     @pytest.mark.aws_validated
-    def test_get_request_validators(self, apigateway_client, apigw_create_rest_api, snapshot):
-        response = apigw_create_rest_api(
-            name=f"test-api-{short_uid()}",
-            description="my api",
-        )
-        snapshot.match("create-rest-api", response)
-        api_id = response["id"]
-
-        response = apigateway_client.create_request_validator(
-            restApiId=api_id, name=f"test-validator-{short_uid()}"
-        )
-        snapshot.match("create-request-validator", response)
-
-        response = apigateway_client.get_request_validators(restApiId=api_id)
-        snapshot.match("get-request-validators", response)
-
-    @pytest.mark.aws_validated
     def test_invalid_get_request_validators(
         self, apigateway_client, apigw_create_rest_api, snapshot
     ):
         with pytest.raises(ClientError) as e:
             apigateway_client.get_request_validators(restApiId="api_id")
         snapshot.match("get-invalid-request-validators", e.value.response)
-
-    @pytest.mark.aws_validated
-    def test_delete_request_validator(self, apigateway_client, apigw_create_rest_api, snapshot):
-        response = apigw_create_rest_api(
-            name=f"test-api-{short_uid()}",
-            description="my api",
-        )
-        snapshot.match("create-rest-api", response)
-        api_id = response["id"]
-
-        response = apigateway_client.create_request_validator(
-            restApiId=api_id, name=f"test-validator-{short_uid()}"
-        )
-        snapshot.match("create-request-validator", response)
-        validator_id = response["id"]
-
-        response = apigateway_client.get_request_validators(restApiId=api_id)
-        snapshot.match("get-request-validators-before-delete", response)
-
-        response = apigateway_client.delete_request_validator(
-            restApiId=api_id, requestValidatorId=validator_id
-        )
-        snapshot.match("delete-request-validator", response)
-
-        response = apigateway_client.get_request_validators(restApiId=api_id)
-        snapshot.match("get-request-validators-after-delete", response)
 
     @pytest.mark.aws_validated
     def test_invalid_delete_request_validator(
@@ -1669,39 +1657,6 @@ class TestApiGatewayApiRequestValidator:
                 restApiId=api_id, requestValidatorId="validator_id"
             )
         snapshot.match("delete-request-validator-invalid-validator-id", e.value.response)
-
-    @pytest.mark.aws_validated
-    def test_update_request_validator(self, apigateway_client, apigw_create_rest_api, snapshot):
-        response = apigw_create_rest_api(
-            name=f"test-api-{short_uid()}",
-            description="my api",
-        )
-        snapshot.match("create-rest-api", response)
-        api_id = response["id"]
-
-        response = apigateway_client.create_request_validator(
-            restApiId=api_id, name=f"test-validator-{short_uid()}"
-        )
-        snapshot.match("create-request-validator", response)
-        validator_id = response["id"]
-
-        response = apigateway_client.get_request_validator(
-            restApiId=api_id, requestValidatorId=validator_id
-        )
-        snapshot.match("get-request-validators-before-update", response)
-
-        patch_operations = [
-            {"op": "replace", "path": "/validateRequestBody", "value": "true"},
-        ]
-        response = apigateway_client.update_request_validator(
-            restApiId=api_id, requestValidatorId=validator_id, patchOperations=patch_operations
-        )
-        snapshot.match("update-request-validator", response)
-
-        response = apigateway_client.get_request_validator(
-            restApiId=api_id, requestValidatorId=validator_id
-        )
-        snapshot.match("get-request-validators-after-update", response)
 
     @pytest.mark.aws_validated
     def test_create_request_validator_invalid_api_id(

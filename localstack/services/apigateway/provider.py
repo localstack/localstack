@@ -1081,12 +1081,12 @@ class ApigatewayProvider(ApigatewayApi, ServiceLifecycleHook):
                 f"Validator {request_validator_id} for API Gateway {rest_api_id} not found"
             )
 
-        for operation in patch_operations:
-            path = operation.get("path")
-            operation_performed = operation.get("op")
-            if operation_performed != "replace":
+        for patch_operation in patch_operations:
+            path = patch_operation.get("path")
+            operation = patch_operation.get("op")
+            if operation != "replace":
                 raise BadRequestException(
-                    f"Invalid patch path  '{path}' specified for op '{operation_performed}'. "
+                    f"Invalid patch path  '{path}' specified for op '{operation}'. "
                     f"Please choose supported operations"
                 )
             if path not in ("/name", "/validateRequestBody", "/validateRequestParameters"):
@@ -1096,15 +1096,12 @@ class ApigatewayProvider(ApigatewayApi, ServiceLifecycleHook):
                 )
 
             key = path[1:]
-            value = operation.get("value")
+            value = patch_operation.get("value")
             if key == "name" and not value:
                 raise BadRequestException("Request Validator name cannot be blank")
 
-            if key in ["validateRequestParameters", "validateRequestBody"]:
-                if value.lower() == "true":
-                    value = True
-                else:
-                    value = False
+            elif key in ("validateRequestParameters", "validateRequestBody"):
+                value = value and value.lower() == "true" or False
 
             rest_api_container.validators[request_validator_id][key] = value
 
