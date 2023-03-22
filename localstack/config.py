@@ -7,7 +7,7 @@ import subprocess
 import tempfile
 import time
 from dataclasses import dataclass
-from typing import Any, Dict, List, Mapping, Optional, Tuple
+from typing import Any, Dict, List, Mapping, Tuple, TypeVar
 
 from localstack import constants
 from localstack.constants import (
@@ -28,6 +28,8 @@ from localstack.constants import (
     TRACE_LOG_LEVELS,
     TRUE_STRINGS,
 )
+
+T = TypeVar("T", str, int)
 
 # keep track of start time, for performance debugging
 load_start_time = time.time()
@@ -415,23 +417,17 @@ HOSTNAME_EXTERNAL = os.environ.get("HOSTNAME_EXTERNAL", "").strip() or LOCALHOST
 # DEPRECATED: if the user sets this since v2.0.0 as we are moving to LOCALSTACK_HOST
 LOCALSTACK_HOSTNAME = os.environ.get("LOCALSTACK_HOSTNAME", "").strip() or LOCALHOST
 
-# How to access LocalStack
-# raw variables (straight from the user)
-# -- Cosmetic
-LOCALSTACK_HOST_RAW: Optional[str] = os.environ.get("LOCALSTACK_HOST")
-# -- Edge configuration
-# Main configuration of the listen address of the hypercorn proxy. Of the form
-# <ip_address>:<port>(,<ip_address>:port>)*
-EDGE_BIND_RAW: Optional[str] = os.environ.get("EDGE_BIND")
-
 
 def populate_legacy_edge_configuration(
-    localstack_host_raw: Optional[str], edge_bind_raw: Optional[str]
+    environment: Dict[str, str]
 ) -> Tuple[str, str, str, int, int]:
     if is_in_docker:
         default_ip = "0.0.0.0"
     else:
         default_ip = "127.0.0.1"
+
+    localstack_host_raw = environment.get("LOCALSTACK_HOST")
+    edge_bind_raw = environment.get("EDGE_BIND")
 
     # new for v2
     # populate LOCALSTACK_HOST first since EDGE_BIND may be derived from LOCALSTACK_HOST
@@ -469,10 +465,19 @@ def populate_legacy_edge_configuration(
     assert edge_bind is not None
     assert localstack_host is not None
 
-    # derive legacy variables from EDGE_BIND
-    edge_bind_host = get_edge_bind(edge_bind)[0].host
-    edge_port = get_edge_bind(edge_bind)[0].port
-    edge_port_http = edge_port
+    def legacy_fallback(envar_name: str, default: T) -> T:
+        result = default
+        result_raw = environment.get(envar_name)
+        if result_raw is not None and edge_bind_raw is None:
+            result = result_raw
+
+        return result
+
+    # derive legacy variables from EDGE_BIND unless EDGE_BIND is not given and
+    # legacy variables are
+    edge_bind_host = legacy_fallback("EDGE_BIND_HOST", get_edge_bind(edge_bind)[0].host)
+    edge_port = int(legacy_fallback("EDGE_PORT", get_edge_bind(edge_bind)[0].port))
+    edge_port_http = int(legacy_fallback("EDGE_PORT_HTTP", get_edge_bind(edge_bind)[0].port))
 
     return localstack_host, edge_bind, edge_bind_host, edge_port, edge_port_http
 
@@ -501,16 +506,19 @@ def get_edge_bind(edge_bind: str) -> List[HostAndPort]:
     return result
 
 
+# How to access LocalStack
 (
+    # -- Cosmetic
     LOCALSTACK_HOST,
+    # -- Edge configuration
+    # Main configuration of the listen address of the hypercorn proxy. Of the form
+    # <ip_address>:<port>(,<ip_address>:port>)*
     EDGE_BIND,
+    # -- Legacy variables
     EDGE_BIND_HOST,
     EDGE_PORT,
     EDGE_PORT_HTTP,
-) = populate_legacy_edge_configuration(
-    LOCALSTACK_HOST_RAW,
-    EDGE_BIND_RAW,
-)
+) = populate_legacy_edge_configuration(os.environ)
 
 
 # optional target URL to forward all edge requests to
