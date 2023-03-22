@@ -2,10 +2,11 @@ import functools
 import logging
 import platform
 import random
+import threading
 from typing import List, Optional
 
 from localstack import config
-from localstack.constants import DEFAULT_VOLUME_DIR
+from localstack.constants import DEFAULT_VOLUME_DIR, DOCKER_IMAGE_NAME
 from localstack.utils.container_utils.container_client import (
     ContainerClient,
     PortMappings,
@@ -22,6 +23,15 @@ PORT_START = 0
 PORT_END = 65536
 RANDOM_PORT_START = 1024
 RANDOM_PORT_END = 65536
+
+
+class _State:
+    """simple container to encapsulate the runtime state (lazily loaded)"""
+
+    # name of the Docker image to use for ports checks
+    ports_check_docker_image: Optional[str] = None
+    # lock used to determine the ports check Docker image
+    ports_check_docker_image_lock: threading.RLock = threading.RLock()
 
 
 def is_docker_sdk_installed() -> bool:
@@ -136,7 +146,7 @@ def container_port_can_be_bound(port: int) -> bool:
     ports.add(port, port)
     try:
         result = DOCKER_CLIENT.run_container(
-            config.PORTS_CHECK_DOCKER_IMAGE,
+            _get_ports_check_docker_image(),
             entrypoint="",
             command=["echo", "test123"],
             ports=ports,
@@ -216,6 +226,31 @@ def reserve_available_container_port(
     raise PortNotAvailableException(
         f"Unable to determine available Docker container port after {retries} retries"
     )
+
+
+def _get_ports_check_docker_image() -> str:
+    """
+    Determine the Docker image to use for Docker port availability checks.
+    Uses either PORTS_CHECK_DOCKER_IMAGE (if configured), or otherwise inspects the running container's image.
+    """
+    with _State.ports_check_docker_image_lock:
+        if not _State.ports_check_docker_image:
+            if config.PORTS_CHECK_DOCKER_IMAGE:
+                # explicit configuration takes precedence
+                _docker_image = config.PORTS_CHECK_DOCKER_IMAGE
+            elif not config.is_in_docker:
+                # use default image for host mode
+                _docker_image = DOCKER_IMAGE_NAME
+            else:
+                try:
+                    # inspect the running container to determine the image
+                    container = DOCKER_CLIENT.inspect_container(get_current_container_id())
+                    _docker_image = container["Config"]["Image"]
+                except Exception:
+                    # fall back to using the default Docker image
+                    _docker_image = DOCKER_IMAGE_NAME
+            _State.ports_check_docker_image = _docker_image
+        return _State.ports_check_docker_image
 
 
 DOCKER_CLIENT: ContainerClient = create_docker_client()
