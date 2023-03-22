@@ -501,6 +501,9 @@ EDGE_BIND_HOST = edge_bind()[0].host
 EDGE_PORT = edge_bind()[0].port
 EDGE_PORT_HTTP = EDGE_PORT
 
+# optional target URL to forward all edge requests to
+EDGE_FORWARD_URL = os.environ.get("EDGE_FORWARD_URL", "").strip()
+
 # IP of the docker bridge used to enable access between containers
 DOCKER_BRIDGE_IP = os.environ.get("DOCKER_BRIDGE_IP", "").strip()
 
