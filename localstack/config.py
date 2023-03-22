@@ -416,17 +416,18 @@ HOSTNAME_EXTERNAL = os.environ.get("HOSTNAME_EXTERNAL", "").strip() or LOCALHOST
 LOCALSTACK_HOSTNAME = os.environ.get("LOCALSTACK_HOSTNAME", "").strip() or LOCALHOST
 
 # How to access LocalStack
+# raw variables (straight from the user)
 # -- Cosmetic
-LOCALSTACK_HOST: Optional[str] = os.environ.get("LOCALSTACK_HOST")
+LOCALSTACK_HOST_RAW: Optional[str] = os.environ.get("LOCALSTACK_HOST")
 # -- Edge configuration
 # Main configuration of the listen address of the hypercorn proxy. Of the form
 # <ip_address>:<port>(,<ip_address>:port>)*
-EDGE_BIND: Optional[str] = os.environ.get("EDGE_BIND")
+EDGE_BIND_RAW: Optional[str] = os.environ.get("EDGE_BIND")
 
 
-def populate_legacy_edge_configuration():
-    global LOCALSTACK_HOST, EDGE_BIND
-
+def populate_legacy_edge_configuration(
+    localstack_host_raw: Optional[str], edge_bind_raw: Optional[str]
+) -> Tuple[str, str, str, int, int]:
     if is_in_docker:
         default_ip = "0.0.0.0"
     else:
@@ -434,9 +435,10 @@ def populate_legacy_edge_configuration():
 
     # new for v2
     # populate LOCALSTACK_HOST first since EDGE_BIND may be derived from LOCALSTACK_HOST
-    if LOCALSTACK_HOST is None:
-        LOCALSTACK_HOST = f"{default_ip}:4566"
-        LOCALSTACK_HOST = f"{constants.LOCALHOST_HOSTNAME}:{constants.DEFAULT_PORT_EDGE}"
+    localstack_host = localstack_host_raw
+    if localstack_host is None:
+        localstack_host = f"{default_ip}:4566"
+        localstack_host = f"{constants.LOCALHOST_HOSTNAME}:{constants.DEFAULT_PORT_EDGE}"
 
     def parse_edge_bind(value: str) -> str:
         if ":" in value:
@@ -450,24 +452,29 @@ def populate_legacy_edge_configuration():
         else:
             return f"{value}:4566"
 
-    if EDGE_BIND is None:
+    edge_bind = edge_bind_raw
+    if edge_bind is None:
         # default to existing behaviour
-        port = int(LOCALSTACK_HOST.split(":")[-1])
-        EDGE_BIND = f"{default_ip}:{port}"
+        port = int(localstack_host.split(":")[-1])
+        edge_bind = f"{default_ip}:{port}"
     else:
-        if "," in EDGE_BIND:
-            components = EDGE_BIND.split(",")
-            return [parse_edge_bind(component) for component in components]
+        if "," in edge_bind:
+            components = edge_bind.split(",")
+            edge_bind = ",".join([parse_edge_bind(component.strip()) for component in components])
         else:
             # if the user specifies a port
             # e.g. ":4566" should become "<default_ip>:4566"
-            EDGE_BIND = parse_edge_bind(EDGE_BIND)
+            edge_bind = parse_edge_bind(edge_bind)
 
-    assert EDGE_BIND is not None
-    assert LOCALSTACK_HOST is not None
+    assert edge_bind is not None
+    assert localstack_host is not None
 
+    # derive legacy variables from EDGE_BIND
+    edge_bind_host = get_edge_bind(edge_bind)[0].host
+    edge_port = get_edge_bind(edge_bind)[0].port
+    edge_port_http = edge_port
 
-populate_legacy_edge_configuration()
+    return localstack_host, edge_bind, edge_bind_host, edge_port, edge_port_http
 
 
 @dataclass
@@ -487,19 +494,24 @@ class HostAndPort:
         return self.host == other.host and self.port == other.port
 
 
-def edge_bind() -> List[HostAndPort]:
+def get_edge_bind(edge_bind: str) -> List[HostAndPort]:
     result = []
-    # please the typechecker
-    assert EDGE_BIND is not None
-    for bind_address in EDGE_BIND.split(","):
+    for bind_address in edge_bind.split(","):
         result.append(HostAndPort.parse(bind_address))
     return result
 
 
-# derive legacy variables from EDGE_BIND
-EDGE_BIND_HOST = edge_bind()[0].host
-EDGE_PORT = edge_bind()[0].port
-EDGE_PORT_HTTP = EDGE_PORT
+(
+    LOCALSTACK_HOST,
+    EDGE_BIND,
+    EDGE_BIND_HOST,
+    EDGE_PORT,
+    EDGE_PORT_HTTP,
+) = populate_legacy_edge_configuration(
+    LOCALSTACK_HOST_RAW,
+    EDGE_BIND_RAW,
+)
+
 
 # optional target URL to forward all edge requests to
 EDGE_FORWARD_URL = os.environ.get("EDGE_FORWARD_URL", "").strip()

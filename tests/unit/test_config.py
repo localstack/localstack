@@ -1,6 +1,6 @@
 import os
+import sys
 from contextlib import contextmanager
-from importlib import reload
 from typing import Any, Dict
 
 import pytest
@@ -135,16 +135,24 @@ class TestEdgeVariablesDerivedCorrectly:
     well with LOCALSTACK_HOST, i.e. if LOCALSTACK_HOST is supplied and
     EDGE_BIND is not, then we should propagate LOCALSTACK_HOST configuration
     into EDGE_BIND.
+
+    Implementation note: monkeypatching the config module is hard, and causes
+    tests run after these ones to import the wrong config. Instead, we test the
+    function that populates the configuration variables.
     """
 
     @pytest.fixture
     def configure_environment(self, monkeypatch):
         def inner(**envars):
+            import importlib
+
             for name, value in envars.items():
                 monkeypatch.setenv(name, value)
 
-            reload(config)
-            return config
+            del sys.modules["localstack.config"]
+            cfg = importlib.import_module("localstack.config")
+
+            return cfg
 
         return inner
 
@@ -155,54 +163,110 @@ class TestEdgeVariablesDerivedCorrectly:
         else:
             return "127.0.0.1"
 
-    def test_defaults(self, default_ip, configure_environment):
-        cfg = configure_environment()
+    def test_defaults(self, default_ip):
+        (
+            ls_host,
+            edge_bind,
+            edge_bind_host,
+            edge_port,
+            edge_port_http,
+        ) = config.populate_legacy_edge_configuration(
+            localstack_host_raw=None,
+            edge_bind_raw=None,
+        )
 
-        assert cfg.EDGE_BIND == f"{default_ip}:4566"
-        assert cfg.EDGE_PORT == 4566
-        assert cfg.EDGE_PORT_HTTP == 4566
-        assert cfg.EDGE_BIND_HOST == default_ip
+        assert ls_host == "localhost.localstack.cloud:4566"
+        assert edge_bind == f"{default_ip}:4566"
+        assert edge_port == 4566
+        assert edge_port_http == 4566
+        assert edge_bind_host == default_ip
 
-    def test_custom_hostname(self, configure_environment):
-        cfg = configure_environment(EDGE_BIND="192.168.0.1")
+    def test_custom_hostname(self):
+        (
+            _,
+            edge_bind,
+            edge_bind_host,
+            edge_port,
+            edge_port_http,
+        ) = config.populate_legacy_edge_configuration(
+            localstack_host_raw=None,
+            edge_bind_raw="192.168.0.1",
+        )
 
-        assert cfg.EDGE_BIND == "192.168.0.1:4566"
-        assert cfg.EDGE_PORT == 4566
-        assert cfg.EDGE_PORT_HTTP == 4566
-        assert cfg.EDGE_BIND_HOST == "192.168.0.1"
+        assert edge_bind == "192.168.0.1:4566"
+        assert edge_port == 4566
+        assert edge_port_http == 4566
+        assert edge_bind_host == "192.168.0.1"
 
-    def test_custom_port(self, configure_environment, default_ip):
-        cfg = configure_environment(EDGE_BIND=":9999")
+    def test_custom_port(self, default_ip):
+        (
+            _,
+            edge_bind,
+            edge_bind_host,
+            edge_port,
+            edge_port_http,
+        ) = config.populate_legacy_edge_configuration(
+            localstack_host_raw=None,
+            edge_bind_raw=":9999",
+        )
 
-        assert cfg.EDGE_BIND == f"{default_ip}:9999"
-        assert cfg.EDGE_PORT == 9999
-        assert cfg.EDGE_PORT_HTTP == 9999
-        assert cfg.EDGE_BIND_HOST == default_ip
+        assert edge_bind == f"{default_ip}:9999"
+        assert edge_port == 9999
+        assert edge_port_http == 9999
+        assert edge_bind_host == default_ip
 
-    def test_custom_host_and_port(self, configure_environment):
-        cfg = configure_environment(EDGE_BIND="192.168.0.1:9999")
+    def test_custom_host_and_port(self):
+        (
+            _,
+            edge_bind,
+            edge_bind_host,
+            edge_port,
+            edge_port_http,
+        ) = config.populate_legacy_edge_configuration(
+            localstack_host_raw=None,
+            edge_bind_raw="192.168.0.1:9999",
+        )
 
-        assert cfg.EDGE_BIND == "192.168.0.1:9999"
-        assert cfg.EDGE_PORT == 9999
-        assert cfg.EDGE_PORT_HTTP == 9999
-        assert cfg.EDGE_BIND_HOST == "192.168.0.1"
+        assert edge_bind == "192.168.0.1:9999"
+        assert edge_port == 9999
+        assert edge_port_http == 9999
+        assert edge_bind_host == "192.168.0.1"
 
-    def test_localstack_host_overrides_edge_variables(self, configure_environment, default_ip):
-        cfg = configure_environment(LOCALSTACK_HOST="hostname:9999")
+    def test_localstack_host_overrides_edge_variables(self, default_ip):
+        (
+            ls_host,
+            edge_bind,
+            edge_bind_host,
+            edge_port,
+            edge_port_http,
+        ) = config.populate_legacy_edge_configuration(
+            localstack_host_raw="hostname:9999",
+            edge_bind_raw=None,
+        )
 
-        assert cfg.EDGE_BIND == f"{default_ip}:9999"
-        assert cfg.EDGE_PORT == 9999
-        assert cfg.EDGE_PORT_HTTP == 9999
-        assert cfg.EDGE_BIND_HOST == default_ip
+        assert ls_host == "hostname:9999"
+        assert edge_bind == f"{default_ip}:9999"
+        assert edge_port == 9999
+        assert edge_port_http == 9999
+        assert edge_bind_host == default_ip
 
-    def test_edge_bind_multiple_addresses(self, configure_environment):
-        cfg = configure_environment(EDGE_BIND="0.0.0.0:9999,0.0.0.0:443")
+    def test_edge_bind_multiple_addresses(self):
+        (
+            _,
+            edge_bind,
+            edge_bind_host,
+            edge_port,
+            edge_port_http,
+        ) = config.populate_legacy_edge_configuration(
+            localstack_host_raw=None,
+            edge_bind_raw="0.0.0.0:9999,0.0.0.0:443",
+        )
 
-        assert cfg.EDGE_BIND == "0.0.0.0:9999,0.0.0.0:443"
+        assert edge_bind == "0.0.0.0:9999,0.0.0.0:443"
         # take the first value
-        assert cfg.EDGE_PORT == 9999
-        assert cfg.EDGE_PORT_HTTP == 9999
-        assert cfg.EDGE_BIND_HOST == "0.0.0.0"
+        assert edge_port == 9999
+        assert edge_port_http == 9999
+        assert edge_bind_host == "0.0.0.0"
 
     @pytest.mark.parametrize(
         "input,hosts_and_ports",
@@ -224,10 +288,8 @@ class TestEdgeVariablesDerivedCorrectly:
             ),
         ],
     )
-    def test_edge_bind_parsed(self, configure_environment, input, hosts_and_ports):
-        cfg = configure_environment(EDGE_BIND=input)
+    def test_edge_bind_parsed(self, input, hosts_and_ports):
+        res = config.get_edge_bind(input)
 
-        res = config.edge_bind()
-
-        expected = [cfg.HostAndPort(host=host, port=port) for (host, port) in hosts_and_ports]
+        expected = [config.HostAndPort(host=host, port=port) for (host, port) in hosts_and_ports]
         assert res == expected
