@@ -6,14 +6,15 @@ import socket
 import subprocess
 import tempfile
 import time
-from typing import Any, Dict, List, Mapping, Tuple
+from dataclasses import dataclass
+from typing import Any, Dict, List, Mapping, Optional, Tuple
 
+from localstack import constants
 from localstack.constants import (
     AWS_REGION_US_EAST_1,
     DEFAULT_BUCKET_MARKER_LOCAL,
     DEFAULT_DEVELOP_PORT,
     DEFAULT_LAMBDA_CONTAINER_REGISTRY,
-    DEFAULT_PORT_EDGE,
     DEFAULT_SERVICE_PORTS,
     DEFAULT_VOLUME_DIR,
     DOCKER_IMAGE_NAME,
@@ -316,17 +317,6 @@ DEFAULT_REGION = (
     os.environ.get("DEFAULT_REGION") or os.environ.get("AWS_DEFAULT_REGION") or AWS_REGION_US_EAST_1
 )
 
-# expose services on a specific host externally
-# DEPRECATED:  since v2.0.0 as we are moving to LOCALSTACK_HOST
-HOSTNAME_EXTERNAL = os.environ.get("HOSTNAME_EXTERNAL", "").strip() or LOCALHOST
-
-# name of the host under which the LocalStack services are available
-# DEPRECATED: if the user sets this since v2.0.0 as we are moving to LOCALSTACK_HOST
-LOCALSTACK_HOSTNAME = os.environ.get("LOCALSTACK_HOSTNAME", "").strip() or LOCALHOST
-
-# configuration of hostnames the user can use to access LocalStack
-LOCALSTACK_HOST = os.environ.get("LOCALSTACK_HOST")
-
 # directory for persisting data (TODO: deprecated, simply use PERSISTENCE=1)
 DATA_DIR = os.environ.get("DATA_DIR", "").strip()
 
@@ -416,14 +406,100 @@ PORTS_CHECK_DOCKER_IMAGE = (
 # whether to forward edge requests in-memory (instead of via proxy servers listening on backend ports)
 # TODO: this will likely become the default and may get removed in the future
 FORWARD_EDGE_INMEM = True
-# Default bind address for the edge service
-EDGE_BIND_HOST = os.environ.get("EDGE_BIND_HOST", "").strip() or "127.0.0.1"
-# port number for the edge service, the main entry point for all API invocations
-EDGE_PORT = int(os.environ.get("EDGE_PORT") or 0) or DEFAULT_PORT_EDGE
-# fallback port for non-SSL HTTP edge service (in case HTTPS edge service cannot be used)
-EDGE_PORT_HTTP = int(os.environ.get("EDGE_PORT_HTTP") or 0)
-# optional target URL to forward all edge requests to
-EDGE_FORWARD_URL = os.environ.get("EDGE_FORWARD_URL", "").strip()
+
+# expose services on a specific host externally
+# DEPRECATED:  since v2.0.0 as we are moving to LOCALSTACK_HOST
+HOSTNAME_EXTERNAL = os.environ.get("HOSTNAME_EXTERNAL", "").strip() or LOCALHOST
+
+# name of the host under which the LocalStack services are available
+# DEPRECATED: if the user sets this since v2.0.0 as we are moving to LOCALSTACK_HOST
+LOCALSTACK_HOSTNAME = os.environ.get("LOCALSTACK_HOSTNAME", "").strip() or LOCALHOST
+
+# How to access LocalStack
+# -- Cosmetic
+LOCALSTACK_HOST: Optional[str] = os.environ.get("LOCALSTACK_HOST")
+# -- Edge configuration
+# Main configuration of the listen address of the hypercorn proxy. Of the form
+# <ip_address>:<port>(,<ip_address>:port>)*
+EDGE_BIND: Optional[str] = os.environ.get("EDGE_BIND")
+
+
+def populate_legacy_edge_configuration():
+    global LOCALSTACK_HOST, EDGE_BIND
+
+    if is_in_docker:
+        default_ip = "0.0.0.0"
+    else:
+        default_ip = "127.0.0.1"
+
+    # new for v2
+    # populate LOCALSTACK_HOST first since EDGE_BIND may be derived from LOCALSTACK_HOST
+    if LOCALSTACK_HOST is None:
+        LOCALSTACK_HOST = f"{default_ip}:4566"
+        LOCALSTACK_HOST = f"{constants.LOCALHOST_HOSTNAME}:{constants.DEFAULT_PORT_EDGE}"
+
+    def parse_edge_bind(value: str) -> str:
+        if ":" in value:
+            ip, port_s = value.split(":", 1)
+            if not ip.strip():
+                ip = default_ip
+            if not port_s.strip():
+                port_s = "4566"
+            port = int(port_s)
+            return f"{ip}:{port}"
+        else:
+            return f"{value}:4566"
+
+    if EDGE_BIND is None:
+        # default to existing behaviour
+        port = int(LOCALSTACK_HOST.split(":")[-1])
+        EDGE_BIND = f"{default_ip}:{port}"
+    else:
+        if "," in EDGE_BIND:
+            components = EDGE_BIND.split(",")
+            return [parse_edge_bind(component) for component in components]
+        else:
+            # if the user specifies a port
+            # e.g. ":4566" should become "<default_ip>:4566"
+            EDGE_BIND = parse_edge_bind(EDGE_BIND)
+
+    assert EDGE_BIND is not None
+    assert LOCALSTACK_HOST is not None
+
+
+populate_legacy_edge_configuration()
+
+
+@dataclass
+class HostAndPort:
+    host: str
+    port: int
+
+    @classmethod
+    def parse(cls, input: str) -> "HostAndPort":
+        host, port_s = input.split(":")
+        return cls(host=host, port=int(port_s))
+
+    def __eq__(self, other: Any) -> bool:
+        if not isinstance(other, self.__class__):
+            return False
+
+        return self.host == other.host and self.port == other.port
+
+
+def edge_bind() -> List[HostAndPort]:
+    result = []
+    # please the typechecker
+    assert EDGE_BIND is not None
+    for bind_address in EDGE_BIND.split(","):
+        result.append(HostAndPort.parse(bind_address))
+    return result
+
+
+# derive legacy variables from EDGE_BIND
+EDGE_BIND_HOST = edge_bind()[0].host
+EDGE_PORT = edge_bind()[0].port
+EDGE_PORT_HTTP = EDGE_PORT
 
 # IP of the docker bridge used to enable access between containers
 DOCKER_BRIDGE_IP = os.environ.get("DOCKER_BRIDGE_IP", "").strip()
