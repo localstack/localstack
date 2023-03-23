@@ -1730,7 +1730,6 @@ class TestApiGatewayApiDocumentationPart:
             name=f"test-api-{short_uid()}",
             description="this is my api",
         )
-        snapshot.match("create-rest-api", response)
         api_id = response["id"]
 
         # create documentation part
@@ -1811,9 +1810,7 @@ class TestApiGatewayApiDocumentationPart:
         snapshot.match("get-documentation-part-invalid-doc-id", e.value.response)
 
     @pytest.mark.aws_validated
-    def test_invalid_get_documentation_parts(
-        self, apigateway_client, apigw_create_rest_api, snapshot
-    ):
+    def test_invalid_get_documentation_parts(self, apigateway_client, snapshot):
         with pytest.raises(ClientError) as e:
             apigateway_client.get_documentation_parts(
                 restApiId="api_id",
@@ -1890,7 +1887,6 @@ class TestApiGatewayApiDocumentationPart:
             name=f"test-api-{short_uid()}",
             description="this is my api",
         )
-        snapshot.match("create-rest-api", response)
         api_id = response["id"]
 
         with pytest.raises(ClientError) as e:

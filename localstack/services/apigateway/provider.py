@@ -9,7 +9,7 @@ from moto.apigateway.models import Resource as MotoResource
 from moto.apigateway.models import RestAPI as MotoRestAPI
 from moto.core.utils import camelcase_to_underscores
 
-from localstack.aws.api import RequestContext, ServiceRequest, handler
+from localstack.aws.api import CommonServiceException, RequestContext, ServiceRequest, handler
 from localstack.aws.api.apigateway import (
     Account,
     ApigatewayApi,
@@ -55,7 +55,6 @@ from localstack.aws.api.apigateway import (
     Tags,
     TestInvokeMethodRequest,
     TestInvokeMethodResponse,
-    ValidationException,
     VpcLink,
     VpcLinks,
 )
@@ -739,6 +738,10 @@ class ApigatewayProvider(ApigatewayApi, ServiceLifecycleHook):
             raise NotFoundException(
                 f"Invalid API identifier specified {context.account_id}:{rest_api_id}"
             )
+
+        # TODO: add complete validation for
+        # location parameter: https://docs.aws.amazon.com/apigateway/latest/api/API_DocumentationPartLocation.html
+        # As of now we validate only "type"
         location_type = location.get("type")
         valid_location_types = [
             "API",
@@ -748,19 +751,22 @@ class ApigatewayProvider(ApigatewayApi, ServiceLifecycleHook):
             "METHOD",
             "PATH_PARAMETER",
             "QUERY_PARAMETER",
-            "REQUEST_HEADER" "REQUEST_BODY",
+            "REQUEST_HEADER",
+            "REQUEST_BODY",
             "RESPONSE",
             "RESPONSE_HEADER",
             "RESPONSE_BODY",
         ]
         if location_type not in valid_location_types:
-            raise ValidationException(
+            raise CommonServiceException(
+                "ValidationException",
                 f"1 validation error detected: Value '{location_type}' at "
                 f"'createDocumentationPartInput.location.type' failed to satisfy constraint: "
                 f"Member must satisfy enum value set: "
                 f"[RESPONSE_BODY, RESPONSE, METHOD, MODEL, AUTHORIZER, RESPONSE_HEADER, "
-                f"RESOURCE, PATH_PARAMETER, REQUEST_BODY, QUERY_PARAMETER, API, REQUEST_HEADER]"
+                f"RESOURCE, PATH_PARAMETER, REQUEST_BODY, QUERY_PARAMETER, API, REQUEST_HEADER]",
             )
+
         doc_part = DocumentationPart(
             id=entity_id,
             location=location,
@@ -791,12 +797,12 @@ class ApigatewayProvider(ApigatewayApi, ServiceLifecycleHook):
         if doc_part is None:
             raise NotFoundException("Invalid Documentation part identifier specified")
 
-        for operation in patch_operations:
-            path = operation.get("path")
-            operation_performed = operation.get("op")
-            if operation_performed != "replace":
+        for patch_operation in patch_operations:
+            path = patch_operation.get("path")
+            operation = patch_operation.get("op")
+            if operation != "replace":
                 raise BadRequestException(
-                    f"Invalid patch path  '{path}' specified for op '{operation_performed}'. "
+                    f"Invalid patch path  '{path}' specified for op '{operation}'. "
                     f"Please choose supported operations"
                 )
 
@@ -807,7 +813,7 @@ class ApigatewayProvider(ApigatewayApi, ServiceLifecycleHook):
                 )
 
             key = path[1:]
-            if key == "properties" and not operation.get("value"):
+            if key == "properties" and not patch_operation.get("value"):
                 raise BadRequestException("Documentation part properties must be non-empty")
 
         patched_doc_part = apply_json_patch_safe(doc_part, patch_operations)
@@ -827,11 +833,7 @@ class ApigatewayProvider(ApigatewayApi, ServiceLifecycleHook):
                 f"Invalid API identifier specified {context.account_id}:{rest_api_id}"
             )
 
-        documentation_part = (
-            rest_api_container.documentation_parts.get(documentation_part_id)
-            if rest_api_container
-            else None
-        )
+        documentation_part = rest_api_container.documentation_parts.get(documentation_part_id)
 
         if documentation_part is None:
             raise NotFoundException("Invalid Documentation part identifier specified")

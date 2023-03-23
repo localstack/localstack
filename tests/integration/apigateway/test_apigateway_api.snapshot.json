@@ -2289,27 +2289,10 @@
     }
   },
   "tests/integration/apigateway/test_apigateway_api.py::TestApiGatewayApiDocumentationPart::test_documentation_part_lifecycle": {
-    "recorded-date": "23-03-2023, 13:10:01",
+    "recorded-date": "23-03-2023, 17:50:40",
     "recorded-content": {
-      "create-rest-api": {
-        "apiKeySource": "HEADER",
-        "createdDate": "datetime",
-        "description": "this is my api",
-        "disableExecuteApiEndpoint": false,
-        "endpointConfiguration": {
-          "types": [
-            "EDGE"
-          ]
-        },
-        "id": "<id:1>",
-        "name": "<name:1>",
-        "ResponseMetadata": {
-          "HTTPHeaders": {},
-          "HTTPStatusCode": 201
-        }
-      },
       "create-documentation-part": {
-        "id": "<id:2>",
+        "id": "<id:1>",
         "location": {
           "type": "API"
         },
@@ -2322,7 +2305,7 @@
         }
       },
       "get-documentation-part": {
-        "id": "<id:2>",
+        "id": "<id:1>",
         "location": {
           "type": "API"
         },
@@ -2337,7 +2320,7 @@
       "get-documentation-parts": {
         "items": [
           {
-            "id": "<id:2>",
+            "id": "<id:1>",
             "location": {
               "type": "API"
             },
@@ -2352,7 +2335,7 @@
         }
       },
       "update-documentation-part": {
-        "id": "<id:2>",
+        "id": "<id:1>",
         "location": {
           "type": "API"
         },
@@ -2365,7 +2348,7 @@
         }
       },
       "get-documentation-part-after-update": {
-        "id": "<id:2>",
+        "id": "<id:1>",
         "location": {
           "type": "API"
         },
@@ -2386,7 +2369,7 @@
     }
   },
   "tests/integration/apigateway/test_apigateway_api.py::TestApiGatewayApiDocumentationPart::test_invalid_get_documentation_part": {
-    "recorded-date": "23-03-2023, 13:10:32",
+    "recorded-date": "23-03-2023, 17:51:12",
     "recorded-content": {
       "get-documentation-part-invalid-api-id": {
         "Error": {
@@ -2413,7 +2396,7 @@
     }
   },
   "tests/integration/apigateway/test_apigateway_api.py::TestApiGatewayApiDocumentationPart::test_invalid_get_documentation_parts": {
-    "recorded-date": "23-03-2023, 13:10:32",
+    "recorded-date": "23-03-2023, 17:51:12",
     "recorded-content": {
       "get-inavlid-documentation-parts": {
         "Error": {
@@ -2429,7 +2412,7 @@
     }
   },
   "tests/integration/apigateway/test_apigateway_api.py::TestApiGatewayApiDocumentationPart::test_invalid_update_documentation_part": {
-    "recorded-date": "23-03-2023, 13:11:03",
+    "recorded-date": "23-03-2023, 17:51:42",
     "recorded-content": {
       "update-documentation-part-invalid-api-id": {
         "Error": {
@@ -2467,25 +2450,8 @@
     }
   },
   "tests/integration/apigateway/test_apigateway_api.py::TestApiGatewayApiDocumentationPart::test_invalid_create_documentation_part_operations": {
-    "recorded-date": "23-03-2023, 13:11:29",
+    "recorded-date": "23-03-2023, 17:52:11",
     "recorded-content": {
-      "create-rest-api": {
-        "apiKeySource": "HEADER",
-        "createdDate": "datetime",
-        "description": "this is my api",
-        "disableExecuteApiEndpoint": false,
-        "endpointConfiguration": {
-          "types": [
-            "EDGE"
-          ]
-        },
-        "id": "<id:1>",
-        "name": "<name:1>",
-        "ResponseMetadata": {
-          "HTTPHeaders": {},
-          "HTTPStatusCode": 201
-        }
-      },
       "create_documentation_part_invalid_api_id": {
         "Error": {
           "Code": "NotFoundException",
@@ -2510,7 +2476,7 @@
     }
   },
   "tests/integration/apigateway/test_apigateway_api.py::TestApiGatewayApiDocumentationPart::test_invalid_delete_documentation_part": {
-    "recorded-date": "23-03-2023, 13:12:03",
+    "recorded-date": "23-03-2023, 17:52:31",
     "recorded-content": {
       "delete_documentation_part_wrong_api_id": {
         "Error": {
