@@ -224,6 +224,22 @@ class TestEdgeVariablesDerivedCorrectly:
         assert edge_port_http == 9999
         assert edge_bind_host == default_ip
 
+    def test_localstack_host_no_port(self, default_ip):
+        environment = {"LOCALSTACK_HOST": "foobar"}
+        (
+            ls_host,
+            gateway_listen,
+            edge_bind_host,
+            edge_port,
+            edge_port_http,
+        ) = config.populate_legacy_edge_configuration(environment)
+
+        assert ls_host == "foobar:4566"
+        assert gateway_listen == f"{default_ip}:4566"
+        assert edge_port == 4566
+        assert edge_port_http == 4566
+        assert edge_bind_host == default_ip
+
     def test_gateway_listen_multiple_addresses(self):
         environment = {"GATEWAY_LISTEN": "0.0.0.0:9999,0.0.0.0:443"}
         (

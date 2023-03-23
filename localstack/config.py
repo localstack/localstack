@@ -436,6 +436,29 @@ HOSTNAME_EXTERNAL = os.environ.get("HOSTNAME_EXTERNAL", "").strip() or LOCALHOST
 LOCALSTACK_HOSTNAME = os.environ.get("LOCALSTACK_HOSTNAME", "").strip() or LOCALHOST
 
 
+def parse_hostname_and_ip(
+    value: str, default_host: str, default_port: int = constants.DEFAULT_PORT_EDGE
+) -> str:
+    """
+    Given a string that should contain a <hostname>:<port>, if either are
+    absent then use the defaults.
+    """
+    host, port = default_host, default_port
+    if ":" in value:
+        hostname, port_s = value.split(":", 1)
+        if hostname.strip():
+            host = hostname.strip()
+        try:
+            port = int(port_s)
+        except (ValueError, TypeError):
+            pass
+    else:
+        if value.strip():
+            host = value.strip()
+
+    return f"{host}:{port}"
+
+
 def populate_legacy_edge_configuration(
     environment: Dict[str, str]
 ) -> Tuple[str, str, str, int, int]:
@@ -452,23 +475,19 @@ def populate_legacy_edge_configuration(
     localstack_host = localstack_host_raw
     if localstack_host is None:
         localstack_host = f"{constants.LOCALHOST_HOSTNAME}:{constants.DEFAULT_PORT_EDGE}"
-
-    def parse_gateway_listen(value: str) -> str:
-        if ":" in value:
-            ip, port_s = value.split(":", 1)
-            if not ip.strip():
-                ip = default_ip
-            if not port_s.strip():
-                port_s = "4566"
-            port = int(port_s)
-            return f"{ip}:{port}"
-        else:
-            return f"{value}:4566"
+    else:
+        localstack_host = parse_hostname_and_ip(
+            localstack_host,
+            default_host=constants.LOCALHOST_HOSTNAME,
+        )
 
     gateway_listen = gateway_listen_raw
     if gateway_listen is None:
         # default to existing behaviour
-        port = int(localstack_host.split(":")[-1])
+        try:
+            port = int(localstack_host.split(":", 1)[-1])
+        except ValueError:
+            port = constants.DEFAULT_PORT_EDGE
         gateway_listen = f"{default_ip}:{port}"
     else:
         components = gateway_listen.split(",")
@@ -476,7 +495,13 @@ def populate_legacy_edge_configuration(
             LOG.warning("multiple GATEWAY_LISTEN addresses are not currently supported")
 
         gateway_listen = ",".join(
-            [parse_gateway_listen(component.strip()) for component in components]
+            [
+                parse_hostname_and_ip(
+                    component.strip(),
+                    default_host=default_ip,
+                )
+                for component in components
+            ]
         )
 
     assert gateway_listen is not None
