@@ -78,7 +78,7 @@ jobs:
           paths:
             - repo/target/coverage/
 
-  itest-lambda-docker:
+  itest-lambda-legacy:
     executor: ubuntu-machine-amd64
     working_directory: /tmp/workspace/repo
     steps:
@@ -102,53 +102,32 @@ jobs:
             docker pull -q lambci/lambda:java8.al2
             docker pull -q lambci/lambda:java11
       - run:
-          name: Test Docker client
+          name: Test 'local' Lambda executor
           environment:
-            TEST_PATH: "tests/integration/docker_utils"
-            TEST_SKIP_LOCALSTACK_START: 1
-            PYTEST_ARGS: "--reruns 2 --junitxml=target/reports/docker-client.xml -o junit_suite_name='docker-client'"
+            LAMBDA_EXECUTOR: "local"
+            PROVIDER_OVERRIDE_LAMBDA: "legacy"
+            USE_SSL: 1
+            TEST_PATH: "tests/integration/awslambda/ tests/integration/test_integration.py tests/integration/apigateway/test_apigateway_basic.py"
+            PYTEST_ARGS: "--reruns 2 --junitxml=target/reports/lambda-docker.xml -o junit_suite_name='legacy-lambda-local'"
             COVERAGE_ARGS: "-p"
           command: make test-coverage
       - run:
           name: Test 'docker' Lambda executor
           environment:
             LAMBDA_EXECUTOR: "docker"
+            PROVIDER_OVERRIDE_LAMBDA: "legacy"
             USE_SSL: 1
             TEST_PATH: "tests/integration/awslambda/ tests/integration/test_integration.py tests/integration/apigateway/test_apigateway_basic.py"
-            PYTEST_ARGS: "--reruns 2 --junitxml=target/reports/lambda-docker.xml -o junit_suite_name='lambda-docker'"
+            PYTEST_ARGS: "--reruns 2 --junitxml=target/reports/lambda-docker.xml -o junit_suite_name='legacy-lambda-docker'"
             COVERAGE_ARGS: "-p"
           command: make test-coverage
       - run:
           name: Test 'docker-reuse' Lambda executor
           environment:
             LAMBDA_EXECUTOR: "docker-reuse"
+            PROVIDER_OVERRIDE_LAMBDA: "legacy"
             TEST_PATH: "tests/integration/awslambda/ tests/integration/test_integration.py tests/integration/apigateway/test_apigateway_basic.py"
-            PYTEST_ARGS: "--reruns 2 --junitxml=target/reports/lambda-docker-reuse.xml -o junit_suite_name='lambda-docker-reuse'"
-            COVERAGE_ARGS: "-p"
-          command: make test-coverage
-      - run:
-          name: Store coverage results
-          command: mv .coverage.* target/coverage/
-      - persist_to_workspace:
-          root:
-            /tmp/workspace
-          paths:
-            - repo/target/coverage/
-      - store_test_results:
-          path: target/reports/
-
-  itest-lambda-provider:
-    executor: ubuntu-machine-amd64
-    working_directory: /tmp/workspace/repo
-    steps:
-      - attach_workspace:
-          at: /tmp/workspace
-      - run:
-          name: Test ASF Lambda provider
-          environment:
-            PROVIDER_OVERRIDE_LAMBDA: "asf"
-            TEST_PATH: "tests/integration/awslambda/test_lambda.py tests/integration/awslambda/test_lambda_api.py tests/integration/awslambda/test_lambda_common.py tests/integration/awslambda/test_lambda_integration_sqs.py tests/integration/cloudformation/resources/test_lambda.py tests/integration/awslambda/test_lambda_integration_dynamodbstreams.py tests/integration/awslambda/test_lambda_integration_kinesis.py tests/integration/awslambda/test_lambda_developer_tools.py tests/integration/test_network_configuration.py::TestLambda"
-            PYTEST_ARGS: "--reruns 3 --junitxml=target/reports/lambda_asf.xml -o junit_suite_name='lambda_asf'"
+            PYTEST_ARGS: "--reruns 2 --junitxml=target/reports/lambda-docker-reuse.xml -o junit_suite_name='legacy-lambda-docker-reuse'"
             COVERAGE_ARGS: "-p"
           command: make test-coverage
       - run:
@@ -263,13 +242,20 @@ jobs:
       image: << parameters.machine_image >>
     resource_class: << parameters.resource_class >>
     working_directory: /tmp/workspace/repo
-    parallelism: 2
+    parallelism: 4
     steps:
       - attach_workspace:
           at: /tmp/workspace
       - run:
           name: Load docker image
           command: docker load -i target/localstack-docker-image-<< parameters.platform >>.tar
+      - when:
+          condition:
+            equal: [ "amd64", << parameters.platform >>]
+          steps:
+            - run:
+                name: pre-build lambda common test packages
+                command: ./scripts/build_common_test_functions.sh `pwd`/tests/integration/awslambda/functions/common
       - run:
           name: Run integration tests
           # circleci split returns newline separated list, so `tr` is necessary to prevent problems in the Makefile
@@ -278,6 +264,7 @@ jobs:
             PYTEST_ARGS="-o junit_family=legacy --junitxml=target/reports/test-report-<< parameters.platform >>-${CIRCLE_NODE_INDEX}.xml" \
             COVERAGE_FILE="target/coverage/.coverage.<< parameters.platform >>.${CIRCLE_NODE_INDEX}" \
             TEST_PATH=$TEST_FILES \
+            DEBUG=1 \
             make docker-run-tests
       - store_test_results:
           path: target/reports/
@@ -426,10 +413,7 @@ workflows:
       - preflight:
           requires:
             - install
-      - itest-lambda-docker:
-          requires:
-            - preflight
-      - itest-lambda-provider:
+      - itest-lambda-legacy:
           requires:
             - preflight
       - itest-s3-asf-provider:
@@ -477,8 +461,7 @@ workflows:
             - docker-build-amd64
       - report:
           requires:
-            - itest-lambda-docker
-            - itest-lambda-provider
+            - itest-lambda-legacy
             - itest-s3-asf-provider
             - itest-sfn-v2-provider
             - docker-test-amd64
@@ -490,8 +473,7 @@ workflows:
             branches:
               only: master
           requires:
-            - itest-lambda-docker
-            - itest-lambda-provider
+            - itest-lambda-legacy
             - itest-s3-asf-provider
             - itest-sfn-v2-provider
             - docker-test-amd64

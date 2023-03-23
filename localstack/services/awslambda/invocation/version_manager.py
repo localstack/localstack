@@ -8,6 +8,7 @@ import time
 import uuid
 from concurrent.futures import Future, ThreadPoolExecutor
 from datetime import datetime
+from math import ceil
 from queue import Queue
 from typing import TYPE_CHECKING, Dict, List, Optional, Union
 
@@ -594,7 +595,7 @@ class LambdaVersionManager(ServiceEndpoint):
                     time_passed = datetime.now() - last_invoke_time
                     enough_time_for_retry = (
                         event_invoke_config.maximum_event_age_in_seconds
-                        and time_passed.seconds + delay_queue_invoke_seconds
+                        and ceil(time_passed.total_seconds()) + delay_queue_invoke_seconds
                         <= event_invoke_config.maximum_event_age_in_seconds
                     )
 

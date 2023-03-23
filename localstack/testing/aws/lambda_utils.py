@@ -126,10 +126,10 @@ def is_old_local_executor() -> bool:
 def is_old_provider():
     return os.environ.get("TEST_TARGET") != "AWS_CLOUD" and os.environ.get(
         "PROVIDER_OVERRIDE_LAMBDA"
-    ) not in ["asf", "v2"]
+    ) in ["legacy", "v1"]
 
 
 def is_new_provider():
     return os.environ.get("TEST_TARGET") != "AWS_CLOUD" and os.environ.get(
         "PROVIDER_OVERRIDE_LAMBDA"
-    ) in ["asf", "v2"]
+    ) not in ["legacy", "v1"]

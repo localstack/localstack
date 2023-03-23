@@ -309,7 +309,14 @@ class TestJavaRuntimes:
         retry(check_logs, retries=20)
 
     @pytest.mark.skip_snapshot_verify(
-        condition=is_old_provider, paths=["$..Code.RepositoryType", "$..Tags"]
+        condition=is_old_provider,
+        paths=[
+            "$..Code.RepositoryType",
+            "$..Tags",
+            "$..Configuration.RuntimeVersionConfig",
+            "$..Configuration.SnapStart",
+            "$..Statement.Condition.ArnLike",
+        ],
     )
     # TODO maybe snapshot payload as well
     def test_java_lambda_subscribe_sns_topic(

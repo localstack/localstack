@@ -40,6 +40,7 @@ from localstack.utils.collections import select_attributes
 from localstack.utils.files import load_file
 from localstack.utils.http import safe_requests as requests
 from localstack.utils.json import clone
+from localstack.utils.platform import get_arch
 from localstack.utils.strings import short_uid, to_str
 from localstack.utils.sync import retry
 from tests.integration.apigateway.apigateway_fixtures import (
@@ -2134,6 +2135,7 @@ def test_import_swagger_api(apigateway_client):
 
 
 @pytest.mark.skipif(not use_docker(), reason="Rust lambdas cannot be executed in local executor")
+@pytest.mark.skipif(get_arch() == "arm64", reason="Lambda only available for amd64")
 def test_apigateway_rust_lambda(
     apigateway_client,
     create_rest_apigw,

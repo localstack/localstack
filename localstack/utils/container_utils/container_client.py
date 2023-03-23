@@ -618,6 +618,23 @@ class ContainerClient(metaclass=ABCMeta):
         pass
 
     @abstractmethod
+    def create_network(self, network_name: str) -> str:
+        """
+        Creates a network with the given name
+        :param network_name: Name of the network
+        :return Network ID
+        """
+        pass
+
+    @abstractmethod
+    def delete_network(self, network_name: str) -> None:
+        """
+        Delete a network with the given name
+        :param network_name: Name of the network
+        """
+        pass
+
+    @abstractmethod
     def inspect_network(self, network_name: str) -> Dict[str, Union[Dict, str]]:
         """Get detailed attributes of an network.
 

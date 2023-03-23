@@ -327,6 +327,20 @@ class SdkDockerClient(ContainerClient):
         except APIError as e:
             raise ContainerException() from e
 
+    def create_network(self, network_name: str) -> None:
+        try:
+            return self.client().networks.create(name=network_name).id
+        except APIError as e:
+            raise ContainerException() from e
+
+    def delete_network(self, network_name: str) -> None:
+        try:
+            return self.client().networks.get(network_name).remove()
+        except NotFound:
+            raise NoSuchNetwork(network_name)
+        except APIError as e:
+            raise ContainerException() from e
+
     def inspect_network(self, network_name: str) -> Dict[str, Union[Dict, str]]:
         try:
             return self.client().networks.get(network_name).attrs
