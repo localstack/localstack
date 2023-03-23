@@ -278,12 +278,9 @@ class TestSES:
         counter = new_counter
 
         raw_message_data = f"From: {email}\nTo: recipient@example.com\nSubject: test\n\nThis is the message body.\n\n"
-        ses_client.send_raw_email(
-            Destinations=["foo@bar.com"], RawMessage={"Data": raw_message_data}
-        )
-
+        ses_client.send_raw_email(RawMessage={"Data": raw_message_data})
         new_counter = ses_client.get_send_quota()["SentLast24Hours"]
-        assert new_counter == counter + 2
+        assert new_counter == counter + 1
 
     def test_clone_receipt_rule_set(self, ses_client):
         # Test that rule set is cloned properly

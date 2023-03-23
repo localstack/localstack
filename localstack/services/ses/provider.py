@@ -448,6 +448,7 @@ class SesProvider(SesApi, ServiceLifecycleHook):
                 LOGGER.warning("Source not specified. Rejecting message.")
                 raise MessageRejected()
 
+        # TODO: On AWS, `destinations` is ignored if the `To` field is set in the raw email.
         destinations = destinations or []
 
         backend = get_ses_backend(context)
