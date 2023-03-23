@@ -17,7 +17,6 @@ from localstack.constants import (
     DEFAULT_LAMBDA_CONTAINER_REGISTRY,
     DEFAULT_SERVICE_PORTS,
     DEFAULT_VOLUME_DIR,
-    DOCKER_IMAGE_NAME,
     ENV_INTERNAL_TEST_COLLECT_METRIC,
     ENV_INTERNAL_TEST_RUN,
     FALSE_STRINGS,
@@ -401,9 +400,7 @@ DOCKER_CMD = os.environ.get("DOCKER_CMD", "").strip() or "docker"
 LEGACY_DOCKER_CLIENT = is_env_true("LEGACY_DOCKER_CLIENT")
 
 # Docker image to use when starting up containers for port checks
-PORTS_CHECK_DOCKER_IMAGE = (
-    os.environ.get("PORTS_CHECK_DOCKER_IMAGE", "").strip() or DOCKER_IMAGE_NAME
-)
+PORTS_CHECK_DOCKER_IMAGE = os.environ.get("PORTS_CHECK_DOCKER_IMAGE", "").strip()
 
 # whether to forward edge requests in-memory (instead of via proxy servers listening on backend ports)
 # TODO: this will likely become the default and may get removed in the future

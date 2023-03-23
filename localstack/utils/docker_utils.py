@@ -5,13 +5,14 @@ import random
 from typing import List, Optional
 
 from localstack import config
-from localstack.constants import DEFAULT_VOLUME_DIR
+from localstack.constants import DEFAULT_VOLUME_DIR, DOCKER_IMAGE_NAME
 from localstack.utils.container_utils.container_client import (
     ContainerClient,
     PortMappings,
     VolumeInfo,
 )
 from localstack.utils.net import PortNotAvailableException, PortRange
+from localstack.utils.objects import singleton_factory
 from localstack.utils.strings import to_str
 
 LOG = logging.getLogger(__name__)
@@ -136,7 +137,7 @@ def container_port_can_be_bound(port: int) -> bool:
     ports.add(port, port)
     try:
         result = DOCKER_CLIENT.run_container(
-            config.PORTS_CHECK_DOCKER_IMAGE,
+            _get_ports_check_docker_image(),
             entrypoint="",
             command=["echo", "test123"],
             ports=ports,
@@ -216,6 +217,27 @@ def reserve_available_container_port(
     raise PortNotAvailableException(
         f"Unable to determine available Docker container port after {retries} retries"
     )
+
+
+@singleton_factory
+def _get_ports_check_docker_image() -> str:
+    """
+    Determine the Docker image to use for Docker port availability checks.
+    Uses either PORTS_CHECK_DOCKER_IMAGE (if configured), or otherwise inspects the running container's image.
+    """
+    if config.PORTS_CHECK_DOCKER_IMAGE:
+        # explicit configuration takes precedence
+        return config.PORTS_CHECK_DOCKER_IMAGE
+    if not config.is_in_docker:
+        # use default image for host mode
+        return DOCKER_IMAGE_NAME
+    try:
+        # inspect the running container to determine the image
+        container = DOCKER_CLIENT.inspect_container(get_current_container_id())
+        return container["Config"]["Image"]
+    except Exception:
+        # fall back to using the default Docker image
+        return DOCKER_IMAGE_NAME
 
 
 DOCKER_CLIENT: ContainerClient = create_docker_client()
