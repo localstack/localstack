@@ -1385,13 +1385,22 @@ class TestDockerPermissions:
         assert security_opt == inspect_result["HostConfig"]["SecurityOpt"]
 
 
+@pytest.fixture
+def set_ports_check_image_alpine(monkeypatch):
+    """Set the ports check Docker image to 'alpine', to avoid pulling the larger localstack image in the tests"""
+
+    def _get_ports_check_docker_image():
+        return "alpine"
+
+    monkeypatch.setattr(
+        docker_utils, "_get_ports_check_docker_image", _get_ports_check_docker_image
+    )
+
+
 class TestDockerPorts:
-    def test_reserve_container_port(self, docker_client, monkeypatch):
+    def test_reserve_container_port(self, docker_client, set_ports_check_image_alpine):
         if isinstance(docker_client, CmdDockerClient):
             pytest.skip("Running test only for one Docker executor")
-
-        monkeypatch.setattr(config, "PORTS_CHECK_DOCKER_IMAGE", "alpine")
-        monkeypatch.setattr(docker_utils._State, "ports_check_docker_image", None)
 
         # reserve available container port
         port = reserve_available_container_port(duration=1)
@@ -1417,12 +1426,9 @@ class TestDockerPorts:
         assert container_port_can_be_bound(port)
         assert not is_port_available_for_containers(port)
 
-    def test_container_port_can_be_bound(self, docker_client, monkeypatch):
+    def test_container_port_can_be_bound(self, docker_client, set_ports_check_image_alpine):
         if isinstance(docker_client, CmdDockerClient):
             pytest.skip("Running test only for one Docker executor")
-
-        monkeypatch.setattr(config, "PORTS_CHECK_DOCKER_IMAGE", "alpine")
-        monkeypatch.setattr(docker_utils._State, "ports_check_docker_image", None)
 
         # reserve available container port
         port = reserve_available_container_port(duration=1)
