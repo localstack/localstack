@@ -193,6 +193,12 @@ class NotFoundException(ServiceException):
     status_code: int = 404
 
 
+class ValidationException(ServiceException):
+    code: str = "ValidationException"
+    sender_fault: bool = False
+    status_code: int = 400
+
+
 class ServiceUnavailableException(ServiceException):
     code: str = "ServiceUnavailableException"
     sender_fault: bool = False

@@ -55,6 +55,7 @@ from localstack.aws.api.apigateway import (
     Tags,
     TestInvokeMethodRequest,
     TestInvokeMethodResponse,
+    ValidationException,
     VpcLink,
     VpcLinks,
 )
@@ -722,7 +723,7 @@ class ApigatewayProvider(ApigatewayApi, ServiceLifecycleHook):
         )
 
         if documentation_part is None:
-            raise NotFoundException(f"Documentation part not found: {documentation_part_id}")
+            raise NotFoundException("Invalid Documentation part identifier specified")
         return to_documentation_part_response_json(rest_api_id, documentation_part)
 
     def create_documentation_part(
@@ -737,6 +738,28 @@ class ApigatewayProvider(ApigatewayApi, ServiceLifecycleHook):
         if not (rest_api_container := store.rest_apis.get(rest_api_id)):
             raise NotFoundException(
                 f"Invalid API identifier specified {context.account_id}:{rest_api_id}"
+            )
+        location_type = location.get("type")
+        valid_location_types = [
+            "API",
+            "AUTHORIZER",
+            "MODEL",
+            "RESOURCE",
+            "METHOD",
+            "PATH_PARAMETER",
+            "QUERY_PARAMETER",
+            "REQUEST_HEADER" "REQUEST_BODY",
+            "RESPONSE",
+            "RESPONSE_HEADER",
+            "RESPONSE_BODY",
+        ]
+        if location_type not in valid_location_types:
+            raise ValidationException(
+                f"1 validation error detected: Value '{location_type}' at "
+                f"'createDocumentationPartInput.location.type' failed to satisfy constraint: "
+                f"Member must satisfy enum value set: "
+                f"[RESPONSE_BODY, RESPONSE, METHOD, MODEL, AUTHORIZER, RESPONSE_HEADER, "
+                f"RESOURCE, PATH_PARAMETER, REQUEST_BODY, QUERY_PARAMETER, API, REQUEST_HEADER]"
             )
         doc_part = DocumentationPart(
             id=entity_id,
@@ -766,7 +789,26 @@ class ApigatewayProvider(ApigatewayApi, ServiceLifecycleHook):
         )
 
         if doc_part is None:
-            raise NotFoundException(f"Documentation part not found: {documentation_part_id}")
+            raise NotFoundException("Invalid Documentation part identifier specified")
+
+        for operation in patch_operations:
+            path = operation.get("path")
+            operation_performed = operation.get("op")
+            if operation_performed != "replace":
+                raise BadRequestException(
+                    f"Invalid patch path  '{path}' specified for op '{operation_performed}'. "
+                    f"Please choose supported operations"
+                )
+
+            if path != "/properties":
+                raise BadRequestException(
+                    f"Invalid patch path  '{path}' specified for op 'replace'. "
+                    f"Must be one of: [/properties]"
+                )
+
+            key = path[1:]
+            if key == "properties" and not operation.get("value"):
+                raise BadRequestException("Documentation part properties must be non-empty")
 
         patched_doc_part = apply_json_patch_safe(doc_part, patch_operations)
 
@@ -780,7 +822,20 @@ class ApigatewayProvider(ApigatewayApi, ServiceLifecycleHook):
     ) -> None:
         # TODO: add validation if document_part does not exist, or rest_api
         store = get_apigateway_store(account_id=context.account_id, region=context.region)
-        rest_api_container = store.rest_apis.get(rest_api_id)
+        if not (rest_api_container := store.rest_apis.get(rest_api_id)):
+            raise NotFoundException(
+                f"Invalid API identifier specified {context.account_id}:{rest_api_id}"
+            )
+
+        documentation_part = (
+            rest_api_container.documentation_parts.get(documentation_part_id)
+            if rest_api_container
+            else None
+        )
+
+        if documentation_part is None:
+            raise NotFoundException("Invalid Documentation part identifier specified")
+
         if rest_api_container:
             rest_api_container.documentation_parts.pop(documentation_part_id, None)
 
