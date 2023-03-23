@@ -261,6 +261,7 @@ class StreamEventSourceListener(EventSourceListener):
                 e,
                 exc_info=LOG.isEnabledFor(logging.DEBUG),
             )
+            raise
 
     def _send_to_failure_destination(
         self,
