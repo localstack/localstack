@@ -2269,8 +2269,9 @@ class TestS3:
                 snapshot.transform.regex(rf"{bucket_2}", "<bucket-name:2>"),
                 snapshot.transform.key_value("x-amz-id-2", reference_replacement=False),
                 snapshot.transform.key_value("x-amz-request-id", reference_replacement=False),
-                snapshot.transform.regex(r"s3\.amazonaws\.com", "host"),
-                snapshot.transform.regex(r"s3\.localhost\.localstack\.cloud:4566", "host"),
+                snapshot.transform.regex(r"s3\.amazonaws\.com", "<host>"),
+                snapshot.transform.regex(r"s3\.localhost\.localstack\.cloud:4566", "<host>"),
+                snapshot.transform.regex(r"s3\.localhost\.localstack\.cloud:443", "<host>"),
             ]
         )
 
@@ -2298,10 +2299,11 @@ class TestS3:
                 _filter_header(response["ResponseMetadata"]["HTTPHeaders"]),
             )
 
-            # TODO aws returns 403, LocalStack 404
-            # with pytest.raises(ClientError) as e:
-            #     response = s3_client.head_bucket(Bucket="does-not-exist")
-            # snapshot.match("head_bucket_not_exist", e.value.response)
+            with pytest.raises(ClientError) as e:
+                response = s3_client.head_bucket(
+                    Bucket=f"does-not-exist-{short_uid()}-{short_uid()}"
+                )
+            snapshot.match("head_bucket_not_exist", e.value.response)
         finally:
             s3_client.delete_bucket(Bucket=bucket_1)
             s3_client.delete_bucket(Bucket=bucket_2)
