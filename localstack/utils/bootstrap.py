@@ -510,6 +510,8 @@ def prepare_docker_start():
     if DOCKER_CLIENT.is_container_running(container_name):
         raise ContainerExists('LocalStack container named "%s" is already running' % container_name)
 
+    config.dirs.mkdirs()
+
 
 def configure_container(container: LocalstackContainer):
     """
