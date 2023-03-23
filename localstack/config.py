@@ -427,7 +427,7 @@ def populate_legacy_edge_configuration(
         default_ip = "127.0.0.1"
 
     localstack_host_raw = environment.get("LOCALSTACK_HOST")
-    edge_bind_raw = environment.get("GATEWAY_LISTEN")
+    gateway_listen_raw = environment.get("GATEWAY_LISTEN")
 
     # new for v2
     # populate LOCALSTACK_HOST first since GATEWAY_LISTEN may be derived from LOCALSTACK_HOST
@@ -435,7 +435,7 @@ def populate_legacy_edge_configuration(
     if localstack_host is None:
         localstack_host = f"{constants.LOCALHOST_HOSTNAME}:{constants.DEFAULT_PORT_EDGE}"
 
-    def parse_edge_bind(value: str) -> str:
+    def parse_gateway_listen(value: str) -> str:
         if ":" in value:
             ip, port_s = value.split(":", 1)
             if not ip.strip():
@@ -447,33 +447,37 @@ def populate_legacy_edge_configuration(
         else:
             return f"{value}:4566"
 
-    edge_bind = edge_bind_raw
-    if edge_bind is None:
+    gateway_listen = gateway_listen_raw
+    if gateway_listen is None:
         # default to existing behaviour
         port = int(localstack_host.split(":")[-1])
-        edge_bind = f"{default_ip}:{port}"
+        gateway_listen = f"{default_ip}:{port}"
     else:
-        components = edge_bind.split(",")
-        edge_bind = ",".join([parse_edge_bind(component.strip()) for component in components])
+        components = gateway_listen.split(",")
+        gateway_listen = ",".join(
+            [parse_gateway_listen(component.strip()) for component in components]
+        )
 
-    assert edge_bind is not None
+    assert gateway_listen is not None
     assert localstack_host is not None
 
     def legacy_fallback(envar_name: str, default: T) -> T:
         result = default
         result_raw = environment.get(envar_name)
-        if result_raw is not None and edge_bind_raw is None:
+        if result_raw is not None and gateway_listen_raw is None:
             result = result_raw
 
         return result
 
     # derive legacy variables from GATEWAY_LISTEN unless GATEWAY_LISTEN is not given and
     # legacy variables are
-    edge_bind_host = legacy_fallback("EDGE_BIND_HOST", get_edge_bind(edge_bind)[0].host)
-    edge_port = int(legacy_fallback("EDGE_PORT", get_edge_bind(edge_bind)[0].port))
-    edge_port_http = int(legacy_fallback("EDGE_PORT_HTTP", get_edge_bind(edge_bind)[0].port))
+    edge_bind_host = legacy_fallback("EDGE_BIND_HOST", get_gateway_listen(gateway_listen)[0].host)
+    edge_port = int(legacy_fallback("EDGE_PORT", get_gateway_listen(gateway_listen)[0].port))
+    edge_port_http = int(
+        legacy_fallback("EDGE_PORT_HTTP", get_gateway_listen(gateway_listen)[0].port)
+    )
 
-    return localstack_host, edge_bind, edge_bind_host, edge_port, edge_port_http
+    return localstack_host, gateway_listen, edge_bind_host, edge_port, edge_port_http
 
 
 @dataclass
@@ -493,9 +497,9 @@ class HostAndPort:
         return self.host == other.host and self.port == other.port
 
 
-def get_edge_bind(edge_bind: str) -> List[HostAndPort]:
+def get_gateway_listen(gateway_listen: str) -> List[HostAndPort]:
     result = []
-    for bind_address in edge_bind.split(","):
+    for bind_address in gateway_listen.split(","):
         result.append(HostAndPort.parse(bind_address))
     return result
 
