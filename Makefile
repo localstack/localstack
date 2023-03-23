@@ -105,17 +105,17 @@ docker-push-master: 	  ## Push a single platform-specific Docker image to regist
 		echo "This is a fork and not the main repo.") || \
 	( \
 		docker info | grep Username || docker login -u $$DOCKER_USERNAME -p $$DOCKER_PASSWORD; \
-			docker tag $(SOURCE_IMAGE_NAME):latest $(TARGET_IMAGE_NAME):unstable-$(PLATFORM) && \
+			docker tag $(SOURCE_IMAGE_NAME):latest $(TARGET_IMAGE_NAME):latest-$(PLATFORM) && \
 		((! (git diff HEAD~1 localstack/__init__.py | grep '^+__version__ =' | grep -v '.dev') && \
-			echo "Only pushing tag 'unstable' as version has not changed.") || \
-			(docker tag $(TARGET_IMAGE_NAME):unstable-$(PLATFORM) $(TARGET_IMAGE_NAME):$(IMAGE_TAG)-$(PLATFORM) && \
-				docker tag $(TARGET_IMAGE_NAME):unstable-$(PLATFORM) $(TARGET_IMAGE_NAME):$(MAJOR_VERSION).$(MINOR_VERSION)-$(PLATFORM) && \
-				docker tag $(TARGET_IMAGE_NAME):unstable-$(PLATFORM) $(TARGET_IMAGE_NAME):$(MAJOR_VERSION).$(MINOR_VERSION).$(PATCH_VERSION)-$(PLATFORM) && \
+			echo "Only pushing tag 'latest' as version has not changed.") || \
+			(docker tag $(TARGET_IMAGE_NAME):latest-$(PLATFORM) $(TARGET_IMAGE_NAME):$(IMAGE_TAG)-$(PLATFORM) && \
+				docker tag $(TARGET_IMAGE_NAME):latest-$(PLATFORM) $(TARGET_IMAGE_NAME):$(MAJOR_VERSION).$(MINOR_VERSION)-$(PLATFORM) && \
+				docker tag $(TARGET_IMAGE_NAME):latest-$(PLATFORM) $(TARGET_IMAGE_NAME):$(MAJOR_VERSION).$(MINOR_VERSION).$(PATCH_VERSION)-$(PLATFORM) && \
 				docker push $(TARGET_IMAGE_NAME):$(IMAGE_TAG)-$(PLATFORM) && \
 				docker push $(TARGET_IMAGE_NAME):$(MAJOR_VERSION).$(MINOR_VERSION)-$(PLATFORM) && \
 				docker push $(TARGET_IMAGE_NAME):$(MAJOR_VERSION).$(MINOR_VERSION).$(PATCH_VERSION)-$(PLATFORM) \
 				)) && \
-				  docker push $(TARGET_IMAGE_NAME):unstable-$(PLATFORM) \
+				  docker push $(TARGET_IMAGE_NAME):latest-$(PLATFORM) \
 	)
 
 MANIFEST_IMAGE_NAME ?= $(IMAGE_NAME)
@@ -130,9 +130,9 @@ docker-create-push-manifests:	## Create and push manifests for a docker image (d
 		echo "This is a fork and not the main repo.") || \
 	( \
 		docker info | grep Username || docker login -u $$DOCKER_USERNAME -p $$DOCKER_PASSWORD; \
-			docker manifest create $(MANIFEST_IMAGE_NAME):unstable --amend $(MANIFEST_IMAGE_NAME):unstable-amd64 --amend $(MANIFEST_IMAGE_NAME):unstable-arm64 && \
+			docker manifest create $(MANIFEST_IMAGE_NAME):latest --amend $(MANIFEST_IMAGE_NAME):latest-amd64 --amend $(MANIFEST_IMAGE_NAME):latest-arm64 && \
 		((! (git diff HEAD~1 localstack/__init__.py | grep '^+__version__ =' | grep -v '.dev') && \
-				echo "Only pushing tag 'unstable' as version has not changed.") || \
+				echo "Only pushing tag 'latest' as version has not changed.") || \
 			(docker manifest create $(MANIFEST_IMAGE_NAME):$(IMAGE_TAG) \
 			--amend $(MANIFEST_IMAGE_NAME):$(IMAGE_TAG)-amd64 \
 			--amend $(MANIFEST_IMAGE_NAME):$(IMAGE_TAG)-arm64 && \
@@ -145,7 +145,7 @@ docker-create-push-manifests:	## Create and push manifests for a docker image (d
 				docker manifest push $(MANIFEST_IMAGE_NAME):$(IMAGE_TAG) && \
 				docker manifest push $(MANIFEST_IMAGE_NAME):$(MAJOR_VERSION).$(MINOR_VERSION) && \
 				docker manifest push $(MANIFEST_IMAGE_NAME):$(MAJOR_VERSION).$(MINOR_VERSION).$(PATCH_VERSION))) && \
-		docker manifest push $(MANIFEST_IMAGE_NAME):unstable \
+		docker manifest push $(MANIFEST_IMAGE_NAME):latest \
 	)
 
 docker-run-tests:		  ## Initializes the test environment and runs the tests in a docker container
