@@ -95,38 +95,84 @@ class TestClientFactory:
         "service",
         [
             "acm",
+            "amplify",
             "apigateway",
+            "apigatewayv2",
+            "appconfig",
+            "appsync",
+            "athena",
+            "autoscaling",
             "awslambda",
+            "backup",
+            "batch",
+            "ce",
             "cloudformation",
+            "cloudfront",
+            "cloudtrail",
             "cloudwatch",
+            "codecommit",
+            "cognito_identity",
             "cognito_idp",
+            "docdb",
             "dynamodb",
             "dynamodbstreams",
             "ec2",
             "ecr",
+            "ecs",
+            "eks",
+            "elasticbeanstalk",
+            "elbv2",
+            "emr",
             "es",
             "events",
             "firehose",
+            "glacier",
+            "glue",
             "iam",
+            "iot",
+            "iot_data",
+            "iotanalytics",
+            "iotwireless",
+            "kafka",
             "kinesis",
             "kms",
+            "lakeformation",
             "logs",
+            "mediastore",
+            "mq",
+            "mwaa",
+            "neptune",
             "opensearch",
+            "organizations",
+            "pi",
+            "qldb",
+            "qldb_session",
+            "rds",
+            "rds_data",
             "redshift",
+            "redshift_data",
             "resource_groups",
             "resourcegroupstaggingapi",
             "route53",
             "route53resolver",
             "s3",
             "s3control",
+            "sagemaker",
+            "sagemaker_runtime",
             "secretsmanager",
+            "serverlessrepo",
+            "servicediscovery",
             "ses",
+            "sesv2",
             "sns",
             "sqs",
             "ssm",
             "stepfunctions",
             "sts",
+            "timestream_query",
+            "timestream_write",
             "transcribe",
+            "xray",
         ],
     )
     def test_typed_client_creation(self, service):
@@ -140,10 +186,11 @@ class TestClientFactory:
         Different factories should result in different (identity wise) clients"""
         # This test might get flaky if some internal boto3 caching is introduced at some point
         # TODO does it really make sense to test the caching?
+        # TODO pretty ugly way of accessing the internal client
         factory = InternalClientFactory()
-        assert factory().s3 == factory().s3
+        assert factory().s3._client == factory().s3._client
         factory_2 = InternalClientFactory()
-        assert factory().s3 != factory_2().s3
+        assert factory().s3._client != factory_2().s3._client
 
     def test_internal_request_parameters(self, create_dummy_request_parameter_gateway):
         internal_dto = None
@@ -162,9 +209,9 @@ class TestClientFactory:
         }
         internal_factory = InternalClientFactory()
         internal_lambda_client = internal_factory(endpoint_url=endpoint_url).awslambda
-        internal_lambda_client.list_functions(
-            _ServicePrincipal=sent_dto["service_principal"], _SourceArn=sent_dto["source_arn"]
-        )
+        internal_lambda_client.request_metadata(
+            service_principal=sent_dto["service_principal"], source_arn=sent_dto["source_arn"]
+        ).list_functions()
         assert internal_dto == sent_dto
         external_factory = ExternalClientFactory()
         external_lambda_client = external_factory(endpoint_url=endpoint_url).awslambda
@@ -236,10 +283,13 @@ class TestClientFactory:
         endpoint_url = create_dummy_request_parameter_gateway([echo_request_handler])
 
         # TODO this should be extracted into a utility for the next iteration
-        response = factory(endpoint_url=endpoint_url).sts.assume_role(
-            RoleArn="arn:aws:iam::000000000000:role/test-role",
-            RoleSessionName="test-session",
-            _ServicePrincipal="apigateway",
+        response = (
+            factory(endpoint_url=endpoint_url)
+            .sts.request_metadata(service_principal="apigateway")
+            .assume_role(
+                RoleArn="arn:aws:iam::000000000000:role/test-role",
+                RoleSessionName="test-session",
+            )
         )
         assert test_params == {"is_internal": True, "service_principal": "apigateway"}
         credentials = response["Credentials"]
@@ -275,10 +325,10 @@ class TestClientFactory:
             "service_principal": "apigatway",
             "source_arn": "arn:aws:apigateway:us-east-1::/apis/a1a1a1a1",
         }
-        clients.awslambda.list_functions(
-            _ServicePrincipal=expected_result["service_principal"],
-            _SourceArn=expected_result["source_arn"],
-        )
+        clients.awslambda.request_metadata(
+            source_arn=expected_result["source_arn"],
+            service_principal=expected_result["service_principal"],
+        ).list_functions()
 
         assert test_params == expected_result
 

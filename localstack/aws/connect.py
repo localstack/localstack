@@ -8,8 +8,8 @@ import json
 import logging
 import threading
 from abc import ABC, abstractmethod
-from functools import cache
-from typing import TYPE_CHECKING, Any, Optional, TypedDict
+from functools import cache, partial
+from typing import Any, Callable, Generic, Optional, TypedDict, TypeVar
 
 from boto3.session import Session
 from botocore.client import BaseClient
@@ -22,43 +22,8 @@ from localstack.constants import (
     MAX_POOL_CONNECTIONS,
 )
 from localstack.utils.aws.aws_stack import get_local_service_url
+from localstack.utils.aws.client_types import TypedServiceClientFactory
 from localstack.utils.aws.request_context import get_region_from_request_context
-
-if TYPE_CHECKING:
-    from mypy_boto3_acm import ACMClient
-    from mypy_boto3_apigateway import APIGatewayClient
-    from mypy_boto3_cloudformation import CloudFormationClient
-    from mypy_boto3_cloudwatch import CloudWatchClient
-    from mypy_boto3_cognito_idp import CognitoIdentityProviderClient
-    from mypy_boto3_dynamodb import DynamoDBClient
-    from mypy_boto3_dynamodbstreams import DynamoDBStreamsClient
-    from mypy_boto3_ec2 import EC2Client
-    from mypy_boto3_ecr import ECRClient
-    from mypy_boto3_es import ElasticsearchServiceClient
-    from mypy_boto3_events import EventBridgeClient
-    from mypy_boto3_firehose import FirehoseClient
-    from mypy_boto3_iam import IAMClient
-    from mypy_boto3_kinesis import KinesisClient
-    from mypy_boto3_kms import KMSClient
-    from mypy_boto3_lambda import LambdaClient
-    from mypy_boto3_logs import CloudWatchLogsClient
-    from mypy_boto3_opensearch import OpenSearchServiceClient
-    from mypy_boto3_redshift import RedshiftClient
-    from mypy_boto3_resource_groups import ResourceGroupsClient
-    from mypy_boto3_resourcegroupstaggingapi import ResourceGroupsTaggingAPIClient
-    from mypy_boto3_route53 import Route53Client
-    from mypy_boto3_route53resolver import Route53ResolverClient
-    from mypy_boto3_s3 import S3Client
-    from mypy_boto3_s3control import S3ControlClient
-    from mypy_boto3_secretsmanager import SecretsManagerClient
-    from mypy_boto3_ses import SESClient
-    from mypy_boto3_sns import SNSClient
-    from mypy_boto3_sqs import SQSClient
-    from mypy_boto3_ssm import SSMClient
-    from mypy_boto3_stepfunctions import SFNClient
-    from mypy_boto3_sts import STSClient
-    from mypy_boto3_transcribe import TranscribeClient
-
 
 LOG = logging.getLogger(__name__)
 
@@ -115,48 +80,57 @@ def load_dto(data: str) -> InternalRequestParameters:
     return json.loads(data)
 
 
+T = TypeVar("T")
+
+
+class MetadataRequestInjector(Generic[T]):
+    def __init__(self, client: T, params: dict[str, str] | None = None):
+        self._client = client
+        self._params = params
+
+    def __getattr__(self, item):
+        target = getattr(self._client, item)
+        if not isinstance(target, Callable):
+            return target
+        if self._params:
+            return partial(target, **self._params)
+        else:
+            return target
+
+    def request_metadata(
+        self, source_arn: str | None = None, service_principal: str | None = None
+    ) -> T:
+        """
+        Provides request metadata to this client.
+        Identical to providing _ServicePrincipal and _SourceArn directly as operation arguments but typing
+        compatible.
+
+        Raw example: lambda_client.invoke(FunctionName="fn", _SourceArn="...")
+        Injector example: lambda_client.request_metadata(source_arn="...").invoke(FunctionName="fn")
+        Cannot be called on objects where the parameters are already set.
+
+        :param source_arn: Arn on which behalf the calls of this client shall be made
+        :param service_principal: Service principal on which behalf the calls of this client shall be made
+        :return: A new version of the MetadataRequestInjector
+        """
+        if self._params is not None:
+            raise TypeError("Request_data cannot be called on it's own return value")
+        params = {}
+        if source_arn:
+            params["_SourceArn"] = source_arn
+        if service_principal:
+            params["_ServicePrincipal"] = service_principal
+        return MetadataRequestInjector(client=self._client, params=params)
+
+
 #
 # Factory
 #
-class ServiceLevelClientFactory:
+class ServiceLevelClientFactory(TypedServiceClientFactory):
     """
     A service level client factory, preseeded with parameters for the boto3 client creation.
     Will create any service client with parameters already provided by the ClientFactory.
     """
-
-    acm: "ACMClient"
-    apigateway: "APIGatewayClient"
-    awslambda: "LambdaClient"
-    cloudformation: "CloudFormationClient"
-    cloudwatch: "CloudWatchClient"
-    cognito_idp: "CognitoIdentityProviderClient"
-    dynamodb: "DynamoDBClient"
-    dynamodbstreams: "DynamoDBStreamsClient"
-    ec2: "EC2Client"
-    ecr: "ECRClient"
-    es: "ElasticsearchServiceClient"
-    events: "EventBridgeClient"
-    firehose: "FirehoseClient"
-    iam: "IAMClient"
-    kinesis: "KinesisClient"
-    kms: "KMSClient"
-    logs: "CloudWatchLogsClient"
-    opensearch: "OpenSearchServiceClient"
-    redshift: "RedshiftClient"
-    resource_groups: "ResourceGroupsClient"
-    resourcegroupstaggingapi: "ResourceGroupsTaggingAPIClient"
-    route53: "Route53Client"
-    route53resolver: "Route53ResolverClient"
-    s3: "S3Client"
-    s3control: "S3ControlClient"
-    secretsmanager: "SecretsManagerClient"
-    ses: "SESClient"
-    sns: "SNSClient"
-    sqs: "SQSClient"
-    ssm: "SSMClient"
-    stepfunctions: "SFNClient"
-    sts: "STSClient"
-    transcribe: "TranscribeClient"
 
     def __init__(
         self, *, factory: "ClientFactory", client_creation_params: dict[str, str | Config | None]
@@ -166,7 +140,9 @@ class ServiceLevelClientFactory:
 
     def __getattr__(self, service: str):
         service = attribute_name_to_service_name(service)
-        return self._factory.get_client(service_name=service, **self._client_creation_params)
+        return MetadataRequestInjector(
+            client=self._factory.get_client(service_name=service, **self._client_creation_params)
+        )
 
 
 class ClientFactory(ABC):
