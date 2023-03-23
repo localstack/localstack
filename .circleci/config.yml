@@ -141,31 +141,6 @@ jobs:
       - store_test_results:
           path: target/reports/
 
-  itest-s3-asf-provider:
-    executor: ubuntu-machine-amd64
-    working_directory: /tmp/workspace/repo
-    steps:
-      - attach_workspace:
-          at: /tmp/workspace
-      - run:
-          name: Test ASF S3 provider
-          environment:
-            PROVIDER_OVERRIDE_S3: "asf"
-            TEST_PATH: "tests/integration/s3/ tests/integration/test_network_configuration.py::TestS3"
-            PYTEST_ARGS: "--reruns 3 --junitxml=target/reports/s3_asf.xml -o junit_suite_name='s3_asf'"
-            COVERAGE_ARGS: "-p"
-          command: make test-coverage
-      - run:
-          name: Store coverage results
-          command: mv .coverage.* target/coverage/
-      - persist_to_workspace:
-          root:
-            /tmp/workspace
-          paths:
-            - repo/target/coverage/
-      - store_test_results:
-          path: target/reports/
-
   itest-sfn-v2-provider:
     executor: ubuntu-machine-amd64
     working_directory: /tmp/workspace/repo
@@ -416,9 +391,6 @@ workflows:
       - itest-lambda-legacy:
           requires:
             - preflight
-      - itest-s3-asf-provider:
-          requires:
-            - preflight
       - itest-sfn-v2-provider:
           requires:
             - preflight
@@ -462,7 +434,6 @@ workflows:
       - report:
           requires:
             - itest-lambda-legacy
-            - itest-s3-asf-provider
             - itest-sfn-v2-provider
             - docker-test-amd64
             - docker-test-arm64
@@ -474,7 +445,6 @@ workflows:
               only: master
           requires:
             - itest-lambda-legacy
-            - itest-s3-asf-provider
             - itest-sfn-v2-provider
             - docker-test-amd64
             - docker-test-arm64
