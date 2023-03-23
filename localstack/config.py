@@ -433,7 +433,6 @@ def populate_legacy_edge_configuration(
     # populate LOCALSTACK_HOST first since EDGE_BIND may be derived from LOCALSTACK_HOST
     localstack_host = localstack_host_raw
     if localstack_host is None:
-        localstack_host = f"{default_ip}:4566"
         localstack_host = f"{constants.LOCALHOST_HOSTNAME}:{constants.DEFAULT_PORT_EDGE}"
 
     def parse_edge_bind(value: str) -> str:
