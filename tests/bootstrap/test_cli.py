@@ -17,7 +17,9 @@ from localstack.utils.run import run, to_str
 
 
 @pytest.fixture
-def runner():
+def runner(monkeypatch):
+    # normally we are setting LOCALSTACK_CLI in localstack/cli/main.py, which is not actually run in the tests
+    monkeypatch.setenv("LOCALSTACK_CLI", "1")
     return CliRunner()
 
 
