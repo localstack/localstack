@@ -1781,7 +1781,6 @@ class TestApiGatewayApiDocumentationPart:
         )
         snapshot.match("delete_documentation_part", response)
 
-
     @pytest.mark.aws_validated
     def test_invalid_get_documentation_part(
         self, apigateway_client, apigw_create_rest_api, snapshot
@@ -1912,7 +1911,7 @@ class TestApiGatewayApiDocumentationPart:
 
     @pytest.mark.aws_validated
     def test_invalid_delete_documentation_part(
-            self, apigateway_client, apigw_create_rest_api, snapshot
+        self, apigateway_client, apigw_create_rest_api, snapshot
     ):
         response = apigw_create_rest_api(
             name=f"test-api-{short_uid()}",
@@ -1935,9 +1934,9 @@ class TestApiGatewayApiDocumentationPart:
         snapshot.match("delete_documentation_part_wrong_api_id", e.value.response)
 
         response = apigateway_client.delete_documentation_part(
-                    restApiId=api_id,
-                    documentationPartId=documentation_part_id,
-                    )
+            restApiId=api_id,
+            documentationPartId=documentation_part_id,
+        )
         snapshot.match("delete_documentation_part", response)
 
         with pytest.raises(ClientError) as e:
