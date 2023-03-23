@@ -1724,22 +1724,6 @@ class TestApiGatewayApiRequestValidator:
 
 
 class TestApiGatewayApiDocumentationPart:
-    # @pytest.mark.aws_validated
-    # def test_create_documentation_part(self, apigateway_client, apigw_create_rest_api, snapshot):
-    #     response = apigw_create_rest_api(
-    #         name=f"test-api-{short_uid()}",
-    #         description="this is my api",
-    #     )
-    #     snapshot.match("create-rest-api", response)
-    #     api_id = response["id"]
-    #
-    #     response = apigateway_client.create_documentation_part(
-    #         restApiId=api_id,
-    #         location={"type": "API"},
-    #         properties='{ "description": "Sample API description" }',
-    #     )
-    #     snapshot.match("create-documentation-part", response)
-
     @pytest.mark.aws_validated
     def test_documentation_part_lifecycle(self, apigateway_client, apigw_create_rest_api, snapshot):
         response = apigw_create_rest_api(
@@ -1827,27 +1811,6 @@ class TestApiGatewayApiDocumentationPart:
             )
         snapshot.match("get-documentation-part-invalid-doc-id", e.value.response)
 
-    # @pytest.mark.aws_validated
-    # def test_get_documentation_parts(self, apigateway_client, apigw_create_rest_api, snapshot):
-    #     response = apigw_create_rest_api(
-    #         name=f"test-api-{short_uid()}",
-    #         description="this is my api",
-    #     )
-    #     snapshot.match("create-rest-api", response)
-    #     api_id = response["id"]
-    #
-    #     response = apigateway_client.create_documentation_part(
-    #         restApiId=api_id,
-    #         location={"type": "API"},
-    #         properties='{ "description": "Sample API description" }',
-    #     )
-    #     snapshot.match("create-documentation-part", response)
-    #
-    #     response = apigateway_client.get_documentation_parts(
-    #         restApiId=api_id,
-    #     )
-    #     snapshot.match("get-documentation-parts", response)
-
     @pytest.mark.aws_validated
     def test_invalid_get_documentation_parts(
         self, apigateway_client, apigw_create_rest_api, snapshot
@@ -1857,74 +1820,6 @@ class TestApiGatewayApiDocumentationPart:
                 restApiId="api_id",
             )
         snapshot.match("get-inavlid-documentation-parts", e.value.response)
-
-    # @pytest.mark.aws_validated
-    # def test_delete_documentation_part(self, apigateway_client, apigw_create_rest_api, snapshot):
-    #     response = apigw_create_rest_api(
-    #         name=f"test-api-{short_uid()}",
-    #         description="this is my api",
-    #     )
-    #     snapshot.match("create-rest-api", response)
-    #     api_id = response["id"]
-    #
-    #     response = apigateway_client.create_documentation_part(
-    #         restApiId=api_id,
-    #         location={"type": "API"},
-    #         properties='{ "description": "Sample API description" }',
-    #     )
-    #     snapshot.match("create-documentation-part", response)
-    #     documentation_part_id = response["id"]
-    #
-    #     response = apigateway_client.get_documentation_part(
-    #         restApiId=api_id, documentationPartId=documentation_part_id
-    #     )
-    #     snapshot.match("get-documentation-part-before-delete", response)
-    #
-    #     response = apigateway_client.delete_documentation_part(
-    #         restApiId=api_id, documentationPartId=documentation_part_id
-    #     )
-    #     snapshot.match("delete_documentation_part", response)
-
-    # @pytest.mark.aws_validated
-    # def test_update_documentation_part(self, apigateway_client, apigw_create_rest_api, snapshot):
-    #     response = apigw_create_rest_api(
-    #         name=f"test-api-{short_uid()}",
-    #         description="this is my api",
-    #     )
-    #     snapshot.match("create-rest-api", response)
-    #     api_id = response["id"]
-    #
-    #     response = apigateway_client.create_documentation_part(
-    #         restApiId=api_id,
-    #         location={"type": "API"},
-    #         properties='{ "description": "Sample API description" }',
-    #     )
-    #     snapshot.match("create-documentation-part", response)
-    #     documentation_part_id = response["id"]
-    #
-    #     response = apigateway_client.get_documentation_part(
-    #         restApiId=api_id, documentationPartId=documentation_part_id
-    #     )
-    #     snapshot.match("get-documentation-part-before-update", response)
-    #
-    #     patch_operations = [
-    #         {
-    #             "op": "replace",
-    #             "path": "/properties",
-    #             "value": '{ "description": "Updated Sample API description" }',
-    #         },
-    #     ]
-    #     response = apigateway_client.update_documentation_part(
-    #         restApiId=api_id,
-    #         documentationPartId=documentation_part_id,
-    #         patchOperations=patch_operations,
-    #     )
-    #     snapshot.match("update-documentation-part", response)
-    #
-    #     response = apigateway_client.get_documentation_part(
-    #         restApiId=api_id, documentationPartId=documentation_part_id
-    #     )
-    #     snapshot.match("get-documentation-part-after-update", response)
 
     @pytest.mark.aws_validated
     def test_invalid_update_documentation_part(
