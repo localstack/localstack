@@ -1084,7 +1084,6 @@ class TestLambdaFeatures:
         zip_file = create_lambda_archive(
             load_file(TEST_LAMBDA_PYTHON),
             get_content=True,
-            libs=TEST_LAMBDA_LIBS,
             runtime=Runtime.python3_9,
         )
         s3_client.upload_fileobj(BytesIO(zip_file), s3_bucket, bucket_key)
@@ -1140,7 +1139,6 @@ class TestLambdaFeatures:
         zip_file = testutil.create_lambda_archive(
             load_file(TEST_LAMBDA_PYTHON),
             get_content=True,
-            libs=TEST_LAMBDA_LIBS,
             runtime=Runtime.python3_9,
         )
         s3_client.upload_fileobj(BytesIO(zip_file), s3_bucket, bucket_key)

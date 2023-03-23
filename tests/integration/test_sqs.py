@@ -20,7 +20,7 @@ from localstack.utils.aws import arns, aws_stack
 from localstack.utils.common import poll_condition, retry, short_uid, to_str
 
 from .awslambda.functions import lambda_integration
-from .awslambda.test_lambda import TEST_LAMBDA_LIBS, TEST_LAMBDA_PYTHON
+from .awslambda.test_lambda import TEST_LAMBDA_PYTHON
 
 TEST_POLICY = """
 {
@@ -946,7 +946,6 @@ class TestSqsProvider:
         lambda_name = f"lambda-{short_uid()}"
         create_lambda_function(
             func_name=lambda_name,
-            libs=TEST_LAMBDA_LIBS,
             handler_file=TEST_LAMBDA_PYTHON,
             runtime=Runtime.python3_9,
         )
@@ -2229,7 +2228,6 @@ class TestSqsProvider:
         lambda_name = "lambda-{}".format(short_uid())
         create_lambda_function(
             func_name=lambda_name,
-            libs=TEST_LAMBDA_LIBS,
             handler_file=TEST_LAMBDA_PYTHON,
             runtime=Runtime.python3_9,
         )

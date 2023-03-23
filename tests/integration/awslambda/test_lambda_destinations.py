@@ -12,7 +12,7 @@ from localstack.testing.aws.util import is_aws_cloud
 from localstack.utils.strings import short_uid, to_bytes, to_str
 from localstack.utils.sync import retry, wait_until
 from tests.integration.awslambda.functions import lambda_integration
-from tests.integration.awslambda.test_lambda import TEST_LAMBDA_LIBS, TEST_LAMBDA_PYTHON
+from tests.integration.awslambda.test_lambda import TEST_LAMBDA_PYTHON
 
 
 class TestLambdaDLQ:
@@ -48,7 +48,6 @@ class TestLambdaDLQ:
         create_lambda_response = create_lambda_function(
             handler_file=TEST_LAMBDA_PYTHON,
             func_name=lambda_name,
-            libs=TEST_LAMBDA_LIBS,
             runtime=Runtime.python3_9,
             DeadLetterConfig={"TargetArn": queue_arn},
             role=lambda_su_role,

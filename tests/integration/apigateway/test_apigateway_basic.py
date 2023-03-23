@@ -69,7 +69,6 @@ from tests.integration.apigateway.conftest import (
 from tests.integration.awslambda.test_lambda import (
     TEST_LAMBDA_AWS_PROXY,
     TEST_LAMBDA_HTTP_RUST,
-    TEST_LAMBDA_LIBS,
     TEST_LAMBDA_NODEJS,
     TEST_LAMBDA_NODEJS_APIGW_502,
     TEST_LAMBDA_NODEJS_APIGW_INTEGRATION,
@@ -1792,9 +1791,7 @@ class TestAPIGateway:
 
     @staticmethod
     def create_lambda_function(fn_name):
-        testutil.create_lambda_function(
-            handler_file=TEST_LAMBDA_PYTHON, libs=TEST_LAMBDA_LIBS, func_name=fn_name
-        )
+        testutil.create_lambda_function(handler_file=TEST_LAMBDA_PYTHON, func_name=fn_name)
         lambda_client = aws_stack.create_external_boto_client("lambda")
         lambda_client.get_waiter("function_active_v2").wait(FunctionName=fn_name)
 

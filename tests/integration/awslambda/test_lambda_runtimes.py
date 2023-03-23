@@ -24,7 +24,6 @@ from tests.integration.awslambda.test_lambda import (
     PYTHON_TEST_RUNTIMES,
     TEST_LAMBDA_JAVA_MULTIPLE_HANDLERS,
     TEST_LAMBDA_JAVA_WITH_LIB,
-    TEST_LAMBDA_LIBS,
     TEST_LAMBDA_NODEJS_ES6,
     TEST_LAMBDA_PYTHON,
     TEST_LAMBDA_PYTHON_UNHANDLED_ERROR,
@@ -436,7 +435,6 @@ class TestPythonRuntimes:
         zip_file = testutil.create_lambda_archive(
             load_file(TEST_LAMBDA_PYTHON),
             get_content=True,
-            libs=TEST_LAMBDA_LIBS,
             runtime=runtime,
             file_name="localstack_package/def/main.py",
         )
