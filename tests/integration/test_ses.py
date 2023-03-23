@@ -14,11 +14,25 @@ from localstack.utils.strings import short_uid
 if TYPE_CHECKING:
     from mypy_boto3_ses import SESClient
 
-TEST_TEMPLATE_ATTRIBUTES = {
+SAMPLE_TEMPLATE = {
     "TemplateName": "hello-world",
     "SubjectPart": "Subject test",
     "TextPart": "hello\nworld",
     "HtmlPart": "hello<br/>world",
+}
+
+SAMPLE_SIMPLE_EMAIL = {
+    "Subject": {
+        "Data": "SOME_SUBJECT",
+    },
+    "Body": {
+        "Text": {
+            "Data": "SOME_MESSAGE",
+        },
+        "Html": {
+            "Data": "<p>SOME_HTML</p>",
+        },
+    },
 }
 
 
@@ -81,27 +95,27 @@ def sort_mail_sqs_messages(message):
 
 class TestSES:
     def test_list_templates(self, ses_client, create_template):
-        create_template(Template=TEST_TEMPLATE_ATTRIBUTES)
+        create_template(Template=SAMPLE_TEMPLATE)
         templ_list = ses_client.list_templates()["TemplatesMetadata"]
         assert 1 == len(templ_list)
         created_template = templ_list[0]
-        assert TEST_TEMPLATE_ATTRIBUTES["TemplateName"] == created_template["Name"]
+        assert SAMPLE_TEMPLATE["TemplateName"] == created_template["Name"]
         assert type(created_template["CreatedTimestamp"]) in (date, datetime)
 
         # Should not fail after 2 consecutive tries
         templ_list = ses_client.list_templates()["TemplatesMetadata"]
         assert 1 == len(templ_list)
         created_template = templ_list[0]
-        assert TEST_TEMPLATE_ATTRIBUTES["TemplateName"] == created_template["Name"]
+        assert SAMPLE_TEMPLATE["TemplateName"] == created_template["Name"]
         assert type(created_template["CreatedTimestamp"]) in (date, datetime)
 
     def test_delete_template(self, ses_client, create_template):
         templ_list = ses_client.list_templates()["TemplatesMetadata"]
         assert 0 == len(templ_list)
-        create_template(Template=TEST_TEMPLATE_ATTRIBUTES)
+        create_template(Template=SAMPLE_TEMPLATE)
         templ_list = ses_client.list_templates()["TemplatesMetadata"]
         assert 1 == len(templ_list)
-        ses_client.delete_template(TemplateName=TEST_TEMPLATE_ATTRIBUTES["TemplateName"])
+        ses_client.delete_template(TemplateName=SAMPLE_TEMPLATE["TemplateName"])
         templ_list = ses_client.list_templates()["TemplatesMetadata"]
         assert 0 == len(templ_list)
 
@@ -134,19 +148,7 @@ class TestSES:
         # Send a regular message
         message1 = ses_client.send_email(
             Source=email,
-            Message={
-                "Subject": {
-                    "Data": "A_SUBJECT",
-                },
-                "Body": {
-                    "Text": {
-                        "Data": "A_MESSAGE",
-                    },
-                    "Html": {
-                        "Data": "A_HTML",
-                    },
-                },
-            },
+            Message=SAMPLE_SIMPLE_EMAIL,
             Destination={
                 "ToAddresses": ["success@example.com"],
             },
@@ -160,8 +162,11 @@ class TestSES:
         assert contents1["Region"]
         assert contents1["Source"] == email
         assert contents1["Destination"] == {"ToAddresses": ["success@example.com"]}
-        assert contents1["Subject"] == "A_SUBJECT"
-        assert contents1["Body"] == {"text_part": "A_MESSAGE", "html_part": "A_HTML"}
+        assert contents1["Subject"] == SAMPLE_SIMPLE_EMAIL["Subject"]["Data"]
+        assert contents1["Body"] == {
+            "text_part": SAMPLE_SIMPLE_EMAIL["Body"]["Text"]["Data"],
+            "html_part": SAMPLE_SIMPLE_EMAIL["Body"]["Html"]["Data"],
+        }
         assert "RawData" not in contents1
 
         # Send a raw message
@@ -208,12 +213,12 @@ class TestSES:
         data_dir = config.dirs.data or config.dirs.tmp
         email = f"user-{short_uid()}@example.com"
         ses_client.verify_email_address(EmailAddress=email)
-        ses_client.delete_template(TemplateName=TEST_TEMPLATE_ATTRIBUTES["TemplateName"])
-        create_template(Template=TEST_TEMPLATE_ATTRIBUTES)
+        ses_client.delete_template(TemplateName=SAMPLE_TEMPLATE["TemplateName"])
+        create_template(Template=SAMPLE_TEMPLATE)
 
         message = ses_client.send_templated_email(
             Source=email,
-            Template=TEST_TEMPLATE_ATTRIBUTES["TemplateName"],
+            Template=SAMPLE_TEMPLATE["TemplateName"],
             TemplateData='{"A key": "A value"}',
             Destination={
                 "ToAddresses": ["success@example.com"],
@@ -227,7 +232,7 @@ class TestSES:
         contents = json.loads(message)
 
         assert email == contents["Source"]
-        assert TEST_TEMPLATE_ATTRIBUTES["TemplateName"] == contents["Template"]
+        assert SAMPLE_TEMPLATE["TemplateName"] == contents["Template"]
         assert '{"A key": "A value"}' == contents["TemplateData"]
         assert ["success@example.com"] == contents["Destination"]["ToAddresses"]
 
@@ -238,6 +243,44 @@ class TestSES:
 
         assert requests.delete("http://localhost:4566/_aws/ses").status_code == 204
         assert requests.get("http://localhost:4566/_aws/ses").json() == {"messages": []}
+
+    def test_sent_message_counter(self, ses_client, create_template):
+        # Ensure all email send operations correctly update the sent email counter
+        email = f"user-{short_uid()}@example.com"
+        ses_client.verify_email_address(EmailAddress=email)
+
+        counter = ses_client.get_send_quota()["SentLast24Hours"]
+
+        ses_client.send_email(
+            Source=email,
+            Message=SAMPLE_SIMPLE_EMAIL,
+            Destination={
+                "ToAddresses": ["success@example.com"],
+            },
+        )
+
+        new_counter = ses_client.get_send_quota()["SentLast24Hours"]
+        assert new_counter == counter + 1
+        counter = new_counter
+
+        create_template(Template=SAMPLE_TEMPLATE)
+        ses_client.send_templated_email(
+            Source=email,
+            Template=SAMPLE_TEMPLATE["TemplateName"],
+            TemplateData='{"A key": "A value"}',
+            Destination={
+                "ToAddresses": ["success@example.com", "lorem@ipsum.co"],
+            },
+        )
+
+        new_counter = ses_client.get_send_quota()["SentLast24Hours"]
+        assert new_counter == counter + 2
+        counter = new_counter
+
+        raw_message_data = f"From: {email}\nTo: recipient@example.com\nSubject: test\n\nThis is the message body.\n\n"
+        ses_client.send_raw_email(RawMessage={"Data": raw_message_data})
+        new_counter = ses_client.get_send_quota()["SentLast24Hours"]
+        assert new_counter == counter + 1
 
     def test_clone_receipt_rule_set(self, ses_client):
         # Test that rule set is cloned properly
@@ -362,19 +405,9 @@ class TestSES:
         destination = {
             "ToAddresses": [recipient_email_address],
         }
-        message = {
-            "Subject": {
-                "Data": "foo subject",
-            },
-            "Body": {
-                "Text": {
-                    "Data": "saml body",
-                },
-            },
-        }
         ses_client.send_email(
             Destination=destination,
-            Message=message,
+            Message=SAMPLE_SIMPLE_EMAIL,
             ConfigurationSetName=config_set_name,
             Source=sender_email_address,
             Tags=[

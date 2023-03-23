@@ -438,7 +438,6 @@ class SesProvider(SesApi, ServiceLifecycleHook):
         tags: MessageTagList = None,
         configuration_set_name: ConfigurationSetName = None,
     ) -> SendRawEmailResponse:
-        response = call_moto(context)
         raw_data = to_str(raw_message["Data"])
 
         if source is None or not source.strip():
@@ -449,6 +448,7 @@ class SesProvider(SesApi, ServiceLifecycleHook):
                 LOGGER.warning("Source not specified. Rejecting message.")
                 raise MessageRejected()
 
+        # TODO: On AWS, `destinations` is ignored if the `To` field is set in the raw email.
         destinations = destinations or []
 
         backend = get_ses_backend(context)
@@ -464,7 +464,7 @@ class SesProvider(SesApi, ServiceLifecycleHook):
                 continue
 
             payload = SNSPayload(
-                message_id=response["MessageId"],
+                message_id=message.id,
                 sender_email=source,
                 destination_addresses=destinations,
                 tags=tags,
