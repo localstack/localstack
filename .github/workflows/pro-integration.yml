@@ -178,48 +178,16 @@ jobs:
         env:
           DEBUG: 1
           DNS_ADDRESS: 0
-          LAMBDA_EXECUTOR: "local"
           LOCALSTACK_API_KEY: "test"
           AWS_SECRET_ACCESS_KEY: "test"
           AWS_ACCESS_KEY_ID: "test"
           AWS_DEFAULT_REGION: "us-east-1"
-          HOST_TMP_FOLDER: /tmp/localstack
           PYTEST_LOGLEVEL: debug
         run: |
           # Remove the host tmp folder (might contain remnant files with different permissions)
           sudo rm -rf ../localstack/.filesystem/var/lib/localstack/tmp
           source .venv/bin/activate
           python -m pytest --capture=no --reruns 2 --durations=10 --junitxml=target/reports/pytest.xml ../localstack/tests/integration/
-      - name: Run Lambda Tests for lambda executor docker
-        env:
-          DEBUG: 0
-          DNS_ADDRESS: 0
-          LAMBDA_EXECUTOR: "docker"
-          LOCALSTACK_API_KEY: "test"
-          HOST_TMP_FOLDER: /tmp/localstack
-        run: |
-          # Remove the host tmp folder (might contain remnant files with different permissions)
-          sudo rm -rf ../localstack/.filesystem/var/lib/localstack/tmp
-          source .venv/bin/activate
-          python -m pytest --reruns 2 --durations=10 --show-capture=no --junitxml=target/reports/lambda-docker.xml -o junit_suite_name='lambda-docker' \
-            ../localstack/tests/integration/awslambda/ \
-            ../localstack/tests/integration/test_integration.py \
-            ../localstack/tests/integration/apigateway/test_apigateway_basic.py
-      - name: Run Lambda Tests for lambda executor docker-reuse
-        env:
-          DEBUG: 1
-          DNS_ADDRESS: 0
-          LAMBDA_EXECUTOR: "docker-reuse"
-          LOCALSTACK_API_KEY: "test"
-          HOST_TMP_FOLDER: /tmp/localstack
-        run: |
-          # Remove the host tmp folder (might contain remnant files with different permissions)
-          sudo rm -rf ../localstack/.filesystem/var/lib/localstack/tmp
-          source .venv/bin/activate
-          python -m pytest --reruns 2 --durations=10 --show-capture=no --junitxml=target/reports/lambda-docker-reuse.xml -o junit_suite_name='lambda-docker-reuse' \
-            ../localstack/tests/integration/awslambda/ \
-            ../localstack/tests/integration/test_integration.py \
-            ../localstack/tests/integration/apigateway/test_apigateway_basic.py
       - name: Publish LocalStack Community Integration Test Results
         uses: EnricoMi/publish-unit-test-result-action@v1
         if: always()

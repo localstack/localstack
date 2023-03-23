@@ -139,8 +139,8 @@ def kms():
     return Service.for_provider(provider)
 
 
-@aws_provider(api="lambda")
-def awslambda():
+@aws_provider(api="lambda", name="legacy")
+def awslambda_legacy():
     from localstack.services.awslambda import lambda_starter
 
     return Service(
@@ -163,6 +163,14 @@ def awslambda_v1():
         check=lambda_starter.check_lambda,
         lifecycle_hook=lambda_starter.LambdaLifecycleHook(),
     )
+
+
+@aws_provider(api="lambda")
+def awslambda():
+    from localstack.services.awslambda.provider import LambdaProvider
+
+    provider = LambdaProvider()
+    return Service.for_provider(provider)
 
 
 @aws_provider(api="lambda", name="asf")

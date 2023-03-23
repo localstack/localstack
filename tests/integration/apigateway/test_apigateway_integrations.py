@@ -29,7 +29,11 @@ from tests.integration.apigateway.apigateway_fixtures import (
     create_rest_resource_method,
 )
 from tests.integration.apigateway.conftest import DEFAULT_STAGE_NAME
-from tests.integration.awslambda.test_lambda import TEST_LAMBDA_AWS_PROXY, TEST_LAMBDA_HELLO_WORLD
+from tests.integration.awslambda.test_lambda import (
+    TEST_LAMBDA_AWS_PROXY,
+    TEST_LAMBDA_HELLO_WORLD,
+    TEST_LAMBDA_LIBS,
+)
 
 
 @pytest.mark.skip_offline
@@ -816,7 +820,11 @@ def test_create_execute_api_vpc_endpoint(
         "SecurityGroupIds": [security_group],
     }
     create_lambda_function(
-        func_name=func_name, handler_file=lambda_code, timeout=10, VpcConfig=vpc_config
+        func_name=func_name,
+        handler_file=lambda_code,
+        libs=TEST_LAMBDA_LIBS,
+        timeout=10,
+        VpcConfig=vpc_config,
     )
 
     # create resource policy

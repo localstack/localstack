@@ -40,6 +40,7 @@ from localstack.utils.collections import select_attributes
 from localstack.utils.files import load_file
 from localstack.utils.http import safe_requests as requests
 from localstack.utils.json import clone
+from localstack.utils.platform import get_arch
 from localstack.utils.strings import short_uid, to_str
 from localstack.utils.sync import retry
 from tests.integration.apigateway.apigateway_fixtures import (
@@ -68,7 +69,6 @@ from tests.integration.apigateway.conftest import (
 from tests.integration.awslambda.test_lambda import (
     TEST_LAMBDA_AWS_PROXY,
     TEST_LAMBDA_HTTP_RUST,
-    TEST_LAMBDA_LIBS,
     TEST_LAMBDA_NODEJS,
     TEST_LAMBDA_NODEJS_APIGW_502,
     TEST_LAMBDA_NODEJS_APIGW_INTEGRATION,
@@ -1791,9 +1791,7 @@ class TestAPIGateway:
 
     @staticmethod
     def create_lambda_function(fn_name):
-        testutil.create_lambda_function(
-            handler_file=TEST_LAMBDA_PYTHON, libs=TEST_LAMBDA_LIBS, func_name=fn_name
-        )
+        testutil.create_lambda_function(handler_file=TEST_LAMBDA_PYTHON, func_name=fn_name)
         lambda_client = aws_stack.create_external_boto_client("lambda")
         lambda_client.get_waiter("function_active_v2").wait(FunctionName=fn_name)
 
@@ -2134,6 +2132,7 @@ def test_import_swagger_api(apigateway_client):
 
 
 @pytest.mark.skipif(not use_docker(), reason="Rust lambdas cannot be executed in local executor")
+@pytest.mark.skipif(get_arch() == "arm64", reason="Lambda only available for amd64")
 def test_apigateway_rust_lambda(
     apigateway_client,
     create_rest_apigw,

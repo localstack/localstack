@@ -13,8 +13,7 @@ from localstack.testing.snapshots.transformer import KeyValueBasedTransformer
 from localstack.utils import testutil
 from localstack.utils.aws import arns
 from localstack.utils.common import now_utc, poll_condition, retry, short_uid
-
-from .awslambda.test_lambda import TEST_LAMBDA_LIBS, TEST_LAMBDA_PYTHON_ECHO
+from tests.integration.awslambda.test_lambda import TEST_LAMBDA_PYTHON_ECHO
 
 logs_role = {
     "Statement": {
@@ -234,7 +233,6 @@ class TestCloudWatchLogs:
         test_lambda_name = f"test-lambda-function-{short_uid()}"
         create_lambda_function(
             handler_file=TEST_LAMBDA_PYTHON_ECHO,
-            libs=TEST_LAMBDA_LIBS,
             func_name=test_lambda_name,
             runtime=Runtime.python3_9,
         )

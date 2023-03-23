@@ -28,7 +28,7 @@ from localstack.testing.snapshots.transformer_utility import PATTERN_UUID
 from localstack.utils import files, platform, testutil
 from localstack.utils.files import load_file
 from localstack.utils.http import safe_requests
-from localstack.utils.platform import is_arm_compatible, standardized_arch
+from localstack.utils.platform import get_arch, is_arm_compatible, standardized_arch
 from localstack.utils.strings import short_uid, to_bytes, to_str
 from localstack.utils.sync import retry, wait_until
 from localstack.utils.testutil import create_lambda_archive
@@ -96,7 +96,7 @@ PYTHON_TEST_RUNTIMES = (
         Runtime.python3_8,
         Runtime.python3_9,
     ]
-    if not is_old_provider() or use_docker()
+    if (not is_old_provider() or use_docker()) and get_arch() != "arm64"
     else [Runtime.python3_9]
 )
 NODE_TEST_RUNTIMES = (
@@ -110,27 +110,15 @@ JAVA_TEST_RUNTIMES = (
         Runtime.java8_al2,
         Runtime.java11,
     ]
-    if not is_old_provider() or use_docker()
+    if (not is_old_provider() or use_docker()) and get_arch() != "arm64"
     else [Runtime.java11]
 )
-
-
-PROVIDED_TEST_RUNTIMES = [
-    Runtime.provided,
-    # TODO remove skip once we use correct images
-    pytest.param(
-        Runtime.provided_al2,
-        marks=pytest.mark.skipif(
-            is_old_provider(), reason="curl missing in provided.al2 lambci image"
-        ),
-    ),
-]
 
 TEST_LAMBDA_LIBS = [
     "requests",
     "psutil",
     "urllib3",
-    "chardet",
+    "charset_normalizer",
     "certifi",
     "idna",
     "pip",
@@ -339,6 +327,7 @@ class TestLambdaBehavior:
             "$..Payload.paths._var_task_uid",
         ],
     )
+    @pytest.mark.skipif(get_arch() == "arm64", reason="Cannot inspect x86 runtime on arm")
     @pytest.mark.aws_validated
     def test_runtime_introspection_x86(self, lambda_client, create_lambda_function, snapshot):
         func_name = f"test_lambda_x86_{short_uid()}"
@@ -439,10 +428,7 @@ class TestLambdaBehavior:
         assert lambda_arch == native_arch
 
     @pytest.mark.skipif(is_old_provider(), reason="unsupported in old provider")
-    @pytest.mark.skipif(
-        not is_arm_compatible() and not is_aws(),
-        reason="ARM architecture not supported on this host",
-    )
+    @pytest.mark.skip  # TODO remove once is_arch_compatible checks work properly
     @pytest.mark.aws_validated
     def test_mixed_architecture(self, lambda_client, create_lambda_function):
         """Test emulation and interaction of lambda functions with different architectures.
@@ -1098,7 +1084,6 @@ class TestLambdaFeatures:
         zip_file = create_lambda_archive(
             load_file(TEST_LAMBDA_PYTHON),
             get_content=True,
-            libs=TEST_LAMBDA_LIBS,
             runtime=Runtime.python3_9,
         )
         s3_client.upload_fileobj(BytesIO(zip_file), s3_bucket, bucket_key)
@@ -1154,7 +1139,6 @@ class TestLambdaFeatures:
         zip_file = testutil.create_lambda_archive(
             load_file(TEST_LAMBDA_PYTHON),
             get_content=True,
-            libs=TEST_LAMBDA_LIBS,
             runtime=Runtime.python3_9,
         )
         s3_client.upload_fileobj(BytesIO(zip_file), s3_bucket, bucket_key)

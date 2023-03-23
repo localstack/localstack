@@ -18,7 +18,6 @@ from werkzeug import Response
 from localstack import config
 from localstack.aws.accounts import get_aws_account_id
 from localstack.aws.api.lambda_ import Runtime
-from localstack.services.awslambda.lambda_utils import LAMBDA_RUNTIME_PYTHON37
 from localstack.services.sns.constants import PLATFORM_ENDPOINT_MSGS_ENDPOINT
 from localstack.services.sns.provider import SnsProvider
 from localstack.testing.aws.util import is_aws_cloud
@@ -30,7 +29,7 @@ from localstack.utils.sync import poll_condition, retry
 from localstack.utils.testutil import check_expected_lambda_log_events_length
 
 from .awslambda.functions import lambda_integration
-from .awslambda.test_lambda import TEST_LAMBDA_LIBS, TEST_LAMBDA_PYTHON, TEST_LAMBDA_PYTHON_ECHO
+from .awslambda.test_lambda import TEST_LAMBDA_PYTHON, TEST_LAMBDA_PYTHON_ECHO
 
 LOG = logging.getLogger(__name__)
 
@@ -108,7 +107,7 @@ class TestSNSSubscription:
         lambda_creation_response = create_lambda_function(
             func_name=function_name,
             handler_file=TEST_LAMBDA_PYTHON_ECHO,
-            runtime=Runtime.python3_7,
+            runtime=Runtime.python3_9,
             role=lambda_su_role,
         )
         lambda_arn = lambda_creation_response["CreateFunctionResponse"]["FunctionArn"]
@@ -700,7 +699,7 @@ class TestSNSProvider:
         lambda_creation_response = create_lambda_function(
             func_name=function_name,
             handler_file=TEST_LAMBDA_PYTHON,
-            runtime=LAMBDA_RUNTIME_PYTHON37,
+            runtime=Runtime.python3_9,
             role=lambda_su_role,
             DeadLetterConfig={"TargetArn": dlq_topic_arn},
         )
@@ -831,9 +830,8 @@ class TestSNSProvider:
         lambda_name = f"test-{short_uid()}"
         lambda_arn = create_lambda_function(
             func_name=lambda_name,
-            libs=TEST_LAMBDA_LIBS,
             handler_file=TEST_LAMBDA_PYTHON,
-            runtime=LAMBDA_RUNTIME_PYTHON37,
+            runtime=Runtime.python3_9,
             role=lambda_su_role,
         )["CreateFunctionResponse"]["FunctionArn"]
 
@@ -3618,7 +3616,7 @@ class TestSNSPublishDelivery:
         lambda_creation_response = create_lambda_function(
             func_name=function_name,
             handler_file=TEST_LAMBDA_PYTHON_ECHO,
-            runtime=Runtime.python3_7,
+            runtime=Runtime.python3_9,
             role=lambda_su_role,
         )
         lambda_arn = lambda_creation_response["CreateFunctionResponse"]["FunctionArn"]

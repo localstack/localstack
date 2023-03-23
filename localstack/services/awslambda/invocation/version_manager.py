@@ -8,6 +8,7 @@ import time
 import uuid
 from concurrent.futures import Future, ThreadPoolExecutor
 from datetime import datetime
+from math import ceil
 from queue import Queue
 from typing import TYPE_CHECKING, Dict, List, Optional, Union
 
@@ -19,6 +20,7 @@ from localstack.aws.api.lambda_ import (
     StateReasonCode,
     TooManyRequestsException,
 )
+from localstack.aws.connect import connect_to
 from localstack.services.awslambda.invocation.lambda_models import (
     Function,
     FunctionVersion,
@@ -86,19 +88,22 @@ class LogHandler:
     _thread: Optional[FuncThread]
     _shutdown_event: threading.Event
 
-    def __init__(self, role_arn: str) -> None:
+    def __init__(self, role_arn: str, region: str) -> None:
         self.role_arn = role_arn
+        self.region = region
         self.log_queue = Queue()
         self._shutdown_event = threading.Event()
         self._thread = None
 
     def run_log_loop(self, *args, **kwargs) -> None:
-        # TODO: create client
+        logs_client = connect_to(region_name=self.region).logs
         while not self._shutdown_event.is_set():
             log_item = self.log_queue.get()
             if log_item is QUEUE_SHUTDOWN:
                 return
-            store_cloudwatch_logs(log_item.log_group, log_item.log_stream, log_item.logs)
+            store_cloudwatch_logs(
+                log_item.log_group, log_item.log_stream, log_item.logs, logs_client=logs_client
+            )
 
     def start_subscriber(self) -> None:
         self._thread = FuncThread(self.run_log_loop, name="log_handler")
@@ -151,7 +156,7 @@ class LambdaVersionManager(ServiceEndpoint):
         self.function_version = function_version
         self.function = function
         self.lambda_service = lambda_service
-        self.log_handler = LogHandler(function_version.config.role)
+        self.log_handler = LogHandler(function_version.config.role, function_version.id.region)
 
         # invocation tracking
         self.running_invocations = {}
@@ -594,7 +599,7 @@ class LambdaVersionManager(ServiceEndpoint):
                     time_passed = datetime.now() - last_invoke_time
                     enough_time_for_retry = (
                         event_invoke_config.maximum_event_age_in_seconds
-                        and time_passed.seconds + delay_queue_invoke_seconds
+                        and ceil(time_passed.total_seconds()) + delay_queue_invoke_seconds
                         <= event_invoke_config.maximum_event_age_in_seconds
                     )
 

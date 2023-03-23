@@ -153,6 +153,8 @@ class RuntimeEnvironment:
             env_vars["LOCALSTACK_USER"] = ""
         if config.LAMBDA_INIT_USER:
             env_vars["LOCALSTACK_USER"] = config.LAMBDA_INIT_USER
+        if config.LAMBDA_INIT_POST_INVOKE_WAIT_MS:
+            env_vars["LOCALSTACK_POST_INVOKE_WAIT_MS"] = int(config.LAMBDA_INIT_POST_INVOKE_WAIT_MS)
         return env_vars
 
     # Lifecycle methods

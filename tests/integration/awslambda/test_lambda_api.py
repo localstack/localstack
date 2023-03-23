@@ -2953,7 +2953,7 @@ class TestLambdaPermissions:
 
         create_lambda_function(
             func_name=function_name,
-            runtime=Runtime.python3_7,
+            runtime=Runtime.python3_9,
             handler_file=TEST_LAMBDA_PYTHON_ECHO,
         )
 

@@ -12,7 +12,7 @@ from localstack.testing.aws.util import is_aws_cloud
 from localstack.utils.strings import short_uid, to_bytes, to_str
 from localstack.utils.sync import retry, wait_until
 from tests.integration.awslambda.functions import lambda_integration
-from tests.integration.awslambda.test_lambda import TEST_LAMBDA_LIBS, TEST_LAMBDA_PYTHON
+from tests.integration.awslambda.test_lambda import TEST_LAMBDA_PYTHON
 
 
 class TestLambdaDLQ:
@@ -48,7 +48,6 @@ class TestLambdaDLQ:
         create_lambda_response = create_lambda_function(
             handler_file=TEST_LAMBDA_PYTHON,
             func_name=lambda_name,
-            libs=TEST_LAMBDA_LIBS,
             runtime=Runtime.python3_9,
             DeadLetterConfig={"TargetArn": queue_arn},
             role=lambda_su_role,
@@ -102,6 +101,7 @@ class TestLambdaDestinationSqs:
             "$..FunctionArn",
             "$..approximateInvokeCount",
             "$..stackTrace",
+            "$..Messages..Body.responsePayload.requestId",
         ],
     )
     @pytest.mark.parametrize(
@@ -135,6 +135,7 @@ class TestLambdaDestinationSqs:
         queue_arn = sqs_queue_arn(queue_url)
         create_lambda_function(
             handler_file=TEST_LAMBDA_PYTHON,
+            runtime=Runtime.python3_9,
             func_name=lambda_name,
             role=lambda_su_role,
         )
@@ -193,6 +194,7 @@ class TestLambdaDestinationSqs:
         queue_arn = sqs_queue_arn(queue_url)
         create_lambda_function(
             handler_file=TEST_LAMBDA_PYTHON,
+            runtime=Runtime.python3_9,
             func_name=lambda_name,
             role=lambda_su_role,
         )
@@ -269,7 +271,7 @@ class TestLambdaDestinationSqs:
         create_lambda_function(
             handler_file=os.path.join(os.path.dirname(__file__), "./functions/lambda_echofail.py"),
             func_name=fn_name,
-            libs=TEST_LAMBDA_LIBS,
+            runtime=Runtime.python3_9,
             role=lambda_su_role,
         )
         lambda_client.put_function_event_invoke_config(
@@ -378,7 +380,6 @@ class TestLambdaDestinationSqs:
         create_lambda_function(
             handler_file=os.path.join(os.path.dirname(__file__), "./functions/lambda_echofail.py"),
             func_name=fn_name,
-            libs=TEST_LAMBDA_LIBS,
             role=lambda_su_role,
         )
         lambda_client.put_function_event_invoke_config(
@@ -435,7 +436,10 @@ class TestLambdaDestinationSqs:
         msg = retry(get_msg_from_q, retries=15, sleep=3)
         snapshot.match("no_retry_failure_message", msg)
 
-        assert get_filtered_event_count() == 1
+        def _assert_event_count(count: int):
+            assert get_filtered_event_count() == count
+
+        retry(_assert_event_count, retries=5, sleep=1, count=1)  # 1 attempt in total (no retries)
 
         # now we increase the max event age to give it a bit of a buffer for the actual lambda execution (60s + 30s buffer = 90s)
         # one retry should now be attempted since there's enough time left
@@ -460,7 +464,7 @@ class TestLambdaDestinationSqs:
         msg_retried = retry(get_msg_from_q, retries=15, sleep=3)
         snapshot.match("single_retry_failure_message", msg_retried)
 
-        assert get_filtered_event_count() == 2  # 2 attempts in total (1 retry)
+        retry(_assert_event_count, retries=5, sleep=1, count=2)  # 2 attempts in total (1 retry)
 
 
 # class TestLambdaDestinationSns:

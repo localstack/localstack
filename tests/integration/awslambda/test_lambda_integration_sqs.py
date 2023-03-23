@@ -5,12 +5,12 @@ import time
 import pytest
 from botocore.exceptions import ClientError
 
+from localstack.aws.api.lambda_ import Runtime
 from localstack.services.awslambda.lambda_api import (
     BATCH_SIZE_RANGES,
     INVALID_PARAMETER_VALUE_EXCEPTION,
 )
 from localstack.services.awslambda.lambda_utils import (
-    LAMBDA_RUNTIME_PYTHON37,
     LAMBDA_RUNTIME_PYTHON38,
     LAMBDA_RUNTIME_PYTHON39,
 )
@@ -297,7 +297,7 @@ def test_sqs_queue_as_lambda_dead_letter_queue(
     lambda_creation_response = create_lambda_function(
         func_name=function_name,
         handler_file=TEST_LAMBDA_PYTHON,
-        runtime=LAMBDA_RUNTIME_PYTHON37,
+        runtime=Runtime.python3_9,
         role=lambda_su_role,
         DeadLetterConfig={"TargetArn": dlq_queue_arn},
     )
@@ -878,7 +878,7 @@ class TestSQSEventSourceMapping:
         create_lambda_function(
             func_name=function_name,
             handler_file=TEST_LAMBDA_PYTHON_ECHO,
-            runtime=LAMBDA_RUNTIME_PYTHON37,
+            runtime=Runtime.python3_9,
             role=lambda_su_role,
         )
         queue_url_1 = sqs_create_queue(QueueName=queue_name_1)
@@ -984,7 +984,7 @@ class TestSQSEventSourceMapping:
         create_lambda_function(
             func_name=function_name,
             handler_file=TEST_LAMBDA_PYTHON_ECHO,
-            runtime=LAMBDA_RUNTIME_PYTHON37,
+            runtime=Runtime.python3_9,
             role=lambda_su_role,
         )
         queue_url_1 = sqs_create_queue(QueueName=queue_name_1)
@@ -1060,7 +1060,7 @@ class TestSQSEventSourceMapping:
         create_lambda_function(
             func_name=function_name,
             handler_file=TEST_LAMBDA_PYTHON_ECHO,
-            runtime=LAMBDA_RUNTIME_PYTHON37,
+            runtime=Runtime.python3_9,
             role=lambda_su_role,
         )
         queue_url_1 = sqs_create_queue(QueueName=queue_name_1)
