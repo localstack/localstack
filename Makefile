@@ -1,7 +1,4 @@
 IMAGE_NAME ?= localstack/localstack
-IMAGE_NAME_PRO ?= $(IMAGE_NAME)-pro
-IMAGE_NAME_LIGHT ?= $(IMAGE_NAME)-light
-IMAGE_NAME_FULL ?= $(IMAGE_NAME)-full
 IMAGE_TAG ?= $(shell cat localstack/__init__.py | grep '^__version__ =' | sed "s/__version__ = ['\"]\(.*\)['\"].*/\1/")
 VENV_BIN ?= python3 -m venv
 VENV_DIR ?= .venv
@@ -67,14 +64,9 @@ coveralls:         		  ## Publish coveralls metrics
 start:             		  ## Manually start the local infrastructure for testing
 	($(VENV_RUN); exec bin/localstack start --host)
 
-docker-image-stats: 	  ## TODO remove when image size is acceptable
-	docker image inspect $(IMAGE_NAME_FULL) --format='{{.Size}}'
-	docker history $(IMAGE_NAME_FULL)
-
-# By default we export the full image
-TAGS ?= $(IMAGE_NAME) $(IMAGE_NAME_PRO) $(IMAGE_NAME_LIGHT) $(IMAGE_NAME_FULL)
-docker-save-images: 		  ## Export the built Docker image
-	docker save -o target/localstack-docker-images-$(PLATFORM).tar $(TAGS)
+TAGS ?= $(IMAGE_NAME)
+docker-save-image: 		  ## Export the built Docker image
+	docker save -o target/localstack-docker-image-$(PLATFORM).tar $(TAGS)
 
 # By default we export the community image
 TAG ?= $(IMAGE_NAME)
@@ -95,18 +87,6 @@ docker-build: 			  ## Build Docker image
 		--add-host="localhost.localdomain:127.0.0.1" \
 		-t $(TAG) $(DOCKER_BUILD_FLAGS) . -f $(DOCKERFILE)
 
-docker-build-light: 	  ## Build Light Docker image
-	make DOCKER_BUILD_FLAGS="--build-arg IMAGE_TYPE=light --load" \
-	  TAG=$(IMAGE_NAME_LIGHT) docker-build
-
-docker-build-full:   ## Build Full Docker image
-	make DOCKER_BUILD_FLAGS="--build-arg IMAGE_TYPE=full --load" \
-	  TAG=$(IMAGE_NAME_FULL) docker-build
-
-docker-build-pro: 	  	  ## Build Pro Docker image
-	make DOCKER_BUILD_FLAGS="--build-arg IMAGE_TYPE=pro --load" \
-	  TAG=$(IMAGE_NAME_PRO) docker-build
-
 docker-build-multiarch:   ## Build the Multi-Arch Full Docker Image
 	# Make sure to prepare your environment for cross-platform docker builds! (see doc/developer_guides/README.md)
 	# Multi-Platform builds cannot be loaded to the docker daemon from buildx, so we can't add "--load".
@@ -125,24 +105,18 @@ docker-push-master: 	  ## Push a single platform-specific Docker image to regist
 		echo "This is a fork and not the main repo.") || \
 	( \
 		docker info | grep Username || docker login -u $$DOCKER_USERNAME -p $$DOCKER_PASSWORD; \
-			docker tag $(SOURCE_IMAGE_NAME):latest $(TARGET_IMAGE_NAME):latest-$(PLATFORM) && \
+			docker tag $(SOURCE_IMAGE_NAME):latest $(TARGET_IMAGE_NAME):unstable-$(PLATFORM) && \
 		((! (git diff HEAD~1 localstack/__init__.py | grep '^+__version__ =' | grep -v '.dev') && \
-			echo "Only pushing tag 'latest' as version has not changed.") || \
-			(docker tag $(TARGET_IMAGE_NAME):latest-$(PLATFORM) $(TARGET_IMAGE_NAME):$(IMAGE_TAG)-$(PLATFORM) && \
-				docker tag $(TARGET_IMAGE_NAME):latest-$(PLATFORM) $(TARGET_IMAGE_NAME):$(MAJOR_VERSION).$(MINOR_VERSION)-$(PLATFORM) && \
-				docker tag $(TARGET_IMAGE_NAME):latest-$(PLATFORM) $(TARGET_IMAGE_NAME):$(MAJOR_VERSION).$(MINOR_VERSION).$(PATCH_VERSION)-$(PLATFORM) && \
+			echo "Only pushing tag 'unstable' as version has not changed.") || \
+			(docker tag $(TARGET_IMAGE_NAME):unstable-$(PLATFORM) $(TARGET_IMAGE_NAME):$(IMAGE_TAG)-$(PLATFORM) && \
+				docker tag $(TARGET_IMAGE_NAME):unstable-$(PLATFORM) $(TARGET_IMAGE_NAME):$(MAJOR_VERSION).$(MINOR_VERSION)-$(PLATFORM) && \
+				docker tag $(TARGET_IMAGE_NAME):unstable-$(PLATFORM) $(TARGET_IMAGE_NAME):$(MAJOR_VERSION).$(MINOR_VERSION).$(PATCH_VERSION)-$(PLATFORM) && \
 				docker push $(TARGET_IMAGE_NAME):$(IMAGE_TAG)-$(PLATFORM) && \
 				docker push $(TARGET_IMAGE_NAME):$(MAJOR_VERSION).$(MINOR_VERSION)-$(PLATFORM) && \
 				docker push $(TARGET_IMAGE_NAME):$(MAJOR_VERSION).$(MINOR_VERSION).$(PATCH_VERSION)-$(PLATFORM) \
 				)) && \
-				  docker push $(TARGET_IMAGE_NAME):latest-$(PLATFORM) \
+				  docker push $(TARGET_IMAGE_NAME):unstable-$(PLATFORM) \
 	)
-
-docker-push-master-all:		## Push Docker images of localstack, localstack-pro, localstack-light, and localstack-full
-	make SOURCE_IMAGE_NAME=$(IMAGE_NAME) TARGET_IMAGE_NAME=$(IMAGE_NAME) docker-push-master
-	make SOURCE_IMAGE_NAME=$(IMAGE_NAME_PRO) TARGET_IMAGE_NAME=$(IMAGE_NAME_PRO) docker-push-master
-	make SOURCE_IMAGE_NAME=$(IMAGE_NAME_LIGHT) TARGET_IMAGE_NAME=$(IMAGE_NAME_LIGHT) docker-push-master
-	make SOURCE_IMAGE_NAME=$(IMAGE_NAME_FULL) TARGET_IMAGE_NAME=$(IMAGE_NAME_FULL) docker-push-master
 
 MANIFEST_IMAGE_NAME ?= $(IMAGE_NAME)
 docker-create-push-manifests:	## Create and push manifests for a docker image (default: community)
@@ -156,9 +130,9 @@ docker-create-push-manifests:	## Create and push manifests for a docker image (d
 		echo "This is a fork and not the main repo.") || \
 	( \
 		docker info | grep Username || docker login -u $$DOCKER_USERNAME -p $$DOCKER_PASSWORD; \
-			docker manifest create $(MANIFEST_IMAGE_NAME):latest --amend $(MANIFEST_IMAGE_NAME):latest-amd64 --amend $(MANIFEST_IMAGE_NAME):latest-arm64 && \
+			docker manifest create $(MANIFEST_IMAGE_NAME):unstable --amend $(MANIFEST_IMAGE_NAME):unstable-amd64 --amend $(MANIFEST_IMAGE_NAME):unstable-arm64 && \
 		((! (git diff HEAD~1 localstack/__init__.py | grep '^+__version__ =' | grep -v '.dev') && \
-				echo "Only pushing tag 'latest' as version has not changed.") || \
+				echo "Only pushing tag 'unstable' as version has not changed.") || \
 			(docker manifest create $(MANIFEST_IMAGE_NAME):$(IMAGE_TAG) \
 			--amend $(MANIFEST_IMAGE_NAME):$(IMAGE_TAG)-amd64 \
 			--amend $(MANIFEST_IMAGE_NAME):$(IMAGE_TAG)-arm64 && \
@@ -171,19 +145,14 @@ docker-create-push-manifests:	## Create and push manifests for a docker image (d
 				docker manifest push $(MANIFEST_IMAGE_NAME):$(IMAGE_TAG) && \
 				docker manifest push $(MANIFEST_IMAGE_NAME):$(MAJOR_VERSION).$(MINOR_VERSION) && \
 				docker manifest push $(MANIFEST_IMAGE_NAME):$(MAJOR_VERSION).$(MINOR_VERSION).$(PATCH_VERSION))) && \
-		docker manifest push $(MANIFEST_IMAGE_NAME):latest \
+		docker manifest push $(MANIFEST_IMAGE_NAME):unstable \
 	)
-
-docker-create-push-manifests-light:	## Create and push manifests for all light docker images
-	make MANIFEST_IMAGE_NAME=$(IMAGE_NAME) docker-create-push-manifests
-	make MANIFEST_IMAGE_NAME=$(IMAGE_NAME_PRO) docker-create-push-manifests
-	make MANIFEST_IMAGE_NAME=$(IMAGE_NAME_LIGHT) docker-create-push-manifests
 
 docker-run-tests:		  ## Initializes the test environment and runs the tests in a docker container
 	# Remove argparse and dataclasses to fix https://github.com/pytest-dev/pytest/issues/5594
 	# Note: running "install-test-only" below, to avoid pulling in [runtime] extras from transitive dependencies
 	docker run -e LOCALSTACK_INTERNAL_TEST_COLLECT_METRIC=1 --entrypoint= -v `pwd`/tests/:/opt/code/localstack/tests/ -v `pwd`/target/:/opt/code/localstack/target/ \
-		$(IMAGE_NAME_FULL) \
+		$(IMAGE_NAME) \
 	    bash -c "make install-test-only && pip uninstall -y argparse dataclasses && DEBUG=$(DEBUG) LAMBDA_EXECUTOR=local PYTEST_LOGLEVEL=debug PYTEST_ARGS='$(PYTEST_ARGS)' COVERAGE_FILE='$(COVERAGE_FILE)' TEST_PATH='$(TEST_PATH)' make test-coverage"
 
 docker-run:        		  ## Run Docker image locally
@@ -224,42 +193,6 @@ test-docker-mount-code:
 	PACKAGES_DIR=$$(echo $$(pwd)/.venv/lib/python*/site-packages | awk '{print $$NF}'); \
 		DOCKER_FLAGS="$(DOCKER_FLAGS) --entrypoint= -v `pwd`/localstack/config.py:/opt/code/localstack/localstack/config.py -v `pwd`/localstack/constants.py:/opt/code/localstack/localstack/constants.py -v `pwd`/localstack/utils:/opt/code/localstack/localstack/utils -v `pwd`/localstack/services:/opt/code/localstack/localstack/services -v `pwd`/localstack/aws:/opt/code/localstack/localstack/aws -v `pwd`/Makefile:/opt/code/localstack/Makefile -v $$PACKAGES_DIR/moto:/opt/code/localstack/.venv/lib/python3.10/site-packages/moto/ -e TEST_PATH=\\'$(TEST_PATH)\\' -e LAMBDA_JAVA_OPTS=$(LAMBDA_JAVA_OPTS) $(ENTRYPOINT)" CMD="make test" make docker-run
 
-# Note: the ci-* targets below should only be used in CI builds!
-
-CI_SMOKE_IMAGE_NAME ?= $(IMAGE_NAME_LIGHT)
-ci-pro-smoke-tests:
-	pip3 install --upgrade awscli-local
-	pip3 install --upgrade localstack
-	IMAGE_NAME=$(CI_SMOKE_IMAGE_NAME) LOCALSTACK_API_KEY=$(TEST_LOCALSTACK_API_KEY) DNS_ADDRESS=0 DEBUG=1 localstack start -d
-	docker logs -f $(MAIN_CONTAINER_NAME) &
-	localstack wait -t 120
-	awslocal amplify list-apps
-	awslocal apigatewayv2 get-apis
-	awslocal appsync list-graphql-apis
-	awslocal athena list-data-catalogs
-	awslocal batch describe-job-definitions
-	awslocal cloudfront list-distributions
-	awslocal cloudtrail list-trails
-	awslocal cognito-idp list-user-pools --max-results 10
-	awslocal docdb describe-db-clusters
-	awslocal ecr describe-repositories
-	awslocal ecs list-clusters
-	awslocal emr list-clusters
-	awslocal elasticache describe-cache-clusters
-	awslocal glue get-databases
-	awslocal iot list-things
-	awslocal kafka list-clusters
-	awslocal lambda list-layers
-	awslocal mediastore list-containers
-	awslocal mwaa list-environments
-	awslocal qldb list-ledgers
-	awslocal rds create-db-cluster --db-cluster-identifier test-cluster --engine aurora-postgresql --database-name test --master-username master --master-user-password secret99 --db-subnet-group-name mysubnetgroup
-	awslocal rds describe-db-instances
-	awslocal s3 mb s3://test-bucket
-	awslocal timestream-write create-database --database-name db1
-	awslocal xray get-trace-summaries --start-time 2020-01-01 --end-time 2030-12-31
-	localstack stop
-
 lint:              		  ## Run code linter to check code style
 	($(VENV_RUN); python -m pflake8 --show-source)
 
@@ -277,21 +210,13 @@ init-precommit:    		  ## install te pre-commit hook into your local git reposit
 
 clean:             		  ## Clean up (npm dependencies, downloaded infrastructure code, compiled Java classes)
 	rm -rf .filesystem
-	# TODO: remove localstack/infra/ as it's no longer used
-	rm -rf localstack/infra/amazon-kinesis-client
-	rm -rf localstack/infra/elasticsearch
-	rm -rf localstack/infra/elasticmq
-	rm -rf localstack/infra/dynamodb
-	rm -rf localstack/infra/node_modules
-	rm -rf localstack/node_modules
 	rm -rf build/
 	rm -rf dist/
 	rm -rf *.egg-info
 	rm -rf $(VENV_DIR)
-	rm -f localstack/utils/kinesis/java/com/atlassian/*.class
 
 clean-dist:				  ## Clean up python distribution directories
 	rm -rf dist/ build/
 	rm -rf *.egg-info
 
-.PHONY: usage venv freeze install-basic install-runtime install-test install-dev install entrypoints dist publish coveralls start docker-save-images docker-build docker-build-light docker-build-multi-platform docker-push-master docker-push-master-all docker-create-push-manifests docker-create-push-manifests-light docker-run-tests docker-run docker-mount-run docker-build-lambdas docker-cp-coverage test test-coverage test-docker test-docker-mount test-docker-mount-code ci-pro-smoke-tests lint lint-modified format format-modified init-precommit clean clean-dist vagrant-start vagrant-stop infra
+.PHONY: usage freeze install-basic install-runtime install-test install-test-only install-dev install entrypoints dist publish coveralls start docker-save-image docker-build docker-build-multiarch docker-push-master docker-create-push-manifests docker-run-tests docker-run docker-mount-run docker-cp-coverage test test-coverage test-docker test-docker-mount test-docker-mount-code lint lint-modified format format-modified init-precommit clean clean-dist

@@ -228,35 +228,17 @@ jobs:
         type: string
     machine:
       image: << parameters.machine_image >>
-      # TODO re-enable docker layer caching after file system problems are fixed
-      # docker_layer_caching: true
     resource_class: << parameters.resource_class >>
     working_directory: /tmp/workspace/repo
     steps:
       - attach_workspace:
           at: /tmp/workspace
       - run:
-          name: Build full docker image
-          command: make docker-build-full
-      - run:
           name: Build community docker image
           command: make docker-build
       - run:
-          name: Build light docker image
-          command: make docker-build-light
-      - run:
-          name: Build pro docker image
-          command: make docker-build-pro
-      - run:
-          name: Save docker images
-          command: PLATFORM="<< parameters.platform >>" make docker-save-images
-      - when:
-          condition:
-            equal: [ master, << pipeline.git.branch >> ]
-          steps:
-            - run:
-                name: Run pre-release smoke tests
-                command: echo "make ci-pro-smoke-tests"
+          name: Save docker image
+          command: PLATFORM="<< parameters.platform >>" make docker-save-image
       - persist_to_workspace:
           root:
             /tmp/workspace
@@ -286,8 +268,8 @@ jobs:
       - attach_workspace:
           at: /tmp/workspace
       - run:
-          name: Load docker localstack-full image
-          command: docker load -i target/localstack-docker-images-<< parameters.platform >>.tar
+          name: Load docker image
+          command: docker load -i target/localstack-docker-image-<< parameters.platform >>.tar
       - run:
           name: Run integration tests
           # circleci split returns newline separated list, so `tr` is necessary to prevent problems in the Makefile
@@ -308,31 +290,25 @@ jobs:
             - repo/target/metric_reports
 
   capture-not-implemented:
-    parameters:
-      pro:
-        description: "Run tests against Pro?"
-        default: false
-        type: boolean
     executor: ubuntu-machine-amd64
     working_directory: /tmp/workspace/repo
     steps:
       - attach_workspace:
           at: /tmp/workspace
       - run:
-          name: Load docker localstack-full image
-          command: docker load -i target/localstack-docker-images-amd64.tar
+          name: Load docker image
+          command: docker load -i target/localstack-docker-image-amd64.tar
       - run:
           name: Run localstack
           command: |
-            <<#parameters.pro>>LOCALSTACK_API_KEY=$TEST_LOCALSTACK_API_KEY<</parameters.pro>> DEBUG=1 DISABLE_EVENTS="1" IMAGE_NAME="localstack/localstack-full:latest" bin/localstack start -d
+            DEBUG=1 DISABLE_EVENTS="1" IMAGE_NAME="localstack/localstack:latest" bin/localstack start -d
             bin/localstack wait -t 120 || (bin/localstack logs && false)
       - run:
           name: Run capture-not-implemented
           command: |
             source .venv/bin/activate
             cd scripts
-            <<#parameters.pro>>mkdir -p pro<</parameters.pro>>
-            python -m capture_notimplemented_responses <<#parameters.pro>>./pro<</parameters.pro>>
+            python -m capture_notimplemented_responses
       - run:
           name: Print the logs
           command: |
@@ -347,8 +323,8 @@ jobs:
           root:
             /tmp/workspace
           paths:
-            - repo/scripts/<<#parameters.pro>>pro/<</parameters.pro>>implementation_coverage_aggregated.csv
-            - repo/scripts/<<#parameters.pro>>pro/<</parameters.pro>>implementation_coverage_full.csv
+            - repo/scripts/implementation_coverage_aggregated.csv
+            - repo/scripts/implementation_coverage_full.csv
 
   report:
     executor: ubuntu-machine-amd64
@@ -383,7 +359,6 @@ jobs:
             METRIC_REPORT_FILE=$(find parity_metrics -type f -iname "metric-report-raw-data-all-*.csv")
             METRIC_REPORT_PATH=$METRIC_REPORT_FILE \
             COMMUNITY_IMPL_COV_PATH=scripts/implementation_coverage_full.csv \
-            PRO_IMPL_COV_PATH=scripts/pro/implementation_coverage_full.csv \
             python -m scripts.tinybird.upload_raw_test_metrics_and_coverage
       - store_artifacts:
           path: parity_metrics/
@@ -393,62 +368,56 @@ jobs:
       - store_artifacts:
           path: scripts/implementation_coverage_full.csv
           destination: community/implementation_coverage_full.csv
-      - store_artifacts:
-          path: scripts/pro/implementation_coverage_aggregated.csv
-          destination: pro/implementation_coverage_aggregated.csv
-      - store_artifacts:
-          path: scripts/pro/implementation_coverage_full.csv
-          destination: pro/implementation_coverage_full.csv
 
-  docker-push:
+  push:
     executor: ubuntu-machine-amd64
     working_directory: /tmp/workspace/repo
     steps:
       - attach_workspace:
           at: /tmp/workspace
       - run:
-          name: Load docker images - amd64
+          name: Load docker image - amd64
           command: |
-            # Load all images for AMD64
-            docker load -i target/localstack-docker-images-amd64.tar
+            # Load all image for AMD64
+            docker load -i target/localstack-docker-image-amd64.tar
       - run:
           name: Log in to ECR registry
           command: aws ecr-public get-login-password --region us-east-1 | docker login --username AWS --password-stdin public.ecr.aws
       - run:
-          name: Push docker images - amd64
+          name: Push docker image - amd64
           command: |
             # Push to Docker Hub
-            PLATFORM="amd64" make docker-push-master-all
+            PLATFORM="amd64" make docker-push-master
             # Push to Amazon Public ECR
             PLATFORM="amd64" SOURCE_IMAGE_NAME="localstack/localstack" TARGET_IMAGE_NAME="public.ecr.aws/localstack/localstack" make docker-push-master
-            PLATFORM="amd64" SOURCE_IMAGE_NAME="localstack/localstack-pro" TARGET_IMAGE_NAME="public.ecr.aws/localstack/localstack-pro" make docker-push-master
       # Load and push per architecture (load overwrites the previous ones)
       - run:
           name: Load docker image - arm64
           command: |
-            # Load all images for AMD64
-            docker load -i target/localstack-docker-images-arm64.tar
+            # Load all image for AMD64
+            docker load -i target/localstack-docker-image-arm64.tar
       - run:
-          name: Push docker images - arm64
+          name: Push docker image - arm64
           command: |
             # Push to Docker Hub
-            PLATFORM="arm64" make docker-push-master-all
+            PLATFORM="arm64" make docker-push-master
             # Push to Amazon Public ECR
             PLATFORM="arm64" SOURCE_IMAGE_NAME="localstack/localstack" TARGET_IMAGE_NAME="public.ecr.aws/localstack/localstack" make docker-push-master
-            PLATFORM="arm64" SOURCE_IMAGE_NAME="localstack/localstack-pro" TARGET_IMAGE_NAME="public.ecr.aws/localstack/localstack-pro" make docker-push-master
       - run:
-          name: Create multi-platform manifests - full
+          name: Create multi-platform manifests
           command: |
             # Push to Docker Hub
-            MANIFEST_IMAGE_NAME="localstack/localstack-full" make docker-create-push-manifests
-      - run:
-          name: Create multi-platform manifests - light
-          command: |
-            # Push to Docker Hub
-            make docker-create-push-manifests-light
+            make docker-create-push-manifests
             # Push to Amazon Public ECR
             MANIFEST_IMAGE_NAME="public.ecr.aws/localstack/localstack" make docker-create-push-manifests
-            MANIFEST_IMAGE_NAME="public.ecr.aws/localstack/localstack-pro" make docker-create-push-manifests
+      - run:
+          name: Publish a dev release
+          command: |
+            source .venv/bin/activate
+            bin/release-helper.sh set-ver $(bin/release-helper.sh next-dev-ver)
+            make publish
+
+
 
 workflows:
   main:
@@ -503,12 +472,7 @@ workflows:
           requires:
             - docker-build-amd64
       - capture-not-implemented:
-          name: collect-not-implemented-community
-          requires:
-            - docker-build-amd64
-      - capture-not-implemented:
-          name: collect-not-implemented-pro
-          pro: true
+          name: collect-not-implemented
           requires:
             - docker-build-amd64
       - report:
@@ -519,10 +483,9 @@ workflows:
             - itest-sfn-v2-provider
             - docker-test-amd64
             - docker-test-arm64
-            - collect-not-implemented-community
-            - collect-not-implemented-pro
+            - collect-not-implemented
             - unit-tests
-      - docker-push:
+      - push:
           filters:
             branches:
               only: master

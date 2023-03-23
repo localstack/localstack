@@ -165,9 +165,9 @@ class TestCliContainerLifecycle:
         monkeypatch.setattr(config, "DOCKER_FLAGS", f"--user={user}")
 
         if in_ci() and os.path.exists("/home/runner"):
-            logs_dir = "/home/runner/.cache/localstack/volume/logs"
-            mkdir(logs_dir)
-            run(["sudo", "chmod", "-R", "777", logs_dir])
+            volume_dir = "/home/runner/.cache/localstack/volume/"
+            mkdir(volume_dir)
+            run(["sudo", "chmod", "-R", "777", volume_dir])
 
         runner.invoke(cli, ["start", "-d"])
         runner.invoke(cli, ["wait", "-t", "60"])
