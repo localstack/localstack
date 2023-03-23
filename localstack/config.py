@@ -454,6 +454,9 @@ def populate_legacy_edge_configuration(
         gateway_listen = f"{default_ip}:{port}"
     else:
         components = gateway_listen.split(",")
+        if len(components) > 1:
+            LOG.warning("multiple GATEWAY_LISTEN addresses are not currently supported")
+
         gateway_listen = ",".join(
             [parse_gateway_listen(component.strip()) for component in components]
         )
