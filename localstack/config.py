@@ -406,6 +406,27 @@ PORTS_CHECK_DOCKER_IMAGE = os.environ.get("PORTS_CHECK_DOCKER_IMAGE", "").strip(
 # TODO: this will likely become the default and may get removed in the future
 FORWARD_EDGE_INMEM = True
 
+
+def is_trace_logging_enabled():
+    if LS_LOG:
+        log_level = str(LS_LOG).upper()
+        return log_level.lower() in TRACE_LOG_LEVELS
+    return False
+
+
+# set log levels immediately, but will be overwritten later by setup_logging
+if DEBUG:
+    logging.getLogger("").setLevel(logging.DEBUG)
+    logging.getLogger("localstack").setLevel(logging.DEBUG)
+
+LOG = logging.getLogger(__name__)
+if is_trace_logging_enabled():
+    load_end_time = time.time()
+    LOG.debug(
+        "Initializing the configuration took %s ms", int((load_end_time - load_start_time) * 1000)
+    )
+
+
 # expose services on a specific host externally
 # DEPRECATED:  since v2.0.0 as we are moving to LOCALSTACK_HOST
 HOSTNAME_EXTERNAL = os.environ.get("HOSTNAME_EXTERNAL", "").strip() or LOCALHOST
@@ -1018,26 +1039,6 @@ def collect_config_items() -> List[Tuple[str, Any]]:
         result.append((k, v))
     result.sort()
     return result
-
-
-def is_trace_logging_enabled():
-    if LS_LOG:
-        log_level = str(LS_LOG).upper()
-        return log_level.lower() in TRACE_LOG_LEVELS
-    return False
-
-
-# set log levels immediately, but will be overwritten later by setup_logging
-if DEBUG:
-    logging.getLogger("").setLevel(logging.DEBUG)
-    logging.getLogger("localstack").setLevel(logging.DEBUG)
-
-LOG = logging.getLogger(__name__)
-if is_trace_logging_enabled():
-    load_end_time = time.time()
-    LOG.debug(
-        "Initializing the configuration took %s ms", int((load_end_time - load_start_time) * 1000)
-    )
 
 
 def parse_service_ports() -> Dict[str, int]:
