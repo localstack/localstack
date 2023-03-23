@@ -521,6 +521,19 @@ class TestSNSProvider:
         assert "MessageId" in response
         assert response["ResponseMetadata"]["HTTPStatusCode"] == 200
 
+        sns_backend = SnsProvider.get_store()
+
+        def check_messages():
+            sms_was_found = False
+            for message in sns_backend.sms_messages:
+                if message["PhoneNumber"] == "+33000000000":
+                    sms_was_found = True
+                    break
+
+            assert sms_was_found
+
+        retry(check_messages, sleep=0.5)
+
     @pytest.mark.aws_validated
     def test_publish_non_existent_target(self, sns_create_topic, snapshot, aws_client):
         topic_arn = sns_create_topic()["TopicArn"]
@@ -1152,7 +1165,7 @@ class TestSNSProvider:
             for contact in list_of_contacts:
                 sms_was_found = False
                 for message in sms_messages:
-                    if message["endpoint"] == contact:
+                    if message["PhoneNumber"] == contact:
                         sms_was_found = True
                         break
 
