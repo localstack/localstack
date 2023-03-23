@@ -14,3 +14,14 @@ class DockerRuntimeExecutorPlugin(RuntimeExecutorPlugin):
         )
 
         return DockerRuntimeExecutor
+
+
+class WorkerRuntimeExecutorPlugin(RuntimeExecutorPlugin):
+    name = "worker"
+
+    def load(self, *args, **kwargs):
+        from localstack.services.awslambda.invocation.worker_runtime_executor import (
+            WorkerRuntimeExecutor,
+        )
+
+        return WorkerRuntimeExecutor
