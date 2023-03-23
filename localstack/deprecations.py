@@ -159,23 +159,23 @@ DEPRECATIONS = [
         "2.0.0",
         "This configuration will be migrated to LOCALSTACK_HOST",
     ),
-    # Since 2.0.0 - redefined as EDGE_BIND
+    # Since 2.0.0 - redefined as GATEWAY_LISTEN
     EnvVarDeprecation(
         "EDGE_BIND_HOST",
         "2.0.0",
-        "This configuration will be migrated to EDGE_BIND",
+        "This configuration will be migrated to GATEWAY_LISTEN",
     ),
-    # Since 2.0.0 - redefined as EDGE_BIND
+    # Since 2.0.0 - redefined as GATEWAY_LISTEN
     EnvVarDeprecation(
         "EDGE_PORT",
         "2.0.0",
-        "This configuration will be migrated to EDGE_BIND",
+        "This configuration will be migrated to GATEWAY_LISTEN",
     ),
-    # Since 2.0.0 - redefined as EDGE_BIND
+    # Since 2.0.0 - redefined as GATEWAY_LISTEN
     EnvVarDeprecation(
         "EDGE_PORT_HTTP",
         "2.0.0",
-        "This configuration will be migrated to EDGE_BIND",
+        "This configuration will be migrated to GATEWAY_LISTEN",
     ),
 ]
 

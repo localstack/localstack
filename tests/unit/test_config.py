@@ -130,10 +130,10 @@ class TestEdgeVariablesDerivedCorrectly:
     * EDGE_PORT_HTTP
     * EDGE_BIND_HOST
 
-    from EDGE_BIND (name TBD). We are also ensuring the configuration behaves
+    from GATEWAY_LISTEN. We are also ensuring the configuration behaves
     well with LOCALSTACK_HOST, i.e. if LOCALSTACK_HOST is supplied and
-    EDGE_BIND is not, then we should propagate LOCALSTACK_HOST configuration
-    into EDGE_BIND.
+    GATEWAY_LISTEN is not, then we should propagate LOCALSTACK_HOST configuration
+    into GATEWAY_LISTEN.
 
     Implementation note: monkeypatching the config module is hard, and causes
     tests run after these ones to import the wrong config. Instead, we test the
@@ -164,7 +164,7 @@ class TestEdgeVariablesDerivedCorrectly:
         assert edge_bind_host == default_ip
 
     def test_custom_hostname(self):
-        environment = {"EDGE_BIND": "192.168.0.1"}
+        environment = {"GATEWAY_LISTEN": "192.168.0.1"}
         (
             _,
             edge_bind,
@@ -179,7 +179,7 @@ class TestEdgeVariablesDerivedCorrectly:
         assert edge_bind_host == "192.168.0.1"
 
     def test_custom_port(self, default_ip):
-        environment = {"EDGE_BIND": ":9999"}
+        environment = {"GATEWAY_LISTEN": ":9999"}
         (
             _,
             edge_bind,
@@ -194,7 +194,7 @@ class TestEdgeVariablesDerivedCorrectly:
         assert edge_bind_host == default_ip
 
     def test_custom_host_and_port(self):
-        environment = {"EDGE_BIND": "192.168.0.1:9999"}
+        environment = {"GATEWAY_LISTEN": "192.168.0.1:9999"}
         (
             _,
             edge_bind,
@@ -225,7 +225,7 @@ class TestEdgeVariablesDerivedCorrectly:
         assert edge_bind_host == default_ip
 
     def test_edge_bind_multiple_addresses(self):
-        environment = {"EDGE_BIND": "0.0.0.0:9999,0.0.0.0:443"}
+        environment = {"GATEWAY_LISTEN": "0.0.0.0:9999,0.0.0.0:443"}
         (
             _,
             edge_bind,

@@ -427,10 +427,10 @@ def populate_legacy_edge_configuration(
         default_ip = "127.0.0.1"
 
     localstack_host_raw = environment.get("LOCALSTACK_HOST")
-    edge_bind_raw = environment.get("EDGE_BIND")
+    edge_bind_raw = environment.get("GATEWAY_LISTEN")
 
     # new for v2
-    # populate LOCALSTACK_HOST first since EDGE_BIND may be derived from LOCALSTACK_HOST
+    # populate LOCALSTACK_HOST first since GATEWAY_LISTEN may be derived from LOCALSTACK_HOST
     localstack_host = localstack_host_raw
     if localstack_host is None:
         localstack_host = f"{constants.LOCALHOST_HOSTNAME}:{constants.DEFAULT_PORT_EDGE}"
@@ -467,7 +467,7 @@ def populate_legacy_edge_configuration(
 
         return result
 
-    # derive legacy variables from EDGE_BIND unless EDGE_BIND is not given and
+    # derive legacy variables from GATEWAY_LISTEN unless GATEWAY_LISTEN is not given and
     # legacy variables are
     edge_bind_host = legacy_fallback("EDGE_BIND_HOST", get_edge_bind(edge_bind)[0].host)
     edge_port = int(legacy_fallback("EDGE_PORT", get_edge_bind(edge_bind)[0].port))
@@ -507,7 +507,7 @@ def get_edge_bind(edge_bind: str) -> List[HostAndPort]:
     # -- Edge configuration
     # Main configuration of the listen address of the hypercorn proxy. Of the form
     # <ip_address>:<port>(,<ip_address>:port>)*
-    EDGE_BIND,
+    GATEWAY_LISTEN,
     # -- Legacy variables
     EDGE_BIND_HOST,
     EDGE_PORT,
