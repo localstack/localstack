@@ -6,14 +6,15 @@ import socket
 import subprocess
 import tempfile
 import time
-from typing import Any, Dict, List, Mapping, Tuple
+from dataclasses import dataclass
+from typing import Any, Dict, List, Mapping, Tuple, TypeVar
 
+from localstack import constants
 from localstack.constants import (
     AWS_REGION_US_EAST_1,
     DEFAULT_BUCKET_MARKER_LOCAL,
     DEFAULT_DEVELOP_PORT,
     DEFAULT_LAMBDA_CONTAINER_REGISTRY,
-    DEFAULT_PORT_EDGE,
     DEFAULT_SERVICE_PORTS,
     DEFAULT_VOLUME_DIR,
     DOCKER_IMAGE_NAME,
@@ -27,6 +28,8 @@ from localstack.constants import (
     TRACE_LOG_LEVELS,
     TRUE_STRINGS,
 )
+
+T = TypeVar("T", str, int)
 
 # keep track of start time, for performance debugging
 load_start_time = time.time()
@@ -316,12 +319,6 @@ DEFAULT_REGION = (
     os.environ.get("DEFAULT_REGION") or os.environ.get("AWS_DEFAULT_REGION") or AWS_REGION_US_EAST_1
 )
 
-# expose services on a specific host externally
-HOSTNAME_EXTERNAL = os.environ.get("HOSTNAME_EXTERNAL", "").strip() or LOCALHOST
-
-# name of the host under which the LocalStack services are available
-LOCALSTACK_HOSTNAME = os.environ.get("LOCALSTACK_HOSTNAME", "").strip() or LOCALHOST
-
 # directory for persisting data (TODO: deprecated, simply use PERSISTENCE=1)
 DATA_DIR = os.environ.get("DATA_DIR", "").strip()
 
@@ -411,12 +408,120 @@ PORTS_CHECK_DOCKER_IMAGE = (
 # whether to forward edge requests in-memory (instead of via proxy servers listening on backend ports)
 # TODO: this will likely become the default and may get removed in the future
 FORWARD_EDGE_INMEM = True
-# Default bind address for the edge service
-EDGE_BIND_HOST = os.environ.get("EDGE_BIND_HOST", "").strip() or "127.0.0.1"
-# port number for the edge service, the main entry point for all API invocations
-EDGE_PORT = int(os.environ.get("EDGE_PORT") or 0) or DEFAULT_PORT_EDGE
-# fallback port for non-SSL HTTP edge service (in case HTTPS edge service cannot be used)
-EDGE_PORT_HTTP = int(os.environ.get("EDGE_PORT_HTTP") or 0)
+
+# expose services on a specific host externally
+# DEPRECATED:  since v2.0.0 as we are moving to LOCALSTACK_HOST
+HOSTNAME_EXTERNAL = os.environ.get("HOSTNAME_EXTERNAL", "").strip() or LOCALHOST
+
+# name of the host under which the LocalStack services are available
+# DEPRECATED: if the user sets this since v2.0.0 as we are moving to LOCALSTACK_HOST
+LOCALSTACK_HOSTNAME = os.environ.get("LOCALSTACK_HOSTNAME", "").strip() or LOCALHOST
+
+
+def populate_legacy_edge_configuration(
+    environment: Dict[str, str]
+) -> Tuple[str, str, str, int, int]:
+    if is_in_docker:
+        default_ip = "0.0.0.0"
+    else:
+        default_ip = "127.0.0.1"
+
+    localstack_host_raw = environment.get("LOCALSTACK_HOST")
+    gateway_listen_raw = environment.get("GATEWAY_LISTEN")
+
+    # new for v2
+    # populate LOCALSTACK_HOST first since GATEWAY_LISTEN may be derived from LOCALSTACK_HOST
+    localstack_host = localstack_host_raw
+    if localstack_host is None:
+        localstack_host = f"{constants.LOCALHOST_HOSTNAME}:{constants.DEFAULT_PORT_EDGE}"
+
+    def parse_gateway_listen(value: str) -> str:
+        if ":" in value:
+            ip, port_s = value.split(":", 1)
+            if not ip.strip():
+                ip = default_ip
+            if not port_s.strip():
+                port_s = "4566"
+            port = int(port_s)
+            return f"{ip}:{port}"
+        else:
+            return f"{value}:4566"
+
+    gateway_listen = gateway_listen_raw
+    if gateway_listen is None:
+        # default to existing behaviour
+        port = int(localstack_host.split(":")[-1])
+        gateway_listen = f"{default_ip}:{port}"
+    else:
+        components = gateway_listen.split(",")
+        if len(components) > 1:
+            LOG.warning("multiple GATEWAY_LISTEN addresses are not currently supported")
+
+        gateway_listen = ",".join(
+            [parse_gateway_listen(component.strip()) for component in components]
+        )
+
+    assert gateway_listen is not None
+    assert localstack_host is not None
+
+    def legacy_fallback(envar_name: str, default: T) -> T:
+        result = default
+        result_raw = environment.get(envar_name)
+        if result_raw is not None and gateway_listen_raw is None:
+            result = result_raw
+
+        return result
+
+    # derive legacy variables from GATEWAY_LISTEN unless GATEWAY_LISTEN is not given and
+    # legacy variables are
+    edge_bind_host = legacy_fallback("EDGE_BIND_HOST", get_gateway_listen(gateway_listen)[0].host)
+    edge_port = int(legacy_fallback("EDGE_PORT", get_gateway_listen(gateway_listen)[0].port))
+    edge_port_http = int(
+        legacy_fallback("EDGE_PORT_HTTP", get_gateway_listen(gateway_listen)[0].port)
+    )
+
+    return localstack_host, gateway_listen, edge_bind_host, edge_port, edge_port_http
+
+
+@dataclass
+class HostAndPort:
+    host: str
+    port: int
+
+    @classmethod
+    def parse(cls, input: str) -> "HostAndPort":
+        host, port_s = input.split(":")
+        return cls(host=host, port=int(port_s))
+
+    def __eq__(self, other: Any) -> bool:
+        if not isinstance(other, self.__class__):
+            return False
+
+        return self.host == other.host and self.port == other.port
+
+
+def get_gateway_listen(gateway_listen: str) -> List[HostAndPort]:
+    result = []
+    for bind_address in gateway_listen.split(","):
+        result.append(HostAndPort.parse(bind_address))
+    return result
+
+
+# How to access LocalStack
+(
+    # -- Cosmetic
+    LOCALSTACK_HOST,
+    # -- Edge configuration
+    # Main configuration of the listen address of the hypercorn proxy. Of the form
+    # <ip_address>:<port>(,<ip_address>:port>)*
+    GATEWAY_LISTEN,
+    # -- Legacy variables
+    EDGE_BIND_HOST,
+    EDGE_PORT,
+    EDGE_PORT_HTTP,
+) = populate_legacy_edge_configuration(os.environ)
+
+
 # optional target URL to forward all edge requests to
 EDGE_FORWARD_URL = os.environ.get("EDGE_FORWARD_URL", "").strip()
 
