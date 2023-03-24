@@ -520,7 +520,7 @@ def populate_legacy_edge_configuration(
     edge_bind_host = legacy_fallback("EDGE_BIND_HOST", get_gateway_listen(gateway_listen)[0].host)
     edge_port = int(legacy_fallback("EDGE_PORT", get_gateway_listen(gateway_listen)[0].port))
     edge_port_http = int(
-        legacy_fallback("EDGE_PORT_HTTP", get_gateway_listen(gateway_listen)[0].port)
+        legacy_fallback("EDGE_PORT_HTTP", 0),
     )
 
     return localstack_host, gateway_listen, edge_bind_host, edge_port, edge_port_http
