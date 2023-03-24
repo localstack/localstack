@@ -1060,7 +1060,7 @@ class S3Provider(S3Api, ServiceLifecycleHook):
 
         response["LastModified"] = key.last_modified
 
-        if bucket in self.get_store().bucket_versioning_status:
+        if bucket_name in self.get_store().bucket_versioning_status:
             response["VersionId"] = key.version_id
 
         if key.multipart:
