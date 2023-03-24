@@ -2,7 +2,7 @@ import functools
 import logging
 import platform
 import random
-from typing import List, Optional
+from typing import List, Optional, Union
 
 from localstack import config
 from localstack.constants import DEFAULT_VOLUME_DIR, DOCKER_IMAGE_NAME
@@ -12,7 +12,7 @@ from localstack.utils.container_utils.container_client import (
     PortMappings,
     VolumeInfo,
 )
-from localstack.utils.net import Port, PortNotAvailableException, PortRange
+from localstack.utils.net import IntOrPort, Port, PortNotAvailableException, PortRange
 from localstack.utils.objects import singleton_factory
 from localstack.utils.strings import to_str
 
@@ -132,7 +132,7 @@ def get_host_path_for_path_in_docker(path):
     return path
 
 
-def container_ports_can_be_bound(ports: int | Port | list[int | Port]) -> bool:
+def container_ports_can_be_bound(ports: Union[IntOrPort, List[IntOrPort]]) -> bool:
     """Determine whether a given list of ports can be bound by Docker containers
 
     :param ports: single port or list of ports to check
@@ -169,7 +169,7 @@ class _DockerPortRange(PortRange):
     PortRange which checks whether the port can be bound on the host instead of inside the container.
     """
 
-    def _try_reserve_port(self, port: int | Port, duration: int) -> int:
+    def _try_reserve_port(self, port: IntOrPort, duration: int) -> int:
         """Checks if the given port is currently not reserved."""
         port = Port.wrap(port)
         if not self.is_port_reserved(port) and container_ports_can_be_bound(port):
@@ -185,17 +185,17 @@ class _DockerPortRange(PortRange):
 reserved_docker_ports = _DockerPortRange(PORT_START, PORT_END)
 
 
-def is_port_available_for_containers(port: int | Port) -> bool:
+def is_port_available_for_containers(port: IntOrPort) -> bool:
     """Check whether the given port can be bound by containers and is not currently reserved"""
     return not is_container_port_reserved(port) and container_ports_can_be_bound(port)
 
 
-def reserve_container_port(port: int | Port, duration: int = None):
+def reserve_container_port(port: IntOrPort, duration: int = None):
     """Reserve the given container port for a short period of time"""
     reserved_docker_ports.reserve_port(port, duration=duration)
 
 
-def is_container_port_reserved(port: int | Port) -> bool:
+def is_container_port_reserved(port: IntOrPort) -> bool:
     """Return whether the given container port is currently reserved"""
     port = Port.wrap(port)
     return reserved_docker_ports.is_port_reserved(port)
