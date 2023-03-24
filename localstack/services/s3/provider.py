@@ -344,13 +344,12 @@ class S3Provider(S3Api, ServiceLifecycleHook):
     def get_object(self, context: RequestContext, request: GetObjectRequest) -> GetObjectOutput:
         key = request["Key"]
         bucket = request["Bucket"]
-        if is_object_expired(context, bucket=bucket, key=key):
+        version_id = request.get("VersionId")
+        if is_object_expired(context, bucket=bucket, key=key, version_id=version_id):
             # TODO: old behaviour was deleting key instantly if expired. AWS cleans up only once a day generally
             # see if we need to implement a feature flag
             # but you can still HeadObject on it and you get the expiry time
-            ex = NoSuchKey("The specified key does not exist.")
-            ex.Key = key
-            raise ex
+            raise NoSuchKey("The specified key does not exist.", Key=key)
 
         response: GetObjectOutput = call_moto(context)
         # check for the presence in the response, might be fixed by moto one day
@@ -363,7 +362,7 @@ class S3Provider(S3Api, ServiceLifecycleHook):
 
         moto_backend = get_moto_s3_backend(context)
         moto_bucket = get_bucket_from_moto(moto_backend, bucket=bucket)
-        key_object = get_key_from_moto_bucket(moto_bucket, key=key)
+        key_object = get_key_from_moto_bucket(moto_bucket, key=key, version_id=version_id)
 
         if not config.S3_SKIP_KMS_KEY_VALIDATION and key_object.kms_key_id:
             validate_kms_key_id(kms_key=key_object.kms_key_id, bucket=moto_bucket)
@@ -390,6 +389,9 @@ class S3Provider(S3Api, ServiceLifecycleHook):
         context: RequestContext,
         request: PutObjectRequest,
     ) -> PutObjectOutput:
+        # TODO: it seems AWS uses AES256 encryption by default now, starting January 5th 2023
+        # note: etag do not change after encryption
+        # https://docs.aws.amazon.com/AmazonS3/latest/userguide/bucket-encryption.html
         if checksum_algorithm := request.get("ChecksumAlgorithm"):
             verify_checksum(checksum_algorithm, context.request.data, request)
 
@@ -412,6 +414,7 @@ class S3Provider(S3Api, ServiceLifecycleHook):
 
         # moto interprets the Expires in query string for presigned URL as an Expires header and use it for the object
         # we set it to the correctly parsed value in Request, else we remove it from moto metadata
+        # we are getting the last set key here so no need for versionId when getting the key
         key_object = get_key_from_moto_bucket(moto_bucket, key=request["Key"])
         if expires := request.get("Expires"):
             key_object.set_expiry(expires)
@@ -453,12 +456,17 @@ class S3Provider(S3Api, ServiceLifecycleHook):
         context: RequestContext,
         request: DeleteObjectRequest,
     ) -> DeleteObjectOutput:
-
+        # TODO: implement DeleteMarker response
         if request["Bucket"] not in self.get_store().bucket_notification_configs:
             return call_moto(context)
 
+        # TODO: we do not differentiate between deleting a key and creating a DeleteMarker in a versioned bucket
+        # for the event (s3:ObjectRemoved:Delete / s3:ObjectRemoved:DeleteMarkerCreated)
+        # it always s3:ObjectRemoved:Delete for now
         # create the notification context before deleting the object, to be able to retrieve its properties
-        s3_notification_ctx = S3EventNotificationContext.from_request_context(context)
+        s3_notification_ctx = S3EventNotificationContext.from_request_context(
+            context, version_id=request.get("VersionId")
+        )
 
         response: DeleteObjectOutput = call_moto(context)
         self._notify(context, s3_notification_ctx)
@@ -476,14 +484,19 @@ class S3Provider(S3Api, ServiceLifecycleHook):
         expected_bucket_owner: AccountId = None,
         checksum_algorithm: ChecksumAlgorithm = None,
     ) -> DeleteResult:
+        # TODO: implement DeleteMarker response
         objects: List[ObjectIdentifier] = delete.get("Objects")
         deleted_objects = {}
         quiet = delete.get("Quiet", False)
-        for object in objects:
-            key = object["Key"]
+        for object_data in objects:
+            key = object_data["Key"]
             # create the notification context before deleting the object, to be able to retrieve its properties
+            # TODO: test format of notification if the key is a DeleteMarker
             s3_notification_ctx = S3EventNotificationContext.from_request_context(
-                context, key_name=key, allow_non_existing_key=True
+                context,
+                key_name=key,
+                version_id=object_data.get("VersionId"),
+                allow_non_existing_key=True,
             )
 
             deleted_objects[key] = s3_notification_ctx
@@ -845,8 +858,12 @@ class S3Provider(S3Api, ServiceLifecycleHook):
             validate_acl_acp(acp)
 
         moto_backend = get_moto_s3_backend(context)
+        # TODO: rework the delete marker handling
         key = get_key_from_moto_bucket(
-            get_bucket_from_moto(moto_backend, bucket=request["Bucket"]), key=request["Key"]
+            moto_bucket=get_bucket_from_moto(moto_backend, bucket=request["Bucket"]),
+            key=request["Key"],
+            version_id=request.get("VersionId"),
+            raise_if_delete_marker_method="PUT",
         )
         acl = key.acl
 
@@ -967,6 +984,7 @@ class S3Provider(S3Api, ServiceLifecycleHook):
             key_name = key_name.replace("${filename}", context.request.files["file"].filename)
 
         moto_backend = get_moto_s3_backend(context)
+        # TODO: add concept of VersionId
         key = get_key_from_moto_bucket(
             get_bucket_from_moto(moto_backend, bucket=bucket), key=key_name
         )
@@ -1014,7 +1032,13 @@ class S3Provider(S3Api, ServiceLifecycleHook):
         bucket_name = request["Bucket"]
         moto_backend = get_moto_s3_backend(context)
         bucket = get_bucket_from_moto(moto_backend, bucket_name)
-        key = get_key_from_moto_bucket(moto_bucket=bucket, key=request["Key"])
+        # TODO: rework the delete marker handling
+        key = get_key_from_moto_bucket(
+            moto_bucket=bucket,
+            key=request["Key"],
+            version_id=request.get("VersionId"),
+            raise_if_delete_marker_method="GET",
+        )
 
         object_attrs = request.get("ObjectAttributes", [])
         response = GetObjectAttributesOutput()
@@ -1035,8 +1059,9 @@ class S3Provider(S3Api, ServiceLifecycleHook):
             response["Checksum"] = {f"Checksum{checksum_algorithm.upper()}": checksum}  # noqa
 
         response["LastModified"] = key.last_modified
-        if version_id := request.get("VersionId"):
-            response["VersionId"] = version_id
+
+        if bucket_name in self.get_store().bucket_versioning_status:
+            response["VersionId"] = key.version_id
 
         if key.multipart:
             response["ObjectParts"] = GetObjectAttributesParts(
@@ -1207,10 +1232,12 @@ def validate_website_configuration(website_config: WebsiteConfiguration) -> None
                 )
 
 
-def is_object_expired(context: RequestContext, bucket: BucketName, key: ObjectKey) -> bool:
+def is_object_expired(
+    context: RequestContext, bucket: BucketName, key: ObjectKey, version_id: str = None
+) -> bool:
     moto_backend = get_moto_s3_backend(context)
     moto_bucket = get_bucket_from_moto(moto_backend, bucket)
-    key_object = get_key_from_moto_bucket(moto_bucket, key)
+    key_object = get_key_from_moto_bucket(moto_bucket, key, version_id=version_id)
     return is_key_expired(key_object=key_object)
 
 
