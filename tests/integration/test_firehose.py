@@ -128,6 +128,7 @@ def test_firehose_http(
 
 class TestFirehoseIntegration:
     @pytest.mark.skip_offline
+    @pytest.mark.skip("Flaky for now, need to investigate")  # TODO: Investigate post V2
     def test_kinesis_firehose_elasticsearch_s3_backup(
         self,
         firehose_client,

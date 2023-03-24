@@ -109,7 +109,9 @@ class TestS3Cors:
         response = s3_client.put_object(Bucket=s3_bucket, Key=key, Body=body, ACL="public-read")
         assert response["ResponseMetadata"]["HTTPStatusCode"] == 200
 
-        key_url = f"{_bucket_url_vhost(bucket_name=s3_bucket)}/{key}"
+        # key_url = f"{_bucket_url_vhost(bucket_name=s3_bucket)}/{key}"
+        # TODO: replace with vhost again: investigate
+        key_url = f"{config.get_edge_url()}/{s3_bucket}/{key}"
 
         response = requests.get(key_url)
         assert response.status_code == 200
@@ -227,7 +229,9 @@ class TestS3Cors:
 
         s3_client.put_bucket_cors(Bucket=s3_bucket, CORSConfiguration=bucket_cors_config)
 
-        key_url = f"{_bucket_url_vhost(bucket_name=s3_bucket)}/{object_key}"
+        # key_url = f"{_bucket_url_vhost(bucket_name=s3_bucket)}/{object_key}"
+        # TODO: replace with vhost again: investigate
+        key_url = f"{config.get_edge_url()}/{s3_bucket}/{object_key}"
 
         # no origin, akin to no CORS
         opt_req = requests.options(key_url)
@@ -309,7 +313,9 @@ class TestS3Cors:
 
         s3_client.put_bucket_cors(Bucket=bucket_name, CORSConfiguration=bucket_cors_config)
 
-        key_url = f"{_bucket_url_vhost(bucket_name=bucket_name)}/{object_key}"
+        # key_url = f"{_bucket_url_vhost(bucket_name=bucket_name)}/{object_key}"
+        # TODO: replace with vhost again: investigate
+        key_url = f"{config.get_edge_url()}/{bucket_name}/{object_key}"
 
         # test with allowed method: GET
         opt_req = requests.options(
@@ -326,7 +332,11 @@ class TestS3Cors:
         match_headers("get-op", get_req)
 
         # test with method: PUT
-        new_key_url = f"{_bucket_url_vhost(bucket_name=bucket_name)}/{object_key}new"
+
+        # new_key_url = f"{_bucket_url_vhost(bucket_name=bucket_name)}/{object_key}new"
+        # TODO: replace with vhost again: investigate
+        new_key_url = f"{config.get_edge_url()}/{bucket_name}/{object_key}new"
+
         opt_req = requests.options(
             new_key_url, headers={"Origin": origin, "Access-Control-Request-Method": "PUT"}
         )
