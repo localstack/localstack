@@ -5011,5 +5011,276 @@
         }
       }
     }
+  },
+  "tests/integration/s3/test_s3.py::TestS3::test_delete_keys_in_versioned_bucket": {
+    "recorded-date": "24-03-2023, 01:25:18",
+    "recorded-content": {
+      "list-objects-v2": {
+        "Contents": [
+          {
+            "ETag": "\"d28473b5c0d7abeb397551aa2fe42be7\"",
+            "Key": "test-key-versioned",
+            "LastModified": "datetime",
+            "Size": 12,
+            "StorageClass": "STANDARD"
+          }
+        ],
+        "EncodingType": "url",
+        "IsTruncated": false,
+        "KeyCount": 1,
+        "MaxKeys": 1000,
+        "Name": "<bucket-name:1>",
+        "Prefix": "",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "delete-object": {
+        "Deleted": [
+          {
+            "DeleteMarker": true,
+            "DeleteMarkerVersionId": "<version-id:1>",
+            "Key": "test-key-versioned"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "list-object-version": {
+        "DeleteMarkers": [
+          {
+            "IsLatest": true,
+            "Key": "test-key-versioned",
+            "LastModified": "datetime",
+            "Owner": {
+              "DisplayName": "<display-name>",
+              "ID": "<owner-id>"
+            },
+            "VersionId": "<version-id:1>"
+          }
+        ],
+        "EncodingType": "url",
+        "IsTruncated": false,
+        "KeyMarker": "",
+        "MaxKeys": 1000,
+        "Name": "<bucket-name:1>",
+        "Prefix": "",
+        "VersionIdMarker": "",
+        "Versions": [
+          {
+            "ETag": "\"d28473b5c0d7abeb397551aa2fe42be7\"",
+            "IsLatest": false,
+            "Key": "test-key-versioned",
+            "LastModified": "datetime",
+            "Owner": {
+              "DisplayName": "<display-name>",
+              "ID": "<owner-id>"
+            },
+            "Size": 12,
+            "StorageClass": "STANDARD",
+            "VersionId": "<version-id:2>"
+          },
+          {
+            "ETag": "\"437b930db84b8079c2dd804a71936b5f\"",
+            "IsLatest": false,
+            "Key": "test-key-versioned",
+            "LastModified": "datetime",
+            "Owner": {
+              "DisplayName": "<display-name>",
+              "ID": "<owner-id>"
+            },
+            "Size": 9,
+            "StorageClass": "STANDARD",
+            "VersionId": "<version-id:3>"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "delete-object-version": {
+        "Deleted": [
+          {
+            "Key": "test-key-versioned",
+            "VersionId": "<version-id:3>"
+          },
+          {
+            "Key": "test-key-versioned",
+            "VersionId": "<version-id:2>"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "list-objects-v2-after-delete": {
+        "EncodingType": "url",
+        "IsTruncated": false,
+        "KeyCount": 0,
+        "MaxKeys": 1000,
+        "Name": "<bucket-name:1>",
+        "Prefix": "",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "list-object-version-after-delete": {
+        "DeleteMarkers": [
+          {
+            "IsLatest": true,
+            "Key": "test-key-versioned",
+            "LastModified": "datetime",
+            "Owner": {
+              "DisplayName": "<display-name>",
+              "ID": "<owner-id>"
+            },
+            "VersionId": "<version-id:1>"
+          }
+        ],
+        "EncodingType": "url",
+        "IsTruncated": false,
+        "KeyMarker": "",
+        "MaxKeys": 1000,
+        "Name": "<bucket-name:1>",
+        "Prefix": "",
+        "VersionIdMarker": "",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "delete-object-delete-marker": {
+        "Deleted": [
+          {
+            "DeleteMarker": true,
+            "DeleteMarkerVersionId": "<version-id:1>",
+            "Key": "test-key-versioned",
+            "VersionId": "<version-id:1>"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/integration/s3/test_s3.py::TestS3::test_put_object_acl_on_delete_marker": {
+    "recorded-date": "24-03-2023, 00:28:23",
+    "recorded-content": {
+      "put-obj-1": {
+        "ETag": "\"437b930db84b8079c2dd804a71936b5f\"",
+        "ServerSideEncryption": "AES256",
+        "VersionId": "<version-id:1>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "put-obj-2": {
+        "ETag": "\"d28473b5c0d7abeb397551aa2fe42be7\"",
+        "ServerSideEncryption": "AES256",
+        "VersionId": "<version-id:2>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "delete-object": {
+        "Deleted": [
+          {
+            "DeleteMarker": true,
+            "DeleteMarkerVersionId": "0wvrZJFm5uVT3UZ3qpFOZ_MCcWInT.TR",
+            "Key": "test-key-versioned"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "key-delete-marker": {
+        "Error": {
+          "Code": "MethodNotAllowed",
+          "Message": "The specified method is not allowed against this resource.",
+          "Method": "PUT",
+          "ResourceType": "DeleteMarker"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 405
+        }
+      }
+    }
+  },
+  "tests/integration/s3/test_s3.py::TestS3::test_get_object_attributes_versioned": {
+    "recorded-date": "24-03-2023, 01:39:11",
+    "recorded-content": {
+      "put-obj-v1": {
+        "ETag": "\"e92499db864217242396e8ef766079a9\"",
+        "ServerSideEncryption": "AES256",
+        "VersionId": "<version-id:1>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "put-obj-v2": {
+        "ETag": "\"d4ca1ed7571e2e7b1f1c375bd50fa220\"",
+        "ServerSideEncryption": "AES256",
+        "VersionId": "<version-id:2>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "object-attrs": {
+        "ETag": "d4ca1ed7571e2e7b1f1c375bd50fa220",
+        "LastModified": "datetime",
+        "ObjectSize": 9,
+        "StorageClass": "STANDARD",
+        "VersionId": "<version-id:2>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "delete-key": {
+        "DeleteMarker": true,
+        "VersionId": "<version-id:3>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 204
+        }
+      },
+      "deleted-object-attrs": {
+        "Error": {
+          "Code": "NoSuchKey",
+          "Key": "key-attrs-versioned",
+          "Message": "The specified key does not exist."
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 404
+        }
+      },
+      "get-object-attrs-v1": {
+        "ETag": "e92499db864217242396e8ef766079a9",
+        "LastModified": "datetime",
+        "ObjectSize": 7,
+        "StorageClass": "STANDARD",
+        "VersionId": "<version-id:1>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
   }
 }

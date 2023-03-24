@@ -6,7 +6,7 @@ from typing import Dict, List, Optional, Tuple, TypedDict, Union
 from urllib.parse import quote
 
 from botocore.exceptions import ClientError
-from moto.s3.models import FakeBucket, FakeKey
+from moto.s3.models import FakeBucket, FakeDeleteMarker, FakeKey
 
 from localstack.aws.api import RequestContext
 from localstack.aws.api.events import PutEventsRequestEntry
@@ -95,7 +95,11 @@ class S3EventNotificationContext:
 
     @classmethod
     def from_request_context(
-        cls, request_context: RequestContext, key_name: str = None, allow_non_existing_key=False
+        cls,
+        request_context: RequestContext,
+        key_name: str = None,
+        version_id: str = None,
+        allow_non_existing_key=False,
     ) -> "S3EventNotificationContext":
         """
         Create an S3EventNotificationContext from a RequestContext.
@@ -103,6 +107,7 @@ class S3EventNotificationContext:
         a provided one.
         :param request_context: RequestContext
         :param key_name: Optional, in case it's not provided in the RequestContext
+        :param version_id: Optional, can be given to get the key version in case of deletion
         :param allow_non_existing_key: Optional, indicates that a dummy Key should be created, if it does not exist (required for delete_objects)
         :return: S3EventNotificationContext
         """
@@ -111,21 +116,33 @@ class S3EventNotificationContext:
         bucket: FakeBucket = get_bucket_from_moto(moto_backend, bucket=bucket_name)
         try:
             key: FakeKey = get_key_from_moto_bucket(
-                moto_bucket=bucket, key=key_name or request_context.service_request["Key"]
+                moto_bucket=bucket,
+                key=key_name or request_context.service_request["Key"],
+                version_id=version_id,
             )
         except NoSuchKey as ex:
             if allow_non_existing_key:
                 key: FakeKey = FakeKey(key_name, "")
             else:
                 raise ex
+
+        # TODO: test notification format when the concerned key is FakeDeleteMarker
+        # it might not send notification, or s3:ObjectRemoved:DeleteMarkerCreated which we don't support
+        if isinstance(key, FakeDeleteMarker):
+            etag = ""
+            key_size = 0
+        else:
+            etag = key.etag.strip('"')
+            key_size = key.contentsize
+
         return cls(
             event_type=EVENT_OPERATION_MAP.get(request_context.operation.wire_name, ""),
             region=request_context.region,
             bucket_name=bucket_name,
             bucket_location=bucket.location,
             key_name=quote(key.name),
-            key_etag=key.etag.strip('"'),
-            key_size=key.contentsize,
+            key_etag=etag,
+            key_size=key_size,
             key_version_id=key.version_id if bucket.is_versioned else None,  # todo: check this?
             xray=request_context.request.headers.get(HEADER_AMZN_XRAY),
         )

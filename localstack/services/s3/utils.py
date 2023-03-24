@@ -1,6 +1,6 @@
 import datetime
 import re
-from typing import Dict, Union
+from typing import Dict, Literal, Union
 
 import moto.s3.models as moto_s3_models
 from botocore.exceptions import ClientError
@@ -13,6 +13,7 @@ from localstack.aws.api.s3 import (
     BucketName,
     ChecksumAlgorithm,
     InvalidArgument,
+    MethodNotAllowed,
     NoSuchBucket,
     NoSuchKey,
     ObjectKey,
@@ -140,19 +141,41 @@ def get_bucket_from_moto(
     try:
         return moto_backend.get_bucket(bucket_name=bucket)
     except MissingBucket:
-        ex = NoSuchBucket("The specified bucket does not exist")
-        ex.BucketName = bucket
-        raise ex
+        raise NoSuchBucket("The specified bucket does not exist", BucketName=bucket)
 
 
 def get_key_from_moto_bucket(
-    moto_bucket: moto_s3_models.FakeBucket, key: ObjectKey
-) -> moto_s3_models.FakeKey:
-    fake_key = moto_bucket.keys.get(key)
+    moto_bucket: FakeBucket,
+    key: ObjectKey,
+    version_id: str = None,
+    raise_if_delete_marker_method: Literal["GET", "PUT"] = None,
+) -> FakeKey | FakeDeleteMarker:
+    # TODO: rework the delete marker handling
+    # we basically need to re-implement moto `get_object` to account for FakeDeleteMarker
+    if version_id is None:
+        fake_key = moto_bucket.keys.get(key)
+    else:
+        for key_version in moto_bucket.keys.getlist(key, default=[]):
+            if str(key_version.version_id) == str(version_id):
+                fake_key = key_version
+                break
+        else:
+            fake_key = None
+
     if not fake_key:
-        ex = NoSuchKey("The specified key does not exist.")
-        ex.Key = key
-        raise ex
+        raise NoSuchKey("The specified key does not exist.", Key=key)
+
+    if isinstance(fake_key, FakeDeleteMarker) and raise_if_delete_marker_method:
+        # TODO: validate method, but should be PUT in most cases (updating a DeleteMarker)
+        match raise_if_delete_marker_method:
+            case "GET":
+                raise NoSuchKey("The specified key does not exist.", Key=key)
+            case "PUT":
+                raise MethodNotAllowed(
+                    "The specified method is not allowed against this resource.",
+                    Method="PUT",
+                    ResourceType="DeleteMarker",
+                )
 
     return fake_key
 
