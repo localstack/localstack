@@ -4308,9 +4308,9 @@
     }
   },
   "tests/integration/s3/test_s3.py::TestS3::test_put_object_storage_class[STANDARD]": {
-    "recorded-date": "16-01-2023, 18:02:54",
+    "recorded-date": "24-03-2023, 03:44:20",
     "recorded-content": {
-      "put-object-storage-class": {
+      "get-object-storage-class": {
         "LastModified": "datetime",
         "StorageClass": "STANDARD",
         "ResponseMetadata": {
@@ -4321,9 +4321,9 @@
     }
   },
   "tests/integration/s3/test_s3.py::TestS3::test_put_object_storage_class[STANDARD_IA]": {
-    "recorded-date": "16-01-2023, 18:01:59",
+    "recorded-date": "24-03-2023, 03:44:22",
     "recorded-content": {
-      "put-object-storage-class": {
+      "get-object-storage-class": {
         "LastModified": "datetime",
         "StorageClass": "STANDARD_IA",
         "ResponseMetadata": {
@@ -4334,9 +4334,9 @@
     }
   },
   "tests/integration/s3/test_s3.py::TestS3::test_put_object_storage_class[GLACIER]": {
-    "recorded-date": "16-01-2023, 18:02:01",
+    "recorded-date": "24-03-2023, 03:44:24",
     "recorded-content": {
-      "put-object-storage-class": {
+      "get-object-storage-class": {
         "LastModified": "datetime",
         "StorageClass": "GLACIER",
         "ResponseMetadata": {
@@ -4347,9 +4347,9 @@
     }
   },
   "tests/integration/s3/test_s3.py::TestS3::test_put_object_storage_class[GLACIER_IR]": {
-    "recorded-date": "16-01-2023, 18:02:04",
+    "recorded-date": "24-03-2023, 03:44:26",
     "recorded-content": {
-      "put-object-storage-class": {
+      "get-object-storage-class": {
         "LastModified": "datetime",
         "StorageClass": "GLACIER_IR",
         "ResponseMetadata": {
@@ -4360,9 +4360,9 @@
     }
   },
   "tests/integration/s3/test_s3.py::TestS3::test_put_object_storage_class[REDUCED_REDUNDANCY]": {
-    "recorded-date": "16-01-2023, 18:02:06",
+    "recorded-date": "24-03-2023, 03:44:29",
     "recorded-content": {
-      "put-object-storage-class": {
+      "get-object-storage-class": {
         "LastModified": "datetime",
         "StorageClass": "REDUCED_REDUNDANCY",
         "ResponseMetadata": {
@@ -4373,9 +4373,9 @@
     }
   },
   "tests/integration/s3/test_s3.py::TestS3::test_put_object_storage_class[ONEZONE_IA]": {
-    "recorded-date": "16-01-2023, 18:02:09",
+    "recorded-date": "24-03-2023, 03:44:31",
     "recorded-content": {
-      "put-object-storage-class": {
+      "get-object-storage-class": {
         "LastModified": "datetime",
         "StorageClass": "ONEZONE_IA",
         "ResponseMetadata": {
@@ -4386,9 +4386,9 @@
     }
   },
   "tests/integration/s3/test_s3.py::TestS3::test_put_object_storage_class[INTELLIGENT_TIERING]": {
-    "recorded-date": "16-01-2023, 18:02:11",
+    "recorded-date": "24-03-2023, 03:44:33",
     "recorded-content": {
-      "put-object-storage-class": {
+      "get-object-storage-class": {
         "LastModified": "datetime",
         "StorageClass": "INTELLIGENT_TIERING",
         "ResponseMetadata": {
@@ -4399,9 +4399,9 @@
     }
   },
   "tests/integration/s3/test_s3.py::TestS3::test_put_object_storage_class[DEEP_ARCHIVE]": {
-    "recorded-date": "16-01-2023, 18:02:13",
+    "recorded-date": "24-03-2023, 03:44:35",
     "recorded-content": {
-      "put-object-storage-class": {
+      "get-object-storage-class": {
         "LastModified": "datetime",
         "StorageClass": "DEEP_ARCHIVE",
         "ResponseMetadata": {

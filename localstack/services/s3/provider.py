@@ -1059,7 +1059,8 @@ class S3Provider(S3Api, ServiceLifecycleHook):
             response["Checksum"] = {f"Checksum{checksum_algorithm.upper()}": checksum}  # noqa
 
         response["LastModified"] = key.last_modified
-        if key.version_id:
+
+        if bucket in self.get_store().bucket_versioning_status:
             response["VersionId"] = key.version_id
 
         if key.multipart:

@@ -691,8 +691,6 @@ class TestS3:
         condition=LEGACY_S3_PROVIDER,
         reason="currently not implemented in moto, see https://github.com/localstack/localstack/issues/6217",
     )
-    # parser issue in https://github.com/localstack/localstack/issues/6422 because moto returns wrong response
-    # TODO test versioned KEY
     def test_get_object_attributes(self, s3_client, s3_bucket, snapshot, s3_multipart_upload):
         s3_client.put_object(Bucket=s3_bucket, Key="data.txt", Body=b"69\n420\n")
         response = s3_client.get_object_attributes(
@@ -3279,7 +3277,7 @@ class TestS3:
             Key=key_name,
             ObjectAttributes=["StorageClass"],
         )
-        snapshot.match("put-object-storage-class", response)
+        snapshot.match("get-object-storage-class", response)
 
     @pytest.mark.aws_validated
     @pytest.mark.xfail(
