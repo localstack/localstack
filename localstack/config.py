@@ -406,6 +406,27 @@ PORTS_CHECK_DOCKER_IMAGE = os.environ.get("PORTS_CHECK_DOCKER_IMAGE", "").strip(
 # TODO: this will likely become the default and may get removed in the future
 FORWARD_EDGE_INMEM = True
 
+
+def is_trace_logging_enabled():
+    if LS_LOG:
+        log_level = str(LS_LOG).upper()
+        return log_level.lower() in TRACE_LOG_LEVELS
+    return False
+
+
+# set log levels immediately, but will be overwritten later by setup_logging
+if DEBUG:
+    logging.getLogger("").setLevel(logging.DEBUG)
+    logging.getLogger("localstack").setLevel(logging.DEBUG)
+
+LOG = logging.getLogger(__name__)
+if is_trace_logging_enabled():
+    load_end_time = time.time()
+    LOG.debug(
+        "Initializing the configuration took %s ms", int((load_end_time - load_start_time) * 1000)
+    )
+
+
 # expose services on a specific host externally
 # DEPRECATED:  since v2.0.0 as we are moving to LOCALSTACK_HOST
 HOSTNAME_EXTERNAL = os.environ.get("HOSTNAME_EXTERNAL", "").strip() or LOCALHOST
@@ -413,6 +434,29 @@ HOSTNAME_EXTERNAL = os.environ.get("HOSTNAME_EXTERNAL", "").strip() or LOCALHOST
 # name of the host under which the LocalStack services are available
 # DEPRECATED: if the user sets this since v2.0.0 as we are moving to LOCALSTACK_HOST
 LOCALSTACK_HOSTNAME = os.environ.get("LOCALSTACK_HOSTNAME", "").strip() or LOCALHOST
+
+
+def parse_hostname_and_ip(
+    value: str, default_host: str, default_port: int = constants.DEFAULT_PORT_EDGE
+) -> str:
+    """
+    Given a string that should contain a <hostname>:<port>, if either are
+    absent then use the defaults.
+    """
+    host, port = default_host, default_port
+    if ":" in value:
+        hostname, port_s = value.split(":", 1)
+        if hostname.strip():
+            host = hostname.strip()
+        try:
+            port = int(port_s)
+        except (ValueError, TypeError):
+            pass
+    else:
+        if value.strip():
+            host = value.strip()
+
+    return f"{host}:{port}"
 
 
 def populate_legacy_edge_configuration(
@@ -431,23 +475,19 @@ def populate_legacy_edge_configuration(
     localstack_host = localstack_host_raw
     if localstack_host is None:
         localstack_host = f"{constants.LOCALHOST_HOSTNAME}:{constants.DEFAULT_PORT_EDGE}"
-
-    def parse_gateway_listen(value: str) -> str:
-        if ":" in value:
-            ip, port_s = value.split(":", 1)
-            if not ip.strip():
-                ip = default_ip
-            if not port_s.strip():
-                port_s = "4566"
-            port = int(port_s)
-            return f"{ip}:{port}"
-        else:
-            return f"{value}:4566"
+    else:
+        localstack_host = parse_hostname_and_ip(
+            localstack_host,
+            default_host=constants.LOCALHOST_HOSTNAME,
+        )
 
     gateway_listen = gateway_listen_raw
     if gateway_listen is None:
         # default to existing behaviour
-        port = int(localstack_host.split(":")[-1])
+        try:
+            port = int(localstack_host.split(":", 1)[-1])
+        except ValueError:
+            port = constants.DEFAULT_PORT_EDGE
         gateway_listen = f"{default_ip}:{port}"
     else:
         components = gateway_listen.split(",")
@@ -455,7 +495,13 @@ def populate_legacy_edge_configuration(
             LOG.warning("multiple GATEWAY_LISTEN addresses are not currently supported")
 
         gateway_listen = ",".join(
-            [parse_gateway_listen(component.strip()) for component in components]
+            [
+                parse_hostname_and_ip(
+                    component.strip(),
+                    default_host=default_ip,
+                )
+                for component in components
+            ]
         )
 
     assert gateway_listen is not None
@@ -474,7 +520,7 @@ def populate_legacy_edge_configuration(
     edge_bind_host = legacy_fallback("EDGE_BIND_HOST", get_gateway_listen(gateway_listen)[0].host)
     edge_port = int(legacy_fallback("EDGE_PORT", get_gateway_listen(gateway_listen)[0].port))
     edge_port_http = int(
-        legacy_fallback("EDGE_PORT_HTTP", get_gateway_listen(gateway_listen)[0].port)
+        legacy_fallback("EDGE_PORT_HTTP", 0),
     )
 
     return localstack_host, gateway_listen, edge_bind_host, edge_port, edge_port_http
@@ -904,6 +950,7 @@ CONFIG_ENV_VARS = [
     "EXTRA_CORS_ALLOWED_HEADERS",
     "EXTRA_CORS_ALLOWED_ORIGINS",
     "EXTRA_CORS_EXPOSE_HEADERS",
+    "GATEWAY_LISTEN",
     "HOSTNAME",
     "HOSTNAME_EXTERNAL",
     "HOSTNAME_FROM_LAMBDA",
@@ -949,6 +996,7 @@ CONFIG_ENV_VARS = [
     "LEGACY_EDGE_PROXY",
     "LEGACY_SNS_GCM_PUBLISHING",
     "LOCALSTACK_API_KEY",
+    "LOCALSTACK_HOST",
     "LOCALSTACK_HOSTNAME",
     "LOG_LICENSE_ISSUES",
     "LS_LOG",
@@ -1018,26 +1066,6 @@ def collect_config_items() -> List[Tuple[str, Any]]:
         result.append((k, v))
     result.sort()
     return result
-
-
-def is_trace_logging_enabled():
-    if LS_LOG:
-        log_level = str(LS_LOG).upper()
-        return log_level.lower() in TRACE_LOG_LEVELS
-    return False
-
-
-# set log levels immediately, but will be overwritten later by setup_logging
-if DEBUG:
-    logging.getLogger("").setLevel(logging.DEBUG)
-    logging.getLogger("localstack").setLevel(logging.DEBUG)
-
-LOG = logging.getLogger(__name__)
-if is_trace_logging_enabled():
-    load_end_time = time.time()
-    LOG.debug(
-        "Initializing the configuration took %s ms", int((load_end_time - load_start_time) * 1000)
-    )
 
 
 def parse_service_ports() -> Dict[str, int]:
