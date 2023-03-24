@@ -2287,5 +2287,225 @@
         }
       }
     }
+  },
+  "tests/integration/apigateway/test_apigateway_api.py::TestApiGatewayApiDocumentationPart::test_documentation_part_lifecycle": {
+    "recorded-date": "23-03-2023, 17:50:40",
+    "recorded-content": {
+      "create-documentation-part": {
+        "id": "<id:1>",
+        "location": {
+          "type": "API"
+        },
+        "properties": {
+          "description": "Sample API description"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 201
+        }
+      },
+      "get-documentation-part": {
+        "id": "<id:1>",
+        "location": {
+          "type": "API"
+        },
+        "properties": {
+          "description": "Sample API description"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "get-documentation-parts": {
+        "items": [
+          {
+            "id": "<id:1>",
+            "location": {
+              "type": "API"
+            },
+            "properties": {
+              "description": "Sample API description"
+            }
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "update-documentation-part": {
+        "id": "<id:1>",
+        "location": {
+          "type": "API"
+        },
+        "properties": {
+          "description": "Updated Sample API description"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "get-documentation-part-after-update": {
+        "id": "<id:1>",
+        "location": {
+          "type": "API"
+        },
+        "properties": {
+          "description": "Updated Sample API description"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "delete_documentation_part": {
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 202
+        }
+      }
+    }
+  },
+  "tests/integration/apigateway/test_apigateway_api.py::TestApiGatewayApiDocumentationPart::test_invalid_get_documentation_part": {
+    "recorded-date": "23-03-2023, 17:51:12",
+    "recorded-content": {
+      "get-documentation-part-invalid-api-id": {
+        "Error": {
+          "Code": "NotFoundException",
+          "Message": "Invalid Documentation part identifier specified"
+        },
+        "message": "Invalid Documentation part identifier specified",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 404
+        }
+      },
+      "get-documentation-part-invalid-doc-id": {
+        "Error": {
+          "Code": "NotFoundException",
+          "Message": "Invalid Documentation part identifier specified"
+        },
+        "message": "Invalid Documentation part identifier specified",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 404
+        }
+      }
+    }
+  },
+  "tests/integration/apigateway/test_apigateway_api.py::TestApiGatewayApiDocumentationPart::test_invalid_get_documentation_parts": {
+    "recorded-date": "23-03-2023, 17:51:12",
+    "recorded-content": {
+      "get-inavlid-documentation-parts": {
+        "Error": {
+          "Code": "NotFoundException",
+          "Message": "Invalid API identifier specified 111111111111:api_id"
+        },
+        "message": "Invalid API identifier specified 111111111111:api_id",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 404
+        }
+      }
+    }
+  },
+  "tests/integration/apigateway/test_apigateway_api.py::TestApiGatewayApiDocumentationPart::test_invalid_update_documentation_part": {
+    "recorded-date": "23-03-2023, 17:51:42",
+    "recorded-content": {
+      "update-documentation-part-invalid-api-id": {
+        "Error": {
+          "Code": "NotFoundException",
+          "Message": "Invalid Documentation part identifier specified"
+        },
+        "message": "Invalid Documentation part identifier specified",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 404
+        }
+      },
+      "update-documentation-part-invalid-add-operation": {
+        "Error": {
+          "Code": "BadRequestException",
+          "Message": "Invalid patch path  '/properties' specified for op 'add'. Please choose supported operations"
+        },
+        "message": "Invalid patch path  '/properties' specified for op 'add'. Please choose supported operations",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "update-documentation-part-invalid-path": {
+        "Error": {
+          "Code": "BadRequestException",
+          "Message": "Invalid patch path  '/invalidPath' specified for op 'replace'. Must be one of: [/properties]"
+        },
+        "message": "Invalid patch path  '/invalidPath' specified for op 'replace'. Must be one of: [/properties]",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/integration/apigateway/test_apigateway_api.py::TestApiGatewayApiDocumentationPart::test_invalid_create_documentation_part_operations": {
+    "recorded-date": "23-03-2023, 17:52:11",
+    "recorded-content": {
+      "create_documentation_part_invalid_api_id": {
+        "Error": {
+          "Code": "NotFoundException",
+          "Message": "Invalid API identifier specified 111111111111:api_id"
+        },
+        "message": "Invalid API identifier specified 111111111111:api_id",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 404
+        }
+      },
+      "create_documentation_part_invalid_location_type": {
+        "Error": {
+          "Code": "ValidationException",
+          "Message": "1 validation error detected: Value 'INVALID' at 'createDocumentationPartInput.location.type' failed to satisfy constraint: Member must satisfy enum value set: [RESPONSE_BODY, RESPONSE, METHOD, MODEL, AUTHORIZER, RESPONSE_HEADER, RESOURCE, PATH_PARAMETER, REQUEST_BODY, QUERY_PARAMETER, API, REQUEST_HEADER]"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/integration/apigateway/test_apigateway_api.py::TestApiGatewayApiDocumentationPart::test_invalid_delete_documentation_part": {
+    "recorded-date": "23-03-2023, 17:52:31",
+    "recorded-content": {
+      "delete_documentation_part_wrong_api_id": {
+        "Error": {
+          "Code": "NotFoundException",
+          "Message": "Invalid API identifier specified 111111111111:api_id"
+        },
+        "message": "Invalid API identifier specified 111111111111:api_id",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 404
+        }
+      },
+      "delete_documentation_part": {
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 202
+        }
+      },
+      "delete_already_deleted_documentation_part": {
+        "Error": {
+          "Code": "NotFoundException",
+          "Message": "Invalid Documentation part identifier specified"
+        },
+        "message": "Invalid Documentation part identifier specified",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 404
+        }
+      }
+    }
   }
 }
