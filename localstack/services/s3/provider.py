@@ -98,7 +98,7 @@ from localstack.services.edge import ROUTER
 from localstack.services.moto import call_moto
 from localstack.services.plugins import ServiceLifecycleHook
 from localstack.services.s3 import constants as s3_constants
-from localstack.services.s3.cors import S3CorsHandler
+from localstack.services.s3.cors import S3CorsHandler, s3_cors_request_handler
 from localstack.services.s3.models import S3Store, get_moto_s3_backend, s3_stores
 from localstack.services.s3.notifications import NotificationDispatcher, S3EventNotificationContext
 from localstack.services.s3.presigned_url import (
@@ -1409,5 +1409,6 @@ def apply_moto_patches():
 
 
 def register_custom_handlers():
+    serve_custom_service_request_handlers.append(s3_cors_request_handler)
     serve_custom_service_request_handlers.append(s3_presigned_url_request_handler)
     modify_service_response.append(S3Provider.service, s3_presigned_url_response_handler)
