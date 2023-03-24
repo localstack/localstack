@@ -67,15 +67,22 @@ class S3Bucket(GenericBaseModel):
             return re.sub("(?<!^)(?=[A-Z])", "-", acl).lower()
 
         def transform_cfn_cors(cors_config):
-            cors_config["CORSRules"] = cors_config.pop("CorsRules")
-            for rule in cors_config["CORSRules"]:
-                if rule["Id"] is not None:
-                    rule["ID"] = rule.pop("Id")
-                if rule["MaxAge"] is not None:
-                    rule["MaxAgeSeconds"] = rule.pop("MaxAge")
-                if rule["ExposedHeaders"] is not None:
-                    rule["ExposeHeaders"] = rule.pop("ExposedHeaders")
-            return cors_config
+            if not cors_config:
+                return {}
+
+            transformed_cors = cors_config.copy()
+            transformed_cors["CORSRules"] = [
+                {
+                    "ID": rule["Id"] if rule["Id"] is not None else None,
+                    "AllowedHeaders": rule.get("AllowedHeaders"),
+                    "AllowedMethods": rule.get("AllowedMethods"),
+                    "AllowedOrigins": rule.get("AllowedOrigins"),
+                    "ExposeHeaders": rule["ExposedHeaders"] if rule.get("ExposedHeaders") else None,
+                    "MaxAgeSeconds": rule["MaxAge"] if rule.get("MaxAge") else None,
+                }
+                for rule in transformed_cors.pop("CorsRules", [])
+            ]
+            return transformed_cors
 
         def s3_bucket_notification_config(params, **kwargs):
             notif_config = params.get("NotificationConfiguration")
