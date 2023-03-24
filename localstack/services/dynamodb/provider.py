@@ -362,13 +362,13 @@ class DynamoDBProvider(DynamodbApi, ServiceLifecycleHook):
 
     def on_before_state_reset(self):
         self.server.stop_dynamodb()
-        self.server = DynamodbServer()
 
     def on_before_state_load(self):
         self.server.stop_dynamodb()
         self.server = DynamodbServer()
 
     def on_after_state_reset(self):
+        self.server = DynamodbServer()
         self.server.start_dynamodb()
 
     def on_after_state_load(self):
