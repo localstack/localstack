@@ -7,6 +7,7 @@ import zipfile
 
 import pytest
 
+from localstack.constants import FALSE_STRINGS
 from localstack.testing.aws.lambda_utils import is_old_provider
 from localstack.testing.snapshots.transformer import KeyValueBasedTransformer
 from localstack.utils.files import cp_r
@@ -247,6 +248,7 @@ class TestLambdaRuntimesCommon:
         assert invocation_result_payload["environment"]["WRAPPER_VAR"] == test_value
 
 
+# TODO: Split this and move to PRO
 @pytest.mark.whitebox
 @pytest.mark.skipif(
     condition=is_old_provider(),
@@ -254,6 +256,11 @@ class TestLambdaRuntimesCommon:
 )
 @pytest.mark.skipif(
     condition=platform.machine() != "x86_64", reason="build process doesn't support arm64 right now"
+)
+@pytest.mark.skipif(
+    condition="LOCALSTACK_API_KEY" in os.environ
+    and str(os.environ.get("DNS_ADDRESS")) not in FALSE_STRINGS,
+    reason="Transparent endpoint injection requires enabled DNS",
 )
 class TestLambdaCallingLocalstack:
     @pytest.mark.multiruntime(

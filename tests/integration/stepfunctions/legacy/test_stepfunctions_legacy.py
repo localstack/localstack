@@ -142,7 +142,7 @@ STATE_MACHINE_INTRINSIC_FUNCS = {
         "state3": {
             "Type": "Task",
             "Resource": "__tbd__",
-            "ResultSelector": {"payload.$": "$"},
+            "ResultSelector": {"payload.$": "$.Payload"},
             "ResultPath": "$.result_value",
             "End": True,
         },
@@ -417,6 +417,7 @@ class TestStateMachine:
         # clean up
         cleanup(sm_arn, state_machines_before, stepfunctions_client)
 
+    # TODO: validate against AWS
     def test_intrinsic_functions(self, stepfunctions_client):
         if os.environ.get("AWS_DEFAULT_REGION") != "us-east-1":
             pytest.skip("skipping non us-east-1 temporarily")
