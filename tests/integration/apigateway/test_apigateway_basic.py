@@ -40,6 +40,7 @@ from localstack.utils.collections import select_attributes
 from localstack.utils.files import load_file
 from localstack.utils.http import safe_requests as requests
 from localstack.utils.json import clone
+from localstack.utils.platform import get_arch
 from localstack.utils.strings import short_uid, to_str
 from localstack.utils.sync import retry
 from tests.integration.apigateway.apigateway_fixtures import (
@@ -68,7 +69,6 @@ from tests.integration.apigateway.conftest import (
 from tests.integration.awslambda.test_lambda import (
     TEST_LAMBDA_AWS_PROXY,
     TEST_LAMBDA_HTTP_RUST,
-    TEST_LAMBDA_LIBS,
     TEST_LAMBDA_NODEJS,
     TEST_LAMBDA_NODEJS_APIGW_502,
     TEST_LAMBDA_NODEJS_APIGW_INTEGRATION,
@@ -1016,40 +1016,6 @@ class TestAPIGateway:
         lambda_client = aws_stack.create_external_boto_client("lambda")
         lambda_client.delete_function(FunctionName=lambda_name)
 
-    def test_request_validator(self, apigateway_client, create_rest_apigw):
-        rest_api_id, _, _ = create_rest_apigw(name="my_api", description="this is my api")
-        # CREATE
-        name = "validator123"
-        result = apigateway_client.create_request_validator(restApiId=rest_api_id, name=name)
-        assert 201 == result["ResponseMetadata"]["HTTPStatusCode"]
-        validator_id = result["id"]
-        # LIST
-        result = apigateway_client.get_request_validators(restApiId=rest_api_id)
-        assert 200 == result["ResponseMetadata"]["HTTPStatusCode"]
-        assert [{"id": validator_id, "name": name}] == result["items"]
-        # GET
-        result = apigateway_client.get_request_validator(
-            restApiId=rest_api_id, requestValidatorId=validator_id
-        )
-        assert 200 == result["ResponseMetadata"]["HTTPStatusCode"]
-        assert select_attributes(result, ["id", "name"]) == {"id": validator_id, "name": name}
-        # UPDATE
-        result = apigateway_client.update_request_validator(
-            restApiId=rest_api_id, requestValidatorId=validator_id, patchOperations=[]
-        )
-        # DELETE
-        apigateway_client.delete_request_validator(
-            restApiId=rest_api_id, requestValidatorId=validator_id
-        )
-        with pytest.raises(Exception):
-            apigateway_client.get_request_validator(
-                restApiId=rest_api_id, requestValidatorId=validator_id
-            )
-        with pytest.raises(Exception):
-            apigateway_client.delete_request_validator(
-                restApiId=rest_api_id, requestValidatorId=validator_id
-            )
-
     def test_base_path_mapping(self, apigateway_client, create_rest_apigw):
         rest_api_id, _, _ = create_rest_apigw(name="my_api", description="this is my api")
 
@@ -1825,9 +1791,7 @@ class TestAPIGateway:
 
     @staticmethod
     def create_lambda_function(fn_name):
-        testutil.create_lambda_function(
-            handler_file=TEST_LAMBDA_PYTHON, libs=TEST_LAMBDA_LIBS, func_name=fn_name
-        )
+        testutil.create_lambda_function(handler_file=TEST_LAMBDA_PYTHON, func_name=fn_name)
         lambda_client = aws_stack.create_external_boto_client("lambda")
         lambda_client.get_waiter("function_active_v2").wait(FunctionName=fn_name)
 
@@ -2168,6 +2132,7 @@ def test_import_swagger_api(apigateway_client):
 
 
 @pytest.mark.skipif(not use_docker(), reason="Rust lambdas cannot be executed in local executor")
+@pytest.mark.skipif(get_arch() == "arm64", reason="Lambda only available for amd64")
 def test_apigateway_rust_lambda(
     apigateway_client,
     create_rest_apigw,

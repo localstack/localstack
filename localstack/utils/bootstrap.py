@@ -10,7 +10,6 @@ from functools import wraps
 from typing import Dict, Iterable, List, Optional, Set
 
 from localstack import config, constants
-from localstack.config import Directories
 from localstack.constants import DEFAULT_VOLUME_DIR
 from localstack.runtime import hooks
 from localstack.utils.container_networking import get_main_container_name
@@ -23,7 +22,7 @@ from localstack.utils.container_utils.container_client import (
 )
 from localstack.utils.container_utils.docker_cmd_client import CmdDockerClient
 from localstack.utils.docker_utils import DOCKER_CLIENT
-from localstack.utils.files import cache_dir, chmod_r, mkdir
+from localstack.utils.files import cache_dir, mkdir
 from localstack.utils.functions import call_safe
 from localstack.utils.run import run, to_str
 from localstack.utils.serving import Server
@@ -55,13 +54,6 @@ API_COMPOSITES = {
     ],
     "cognito": ["cognito-idp", "cognito-identity"],
 }
-
-# main container name determined via "docker inspect"
-MAIN_CONTAINER_NAME_CACHED = None
-
-# environment variable that indicates that we're executing in
-# the context of the script that starts the Docker container
-ENV_SCRIPT_STARTING_DOCKER = "LS_SCRIPT_STARTING_DOCKER"
 
 
 def log_duration(name=None, min_ms=500):
@@ -517,21 +509,8 @@ def prepare_docker_start():
 
     if DOCKER_CLIENT.is_container_running(container_name):
         raise ContainerExists('LocalStack container named "%s" is already running' % container_name)
-    if config.dirs.tmp != config.dirs.functions and not config.LAMBDA_REMOTE_DOCKER:
-        # Logger is not initialized at this point, so the warning is displayed via print
-        print(
-            f"WARNING: The detected temp folder for localstack ({config.dirs.tmp}) is not equal to the "
-            f"HOST_TMP_FOLDER environment variable set ({config.dirs.functions})."
-        )
 
-    os.environ[ENV_SCRIPT_STARTING_DOCKER] = "1"
-
-    # make sure temp folder exists
-    mkdir(config.dirs.tmp)
-    try:
-        chmod_r(config.dirs.tmp, 0o777)
-    except Exception:
-        pass
+    config.dirs.mkdirs()
 
 
 def configure_container(container: LocalstackContainer):
@@ -580,30 +559,7 @@ def configure_container(container: LocalstackContainer):
 
 
 def configure_volume_mounts(container: LocalstackContainer):
-    if not config.LEGACY_DIRECTORIES:
-        container.volumes.add(VolumeBind(config.VOLUME_DIR, DEFAULT_VOLUME_DIR))
-        return
-
-    source_dirs = config.dirs
-    target_dirs = Directories.legacy_for_container()
-
-    # default shared directories
-    for name in Directories.default_bind_mounts:
-        src = getattr(source_dirs, name, None)
-        target = getattr(target_dirs, name, None)
-        if src and target:
-            container.volumes.add(VolumeBind(src, target))
-
-    # shared tmp folder
-    container.volumes.add(VolumeBind(source_dirs.tmp, target_dirs.tmp))
-
-    # set the HOST_TMP_FOLDER for the legacy dirs / legacy lambda function mounting
-    container.env_vars["HOST_TMP_FOLDER"] = source_dirs.functions
-
-    # data_dir mounting and environment variables
-    if source_dirs.data:
-        container.volumes.add(VolumeBind(source_dirs.data, target_dirs.data))
-        container.env_vars["DATA_DIR"] = target_dirs.data
+    container.volumes.add(VolumeBind(config.VOLUME_DIR, DEFAULT_VOLUME_DIR))
 
 
 @log_duration()

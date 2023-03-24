@@ -94,10 +94,10 @@ from localstack.aws.handlers import (
     preprocess_request,
     serve_custom_service_request_handlers,
 )
-from localstack.constants import LOCALHOST_HOSTNAME
 from localstack.services.edge import ROUTER
 from localstack.services.moto import call_moto
 from localstack.services.plugins import ServiceLifecycleHook
+from localstack.services.s3 import constants as s3_constants
 from localstack.services.s3.cors import S3CorsHandler
 from localstack.services.s3.models import S3Store, get_moto_s3_backend, s3_stores
 from localstack.services.s3.notifications import NotificationDispatcher, S3EventNotificationContext
@@ -107,10 +107,6 @@ from localstack.services.s3.presigned_url import (
     validate_post_policy,
 )
 from localstack.services.s3.utils import (
-    ALLOWED_HEADER_OVERRIDES,
-    VALID_ACL_PREDEFINED_GROUPS,
-    VALID_GRANTEE_PERMISSIONS,
-    VALID_STORAGE_CLASSES,
     _create_invalid_argument_exc,
     capitalize_header_name_from_snake_case,
     get_bucket_from_moto,
@@ -130,6 +126,7 @@ from localstack.utils.aws.arns import s3_bucket_name
 from localstack.utils.collections import get_safe
 from localstack.utils.patch import patch
 from localstack.utils.strings import short_uid
+from localstack.utils.urls import localstack_host
 
 LOG = logging.getLogger(__name__)
 
@@ -166,8 +163,13 @@ class UnexpectedContent(CommonServiceException):
 
 def get_full_default_bucket_location(bucket_name):
     if config.HOSTNAME_EXTERNAL != config.LOCALHOST:
-        return f"{config.get_protocol()}://{config.HOSTNAME_EXTERNAL}:{config.get_edge_port_http()}/{bucket_name}/"
-    return f"{config.get_protocol()}://{bucket_name}.s3.{LOCALHOST_HOSTNAME}:{config.get_edge_port_http()}/"
+        host_definition = localstack_host(
+            use_hostname_external=True, custom_port=config.get_edge_port_http()
+        )
+        return f"{config.get_protocol()}://{host_definition.host_and_port()}/{bucket_name}/"
+    else:
+        host_definition = localstack_host(use_localhost_cloud=True)
+        return f"{config.get_protocol()}://{bucket_name}.s3.{host_definition.host_and_port()}/"
 
 
 class S3Provider(S3Api, ServiceLifecycleHook):
@@ -342,26 +344,25 @@ class S3Provider(S3Api, ServiceLifecycleHook):
     def get_object(self, context: RequestContext, request: GetObjectRequest) -> GetObjectOutput:
         key = request["Key"]
         bucket = request["Bucket"]
-        if is_object_expired(context, bucket=bucket, key=key):
+        version_id = request.get("VersionId")
+        if is_object_expired(context, bucket=bucket, key=key, version_id=version_id):
             # TODO: old behaviour was deleting key instantly if expired. AWS cleans up only once a day generally
             # see if we need to implement a feature flag
             # but you can still HeadObject on it and you get the expiry time
-            ex = NoSuchKey("The specified key does not exist.")
-            ex.Key = key
-            raise ex
+            raise NoSuchKey("The specified key does not exist.", Key=key)
 
         response: GetObjectOutput = call_moto(context)
         # check for the presence in the response, might be fixed by moto one day
         if "VersionId" in response and bucket not in self.get_store().bucket_versioning_status:
             response.pop("VersionId")
 
-        for request_param, response_param in ALLOWED_HEADER_OVERRIDES.items():
+        for request_param, response_param in s3_constants.ALLOWED_HEADER_OVERRIDES.items():
             if request_param_value := request.get(request_param):  # noqa
                 response[response_param] = request_param_value  # noqa
 
         moto_backend = get_moto_s3_backend(context)
         moto_bucket = get_bucket_from_moto(moto_backend, bucket=bucket)
-        key_object = get_key_from_moto_bucket(moto_bucket, key=key)
+        key_object = get_key_from_moto_bucket(moto_bucket, key=key, version_id=version_id)
 
         if not config.S3_SKIP_KMS_KEY_VALIDATION and key_object.kms_key_id:
             validate_kms_key_id(kms_key=key_object.kms_key_id, bucket=moto_bucket)
@@ -388,6 +389,9 @@ class S3Provider(S3Api, ServiceLifecycleHook):
         context: RequestContext,
         request: PutObjectRequest,
     ) -> PutObjectOutput:
+        # TODO: it seems AWS uses AES256 encryption by default now, starting January 5th 2023
+        # note: etag do not change after encryption
+        # https://docs.aws.amazon.com/AmazonS3/latest/userguide/bucket-encryption.html
         if checksum_algorithm := request.get("ChecksumAlgorithm"):
             verify_checksum(checksum_algorithm, context.request.data, request)
 
@@ -410,6 +414,7 @@ class S3Provider(S3Api, ServiceLifecycleHook):
 
         # moto interprets the Expires in query string for presigned URL as an Expires header and use it for the object
         # we set it to the correctly parsed value in Request, else we remove it from moto metadata
+        # we are getting the last set key here so no need for versionId when getting the key
         key_object = get_key_from_moto_bucket(moto_bucket, key=request["Key"])
         if expires := request.get("Expires"):
             key_object.set_expiry(expires)
@@ -451,12 +456,17 @@ class S3Provider(S3Api, ServiceLifecycleHook):
         context: RequestContext,
         request: DeleteObjectRequest,
     ) -> DeleteObjectOutput:
-
+        # TODO: implement DeleteMarker response
         if request["Bucket"] not in self.get_store().bucket_notification_configs:
             return call_moto(context)
 
+        # TODO: we do not differentiate between deleting a key and creating a DeleteMarker in a versioned bucket
+        # for the event (s3:ObjectRemoved:Delete / s3:ObjectRemoved:DeleteMarkerCreated)
+        # it always s3:ObjectRemoved:Delete for now
         # create the notification context before deleting the object, to be able to retrieve its properties
-        s3_notification_ctx = S3EventNotificationContext.from_request_context(context)
+        s3_notification_ctx = S3EventNotificationContext.from_request_context(
+            context, version_id=request.get("VersionId")
+        )
 
         response: DeleteObjectOutput = call_moto(context)
         self._notify(context, s3_notification_ctx)
@@ -474,14 +484,19 @@ class S3Provider(S3Api, ServiceLifecycleHook):
         expected_bucket_owner: AccountId = None,
         checksum_algorithm: ChecksumAlgorithm = None,
     ) -> DeleteResult:
+        # TODO: implement DeleteMarker response
         objects: List[ObjectIdentifier] = delete.get("Objects")
         deleted_objects = {}
         quiet = delete.get("Quiet", False)
-        for object in objects:
-            key = object["Key"]
+        for object_data in objects:
+            key = object_data["Key"]
             # create the notification context before deleting the object, to be able to retrieve its properties
+            # TODO: test format of notification if the key is a DeleteMarker
             s3_notification_ctx = S3EventNotificationContext.from_request_context(
-                context, key_name=key, allow_non_existing_key=True
+                context,
+                key_name=key,
+                version_id=object_data.get("VersionId"),
+                allow_non_existing_key=True,
             )
 
             deleted_objects[key] = s3_notification_ctx
@@ -511,7 +526,7 @@ class S3Provider(S3Api, ServiceLifecycleHook):
 
         if (
             storage_class := request.get("StorageClass")
-        ) and storage_class not in VALID_STORAGE_CLASSES:
+        ) and storage_class not in s3_constants.VALID_STORAGE_CLASSES:
             raise InvalidStorageClass(
                 "The storage class you specified is not valid",
                 StorageClassRequested=storage_class,
@@ -843,8 +858,12 @@ class S3Provider(S3Api, ServiceLifecycleHook):
             validate_acl_acp(acp)
 
         moto_backend = get_moto_s3_backend(context)
+        # TODO: rework the delete marker handling
         key = get_key_from_moto_bucket(
-            get_bucket_from_moto(moto_backend, bucket=request["Bucket"]), key=request["Key"]
+            moto_bucket=get_bucket_from_moto(moto_backend, bucket=request["Bucket"]),
+            key=request["Key"],
+            version_id=request.get("VersionId"),
+            raise_if_delete_marker_method="PUT",
         )
         acl = key.acl
 
@@ -965,6 +984,7 @@ class S3Provider(S3Api, ServiceLifecycleHook):
             key_name = key_name.replace("${filename}", context.request.files["file"].filename)
 
         moto_backend = get_moto_s3_backend(context)
+        # TODO: add concept of VersionId
         key = get_key_from_moto_bucket(
             get_bucket_from_moto(moto_backend, bucket=bucket), key=key_name
         )
@@ -1012,7 +1032,13 @@ class S3Provider(S3Api, ServiceLifecycleHook):
         bucket_name = request["Bucket"]
         moto_backend = get_moto_s3_backend(context)
         bucket = get_bucket_from_moto(moto_backend, bucket_name)
-        key = get_key_from_moto_bucket(moto_bucket=bucket, key=request["Key"])
+        # TODO: rework the delete marker handling
+        key = get_key_from_moto_bucket(
+            moto_bucket=bucket,
+            key=request["Key"],
+            version_id=request.get("VersionId"),
+            raise_if_delete_marker_method="GET",
+        )
 
         object_attrs = request.get("ObjectAttributes", [])
         response = GetObjectAttributesOutput()
@@ -1033,8 +1059,9 @@ class S3Provider(S3Api, ServiceLifecycleHook):
             response["Checksum"] = {f"Checksum{checksum_algorithm.upper()}": checksum}  # noqa
 
         response["LastModified"] = key.last_modified
-        if version_id := request.get("VersionId"):
-            response["VersionId"] = version_id
+
+        if bucket_name in self.get_store().bucket_versioning_status:
+            response["VersionId"] = key.version_id
 
         if key.multipart:
             response["ObjectParts"] = GetObjectAttributesParts(
@@ -1074,7 +1101,7 @@ def validate_grantee_in_headers(grant: str, grantees: str) -> None:
                 "Argument format not recognized", get_header_name(grant), grantee
             )
             raise ex
-        elif grantee_type == "uri" and grantee_id not in VALID_ACL_PREDEFINED_GROUPS:
+        elif grantee_type == "uri" and grantee_id not in s3_constants.VALID_ACL_PREDEFINED_GROUPS:
             ex = _create_invalid_argument_exc("Invalid group uri", "uri", grantee_id)
             raise ex
         elif grantee_type == "id" and not is_valid_canonical_id(grantee_id):
@@ -1096,7 +1123,7 @@ def validate_acl_acp(acp: AccessControlPolicy) -> None:
         raise ex
 
     for grant in acp["Grants"]:
-        if grant.get("Permission") not in VALID_GRANTEE_PERMISSIONS:
+        if grant.get("Permission") not in s3_constants.VALID_GRANTEE_PERMISSIONS:
             raise MalformedACLError(
                 "The XML you provided was not well-formed or did not validate against our published schema"
             )
@@ -1113,7 +1140,8 @@ def validate_acl_acp(acp: AccessControlPolicy) -> None:
             )
         elif (
             grant_type == GranteeType.Group
-            and (grant_uri := grantee.get("URI", "")) not in VALID_ACL_PREDEFINED_GROUPS
+            and (grant_uri := grantee.get("URI", ""))
+            not in s3_constants.VALID_ACL_PREDEFINED_GROUPS
         ):
             ex = _create_invalid_argument_exc("Invalid group uri", "Group/URI", grant_uri)
             raise ex
@@ -1204,10 +1232,12 @@ def validate_website_configuration(website_config: WebsiteConfiguration) -> None
                 )
 
 
-def is_object_expired(context: RequestContext, bucket: BucketName, key: ObjectKey) -> bool:
+def is_object_expired(
+    context: RequestContext, bucket: BucketName, key: ObjectKey, version_id: str = None
+) -> bool:
     moto_backend = get_moto_s3_backend(context)
     moto_bucket = get_bucket_from_moto(moto_backend, bucket)
-    key_object = get_key_from_moto_bucket(moto_bucket, key)
+    key_object = get_key_from_moto_bucket(moto_bucket, key, version_id=version_id)
     return is_key_expired(key_object=key_object)
 
 
@@ -1244,15 +1274,16 @@ def _create_redirect_for_post_request(
 
 def apply_moto_patches():
     # importing here in case we need InvalidObjectState from `localstack.aws.api.s3`
+    import moto.s3.models as moto_s3_models
+    from moto.iam.access_control import PermissionResult
     from moto.s3.exceptions import InvalidObjectState
-    from moto.s3.models import STORAGE_CLASS
 
     if not os.environ.get("MOTO_S3_DEFAULT_KEY_BUFFER_SIZE"):
         os.environ["MOTO_S3_DEFAULT_KEY_BUFFER_SIZE"] = str(S3_MAX_FILE_SIZE_BYTES)
 
     # TODO: fix upstream
-    STORAGE_CLASS.clear()
-    STORAGE_CLASS.extend(VALID_STORAGE_CLASSES)
+    moto_s3_models.STORAGE_CLASS.clear()
+    moto_s3_models.STORAGE_CLASS.extend(s3_constants.VALID_STORAGE_CLASSES)
 
     @patch(moto_s3_responses.S3Response.key_response)
     def _fix_key_response(fn, self, *args, **kwargs):
@@ -1365,6 +1396,16 @@ def apply_moto_patches():
         Requests going to moto will never be subdomain based, as they passed through the VirtualHost forwarder
         """
         return False
+
+    @patch(moto_s3_models.FakeBucket.get_permission)
+    def bucket_get_permission(fn, self, *args, **kwargs):
+        """
+        Apply a patch to disable/enable enforcement of S3 bucket policies
+        """
+        if not s3_constants.ENABLE_MOTO_BUCKET_POLICY_ENFORCEMENT:
+            return PermissionResult.PERMITTED
+
+        return fn(self, *args, **kwargs)
 
 
 def register_custom_handlers():

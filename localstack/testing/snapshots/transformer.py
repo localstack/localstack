@@ -227,7 +227,7 @@ class SortingTransformer:
             if k == self.key:
                 if not isinstance(v, list):
                     raise ValueError("SortingTransformer should only be applied to lists.")
-                input_data[k] = sorted(v, key=self.sorting_fn)
+                input_data[k] = sorted(self._transform(v, ctx=ctx), key=self.sorting_fn)
             else:
                 input_data[k] = self._transform(v, ctx=ctx)
         return input_data

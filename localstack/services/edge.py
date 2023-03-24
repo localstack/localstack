@@ -354,14 +354,9 @@ def is_trace_logging_enabled(headers) -> bool:
 
 
 def do_start_edge(bind_address, port, use_ssl, asynchronous=False):
-    if config.LEGACY_EDGE_PROXY:
-        serve = do_start_edge_proxy
-    else:
-        from localstack.aws.serving.edge import serve_gateway
+    from localstack.aws.serving.edge import serve_gateway
 
-        serve = serve_gateway
-
-    return serve(bind_address, port, use_ssl, asynchronous)
+    return serve_gateway(bind_address, port, use_ssl, asynchronous)
 
 
 def do_start_edge_proxy(bind_address, port, use_ssl, asynchronous=False):

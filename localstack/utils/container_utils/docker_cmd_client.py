@@ -22,6 +22,7 @@ from localstack.utils.container_utils.container_client import (
     PortMappings,
     RegistryConnectionError,
     SimpleVolumeBind,
+    Ulimit,
     Util,
     VolumeBind,
 )
@@ -403,6 +404,30 @@ class CmdDockerClient(ContainerClient):
                 return self.inspect_image(image_name, pull=False)
             raise NoSuchImage(image_name=e.object_id)
 
+    def create_network(self, network_name: str) -> str:
+        cmd = self._docker_cmd()
+        cmd += ["network", "create", network_name]
+        try:
+            return run(cmd).strip()
+        except subprocess.CalledProcessError as e:
+            raise ContainerException(
+                "Docker process returned with errorcode %s" % e.returncode, e.stdout, e.stderr
+            ) from e
+
+    def delete_network(self, network_name: str) -> None:
+        cmd = self._docker_cmd()
+        cmd += ["network", "rm", network_name]
+        try:
+            run(cmd)
+        except subprocess.CalledProcessError as e:
+            stdout_str = to_str(e.stdout)
+            if re.match(r".*network (.*) not found.*", stdout_str):
+                raise NoSuchNetwork(network_name=network_name)
+            else:
+                raise ContainerException(
+                    "Docker process returned with errorcode %s" % e.returncode, e.stdout, e.stderr
+                ) from e
+
     def inspect_network(self, network_name: str) -> Dict[str, Union[Dict, str]]:
         try:
             return self._inspect_object(network_name)
@@ -629,6 +654,7 @@ class CmdDockerClient(ContainerClient):
         privileged: Optional[bool] = None,
         labels: Optional[Dict[str, str]] = None,
         platform: Optional[DockerPlatform] = None,
+        ulimits: Optional[List[Ulimit]] = None,
     ) -> Tuple[List[str], str]:
         env_file = None
         cmd = self._docker_cmd() + [action]
@@ -678,6 +704,10 @@ class CmdDockerClient(ContainerClient):
                 cmd += ["--label", f"{key}={value}"]
         if platform:
             cmd += ["--platform", platform]
+        if ulimits:
+            cmd += list(
+                itertools.chain.from_iterable(["--ulimits", str(ulimit)] for ulimit in ulimits)
+            )
 
         if additional_flags:
             cmd += shlex.split(additional_flags)

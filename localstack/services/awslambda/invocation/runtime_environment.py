@@ -1,12 +1,16 @@
+import binascii
 import logging
+import os
 import random
 import string
+import time
 from datetime import date, datetime
 from enum import Enum, auto
 from threading import RLock, Timer
 from typing import TYPE_CHECKING, Dict, Literal, Optional
 
 from localstack import config
+from localstack.aws.api.lambda_ import TracingMode
 from localstack.services.awslambda.invocation.executor_endpoint import ServiceEndpoint
 from localstack.services.awslambda.invocation.lambda_models import Credentials, FunctionVersion
 from localstack.services.awslambda.invocation.runtime_executor import (
@@ -115,7 +119,12 @@ class RuntimeEnvironment:
             # PYTHONPATH
             # GEM_PATH
             "AWS_XRAY_CONTEXT_MISSING": "LOG_ERROR",
-            # TODO: AWS_XRAY_DAEMON_ADDRESS
+            # TODO: allow configuration of xray address
+            "AWS_XRAY_DAEMON_ADDRESS": "127.0.0.1:2000",
+            # not 100% sure who sets these two
+            # extensions are not supposed to have them in their envs => TODO: test if init removes them
+            "_AWS_XRAY_DAEMON_PORT": "2000",
+            "_AWS_XRAY_DAEMON_ADDRESS": "127.0.0.1",
             # AWS_LAMBDA_DOTNET_PREJIT
             "TZ": ":UTC",
             # 2) Public AWS RIE interface: https://github.com/aws/aws-lambda-runtime-interface-emulator
@@ -127,6 +136,7 @@ class RuntimeEnvironment:
             # 4) Internal LocalStack runtime API
             "LOCALSTACK_RUNTIME_ID": self.id,
             "LOCALSTACK_RUNTIME_ENDPOINT": self.runtime_executor.get_runtime_endpoint(),
+            # used by the init to spawn the x-ray daemon
             # LOCALSTACK_USER conditionally added below
         }
         # Conditionally added environment variables
@@ -143,6 +153,8 @@ class RuntimeEnvironment:
             env_vars["LOCALSTACK_USER"] = ""
         if config.LAMBDA_INIT_USER:
             env_vars["LOCALSTACK_USER"] = config.LAMBDA_INIT_USER
+        if config.LAMBDA_INIT_POST_INVOKE_WAIT_MS:
+            env_vars["LOCALSTACK_POST_INVOKE_WAIT_MS"] = int(config.LAMBDA_INIT_POST_INVOKE_WAIT_MS)
         return env_vars
 
     # Lifecycle methods
@@ -178,7 +190,7 @@ class RuntimeEnvironment:
         with self.status_lock:
             if self.status != RuntimeStatus.STARTING:
                 raise InvalidStatusException(
-                    "Runtime Handler can only be set active while starting"
+                    f"Runtime Handler can only be set active while starting. Current status: {self.status}"
                 )
             self.status = RuntimeStatus.READY
             if self.startup_timer:
@@ -192,8 +204,11 @@ class RuntimeEnvironment:
                 raise InvalidStatusException("Runtime Handler can only be set ready while running")
             self.status = RuntimeStatus.READY
 
-            self.keepalive_timer = Timer(config.LAMBDA_KEEPALIVE_MS / 1000, self.keepalive_passed)
-            self.keepalive_timer.start()
+            if self.initialization_type == "on-demand":
+                self.keepalive_timer = Timer(
+                    config.LAMBDA_KEEPALIVE_MS / 1000, self.keepalive_passed
+                )
+                self.keepalive_timer.start()
 
     def keepalive_passed(self) -> None:
         LOG.debug(
@@ -235,6 +250,7 @@ class RuntimeEnvironment:
             "invoke-id": invocation_event.invocation_id,
             "invoked-function-arn": invocation_event.invocation.invoked_arn,
             "payload": to_str(invocation_event.invocation.payload),
+            "trace-id": self._generate_trace_header(),
         }
         self.runtime_executor.invoke(payload=invoke_payload)
 
@@ -246,3 +262,36 @@ class RuntimeEnvironment:
             RoleSessionName=self.function_version.id.function_name,
             DurationSeconds=43200,
         )["Credentials"]
+
+    def _generate_trace_id(self):
+        """https://docs.aws.amazon.com/xray/latest/devguide/xray-api-sendingdata.html#xray-api-traceids"""
+        # TODO: add test for start time
+        original_request_epoch = int(time.time())
+        timestamp_hex = hex(original_request_epoch)[2:]
+        version_number = "1"
+        unique_id = binascii.hexlify(os.urandom(12)).decode("utf-8")
+        return f"{version_number}-{timestamp_hex}-{unique_id}"
+
+    def _generate_trace_header(self):
+        """
+        https://docs.aws.amazon.com/lambda/latest/dg/services-xray.html
+
+        "The sampling rate is 1 request per second and 5 percent of additional requests."
+
+        Currently we implement a simpler, more predictable strategy.
+        If TracingMode is "Active", we always sample the request. (Sampled=1)
+
+        TODO: implement passive tracing
+        TODO: use xray sdk here
+        """
+        if self.function_version.config.tracing_config_mode == TracingMode.Active:
+            sampled = "1"
+        else:
+            sampled = "0"
+
+        root_trace_id = self._generate_trace_id()
+
+        parent = binascii.b2a_hex(os.urandom(8)).decode(
+            "utf-8"
+        )  # TODO: segment doesn't actually exist at the moment
+        return f"Root={root_trace_id};Parent={parent};Sampled={sampled}"

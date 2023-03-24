@@ -184,71 +184,84 @@ class StreamEventSourceListener(EventSourceListener):
                                    more than max_num_retries
         """
         # TODO: These values will never get updated if the event source mapping configuration changes :(
-        function_arn = params["function_arn"]
-        stream_arn = params["stream_arn"]
-        batch_size = params["batch_size"]
-        parallelization_factor = params["parallelization_factor"]
-        lock_discriminator = params["lock_discriminator"]
-        shard_id = params["shard_id"]
-        stream_client = params["stream_client"]
-        shard_iterator = params["shard_iterator"]
-        failure_destination = params["failure_destination"]
-        max_num_retries = params["max_num_retries"]
-        num_invocation_failures = 0
+        try:
+            function_arn = params["function_arn"]
+            stream_arn = params["stream_arn"]
+            batch_size = params["batch_size"]
+            parallelization_factor = params["parallelization_factor"]
+            lock_discriminator = params["lock_discriminator"]
+            shard_id = params["shard_id"]
+            stream_client = params["stream_client"]
+            shard_iterator = params["shard_iterator"]
+            failure_destination = params["failure_destination"]
+            max_num_retries = params["max_num_retries"]
+            num_invocation_failures = 0
 
-        while lock_discriminator in self._STREAM_LISTENER_THREADS:
-            records_response = stream_client.get_records(
-                ShardIterator=shard_iterator, Limit=batch_size
-            )
-            records = records_response.get("Records")
-            event_filter_criterias = self._get_lambda_event_filters_for_arn(
-                function_arn, stream_arn
-            )
-            if len(event_filter_criterias) > 0:
-                records = filter_stream_records(records, event_filter_criterias)
-
-            should_get_next_batch = True
-            if records:
-                payload = self._create_lambda_event_payload(stream_arn, records, shard_id=shard_id)
-                is_invocation_successful, status_code = self._invoke_lambda(
-                    function_arn, payload, lock_discriminator, parallelization_factor
+            while lock_discriminator in self._STREAM_LISTENER_THREADS:
+                records_response = stream_client.get_records(
+                    ShardIterator=shard_iterator, Limit=batch_size
                 )
-                if is_invocation_successful:
-                    should_get_next_batch = True
-                else:
-                    num_invocation_failures += 1
-                    if num_invocation_failures >= max_num_retries:
+                records = records_response.get("Records")
+                event_filter_criterias = self._get_lambda_event_filters_for_arn(
+                    function_arn, stream_arn
+                )
+                if len(event_filter_criterias) > 0:
+                    records = filter_stream_records(records, event_filter_criterias)
+
+                should_get_next_batch = True
+                if records:
+                    payload = self._create_lambda_event_payload(
+                        stream_arn, records, shard_id=shard_id
+                    )
+                    is_invocation_successful, status_code = self._invoke_lambda(
+                        function_arn, payload, lock_discriminator, parallelization_factor
+                    )
+                    if is_invocation_successful:
                         should_get_next_batch = True
-                        if failure_destination:
-                            first_rec = records[0]
-                            last_rec = records[-1]
-                            (
-                                first_seq_num,
-                                last_seq_num,
-                            ) = self._get_starting_and_ending_sequence_numbers(first_rec, last_rec)
-                            (
-                                first_arrival_time,
-                                last_arrival_time,
-                            ) = self._get_first_and_last_arrival_time(first_rec, last_rec)
-                            self._send_to_failure_destination(
-                                shard_id,
-                                first_seq_num,
-                                last_seq_num,
-                                stream_arn,
-                                function_arn,
-                                num_invocation_failures,
-                                status_code,
-                                batch_size,
-                                first_arrival_time,
-                                last_arrival_time,
-                                failure_destination,
-                            )
                     else:
-                        should_get_next_batch = False
-            if should_get_next_batch:
-                shard_iterator = records_response["NextShardIterator"]
-                num_invocation_failures = 0
-            time.sleep(self._POLL_INTERVAL_SEC)
+                        num_invocation_failures += 1
+                        if num_invocation_failures >= max_num_retries:
+                            should_get_next_batch = True
+                            if failure_destination:
+                                first_rec = records[0]
+                                last_rec = records[-1]
+                                (
+                                    first_seq_num,
+                                    last_seq_num,
+                                ) = self._get_starting_and_ending_sequence_numbers(
+                                    first_rec, last_rec
+                                )
+                                (
+                                    first_arrival_time,
+                                    last_arrival_time,
+                                ) = self._get_first_and_last_arrival_time(first_rec, last_rec)
+                                self._send_to_failure_destination(
+                                    shard_id,
+                                    first_seq_num,
+                                    last_seq_num,
+                                    stream_arn,
+                                    function_arn,
+                                    num_invocation_failures,
+                                    status_code,
+                                    batch_size,
+                                    first_arrival_time,
+                                    last_arrival_time,
+                                    failure_destination,
+                                )
+                        else:
+                            should_get_next_batch = False
+                if should_get_next_batch:
+                    shard_iterator = records_response["NextShardIterator"]
+                    num_invocation_failures = 0
+                time.sleep(self._POLL_INTERVAL_SEC)
+        except Exception as e:
+            LOG.error(
+                "Error while listening to shard / executing lambda with params %s: %s",
+                params,
+                e,
+                exc_info=LOG.isEnabledFor(logging.DEBUG),
+            )
+            raise
 
     def _send_to_failure_destination(
         self,
@@ -329,7 +342,16 @@ class StreamEventSourceListener(EventSourceListener):
                     max_num_retries = source.get("MaximumRetryAttempts", -1)
                     if max_num_retries < 0:
                         max_num_retries = math.inf
-                    stream_description = self._get_stream_description(stream_client, stream_arn)
+                    try:
+                        stream_description = self._get_stream_description(stream_client, stream_arn)
+                    except Exception as e:
+                        LOG.error(
+                            "Cannot describe target stream %s of event source mapping %s: %s",
+                            stream_arn,
+                            mapping_uuid,
+                            e,
+                        )
+                        continue
                     if stream_description["StreamStatus"] not in {"ENABLED", "ACTIVE"}:
                         continue
                     shard_ids = [shard["ShardId"] for shard in stream_description["Shards"]]

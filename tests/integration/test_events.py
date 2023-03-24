@@ -1653,7 +1653,7 @@ class TestEvents:
 
     @pytest.mark.aws_validated
     def test_should_ignore_schedules_for_put_event(
-        self, create_lambda_function, lambda_client, events_client, logs_client
+        self, create_lambda_function, lambda_client, events_client, logs_client, cleanups
     ):
         """Regression test for https://github.com/localstack/localstack/issues/7847"""
         fn_name = f"test-event-fn-{short_uid()}"
@@ -1675,8 +1675,12 @@ class TestEvents:
         events_client.put_rule(
             Name="ScheduledLambda", ScheduleExpression="rate(1 minute)"
         )  # every minute, can't go lower than that
+        cleanups.append(lambda: events_client.delete_rule(Name="ScheduledLambda"))
         events_client.put_targets(
             Rule="ScheduledLambda", Targets=[{"Id": "calllambda1", "Arn": fn_arn}]
+        )
+        cleanups.append(
+            lambda: events_client.remove_targets(Rule="ScheduledLambda", Ids=["calllambda1"])
         )
 
         events_client.put_events(

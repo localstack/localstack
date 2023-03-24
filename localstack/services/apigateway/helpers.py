@@ -44,7 +44,7 @@ PATH_REGEX_USER_REQUEST = (
     r"^/restapis/([A-Za-z0-9_\\-]+)(?:/([A-Za-z0-9\_($|%%24)\\-]+))?/%s/(.*)$" % PATH_USER_REQUEST
 )
 # URL pattern for invocations
-HOST_REGEX_EXECUTE_API = r"(?:.*://)?([a-zA-Z0-9-]+)\.execute-api\.(localhost.localstack.cloud|([^\.]+)\.amazonaws\.com)(.*)"
+HOST_REGEX_EXECUTE_API = r"(?:.*://)?([a-zA-Z0-9]+)(?:(-vpce-[^.]+))?\.execute-api\.(localhost.localstack.cloud|([^\.]+)\.amazonaws\.com)(.*)"
 
 # regex path patterns
 PATH_REGEX_MAIN = r"^/restapis/([A-Za-z0-9_\-]+)/[a-z]+(\?.*)?"
@@ -67,6 +67,8 @@ APIGATEWAY_SQS_DATA_INBOUND_TEMPLATE = (
 
 # special tag name to allow specifying a custom ID for new REST APIs
 TAG_KEY_CUSTOM_ID = "_custom_id_"
+
+EMPTY_MODEL = "Empty"
 
 # TODO: make the CRUD operations in this file generic for the different model types (authorizes, validators, ...)
 

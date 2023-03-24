@@ -9,7 +9,7 @@ from moto.apigateway.models import Resource as MotoResource
 from moto.apigateway.models import RestAPI as MotoRestAPI
 from moto.core.utils import camelcase_to_underscores
 
-from localstack.aws.api import RequestContext, ServiceRequest, handler
+from localstack.aws.api import CommonServiceException, RequestContext, ServiceRequest, handler
 from localstack.aws.api.apigateway import (
     Account,
     ApigatewayApi,
@@ -61,6 +61,7 @@ from localstack.aws.api.apigateway import (
 from localstack.aws.forwarder import NotImplementedAvoidFallbackError, create_aws_request_context
 from localstack.constants import APPLICATION_JSON
 from localstack.services.apigateway.helpers import (
+    EMPTY_MODEL,
     OpenApiExporter,
     apply_json_patch_safe,
     get_apigateway_store,
@@ -137,7 +138,7 @@ class ApigatewayProvider(ApigatewayApi, ServiceLifecycleHook):
         rest_api_container = RestApiContainer(rest_api=response)
         store.rest_apis[result["id"]] = rest_api_container
         # add the 2 default models
-        rest_api_container.models["Empty"] = DEFAULT_EMPTY_MODEL
+        rest_api_container.models[EMPTY_MODEL] = DEFAULT_EMPTY_MODEL
         rest_api_container.models["Error"] = DEFAULT_ERROR_MODEL
 
         return response
@@ -442,7 +443,7 @@ class ApigatewayProvider(ApigatewayApi, ServiceLifecycleHook):
         if request_models:
             for content_type, model_name in request_models.items():
                 # FIXME: add Empty model to rest api at creation
-                if model_name == "Empty":
+                if model_name == EMPTY_MODEL:
                     continue
                 if model_name not in rest_api_container.models:
                     raise BadRequestException(f"Invalid model identifier specified: {model_name}")
@@ -513,10 +514,15 @@ class ApigatewayProvider(ApigatewayApi, ServiceLifecycleHook):
                 continue
 
             elif path == "/requestValidatorId" and value not in rest_api.validators:
+                if not value:
+                    # you can remove a requestValidator by passing an empty string as a value
+                    patch_op = {"op": "remove", "path": path, "value": value}
+                    applicable_patch_operations.append(patch_op)
+                    continue
                 raise BadRequestException("Invalid Request Validator identifier specified")
 
             elif path.startswith("/requestModels/"):
-                if value != "Empty" and value not in rest_api.models:
+                if value != EMPTY_MODEL and value not in rest_api.models:
                     raise BadRequestException(f"Invalid model identifier specified: {value}")
 
             applicable_patch_operations.append(patch_operation)
@@ -541,6 +547,19 @@ class ApigatewayProvider(ApigatewayApi, ServiceLifecycleHook):
         response = moto_method.to_json()
         remove_empty_attributes_from_method(response)
         return response
+
+    def delete_method(
+        self, context: RequestContext, rest_api_id: String, resource_id: String, http_method: String
+    ) -> None:
+        moto_backend = apigw_models.apigateway_backends[context.account_id][context.region]
+        moto_rest_api: MotoRestAPI = moto_backend.apis.get(rest_api_id)
+        if not moto_rest_api or not (moto_resource := moto_rest_api.resources.get(resource_id)):
+            raise NotFoundException("Invalid Resource identifier specified")
+
+        if not (moto_resource.resource_methods.get(http_method)):
+            raise NotFoundException("Invalid Method identifier specified")
+
+        call_moto(context)
 
     # method responses
 
@@ -703,7 +722,7 @@ class ApigatewayProvider(ApigatewayApi, ServiceLifecycleHook):
         )
 
         if documentation_part is None:
-            raise NotFoundException(f"Documentation part not found: {documentation_part_id}")
+            raise NotFoundException("Invalid Documentation part identifier specified")
         return to_documentation_part_response_json(rest_api_id, documentation_part)
 
     def create_documentation_part(
@@ -719,6 +738,35 @@ class ApigatewayProvider(ApigatewayApi, ServiceLifecycleHook):
             raise NotFoundException(
                 f"Invalid API identifier specified {context.account_id}:{rest_api_id}"
             )
+
+        # TODO: add complete validation for
+        # location parameter: https://docs.aws.amazon.com/apigateway/latest/api/API_DocumentationPartLocation.html
+        # As of now we validate only "type"
+        location_type = location.get("type")
+        valid_location_types = [
+            "API",
+            "AUTHORIZER",
+            "MODEL",
+            "RESOURCE",
+            "METHOD",
+            "PATH_PARAMETER",
+            "QUERY_PARAMETER",
+            "REQUEST_HEADER",
+            "REQUEST_BODY",
+            "RESPONSE",
+            "RESPONSE_HEADER",
+            "RESPONSE_BODY",
+        ]
+        if location_type not in valid_location_types:
+            raise CommonServiceException(
+                "ValidationException",
+                f"1 validation error detected: Value '{location_type}' at "
+                f"'createDocumentationPartInput.location.type' failed to satisfy constraint: "
+                f"Member must satisfy enum value set: "
+                f"[RESPONSE_BODY, RESPONSE, METHOD, MODEL, AUTHORIZER, RESPONSE_HEADER, "
+                f"RESOURCE, PATH_PARAMETER, REQUEST_BODY, QUERY_PARAMETER, API, REQUEST_HEADER]",
+            )
+
         doc_part = DocumentationPart(
             id=entity_id,
             location=location,
@@ -747,7 +795,26 @@ class ApigatewayProvider(ApigatewayApi, ServiceLifecycleHook):
         )
 
         if doc_part is None:
-            raise NotFoundException(f"Documentation part not found: {documentation_part_id}")
+            raise NotFoundException("Invalid Documentation part identifier specified")
+
+        for patch_operation in patch_operations:
+            path = patch_operation.get("path")
+            operation = patch_operation.get("op")
+            if operation != "replace":
+                raise BadRequestException(
+                    f"Invalid patch path  '{path}' specified for op '{operation}'. "
+                    f"Please choose supported operations"
+                )
+
+            if path != "/properties":
+                raise BadRequestException(
+                    f"Invalid patch path  '{path}' specified for op 'replace'. "
+                    f"Must be one of: [/properties]"
+                )
+
+            key = path[1:]
+            if key == "properties" and not patch_operation.get("value"):
+                raise BadRequestException("Documentation part properties must be non-empty")
 
         patched_doc_part = apply_json_patch_safe(doc_part, patch_operations)
 
@@ -761,7 +828,16 @@ class ApigatewayProvider(ApigatewayApi, ServiceLifecycleHook):
     ) -> None:
         # TODO: add validation if document_part does not exist, or rest_api
         store = get_apigateway_store(account_id=context.account_id, region=context.region)
-        rest_api_container = store.rest_apis.get(rest_api_id)
+        if not (rest_api_container := store.rest_apis.get(rest_api_id)):
+            raise NotFoundException(
+                f"Invalid API identifier specified {context.account_id}:{rest_api_id}"
+            )
+
+        documentation_part = rest_api_container.documentation_parts.get(documentation_part_id)
+
+        if documentation_part is None:
+            raise NotFoundException("Invalid Documentation part identifier specified")
+
         if rest_api_container:
             rest_api_container.documentation_parts.pop(documentation_part_id, None)
 
@@ -1010,9 +1086,7 @@ class ApigatewayProvider(ApigatewayApi, ServiceLifecycleHook):
         )
 
         if validator is None:
-            raise NotFoundException(
-                f"Validator {request_validator_id} for API Gateway {rest_api_id} not found"
-            )
+            raise NotFoundException("Invalid Request Validator identifier specified")
 
         result = to_validator_response_json(rest_api_id, validator)
         return result
@@ -1035,8 +1109,8 @@ class ApigatewayProvider(ApigatewayApi, ServiceLifecycleHook):
         validator = RequestValidator(
             id=validator_id,
             name=name,
-            validateRequestBody=validate_request_body,
-            validateRequestParameters=validate_request_parameters,
+            validateRequestBody=validate_request_body or False,
+            validateRequestParameters=validate_request_parameters or False,
         )
 
         rest_api_container.validators[validator_id] = validator
@@ -1064,11 +1138,33 @@ class ApigatewayProvider(ApigatewayApi, ServiceLifecycleHook):
                 f"Validator {request_validator_id} for API Gateway {rest_api_id} not found"
             )
 
-        patched_validator = apply_json_patch_safe(validator, patch_operations)
-        rest_api_container.validators[request_validator_id] = patched_validator
+        for patch_operation in patch_operations:
+            path = patch_operation.get("path")
+            operation = patch_operation.get("op")
+            if operation != "replace":
+                raise BadRequestException(
+                    f"Invalid patch path  '{path}' specified for op '{operation}'. "
+                    f"Please choose supported operations"
+                )
+            if path not in ("/name", "/validateRequestBody", "/validateRequestParameters"):
+                raise BadRequestException(
+                    f"Invalid patch path  '{path}' specified for op 'replace'. "
+                    f"Must be one of: [/name, /validateRequestParameters, /validateRequestBody]"
+                )
 
-        result = to_validator_response_json(rest_api_id, patched_validator)
-        return result
+            key = path[1:]
+            value = patch_operation.get("value")
+            if key == "name" and not value:
+                raise BadRequestException("Request Validator name cannot be blank")
+
+            elif key in ("validateRequestParameters", "validateRequestBody"):
+                value = value and value.lower() == "true" or False
+
+            rest_api_container.validators[request_validator_id][key] = value
+
+        return to_validator_response_json(
+            rest_api_id, rest_api_container.validators[request_validator_id]
+        )
 
     def delete_request_validator(
         self, context: RequestContext, rest_api_id: String, request_validator_id: String
@@ -1077,13 +1173,11 @@ class ApigatewayProvider(ApigatewayApi, ServiceLifecycleHook):
         store = get_apigateway_store(account_id=context.account_id, region=context.region)
         rest_api_container = store.rest_apis.get(rest_api_id)
         if not rest_api_container:
-            return
+            raise NotFoundException("Invalid Request Validator identifier specified")
 
         validator = rest_api_container.validators.pop(request_validator_id, None)
         if not validator:
-            raise NotFoundException(
-                f"Validator {request_validator_id} for API Gateway {rest_api_id} not found"
-            )
+            raise NotFoundException("Invalid Request Validator identifier specified")
 
     # tags
 
@@ -1323,10 +1417,17 @@ class ApigatewayProvider(ApigatewayApi, ServiceLifecycleHook):
         self, context: RequestContext, rest_api_id: String, model_name: String
     ) -> None:
         store = get_apigateway_store(account_id=context.account_id, region=context.region)
-        if rest_api_id not in store.rest_apis or not (
-            store.rest_apis[rest_api_id].models.pop(model_name, None)
+
+        if (
+            rest_api_id not in store.rest_apis
+            or model_name not in store.rest_apis[rest_api_id].models
         ):
             raise NotFoundException(f"Invalid model name specified: {model_name}")
+
+        moto_rest_api = get_moto_rest_api(context, rest_api_id)
+        validate_model_in_use(moto_rest_api, model_name)
+
+        store.rest_apis[rest_api_id].models.pop(model_name, None)
 
 
 # ---------------
@@ -1390,6 +1491,16 @@ def is_greedy_path(path_part: str) -> bool:
 
 def is_variable_path(path_part: str) -> bool:
     return path_part.startswith("{") and path_part.endswith("}")
+
+
+def validate_model_in_use(moto_rest_api: MotoRestAPI, model_name: str) -> None:
+    for resource in moto_rest_api.resources.values():
+        for method in resource.resource_methods.values():
+            if model_name in set(method.request_models.values()):
+                path = f"{resource.get_path()}/{method.http_method}"
+                raise ConflictException(
+                    f"Cannot delete model '{model_name}', is referenced in method request: {path}"
+                )
 
 
 def create_custom_context(
@@ -1499,7 +1610,7 @@ def to_response_json(model_type, data, api_id=None, self_link=None, id_attr=None
 
 DEFAULT_EMPTY_MODEL = Model(
     id=short_uid()[:6],
-    name="Empty",
+    name=EMPTY_MODEL,
     contentType="application/json",
     description="This is a default empty schema model",
     schema=json.dumps(

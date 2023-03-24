@@ -17,6 +17,7 @@ AsyncRequestTokenARN = str
 AwsLambdaTransformationPayload = str
 AwsOrgArn = str
 Boolean = bool
+BucketIdentifierString = str
 BucketName = str
 ConfigId = str
 ConfirmRemoveSelfBucketAccess = bool
@@ -49,6 +50,7 @@ ManifestPrefixString = str
 MaxLength1024String = str
 MaxResults = int
 MinStorageBytesPercentage = float
+Minutes = int
 MultiRegionAccessPointAlias = str
 MultiRegionAccessPointClientToken = str
 MultiRegionAccessPointId = str
@@ -59,6 +61,7 @@ NonEmptyMaxLength2048String = str
 NonEmptyMaxLength256String = str
 NonEmptyMaxLength64String = str
 NoncurrentVersionCount = int
+ObjectLambdaAccessPointAliasValue = str
 ObjectLambdaAccessPointArn = str
 ObjectLambdaAccessPointName = str
 ObjectLambdaPolicy = str
@@ -66,9 +69,12 @@ ObjectLambdaSupportingAccessPointArn = str
 ObjectLockEnabledForBucket = bool
 Policy = str
 Prefix = str
+Priority = int
 PublicAccessBlockEnabled = bool
 RegionName = str
+ReplicaKmsKeyID = str
 ReportPrefixString = str
+Role = str
 S3AWSRegion = str
 S3AccessPointArn = str
 S3BucketArnString = str
@@ -119,6 +125,16 @@ class BucketLocationConstraint(str):
 class BucketVersioningStatus(str):
     Enabled = "Enabled"
     Suspended = "Suspended"
+
+
+class DeleteMarkerReplicationStatus(str):
+    Enabled = "Enabled"
+    Disabled = "Disabled"
+
+
+class ExistingObjectReplicationStatus(str):
+    Enabled = "Enabled"
+    Disabled = "Disabled"
 
 
 class ExpirationStatus(str):
@@ -182,6 +198,11 @@ class MFADeleteStatus(str):
     Disabled = "Disabled"
 
 
+class MetricsStatus(str):
+    Enabled = "Enabled"
+    Disabled = "Disabled"
+
+
 class MultiRegionAccessPointStatus(str):
     READY = "READY"
     INCONSISTENT_ACROSS_REGIONS = "INCONSISTENT_ACROSS_REGIONS"
@@ -194,6 +215,11 @@ class MultiRegionAccessPointStatus(str):
 class NetworkOrigin(str):
     Internet = "Internet"
     VPC = "VPC"
+
+
+class ObjectLambdaAccessPointAliasStatus(str):
+    PROVISIONING = "PROVISIONING"
+    READY = "READY"
 
 
 class ObjectLambdaAllowedFeature(str):
@@ -226,11 +252,42 @@ class OutputSchemaVersion(str):
     V_1 = "V_1"
 
 
+class OwnerOverride(str):
+    Destination = "Destination"
+
+
+class ReplicaModificationsStatus(str):
+    Enabled = "Enabled"
+    Disabled = "Disabled"
+
+
+class ReplicationRuleStatus(str):
+    Enabled = "Enabled"
+    Disabled = "Disabled"
+
+
 class ReplicationStatus(str):
     COMPLETED = "COMPLETED"
     FAILED = "FAILED"
     REPLICA = "REPLICA"
     NONE = "NONE"
+
+
+class ReplicationStorageClass(str):
+    STANDARD = "STANDARD"
+    REDUCED_REDUNDANCY = "REDUCED_REDUNDANCY"
+    STANDARD_IA = "STANDARD_IA"
+    ONEZONE_IA = "ONEZONE_IA"
+    INTELLIGENT_TIERING = "INTELLIGENT_TIERING"
+    GLACIER = "GLACIER"
+    DEEP_ARCHIVE = "DEEP_ARCHIVE"
+    OUTPOSTS = "OUTPOSTS"
+    GLACIER_IR = "GLACIER_IR"
+
+
+class ReplicationTimeStatus(str):
+    Enabled = "Enabled"
+    Disabled = "Disabled"
 
 
 class RequestedJobStatus(str):
@@ -307,6 +364,11 @@ class S3StorageClass(str):
     INTELLIGENT_TIERING = "INTELLIGENT_TIERING"
     DEEP_ARCHIVE = "DEEP_ARCHIVE"
     GLACIER_IR = "GLACIER_IR"
+
+
+class SseKmsEncryptedObjectsStatus(str):
+    Enabled = "Enabled"
+    Disabled = "Disabled"
 
 
 class TransitionStorageClass(str):
@@ -391,6 +453,10 @@ class TooManyTagsException(ServiceException):
 
 class AbortIncompleteMultipartUpload(TypedDict, total=False):
     DaysAfterInitiation: Optional[DaysAfterInitiation]
+
+
+class AccessControlTranslation(TypedDict, total=False):
+    Owner: OwnerOverride
 
 
 class VpcConfiguration(TypedDict, total=False):
@@ -495,6 +561,7 @@ class DeleteMultiRegionAccessPointInput(TypedDict, total=False):
 
 class Region(TypedDict, total=False):
     Bucket: BucketName
+    BucketAccountId: Optional[AccountId]
 
 
 RegionCreationList = List[Region]
@@ -571,8 +638,14 @@ class CreateAccessPointForObjectLambdaRequest(ServiceRequest):
     Configuration: ObjectLambdaConfiguration
 
 
+class ObjectLambdaAccessPointAlias(TypedDict, total=False):
+    Value: Optional[ObjectLambdaAccessPointAliasValue]
+    Status: Optional[ObjectLambdaAccessPointAliasStatus]
+
+
 class CreateAccessPointForObjectLambdaResult(TypedDict, total=False):
     ObjectLambdaAccessPointArn: Optional[ObjectLambdaAccessPointArn]
+    Alias: Optional[ObjectLambdaAccessPointAlias]
 
 
 class CreateAccessPointRequest(ServiceRequest):
@@ -879,6 +952,11 @@ class DeleteBucketPolicyRequest(ServiceRequest):
     Bucket: BucketName
 
 
+class DeleteBucketReplicationRequest(ServiceRequest):
+    AccountId: AccountId
+    Bucket: BucketName
+
+
 class DeleteBucketRequest(ServiceRequest):
     AccountId: AccountId
     Bucket: BucketName
@@ -896,6 +974,10 @@ class DeleteJobTaggingRequest(ServiceRequest):
 
 class DeleteJobTaggingResult(TypedDict, total=False):
     pass
+
+
+class DeleteMarkerReplication(TypedDict, total=False):
+    Status: DeleteMarkerReplicationStatus
 
 
 class DeleteMultiRegionAccessPointRequest(ServiceRequest):
@@ -1001,6 +1083,34 @@ class DescribeMultiRegionAccessPointOperationResult(TypedDict, total=False):
     AsyncOperation: Optional[AsyncOperation]
 
 
+class ReplicationTimeValue(TypedDict, total=False):
+    Minutes: Optional[Minutes]
+
+
+class Metrics(TypedDict, total=False):
+    Status: MetricsStatus
+    EventThreshold: Optional[ReplicationTimeValue]
+
+
+class EncryptionConfiguration(TypedDict, total=False):
+    ReplicaKmsKeyID: Optional[ReplicaKmsKeyID]
+
+
+class ReplicationTime(TypedDict, total=False):
+    Status: ReplicationTimeStatus
+    Time: ReplicationTimeValue
+
+
+class Destination(TypedDict, total=False):
+    Account: Optional[AccountId]
+    Bucket: BucketIdentifierString
+    ReplicationTime: Optional[ReplicationTime]
+    AccessControlTranslation: Optional[AccessControlTranslation]
+    EncryptionConfiguration: Optional[EncryptionConfiguration]
+    Metrics: Optional[Metrics]
+    StorageClass: Optional[ReplicationStorageClass]
+
+
 Endpoints = Dict[NonEmptyMaxLength64String, NonEmptyMaxLength1024String]
 
 
@@ -1014,6 +1124,10 @@ Regions = List[S3AWSRegion]
 class Exclude(TypedDict, total=False):
     Buckets: Optional[Buckets]
     Regions: Optional[Regions]
+
+
+class ExistingObjectReplication(TypedDict, total=False):
+    Status: ExistingObjectReplicationStatus
 
 
 class GetAccessPointConfigurationForObjectLambdaRequest(ServiceRequest):
@@ -1034,6 +1148,7 @@ class GetAccessPointForObjectLambdaResult(TypedDict, total=False):
     Name: Optional[ObjectLambdaAccessPointName]
     PublicAccessBlockConfiguration: Optional[PublicAccessBlockConfiguration]
     CreationDate: Optional[CreationDate]
+    Alias: Optional[ObjectLambdaAccessPointAlias]
 
 
 class GetAccessPointPolicyForObjectLambdaRequest(ServiceRequest):
@@ -1171,6 +1286,60 @@ class GetBucketPolicyResult(TypedDict, total=False):
     Policy: Optional[Policy]
 
 
+class GetBucketReplicationRequest(ServiceRequest):
+    AccountId: AccountId
+    Bucket: BucketName
+
+
+class ReplicaModifications(TypedDict, total=False):
+    Status: ReplicaModificationsStatus
+
+
+class SseKmsEncryptedObjects(TypedDict, total=False):
+    Status: SseKmsEncryptedObjectsStatus
+
+
+class SourceSelectionCriteria(TypedDict, total=False):
+    SseKmsEncryptedObjects: Optional[SseKmsEncryptedObjects]
+    ReplicaModifications: Optional[ReplicaModifications]
+
+
+class ReplicationRuleAndOperator(TypedDict, total=False):
+    Prefix: Optional[Prefix]
+    Tags: Optional[S3TagSet]
+
+
+class ReplicationRuleFilter(TypedDict, total=False):
+    Prefix: Optional[Prefix]
+    Tag: Optional[S3Tag]
+    And: Optional[ReplicationRuleAndOperator]
+
+
+class ReplicationRule(TypedDict, total=False):
+    ID: Optional[ID]
+    Priority: Optional[Priority]
+    Prefix: Optional[Prefix]
+    Filter: Optional[ReplicationRuleFilter]
+    Status: ReplicationRuleStatus
+    SourceSelectionCriteria: Optional[SourceSelectionCriteria]
+    ExistingObjectReplication: Optional[ExistingObjectReplication]
+    Destination: Destination
+    DeleteMarkerReplication: Optional[DeleteMarkerReplication]
+    Bucket: BucketIdentifierString
+
+
+ReplicationRules = List[ReplicationRule]
+
+
+class ReplicationConfiguration(TypedDict, total=False):
+    Role: Role
+    Rules: ReplicationRules
+
+
+class GetBucketReplicationResult(TypedDict, total=False):
+    ReplicationConfiguration: Optional[ReplicationConfiguration]
+
+
 class GetBucketRequest(ServiceRequest):
     AccountId: AccountId
     Bucket: BucketName
@@ -1245,6 +1414,7 @@ class GetMultiRegionAccessPointRequest(ServiceRequest):
 class RegionReport(TypedDict, total=False):
     Bucket: Optional[BucketName]
     Region: Optional[RegionName]
+    BucketAccountId: Optional[AccountId]
 
 
 RegionReportList = List[RegionReport]
@@ -1391,6 +1561,7 @@ class ListAccessPointsForObjectLambdaRequest(ServiceRequest):
 class ObjectLambdaAccessPoint(TypedDict, total=False):
     Name: ObjectLambdaAccessPointName
     ObjectLambdaAccessPointArn: Optional[ObjectLambdaAccessPointArn]
+    Alias: Optional[ObjectLambdaAccessPointAlias]
 
 
 ObjectLambdaAccessPointList = List[ObjectLambdaAccessPoint]
@@ -1511,6 +1682,12 @@ class PutBucketPolicyRequest(ServiceRequest):
     Bucket: BucketName
     ConfirmRemoveSelfBucketAccess: Optional[ConfirmRemoveSelfBucketAccess]
     Policy: Policy
+
+
+class PutBucketReplicationRequest(ServiceRequest):
+    AccountId: AccountId
+    Bucket: BucketName
+    ReplicationConfiguration: ReplicationConfiguration
 
 
 class Tagging(TypedDict, total=False):
@@ -1726,6 +1903,12 @@ class S3ControlApi:
     ) -> None:
         raise NotImplementedError
 
+    @handler("DeleteBucketReplication")
+    def delete_bucket_replication(
+        self, context: RequestContext, account_id: AccountId, bucket: BucketName
+    ) -> None:
+        raise NotImplementedError
+
     @handler("DeleteBucketTagging")
     def delete_bucket_tagging(
         self, context: RequestContext, account_id: AccountId, bucket: BucketName
@@ -1837,6 +2020,12 @@ class S3ControlApi:
     def get_bucket_policy(
         self, context: RequestContext, account_id: AccountId, bucket: BucketName
     ) -> GetBucketPolicyResult:
+        raise NotImplementedError
+
+    @handler("GetBucketReplication")
+    def get_bucket_replication(
+        self, context: RequestContext, account_id: AccountId, bucket: BucketName
+    ) -> GetBucketReplicationResult:
         raise NotImplementedError
 
     @handler("GetBucketTagging")
@@ -2002,6 +2191,16 @@ class S3ControlApi:
         bucket: BucketName,
         policy: Policy,
         confirm_remove_self_bucket_access: ConfirmRemoveSelfBucketAccess = None,
+    ) -> None:
+        raise NotImplementedError
+
+    @handler("PutBucketReplication")
+    def put_bucket_replication(
+        self,
+        context: RequestContext,
+        account_id: AccountId,
+        bucket: BucketName,
+        replication_configuration: ReplicationConfiguration,
     ) -> None:
         raise NotImplementedError
 

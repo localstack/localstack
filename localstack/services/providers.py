@@ -139,8 +139,8 @@ def kms():
     return Service.for_provider(provider)
 
 
-@aws_provider(api="lambda")
-def awslambda():
+@aws_provider(api="lambda", name="legacy")
+def awslambda_legacy():
     from localstack.services.awslambda import lambda_starter
 
     return Service(
@@ -163,6 +163,14 @@ def awslambda_v1():
         check=lambda_starter.check_lambda,
         lifecycle_hook=lambda_starter.LambdaLifecycleHook(),
     )
+
+
+@aws_provider(api="lambda")
+def awslambda():
+    from localstack.services.awslambda.provider import LambdaProvider
+
+    provider = LambdaProvider()
+    return Service.for_provider(provider)
 
 
 @aws_provider(api="lambda", name="asf")
@@ -221,7 +229,7 @@ def route53resolver():
     return Service.for_provider(provider, dispatch_table_factory=MotoFallbackDispatcher)
 
 
-@aws_provider(api="s3", name="default")
+@aws_provider(api="s3", name="legacy")
 def s3():
     from localstack.services.s3 import s3_listener, s3_starter
 
@@ -247,7 +255,7 @@ def s3_asf():
     return Service.for_provider(provider, dispatch_table_factory=MotoFallbackDispatcher)
 
 
-@aws_provider(api="s3", name="v2")
+@aws_provider(api="s3", name="default")
 def s3_v2():
     from localstack.services.s3.provider import S3Provider
 

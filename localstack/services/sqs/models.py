@@ -9,7 +9,7 @@ import time
 from queue import PriorityQueue
 from typing import Dict, NamedTuple, Optional, Set
 
-from localstack import config, constants
+from localstack import config
 from localstack.aws.api import RequestContext
 from localstack.aws.api.sqs import (
     InvalidAttributeName,
@@ -21,7 +21,7 @@ from localstack.aws.api.sqs import (
     ReceiptHandleIsInvalid,
     TagMap,
 )
-from localstack.config import external_service_url
+from localstack.config import get_protocol
 from localstack.services.sqs import constants as sqs_constants
 from localstack.services.sqs.exceptions import (
     InvalidAttributeValue,
@@ -35,6 +35,7 @@ from localstack.services.sqs.utils import (
 )
 from localstack.services.stores import AccountRegionBundle, BaseStore, LocalAttribute
 from localstack.utils.time import now
+from localstack.utils.urls import localstack_host
 
 LOG = logging.getLogger(__name__)
 
@@ -249,13 +250,18 @@ class SqsQueue:
             # or us-east-2.queue.localhost.localstack.cloud:4566/000000000000/my-queue
             region = "" if self.region == "us-east-1" else self.region + "."
             scheme = context.request.scheme
-            host_url = f"{scheme}://{region}queue.{constants.LOCALHOST_HOSTNAME}:{config.EDGE_PORT}"
+
+            host_definition = localstack_host(use_localhost_cloud=True)
+            host_url = f"{scheme}://{region}queue.{host_definition.host_and_port()}"
         elif config.SQS_ENDPOINT_STRATEGY == "path":
             # https?://localhost:4566/queue/us-east-1/00000000000/my-queue (us-east-1)
             host_url = f"{context.request.host_url}queue/{self.region}"
         else:
             if config.SQS_PORT_EXTERNAL:
-                host_url = external_service_url("sqs")
+                host_definition = localstack_host(
+                    use_hostname_external=True, custom_port=config.SQS_PORT_EXTERNAL
+                )
+                host_url = f"{get_protocol()}://{host_definition.host_and_port()}"
 
         return "{host}/{account_id}/{name}".format(
             host=host_url.rstrip("/"),

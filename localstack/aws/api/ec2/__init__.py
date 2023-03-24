@@ -7978,6 +7978,7 @@ class CreateVpcEndpointConnectionNotificationResult(TypedDict, total=False):
 
 class DnsOptionsSpecification(TypedDict, total=False):
     DnsRecordIpType: Optional[DnsRecordIpType]
+    PrivateDnsOnlyForInboundResolverEndpoint: Optional[Boolean]
 
 
 VpcEndpointSecurityGroupIdList = List[SecurityGroupId]
@@ -8016,6 +8017,7 @@ DnsEntrySet = List[DnsEntry]
 
 class DnsOptions(TypedDict, total=False):
     DnsRecordIpType: Optional[DnsRecordIpType]
+    PrivateDnsOnlyForInboundResolverEndpoint: Optional[Boolean]
 
 
 class SecurityGroupIdentifier(TypedDict, total=False):

@@ -9,6 +9,7 @@ from localstack import config
 from localstack.aws.handlers.cors import ALLOWED_CORS_ORIGINS
 from localstack.config import LEGACY_S3_PROVIDER
 from localstack.constants import LOCALHOST_HOSTNAME, S3_VIRTUAL_HOSTNAME
+from localstack.utils.aws import aws_stack
 from localstack.utils.strings import short_uid
 
 
@@ -108,7 +109,9 @@ class TestS3Cors:
         response = s3_client.put_object(Bucket=s3_bucket, Key=key, Body=body, ACL="public-read")
         assert response["ResponseMetadata"]["HTTPStatusCode"] == 200
 
-        key_url = f"{_bucket_url_vhost(bucket_name=s3_bucket)}/{key}"
+        # key_url = f"{_bucket_url_vhost(bucket_name=s3_bucket)}/{key}"
+        # TODO: replace with vhost again: investigate
+        key_url = f"{config.get_edge_url()}/{s3_bucket}/{key}"
 
         response = requests.get(key_url)
         assert response.status_code == 200
@@ -126,7 +129,6 @@ class TestS3Cors:
         body = "cors-test"
         response = s3_client.put_object(Bucket=s3_bucket, Key=key, Body=body, ACL="public-read")
         assert response["ResponseMetadata"]["HTTPStatusCode"] == 200
-
         key_url = f"{_bucket_url_vhost(bucket_name=s3_bucket)}/{key}"
         origin = ALLOWED_CORS_ORIGINS[0]
 
@@ -140,6 +142,29 @@ class TestS3Cors:
         assert response.status_code == 200
         assert response.text == body
         assert response.headers["Access-Control-Allow-Origin"] == origin
+
+    @pytest.mark.only_localstack
+    def test_cors_list_buckets(self):
+        # ListBuckets is an operation outside S3 CORS configuration management
+        # it should follow the default rules of LocalStack
+
+        url = f"{config.get_edge_url()}/"
+        origin = ALLOWED_CORS_ORIGINS[0]
+        # we need to "sign" the request so that our service name parser recognize ListBuckets as an S3 operation
+        # if the request isn't signed, AWS will redirect to https://aws.amazon.com/s3/
+        headers = aws_stack.mock_aws_request_headers("s3")
+        headers["Origin"] = origin
+        response = requests.options(
+            url, headers={**headers, "Access-Control-Request-Method": "GET"}
+        )
+        assert response.ok
+        assert response.headers["Access-Control-Allow-Origin"] == origin
+
+        response = requests.get(url, headers=headers)
+        assert response.status_code == 200
+        assert response.headers["Access-Control-Allow-Origin"] == origin
+        # assert that we're getting ListBuckets result
+        assert b"<ListAllMyBuckets" in response.content
 
     @pytest.mark.aws_validated
     def test_cors_http_options_non_existent_bucket(self, s3_client, s3_bucket, snapshot):
@@ -204,7 +229,9 @@ class TestS3Cors:
 
         s3_client.put_bucket_cors(Bucket=s3_bucket, CORSConfiguration=bucket_cors_config)
 
-        key_url = f"{_bucket_url_vhost(bucket_name=s3_bucket)}/{object_key}"
+        # key_url = f"{_bucket_url_vhost(bucket_name=s3_bucket)}/{object_key}"
+        # TODO: replace with vhost again: investigate
+        key_url = f"{config.get_edge_url()}/{s3_bucket}/{object_key}"
 
         # no origin, akin to no CORS
         opt_req = requests.options(key_url)
@@ -286,7 +313,9 @@ class TestS3Cors:
 
         s3_client.put_bucket_cors(Bucket=bucket_name, CORSConfiguration=bucket_cors_config)
 
-        key_url = f"{_bucket_url_vhost(bucket_name=bucket_name)}/{object_key}"
+        # key_url = f"{_bucket_url_vhost(bucket_name=bucket_name)}/{object_key}"
+        # TODO: replace with vhost again: investigate
+        key_url = f"{config.get_edge_url()}/{bucket_name}/{object_key}"
 
         # test with allowed method: GET
         opt_req = requests.options(
@@ -303,7 +332,11 @@ class TestS3Cors:
         match_headers("get-op", get_req)
 
         # test with method: PUT
-        new_key_url = f"{_bucket_url_vhost(bucket_name=bucket_name)}/{object_key}new"
+
+        # new_key_url = f"{_bucket_url_vhost(bucket_name=bucket_name)}/{object_key}new"
+        # TODO: replace with vhost again: investigate
+        new_key_url = f"{config.get_edge_url()}/{bucket_name}/{object_key}new"
+
         opt_req = requests.options(
             new_key_url, headers={"Origin": origin, "Access-Control-Request-Method": "PUT"}
         )

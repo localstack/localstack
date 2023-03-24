@@ -37,7 +37,7 @@ class AlarmScheduler:
         """
         super().__init__()
         self.scheduler = Scheduler()
-        self.thread = threading.Thread(target=self.scheduler.run)
+        self.thread = threading.Thread(target=self.scheduler.run, name="cloudwatch-scheduler")
         self.thread.start()
         self.scheduled_alarms = {}
 

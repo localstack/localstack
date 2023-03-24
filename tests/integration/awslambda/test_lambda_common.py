@@ -1,6 +1,6 @@
 import json
 import logging
-import os
+import platform
 import time
 import zipfile
 
@@ -41,6 +41,9 @@ def snapshot_transformers(snapshot):
 @pytest.mark.skipif(
     condition=is_old_provider(),
     reason="Local executor does not support the majority of the runtimes",
+)
+@pytest.mark.skipif(
+    condition=platform.machine() != "x86_64", reason="build process doesn't support arm64 right now"
 )
 class TestLambdaRuntimesCommon:
     """
@@ -243,10 +246,14 @@ class TestLambdaRuntimesCommon:
         assert invocation_result_payload["environment"]["WRAPPER_VAR"] == test_value
 
 
+# TODO: Split this and move to PRO
 @pytest.mark.whitebox
 @pytest.mark.skipif(
     condition=is_old_provider(),
     reason="Local executor does not support the majority of the runtimes",
+)
+@pytest.mark.skipif(
+    condition=platform.machine() != "x86_64", reason="build process doesn't support arm64 right now"
 )
 class TestLambdaCallingLocalstack:
     @pytest.mark.multiruntime(
@@ -263,16 +270,9 @@ class TestLambdaCallingLocalstack:
         ],
     )
     def test_calling_localstack_from_lambda(self, lambda_client, multiruntime_lambda, tmp_path):
-        pro_enabled = "LOCALSTACK_API_KEY" in os.environ
-
-        if pro_enabled and multiruntime_lambda.runtime in ["go1.x", "dotnet6", "dotnetcore3.1"]:
-            pytest.skip(
-                f"Runtime ({multiruntime_lambda.runtime}) does not support transparent endpoint injection yet. Skipping"
-            )
-
         create_function_result = multiruntime_lambda.create_function(
             MemorySize=1024,
-            Environment={"Variables": {"CONFIGURE_CLIENT": "0" if pro_enabled else "1"}},
+            Environment={"Variables": {"CONFIGURE_CLIENT": "1"}},
         )
 
         invocation_result = lambda_client.invoke(

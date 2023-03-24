@@ -96,9 +96,10 @@ def store_cloudwatch_logs(
     log_output,
     start_time=None,
     auto_create_group: Optional[bool] = True,
+    logs_client=None,
 ):
     start_time = start_time or int(time.time() * 1000)
-    logs_client = aws_stack.connect_to_service("logs")
+    logs_client = logs_client or aws_stack.connect_to_service("logs")
     log_output = to_str(log_output)
 
     if auto_create_group:

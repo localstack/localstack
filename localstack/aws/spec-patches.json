@@ -791,6 +791,40 @@
       "op": "move",
       "from": "/shapes/ListObjectsOutput",
       "path": "/shapes/ListBucketResult"
+    },
+    {
+      "op": "add",
+      "path": "/shapes/Method",
+      "value": {
+        "type": "string"
+      }
+    },
+    {
+      "op": "add",
+      "path": "/shapes/ResourceType",
+      "value": {
+        "type": "string"
+      }
+    },
+    {
+      "op": "add",
+      "path": "/shapes/MethodNotAllowed",
+      "value": {
+        "type": "structure",
+        "members": {
+          "Method": {
+            "shape": "Method"
+          },
+          "ResourceType": {
+            "shape": "ResourceType"
+          }
+        },
+        "error": {
+          "httpStatusCode": 405
+        },
+        "documentation": "<p>The specified method is not allowed against this resource.</p>",
+        "exception": true
+      }
     }
   ]
 }

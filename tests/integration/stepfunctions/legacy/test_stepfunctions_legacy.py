@@ -142,7 +142,7 @@ STATE_MACHINE_INTRINSIC_FUNCS = {
         "state3": {
             "Type": "Task",
             "Resource": "__tbd__",
-            "ResultSelector": {"payload.$": "$"},
+            "ResultSelector": {"payload.$": "$.Payload"},
             "ResultPath": "$.result_value",
             "End": True,
         },
@@ -417,6 +417,7 @@ class TestStateMachine:
         # clean up
         cleanup(sm_arn, state_machines_before, stepfunctions_client)
 
+    # TODO: validate against AWS
     def test_intrinsic_functions(self, stepfunctions_client):
         if os.environ.get("AWS_DEFAULT_REGION") != "us-east-1":
             pytest.skip("skipping non us-east-1 temporarily")
@@ -661,6 +662,7 @@ def test_default_logging_configuration(iam_client, create_state_machine, stepfun
         iam_client.delete_role(RoleName=role_name)
 
 
+@pytest.mark.skip("Does not work against Pro in new pipeline.")
 def test_aws_sdk_task(sfn_execution_role, stepfunctions_client, iam_client, sns_client):
     statemachine_definition = {
         "StartAt": "CreateTopicTask",
@@ -741,6 +743,7 @@ def test_aws_sdk_task(sfn_execution_role, stepfunctions_client, iam_client, sns_
         stepfunctions_client.delete_state_machine(stateMachineArn=machine_arn)
 
 
+@pytest.mark.skip("Does not work against Pro in new pipeline.")
 def test_aws_sdk_task_delete_s3_object(
     stepfunctions_client, s3_bucket, iam_client, sns_client, s3_client, sfn_execution_role
 ):

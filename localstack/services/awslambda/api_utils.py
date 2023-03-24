@@ -409,8 +409,9 @@ def map_config_out(
     version: "FunctionVersion",
     return_qualified_arn: bool = False,
     return_update_status: bool = True,
+    alias_name: str | None = None,
 ) -> FunctionConfiguration:
-    """map version config to function configuration"""
+    """map function version to function configuration"""
 
     # handle optional entries that shouldn't be rendered at all if not present
     optional_kwargs = {}
@@ -453,12 +454,18 @@ def map_config_out(
         optional_kwargs["CodeSize"] = 0
         optional_kwargs["CodeSha256"] = version.config.image.code_sha256
 
+    # output for an alias qualifier is completely the same except for the returned ARN
+    if alias_name:
+        function_arn = f"{':'.join(version.id.qualified_arn().split(':')[:-1])}:{alias_name}"
+    else:
+        function_arn = (
+            version.id.qualified_arn() if return_qualified_arn else version.id.unqualified_arn()
+        )
+
     func_conf = FunctionConfiguration(
         RevisionId=version.config.revision_id,
         FunctionName=version.id.function_name,
-        FunctionArn=version.id.qualified_arn()
-        if return_qualified_arn
-        else version.id.unqualified_arn(),  # qualifier usually not included
+        FunctionArn=function_arn,
         LastModified=version.config.last_modified,
         Version=version.id.qualifier,
         Description=version.config.description,
