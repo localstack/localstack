@@ -85,12 +85,17 @@ def start_ssl_proxy(
     target_ssl=False,
     client_cert_key: Tuple[str, str] = None,
     asynchronous: bool = False,
+    bind_address: str = None,
 ):
     """Start a proxy server that accepts SSL requests and forwards requests to a backend (either SSL or non-SSL)"""
 
     def _run(*args):
         return _do_start_ssl_proxy(
-            port, target, target_ssl=target_ssl, client_cert_key=client_cert_key
+            port,
+            target,
+            target_ssl=target_ssl,
+            client_cert_key=client_cert_key,
+            bind_address=bind_address,
         )
 
     if not asynchronous:
