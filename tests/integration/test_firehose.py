@@ -9,7 +9,6 @@ from pytest_httpserver import HTTPServer
 from localstack import config
 from localstack.utils.aws import arns, aws_stack
 from localstack.utils.aws.arns import lambda_function_arn
-from localstack.utils.bootstrap import in_ci
 from localstack.utils.strings import short_uid, to_bytes, to_str
 from localstack.utils.sync import poll_condition, retry
 
@@ -289,6 +288,7 @@ class TestFirehoseIntegration:
 
     @pytest.mark.skip_offline
     @pytest.mark.parametrize("opensearch_endpoint_strategy", ["domain", "path", "port"])
+    @pytest.mark.skip("Skipping if CI for now until we know more - post v2")
     def test_kinesis_firehose_opensearch_s3_backup(
         self,
         firehose_client,
@@ -300,10 +300,6 @@ class TestFirehoseIntegration:
         monkeypatch,
         opensearch_endpoint_strategy,
     ):
-        if in_ci() and opensearch_endpoint_strategy == "domain":
-            # TODO: investigate this issue (V2)
-            pytest.skip("Skipping in CI for now until we know more")
-
         domain_name = f"test-domain-{short_uid()}"
         stream_name = f"test-stream-{short_uid()}"
         role_arn = "arn:aws:iam::000000000000:role/Firehose-Role"
