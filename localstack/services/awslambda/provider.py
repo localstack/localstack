@@ -223,6 +223,7 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
 
     def on_after_state_load(self):
         self.lambda_service = LambdaService()
+        self.router.lambda_service = self.lambda_service
 
         # TODO: provisioned concurrency
         for account_id, account_bundle in lambda_stores.items():
