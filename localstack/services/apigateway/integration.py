@@ -406,14 +406,17 @@ class KinesisIntegration(BackendIntegration):
             invocation_context.context = helpers.get_event_request_context(invocation_context)
             invocation_context.stage_variables = helpers.get_stage_variables(invocation_context)
 
-            # integration type "AWS" is only supported for WebSocket APIs. The
-            # integration can be anything, it just means it's called by a websocket
-            # connection.
-            if integration_type == "AWS":
-                template_key = (
-                    invocation_context.integration.get("TemplateSelectionExpression") or None
+            # integration type "AWS" is only supported for WebSocket APIs and REST
+            # API (v1), but the template selection expression is only supported for
+            # Websockets
+            template_key = None
+            if integration_type == "AWS" and invocation_context.ws_route:
+                template_key = invocation_context.integration.get(
+                    "TemplateSelectionExpression", "$default"
                 )
-            payload = self.request_templates.render(invocation_context, template_key)
+                payload = self.request_templates.render(invocation_context, template_key)
+            else:
+                payload = self.request_templates.render(invocation_context)
 
         except Exception as e:
             LOG.warning("Unable to convert API Gateway payload to str", e)
