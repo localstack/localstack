@@ -567,8 +567,7 @@ class ServicePluginManager(ServiceManager):
                 return None
 
             with self._mutex:
-                if plugin.service.name() not in self._services:
-                    super().add_service(plugin.service)
+                super().add_service(plugin.service)
 
             del self._plugin_load_locks[name]  # we only needed the service lock once
 
