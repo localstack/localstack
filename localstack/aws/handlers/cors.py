@@ -16,13 +16,11 @@ from flask_cors.core import (
 from werkzeug.datastructures import Headers
 
 from localstack import config
+from localstack.aws.api import RequestContext
+from localstack.aws.chain import Handler, HandlerChain
 from localstack.config import EXTRA_CORS_ALLOWED_HEADERS, EXTRA_CORS_EXPOSE_HEADERS
+from localstack.constants import LOCALHOST, LOCALHOST_HOSTNAME, PATH_USER_REQUEST
 from localstack.http import Response
-
-from ...constants import LOCALHOST, LOCALHOST_HOSTNAME, PATH_USER_REQUEST
-from ...utils.bootstrap import log_duration
-from ..api import RequestContext
-from ..chain import Handler, HandlerChain
 
 LOG = logging.getLogger(__name__)
 
@@ -196,15 +194,13 @@ class CorsEnforcer(Handler):
         return True
 
     @staticmethod
-    @log_duration(min_ms=0)
     def _is_in_allowed_origins(allowed_origins: List[str], origin: str) -> bool:
         """Returns true if the `origin` is in the `allowed_origins`."""
         for allowed_origin in allowed_origins:
             if allowed_origin == "*" or origin == allowed_origin:
                 return True
 
-        # the cost of adding one a dynamic origin will around 4us on my local machine
-        # but performance wise, this is not very heavy because most of the regular requests will match above
+        # performance wise, this is not very heavy because most of the regular requests will match above
         # this would be executed mostly when rejecting or actually using content served by CloudFront or S3 website
         for dynamic_origin in DYNAMIC_INTERNAL_ORIGINS:
             match = dynamic_origin.match(origin)
