@@ -73,12 +73,12 @@ class S3Bucket(GenericBaseModel):
             transformed_cors = cors_config.copy()
             transformed_cors["CORSRules"] = [
                 {
-                    "ID": rule["Id"] if rule["Id"] is not None else None,
+                    "ID": rule.get("Id"),
                     "AllowedHeaders": rule.get("AllowedHeaders"),
                     "AllowedMethods": rule.get("AllowedMethods"),
                     "AllowedOrigins": rule.get("AllowedOrigins"),
-                    "ExposeHeaders": rule["ExposedHeaders"] if rule.get("ExposedHeaders") else None,
-                    "MaxAgeSeconds": rule["MaxAge"] if rule.get("MaxAge") else None,
+                    "ExposeHeaders": rule.get("ExposedHeaders"),
+                    "MaxAgeSeconds": rule.get("MaxAge"),
                 }
                 for rule in transformed_cors.pop("CorsRules", [])
             ]
