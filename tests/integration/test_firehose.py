@@ -127,7 +127,6 @@ def test_firehose_http(
 
 class TestFirehoseIntegration:
     @pytest.mark.skip_offline
-    @pytest.mark.skip("Flaky for now, need to investigate")  # TODO: Investigate post V2
     def test_kinesis_firehose_elasticsearch_s3_backup(
         self,
         firehose_client,
@@ -194,7 +193,8 @@ class TestFirehoseIntegration:
             result = es_client.describe_elasticsearch_domain(DomainName=domain_name)
             return not result["DomainStatus"]["Processing"]
 
-        assert poll_condition(check_domain_state, 30, 1)
+        # if ElasticSearch is not yet installed, it might take some time to download the package before starting the domain
+        assert poll_condition(check_domain_state, 120, 1)
 
         # put kinesis stream record
         kinesis_record = {"target": "hello"}
@@ -288,7 +288,6 @@ class TestFirehoseIntegration:
 
     @pytest.mark.skip_offline
     @pytest.mark.parametrize("opensearch_endpoint_strategy", ["domain", "path", "port"])
-    @pytest.mark.skip("Skipping if CI for now until we know more - post v2")
     def test_kinesis_firehose_opensearch_s3_backup(
         self,
         firehose_client,
@@ -359,7 +358,8 @@ class TestFirehoseIntegration:
                 ]
                 return not result
 
-            assert poll_condition(check_domain_state, 30, 1)
+            # if OpenSearch is not yet installed, it might take some time to download the package before starting the domain
+            assert poll_condition(check_domain_state, 120, 1)
 
             # put kinesis stream record
             kinesis_record = {"target": "hello"}
