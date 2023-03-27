@@ -3383,6 +3383,13 @@ class TestS3:
         resp_dict = xmltodict.parse(resp.content)
         assert "ListBucketResult" in resp_dict
 
+        # Lists all multipart uploads in a bucket
+        bucket_url = f"{_bucket_url(s3_bucket)}?uploads"
+        resp = s3_http_client.get(bucket_url, headers=headers)
+        assert b'<?xml version="1.0" encoding="UTF-8"?>\n' in get_xml_content(resp.content)
+        resp_dict = xmltodict.parse(resp.content)
+        assert "ListMultipartUploadsResult" in resp_dict
+
         location_constraint_url = f"{bucket_url}?location"
         resp = s3_http_client.get(location_constraint_url, headers=headers)
         assert b'<?xml version="1.0" encoding="UTF-8"?>\n' in get_xml_content(resp.content)
