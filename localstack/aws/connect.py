@@ -400,7 +400,9 @@ class InternalClientFactory(ClientFactory):
         """
 
         if config is None:
-            config = Config()
+            config = self._config
+        else:
+            config = self._config.merge(config)
 
         return self._get_client(
             service_name=service_name,
@@ -411,7 +413,7 @@ class InternalClientFactory(ClientFactory):
             aws_access_key_id=aws_access_key_id or INTERNAL_AWS_ACCESS_KEY_ID,
             aws_secret_access_key=aws_secret_access_key or INTERNAL_AWS_SECRET_ACCESS_KEY,
             aws_session_token=aws_session_token,
-            config=self._config.merge(config),
+            config=config,
         )
 
 
@@ -449,7 +451,9 @@ class ExternalClientFactory(ClientFactory):
         :param config: Boto config for advanced use.
         """
         if config is None:
-            config = Config()
+            config = self._config
+        else:
+            config = self._config.merge(config)
 
         endpoint_url = endpoint_url or get_local_service_url(service_name)
         if service_name == "s3":
@@ -465,7 +469,7 @@ class ExternalClientFactory(ClientFactory):
             aws_access_key_id=aws_access_key_id,
             aws_secret_access_key=aws_secret_access_key,
             aws_session_token=aws_session_token,
-            config=self._config.merge(config),
+            config=config,
         )
 
 
@@ -503,10 +507,12 @@ class ExternalAwsClientFactory(ClientFactory):
         :param config: Boto config for advanced use.
         """
         if config is None:
-            config = Config()
+            config = self._config
+        else:
+            config = self._config.merge(config)
 
         return self._get_client(
-            config=self._config.merge(config),
+            config=config,
             service_name=service_name,
             region_name=region_name or self._get_session_region(),
             endpoint_url=endpoint_url,
