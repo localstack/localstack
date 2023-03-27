@@ -1,0 +1,32 @@
+{
+  "tests/integration/cloudformation/resources/test_s3.py::test_cors_configuration": {
+    "recorded-date": "16-03-2023, 10:22:58",
+    "recorded-content": {
+      "cors_info": {
+        "CORSRules": [
+          {
+            "AllowedHeaders": [
+              "*",
+              "x-amz-*"
+            ],
+            "AllowedMethods": [
+              "GET"
+            ],
+            "AllowedOrigins": [
+              "*"
+            ],
+            "ExposeHeaders": [
+              "Date"
+            ],
+            "ID": "test-cors-id",
+            "MaxAgeSeconds": 3600
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  }
+}
