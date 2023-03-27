@@ -6,6 +6,7 @@ LocalStack providers.
 """
 import json
 import logging
+import re
 import threading
 from abc import ABC, abstractmethod
 from functools import cache, partial
@@ -21,7 +22,7 @@ from localstack.constants import (
     INTERNAL_AWS_SECRET_ACCESS_KEY,
     MAX_POOL_CONNECTIONS,
 )
-from localstack.utils.aws.aws_stack import get_local_service_url
+from localstack.utils.aws.aws_stack import get_local_service_url, get_s3_hostname
 from localstack.utils.aws.client_types import ServicePrincipal, TypedServiceClientFactory
 from localstack.utils.aws.request_context import get_region_from_request_context
 from localstack.utils.strings import short_uid
@@ -450,12 +451,17 @@ class ExternalClientFactory(ClientFactory):
         if config is None:
             config = Config()
 
+        endpoint_url = endpoint_url or get_local_service_url(service_name)
+        if service_name == "s3":
+            if re.match(r"https?://localhost(:[0-9]+)?", endpoint_url):
+                endpoint_url = endpoint_url.replace("://localhost", "://%s" % get_s3_hostname())
+
         return self._get_client(
             service_name=service_name,
             region_name=region_name or self._get_region(),
             use_ssl=self._use_ssl,
             verify=self._verify,
-            endpoint_url=endpoint_url or get_local_service_url(service_name),
+            endpoint_url=endpoint_url,
             aws_access_key_id=aws_access_key_id,
             aws_secret_access_key=aws_secret_access_key,
             aws_session_token=aws_session_token,
