@@ -583,9 +583,8 @@ class TestLambdaBehavior:
     @pytest.mark.aws_validated
     def test_lambda_invoke_no_timeout(
         self,
-        lambda_client,
         create_lambda_function,
-        logs_client,
+        aws_client,
         snapshot,
     ):
         func_name = f"test_lambda_{short_uid()}"
@@ -593,26 +592,28 @@ class TestLambdaBehavior:
             func_name=func_name,
             handler_file=TEST_LAMBDA_TIMEOUT_PYTHON,
             runtime=Runtime.python3_8,
-            client=lambda_client,
+            client=aws_client.awslambda,
             timeout=2,
         )
         snapshot.match("create-result", create_result)
 
-        result = lambda_client.invoke(FunctionName=func_name, Payload=json.dumps({"wait": 1}))
+        result = aws_client.awslambda.invoke(
+            FunctionName=func_name, Payload=json.dumps({"wait": 1})
+        )
         snapshot.match("invoke-result", result)
         log_group_name = f"/aws/lambda/{func_name}"
 
         def _log_stream_available():
-            result = logs_client.describe_log_streams(logGroupName=log_group_name)["logStreams"]
+            result = aws_client.logs.describe_log_streams(logGroupName=log_group_name)["logStreams"]
             return len(result) > 0
 
         wait_until(_log_stream_available, strategy="linear")
 
-        ls_result = logs_client.describe_log_streams(logGroupName=log_group_name)
+        ls_result = aws_client.logs.describe_log_streams(logGroupName=log_group_name)
         log_stream_name = ls_result["logStreams"][0]["logStreamName"]
 
         def _assert_log_output():
-            log_events = logs_client.get_log_events(
+            log_events = aws_client.logs.get_log_events(
                 logGroupName=log_group_name, logStreamName=log_stream_name
             )["events"]
             return any(["starting wait" in e["message"] for e in log_events]) and any(

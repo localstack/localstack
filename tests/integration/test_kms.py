@@ -12,16 +12,15 @@ from cryptography.hazmat.primitives.serialization import load_der_public_key
 
 from localstack.aws.accounts import get_aws_account_id
 from localstack.services.kms.utils import get_hash_algorithm
-from localstack.testing.pytest.fixtures import _client
 from localstack.utils.strings import short_uid
 
 
 @pytest.fixture(scope="class")
-def kms_client_for_region():
+def kms_client_for_region(aws_client_factory):
     def _kms_client(
         region_name: str = None,
     ):
-        return _client("kms", region_name=region_name)
+        return aws_client_factory(region_name=region_name).kms
 
     return _kms_client
 

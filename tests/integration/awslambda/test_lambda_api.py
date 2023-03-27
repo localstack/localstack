@@ -23,7 +23,6 @@ from botocore.exceptions import ClientError, ParamValidationError
 from localstack.aws.api.lambda_ import Architecture, Runtime
 from localstack.testing.aws.lambda_utils import _await_dynamodb_table_active, is_old_provider
 from localstack.testing.aws.util import is_aws_cloud
-from localstack.testing.pytest.fixtures import _client
 from localstack.testing.snapshots.transformer import SortingTransformer
 from localstack.utils import testutil
 from localstack.utils.aws import arns, aws_stack
@@ -4253,7 +4252,13 @@ class TestLambdaLayer:
 
     @pytest.mark.aws_validated
     def test_layer_function_exceptions(
-        self, lambda_client, create_lambda_function, snapshot, dummylayer, cleanups
+        self,
+        lambda_client,
+        create_lambda_function,
+        snapshot,
+        dummylayer,
+        cleanups,
+        aws_client_factory,
     ):
         """Test interaction of layers when adding them to the function"""
         function_name = f"fn-layer-{short_uid()}"
@@ -4363,7 +4368,7 @@ class TestLambdaLayer:
 
         other_region = "us-west-2"
         assert other_region != aws_stack.get_region()
-        other_region_lambda_client = _client("lambda", region_name=other_region)
+        other_region_lambda_client = aws_client_factory(region_name=other_region).awslambda
         other_region_layer_result = other_region_lambda_client.publish_layer_version(
             LayerName=layer_name,
             CompatibleRuntimes=[],
