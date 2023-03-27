@@ -1,3 +1,4 @@
+import logging
 import re
 from typing import Optional, Tuple
 
@@ -17,6 +18,9 @@ from localstack.constants import S3_VIRTUAL_HOSTNAME
 from localstack.http import Request, Response
 from localstack.services.s3.models import BucketCorsIndex
 from localstack.services.s3.utils import S3_VIRTUAL_HOSTNAME_REGEX
+
+# TODO: add more logging statements
+LOG = logging.getLogger(__name__)
 
 _s3_virtual_host_regex = re.compile(S3_VIRTUAL_HOSTNAME_REGEX)
 FAKE_HOST_ID = "9Gjjt1m+cjU4OPvX9O9/8RuvnG41MRb/18Oux2o5H5MY7ISNTlXN+Dz9IG62/ILVxhAGI0qyPfg="
@@ -249,3 +253,28 @@ class S3CorsHandler(Handler):
         except Exception:
             # if we can't parse the request, just set GetObject
             return self._service.operation_model("GetObject")
+
+
+def s3_cors_request_handler(chain: HandlerChain, context: RequestContext, response: Response):
+    """
+    Handler to add default CORS headers to S3 operations not concerned with CORS configuration
+    """
+    # if DISABLE_CUSTOM_CORS_S3 is true, the default CORS handling will take place, so we won't need to do it here
+    if config.LEGACY_S3_PROVIDER or config.DISABLE_CUSTOM_CORS_S3:
+        return
+
+    if context.service.service_name != "s3":
+        return
+
+    if not context.operation or context.operation.name not in ("ListBuckets", "CreateBucket"):
+        return
+
+    if not config.DISABLE_CORS_CHECKS and not is_origin_allowed_default(context.request.headers):
+        LOG.info(
+            "Blocked CORS request from forbidden origin %s",
+            context.request.headers.get("origin") or context.request.headers.get("referer"),
+        )
+        response.status_code = 403
+        chain.terminate()
+
+    add_default_headers(response_headers=response.headers, request_headers=context.request.headers)

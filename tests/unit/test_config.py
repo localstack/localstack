@@ -160,7 +160,7 @@ class TestEdgeVariablesDerivedCorrectly:
         assert ls_host == "localhost.localstack.cloud:4566"
         assert gateway_listen == f"{default_ip}:4566"
         assert edge_port == 4566
-        assert edge_port_http == 4566
+        assert edge_port_http == 0
         assert edge_bind_host == default_ip
 
     def test_custom_hostname(self):
@@ -175,7 +175,7 @@ class TestEdgeVariablesDerivedCorrectly:
 
         assert gateway_listen == "192.168.0.1:4566"
         assert edge_port == 4566
-        assert edge_port_http == 4566
+        assert edge_port_http == 0
         assert edge_bind_host == "192.168.0.1"
 
     def test_custom_port(self, default_ip):
@@ -190,7 +190,7 @@ class TestEdgeVariablesDerivedCorrectly:
 
         assert gateway_listen == f"{default_ip}:9999"
         assert edge_port == 9999
-        assert edge_port_http == 9999
+        assert edge_port_http == 0
         assert edge_bind_host == default_ip
 
     def test_custom_host_and_port(self):
@@ -205,7 +205,7 @@ class TestEdgeVariablesDerivedCorrectly:
 
         assert gateway_listen == "192.168.0.1:9999"
         assert edge_port == 9999
-        assert edge_port_http == 9999
+        assert edge_port_http == 0
         assert edge_bind_host == "192.168.0.1"
 
     def test_localstack_host_overrides_edge_variables(self, default_ip):
@@ -221,7 +221,23 @@ class TestEdgeVariablesDerivedCorrectly:
         assert ls_host == "hostname:9999"
         assert gateway_listen == f"{default_ip}:9999"
         assert edge_port == 9999
-        assert edge_port_http == 9999
+        assert edge_port_http == 0
+        assert edge_bind_host == default_ip
+
+    def test_localstack_host_no_port(self, default_ip):
+        environment = {"LOCALSTACK_HOST": "foobar"}
+        (
+            ls_host,
+            gateway_listen,
+            edge_bind_host,
+            edge_port,
+            edge_port_http,
+        ) = config.populate_legacy_edge_configuration(environment)
+
+        assert ls_host == "foobar:4566"
+        assert gateway_listen == f"{default_ip}:4566"
+        assert edge_port == 4566
+        assert edge_port_http == 0
         assert edge_bind_host == default_ip
 
     def test_gateway_listen_multiple_addresses(self):
@@ -237,7 +253,7 @@ class TestEdgeVariablesDerivedCorrectly:
         assert gateway_listen == "0.0.0.0:9999,0.0.0.0:443"
         # take the first value
         assert edge_port == 9999
-        assert edge_port_http == 9999
+        assert edge_port_http == 0
         assert edge_bind_host == "0.0.0.0"
 
     @pytest.mark.parametrize(

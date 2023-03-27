@@ -230,7 +230,7 @@ def route53resolver():
 
 
 @aws_provider(api="s3", name="legacy")
-def s3():
+def s3_legacy():
     from localstack.services.s3 import s3_listener, s3_starter
 
     return Service(
@@ -256,6 +256,14 @@ def s3_asf():
 
 
 @aws_provider(api="s3", name="default")
+def s3():
+    from localstack.services.s3.provider import S3Provider
+
+    provider = S3Provider()
+    return Service.for_provider(provider, dispatch_table_factory=MotoFallbackDispatcher)
+
+
+@aws_provider(api="s3", name="v2")
 def s3_v2():
     from localstack.services.s3.provider import S3Provider
 

@@ -200,17 +200,19 @@ class RequestTemplates(Templates):
     Handles request template rendering
     """
 
-    def render(self, api_context: ApiInvocationContext) -> Union[bytes, str]:
+    def render(
+        self, api_context: ApiInvocationContext, template_key: str = APPLICATION_JSON
+    ) -> Union[bytes, str]:
         LOG.info(
             "Method request body before transformations: %s", to_str(api_context.data_as_string())
         )
         request_templates = api_context.integration.get("requestTemplates", {})
-        template = request_templates.get(APPLICATION_JSON, {})
+        template = request_templates.get(template_key)
         if not template:
             return api_context.data_as_string()
 
         variables = self.build_variables_mapping(api_context)
-        result = self.render_vtl(template, variables=variables)
+        result = self.render_vtl(template.strip(), variables=variables)
         LOG.info(f"Endpoint request body after transformations:\n{result}")
         return result
 

@@ -118,10 +118,6 @@ def should_enforce_self_managed_service(context: RequestContext) -> bool:
     if context.service:
         service_name = context.service.service_name
         if not config.DISABLE_CUSTOM_CORS_S3 and service_name == "s3":
-            # ListBuckets is not concerned by S3 CORS handling, it should follow general LocalStack CORS rules.
-            # we can also check if the path is "/", no need for operation
-            if context.operation and context.operation.name == "ListBuckets":
-                return True
             return False
         if not config.DISABLE_CUSTOM_CORS_APIGATEWAY and service_name == "apigateway":
             is_user_request = (

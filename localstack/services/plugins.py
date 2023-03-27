@@ -16,7 +16,7 @@ from localstack.state import StateLifecycleHook, StateVisitable, StateVisitor
 from localstack.utils.bootstrap import get_enabled_apis, log_duration
 from localstack.utils.functions import call_safe
 from localstack.utils.net import wait_for_port_status
-from localstack.utils.sync import poll_condition
+from localstack.utils.sync import SynchronizedDefaultDict, poll_condition
 
 # set up logger
 LOG = logging.getLogger(__name__)
@@ -245,7 +245,7 @@ class ServiceContainer:
 class ServiceManager:
     def __init__(self) -> None:
         super().__init__()
-        self._services = {}
+        self._services: Dict[str, ServiceContainer] = {}
         self._mutex = threading.RLock()
 
     def get_service_container(self, name: str) -> Optional[ServiceContainer]:
@@ -454,6 +454,11 @@ class ServicePluginManager(ServiceManager):
         self._api_provider_specs = None
         self.provider_config = provider_config or config.SERVICE_PROVIDER_CONFIG
 
+        # locks used to make sure plugin loading is thread safe - will be cleared after single use
+        self._plugin_load_locks: Dict[str, threading.RLock] = SynchronizedDefaultDict(
+            threading.RLock
+        )
+
     def get_active_provider(self, service: str) -> str:
         """
         Get configured provider for a given service
@@ -542,24 +547,31 @@ class ServicePluginManager(ServiceManager):
         return ServiceState.AVAILABLE
 
     def get_service_container(self, name: str) -> Optional[ServiceContainer]:
-        container = super().get_service_container(name)
-        if container:
+        if container := self._services.get(name):
             return container
 
         if not self.exists(name):
             return None
 
-        # this is where we start lazy loading. we now know the PluginSpec for the API exists,
-        # but the ServiceContainer has not been created
-        plugin = self._load_service_plugin(name)
-        if not plugin or not plugin.service:
-            return None
+        load_lock = self._plugin_load_locks[name]
+        with load_lock:
+            # check once again to avoid race conditions
+            if container := self._services.get(name):
+                return container
 
-        with self._mutex:
-            if plugin.service.name() not in self._services:
+            # this is where we start lazy loading. we now know the PluginSpec for the API exists,
+            # but the ServiceContainer has not been created.
+            # this control path will be executed once per service
+            plugin = self._load_service_plugin(name)
+            if not plugin or not plugin.service:
+                return None
+
+            with self._mutex:
                 super().add_service(plugin.service)
 
-        return super().get_service_container(name)
+            del self._plugin_load_locks[name]  # we only needed the service lock once
+
+            return self._services.get(name)
 
     @property
     def api_provider_specs(self) -> Dict[str, List[str]]:

@@ -48,7 +48,7 @@ def read_client_metadata() -> ClientMetadata:
     return ClientMetadata(
         session_id=get_session_id(),
         machine_id=get_machine_id(),
-        api_key=read_api_key_safe(),
+        api_key=read_api_key_safe() or "",  # api key should not be None
         system=get_system(),
         version=get_version_string(),
         is_ci=os.getenv("CI") is not None,

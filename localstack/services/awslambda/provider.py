@@ -218,6 +218,12 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
     def accept_state_visitor(self, visitor: StateVisitor):
         visitor.visit(lambda_stores)
 
+    def on_before_state_reset(self):
+        self.lambda_service.stop()
+
+    def on_after_state_reset(self):
+        self.router.lambda_service = self.lambda_service = LambdaService()
+
     def on_before_state_load(self):
         self.lambda_service.stop()
 
