@@ -240,7 +240,6 @@ class TestEvents:
             events_client, sqs_client, pattern=TEST_EVENT_PATTERN, entries_asserts=[(entries, True)]
         )
 
-    @pytest.mark.aws_validated
     def test_put_events_with_values_in_array(self, events_client, sqs_client):
         pattern = {"detail": {"event": {"data": {"type": ["1", "2"]}}}}
         entries1 = [
