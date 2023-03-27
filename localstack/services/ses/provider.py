@@ -51,7 +51,7 @@ from localstack.aws.api.ses import (
     VerificationStatus,
 )
 from localstack.constants import TEST_AWS_SECRET_ACCESS_KEY
-from localstack.http import Resource
+from localstack.http import Resource, Response
 from localstack.services.internal import DeprecatedResource, get_internal_apis
 from localstack.services.moto import call_moto
 from localstack.services.plugins import ServiceLifecycleHook
@@ -125,20 +125,31 @@ class SesServiceApiResource:
     This is registered as a LocalStack internal HTTP resource.
 
     This endpoint accepts:
-    - GET param `email`: filter for `source` field in SES message
+    - GET param `id`: filter for `id` field in SES message
+    - GET param `email`: filter for `source` field in SES message, when `id` filter is specified then filters on both
     """
 
     def on_get(self, request):
+        filter_id = request.args.get("id")
         filter_source = request.args.get("email")
         messages = []
 
         for msg in EMAILS.values():
-            if filter_source in (msg.get("Source"), None, ""):
-                messages.append(msg)
+            if filter_id in (msg.get("Id"), None, ""):
+                if filter_source in (msg.get("Source"), None, ""):
+                    messages.append(msg)
 
         return {
             "messages": messages,
         }
+
+    def on_delete(self, request):
+        filter_id = request.args.get("id")
+        if filter_id is not None:
+            del EMAILS[filter_id]
+        else:
+            EMAILS.clear()
+        return Response(status=204)
 
 
 def register_ses_api_resource():
@@ -156,7 +167,7 @@ def register_ses_api_resource():
                     ses_service_api_resource,
                     previous_path="/_localstack/ses",
                     deprecation_version="1.4.0",
-                    new_path="/_aws/ses/",
+                    new_path="/_aws/ses",
                 ),
             )
         )
@@ -427,7 +438,6 @@ class SesProvider(SesApi, ServiceLifecycleHook):
         tags: MessageTagList = None,
         configuration_set_name: ConfigurationSetName = None,
     ) -> SendRawEmailResponse:
-        response = call_moto(context)
         raw_data = to_str(raw_message["Data"])
 
         if source is None or not source.strip():
@@ -438,6 +448,7 @@ class SesProvider(SesApi, ServiceLifecycleHook):
                 LOGGER.warning("Source not specified. Rejecting message.")
                 raise MessageRejected()
 
+        # TODO: On AWS, `destinations` is ignored if the `To` field is set in the raw email.
         destinations = destinations or []
 
         backend = get_ses_backend(context)
@@ -453,7 +464,7 @@ class SesProvider(SesApi, ServiceLifecycleHook):
                 continue
 
             payload = SNSPayload(
-                message_id=response["MessageId"],
+                message_id=message.id,
                 sender_email=source,
                 destination_addresses=destinations,
                 tags=tags,

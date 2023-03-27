@@ -401,9 +401,22 @@ class KinesisIntegration(BackendIntegration):
             target = ""
 
         try:
+            # xXx this "event" request context is used in multiple places, we probably
+            # want to refactor this into a model class
             invocation_context.context = helpers.get_event_request_context(invocation_context)
             invocation_context.stage_variables = helpers.get_stage_variables(invocation_context)
-            payload = self.request_templates.render(invocation_context)
+
+            # integration type "AWS" is only supported for WebSocket APIs and REST
+            # API (v1), but the template selection expression is only supported for
+            # Websockets
+            template_key = None
+            if integration_type == "AWS" and invocation_context.ws_route:
+                template_key = invocation_context.integration.get(
+                    "TemplateSelectionExpression", "$default"
+                )
+                payload = self.request_templates.render(invocation_context, template_key)
+            else:
+                payload = self.request_templates.render(invocation_context)
 
         except Exception as e:
             LOG.warning("Unable to convert API Gateway payload to str", e)
@@ -453,8 +466,10 @@ class DynamoDBIntegration(BackendIntegration):
         response = self.response_templates.render(invocation_context, response=response_obj)
 
         # construct final response
-        response = requests_response(response)
-        invocation_context.response = response
+        # TODO: set response header based on response templates
+        headers = {HEADER_CONTENT_TYPE: APPLICATION_JSON}
+        response = requests_response(response, headers=headers)
+
         return response
 
 

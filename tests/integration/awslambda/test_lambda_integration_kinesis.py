@@ -7,10 +7,8 @@ from unittest.mock import patch
 import pytest
 
 from localstack import config
-from localstack.services.awslambda.lambda_utils import (
-    LAMBDA_RUNTIME_PYTHON37,
-    LAMBDA_RUNTIME_PYTHON39,
-)
+from localstack.aws.api.lambda_ import Runtime
+from localstack.services.awslambda.lambda_utils import LAMBDA_RUNTIME_PYTHON39
 from localstack.testing.aws.lambda_utils import (
     _await_event_source_mapping_enabled,
     _await_event_source_mapping_state,
@@ -387,7 +385,7 @@ class TestKinesisSource:
         create_lambda_function(
             handler_file=TEST_LAMBDA_PYTHON,
             func_name=function_name,
-            runtime=LAMBDA_RUNTIME_PYTHON37,
+            runtime=Runtime.python3_9,
             role=role_arn,
         )
         kinesis_client.create_stream(StreamName=kinesis_name, ShardCount=1)

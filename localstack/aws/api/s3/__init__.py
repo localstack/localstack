@@ -180,6 +180,7 @@ X_Amz_Expires = int
 HttpMethod = str
 ResourceType = str
 MissingHeaderName = str
+Method = str
 
 
 class AnalyticsS3ExportFileFormat(str):
@@ -752,6 +753,14 @@ class InvalidStorageClass(ServiceException):
     sender_fault: bool = False
     status_code: int = 400
     StorageClassRequested: Optional[StorageClass]
+
+
+class MethodNotAllowed(ServiceException):
+    code: str = "MethodNotAllowed"
+    sender_fault: bool = False
+    status_code: int = 405
+    Method: Optional[Method]
+    ResourceType: Optional[ResourceType]
 
 
 AbortDate = datetime

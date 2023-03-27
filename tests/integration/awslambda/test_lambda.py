@@ -3,6 +3,7 @@ import json
 import logging
 import os
 import re
+import time
 from concurrent.futures import ThreadPoolExecutor
 from io import BytesIO
 from typing import Dict, TypeVar
@@ -10,12 +11,13 @@ from typing import Dict, TypeVar
 import pytest
 from botocore.response import StreamingBody
 
+from localstack import config
 from localstack.aws.api.lambda_ import Architecture, Runtime
 from localstack.services.awslambda.lambda_api import use_docker
 from localstack.testing.aws.lambda_utils import (
     concurrency_update_done,
     get_invoke_init_type,
-    is_arm_compatible,
+    is_old_local_executor,
     is_old_provider,
     update_done,
 )
@@ -23,9 +25,10 @@ from localstack.testing.aws.util import create_client_with_keys
 from localstack.testing.pytest.snapshot import is_aws
 from localstack.testing.snapshots.transformer import KeyValueBasedTransformer
 from localstack.testing.snapshots.transformer_utility import PATTERN_UUID
-from localstack.utils import files, testutil
+from localstack.utils import files, platform, testutil
 from localstack.utils.files import load_file
 from localstack.utils.http import safe_requests
+from localstack.utils.platform import get_arch, is_arm_compatible, standardized_arch
 from localstack.utils.strings import short_uid, to_bytes, to_str
 from localstack.utils.sync import retry, wait_until
 from localstack.utils.testutil import create_lambda_archive
@@ -81,6 +84,8 @@ TEST_LAMBDA_TIMEOUT_PYTHON = os.path.join(THIS_FOLDER, "functions/lambda_timeout
 TEST_LAMBDA_TIMEOUT_ENV_PYTHON = os.path.join(THIS_FOLDER, "functions/lambda_timeout_env.py")
 TEST_LAMBDA_SLEEP_ENVIRONMENT = os.path.join(THIS_FOLDER, "functions/lambda_sleep_environment.py")
 TEST_LAMBDA_INTROSPECT_PYTHON = os.path.join(THIS_FOLDER, "functions/lambda_introspect.py")
+TEST_LAMBDA_ULIMITS = os.path.join(THIS_FOLDER, "functions/lambda_ulimits.py")
+TEST_LAMBDA_INVOCATION_TYPE = os.path.join(THIS_FOLDER, "functions/lambda_invocation_type.py")
 TEST_LAMBDA_VERSION = os.path.join(THIS_FOLDER, "functions/lambda_version.py")
 
 TEST_GOLANG_LAMBDA_URL_TEMPLATE = "https://github.com/localstack/awslamba-go-runtime/releases/download/v{version}/example-handler-{os}-{arch}.tar.gz"
@@ -91,7 +96,7 @@ PYTHON_TEST_RUNTIMES = (
         Runtime.python3_8,
         Runtime.python3_9,
     ]
-    if not is_old_provider() or use_docker()
+    if (not is_old_provider() or use_docker()) and get_arch() != "arm64"
     else [Runtime.python3_9]
 )
 NODE_TEST_RUNTIMES = (
@@ -105,27 +110,15 @@ JAVA_TEST_RUNTIMES = (
         Runtime.java8_al2,
         Runtime.java11,
     ]
-    if not is_old_provider() or use_docker()
+    if (not is_old_provider() or use_docker()) and get_arch() != "arm64"
     else [Runtime.java11]
 )
-
-
-PROVIDED_TEST_RUNTIMES = [
-    Runtime.provided,
-    # TODO remove skip once we use correct images
-    pytest.param(
-        Runtime.provided_al2,
-        marks=pytest.mark.skipif(
-            is_old_provider(), reason="curl missing in provided.al2 lambci image"
-        ),
-    ),
-]
 
 TEST_LAMBDA_LIBS = [
     "requests",
     "psutil",
     "urllib3",
-    "chardet",
+    "charset_normalizer",
     "certifi",
     "idna",
     "pip",
@@ -306,11 +299,6 @@ class TestLambdaBaseFeatures:
 
 
 class TestLambdaBehavior:
-    @pytest.mark.aws_validated
-    @pytest.mark.skip_snapshot_verify(
-        # TODO: run lambdas as user `sbx_user1051`
-        paths=["$..Payload.user_login_name", "$..Payload.user_whoami"]
-    )
     @pytest.mark.skip_snapshot_verify(
         condition=is_old_provider,
         paths=[
@@ -320,14 +308,132 @@ class TestLambdaBehavior:
             "$..Payload.errorMessage",
             "$..Payload.errorType",
             "$..Payload.event",
-            "$..Payload.opt_filemode",
             "$..Payload.platform_machine",
             "$..Payload.platform_system",
-            "$..Payload.pwd_filemode",
             "$..Payload.stackTrace",
+            "$..Payload.paths",
+            "$..Payload.pwd",
+            "$..Payload.user_login_name",
+            "$..Payload.user_whoami",
         ],
     )
+    @pytest.mark.skip_snapshot_verify(
+        paths=[
+            # fixable by setting /tmp permissions to 700
+            "$..Payload.paths._tmp_mode",
+            # requires creating a new user `slicer` and chown /var/task
+            "$..Payload.paths._var_task_gid",
+            "$..Payload.paths._var_task_owner",
+            "$..Payload.paths._var_task_uid",
+        ],
+    )
+    @pytest.mark.skipif(get_arch() == "arm64", reason="Cannot inspect x86 runtime on arm")
+    @pytest.mark.aws_validated
     def test_runtime_introspection_x86(self, lambda_client, create_lambda_function, snapshot):
+        func_name = f"test_lambda_x86_{short_uid()}"
+        create_lambda_function(
+            func_name=func_name,
+            handler_file=TEST_LAMBDA_INTROSPECT_PYTHON,
+            runtime=Runtime.python3_9,
+            timeout=9,
+            Architectures=[Architecture.x86_64],
+        )
+
+        invoke_result = lambda_client.invoke(FunctionName=func_name)
+        snapshot.match("invoke_runtime_x86_introspection", invoke_result)
+
+    @pytest.mark.skipif(is_old_provider(), reason="unsupported in old provider")
+    @pytest.mark.skipif(
+        not is_arm_compatible() and not is_aws(),
+        reason="ARM architecture not supported on this host",
+    )
+    @pytest.mark.skip_snapshot_verify(
+        paths=[
+            # fixable by setting /tmp permissions to 700
+            "$..Payload.paths._tmp_mode",
+            # requires creating a new user `slicer` and chown /var/task
+            "$..Payload.paths._var_task_gid",
+            "$..Payload.paths._var_task_owner",
+            "$..Payload.paths._var_task_uid",
+        ],
+    )
+    @pytest.mark.aws_validated
+    def test_runtime_introspection_arm(self, lambda_client, create_lambda_function, snapshot):
+        func_name = f"test_lambda_arm_{short_uid()}"
+        create_lambda_function(
+            func_name=func_name,
+            handler_file=TEST_LAMBDA_INTROSPECT_PYTHON,
+            runtime=Runtime.python3_9,
+            timeout=9,
+            Architectures=[Architecture.arm64],
+        )
+
+        invoke_result = lambda_client.invoke(FunctionName=func_name)
+        snapshot.match("invoke_runtime_arm_introspection", invoke_result)
+
+    @pytest.mark.skipif(
+        is_old_local_executor(),
+        reason="Monkey-patching of Docker flags is not applicable because no new container is spawned",
+    )
+    @pytest.mark.skip_snapshot_verify(condition=is_old_provider, paths=["$..LogResult"])
+    @pytest.mark.aws_validated
+    def test_runtime_ulimits(self, lambda_client, create_lambda_function, snapshot, monkeypatch):
+        """We consider ulimits parity as opt-in because development environments could hit these limits unlike in
+        optimized production deployments."""
+        monkeypatch.setattr(
+            config,
+            "LAMBDA_DOCKER_FLAGS",
+            "--ulimit nofile=1024:1024 --ulimit nproc=735:735 --ulimit core=-1:-1 --ulimit stack=8388608:-1",
+        )
+
+        func_name = f"test_lambda_ulimits_{short_uid()}"
+        create_lambda_function(
+            func_name=func_name,
+            handler_file=TEST_LAMBDA_ULIMITS,
+            runtime=Runtime.python3_9,
+        )
+
+        invoke_result = lambda_client.invoke(FunctionName=func_name)
+        snapshot.match("invoke_runtime_ulimits", invoke_result)
+
+    @pytest.mark.skipif(is_old_provider(), reason="unsupported in old provider")
+    @pytest.mark.skipif(
+        is_old_local_executor(),
+        reason="Monkey-patching of Docker flags is not applicable because no new container is spawned",
+    )
+    @pytest.mark.only_localstack
+    def test_ignore_architecture(
+        self, lambda_client, create_lambda_function, snapshot, monkeypatch
+    ):
+        """Test configuration to ignore lambda architecture by creating a lambda with non-native architecture."""
+        monkeypatch.setattr(config, "LAMBDA_IGNORE_ARCHITECTURE", True)
+
+        # Assumes that LocalStack runs on native Docker host architecture
+        # This assumption could be violated when using remote Lambda executors
+        native_arch = platform.get_arch()
+        non_native_architecture = (
+            Architecture.x86_64 if native_arch == "arm64" else Architecture.arm64
+        )
+        func_name = f"test_lambda_arch_{short_uid()}"
+        create_lambda_function(
+            func_name=func_name,
+            handler_file=TEST_LAMBDA_INTROSPECT_PYTHON,
+            runtime=Runtime.python3_9,
+            Architectures=[non_native_architecture],
+        )
+
+        invoke_result = lambda_client.invoke(FunctionName=func_name)
+        payload = json.loads(to_str(invoke_result["Payload"].read()))
+        lambda_arch = standardized_arch(payload.get("platform_machine"))
+        assert lambda_arch == native_arch
+
+    @pytest.mark.skipif(is_old_provider(), reason="unsupported in old provider")
+    @pytest.mark.skip  # TODO remove once is_arch_compatible checks work properly
+    @pytest.mark.aws_validated
+    def test_mixed_architecture(self, lambda_client, create_lambda_function):
+        """Test emulation and interaction of lambda functions with different architectures.
+        Limitation: only works on ARM hosts that support x86 emulation.
+        """
         func_name = f"test_lambda_x86_{short_uid()}"
         create_lambda_function(
             func_name=func_name,
@@ -337,29 +443,48 @@ class TestLambdaBehavior:
         )
 
         invoke_result = lambda_client.invoke(FunctionName=func_name)
-        snapshot.match("invoke_runtime_x86_introspection", invoke_result)
+        assert "FunctionError" not in invoke_result
+        payload = json.loads(invoke_result["Payload"].read())
+        assert payload.get("platform_machine") == "x86_64"
 
-    @pytest.mark.aws_validated
-    @pytest.mark.skip_snapshot_verify(
-        # TODO: run lambdas as user `sbx_user1051`
-        paths=["$..Payload.user_login_name", "$..Payload.user_whoami"]
-    )
-    @pytest.mark.skipif(is_old_provider(), reason="unsupported in old provider")
-    @pytest.mark.skipif(
-        not is_arm_compatible() and not is_aws(),
-        reason="ARM architecture not supported on this host",
-    )
-    def test_runtime_introspection_arm(self, lambda_client, create_lambda_function, snapshot):
-        func_name = f"test_lambda_arm_{short_uid()}"
+        func_name_arm = f"test_lambda_arm_{short_uid()}"
         create_lambda_function(
-            func_name=func_name,
+            func_name=func_name_arm,
             handler_file=TEST_LAMBDA_INTROSPECT_PYTHON,
             runtime=Runtime.python3_9,
             Architectures=[Architecture.arm64],
         )
 
-        invoke_result = lambda_client.invoke(FunctionName=func_name)
-        snapshot.match("invoke_runtime_arm_introspection", invoke_result)
+        invoke_result_arm = lambda_client.invoke(FunctionName=func_name_arm)
+        assert "FunctionError" not in invoke_result_arm
+        payload_arm = json.loads(invoke_result_arm["Payload"].read())
+        assert payload_arm.get("platform_machine") == "aarch64"
+
+        v1_result = lambda_client.publish_version(FunctionName=func_name)
+        v1 = v1_result["Version"]
+
+        # assert version is available(!)
+        lambda_client.get_waiter(waiter_name="function_active_v2").wait(
+            FunctionName=func_name, Qualifier=v1
+        )
+
+        arm_v1_result = lambda_client.publish_version(FunctionName=func_name_arm)
+        arm_v1 = arm_v1_result["Version"]
+
+        # assert version is available(!)
+        lambda_client.get_waiter(waiter_name="function_active_v2").wait(
+            FunctionName=func_name_arm, Qualifier=arm_v1
+        )
+
+        invoke_result_2 = lambda_client.invoke(FunctionName=func_name, Qualifier=v1)
+        assert "FunctionError" not in invoke_result_2
+        payload_2 = json.loads(invoke_result_2["Payload"].read())
+        assert payload_2.get("platform_machine") == "x86_64"
+
+        invoke_result_arm_2 = lambda_client.invoke(FunctionName=func_name_arm, Qualifier=arm_v1)
+        assert "FunctionError" not in invoke_result_arm_2
+        payload_arm_2 = json.loads(invoke_result_arm_2["Payload"].read())
+        assert payload_arm_2.get("platform_machine") == "aarch64"
 
     @pytest.mark.skip_snapshot_verify(
         condition=is_old_provider, paths=["$..Payload", "$..LogResult"]
@@ -959,7 +1084,6 @@ class TestLambdaFeatures:
         zip_file = create_lambda_archive(
             load_file(TEST_LAMBDA_PYTHON),
             get_content=True,
-            libs=TEST_LAMBDA_LIBS,
             runtime=Runtime.python3_9,
         )
         s3_client.upload_fileobj(BytesIO(zip_file), s3_bucket, bucket_key)
@@ -1015,7 +1139,6 @@ class TestLambdaFeatures:
         zip_file = testutil.create_lambda_archive(
             load_file(TEST_LAMBDA_PYTHON),
             get_content=True,
-            libs=TEST_LAMBDA_LIBS,
             runtime=Runtime.python3_9,
         )
         s3_client.upload_fileobj(BytesIO(zip_file), s3_bucket, bucket_key)
@@ -1116,7 +1239,7 @@ class TestLambdaConcurrency:
         deleted_concurrency_result = lambda_client.get_function_concurrency(FunctionName=func_name)
         snapshot.match("get_function_concurrency_deleted", deleted_concurrency_result)
 
-    @pytest.mark.skipif(not is_old_provider(), reason="Not yet implemented")
+    @pytest.mark.skip(reason="Requires prefer-provisioned feature")
     @pytest.mark.aws_validated
     def test_lambda_concurrency_block(self, snapshot, create_lambda_function, lambda_client):
         """
@@ -1198,7 +1321,7 @@ class TestLambdaConcurrency:
 
         create_result = create_lambda_function(
             func_name=func_name,
-            handler_file=TEST_LAMBDA_INTROSPECT_PYTHON,
+            handler_file=TEST_LAMBDA_INVOCATION_TYPE,
             runtime=Runtime.python3_8,
             client=lambda_client,
             timeout=2,
@@ -1301,6 +1424,264 @@ class TestLambdaConcurrency:
                 FunctionName=func_name, Qualifier=new_version["Version"]
             )
         snapshot.match("provisioned_concurrency_notfound", e.value.response)
+
+    @pytest.mark.aws_validated
+    def test_provisioned_concurrency(
+        self, lambda_client, logs_client, create_lambda_function, snapshot
+    ):
+        """
+        TODO: what happens with running invocations in provisioned environments when the provisioned concurrency is deleted?
+        TODO: are the previous provisioned environments not available for new invocations anymore?
+        TODO: lambda_client.delete_provisioned_concurrency_config()
+
+        Findings (mostly through manual testing, observing, changing the test here and doing semi-manual runs)
+        - execution environments are provisioned nearly in parallel (we had *ONE*  case where it first spawned 19/20)
+        - it generates 2x provisioned concurrency cloudwatch logstreams with only INIT_START
+        - updates while IN_PROGRESS are allowed and overwrite the previous config
+        """
+        func_name = f"test_lambda_{short_uid()}"
+
+        create_lambda_function(
+            func_name=func_name,
+            handler_file=TEST_LAMBDA_INVOCATION_TYPE,
+            runtime=Runtime.python3_9,
+            client=lambda_client,
+        )
+
+        v1 = lambda_client.publish_version(FunctionName=func_name)
+
+        put_provisioned = lambda_client.put_provisioned_concurrency_config(
+            FunctionName=func_name, Qualifier=v1["Version"], ProvisionedConcurrentExecutions=5
+        )
+        snapshot.match("put_provisioned_5", put_provisioned)
+
+        get_provisioned_prewait = lambda_client.get_provisioned_concurrency_config(
+            FunctionName=func_name, Qualifier=v1["Version"]
+        )
+        snapshot.match("get_provisioned_prewait", get_provisioned_prewait)
+        assert wait_until(concurrency_update_done(lambda_client, func_name, v1["Version"]))
+        get_provisioned_postwait = lambda_client.get_provisioned_concurrency_config(
+            FunctionName=func_name, Qualifier=v1["Version"]
+        )
+        snapshot.match("get_provisioned_postwait", get_provisioned_postwait)
+
+        invoke_result1 = lambda_client.invoke(FunctionName=func_name, Qualifier=v1["Version"])
+        result1 = json.loads(to_str(invoke_result1["Payload"].read()))
+        assert result1 == "provisioned-concurrency"
+
+        invoke_result2 = lambda_client.invoke(FunctionName=func_name, Qualifier="$LATEST")
+        result2 = json.loads(to_str(invoke_result2["Payload"].read()))
+        assert result2 == "on-demand"
+
+    @pytest.mark.aws_validated
+    def test_reserved_concurrency_async_queue(
+        self,
+        lambda_client,
+        logs_client,
+        create_lambda_function,
+        snapshot,
+        sqs_client,
+        sqs_create_queue,
+    ):
+        func_name = f"test_lambda_{short_uid()}"
+        create_lambda_function(
+            func_name=func_name,
+            handler_file=TEST_LAMBDA_INTROSPECT_PYTHON,
+            runtime=Runtime.python3_9,
+            client=lambda_client,
+            timeout=20,
+        )
+
+        fn = lambda_client.get_function_configuration(FunctionName=func_name, Qualifier="$LATEST")
+        snapshot.match("fn", fn)
+        fn_arn = fn["FunctionArn"]
+
+        # sequential execution
+        put_fn_concurrency = lambda_client.put_function_concurrency(
+            FunctionName=func_name, ReservedConcurrentExecutions=1
+        )
+        snapshot.match("put_fn_concurrency", put_fn_concurrency)
+
+        lambda_client.invoke(
+            FunctionName=fn_arn, InvocationType="Event", Payload=json.dumps({"wait": 10})
+        )
+        lambda_client.invoke(
+            FunctionName=fn_arn, InvocationType="Event", Payload=json.dumps({"wait": 10})
+        )
+
+        time.sleep(4)  # make sure one is already in the "queue" and one is being executed
+
+        with pytest.raises(lambda_client.exceptions.TooManyRequestsException) as e:
+            lambda_client.invoke(FunctionName=fn_arn, InvocationType="RequestResponse")
+        snapshot.match("too_many_requests_exc", e.value.response)
+
+        with pytest.raises(lambda_client.exceptions.InvalidParameterValueException) as e:
+            lambda_client.put_function_concurrency(
+                FunctionName=fn_arn, ReservedConcurrentExecutions=2
+            )
+        snapshot.match("put_function_concurrency_qualified_arn_exc", e.value.response)
+
+        lambda_client.put_function_concurrency(
+            FunctionName=func_name, ReservedConcurrentExecutions=2
+        )
+        lambda_client.invoke(FunctionName=fn_arn, InvocationType="RequestResponse")
+
+        def assert_events():
+            log_events = logs_client.filter_log_events(
+                logGroupName=f"/aws/lambda/{func_name}",
+            )["events"]
+            assert len([e["message"] for e in log_events if e["message"].startswith("REPORT")]) == 3
+
+        retry(assert_events, retries=120, sleep=2)
+
+        # TODO: snapshot logs & request ID for correlation after request id gets propagated
+        #  https://github.com/localstack/localstack/pull/7874
+
+    @pytest.mark.aws_validated
+    def test_reserved_concurrency(
+        self,
+        lambda_client,
+        logs_client,
+        create_lambda_function,
+        snapshot,
+        sqs_client,
+        sqs_create_queue,
+    ):
+        snapshot.add_transformer(
+            snapshot.transform.key_value("MD5OfBody", "<md5-of-body>", reference_replacement=False)
+        )
+        snapshot.add_transformer(
+            snapshot.transform.key_value(
+                "ReceiptHandle", "receipt-handle", reference_replacement=True
+            )
+        )
+        snapshot.add_transformer(
+            snapshot.transform.key_value("SenderId", "<sender-id>", reference_replacement=False)
+        )
+        func_name = f"test_lambda_{short_uid()}"
+
+        create_lambda_function(
+            func_name=func_name,
+            handler_file=TEST_LAMBDA_INTROSPECT_PYTHON,
+            runtime=Runtime.python3_9,
+            client=lambda_client,
+            timeout=20,
+        )
+
+        fn = lambda_client.get_function_configuration(FunctionName=func_name, Qualifier="$LATEST")
+        snapshot.match("fn", fn)
+        fn_arn = fn["FunctionArn"]
+
+        # block execution by setting reserved concurrency to 0
+        put_reserved = lambda_client.put_function_concurrency(
+            FunctionName=func_name, ReservedConcurrentExecutions=0
+        )
+        snapshot.match("put_reserved", put_reserved)
+
+        with pytest.raises(lambda_client.exceptions.TooManyRequestsException) as e:
+            lambda_client.invoke(FunctionName=fn_arn, InvocationType="RequestResponse")
+        snapshot.match("exc_no_cap_requestresponse", e.value.response)
+
+        queue_name = f"test-queue-{short_uid()}"
+        queue_url = sqs_create_queue(QueueName=queue_name)
+        queue_arn = sqs_client.get_queue_attributes(
+            QueueUrl=queue_url, AttributeNames=["QueueArn"]
+        )["Attributes"]["QueueArn"]
+        put_event_invoke_conf = lambda_client.put_function_event_invoke_config(
+            FunctionName=func_name,
+            MaximumRetryAttempts=0,
+            DestinationConfig={"OnFailure": {"Destination": queue_arn}},
+        )
+        snapshot.match("put_event_invoke_conf", put_event_invoke_conf)
+
+        time.sleep(3)  # just to be sure
+
+        invoke_result = lambda_client.invoke(FunctionName=fn_arn, InvocationType="Event")
+        snapshot.match("invoke_result", invoke_result)
+
+        def get_msg_from_queue():
+            msgs = sqs_client.receive_message(
+                QueueUrl=queue_url, AttributeNames=["All"], WaitTimeSeconds=5
+            )
+            return msgs["Messages"][0]
+
+        msg = retry(get_msg_from_queue, retries=10, sleep=2)
+        snapshot.match("msg", msg)
+
+    @pytest.mark.aws_validated
+    def test_reserved_provisioned_overlap(
+        self, lambda_client, logs_client, create_lambda_function, snapshot
+    ):
+        func_name = f"test_lambda_{short_uid()}"
+
+        create_lambda_function(
+            func_name=func_name,
+            handler_file=TEST_LAMBDA_INVOCATION_TYPE,
+            runtime=Runtime.python3_9,
+            client=lambda_client,
+        )
+
+        v1 = lambda_client.publish_version(FunctionName=func_name)
+
+        put_provisioned = lambda_client.put_provisioned_concurrency_config(
+            FunctionName=func_name, Qualifier=v1["Version"], ProvisionedConcurrentExecutions=2
+        )
+        snapshot.match("put_provisioned_5", put_provisioned)
+
+        get_provisioned_prewait = lambda_client.get_provisioned_concurrency_config(
+            FunctionName=func_name, Qualifier=v1["Version"]
+        )
+        snapshot.match("get_provisioned_prewait", get_provisioned_prewait)
+        assert wait_until(concurrency_update_done(lambda_client, func_name, v1["Version"]))
+        get_provisioned_postwait = lambda_client.get_provisioned_concurrency_config(
+            FunctionName=func_name, Qualifier=v1["Version"]
+        )
+        snapshot.match("get_provisioned_postwait", get_provisioned_postwait)
+
+        with pytest.raises(lambda_client.exceptions.InvalidParameterValueException) as e:
+            lambda_client.put_function_concurrency(
+                FunctionName=func_name, ReservedConcurrentExecutions=1
+            )
+        snapshot.match("reserved_lower_than_provisioned_exc", e.value.response)
+        lambda_client.put_function_concurrency(
+            FunctionName=func_name, ReservedConcurrentExecutions=2
+        )
+        get_concurrency = lambda_client.get_function_concurrency(FunctionName=func_name)
+        snapshot.match("get_concurrency", get_concurrency)
+
+        # absolute limit, this means there is no free function execution for any invoke that doesn't have provisioned concurrency (!)
+        with pytest.raises(lambda_client.exceptions.TooManyRequestsException) as e:
+            lambda_client.invoke(FunctionName=func_name)
+        snapshot.match("reserved_equals_provisioned_latest_invoke_exc", e.value.response)
+
+        # passes since the version has a provisioned concurrency config set
+        # TODO: re-add this when implementing it in version manager
+        # invoke_result1 = lambda_client.invoke(FunctionName=func_name, Qualifier=v1["Version"])
+        # result1 = json.loads(to_str(invoke_result1["Payload"].read()))
+        # assert result1 == "provisioned-concurrency"
+
+        # try to add a new provisioned concurrency config to another qualifier on the same function
+        update_func_config = lambda_client.update_function_configuration(
+            FunctionName=func_name, Timeout=15
+        )
+        snapshot.match("update_func_config", update_func_config)
+        lambda_client.get_waiter("function_updated_v2").wait(FunctionName=func_name)
+
+        v2 = lambda_client.publish_version(FunctionName=func_name)
+        assert v1["Version"] != v2["Version"]
+        # doesn't work because the reserved function concurrency is 2 and we already have a total provisioned sum of 2
+        with pytest.raises(lambda_client.exceptions.InvalidParameterValueException) as e:
+            lambda_client.put_provisioned_concurrency_config(
+                FunctionName=func_name, Qualifier=v2["Version"], ProvisionedConcurrentExecutions=1
+            )
+        snapshot.match("reserved_equals_provisioned_another_provisioned_exc", e.value.response)
+
+        # updating the provisioned concurrency config of v1 to 3 (from 2) should also not work
+        with pytest.raises(lambda_client.exceptions.InvalidParameterValueException) as e:
+            lambda_client.put_provisioned_concurrency_config(
+                FunctionName=func_name, Qualifier=v1["Version"], ProvisionedConcurrentExecutions=3
+            )
+        snapshot.match("reserved_equals_provisioned_increase_provisioned_exc", e.value.response)
 
 
 @pytest.mark.skipif(condition=is_old_provider(), reason="not supported")

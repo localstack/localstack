@@ -5,8 +5,7 @@
   ],
   "enabledManagers": ["dockerfile"],
   "docker": {
-    "pinDigests": true,
-    "ignorePaths": ["bin/lambda/Dockerfile.nodejs14x", "Dockerfile.rh"]
+    "pinDigests": true
   },
   "major": {
     "enabled": false
@@ -23,5 +22,6 @@
         "commitMessageTopic": "Docker base image ({{{depName}}}{{#if currentValue}}:{{{currentValue}}}{{/if}}) digest"
       }
     }
-  ]
+  ],
+  "reviewers": ["alexrashed"]
 }

@@ -1,5 +1,7 @@
 # -*- coding: utf-8 -*-
 
+# TODO: split up the tests in this file into more specific test sub-modules
+
 import base64
 import json
 import os
@@ -12,21 +14,14 @@ import xmltodict
 from botocore.exceptions import ClientError
 from jsonpatch import apply_patch
 from moto.apigateway import apigateway_backends
-from pytest_httpserver import HTTPServer
 from requests.structures import CaseInsensitiveDict
-from werkzeug import Request, Response
 
 from localstack import config
 from localstack.aws.accounts import get_aws_account_id
 from localstack.aws.api.lambda_ import Runtime
 from localstack.aws.handlers import cors
 from localstack.config import get_edge_url
-from localstack.constants import (
-    APPLICATION_JSON,
-    LOCALHOST_HOSTNAME,
-    TEST_AWS_ACCOUNT_ID,
-    TEST_AWS_REGION_NAME,
-)
+from localstack.constants import APPLICATION_JSON, LOCALHOST_HOSTNAME
 from localstack.services.apigateway.helpers import (
     TAG_KEY_CUSTOM_ID,
     connect_api_gateway_to_sqs,
@@ -44,10 +39,11 @@ from localstack.utils.aws import resources as resource_util
 from localstack.utils.collections import select_attributes
 from localstack.utils.files import load_file
 from localstack.utils.http import safe_requests as requests
-from localstack.utils.json import clone, json_safe
+from localstack.utils.json import clone
+from localstack.utils.platform import get_arch
 from localstack.utils.strings import short_uid, to_str
 from localstack.utils.sync import retry
-from tests.integration.apigateway_fixtures import (
+from tests.integration.apigateway.apigateway_fixtures import (
     _client,
     api_invoke_url,
     create_rest_api_deployment,
@@ -64,67 +60,29 @@ from tests.integration.apigateway_fixtures import (
     update_rest_api_deployment,
     update_rest_api_stage,
 )
-
-from ..unit.test_apigateway import load_test_resource
-from .awslambda.test_lambda import (
+from tests.integration.apigateway.conftest import (
+    APIGATEWAY_ASSUME_ROLE_POLICY,
+    APIGATEWAY_LAMBDA_POLICY,
+    APIGATEWAY_STEPFUNCTIONS_POLICY,
+    STEPFUNCTIONS_ASSUME_ROLE_POLICY,
+)
+from tests.integration.awslambda.test_lambda import (
     TEST_LAMBDA_AWS_PROXY,
     TEST_LAMBDA_HTTP_RUST,
-    TEST_LAMBDA_LIBS,
     TEST_LAMBDA_NODEJS,
     TEST_LAMBDA_NODEJS_APIGW_502,
     TEST_LAMBDA_NODEJS_APIGW_INTEGRATION,
     TEST_LAMBDA_PYTHON,
     TEST_LAMBDA_PYTHON_ECHO,
 )
-
-STEPFUNCTIONS_ASSUME_ROLE_POLICY = {
-    "Version": "2012-10-17",
-    "Statement": [
-        {
-            "Effect": "Allow",
-            "Principal": {"Service": "states.amazonaws.com"},
-            "Action": "sts:AssumeRole",
-        }
-    ],
-}
-
-APIGATEWAY_STEPFUNCTIONS_POLICY = {
-    "Version": "2012-10-17",
-    "Statement": [{"Effect": "Allow", "Action": "states:*", "Resource": "*"}],
-}
-
-APIGATEWAY_KINESIS_POLICY = {
-    "Version": "2012-10-17",
-    "Statement": [{"Effect": "Allow", "Action": "kinesis:*", "Resource": "*"}],
-}
-
-APIGATEWAY_DYNAMODB_POLICY = {
-    "Version": "2012-10-17",
-    "Statement": [{"Effect": "Allow", "Action": "dynamodb:*", "Resource": "*"}],
-}
-
-APIGATEWAY_LAMBDA_POLICY = {
-    "Version": "2012-10-17",
-    "Statement": [{"Effect": "Allow", "Action": "lambda:*", "Resource": "*"}],
-}
-
-
-APIGATEWAY_ASSUME_ROLE_POLICY = {
-    "Statement": {
-        "Sid": "",
-        "Effect": "Allow",
-        "Principal": {"Service": "apigateway.amazonaws.com"},
-        "Action": "sts:AssumeRole",
-    }
-}
+from tests.unit.test_apigateway import load_test_resource
 
 THIS_FOLDER = os.path.dirname(os.path.realpath(__file__))
-TEST_SWAGGER_FILE_JSON = os.path.join(THIS_FOLDER, "files", "swagger.json")
-TEST_SWAGGER_FILE_YAML = os.path.join(THIS_FOLDER, "files", "swagger.yaml")
-TEST_IMPORT_REST_API_FILE = os.path.join(THIS_FOLDER, "files", "pets.json")
-TEST_IMPORT_PETSTORE_SWAGGER = os.path.join(THIS_FOLDER, "files", "petstore-swagger.json")
-TEST_IMPORT_MOCK_INTEGRATION = os.path.join(THIS_FOLDER, "files", "openapi-mock.json")
-TEST_IMPORT_REST_API_ASYNC_LAMBDA = os.path.join(THIS_FOLDER, "files", "api_definition.yaml")
+TEST_SWAGGER_FILE_JSON = os.path.join(THIS_FOLDER, "../files", "swagger.json")
+TEST_SWAGGER_FILE_YAML = os.path.join(THIS_FOLDER, "../files", "swagger.yaml")
+TEST_IMPORT_REST_API_FILE = os.path.join(THIS_FOLDER, "../files", "pets.json")
+TEST_IMPORT_MOCK_INTEGRATION = os.path.join(THIS_FOLDER, "../files", "openapi-mock.json")
+TEST_IMPORT_REST_API_ASYNC_LAMBDA = os.path.join(THIS_FOLDER, "../files", "api_definition.yaml")
 
 ApiGatewayLambdaProxyIntegrationTestResult = namedtuple(
     "ApiGatewayLambdaProxyIntegrationTestResult",
@@ -136,23 +94,6 @@ ApiGatewayLambdaProxyIntegrationTestResult = namedtuple(
         "path_with_replace",
     ],
 )
-
-
-@pytest.fixture(scope="function")
-def echo_http_server(httpserver: HTTPServer):
-    def _echo(request: Request) -> Response:
-        result = {
-            "data": request.data or "{}",
-            "headers": dict(request.headers),
-            "request_url": request.url,
-        }
-        response_body = json.dumps(json_safe(result))
-        return Response(response_body, status=200)
-
-    httpserver.expect_request("").respond_with_handler(_echo)
-    http_endpoint = httpserver.url_for("/")
-
-    yield http_endpoint
 
 
 class TestAPIGateway:
@@ -830,16 +771,15 @@ class TestAPIGateway:
         response = requests.get(url)
         assert response._content == b'{"echo": "foobar", "response": "mocked"}'
 
-    def test_api_gateway_authorizer_crud(self):
-        apig = aws_stack.create_external_boto_client("apigateway")
-
-        authorizer = apig.create_authorizer(
+    @pytest.mark.xfail(reason="Behaviour is not AWS compliant, need to recreate this test")
+    def test_api_gateway_authorizer_crud(self, apigateway_client):
+        authorizer = apigateway_client.create_authorizer(
             restApiId=self.TEST_API_GATEWAY_ID, **self.TEST_API_GATEWAY_AUTHORIZER
         )
 
         authorizer_id = authorizer.get("id")
 
-        create_result = apig.get_authorizer(
+        create_result = apigateway_client.get_authorizer(
             restApiId=self.TEST_API_GATEWAY_ID, authorizerId=authorizer_id
         )
 
@@ -851,13 +791,13 @@ class TestAPIGateway:
 
         assert create_expected == create_result
 
-        apig.update_authorizer(
+        apigateway_client.update_authorizer(
             restApiId=self.TEST_API_GATEWAY_ID,
             authorizerId=authorizer_id,
             patchOperations=self.TEST_API_GATEWAY_AUTHORIZER_OPS,
         )
 
-        update_result = apig.get_authorizer(
+        update_result = apigateway_client.get_authorizer(
             restApiId=self.TEST_API_GATEWAY_ID, authorizerId=authorizer_id
         )
 
@@ -868,10 +808,14 @@ class TestAPIGateway:
 
         assert update_expected == update_result
 
-        apig.delete_authorizer(restApiId=self.TEST_API_GATEWAY_ID, authorizerId=authorizer_id)
+        apigateway_client.delete_authorizer(
+            restApiId=self.TEST_API_GATEWAY_ID, authorizerId=authorizer_id
+        )
 
         with pytest.raises(Exception):
-            apig.get_authorizer(self.TEST_API_GATEWAY_ID, authorizer_id)
+            apigateway_client.get_authorizer(
+                restApiId=self.TEST_API_GATEWAY_ID, authorizerId=authorizer_id
+            )
 
     def test_apigateway_with_lambda_integration(self, apigateway_client, create_rest_apigw):
         # create Lambda function
@@ -1072,98 +1016,6 @@ class TestAPIGateway:
         lambda_client = aws_stack.create_external_boto_client("lambda")
         lambda_client.delete_function(FunctionName=lambda_name)
 
-    def test_create_model(self, create_rest_apigw, apigateway_client):
-        rest_api_id, _, _ = create_rest_apigw(name="my_api", description="this is my api")
-        dummy_rest_api_id = "_non_existing_"
-        model_name = "testModel"
-        description = "test model"
-        content_type = "application/json"
-
-        # success case with valid params
-        response = apigateway_client.create_model(
-            restApiId=rest_api_id,
-            name=model_name,
-            description=description,
-            contentType=content_type,
-        )
-        assert model_name == response["name"]
-        assert description == response["description"]
-
-        with pytest.raises(Exception) as ctx:
-            apigateway_client.create_model(
-                restApiId=dummy_rest_api_id,
-                name=model_name,
-                description=description,
-                contentType=content_type,
-            )
-        assert "NotFoundException" == ctx.value.response["Error"]["Code"]
-        assert "Invalid Rest API Id specified" == ctx.value.response["Error"]["Message"]
-
-        with pytest.raises(Exception) as ctx:
-            apigateway_client.create_model(
-                restApiId=dummy_rest_api_id,
-                name="",
-                description=description,
-                contentType=content_type,
-            )
-        assert "BadRequestException" == ctx.value.response["Error"]["Code"]
-        assert "No Model Name specified" == ctx.value.response["Error"]["Message"]
-
-    def test_get_api_models(self, apigateway_client, create_rest_apigw):
-        rest_api_id, _, _ = create_rest_apigw(name="my_api", description="this is my api")
-        model_name = "testModel"
-        description = "test model"
-        content_type = "application/json"
-        # when no models are present
-        result = apigateway_client.get_models(restApiId=rest_api_id)
-        assert [] == result["items"]
-        # add a model
-        apigateway_client.create_model(
-            restApiId=rest_api_id,
-            name=model_name,
-            description=description,
-            contentType=content_type,
-        )
-
-        # get models after adding
-        result = apigateway_client.get_models(restApiId=rest_api_id)
-        assert model_name == result["items"][0]["name"]
-        assert description == result["items"][0]["description"]
-
-    def test_request_validator(self, apigateway_client, create_rest_apigw):
-        rest_api_id, _, _ = create_rest_apigw(name="my_api", description="this is my api")
-        # CREATE
-        name = "validator123"
-        result = apigateway_client.create_request_validator(restApiId=rest_api_id, name=name)
-        assert 201 == result["ResponseMetadata"]["HTTPStatusCode"]
-        validator_id = result["id"]
-        # LIST
-        result = apigateway_client.get_request_validators(restApiId=rest_api_id)
-        assert 200 == result["ResponseMetadata"]["HTTPStatusCode"]
-        assert [{"id": validator_id, "name": name}] == result["items"]
-        # GET
-        result = apigateway_client.get_request_validator(
-            restApiId=rest_api_id, requestValidatorId=validator_id
-        )
-        assert 200 == result["ResponseMetadata"]["HTTPStatusCode"]
-        assert select_attributes(result, ["id", "name"]) == {"id": validator_id, "name": name}
-        # UPDATE
-        result = apigateway_client.update_request_validator(
-            restApiId=rest_api_id, requestValidatorId=validator_id, patchOperations=[]
-        )
-        # DELETE
-        apigateway_client.delete_request_validator(
-            restApiId=rest_api_id, requestValidatorId=validator_id
-        )
-        with pytest.raises(Exception):
-            apigateway_client.get_request_validator(
-                restApiId=rest_api_id, requestValidatorId=validator_id
-            )
-        with pytest.raises(Exception):
-            apigateway_client.delete_request_validator(
-                restApiId=rest_api_id, requestValidatorId=validator_id
-            )
-
     def test_base_path_mapping(self, apigateway_client, create_rest_apigw):
         rest_api_id, _, _ = create_rest_apigw(name="my_api", description="this is my api")
 
@@ -1277,38 +1129,6 @@ class TestAPIGateway:
             patchOperations=[{"op": "add", "path": "/features/-", "value": "foobar"}]
         )
         assert "foobar" in result["features"]
-
-    def test_get_model_by_name(self, apigateway_client, create_rest_apigw):
-        rest_api_id, _, _ = create_rest_apigw(name="my_api", description="this is my api")
-        dummy_rest_api_id = "_non_existing_"
-        model_name = "testModel"
-        description = "test model"
-        content_type = "application/json"
-        # add a model
-        apigateway_client.create_model(
-            restApiId=rest_api_id,
-            name=model_name,
-            description=description,
-            contentType=content_type,
-        )
-
-        # get models after adding
-        result = apigateway_client.get_model(restApiId=rest_api_id, modelName=model_name)
-        assert model_name == result["name"]
-        assert description == result["description"]
-
-        with pytest.raises(ClientError) as e:
-            apigateway_client.get_model(restApiId=dummy_rest_api_id, modelName=model_name)
-        assert e.value.response["Error"]["Code"] == "NotFoundException"
-        assert e.value.response["Error"]["Message"] == "Invalid Rest API Id specified"
-
-    def test_get_model_with_invalid_name(self, apigateway_client, create_rest_apigw):
-        rest_api_id, _, _ = create_rest_apigw(name="my_api", description="this is my api")
-
-        # test with an invalid model name
-        with pytest.raises(ClientError) as e:
-            apigateway_client.get_model(restApiId=rest_api_id, modelName="fake")
-        assert "NotFoundException" == e.value.response["Error"]["Code"]
 
     def test_put_integration_dynamodb_proxy_validation_without_request_template(self):
         api_id = self.create_api_gateway_and_deploy()
@@ -1729,7 +1549,7 @@ class TestAPIGateway:
             assert 200 == result.status_code
             assert re.search(
                 "http://.*localhost.*/person/123",
-                content["request_url"],
+                content["url"],
             )
 
         for use_hostname in [True, False]:
@@ -1971,9 +1791,7 @@ class TestAPIGateway:
 
     @staticmethod
     def create_lambda_function(fn_name):
-        testutil.create_lambda_function(
-            handler_file=TEST_LAMBDA_PYTHON, libs=TEST_LAMBDA_LIBS, func_name=fn_name
-        )
+        testutil.create_lambda_function(handler_file=TEST_LAMBDA_PYTHON, func_name=fn_name)
         lambda_client = aws_stack.create_external_boto_client("lambda")
         lambda_client.get_waiter("function_active_v2").wait(FunctionName=fn_name)
 
@@ -2260,11 +2078,14 @@ class TestAPIGateway:
 
 
 def test_import_swagger_api(apigateway_client):
+    # TODO: refactor test to not access moto resources directly
     api_spec = load_test_resource("openapi.swagger.json")
     api_spec_dict = json.loads(api_spec)
 
-    backend = apigateway_backends[TEST_AWS_ACCOUNT_ID][TEST_AWS_REGION_NAME]
-    api_model = backend.create_rest_api(name="api_name", description="description-1")
+    backend = apigateway_backends[get_aws_account_id()][aws_stack.get_region()]
+    rest_api = apigateway_client.create_rest_api(name="api_name", description="description-1")
+
+    api_model = backend.get_rest_api(rest_api["id"])
 
     imported_api = import_api_from_openapi_spec(api_model, api_spec_dict, {})
 
@@ -2311,6 +2132,7 @@ def test_import_swagger_api(apigateway_client):
 
 
 @pytest.mark.skipif(not use_docker(), reason="Rust lambdas cannot be executed in local executor")
+@pytest.mark.skipif(get_arch() == "arm64", reason="Lambda only available for amd64")
 def test_apigateway_rust_lambda(
     apigateway_client,
     create_rest_apigw,

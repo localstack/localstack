@@ -1,4 +1,4 @@
-name: cli-tests
+name: CLI Tests
 on:
   workflow_dispatch:
   pull_request:
@@ -44,10 +44,10 @@ jobs:
     timeout-minutes: 10
     steps:
       - name: Checkout
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
       - name: Set up Python
         id: setup-python
-        uses: actions/setup-python@v2
+        uses: actions/setup-python@v4
         with:
           python-version: ${{ matrix.python-version }}
       - name: Install CLI test dependencies

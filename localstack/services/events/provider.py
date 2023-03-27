@@ -491,8 +491,12 @@ def events_handler_put_events(self):
         event = event_envelope["event"]
         event_bus = event.get("EventBusName") or DEFAULT_EVENT_BUS_NAME
 
-        matchine_rules = [r for r in event_rules.values() if r.event_bus_name == event_bus]
-        if not matchine_rules:
+        matching_rules = [
+            r
+            for r in event_rules.values()
+            if r.event_bus_name == event_bus and not r.scheduled_expression
+        ]
+        if not matching_rules:
             continue
 
         formatted_event = {
@@ -508,7 +512,7 @@ def events_handler_put_events(self):
         }
 
         targets = []
-        for rule in matchine_rules:
+        for rule in matching_rules:
             if filter_event_based_on_event_format(self, rule.name, formatted_event):
                 targets.extend(self.events_backend.list_targets_by_rule(rule.name)["Targets"])
 

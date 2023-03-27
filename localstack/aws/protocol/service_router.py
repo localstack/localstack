@@ -282,15 +282,14 @@ def resolve_conflicts(candidates: Set[str], request: Request):
         return "rds"
 
 
-def determine_aws_service_name(
-    request: Request, services: ServiceCatalog = get_service_catalog()
-) -> Optional[str]:
+def determine_aws_service_name(request: Request, services: ServiceCatalog = None) -> Optional[str]:
     """
     Tries to determine the name of the AWS service an incoming request is targeting.
     :param request: to determine the target service name of
     :param services: service catalog (can be handed in for caching purposes)
     :return: service name string (or None if the targeting service could not be determined exactly)
     """
+    services = services or get_service_catalog()
     signing_name, target_prefix, operation, host, path = _extract_service_indicators(request)
     candidates = set()
 

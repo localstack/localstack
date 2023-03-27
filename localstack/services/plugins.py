@@ -8,8 +8,6 @@ from enum import Enum
 from typing import Callable, Dict, List, Optional, Protocol, Tuple
 
 from plugin import Plugin, PluginLifecycleListener, PluginManager, PluginSpec
-from readerwriterlock import rwlock
-from werkzeug import Request
 
 from localstack import config
 from localstack.aws.skeleton import DispatchTable
@@ -18,7 +16,7 @@ from localstack.state import StateLifecycleHook, StateVisitable, StateVisitor
 from localstack.utils.bootstrap import get_enabled_apis, log_duration
 from localstack.utils.functions import call_safe
 from localstack.utils.net import wait_for_port_status
-from localstack.utils.sync import poll_condition
+from localstack.utils.sync import SynchronizedDefaultDict, poll_condition
 
 # set up logger
 LOG = logging.getLogger(__name__)
@@ -27,81 +25,6 @@ LOG = logging.getLogger(__name__)
 PLUGIN_NAMESPACE = "localstack.aws.provider"
 
 _default = object()  # sentinel object indicating a default value
-
-
-# ---------------------------
-# STATE SERIALIZER INTERFACE
-# ---------------------------
-
-
-class PersistenceContext:
-    state_dir: str
-    lock: rwlock.RWLockable
-
-    def __init__(self, state_dir: str = None, lock: rwlock.RWLockable = None):
-        # state dir (within DATA_DIR) of currently processed API in local file system
-        self.state_dir = state_dir
-        # read-write lock for concurrency control of incoming requests
-        self.lock = lock
-
-
-class StateSerializer(abc.ABC):
-    """A state serializer encapsulates the logic of persisting and loading service state to/from disk."""
-
-    @abc.abstractmethod
-    def restore_state(self, context: PersistenceContext):
-        """Restore state from the underlying persistence file"""
-        pass
-
-    @abc.abstractmethod
-    def update_state(self, context: PersistenceContext, request: Request):
-        """Update persistence state based on the incoming request"""
-        pass
-
-    @abc.abstractmethod
-    def is_write_request(self, request: Request) -> bool:
-        """Returns whether the given request is a write request that should trigger serialization"""
-        return False
-
-    def get_lock_for_request(self, request: Request) -> Optional[rwlock.Lockable]:
-        """Returns a lock (or None) that should be used to guard the given request, for concurrency control"""
-        return None
-
-    def get_context(self) -> PersistenceContext:
-        """Returns the current persistence context"""
-        return None
-
-
-class StateSerializerComposite(StateSerializer):
-    """Composite state serializer that delegates the requests to a list of underlying concrete serializers"""
-
-    def __init__(self, serializers: List[StateSerializer] = None):
-        self.serializers: List[StateSerializer] = serializers or []
-
-    def restore_state(self, context: PersistenceContext):
-        for serializer in self.serializers:
-            serializer.restore_state(context)
-
-    def update_state(self, context: PersistenceContext, request: Request):
-        for serializer in self.serializers:
-            serializer.update_state(context, request)
-
-    def is_write_request(self, request: Request) -> bool:
-        return any(ser.is_write_request(request) for ser in self.serializers)
-
-    def get_lock_for_request(self, request: Request) -> Optional[rwlock.Lockable]:
-        if self.serializers:
-            return self.serializers[0].get_lock_for_request(
-                request
-            )  # return lock from first serializer
-
-    def get_context(self) -> PersistenceContext:
-        if self.serializers:
-            return self.serializers[0].get_context()  # return context from first serializer
-
-
-# maps service names to serializers (TODO: to be encapsulated in ServicePlugin instances)
-SERIALIZERS: Dict[str, StateSerializer] = {}
 
 
 # -----------------
@@ -322,7 +245,7 @@ class ServiceContainer:
 class ServiceManager:
     def __init__(self) -> None:
         super().__init__()
-        self._services = {}
+        self._services: Dict[str, ServiceContainer] = {}
         self._mutex = threading.RLock()
 
     def get_service_container(self, name: str) -> Optional[ServiceContainer]:
@@ -531,6 +454,11 @@ class ServicePluginManager(ServiceManager):
         self._api_provider_specs = None
         self.provider_config = provider_config or config.SERVICE_PROVIDER_CONFIG
 
+        # locks used to make sure plugin loading is thread safe - will be cleared after single use
+        self._plugin_load_locks: Dict[str, threading.RLock] = SynchronizedDefaultDict(
+            threading.RLock
+        )
+
     def get_active_provider(self, service: str) -> str:
         """
         Get configured provider for a given service
@@ -619,24 +547,31 @@ class ServicePluginManager(ServiceManager):
         return ServiceState.AVAILABLE
 
     def get_service_container(self, name: str) -> Optional[ServiceContainer]:
-        container = super().get_service_container(name)
-        if container:
+        if container := self._services.get(name):
             return container
 
         if not self.exists(name):
             return None
 
-        # this is where we start lazy loading. we now know the PluginSpec for the API exists,
-        # but the ServiceContainer has not been created
-        plugin = self._load_service_plugin(name)
-        if not plugin or not plugin.service:
-            return None
+        load_lock = self._plugin_load_locks[name]
+        with load_lock:
+            # check once again to avoid race conditions
+            if container := self._services.get(name):
+                return container
 
-        with self._mutex:
-            if plugin.service.name() not in self._services:
+            # this is where we start lazy loading. we now know the PluginSpec for the API exists,
+            # but the ServiceContainer has not been created.
+            # this control path will be executed once per service
+            plugin = self._load_service_plugin(name)
+            if not plugin or not plugin.service:
+                return None
+
+            with self._mutex:
                 super().add_service(plugin.service)
 
-        return super().get_service_container(name)
+            del self._plugin_load_locks[name]  # we only needed the service lock once
+
+            return self._services.get(name)
 
     @property
     def api_provider_specs(self) -> Dict[str, List[str]]:

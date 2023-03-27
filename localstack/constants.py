@@ -154,8 +154,7 @@ API_ENDPOINT = os.environ.get("API_ENDPOINT") or "https://api.localstack.cloud/v
 # new analytics API endpoint
 ANALYTICS_API = os.environ.get("ANALYTICS_API") or "https://analytics.localstack.cloud/v1"
 
-# environment variable to indicates that this process is running the Web UI
-LOCALSTACK_WEB_PROCESS = "LOCALSTACK_WEB_PROCESS"
+# environment variable to indicates this process should run the localstack infrastructure
 LOCALSTACK_INFRA_PROCESS = "LOCALSTACK_INFRA_PROCESS"
 
 # default AWS region us-east-1

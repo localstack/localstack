@@ -1161,6 +1161,7 @@ class TemplateDeployer:
 
     def resource_config_differs(self, resource_new):
         """Return whether the given resource properties differ from the existing config (for stack updates)."""
+        # TODO: this is broken for default fields when they're added to the properties in the model
         resource_id = resource_new["LogicalResourceId"]
         resource_old = self.resources[resource_id]
         props_old = resource_old["Properties"]

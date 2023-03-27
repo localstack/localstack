@@ -1056,6 +1056,26 @@ class TestLambdaAlias:
         snapshot.match("create_alias_1_1", create_alias_1_1)
         get_alias_1_1 = lambda_client.get_alias(FunctionName=function_name, Name="aliasname1_1")
         snapshot.match("get_alias_1_1", get_alias_1_1)
+        get_function_alias_1_1 = lambda_client.get_function(
+            FunctionName=function_name, Qualifier="aliasname1_1"
+        )
+        snapshot.match("get_function_alias_1_1", get_function_alias_1_1)
+        get_function_byarn_alias_1_1 = lambda_client.get_function(
+            FunctionName=create_alias_1_1["AliasArn"]
+        )
+        snapshot.match("get_function_byarn_alias_1_1", get_function_byarn_alias_1_1)
+
+        with pytest.raises(lambda_client.exceptions.ResourceNotFoundException) as e:
+            lambda_client.get_function(FunctionName=function_name, Qualifier="aliasdoesnotexist")
+        snapshot.match("get_function_alias_notfound_exc", e.value.response)
+
+        with pytest.raises(lambda_client.exceptions.ResourceNotFoundException) as e:
+            lambda_client.get_function(
+                FunctionName=create_alias_1_1["AliasArn"].replace(
+                    "aliasname1_1", "aliasdoesnotexist"
+                )
+            )
+        snapshot.match("get_function_alias_byarn_notfound_exc", e.value.response)
 
         create_alias_1_2 = lambda_client.create_alias(
             FunctionName=function_name,
@@ -1744,6 +1764,11 @@ class TestLambdaEventInvokeConfig:
         )
         snapshot.match("put_published_invokeconfig", put_published_invokeconfig)
 
+        get_published_invokeconfig = lambda_client.get_function_event_invoke_config(
+            FunctionName=function_name, Qualifier=publish_version_result["Version"]
+        )
+        snapshot.match("get_published_invokeconfig", get_published_invokeconfig)
+
         # list paging
         list_paging_single = lambda_client.list_function_event_invoke_configs(
             FunctionName=function_name, MaxItems=1
@@ -2208,8 +2233,11 @@ class TestLambdaProvisionedConcurrency:
     # TODO: test shorthand ARN
     @pytest.mark.aws_validated
     def test_provisioned_concurrency_exceptions(
-        self, lambda_client, create_lambda_function, snapshot
+        self, create_boto_client, create_lambda_function, snapshot
     ):
+        lambda_client = create_boto_client(
+            "lambda", additional_config=Config(parameter_validation=False)
+        )
         function_name = f"lambda_func-{short_uid()}"
         create_lambda_function(
             handler_file=TEST_LAMBDA_PYTHON_ECHO,
@@ -2297,6 +2325,15 @@ class TestLambdaProvisionedConcurrency:
         snapshot.match("delete_provisioned_config_doesnotexist", delete_nonexistent)
 
         ### PUT
+
+        # is provisioned = 0 equal to deleted? => no, invalid
+        with pytest.raises(Exception) as e:
+            lambda_client.put_provisioned_concurrency_config(
+                FunctionName=function_name,
+                Qualifier=function_version,
+                ProvisionedConcurrentExecutions=0,
+            )
+        snapshot.match("put_provisioned_invalid_param_0", e.value.response)
 
         # function does not exist
         with pytest.raises(lambda_client.exceptions.ResourceNotFoundException) as e:
@@ -2916,7 +2953,7 @@ class TestLambdaPermissions:
 
         create_lambda_function(
             func_name=function_name,
-            runtime=Runtime.python3_7,
+            runtime=Runtime.python3_9,
             handler_file=TEST_LAMBDA_PYTHON_ECHO,
         )
 
