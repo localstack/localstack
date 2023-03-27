@@ -136,7 +136,7 @@
 /localstack/aws/api/s3/ @bentsku @macnev2013
 /localstack/services/s3/ @bentsku @macnev2013
 /localstack/services/cloudformation/models/s3.py @bentsku @macnev2013
-/test/integration/s3/ @bentsku @macnev2013
+/tests/integration/s3/ @bentsku @macnev2013
 /tests/unit/test_s3.py @bentsku @macnev2013
 
 # Secretsmanager
