@@ -81,9 +81,16 @@ class TestS3Cors:
         assert response["ResponseMetadata"]["HTTPStatusCode"] == 200
 
         key_url = f"{_bucket_url_vhost(bucket_name=s3_bucket)}/{key}"
+        # TODO: replace with vhost again: investigate
+        # key_url = f"{config.get_edge_url()}/{s3_bucket}/{key}"
 
         response = requests.options(key_url)
-        assert response.status_code == 400
+
+        # debug_assert_s3(s3_client, response, 400)
+        assert response.status_code == 400, (
+            response.url,
+            [bucket["Name"] for bucket in aws_client.s3.list_buckets().get("Buckets", [])],
+        )
         # TODO: match_headers
         # yes, a body in an `options` request
         parsed_response = xmltodict.parse(response.content)
@@ -92,7 +99,10 @@ class TestS3Cors:
         response = requests.options(
             key_url, headers={"Origin": "whatever", "Access-Control-Request-Method": "PUT"}
         )
-        assert response.status_code == 403
+        assert response.status_code == 403, (
+            response.url,
+            [bucket["Name"] for bucket in aws_client.s3.list_buckets().get("Buckets", [])],
+        )
         parsed_response = xmltodict.parse(response.content)
         snapshot.match("options-with-origin", parsed_response)
 
@@ -114,18 +124,26 @@ class TestS3Cors:
         key_url = f"{config.get_edge_url()}/{s3_bucket}/{key}"
 
         response = requests.get(key_url)
-        assert response.status_code == 200
+
+        assert response.status_code == 200, (
+            response.url,
+            [bucket["Name"] for bucket in aws_client.s3.list_buckets().get("Buckets", [])],
+        )
         assert response.text == body
         assert not any("access-control" in header.lower() for header in response.headers)
 
         response = requests.get(key_url, headers={"Origin": "whatever"})
-        assert response.status_code == 200
+        assert response.status_code == 200, (
+            response.url,
+            [bucket["Name"] for bucket in aws_client.s3.list_buckets().get("Buckets", [])],
+        )
+        # assert response.status_code == 200
         assert response.text == body
         assert not any("access-control" in header.lower() for header in response.headers)
 
     @pytest.mark.only_localstack
     def test_cors_no_config_localstack_allowed(self, s3_bucket, aws_client):
-        key = "test-cors-get-no-config"
+        key = "test-cors-get-no-config-localstack-allowed"
         body = "cors-test"
         response = aws_client.s3.put_object(Bucket=s3_bucket, Key=key, Body=body, ACL="public-read")
         assert response["ResponseMetadata"]["HTTPStatusCode"] == 200
@@ -135,16 +153,24 @@ class TestS3Cors:
         response = requests.options(
             key_url, headers={"Origin": origin, "Access-Control-Request-Method": "PUT"}
         )
+        assert response.status_code == 200, (
+            response.url,
+            [bucket["Name"] for bucket in aws_client.s3.list_buckets().get("Buckets", [])],
+        )
         assert response.ok
         assert response.headers["Access-Control-Allow-Origin"] == origin
 
         response = requests.get(key_url, headers={"Origin": origin})
-        assert response.status_code == 200
+        assert response.status_code == 200, (
+            response.url,
+            [bucket["Name"] for bucket in aws_client.s3.list_buckets().get("Buckets", [])],
+        )
+        # assert response.status_code == 200
         assert response.text == body
         assert response.headers["Access-Control-Allow-Origin"] == origin
 
     @pytest.mark.only_localstack
-    def test_cors_list_buckets(self):
+    def test_cors_list_buckets(self, aws_client):
         # ListBuckets is an operation outside S3 CORS configuration management
         # it should follow the default rules of LocalStack
 
@@ -161,13 +187,17 @@ class TestS3Cors:
         assert response.headers["Access-Control-Allow-Origin"] == origin
 
         response = requests.get(url, headers=headers)
-        assert response.status_code == 200
+        assert response.status_code == 200, (
+            response.url,
+            [bucket["Name"] for bucket in aws_client.s3.list_buckets().get("Buckets", [])],
+        )
+        # assert response.status_code == 200
         assert response.headers["Access-Control-Allow-Origin"] == origin
         # assert that we're getting ListBuckets result
         assert b"<ListAllMyBuckets" in response.content
 
     @pytest.mark.aws_validated
-    def test_cors_http_options_non_existent_bucket(self, s3_bucket, snapshot):
+    def test_cors_http_options_non_existent_bucket(self, s3_bucket, snapshot, aws_client):
         snapshot.add_transformer(
             [
                 snapshot.transform.key_value("HostId", reference_replacement=False),
@@ -180,21 +210,33 @@ class TestS3Cors:
         )
 
         response = requests.options(key_url)
-        assert response.status_code == 400
+        assert response.status_code == 400, (
+            response.url,
+            [bucket["Name"] for bucket in aws_client.s3.list_buckets().get("Buckets", [])],
+        )
+        # assert response.status_code == 400
         parsed_response = xmltodict.parse(response.content)
         snapshot.match("options-no-origin", parsed_response)
 
         response = requests.options(key_url, headers={"Origin": "whatever"})
-        assert response.status_code == 403
+        assert response.status_code == 403, (
+            response.url,
+            [bucket["Name"] for bucket in aws_client.s3.list_buckets().get("Buckets", [])],
+        )
+        # assert response.status_code == 403
         parsed_response = xmltodict.parse(response.content)
         snapshot.match("options-with-origin", parsed_response)
 
     @pytest.mark.only_localstack
-    def test_cors_http_options_non_existent_bucket_ls_allowed(self, s3_bucket):
+    def test_cors_http_options_non_existent_bucket_ls_allowed(self, s3_bucket, aws_client):
         key = "test-cors-options-no-bucket"
         key_url = f'{_bucket_url_vhost(bucket_name=f"fake-bucket-{short_uid()}")}/{key}'
         origin = ALLOWED_CORS_ORIGINS[0]
         response = requests.options(key_url, headers={"Origin": origin})
+        assert response.status_code == 200, (
+            response.url,
+            [bucket["Name"] for bucket in aws_client.s3.list_buckets().get("Buckets", [])],
+        )
         assert response.ok
         assert response.headers["Access-Control-Allow-Origin"] == origin
 
@@ -235,8 +277,16 @@ class TestS3Cors:
 
         # no origin, akin to no CORS
         opt_req = requests.options(key_url)
+        assert opt_req.status_code == 400, (
+            opt_req.url,
+            [bucket["Name"] for bucket in aws_client.s3.list_buckets().get("Buckets", [])],
+        )
         match_headers("opt-no-origin", opt_req)
         get_req = requests.get(key_url)
+        assert get_req.status_code == 200, (
+            get_req.url,
+            [bucket["Name"] for bucket in aws_client.s3.list_buckets().get("Buckets", [])],
+        )
         match_headers("get-no-origin", get_req)
 
         # origin from the rule
@@ -244,8 +294,16 @@ class TestS3Cors:
             key_url,
             headers={"Origin": "https://localhost:4200", "Access-Control-Request-Method": "PUT"},
         )
+        assert opt_req.status_code == 200, (
+            opt_req.url,
+            [bucket["Name"] for bucket in aws_client.s3.list_buckets().get("Buckets", [])],
+        )
         match_headers("opt-right-origin", opt_req)
         get_req = requests.get(key_url, headers={"Origin": "https://localhost:4200"})
+        assert get_req.status_code == 200, (
+            get_req.url,
+            [bucket["Name"] for bucket in aws_client.s3.list_buckets().get("Buckets", [])],
+        )
         match_headers("get-right-origin", get_req)
 
         # wrong origin
@@ -253,8 +311,16 @@ class TestS3Cors:
             key_url,
             headers={"Origin": "http://localhost:4200", "Access-Control-Request-Method": "PUT"},
         )
+        assert opt_req.status_code == 403, (
+            opt_req.url,
+            [bucket["Name"] for bucket in aws_client.s3.list_buckets().get("Buckets", [])],
+        )
         match_headers("opt-wrong-origin", opt_req)
         get_req = requests.get(key_url, headers={"Origin": "http://localhost:4200"})
+        assert get_req.status_code == 200, (
+            get_req.url,
+            [bucket["Name"] for bucket in aws_client.s3.list_buckets().get("Buckets", [])],
+        )
         match_headers("get-wrong-origin", get_req)
 
         # test * origin
@@ -274,8 +340,16 @@ class TestS3Cors:
             key_url,
             headers={"Origin": "http://random:1234", "Access-Control-Request-Method": "PUT"},
         )
+        assert opt_req.status_code == 200, (
+            opt_req.url,
+            [bucket["Name"] for bucket in aws_client.s3.list_buckets().get("Buckets", [])],
+        )
         match_headers("opt-random-wildcard-origin", opt_req)
         get_req = requests.get(key_url, headers={"Origin": "http://random:1234"})
+        assert get_req.status_code == 200, (
+            get_req.url,
+            [bucket["Name"] for bucket in aws_client.s3.list_buckets().get("Buckets", [])],
+        )
         match_headers("get-random-wildcard-origin", get_req)
 
     @pytest.mark.aws_validated
@@ -321,14 +395,26 @@ class TestS3Cors:
         opt_req = requests.options(
             key_url, headers={"Origin": origin, "Access-Control-Request-Method": "GET"}
         )
+        assert opt_req.status_code == 200, (
+            opt_req.url,
+            [bucket["Name"] for bucket in aws_client.s3.list_buckets().get("Buckets", [])],
+        )
         match_headers("opt-get", opt_req)
         # try a get with a supposed OPTIONS headers, to check behaviour (AWS is weird about it)
         get_req = requests.get(
             key_url, headers={"Origin": origin, "Access-Control-Request-Method": "PUT"}
         )
+        assert get_req.status_code == 200, (
+            get_req.url,
+            [bucket["Name"] for bucket in aws_client.s3.list_buckets().get("Buckets", [])],
+        )
         match_headers("get-wrong-op", get_req)
 
         get_req = requests.get(key_url, headers={"Origin": origin})
+        assert get_req.status_code == 200, (
+            get_req.url,
+            [bucket["Name"] for bucket in aws_client.s3.list_buckets().get("Buckets", [])],
+        )
         match_headers("get-op", get_req)
 
         # test with method: PUT
@@ -340,9 +426,17 @@ class TestS3Cors:
         opt_req = requests.options(
             new_key_url, headers={"Origin": origin, "Access-Control-Request-Method": "PUT"}
         )
+        assert opt_req.status_code == 403, (
+            opt_req.url,
+            [bucket["Name"] for bucket in aws_client.s3.list_buckets().get("Buckets", [])],
+        )
         match_headers("opt-put", opt_req)
-        get_req = requests.put(new_key_url, headers={"Origin": origin})
-        match_headers("put-op", get_req)
+        put_req = requests.put(new_key_url, headers={"Origin": origin})
+        assert put_req.status_code == 200, (
+            put_req.url,
+            [bucket["Name"] for bucket in aws_client.s3.list_buckets().get("Buckets", [])],
+        )
+        match_headers("put-op", put_req)
 
     @pytest.mark.aws_validated
     @pytest.mark.skip_snapshot_verify(
@@ -391,6 +485,10 @@ class TestS3Cors:
                 "Access-Control-Request-Headers": "x-amz-request-payer",
             },
         )
+        assert opt_req.status_code == 200, (
+            opt_req.url,
+            [bucket["Name"] for bucket in aws_client.s3.list_buckets().get("Buckets", [])],
+        )
         match_headers("opt-get", opt_req)
         # test with two specific headers: x-amz-request-payer & x-amz-expected-bucket-owner
         opt_req = requests.options(
@@ -401,9 +499,17 @@ class TestS3Cors:
                 "Access-Control-Request-Headers": "x-amz-request-payer, x-amz-expected-bucket-owner",
             },
         )
+        assert opt_req.status_code == 200, (
+            opt_req.url,
+            [bucket["Name"] for bucket in aws_client.s3.list_buckets().get("Buckets", [])],
+        )
         match_headers("opt-get-two", opt_req)
         get_req = requests.get(
             key_url, headers={"Origin": origin, "x-amz-request-payer": "requester"}
+        )
+        assert get_req.status_code == 200, (
+            get_req.url,
+            [bucket["Name"] for bucket in aws_client.s3.list_buckets().get("Buckets", [])],
         )
         match_headers("get-op", get_req)
 
@@ -432,6 +538,10 @@ class TestS3Cors:
             },
         )
         match_headers("opt-get-non-allowed", opt_req)
+        assert opt_req.status_code == 403, (
+            opt_req.url,
+            [bucket["Name"] for bucket in aws_client.s3.list_buckets().get("Buckets", [])],
+        )
         assert opt_req.status_code == 403
 
         # test with a specific header: x-amz-expected-bucket-owner, allowed in the config
@@ -442,6 +552,10 @@ class TestS3Cors:
                 "Access-Control-Request-Method": "GET",
                 "Access-Control-Request-Headers": "x-amz-expected-bucket-owner",
             },
+        )
+        assert opt_req.status_code == 200, (
+            opt_req.url,
+            [bucket["Name"] for bucket in aws_client.s3.list_buckets().get("Buckets", [])],
         )
         match_headers("opt-get-allowed", opt_req)
         assert opt_req.ok
@@ -456,6 +570,10 @@ class TestS3Cors:
             },
         )
         # no CORS in the headers
+        assert get_req.status_code == 200, (
+            get_req.url,
+            [bucket["Name"] for bucket in aws_client.s3.list_buckets().get("Buckets", [])],
+        )
         match_headers("get-non-allowed-with-acl", get_req)
 
         # test GET with x-amz-request-payer in non-allowed headers, should work when Access-Control-Request-Headers
@@ -466,6 +584,10 @@ class TestS3Cors:
                 "Origin": origin,
                 "x-amz-request-payer": "requester",
             },
+        )
+        assert get_req.status_code == 200, (
+            get_req.url,
+            [bucket["Name"] for bucket in aws_client.s3.list_buckets().get("Buckets", [])],
         )
         match_headers("get-non-allowed", get_req)
 
@@ -504,6 +626,10 @@ class TestS3Cors:
                 "Origin": "localhost:4566",
                 "Access-Control-Request-Method": "GET",
             },
+        )
+        assert opt_req.status_code == 200, (
+            opt_req.url,
+            [bucket["Name"] for bucket in aws_client.s3.list_buckets().get("Buckets", [])],
         )
         match_headers("opt-get", opt_req)
 
@@ -593,6 +719,10 @@ class TestS3Cors:
                 "Access-Control-Request-Method": "GET",
             },
         )
+        assert opt_req.status_code == 200, (
+            opt_req.url,
+            [bucket["Name"] for bucket in aws_client.s3.list_buckets().get("Buckets", [])],
+        )
         match_headers("opt-get", opt_req)
 
         # get CORS headers from the response not matching the rule because AllowedHeaders is missing from the rule
@@ -603,6 +733,10 @@ class TestS3Cors:
                 "Access-Control-Request-Method": "GET",
                 "Access-Control-Request-Headers": "x-amz-request-payer",
             },
+        )
+        assert opt_req.status_code == 403, (
+            opt_req.url,
+            [bucket["Name"] for bucket in aws_client.s3.list_buckets().get("Buckets", [])],
         )
         match_headers("opt-get-headers", opt_req)
 
