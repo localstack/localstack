@@ -289,11 +289,11 @@ class ClientFactory(ABC):
         service_name: str,
         region_name: str,
         use_ssl: bool,
-        verify: bool,
-        endpoint_url: str,
-        aws_access_key_id: str,
-        aws_secret_access_key: str,
-        aws_session_token: str,
+        verify: Optional[bool],
+        endpoint_url: Optional[str],
+        aws_access_key_id: Optional[str],
+        aws_secret_access_key: Optional[str],
+        aws_session_token: Optional[str],
         config: Config,
     ) -> BaseClient:
         """
@@ -453,6 +453,52 @@ class ExternalClientFactory(ClientFactory):
             aws_secret_access_key=aws_secret_access_key,
             aws_session_token=aws_session_token,
             config=config or self._config,
+        )
+
+
+class ExternalAwsClientFactory(ClientFactory):
+    def get_client(
+        self,
+        service_name: str,
+        region_name: Optional[str],
+        aws_access_key_id: Optional[str] = None,
+        aws_secret_access_key: Optional[str] = None,
+        aws_session_token: Optional[str] = None,
+        endpoint_url: str = None,
+        config: Config = None,
+    ) -> BaseClient:
+        """
+        Build and return client for connections originating outside LocalStack and targeting AWS.
+
+        If either of the access keys or region are set to None, they are loaded from following
+        locations:
+        - AWS environment variables
+        - Credentials file `~/.aws/credentials`
+        - Config file `~/.aws/config`
+
+        :param service_name: Service to build the client for, eg. `s3`
+        :param region_name: Name of the AWS region to be associated with the client
+            If set to None, loads from botocore session.
+        :param aws_access_key_id: Access key to use for the client.
+            If set to None, loads from botocore session.
+        :param aws_secret_access_key: Secret key to use for the client.
+            If set to None, loads from botocore session.
+        :param aws_session_token: Session token to use for the client.
+            Not being used if not set.
+        :param endpoint_url: Full endpoint URL to be used by the client.
+            Defaults to appropriate AWS endpoint.
+        :param config: Boto config for advanced use.
+        """
+        return self._get_client(
+            config=config,
+            service_name=service_name,
+            region_name=region_name or self._get_session_region(),
+            endpoint_url=endpoint_url,
+            use_ssl=True,
+            verify=True,
+            aws_access_key_id=None,
+            aws_secret_access_key=None,
+            aws_session_token=None,
         )
 
 
