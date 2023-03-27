@@ -1,6 +1,6 @@
 {
   "tests/integration/stepfunctions/v2/choice_operators/test_is_operators.py::TestIsOperators::test_is_boolean": {
-    "recorded-date": "03-03-2023, 18:42:05",
+    "recorded-date": "27-03-2023, 22:10:44",
     "recorded-content": {
       "cases": [
         {
@@ -159,6 +159,24 @@
         {
           "input": {
             "Variable": "2012-10-09T19:00:55",
+            "Value": false
+          },
+          "output": {
+            "TestResult.$": "ConditionTrue"
+          }
+        },
+        {
+          "input": {
+            "Variable": "date",
+            "Value": true
+          },
+          "output": {
+            "TestResult.$": "ConditionFalse"
+          }
+        },
+        {
+          "input": {
+            "Variable": "date",
             "Value": false
           },
           "output": {
@@ -321,7 +339,7 @@
     }
   },
   "tests/integration/stepfunctions/v2/choice_operators/test_is_operators.py::TestIsOperators::test_is_null": {
-    "recorded-date": "03-03-2023, 18:42:43",
+    "recorded-date": "27-03-2023, 22:11:23",
     "recorded-content": {
       "cases": [
         {
@@ -480,6 +498,24 @@
         {
           "input": {
             "Variable": "2012-10-09T19:00:55",
+            "Value": false
+          },
+          "output": {
+            "TestResult.$": "ConditionTrue"
+          }
+        },
+        {
+          "input": {
+            "Variable": "date",
+            "Value": true
+          },
+          "output": {
+            "TestResult.$": "ConditionFalse"
+          }
+        },
+        {
+          "input": {
+            "Variable": "date",
             "Value": false
           },
           "output": {
@@ -642,7 +678,7 @@
     }
   },
   "tests/integration/stepfunctions/v2/choice_operators/test_is_operators.py::TestIsOperators::test_is_numeric": {
-    "recorded-date": "03-03-2023, 18:43:22",
+    "recorded-date": "27-03-2023, 22:12:04",
     "recorded-content": {
       "cases": [
         {
@@ -801,6 +837,24 @@
         {
           "input": {
             "Variable": "2012-10-09T19:00:55",
+            "Value": false
+          },
+          "output": {
+            "TestResult.$": "ConditionTrue"
+          }
+        },
+        {
+          "input": {
+            "Variable": "date",
+            "Value": true
+          },
+          "output": {
+            "TestResult.$": "ConditionFalse"
+          }
+        },
+        {
+          "input": {
+            "Variable": "date",
             "Value": false
           },
           "output": {
@@ -963,7 +1017,7 @@
     }
   },
   "tests/integration/stepfunctions/v2/choice_operators/test_is_operators.py::TestIsOperators::test_is_present": {
-    "recorded-date": "03-03-2023, 18:44:28",
+    "recorded-date": "27-03-2023, 22:13:16",
     "recorded-content": {
       "cases": [
         {
@@ -1122,6 +1176,24 @@
         {
           "input": {
             "Variable": "2012-10-09T19:00:55",
+            "Value": false
+          },
+          "output": {
+            "TestResult.$": "ConditionFalse"
+          }
+        },
+        {
+          "input": {
+            "Variable": "date",
+            "Value": true
+          },
+          "output": {
+            "TestResult.$": "ConditionTrue"
+          }
+        },
+        {
+          "input": {
+            "Variable": "date",
             "Value": false
           },
           "output": {
@@ -1284,7 +1356,7 @@
     }
   },
   "tests/integration/stepfunctions/v2/choice_operators/test_is_operators.py::TestIsOperators::test_is_string": {
-    "recorded-date": "03-03-2023, 18:45:40",
+    "recorded-date": "27-03-2023, 22:14:27",
     "recorded-content": {
       "cases": [
         {
@@ -1443,6 +1515,24 @@
         {
           "input": {
             "Variable": "2012-10-09T19:00:55",
+            "Value": false
+          },
+          "output": {
+            "TestResult.$": "ConditionFalse"
+          }
+        },
+        {
+          "input": {
+            "Variable": "date",
+            "Value": true
+          },
+          "output": {
+            "TestResult.$": "ConditionTrue"
+          }
+        },
+        {
+          "input": {
+            "Variable": "date",
             "Value": false
           },
           "output": {

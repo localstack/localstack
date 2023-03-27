@@ -1,5 +1,5 @@
 import logging
-from typing import Optional
+import subprocess
 
 from localstack import config
 from localstack.aws.accounts import get_aws_account_id
@@ -7,6 +7,8 @@ from localstack.services.infra import do_run, log_startup_message
 from localstack.services.stepfunctions.packages import stepfunctions_local_package
 from localstack.utils.aws import aws_stack
 from localstack.utils.common import wait_for_port_open
+from localstack.utils.net import wait_for_port_closed
+from localstack.utils.run import ShellCommandThread, wait_for_process_to_be_killed
 from localstack.utils.sync import retry
 
 LOG = logging.getLogger(__name__)
@@ -15,7 +17,7 @@ LOG = logging.getLogger(__name__)
 MAX_HEAP_SIZE = "256m"
 
 # todo: will be replaced with plugin mechanism
-PROCESS_THREAD = None
+PROCESS_THREAD: ShellCommandThread | subprocess.Popen | None = None
 
 
 # TODO: pass env more explicitly
@@ -66,7 +68,7 @@ def get_command(backend_port):
     return cmd
 
 
-def start_stepfunctions(asynchronous=True, persistence_path: Optional[str] = None):
+def start_stepfunctions(asynchronous: bool = True, persistence_path: str | None = None):
     # TODO: introduce Server abstraction for StepFunctions process
     global PROCESS_THREAD
     backend_port = config.LOCAL_PORT_STEPFUNCTIONS
@@ -91,7 +93,22 @@ def wait_for_stepfunctions():
     retry(check_stepfunctions, sleep=0.5, retries=15)
 
 
-def check_stepfunctions(expect_shutdown=False, print_error=False):
+def stop_stepfunctions():
+    if PROCESS_THREAD or not PROCESS_THREAD.process:
+        return
+    LOG.debug("Restarting StepFunctions process ...")
+
+    pid = PROCESS_THREAD.process.pid
+    PROCESS_THREAD.stop()
+    wait_for_port_closed(config.LOCAL_PORT_STEPFUNCTIONS, sleep_time=0.5, retries=15)
+    try:
+        # TODO: currently failing in CI (potentially due to a defunct process) - need to investigate!
+        wait_for_process_to_be_killed(pid, sleep=0.3, retries=10)
+    except Exception as e:
+        LOG.warning("StepFunctions process not properly terminated: %s", e)
+
+
+def check_stepfunctions(expect_shutdown: bool = False, print_error: bool = False) -> None:
     out = None
     try:
         wait_for_port_open(config.LOCAL_PORT_STEPFUNCTIONS, sleep_time=2)

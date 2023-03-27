@@ -6,12 +6,24 @@ from botocore.exceptions import ClientError
 from localstack.constants import APPLICATION_JSON
 from localstack.utils.http import safe_requests as requests
 from localstack.utils.sync import retry
+from tests.integration.apigateway.apigateway_fixtures import (
+    api_invoke_url,
+    create_rest_api_integration,
+)
 from tests.integration.apigateway.conftest import DEFAULT_STAGE_NAME
-from tests.integration.apigateway_fixtures import api_invoke_url, create_rest_api_integration
 
 
 @pytest.mark.aws_validated
 @pytest.mark.parametrize("ddb_action", ["PutItem", "Query", "Scan"])
+@pytest.mark.skip_snapshot_verify(
+    paths=[
+        "$..headers.connection",
+        "$..headers.x-amz-apigw-id",
+        "$..headers.x-amzn-requestid",
+        "$..headers.x-amzn-trace-id",
+        "$..headers.server",
+    ]
+)
 def test_rest_api_to_dynamodb_integration(
     apigateway_client,
     ddb_action,
@@ -20,6 +32,14 @@ def test_rest_api_to_dynamodb_integration(
     create_rest_api_with_integration,
     snapshot,
 ):
+    snapshot.add_transformer(snapshot.transform.key_value("date", reference_replacement=False))
+    snapshot.add_transformer(
+        snapshot.transform.key_value("content-length", reference_replacement=False)
+    )
+    snapshot.add_transformer(
+        snapshot.transform.key_value("x-amz-apigw-id", reference_replacement=False)
+    )
+
     # create table
     table = dynamodb_create_table()["TableDescription"]
     table_name = table["TableName"]
@@ -63,7 +83,11 @@ def test_rest_api_to_dynamodb_integration(
         url = api_invoke_url(api_id, stage=DEFAULT_STAGE_NAME, path=f"/test?id={id_param}")
         response = requests.post(url)
         assert response.status_code == 200
-        return response.json()
+        return {
+            "status_code": response.status_code,
+            "content": response.json(),
+            "headers": {k.lower(): v for k, v in dict(response.headers).items()},
+        }
 
     def _invoke_with_retries(id_param=None):
         return retry(lambda: _invoke_endpoint(id_param), retries=15, sleep=2)
@@ -88,7 +112,7 @@ def test_rest_api_to_dynamodb_integration(
 
     elif ddb_action == "Scan":
         result = _invoke_with_retries()
-        result["Items"] = sorted(result["Items"], key=lambda x: x["id"]["S"])
+        result["content"]["Items"] = sorted(result["content"]["Items"], key=lambda x: x["id"]["S"])
         snapshot.match("result-scan", result)
 
 

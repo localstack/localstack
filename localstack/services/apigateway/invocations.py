@@ -2,6 +2,7 @@ import json
 import logging
 from typing import Dict
 
+from botocore.exceptions import ClientError
 from jsonschema import ValidationError, validate
 from requests.models import Response
 
@@ -9,6 +10,7 @@ from localstack.constants import APPLICATION_JSON
 from localstack.services.apigateway import helpers
 from localstack.services.apigateway.context import ApiInvocationContext
 from localstack.services.apigateway.helpers import (
+    EMPTY_MODEL,
     extract_path_params,
     extract_query_string_params,
     get_cors_response,
@@ -57,11 +59,15 @@ class RequestValidator:
             return True
 
         # check if there is a validator for this request
-        validator = self.apigateway_client.get_request_validator(
-            restApiId=self.context.api_id, requestValidatorId=resource["requestValidatorId"]
-        )
-        if validator is None:
-            return True
+        try:
+            validator = self.apigateway_client.get_request_validator(
+                restApiId=self.context.api_id, requestValidatorId=resource["requestValidatorId"]
+            )
+        except ClientError as e:
+            if "NotFoundException" in e:
+                return True
+
+            raise
 
         # are we validating the body?
         if self.should_validate_body(validator):
@@ -77,23 +83,34 @@ class RequestValidator:
         return True
 
     def validate_body(self, resource):
-        # we need a model to validate the body
-        if "requestModels" not in resource or not resource["requestModels"]:
-            return False
+        # if there's no model to validate the body, use the Empty model
+        # https://docs.aws.amazon.com/cdk/api/v1/docs/@aws-cdk_aws-apigateway.EmptyModel.html
+        if not (request_models := resource.get("requestModels")):
+            schema_name = EMPTY_MODEL
+        else:
+            schema_name = request_models.get(APPLICATION_JSON, EMPTY_MODEL)
 
-        schema_name = resource["requestModels"].get(APPLICATION_JSON)
-        model = self.apigateway_client.get_model(
-            restApiId=self.context.api_id,
-            modelName=schema_name,
-        )
-        if not model:
+        try:
+            model = self.apigateway_client.get_model(
+                restApiId=self.context.api_id,
+                modelName=schema_name,
+            )
+        except ClientError as e:
+            LOG.exception("An exception occurred while trying to validate the request: %s", e)
             return False
 
         try:
-            validate(instance=json.loads(self.context.data), schema=json.loads(model["schema"]))
+            # if the body is empty, replace it with an empty JSON body
+            validate(
+                instance=json.loads(self.context.data or "{}"), schema=json.loads(model["schema"])
+            )
             return True
         except ValidationError as e:
-            LOG.warning("failed to validate request body", e)
+            LOG.warning("failed to validate request body %s", e)
+            return False
+        except json.JSONDecodeError as e:
+            # TODO: for now, it could also be the loading of the schema failing but it will be validated at some point
+            LOG.warning("failed to validate request body, request data is not valid JSON %s", e)
             return False
 
     # TODO implement parameters and headers
@@ -120,7 +137,8 @@ def run_authorizer(invocation_context: ApiInvocationContext, authorizer: Dict):
 
 
 def authorize_invocation(invocation_context: ApiInvocationContext):
-    client = aws_stack.connect_to_service("apigateway")
+    region_name = invocation_context.region_name or aws_stack.get_region()
+    client = aws_stack.connect_to_service("apigateway", region_name=region_name)
     authorizers = client.get_authorizers(restApiId=invocation_context.api_id, limit=100).get(
         "items", []
     )

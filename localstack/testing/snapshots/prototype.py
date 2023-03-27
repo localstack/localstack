@@ -103,8 +103,6 @@ class SnapshotSession:
             with open(self.file_path, "r+") as fd:
                 try:
                     content = fd.read()
-                    fd.seek(0)
-                    fd.truncate()
                     full_state = json.loads(content or "{}")
                     recorded = {
                         "recorded-date": datetime.now().strftime("%d-%m-%Y, %H:%M:%S"),
@@ -112,6 +110,8 @@ class SnapshotSession:
                     }
                     full_state[self.scope_key] = recorded
                     state_to_dump = json.dumps(full_state, indent=2)
+                    fd.seek(0)
+                    fd.truncate()
                     # add line ending to be compatible with pre-commit-hooks (end-of-file-fixer)
                     fd.write(f"{state_to_dump}\n")
                 except Exception as e:

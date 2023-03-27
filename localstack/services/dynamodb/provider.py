@@ -1,6 +1,7 @@
 import copy
 import json
 import logging
+import os.path
 import random
 import re
 import time
@@ -99,9 +100,8 @@ from localstack.aws.api.dynamodb import (
 from localstack.aws.forwarder import get_request_forwarder_http
 from localstack.constants import AUTH_CREDENTIAL_REGEX, LOCALHOST, TEST_AWS_SECRET_ACCESS_KEY
 from localstack.http import Response
-from localstack.services.dynamodb import server
 from localstack.services.dynamodb.models import DynamoDBStore, dynamodb_stores
-from localstack.services.dynamodb.server import start_dynamodb, wait_for_dynamodb
+from localstack.services.dynamodb.server import DynamodbServer
 from localstack.services.dynamodb.utils import (
     ItemFinder,
     ItemSet,
@@ -114,6 +114,7 @@ from localstack.services.dynamodbstreams.dynamodbstreams_api import (
 )
 from localstack.services.edge import ROUTER
 from localstack.services.plugins import ServiceLifecycleHook
+from localstack.state import AssetDirectory, StateVisitor
 from localstack.utils.aws import arns, aws_stack
 from localstack.utils.aws.arns import extract_account_id_from_arn, extract_region_from_arn
 from localstack.utils.aws.aws_stack import get_valid_regions_for_service
@@ -344,8 +345,34 @@ def modify_context_region(context: RequestContext, region: str):
 
 
 class DynamoDBProvider(DynamodbApi, ServiceLifecycleHook):
+
+    server: DynamodbServer
+    """The instance of the server managing the instance of DynamoDB local"""
+
     def __init__(self):
+        self.server = DynamodbServer()
         self.request_forwarder = get_request_forwarder_http(self.get_forward_url)
+
+    def on_before_start(self):
+        self.server.start_dynamodb()
+
+    def accept_state_visitor(self, visitor: StateVisitor):
+        visitor.visit(dynamodb_stores)
+        visitor.visit(AssetDirectory(os.path.join(config.dirs.data, self.service)))
+
+    def on_before_state_reset(self):
+        self.server.stop_dynamodb()
+
+    def on_before_state_load(self):
+        self.server.stop_dynamodb()
+        self.server = DynamodbServer()
+
+    def on_after_state_reset(self):
+        self.server = DynamodbServer()
+        self.server.start_dynamodb()
+
+    def on_after_state_load(self):
+        self.server.start_dynamodb()
 
     def on_after_init(self):
         # add response processor specific to ddblocal
@@ -406,11 +433,7 @@ class DynamoDBProvider(DynamodbApi, ServiceLifecycleHook):
 
     def get_forward_url(self) -> str:
         """Return the URL of the backend DynamoDBLocal server to forward requests to"""
-        return f"http://{LOCALHOST}:{server.get_server().port}"
-
-    def on_before_start(self):
-        start_dynamodb()
-        wait_for_dynamodb()
+        return f"http://{LOCALHOST}:{self.server.port}"
 
     def handle_shell_ui_redirect(self, request: werkzeug.Request) -> Response:
         headers = {"Refresh": f"0; url={config.service_url('dynamodb')}/shell/index.html"}
@@ -866,7 +889,7 @@ class DynamoDBProvider(DynamodbApi, ServiceLifecycleHook):
                 unprocessed[table_name] = []
             for key in ["PutRequest", "DeleteRequest"]:
                 if any(unprocessed_items[key]):
-                    unprocessed_items[table_name].append({key: unprocessed_items[key]})
+                    unprocessed[table_name].append({key: unprocessed_items[key]})
             for key in list(unprocessed.keys()):
                 if not unprocessed.get(key):
                     del unprocessed[key]

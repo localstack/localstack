@@ -1,10 +1,13 @@
 import logging
+import os
 import re
 import threading
 from datetime import datetime, timezone
 from random import randint
 from typing import Dict, Optional
+from urllib.parse import urlparse
 
+from localstack import config
 from localstack.aws.accounts import get_aws_account_id
 from localstack.aws.api import RequestContext, handler
 from localstack.aws.api.opensearch import (
@@ -55,6 +58,7 @@ from localstack.aws.api.opensearch import (
     NextToken,
     NodeToNodeEncryptionOptions,
     NodeToNodeEncryptionOptionsStatus,
+    OffPeakWindowOptions,
     OpensearchApi,
     OpenSearchPartitionInstanceType,
     OptionState,
@@ -66,6 +70,7 @@ from localstack.aws.api.opensearch import (
     ServiceSoftwareOptions,
     SnapshotOptions,
     SnapshotOptionsStatus,
+    SoftwareUpdateOptions,
     StringList,
     TagList,
     TLSSecurityPolicy,
@@ -88,6 +93,7 @@ from localstack.services.opensearch.cluster_manager import (
     create_cluster_manager,
 )
 from localstack.services.opensearch.models import OpenSearchStore, opensearch_stores
+from localstack.state import AssetDirectory, StateVisitor
 from localstack.utils.aws.request_context import get_region_from_request_context
 from localstack.utils.collections import PaginatedList, remove_none_values_from_dict
 from localstack.utils.serving import Server
@@ -400,6 +406,59 @@ class OpensearchProvider(OpensearchApi):
             ), "The region was not given and it could not be extracted from a request context."
         return opensearch_stores[get_aws_account_id()][region]
 
+    def accept_state_visitor(self, visitor: StateVisitor):
+        visitor.visit(opensearch_stores)
+        visitor.visit(AssetDirectory(os.path.join(config.dirs.data, "opensearch")))
+        visitor.visit(AssetDirectory(os.path.join(config.dirs.data, "elasticsearch")))
+
+    def on_after_state_load(self):
+        """Starts clusters whose metadata has been restored."""
+        for account_id, region_bundle in opensearch_stores.items():
+            for region, store in region_bundle.items():
+                for domain_name, domain_status in store.opensearch_domains.items():
+                    domain_key = DomainKey(domain_name, region, account_id)
+                    if cluster_manager().get(domain_key.arn):
+                        # cluster already restored in previous call to on_after_state_load
+                        continue
+
+                    LOG.info(f"Restoring domain {domain_name} in region {region}.")
+                    try:
+                        preferred_port = None
+                        if config.OPENSEARCH_ENDPOINT_STRATEGY == "port":
+                            # try to parse the previous port to re-use it for the re-created cluster
+                            if "Endpoint" in domain_status:
+                                preferred_port = urlparse(
+                                    f"http://{domain_status['Endpoint']}"
+                                ).port
+
+                        engine_version = domain_status.get("EngineVersion")
+                        domain_endpoint_options = domain_status.get("DomainEndpointOptions", {})
+                        security_options = SecurityOptions.from_input(
+                            domain_status.get("AdvancedSecurityOptions")
+                        )
+
+                        create_cluster(
+                            domain_key=domain_key,
+                            engine_version=engine_version,
+                            domain_endpoint_options=domain_endpoint_options,
+                            security_options=security_options,
+                            preferred_port=preferred_port,
+                        )
+                    except Exception:
+                        LOG.exception(f"Could not restore domain {domain_name} in region {region}.")
+
+    def on_before_state_reset(self):
+        self._stop_clusters()
+
+    def on_before_stop(self):
+        self._stop_clusters()
+
+    def _stop_clusters(self):
+        for account_id, region_bundle in opensearch_stores.items():
+            for region, store in region_bundle.items():
+                for domain_name in store.opensearch_domains.keys():
+                    cluster_manager().remove(DomainKey(domain_name, region, account_id).arn)
+
     def create_domain(
         self,
         context: RequestContext,
@@ -419,6 +478,8 @@ class OpensearchProvider(OpensearchApi):
         advanced_security_options: AdvancedSecurityOptionsInput = None,
         tag_list: TagList = None,
         auto_tune_options: AutoTuneOptionsInput = None,
+        off_peak_window_options: OffPeakWindowOptions = None,
+        software_update_options: SoftwareUpdateOptions = None,
     ) -> CreateDomainResponse:
         store = self.get_store()
 

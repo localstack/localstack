@@ -106,6 +106,7 @@ DoubleWithConstraints = float
 DrainSeconds = int
 EfaSupportedFlag = bool
 EgressOnlyInternetGatewayId = str
+EipAllocationPublicIp = str
 ElasticGpuId = str
 ElasticInferenceAcceleratorCount = int
 ElasticIpAssociationId = str
@@ -140,6 +141,7 @@ Hour = int
 IamInstanceProfileAssociationId = str
 ImageId = str
 ImportImageTaskId = str
+ImportManifestUrl = str
 ImportSnapshotTaskId = str
 ImportTaskId = str
 InferenceDeviceCount = int
@@ -225,8 +227,10 @@ PoolMaxResults = int
 Port = int
 PrefixListMaxResults = int
 PrefixListResourceId = str
+Priority = int
 PrivateIpAddressCount = int
 ProcessorSustainedClockSpeed = float
+ProtocolInt = int
 PublicIpAddress = str
 RamdiskId = str
 ReplaceRootVolumeTaskId = str
@@ -484,6 +488,7 @@ class BootModeType(str):
 class BootModeValues(str):
     legacy_bios = "legacy-bios"
     uefi = "uefi"
+    uefi_preferred = "uefi-preferred"
 
 
 class BundleTaskState(str):
@@ -1046,6 +1051,11 @@ class InstanceAttributeName(str):
 class InstanceAutoRecoveryState(str):
     disabled = "disabled"
     default = "default"
+
+
+class InstanceBootModeValues(str):
+    legacy_bios = "legacy-bios"
+    uefi = "uefi"
 
 
 class InstanceEventWindowState(str):
@@ -1740,6 +1750,25 @@ class InstanceType(str):
     r6idn_16xlarge = "r6idn.16xlarge"
     r6idn_24xlarge = "r6idn.24xlarge"
     r6idn_32xlarge = "r6idn.32xlarge"
+    c7g_metal = "c7g.metal"
+    m7g_medium = "m7g.medium"
+    m7g_large = "m7g.large"
+    m7g_xlarge = "m7g.xlarge"
+    m7g_2xlarge = "m7g.2xlarge"
+    m7g_4xlarge = "m7g.4xlarge"
+    m7g_8xlarge = "m7g.8xlarge"
+    m7g_12xlarge = "m7g.12xlarge"
+    m7g_16xlarge = "m7g.16xlarge"
+    m7g_metal = "m7g.metal"
+    r7g_medium = "r7g.medium"
+    r7g_large = "r7g.large"
+    r7g_xlarge = "r7g.xlarge"
+    r7g_2xlarge = "r7g.2xlarge"
+    r7g_4xlarge = "r7g.4xlarge"
+    r7g_8xlarge = "r7g.8xlarge"
+    r7g_12xlarge = "r7g.12xlarge"
+    r7g_16xlarge = "r7g.16xlarge"
+    r7g_metal = "r7g.metal"
 
 
 class InstanceTypeHypervisor(str):
@@ -3224,6 +3253,39 @@ class AcceptVpcPeeringConnectionResult(TypedDict, total=False):
     VpcPeeringConnection: Optional[VpcPeeringConnection]
 
 
+class PortRange(TypedDict, total=False):
+    From: Optional[Integer]
+    To: Optional[Integer]
+
+
+PortRangeList = List[PortRange]
+
+
+class FirewallStatefulRule(TypedDict, total=False):
+    RuleGroupArn: Optional[ResourceArn]
+    Sources: Optional[ValueStringList]
+    Destinations: Optional[ValueStringList]
+    SourcePorts: Optional[PortRangeList]
+    DestinationPorts: Optional[PortRangeList]
+    Protocol: Optional[String]
+    RuleAction: Optional[String]
+    Direction: Optional[String]
+
+
+ProtocolIntList = List[ProtocolInt]
+
+
+class FirewallStatelessRule(TypedDict, total=False):
+    RuleGroupArn: Optional[ResourceArn]
+    Sources: Optional[ValueStringList]
+    Destinations: Optional[ValueStringList]
+    SourcePorts: Optional[PortRangeList]
+    DestinationPorts: Optional[PortRangeList]
+    Protocols: Optional[ProtocolIntList]
+    RuleAction: Optional[String]
+    Priority: Optional[Priority]
+
+
 class AnalysisComponent(TypedDict, total=False):
     Id: Optional[String]
     Arn: Optional[String]
@@ -3241,11 +3303,6 @@ class TransitGatewayRouteTableRoute(TypedDict, total=False):
 
 
 AnalysisComponentList = List[AnalysisComponent]
-
-
-class PortRange(TypedDict, total=False):
-    From: Optional[Integer]
-    To: Optional[Integer]
 
 
 class AnalysisSecurityGroupRule(TypedDict, total=False):
@@ -3269,10 +3326,12 @@ class AnalysisRouteTableRoute(TypedDict, total=False):
     TransitGatewayId: Optional[String]
     VpcPeeringConnectionId: Optional[String]
     State: Optional[String]
+    CarrierGatewayId: Optional[String]
+    CoreNetworkArn: Optional[ResourceArn]
+    LocalGatewayId: Optional[String]
 
 
 StringList = List[String]
-PortRangeList = List[PortRange]
 
 
 class AnalysisLoadBalancerTarget(TypedDict, total=False):
@@ -3351,14 +3410,46 @@ class Explanation(TypedDict, total=False):
     TransitGatewayAttachment: Optional[AnalysisComponent]
     ComponentAccount: Optional[ComponentAccount]
     ComponentRegion: Optional[ComponentRegion]
+    FirewallStatelessRule: Optional[FirewallStatelessRule]
+    FirewallStatefulRule: Optional[FirewallStatefulRule]
 
 
 ExplanationList = List[Explanation]
 
 
+class RuleOption(TypedDict, total=False):
+    Keyword: Optional[String]
+    Settings: Optional[StringList]
+
+
+RuleOptionList = List[RuleOption]
+
+
+class RuleGroupRuleOptionsPair(TypedDict, total=False):
+    RuleGroupArn: Optional[ResourceArn]
+    RuleOptions: Optional[RuleOptionList]
+
+
+RuleGroupRuleOptionsPairList = List[RuleGroupRuleOptionsPair]
+
+
+class RuleGroupTypePair(TypedDict, total=False):
+    RuleGroupArn: Optional[ResourceArn]
+    RuleGroupType: Optional[String]
+
+
+RuleGroupTypePairList = List[RuleGroupTypePair]
+
+
 class AdditionalDetail(TypedDict, total=False):
     AdditionalDetailType: Optional[String]
     Component: Optional[AnalysisComponent]
+    VpcEndpointService: Optional[AnalysisComponent]
+    RuleOptions: Optional[RuleOptionList]
+    RuleGroupTypePairs: Optional[RuleGroupTypePairList]
+    RuleGroupRuleOptionsPairs: Optional[RuleGroupRuleOptionsPairList]
+    ServiceName: Optional[String]
+    LoadBalancers: Optional[AnalysisComponentList]
 
 
 AdditionalDetailList = List[AdditionalDetail]
@@ -3390,6 +3481,9 @@ class PathComponent(TypedDict, total=False):
     TransitGatewayRouteTableRoute: Optional[TransitGatewayRouteTableRoute]
     Explanations: Optional[ExplanationList]
     ElasticLoadBalancerListener: Optional[AnalysisComponent]
+    FirewallStatelessRule: Optional[FirewallStatelessRule]
+    FirewallStatefulRule: Optional[FirewallStatefulRule]
+    ServiceName: Optional[String]
 
 
 PathComponentList = List[PathComponent]
@@ -3770,7 +3864,7 @@ class AssignPrivateNatGatewayAddressResult(TypedDict, total=False):
 class AssociateAddressRequest(ServiceRequest):
     AllocationId: Optional[AllocationId]
     InstanceId: Optional[InstanceId]
-    PublicIp: Optional[String]
+    PublicIp: Optional[EipAllocationPublicIp]
     AllowReassociation: Optional[Boolean]
     DryRun: Optional[Boolean]
     NetworkInterfaceId: Optional[NetworkInterfaceId]
@@ -5348,7 +5442,7 @@ class CreateCoipPoolResult(TypedDict, total=False):
 
 
 class CreateCustomerGatewayRequest(ServiceRequest):
-    BgpAsn: Integer
+    BgpAsn: Optional[Integer]
     PublicIp: Optional[String]
     CertificateArn: Optional[String]
     Type: GatewayType
@@ -6831,16 +6925,42 @@ class CreateNetworkInsightsAccessScopeResult(TypedDict, total=False):
     NetworkInsightsAccessScopeContent: Optional[NetworkInsightsAccessScopeContent]
 
 
+class RequestFilterPortRange(TypedDict, total=False):
+    FromPort: Optional[Port]
+    ToPort: Optional[Port]
+
+
+class PathRequestFilter(TypedDict, total=False):
+    SourceAddress: Optional[IpAddress]
+    SourcePortRange: Optional[RequestFilterPortRange]
+    DestinationAddress: Optional[IpAddress]
+    DestinationPortRange: Optional[RequestFilterPortRange]
+
+
 class CreateNetworkInsightsPathRequest(ServiceRequest):
     SourceIp: Optional[IpAddress]
     DestinationIp: Optional[IpAddress]
     Source: NetworkInsightsResourceId
-    Destination: NetworkInsightsResourceId
+    Destination: Optional[NetworkInsightsResourceId]
     Protocol: Protocol
     DestinationPort: Optional[Port]
     TagSpecifications: Optional[TagSpecificationList]
     DryRun: Optional[Boolean]
     ClientToken: String
+    FilterAtSource: Optional[PathRequestFilter]
+    FilterAtDestination: Optional[PathRequestFilter]
+
+
+class FilterPortRange(TypedDict, total=False):
+    FromPort: Optional[Port]
+    ToPort: Optional[Port]
+
+
+class PathFilter(TypedDict, total=False):
+    SourceAddress: Optional[IpAddress]
+    SourcePortRange: Optional[FilterPortRange]
+    DestinationAddress: Optional[IpAddress]
+    DestinationPortRange: Optional[FilterPortRange]
 
 
 class NetworkInsightsPath(TypedDict, total=False):
@@ -6856,6 +6976,8 @@ class NetworkInsightsPath(TypedDict, total=False):
     Protocol: Optional[Protocol]
     DestinationPort: Optional[Integer]
     Tags: Optional[TagList]
+    FilterAtSource: Optional[PathFilter]
+    FilterAtDestination: Optional[PathFilter]
 
 
 class CreateNetworkInsightsPathResult(TypedDict, total=False):
@@ -7952,6 +8074,7 @@ class CreateVpcEndpointConnectionNotificationResult(TypedDict, total=False):
 
 class DnsOptionsSpecification(TypedDict, total=False):
     DnsRecordIpType: Optional[DnsRecordIpType]
+    PrivateDnsOnlyForInboundResolverEndpoint: Optional[Boolean]
 
 
 VpcEndpointSecurityGroupIdList = List[SecurityGroupId]
@@ -7990,6 +8113,7 @@ DnsEntrySet = List[DnsEntry]
 
 class DnsOptions(TypedDict, total=False):
     DnsRecordIpType: Optional[DnsRecordIpType]
+    PrivateDnsOnlyForInboundResolverEndpoint: Optional[Boolean]
 
 
 class SecurityGroupIdentifier(TypedDict, total=False):
@@ -10860,6 +10984,7 @@ class Instance(TypedDict, total=False):
     Ipv6Address: Optional[String]
     TpmSupport: Optional[String]
     MaintenanceOptions: Optional[InstanceMaintenanceOptions]
+    CurrentInstanceBootMode: Optional[InstanceBootModeValues]
 
 
 InstanceList = List[Instance]
@@ -13515,7 +13640,7 @@ class DisableVpcClassicLinkResult(TypedDict, total=False):
 
 class DisassociateAddressRequest(ServiceRequest):
     AssociationId: Optional[ElasticIpAssociationId]
-    PublicIp: Optional[String]
+    PublicIp: Optional[EipAllocationPublicIp]
     DryRun: Optional[Boolean]
 
 
@@ -13661,7 +13786,7 @@ class VolumeDetail(TypedDict, total=False):
 class DiskImageDetail(TypedDict, total=False):
     Bytes: Long
     Format: DiskImageFormat
-    ImportManifestUrl: String
+    ImportManifestUrl: ImportManifestUrl
 
 
 class DiskImage(TypedDict, total=False):
@@ -15256,6 +15381,7 @@ class ModifyImageAttributeRequest(ServiceRequest):
     DryRun: Optional[Boolean]
     OrganizationArns: Optional[OrganizationArnStringList]
     OrganizationalUnitArns: Optional[OrganizationalUnitArnStringList]
+    ImdsSupport: Optional[AttributeValue]
 
 
 class ModifyInstanceAttributeRequest(ServiceRequest):
@@ -17183,7 +17309,7 @@ class Ec2Api:
         context: RequestContext,
         allocation_id: AllocationId = None,
         instance_id: InstanceId = None,
-        public_ip: String = None,
+        public_ip: EipAllocationPublicIp = None,
         allow_reassociation: Boolean = None,
         dry_run: Boolean = None,
         network_interface_id: NetworkInterfaceId = None,
@@ -18062,14 +18188,16 @@ class Ec2Api:
         self,
         context: RequestContext,
         source: NetworkInsightsResourceId,
-        destination: NetworkInsightsResourceId,
         protocol: Protocol,
         client_token: String,
         source_ip: IpAddress = None,
         destination_ip: IpAddress = None,
+        destination: NetworkInsightsResourceId = None,
         destination_port: Port = None,
         tag_specifications: TagSpecificationList = None,
         dry_run: Boolean = None,
+        filter_at_source: PathRequestFilter = None,
+        filter_at_destination: PathRequestFilter = None,
     ) -> CreateNetworkInsightsPathResult:
         raise NotImplementedError
 
@@ -21185,7 +21313,7 @@ class Ec2Api:
         self,
         context: RequestContext,
         association_id: ElasticIpAssociationId = None,
-        public_ip: String = None,
+        public_ip: EipAllocationPublicIp = None,
         dry_run: Boolean = None,
     ) -> None:
         raise NotImplementedError
@@ -22173,6 +22301,7 @@ class Ec2Api:
         dry_run: Boolean = None,
         organization_arns: OrganizationArnStringList = None,
         organizational_unit_arns: OrganizationalUnitArnStringList = None,
+        imds_support: AttributeValue = None,
     ) -> None:
         raise NotImplementedError
 

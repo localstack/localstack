@@ -4,6 +4,7 @@ import json
 import logging
 import os
 import re
+import socket
 import time
 from typing import TYPE_CHECKING, Any, Callable, Dict, List, Optional, Tuple
 
@@ -19,8 +20,9 @@ from botocore.exceptions import ClientError
 from botocore.regions import EndpointResolver
 from moto.core import BackendDict, BaseBackend
 from pytest_httpserver import HTTPServer
+from werkzeug import Request, Response
 
-from localstack import config
+from localstack import config, constants
 from localstack.aws.accounts import get_aws_account_id
 from localstack.constants import TEST_AWS_ACCESS_KEY_ID, TEST_AWS_SECRET_ACCESS_KEY
 from localstack.services.stores import (
@@ -31,7 +33,7 @@ from localstack.services.stores import (
     LocalAttribute,
 )
 from localstack.testing.aws.cloudformation_utils import load_template_file, render_template
-from localstack.testing.aws.util import get_lambda_logs
+from localstack.testing.aws.util import get_lambda_logs, is_aws_cloud
 from localstack.utils import testutil
 from localstack.utils.aws import aws_stack
 from localstack.utils.aws.client import SigningHttpClient
@@ -39,6 +41,7 @@ from localstack.utils.aws.resources import create_dynamodb_table
 from localstack.utils.collections import ensure_list
 from localstack.utils.functions import run_safe
 from localstack.utils.http import safe_requests as requests
+from localstack.utils.json import json_safe
 from localstack.utils.net import wait_for_port_open
 from localstack.utils.strings import short_uid, to_str
 from localstack.utils.sync import ShortCircuitWaitException, poll_condition, retry, wait_until
@@ -81,6 +84,9 @@ if TYPE_CHECKING:
     from mypy_boto3_transcribe import TranscribeClient
 
 LOG = logging.getLogger(__name__)
+
+# URL of public HTTP echo server, used primarily for AWS parity/snapshot testing
+PUBLIC_HTTP_ECHO_SERVER_URL = "http://httpbin.org"
 
 
 def _client(service, region_name=None, aws_access_key_id=None, *, additional_config=None):
@@ -1875,6 +1881,41 @@ def ses_verify_identity(ses_client):
 
 
 @pytest.fixture
+def ec2_create_security_group(ec2_client):
+    ec2_sgs = []
+
+    def factory(ports=None, **kwargs):
+        if "GroupName" not in kwargs:
+            kwargs["GroupName"] = f"test-sg-{short_uid()}"
+        security_group = ec2_client.create_security_group(**kwargs)
+
+        permissions = [
+            {
+                "FromPort": port,
+                "IpProtocol": "tcp",
+                "IpRanges": [{"CidrIp": "0.0.0.0/0"}],
+                "ToPort": port,
+            }
+            for port in ports or []
+        ]
+        ec2_client.authorize_security_group_ingress(
+            GroupName=kwargs["GroupName"],
+            IpPermissions=permissions,
+        )
+
+        ec2_sgs.append(security_group["GroupId"])
+        return security_group
+
+    yield factory
+
+    for sg_group_id in ec2_sgs:
+        try:
+            ec2_client.delete_security_group(GroupId=sg_group_id)
+        except Exception as e:
+            LOG.debug("Error cleaning up EC2 security group: %s, %s", sg_group_id, e)
+
+
+@pytest.fixture
 def cleanups(ec2_client):
     cleanup_fns = []
 
@@ -1958,6 +1999,27 @@ def create_rest_apigw():
 
 
 @pytest.fixture
+def create_rest_apigw_openapi():
+    rest_apis = []
+
+    def _create_apigateway_function(**kwargs):
+        region_name = kwargs.pop("region_name", None)
+        apigateway_client = _client("apigateway", region_name)
+
+        response = apigateway_client.import_rest_api(**kwargs)
+        api_id = response.get("id")
+        rest_apis.append((api_id, region_name))
+        return api_id, response
+
+    yield _create_apigateway_function
+
+    for rest_api_id, region_name in rest_apis:
+        with contextlib.suppress(Exception):
+            apigateway_client = _client("apigateway", region_name)
+            apigateway_client.delete_rest_api(restApiId=rest_api_id)
+
+
+@pytest.fixture
 def appsync_create_api(appsync_client):
     graphql_apis = []
 
@@ -1978,3 +2040,97 @@ def appsync_create_api(appsync_client):
             appsync_client.delete_graphql_api(apiId=api)
         except Exception as e:
             LOG.debug(f"Error cleaning up AppSync API: {api}, {e}")
+
+
+@pytest.fixture
+def assert_host_customisation(monkeypatch):
+    hostname_external = f"external-host-{short_uid()}"
+    # `LOCALSTACK_HOSTNAME` is really an internal variable that has been
+    # exposed to the user at some point in the past. It is used by some
+    # services that start resources (e.g. OpenSearch) to determine if the
+    # service has been started correctly (i.e. a health check). This means that
+    # the value must be resolvable by LocalStack or else the service resources
+    # won't start properly.
+    #
+    # One hostname that's always resolvable is the hostname of the process
+    # running LocalStack, so use that here.
+    #
+    # Note: We cannot use `localhost` since we explicitly check that the URL
+    # passed in does not contain `localhost`, unless it is requried to.
+    localstack_hostname = socket.gethostname()
+    monkeypatch.setattr(config, "HOSTNAME_EXTERNAL", hostname_external)
+    monkeypatch.setattr(config, "LOCALSTACK_HOSTNAME", localstack_hostname)
+
+    def asserter(
+        url: str,
+        *,
+        use_hostname_external: bool = False,
+        use_localstack_hostname: bool = False,
+        use_localstack_cloud: bool = False,
+        use_localhost: bool = False,
+        custom_host: Optional[str] = None,
+    ):
+        if use_hostname_external:
+            assert hostname_external in url
+
+            assert localstack_hostname not in url
+            assert constants.LOCALHOST_HOSTNAME not in url
+            assert constants.LOCALHOST not in url
+        elif use_localstack_hostname:
+            assert localstack_hostname in url
+
+            assert hostname_external not in url
+            assert constants.LOCALHOST_HOSTNAME not in url
+            assert constants.LOCALHOST not in url
+        elif use_localstack_cloud:
+            assert constants.LOCALHOST_HOSTNAME in url
+
+            assert hostname_external not in url
+            assert localstack_hostname not in url
+        elif use_localhost:
+            assert constants.LOCALHOST in url
+
+            assert constants.LOCALHOST_HOSTNAME not in url
+            assert hostname_external not in url
+            assert localstack_hostname not in url
+        elif custom_host is not None:
+            assert custom_host in url
+
+            assert constants.LOCALHOST_HOSTNAME not in url
+            assert hostname_external not in url
+            assert localstack_hostname not in url
+        else:
+            raise ValueError("no assertions made")
+
+    yield asserter
+
+
+@pytest.fixture
+def echo_http_server(httpserver: HTTPServer):
+    """Spins up a local HTTP echo server and returns the endpoint URL"""
+
+    def _echo(request: Request) -> Response:
+        result = {
+            "data": request.data or "{}",
+            "headers": dict(request.headers),
+            "url": request.url,
+            "method": request.method,
+        }
+        response_body = json.dumps(json_safe(result))
+        return Response(response_body, status=200)
+
+    httpserver.expect_request("").respond_with_handler(_echo)
+    http_endpoint = httpserver.url_for("/")
+
+    return http_endpoint
+
+
+@pytest.fixture
+def echo_http_server_post(echo_http_server):
+    """
+    Returns an HTTP echo server URL for POST requests that work both locally and for parity tests (against real AWS)
+    """
+    if is_aws_cloud():
+        return f"{PUBLIC_HTTP_ECHO_SERVER_URL}/post"
+
+    return f"{echo_http_server}/post"

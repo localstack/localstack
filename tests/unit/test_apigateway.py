@@ -6,6 +6,7 @@ from unittest.mock import Mock
 
 import boto3
 import pytest
+from botocore.exceptions import ClientError
 
 from localstack import config
 from localstack.constants import APPLICATION_JSON
@@ -165,6 +166,14 @@ class ApiGatewayPathsTest(unittest.TestCase):
     def test_request_validate_body_with_no_request_model(self):
         apigateway_client = self._mock_client()
         apigateway_client.get_request_validator.return_value = {"validateRequestBody": True}
+        empty_schema = json.dumps(
+            {
+                "$schema": "http://json-schema.org/draft-04/schema#",
+                "title": "Empty Schema",
+                "type": "object",
+            }
+        )
+        apigateway_client.get_model.return_value = {"schema": empty_schema}
         ctx = ApiInvocationContext("POST", "/", '{"id":"1"}', {})
         ctx.api_id = "deadbeef"
         ctx.resource = {
@@ -176,12 +185,19 @@ class ApiGatewayPathsTest(unittest.TestCase):
             }
         }
         validator = RequestValidator(ctx, apigateway_client)
-        self.assertFalse(validator.is_request_valid())
+        self.assertTrue(validator.is_request_valid())
+        apigateway_client.get_request_validator.assert_called_with(
+            restApiId="deadbeef", requestValidatorId="112233"
+        )
+        apigateway_client.get_model.assert_called_with(restApiId="deadbeef", modelName="Empty")
 
     def test_request_validate_body_with_no_model_for_schema_name(self):
         apigateway_client = self._mock_client()
         apigateway_client.get_request_validator.return_value = {"validateRequestBody": True}
-        apigateway_client.get_model.return_value = None
+        apigateway_client.get_model.side_effect = ClientError(
+            error_response={"Error": {"Code": "NotFoundException", "Message": ""}},
+            operation_name="GetModel",
+        )
         ctx = ApiInvocationContext("POST", "/", '{"id":"1"}', {})
         ctx.api_id = "deadbeef"
         ctx.resource = {

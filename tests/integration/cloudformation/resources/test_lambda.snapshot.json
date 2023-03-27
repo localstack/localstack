@@ -1355,5 +1355,41 @@
         }
       }
     }
+  },
+  "tests/integration/cloudformation/resources/test_lambda.py::test_multiple_lambda_permissions_for_singlefn": {
+    "recorded-date": "09-03-2023, 22:07:56",
+    "recorded-content": {
+      "policy": {
+        "Policy": {
+          "Id": "default",
+          "Statement": [
+            {
+              "Action": "lambda:InvokeFunction",
+              "Effect": "Allow",
+              "Principal": {
+                "Service": "lambda.amazonaws.com"
+              },
+              "Resource": "arn:aws:lambda:<region>:111111111111:function:<fn-name>",
+              "Sid": "<p1-sid>"
+            },
+            {
+              "Action": "lambda:InvokeFunction",
+              "Effect": "Allow",
+              "Principal": {
+                "Service": "states.amazonaws.com"
+              },
+              "Resource": "arn:aws:lambda:<region>:111111111111:function:<fn-name>",
+              "Sid": "<p2-sid>"
+            }
+          ],
+          "Version": "2012-10-17"
+        },
+        "RevisionId": "<uuid:1>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
   }
 }

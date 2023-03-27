@@ -2,6 +2,8 @@ import functools
 import sys
 from typing import Any, NamedTuple, Optional, Type, Union
 
+from localstack.aws.connect import InternalRequestParameters
+
 if sys.version_info >= (3, 8):
     from typing import Protocol, TypedDict
 else:
@@ -95,6 +97,8 @@ class RequestContext:
     """The response from the AWS emulator backend."""
     service_exception: Optional[ServiceException]
     """The exception the AWS emulator backend may have raised."""
+    internal_request_params: Optional[InternalRequestParameters]
+    """Data sent by client-side LocalStack during internal calls."""
 
     def __init__(self) -> None:
         self.service = None
@@ -105,6 +109,14 @@ class RequestContext:
         self.service_request = None
         self.service_response = None
         self.service_exception = None
+        self.internal_request_params = None
+
+    @property
+    def is_internal_call(self) -> bool:
+        """
+        Whether this request is an internal cross-service call.
+        """
+        return self.internal_request_params is not None
 
     @property
     def service_operation(self) -> Optional[ServiceOperation]:

@@ -30,20 +30,22 @@ TYPE_COMPARISONS: Final[list[tuple[Any, bool]]] = [
     ("2012-10-09T19:00:55", False),  # 17
     ("2012-10-09T19:00:55Z", True),  # 18
     ("2012-10-09T19:00:55Z", False),  # 19
-    ("2023-02-24", True),  # 20
-    ("2023-02-24", False),  # 21
-    ([], True),  # 22
-    ([], False),  # 23
-    ([""], True),  # 24
-    ([""], False),  # 25
-    ({}, True),  # 26
-    ({}, False),  # 27
-    ({"A": 0}, True),  # 28
-    ({"A": 0}, False),  # 29
-    (True, True),  # 30
-    (False, True),  # 31
-    (False, True),  # 32
-    (False, False),  # 33
+    ("2012-10-09T19:00:55+01:00", True),  # 20
+    ("2012-10-09T19:00:55+01:00", False),  # 21
+    ("2023-02-24", True),  # 22
+    ("2023-02-24", False),  # 23
+    ([], True),  # 24
+    ([], False),  # 25
+    ([""], True),  # 26
+    ([""], False),  # 27
+    ({}, True),  # 28
+    ({}, False),  # 29
+    ({"A": 0}, True),  # 30
+    ({"A": 0}, False),  # 31
+    (True, True),  # 32
+    (False, True),  # 33
+    (False, True),  # 34
+    (False, False),  # 35
 ]
 
 

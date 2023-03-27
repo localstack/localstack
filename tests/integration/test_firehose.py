@@ -193,7 +193,8 @@ class TestFirehoseIntegration:
             result = es_client.describe_elasticsearch_domain(DomainName=domain_name)
             return not result["DomainStatus"]["Processing"]
 
-        assert poll_condition(check_domain_state, 30, 1)
+        # if ElasticSearch is not yet installed, it might take some time to download the package before starting the domain
+        assert poll_condition(check_domain_state, 120, 1)
 
         # put kinesis stream record
         kinesis_record = {"target": "hello"}
@@ -357,7 +358,8 @@ class TestFirehoseIntegration:
                 ]
                 return not result
 
-            assert poll_condition(check_domain_state, 30, 1)
+            # if OpenSearch is not yet installed, it might take some time to download the package before starting the domain
+            assert poll_condition(check_domain_state, 120, 1)
 
             # put kinesis stream record
             kinesis_record = {"target": "hello"}

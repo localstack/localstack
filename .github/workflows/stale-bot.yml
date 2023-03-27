@@ -1,4 +1,4 @@
-name: "Triage Stale issues"
+name: Triage Stale Issues
 
 on:
   schedule:

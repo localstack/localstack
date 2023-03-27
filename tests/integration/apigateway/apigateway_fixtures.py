@@ -9,6 +9,8 @@ from localstack.services.apigateway.helpers import host_based_url, path_based_ur
 from localstack.testing.aws.util import is_aws_cloud
 from localstack.utils.aws import aws_stack
 
+# TODO convert the test util functions in this file to pytest fixtures
+
 
 def _client(service, region_name=None, aws_access_key_id=None):
     if os.environ.get("TEST_TARGET") == "AWS_CLOUD":
