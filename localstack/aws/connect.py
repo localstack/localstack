@@ -15,7 +15,7 @@ from boto3.session import Session
 from botocore.client import BaseClient
 from botocore.config import Config
 
-from localstack import config
+from localstack import config as localstack_config
 from localstack.constants import (
     INTERNAL_AWS_ACCESS_KEY_ID,
     INTERNAL_AWS_SECRET_ACCESS_KEY,
@@ -348,7 +348,9 @@ class ClientFactory(ABC):
         - Boto session
         """
         return (
-            get_region_from_request_context() or self._get_session_region() or config.DEFAULT_REGION
+            get_region_from_request_context()
+            or self._get_session_region()
+            or localstack_config.DEFAULT_REGION
         )
 
 
@@ -396,6 +398,9 @@ class InternalClientFactory(ClientFactory):
         :param config: Boto config for advanced use.
         """
 
+        if config is None:
+            config = Config()
+
         return self._get_client(
             service_name=service_name,
             region_name=region_name or self._get_region(),
@@ -405,7 +410,7 @@ class InternalClientFactory(ClientFactory):
             aws_access_key_id=aws_access_key_id or INTERNAL_AWS_ACCESS_KEY_ID,
             aws_secret_access_key=aws_secret_access_key or INTERNAL_AWS_SECRET_ACCESS_KEY,
             aws_session_token=aws_session_token,
-            config=config or self._config,
+            config=self._config.merge(config),
         )
 
 
@@ -442,6 +447,8 @@ class ExternalClientFactory(ClientFactory):
             Defaults to appropriate LocalStack endpoint.
         :param config: Boto config for advanced use.
         """
+        if config is None:
+            config = Config()
 
         return self._get_client(
             service_name=service_name,
@@ -452,7 +459,7 @@ class ExternalClientFactory(ClientFactory):
             aws_access_key_id=aws_access_key_id,
             aws_secret_access_key=aws_secret_access_key,
             aws_session_token=aws_session_token,
-            config=config or self._config,
+            config=self._config.merge(config),
         )
 
 
@@ -489,8 +496,11 @@ class ExternalAwsClientFactory(ClientFactory):
             Defaults to appropriate AWS endpoint.
         :param config: Boto config for advanced use.
         """
+        if config is None:
+            config = Config()
+
         return self._get_client(
-            config=config,
+            config=self._config.merge(config),
             service_name=service_name,
             region_name=region_name or self._get_session_region(),
             endpoint_url=endpoint_url,
