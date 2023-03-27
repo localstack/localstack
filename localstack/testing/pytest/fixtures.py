@@ -1882,7 +1882,7 @@ def cleanups(ec2_client):
 
 
 @pytest.fixture(scope="session")
-def account_id():
+def account_id(aws_client):
     sts_client = aws_client.sts
     return sts_client.get_caller_identity()["Account"]
 
