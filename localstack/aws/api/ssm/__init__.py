@@ -732,6 +732,8 @@ class OperatingSystem(str):
     MACOS = "MACOS"
     RASPBIAN = "RASPBIAN"
     ROCKY_LINUX = "ROCKY_LINUX"
+    ALMA_LINUX = "ALMA_LINUX"
+    AMAZON_LINUX_2023 = "AMAZON_LINUX_2023"
 
 
 class OpsFilterOperatorType(str):
