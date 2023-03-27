@@ -61,21 +61,21 @@ def aws_session():
 
 @pytest.fixture(scope="session")
 def aws_client_factory(aws_session):
-    if os.environ.get("TEST_TARGET") == "AWS_CLOUD":
-        return ExternalAwsClientFactory(session=aws_session)
-    else:
-        return ExternalClientFactory(session=aws_session)
-
-
-@pytest.fixture(scope="session")
-def aws_client(aws_client_factory):
     config = None
     if os.environ.get("TEST_DISABLE_RETRIES_AND_TIMEOUTS"):
         config = botocore.config.Config(
             connect_timeout=1_000, read_timeout=1_000, retries={"total_max_attempts": 1}
         )
 
-    return aws_client_factory(config=config)
+    if os.environ.get("TEST_TARGET") == "AWS_CLOUD":
+        return ExternalAwsClientFactory(session=aws_session, config=config)
+    else:
+        return ExternalClientFactory(session=aws_session, config=config)
+
+
+@pytest.fixture(scope="session")
+def aws_client(aws_client_factory):
+    return aws_client_factory()
 
 
 def _resource(service):
