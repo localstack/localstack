@@ -37,6 +37,7 @@ from localstack.services.events.scheduler import JobScheduler
 from localstack.services.moto import call_moto
 from localstack.services.plugins import ServiceLifecycleHook
 from localstack.utils.aws import aws_stack
+from localstack.utils.aws.arns import event_bus_arn
 from localstack.utils.aws.message_forwarding import send_event_to_target
 from localstack.utils.collections import pick_attributes
 from localstack.utils.common import TMP_FILES, mkdir, save_file, truncate
@@ -439,7 +440,10 @@ def filter_event_based_on_event_format(self, rule_name: str, event: Dict[str, An
 
         return True
 
-    rule_information = self.events_backend.describe_rule(rule_name)
+    rule_information = self.events_backend.describe_rule(
+        rule_name, event_bus_arn(event["event-bus-name"])
+    )
+
     if not rule_information:
         LOG.info('Unable to find rule "%s" in backend: %s', rule_name, rule_information)
         return False
@@ -485,16 +489,16 @@ def events_handler_put_events(self):
     events = list(map(lambda event: {"event": event, "uuid": str(long_uid())}, entries))
 
     _dump_events_to_files(events)
-    event_rules = self.events_backend.rules
 
     for event_envelope in events:
         event = event_envelope["event"]
-        event_bus = event.get("EventBusName") or DEFAULT_EVENT_BUS_NAME
+        event_bus_name = event.get("EventBusName") or DEFAULT_EVENT_BUS_NAME
+        event_rules = self.events_backend.event_buses[event_bus_name].rules
 
         matching_rules = [
             r
             for r in event_rules.values()
-            if r.event_bus_name == event_bus and not r.scheduled_expression
+            if r.event_bus_name == event_bus_name and not r.scheduled_expression
         ]
         if not matching_rules:
             continue
@@ -509,12 +513,17 @@ def events_handler_put_events(self):
             "region": self.region,
             "resources": event.get("Resources", []),
             "detail": json.loads(event.get("Detail", "{}")),
+            "event-bus-name": event_bus_name,
         }
 
         targets = []
         for rule in matching_rules:
             if filter_event_based_on_event_format(self, rule.name, formatted_event):
-                targets.extend(self.events_backend.list_targets_by_rule(rule.name)["Targets"])
+                targets.extend(
+                    self.events_backend.list_targets_by_rule(
+                        rule.name, event_bus_arn(event_bus_name)
+                    )["Targets"]
+                )
 
         # process event
         process_events(formatted_event, targets)
