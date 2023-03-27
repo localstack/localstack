@@ -3673,6 +3673,9 @@ class TestS3:
 
     @pytest.mark.aws_validated
     # there is currently no server side encryption is place in LS, ETag will be different
+    @pytest.mark.skip(
+        reason="Behaviour not implemented yet: https://github.com/localstack/localstack/issues/6882"
+    )
     @pytest.mark.skip_snapshot_verify(paths=["$..ETag"])
     @pytest.mark.skip_snapshot_verify(
         condition=is_old_provider, paths=["$..ContentLanguage", "$..SSEKMSKeyId", "$..VersionId"]
@@ -3717,6 +3720,9 @@ class TestS3:
         snapshot.match("get-obj", response)
 
     @pytest.mark.aws_validated
+    @pytest.mark.skip(
+        reason="Behaviour not implemented yet: https://github.com/localstack/localstack/issues/6882"
+    )
     # there is currently no server side encryption is place in LS, ETag will be different
     @pytest.mark.skip_snapshot_verify(paths=["$..ETag"])
     @pytest.mark.skip_snapshot_verify(
@@ -3780,6 +3786,9 @@ class TestS3:
         snapshot.match("get-obj-after-setting", response)
 
     @pytest.mark.aws_validated
+    @pytest.mark.skip(
+        reason="Behaviour not implemented yet: https://github.com/localstack/localstack/issues/6882"
+    )
     # there is currently no server side encryption is place in LS, ETag will be different
     @pytest.mark.skip_snapshot_verify(paths=["$..ETag"])
     @pytest.mark.skip_snapshot_verify(
