@@ -361,6 +361,8 @@ def handle_prefix_filtering(event_pattern, value):
         if isinstance(element, (int, str)):
             if str(element) == str(value):
                 return True
+            if element in value:
+                return True
         elif isinstance(element, dict) and "prefix" in element:
             if value.startswith(element.get("prefix")):
                 return True
