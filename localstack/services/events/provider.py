@@ -390,7 +390,9 @@ def get_two_lists_intersection(lst1: List, lst2: List) -> List:
 
 
 # TODO: refactor/simplify!
-def filter_event_based_on_event_format(self, rule_name: str, event: Dict[str, Any]):
+def filter_event_based_on_event_format(
+    self, rule_name: str, event_bus_name: str, event: Dict[str, Any]
+):
     def filter_event(event_pattern_filter: Dict[str, Any], event: Dict[str, Any]):
         for key, value in event_pattern_filter.items():
             # match keys in the event in a case-agnostic way
@@ -440,9 +442,7 @@ def filter_event_based_on_event_format(self, rule_name: str, event: Dict[str, An
 
         return True
 
-    rule_information = self.events_backend.describe_rule(
-        rule_name, event_bus_arn(event["event-bus-name"])
-    )
+    rule_information = self.events_backend.describe_rule(rule_name, event_bus_arn(event_bus_name))
 
     if not rule_information:
         LOG.info('Unable to find rule "%s" in backend: %s', rule_name, rule_information)
@@ -503,6 +503,7 @@ def events_handler_put_events(self):
         if not matching_rules:
             continue
 
+        # See https://docs.aws.amazon.com/AmazonS3/latest/userguide/ev-events.html
         formatted_event = {
             "version": "0",
             "id": event_envelope["uuid"],
@@ -513,12 +514,11 @@ def events_handler_put_events(self):
             "region": self.region,
             "resources": event.get("Resources", []),
             "detail": json.loads(event.get("Detail", "{}")),
-            "event-bus-name": event_bus_name,
         }
 
         targets = []
         for rule in matching_rules:
-            if filter_event_based_on_event_format(self, rule.name, formatted_event):
+            if filter_event_based_on_event_format(self, rule.name, event_bus_name, formatted_event):
                 targets.extend(
                     self.events_backend.list_targets_by_rule(
                         rule.name, event_bus_arn(event_bus_name)
