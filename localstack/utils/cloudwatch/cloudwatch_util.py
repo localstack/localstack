@@ -104,17 +104,14 @@ def store_cloudwatch_logs(
 
     if auto_create_group:
         # make sure that the log group exists, create it if not
-        log_groups = logs_client.describe_log_groups()["logGroups"]
-        log_groups = [lg["logGroupName"] for lg in log_groups]
-        if log_group_name not in log_groups:
-            try:
-                logs_client.create_log_group(logGroupName=log_group_name)
-            except Exception as e:
-                if "ResourceAlreadyExistsException" in str(e):
-                    # this can happen in certain cases, possibly due to a race condition
-                    pass
-                else:
-                    raise e
+        try:
+            logs_client.create_log_group(logGroupName=log_group_name)
+        except Exception as e:
+            if "ResourceAlreadyExistsException" in str(e):
+                # the log group already exists, this is fine
+                pass
+            else:
+                raise e
 
     # create a new log stream for this lambda invocation
     try:

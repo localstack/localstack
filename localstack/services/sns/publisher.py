@@ -18,6 +18,7 @@ from localstack import config
 from localstack.aws.api.lambda_ import InvocationType
 from localstack.aws.api.sns import MessageAttributeMap
 from localstack.aws.api.sqs import MessageBodyAttributeMap
+from localstack.aws.connect import connect_to
 from localstack.config import external_service_url
 from localstack.services.sns import constants as sns_constants
 from localstack.services.sns.models import (
@@ -167,16 +168,15 @@ class LambdaTopicPublisher(TopicPublisher):
 
     def _publish(self, context: SnsPublishContext, subscriber: SnsSubscription):
         try:
-            lambda_client = aws_stack.connect_to_service(
-                "lambda", region_name=extract_region_from_arn(subscriber["Endpoint"])
+            region = extract_region_from_arn(subscriber["Endpoint"])
+            lambda_client = connect_to(region_name=region).awslambda.request_metadata(
+                source_arn=subscriber["TopicArn"], service_principal="sns"
             )
             event = self.prepare_message(context.message, subscriber)
             inv_result = lambda_client.invoke(
                 FunctionName=subscriber["Endpoint"],
                 Payload=to_bytes(event),
-                InvocationType=InvocationType.RequestResponse
-                if config.SYNCHRONOUS_SNS_EVENTS
-                else InvocationType.Event,  # DEPRECATED
+                InvocationType=InvocationType.Event,
             )
             status_code = inv_result.get("StatusCode")
             payload = inv_result.get("Payload")
@@ -256,8 +256,11 @@ class SqsTopicPublisher(TopicPublisher):
             return
         try:
             queue_url: str = sqs_queue_url_for_arn(subscriber["Endpoint"])
-            parsed_arn = parse_arn(subscriber["Endpoint"])
-            sqs_client = aws_stack.connect_to_service("sqs", region_name=parsed_arn["region"])
+
+            region = extract_region_from_arn(subscriber["Endpoint"])
+            sqs_client = connect_to(region_name=region).sqs.request_metadata(
+                source_arn=subscriber["TopicArn"], service_principal="sns"
+            )
             kwargs = {}
             if message_context.message_group_id:
                 kwargs["MessageGroupId"] = message_context.message_group_id
@@ -361,8 +364,11 @@ class SqsBatchTopicPublisher(SqsTopicPublisher):
 
         try:
             queue_url = sqs_queue_url_for_arn(subscriber["Endpoint"])
-            parsed_arn = parse_arn(subscriber["Endpoint"])
-            sqs_client = aws_stack.connect_to_service("sqs", region_name=parsed_arn["region"])
+
+            region = extract_region_from_arn(subscriber["Endpoint"])
+            sqs_client = connect_to(region_name=region).sqs.request_metadata(
+                source_arn=subscriber["TopicArn"], service_principal="sns"
+            )
             response = sqs_client.send_message_batch(QueueUrl=queue_url, Entries=entries)
 
             for message_ctx in context.messages:
