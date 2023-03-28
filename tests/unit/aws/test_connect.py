@@ -283,24 +283,15 @@ class TestClientFactory:
         endpoint_url = create_dummy_request_parameter_gateway([echo_request_handler])
 
         # TODO this should be extracted into a utility for the next iteration
-        response = (
-            factory(endpoint_url=endpoint_url)
-            .sts.request_metadata(service_principal="apigateway")
-            .assume_role(
-                RoleArn="arn:aws:iam::000000000000:role/test-role",
-                RoleSessionName="test-session",
-            )
+        client = factory.with_assumed_role(
+            role_arn="arn:aws:iam::000000000000:role/test-role",
+            service_principal="apigateway",
+            endpoint_url=endpoint_url,
         )
         assert test_params == {"is_internal": True, "service_principal": "apigateway"}
-        credentials = response["Credentials"]
         test_params = {}
 
-        factory(
-            endpoint_url=endpoint_url,
-            aws_access_key_id=credentials["AccessKeyId"],
-            aws_secret_access_key=credentials["SecretAccessKey"],
-            aws_session_token=credentials["SessionToken"],
-        ).awslambda.list_functions()
+        client.awslambda.list_functions()
 
         assert test_params == {"is_internal": True, "access_key_id": "ASIAQAAAAAAAKZ4L3POJ"}
 
