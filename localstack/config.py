@@ -494,32 +494,9 @@ HOSTNAME_EXTERNAL = os.environ.get("HOSTNAME_EXTERNAL", "").strip() or LOCALHOST
 LOCALSTACK_HOSTNAME = os.environ.get("LOCALSTACK_HOSTNAME", "").strip() or LOCALHOST
 
 
-def parse_hostname_and_ip(
-    value: str, default_host: str, default_port: int = constants.DEFAULT_PORT_EDGE
-) -> str:
-    """
-    Given a string that should contain a <hostname>:<port>, if either are
-    absent then use the defaults.
-    """
-    host, port = default_host, default_port
-    if ":" in value:
-        hostname, port_s = value.split(":", 1)
-        if hostname.strip():
-            host = hostname.strip()
-        try:
-            port = int(port_s)
-        except (ValueError, TypeError):
-            pass
-    else:
-        if value.strip():
-            host = value.strip()
-
-    return f"{host}:{port}"
-
-
 def populate_legacy_edge_configuration(
     environment: Dict[str, str]
-) -> Tuple[str, str, str, int, int]:
+) -> Tuple["HostAndPort", List["HostAndPort"], str, int, int]:
     if is_in_docker:
         default_ip = "0.0.0.0"
     else:
@@ -532,35 +509,23 @@ def populate_legacy_edge_configuration(
     # populate LOCALSTACK_HOST first since GATEWAY_LISTEN may be derived from LOCALSTACK_HOST
     localstack_host = localstack_host_raw
     if localstack_host is None:
-        localstack_host = f"{constants.LOCALHOST_HOSTNAME}:{constants.DEFAULT_PORT_EDGE}"
+        localstack_host = HostAndPort(
+            host=constants.LOCALHOST_HOSTNAME, port=constants.DEFAULT_PORT_EDGE
+        )
     else:
-        localstack_host = parse_hostname_and_ip(
+        localstack_host = HostAndPort.parse(
             localstack_host,
             default_host=constants.LOCALHOST_HOSTNAME,
         )
 
-    gateway_listen = gateway_listen_raw
-    if gateway_listen is None:
-        # default to existing behaviour
-        try:
-            port = int(localstack_host.split(":", 1)[-1])
-        except ValueError:
-            port = constants.DEFAULT_PORT_EDGE
-        gateway_listen = f"{default_ip}:{port}"
+    # parse gateway listen from multiple components
+    if gateway_listen_raw is not None:
+        gateway_listen = []
+        for address in gateway_listen_raw.split(","):
+            gateway_listen.append(HostAndPort.parse(address.strip(), default_host=default_ip))
     else:
-        components = gateway_listen.split(",")
-        if len(components) > 1:
-            LOG.warning("multiple GATEWAY_LISTEN addresses are not currently supported")
-
-        gateway_listen = ",".join(
-            [
-                parse_hostname_and_ip(
-                    component.strip(),
-                    default_host=default_ip,
-                )
-                for component in components
-            ]
-        )
+        # default to existing behaviour
+        gateway_listen = [HostAndPort(host=default_ip, port=localstack_host.port)]
 
     assert gateway_listen is not None
     assert localstack_host is not None
@@ -575,8 +540,8 @@ def populate_legacy_edge_configuration(
 
     # derive legacy variables from GATEWAY_LISTEN unless GATEWAY_LISTEN is not given and
     # legacy variables are
-    edge_bind_host = legacy_fallback("EDGE_BIND_HOST", get_gateway_listen(gateway_listen)[0].host)
-    edge_port = int(legacy_fallback("EDGE_PORT", get_gateway_listen(gateway_listen)[0].port))
+    edge_bind_host = legacy_fallback("EDGE_BIND_HOST", gateway_listen[0].host)
+    edge_port = int(legacy_fallback("EDGE_PORT", gateway_listen[0].port))
     edge_port_http = int(
         legacy_fallback("EDGE_PORT_HTTP", 0),
     )
@@ -587,18 +552,48 @@ def populate_legacy_edge_configuration(
 @dataclass
 class HostAndPort:
     host: str
-    port: int
+    port: Optional[int]
 
     @classmethod
-    def parse(cls, input: str) -> "HostAndPort":
-        host, port_s = input.split(":")
-        return cls(host=host, port=int(port_s))
+    def parse(
+        cls,
+        input: str,
+        default_host: Optional[str] = None,
+        default_port: int = constants.DEFAULT_PORT_EDGE,
+    ) -> "HostAndPort":
+        host, port = default_host, default_port
+        if ":" in input:
+            hostname, port_s = input.split(":", 1)
+            if hostname.strip():
+                host = hostname.strip()
+            try:
+                port = int(port_s)
+            except (ValueError, TypeError):
+                pass
+        else:
+            if input.strip():
+                host = input.strip()
 
-    def __eq__(self, other: Any) -> bool:
-        if not isinstance(other, self.__class__):
-            return False
+        # validation
+        if host is None:
+            raise ValueError("could not parse hostname")
 
-        return self.host == other.host and self.port == other.port
+        if port < 0 or port >= 2**16:
+            raise ValueError("port out of range")
+
+        return cls(host=host, port=port)
+
+    # easier tests
+    def __eq__(self, other: "str | HostAndPort") -> bool:
+        if isinstance(other, self.__class__):
+            return self.host == other.host and self.port == other.port
+        elif isinstance(other, str):
+            return self == self.__class__.parse(other)
+        else:
+            raise TypeError(f"cannot compare {self.__class__} to {other.__class__}")
+
+    def __str__(self) -> str:
+        return f"{self.host}:{self.port}"
 
 
 def get_gateway_listen(gateway_listen: str) -> List[HostAndPort]:

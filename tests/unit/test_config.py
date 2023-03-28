@@ -5,6 +5,10 @@ from hypothesis import given
 from hypothesis.strategies import integers, sampled_from, text
 
 from localstack import config
+from localstack.config import HostAndPort
+
+HOSTNAME_CHARACTERS = string.ascii_letters + string.digits + "-" + "."
+SAMPLER = sampled_from(HOSTNAME_CHARACTERS)
 
 HOSTNAME_CHARACTERS = string.ascii_letters + string.digits + "-" + "."
 SAMPLER = sampled_from(HOSTNAME_CHARACTERS)
@@ -101,7 +105,7 @@ class TestEdgeVariablesDerivedCorrectly:
         ) = config.populate_legacy_edge_configuration(environment)
 
         assert ls_host == "localhost.localstack.cloud:4566"
-        assert gateway_listen == f"{default_ip}:4566"
+        assert gateway_listen == [HostAndPort(host=default_ip, port=4566)]
         assert edge_port == 4566
         assert edge_port_http == 0
         assert edge_bind_host == default_ip
@@ -116,7 +120,7 @@ class TestEdgeVariablesDerivedCorrectly:
             edge_port_http,
         ) = config.populate_legacy_edge_configuration(environment)
 
-        assert gateway_listen == "192.168.0.1:4566"
+        assert gateway_listen == [HostAndPort(host="192.168.0.1", port=4566)]
         assert edge_port == 4566
         assert edge_port_http == 0
         assert edge_bind_host == "192.168.0.1"
@@ -131,7 +135,7 @@ class TestEdgeVariablesDerivedCorrectly:
             edge_port_http,
         ) = config.populate_legacy_edge_configuration(environment)
 
-        assert gateway_listen == f"{default_ip}:9999"
+        assert gateway_listen == [HostAndPort(host=default_ip, port=9999)]
         assert edge_port == 9999
         assert edge_port_http == 0
         assert edge_bind_host == default_ip
@@ -146,7 +150,7 @@ class TestEdgeVariablesDerivedCorrectly:
             edge_port_http,
         ) = config.populate_legacy_edge_configuration(environment)
 
-        assert gateway_listen == "192.168.0.1:9999"
+        assert gateway_listen == [HostAndPort(host="192.168.0.1", port=9999)]
         assert edge_port == 9999
         assert edge_port_http == 0
         assert edge_bind_host == "192.168.0.1"
@@ -161,8 +165,8 @@ class TestEdgeVariablesDerivedCorrectly:
             edge_port_http,
         ) = config.populate_legacy_edge_configuration(environment)
 
-        assert ls_host == "hostname:9999"
-        assert gateway_listen == f"{default_ip}:9999"
+        assert ls_host == HostAndPort(host="hostname", port=9999)
+        assert gateway_listen == [HostAndPort(host=default_ip, port=9999)]
         assert edge_port == 9999
         assert edge_port_http == 0
         assert edge_bind_host == default_ip
@@ -177,8 +181,8 @@ class TestEdgeVariablesDerivedCorrectly:
             edge_port_http,
         ) = config.populate_legacy_edge_configuration(environment)
 
-        assert ls_host == "foobar:4566"
-        assert gateway_listen == f"{default_ip}:4566"
+        assert ls_host == HostAndPort(host="foobar", port=4566)
+        assert gateway_listen == [HostAndPort(host=default_ip, port=4566)]
         assert edge_port == 4566
         assert edge_port_http == 0
         assert edge_bind_host == default_ip
@@ -193,7 +197,10 @@ class TestEdgeVariablesDerivedCorrectly:
             edge_port_http,
         ) = config.populate_legacy_edge_configuration(environment)
 
-        assert gateway_listen == "0.0.0.0:9999,0.0.0.0:443"
+        assert gateway_listen == [
+            HostAndPort(host="0.0.0.0", port=9999),
+            HostAndPort(host="0.0.0.0", port=443),
+        ]
         # take the first value
         assert edge_port == 9999
         assert edge_port_http == 0
@@ -239,7 +246,7 @@ class TestEdgeVariablesDerivedCorrectly:
             edge_port_http,
         ) = config.populate_legacy_edge_configuration(environment)
 
-        assert gateway_listen == f"{default_ip}:4566"
+        assert gateway_listen == [HostAndPort(host=default_ip, port=4566)]
         assert edge_bind_host == "192.168.0.1"
         assert edge_port == 10101
         assert edge_port_http == 20202
