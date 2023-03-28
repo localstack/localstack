@@ -27,6 +27,7 @@ from localstack.services.awslambda.packages import awslambda_runtime_package
 from localstack.utils.container_networking import get_main_container_name
 from localstack.utils.container_utils.container_client import (
     ContainerConfiguration,
+    ContainerException,
     DockerPlatform,
     PortMappings,
     VolumeBind,
@@ -383,8 +384,17 @@ class DockerRuntimeExecutor(RuntimeExecutor):
             platform = docker_platform(function_version.config.architectures[0])
             # Pull image for a given platform upon function creation such that invocations do not time out.
             if (image_name, platform) not in PULLED_IMAGES:
-                CONTAINER_CLIENT.pull_image(image_name, platform)
-                PULLED_IMAGES.add((image_name, platform))
+                try:
+                    CONTAINER_CLIENT.pull_image(image_name, platform)
+                    PULLED_IMAGES.add((image_name, platform))
+                except ContainerException as e:
+                    LOG.error(
+                        "Failed to pull Docker image because Docker is not available in the LocalStack container"
+                        "but required to run Lambda functions. Please add the Docker volume mount "
+                        '"/var/run/docker.sock:/var/run/docker.sock" to your LocalStack startup. '
+                        "https://docs.localstack.cloud/references/lambda-provider-v2/#docker-not-available"
+                    )
+                    raise e
             if config.LAMBDA_PREBUILD_IMAGES:
                 target_path = function_version.config.code.get_unzipped_code_location()
                 prepare_image(target_path, function_version)
@@ -406,7 +416,7 @@ class DockerRuntimeExecutor(RuntimeExecutor):
     def validate_environment(cls) -> bool:
         if not CONTAINER_CLIENT.has_docker():
             LOG.warning(
-                "WARNING: Docker not available in the LocalStack container but required for executing Lambda "
+                "WARNING: Docker not available in the LocalStack container but required to run Lambda "
                 'functions. Please add the Docker volume mount "/var/run/docker.sock:/var/run/docker.sock" to your '
                 "LocalStack startup. https://docs.localstack.cloud/references/lambda-provider-v2/#docker-not-available"
             )
