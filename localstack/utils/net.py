@@ -3,7 +3,7 @@ import re
 import socket
 import threading
 from contextlib import closing
-from typing import List, Optional, Union
+from typing import Any, List, MutableMapping, NamedTuple, Optional, Union
 from urllib.parse import urlparse
 
 import dns.resolver
@@ -18,6 +18,26 @@ LOG = logging.getLogger(__name__)
 IP_REGEX = (
     r"^(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$"
 )
+
+
+class Port(NamedTuple):
+    """Represents a network port, with port number and protocol (TCP/UDP)"""
+
+    port: int
+    """the port number"""
+    protocol: str
+    """network protocol name (usually 'tcp' or 'udp')"""
+
+    @classmethod
+    def wrap(cls, port: "IntOrPort") -> "Port":
+        """Return the given port as a Port object, using 'tcp' as the default protocol."""
+        if isinstance(port, Port):
+            return port
+        return Port(port=port, protocol="tcp")
+
+
+# simple helper type to encapsulate int/Port argument types
+IntOrPort = Union[int, Port]
 
 
 def is_port_open(
@@ -88,7 +108,7 @@ def is_port_open(
 def wait_for_port_open(
     port: int, http_path: str = None, expect_success=True, retries=10, sleep_time=0.5
 ):
-    """Ping the given network port until it becomes available (for a given number of retries).
+    """Ping the given TCP network port until it becomes available (for a given number of retries).
     If 'http_path' is set, make a GET request to this path and assert a non-error response."""
     return wait_for_port_status(
         port,
@@ -120,7 +140,7 @@ def wait_for_port_status(
     sleep_time=0.5,
     expect_closed=False,
 ):
-    """Ping the given network port until it becomes (un)available (for a given number of retries)."""
+    """Ping the given TCP network port until it becomes (un)available (for a given number of retries)."""
 
     def check():
         status = is_port_open(port, http_path=http_path, expect_success=expect_success)
@@ -133,28 +153,37 @@ def wait_for_port_status(
     return retry(check, sleep=sleep_time, retries=retries)
 
 
-def port_can_be_bound(port: int) -> bool:
-    """Return whether a local port can be bound to. Note that this is a stricter check
+def port_can_be_bound(port: IntOrPort) -> bool:
+    """
+    Return whether a local port (TCP or UDP) can be bound to. Note that this is a stricter check
     than is_port_open(...) above, as is_port_open() may return False if the port is
-    not accessible (i.e., does not respond), yet cannot be bound to."""
+    not accessible (i.e., does not respond), yet cannot be bound to.
+    """
     try:
-        tcp = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        tcp.bind(("", port))
+        port = Port.wrap(port)
+        if port.protocol == "tcp":
+            sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        elif port.protocol == "udp":
+            sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        else:
+            LOG.debug("Unsupported network protocol '%s' for port check", port.protocol)
+            return False
+        sock.bind(("", port.port))
         return True
     except Exception:
         return False
 
 
-def get_free_tcp_port(blacklist: List[int] = None) -> int:
-    blacklist = blacklist or []
+def get_free_tcp_port(blocklist: List[int] = None) -> int:
+    blocklist = blocklist or []
     for i in range(10):
         tcp = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         tcp.bind(("", 0))
         addr, port = tcp.getsockname()
         tcp.close()
-        if port not in blacklist:
+        if port not in blocklist:
             return port
-    raise Exception("Unable to determine free TCP port with blacklist %s" % blacklist)
+    raise Exception(f"Unable to determine free TCP port with blocklist {blocklist}")
 
 
 def resolve_hostname(hostname: str) -> Optional[str]:
@@ -193,12 +222,12 @@ class PortRange:
 
     def __init__(self, start: int, end: int):
         # cache for locally available ports (ports are reserved for a short period of a few seconds)
-        self._ports_cache = CustomExpiryTTLCache(maxsize=100, ttl=6)
+        self._ports_cache: MutableMapping[Port, Any] = CustomExpiryTTLCache(maxsize=100, ttl=6)
         self._ports_lock = threading.RLock()
         self.start = start
         self.end = end
 
-    def reserve_port(self, port: int = None, duration: int = None) -> int:
+    def reserve_port(self, port: Optional[IntOrPort] = None, duration: Optional[int] = None) -> int:
         """
         Reserves the given port (if it is still free). If the given port is None, it reserves a free port from the
         configured port range for external services. If a port is given, it has to be within the configured
@@ -209,7 +238,8 @@ class PortRange:
                     reserved, or if the given port is none and there is no free port in the configured service range.
         """
         ports_range = range(self.start, self.end)
-        if port is not None and port not in ports_range:
+        port = Port.wrap(port) if port is not None else port
+        if port is not None and port.port not in ports_range:
             raise PortNotAvailableException(
                 f"The requested port ({port}) is not in the port range ({ports_range})."
             )
@@ -228,16 +258,18 @@ class PortRange:
             list(self._ports_cache.keys()),
         )
 
-    def is_port_reserved(self, port: int) -> bool:
+    def is_port_reserved(self, port: IntOrPort) -> bool:
+        port = Port.wrap(port)
         return self._ports_cache.get(port) is not None
 
-    def _try_reserve_port(self, port: int, duration: int) -> int:
+    def _try_reserve_port(self, port: IntOrPort, duration: int) -> int:
         """Checks if the given port is currently not reserved and can be bound."""
+        port = Port.wrap(port)
         if not self.is_port_reserved(port) and port_can_be_bound(port):
             # reserve the port for a short period of time
             self._ports_cache[port] = "__reserved__"
             if duration:
                 self._ports_cache.set_expiry(port, duration)
-            return port
+            return port.port
         else:
             raise PortNotAvailableException(f"The given port ({port}) is already reserved.")
