@@ -568,50 +568,50 @@ class S3Provider(S3Api, ServiceLifecycleHook):
         request: ListMultipartUploadsRequest,
     ) -> ListMultipartUploadsResult:
 
-        try:
-            response: ListMultipartUploadsResult = call_moto(context)
-        except NotImplementedError:
-            # TODO: implement KeyMarker and UploadIdMarker (using sort)
-            # implement Delimiter and MaxUploads
-            # see https://docs.aws.amazon.com/AmazonS3/latest/API/API_ListMultipartUploads.html
-            bucket = request["Bucket"]
-            moto_backend = get_moto_s3_backend(context)
-            multiparts = list(moto_backend.get_all_multiparts(bucket).values())
-            if (prefix := request.get("Prefix")) is not None:
-                multiparts = [upload for upload in multiparts if upload.key_name.startswith(prefix)]
+        # TODO: implement KeyMarker and UploadIdMarker (using sort)
+        # implement Delimiter and MaxUploads
+        # see https://docs.aws.amazon.com/AmazonS3/latest/API/API_ListMultipartUploads.html
+        bucket = request["Bucket"]
+        moto_backend = get_moto_s3_backend(context)
+        # getting the bucket from moto to raise an error if the bucket does not exist
+        get_bucket_from_moto(moto_backend=moto_backend, bucket=bucket)
 
-            # TODO: this is taken from moto template, hardcoded strings.
-            uploads = [
-                MultipartUpload(
-                    Key=upload.key_name,
-                    UploadId=upload.id,
-                    Initiator={
-                        "ID": f"arn:aws:iam::{context.account_id}:user/user1-11111a31-17b5-4fb7-9df5-b111111f13de",
-                        "DisplayName": "user1-11111a31-17b5-4fb7-9df5-b111111f13de",
-                    },
-                    Owner={
-                        "ID": "75aa57f09aa0c8caeab4f8c24e99d10f8e7faeebf76c078efc7c6caea54ba06a",
-                        "DisplayName": "webfile",
-                    },
-                    StorageClass=StorageClass.STANDARD,  # hardcoded in moto
-                    Initiated=datetime.datetime.now(),  # hardcoded in moto
-                )
-                for upload in multiparts
-            ]
+        multiparts = list(moto_backend.get_all_multiparts(bucket).values())
+        if (prefix := request.get("Prefix")) is not None:
+            multiparts = [upload for upload in multiparts if upload.key_name.startswith(prefix)]
 
-            response = ListMultipartUploadsResult(
-                Bucket=request["Bucket"],
-                MaxUploads=request.get("MaxUploads") or 1000,
-                IsTruncated=False,
-                Uploads=uploads,
-                UploadIdMarker=request.get("UploadIdMarker") or "",
-                KeyMarker=request.get("KeyMarker") or "",
+        # TODO: this is taken from moto template, hardcoded strings.
+        uploads = [
+            MultipartUpload(
+                Key=upload.key_name,
+                UploadId=upload.id,
+                Initiator={
+                    "ID": f"arn:aws:iam::{context.account_id}:user/user1-11111a31-17b5-4fb7-9df5-b111111f13de",
+                    "DisplayName": "user1-11111a31-17b5-4fb7-9df5-b111111f13de",
+                },
+                Owner={
+                    "ID": "75aa57f09aa0c8caeab4f8c24e99d10f8e7faeebf76c078efc7c6caea54ba06a",
+                    "DisplayName": "webfile",
+                },
+                StorageClass=StorageClass.STANDARD,  # hardcoded in moto
+                Initiated=datetime.datetime.now(),  # hardcoded in moto
             )
+            for upload in multiparts
+        ]
 
-            if "Delimiter" in request:
-                response["Delimiter"] = request["Delimiter"]
+        response = ListMultipartUploadsResult(
+            Bucket=request["Bucket"],
+            MaxUploads=request.get("MaxUploads") or 1000,
+            IsTruncated=False,
+            Uploads=uploads,
+            UploadIdMarker=request.get("UploadIdMarker") or "",
+            KeyMarker=request.get("KeyMarker") or "",
+        )
 
-            # TODO: add NextKeyMarker and NextUploadIdMarker to response once implemented
+        if "Delimiter" in request:
+            response["Delimiter"] = request["Delimiter"]
+
+        # TODO: add NextKeyMarker and NextUploadIdMarker to response once implemented
 
         return response
 
