@@ -1,23 +1,23 @@
+import argparse
 import gzip
 import json
 import logging
-import os
 import re
 import subprocess
 import sys
 import threading
-from typing import Dict, List, Optional
-from urllib.parse import urlparse
+from typing import Callable, Dict, List, Optional, Tuple, TypeVar
 
 from requests.models import Response
 
-from localstack import config
+from localstack import config, constants
 from localstack.aws.accounts import (
     get_account_id_from_access_key_id,
     set_aws_access_key_id,
     set_aws_account_id,
 )
 from localstack.aws.protocol.service_router import determine_aws_service_name
+from localstack.config import HostAndPort
 from localstack.constants import (
     HEADER_LOCALSTACK_ACCOUNT_ID,
     HEADER_LOCALSTACK_EDGE_URL,
@@ -48,7 +48,9 @@ from localstack.utils.run import is_root, run
 from localstack.utils.server.http2_server import HTTPErrorResponse
 from localstack.utils.server.proxy_server import start_tcp_proxy
 from localstack.utils.strings import to_bytes, truncate
-from localstack.utils.threads import TMP_THREADS, start_thread
+from localstack.utils.threads import FuncThread, start_thread
+
+T = TypeVar("T")
 
 LOG = logging.getLogger(__name__)
 
@@ -353,10 +355,10 @@ def is_trace_logging_enabled(headers) -> bool:
     return HEADER_LOCALSTACK_ACCOUNT_ID not in headers.keys()
 
 
-def do_start_edge(bind_address, port, use_ssl, asynchronous=False):
+def do_start_edge(listen: List[HostAndPort], use_ssl: bool, asynchronous: bool = False):
     from localstack.aws.serving.edge import serve_gateway
 
-    return serve_gateway(bind_address, port, use_ssl, asynchronous)
+    return serve_gateway(listen, use_ssl, asynchronous)
 
 
 def do_start_edge_proxy(bind_address, port, use_ssl, asynchronous=False):
@@ -400,34 +402,36 @@ def ensure_can_use_sudo():
         run("sudo -v", stdin=True)
 
 
-def start_component(component: str, port=None):
+def start_component(component: str, listen_str: str = None):
     if component == "edge":
-        return start_edge(port=port)
+        return start_edge(listen_str=listen_str)
     if component == "proxy":
-        return start_proxy(port=port)
+        return start_proxy(listen_str=listen_str)
     raise Exception("Unexpected component name '%s' received during start up" % component)
 
 
-def start_proxy(port, asynchronous=False):
+def start_proxy(
+    listen_str: str, target_address: Optional[HostAndPort] = None, asynchronous: bool = False
+) -> FuncThread:
     """
     Starts a TCP proxy to perform a low-level forwarding of incoming requests.
     The proxy's source port (given as method argument) is bound to the EDGE_BIND_HOST.
     The target IP is always 127.0.0.1.
-    The target port is parsed from the EDGE_FORWARD_URL (for compatibility with the legacy edge proxy forwarding).
-    All other parts of the EDGE_FORWARD_URL are _not_ used anymore.
 
     :param port: source port
     :param asynchronous: False if the function should join the proxy thread and block until it terminates.
     :return: created thread executing the proxy
     """
-    destination_port = urlparse(config.EDGE_FORWARD_URL).port
-    if not destination_port or destination_port < 1 or destination_port > 65535:
-        raise ValueError("EDGE_FORWARD_URL does not contain a valid port.")
+    listen_hosts = parse_gateway_listen(listen_str)
+    listen = listen_hosts[0]
+    if target_address is None:
+        target_address = HostAndPort(host=config.LOCALHOST_IP, port=constants.DEFAULT_PORT_EDGE)
 
-    src = f"{config.EDGE_BIND_HOST}:{port}"
-    dst = f"{config.LOCALHOST_IP}:{destination_port}"
+    src = f"{listen.host}:{listen.port}"
+    dst = f"{config.LOCALHOST_IP}:{target_address.port}"
 
-    LOG.debug("Starting Local TCP Proxy: %s -> %s", src, dst)
+    LOG.debug(f"proxying requests from {src} to {dst}")
+
     proxy = start_thread(
         lambda *args, **kwargs: start_tcp_proxy(src=src, dst=dst, handler=None, **kwargs),
         name="edge-tcp-proxy",
@@ -437,44 +441,80 @@ def start_proxy(port, asynchronous=False):
     return proxy
 
 
-def start_edge(port=None, use_ssl=True, asynchronous=False):
-    if not port:
-        port = config.EDGE_PORT
-    if config.EDGE_PORT_HTTP and config.EDGE_PORT_HTTP != port:
-        do_start_edge(
-            config.EDGE_BIND_HOST,
-            config.EDGE_PORT_HTTP,
-            use_ssl=use_ssl,
+def split_list_by(lst: List[T], predicate: Callable[[T], bool]) -> Tuple[List[T], List[T]]:
+    truthy, falsy = [], []
+
+    for item in lst:
+        if predicate(item):
+            truthy.append(item)
+        else:
+            falsy.append(item)
+
+    return truthy, falsy
+
+
+def start_edge(listen_str: str, use_ssl: bool = True, asynchronous: bool = False):
+    if listen_str:
+        listen = parse_gateway_listen(listen_str)
+    else:
+        listen = config.GATEWAY_LISTEN
+
+    if len(listen) == 0:
+        raise ValueError("no listen addresses provided")
+
+    # separate privileged and unprivileged addresses
+    unprivileged, privileged = split_list_by(listen, lambda addr: addr.is_unprivileged() or False)
+
+    # bind the gateway server to unprivileged addresses
+    edge_thread = do_start_edge(unprivileged, use_ssl=use_ssl, asynchronous=True)
+
+    # start TCP proxies for the remaining addresses
+    for address in privileged:
+        # start a tcp proxy
+        run_module_as_sudo(
+            module="localstack.services.edge",
+            arguments=["proxy", "--gateway-listen", str(address)],
             asynchronous=True,
         )
-    if port > 1024 or is_root():
-        return do_start_edge(config.EDGE_BIND_HOST, port, use_ssl, asynchronous=asynchronous)
+
+    if edge_thread is not None:
+        edge_thread.join()
+
+    # if config.EDGE_PORT_HTTP and config.EDGE_PORT_HTTP != port:
+    #     do_start_edge(
+    #         config.EDGE_BIND_HOST,
+    #         config.EDGE_PORT_HTTP,
+    #         use_ssl=use_ssl,
+    #         asynchronous=True,
+    #     )
+    # if port > 1024 or is_root():
+    #     return do_start_edge(config.EDGE_BIND_HOST, port, use_ssl, asynchronous=asynchronous)
 
     # process requires privileged port but we're not root -> try running as sudo
 
-    class Terminator:
-        def stop(self, quiet=True):
-            try:
-                url = "http%s://%s:%s" % ("s" if use_ssl else "", LOCALHOST, port)
-                requests.verify_ssl = False
-                requests.post(url, headers={HEADER_KILL_SIGNAL: "kill"})
-            except Exception:
-                pass
-
-    # register a signal handler to terminate the sudo process later on
-    TMP_THREADS.append(Terminator())
-
-    # start the TCP proxy
-    env_vars = {
-        "DEBUG": os.environ.get("DEBUG", ""),
-        "EDGE_FORWARD_URL": config.get_edge_url(),
-        "EDGE_BIND_HOST": config.EDGE_BIND_HOST,
-    }
-    proxy_module = "localstack.services.edge"
-    proxy_args = ["proxy", str(port)]
-    return run_module_as_sudo(
-        module=proxy_module, arguments=proxy_args, env_vars=env_vars, asynchronous=asynchronous
-    )
+    # class Terminator:
+    #     def stop(self, quiet=True):
+    #         try:
+    #             url = "http%s://%s:%s" % ("s" if use_ssl else "", LOCALHOST, port)
+    #             requests.verify_ssl = False
+    #             requests.post(url, headers={HEADER_KILL_SIGNAL: "kill"})
+    #         except Exception:
+    #             pass
+    #
+    # # register a signal handler to terminate the sudo process later on
+    # TMP_THREADS.append(Terminator())
+    #
+    # # start the TCP proxy
+    # env_vars = {
+    #     "DEBUG": os.environ.get("DEBUG", ""),
+    #     "EDGE_FORWARD_URL": config.get_edge_url(),
+    #     "EDGE_BIND_HOST": config.EDGE_BIND_HOST,
+    # }
+    # proxy_module = "localstack.services.edge"
+    # proxy_args = ["proxy", str(port)]
+    # return run_module_as_sudo(
+    #     module=proxy_module, arguments=proxy_args, env_vars=env_vars, asynchronous=asynchronous
+    # )
 
 
 def run_module_as_sudo(
@@ -513,6 +553,19 @@ def env_vars_to_string(env_vars: Dict) -> str:
     return " ".join(f"{k}='{v}'" for k, v in env_vars.items())
 
 
+# TODO: upstream this into HostAndPort
+def parse_gateway_listen(listen: str) -> List[HostAndPort]:
+    addresses = []
+    for address in listen.split(","):
+        addresses.append(HostAndPort.parse(address))
+    return addresses
+
+
 if __name__ == "__main__":
     logging.basicConfig()
-    start_component(sys.argv[1], int(sys.argv[2]))
+    parser = argparse.ArgumentParser()
+    parser.add_argument("component")
+    parser.add_argument("-l", "--gateway-listen", required=False, default=None)
+    args = parser.parse_args()
+
+    start_component(args.component, args.gateway_listen)

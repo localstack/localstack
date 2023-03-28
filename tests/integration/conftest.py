@@ -11,7 +11,7 @@ import threading
 
 import pytest
 
-from localstack import config
+from localstack import config, constants
 from localstack.config import is_env_true
 from localstack.constants import ENV_INTERNAL_TEST_RUN
 from localstack.runtime import events
@@ -126,7 +126,7 @@ def run_localstack():
     os.environ[ENV_INTERNAL_TEST_RUN] = "1"
     safe_requests.verify_ssl = False
     config.FORCE_SHUTDOWN = False
-    config.EDGE_BIND_HOST = "0.0.0.0"
+    config.GATEWAY_LISTEN = [config.HostAndPort(host="0.0.0.0", port=constants.DEFAULT_PORT_EDGE)]
 
     def watchdog():
         logger.info("waiting stop event")

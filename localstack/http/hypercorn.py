@@ -1,6 +1,7 @@
 import asyncio
 import threading
 from asyncio import AbstractEventLoop
+from typing import List
 
 from hypercorn import Config
 from hypercorn.asyncio import serve
@@ -9,8 +10,8 @@ from hypercorn.typing import ASGIFramework
 from localstack.aws.gateway import Gateway
 from localstack.aws.handlers.proxy import ProxyHandler
 from localstack.aws.serving.asgi import AsgiGateway
+from localstack.config import HostAndPort
 from localstack.logging.setup import setup_hypercorn_logger
-from localstack.utils.collections import ensure_list
 from localstack.utils.functions import call_safe
 from localstack.utils.serving import Server
 from localstack.utils.ssl import create_ssl_cert, install_predefined_cert_if_available
@@ -80,9 +81,7 @@ class GatewayServer(HypercornServer):
     exception-handlers.
     """
 
-    def __init__(
-        self, gateway: Gateway, port: int, bind_address: str | list[str], use_ssl: bool = False
-    ):
+    def __init__(self, gateway: Gateway, listen: List[HostAndPort], use_ssl: bool = False):
         """
         Creates a new GatewayServer instance.
 
@@ -96,12 +95,12 @@ class GatewayServer(HypercornServer):
         config.h11_pass_raw_headers = True
         setup_hypercorn_logger(config)
 
-        bind_address = ensure_list(bind_address)
-        config.bind = [f"{addr}:{port}" for addr in bind_address]
+        config.bind = [str(host_and_port) for host_and_port in listen]
 
         if use_ssl:
             install_predefined_cert_if_available()
-            _, cert_file_name, key_file_name = create_ssl_cert(serial_number=port)
+            serial_number = listen[0].port
+            _, cert_file_name, key_file_name = create_ssl_cert(serial_number=serial_number)
             config.certfile = cert_file_name
             config.keyfile = key_file_name
 
@@ -124,7 +123,7 @@ class ProxyServer(GatewayServer):
     and just forward all incoming requests to a backend.
     """
 
-    def __init__(self, forward_base_url: str, port: int, bind_address: str, use_ssl: bool = False):
+    def __init__(self, forward_base_url: str, listen: List[HostAndPort], use_ssl: bool = False):
         """
         Creates a new ProxyServer instance.
 
@@ -135,4 +134,4 @@ class ProxyServer(GatewayServer):
         """
         gateway = Gateway()
         gateway.request_handlers.append(ProxyHandler(forward_base_url=forward_base_url))
-        super().__init__(gateway, port, bind_address, use_ssl)
+        super().__init__(gateway, listen, use_ssl)

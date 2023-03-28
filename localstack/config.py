@@ -583,6 +583,13 @@ class HostAndPort:
 
         return cls(host=host, port=port)
 
+    def is_unprivileged(self) -> Optional[bool]:
+        if self.port is not None:
+            return self.port >= 1024
+
+    def __hash__(self) -> int:
+        return hash((self.host, self.port))
+
     # easier tests
     def __eq__(self, other: "str | HostAndPort") -> bool:
         if isinstance(other, self.__class__):
@@ -1255,10 +1262,12 @@ def external_service_url(service_key, host=None, port=None):
 
 
 def get_edge_port_http():
+    # TODO: update to use gateway_listen
     return EDGE_PORT_HTTP or EDGE_PORT
 
 
 def get_edge_url(localstack_hostname=None, protocol=None):
+    # TODO: update to use gateway_listen
     port = get_edge_port_http()
     protocol = protocol or get_protocol()
     localstack_hostname = localstack_hostname or LOCALSTACK_HOSTNAME

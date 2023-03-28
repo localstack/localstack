@@ -14,6 +14,7 @@ from localstack.aws.connect import (
 from localstack.aws.gateway import Gateway
 from localstack.aws.handlers import add_internal_request_params, add_region_from_header
 from localstack.constants import TEST_AWS_ACCESS_KEY_ID, TEST_AWS_SECRET_ACCESS_KEY
+from localstack.config import HostAndPort
 from localstack.http import Response
 from localstack.http.hypercorn import GatewayServer
 from localstack.utils.aws.aws_stack import extract_access_key_id_from_auth_header
@@ -33,7 +34,8 @@ class TestClientFactory:
             for handler in request_handlers:
                 gateway.request_handlers.append(handler)
             port = get_free_tcp_port()
-            server = GatewayServer(gateway, port, "127.0.0.1", use_ssl=True)
+            gateway_listen = [HostAndPort(host="127.0.0.1", port=port)]
+            server = GatewayServer(gateway, gateway_listen, use_ssl=True)
             server.start()
             server.wait_is_up(timeout=10)
             return f"http://localhost:{port}"
