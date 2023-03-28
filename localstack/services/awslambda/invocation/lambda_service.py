@@ -247,6 +247,12 @@ class LambdaService:
         except ValueError:
             version = function.versions.get(version_qualifier)
             state = version and version.config.state.state
+            # TODO: make such developer hints optional or remove after initial v2 transition period
+            LOG.warning(
+                "Lambda functions are created and updated asynchronously in the new lambda provider. "
+                "Please wait until the function is in the Active state before invoking. Check out "
+                "https://docs.localstack.cloud/references/lambda-provider-v2"
+            )
             raise ResourceConflictException(
                 f"The operation cannot be performed at this time. The function is currently in the following state: {state}"
             )
