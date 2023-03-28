@@ -948,7 +948,7 @@ LEGACY_SNS_GCM_PUBLISHING = is_env_true("LEGACY_SNS_GCM_PUBLISHING")
 # TODO remove fallback to LAMBDA_DOCKER_NETWORK with next minor version
 MAIN_DOCKER_NETWORK = os.environ.get("MAIN_DOCKER_NETWORK", "") or LAMBDA_DOCKER_NETWORK
 
-# Add deprecated environment variables to deprecations.py
+# HINT: Please add deprecated environment variables to deprecations.py
 
 # list of environment variable names used for configuration.
 # Make sure to keep this in sync with the above!

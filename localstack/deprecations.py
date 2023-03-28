@@ -229,7 +229,7 @@ DEPRECATIONS = [
     EnvVarDeprecation(
         "HOSTNAME_FROM_LAMBDA",
         "2.0.0",
-        "This feature is not supported in the new lambda provider "
+        "This feature is currently not supported in the new lambda provider "
         "https://docs.localstack.cloud/references/lambda-provider-v2/",
     ),
     EnvVarDeprecation(

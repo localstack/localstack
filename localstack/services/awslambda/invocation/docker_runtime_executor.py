@@ -20,6 +20,7 @@ from localstack.services.awslambda.invocation.runtime_executor import (
     RuntimeExecutor,
 )
 from localstack.services.awslambda.lambda_utils import (
+    HINT_LOG,
     get_container_network_for_lambda,
     get_main_endpoint_from_container,
 )
@@ -388,7 +389,7 @@ class DockerRuntimeExecutor(RuntimeExecutor):
                     CONTAINER_CLIENT.pull_image(image_name, platform)
                     PULLED_IMAGES.add((image_name, platform))
                 except ContainerException as e:
-                    LOG.error(
+                    HINT_LOG.error(
                         "Failed to pull Docker image because Docker is not available in the LocalStack container"
                         "but required to run Lambda functions. Please add the Docker volume mount "
                         '"/var/run/docker.sock:/var/run/docker.sock" to your LocalStack startup. '
