@@ -1,6 +1,13 @@
+import string
+
 import pytest
+from hypothesis import given
+from hypothesis.strategies import integers, sampled_from, text
 
 from localstack import config
+
+HOSTNAME_CHARACTERS = string.ascii_letters + string.digits + "-" + "."
+SAMPLER = sampled_from(HOSTNAME_CHARACTERS)
 
 
 class TestProviderConfig:
@@ -236,3 +243,29 @@ class TestEdgeVariablesDerivedCorrectly:
         assert edge_bind_host == "192.168.0.1"
         assert edge_port == 10101
         assert edge_port_http == 20202
+
+    # generate random hostnames and ports from within the following criteria:
+    # - hostnames: a-zA-Z0-9-.
+    # - ports: 0-65535
+    @given(text(alphabet=SAMPLER, min_size=1), integers(min_value=0, max_value=2**16 - 1))
+    def test_parsing_hostname_and_ip(self, hostname, port):
+        """
+        Use property-based testing to ensure that "well-behaved" input parses correctly
+        """
+        h = config.HostAndPort.parse(f"{hostname}:{port}")
+        assert h.host == hostname
+        assert h.port == port
+
+    # test edge cases
+    def test_empty_hostname(self):
+        with pytest.raises(ValueError) as exc_info:
+            config.HostAndPort.parse(f":{1000}")
+
+        assert "could not parse hostname" in str(exc_info)
+
+    @pytest.mark.parametrize("port", [-1000, 100_000])
+    def test_negative_port(self, port):
+        with pytest.raises(ValueError) as exc_info:
+            config.HostAndPort.parse(f"localhost:{port}")
+
+        assert "port out of range" in str(exc_info)
