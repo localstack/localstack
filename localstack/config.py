@@ -366,11 +366,6 @@ USE_SSL = is_env_true("USE_SSL")
 # whether to use the legacy edge proxy or the newer Gateway/HandlerChain framework
 LEGACY_EDGE_PROXY = is_env_true("LEGACY_EDGE_PROXY")
 
-# Forces to use S3 ASF provider, while not loading -ext (does not have asf provider)
-# TODO: will need to discuss the best way to do this with -ext, this is temporary for testing
-if not os.environ.get("PROVIDER_OVERRIDE_S3"):
-    os.environ["PROVIDER_OVERRIDE_S3"] = "asf"
-
 # whether legacy s3 is enabled
 LEGACY_S3_PROVIDER = os.environ.get("PROVIDER_OVERRIDE_S3", "") == "legacy"
 

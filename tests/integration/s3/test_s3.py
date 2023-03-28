@@ -660,6 +660,25 @@ class TestS3:
             )
             snapshot.match(f"list-object-version-{param['Id']}", response)
 
+    def test_list_objects_v2_with_prefix(self, s3_client, s3_bucket, snapshot):
+        snapshot.add_transformer(snapshot.transform.s3_api())
+        keys = ["test/foo/bar/123" "test/foo/bar/456", "test/bar/foo/123"]
+        for key in keys:
+            s3_client.put_object(Bucket=s3_bucket, Key=key, Body=b"content 123")
+
+        response = s3_client.list_objects_v2(Bucket=s3_bucket, Prefix="test/", EncodingType="url")
+        snapshot.match("list-objects-v2-1", response)
+
+        response = s3_client.list_objects_v2(
+            Bucket=s3_bucket, Prefix="test/foo", EncodingType="url"
+        )
+        snapshot.match("list-objects-v2-2", response)
+
+        response = s3_client.list_objects_v2(
+            Bucket=s3_bucket, Prefix="test/foo/bar", EncodingType="url"
+        )
+        snapshot.match("list-objects-v2-3", response)
+
     @pytest.mark.aws_validated
     @pytest.mark.skip_snapshot_verify(condition=is_old_provider, path="$..Error.BucketName")
     def test_get_object_no_such_bucket(self, s3_client, snapshot):
