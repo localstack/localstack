@@ -59,6 +59,6 @@ test -d ${LOG_DIR} || mkdir -p ${LOG_DIR}
 # run runtime init hooks BOOT stage before starting localstack
 test -d /etc/localstack/init/boot.d && /opt/code/localstack/.venv/bin/python -m localstack.runtime.init BOOT
 
-# run the localstack supervisor. it's important to run with `exec` and don't use pipes so signals are handled
-# correctly
-exec /opt/code/localstack/.venv/bin/python /opt/code/localstack/bin/localstack-supervisor.py
+source .venv/bin/activate
+# run the localstack supervisor. it's important to run with `exec` and don't use pipes so signals are handled correctly
+exec localstack-supervisor.py

@@ -1,3 +1,4 @@
+#!/usr/bin/env python3
 """Supervisor script for managing localstack processes, acting like a mini init system tailored to
 localstack. This can be used on the host or in the docker-entrypoint.sh.
 
