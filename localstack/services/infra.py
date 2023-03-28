@@ -1,6 +1,5 @@
 import logging
 import os
-import re
 import signal
 import subprocess
 import sys
@@ -17,10 +16,11 @@ from localstack import config, constants
 from localstack.aws.accounts import get_aws_account_id
 from localstack.constants import ENV_DEV, LOCALSTACK_INFRA_PROCESS, LOCALSTACK_VENV_FOLDER
 from localstack.runtime import events, hooks
+from localstack.runtime.exceptions import LocalstackExit
 from localstack.services import generic_proxy, motoserver
 from localstack.services.generic_proxy import ProxyListener, start_proxy_server
 from localstack.services.plugins import SERVICE_PLUGINS, ServiceDisabled, wait_for_infra_shutdown
-from localstack.utils import analytics, config_listener, files
+from localstack.utils import analytics, config_listener, files, objects
 from localstack.utils.aws.request_context import patch_moto_request_handling
 from localstack.utils.bootstrap import (
     canonicalize_api_names,
@@ -43,9 +43,6 @@ from localstack.utils.threads import (
     start_thread,
 )
 
-# flag to indicate whether signal handlers have been set up already
-SIGNAL_HANDLERS_SETUP = False
-
 # output string that indicates that the stack is ready
 READY_MARKER_OUTPUT = constants.READY_MARKER_OUTPUT
 
@@ -65,8 +62,12 @@ INFRA_READY = events.infra_ready
 # event flag indicating that the infrastructure has been shut down
 SHUTDOWN_INFRA = threading.Event()
 
+# can be set
+EXIT_CODE: objects.Value[int] = objects.Value(0)
+
 # Start config update backdoor
 config_listener.start_listener()
+
 
 # ---------------
 # HELPER METHODS
@@ -124,23 +125,6 @@ def get_multiserver_or_free_service_port():
     if config.FORWARD_EDGE_INMEM:
         return multiserver.get_moto_server_port()
     return get_free_tcp_port()
-
-
-def register_signal_handlers():
-    global SIGNAL_HANDLERS_SETUP
-    if SIGNAL_HANDLERS_SETUP:
-        return
-
-    # register signal handlers
-    def signal_handler(sig, frame):
-        LOG.debug("[shutdown] signal received %s", sig)
-        stop_infra()
-        if config.FORCE_SHUTDOWN:
-            sys.exit(0)
-
-    signal.signal(signal.SIGTERM, signal_handler)
-    signal.signal(signal.SIGINT, signal_handler)
-    SIGNAL_HANDLERS_SETUP = True
 
 
 def do_run(
@@ -278,6 +262,17 @@ def start_local_api(name, port, api, method, asynchronous=False, listener=None):
         method(port)
 
 
+def exit_infra(code: int):
+    """
+    Triggers an orderly shutdown of the localstack infrastructure and sets the code the main process should
+    exit with to a specific value.
+
+    :param code: the exit code the main process should return with
+    """
+    EXIT_CODE.set(code)
+    SHUTDOWN_INFRA.set()
+
+
 def stop_infra():
     if events.infra_stopping.is_set():
         return
@@ -336,28 +331,11 @@ def check_aws_credentials():
     assert credentials
 
 
-def terminate_all_processes_in_docker():
-    if not in_docker():
-        # make sure we only run this inside docker!
-        return
-    print("INFO: Received command to restart all processes ...")
-    cmd = (
-        'ps aux | grep -v supervisor | grep -v docker-entrypoint.sh | grep -v "bin/localstack" | '
-        "grep -v localstack_infra.log | awk '{print $2}' | grep -v PID"
-    )
-    pids = run(cmd).strip()
-    pids = re.split(r"\s+", pids)
-    pids = [int(pid) for pid in pids]
-    this_pid = os.getpid()
-    for pid in pids:
-        if pid != this_pid:
-            try:
-                # kill spawned process
-                os.kill(pid, signal.SIGKILL)
-            except Exception:
-                pass
-    # kill the process itself
-    os.kill(this_pid, signal.SIGKILL)
+def signal_supervisor_restart():
+    if pid := os.environ.get("SUPERVISOR_PID"):
+        os.kill(int(pid), signal.SIGHUP)
+    else:
+        LOG.warning("could not signal supervisor to restart localstack")
 
 
 # -------------
@@ -429,11 +407,17 @@ def start_infra(asynchronous=False, apis=None):
 
     except KeyboardInterrupt:
         print("Shutdown")
+    except LocalstackExit as e:
+        print(f"Localstack returning with exit code {e.code}. Reason: {e}")
+        raise
     except Exception as e:
-        print("Error starting infrastructure: %s %s" % (e, traceback.format_exc()))
-        sys.stdout.flush()
+        print(
+            "Unexpected exception while starting infrastructure: %s %s"
+            % (e, traceback.format_exc())
+        )
         raise e
     finally:
+        sys.stdout.flush()
         if not asynchronous:
             stop_infra()
 
@@ -460,9 +444,6 @@ def do_start_infra(asynchronous, apis, is_in_docker):
         # set environment
         os.environ["AWS_REGION"] = config.DEFAULT_REGION
         os.environ["ENV"] = ENV_DEV
-        # register signal handlers
-        if not config.is_local_test_mode():
-            register_signal_handlers()
         # make sure AWS credentials are configured, otherwise boto3 bails on us
         check_aws_credentials()
         patch_moto_request_handling()
