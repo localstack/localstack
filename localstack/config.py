@@ -695,8 +695,7 @@ KINESIS_LATENCY = os.environ.get("KINESIS_LATENCY", "").strip() or "500"
 KINESIS_MOCK_PERSIST_INTERVAL = os.environ.get("KINESIS_MOCK_PERSIST_INTERVAL", "").strip() or "5s"
 
 # DEPRECATED: 1 (default) only applies to old lambda provider
-# Whether or not to handle Kinesis Lambda event sources as synchronous invocations.
-SYNCHRONOUS_SNS_EVENTS = is_env_true("SYNCHRONOUS_SNS_EVENTS")  # DEPRECATED
+# Whether to handle Kinesis Lambda event sources as synchronous invocations.
 SYNCHRONOUS_KINESIS_EVENTS = is_env_not_false("SYNCHRONOUS_KINESIS_EVENTS")  # DEPRECATED
 
 # randomly inject faults to Kinesis
