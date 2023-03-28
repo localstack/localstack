@@ -22,7 +22,7 @@ from localstack.constants import (
     MAX_POOL_CONNECTIONS,
 )
 from localstack.utils.aws.aws_stack import get_local_service_url
-from localstack.utils.aws.client_types import TypedServiceClientFactory
+from localstack.utils.aws.client_types import ServicePrincipal, TypedServiceClientFactory
 from localstack.utils.aws.request_context import get_region_from_request_context
 from localstack.utils.strings import short_uid
 
@@ -217,7 +217,7 @@ class ClientFactory(ABC):
         self,
         *,
         role_arn: str,
-        service_principal: Optional[str] = None,
+        service_principal: Optional[ServicePrincipal] = None,
         session_name: Optional[str] = None,
         region_name: Optional[str] = None,
         endpoint_url: Optional[str] = None,

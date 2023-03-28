@@ -14,6 +14,7 @@ from localstack.aws.handlers import add_internal_request_params, add_region_from
 from localstack.http import Response
 from localstack.http.hypercorn import GatewayServer
 from localstack.utils.aws.aws_stack import extract_access_key_id_from_auth_header
+from localstack.utils.aws.client_types import ServicePrincipal
 from localstack.utils.net import get_free_tcp_port
 
 
@@ -282,10 +283,9 @@ class TestClientFactory:
 
         endpoint_url = create_dummy_request_parameter_gateway([echo_request_handler])
 
-        # TODO this should be extracted into a utility for the next iteration
         client = factory.with_assumed_role(
             role_arn="arn:aws:iam::000000000000:role/test-role",
-            service_principal="apigateway",
+            service_principal=ServicePrincipal.apigateway,
             endpoint_url=endpoint_url,
         )
         # TODO should be {"is_internal": True, "service_principal": "apigateway"} once IAM role resource policies

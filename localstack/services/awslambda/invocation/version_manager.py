@@ -40,6 +40,7 @@ from localstack.services.awslambda.invocation.runtime_environment import (
 from localstack.services.awslambda.invocation.runtime_executor import get_runtime_executor
 from localstack.services.awslambda.lambda_executors import InvocationException
 from localstack.utils.aws import dead_letter_queue
+from localstack.utils.aws.client_types import ServicePrincipal
 from localstack.utils.aws.message_forwarding import send_event_to_target
 from localstack.utils.cloudwatch.cloudwatch_util import store_cloudwatch_logs
 from localstack.utils.strings import to_str, truncate
@@ -97,7 +98,9 @@ class LogHandler:
 
     def run_log_loop(self, *args, **kwargs) -> None:
         logs_client = connect_to.with_assumed_role(
-            region_name=self.region, role_arn=self.role_arn, service_principal="lambda"
+            region_name=self.region,
+            role_arn=self.role_arn,
+            service_principal=ServicePrincipal.awslambda,
         ).logs
         while not self._shutdown_event.is_set():
             log_item = self.log_queue.get()
