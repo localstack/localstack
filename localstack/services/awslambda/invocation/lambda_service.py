@@ -260,7 +260,7 @@ class LambdaService:
                 HINT_LOG.warning(
                     "Lambda functions are created and updated asynchronously in the new lambda provider like in AWS. "
                     f"Before invoking {function_name}, please wait until the function transitioned from the state "
-                    f"Pending to Active using: aws lambda wait function-active-v2 --function-name {function_name} "
+                    f'Pending to Active using: "aws lambda wait function-active-v2 --function-name {function_name}" '
                     "Check out https://docs.localstack.cloud/references/lambda-provider-v2/#function-in-pending-state"
                 )
             raise ResourceConflictException(
