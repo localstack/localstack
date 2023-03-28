@@ -101,6 +101,12 @@ class RuntimeExecutor(ABC):
         """
         pass
 
+    @classmethod
+    def validate_environment(cls) -> bool:
+        """Validates the setup of the environment and provides an opportunity to log warnings.
+        Returns False if an invalid environment is detected and True otherwise."""
+        return True
+
 
 class LambdaRuntimeException(Exception):
     def __init__(self, message: str):

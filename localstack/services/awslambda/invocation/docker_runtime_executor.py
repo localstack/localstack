@@ -401,3 +401,14 @@ class DockerRuntimeExecutor(RuntimeExecutor):
 
     def get_runtime_endpoint(self) -> str:
         return f"http://{self.get_endpoint_from_executor()}:{config.EDGE_PORT}{self.executor_endpoint.get_endpoint_prefix()}"
+
+    @classmethod
+    def validate_environment(cls) -> bool:
+        if not CONTAINER_CLIENT.has_docker():
+            LOG.warning(
+                "WARNING: Docker not available in the LocalStack container but required for executing Lambda "
+                'functions. Please add the Docker volume mount "/var/run/docker.sock:/var/run/docker.sock" to your '
+                "LocalStack startup. https://docs.localstack.cloud/references/lambda-provider-v2/#docker-not-available"
+            )
+            return False
+        return True
