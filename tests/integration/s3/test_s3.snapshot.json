@@ -3825,11 +3825,12 @@
     }
   },
   "tests/integration/s3/test_s3.py::TestS3::test_multipart_and_list_parts": {
-    "recorded-date": "06-10-2022, 18:49:24",
+    "recorded-date": "27-03-2023, 19:46:42",
     "recorded-content": {
       "create-multipart": {
         "Bucket": "bucket",
         "Key": "test-list-parts",
+        "ServerSideEncryption": "AES256",
         "UploadId": "<upload-id:1>",
         "ResponseMetadata": {
           "HTTPHeaders": {},
@@ -3858,8 +3859,38 @@
           "HTTPStatusCode": 200
         }
       },
+      "list-all-uploads": {
+        "Bucket": "bucket",
+        "IsTruncated": false,
+        "KeyMarker": "",
+        "MaxUploads": 1000,
+        "NextKeyMarker": "test-list-parts",
+        "NextUploadIdMarker": "<upload-id:1>",
+        "UploadIdMarker": "",
+        "Uploads": [
+          {
+            "Initiated": "datetime",
+            "Initiator": {
+              "DisplayName": "display-name",
+              "ID": "owner-id"
+            },
+            "Key": "test-list-parts",
+            "Owner": {
+              "DisplayName": "display-name",
+              "ID": "owner-id"
+            },
+            "StorageClass": "STANDARD",
+            "UploadId": "<upload-id:1>"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
       "upload-part": {
         "ETag": "\"3237c18681adb6a9d843c733ce249480\"",
+        "ServerSideEncryption": "AES256",
         "ResponseMetadata": {
           "HTTPHeaders": {},
           "HTTPStatusCode": 200
@@ -3895,11 +3926,41 @@
           "HTTPStatusCode": 200
         }
       },
+      "list-all-uploads-after": {
+        "Bucket": "bucket",
+        "IsTruncated": false,
+        "KeyMarker": "",
+        "MaxUploads": 1000,
+        "NextKeyMarker": "test-list-parts",
+        "NextUploadIdMarker": "<upload-id:1>",
+        "UploadIdMarker": "",
+        "Uploads": [
+          {
+            "Initiated": "datetime",
+            "Initiator": {
+              "DisplayName": "display-name",
+              "ID": "owner-id"
+            },
+            "Key": "test-list-parts",
+            "Owner": {
+              "DisplayName": "display-name",
+              "ID": "owner-id"
+            },
+            "StorageClass": "STANDARD",
+            "UploadId": "<upload-id:1>"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
       "complete-multipart": {
         "Bucket": "bucket",
         "ETag": "\"e747540af6911dbc890f8d3e0b48549b-1\"",
         "Key": "test-list-parts",
         "Location": "<location:1>",
+        "ServerSideEncryption": "AES256",
         "ResponseMetadata": {
           "HTTPHeaders": {},
           "HTTPStatusCode": 200
@@ -3914,6 +3975,19 @@
         "ResponseMetadata": {
           "HTTPHeaders": {},
           "HTTPStatusCode": 404
+        }
+      },
+      "list-all-uploads-completed": {
+        "Bucket": "bucket",
+        "IsTruncated": false,
+        "KeyMarker": "",
+        "MaxUploads": 1000,
+        "NextKeyMarker": "",
+        "NextUploadIdMarker": "",
+        "UploadIdMarker": "",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
         }
       }
     }

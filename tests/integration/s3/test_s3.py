@@ -790,6 +790,13 @@ class TestS3:
 
     @pytest.mark.aws_validated
     @pytest.mark.skip_snapshot_verify(
+        paths=[
+            "$..ServerSideEncryption",  # missing from the response as it's default in AWS now
+            "$..NextKeyMarker",  # not returned by LocalStack yet
+            "$..NextUploadIdMarker",
+        ]
+    )
+    @pytest.mark.skip_snapshot_verify(
         condition=is_old_provider, paths=["$..VersionId", "$..Error.RequestID"]
     )
     def test_multipart_and_list_parts(self, s3_client, s3_bucket, snapshot):
@@ -813,6 +820,9 @@ class TestS3:
         list_part = s3_client.list_parts(Bucket=s3_bucket, Key=key_name, UploadId=upload_id)
         snapshot.match("list-part-after-created", list_part)
 
+        list_multipart_uploads = s3_client.list_multipart_uploads(Bucket=s3_bucket)
+        snapshot.match("list-all-uploads", list_multipart_uploads)
+
         # Write contents to memory rather than a file.
         data = "upload-part-1" * 5
         data = to_bytes(data)
@@ -829,6 +839,9 @@ class TestS3:
         list_part = s3_client.list_parts(Bucket=s3_bucket, Key=key_name, UploadId=upload_id)
         snapshot.match("list-part-after-upload", list_part)
 
+        list_multipart_uploads = s3_client.list_multipart_uploads(Bucket=s3_bucket)
+        snapshot.match("list-all-uploads-after", list_multipart_uploads)
+
         multipart_upload_parts = [{"ETag": response["ETag"], "PartNumber": 1}]
 
         response = s3_client.complete_multipart_upload(
@@ -841,6 +854,9 @@ class TestS3:
         with pytest.raises(ClientError) as e:
             s3_client.list_parts(Bucket=s3_bucket, Key=key_name, UploadId=upload_id)
         snapshot.match("list-part-after-complete-exc", e.value.response)
+
+        list_multipart_uploads = s3_client.list_multipart_uploads(Bucket=s3_bucket)
+        snapshot.match("list-all-uploads-completed", list_multipart_uploads)
 
     @pytest.mark.aws_validated
     @pytest.mark.skip_snapshot_verify(
