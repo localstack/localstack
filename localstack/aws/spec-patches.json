@@ -90,24 +90,6 @@
     },
     {
       "op": "add",
-      "path": "/shapes/ListObjectsOutput/members/BucketRegion",
-      "value": {
-        "shape": "BucketRegion",
-        "location": "header",
-        "locationName": "x-amz-bucket-region"
-      }
-    },
-    {
-      "op": "add",
-      "path": "/shapes/ListObjectsV2Output/members/BucketRegion",
-      "value": {
-        "shape": "BucketRegion",
-        "location": "header",
-        "locationName": "x-amz-bucket-region"
-      }
-    },
-    {
-      "op": "add",
       "path": "/operations/PutBucketPolicy/http/responseCode",
       "value": 204
     },
@@ -789,8 +771,37 @@
     },
     {
       "op": "move",
-      "from": "/shapes/ListObjectsOutput",
+      "from": "/shapes/ListObjectsV2Output",
       "path": "/shapes/ListBucketResult"
+    },
+    {
+      "op": "remove",
+      "path": "/shapes/ListObjectsOutput"
+    },
+    {
+        "op": "add",
+        "path": "/shapes/ListBucketResult/members/Marker",
+        "value": {
+            "shape": "Marker",
+            "documentation": "<p>Indicates where in the bucket listing begins. Marker is included in the response if it was sent with the request.</p>"
+        }
+    },
+    {
+        "op": "add",
+        "path": "/shapes/ListBucketResult/members/NextMarker",
+        "value": {
+            "shape": "NextMarker",
+            "documentation": "<p>When response is truncated (the IsTruncated element value in the response is true), you can use the key name in this field as marker in the subsequent request to get next set of objects. Amazon S3 lists objects in alphabetical order Note: This element is returned only if you have delimiter request parameter specified. If response does not include the NextMarker and it is truncated, you can use the value of the last Key in the response as the marker in the subsequent request to get the next set of object keys.</p>"
+        }
+    },
+    {
+      "op": "add",
+      "path": "/shapes/ListBucketResult/members/BucketRegion",
+      "value": {
+        "shape": "BucketRegion",
+        "location": "header",
+        "locationName": "x-amz-bucket-region"
+      }
     },
     {
       "op": "add",
@@ -825,6 +836,11 @@
         "documentation": "<p>The specified method is not allowed against this resource.</p>",
         "exception": true
       }
+    },
+    {
+      "op": "replace",
+      "path": "/operations/ListObjectsV2/output/shape",
+      "value": "ListBucketResult"
     }
   ]
 }

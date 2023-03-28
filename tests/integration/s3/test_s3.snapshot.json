@@ -2542,7 +2542,7 @@
     }
   },
   "tests/integration/s3/test_s3.py::TestS3::test_head_object_fields": {
-    "recorded-date": "21-09-2022, 13:54:45",
+    "recorded-date": "28-03-2023, 15:37:16",
     "recorded-content": {
       "head-object": {
         "AcceptRanges": "bytes",
@@ -2551,9 +2551,20 @@
         "ETag": "\"e8dc4081b13434b45189a720b77b6818\"",
         "LastModified": "datetime",
         "Metadata": {},
+        "ServerSideEncryption": "AES256",
         "ResponseMetadata": {
           "HTTPHeaders": {},
           "HTTPStatusCode": 200
+        }
+      },
+      "head-object-404": {
+        "Error": {
+          "Code": "404",
+          "Message": "Not Found"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 404
         }
       }
     }
@@ -5276,6 +5287,135 @@
         "ObjectSize": 7,
         "StorageClass": "STANDARD",
         "VersionId": "<version-id:1>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/integration/s3/test_s3.py::TestS3::test_list_objects_v2_with_prefix[None]": {
+    "recorded-date": "28-03-2023, 12:25:25",
+    "recorded-content": {}
+  },
+  "tests/integration/s3/test_s3.py::TestS3::test_list_objects_v2_with_prefix[/]": {
+    "recorded-date": "28-03-2023, 12:25:27",
+    "recorded-content": {
+      "list-objects-v2": {
+        "CommonPrefixes": [
+          {
+            "Prefix": "test/foo/"
+          }
+        ],
+        "Delimiter": "/",
+        "EncodingType": "url",
+        "IsTruncated": false,
+        "KeyCount": 1,
+        "MaxKeys": 1000,
+        "Name": "<bucket-name:1>",
+        "Prefix": "test/",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/integration/s3/test_s3.py::TestS3::test_list_objects_v2_with_prefix[%2F]": {
+    "recorded-date": "28-03-2023, 12:25:30",
+    "recorded-content": {
+      "list-objects-v2": {
+        "Contents": [
+          {
+            "ETag": "\"0d9fa06a66933b40f615f530e59edd6b\"",
+            "Key": "test/foo/bar/123",
+            "LastModified": "datetime",
+            "Size": 11,
+            "StorageClass": "STANDARD"
+          }
+        ],
+        "Delimiter": "%252F",
+        "EncodingType": "url",
+        "IsTruncated": false,
+        "KeyCount": 1,
+        "MaxKeys": 1000,
+        "Name": "<bucket-name:1>",
+        "Prefix": "test/",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/integration/s3/test_s3.py::TestS3::test_list_objects_v2_with_prefix": {
+    "recorded-date": "28-03-2023, 13:54:02",
+    "recorded-content": {
+      "list-objects-v2-1": {
+        "Contents": [
+          {
+            "ETag": "\"0d9fa06a66933b40f615f530e59edd6b\"",
+            "Key": "test/bar/foo/123",
+            "LastModified": "datetime",
+            "Size": 11,
+            "StorageClass": "STANDARD"
+          },
+          {
+            "ETag": "\"0d9fa06a66933b40f615f530e59edd6b\"",
+            "Key": "test/foo/bar/123test/foo/bar/456",
+            "LastModified": "datetime",
+            "Size": 11,
+            "StorageClass": "STANDARD"
+          }
+        ],
+        "EncodingType": "url",
+        "IsTruncated": false,
+        "KeyCount": 2,
+        "MaxKeys": 1000,
+        "Name": "<bucket-name:1>",
+        "Prefix": "test/",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "list-objects-v2-2": {
+        "Contents": [
+          {
+            "ETag": "\"0d9fa06a66933b40f615f530e59edd6b\"",
+            "Key": "test/foo/bar/123test/foo/bar/456",
+            "LastModified": "datetime",
+            "Size": 11,
+            "StorageClass": "STANDARD"
+          }
+        ],
+        "EncodingType": "url",
+        "IsTruncated": false,
+        "KeyCount": 1,
+        "MaxKeys": 1000,
+        "Name": "<bucket-name:1>",
+        "Prefix": "test/foo",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "list-objects-v2-3": {
+        "Contents": [
+          {
+            "ETag": "\"0d9fa06a66933b40f615f530e59edd6b\"",
+            "Key": "test/foo/bar/123test/foo/bar/456",
+            "LastModified": "datetime",
+            "Size": 11,
+            "StorageClass": "STANDARD"
+          }
+        ],
+        "EncodingType": "url",
+        "IsTruncated": false,
+        "KeyCount": 1,
+        "MaxKeys": 1000,
+        "Name": "<bucket-name:1>",
+        "Prefix": "test/foo/bar",
         "ResponseMetadata": {
           "HTTPHeaders": {},
           "HTTPStatusCode": 200

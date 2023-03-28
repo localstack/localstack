@@ -2354,35 +2354,6 @@ class ListObjectsRequest(ServiceRequest):
     ExpectedBucketOwner: Optional[AccountId]
 
 
-class Object(TypedDict, total=False):
-    Key: Optional[ObjectKey]
-    LastModified: Optional[LastModified]
-    ETag: Optional[ETag]
-    ChecksumAlgorithm: Optional[ChecksumAlgorithmList]
-    Size: Optional[Size]
-    StorageClass: Optional[ObjectStorageClass]
-    Owner: Optional[Owner]
-
-
-ObjectList = List[Object]
-
-
-class ListObjectsV2Output(TypedDict, total=False):
-    IsTruncated: Optional[IsTruncated]
-    Contents: Optional[ObjectList]
-    Name: Optional[BucketName]
-    Prefix: Optional[Prefix]
-    Delimiter: Optional[Delimiter]
-    MaxKeys: Optional[MaxKeys]
-    CommonPrefixes: Optional[CommonPrefixList]
-    EncodingType: Optional[EncodingType]
-    KeyCount: Optional[KeyCount]
-    ContinuationToken: Optional[Token]
-    NextContinuationToken: Optional[NextToken]
-    StartAfter: Optional[StartAfter]
-    BucketRegion: Optional[BucketRegion]
-
-
 class ListObjectsV2Request(ServiceRequest):
     Bucket: BucketName
     Delimiter: Optional[Delimiter]
@@ -2493,6 +2464,17 @@ class NotificationConfigurationDeprecated(TypedDict, total=False):
     CloudFunctionConfiguration: Optional[CloudFunctionConfiguration]
 
 
+class Object(TypedDict, total=False):
+    Key: Optional[ObjectKey]
+    LastModified: Optional[LastModified]
+    ETag: Optional[ETag]
+    ChecksumAlgorithm: Optional[ChecksumAlgorithmList]
+    Size: Optional[Size]
+    StorageClass: Optional[ObjectStorageClass]
+    Owner: Optional[Owner]
+
+
+ObjectList = List[Object]
 UserMetadata = List[MetadataEntry]
 
 
@@ -3094,8 +3076,6 @@ class ListAllMyBucketsResult(TypedDict, total=False):
 
 class ListBucketResult(TypedDict, total=False):
     IsTruncated: Optional[IsTruncated]
-    Marker: Optional[Marker]
-    NextMarker: Optional[NextMarker]
     Contents: Optional[ObjectList]
     Name: Optional[BucketName]
     Prefix: Optional[Prefix]
@@ -3103,6 +3083,12 @@ class ListBucketResult(TypedDict, total=False):
     MaxKeys: Optional[MaxKeys]
     CommonPrefixes: Optional[CommonPrefixList]
     EncodingType: Optional[EncodingType]
+    KeyCount: Optional[KeyCount]
+    ContinuationToken: Optional[Token]
+    NextContinuationToken: Optional[NextToken]
+    StartAfter: Optional[StartAfter]
+    Marker: Optional[Marker]
+    NextMarker: Optional[NextMarker]
     BucketRegion: Optional[BucketRegion]
 
 
@@ -3771,7 +3757,7 @@ class S3Api:
         start_after: StartAfter = None,
         request_payer: RequestPayer = None,
         expected_bucket_owner: AccountId = None,
-    ) -> ListObjectsV2Output:
+    ) -> ListBucketResult:
         raise NotImplementedError
 
     @handler("ListParts")

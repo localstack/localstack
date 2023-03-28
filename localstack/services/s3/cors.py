@@ -263,7 +263,7 @@ def s3_cors_request_handler(chain: HandlerChain, context: RequestContext, respon
     if config.LEGACY_S3_PROVIDER or config.DISABLE_CUSTOM_CORS_S3:
         return
 
-    if context.service.service_name != "s3":
+    if not context.service or context.service.service_name != "s3":
         return
 
     if not context.operation or context.operation.name not in ("ListBuckets", "CreateBucket"):
