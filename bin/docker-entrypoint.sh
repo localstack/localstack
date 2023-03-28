@@ -47,10 +47,12 @@ term_handler() {
   exit 0; # 128 + 15 = 143 -- SIGTERM, but 0 is expected if proper shutdown takes place
 }
 
-# Strip `LOCALSTACK_` prefix in environment variables name (except LOCALSTACK_HOSTNAME)
+# Strip `LOCALSTACK_` prefix in environment variables name (except
+# LOCALSTACK_HOST and LOCALSTACK_HOSTNAME)
 source <(
   env |
   grep -v -e '^LOCALSTACK_HOSTNAME' |
+  grep -v -e '^LOCALSTACK_HOST' |
   grep -v -e '^LOCALSTACK_[[:digit:]]' | # See issue #1387
   sed -ne 's/^LOCALSTACK_\([^=]\+\)=.*/export \1=${LOCALSTACK_\1}/p'
 )

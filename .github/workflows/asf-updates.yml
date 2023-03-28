@@ -56,7 +56,7 @@ jobs:
 
           # Store a (multiline-sanitized) list of changed services (compared to the master) in the GitHub Action output "changed-services"
           echo "changed-services<<EOF" >> $GITHUB_OUTPUT
-          echo "$(git diff --name-only origin/master localstack/aws/api/ | sed 's#localstack/aws/api/#- #g' | sed 's#/__init__.py##g' | sed 's/_/-/g' | sed -z 's/\n/%0A/g' | sed -z 's/\r/%0D/g')" >> $GITHUB_OUTPUT
+          echo "$(git diff --name-only origin/master localstack/aws/api/ | sed 's#localstack/aws/api/#- #g' | sed 's#/__init__.py##g' | sed 's/_/-/g')" >> $GITHUB_OUTPUT
           echo "EOF" >> $GITHUB_OUTPUT
 
       - name: Read PR markdown template
@@ -69,8 +69,7 @@ jobs:
       - name: Add changed services to template
         if: ${{ success() && steps.check-for-changes.outputs.diff-count != '0' && steps.check-for-changes.outputs.diff-count != '' }}
         id: markdown
-        # TODO upgrade after https://github.com/mad9000/actions-find-and-replace-string/pull/11 has been released
-        uses: mad9000/actions-find-and-replace-string@2
+        uses: mad9000/actions-find-and-replace-string@4
         with:
           source: ${{ steps.template.outputs.content }}
           find: '{{ SERVICES }}'

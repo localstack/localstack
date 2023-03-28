@@ -240,6 +240,38 @@ class TestEvents:
             events_client, sqs_client, pattern=TEST_EVENT_PATTERN, entries_asserts=[(entries, True)]
         )
 
+    def test_put_events_with_values_in_array(self, events_client, sqs_client):
+        pattern = {"detail": {"event": {"data": {"type": ["1", "2"]}}}}
+        entries1 = [
+            {
+                "Source": "test",
+                "DetailType": "test",
+                "Detail": json.dumps({"event": {"data": {"type": ["3", "1"]}}}),
+            }
+        ]
+        entries2 = [
+            {
+                "Source": "test",
+                "DetailType": "test",
+                "Detail": json.dumps({"event": {"data": {"type": ["2"]}}}),
+            }
+        ]
+        entries3 = [
+            {
+                "Source": "test",
+                "DetailType": "test",
+                "Detail": json.dumps({"event": {"data": {"type": ["3"]}}}),
+            }
+        ]
+        entries_asserts = [(entries1, True), (entries2, True), (entries3, False)]
+        self._put_events_with_filter_to_sqs(
+            events_client,
+            sqs_client,
+            pattern=pattern,
+            entries_asserts=entries_asserts,
+            input_path="$.detail",
+        )
+
     @pytest.mark.aws_validated
     def test_put_events_with_nested_event_pattern(self, events_client, sqs_client):
         pattern = {"detail": {"event": {"data": {"type": ["1"]}}}}
