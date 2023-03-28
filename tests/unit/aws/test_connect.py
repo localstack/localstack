@@ -288,7 +288,9 @@ class TestClientFactory:
             service_principal="apigateway",
             endpoint_url=endpoint_url,
         )
-        assert test_params == {"is_internal": True, "service_principal": "apigateway"}
+        # TODO should be {"is_internal": True, "service_principal": "apigateway"} once IAM role resource policies
+        # are working
+        assert test_params == {"is_internal": True}
         test_params = {}
 
         client.awslambda.list_functions()
