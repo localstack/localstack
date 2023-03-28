@@ -40,11 +40,6 @@ class TestServerless(unittest.TestCase):
         events = aws_stack.create_external_boto_client("events")
         rules = events.list_rules()["Rules"]
 
-        import logging
-
-        logging.error(rules)
-        logging.error(events.list_event_buses())
-
         rule = ([r for r in rules if r["Name"] == "sls-test-cf-event"] or [None])[0]
         self.assertTrue(rule)
         self.assertIn("Arn", rule)
