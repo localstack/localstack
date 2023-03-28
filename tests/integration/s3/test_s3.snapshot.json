@@ -2542,7 +2542,7 @@
     }
   },
   "tests/integration/s3/test_s3.py::TestS3::test_head_object_fields": {
-    "recorded-date": "21-09-2022, 13:54:45",
+    "recorded-date": "28-03-2023, 15:37:16",
     "recorded-content": {
       "head-object": {
         "AcceptRanges": "bytes",
@@ -2551,9 +2551,20 @@
         "ETag": "\"e8dc4081b13434b45189a720b77b6818\"",
         "LastModified": "datetime",
         "Metadata": {},
+        "ServerSideEncryption": "AES256",
         "ResponseMetadata": {
           "HTTPHeaders": {},
           "HTTPStatusCode": 200
+        }
+      },
+      "head-object-404": {
+        "Error": {
+          "Code": "404",
+          "Message": "Not Found"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 404
         }
       }
     }
@@ -5338,7 +5349,7 @@
     }
   },
   "tests/integration/s3/test_s3.py::TestS3::test_list_objects_v2_with_prefix": {
-    "recorded-date": "28-03-2023, 12:30:57",
+    "recorded-date": "28-03-2023, 13:54:02",
     "recorded-content": {
       "list-objects-v2-1": {
         "Contents": [

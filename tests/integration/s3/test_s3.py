@@ -950,6 +950,7 @@ class TestS3:
         snapshot.match("deleted-object-tags", object_tags)
 
     @pytest.mark.aws_validated
+    @pytest.mark.skip_snapshot_verify(paths=["$..ServerSideEncryption"])
     @pytest.mark.skipif(
         condition=LEGACY_S3_PROVIDER,
         reason="see https://github.com/localstack/localstack/issues/6218",
@@ -959,6 +960,10 @@ class TestS3:
         s3_client.put_object(Bucket=s3_bucket, Key=key, Body=b"abcdefgh")
         response = s3_client.head_object(Bucket=s3_bucket, Key=key)
         snapshot.match("head-object", response)
+
+        with pytest.raises(ClientError) as e:
+            s3_client.head_object(Bucket=s3_bucket, Key="doesnotexist")
+        snapshot.match("head-object-404", e.value.response)
 
     @pytest.mark.aws_validated
     @pytest.mark.skip_snapshot_verify(
@@ -3349,6 +3354,13 @@ class TestS3:
 
         # Lists all objects in a bucket
         bucket_url = _bucket_url(s3_bucket)
+        resp = s3_http_client.get(bucket_url, headers=headers)
+        assert b'<?xml version="1.0" encoding="UTF-8"?>\n' in get_xml_content(resp.content)
+        resp_dict = xmltodict.parse(resp.content)
+        assert "ListBucketResult" in resp_dict
+
+        # Lists all objects V2 in a bucket
+        bucket_url = f"{_bucket_url(s3_bucket)}?list-type=2"
         resp = s3_http_client.get(bucket_url, headers=headers)
         assert b'<?xml version="1.0" encoding="UTF-8"?>\n' in get_xml_content(resp.content)
         resp_dict = xmltodict.parse(resp.content)
