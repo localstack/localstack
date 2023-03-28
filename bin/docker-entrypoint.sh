@@ -52,4 +52,4 @@ source /opt/code/localstack/.venv/bin/activate
 test -d /etc/localstack/init/boot.d && python3 -m localstack.runtime.init BOOT
 
 # run the localstack supervisor. it's important to run with `exec` and don't use pipes so signals are handled correctly
-exec localstack-supervisor.py
+exec localstack-supervisor

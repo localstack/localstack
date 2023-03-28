@@ -132,7 +132,7 @@ ADD Makefile setup.py setup.cfg pyproject.toml ./
 # add the root package init to invalidate docker layers with version bumps
 ADD localstack/__init__.py localstack/
 # add the localstack start scripts (necessary for the installation of the runtime dependencies, i.e. `pip install -e .`)
-ADD bin/localstack bin/localstack.bat bin/localstack-supervisor.py bin/
+ADD bin/localstack bin/localstack.bat bin/localstack-supervisor bin/
 
 # install dependencies to run the LocalStack Pro runtime and save which ones were installed
 RUN --mount=type=cache,target=/root/.cache \
@@ -148,7 +148,7 @@ COPY --from=builder /opt/code/localstack/.venv /opt/code/localstack/.venv
 # add project files necessary to install all dependencies
 ADD Makefile setup.py setup.cfg pyproject.toml ./
 # add the localstack start scripts (necessary for the installation of the runtime dependencies, i.e. `pip install -e .`)
-ADD bin/localstack bin/localstack.bat bin/localstack-supervisor.py bin/
+ADD bin/localstack bin/localstack.bat bin/localstack-supervisor bin/
 
 # add the code as late as possible
 ADD localstack/ localstack/
