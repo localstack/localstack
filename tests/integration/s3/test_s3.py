@@ -660,6 +660,7 @@ class TestS3:
             )
             snapshot.match(f"list-object-version-{param['Id']}", response)
 
+    @pytest.mark.aws_validated
     def test_list_objects_v2_with_prefix(self, s3_client, s3_bucket, snapshot):
         snapshot.add_transformer(snapshot.transform.s3_api())
         keys = ["test/foo/bar/123" "test/foo/bar/456", "test/bar/foo/123"]
