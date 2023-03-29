@@ -137,6 +137,10 @@ def main():
 
     signal.signal(signal.SIGALRM, _raise_alarm_exception)
     signal.signal(signal.SIGTERM, _terminate_localstack)
+    # TODO investigate: when we tried to forward SIGINT to LS, for some reason SIGINT was raised twice in LS
+    #  yet setting this to a no-op also worked. since we couldn't really figure out what was going on, we just
+    #  translate SIGINT to SIGTERM for the localstack process.
+    signal.signal(signal.SIGINT, _terminate_localstack)
     signal.signal(signal.SIGHUP, _restart_localstack)
 
     # sets the supervisor PID so localstack can signal to it more easily
@@ -169,8 +173,6 @@ def main():
                 continue
             else:
                 break
-    except KeyboardInterrupt:
-        pass
     finally:
         log("exiting")
 
