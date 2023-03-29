@@ -202,6 +202,9 @@ class ServicePrincipal(str):
     It is usually found under the `Service linked Roles` link for the respective service.
     https://docs.aws.amazon.com/IAM/latest/UserGuide/reference_aws-services-that-work-with-iam.html
 
+    You can also find a list of service principals here:
+    https://gist.github.com/shortjared/4c1e3fe52bdfa47522cfe5b41e5d6f22
+
     To save some space in our DTOs, we only add the `<service-name>` part of the service principal here.
     """
 
