@@ -303,11 +303,7 @@ class AccountRegionBundle(dict, Generic[BaseStoreType]):
         self._universal = {}
 
     def __getitem__(self, account_id: str) -> RegionBundle[BaseStoreType]:
-        if (
-            config.ALLOW_NONSTANDARD_REGIONS
-            and self.validate
-            and not re.match(r"\d{12}", account_id)
-        ):
+        if self.validate and not re.match(r"\d{12}", account_id):
             raise ValueError(f"'{account_id}' is not a valid AWS account ID")
 
         with self.lock:
