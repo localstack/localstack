@@ -3383,6 +3383,13 @@ class TestS3:
         resp_dict = xmltodict.parse(resp.content)
         assert "ListBucketResult" in resp_dict
 
+        # Lists all multipart uploads in a bucket
+        bucket_url = f"{_bucket_url(s3_bucket)}?uploads"
+        resp = s3_http_client.get(bucket_url, headers=headers)
+        assert b'<?xml version="1.0" encoding="UTF-8"?>\n' in get_xml_content(resp.content)
+        resp_dict = xmltodict.parse(resp.content)
+        assert "ListMultipartUploadsResult" in resp_dict
+
         location_constraint_url = f"{bucket_url}?location"
         resp = s3_http_client.get(location_constraint_url, headers=headers)
         assert b'<?xml version="1.0" encoding="UTF-8"?>\n' in get_xml_content(resp.content)
@@ -3579,6 +3586,51 @@ class TestS3:
                 UploadId=upload_id,
             )
         snapshot.match("upload-part-no-checksum-exc", e.value.response)
+
+    @pytest.mark.aws_validated
+    @pytest.mark.skip_snapshot_verify(
+        paths=[
+            "$..ServerSideEncryption",
+            "$..NextKeyMarker",
+            "$..NextUploadIdMarker",
+        ]
+    )
+    def test_list_multipart_uploads_parameters(self, s3_client, s3_bucket, snapshot):
+        snapshot.add_transformer(
+            [
+                snapshot.transform.key_value("Bucket", reference_replacement=False),
+                snapshot.transform.key_value("UploadId"),
+                snapshot.transform.key_value("DisplayName", reference_replacement=False),
+                snapshot.transform.key_value("ID", reference_replacement=False),
+            ]
+        )
+        key_name = "test-multipart-uploads-parameters"
+        response = s3_client.create_multipart_upload(Bucket=s3_bucket, Key=key_name)
+        snapshot.match("create-multipart", response)
+        upload_id = response["UploadId"]
+
+        # Write contents to memory rather than a file.
+        upload_file_object = BytesIO(to_bytes("test"))
+
+        upload_resp = s3_client.upload_part(
+            Bucket=s3_bucket,
+            Key=key_name,
+            Body=upload_file_object,
+            PartNumber=1,
+            UploadId=upload_id,
+        )
+        snapshot.match("upload-part", upload_resp)
+
+        response = s3_client.list_multipart_uploads(Bucket=s3_bucket)
+        snapshot.match("list-uploads-basic", response)
+
+        # TODO: not applied yet, just check that the status is the same (not raising NotImplemented)
+        response = s3_client.list_multipart_uploads(Bucket=s3_bucket, MaxUploads=1)
+        snapshot.match("list-uploads-max-uploads", response)
+
+        # TODO: not applied yet, just check that the status is the same (not raising NotImplemented)
+        response = s3_client.list_multipart_uploads(Bucket=s3_bucket, Delimiter="/")
+        snapshot.match("list-uploads-delimiter", response)
 
 
 class TestS3TerraformRawRequests:

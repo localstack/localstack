@@ -2262,34 +2262,6 @@ class ListBucketMetricsConfigurationsRequest(ServiceRequest):
     ExpectedBucketOwner: Optional[AccountId]
 
 
-class MultipartUpload(TypedDict, total=False):
-    UploadId: Optional[MultipartUploadId]
-    Key: Optional[ObjectKey]
-    Initiated: Optional[Initiated]
-    StorageClass: Optional[StorageClass]
-    Owner: Optional[Owner]
-    Initiator: Optional[Initiator]
-    ChecksumAlgorithm: Optional[ChecksumAlgorithm]
-
-
-MultipartUploadList = List[MultipartUpload]
-
-
-class ListMultipartUploadsOutput(TypedDict, total=False):
-    Bucket: Optional[BucketName]
-    KeyMarker: Optional[KeyMarker]
-    UploadIdMarker: Optional[UploadIdMarker]
-    NextKeyMarker: Optional[NextKeyMarker]
-    Prefix: Optional[Prefix]
-    Delimiter: Optional[Delimiter]
-    NextUploadIdMarker: Optional[NextUploadIdMarker]
-    MaxUploads: Optional[MaxUploads]
-    IsTruncated: Optional[IsTruncated]
-    Uploads: Optional[MultipartUploadList]
-    CommonPrefixes: Optional[CommonPrefixList]
-    EncodingType: Optional[EncodingType]
-
-
 class ListMultipartUploadsRequest(ServiceRequest):
     Bucket: BucketName
     Delimiter: Optional[Delimiter]
@@ -2415,6 +2387,19 @@ class ListPartsRequest(ServiceRequest):
 class MetadataEntry(TypedDict, total=False):
     Name: Optional[MetadataKey]
     Value: Optional[MetadataValue]
+
+
+class MultipartUpload(TypedDict, total=False):
+    UploadId: Optional[MultipartUploadId]
+    Key: Optional[ObjectKey]
+    Initiated: Optional[Initiated]
+    StorageClass: Optional[StorageClass]
+    Owner: Optional[Owner]
+    Initiator: Optional[Initiator]
+    ChecksumAlgorithm: Optional[ChecksumAlgorithm]
+
+
+MultipartUploadList = List[MultipartUpload]
 
 
 class QueueConfiguration(TypedDict, total=False):
@@ -3092,6 +3077,21 @@ class ListBucketResult(TypedDict, total=False):
     BucketRegion: Optional[BucketRegion]
 
 
+class ListMultipartUploadsResult(TypedDict, total=False):
+    Bucket: Optional[BucketName]
+    KeyMarker: Optional[KeyMarker]
+    UploadIdMarker: Optional[UploadIdMarker]
+    NextKeyMarker: Optional[NextKeyMarker]
+    Prefix: Optional[Prefix]
+    Delimiter: Optional[Delimiter]
+    NextUploadIdMarker: Optional[NextUploadIdMarker]
+    MaxUploads: Optional[MaxUploads]
+    IsTruncated: Optional[IsTruncated]
+    Uploads: Optional[MultipartUploadList]
+    CommonPrefixes: Optional[CommonPrefixList]
+    EncodingType: Optional[EncodingType]
+
+
 class S3Api:
 
     service = "s3"
@@ -3710,7 +3710,7 @@ class S3Api:
         prefix: Prefix = None,
         upload_id_marker: UploadIdMarker = None,
         expected_bucket_owner: AccountId = None,
-    ) -> ListMultipartUploadsOutput:
+    ) -> ListMultipartUploadsResult:
         raise NotImplementedError
 
     @handler("ListObjectVersions")

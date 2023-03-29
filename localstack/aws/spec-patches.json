@@ -841,6 +841,16 @@
       "op": "replace",
       "path": "/operations/ListObjectsV2/output/shape",
       "value": "ListBucketResult"
+    },
+    {
+      "op": "replace",
+      "path": "/operations/ListMultipartUploads/output/shape",
+      "value": "ListMultipartUploadsResult"
+    },
+    {
+      "op": "move",
+      "from": "/shapes/ListMultipartUploadsOutput",
+      "path": "/shapes/ListMultipartUploadsResult"
     }
   ]
 }
