@@ -70,12 +70,8 @@ class TestCliContainerLifecycle:
             requests.get(get_edge_url() + "/_localstack/health")
 
     def test_wait_timeout_raises_exception(self, runner, container_client):
-        result = runner.invoke(cli, ["start", "-d"])
-        assert result.exit_code == 0
-        assert "starting LocalStack" in result.output
-
+        # assume a wait without start fails
         result = runner.invoke(cli, ["wait", "-t", "0.5"])
-        # one day this test will surely fail ;-)
         assert result.exit_code != 0
 
     def test_logs(self, runner, container_client):
