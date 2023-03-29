@@ -598,6 +598,11 @@ SKIP_SSL_CERT_DOWNLOAD = is_env_true("SKIP_SSL_CERT_DOWNLOAD")
 # Absolute path to a custom certificate (pem file)
 CUSTOM_SSL_CERT_PATH = os.environ.get("CUSTOM_SSL_CERT_PATH", "").strip()
 
+# Allow non-standard AWS regions
+ALLOW_NONSTANDARD_REGIONS = is_env_true("ALLOW_NONSTANDARD_REGIONS")
+if ALLOW_NONSTANDARD_REGIONS:
+    os.environ["MOTO_ALLOW_NONEXISTENT_REGION"] = "true"
+
 # name of the main Docker container
 MAIN_CONTAINER_NAME = os.environ.get("MAIN_CONTAINER_NAME", "").strip() or "localstack_main"
 
@@ -953,6 +958,7 @@ MAIN_DOCKER_NETWORK = os.environ.get("MAIN_DOCKER_NETWORK", "") or LAMBDA_DOCKER
 # Make sure to keep this in sync with the above!
 # Note: do *not* include DATA_DIR in this list, as it is treated separately
 CONFIG_ENV_VARS = [
+    "ALLOW_NONSTANDARD_REGIONS",
     "BUCKET_MARKER_LOCAL",
     "CFN_ENABLE_RESOLVE_REFS_IN_MODELS",
     "CUSTOM_SSL_CERT_PATH",
