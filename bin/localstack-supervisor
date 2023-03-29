@@ -3,7 +3,7 @@
 localstack. This can be used on the host or in the docker-entrypoint.sh.
 
 The supervisor behaves as follows:
-* SIGHUP to supervisor will terminate the localstack instance and then start a new process
+* SIGUSR1 to supervisor will terminate the localstack instance and then start a new process
 * SIGTERM to supervisor will terminate the localstack instance and then return
 * if the localstack instance exits, then the supervisor exits with the same exit code.
 
@@ -137,7 +137,11 @@ def main():
 
     signal.signal(signal.SIGALRM, _raise_alarm_exception)
     signal.signal(signal.SIGTERM, _terminate_localstack)
-    signal.signal(signal.SIGHUP, _restart_localstack)
+    # TODO investigate: when we tried to forward SIGINT to LS, for some reason SIGINT was raised twice in LS
+    #  yet setting this to a no-op also worked. since we couldn't really figure out what was going on, we just
+    #  translate SIGINT to SIGTERM for the localstack process.
+    signal.signal(signal.SIGINT, _terminate_localstack)
+    signal.signal(signal.SIGUSR1, _restart_localstack)
 
     # sets the supervisor PID so localstack can signal to it more easily
     os.environ["SUPERVISOR_PID"] = str(os.getpid())
@@ -169,8 +173,6 @@ def main():
                 continue
             else:
                 break
-    except KeyboardInterrupt:
-        pass
     finally:
         log("exiting")
 
