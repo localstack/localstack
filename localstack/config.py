@@ -676,7 +676,8 @@ EXTERNAL_SERVICE_PORTS_END = int(
     or (EXTERNAL_SERVICE_PORTS_START + 50)
 )
 
-# java options to Lambda
+# PUBLIC v1: -Xmx512M (example) Currently not supported in new provider but possible via custom entrypoint.
+# Allow passing custom JVM options to Java Lambdas executed in Docker.
 LAMBDA_JAVA_OPTS = os.environ.get("LAMBDA_JAVA_OPTS", "").strip()
 
 # limit in which to kinesis-mock will start throwing exceptions
@@ -693,7 +694,8 @@ KINESIS_LATENCY = os.environ.get("KINESIS_LATENCY", "").strip() or "500"
 # Delay between data persistence (in seconds)
 KINESIS_MOCK_PERSIST_INTERVAL = os.environ.get("KINESIS_MOCK_PERSIST_INTERVAL", "").strip() or "5s"
 
-# Whether or not to handle lambda event sources as synchronous invocations
+# DEPRECATED: 1 (default) only applies to old lambda provider
+# Whether or not to handle Kinesis Lambda event sources as synchronous invocations.
 SYNCHRONOUS_SNS_EVENTS = is_env_true("SYNCHRONOUS_SNS_EVENTS")  # DEPRECATED
 SYNCHRONOUS_KINESIS_EVENTS = is_env_not_false("SYNCHRONOUS_KINESIS_EVENTS")  # DEPRECATED
 
@@ -730,100 +732,128 @@ SQS_ENDPOINT_STRATEGY = os.environ.get("SQS_ENDPOINT_STRATEGY", "") or "off"
 # Disable the check for MaxNumberOfMessage in SQS ReceiveMessage
 SQS_DISABLE_MAX_NUMBER_OF_MESSAGE_LIMIT = is_env_true("SQS_DISABLE_MAX_NUMBER_OF_MESSAGE_LIMIT")
 
-# host under which the LocalStack services are available from Lambda Docker containers
+# DEPRECATED: only applies to old lambda provider
+# Endpoint host under which LocalStack APIs are accessible from Lambda Docker containers.
 HOSTNAME_FROM_LAMBDA = os.environ.get("HOSTNAME_FROM_LAMBDA", "").strip()
 
-# whether to remotely copy the Lambda code or locally mount a volume
+# DEPRECATED: true (default) only applies to old lambda provider
+# Determines whether Lambda code is copied or mounted into containers.
 LAMBDA_REMOTE_DOCKER = is_env_true("LAMBDA_REMOTE_DOCKER")
 # make sure we default to LAMBDA_REMOTE_DOCKER=true if running in Docker
 if is_in_docker and not os.environ.get("LAMBDA_REMOTE_DOCKER", "").strip():
     LAMBDA_REMOTE_DOCKER = True
 
-# Marker name to indicate that a bucket represents the local file system. This is used for testing
-# Serverless applications where we mount the Lambda code directly into the container from the host OS.
+# PUBLIC: hot-reload (default v2), __local__ (default v1)
+# Magic S3 bucket name for Hot Reloading. The S3Key points to the source code on the local file system.
 BUCKET_MARKER_LOCAL = (
     os.environ.get("BUCKET_MARKER_LOCAL", "").strip() or DEFAULT_BUCKET_MARKER_LOCAL
 )
 
-# network that the docker lambda container will be joining
+# PUBLIC: bridge (Docker default)
+# Docker network driver for the Lambda and ECS containers. https://docs.docker.com/network/
 LAMBDA_DOCKER_NETWORK = os.environ.get("LAMBDA_DOCKER_NETWORK", "").strip()
 
-# custom DNS server that the docker lambda container will use
+# PUBLIC v1: Currently only supported by the old lambda provider
+# Custom DNS server for the container running your lambda function.
 LAMBDA_DOCKER_DNS = os.environ.get("LAMBDA_DOCKER_DNS", "").strip()
 
-# additional flags passed to Lambda Docker run/create commands
+# PUBLIC: -e KEY=VALUE -v host:container
+# Additional flags passed to Docker run|create commands.
 LAMBDA_DOCKER_FLAGS = os.environ.get("LAMBDA_DOCKER_FLAGS", "").strip()
 
+# PUBLIC: 0 (default)
 # Enable this flag to run cross-platform compatible lambda functions natively (i.e., Docker selects architecture) and
 # ignore the AWS architectures (i.e., x86_64, arm64) configured for the lambda function.
 LAMBDA_IGNORE_ARCHITECTURE = is_env_true("LAMBDA_IGNORE_ARCHITECTURE")
 
+# TODO: test and add to docs
+# EXPERIMENTAL: 0 (default)
 # prebuild images before execution? Increased cold start time on the tradeoff of increased time until lambda is ACTIVE
 LAMBDA_PREBUILD_IMAGES = is_env_true("LAMBDA_PREBUILD_IMAGES")
 
-# get the lambda runtime executor name
+# PUBLIC: docker (default), kubernetes (pro)
+# Where Lambdas will be executed.
 LAMBDA_RUNTIME_EXECUTOR = os.environ.get("LAMBDA_RUNTIME_EXECUTOR", "").strip()
 
-# Lambda executor startup timeout
+# PUBLIC: 10 (default)
+# How many seconds Lambda will wait for the runtime environment to start up.
 LAMBDA_RUNTIME_ENVIRONMENT_TIMEOUT = int(os.environ.get("LAMBDA_RUNTIME_ENVIRONMENT_TIMEOUT") or 10)
 
-# default container registry for lambda execution images
+# DEPRECATED: lambci/lambda (default) only applies to old lambda provider
+# An alternative docker registry from where to pull lambda execution containers.
+# Replaced by LAMBDA_RUNTIME_IMAGE_MAPPING in new provider.
 LAMBDA_CONTAINER_REGISTRY = (
     os.environ.get("LAMBDA_CONTAINER_REGISTRY", "").strip() or DEFAULT_LAMBDA_CONTAINER_REGISTRY
 )
 
-# EXPERIMENTAL | Only applicable to new Lambda Provider
-# Allows two options to customize the resolution of Lambda runtime:
-#   1. pattern with <runtime> placeholder, e.g. "custom-repo/lambda-<runtime>:2022"
-#   2. json dict mapping the <runtime> to an image, e.g. '{"python3.9": "custom-repo/lambda-py:thon3.9"}'
+# PUBLIC: base images for Lambda (default) https://docs.aws.amazon.com/lambda/latest/dg/runtimes-images.html
+# localstack/services/awslambda/invocation/lambda_models.py:IMAGE_MAPPING
+# Customize the Docker image of Lambda runtimes, either by:
+# a) pattern with <runtime> placeholder, e.g. custom-repo/lambda-<runtime>:2022
+# b) json dict mapping the <runtime> to an image, e.g. {"python3.9": "custom-repo/lambda-py:thon3.9"}
 LAMBDA_RUNTIME_IMAGE_MAPPING = os.environ.get("LAMBDA_RUNTIME_IMAGE_MAPPING", "").strip()
 
-# whether to remove containers after Lambdas finished executing
+# PUBLIC: 1 (default)
+# Whether to remove any Lambda Docker containers.
 LAMBDA_REMOVE_CONTAINERS = (
     os.environ.get("LAMBDA_REMOVE_CONTAINERS", "").lower().strip() not in FALSE_STRINGS
 )
 
-# time in milliseconds until lambda kills the execution environment after the last invocation has been processed
-# can be set to 0 to immediately kill the execution environments after an invocation
-# defaults to 600_000 ms => 10 minutes
+# PUBLIC: 600000 (default 10min)
+# Time in milliseconds until lambda shuts down the execution environment after the last invocation has been processed.
+# Set to 0 to immediately shut down the execution environment after an invocation.
 LAMBDA_KEEPALIVE_MS = int(os.environ.get("LAMBDA_KEEPALIVE_MS", 600_000))
 
+# PUBLIC: 1000 (default)
+# The maximum number of events that functions can process simultaneously in the current Region.
+# See AWS service quotas: https://docs.aws.amazon.com/general/latest/gr/lambda-service.html
 # Concurrency limits. Like on AWS these apply per account and region.
-# per account/region: there can be at most <LAMBDA_LIMITS_CONCURRENT_EXECUTIONS> concurrent invocations.
 LAMBDA_LIMITS_CONCURRENT_EXECUTIONS = int(
     os.environ.get("LAMBDA_LIMITS_CONCURRENT_EXECUTIONS", 1_000)
 )
+# SEMI-PUBLIC: not actively communicated
 # per account/region: there must be at least <LAMBDA_LIMITS_MINIMUM_UNRESERVED_CONCURRENCY> unreserved concurrency.
 LAMBDA_LIMITS_MINIMUM_UNRESERVED_CONCURRENCY = int(
     os.environ.get("LAMBDA_LIMITS_MINIMUM_UNRESERVED_CONCURRENCY", 100)
 )
-
+# SEMI-PUBLIC: not actively communicated
 LAMBDA_LIMITS_TOTAL_CODE_SIZE = int(os.environ.get("LAMBDA_LIMITS_TOTAL_CODE_SIZE", 80_530_636_800))
+# SEMI-PUBLIC: not actively communicated
 LAMBDA_LIMITS_CODE_SIZE_ZIPPED = int(os.environ.get("LAMBDA_LIMITS_CODE_SIZE_ZIPPED", 52_428_800))
+# SEMI-PUBLIC: not actively communicated
 LAMBDA_LIMITS_CODE_SIZE_UNZIPPED = int(
     os.environ.get("LAMBDA_LIMITS_CODE_SIZE_UNZIPPED", 262_144_000)
 )
+# SEMI-PUBLIC: not actively communicated
 LAMBDA_LIMITS_CREATE_FUNCTION_REQUEST_SIZE = int(
     os.environ.get("LAMBDA_LIMITS_CREATE_FUNCTION_REQUEST_SIZE", 69_905_067)
 )
+# SEMI-PUBLIC: not actively communicated
 LAMBDA_LIMITS_MAX_FUNCTION_ENVVAR_SIZE_BYTES = int(
     os.environ.get("LAMBDA_LIMITS_MAX_FUNCTION_ENVVAR_SIZE_BYTES", 4 * 1024)
 )
 
-# DEV | Only for LS developers. Only applicable to new Lambda provider.
-# whether to explicitly expose port in lambda container when invoking functions in host mode for systems that cannot
-# reach the container via its IPv4 (e.g., macOS https://docs.docker.com/desktop/networking/#i-cannot-ping-my-containers)
+# DEV: 0 (default) only applies to new lambda provider. For LS developers only.
+# Whether to explicitly expose a free TCP port in lambda containers when invoking functions in host mode for
+# systems that cannot reach the container via its IPv4. For example, macOS cannot reach Docker containers:
+# https://docs.docker.com/desktop/networking/#i-cannot-ping-my-containers
 LAMBDA_DEV_PORT_EXPOSE = is_env_true("LAMBDA_DEV_PORT_EXPOSE")
 
-# INTERNAL debugging options
-# There are NO stability guarantees and they may break at any time.
+# DEV: only applies to new lambda provider. All LAMBDA_INIT_* configuration are for LS developers only.
+# There are NO stability guarantees, and they may break at any time.
+# DEV: 0 (default) Enable for mounting of RIE init binary and delve debugger
 LAMBDA_INIT_DEBUG = is_env_true("LAMBDA_INIT_DEBUG")
+# DEV: path to RIE init binary (e.g., var/rapid/init)
 LAMBDA_INIT_BIN_PATH = os.environ.get("LAMBDA_INIT_BIN_PATH")
+# DEV: path to entrypoint script (e.g., var/rapid/entrypoint.sh)
 LAMBDA_INIT_BOOTSTRAP_PATH = os.environ.get("LAMBDA_INIT_BOOTSTRAP_PATH")
+# DEV: path to delve debugger (e.g., var/rapid/dlv)
 LAMBDA_INIT_DELVE_PATH = os.environ.get("LAMBDA_INIT_DELVE_PATH")
+# DEV: Go Delve debug port
 LAMBDA_INIT_DELVE_PORT = int(os.environ.get("LAMBDA_INIT_DELVE_PORT") or 40000)
+# DEV: Time to wait after every invoke as a workaround to fix a race condition in persistence tests
 LAMBDA_INIT_POST_INVOKE_WAIT_MS = os.environ.get("LAMBDA_INIT_POST_INVOKE_WAIT_MS")
-# Alternative user or empty string to skip dropping privileges
+# DEV: sbx_user1051 (default when not provided) Alternative system user or empty string to skip dropping privileges.
 LAMBDA_INIT_USER = os.environ.get("LAMBDA_INIT_USER")
 
 # Adding Stepfunctions default port
@@ -839,38 +869,47 @@ S3_SKIP_SIGNATURE_VALIDATION = is_env_not_false("S3_SKIP_SIGNATURE_VALIDATION")
 # whether to skip S3 validation of provided KMS key
 S3_SKIP_KMS_KEY_VALIDATION = is_env_not_false("S3_SKIP_KMS_KEY_VALIDATION")
 
-# user-defined lambda executor mode
+# DEPRECATED: docker (default), local (fallback without Docker), docker-reuse. only applies to old lambda provider
+# Method to use for executing Lambda functions.
 LAMBDA_EXECUTOR = os.environ.get("LAMBDA_EXECUTOR", "").strip()
 
+# DEPRECATED: only applies to old lambda provider
 # Fallback URL to use when a non-existing Lambda is invoked. If this matches
 # `dynamodb://<table_name>`, then the invocation is recorded in the corresponding
 # DynamoDB table. If this matches `http(s)://...`, then the Lambda invocation is
 # forwarded as a POST request to that URL.
 LAMBDA_FALLBACK_URL = os.environ.get("LAMBDA_FALLBACK_URL", "").strip()
+# DEPRECATED: only applies to old lambda provider
 # Forward URL used to forward any Lambda invocations to an external
 # endpoint (can use useful for advanced test setups)
 LAMBDA_FORWARD_URL = os.environ.get("LAMBDA_FORWARD_URL", "").strip()
+# DEPRECATED: ignored in new lambda provider because creation happens asynchronously
 # Time in seconds to wait at max while extracting Lambda code.
 # By default, it is 25 seconds for limiting the execution time
 # to avoid client/network timeout issues
 LAMBDA_CODE_EXTRACT_TIME = int(os.environ.get("LAMBDA_CODE_EXTRACT_TIME") or 25)
 
+# DEPRECATED: 1 (default) only applies to old lambda provider
 # whether lambdas should use stay open mode if executed in "docker-reuse" executor
 LAMBDA_STAY_OPEN_MODE = is_in_docker and is_env_not_false("LAMBDA_STAY_OPEN_MODE")
 
-# truncate output string slices value
+# PUBLIC: 2000 (default)
+# Allows increasing the default char limit for truncation of lambda log lines when printed in the console.
+# This does not affect the logs processing in CloudWatch.
 LAMBDA_TRUNCATE_STDOUT = int(os.getenv("LAMBDA_TRUNCATE_STDOUT") or 2000)
 
-# sets an alternative base delay in seconds for async retries (only applicable to ASF Lambda provider)
-# defaults to 60s (behavior on AWS)
-# the first retry will be 1x LAMBDA_RETRY_BASE_DELAY_SECONDS, the second one 2x LAMBDA_RETRY_BASE_DELAY_SECONDS
-# e.g. LAMBDA_RETRY_BASE_DELAY_SECONDS=30.
-#   The delay between the initial invocation and first retry will be 30s.
-#   The delay between the first retry and the second retry will be 60s
+# INTERNAL: 60 (default matching AWS) only applies to new lambda provider
+# Base delay in seconds for async retries. Further retries use: NUM_ATTEMPTS * LAMBDA_RETRY_BASE_DELAY_SECONDS
+# For example:
+# 1x LAMBDA_RETRY_BASE_DELAY_SECONDS: delay between initial invocation and first retry
+# 2x LAMBDA_RETRY_BASE_DELAY_SECONDS: delay between the first retry and the second retry
 LAMBDA_RETRY_BASE_DELAY_SECONDS = int(os.getenv("LAMBDA_RETRY_BASE_DELAY") or 60)
 
-# whether Lambda.CreateFunction will block until the function is in a terminal state (active or failed)
-# this technically breaks behavior parity but is provided as a simplification over the default AWS behavior
+# PUBLIC: 0 (default)
+# Set to 1 to create lambda functions synchronously (not recommended).
+# Whether Lambda.CreateFunction will block until the function is in a terminal state (Active or Failed).
+# This technically breaks behavior parity but is provided as a simplification over the default AWS behavior and
+# to match the behavior of the old lambda provider.
 LAMBDA_SYNCHRONOUS_CREATE = is_env_true("LAMBDA_SYNCHRONOUS_CREATE")
 
 # A comma-delimited string of stream names and its corresponding shard count to
@@ -908,6 +947,8 @@ LEGACY_SNS_GCM_PUBLISHING = is_env_true("LEGACY_SNS_GCM_PUBLISHING")
 
 # TODO remove fallback to LAMBDA_DOCKER_NETWORK with next minor version
 MAIN_DOCKER_NETWORK = os.environ.get("MAIN_DOCKER_NETWORK", "") or LAMBDA_DOCKER_NETWORK
+
+# HINT: Please add deprecated environment variables to deprecations.py
 
 # list of environment variable names used for configuration.
 # Make sure to keep this in sync with the above!

@@ -177,6 +177,7 @@ from localstack.services.awslambda.invocation.lambda_service import (
     store_s3_bucket_archive,
 )
 from localstack.services.awslambda.invocation.models import LambdaStore
+from localstack.services.awslambda.invocation.runtime_executor import get_runtime_executor
 from localstack.services.awslambda.lambda_utils import validate_filters
 from localstack.services.awslambda.layerfetcher.layer_fetcher import LayerFetcher
 from localstack.services.awslambda.urlrouter import FunctionUrlRouter
@@ -262,6 +263,7 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
 
     def on_after_init(self):
         self.router.register_routes()
+        get_runtime_executor().validate_environment()
 
     def on_before_stop(self) -> None:
         # TODO: should probably unregister routes?

@@ -20,6 +20,7 @@ from localstack.services.awslambda.invocation.runtime_executor import (
     RuntimeExecutor,
 )
 from localstack.services.awslambda.lambda_utils import (
+    HINT_LOG,
     get_container_network_for_lambda,
     get_main_endpoint_from_container,
 )
@@ -27,7 +28,9 @@ from localstack.services.awslambda.packages import awslambda_runtime_package
 from localstack.utils.container_networking import get_main_container_name
 from localstack.utils.container_utils.container_client import (
     ContainerConfiguration,
+    DockerNotAvailable,
     DockerPlatform,
+    NoSuchImage,
     PortMappings,
     VolumeBind,
     VolumeMappings,
@@ -383,8 +386,22 @@ class DockerRuntimeExecutor(RuntimeExecutor):
             platform = docker_platform(function_version.config.architectures[0])
             # Pull image for a given platform upon function creation such that invocations do not time out.
             if (image_name, platform) not in PULLED_IMAGES:
-                CONTAINER_CLIENT.pull_image(image_name, platform)
-                PULLED_IMAGES.add((image_name, platform))
+                try:
+                    CONTAINER_CLIENT.pull_image(image_name, platform)
+                    PULLED_IMAGES.add((image_name, platform))
+                except NoSuchImage as e:
+                    LOG.debug(
+                        "Unable to pull image %s for runtime executor preparation.", image_name
+                    )
+                    raise e
+                except DockerNotAvailable as e:
+                    HINT_LOG.error(
+                        "Failed to pull Docker image because Docker is not available in the LocalStack container "
+                        "but required to run Lambda functions. Please add the Docker volume mount "
+                        '"/var/run/docker.sock:/var/run/docker.sock" to your LocalStack startup. '
+                        "https://docs.localstack.cloud/references/lambda-provider-v2/#docker-not-available"
+                    )
+                    raise e
             if config.LAMBDA_PREBUILD_IMAGES:
                 target_path = function_version.config.code.get_unzipped_code_location()
                 prepare_image(target_path, function_version)
@@ -401,3 +418,14 @@ class DockerRuntimeExecutor(RuntimeExecutor):
 
     def get_runtime_endpoint(self) -> str:
         return f"http://{self.get_endpoint_from_executor()}:{config.EDGE_PORT}{self.executor_endpoint.get_endpoint_prefix()}"
+
+    @classmethod
+    def validate_environment(cls) -> bool:
+        if not CONTAINER_CLIENT.has_docker():
+            LOG.warning(
+                "WARNING: Docker not available in the LocalStack container but required to run Lambda "
+                'functions. Please add the Docker volume mount "/var/run/docker.sock:/var/run/docker.sock" to your '
+                "LocalStack startup. https://docs.localstack.cloud/references/lambda-provider-v2/#docker-not-available"
+            )
+            return False
+        return True

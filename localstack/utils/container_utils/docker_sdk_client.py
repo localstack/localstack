@@ -17,6 +17,7 @@ from localstack.utils.container_utils.container_client import (
     ContainerClient,
     ContainerException,
     DockerContainerStatus,
+    DockerNotAvailable,
     DockerPlatform,
     NoSuchContainer,
     NoSuchImage,
@@ -50,7 +51,7 @@ class SdkDockerClient(ContainerClient):
         if self.docker_client:
             return self.docker_client
         else:
-            raise ContainerException("Docker not available")
+            raise DockerNotAvailable("Docker not available")
 
     def _read_from_sock(self, sock: socket, tty: bool):
         """Reads multiplexed messages from a socket returned by attach_socket.
