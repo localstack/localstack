@@ -32,16 +32,6 @@ source <(
   sed -ne 's/^LOCALSTACK_\([^=]\+\)=.*/export \1=${LOCALSTACK_\1}/p'
 )
 
-# Setup trap handler(s)
-if [ "$DISABLE_TERM_HANDLER" == "" ]; then
-  # Catch all the main
-  trap 'kill -1 ${!}; term_handler 1' SIGHUP
-  trap 'kill -2 ${!}; term_handler 2' SIGINT
-  trap 'kill -3 ${!}; term_handler 3' SIGQUIT
-  trap 'kill -15 ${!}; term_handler 15' SIGTERM
-  trap 'kill -31 ${!}; term_handler 31' SIGUSR2
-fi
-
 LOG_DIR=/var/lib/localstack/logs
 test -d ${LOG_DIR} || mkdir -p ${LOG_DIR}
 
