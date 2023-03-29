@@ -52,6 +52,8 @@ if TYPE_CHECKING:
 
 LOG = logging.getLogger(__name__)
 
+MAX_ENVIRONMENT_START_ATTEMPTS = 3
+
 
 @dataclasses.dataclass(frozen=True)
 class QueuedInvocation:
@@ -343,7 +345,7 @@ class LambdaVersionManager(ServiceEndpoint):
                 service_endpoint=self,
             )
             self.all_environments[runtime_environment.id] = runtime_environment
-            self.execution_env_pool.submit(runtime_environment.start)
+            runtime_environment.start()
 
     def stop_environment(self, environment: RuntimeEnvironment) -> None:
         try:
@@ -404,7 +406,15 @@ class LambdaVersionManager(ServiceEndpoint):
 
                 environment = None
                 # TODO avoid infinite environment spawning retrying
+                environment_start_attempt_nr = 0
                 while not environment:
+                    environment_start_attempt_nr += 1
+                    if environment_start_attempt_nr > MAX_ENVIRONMENT_START_ATTEMPTS:
+                        raise Exception(
+                            "Exceeded maximum retries to start environment for invocation %s",
+                            queued_invocation.invocation_id,
+                        )
+
                     try:
                         environment = self.available_environments.get(timeout=1)
                         if environment is QUEUE_SHUTDOWN or self.shutdown_event.is_set():
@@ -433,6 +443,12 @@ class LambdaVersionManager(ServiceEndpoint):
                         # another busy environment, and won't spawn a new one as there is one active here.
                         # We will be stuck in the loop until another becomes active without scaling.
                         if self.active_environment_count() == 0:
+                            if environment_start_attempt_nr >= MAX_ENVIRONMENT_START_ATTEMPTS:
+                                raise Exception(
+                                    "Exceeded maximum retries to start environment for invocation %s",
+                                    queued_invocation.invocation_id,
+                                )
+
                             LOG.debug(
                                 "Detected no active environments for version %s. Starting one...",
                                 self.function_arn,
