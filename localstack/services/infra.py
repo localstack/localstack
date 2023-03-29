@@ -333,7 +333,7 @@ def check_aws_credentials():
 
 def signal_supervisor_restart():
     if pid := os.environ.get("SUPERVISOR_PID"):
-        os.kill(int(pid), signal.SIGHUP)
+        os.kill(int(pid), signal.SIGUSR1)
     else:
         LOG.warning("could not signal supervisor to restart localstack")
 
