@@ -81,17 +81,16 @@ class PackageInstaller(abc.ABC):
             if not target:
                 target = InstallTarget.VAR_LIBS
             # Skip the installation if it's already installed
-            if not self.is_installed():
-                with self.install_lock:
-                    # Package might have been installed in the meantime, check again
-                    if not self.is_installed():
-                        LOG.debug("Starting installation of %s...", self.name)
-                        self._prepare_installation(target)
-                        self._install(target)
-                        self._post_process(target)
-                        LOG.debug("Installation of %s finished.", self.name)
-            else:
-                LOG.debug("Installation of %s skipped (already installed).", self.name)
+            with self.install_lock:
+                # Package might have been installed in the meantime, check again
+                if not self.is_installed():
+                    LOG.debug("Starting installation of %s...", self.name)
+                    self._prepare_installation(target)
+                    self._install(target)
+                    self._post_process(target)
+                    LOG.debug("Installation of %s finished.", self.name)
+                else:
+                    LOG.debug("Installation of %s skipped (already installed).", self.name)
         except PackageException as e:
             raise e
         except Exception as e:
