@@ -601,7 +601,7 @@ CUSTOM_SSL_CERT_PATH = os.environ.get("CUSTOM_SSL_CERT_PATH", "").strip()
 # Allow non-standard AWS regions
 ALLOW_NONSTANDARD_REGIONS = is_env_true("ALLOW_NONSTANDARD_REGIONS")
 if ALLOW_NONSTANDARD_REGIONS:
-    os.environ["MOTO_ALLOW_NONEXISTENT_REGION"] = True
+    os.environ["MOTO_ALLOW_NONEXISTENT_REGION"] = "true"
 
 # name of the main Docker container
 MAIN_CONTAINER_NAME = os.environ.get("MAIN_CONTAINER_NAME", "").strip() or "localstack_main"
