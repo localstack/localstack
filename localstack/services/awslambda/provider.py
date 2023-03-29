@@ -385,7 +385,11 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
                 Type="User",
             )
         current_hash = current_latest_version.config.code.code_sha256
-        if code_sha256 and current_hash != code_sha256:
+        if (
+            code_sha256
+            and current_hash != code_sha256
+            and not current_latest_version.config.code.is_hot_reloading()
+        ):
             raise InvalidParameterValueException(
                 f"CodeSHA256 ({code_sha256}) is different from current CodeSHA256 in $LATEST ({current_hash}). Please try again with the CodeSHA256 in $LATEST.",
                 Type="User",
