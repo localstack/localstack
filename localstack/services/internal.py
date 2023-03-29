@@ -14,7 +14,7 @@ from localstack.deprecations import deprecated_endpoint
 from localstack.http import Request, Resource, Response, Router
 from localstack.http.adapters import RouterListener
 from localstack.http.dispatcher import handler_dispatcher
-from localstack.services.infra import SHUTDOWN_INFRA, terminate_all_processes_in_docker
+from localstack.services.infra import exit_infra, signal_supervisor_restart
 from localstack.utils.collections import merge_recursive
 from localstack.utils.config_listener import update_config_variable
 from localstack.utils.files import load_file
@@ -64,9 +64,10 @@ class HealthResource:
             return Response("invalid request", 400)
 
         # backdoor API to support restarting the instance
-        if data.get("action") in ["kill", "restart"]:
-            terminate_all_processes_in_docker()
-            SHUTDOWN_INFRA.set()
+        if data.get("action") == "restart":
+            signal_supervisor_restart()
+        elif data.get("action") == "kill":
+            exit_infra(0)
 
         return Response("ok", 200)
 

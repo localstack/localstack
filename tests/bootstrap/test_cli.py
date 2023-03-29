@@ -149,8 +149,8 @@ class TestCliContainerLifecycle:
         result = json.loads(output[0])
         assert "stateMachines" in result
 
-        output = container_client.exec_in_container(config.MAIN_CONTAINER_NAME, ["ps", "-u", user])
-        assert "supervisord" in to_str(output[0])
+        output = container_client.exec_in_container(config.MAIN_CONTAINER_NAME, ["ps", "-fu", user])
+        assert "localstack-supervisor" in to_str(output[0])
 
     def test_start_cli_within_container(self, runner, container_client):
         output = container_client.run_container(

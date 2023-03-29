@@ -57,7 +57,6 @@ from localstack.aws.api.s3 import (
     InvalidStorageClass,
     ListBucketResult,
     ListObjectsRequest,
-    ListObjectsV2Output,
     ListObjectsV2Request,
     MissingSecurityHeader,
     NoSuchBucket,
@@ -310,8 +309,8 @@ class S3Provider(S3Api, ServiceLifecycleHook):
         self,
         context: RequestContext,
         request: ListObjectsV2Request,
-    ) -> ListObjectsV2Output:
-        response: ListObjectsV2Output = call_moto(context)
+    ) -> ListBucketResult:
+        response: ListBucketResult = call_moto(context)
 
         encoding_type = request.get("EncodingType")
         if "EncodingType" not in response and encoding_type:
