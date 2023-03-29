@@ -47,7 +47,8 @@ class TestServerless(unittest.TestCase):
         self.assertEqual(["aws.cloudformation"], pattern["source"])
         self.assertIn("detail-type", pattern)
 
-        rule = ([r for r in rules if r["EventBusName"] == "customBus"] or [None])[0]
+        event_bus_name = "customBus"
+        rule = events.list_rules(EventBusName=event_bus_name)["Rules"][0]
         self.assertTrue(rule)
         self.assertEqual({"source": ["customSource"]}, json.loads(rule["EventPattern"]))
 

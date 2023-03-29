@@ -496,11 +496,16 @@ class TestEvents:
 
         events_client.create_event_bus(Name=bus_name_1)
         resp = events_client.create_event_bus(Name=bus_name_2)
-        events_client.put_rule(
-            Name=rule_name,
-            EventBusName=bus_name_1,
-            EventPattern=json.dumps(TEST_EVENT_PATTERN),
-        )
+
+        for bus_name in (
+            bus_name_1,
+            bus_name_2,
+        ):
+            events_client.put_rule(
+                Name=rule_name,
+                EventBusName=bus_name,
+                EventPattern=json.dumps(TEST_EVENT_PATTERN),
+            )
 
         events_client.put_targets(
             Rule=rule_name,
@@ -1281,7 +1286,6 @@ class TestEvents:
         # put target
         events_client.put_targets(
             Rule=rule_name,
-            EventBusName=TEST_EVENT_BUS_NAME,
             Targets=[{"Id": target_id, "Arn": queue_arn, "InputPath": "$.detail"}],
         )
 
