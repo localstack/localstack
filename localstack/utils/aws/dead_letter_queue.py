@@ -3,7 +3,8 @@ import logging
 import uuid
 from typing import Dict, List
 
-from localstack.utils.aws import arns, aws_stack
+from localstack.aws.connect import connect_to
+from localstack.utils.aws import arns
 from localstack.utils.aws.aws_models import LambdaFunction
 from localstack.utils.strings import convert_to_printable_chars, first_char_to_upper
 
@@ -26,14 +27,24 @@ def lambda_error_to_dead_letter_queue(func_details: LambdaFunction, event: Dict,
     _send_to_dead_letter_queue(source_arn, dlq_arn, event, error)
 
 
-def _send_to_dead_letter_queue(source_arn: str, dlq_arn: str, event: Dict, error):
+def _send_to_dead_letter_queue(source_arn: str, dlq_arn: str, event: Dict, error, role: str = None):
     if not dlq_arn:
         return
     LOG.info("Sending failed execution %s to dead letter queue %s", source_arn, dlq_arn)
     messages = _prepare_messages_to_dlq(source_arn, event, error)
+    source_service = arns.extract_service_from_arn(source_arn)
+    region = arns.extract_region_from_arn(dlq_arn)
+    if role:
+        clients = connect_to.with_assumed_role(
+            role_arn=role, service_principal=source_service, region_name=region
+        )
+    else:
+        clients = connect_to(region_name=region)
     if ":sqs:" in dlq_arn:
         queue_url = arns.get_sqs_queue_url(dlq_arn)
-        sqs_client = aws_stack.connect_to_service("sqs")
+        sqs_client = clients.sqs.request_metadata(
+            source_arn=source_arn, service_principal=source_service
+        )
         error = None
         result_code = None
         try:
@@ -52,7 +63,9 @@ def _send_to_dead_letter_queue(source_arn: str, dlq_arn: str, event: Dict, error
             LOG.info(msg)
             raise Exception(msg)
     elif ":sns:" in dlq_arn:
-        sns_client = aws_stack.connect_to_service("sns")
+        sns_client = clients.sns.request_metadata(
+            source_arn=source_arn, service_principal=source_service
+        )
         for message in messages:
             sns_client.publish(
                 TopicArn=dlq_arn,
