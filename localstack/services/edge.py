@@ -6,7 +6,7 @@ import re
 import subprocess
 import sys
 import threading
-from typing import Callable, Dict, List, Optional, Tuple, TypeVar
+from typing import Callable, Dict, Iterable, List, Optional, Tuple, TypeVar
 
 from requests.models import Response
 
@@ -424,6 +424,12 @@ def start_proxy(
     """
     listen_hosts = parse_gateway_listen(listen_str)
     listen = listen_hosts[0]
+    return do_start_tcp_proxy(listen, target_address, asynchronous)
+
+
+def do_start_tcp_proxy(
+    listen: HostAndPort, target_address: Optional[HostAndPort] = None, asynchronous: bool = False
+) -> FuncThread:
     if target_address is None:
         target_address = HostAndPort(host=config.LOCALHOST_IP, port=constants.DEFAULT_PORT_EDGE)
 
@@ -441,7 +447,7 @@ def start_proxy(
     return proxy
 
 
-def split_list_by(lst: List[T], predicate: Callable[[T], bool]) -> Tuple[List[T], List[T]]:
+def split_list_by(lst: Iterable[T], predicate: Callable[[T], bool]) -> Tuple[List[T], List[T]]:
     truthy, falsy = [], []
 
     for item in lst:
@@ -470,54 +476,22 @@ def start_edge(listen_str: str, use_ssl: bool = True, asynchronous: bool = False
 
     # start TCP proxies for the remaining addresses
     for address in privileged:
-        # start a tcp proxy
-        run_module_as_sudo(
-            module="localstack.services.edge",
-            arguments=["proxy", "--gateway-listen", str(address)],
-            asynchronous=True,
-        )
+        if is_root():
+            # just start the proxy
+            do_start_tcp_proxy(address, asynchronous=asynchronous)
+        else:
+            # escalate to root
+            run_module_as_root(
+                module="localstack.services.edge",
+                arguments=["proxy", "--gateway-listen", str(address)],
+                asynchronous=True,
+            )
 
     if edge_thread is not None:
         edge_thread.join()
 
-    # if config.EDGE_PORT_HTTP and config.EDGE_PORT_HTTP != port:
-    #     do_start_edge(
-    #         config.EDGE_BIND_HOST,
-    #         config.EDGE_PORT_HTTP,
-    #         use_ssl=use_ssl,
-    #         asynchronous=True,
-    #     )
-    # if port > 1024 or is_root():
-    #     return do_start_edge(config.EDGE_BIND_HOST, port, use_ssl, asynchronous=asynchronous)
 
-    # process requires privileged port but we're not root -> try running as sudo
-
-    # class Terminator:
-    #     def stop(self, quiet=True):
-    #         try:
-    #             url = "http%s://%s:%s" % ("s" if use_ssl else "", LOCALHOST, port)
-    #             requests.verify_ssl = False
-    #             requests.post(url, headers={HEADER_KILL_SIGNAL: "kill"})
-    #         except Exception:
-    #             pass
-    #
-    # # register a signal handler to terminate the sudo process later on
-    # TMP_THREADS.append(Terminator())
-    #
-    # # start the TCP proxy
-    # env_vars = {
-    #     "DEBUG": os.environ.get("DEBUG", ""),
-    #     "EDGE_FORWARD_URL": config.get_edge_url(),
-    #     "EDGE_BIND_HOST": config.EDGE_BIND_HOST,
-    # }
-    # proxy_module = "localstack.services.edge"
-    # proxy_args = ["proxy", str(port)]
-    # return run_module_as_sudo(
-    #     module=proxy_module, arguments=proxy_args, env_vars=env_vars, asynchronous=asynchronous
-    # )
-
-
-def run_module_as_sudo(
+def run_module_as_root(
     module: str, arguments: Optional[List[str]] = None, asynchronous=False, env_vars=None
 ):
     # prepare environment
