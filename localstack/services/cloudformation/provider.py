@@ -147,7 +147,7 @@ class CloudformationProvider(CloudformationApi):
         if len(template_body) > 51200:
             raise ValidationError(
                 f'1 validation error detected: Value \'{request["TemplateBody"]}\' at \'templateBody\' '
-                f'failed to satisfy constraint: Member must have length less than or equal to 51200'
+                f"failed to satisfy constraint: Member must have length less than or equal to 51200"
             )
         api_utils.prepare_template_body(request)  # TODO: avoid mutating request directly
 
