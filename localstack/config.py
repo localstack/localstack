@@ -1226,7 +1226,7 @@ class ServiceProviderConfig(Mapping[str, str]):
         if env is None:
             env = os.environ
         for key, value in env.items():
-            if key.startswith(self.override_prefix):
+            if key.startswith(self.override_prefix) and value:
                 self.set_provider(key[len(self.override_prefix) :].lower().replace("_", "-"), value)
 
     def get_provider(self, service: str) -> str:
