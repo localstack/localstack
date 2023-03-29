@@ -161,7 +161,7 @@ class Directories:
         from localstack.utils import files
 
         tmp_dir = os.path.join(tempfile.gettempdir(), "localstack-cli")
-        cache_dir = (files.cache_dir() / "cli").absolute()
+        cache_dir = (files.get_user_cache_dir()).absolute() / "localstack-cli"
 
         return Directories(
             static_libs=None,
