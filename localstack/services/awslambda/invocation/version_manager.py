@@ -42,7 +42,7 @@ from localstack.services.awslambda.lambda_executors import InvocationException
 from localstack.utils.aws import dead_letter_queue
 from localstack.utils.aws.client_types import ServicePrincipal
 from localstack.utils.aws.message_forwarding import send_event_to_target
-from localstack.utils.cloudwatch.cloudwatch_util import store_cloudwatch_logs
+from localstack.utils.cloudwatch.cloudwatch_util import publish_lambda_metric, store_cloudwatch_logs
 from localstack.utils.strings import to_str, truncate
 from localstack.utils.threads import FuncThread, start_thread
 from localstack.utils.time import timestamp_millis
@@ -723,10 +723,12 @@ class LambdaVersionManager(ServiceEndpoint):
     # Service Endpoint implementation
     def invocation_result(self, invoke_id: str, invocation_result: InvocationResult) -> None:
         LOG.debug("Got invocation result for invocation '%s'", invoke_id)
+        start_thread(self.record_cw_metric_invocation)
         self.invocation_response(invoke_id=invoke_id, invocation_result=invocation_result)
 
     def invocation_error(self, invoke_id: str, invocation_error: InvocationError) -> None:
         LOG.debug("Got invocation error for invocation '%s'", invoke_id)
+        start_thread(self.record_cw_metric_error)
         self.invocation_response(invoke_id=invoke_id, invocation_result=invocation_error)
 
     def invocation_logs(self, invoke_id: str, invocation_logs: InvocationLogs) -> None:
@@ -743,3 +745,33 @@ class LambdaVersionManager(ServiceEndpoint):
 
     def status_error(self, executor_id: str) -> None:
         self.set_environment_failed(executor_id=executor_id)
+
+    # Cloud Watch reporting
+    # TODO: replace this with a custom metric handler using a thread pool
+    def record_cw_metric_invocation(self, *args, **kwargs):
+        try:
+            publish_lambda_metric(
+                "Invocations",
+                1,
+                {"func_name": self.function.function_name},
+                region_name=self.function_version.id.region,
+            )
+        except Exception as e:
+            LOG.debug("Failed to send CloudWatch metric for Lambda invocation: %s", e)
+
+    def record_cw_metric_error(self, *args, **kwargs):
+        try:
+            publish_lambda_metric(
+                "Invocations",
+                1,
+                {"func_name": self.function.function_name},
+                region_name=self.function_version.id.region,
+            )
+            publish_lambda_metric(
+                "Errors",
+                1,
+                {"func_name": self.function.function_name},
+                region_name=self.function_version.id.region,
+            )
+        except Exception as e:
+            LOG.debug("Failed to send CloudWatch metric for Lambda invocation error: %s", e)

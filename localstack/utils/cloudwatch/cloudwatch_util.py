@@ -6,6 +6,7 @@ from typing import Optional
 from flask import Response
 
 from localstack import config
+from localstack.aws.connect import connect_to
 from localstack.utils.aws import aws_stack
 from localstack.utils.strings import to_str
 from localstack.utils.time import now_utc
@@ -23,11 +24,11 @@ def dimension_lambda(kwargs):
     return [{"Name": "FunctionName", "Value": func_name}]
 
 
-def publish_lambda_metric(metric, value, kwargs):
+def publish_lambda_metric(metric, value, kwargs, region_name: Optional[str] = None):
     # publish metric only if CloudWatch service is available
     if not config.service_port("cloudwatch"):
         return
-    cw_client = aws_stack.connect_to_service("cloudwatch")
+    cw_client = connect_to(region_name=region_name).cloudwatch
     try:
         cw_client.put_metric_data(
             Namespace="AWS/Lambda",
