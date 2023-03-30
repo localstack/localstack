@@ -1,3 +1,4 @@
+import copy
 import datetime
 import logging
 import os
@@ -99,7 +100,7 @@ from localstack.aws.handlers import (
     serve_custom_service_request_handlers,
 )
 from localstack.services.edge import ROUTER
-from localstack.services.moto import call_moto
+from localstack.services.moto import call_moto, call_moto_with_request
 from localstack.services.plugins import ServiceLifecycleHook
 from localstack.services.s3 import constants as s3_constants
 from localstack.services.s3.cors import S3CorsHandler, s3_cors_request_handler
@@ -240,14 +241,32 @@ class S3Provider(S3Api, ServiceLifecycleHook):
     ) -> CreateBucketOutput:
         bucket_name = request["Bucket"]
         validate_bucket_name(bucket=bucket_name)
-        response: CreateBucketOutput = call_moto(context)
+        # AWS JS SDK v2 has weird behaviour regarding adding LocationConstraint to `us-east-1` if not targeting AWS
+        # we need to modify the request before sending it to Moto
+        # this is a hack and prevent AWS parity, but this breaks a lot of users setup
+        # see https://github.com/localstack/localstack/issues/8000
+        bucket_configuration = request.get("CreateBucketConfiguration", {})
+        is_node_sdk_v2 = context.request.headers.get("User-Agent", "").startswith(
+            "aws-sdk-nodejs/2"
+        )
+        if (
+            is_node_sdk_v2
+            and bucket_configuration
+            and bucket_configuration.get("LocationConstraint") == "us-east-1"
+        ):
+            request_for_moto = copy.deepcopy(request)
+            request_for_moto.pop("CreateBucketConfiguration", None)
+            response: CreateBucketOutput = call_moto_with_request(context, request_for_moto)
+        else:
+            response: CreateBucketOutput = call_moto(context)
+
         # Location is always contained in response -> full url for LocationConstraint outside us-east-1
-        if request.get("CreateBucketConfiguration"):
-            location = request["CreateBucketConfiguration"].get("LocationConstraint")
-            if location and location != "us-east-1":
-                response["Location"] = get_full_default_bucket_location(bucket_name)
+        if (location := bucket_configuration.get("LocationConstraint")) and location != "us-east-1":
+            response["Location"] = get_full_default_bucket_location(bucket_name)
+
         if "Location" not in response:
             response["Location"] = f"/{bucket_name}"
+
         self._cors_handler.invalidate_cache()
         return response
 

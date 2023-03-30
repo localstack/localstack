@@ -3632,6 +3632,34 @@ class TestS3:
         response = s3_client.list_multipart_uploads(Bucket=s3_bucket, Delimiter="/")
         snapshot.match("list-uploads-delimiter", response)
 
+    @pytest.mark.only_localstack
+    def test_create_bucket_with_wrong_location_with_js_sdk_v2(self, s3_client, s3_create_bucket):
+        # AWS JS SDK v2 has weird behaviour regarding adding LocationConstraint to `us-east-1` if not targeting AWS
+        # we modify the request before sending it to Moto
+        # this is a hack and prevent AWS parity, but this breaks a lot of users setup
+        # see https://github.com/localstack/localstack/issues/8000
+        request_body = '<CreateBucketConfiguration xmlns="http://s3.amazonaws.com/doc/2006-03-01/"><LocationConstraint>us-east-1</LocationConstraint></CreateBucketConfiguration>'
+        js_sdk_bucket = f"test-bucket-{short_uid()}"
+        try:
+            create_bucket_as_js_v2_sdk = requests.put(
+                url=f"{config.get_edge_url()}/{js_sdk_bucket}",
+                data=request_body,
+                headers={"User-Agent": "aws-sdk-nodejs/2.1346.0 darwin/v14.18.3 callback"},
+            )
+            assert create_bucket_as_js_v2_sdk.ok
+            assert create_bucket_as_js_v2_sdk.headers["Location"] == f"/{js_sdk_bucket}"
+        finally:
+            s3_client.delete_bucket(Bucket=js_sdk_bucket)
+
+        # assert that outside the JS SDK V2, we still raise the exception
+        with pytest.raises(ClientError) as e:
+            s3_client.create_bucket(
+                Bucket=f"test-bucket-{short_uid()}",
+                CreateBucketConfiguration={"LocationConstraint": "us-east-1"},
+            )
+
+        assert e.value.response["Error"]["Code"] == "InvalidLocationConstraint"
+
 
 class TestS3TerraformRawRequests:
     @pytest.mark.only_localstack
