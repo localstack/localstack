@@ -5,7 +5,7 @@ import pytest
 
 @pytest.mark.aws_validated
 @pytest.mark.skip_snapshot_verify(paths=["$..ResourceIdentifierSummaries..ResourceIdentifiers"])
-def test_get_template_summary(deploy_cfn_template, cfn_client, snapshot):
+def test_get_template_summary(deploy_cfn_template, snapshot, aws_client):
     snapshot.add_transformer(snapshot.transform.cloudformation_api())
     snapshot.add_transformer(snapshot.transform.sns_api())
 
@@ -17,6 +17,6 @@ def test_get_template_summary(deploy_cfn_template, cfn_client, snapshot):
         )
     )
 
-    res = cfn_client.get_template_summary(StackName=deployment.stack_name)
+    res = aws_client.cloudformation.get_template_summary(StackName=deployment.stack_name)
 
     snapshot.match("template-summary", res)

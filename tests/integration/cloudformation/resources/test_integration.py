@@ -5,7 +5,7 @@ from localstack.utils.strings import short_uid
 from localstack.utils.sync import wait_until
 
 
-def test_events_sqs_sns_lambda(logs_client, events_client, sns_client, deploy_cfn_template):
+def test_events_sqs_sns_lambda(deploy_cfn_template, aws_client):
     function_name = f"function-{short_uid()}"
     queue_name = f"queue-{short_uid()}"
     topic_name = f"topic-{short_uid()}"
@@ -30,7 +30,7 @@ def test_events_sqs_sns_lambda(logs_client, events_client, sns_client, deploy_cf
     bus_name = stack.outputs["EventBusName"]
 
     topic_arn = stack.outputs["TopicArn"]
-    result = sns_client.get_topic_attributes(TopicArn=topic_arn)["Attributes"]
+    result = aws_client.sns.get_topic_attributes(TopicArn=topic_arn)["Attributes"]
     assert json.loads(result.get("Policy")) == {
         "Statement": [
             {
@@ -45,7 +45,7 @@ def test_events_sqs_sns_lambda(logs_client, events_client, sns_client, deploy_cf
     }
 
     # put events
-    events_client.put_events(
+    aws_client.events.put_events(
         Entries=[
             {
                 "DetailType": "test-detail-type",
@@ -56,8 +56,10 @@ def test_events_sqs_sns_lambda(logs_client, events_client, sns_client, deploy_cf
     )
 
     def _check_lambda_invocations():
-        groups = logs_client.describe_log_groups(logGroupNamePrefix=f"/aws/lambda/{lambda_name}")
-        streams = logs_client.describe_log_streams(
+        groups = aws_client.logs.describe_log_groups(
+            logGroupNamePrefix=f"/aws/lambda/{lambda_name}"
+        )
+        streams = aws_client.logs.describe_log_streams(
             logGroupName=groups["logGroups"][0]["logGroupName"]
         )
         assert (
@@ -66,7 +68,7 @@ def test_events_sqs_sns_lambda(logs_client, events_client, sns_client, deploy_cf
 
         all_events = []
         for s in streams["logStreams"]:
-            events = logs_client.get_log_events(
+            events = aws_client.logs.get_log_events(
                 logGroupName=groups["logGroups"][0]["logGroupName"],
                 logStreamName=s["logStreamName"],
             )["events"]

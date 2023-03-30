@@ -5,7 +5,7 @@ import pytest
 from localstack.utils.strings import short_uid
 
 
-def test_deploy_stack_with_dynamodb_table(cfn_client, deploy_cfn_template, dynamodb_client):
+def test_deploy_stack_with_dynamodb_table(deploy_cfn_template, aws_client):
     env = "Staging"
     ddb_table_name_prefix = f"ddb-table-{short_uid()}"
     ddb_table_name = f"{ddb_table_name_prefix}-{env}"
@@ -21,17 +21,17 @@ def test_deploy_stack_with_dynamodb_table(cfn_client, deploy_cfn_template, dynam
     assert f"table/{ddb_table_name}" in stack.outputs["Arn"]
     assert stack.outputs["Name"] == ddb_table_name
 
-    rs = dynamodb_client.list_tables()
+    rs = aws_client.dynamodb.list_tables()
     assert ddb_table_name in rs["TableNames"]
 
     stack.destroy()
 
-    rs = dynamodb_client.list_tables()
+    rs = aws_client.dynamodb.list_tables()
     assert ddb_table_name not in rs["TableNames"]
 
 
 def test_globalindex_read_write_provisioned_throughput_dynamodb_table(
-    dynamodb_client, deploy_cfn_template
+    deploy_cfn_template, aws_client
 ):
     deploy_cfn_template(
         template_path=os.path.join(
@@ -40,7 +40,7 @@ def test_globalindex_read_write_provisioned_throughput_dynamodb_table(
         parameters={"tableName": "dynamodb", "env": "test"},
     )
 
-    response = dynamodb_client.describe_table(TableName="dynamodb-test")
+    response = aws_client.dynamodb.describe_table(TableName="dynamodb-test")
 
     if response["Table"]["ProvisionedThroughput"]:
         throughput = response["Table"]["ProvisionedThroughput"]
@@ -62,7 +62,7 @@ def test_globalindex_read_write_provisioned_throughput_dynamodb_table(
         "$..Table.Replicas",
     ]
 )
-def test_default_name_for_table(deploy_cfn_template, dynamodb_client, snapshot):
+def test_default_name_for_table(deploy_cfn_template, snapshot, aws_client):
     snapshot.add_transformer(snapshot.transform.dynamodb_api())
     snapshot.add_transformer(snapshot.transform.key_value("TableName", "table-name"))
     stack = deploy_cfn_template(
@@ -71,5 +71,5 @@ def test_default_name_for_table(deploy_cfn_template, dynamodb_client, snapshot):
         ),
     )
 
-    response = dynamodb_client.describe_table(TableName=stack.outputs["TableName"])
+    response = aws_client.dynamodb.describe_table(TableName=stack.outputs["TableName"])
     snapshot.match("table_description", response)
