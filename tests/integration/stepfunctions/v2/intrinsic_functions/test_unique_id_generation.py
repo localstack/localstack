@@ -19,9 +19,7 @@ pytestmark = pytest.mark.skipif(
     paths=["$..loggingConfiguration", "$..tracingConfiguration", "$..previousEventId"]
 )
 class TestUniqueIdGeneration:
-    def test_uuid(
-        self, stepfunctions_client, create_iam_role_for_sfn, create_state_machine, snapshot
-    ):
+    def test_uuid(self, create_iam_role_for_sfn, create_state_machine, snapshot, aws_client):
         snf_role_arn = create_iam_role_for_sfn()
         snapshot.add_transformer(RegexTransformer(snf_role_arn, "snf_role_arn"))
 
@@ -35,15 +33,15 @@ class TestUniqueIdGeneration:
         snapshot.add_transformer(snapshot.transform.sfn_sm_create_arn(creation_resp, 0))
         state_machine_arn = creation_resp["stateMachineArn"]
 
-        exec_resp = stepfunctions_client.start_execution(stateMachineArn=state_machine_arn)
+        exec_resp = aws_client.stepfunctions.start_execution(stateMachineArn=state_machine_arn)
         snapshot.add_transformer(snapshot.transform.sfn_sm_exec_arn(exec_resp, 0))
         execution_arn = exec_resp["executionArn"]
 
         await_execution_success(
-            stepfunctions_client=stepfunctions_client, execution_arn=execution_arn
+            stepfunctions_client=aws_client.stepfunctions, execution_arn=execution_arn
         )
 
-        exec_hist_resp = stepfunctions_client.get_execution_history(executionArn=execution_arn)
+        exec_hist_resp = aws_client.stepfunctions.get_execution_history(executionArn=execution_arn)
         output = JSONPathUtils.extract_json(
             "$..executionSucceededEventDetails..output", exec_hist_resp
         )
