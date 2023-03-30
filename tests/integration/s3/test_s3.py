@@ -3347,7 +3347,7 @@ class TestS3:
         snapshot.match("create-multipart-outposts-exc", e.value.response)
 
     @pytest.mark.aws_validated
-    def test_response_structure(self, aws_http_client_factory, s3_bucket):
+    def test_response_structure(self, aws_http_client_factory, s3_client, s3_bucket):
         """
         Test that the response structure is correct for the S3 API
         """
@@ -3377,22 +3377,43 @@ class TestS3:
         assert "ListBucketResult" in resp_dict
 
         # Lists all objects V2 in a bucket
-        bucket_url = f"{_bucket_url(s3_bucket)}?list-type=2"
-        resp = s3_http_client.get(bucket_url, headers=headers)
+        list_objects_v2_url = f"{bucket_url}?list-type=2"
+        resp = s3_http_client.get(list_objects_v2_url, headers=headers)
         assert b'<?xml version="1.0" encoding="UTF-8"?>\n' in get_xml_content(resp.content)
         resp_dict = xmltodict.parse(resp.content)
         assert "ListBucketResult" in resp_dict
 
         # Lists all multipart uploads in a bucket
-        bucket_url = f"{_bucket_url(s3_bucket)}?uploads"
-        resp = s3_http_client.get(bucket_url, headers=headers)
+        list_multipart_uploads_url = f"{bucket_url}?uploads"
+        resp = s3_http_client.get(list_multipart_uploads_url, headers=headers)
         assert b'<?xml version="1.0" encoding="UTF-8"?>\n' in get_xml_content(resp.content)
         resp_dict = xmltodict.parse(resp.content)
         assert "ListMultipartUploadsResult" in resp_dict
 
+        # GetBucketLocation
         location_constraint_url = f"{bucket_url}?location"
         resp = s3_http_client.get(location_constraint_url, headers=headers)
         assert b'<?xml version="1.0" encoding="UTF-8"?>\n' in get_xml_content(resp.content)
+
+        tagging = {"TagSet": [{"Key": "tag1", "Value": "tag1"}]}
+        # put some tags on the bucket
+        s3_client.put_bucket_tagging(Bucket=s3_bucket, Tagging=tagging)
+
+        # GetBucketTagging
+        get_bucket_tagging_url = f"{bucket_url}?tagging"
+        resp = s3_http_client.get(get_bucket_tagging_url, headers=headers)
+        resp_dict = xmltodict.parse(resp.content)
+        assert resp_dict["Tagging"]["TagSet"] == {"Tag": {"Key": "tag1", "Value": "tag1"}}
+
+        # put an object to tests the next requests
+        key_name = "test-key"
+        s3_client.put_object(Bucket=s3_bucket, Key=key_name, Tagging="tag1=tag1")
+
+        # GetObjectTagging
+        get_object_tagging_url = f"{bucket_url}/{key_name}?tagging"
+        resp = s3_http_client.get(get_object_tagging_url, headers=headers)
+        resp_dict = xmltodict.parse(resp.content)
+        assert resp_dict["Tagging"]["TagSet"] == {"Tag": {"Key": "tag1", "Value": "tag1"}}
 
     @pytest.mark.aws_validated
     def test_s3_delete_objects_trailing_slash(self, s3_client, aws_http_client_factory, s3_bucket):

@@ -620,6 +620,9 @@ class S3Provider(S3Api, ServiceLifecycleHook):
         self, context: RequestContext, request: GetObjectTaggingRequest
     ) -> GetObjectTaggingOutput:
         response: GetObjectTaggingOutput = call_moto(context)
+        # FIXME: because of an issue with the serializer, we cannot return the VersionId for now
+        # the specs give a GetObjectTaggingOutput but the real return tag is `Tagging` which already exists as a shape
+        # we can't add the VersionId for now
         if (
             "VersionId" in response
             and request["Bucket"] not in self.get_store().bucket_versioning_status
