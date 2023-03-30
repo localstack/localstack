@@ -3070,9 +3070,7 @@ class TestLambdaUrl:
         # function name + qualifier tests
         fn_arn_doesnotexist = fn_arn.replace(function_name, "doesnotexist")
 
-        def test_name_and_qualifier(
-            method: Callable, snapshot_prefix: str, tests, aws_client, **kwargs
-        ):
+        def test_name_and_qualifier(method: Callable, snapshot_prefix: str, tests, **kwargs):
             for t in tests:
                 with pytest.raises(t["exc"]) as e:
                     method(**t["args"], **kwargs)

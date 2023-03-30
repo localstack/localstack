@@ -47,14 +47,16 @@ TEST_LAMBDA_ROTATE_SECRET = os.path.join(THIS_FOLDER, "functions", "lambda_rotat
 
 class TestSecretsManager:
     @pytest.fixture
-    def secret_name(self, sm_client, cleanups) -> str:
+    def secret_name(self, aws_client, cleanups) -> str:
         """
         Returns a new unique SecretId, and schedules its deletion though the cleanups mechanism.
         :return: a new and automatically deleted unique SecretId.
         """
         secret_name = f"s-{short_uid()}"
         cleanups.append(
-            lambda: sm_client.delete_secret(SecretId=secret_name, ForceDeleteWithoutRecovery=True)
+            lambda: aws_client.secretsmanager.delete_secret(
+                SecretId=secret_name, ForceDeleteWithoutRecovery=True
+            )
         )
         return secret_name
 
