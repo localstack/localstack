@@ -92,13 +92,14 @@ def _resource(service):
     return aws_stack.connect_to_resource_external(service, config=config)
 
 
+# TODO: remove usage of this fixture
 @pytest.fixture(scope="class")
 def create_boto_client(aws_client_factory):
     def _factory_client(
         service, region_name=None, aws_access_key_id=None, *, additional_config=None
     ):
-        return getattr(
-            aws_client_factory(region_name=region_name, config=additional_config), service
+        return aws_client_factory.get_client(
+            service_name=service, region_name=region_name, config=additional_config
         )
 
     return _factory_client
