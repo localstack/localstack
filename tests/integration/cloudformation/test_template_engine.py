@@ -145,7 +145,7 @@ class TestIntrinsicFunctions:
         assert (bucket_name in bucket_names) == expected_bucket_created
 
     @pytest.mark.aws_validated
-    def test_base64_sub_and_getatt_functions(self, deploy_cfn_template, aws_client):
+    def test_base64_sub_and_getatt_functions(self, deploy_cfn_template):
         template_path = os.path.join(
             os.path.dirname(__file__), "../templates/functions_getatt_sub_base64.yml"
         )
@@ -158,7 +158,7 @@ class TestIntrinsicFunctions:
         assert converted_string == deployed.outputs["Encoded"]
 
     @pytest.mark.aws_validated
-    def test_split_length_and_join_functions(self, deploy_cfn_template, aws_client):
+    def test_split_length_and_join_functions(self, deploy_cfn_template):
         template_path = os.path.join(
             os.path.dirname(__file__), "../templates/functions_select_split_join.yml"
         )
@@ -183,7 +183,7 @@ class TestIntrinsicFunctions:
 
     @pytest.mark.aws_validated
     @pytest.mark.skip(reason="functions not currently supported")
-    def test_json_and_find_in_map_functions(self, deploy_cfn_template, aws_client):
+    def test_json_and_find_in_map_functions(self, deploy_cfn_template):
         template_path = os.path.join(
             os.path.dirname(__file__), "../templates/function_to_json_string.yml"
         )
@@ -206,7 +206,7 @@ class TestIntrinsicFunctions:
 
     @pytest.mark.aws_validated
     @pytest.mark.skip(reason="function not currently supported")
-    def test_cidr_function(self, deploy_cfn_template, aws_client):
+    def test_cidr_function(self, deploy_cfn_template):
         template_path = os.path.join(os.path.dirname(__file__), "../templates/functions_cidr.yml")
 
         # TODO parametrize parameters and result
@@ -219,7 +219,7 @@ class TestIntrinsicFunctions:
 
     @pytest.mark.aws_validated
     @pytest.mark.skip(reason="function not currently supported")
-    def test_get_azs_function(self, deploy_cfn_template, aws_client):
+    def test_get_azs_function(self, deploy_cfn_template):
         template_path = os.path.join(
             os.path.dirname(__file__), "../templates/functions_get_azs.yml"
         )
@@ -301,7 +301,7 @@ class TestSsmParameters:
         tags = aws_client.sns.list_tags_for_resource(ResourceArn=matching[0])
         snapshot.match("topic-tags", tags)
 
-    def test_resolve_ssm(self, create_parameter, deploy_cfn_template, aws_client):
+    def test_resolve_ssm(self, create_parameter, deploy_cfn_template):
         parameter_key = f"param-key-{short_uid()}"
         parameter_value = f"param-value-{short_uid()}"
         create_parameter(Name=parameter_key, Value=parameter_value, Type="String")
@@ -337,7 +337,7 @@ class TestSsmParameters:
         topic_name = result.outputs["TopicName"]
         assert topic_name == parameter_value_v1
 
-    def test_resolve_ssm_secure(self, create_parameter, deploy_cfn_template, aws_client):
+    def test_resolve_ssm_secure(self, create_parameter, deploy_cfn_template):
         parameter_key = f"param-key-{short_uid()}"
         parameter_value = f"param-value-{short_uid()}"
 
@@ -363,9 +363,7 @@ class TestSecretsManagerParameters:
             "resolve_secretsmanager.yaml",
         ],
     )
-    def test_resolve_secretsmanager(
-        self, create_secret, deploy_cfn_template, template_name, aws_client
-    ):
+    def test_resolve_secretsmanager(self, create_secret, deploy_cfn_template, template_name):
         parameter_key = f"param-key-{short_uid()}"
         parameter_value = f"param-value-{short_uid()}"
 

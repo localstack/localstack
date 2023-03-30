@@ -25,35 +25,35 @@ from localstack.utils.xml import strip_xmlns
 
 
 class TestEdgeAPI:
-    def test_invoke_kinesis(self, aws_client):
+    def test_invoke_kinesis(self):
         edge_url = config.get_edge_url()
         self._invoke_kinesis_via_edge(edge_url)
 
-    def test_invoke_dynamodb(self, aws_client):
+    def test_invoke_dynamodb(self):
         edge_url = config.get_edge_url()
         self._invoke_dynamodb_via_edge_go_sdk(edge_url)
 
-    def test_invoke_dynamodbstreams(self, aws_client):
+    def test_invoke_dynamodbstreams(self):
         edge_url = config.get_edge_url()
         self._invoke_dynamodbstreams_via_edge(edge_url)
 
-    def test_invoke_firehose(self, aws_client):
+    def test_invoke_firehose(self):
         edge_url = config.get_edge_url()
         self._invoke_firehose_via_edge(edge_url)
 
-    def test_invoke_stepfunctions(self, aws_client):
+    def test_invoke_stepfunctions(self):
         edge_url = config.get_edge_url()
         self._invoke_stepfunctions_via_edge(edge_url)
 
     @pytest.mark.skipif(
         condition=not config.LEGACY_S3_PROVIDER, reason="S3 ASF provider does not have POST yet"
     )
-    def test_invoke_s3(self, aws_client):
+    def test_invoke_s3(self):
         edge_url = config.get_edge_url()
         self._invoke_s3_via_edge(edge_url)
 
     @pytest.mark.xfail(reason="failing in CI")  # TODO verify this
-    def test_invoke_s3_multipart_request(self, aws_client):
+    def test_invoke_s3_multipart_request(self):
         edge_url = config.get_edge_url()
         self._invoke_s3_via_edge_multipart_form(edge_url)
 
@@ -159,7 +159,7 @@ class TestEdgeAPI:
         client.delete_object(Bucket=bucket_name, Key=object_name)
         client.delete_bucket(Bucket=bucket_name)
 
-    def test_basic_https_invocation(self, aws_client):
+    def test_basic_https_invocation(self):
         class MyListener(ProxyListener):
             def forward_request(self, method, path, data, headers):
                 return {"method": method, "path": path, "data": data}
@@ -174,7 +174,7 @@ class TestEdgeAPI:
         assert json.loads(to_str(response.content)) == expected
         proxy.stop()
 
-    def test_http2_relay_traffic(self, aws_client):
+    def test_http2_relay_traffic(self):
         """Tests if HTTP2 traffic can correctly be forwarded (including url-encoded characters)."""
 
         # Create a simple HTTP echo server
@@ -300,7 +300,7 @@ class TestEdgeAPI:
         content = to_str(result["Body"].read())
         assert " patched" in content
 
-    def test_update_path_in_url(self, aws_client):
+    def test_update_path_in_url(self):
         assert update_path_in_url("http://foo:123", "/bar/1/2/3") == "http://foo:123/bar/1/2/3"
         assert update_path_in_url("http://foo:123/", "/bar/1/2/3") == "http://foo:123/bar/1/2/3"
         assert (
@@ -314,7 +314,7 @@ class TestEdgeAPI:
         assert update_path_in_url("http://foo:123/test", "/") == "http://foo:123/"
         assert update_path_in_url("//foo:123/test/123", "bar/1/2/3") == "//foo:123/bar/1/2/3"
 
-    def test_response_content_type(self, aws_client):
+    def test_response_content_type(self):
         url = config.get_edge_url()
         data = {"Action": "GetCallerIdentity", "Version": "2011-06-15"}
 
@@ -341,7 +341,7 @@ class TestEdgeAPI:
         content2.get("GetCallerIdentityResponse", {}).pop("ResponseMetadata", None)
         assert strip_xmlns(content1) == content2
 
-    def test_request_with_custom_host_header(self, aws_client):
+    def test_request_with_custom_host_header(self):
         url = config.get_edge_url()
 
         headers = aws_stack.mock_aws_request_headers("lambda")

@@ -168,9 +168,7 @@ class TestSNSProvider:
         snapshot.match("received-message", response)
 
     @pytest.mark.aws_validated
-    def test_subscribe_with_invalid_protocol(
-        self, sns_create_topic, sns_subscription, snapshot, aws_client
-    ):
+    def test_subscribe_with_invalid_protocol(self, sns_create_topic, sns_subscription, snapshot):
         topic_arn = sns_create_topic()["TopicArn"]
 
         with pytest.raises(ClientError) as e:
@@ -937,7 +935,7 @@ class TestSNSProvider:
         snapshot.match("exception-duplicate", e.value.response)
 
     @pytest.mark.aws_validated
-    def test_create_duplicate_topic_check_idempotency(self, sns_create_topic, snapshot, aws_client):
+    def test_create_duplicate_topic_check_idempotency(self, sns_create_topic, snapshot):
         topic_name = f"test-{short_uid()}"
         tags = [{"Key": "a", "Value": "1"}, {"Key": "b", "Value": "2"}]
         kwargs = [
@@ -1683,7 +1681,7 @@ class TestSNSProvider:
 
     @pytest.mark.aws_validated
     def test_subscribe_to_sqs_with_queue_url(
-        self, sns_create_topic, sqs_create_queue, sns_subscription, snapshot, aws_client
+        self, sns_create_topic, sqs_create_queue, sns_subscription, snapshot
     ):
         topic = sns_create_topic()
         topic_arn = topic["TopicArn"]

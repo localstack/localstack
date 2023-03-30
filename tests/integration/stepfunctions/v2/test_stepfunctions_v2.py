@@ -583,7 +583,7 @@ STS_ROLE_POLICY_DOC = {
 @pytest.mark.skip("Investigate error around states:startExecution.sync")
 @pytest.mark.parametrize("region_name", ("us-east-1", "us-east-2", "eu-west-1", "eu-central-1"))
 @pytest.mark.parametrize("statemachine_definition", (TEST_STATE_MACHINE_3,))  # TODO: add sync2 test
-def test_multiregion_nested(region_name, statemachine_definition, aws_client):
+def test_multiregion_nested(region_name, statemachine_definition):
     client1 = aws_stack.create_external_boto_client("stepfunctions", region_name=region_name)
     # create state machine
     child_machine_name = f"sf-child-{short_uid()}"

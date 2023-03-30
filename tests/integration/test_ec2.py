@@ -167,7 +167,7 @@ class TestEc2Integrations:
         )
         assert 200 == rs["ResponseMetadata"]["HTTPStatusCode"]
 
-    def test_vcp_peering_difference_regions(self, aws_client):
+    def test_vcp_peering_difference_regions(self):
         # Note: different regions currently not supported due to set_default_region_in_headers(..) in edge.py
         region1 = region2 = aws_stack.get_region()
         ec2_client1 = aws_stack.create_external_boto_client(service_name="ec2", region_name=region1)
@@ -366,7 +366,7 @@ def test_raise_when_launch_template_data_missing(aws_client):
 
 
 @pytest.mark.aws_validated
-def test_raise_invalid_launch_template_name(create_launch_template, aws_client):
+def test_raise_invalid_launch_template_name(create_launch_template):
     with pytest.raises(ClientError) as e:
         create_launch_template(f"some illegal name {short_uid()}")
 
@@ -375,7 +375,7 @@ def test_raise_invalid_launch_template_name(create_launch_template, aws_client):
 
 
 @pytest.mark.aws_validated
-def test_raise_duplicate_launch_template_name(create_launch_template, aws_client):
+def test_raise_duplicate_launch_template_name(create_launch_template):
     create_launch_template("name")
 
     with pytest.raises(ClientError) as e:

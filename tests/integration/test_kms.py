@@ -61,7 +61,7 @@ class TestKMS:
         return sts_client.get_caller_identity()["Arn"]
 
     @pytest.mark.aws_validated
-    def test_create_alias(self, kms_create_alias, kms_create_key, snapshot, aws_client):
+    def test_create_alias(self, kms_create_alias, kms_create_key, snapshot):
 
         alias_name = f"{short_uid()}"
         alias_key_id = kms_create_key()["KeyId"]
@@ -94,9 +94,7 @@ class TestKMS:
         assert f":{account_id}:" in response["Arn"]
 
     @pytest.mark.aws_validated
-    def test_get_key_in_different_region(
-        self, kms_client_for_region, kms_create_key, snapshot, aws_client
-    ):
+    def test_get_key_in_different_region(self, kms_client_for_region, kms_create_key, snapshot):
         client_region = "us-east-1"
         key_region = "us-west-2"
         us_east_1_kms_client = kms_client_for_region(client_region)
@@ -387,7 +385,7 @@ class TestKMS:
     @pytest.mark.parametrize("number_of_bytes", [None, 0, 1025])
     @pytest.mark.aws_validated
     def test_generate_random_invalid_number_of_bytes(
-        self, create_boto_client, snapshot, number_of_bytes, aws_client
+        self, create_boto_client, snapshot, number_of_bytes
     ):
         kms_client = create_boto_client("kms", additional_config=Config(parameter_validation=False))
 
@@ -627,15 +625,13 @@ class TestKMS:
         aws_client.kms.encrypt(KeyId=alias_name, Plaintext="encrypt-me")
 
     @pytest.mark.aws_validated
-    def test_create_multi_region_key(self, kms_create_key, aws_client):
+    def test_create_multi_region_key(self, kms_create_key):
         key = kms_create_key(MultiRegion=True)
         assert key["KeyId"].startswith("mrk-")
         assert key["MultiRegion"]
 
     @pytest.mark.aws_validated
-    def test_non_multi_region_keys_should_not_have_multi_region_properties(
-        self, kms_create_key, aws_client
-    ):
+    def test_non_multi_region_keys_should_not_have_multi_region_properties(self, kms_create_key):
         key = kms_create_key(MultiRegion=False)
         assert not key["KeyId"].startswith("mrk-")
         assert not key["MultiRegion"]
@@ -653,7 +649,7 @@ class TestKMS:
         ],
     )
     def test_replicate_key(
-        self, kms_client_for_region, kms_create_key, kms_replicate_key, snapshot, aws_client
+        self, kms_client_for_region, kms_create_key, kms_replicate_key, snapshot
     ):
         snapshot.add_transformer(snapshot.transform.key_value("KeyId"))
         region_to_replicate_from = "us-east-1"

@@ -34,7 +34,7 @@ def handler(event, context):
 
 @pytest.mark.parametrize("lambda_processor_enabled", [True, False])
 def test_firehose_http(
-    lambda_processor_enabled: bool, create_lambda_function, httpserver: HTTPServer, aws_client
+    lambda_processor_enabled: bool, create_lambda_function, httpserver: HTTPServer
 ):
     httpserver.expect_request("").respond_with_data(b"", 200)
     http_endpoint = httpserver.url_for("/")

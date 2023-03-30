@@ -502,7 +502,7 @@ class TestOpensearchProvider:
             == final_response["DomainConfig"]["ClusterConfig"]["Options"]["InstanceType"]
         )
 
-    def test_create_indices(self, opensearch_endpoint, aws_client):
+    def test_create_indices(self, opensearch_endpoint):
         indices = ["index1", "index2"]
         for index_name in indices:
             index_path = f"{opensearch_endpoint}/{index_name}"
@@ -514,13 +514,13 @@ class TestOpensearchProvider:
             assert req_result[0]["health"] in ["green", "yellow"]
             assert req_result[0]["index"] in indices
 
-    def test_get_document(self, opensearch_document_path, aws_client):
+    def test_get_document(self, opensearch_document_path):
         response = requests.get(opensearch_document_path)
         assert (
             "I'm just a simple man" in response.text
         ), f"document not found({response.status_code}): {response.text}"
 
-    def test_search(self, opensearch_endpoint, opensearch_document_path, aws_client):
+    def test_search(self, opensearch_endpoint, opensearch_document_path):
         index = "/".join(opensearch_document_path.split("/")[:-2])
         # force the refresh of the index after the document was added, so it can appear in search
         response = requests.post(f"{opensearch_endpoint}/_refresh", headers=COMMON_HEADERS)
@@ -578,7 +578,7 @@ class TestOpensearchProvider:
 
 @pytest.mark.skip_offline
 class TestEdgeProxiedOpensearchCluster:
-    def test_route_through_edge(self, aws_client):
+    def test_route_through_edge(self):
         cluster_id = f"domain-{short_uid()}"
         cluster_url = f"http://localhost:{config.EDGE_PORT}/{cluster_id}"
         arn = f"arn:aws:es:us-east-1:000000000000:domain/{cluster_id}"
@@ -665,7 +665,7 @@ class TestEdgeProxiedOpensearchCluster:
 
 @pytest.mark.skip_offline
 class TestMultiClusterManager:
-    def test_multi_cluster(self, monkeypatch, aws_client):
+    def test_multi_cluster(self, monkeypatch):
         monkeypatch.setattr(config, "OPENSEARCH_ENDPOINT_STRATEGY", "domain")
         monkeypatch.setattr(config, "OPENSEARCH_MULTI_CLUSTER", True)
 
@@ -712,7 +712,7 @@ class TestMultiClusterManager:
 
 @pytest.mark.skip_offline
 class TestMultiplexingClusterManager:
-    def test_multiplexing_cluster(self, monkeypatch, aws_client):
+    def test_multiplexing_cluster(self, monkeypatch):
         monkeypatch.setattr(config, "OPENSEARCH_ENDPOINT_STRATEGY", "domain")
         monkeypatch.setattr(config, "OPENSEARCH_MULTI_CLUSTER", False)
 
@@ -759,7 +759,7 @@ class TestMultiplexingClusterManager:
 
 @pytest.mark.skip_offline
 class TestSingletonClusterManager:
-    def test_endpoint_strategy_port_singleton_cluster(self, monkeypatch, aws_client):
+    def test_endpoint_strategy_port_singleton_cluster(self, monkeypatch):
         monkeypatch.setattr(config, "OPENSEARCH_ENDPOINT_STRATEGY", "port")
         monkeypatch.setattr(config, "OPENSEARCH_MULTI_CLUSTER", False)
 
@@ -804,7 +804,7 @@ class TestSingletonClusterManager:
 
 @pytest.mark.skip_offline
 class TestCustomBackendManager:
-    def test_custom_backend(self, httpserver, monkeypatch, aws_client):
+    def test_custom_backend(self, httpserver, monkeypatch):
         monkeypatch.setattr(config, "OPENSEARCH_ENDPOINT_STRATEGY", "domain")
         monkeypatch.setattr(config, "OPENSEARCH_CUSTOM_BACKEND", httpserver.url_for("/"))
 

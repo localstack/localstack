@@ -531,7 +531,7 @@ class TestIntegration:
             # cleanup
             process.stop()
 
-    def test_scheduled_lambda(self, scheduled_test_lambda, aws_client):
+    def test_scheduled_lambda(self, scheduled_test_lambda):
         def check_invocation(*args):
             log_events = get_lambda_logs(scheduled_test_lambda)
             assert log_events

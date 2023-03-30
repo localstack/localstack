@@ -39,7 +39,7 @@ def kinesis_snapshot_transformer(snapshot):
 
 
 class TestKinesis:
-    def test_create_stream_without_stream_name_raises(self, aws_client):
+    def test_create_stream_without_stream_name_raises(self):
         boto_config = BotoConfig(parameter_validation=False)
         kinesis_client = aws_stack.create_external_boto_client("kinesis", config=boto_config)
         with pytest.raises(ClientError) as e:
@@ -419,7 +419,7 @@ def wait_for_consumer_ready(kinesis_client):
 
 class TestKinesisPythonClient:
     @pytest.mark.skip_offline
-    def test_run_kcl(self, aws_client):
+    def test_run_kcl(self):
         result = []
 
         def process_records(records):

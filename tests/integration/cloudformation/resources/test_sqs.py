@@ -20,7 +20,7 @@ def test_sqs_queue_policy(deploy_cfn_template, aws_client):
 
 
 @pytest.mark.aws_validated
-def test_sqs_fifo_queue_generates_valid_name(deploy_cfn_template, aws_client):
+def test_sqs_fifo_queue_generates_valid_name(deploy_cfn_template):
     result = deploy_cfn_template(
         template_path=os.path.join(
             os.path.dirname(__file__), "../../templates/sqs_fifo_autogenerate_name.yaml"
@@ -31,7 +31,7 @@ def test_sqs_fifo_queue_generates_valid_name(deploy_cfn_template, aws_client):
 
 
 # FIXME: doesn't work on AWS. (known bug in cloudformation: https://github.com/aws-cloudformation/cloudformation-coverage-roadmap/issues/165)
-def test_sqs_non_fifo_queue_generates_valid_name(deploy_cfn_template, aws_client):
+def test_sqs_non_fifo_queue_generates_valid_name(deploy_cfn_template):
     result = deploy_cfn_template(
         template_path=os.path.join(
             os.path.dirname(__file__), "../../templates/sqs_fifo_autogenerate_name.yaml"

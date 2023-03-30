@@ -35,7 +35,7 @@ class TestCdkInit:
         assert stack_res["StackResources"][0]["LogicalResourceId"] == "CDKMetadata"
 
     def test_cdk_bootstrap_redeploy(
-        self, is_change_set_finished, cleanup_stacks, cleanup_changesets, aws_client
+        self, is_change_set_finished, cleanup_stacks, cleanup_changesets
     ):
         """Test that simulates a sequence of commands executed by CDK when running 'cdk bootstrap' twice"""
 

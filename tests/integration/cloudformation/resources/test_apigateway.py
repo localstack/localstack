@@ -128,7 +128,7 @@ def test_cfn_apigateway_swagger_import(deploy_cfn_template, echo_http_server_pos
 
 
 @pytest.mark.only_localstack
-def test_url_output(tmp_http_server, deploy_cfn_template, aws_client):
+def test_url_output(tmp_http_server, deploy_cfn_template):
     test_port, invocations, proxy = tmp_http_server
     integration_uri = f"http://localhost:{test_port}/{{proxy}}"
     api_name = f"rest-api-{short_uid()}"

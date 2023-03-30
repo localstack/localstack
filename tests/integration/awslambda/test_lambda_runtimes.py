@@ -133,7 +133,7 @@ class TestNodeJSRuntimes:
 
 class TestJavaRuntimes:
     @pytest.fixture(scope="class")
-    def test_java_jar(self, aws_client) -> bytes:
+    def test_java_jar(self) -> bytes:
         lambda_java_testlibs_package.install()
         java_file = load_file(
             lambda_java_testlibs_package.get_installer().get_executable_path(), mode="rb"
@@ -141,7 +141,7 @@ class TestJavaRuntimes:
         return java_file
 
     @pytest.fixture(scope="class")
-    def test_java_zip(self, tmpdir_factory, test_java_jar, aws_client) -> bytes:
+    def test_java_zip(self, tmpdir_factory, test_java_jar) -> bytes:
         tmpdir = tmpdir_factory.mktemp("tmp-java-zip")
         zip_lib_dir = os.path.join(tmpdir, "lib")
         zip_jar_path = os.path.join(zip_lib_dir, "test.lambda.jar")

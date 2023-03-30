@@ -10,7 +10,7 @@ from localstack.utils.strings import short_uid, to_str
 
 
 class TestCSRF:
-    def test_CSRF(self, aws_client):
+    def test_CSRF(self):
         headers = {"Origin": "http://attacker.com"}
         # Test if lambdas are enumerable
         response = requests.get(f"{config.get_edge_url()}/2015-03-31/functions/", headers=headers)
@@ -29,7 +29,7 @@ class TestCSRF:
         assert response.status_code == 200
         assert response.headers["access-control-allow-origin"] == "*"
 
-    def test_default_cors_headers(self, aws_client):
+    def test_default_cors_headers(self):
         headers = {"Origin": "https://app.localstack.cloud"}
         response = requests.get(f"{config.get_edge_url()}/2015-03-31/functions/", headers=headers)
         assert response.status_code == 200
@@ -37,7 +37,7 @@ class TestCSRF:
         assert "GET" in response.headers["access-control-allow-methods"].split(",")
 
     @pytest.mark.parametrize("path", ["/health", "/_localstack/health"])
-    def test_internal_route_cors_headers(self, path, aws_client):
+    def test_internal_route_cors_headers(self, path):
         headers = {"Origin": "https://app.localstack.cloud"}
         response = requests.get(f"{config.get_edge_url()}{path}", headers=headers)
         assert response.status_code == 200
@@ -83,7 +83,7 @@ class TestCSRF:
         assert result.status_code == 403
 
     @pytest.mark.skipif(condition=is_new_provider(), reason="invalid API behavior")
-    def test_disable_cors_checks(self, monkeypatch, aws_client):
+    def test_disable_cors_checks(self, monkeypatch):
         """Test DISABLE_CORS_CHECKS=1 (most permissive setting)"""
         headers = {"Origin": "https://invalid.localstack.cloud"}
         url = f"{config.get_edge_url()}/2015-03-31/functions/"
@@ -96,7 +96,7 @@ class TestCSRF:
         assert response.headers["access-control-allow-origin"] == headers["Origin"]
         assert "GET" in response.headers["access-control-allow-methods"].split(",")
 
-    def test_disable_cors_headers(self, monkeypatch, aws_client):
+    def test_disable_cors_headers(self, monkeypatch):
         """Test DISABLE_CORS_CHECKS=1 (most restrictive setting, not sending any CORS headers)"""
         headers = aws_stack.mock_aws_request_headers("sns")
         headers["Origin"] = "https://app.localstack.cloud"
@@ -118,7 +118,7 @@ class TestCSRF:
         assert not response.headers.get("access-control-allow-origin")
         assert not response.headers.get("access-control-allow-credentials")
 
-    def test_additional_allowed_origins(self, monkeypatch, aws_client):
+    def test_additional_allowed_origins(self, monkeypatch):
         test_domain = f"test-{short_uid()}.com"
         monkeypatch.setattr(config, "EXTRA_CORS_ALLOWED_ORIGINS", f"https://{test_domain}")
         monkeypatch.setattr(cors_handler, "ALLOWED_CORS_ORIGINS", _get_allowed_cors_origins())

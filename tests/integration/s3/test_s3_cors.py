@@ -144,7 +144,7 @@ class TestS3Cors:
         assert response.headers["Access-Control-Allow-Origin"] == origin
 
     @pytest.mark.only_localstack
-    def test_cors_list_buckets(self, aws_client):
+    def test_cors_list_buckets(self):
         # ListBuckets is an operation outside S3 CORS configuration management
         # it should follow the default rules of LocalStack
 
@@ -167,7 +167,7 @@ class TestS3Cors:
         assert b"<ListAllMyBuckets" in response.content
 
     @pytest.mark.aws_validated
-    def test_cors_http_options_non_existent_bucket(self, s3_bucket, snapshot, aws_client):
+    def test_cors_http_options_non_existent_bucket(self, s3_bucket, snapshot):
         snapshot.add_transformer(
             [
                 snapshot.transform.key_value("HostId", reference_replacement=False),
@@ -190,7 +190,7 @@ class TestS3Cors:
         snapshot.match("options-with-origin", parsed_response)
 
     @pytest.mark.only_localstack
-    def test_cors_http_options_non_existent_bucket_ls_allowed(self, s3_bucket, aws_client):
+    def test_cors_http_options_non_existent_bucket_ls_allowed(self, s3_bucket):
         key = "test-cors-options-no-bucket"
         key_url = f'{_bucket_url_vhost(bucket_name=f"fake-bucket-{short_uid()}")}/{key}'
         origin = ALLOWED_CORS_ORIGINS[0]

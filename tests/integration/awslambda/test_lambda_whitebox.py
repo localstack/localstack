@@ -75,7 +75,7 @@ class TestLambdaFallbackUrl(unittest.TestCase):
             else:
                 config.LAMBDA_FORWARD_URL = ""
 
-    def test_forward_to_fallback_url_dynamodb(self, aws_client):
+    def test_forward_to_fallback_url_dynamodb(self):
         db_table = "lambda-records"
         ddb_client = aws_stack.create_external_boto_client("dynamodb")
 
@@ -87,7 +87,7 @@ class TestLambdaFallbackUrl(unittest.TestCase):
         items_after = num_items()
         self.assertEqual(items_before + 3, items_after)
 
-    def test_forward_to_fallback_url_http(self, aws_client):
+    def test_forward_to_fallback_url_http(self):
         lambda_client = aws_stack.create_external_boto_client("lambda")
         lambda_result = {"result": "test123"}
 
@@ -149,7 +149,7 @@ class TestLambdaFallbackUrl(unittest.TestCase):
                 # clean up / shutdown
                 lambda_client.delete_function(FunctionName=lambda_name)
 
-    def test_adding_fallback_function_name_in_headers(self, aws_client):
+    def test_adding_fallback_function_name_in_headers(self):
         lambda_client = aws_stack.create_external_boto_client("lambda")
         ddb_client = aws_stack.create_external_boto_client("dynamodb")
 
@@ -176,7 +176,7 @@ class TestDockerExecutors(unittest.TestCase):
         cls.s3_client = aws_stack.create_external_boto_client("s3")
 
     @pytest.mark.skipif(not use_docker(), reason="Only applicable with docker executor")
-    def test_additional_docker_flags(self, aws_client):
+    def test_additional_docker_flags(self):
         flags_before = config.LAMBDA_DOCKER_FLAGS
         env_value = short_uid()
         config.LAMBDA_DOCKER_FLAGS = f"-e Hello={env_value}"
@@ -201,7 +201,7 @@ class TestDockerExecutors(unittest.TestCase):
         # clean up
         lambda_client.delete_function(FunctionName=function_name)
 
-    def test_code_updated_on_redeployment(self, aws_client):
+    def test_code_updated_on_redeployment(self):
         lambda_api.LAMBDA_EXECUTOR.cleanup()
 
         func_name = "test_code_updated_on_redeployment"
@@ -240,7 +240,7 @@ class TestDockerExecutors(unittest.TestCase):
         ),
         reason="Test only applicable if docker-reuse executor is selected",
     )
-    def test_prime_and_destroy_containers(self, aws_client):
+    def test_prime_and_destroy_containers(self):
         executor = lambda_api.LAMBDA_EXECUTOR
         func_name = f"test_prime_and_destroy_containers_{short_uid()}"
         func_arn = lambda_api.func_arn(func_name)
@@ -309,7 +309,7 @@ class TestDockerExecutors(unittest.TestCase):
         ),
         reason="Test only applicable if docker-reuse executor is selected",
     )
-    def test_destroy_idle_containers(self, aws_client):
+    def test_destroy_idle_containers(self):
         executor = lambda_api.LAMBDA_EXECUTOR
         func_name = "test_destroy_idle_containers"
         func_arn = lambda_api.func_arn(func_name)
@@ -352,7 +352,7 @@ class TestDockerExecutors(unittest.TestCase):
 
 
 class TestLocalExecutors(unittest.TestCase):
-    def test_python3_runtime_multiple_create_with_conflicting_module(self, aws_client):
+    def test_python3_runtime_multiple_create_with_conflicting_module(self):
         lambda_client = aws_stack.create_external_boto_client("lambda")
         original_do_use_docker = lambda_api.DO_USE_DOCKER
         try:

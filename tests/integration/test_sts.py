@@ -168,7 +168,7 @@ class TestSTSIntegrations:
         assert f"arn:aws:iam::{account_id}:root" == response["Arn"]
 
     @pytest.mark.only_localstack
-    def test_expiration_date_format(self, aws_client):
+    def test_expiration_date_format(self):
         url = config.get_edge_url()
         data = {"Action": "GetSessionToken", "Version": "2011-06-15"}
         headers = aws_stack.mock_aws_request_headers("sts")

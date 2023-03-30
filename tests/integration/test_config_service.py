@@ -41,7 +41,7 @@ class TestConfigService(unittest.TestCase):
             }
         )
 
-    def test_put_configuration_recorder(self, aws_client):
+    def test_put_configuration_recorder(self):
         iam_role_name = "role-{}".format(short_uid())
         iam_role_arn = self.create_iam_role(iam_role_name)
 
@@ -61,7 +61,7 @@ class TestConfigService(unittest.TestCase):
             ConfigurationRecorderName=TEST_CONFIG_RECORDER_NAME
         )
 
-    def test_put_delivery_channel(self, aws_client):
+    def test_put_delivery_channel(self):
         iam_role_name = "role-{}".format(short_uid())
         iam_role_arn = self.create_iam_role(iam_role_name)
 

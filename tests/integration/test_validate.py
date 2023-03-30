@@ -7,7 +7,7 @@ from botocore.auth import SigV4Auth
 @pytest.mark.xfail(reason="there is no generalized way of server-side request validation yet")
 class TestMissingParameter:
     @pytest.mark.aws_validated
-    def test_opensearch(self, aws_http_client_factory, aws_client):
+    def test_opensearch(self, aws_http_client_factory):
         client = aws_http_client_factory("es", signer_factory=SigV4Auth)
 
         response = client.post(
@@ -22,7 +22,7 @@ class TestMissingParameter:
         )
 
     @pytest.mark.aws_validated
-    def test_sns(self, aws_http_client_factory, aws_client):
+    def test_sns(self, aws_http_client_factory):
         client = aws_http_client_factory("sns", region="us-east-1")
 
         response = client.post(
@@ -36,7 +36,7 @@ class TestMissingParameter:
         )
 
     @pytest.mark.aws_validated
-    def test_elasticache(self, aws_http_client_factory, aws_client):
+    def test_elasticache(self, aws_http_client_factory):
         client = aws_http_client_factory("elasticache")
 
         response = client.post(
@@ -53,7 +53,7 @@ class TestMissingParameter:
         )
 
     @pytest.mark.aws_validated
-    def test_sqs_create_queue(self, aws_http_client_factory, aws_client):
+    def test_sqs_create_queue(self, aws_http_client_factory):
         client = aws_http_client_factory("sqs")
 
         response = client.post(
@@ -71,7 +71,7 @@ class TestMissingParameter:
         )
 
     @pytest.mark.aws_validated
-    def test_sqs_send_message(self, aws_http_client_factory, sqs_queue, aws_client):
+    def test_sqs_send_message(self, aws_http_client_factory, sqs_queue):
         client = aws_http_client_factory("sqs")
 
         response = client.post(

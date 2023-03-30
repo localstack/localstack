@@ -77,7 +77,7 @@ def apigw_create_rest_api(apigateway_client):
 
 
 @pytest.mark.aws_validated
-def test_import_rest_api(import_apigw, snapshot, aws_client):
+def test_import_rest_api(import_apigw, snapshot):
     snapshot.add_transformer(snapshot.transform.apigateway_api())
 
     spec_file = load_file(OPENAPI_SPEC_PULUMI_JSON)
@@ -195,9 +195,7 @@ class TestApiGatewayApi:
         snapshot.match("get-api-upper-case", e.value.response)
 
     @pytest.mark.aws_validated
-    def test_create_rest_api_with_optional_params(
-        self, apigw_create_rest_api, snapshot, aws_client
-    ):
+    def test_create_rest_api_with_optional_params(self, apigw_create_rest_api, snapshot):
         # create only with mandatory name
         response = apigw_create_rest_api(
             name=f"test-api-{short_uid()}",
@@ -246,7 +244,7 @@ class TestApiGatewayApi:
         snapshot.match("get-rest-apis-w-tags", response)
 
     @pytest.mark.only_localstack
-    def test_create_rest_api_with_custom_id_tag(self, apigw_create_rest_api, aws_client):
+    def test_create_rest_api_with_custom_id_tag(self, apigw_create_rest_api):
         custom_id_tag = "testid123"
         response = apigw_create_rest_api(
             name="my_api", description="this is my api", tags={TAG_KEY_CUSTOM_ID: custom_id_tag}

@@ -472,7 +472,7 @@ class TestSqsProvider:
         assert response["Tags"] == tags
 
     @pytest.mark.aws_validated
-    def test_create_queue_without_attributes_is_idempotent(self, sqs_create_queue, aws_client):
+    def test_create_queue_without_attributes_is_idempotent(self, sqs_create_queue):
         queue_name = f"queue-{short_uid()}"
 
         queue_url = sqs_create_queue(QueueName=queue_name)
@@ -480,7 +480,7 @@ class TestSqsProvider:
         assert sqs_create_queue(QueueName=queue_name) == queue_url
 
     @pytest.mark.aws_validated
-    def test_create_queue_with_same_attributes_is_idempotent(self, sqs_create_queue, aws_client):
+    def test_create_queue_with_same_attributes_is_idempotent(self, sqs_create_queue):
         queue_name = f"queue-{short_uid()}"
         attributes = {
             "VisibilityTimeout": "69",
@@ -548,7 +548,7 @@ class TestSqsProvider:
         ), f"unexpected number of messages in response {response}"
 
     @pytest.mark.aws_validated
-    def test_create_queue_with_default_attributes_is_idempotent(self, sqs_create_queue, aws_client):
+    def test_create_queue_with_default_attributes_is_idempotent(self, sqs_create_queue):
         queue_name = f"queue-{short_uid()}"
         attributes = {
             "VisibilityTimeout": "69",
@@ -559,9 +559,7 @@ class TestSqsProvider:
         assert sqs_create_queue(QueueName=queue_name) == queue_url
 
     @pytest.mark.aws_validated
-    def test_create_fifo_queue_with_same_attributes_is_idempotent(
-        self, sqs_create_queue, aws_client
-    ):
+    def test_create_fifo_queue_with_same_attributes_is_idempotent(self, sqs_create_queue):
         queue_name = f"queue-{short_uid()}.fifo"
         attributes = {"FifoQueue": "true"}
         queue_url = sqs_create_queue(QueueName=queue_name, Attributes=attributes)
@@ -1047,7 +1045,7 @@ class TestSqsProvider:
         assert receive_result["Messages"][0]["Body"] == message_body
 
     @pytest.mark.only_localstack
-    def test_external_hostname_via_host_header(self, monkeypatch, sqs_create_queue, aws_client):
+    def test_external_hostname_via_host_header(self, monkeypatch, sqs_create_queue):
         """test making a request with a different external hostname/port being returned"""
         monkeypatch.setattr(config, "SQS_ENDPOINT_STRATEGY", "off")
 
@@ -1076,7 +1074,7 @@ class TestSqsProvider:
         assert re.match(rf".*<QueueUrl>\s*http://[^:]+:{port}[^<]+</QueueUrl>.*", content, **kwargs)
 
     @pytest.mark.only_localstack
-    def test_external_host_via_header_complete_message_lifecycle(self, monkeypatch, aws_client):
+    def test_external_host_via_header_complete_message_lifecycle(self, monkeypatch):
         monkeypatch.setattr(config, "SQS_ENDPOINT_STRATEGY", "off")
 
         queue_name = f"queue-{short_uid()}"
@@ -1413,7 +1411,7 @@ class TestSqsProvider:
         assert result_recv["Messages"][0]["MessageId"] == message_id
 
     @pytest.mark.aws_validated
-    def test_fifo_queue_requires_suffix(self, sqs_create_queue, aws_client):
+    def test_fifo_queue_requires_suffix(self, sqs_create_queue):
         queue_name = f"invalid-{short_uid()}"
         attributes = {"FifoQueue": "true"}
 
@@ -1422,7 +1420,7 @@ class TestSqsProvider:
         e.match("InvalidParameterValue")
 
     @pytest.mark.aws_validated
-    def test_standard_queue_cannot_have_fifo_suffix(self, sqs_create_queue, aws_client):
+    def test_standard_queue_cannot_have_fifo_suffix(self, sqs_create_queue):
         queue_name = f"queue-{short_uid()}.fifo"
         with pytest.raises(Exception) as e:
             sqs_create_queue(QueueName=queue_name)
@@ -1477,9 +1475,7 @@ class TestSqsProvider:
 
     @pytest.mark.aws_validated
     @pytest.mark.xfail(reason="behavior not implemented yet")
-    def test_invalid_dead_letter_arn_rejected_before_lookup(
-        self, sqs_create_queue, snapshot, aws_client
-    ):
+    def test_invalid_dead_letter_arn_rejected_before_lookup(self, sqs_create_queue, snapshot):
         dl_dummy_arn = "dummy"
         max_receive_count = 42
         _redrive_policy = {
@@ -1726,7 +1722,7 @@ class TestSqsProvider:
         e.match("InvalidMessageContents")
 
     @pytest.mark.aws_validated
-    def test_dead_letter_queue_config(self, sqs_create_queue, aws_client):
+    def test_dead_letter_queue_config(self, sqs_create_queue):
 
         queue_name = f"queue-{short_uid()}"
         dead_letter_queue_name = f"dead_letter_queue-{short_uid()}"
@@ -2028,14 +2024,14 @@ class TestSqsProvider:
     @pytest.mark.xfail(
         reason="localstack allows queue names with slashes, but this should be deprecated"
     )
-    def test_disallow_queue_name_with_slashes(self, sqs_create_queue, aws_client):
+    def test_disallow_queue_name_with_slashes(self, sqs_create_queue):
         queue_name = f"queue/{short_uid()}/"
         with pytest.raises(Exception) as e:
             sqs_create_queue(QueueName=queue_name)
         e.match("InvalidParameterValue")
 
     @pytest.mark.aws_validated
-    def test_get_list_queues_with_query_auth(self, aws_http_client_factory, aws_client):
+    def test_get_list_queues_with_query_auth(self, aws_http_client_factory):
         client = aws_http_client_factory("sqs", region="us-east-1")
 
         if os.environ.get("TEST_TARGET") == "AWS_CLOUD":
@@ -2387,7 +2383,7 @@ class TestSqsProvider:
 
     @pytest.mark.only_localstack
     def test_list_queues_multi_region_without_endpoint_strategy(
-        self, create_boto_client, cleanups, monkeypatch, aws_client
+        self, create_boto_client, cleanups, monkeypatch
     ):
         monkeypatch.setattr(config, "SQS_ENDPOINT_STRATEGY", "off")
 
@@ -2416,7 +2412,7 @@ class TestSqsProvider:
 
     @pytest.mark.aws_validated
     def test_list_queues_multi_region_with_endpoint_strategy_domain(
-        self, create_boto_client, cleanups, monkeypatch, aws_client
+        self, create_boto_client, cleanups, monkeypatch
     ):
         monkeypatch.setattr(config, "SQS_ENDPOINT_STRATEGY", "domain")
 
@@ -2444,9 +2440,7 @@ class TestSqsProvider:
         assert queue2_url in region2_client.list_queues().get("QueueUrls", [])
 
     @pytest.mark.aws_validated
-    def test_get_queue_url_multi_region(
-        self, create_boto_client, cleanups, monkeypatch, aws_client
-    ):
+    def test_get_queue_url_multi_region(self, create_boto_client, cleanups, monkeypatch):
         monkeypatch.setattr(config, "SQS_ENDPOINT_STRATEGY", "domain")
 
         region1_client = create_boto_client("sqs", region_name="us-east-1")
@@ -2767,7 +2761,7 @@ class TestSqsQueryApi:
     @pytest.mark.xfail(
         reason="this behaviour is deprecated (see https://github.com/localstack/localstack/pull/5928)",
     )
-    def test_call_fifo_queue_url(self, sqs_create_queue, aws_client):
+    def test_call_fifo_queue_url(self, sqs_create_queue):
         # TODO: remove once query API has been documented
         queue_name = f"queue-{short_uid()}.fifo"
         queue_url = sqs_create_queue(QueueName=queue_name, Attributes={"FifoQueue": "true"})
@@ -2780,7 +2774,7 @@ class TestSqsQueryApi:
     @pytest.mark.xfail(
         reason="this behaviour is deprecated (see https://github.com/localstack/localstack/pull/5928)",
     )
-    def test_request_via_url(self, sqs_create_queue, aws_client):
+    def test_request_via_url(self, sqs_create_queue):
         # TODO: remove once query API has been documented
         queue_url = sqs_create_queue()
         response = requests.get(url=queue_url, params={"Action": "ListQueues"})
@@ -2788,7 +2782,7 @@ class TestSqsQueryApi:
         assert queue_url in response.text
 
     @pytest.mark.aws_validated
-    def test_get_queue_attributes_all(self, sqs_create_queue, sqs_http_client, aws_client):
+    def test_get_queue_attributes_all(self, sqs_create_queue, sqs_http_client):
         queue_url = sqs_create_queue()
         response = sqs_http_client.get(
             queue_url,
@@ -2805,7 +2799,7 @@ class TestSqsQueryApi:
         assert queue_url.split("/")[-1] in response.text
 
     @pytest.mark.only_localstack
-    def test_get_queue_attributes_works_without_authparams(self, sqs_create_queue, aws_client):
+    def test_get_queue_attributes_works_without_authparams(self, sqs_create_queue):
         queue_url = sqs_create_queue()
         response = requests.get(
             queue_url,
@@ -2822,9 +2816,7 @@ class TestSqsQueryApi:
         assert queue_url.split("/")[-1] in response.text
 
     @pytest.mark.aws_validated
-    def test_get_queue_attributes_with_query_args(
-        self, sqs_create_queue, sqs_http_client, aws_client
-    ):
+    def test_get_queue_attributes_with_query_args(self, sqs_create_queue, sqs_http_client):
         queue_url = sqs_create_queue()
         response = sqs_http_client.get(
             queue_url,
@@ -2841,7 +2833,7 @@ class TestSqsQueryApi:
         assert queue_url.split("/")[-1] in response.text
 
     @pytest.mark.aws_validated
-    def test_invalid_action_raises_exception(self, sqs_create_queue, sqs_http_client, aws_client):
+    def test_invalid_action_raises_exception(self, sqs_create_queue, sqs_http_client):
         queue_url = sqs_create_queue()
         response = sqs_http_client.get(
             queue_url,
@@ -2860,7 +2852,7 @@ class TestSqsQueryApi:
 
     @pytest.mark.aws_validated
     def test_valid_action_with_missing_parameter_raises_exception(
-        self, sqs_create_queue, sqs_http_client, aws_client
+        self, sqs_create_queue, sqs_http_client
     ):
         queue_url = sqs_create_queue()
         response = sqs_http_client.get(
@@ -2879,9 +2871,7 @@ class TestSqsQueryApi:
         )
 
     @pytest.mark.aws_validated
-    def test_get_queue_attributes_of_fifo_queue(
-        self, sqs_create_queue, sqs_http_client, aws_client
-    ):
+    def test_get_queue_attributes_of_fifo_queue(self, sqs_create_queue, sqs_http_client):
         queue_name = f"queue-{short_uid()}.fifo"
         queue_url = sqs_create_queue(QueueName=queue_name, Attributes={"FifoQueue": "true"})
 
@@ -2901,7 +2891,7 @@ class TestSqsQueryApi:
 
     @pytest.mark.aws_validated
     def test_get_queue_attributes_with_invalid_arg_returns_error(
-        self, sqs_create_queue, sqs_http_client, aws_client
+        self, sqs_create_queue, sqs_http_client
     ):
         queue_url = sqs_create_queue()
         response = sqs_http_client.get(
@@ -2918,9 +2908,7 @@ class TestSqsQueryApi:
         assert "<Message>Unknown Attribute Foobar.</Message>" in response.text
 
     @pytest.mark.aws_validated
-    def test_get_delete_queue(
-        self, sqs_create_queue, sqs_http_client, sqs_queue_exists, aws_client
-    ):
+    def test_get_delete_queue(self, sqs_create_queue, sqs_http_client, sqs_queue_exists):
         queue_url = sqs_create_queue()
 
         response = sqs_http_client.get(
@@ -2935,7 +2923,7 @@ class TestSqsQueryApi:
         assert poll_condition(lambda: not sqs_queue_exists(queue_url), timeout=5)
 
     @pytest.mark.aws_validated
-    def test_get_send_and_receive_messages(self, sqs_create_queue, sqs_http_client, aws_client):
+    def test_get_send_and_receive_messages(self, sqs_create_queue, sqs_http_client):
         queue1_url = sqs_create_queue()
         queue2_url = sqs_create_queue()
 
@@ -2997,9 +2985,7 @@ class TestSqsQueryApi:
         assert response.status_code == 400
 
     @pytest.mark.aws_validated
-    def test_get_without_query_returns_unknown_operation(
-        self, sqs_create_queue, sqs_http_client, aws_client
-    ):
+    def test_get_without_query_returns_unknown_operation(self, sqs_create_queue, sqs_http_client):
         queue_name = f"test-queue-{short_uid()}"
         queue_url = sqs_create_queue(QueueName=queue_name)
 
@@ -3010,7 +2996,7 @@ class TestSqsQueryApi:
         assert response.status_code == 404
 
     @pytest.mark.aws_validated
-    def test_get_create_queue_fails(self, sqs_create_queue, sqs_http_client, aws_client):
+    def test_get_create_queue_fails(self, sqs_create_queue, sqs_http_client):
         queue1_url = sqs_create_queue()
         queue2_name = f"test-queue-{short_uid()}"
 
@@ -3027,7 +3013,7 @@ class TestSqsQueryApi:
         assert response.status_code == 400
 
     @pytest.mark.aws_validated
-    def test_get_list_queues_fails(self, sqs_create_queue, sqs_http_client, aws_client):
+    def test_get_list_queues_fails(self, sqs_create_queue, sqs_http_client):
         queue_url = sqs_create_queue()
 
         response = sqs_http_client.get(
@@ -3041,9 +3027,7 @@ class TestSqsQueryApi:
         assert response.status_code == 400
 
     @pytest.mark.aws_validated
-    def test_get_queue_url_works_for_same_queue(
-        self, sqs_create_queue, sqs_http_client, aws_client
-    ):
+    def test_get_queue_url_works_for_same_queue(self, sqs_create_queue, sqs_http_client):
         queue_url = sqs_create_queue()
 
         response = sqs_http_client.get(
@@ -3057,9 +3041,7 @@ class TestSqsQueryApi:
         assert response.status_code == 200
 
     @pytest.mark.aws_validated
-    def test_get_queue_url_work_for_different_queue(
-        self, sqs_create_queue, sqs_http_client, aws_client
-    ):
+    def test_get_queue_url_work_for_different_queue(self, sqs_create_queue, sqs_http_client):
         # for some reason this is allowed 🤷
         queue1_url = sqs_create_queue()
         queue2_url = sqs_create_queue()
@@ -3085,7 +3067,6 @@ class TestSqsQueryApi:
         aws_http_client_factory,
         monkeypatch,
         cleanups,
-        aws_client,
     ):
         monkeypatch.setattr(config, "SQS_ENDPOINT_STRATEGY", strategy)
 
@@ -3128,7 +3109,7 @@ class TestSqsQueryApi:
         assert response.ok
         assert "foobar" in response.text
 
-    def test_queue_url_format_path_strategy(self, sqs_create_queue, monkeypatch, aws_client):
+    def test_queue_url_format_path_strategy(self, sqs_create_queue, monkeypatch):
         monkeypatch.setattr(config, "SQS_ENDPOINT_STRATEGY", "path")
         queue_name = f"path_queue_{short_uid()}"
         queue_url = sqs_create_queue(QueueName=queue_name)
@@ -3137,7 +3118,7 @@ class TestSqsQueryApi:
         )
 
     @pytest.mark.aws_validated
-    def test_overwrite_queue_url_in_params(self, sqs_create_queue, sqs_http_client, aws_client):
+    def test_overwrite_queue_url_in_params(self, sqs_create_queue, sqs_http_client):
         # here, queue1 url simply serves as AWS endpoint but we pass queue2 url in the request arg
         queue1_url = sqs_create_queue()
         queue2_url = sqs_create_queue()
@@ -3158,7 +3139,7 @@ class TestSqsQueryApi:
 
     @pytest.mark.xfail(reason="json serialization not supported yet")
     @pytest.mark.aws_validated
-    def test_get_list_queues_fails_json_format(self, sqs_create_queue, sqs_http_client, aws_client):
+    def test_get_list_queues_fails_json_format(self, sqs_create_queue, sqs_http_client):
         queue_url = sqs_create_queue()
 
         response = sqs_http_client.get(
@@ -3176,7 +3157,7 @@ class TestSqsQueryApi:
 
     @pytest.mark.xfail(reason="json serialization not supported yet")
     @pytest.mark.aws_validated
-    def test_get_queue_attributes_json_format(self, sqs_create_queue, sqs_http_client, aws_client):
+    def test_get_queue_attributes_json_format(self, sqs_create_queue, sqs_http_client):
         queue_url = sqs_create_queue()
         response = sqs_http_client.get(
             queue_url,
@@ -3202,7 +3183,7 @@ class TestSqsQueryApi:
 
     @pytest.mark.aws_validated
     def test_get_without_query_json_format_returns_returns_xml(
-        self, sqs_create_queue, sqs_http_client, aws_client
+        self, sqs_create_queue, sqs_http_client
     ):
         queue_url = sqs_create_queue()
         response = sqs_http_client.get(queue_url, headers={"Accept": "application/json"})

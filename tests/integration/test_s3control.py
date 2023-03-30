@@ -10,7 +10,7 @@ remote_endpoint = "https://%s:%s" % (LOCALHOST_HOSTNAME, EDGE_PORT)
 s3control_client = create_external_boto_client("s3control", endpoint_url=remote_endpoint)
 
 
-def test_lifecycle_public_access_block(aws_client):
+def test_lifecycle_public_access_block():
     with pytest.raises(ClientError) as ce:
         s3control_client.get_public_access_block(AccountId=get_aws_account_id())
     assert ce.value.response["Error"]["Code"] == "NoSuchPublicAccessBlockConfiguration"
@@ -34,7 +34,7 @@ def test_lifecycle_public_access_block(aws_client):
     s3control_client.delete_public_access_block(AccountId=get_aws_account_id())
 
 
-def test_public_access_block_validations(aws_client):
+def test_public_access_block_validations():
     with pytest.raises(ClientError) as error:
         s3control_client.get_public_access_block(AccountId="111111111111")
     assert error.value.response["Error"]["Code"] == "AccessDenied"

@@ -139,7 +139,7 @@ def test_create_change_set_update_without_parameters(
 
 
 @pytest.mark.skip(reason="TODO")
-def test_create_change_set_with_template_url(aws_client):
+def test_create_change_set_with_template_url():
     pass
 
 
@@ -203,7 +203,7 @@ def test_create_change_set_update_nonexisting(aws_client):
 
 
 @pytest.mark.skip(reason="TODO")
-def test_create_change_set_import(aws_client):
+def test_create_change_set_import():
     """test importing existing resources into a stack via the change set"""
     pass  # TODO
 
@@ -408,7 +408,7 @@ def test_delete_change_set_exception(snapshot, aws_client):
 
 
 @pytest.mark.aws_validated
-def test_create_and_then_remove_non_supported_resource_change_set(deploy_cfn_template, aws_client):
+def test_create_and_then_remove_non_supported_resource_change_set(deploy_cfn_template):
     # first deploy cfn with a CodeArtifact resource that is not actually supported
     template_path = os.path.join(
         os.path.dirname(__file__), "../../templates/code_artifact_template.yaml"

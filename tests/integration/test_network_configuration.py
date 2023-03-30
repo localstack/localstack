@@ -138,7 +138,7 @@ class TestSQS:
     """
 
     def test_off_strategy_without_external_port(
-        self, monkeypatch, sqs_create_queue, assert_host_customisation, aws_client
+        self, monkeypatch, sqs_create_queue, assert_host_customisation
     ):
         monkeypatch.setattr(config, "SQS_ENDPOINT_STRATEGY", "off")
 
@@ -149,7 +149,7 @@ class TestSQS:
         assert queue_name in queue_url
 
     def test_off_strategy_with_external_port(
-        self, monkeypatch, sqs_create_queue, assert_host_customisation, aws_client
+        self, monkeypatch, sqs_create_queue, assert_host_customisation
     ):
         external_port = 12345
         monkeypatch.setattr(config, "SQS_ENDPOINT_STRATEGY", "off")
@@ -162,9 +162,7 @@ class TestSQS:
         assert queue_name in queue_url
         assert f":{external_port}" in queue_url
 
-    def test_domain_strategy(
-        self, monkeypatch, sqs_create_queue, assert_host_customisation, aws_client
-    ):
+    def test_domain_strategy(self, monkeypatch, sqs_create_queue, assert_host_customisation):
         monkeypatch.setattr(config, "SQS_ENDPOINT_STRATEGY", "domain")
 
         queue_name = f"queue-{short_uid()}"
@@ -173,9 +171,7 @@ class TestSQS:
         assert_host_customisation(queue_url, use_localstack_cloud=True)
         assert queue_name in queue_url
 
-    def test_path_strategy(
-        self, monkeypatch, sqs_create_queue, assert_host_customisation, aws_client
-    ):
+    def test_path_strategy(self, monkeypatch, sqs_create_queue, assert_host_customisation):
         monkeypatch.setattr(config, "SQS_ENDPOINT_STRATEGY", "path")
 
         queue_name = f"queue-{short_uid()}"
@@ -208,7 +204,7 @@ class TestLambda:
 
     @pytest.mark.skipif(condition=is_new_provider(), reason="Not implemented for new provider")
     def test_http_api_for_function_url(
-        self, assert_host_customisation, create_lambda_function, aws_http_client_factory, aws_client
+        self, assert_host_customisation, create_lambda_function, aws_http_client_factory
     ):
         function_name = f"function-{short_uid()}"
         handler_code = ""

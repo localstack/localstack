@@ -10,17 +10,17 @@ from localstack.aws.api import (
 from localstack.aws.forwarder import ForwardingFallbackDispatcher, NotImplementedAvoidFallbackError
 
 
-def test_forwarding_fallback_dispatcher(aws_client):
+def test_forwarding_fallback_dispatcher():
     # create a dummy provider which raises a NotImplementedError (triggering the fallthrough)
     class TestProvider:
         @handler(operation="TestOperation")
-        def test_method(self, context, aws_client):
+        def test_method(self, context):
             raise NotImplementedError
 
     test_provider = TestProvider()
 
     # create a dummy fallback function
-    def test_request_forwarder(_, __, aws_client) -> ServiceResponse:
+    def test_request_forwarder(_, __) -> ServiceResponse:
         return "fallback-result"
 
     # invoke the function and expect the result from the fallback function
@@ -28,17 +28,17 @@ def test_forwarding_fallback_dispatcher(aws_client):
     assert dispatcher["TestOperation"](RequestContext(), ServiceRequest()) == "fallback-result"
 
 
-def test_forwarding_fallback_dispatcher_avoid_fallback(aws_client):
+def test_forwarding_fallback_dispatcher_avoid_fallback():
     # create a dummy provider which raises a NotImplementedAvoidFallbackError (avoiding the fallthrough)
     class TestProvider:
         @handler(operation="TestOperation")
-        def test_method(self, context, aws_client):
+        def test_method(self, context):
             raise NotImplementedAvoidFallbackError
 
     test_provider = TestProvider()
 
     # create a dummy forwarding function which raises a ServiceException
-    def test_request_forwarder(_, __, aws_client) -> ServiceResponse:
+    def test_request_forwarder(_, __) -> ServiceResponse:
         raise ServiceException
 
     # expect a NotImplementedError exception (and not the ServiceException from the fallthrough)

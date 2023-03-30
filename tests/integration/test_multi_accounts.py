@@ -17,7 +17,7 @@ def client_factory(aws_client_factory):
 
 
 class TestMultiAccounts:
-    def test_account_id_namespacing_for_moto_backends(self, client_factory, aws_client):
+    def test_account_id_namespacing_for_moto_backends(self, client_factory):
         #
         # ACM
         #
@@ -68,7 +68,7 @@ class TestMultiAccounts:
         vpcs = ec2_client1.describe_vpcs()["Vpcs"]
         assert all([vpc["OwnerId"] == account_id1 for vpc in vpcs])
 
-    def test_account_id_namespacing_for_localstack_backends(self, client_factory, aws_client):
+    def test_account_id_namespacing_for_localstack_backends(self, client_factory):
         # Ensure resources are isolated by account ID namespaces
         account_id1 = "420420420420"
         account_id2 = "133713371337"
@@ -101,7 +101,7 @@ class TestMultiAccounts:
         assert len(sns_client2.list_tags_for_resource(ResourceArn=arn2)["Tags"]) == 2
         assert len(sns_client2.list_tags_for_resource(ResourceArn=arn3)["Tags"]) == 1
 
-    def test_multi_accounts_dynamodb(self, client_factory, cleanups, aws_client):
+    def test_multi_accounts_dynamodb(self, client_factory, cleanups):
         """DynamoDB depends on an external service - DynamoDB Local"""
         account_id1 = "420420420420"
         account_id2 = "133713371337"
@@ -171,7 +171,7 @@ class TestMultiAccounts:
         response = ddb_client3.describe_table(TableName=tab1)
         assert response["Table"]["ItemCount"] == 3
 
-    def test_multi_accounts_kinesis(self, client_factory, aws_client):
+    def test_multi_accounts_kinesis(self, client_factory):
         """Test that multi-accounts work with external dependency, Kinesis Mock."""
         account_id1 = "420420420420"
         account_id2 = "133713371337"

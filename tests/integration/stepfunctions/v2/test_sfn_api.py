@@ -66,7 +66,7 @@ class TestSnfApi:
 
     @pytest.mark.skip("Add support for invalid language derivation.")
     def test_create_delete_invalid_sm(
-        self, create_iam_role_for_sfn, create_state_machine, snapshot, aws_client
+        self, create_iam_role_for_sfn, create_state_machine, snapshot
     ):
         snf_role_arn = create_iam_role_for_sfn()
         snapshot.add_transformer(RegexTransformer(snf_role_arn, "snf_role_arn"))

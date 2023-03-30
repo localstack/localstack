@@ -363,7 +363,7 @@ class TestCloudFormation:
         "create_bucket_first, region", [(True, "eu-west-1"), (False, "us-east-1")]
     )
     def test_cfn_handle_s3_notification_configuration(
-        self, region, create_boto_client, deploy_cfn_template, create_bucket_first, aws_client
+        self, region, create_boto_client, deploy_cfn_template, create_bucket_first
     ):
         s3_client = create_boto_client("s3", region_name=region)
         bucket_name = f"target-{short_uid()}"

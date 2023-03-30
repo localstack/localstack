@@ -32,7 +32,7 @@ class TestErrorInjection:
             aws_client.kinesis.delete_stream(StreamName=stream_name)
 
     @pytest.mark.only_localstack
-    def test_dynamodb_error_injection(self, monkeypatch, aws_client):
+    def test_dynamodb_error_injection(self, monkeypatch):
         table = self.get_dynamodb_table()
 
         try:
@@ -48,7 +48,7 @@ class TestErrorInjection:
             table.delete()
 
     @pytest.mark.only_localstack
-    def test_dynamodb_read_error_injection(self, monkeypatch, aws_client):
+    def test_dynamodb_read_error_injection(self, monkeypatch):
         table = self.get_dynamodb_table()
 
         try:
@@ -64,7 +64,7 @@ class TestErrorInjection:
             table.delete()
 
     @pytest.mark.only_localstack
-    def test_dynamodb_write_error_injection(self, monkeypatch, aws_client):
+    def test_dynamodb_write_error_injection(self, monkeypatch):
         table = self.get_dynamodb_table()
 
         try:

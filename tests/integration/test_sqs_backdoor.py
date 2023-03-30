@@ -74,7 +74,7 @@ class TestSqsDeveloperEdpoints:
         assert response["Messages"][1]["Attributes"]["ApproximateReceiveCount"] == "0"
 
     @pytest.mark.only_localstack
-    def test_list_messages_with_invalid_action_raises_error(self, sqs_create_queue, aws_client):
+    def test_list_messages_with_invalid_action_raises_error(self, sqs_create_queue):
         queue_url = sqs_create_queue()
 
         client = aws_stack.connect_to_service(

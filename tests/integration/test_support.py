@@ -31,7 +31,7 @@ class TestConfigService(unittest.TestCase):
         )
         return response["caseId"]
 
-    def test_create_support_case(self, aws_client):
+    def test_create_support_case(self):
         test_case_id = self.create_case()
         support_cases = self.support_client.describe_cases()["cases"]
         self.assertEqual(1, len(support_cases))
@@ -39,7 +39,7 @@ class TestConfigService(unittest.TestCase):
         for key in TEST_SUPPORT_CASE.keys():
             self.assertEqual(TEST_SUPPORT_CASE[key], support_cases[0][key])
 
-    def test_resolve_case(self, aws_client):
+    def test_resolve_case(self):
         test_case_id = self.create_case()
         response = self.support_client.resolve_case(caseId=test_case_id)
         self.assertEqual("resolved", response["finalCaseStatus"])

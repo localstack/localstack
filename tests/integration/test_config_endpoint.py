@@ -24,7 +24,7 @@ def config_endpoint(monkeypatch):
     router.remove(rules)
 
 
-def test_config_endpoint(config_endpoint, aws_client):
+def test_config_endpoint(config_endpoint):
     key = value = None
 
     def custom_listener(config_key, config_value):
