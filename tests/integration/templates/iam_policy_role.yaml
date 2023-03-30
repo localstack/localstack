@@ -1,0 +1,23 @@
+Resources:
+  MyS3Policy:
+    Type: "AWS::IAM::Policy"
+    Properties:
+      PolicyName: "S3AccessPolicy"
+      PolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: "Allow"
+            Action:
+              - "s3:GetObject"
+              - "s3:PutObject"
+              - "s3:ListBucket"
+            Resource: "*"
+      Roles:
+        - "MyRole"
+        - "AnotherRole"
+      Users:
+        - "MyUser"
+        - "AnotherUser"
+      Groups:
+        - "MyGroup"
+        - "AnotherGroup"

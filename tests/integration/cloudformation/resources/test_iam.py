@@ -81,6 +81,19 @@ def test_policy_attachments(
     policy = json.loads(policy) if isinstance(policy, str) else policy
     assert policy["Statement"][0]["Principal"] == {"Service": "elasticbeanstalk.amazonaws.com"}
 
+@pytest.mark.aws_validated
+def test_iam_policy_role_attachments(deploy_cfn_template, iam_client, snapshot):
+    snapshot.add_transformer(snapshot.transform.iam_api())
+    snapshot.add_transformer(snapshot.transform.cloudformation_api())
+
+    stack = deploy_cfn_template(
+        template_path=os.path.join(
+            os.path.dirname(__file__), "../../templates/iam_policy_role.yaml"
+        ),
+    )
+
+    snapshot.match("outputs", stack.outputs)
+
 
 @pytest.mark.aws_validated
 @pytest.mark.skip_snapshot_verify(paths=["$..User.Tags"])

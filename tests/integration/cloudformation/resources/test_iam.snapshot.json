@@ -1,24 +1,24 @@
 {
   "tests/integration/cloudformation/resources/test_iam.py::test_iam_username_defaultname": {
-    "recorded-date": "31-05-2022, 11:29:45",
+    "recorded-date": "30-03-2023, 13:58:47",
     "recorded-content": {
       "get_iam_user": {
         "User": {
-          "Path": "/",
-          "UserName": "<user-name:1>",
-          "UserId": "<user-id:1>",
           "Arn": "arn:aws:iam::111111111111:user/<user-name:1>",
-          "CreateDate": "datetime"
+          "CreateDate": "datetime",
+          "Path": "/",
+          "UserId": "<user-id:1>",
+          "UserName": "<user-name:1>"
         },
         "ResponseMetadata": {
-          "HTTPStatusCode": 200,
-          "HTTPHeaders": {}
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
         }
       }
     }
   },
   "tests/integration/cloudformation/resources/test_iam.py::test_managed_policy_with_empty_resource": {
-    "recorded-date": "05-09-2022, 10:01:53",
+    "recorded-date": "30-03-2023, 14:30:51",
     "recorded-content": {
       "outputs": {
         "PolicyArn": "arn:aws:iam::111111111111:policy/<resource:1>",
@@ -48,7 +48,7 @@
     }
   },
   "tests/integration/cloudformation/resources/test_iam.py::test_iam_user_access_key": {
-    "recorded-date": "06-01-2023, 11:55:42",
+    "recorded-date": "30-03-2023, 14:00:28",
     "recorded-content": {
       "key_outputs": {
         "AccessKeyId": "<key-id:1>",
@@ -63,15 +63,13 @@
       "access_key_updated": {
         "AccessKeyId": "<key-id:1>",
         "CreateDate": "datetime",
-        "Status": "Inactive",
-        "UserName": "<user-name:1>"
-      },
-      "access_key_serial_updated": {
-        "AccessKeyId": "<key-id:2>",
-        "CreateDate": "datetime",
-        "Status": "Inactive",
+        "Status": "Active",
         "UserName": "<user-name:1>"
       }
     }
+  },
+  "tests/integration/cloudformation/resources/test_iam.py::test_iam_policy_role_attachments": {
+    "recorded-date": "30-03-2023, 14:35:02",
+    "recorded-content": {}
   }
 }
