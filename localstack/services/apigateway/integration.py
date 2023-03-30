@@ -410,7 +410,7 @@ class KinesisIntegration(BackendIntegration):
             # API (v1), but the template selection expression is only supported for
             # Websockets
             template_key = None
-            if integration_type == "AWS" and invocation_context.ws_route:
+            if invocation_context.is_websocket_request():
                 template_key = invocation_context.integration.get(
                     "TemplateSelectionExpression", "$default"
                 )
