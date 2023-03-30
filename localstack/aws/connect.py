@@ -404,12 +404,17 @@ class InternalClientFactory(ClientFactory):
         else:
             config = self._config.merge(config)
 
+        endpoint_url = endpoint_url or get_local_service_url(service_name)
+        if service_name == "s3":
+            if re.match(r"https?://localhost(:[0-9]+)?", endpoint_url):
+                endpoint_url = endpoint_url.replace("://localhost", "://%s" % get_s3_hostname())
+
         return self._get_client(
             service_name=service_name,
             region_name=region_name or self._get_region(),
             use_ssl=self._use_ssl,
             verify=self._verify,
-            endpoint_url=endpoint_url or get_local_service_url(service_name),
+            endpoint_url=endpoint_url,
             aws_access_key_id=aws_access_key_id or INTERNAL_AWS_ACCESS_KEY_ID,
             aws_secret_access_key=aws_secret_access_key or INTERNAL_AWS_SECRET_ACCESS_KEY,
             aws_session_token=aws_session_token,
