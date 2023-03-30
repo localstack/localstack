@@ -845,6 +845,9 @@ LAMBDA_DEV_PORT_EXPOSE = is_env_true("LAMBDA_DEV_PORT_EXPOSE")
 
 # DEV: only applies to new lambda provider. All LAMBDA_INIT_* configuration are for LS developers only.
 # There are NO stability guarantees, and they may break at any time.
+
+# DEV: Release version of https://github.com/localstack/lambda-runtime-init overriding the current default
+LAMBDA_INIT_RELEASE_VERSION = os.environ.get("LAMBDA_INIT_RELEASE_VERSION")
 # DEV: 0 (default) Enable for mounting of RIE init binary and delve debugger
 LAMBDA_INIT_DEBUG = is_env_true("LAMBDA_INIT_DEBUG")
 # DEV: path to RIE init binary (e.g., var/rapid/init)
@@ -1014,6 +1017,7 @@ CONFIG_ENV_VARS = [
     "LAMBDA_INIT_DELVE_PORT",
     "LAMBDA_INIT_POST_INVOKE_WAIT",
     "LAMBDA_INIT_USER",
+    "LAMBDA_INIT_RELEASE_VERSION",
     "LAMBDA_RUNTIME_IMAGE_MAPPING",
     "LAMBDA_JAVA_OPTS",
     "LAMBDA_REMOTE_DOCKER",

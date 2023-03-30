@@ -3,6 +3,7 @@ import platform
 import stat
 from typing import List
 
+from localstack import config
 from localstack.packages import DownloadInstaller, InstallTarget, Package, PackageInstaller
 from localstack.packages.core import ArchiveDownloadAndExtractInstaller, SystemNotSupportedException
 from localstack.utils.platform import get_arch
@@ -10,6 +11,7 @@ from localstack.utils.platform import get_arch
 LAMBDA_RUNTIME_INIT_URL = "https://github.com/localstack/lambda-runtime-init/releases/download/{version}/aws-lambda-rie-{arch}"
 
 LAMBDA_RUNTIME_DEFAULT_VERSION = "v0.1.16-pre"
+LAMBDA_RUNTIME_VERSION = config.LAMBDA_INIT_RELEASE_VERSION or LAMBDA_RUNTIME_DEFAULT_VERSION
 
 # GO Lambda runtime
 GO_RUNTIME_VERSION = "0.4.0"
@@ -17,11 +19,11 @@ GO_RUNTIME_DOWNLOAD_URL_TEMPLATE = "https://github.com/localstack/awslamba-go-ru
 
 
 class AWSLambdaRuntimePackage(Package):
-    def __init__(self, default_version: str = LAMBDA_RUNTIME_DEFAULT_VERSION):
+    def __init__(self, default_version: str = LAMBDA_RUNTIME_VERSION):
         super().__init__(name="AwsLambda", default_version=default_version)
 
     def get_versions(self) -> List[str]:
-        return [LAMBDA_RUNTIME_DEFAULT_VERSION]
+        return [LAMBDA_RUNTIME_VERSION]
 
     def _get_installer(self, version: str) -> PackageInstaller:
         return AWSLambdaRuntimePackageInstaller(name="awslambda-runtime", version=version)
