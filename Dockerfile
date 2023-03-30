@@ -104,8 +104,6 @@ ADD bin/hosts /etc/hosts
 ENV LD_LIBRARY_PATH=/usr/lib/jvm/java-11/lib:/usr/lib/jvm/java-11/lib/server
 ENV USER=localstack
 ENV PYTHONUNBUFFERED=1
-ENV EDGE_BIND_HOST=0.0.0.0
-ENV LOCALSTACK_HOSTNAME=localhost
 
 # Install the latest version of awslocal globally
 RUN --mount=type=cache,target=/root/.cache \
