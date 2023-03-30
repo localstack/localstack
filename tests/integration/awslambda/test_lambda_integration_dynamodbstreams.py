@@ -102,15 +102,14 @@ class TestDynamoDBEventSourceMapping:
     @pytest.mark.aws_validated
     def test_dynamodb_event_source_mapping(
         self,
-        lambda_client,
         create_lambda_function,
         create_iam_role_with_policy,
-        dynamodb_client,
         dynamodb_create_table,
         get_lambda_logs_event,
         cleanups,
         wait_for_dynamodb_stream_enabled,
         snapshot,
+        aws_client,
     ):
 
         function_name = f"lambda_func-{short_uid()}"
@@ -137,13 +136,13 @@ class TestDynamoDBEventSourceMapping:
         )
         # snapshot create table to get the table name registered as resource
         snapshot.match("create-table-result", create_table_result)
-        _await_dynamodb_table_active(dynamodb_client, table_name)
-        stream_arn = dynamodb_client.update_table(
+        _await_dynamodb_table_active(aws_client.dynamodb, table_name)
+        stream_arn = aws_client.dynamodb.update_table(
             TableName=table_name,
             StreamSpecification={"StreamEnabled": True, "StreamViewType": "NEW_IMAGE"},
         )["TableDescription"]["LatestStreamArn"]
         assert wait_for_dynamodb_stream_enabled(stream_arn)
-        create_event_source_mapping_response = lambda_client.create_event_source_mapping(
+        create_event_source_mapping_response = aws_client.awslambda.create_event_source_mapping(
             FunctionName=function_name,
             BatchSize=1,
             StartingPosition="TRIM_HORIZON",  # TODO investigate how to get it back to LATEST
@@ -153,12 +152,14 @@ class TestDynamoDBEventSourceMapping:
         )
         snapshot.match("create_event_source_mapping_response", create_event_source_mapping_response)
         event_source_uuid = create_event_source_mapping_response["UUID"]
-        cleanups.append(lambda: lambda_client.delete_event_source_mapping(UUID=event_source_uuid))
+        cleanups.append(
+            lambda: aws_client.awslambda.delete_event_source_mapping(UUID=event_source_uuid)
+        )
 
-        _await_event_source_mapping_enabled(lambda_client, event_source_uuid)
+        _await_event_source_mapping_enabled(aws_client.awslambda, event_source_uuid)
 
         def _send_and_receive_events():
-            dynamodb_client.put_item(TableName=table_name, Item=db_item)
+            aws_client.dynamodb.put_item(TableName=table_name, Item=db_item)
             return get_lambda_logs_event(
                 function_name=function_name, expected_num_events=1, retries=20
             )
@@ -175,15 +176,13 @@ class TestDynamoDBEventSourceMapping:
     def test_disabled_dynamodb_event_source_mapping(
         self,
         create_lambda_function,
-        lambda_client,
         dynamodb_resource,
         dynamodb_create_table,
-        logs_client,
-        dynamodbstreams_client,
         lambda_su_role,
         cleanups,
         wait_for_dynamodb_stream_enabled,
         snapshot,
+        aws_client,
     ):
 
         function_name = f"lambda_func-{short_uid()}"
@@ -203,7 +202,7 @@ class TestDynamoDBEventSourceMapping:
         )
         latest_stream_arn = dynamodb_create_table_result["TableDescription"]["LatestStreamArn"]
         snapshot.match("dynamodb_create_table_result", dynamodb_create_table_result)
-        rs = lambda_client.create_event_source_mapping(
+        rs = aws_client.awslambda.create_event_source_mapping(
             FunctionName=function_name,
             EventSourceArn=latest_stream_arn,
             StartingPosition="TRIM_HORIZON",
@@ -211,8 +210,8 @@ class TestDynamoDBEventSourceMapping:
         )
         snapshot.match("create_event_source_mapping_result", rs)
         uuid = rs["UUID"]
-        cleanups.append(lambda: lambda_client.delete_event_source_mapping(UUID=uuid))
-        _await_event_source_mapping_enabled(lambda_client, uuid)
+        cleanups.append(lambda: aws_client.awslambda.delete_event_source_mapping(UUID=uuid))
+        _await_event_source_mapping_enabled(aws_client.awslambda, uuid)
 
         assert wait_for_dynamodb_stream_enabled(latest_stream_arn)
         table = dynamodb_resource.Table(ddb_table)
@@ -225,10 +224,10 @@ class TestDynamoDBEventSourceMapping:
             sleep=3,
             function_name=function_name,
             expected_length=1,
-            logs_client=logs_client,
+            logs_client=aws_client.logs,
         )
         # disable event source mapping
-        update_event_source_mapping_result = lambda_client.update_event_source_mapping(
+        update_event_source_mapping_result = aws_client.awslambda.update_event_source_mapping(
             UUID=uuid, Enabled=False
         )
         snapshot.match("update_event_source_mapping_result", update_event_source_mapping_result)
@@ -236,19 +235,18 @@ class TestDynamoDBEventSourceMapping:
         table.put_item(Item=items[1])
         # lambda no longer invoked, still have 1 event
         check_expected_lambda_log_events_length(
-            expected_length=1, function_name=function_name, logs_client=logs_client
+            expected_length=1, function_name=function_name, logs_client=aws_client.logs
         )
 
     @pytest.mark.aws_validated
     def test_deletion_event_source_mapping_with_dynamodb(
         self,
         create_lambda_function,
-        lambda_client,
-        dynamodb_client,
         lambda_su_role,
         snapshot,
         cleanups,
         dynamodb_create_table,
+        aws_client,
     ):
         function_name = f"lambda_func-{short_uid()}"
         ddb_table = f"ddb_table-{short_uid()}"
@@ -262,27 +260,27 @@ class TestDynamoDBEventSourceMapping:
         create_dynamodb_table_response = dynamodb_create_table(
             table_name=ddb_table,
             partition_key="id",
-            client=dynamodb_client,
+            client=aws_client.dynamodb,
             stream_view_type="NEW_IMAGE",
         )
         snapshot.match("create_dynamodb_table_response", create_dynamodb_table_response)
-        _await_dynamodb_table_active(dynamodb_client, ddb_table)
+        _await_dynamodb_table_active(aws_client.dynamodb, ddb_table)
         latest_stream_arn = create_dynamodb_table_response["TableDescription"]["LatestStreamArn"]
-        result = lambda_client.create_event_source_mapping(
+        result = aws_client.awslambda.create_event_source_mapping(
             FunctionName=function_name,
             EventSourceArn=latest_stream_arn,
             StartingPosition="TRIM_HORIZON",
         )
         snapshot.match("create_event_source_mapping_result", result)
-        _await_event_source_mapping_enabled(lambda_client, result["UUID"])
-        cleanups.append(lambda: dynamodb_client.delete_table(TableName=ddb_table))
+        _await_event_source_mapping_enabled(aws_client.awslambda, result["UUID"])
+        cleanups.append(lambda: aws_client.dynamodb.delete_table(TableName=ddb_table))
 
         event_source_mapping_uuid = result["UUID"]
         cleanups.append(
-            lambda: lambda_client.delete_event_source_mapping(UUID=event_source_mapping_uuid)
+            lambda: aws_client.awslambda.delete_event_source_mapping(UUID=event_source_mapping_uuid)
         )
-        dynamodb_client.delete_table(TableName=ddb_table)
-        list_esm = lambda_client.list_event_source_mappings(EventSourceArn=latest_stream_arn)
+        aws_client.dynamodb.delete_table(TableName=ddb_table)
+        list_esm = aws_client.awslambda.list_event_source_mappings(EventSourceArn=latest_stream_arn)
         snapshot.match("list_event_source_mapping_result", list_esm)
 
     @pytest.mark.aws_validated
@@ -301,16 +299,14 @@ class TestDynamoDBEventSourceMapping:
     )
     def test_dynamodb_event_source_mapping_with_on_failure_destination_config(
         self,
-        lambda_client,
         create_lambda_function,
-        sqs_client,
         sqs_queue_arn,
         sqs_create_queue,
         create_iam_role_with_policy,
-        dynamodb_client,
         dynamodb_create_table,
         snapshot,
         cleanups,
+        aws_client,
     ):
         snapshot.add_transformer(snapshot.transform.key_value("MD5OfBody"))
         snapshot.add_transformer(snapshot.transform.key_value("ReceiptHandle"))
@@ -336,8 +332,8 @@ class TestDynamoDBEventSourceMapping:
             role=role_arn,
         )
         dynamodb_create_table(table_name=table_name, partition_key=partition_key)
-        _await_dynamodb_table_active(dynamodb_client, table_name)
-        update_table_response = dynamodb_client.update_table(
+        _await_dynamodb_table_active(aws_client.dynamodb, table_name)
+        update_table_response = aws_client.dynamodb.update_table(
             TableName=table_name,
             StreamSpecification={"StreamEnabled": True, "StreamViewType": "NEW_IMAGE"},
         )
@@ -346,7 +342,7 @@ class TestDynamoDBEventSourceMapping:
         destination_queue = sqs_create_queue()
         queue_failure_event_source_mapping_arn = sqs_queue_arn(destination_queue)
         destination_config = {"OnFailure": {"Destination": queue_failure_event_source_mapping_arn}}
-        create_event_source_mapping_response = lambda_client.create_event_source_mapping(
+        create_event_source_mapping_response = aws_client.awslambda.create_event_source_mapping(
             FunctionName=function_name,
             BatchSize=1,
             StartingPosition="TRIM_HORIZON",
@@ -358,15 +354,15 @@ class TestDynamoDBEventSourceMapping:
         snapshot.match("create_event_source_mapping_response", create_event_source_mapping_response)
         event_source_mapping_uuid = create_event_source_mapping_response["UUID"]
         cleanups.append(
-            lambda: lambda_client.delete_event_source_mapping(UUID=event_source_mapping_uuid)
+            lambda: aws_client.awslambda.delete_event_source_mapping(UUID=event_source_mapping_uuid)
         )
 
-        _await_event_source_mapping_enabled(lambda_client, event_source_mapping_uuid)
+        _await_event_source_mapping_enabled(aws_client.awslambda, event_source_mapping_uuid)
 
-        dynamodb_client.put_item(TableName=table_name, Item=item)
+        aws_client.dynamodb.put_item(TableName=table_name, Item=item)
 
         def verify_failure_received():
-            res = sqs_client.receive_message(QueueUrl=destination_queue)
+            res = aws_client.sqs.receive_message(QueueUrl=destination_queue)
             assert res.get("Messages")
             return res
 
@@ -439,11 +435,8 @@ class TestDynamoDBEventSourceMapping:
     def test_dynamodb_event_filter(
         self,
         create_lambda_function,
-        lambda_client,
-        dynamodb_client,
         dynamodb_create_table,
         lambda_su_role,
-        logs_client,
         wait_for_dynamodb_stream_ready,
         filter,
         calls,
@@ -451,6 +444,7 @@ class TestDynamoDBEventSourceMapping:
         item_to_put2,
         cleanups,
         snapshot,
+        aws_client,
     ):
 
         function_name = f"lambda_func-{short_uid()}"
@@ -465,8 +459,8 @@ class TestDynamoDBEventSourceMapping:
         )
         table_creation_response = dynamodb_create_table(table_name=table_name, partition_key="id")
         snapshot.match("table_creation_response", table_creation_response)
-        _await_dynamodb_table_active(dynamodb_client, table_name)
-        stream_arn = dynamodb_client.update_table(
+        _await_dynamodb_table_active(aws_client.dynamodb, table_name)
+        stream_arn = aws_client.dynamodb.update_table(
             TableName=table_name,
             StreamSpecification={"StreamEnabled": True, "StreamViewType": "NEW_AND_OLD_IMAGES"},
         )["TableDescription"]["LatestStreamArn"]
@@ -487,18 +481,20 @@ class TestDynamoDBEventSourceMapping:
             }
         )
 
-        create_event_source_mapping_response = lambda_client.create_event_source_mapping(
+        create_event_source_mapping_response = aws_client.awslambda.create_event_source_mapping(
             **event_source_mapping_kwargs
         )
         event_source_uuid = create_event_source_mapping_response["UUID"]
-        cleanups.append(lambda: lambda_client.delete_event_source_mapping(UUID=event_source_uuid))
+        cleanups.append(
+            lambda: aws_client.awslambda.delete_event_source_mapping(UUID=event_source_uuid)
+        )
         snapshot.match("create_event_source_mapping_response", create_event_source_mapping_response)
 
-        _await_event_source_mapping_enabled(lambda_client, event_source_uuid)
-        dynamodb_client.put_item(TableName=table_name, Item=item_to_put1)
+        _await_event_source_mapping_enabled(aws_client.awslambda, event_source_uuid)
+        aws_client.dynamodb.put_item(TableName=table_name, Item=item_to_put1)
 
         def assert_lambda_called():
-            events = get_lambda_log_events(function_name, logs_client=logs_client)
+            events = get_lambda_log_events(function_name, logs_client=aws_client.logs)
             if calls > 0:
                 assert len(events) == 1
             else:
@@ -512,15 +508,15 @@ class TestDynamoDBEventSourceMapping:
         # Following lines are relevant if variables are set via parametrize
         if item_to_put2:
             # putting a new item (item_to_put2) a second time is a 'INSERT' request
-            dynamodb_client.put_item(TableName=table_name, Item=item_to_put2)
+            aws_client.dynamodb.put_item(TableName=table_name, Item=item_to_put2)
         else:
             # putting the same item (item_to_put1) a second time is a 'MODIFY' request (at least in Localstack)
-            dynamodb_client.put_item(TableName=table_name, Item=item_to_put1)
+            aws_client.dynamodb.put_item(TableName=table_name, Item=item_to_put1)
         # depending on the parametrize values the filter (and the items to put) the lambda might be called multiple times
         if calls > 1:
 
             def assert_events_called_multiple():
-                events = get_lambda_log_events(function_name, logs_client=logs_client)
+                events = get_lambda_log_events(function_name, logs_client=aws_client.logs)
                 assert len(events) == calls
                 return events
 
@@ -542,13 +538,12 @@ class TestDynamoDBEventSourceMapping:
     def test_dynamodb_invalid_event_filter(
         self,
         create_lambda_function,
-        lambda_client,
-        dynamodb_client,
         dynamodb_create_table,
         lambda_su_role,
         wait_for_dynamodb_stream_ready,
         filter,
         snapshot,
+        aws_client,
     ):
 
         function_name = f"lambda_func-{short_uid()}"
@@ -561,8 +556,8 @@ class TestDynamoDBEventSourceMapping:
             role=lambda_su_role,
         )
         dynamodb_create_table(table_name=table_name, partition_key="id")
-        _await_dynamodb_table_active(dynamodb_client, table_name)
-        stream_arn = dynamodb_client.update_table(
+        _await_dynamodb_table_active(aws_client.dynamodb, table_name)
+        stream_arn = aws_client.dynamodb.update_table(
             TableName=table_name,
             StreamSpecification={"StreamEnabled": True, "StreamViewType": "NEW_AND_OLD_IMAGES"},
         )["TableDescription"]["LatestStreamArn"]
@@ -582,6 +577,6 @@ class TestDynamoDBEventSourceMapping:
         }
 
         with pytest.raises(Exception) as expected:
-            lambda_client.create_event_source_mapping(**event_source_mapping_kwargs)
+            aws_client.awslambda.create_event_source_mapping(**event_source_mapping_kwargs)
         snapshot.match("exception_event_source_creation", expected.value.response)
         expected.match(INVALID_PARAMETER_VALUE_EXCEPTION)
