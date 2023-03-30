@@ -13,7 +13,7 @@ from localstack.services.moto import MotoFallbackDispatcher
 from localstack.utils.common import short_uid
 
 
-def test_call_with_sqs_creates_state_correctly():
+def test_call_with_sqs_creates_state_correctly(aws_client):
     qname = f"queue-{short_uid()}"
 
     response = moto.call_moto(
@@ -35,7 +35,7 @@ def test_call_with_sqs_creates_state_correctly():
     assert url not in response.get("QueueUrls", [])
 
 
-def test_call_sqs_invalid_call_raises_http_exception():
+def test_call_sqs_invalid_call_raises_http_exception(aws_client):
     with pytest.raises(ServiceException) as e:
         moto.call_moto(
             moto.create_aws_request_context(
@@ -49,7 +49,7 @@ def test_call_sqs_invalid_call_raises_http_exception():
     e.match("The specified queue does not exist")
 
 
-def test_call_non_implemented_operation():
+def test_call_non_implemented_operation(aws_client):
     with pytest.raises(NotImplementedError):
         # we'll need to keep finding methods that moto doesn't implement ;-)
         moto.call_moto(
@@ -57,7 +57,7 @@ def test_call_non_implemented_operation():
         )
 
 
-def test_call_with_sqs_modifies_state_in_moto_backend():
+def test_call_with_sqs_modifies_state_in_moto_backend(aws_client):
     """Whitebox test to check that moto backends are populated correctly"""
     from moto.sqs.models import sqs_backends
 
@@ -75,7 +75,7 @@ def test_call_with_sqs_modifies_state_in_moto_backend():
 @pytest.mark.parametrize(
     "payload", ["foobar", b"foobar", BytesIO(b"foobar")], ids=["str", "bytes", "IO[bytes]"]
 )
-def test_call_s3_with_streaming_trait(payload, monkeypatch):
+def test_call_s3_with_streaming_trait(payload, monkeypatch, aws_client):
     monkeypatch.setenv("MOTO_S3_CUSTOM_ENDPOINTS", "s3.localhost.localstack.cloud:4566")
 
     # In this test we use low-level interface with Moto and skip the standard setup
@@ -112,7 +112,7 @@ def test_call_s3_with_streaming_trait(payload, monkeypatch):
     moto.call_moto(moto.create_aws_request_context("s3", "DeleteBucket", {"Bucket": bucket_name}))
 
 
-def test_call_include_response_metadata():
+def test_call_include_response_metadata(aws_client):
     ctx = moto.create_aws_request_context("sqs", "ListQueues")
 
     response = moto.call_moto(ctx)
@@ -122,7 +122,7 @@ def test_call_include_response_metadata():
     assert "ResponseMetadata" in response
 
 
-def test_call_with_modified_request():
+def test_call_with_modified_request(aws_client):
     from moto.sqs.models import sqs_backends
 
     qname1 = f"queue-{short_uid()}"
@@ -138,7 +138,7 @@ def test_call_with_modified_request():
     moto.call_moto(moto.create_aws_request_context("sqs", "DeleteQueue", {"QueueUrl": url}))
 
 
-def test_call_with_es_creates_state_correctly():
+def test_call_with_es_creates_state_correctly(aws_client):
     domain_name = f"domain-{short_uid()}"
     response = moto.call_moto(
         moto.create_aws_request_context(
@@ -166,7 +166,7 @@ def test_call_with_es_creates_state_correctly():
         assert response["ResponseMetadata"]["HTTPStatusCode"] == 200
 
 
-def test_call_multi_region_backends():
+def test_call_multi_region_backends(aws_client):
     from moto.sqs.models import sqs_backends
 
     qname_us = f"queue-us-{short_uid()}"
@@ -193,7 +193,7 @@ def test_call_multi_region_backends():
     del sqs_backends[DEFAULT_MOTO_ACCOUNT_ID]["eu-central-1"].queues[qname_eu]
 
 
-def test_call_with_sqs_invalid_call_raises_exception():
+def test_call_with_sqs_invalid_call_raises_exception(aws_client):
     with pytest.raises(ServiceException):
         moto.call_moto(
             moto.create_aws_request_context(
@@ -206,7 +206,7 @@ def test_call_with_sqs_invalid_call_raises_exception():
         )
 
 
-def test_call_with_sqs_returns_service_response():
+def test_call_with_sqs_returns_service_response(aws_client):
     qname = f"queue-{short_uid()}"
 
     create_queue_response = moto.call_moto(
@@ -238,7 +238,7 @@ class FakeSqsProvider(FakeSqsApi):
         return moto.call_moto(context)
 
 
-def test_moto_fallback_dispatcher():
+def test_moto_fallback_dispatcher(aws_client):
     provider = FakeSqsProvider()
     dispatcher = MotoFallbackDispatcher(provider)
 
@@ -294,7 +294,7 @@ class FakeS3Provider:
         raise NotImplementedAvoidFallbackError
 
 
-def test_moto_fallback_dispatcher_error_handling(monkeypatch):
+def test_moto_fallback_dispatcher_error_handling(monkeypatch, aws_client):
     """
     This test checks if the error handling (marshalling / unmarshalling) works correctly on all levels, including
     additional (even non-officially supported) fields on exception (like NoSuchBucket#BucketName).
@@ -329,7 +329,7 @@ def test_moto_fallback_dispatcher_error_handling(monkeypatch):
         _dispatch("PutObject", {"Bucket": bucket_name, "Key": "key"})
 
 
-def test_request_with_response_header_location_fields():
+def test_request_with_response_header_location_fields(aws_client):
     # CreateHostedZoneResponse has a member "Location" that's located in the headers
     zone_name = f"zone-{short_uid()}.com"
     request = moto.create_aws_request_context(

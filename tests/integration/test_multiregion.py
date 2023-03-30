@@ -17,7 +17,7 @@ REGION4 = "eu-central-1"
 
 
 class TestMultiRegion(unittest.TestCase):
-    def test_multi_region_sns(self):
+    def test_multi_region_sns(self, aws_client):
         sns_1 = aws_stack.create_external_boto_client("sns", region_name=REGION1)
         sns_2 = aws_stack.create_external_boto_client("sns", region_name=REGION2)
         len_1 = len(sns_1.list_topics()["Topics"])
@@ -37,7 +37,7 @@ class TestMultiRegion(unittest.TestCase):
         self.assertEqual(len(result2), len_2 + 1)
         self.assertIn(REGION2, result2[0]["TopicArn"])
 
-    def test_multi_region_api_gateway(self):
+    def test_multi_region_api_gateway(self, aws_client):
         gw_1 = aws_stack.create_external_boto_client("apigateway", region_name=REGION1)
         gw_2 = aws_stack.create_external_boto_client("apigateway", region_name=REGION2)
         gw_3 = aws_stack.create_external_boto_client("apigateway", region_name=REGION3)

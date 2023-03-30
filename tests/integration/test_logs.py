@@ -63,24 +63,24 @@ def logs_log_stream(logs_client, logs_log_group):
 
 class TestCloudWatchLogs:
     # TODO make creation and description atomic to avoid possible flake?
-    def test_create_and_delete_log_group(self, logs_client):
+    def test_create_and_delete_log_group(self, aws_client):
         test_name = f"test-log-group-{short_uid()}"
-        log_groups_before = logs_client.describe_log_groups(
+        log_groups_before = aws_client.logs.describe_log_groups(
             logGroupNamePrefix="test-log-group-"
         ).get("logGroups", [])
 
-        logs_client.create_log_group(logGroupName=test_name)
+        aws_client.logs.create_log_group(logGroupName=test_name)
 
-        log_groups_between = logs_client.describe_log_groups(
+        log_groups_between = aws_client.logs.describe_log_groups(
             logGroupNamePrefix="test-log-group-"
         ).get("logGroups", [])
         assert poll_condition(
             lambda: len(log_groups_between) == len(log_groups_before) + 1, timeout=5.0, interval=0.5
         )
 
-        logs_client.delete_log_group(logGroupName=test_name)
+        aws_client.logs.delete_log_group(logGroupName=test_name)
 
-        log_groups_after = logs_client.describe_log_groups(
+        log_groups_after = aws_client.logs.describe_log_groups(
             logGroupNamePrefix="test-log-group-"
         ).get("logGroups", [])
         assert poll_condition(
@@ -89,25 +89,25 @@ class TestCloudWatchLogs:
         assert len(log_groups_after) == len(log_groups_before)
 
     @pytest.mark.aws_validated
-    def test_list_tags_log_group(self, logs_client, snapshot):
+    def test_list_tags_log_group(self, snapshot, aws_client):
         test_name = f"test-log-group-{short_uid()}"
         try:
-            logs_client.create_log_group(logGroupName=test_name, tags={"env": "testing1"})
-            response = logs_client.list_tags_log_group(logGroupName=test_name)
+            aws_client.logs.create_log_group(logGroupName=test_name, tags={"env": "testing1"})
+            response = aws_client.logs.list_tags_log_group(logGroupName=test_name)
             snapshot.match("list_tags_after_create_log_group", response)
 
             # get group arn, to use the tag-resource api
-            log_group_arn = logs_client.describe_log_groups(logGroupNamePrefix=test_name)[
+            log_group_arn = aws_client.logs.describe_log_groups(logGroupNamePrefix=test_name)[
                 "logGroups"
             ][0]["arn"].rstrip(":*")
 
             # add a tag - new api
-            logs_client.tag_resource(
+            aws_client.logs.tag_resource(
                 resourceArn=log_group_arn, tags={"test1": "val1", "test2": "val2"}
             )
 
-            response = logs_client.list_tags_log_group(logGroupName=test_name)
-            response_2 = logs_client.list_tags_for_resource(resourceArn=log_group_arn)
+            response = aws_client.logs.list_tags_log_group(logGroupName=test_name)
+            response_2 = aws_client.logs.list_tags_for_resource(resourceArn=log_group_arn)
 
             snapshot.match("list_tags_log_group_after_tag_resource", response)
             snapshot.match("list_tags_for_resource_after_tag_resource", response_2)
@@ -115,21 +115,21 @@ class TestCloudWatchLogs:
             assert response["tags"] == response_2["tags"]
 
             # add a tag - old api
-            logs_client.tag_log_group(logGroupName=test_name, tags={"test3": "val3"})
+            aws_client.logs.tag_log_group(logGroupName=test_name, tags={"test3": "val3"})
 
-            response = logs_client.list_tags_log_group(logGroupName=test_name)
-            response_2 = logs_client.list_tags_for_resource(resourceArn=log_group_arn)
+            response = aws_client.logs.list_tags_log_group(logGroupName=test_name)
+            response_2 = aws_client.logs.list_tags_for_resource(resourceArn=log_group_arn)
 
             snapshot.match("list_tags_log_group_after_tag_log_group", response)
             snapshot.match("list_tags_for_resource_after_tag_log_group", response_2)
             assert response["tags"] == response_2["tags"]
 
             # untag - use both apis
-            logs_client.untag_log_group(logGroupName=test_name, tags=["test3"])
-            logs_client.untag_resource(resourceArn=log_group_arn, tagKeys=["env", "test1"])
+            aws_client.logs.untag_log_group(logGroupName=test_name, tags=["test3"])
+            aws_client.logs.untag_resource(resourceArn=log_group_arn, tagKeys=["env", "test1"])
 
-            response = logs_client.list_tags_log_group(logGroupName=test_name)
-            response_2 = logs_client.list_tags_for_resource(resourceArn=log_group_arn)
+            response = aws_client.logs.list_tags_log_group(logGroupName=test_name)
+            response_2 = aws_client.logs.list_tags_for_resource(resourceArn=log_group_arn)
             snapshot.match("list_tags_log_group_after_untag", response)
             snapshot.match("list_tags_for_resource_after_untag", response_2)
 
@@ -137,17 +137,17 @@ class TestCloudWatchLogs:
 
         finally:
             # clean up
-            logs_client.delete_log_group(logGroupName=test_name)
+            aws_client.logs.delete_log_group(logGroupName=test_name)
 
-    def test_create_and_delete_log_stream(self, logs_client, logs_log_group):
+    def test_create_and_delete_log_stream(self, logs_log_group, aws_client):
         test_name = f"test-log-stream-{short_uid()}"
-        log_streams_before = logs_client.describe_log_streams(logGroupName=logs_log_group).get(
+        log_streams_before = aws_client.logs.describe_log_streams(logGroupName=logs_log_group).get(
             "logStreams", []
         )
 
-        logs_client.create_log_stream(logGroupName=logs_log_group, logStreamName=test_name)
+        aws_client.logs.create_log_stream(logGroupName=logs_log_group, logStreamName=test_name)
 
-        log_streams_between = logs_client.describe_log_streams(logGroupName=logs_log_group).get(
+        log_streams_between = aws_client.logs.describe_log_streams(logGroupName=logs_log_group).get(
             "logStreams", []
         )
         assert poll_condition(
@@ -156,9 +156,9 @@ class TestCloudWatchLogs:
             interval=0.5,
         )
 
-        logs_client.delete_log_stream(logGroupName=logs_log_group, logStreamName=test_name)
+        aws_client.logs.delete_log_stream(logGroupName=logs_log_group, logStreamName=test_name)
 
-        log_streams_after = logs_client.describe_log_streams(logGroupName=logs_log_group).get(
+        log_streams_after = aws_client.logs.describe_log_streams(logGroupName=logs_log_group).get(
             "logStreams", []
         )
         assert poll_condition(
@@ -168,30 +168,30 @@ class TestCloudWatchLogs:
         )
         assert len(log_streams_after) == len(log_streams_before)
 
-    def test_put_events_multi_bytes_msg(self, logs_client, logs_log_group, logs_log_stream):
+    def test_put_events_multi_bytes_msg(self, logs_log_group, logs_log_stream, aws_client):
         body_msg = "🙀 - 参よ - 日本語"
         events = [{"timestamp": now_utc(millis=True), "message": body_msg}]
-        response = logs_client.put_log_events(
+        response = aws_client.logs.put_log_events(
             logGroupName=logs_log_group, logStreamName=logs_log_stream, logEvents=events
         )
         assert response["ResponseMetadata"]["HTTPStatusCode"] == 200
 
-        events = logs_client.get_log_events(
+        events = aws_client.logs.get_log_events(
             logGroupName=logs_log_group, logStreamName=logs_log_stream
         )["events"]
         assert events[0]["message"] == body_msg
 
-    def test_filter_log_events_response_header(self, logs_client, logs_log_group, logs_log_stream):
+    def test_filter_log_events_response_header(self, logs_log_group, logs_log_stream, aws_client):
         events = [
             {"timestamp": now_utc(millis=True), "message": "log message 1"},
             {"timestamp": now_utc(millis=True), "message": "log message 2"},
         ]
-        response = logs_client.put_log_events(
+        response = aws_client.logs.put_log_events(
             logGroupName=logs_log_group, logStreamName=logs_log_stream, logEvents=events
         )
         assert response["ResponseMetadata"]["HTTPStatusCode"] == 200
 
-        response = logs_client.filter_log_events(logGroupName=logs_log_group)
+        response = aws_client.logs.filter_log_events(logGroupName=logs_log_group)
         assert response["ResponseMetadata"]["HTTPStatusCode"] == 200
         assert (
             response["ResponseMetadata"]["HTTPHeaders"]["content-type"] == APPLICATION_AMZ_JSON_1_1
@@ -205,14 +205,7 @@ class TestCloudWatchLogs:
         ]
     )
     def test_put_subscription_filter_lambda(
-        self,
-        lambda_client,
-        logs_client,
-        logs_log_group,
-        logs_log_stream,
-        create_lambda_function,
-        sts_client,
-        snapshot,
+        self, logs_log_group, logs_log_stream, create_lambda_function, snapshot, aws_client
     ):
         snapshot.add_transformer(snapshot.transform.lambda_api())
         # special replacements for this test case:
@@ -236,10 +229,10 @@ class TestCloudWatchLogs:
             func_name=test_lambda_name,
             runtime=Runtime.python3_9,
         )
-        lambda_client.invoke(FunctionName=test_lambda_name, Payload=b"{}")
+        aws_client.awslambda.invoke(FunctionName=test_lambda_name, Payload=b"{}")
         # get account-id to set the correct policy
-        account_id = sts_client.get_caller_identity()["Account"]
-        result = lambda_client.add_permission(
+        account_id = aws_client.sts.get_caller_identity()["Account"]
+        result = aws_client.awslambda.add_permission(
             FunctionName=test_lambda_name,
             StatementId=test_lambda_name,
             Principal=f"logs.{config.AWS_REGION_US_EAST_1}.amazonaws.com",
@@ -250,7 +243,7 @@ class TestCloudWatchLogs:
 
         snapshot.match("add_permission", result)
 
-        result = logs_client.put_subscription_filter(
+        result = aws_client.logs.put_subscription_filter(
             logGroupName=logs_log_group,
             filterName="test",
             filterPattern="",
@@ -260,7 +253,7 @@ class TestCloudWatchLogs:
         )
         snapshot.match("put_subscription_filter", result)
 
-        logs_client.put_log_events(
+        aws_client.logs.put_log_events(
             logGroupName=logs_log_group,
             logStreamName=logs_log_stream,
             logEvents=[
@@ -269,13 +262,13 @@ class TestCloudWatchLogs:
             ],
         )
 
-        response = logs_client.describe_subscription_filters(logGroupName=logs_log_group)
+        response = aws_client.logs.describe_subscription_filters(logGroupName=logs_log_group)
         assert len(response["subscriptionFilters"]) == 1
         snapshot.match("describe_subscription_filter", response)
 
         def check_invocation():
             events = testutil.list_all_log_events(
-                log_group_name=f"/aws/lambda/{test_lambda_name}", logs_client=logs_client
+                log_group_name=f"/aws/lambda/{test_lambda_name}", logs_client=aws_client.logs
             )
             # we only are interested in events that contain "awslogs"
             filtered_events = []
@@ -299,15 +292,7 @@ class TestCloudWatchLogs:
 
     @pytest.mark.aws_validated
     def test_put_subscription_filter_firehose(
-        self,
-        logs_client,
-        logs_log_group,
-        logs_log_stream,
-        s3_bucket,
-        s3_client,
-        firehose_client,
-        iam_client,
-        create_iam_role_with_policy,
+        self, logs_log_group, logs_log_stream, s3_bucket, create_iam_role_with_policy, aws_client
     ):
         try:
             firehose_name = f"test-firehose-{short_uid()}"
@@ -325,7 +310,7 @@ class TestCloudWatchLogs:
             # TODO AWS has troubles creating the delivery stream the first time
             # policy is not accepted at first, so we try again
             def create_delivery_stream():
-                firehose_client.create_delivery_stream(
+                aws_client.firehose.create_delivery_stream(
                     DeliveryStreamName=firehose_name,
                     S3DestinationConfiguration={
                         "BucketARN": s3_bucket_arn,
@@ -336,7 +321,9 @@ class TestCloudWatchLogs:
 
             retry(create_delivery_stream, retries=5, sleep=10.0)
 
-            response = firehose_client.describe_delivery_stream(DeliveryStreamName=firehose_name)
+            response = aws_client.firehose.describe_delivery_stream(
+                DeliveryStreamName=firehose_name
+            )
             firehose_arn = response["DeliveryStreamDescription"]["DeliveryStreamARN"]
 
             role = f"test-firehose-role-{short_uid()}"
@@ -349,15 +336,15 @@ class TestCloudWatchLogs:
             )
 
             def check_stream_active():
-                state = firehose_client.describe_delivery_stream(DeliveryStreamName=firehose_name)[
-                    "DeliveryStreamDescription"
-                ]["DeliveryStreamStatus"]
+                state = aws_client.firehose.describe_delivery_stream(
+                    DeliveryStreamName=firehose_name
+                )["DeliveryStreamDescription"]["DeliveryStreamStatus"]
                 if state != "ACTIVE":
                     raise Exception(f"DeliveryStreamStatus is {state}")
 
             retry(check_stream_active, retries=60, sleep=30.0)
 
-            logs_client.put_subscription_filter(
+            aws_client.logs.put_subscription_filter(
                 logGroupName=logs_log_group,
                 filterName="Destination",
                 filterPattern="",
@@ -365,7 +352,7 @@ class TestCloudWatchLogs:
                 roleArn=role_arn_logs,
             )
 
-            logs_client.put_log_events(
+            aws_client.logs.put_log_events(
                 logGroupName=logs_log_group,
                 logStreamName=logs_log_stream,
                 logEvents=[
@@ -375,13 +362,13 @@ class TestCloudWatchLogs:
             )
 
             def list_objects():
-                response = s3_client.list_objects(Bucket=s3_bucket)
+                response = aws_client.s3.list_objects(Bucket=s3_bucket)
                 assert len(response["Contents"]) >= 1
 
             retry(list_objects, retries=60, sleep=30.0)
-            response = s3_client.list_objects(Bucket=s3_bucket)
+            response = aws_client.s3.list_objects(Bucket=s3_bucket)
             key = response["Contents"][-1]["Key"]
-            response = s3_client.get_object(Bucket=s3_bucket, Key=key)
+            response = aws_client.s3.get_object(Bucket=s3_bucket, Key=key)
             content = gzip.decompress(response["Body"].read()).decode("utf-8")
             assert "DATA_MESSAGE" in content
             assert "test" in content
@@ -389,27 +376,23 @@ class TestCloudWatchLogs:
 
         finally:
             # clean up
-            firehose_client.delete_delivery_stream(
+            aws_client.firehose.delete_delivery_stream(
                 DeliveryStreamName=firehose_name, AllowForceDelete=True
             )
 
     @pytest.mark.aws_validated
     def test_put_subscription_filter_kinesis(
-        self,
-        logs_client,
-        logs_log_group,
-        logs_log_stream,
-        kinesis_client,
-        iam_client,
-        create_iam_role_with_policy,
+        self, logs_log_group, logs_log_stream, create_iam_role_with_policy, aws_client
     ):
 
         kinesis_name = f"test-kinesis-{short_uid()}"
         filter_name = "Destination"
-        kinesis_client.create_stream(StreamName=kinesis_name, ShardCount=1)
+        aws_client.kinesis.create_stream(StreamName=kinesis_name, ShardCount=1)
 
         try:
-            result = kinesis_client.describe_stream(StreamName=kinesis_name)["StreamDescription"]
+            result = aws_client.kinesis.describe_stream(StreamName=kinesis_name)[
+                "StreamDescription"
+            ]
             kinesis_arn = result["StreamARN"]
             role = f"test-kinesis-role-{short_uid()}"
             policy_name = f"test-kinesis-role-policy-{short_uid()}"
@@ -425,7 +408,7 @@ class TestCloudWatchLogs:
             if status != "ACTIVE":
 
                 def check_stream_active():
-                    state = kinesis_client.describe_stream(StreamName=kinesis_name)[
+                    state = aws_client.kinesis.describe_stream(StreamName=kinesis_name)[
                         "StreamDescription"
                     ]["StreamStatus"]
                     if state != "ACTIVE":
@@ -434,7 +417,7 @@ class TestCloudWatchLogs:
                 retry(check_stream_active, retries=6, sleep=1.0, sleep_before=2.0)
 
             def put_subscription_filter():
-                logs_client.put_subscription_filter(
+                aws_client.logs.put_subscription_filter(
                     logGroupName=logs_log_group,
                     filterName=filter_name,
                     filterPattern="",
@@ -447,7 +430,7 @@ class TestCloudWatchLogs:
             retry(put_subscription_filter, retries=6, sleep=3.0)
 
             def put_event():
-                logs_client.put_log_events(
+                aws_client.logs.put_log_events(
                     logGroupName=logs_log_group,
                     logStreamName=logs_log_stream,
                     logEvents=[
@@ -458,13 +441,13 @@ class TestCloudWatchLogs:
 
             retry(put_event, retries=6, sleep=3.0)
 
-            shard_iterator = kinesis_client.get_shard_iterator(
+            shard_iterator = aws_client.kinesis.get_shard_iterator(
                 StreamName=kinesis_name,
                 ShardId="shardId-000000000000",
                 ShardIteratorType="TRIM_HORIZON",
             )["ShardIterator"]
 
-            response = kinesis_client.get_records(ShardIterator=shard_iterator)
+            response = aws_client.kinesis.get_records(ShardIterator=shard_iterator)
             # AWS sends messages as health checks
             assert len(response["Records"]) >= 1
             found = False
@@ -481,13 +464,13 @@ class TestCloudWatchLogs:
             assert found
         # clean up
         finally:
-            kinesis_client.delete_stream(StreamName=kinesis_name, EnforceConsumerDeletion=True)
-            logs_client.delete_subscription_filter(
+            aws_client.kinesis.delete_stream(StreamName=kinesis_name, EnforceConsumerDeletion=True)
+            aws_client.logs.delete_subscription_filter(
                 logGroupName=logs_log_group, filterName=filter_name
             )
 
     @pytest.mark.skip("TODO: failing against pro")
-    def test_metric_filters(self, logs_client, logs_log_group, logs_log_stream, cloudwatch_client):
+    def test_metric_filters(self, logs_log_group, logs_log_stream, aws_client):
         basic_filter_name = f"test-filter-basic-{short_uid()}"
         json_filter_name = f"test-filter-json-{short_uid()}"
         namespace_name = f"test-metric-namespace-{short_uid()}"
@@ -505,20 +488,20 @@ class TestCloudWatchLogs:
             "metricValue": "1",
             "defaultValue": 0,
         }
-        logs_client.put_metric_filter(
+        aws_client.logs.put_metric_filter(
             logGroupName=logs_log_group,
             filterName=basic_filter_name,
             filterPattern=" ",
             metricTransformations=[basic_transforms],
         )
-        logs_client.put_metric_filter(
+        aws_client.logs.put_metric_filter(
             logGroupName=logs_log_group,
             filterName=json_filter_name,
             filterPattern='{$.message = "test"}',
             metricTransformations=[json_transforms],
         )
 
-        response = logs_client.describe_metric_filters(
+        response = aws_client.logs.describe_metric_filters(
             logGroupName=logs_log_group, filterNamePrefix="test-filter-"
         )
         assert response["ResponseMetadata"]["HTTPStatusCode"] == 200
@@ -531,19 +514,23 @@ class TestCloudWatchLogs:
             {"timestamp": now_utc(millis=True), "message": "log message 1"},
             {"timestamp": now_utc(millis=True), "message": "log message 2"},
         ]
-        logs_client.put_log_events(
+        aws_client.logs.put_log_events(
             logGroupName=logs_log_group, logStreamName=logs_log_stream, logEvents=events
         )
 
         # list metrics
-        response = cloudwatch_client.list_metrics(Namespace=namespace_name)
+        response = aws_client.cloudwatch.list_metrics(Namespace=namespace_name)
         assert len(response["Metrics"]) == 2
 
         # delete filters
-        logs_client.delete_metric_filter(logGroupName=logs_log_group, filterName=basic_filter_name)
-        logs_client.delete_metric_filter(logGroupName=logs_log_group, filterName=json_filter_name)
+        aws_client.logs.delete_metric_filter(
+            logGroupName=logs_log_group, filterName=basic_filter_name
+        )
+        aws_client.logs.delete_metric_filter(
+            logGroupName=logs_log_group, filterName=json_filter_name
+        )
 
-        response = logs_client.describe_metric_filters(
+        response = aws_client.logs.describe_metric_filters(
             logGroupName=logs_log_group, filterNamePrefix="test-filter-"
         )
         assert response["ResponseMetadata"]["HTTPStatusCode"] == 200
@@ -551,9 +538,7 @@ class TestCloudWatchLogs:
         assert basic_filter_name not in filter_names
         assert json_filter_name not in filter_names
 
-    def test_delivery_logs_for_sns(
-        self, logs_client, sns_client, sns_create_topic, sns_subscription
-    ):
+    def test_delivery_logs_for_sns(self, sns_create_topic, sns_subscription, aws_client):
         topic_name = f"test-logs-{short_uid()}"
         contact = "+10123456789"
 
@@ -561,11 +546,11 @@ class TestCloudWatchLogs:
         sns_subscription(TopicArn=topic_arn, Protocol="sms", Endpoint=contact)
 
         message = "Good news everyone!"
-        sns_client.publish(Message=message, TopicArn=topic_arn)
+        aws_client.sns.publish(Message=message, TopicArn=topic_arn)
         logs_group_name = topic_arn.replace("arn:aws:", "").replace(":", "/")
 
         def log_group_exists():
-            response = logs_client.describe_log_streams(logGroupName=logs_group_name)
+            response = aws_client.logs.describe_log_streams(logGroupName=logs_group_name)
             assert response["ResponseMetadata"]["HTTPStatusCode"] == 200
 
         retry(log_group_exists)

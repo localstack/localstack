@@ -1,7 +1,7 @@
 import json
 import os
 from datetime import date, datetime
-from typing import TYPE_CHECKING, Optional, Tuple
+from typing import Optional, Tuple
 
 import pytest
 import requests
@@ -10,9 +10,6 @@ from botocore.exceptions import ClientError
 import localstack.config as config
 from localstack.services.ses.provider import EMAILS_ENDPOINT
 from localstack.utils.strings import short_uid
-
-if TYPE_CHECKING:
-    from mypy_boto3_ses import SESClient
 
 SAMPLE_TEMPLATE = {
     "TemplateName": "hello-world",
@@ -37,17 +34,17 @@ SAMPLE_SIMPLE_EMAIL = {
 
 
 @pytest.fixture
-def create_template(ses_client):
+def create_template(aws_client):
     created_template_names = []
 
     def _create_template(Template):
-        ses_client.create_template(Template=Template)
+        aws_client.ses.create_template(Template=Template)
         created_template_names.append(Template["TemplateName"])
 
     yield _create_template
 
     for name in created_template_names:
-        ses_client.delete_template(TemplateName=name)
+        aws_client.ses.delete_template(TemplateName=name)
 
 
 @pytest.fixture
@@ -94,36 +91,36 @@ def sort_mail_sqs_messages(message):
 
 
 class TestSES:
-    def test_list_templates(self, ses_client, create_template):
+    def test_list_templates(self, create_template, aws_client):
         create_template(Template=SAMPLE_TEMPLATE)
-        templ_list = ses_client.list_templates()["TemplatesMetadata"]
+        templ_list = aws_client.ses.list_templates()["TemplatesMetadata"]
         assert 1 == len(templ_list)
         created_template = templ_list[0]
         assert SAMPLE_TEMPLATE["TemplateName"] == created_template["Name"]
         assert type(created_template["CreatedTimestamp"]) in (date, datetime)
 
         # Should not fail after 2 consecutive tries
-        templ_list = ses_client.list_templates()["TemplatesMetadata"]
+        templ_list = aws_client.ses.list_templates()["TemplatesMetadata"]
         assert 1 == len(templ_list)
         created_template = templ_list[0]
         assert SAMPLE_TEMPLATE["TemplateName"] == created_template["Name"]
         assert type(created_template["CreatedTimestamp"]) in (date, datetime)
 
-    def test_delete_template(self, ses_client, create_template):
-        templ_list = ses_client.list_templates()["TemplatesMetadata"]
+    def test_delete_template(self, create_template, aws_client):
+        templ_list = aws_client.ses.list_templates()["TemplatesMetadata"]
         assert 0 == len(templ_list)
         create_template(Template=SAMPLE_TEMPLATE)
-        templ_list = ses_client.list_templates()["TemplatesMetadata"]
+        templ_list = aws_client.ses.list_templates()["TemplatesMetadata"]
         assert 1 == len(templ_list)
-        ses_client.delete_template(TemplateName=SAMPLE_TEMPLATE["TemplateName"])
-        templ_list = ses_client.list_templates()["TemplatesMetadata"]
+        aws_client.ses.delete_template(TemplateName=SAMPLE_TEMPLATE["TemplateName"])
+        templ_list = aws_client.ses.list_templates()["TemplatesMetadata"]
         assert 0 == len(templ_list)
 
-    def test_get_identity_verification_attributes(self, ses_client):
+    def test_get_identity_verification_attributes(self, aws_client):
         domain = "example.com"
         email = f"user-{short_uid()}@example.com"
         test_values = [domain, email]
-        response = ses_client.get_identity_verification_attributes(Identities=test_values)[
+        response = aws_client.ses.get_identity_verification_attributes(Identities=test_values)[
             "VerificationAttributes"
         ]
         assert 2 == len(response)
@@ -132,7 +129,7 @@ class TestSES:
         assert "VerificationToken" in response[domain]
         assert "VerificationToken" not in response[email]
 
-    def test_send_email_can_retrospect(self, ses_client):
+    def test_send_email_can_retrospect(self, aws_client):
         # Test that sent emails can be retrospected through saved file and API access
 
         def _read_message_from_filesystem(message_id: str) -> dict:
@@ -143,10 +140,10 @@ class TestSES:
             return json.loads(message)
 
         email = f"user-{short_uid()}@example.com"
-        ses_client.verify_email_address(EmailAddress=email)
+        aws_client.ses.verify_email_address(EmailAddress=email)
 
         # Send a regular message
-        message1 = ses_client.send_email(
+        message1 = aws_client.ses.send_email(
             Source=email,
             Message=SAMPLE_SIMPLE_EMAIL,
             Destination={
@@ -171,7 +168,7 @@ class TestSES:
 
         # Send a raw message
         raw_message_data = f"From: {email}\nTo: recipient@example.com\nSubject: test\n\nThis is the message body.\n\n"
-        message2 = ses_client.send_raw_email(RawMessage={"Data": raw_message_data})
+        message2 = aws_client.ses.send_raw_email(RawMessage={"Data": raw_message_data})
         message2_id = message2["MessageId"]
 
         # Ensure saved raw message
@@ -208,15 +205,15 @@ class TestSES:
         assert requests.delete(emails_url + f"?id={message2_id}").status_code == 204
         assert requests.get(emails_url).json() == {"messages": []}
 
-    def test_send_templated_email_can_retrospect(self, ses_client, create_template):
+    def test_send_templated_email_can_retrospect(self, create_template, aws_client):
         # Test that sent emails can be retrospected through saved file and API access
         data_dir = config.dirs.data or config.dirs.tmp
         email = f"user-{short_uid()}@example.com"
-        ses_client.verify_email_address(EmailAddress=email)
-        ses_client.delete_template(TemplateName=SAMPLE_TEMPLATE["TemplateName"])
+        aws_client.ses.verify_email_address(EmailAddress=email)
+        aws_client.ses.delete_template(TemplateName=SAMPLE_TEMPLATE["TemplateName"])
         create_template(Template=SAMPLE_TEMPLATE)
 
-        message = ses_client.send_templated_email(
+        message = aws_client.ses.send_templated_email(
             Source=email,
             Template=SAMPLE_TEMPLATE["TemplateName"],
             TemplateData='{"A key": "A value"}',
@@ -244,14 +241,14 @@ class TestSES:
         assert requests.delete("http://localhost:4566/_aws/ses").status_code == 204
         assert requests.get("http://localhost:4566/_aws/ses").json() == {"messages": []}
 
-    def test_sent_message_counter(self, ses_client, create_template):
+    def test_sent_message_counter(self, create_template, aws_client):
         # Ensure all email send operations correctly update the sent email counter
         email = f"user-{short_uid()}@example.com"
-        ses_client.verify_email_address(EmailAddress=email)
+        aws_client.ses.verify_email_address(EmailAddress=email)
 
-        counter = ses_client.get_send_quota()["SentLast24Hours"]
+        counter = aws_client.ses.get_send_quota()["SentLast24Hours"]
 
-        ses_client.send_email(
+        aws_client.ses.send_email(
             Source=email,
             Message=SAMPLE_SIMPLE_EMAIL,
             Destination={
@@ -259,12 +256,12 @@ class TestSES:
             },
         )
 
-        new_counter = ses_client.get_send_quota()["SentLast24Hours"]
+        new_counter = aws_client.ses.get_send_quota()["SentLast24Hours"]
         assert new_counter == counter + 1
         counter = new_counter
 
         create_template(Template=SAMPLE_TEMPLATE)
-        ses_client.send_templated_email(
+        aws_client.ses.send_templated_email(
             Source=email,
             Template=SAMPLE_TEMPLATE["TemplateName"],
             TemplateData='{"A key": "A value"}',
@@ -273,16 +270,16 @@ class TestSES:
             },
         )
 
-        new_counter = ses_client.get_send_quota()["SentLast24Hours"]
+        new_counter = aws_client.ses.get_send_quota()["SentLast24Hours"]
         assert new_counter == counter + 2
         counter = new_counter
 
         raw_message_data = f"From: {email}\nTo: recipient@example.com\nSubject: test\n\nThis is the message body.\n\n"
-        ses_client.send_raw_email(RawMessage={"Data": raw_message_data})
-        new_counter = ses_client.get_send_quota()["SentLast24Hours"]
+        aws_client.ses.send_raw_email(RawMessage={"Data": raw_message_data})
+        new_counter = aws_client.ses.get_send_quota()["SentLast24Hours"]
         assert new_counter == counter + 1
 
-    def test_clone_receipt_rule_set(self, ses_client):
+    def test_clone_receipt_rule_set(self, aws_client):
         # Test that rule set is cloned properly
 
         original_rule_set_name = "RuleSetToClone"
@@ -290,8 +287,8 @@ class TestSES:
         rule_names = ["MyRule1", "MyRule2"]
 
         # Create mock rule set called RuleSetToClone
-        ses_client.create_receipt_rule_set(RuleSetName=original_rule_set_name)
-        ses_client.create_receipt_rule(
+        aws_client.ses.create_receipt_rule_set(RuleSetName=original_rule_set_name)
+        aws_client.ses.create_receipt_rule(
             After="",
             Rule={
                 "Actions": [
@@ -309,7 +306,7 @@ class TestSES:
             },
             RuleSetName=original_rule_set_name,
         )
-        ses_client.create_receipt_rule(
+        aws_client.ses.create_receipt_rule(
             After="",
             Rule={
                 "Actions": [
@@ -329,12 +326,14 @@ class TestSES:
         )
 
         # Clone RuleSetToClone into RuleSetToCreate
-        ses_client.clone_receipt_rule_set(
+        aws_client.ses.clone_receipt_rule_set(
             RuleSetName=rule_set_name, OriginalRuleSetName=original_rule_set_name
         )
 
-        original_rule_set = ses_client.describe_receipt_rule_set(RuleSetName=original_rule_set_name)
-        rule_set = ses_client.describe_receipt_rule_set(RuleSetName=rule_set_name)
+        original_rule_set = aws_client.ses.describe_receipt_rule_set(
+            RuleSetName=original_rule_set_name
+        )
+        rule_set = aws_client.ses.describe_receipt_rule_set(RuleSetName=rule_set_name)
 
         assert original_rule_set["Metadata"]["Name"] == original_rule_set_name
         assert rule_set["Metadata"]["Name"] == rule_set_name
@@ -362,7 +361,6 @@ class TestSES:
     )
     def test_ses_sns_topic_integration_send_email(
         self,
-        ses_client,
         sqs_queue,
         sns_topic,
         sns_create_sqs_subscription,
@@ -371,6 +369,7 @@ class TestSES:
         sqs_receive_num_messages,
         setup_email_addresses,
         snapshot,
+        aws_client,
     ):
         """
         Repro for #7184 - test that this test is not runnable in the sandbox account since it
@@ -405,7 +404,7 @@ class TestSES:
         destination = {
             "ToAddresses": [recipient_email_address],
         }
-        ses_client.send_email(
+        aws_client.ses.send_email(
             Destination=destination,
             Message=SAMPLE_SIMPLE_EMAIL,
             ConfigurationSetName=config_set_name,
@@ -443,7 +442,6 @@ class TestSES:
     )
     def test_ses_sns_topic_integration_send_templated_email(
         self,
-        ses_client,
         ses_configuration_set,
         ses_configuration_set_sns_event_destination,
         ses_email_template,
@@ -453,6 +451,7 @@ class TestSES:
         sqs_receive_num_messages,
         setup_email_addresses,
         snapshot,
+        aws_client,
     ):
         # add your email addresses in here to verify against AWS
         sender_email_address, recipient_email_address = setup_email_addresses()
@@ -485,7 +484,7 @@ class TestSES:
         destination = {
             "ToAddresses": [recipient_email_address],
         }
-        ses_client.send_templated_email(
+        aws_client.ses.send_templated_email(
             Destination=destination,
             Template=template_name,
             TemplateData=json.dumps({}),
@@ -524,7 +523,6 @@ class TestSES:
     )
     def test_ses_sns_topic_integration_send_raw_email(
         self,
-        ses_client,
         ses_configuration_set,
         ses_configuration_set_sns_event_destination,
         sns_create_sqs_subscription,
@@ -533,6 +531,7 @@ class TestSES:
         sqs_receive_num_messages,
         setup_email_addresses,
         snapshot,
+        aws_client,
     ):
         # add your email addresses in here to verify against AWS
         sender_email_address, recipient_email_address = setup_email_addresses()
@@ -559,7 +558,7 @@ class TestSES:
         )
 
         # send an email to trigger the SNS message and SQS message
-        ses_client.send_raw_email(
+        aws_client.ses.send_raw_email(
             Destinations=[recipient_email_address],
             RawMessage={
                 "Data": b"",
@@ -579,10 +578,10 @@ class TestSES:
         snapshot.match("messages", messages)
 
     def test_cannot_create_event_for_no_topic(
-        self, ses_configuration_set, ses_client, snapshot, account_id
+        self, ses_configuration_set, snapshot, account_id, aws_client
     ):
         topic_name = f"missing-topic-{short_uid()}"
-        topic_arn = f"arn:aws:sns:{ses_client.meta.region_name}:{account_id}:{topic_name}"
+        topic_arn = f"arn:aws:sns:{aws_client.ses.meta.region_name}:{account_id}:{topic_name}"
         snapshot.add_transformer(snapshot.transform.regex(topic_arn, "<arn>"))
 
         config_set_name = f"config-set-{short_uid()}"
@@ -592,7 +591,7 @@ class TestSES:
 
         # check if job is gone
         with pytest.raises(ClientError) as e_info:
-            ses_client.create_configuration_set_event_destination(
+            aws_client.ses.create_configuration_set_event_destination(
                 ConfigurationSetName=config_set_name,
                 EventDestination={
                     "Name": event_destination_name,
@@ -624,10 +623,8 @@ class TestSES:
     )
     def test_sending_to_deleted_topic(
         self,
-        ses_client,
         sqs_queue,
         sns_create_sqs_subscription,
-        sns_client,
         sns_topic,
         sns_wait_for_topic_delete,
         ses_configuration_set,
@@ -635,6 +632,7 @@ class TestSES:
         ses_configuration_set_sns_event_destination,
         setup_email_addresses,
         snapshot,
+        aws_client,
     ):
         # add your email addresses in here to verify against AWS
         sender_email_address, recipient_email_address = setup_email_addresses()
@@ -673,10 +671,10 @@ class TestSES:
 
         # FIXME: there will be an issue with the fixture deleting the topic. Currently it logs
         #  only, but this may change in the future.
-        sns_client.delete_topic(TopicArn=topic_arn)
+        aws_client.sns.delete_topic(TopicArn=topic_arn)
         sns_wait_for_topic_delete(topic_arn=topic_arn)
 
-        ses_client.send_email(
+        aws_client.ses.send_email(
             Destination=destination,
             Message=message,
             ConfigurationSetName=config_set_name,
@@ -687,7 +685,7 @@ class TestSES:
         snapshot.match("messages", messages)
 
     def test_creating_event_destination_without_configuration_set(
-        self, sns_topic, ses_client: "SESClient", snapshot
+        self, sns_topic, snapshot, aws_client
     ):
         config_set_name = f"nonexistent-configuration-set-{short_uid()}"
         snapshot.add_transformer(snapshot.transform.regex(config_set_name, "<config-set>"))
@@ -695,7 +693,7 @@ class TestSES:
         topic_arn = sns_topic["Attributes"]["TopicArn"]
         event_destination_name = f"event-destination-{short_uid()}"
         with pytest.raises(ClientError) as e_info:
-            ses_client.create_configuration_set_event_destination(
+            aws_client.ses.create_configuration_set_event_destination(
                 ConfigurationSetName=config_set_name,
                 EventDestination={
                     "Name": event_destination_name,
@@ -708,16 +706,16 @@ class TestSES:
             )
         snapshot.match("create-error", e_info.value.response)
 
-    def test_deleting_non_existent_configuration_set(self, ses_client, snapshot):
+    def test_deleting_non_existent_configuration_set(self, snapshot, aws_client):
         config_set_name = f"config-set-{short_uid()}"
         snapshot.add_transformer(snapshot.transform.regex(config_set_name, "<config-set>"))
 
         with pytest.raises(ClientError) as e_info:
-            ses_client.delete_configuration_set(ConfigurationSetName=config_set_name)
+            aws_client.ses.delete_configuration_set(ConfigurationSetName=config_set_name)
         snapshot.match("delete-error", e_info.value.response)
 
     def test_deleting_non_existent_configuration_set_event_destination(
-        self, ses_configuration_set, ses_client, snapshot
+        self, ses_configuration_set, snapshot, aws_client
     ):
         config_set_name = f"config-set-{short_uid()}"
         snapshot.add_transformer(snapshot.transform.regex(config_set_name, "<config-set>"))
@@ -726,7 +724,7 @@ class TestSES:
         event_destination_name = f"non-existent-configuration-set-{short_uid()}"
         # check if job is gone
         with pytest.raises(ClientError) as e_info:
-            ses_client.delete_configuration_set_event_destination(
+            aws_client.ses.delete_configuration_set_event_destination(
                 ConfigurationSetName=config_set_name,
                 EventDestinationName=event_destination_name,
             )
@@ -735,10 +733,10 @@ class TestSES:
     def test_trying_to_delete_event_destination_from_non_existent_configuration_set(
         self,
         ses_configuration_set,
-        ses_client,
         ses_configuration_set_sns_event_destination,
         sns_topic,
         snapshot,
+        aws_client,
     ):
         config_set_name = f"config-set-{short_uid()}"
         snapshot.add_transformer(snapshot.transform.regex(config_set_name, "<config-set>"))
@@ -755,7 +753,7 @@ class TestSES:
         )
 
         with pytest.raises(ClientError) as e_info:
-            ses_client.delete_configuration_set_event_destination(
+            aws_client.ses.delete_configuration_set_event_destination(
                 ConfigurationSetName="non-existent-configuration-set",
                 EventDestinationName=event_destination_name,
             )

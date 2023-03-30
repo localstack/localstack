@@ -19,7 +19,7 @@ class TestSwf(unittest.TestCase):
             name=self.workflow_domain_name, workflowExecutionRetentionPeriodInDays="1"
         )
 
-    def test_run_workflow(self):
+    def test_run_workflow(self, aws_client):
         self.given_workflow()
         self.when_workflow_is_started()
         self.then_workflow_components_execute()

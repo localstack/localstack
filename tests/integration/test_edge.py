@@ -25,35 +25,35 @@ from localstack.utils.xml import strip_xmlns
 
 
 class TestEdgeAPI:
-    def test_invoke_kinesis(self):
+    def test_invoke_kinesis(self, aws_client):
         edge_url = config.get_edge_url()
         self._invoke_kinesis_via_edge(edge_url)
 
-    def test_invoke_dynamodb(self):
+    def test_invoke_dynamodb(self, aws_client):
         edge_url = config.get_edge_url()
         self._invoke_dynamodb_via_edge_go_sdk(edge_url)
 
-    def test_invoke_dynamodbstreams(self):
+    def test_invoke_dynamodbstreams(self, aws_client):
         edge_url = config.get_edge_url()
         self._invoke_dynamodbstreams_via_edge(edge_url)
 
-    def test_invoke_firehose(self):
+    def test_invoke_firehose(self, aws_client):
         edge_url = config.get_edge_url()
         self._invoke_firehose_via_edge(edge_url)
 
-    def test_invoke_stepfunctions(self):
+    def test_invoke_stepfunctions(self, aws_client):
         edge_url = config.get_edge_url()
         self._invoke_stepfunctions_via_edge(edge_url)
 
     @pytest.mark.skipif(
         condition=not config.LEGACY_S3_PROVIDER, reason="S3 ASF provider does not have POST yet"
     )
-    def test_invoke_s3(self):
+    def test_invoke_s3(self, aws_client):
         edge_url = config.get_edge_url()
         self._invoke_s3_via_edge(edge_url)
 
     @pytest.mark.xfail(reason="failing in CI")  # TODO verify this
-    def test_invoke_s3_multipart_request(self):
+    def test_invoke_s3_multipart_request(self, aws_client):
         edge_url = config.get_edge_url()
         self._invoke_s3_via_edge_multipart_form(edge_url)
 
@@ -159,7 +159,7 @@ class TestEdgeAPI:
         client.delete_object(Bucket=bucket_name, Key=object_name)
         client.delete_bucket(Bucket=bucket_name)
 
-    def test_basic_https_invocation(self):
+    def test_basic_https_invocation(self, aws_client):
         class MyListener(ProxyListener):
             def forward_request(self, method, path, data, headers):
                 return {"method": method, "path": path, "data": data}
@@ -174,7 +174,7 @@ class TestEdgeAPI:
         assert json.loads(to_str(response.content)) == expected
         proxy.stop()
 
-    def test_http2_relay_traffic(self):
+    def test_http2_relay_traffic(self, aws_client):
         """Tests if HTTP2 traffic can correctly be forwarded (including url-encoded characters)."""
 
         # Create a simple HTTP echo server
@@ -209,12 +209,7 @@ class TestEdgeAPI:
         relay_proxy.stop()
 
     def test_invoke_sns_sqs_integration_using_edge_port(
-        self,
-        sqs_create_queue,
-        sqs_client,
-        sns_client,
-        sns_create_topic,
-        sns_create_sqs_subscription,
+        self, sqs_create_queue, sns_create_topic, sns_create_sqs_subscription, aws_client
     ):
         topic_name = f"topic-{short_uid()}"
         queue_name = f"queue-{short_uid()}"
@@ -222,14 +217,14 @@ class TestEdgeAPI:
         region_original = os.environ.get("DEFAULT_REGION")
         os.environ["DEFAULT_REGION"] = "us-southeast-2"
 
-        topic = sns_client.create_topic(Name=topic_name)
+        topic = aws_client.sns.create_topic(Name=topic_name)
         topic_arn = topic["TopicArn"]
         queue_url = sqs_create_queue(QueueName=queue_name)
-        sqs_client.get_queue_attributes(QueueUrl=queue_url, AttributeNames=["QueueArn"])
+        aws_client.sqs.get_queue_attributes(QueueUrl=queue_url, AttributeNames=["QueueArn"])
         sns_create_sqs_subscription(topic_arn=topic_arn, queue_url=queue_url)
-        sns_client.publish(TargetArn=topic_arn, Message="Test msg")
+        aws_client.sns.publish(TargetArn=topic_arn, Message="Test msg")
 
-        response = sqs_client.receive_message(
+        response = aws_client.sqs.receive_message(
             QueueUrl=queue_url,
             AttributeNames=["SentTimestamp"],
             MaxNumberOfMessages=1,
@@ -246,7 +241,7 @@ class TestEdgeAPI:
     @pytest.mark.skipif(
         condition=not config.LEGACY_S3_PROVIDER, reason="S3 ASF provider does not use ProxyListener"
     )
-    def test_message_modifying_handler(self, s3_client, monkeypatch):
+    def test_message_modifying_handler(self, monkeypatch, aws_client):
         class MessageModifier(MessageModifyingProxyListener):
             def forward_request(self, method, path: str, data, headers):
                 if method != "HEAD":
@@ -264,24 +259,24 @@ class TestEdgeAPI:
 
         # create S3 bucket, assert that patched bucket name is used
         bucket_name = f"b-{short_uid()}"
-        s3_client.create_bucket(Bucket=bucket_name)
-        buckets = [b["Name"] for b in s3_client.list_buckets()["Buckets"]]
+        aws_client.s3.create_bucket(Bucket=bucket_name)
+        buckets = [b["Name"] for b in aws_client.s3.list_buckets()["Buckets"]]
         assert f"{bucket_name}-patched" in buckets
         assert f"{bucket_name}" not in buckets
-        result = s3_client.head_bucket(Bucket=f"{bucket_name}-patched")
+        result = aws_client.s3.head_bucket(Bucket=f"{bucket_name}-patched")
         assert result["ResponseMetadata"]["HTTPStatusCode"] == 201
 
         # put content, assert that patched content is returned
         key = "test/1/2/3"
-        s3_client.put_object(Bucket=bucket_name, Key=key, Body=b"test content 123")
-        result = s3_client.get_object(Bucket=bucket_name, Key=key)
+        aws_client.s3.put_object(Bucket=bucket_name, Key=key, Body=b"test content 123")
+        result = aws_client.s3.get_object(Bucket=bucket_name, Key=key)
         content = to_str(result["Body"].read())
         assert " patched" in content
 
     @pytest.mark.skipif(
         condition=not config.LEGACY_S3_PROVIDER, reason="S3 ASF provider does not use ProxyListener"
     )
-    def test_handler_returning_none_method(self, s3_client, monkeypatch):
+    def test_handler_returning_none_method(self, monkeypatch, aws_client):
         class MessageModifier(ProxyListener):
             def forward_request(self, method, path: str, data, headers):
                 # simple heuristic to determine whether we are in the context of an edge call, or service request
@@ -297,15 +292,15 @@ class TestEdgeAPI:
         # prepare bucket and test object
         bucket_name = f"b-{short_uid()}"
         key = "test/1/2/3"
-        s3_client.create_bucket(Bucket=bucket_name)
-        s3_client.put_object(Bucket=bucket_name, Key=key, Body=b"test content 123")
+        aws_client.s3.create_bucket(Bucket=bucket_name)
+        aws_client.s3.put_object(Bucket=bucket_name, Key=key, Body=b"test content 123")
 
         # get content, assert that content has been patched
-        result = s3_client.get_object(Bucket=bucket_name, Key=key)
+        result = aws_client.s3.get_object(Bucket=bucket_name, Key=key)
         content = to_str(result["Body"].read())
         assert " patched" in content
 
-    def test_update_path_in_url(self):
+    def test_update_path_in_url(self, aws_client):
         assert update_path_in_url("http://foo:123", "/bar/1/2/3") == "http://foo:123/bar/1/2/3"
         assert update_path_in_url("http://foo:123/", "/bar/1/2/3") == "http://foo:123/bar/1/2/3"
         assert (
@@ -319,7 +314,7 @@ class TestEdgeAPI:
         assert update_path_in_url("http://foo:123/test", "/") == "http://foo:123/"
         assert update_path_in_url("//foo:123/test/123", "bar/1/2/3") == "//foo:123/bar/1/2/3"
 
-    def test_response_content_type(self):
+    def test_response_content_type(self, aws_client):
         url = config.get_edge_url()
         data = {"Action": "GetCallerIdentity", "Version": "2011-06-15"}
 
@@ -346,7 +341,7 @@ class TestEdgeAPI:
         content2.get("GetCallerIdentityResponse", {}).pop("ResponseMetadata", None)
         assert strip_xmlns(content1) == content2
 
-    def test_request_with_custom_host_header(self):
+    def test_request_with_custom_host_header(self, aws_client):
         url = config.get_edge_url()
 
         headers = aws_stack.mock_aws_request_headers("lambda")

@@ -36,7 +36,7 @@ class TestServerless(unittest.TestCase):
         return os.path.join(os.path.dirname(__file__), "serverless")
 
     @pytest.mark.skip_offline
-    def test_event_rules_deployed(self):
+    def test_event_rules_deployed(self, aws_client):
         events = aws_stack.create_external_boto_client("events")
         rules = events.list_rules()["Rules"]
 
@@ -53,7 +53,7 @@ class TestServerless(unittest.TestCase):
         self.assertEqual({"source": ["customSource"]}, json.loads(rule["EventPattern"]))
 
     @pytest.mark.skip_offline
-    def test_dynamodb_stream_handler_deployed(self):
+    def test_dynamodb_stream_handler_deployed(self, aws_client):
         function_name = "sls-test-local-dynamodbStreamHandler"
         table_name = "Test"
 
@@ -73,7 +73,7 @@ class TestServerless(unittest.TestCase):
         self.assertEqual(event_source_arn, resp["Table"]["LatestStreamArn"])
 
     @pytest.mark.skip_offline
-    def test_kinesis_stream_handler_deployed(self):
+    def test_kinesis_stream_handler_deployed(self, aws_client):
         function_name = "sls-test-local-kinesisStreamHandler"
         function_name2 = "sls-test-local-kinesisConsumerHandler"
         stream_name = "KinesisTestStream"
@@ -102,7 +102,7 @@ class TestServerless(unittest.TestCase):
         retry(assert_invocations, sleep=2, retries=20)
 
     @pytest.mark.skip_offline
-    def test_queue_handler_deployed(self):
+    def test_queue_handler_deployed(self, aws_client):
         function_name = "sls-test-local-queueHandler"
         queue_name = "sls-test-local-CreateQueue"
 
@@ -129,7 +129,7 @@ class TestServerless(unittest.TestCase):
         self.assertEqual(3, redrive_policy["maxReceiveCount"])
 
     @pytest.mark.skip_offline
-    def test_lambda_with_configs_deployed(self):
+    def test_lambda_with_configs_deployed(self, aws_client):
         function_name = "sls-test-local-test"
 
         lambda_client = aws_stack.create_external_boto_client("lambda")
@@ -146,7 +146,7 @@ class TestServerless(unittest.TestCase):
         self.assertEqual(7200, resp.get("MaximumEventAgeInSeconds"))
 
     @pytest.mark.skip_offline
-    def test_apigateway_deployed(self):
+    def test_apigateway_deployed(self, aws_client):
         function_name = "sls-test-local-router"
 
         lambda_client = aws_stack.create_external_boto_client("lambda")
@@ -174,7 +174,7 @@ class TestServerless(unittest.TestCase):
             )
 
     @pytest.mark.skip_offline
-    def test_s3_bucket_deployed(self):
+    def test_s3_bucket_deployed(self, aws_client):
         s3_client = aws_stack.create_external_boto_client("s3")
         bucket_name = "testing-bucket"
         response = s3_client.head_bucket(Bucket=bucket_name)

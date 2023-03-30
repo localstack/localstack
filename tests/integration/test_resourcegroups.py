@@ -5,7 +5,7 @@ from localstack.utils.common import short_uid
 
 
 class TestResourceGroups:
-    def test_create_group(self):
+    def test_create_group(self, aws_client):
         resource_group_client = aws_stack.create_external_boto_client("resource-groups")
         name = "resource_group-{}".format(short_uid())
         response = resource_group_client.create_group(
