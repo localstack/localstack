@@ -948,11 +948,13 @@ class SubscriptionFilter:
                     return False
             else:
                 # else, values represents the list of conditions of the filter policy
-                for condition in values:
-                    if not self._evaluate_condition(
+                if not any(
+                    self._evaluate_condition(
                         payload.get(field_name), condition, field_exists=field_name in payload
-                    ):
-                        return False
+                    )
+                    for condition in values
+                ):
+                    return False
 
         return True
 
