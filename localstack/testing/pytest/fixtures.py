@@ -2134,3 +2134,59 @@ def echo_http_server_post(echo_http_server):
         return f"{PUBLIC_HTTP_ECHO_SERVER_URL}/post"
 
     return f"{echo_http_server}/post"
+
+
+def create_policy_doc(effect: str, actions: List, resource=None) -> Dict:
+    actions = ensure_list(actions)
+    resource = resource or "*"
+    return {
+        "Version": "2012-10-17",
+        "Statement": [
+            {
+                # TODO statement ids have to be alphanumeric [0-9A-Za-z], write a test for it
+                "Sid": f"s{short_uid()}",
+                "Effect": effect,
+                "Action": actions,
+                "Resource": resource,
+            }
+        ],
+    }
+
+
+@pytest.fixture
+def create_policy_generated_document(create_policy):
+    def _create_policy_with_doc(effect, actions, policy_name=None, resource=None):
+        policy_name = policy_name or f"p-{short_uid()}"
+        policy = create_policy_doc(effect, actions, resource=resource)
+        response = create_policy(PolicyName=policy_name, PolicyDocument=json.dumps(policy))
+        policy_arn = response["Policy"]["Arn"]
+        return policy_arn
+
+    return _create_policy_with_doc
+
+
+@pytest.fixture
+def create_role_with_policy(iam_client, sts_client, create_role, create_policy_generated_document):
+    def _create_role_with_policy(effect, actions, assume_policy_doc, resource=None, attach=True):
+        role_name = f"role-{short_uid()}"
+        result = create_role(RoleName=role_name, AssumeRolePolicyDocument=assume_policy_doc)
+        role_arn = result["Role"]["Arn"]
+        policy_name = f"p-{short_uid()}"
+
+        if attach:
+            # create role and attach role policy
+            policy_arn = create_policy_generated_document(
+                effect, actions, policy_name=policy_name, resource=resource
+            )
+            iam_client.attach_role_policy(RoleName=role_name, PolicyArn=policy_arn)
+        else:
+            # put role policy
+            policy_document = create_policy_doc(effect, actions, resource=resource)
+            policy_document = json.dumps(policy_document)
+            iam_client.put_role_policy(
+                RoleName=role_name, PolicyName=policy_name, PolicyDocument=policy_document
+            )
+
+        return role_name, role_arn
+
+    return _create_role_with_policy
