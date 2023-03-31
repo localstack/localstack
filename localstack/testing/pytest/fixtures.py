@@ -2136,7 +2136,6 @@ def echo_http_server_post(echo_http_server):
     return f"{echo_http_server}/post"
 
 
-@pytest.fixture
 def create_policy_doc(effect: str, actions: List, resource=None) -> Dict:
     actions = ensure_list(actions)
     resource = resource or "*"
@@ -2167,7 +2166,8 @@ def create_policy_generated_document(create_policy):
 
 
 @pytest.fixture
-def create_role_with_policy(iam_client, sts_client, create_role, create_policy_generated_document):
+def create_role_with_policy(iam_client, sts_client, create_role,
+                            create_policy_generated_document):
     def _create_role_with_policy(effect, actions, assume_policy_doc, resource=None, attach=True):
         role_name = f"role-{short_uid()}"
         result = create_role(RoleName=role_name, AssumeRolePolicyDocument=assume_policy_doc)
@@ -2191,3 +2191,16 @@ def create_role_with_policy(iam_client, sts_client, create_role, create_policy_g
         return role_name, role_arn
 
     return _create_role_with_policy
+
+
+@pytest.fixture
+def create_user_with_policy(iam_client, create_policy_generated_document, create_user):
+    def _create_user_with_policy(effect, actions, resource=None):
+        policy_arn = create_policy_generated_document(effect, actions, resource=resource)
+        username = f"user-{short_uid()}"
+        create_user(UserName=username)
+        iam_client.attach_user_policy(UserName=username, PolicyArn=policy_arn)
+        keys = iam_client.create_access_key(UserName=username)["AccessKey"]
+        return username, keys
+
+    return _create_user_with_policy
