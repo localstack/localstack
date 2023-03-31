@@ -3132,5 +3132,57 @@
         }
       }
     }
+  },
+  "tests/integration/awslambda/test_lambda.py::TestRequestIdHandling::test_request_id_format": {
+    "recorded-date": "31-03-2023, 07:03:58",
+    "recorded-content": {}
+  },
+  "tests/integration/awslambda/test_lambda.py::TestRequestIdHandling::test_request_id_invoke": {
+    "recorded-date": "31-03-2023, 07:04:16",
+    "recorded-content": {
+      "invoke_result": {
+        "ExecutedVersion": "$LATEST",
+        "Payload": {
+          "hello": "world"
+        },
+        "StatusCode": 200,
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "end_log_entries": [
+        "END RequestId: <request-id>\n"
+      ]
+    }
+  },
+  "tests/integration/awslambda/test_lambda.py::TestRequestIdHandling::test_request_id_async_invoke_with_retry": {
+    "recorded-date": "31-03-2023, 07:06:21",
+    "recorded-content": {
+      "invoke_result": {
+        "Payload": "",
+        "StatusCode": 202,
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 202
+        }
+      },
+      "end_messages": [
+        {
+          "logStreamName": "<log-stream-name:1>",
+          "timestamp": "timestamp",
+          "message": "END RequestId: <request-id>\n",
+          "ingestionTime": "timestamp",
+          "eventId": "<event-id>"
+        },
+        {
+          "logStreamName": "<log-stream-name:1>",
+          "timestamp": "timestamp",
+          "message": "END RequestId: <request-id>\n",
+          "ingestionTime": "timestamp",
+          "eventId": "<event-id>"
+        }
+      ]
+    }
   }
 }

@@ -75,7 +75,6 @@ import base64
 import functools
 import json
 import logging
-import random
 import string
 from abc import ABC
 from binascii import crc32
@@ -239,12 +238,12 @@ class ResponseSerializer(abc.ABC):
         Takes an error instance and serializes it to an actual HttpResponse.
         Therefore, this method is used for errors which should be serialized and transmitted to the calling client.
 
-        :param request_id: TODO
         :param error: to serialize
         :param operation_model: specification of the service & operation containing information about the shape of the
                                 service's output / response
         :param headers: the headers of the incoming request this response should be serialized for. This is necessary
                         for features like Content-Negotiation (define response content type based on request headers).
+        :param request_id: AWS Request ID
         :return: HttpResponse which can be sent to the calling client
         :raises: ResponseSerializerError (either a ProtocolSerializerError or an UnknownSerializerError)
         """
@@ -1608,15 +1607,15 @@ class SqsResponseSerializer(QueryResponseSerializer):
 
 def gen_amzn_requestid():
     """
+    Generate generic AWS request ID.
+
+    3 uses a different format and set of request Ids.
+
     Examples:
     996d38a0-a4e9-45de-bad4-480cd962d208
     b9260553-df1b-4db6-ae41-97b89a5f85ea
     """
     return long_uid()
-
-
-def gen_amzn_requestid_long():
-    return "".join([random.choice(REQUEST_ID_CHARACTERS) for _ in range(0, 52)])
 
 
 def create_serializer(service: ServiceModel) -> ResponseSerializer:
@@ -1691,7 +1690,7 @@ def aws_response_serializer(service: str, operation: str):
 
             # TODO: we have no context here
             # TODO: maybe try to get the request ID from the headers first before generating a new one
-            request_id = long_uid()
+            request_id = gen_amzn_requestid()
 
             try:
                 response = fn(*args, **kwargs)
