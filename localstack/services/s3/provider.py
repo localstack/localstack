@@ -25,7 +25,7 @@ from localstack.aws.api.s3 import (
     CORSConfiguration,
     CreateBucketOutput,
     CreateBucketRequest,
-    CreateMultipartUploadOutput,
+    InitiateMultipartUploadResult,
     CreateMultipartUploadRequest,
     Delete,
     DeleteObjectOutput,
@@ -522,7 +522,7 @@ class S3Provider(S3Api, ServiceLifecycleHook):
         self,
         context: RequestContext,
         request: CreateMultipartUploadRequest,
-    ) -> CreateMultipartUploadOutput:
+    ) -> InitiateMultipartUploadResult:
         if not config.S3_SKIP_KMS_KEY_VALIDATION and (sse_kms_key_id := request.get("SSEKMSKeyId")):
             moto_backend = get_moto_s3_backend(context)
             bucket = get_bucket_from_moto(moto_backend, bucket=request["Bucket"])
@@ -536,7 +536,7 @@ class S3Provider(S3Api, ServiceLifecycleHook):
                 StorageClassRequested=storage_class,
             )
 
-        response: CreateMultipartUploadOutput = call_moto(context)
+        response: InitiateMultipartUploadResult = call_moto(context)
         return response
 
     @handler("CompleteMultipartUpload", expand=False)

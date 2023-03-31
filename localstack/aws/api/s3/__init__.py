@@ -1194,7 +1194,7 @@ class CreateBucketRequest(ServiceRequest):
     ObjectOwnership: Optional[ObjectOwnership]
 
 
-class CreateMultipartUploadOutput(TypedDict, total=False):
+class InitiateMultipartUploadResult(TypedDict, total=False):
     AbortDate: Optional[AbortDate]
     AbortRuleId: Optional[AbortRuleId]
     Bucket: Optional[BucketName]
@@ -3228,7 +3228,7 @@ class S3Api:
         object_lock_legal_hold_status: ObjectLockLegalHoldStatus = None,
         expected_bucket_owner: AccountId = None,
         checksum_algorithm: ChecksumAlgorithm = None,
-    ) -> CreateMultipartUploadOutput:
+    ) -> InitiateMultipartUploadResult:
         raise NotImplementedError
 
     @handler("DeleteBucket")
