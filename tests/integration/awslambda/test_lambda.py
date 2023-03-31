@@ -1935,6 +1935,68 @@ class TestRequestIdHandling:
         snapshot.match("end_log_entries", end_log_entries)
 
     @pytest.mark.aws_validated
+    def test_request_id_invoke_url(
+        self, lambda_client, create_lambda_function, logs_client, snapshot
+    ):
+        snapshot.add_transformer(
+            snapshot.transform.key_value(
+                "FunctionUrl", "<function-url>", reference_replacement=False
+            )
+        )
+
+        fn_name = f"test-url-fn{short_uid()}"
+        log_group_name = f"/aws/lambda/{fn_name}"
+
+        handler_file = files.new_tmp_file()
+        handler_code = URL_HANDLER_CODE.replace("<<returnvalue>>", "'hi'")
+        files.save_file(handler_file, handler_code)
+
+        create_lambda_function(
+            func_name=fn_name,
+            handler_file=handler_file,
+            runtime=Runtime.python3_9,
+            client=lambda_client,
+        )
+
+        url_config = lambda_client.create_function_url_config(
+            FunctionName=fn_name,
+            AuthType="NONE",
+        )
+        snapshot.match("create_lambda_url_config", url_config)
+
+        permissions_response = lambda_client.add_permission(
+            FunctionName=fn_name,
+            StatementId="urlPermission",
+            Action="lambda:InvokeFunctionUrl",
+            Principal="*",
+            FunctionUrlAuthType="NONE",
+        )
+        snapshot.match("add_permission", permissions_response)
+
+        url = f"{url_config['FunctionUrl']}custom_path/extend?test_param=test_value"
+        result = safe_requests.post(url, data=b"{'key':'value'}")
+        snapshot.match(
+            "lambda_url_invocation",
+            {
+                "statuscode": result.status_code,
+                "headers": {"x-amzn-RequestId": result.headers.get("x-amzn-RequestId")},
+                "content": to_str(result.content),
+            },
+        )
+
+        def fetch_logs():
+            log_events_result = logs_client.filter_log_events(logGroupName=log_group_name)
+            assert any(["REPORT" in e["message"] for e in log_events_result["events"]])
+            return log_events_result
+
+        log_events = retry(fetch_logs, retries=10, sleep=2)
+        # TODO: AWS appends a "\n" so we need to trim here. Should explore this more
+        end_log_entries = [
+            e["message"].rstrip() for e in log_events["events"] if e["message"].startswith("END")
+        ]
+        snapshot.match("end_log_entries", end_log_entries)
+
+    @pytest.mark.aws_validated
     def test_request_id_async_invoke_with_retry(
         self, lambda_client, create_lambda_function, logs_client, monkeypatch, snapshot
     ):
