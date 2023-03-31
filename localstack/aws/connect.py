@@ -21,6 +21,8 @@ from localstack.constants import (
     INTERNAL_AWS_ACCESS_KEY_ID,
     INTERNAL_AWS_SECRET_ACCESS_KEY,
     MAX_POOL_CONNECTIONS,
+    TEST_AWS_ACCESS_KEY_ID,
+    TEST_AWS_SECRET_ACCESS_KEY,
 )
 from localstack.utils.aws.aws_stack import get_local_service_url, get_s3_hostname
 from localstack.utils.aws.client_types import ServicePrincipal, TypedServiceClientFactory
@@ -471,8 +473,8 @@ class ExternalClientFactory(ClientFactory):
             use_ssl=self._use_ssl,
             verify=self._verify,
             endpoint_url=endpoint_url,
-            aws_access_key_id=aws_access_key_id,
-            aws_secret_access_key=aws_secret_access_key,
+            aws_access_key_id=aws_access_key_id or TEST_AWS_ACCESS_KEY_ID,
+            aws_secret_access_key=aws_secret_access_key or TEST_AWS_SECRET_ACCESS_KEY,
             aws_session_token=aws_session_token,
             config=config,
         )
