@@ -409,7 +409,7 @@ class InternalClientFactory(ClientFactory):
         endpoint_url = endpoint_url or get_local_service_url(service_name)
         if service_name == "s3":
             if re.match(r"https?://localhost(:[0-9]+)?", endpoint_url):
-                endpoint_url = endpoint_url.replace("://localhost", "://%s" % get_s3_hostname())
+                endpoint_url = endpoint_url.replace("://localhost", f"://{get_s3_hostname()}")
 
         return self._get_client(
             service_name=service_name,
@@ -465,7 +465,7 @@ class ExternalClientFactory(ClientFactory):
         endpoint_url = endpoint_url or get_local_service_url(service_name)
         if service_name == "s3":
             if re.match(r"https?://localhost(:[0-9]+)?", endpoint_url):
-                endpoint_url = endpoint_url.replace("://localhost", "://%s" % get_s3_hostname())
+                endpoint_url = endpoint_url.replace("://localhost", f"://{get_s3_hostname()}")
 
         return self._get_client(
             service_name=service_name,

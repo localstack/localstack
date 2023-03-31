@@ -5,6 +5,7 @@ import pytest
 from localstack.aws.api import RequestContext
 from localstack.aws.chain import Handler, HandlerChain
 from localstack.aws.connect import (
+    ExternalAwsClientFactory,
     ExternalClientFactory,
     InternalClientFactory,
     attribute_name_to_service_name,
@@ -55,9 +56,11 @@ class TestClientFactory:
         )
         mock.meta.events.register.assert_not_called()
 
-    @patch.object(ExternalClientFactory, "_get_client")
-    def test_external_client_credentials_loaded_from_env_if_set_to_none(self, mock, monkeypatch):
-        connect_to = ExternalClientFactory(use_ssl=True)
+    @patch.object(ExternalAwsClientFactory, "_get_client")
+    def test_external_aws_client_credentials_loaded_from_env_if_set_to_none(
+        self, mock, monkeypatch
+    ):
+        connect_to = ExternalAwsClientFactory(use_ssl=True)
         connect_to.get_client(
             "abc", region_name="xx-south-1", aws_access_key_id="foo", aws_secret_access_key="bar"
         )
