@@ -110,9 +110,6 @@ class GenericDictUtilsTest(unittest.TestCase):
         self.assertEqual(expected_whitelisted_dictionary, whitelisted_dictionary)
 
     def test_dict_multi_values(self):
-        # write a table test for a function that receives a dict or a list and return
-        # a dictionary with the same keys and values as lists
-
         tt = [
             {
                 "input": {"a": 1, "b": 2},
