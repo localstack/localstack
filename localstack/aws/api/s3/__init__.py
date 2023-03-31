@@ -3495,7 +3495,7 @@ class S3Api:
     @handler("GetBucketTagging")
     def get_bucket_tagging(
         self, context: RequestContext, bucket: BucketName, expected_bucket_owner: AccountId = None
-    ) -> GetBucketTaggingOutput:
+    ) -> Tagging:
         raise NotImplementedError
 
     @handler("GetBucketVersioning")
@@ -3607,7 +3607,7 @@ class S3Api:
         version_id: ObjectVersionId = None,
         expected_bucket_owner: AccountId = None,
         request_payer: RequestPayer = None,
-    ) -> GetObjectTaggingOutput:
+    ) -> Tagging:
         raise NotImplementedError
 
     @handler("GetObjectTorrent")

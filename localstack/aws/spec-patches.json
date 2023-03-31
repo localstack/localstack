@@ -851,6 +851,16 @@
       "op": "move",
       "from": "/shapes/ListMultipartUploadsOutput",
       "path": "/shapes/ListMultipartUploadsResult"
+    },
+    {
+      "op": "replace",
+      "path": "/operations/GetObjectTagging/output/shape",
+      "value": "Tagging"
+    },
+    {
+      "op": "replace",
+      "path": "/operations/GetBucketTagging/output/shape",
+      "value": "Tagging"
     }
   ]
 }
