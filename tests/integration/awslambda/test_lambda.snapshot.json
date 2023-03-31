@@ -3134,11 +3134,11 @@
     }
   },
   "tests/integration/awslambda/test_lambda.py::TestRequestIdHandling::test_request_id_format": {
-    "recorded-date": "31-03-2023, 07:03:58",
+    "recorded-date": "31-03-2023, 10:33:20",
     "recorded-content": {}
   },
   "tests/integration/awslambda/test_lambda.py::TestRequestIdHandling::test_request_id_invoke": {
-    "recorded-date": "31-03-2023, 07:04:16",
+    "recorded-date": "31-03-2023, 10:33:43",
     "recorded-content": {
       "invoke_result": {
         "ExecutedVersion": "$LATEST",
@@ -3152,12 +3152,12 @@
         }
       },
       "end_log_entries": [
-        "END RequestId: <request-id>\n"
+        "END RequestId: <request-id>"
       ]
     }
   },
   "tests/integration/awslambda/test_lambda.py::TestRequestIdHandling::test_request_id_async_invoke_with_retry": {
-    "recorded-date": "31-03-2023, 07:06:21",
+    "recorded-date": "31-03-2023, 10:36:02",
     "recorded-content": {
       "invoke_result": {
         "Payload": "",
@@ -3168,25 +3168,13 @@
         }
       },
       "end_messages": [
-        {
-          "logStreamName": "<log-stream-name:1>",
-          "timestamp": "timestamp",
-          "message": "END RequestId: <request-id>\n",
-          "ingestionTime": "timestamp",
-          "eventId": "<event-id>"
-        },
-        {
-          "logStreamName": "<log-stream-name:1>",
-          "timestamp": "timestamp",
-          "message": "END RequestId: <request-id>\n",
-          "ingestionTime": "timestamp",
-          "eventId": "<event-id>"
-        }
+        "END RequestId: <request-id>",
+        "END RequestId: <request-id>"
       ]
     }
   },
   "tests/integration/awslambda/test_lambda.py::TestRequestIdHandling::test_request_id_invoke_url": {
-    "recorded-date": "31-03-2023, 09:25:08",
+    "recorded-date": "31-03-2023, 10:33:57",
     "recorded-content": {
       "create_lambda_url_config": {
         "AuthType": "NONE",

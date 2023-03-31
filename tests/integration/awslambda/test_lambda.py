@@ -1930,7 +1930,7 @@ class TestRequestIdHandling:
 
         log_events = retry(fetch_logs, retries=10, sleep=2)
         end_log_entries = [
-            e["message"] for e in log_events["events"] if e["message"].startswith("END")
+            e["message"].rstrip() for e in log_events["events"] if e["message"].startswith("END")
         ]
         snapshot.match("end_log_entries", end_log_entries)
 
@@ -2036,5 +2036,7 @@ class TestRequestIdHandling:
         report_messages = [e for e in log_events["events"] if "REPORT" in e["message"]]
         assert len(report_messages) == 2
         assert all([request_id in rm["message"] for rm in report_messages])
-        end_messages = [e for e in log_events["events"] if "END" in e["message"]]
+        end_messages = [
+            e["message"].rstrip() for e in log_events["events"] if "END" in e["message"]
+        ]
         snapshot.match("end_messages", end_messages)
