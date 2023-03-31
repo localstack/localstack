@@ -378,7 +378,9 @@ class LambdaVersionManager(ServiceEndpoint):
                         self.function_arn,
                     )
                     return
-                LOG.debug("Got invocation event %s in loop", queued_invocation.invocation.request_id)
+                LOG.debug(
+                    "Got invocation event %s in loop", queued_invocation.invocation.request_id
+                )
                 # Assumption: Synchronous invoke should never end up in the invocation queue because we catch it earlier
                 if self.function.reserved_concurrent_executions == 0:
                     # error...
