@@ -2136,6 +2136,7 @@ def echo_http_server_post(echo_http_server):
     return f"{echo_http_server}/post"
 
 
+@pytest.fixture
 def create_policy_doc(effect: str, actions: List, resource=None) -> Dict:
     actions = ensure_list(actions)
     resource = resource or "*"
