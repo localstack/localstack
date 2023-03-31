@@ -217,6 +217,30 @@ def test_lambda_aws_proxy_integration(
         response_params_encoding.json(),
     )
 
+    def invoke_api_with_multi_value_header(url):
+        headers = {
+            "Content-Type": "application/json;charset=utf-8",
+            "Authorization": "Bearer token123;API key456"
+        }
+
+        params = {
+            "category": ["electronics", "books"],
+            "price": ["10", "20", "30"]
+        }
+        response = requests.post(
+            url,
+            data=json.dumps({"message": "hello world"}),
+            headers=headers,
+            params=params,
+            verify=False,
+        )
+        assert response.ok
+        return response
+
+    responses = retry(invoke_api_with_multi_value_header, sleep=2, retries=10,
+        url=invocation_url)
+    snapshot.match("invocation-payload-with-params-encoding-multi", responses.json())
+
 
 @pytest.mark.aws_validated
 def test_lambda_aws_integration(
@@ -282,82 +306,3 @@ def test_lambda_aws_integration(
 
     response = retry(invoke_api, sleep=2, retries=10, url=invocation_url)
     snapshot.match("lambda-aws-integration", response.json())
-
-
-@pytest.mark.aws_validated
-def test_lambda_aws_proxy_event_payload(snapshot, apigateway_client,
-                                        create_rest_apigw, create_lambda_function,
-                                        create_role_with_policy):
-    function_name = f"test-function-{short_uid()}"
-    stage_name = "api"
-    snapshot.add_transformer(snapshot.transform.apigateway_api())
-    snapshot.add_transformer(snapshot.transform.apigateway_proxy_event())
-
-    # create lambda
-    create_function_response = create_lambda_function(
-        func_name=function_name,
-        handler_file=TEST_LAMBDA_AWS_PROXY,
-        handler="lambda_aws_proxy.handler",
-        runtime=LAMBDA_RUNTIME_PYTHON39,
-    )
-    # create invocation role
-    _, role_arn = create_role_with_policy(
-        "Allow", "lambda:InvokeFunction", json.dumps(APIGATEWAY_ASSUME_ROLE_POLICY), "*"
-    )
-    lambda_arn = create_function_response["CreateFunctionResponse"]["FunctionArn"]
-    # create rest api
-    api_id, _, root = create_rest_apigw(
-        name=f"test-api-{short_uid()}",
-        description="Integration test API",
-    )
-    resource_id = apigateway_client.create_resource(
-        restApiId=api_id, parentId=root, pathPart="{proxy+}"
-    )["id"]
-    apigateway_client.put_method(
-        restApiId=api_id,
-        resourceId=resource_id,
-        httpMethod="ANY",
-        authorizationType="NONE",
-    )
-    # Lambda AWS_PROXY integration
-    apigateway_client.put_integration(
-        restApiId=api_id,
-        resourceId=resource_id,
-        httpMethod="ANY",
-        type="AWS_PROXY",
-        integrationHttpMethod="POST",
-        uri=f"arn:aws:apigateway:{apigateway_client.meta.region_name}:lambda:path/2015-03-31/functions/{lambda_arn}/invocations",
-        credentials=role_arn,
-    )
-    apigateway_client.create_deployment(restApiId=api_id, stageName=stage_name)
-
-    # invoke rest api
-    invocation_url = api_invoke_url(
-        api_id=api_id,
-        stage=stage_name,
-        path="/test",
-    )
-
-    def invoke_api_with_multi_value_header(url):
-        headers = {
-            "Content-Type": "application/json;charset=utf-8",
-            "Authorization": "Bearer token123;API key456"
-        }
-
-        params = {
-            "category": ["electronics", "books"],
-            "price": ["10", "20", "30"]
-        }
-        response = requests.post(
-            url,
-            data=json.dumps({"message": "hello world"}),
-            headers=headers,
-            params=params,
-            verify=False,
-        )
-        assert response.ok
-        return response
-
-    responses = retry(invoke_api_with_multi_value_header, sleep=2, retries=10,
-        url=invocation_url)
-    snapshot.match("lambda-aws-proxy-event-payload", responses.json())

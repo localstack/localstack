@@ -192,7 +192,7 @@ class LambdaProxyIntegration(BackendIntegration):
             "body": data,
             "isBase64Encoded": is_base64_encoded,
             "httpMethod": method,
-            "queryStringParameters": query_string_params or None,
+            "queryStringParameters": {key: value[-1] for key, value in query_string_params.items()} or None,
             "multiValueQueryStringParameters": cls.multi_value_dict_for_list(query_string_params)
             or None,
         }
@@ -249,10 +249,10 @@ class LambdaProxyIntegration(BackendIntegration):
             or invocation_context.integration.get("integrationUri")
             or ""
         )
+        invocation_context.context = get_event_request_context(invocation_context)
         relative_path, query_string_params = extract_query_string_params(
             path=invocation_context.path_with_query_string
         )
-        invocation_context.context = get_event_request_context(invocation_context)
         try:
             path_params = extract_path_params(
                 path=relative_path, extracted_path=invocation_context.resource_path

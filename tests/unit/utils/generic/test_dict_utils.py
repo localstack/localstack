@@ -1,6 +1,7 @@
 import unittest
 
-from localstack.utils.collections import get_safe, pick_attributes, set_safe_mutable
+from localstack.utils.collections import get_safe, pick_attributes, set_safe_mutable, \
+    dict_multi_values
 
 
 class GenericDictUtilsTest(unittest.TestCase):
@@ -103,3 +104,29 @@ class GenericDictUtilsTest(unittest.TestCase):
             "level_one_2": "level_one_2_value",
         }
         self.assertEqual(expected_whitelisted_dictionary, whitelisted_dictionary)
+
+    def test_dict_multi_values(self):
+        # write a table test for a function that receives a dict or a list and return
+        # a dictionary with the same keys and values as lists
+
+        tt = [
+            {
+                "input": {"a": 1, "b": 2},
+                "expected": {"a": [1], "b": [2]},
+            },
+            {
+                "input": ["a", "b"],
+                "expected": {"a": ["b"]},
+            },
+            {
+                "input": [["a", "1"], ["b", "2"], ["b", "3"]],
+                "expected": {"a": ["1"], "b": ["2", "3"]},
+            },
+            {
+                "input": {"a": [1, 2], "b": [3, 4]},
+                "expected": {"a": [1, 2], "b": [3, 4]},
+            }
+        ]
+
+        for t in tt:
+            self.assertEqual(t["expected"], dict_multi_values(t["input"]))
