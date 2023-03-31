@@ -2166,8 +2166,7 @@ def create_policy_generated_document(create_policy):
 
 
 @pytest.fixture
-def create_role_with_policy(iam_client, sts_client, create_role,
-                            create_policy_generated_document):
+def create_role_with_policy(iam_client, sts_client, create_role, create_policy_generated_document):
     def _create_role_with_policy(effect, actions, assume_policy_doc, resource=None, attach=True):
         role_name = f"role-{short_uid()}"
         result = create_role(RoleName=role_name, AssumeRolePolicyDocument=assume_policy_doc)
