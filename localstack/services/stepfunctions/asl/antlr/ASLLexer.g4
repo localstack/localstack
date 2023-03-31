@@ -128,6 +128,8 @@ ERRORNAMEStatesIntrinsicFailure: '"States.IntrinsicFailure"';
 ERRORNAMEStatesExceedToleratedFailureThreshold: '"States.ExceedToleratedFailureThreshold"';
 ERRORNAMEStatesItemReaderFailed: '"States.ItemReaderFailed"';
 ERRORNAMEStatesResultWriterFailed: '"States.ResultWriterFailed"';
+// Read-only:
+ERRORNAMEStatesRuntime: '"States.Runtime"';
 
 // Strings.
 

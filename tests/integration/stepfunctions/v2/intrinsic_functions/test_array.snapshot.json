@@ -402,7 +402,7 @@
     }
   },
   "tests/integration/stepfunctions/v2/intrinsic_functions/test_array.py::TestArray::test_array_2": {
-    "recorded-date": "09-02-2023, 10:20:19",
+    "recorded-date": "31-03-2023, 23:29:25",
     "recorded-content": {
       "exec_hist_resp_0": {
         "events": [

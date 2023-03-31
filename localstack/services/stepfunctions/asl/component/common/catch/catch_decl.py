@@ -9,7 +9,6 @@ from localstack.services.stepfunctions.asl.component.common.catch.catcher_outcom
     CatcherOutcomeCaught,
     CatcherOutcomeNotCaught,
 )
-from localstack.services.stepfunctions.asl.component.common.error_name.error_name import ErrorName
 from localstack.services.stepfunctions.asl.component.eval_component import EvalComponent
 from localstack.services.stepfunctions.asl.eval.environment import Environment
 
@@ -19,11 +18,7 @@ class CatchDecl(EvalComponent):
         self.catchers: Final[list[CatcherDecl]] = catchers
 
     def _eval_body(self, env: Environment) -> None:
-        error_name: ErrorName = env.stack.pop()
-
         for catcher in self.catchers:
-            env.stack.append(error_name)
-
             catcher.eval(env)
             catcher_outcome: CatcherOutcome = env.stack.pop()
 

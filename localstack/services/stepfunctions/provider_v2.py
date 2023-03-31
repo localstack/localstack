@@ -219,6 +219,7 @@ class StepFunctionsProvider(StepfunctionsApi):
         executions: ExecutionList = [
             execution.to_execution_list_item()
             for execution in self.get_store(context).executions.values()
+            if execution.state_machine.arn == state_machine_arn
         ]
         return ListExecutionsOutput(executions=executions)
 
