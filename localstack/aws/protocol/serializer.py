@@ -1536,9 +1536,11 @@ class S3ResponseSerializer(RestXMLResponseSerializer):
         response = super()._prepare_additional_traits_in_response(
             response, operation_model, request_id
         )
+        # s3 extended Request ID
+        # mostly used internally on AWS and corresponds to a HostId
         response.headers[
             "x-amz-id-2"
-        ] = f"MzRISOwyjmnup{request_id}7/JypPGXLh0OVFGcJaaO3KW/hRAqKOpIEEp"
+        ] = "s9lzHYrFp76ZVxRcpX9+5cjAnEH2ROuNkd2BHfIa6UkFVdtjf5mKR3/eTPFvsiP/XV/VLi31234="
         return response
 
     def _add_error_tags(
