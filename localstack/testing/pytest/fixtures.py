@@ -2190,3 +2190,16 @@ def create_role_with_policy(iam_client, sts_client, create_role, create_policy_g
         return role_name, role_arn
 
     return _create_role_with_policy
+
+
+@pytest.fixture
+def create_user_with_policy(iam_client, create_policy_generated_document, create_user):
+    def _create_user_with_policy(effect, actions, resource=None):
+        policy_arn = create_policy_generated_document(effect, actions, resource=resource)
+        username = f"user-{short_uid()}"
+        create_user(UserName=username)
+        iam_client.attach_user_policy(UserName=username, PolicyArn=policy_arn)
+        keys = iam_client.create_access_key(UserName=username)["AccessKey"]
+        return username, keys
+
+    return _create_user_with_policy
