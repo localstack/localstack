@@ -206,6 +206,7 @@ def send_metric_report(metric_path: str, timestamp: str):
         if tmp:
             # send last batch
             send_data_to_tinybird(tmp, data_name=DATA_SOURCE_RAW_TESTS)
+            tmp.clear()
 
     print(f"---> processed {count} rows from community test coverage {metric_path}")
 
