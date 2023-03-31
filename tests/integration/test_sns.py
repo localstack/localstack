@@ -3210,7 +3210,7 @@ class TestSNSProvider:
         # see https://aws.amazon.com/blogs/compute/introducing-payload-based-message-filtering-for-amazon-sns/
         nested_filter_policy = {
             "object": {
-                "key": [{"prefix": "auto-"}],
+                "key": [{"prefix": "auto-"}, "hardcodedvalue"],
                 "nested_key": [{"exists": False}],
             },
             "test": [{"exists": False}],
@@ -3242,19 +3242,25 @@ class TestSNSProvider:
         # assert there are no messages in the queue
         assert "Messages" not in response
 
-        # publish message that satisfies the filter policy, assert that message is received
-        message = {"object": {"key": "auto-test"}}
-        sns_client.publish(
-            TopicArn=topic_arn,
-            Message=json.dumps(message),
-        )
+        # publish messages that satisfies the filter policy, assert that messages are received
+        messages = [
+            {"object": {"key": "auto-test"}},
+            {"object": {"key": "hardcodedvalue"}},
+        ]
+        for i, message in enumerate(messages):
+            sns_client.publish(
+                TopicArn=topic_arn,
+                Message=json.dumps(message),
+            )
 
-        response = sqs_client.receive_message(
-            QueueUrl=queue_url, VisibilityTimeout=0, WaitTimeSeconds=2
-        )
-        snapshot.match("recv-passed-msg", response)
-        receipt_handle = response["Messages"][0]["ReceiptHandle"]
-        sqs_client.delete_message(QueueUrl=queue_url, ReceiptHandle=receipt_handle)
+            response = sqs_client.receive_message(
+                QueueUrl=queue_url,
+                VisibilityTimeout=0,
+                WaitTimeSeconds=5 if is_aws_cloud() else 2,
+            )
+            snapshot.match(f"recv-passed-msg-{i}", response)
+            receipt_handle = response["Messages"][0]["ReceiptHandle"]
+            sqs_client.delete_message(QueueUrl=queue_url, ReceiptHandle=receipt_handle)
 
         # publish messages that do not satisfy the filter policy, assert those messages are not received
         messages = [
