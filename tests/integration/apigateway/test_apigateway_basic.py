@@ -685,7 +685,7 @@ class TestAPIGateway:
             ) from e
         assert parsed_body.get("return_status_code") == 203
         assert parsed_body.get("return_headers") == {"foo": "bar123"}
-        assert parsed_body.get("queryStringParameters") == {"foo": "foo", "bar": ["bar", "baz"]}
+        assert parsed_body.get("queryStringParameters") == {"foo": "foo", "bar": "baz"}
 
         request_context = parsed_body.get("requestContext")
         source_ip = request_context["identity"].pop("sourceIp")
