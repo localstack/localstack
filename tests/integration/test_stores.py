@@ -1,7 +1,7 @@
 from localstack.utils.strings import short_uid
 
 
-def test_nonstandard_regions(monkeypatch, create_boto_client, sqs_create_queue):
+def test_nonstandard_regions(monkeypatch, create_boto_client):
     """
     Ensure that non-standard AWS regions can be used vertically.
     """
