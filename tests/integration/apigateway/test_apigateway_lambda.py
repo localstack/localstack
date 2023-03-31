@@ -23,6 +23,7 @@ from tests.integration.awslambda.test_lambda import TEST_LAMBDA_AWS_PROXY, TEST_
     paths=[
         "$..body",
         "$..headers.Accept",
+        "$..headers.Content-Length",
         "$..headers.Accept-Encoding",
         "$..headers.Authorization",
         "$..headers.CloudFront-Forwarded-Proto",
@@ -46,6 +47,7 @@ from tests.integration.awslambda.test_lambda import TEST_LAMBDA_AWS_PROXY, TEST_
         "$..headers.x-localstack-edge",
         "$..headers.x-localstack-request-url",
         "$..headers.x-localstack-tgt-api",
+        "$..multiValueHeaders.Content-Length",
         "$..multiValueHeaders.Accept",
         "$..multiValueHeaders.Accept-Encoding",
         "$..multiValueHeaders.Authorization",
@@ -220,13 +222,10 @@ def test_lambda_aws_proxy_integration(
     def invoke_api_with_multi_value_header(url):
         headers = {
             "Content-Type": "application/json;charset=utf-8",
-            "Authorization": "Bearer token123;API key456"
+            "Authorization": "Bearer token123;API key456",
         }
 
-        params = {
-            "category": ["electronics", "books"],
-            "price": ["10", "20", "30"]
-        }
+        params = {"category": ["electronics", "books"], "price": ["10", "20", "30"]}
         response = requests.post(
             url,
             data=json.dumps({"message": "hello world"}),
@@ -237,8 +236,7 @@ def test_lambda_aws_proxy_integration(
         assert response.ok
         return response
 
-    responses = retry(invoke_api_with_multi_value_header, sleep=2, retries=10,
-        url=invocation_url)
+    responses = retry(invoke_api_with_multi_value_header, sleep=2, retries=10, url=invocation_url)
     snapshot.match("invocation-payload-with-params-encoding-multi", responses.json())
 
 

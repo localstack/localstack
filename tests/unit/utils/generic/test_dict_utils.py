@@ -1,7 +1,11 @@
 import unittest
 
-from localstack.utils.collections import get_safe, pick_attributes, set_safe_mutable, \
-    dict_multi_values
+from localstack.utils.collections import (
+    dict_multi_values,
+    get_safe,
+    pick_attributes,
+    set_safe_mutable,
+)
 
 
 class GenericDictUtilsTest(unittest.TestCase):
@@ -125,7 +129,7 @@ class GenericDictUtilsTest(unittest.TestCase):
             {
                 "input": {"a": [1, 2], "b": [3, 4]},
                 "expected": {"a": [1, 2], "b": [3, 4]},
-            }
+            },
         ]
 
         for t in tt:

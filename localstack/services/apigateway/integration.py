@@ -40,7 +40,7 @@ from localstack.utils.aws.aws_responses import (
     requests_response,
 )
 from localstack.utils.aws.templating import VtlTemplate
-from localstack.utils.collections import remove_attributes
+from localstack.utils.collections import dict_multi_values, remove_attributes
 from localstack.utils.common import make_http_request, to_str
 from localstack.utils.http import add_query_params_to_url, canonicalize_headers, parse_request_data
 from localstack.utils.json import json_safe
@@ -183,6 +183,10 @@ class LambdaProxyIntegration(BackendIntegration):
         cls, method, path, headers, data, query_string_params=None, is_base64_encoded=False
     ):
         query_string_params = query_string_params or parse_request_data(method, path, "")
+
+        single_value_query_string_params = {
+            k: v[-1] if isinstance(v, list) else v for k, v in query_string_params.items()
+        }
         # AWS canonical header names, converting them to lower-case
         headers = canonicalize_headers(headers)
         return {
@@ -192,9 +196,8 @@ class LambdaProxyIntegration(BackendIntegration):
             "body": data,
             "isBase64Encoded": is_base64_encoded,
             "httpMethod": method,
-            "queryStringParameters": {key: value[-1] for key, value in query_string_params.items()} or None,
-            "multiValueQueryStringParameters": cls.multi_value_dict_for_list(query_string_params)
-            or None,
+            "queryStringParameters": single_value_query_string_params or None,
+            "multiValueQueryStringParameters": dict_multi_values(query_string_params) or None,
         }
 
     @classmethod
