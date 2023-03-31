@@ -1,5 +1,5 @@
 <p align="center">
-:zap: We are thrilled to announce <a href="https://discuss.localstack.cloud/t/localstack-release-v1-4-0/214">LocalStack 1.4</a> which brings new features, enhancements and bugfixes :zap:
+:zap: We are thrilled to announce <a href="https://localstack.cloud/blog/2023-03-29-announcing-localstack-2.0-general-availability/">LocalStack 2.0</a> which brings new features, enhancements and bugfixes :zap:
 </p>
 
 <p align="center">
@@ -78,7 +78,7 @@ Start LocalStack inside a Docker container by running:
   / /___/ /_/ / /__/ /_/ / /___/ / /_/ /_/ / /__/ ,<
  /_____/\____/\___/\__,_/_//____/\__/\__,_/\___/_/|_|
 
- 💻 LocalStack CLI 1.4.0
+ 💻 LocalStack CLI 2.0.0
 
 [20:22:20] starting LocalStack in Docker mode 🐳
 [20:22:21] detaching
