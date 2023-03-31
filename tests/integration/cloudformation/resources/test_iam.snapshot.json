@@ -69,7 +69,7 @@
     }
   },
   "tests/integration/cloudformation/resources/test_iam.py::test_iam_policy_role_attachments": {
-    "recorded-date": "30-03-2023, 14:35:02",
+    "recorded-date": "31-03-2023, 19:57:32",
     "recorded-content": {}
   }
 }

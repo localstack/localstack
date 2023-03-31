@@ -82,17 +82,33 @@ def test_policy_attachments(
     assert policy["Statement"][0]["Principal"] == {"Service": "elasticbeanstalk.amazonaws.com"}
 
 @pytest.mark.aws_validated
-def test_iam_policy_role_attachments(deploy_cfn_template, iam_client, snapshot):
-    snapshot.add_transformer(snapshot.transform.iam_api())
-    snapshot.add_transformer(snapshot.transform.cloudformation_api())
-
+def test_iam_policy_role_attachments(deploy_cfn_template, snapshot, iam_client):
     stack = deploy_cfn_template(
         template_path=os.path.join(
             os.path.dirname(__file__), "../../templates/iam_policy_role.yaml"
         ),
     )
 
+    policy_name = "S3AccessPolicy"
+    role_names = ["MyRole", "AnotherRole"]
+
+    # Verify that the policy exists
+    policy = iam_client.get_policy(PolicyArn=f"arn:aws:iam:::policy/{policy_name}")
+    assert policy["Policy"]["PolicyName"] == policy_name
+
+    # Verify that the policy is attached to the roles
+    for role_name in role_names:
+        role = iam_client.get_role(RoleName=role_name)
+        attached_policies = role["Role"]["AttachedPolicies"]
+        attached_policy_arns = [p["PolicyArn"] for p in attached_policies]
+        assert f"arn:aws:iam:::policy/{policy_name}" in attached_policy_arns
+
+    # Verify that the snapshot matches the stack outputs
+    snapshot.add_transformer(snapshot.transform.iam_api())
+    snapshot.add_transformer(snapshot.transform.cloudformation_api())
     snapshot.match("outputs", stack.outputs)
+
+
 
 
 @pytest.mark.aws_validated
