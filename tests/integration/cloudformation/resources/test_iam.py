@@ -81,34 +81,69 @@ def test_policy_attachments(
     policy = json.loads(policy) if isinstance(policy, str) else policy
     assert policy["Statement"][0]["Principal"] == {"Service": "elasticbeanstalk.amazonaws.com"}
 
+
 @pytest.mark.aws_validated
 def test_iam_policy_role_attachments(deploy_cfn_template, snapshot, iam_client):
+
+    snapshot.add_transformer(snapshot.transform.iam_api())
+    policy_name = f"policy-{short_uid()}"
+    user_name = f"user-{short_uid()}"
+    role_name = f"user-{short_uid()}"
+    group_name = f"user-{short_uid()}"
+
     stack = deploy_cfn_template(
         template_path=os.path.join(
             os.path.dirname(__file__), "../../templates/iam_policy_role.yaml"
         ),
+        parameters={
+            "PolicyName": policy_name,
+            "UserName": user_name,
+            "RoleName": role_name,
+            "GroupName": group_name,
+        },
     )
 
-    policy_name = "S3AccessPolicy"
-    role_names = ["MyRole", "AnotherRole"]
+    user_inline_policy_response = iam_client.get_user_policy(
+        UserName=user_name, PolicyName=policy_name
+    )
+    group_inline_policy_resource = iam_client.get_group_policy(
+        GroupName=group_name, PolicyName=policy_name
+    )
+    role_inline_policy_resource = iam_client.get_role_policy(
+        RoleName=role_name, PolicyName=policy_name
+    )
 
-    # Verify that the policy exists
-    policy = iam_client.get_policy(PolicyArn=f"arn:aws:iam:::policy/{policy_name}")
-    assert policy["Policy"]["PolicyName"] == policy_name
+    snapshot.match("user_inline_policy", user_inline_policy_response)
+    snapshot.match("group_inline_policy", group_inline_policy_resource)
+    snapshot.match("role_inline_policy", role_inline_policy_resource)
 
-    # Verify that the policy is attached to the roles
-    for role_name in role_names:
-        role = iam_client.get_role(RoleName=role_name)
-        attached_policies = role["Role"]["AttachedPolicies"]
-        attached_policy_arns = [p["PolicyArn"] for p in attached_policies]
-        assert f"arn:aws:iam:::policy/{policy_name}" in attached_policy_arns
+    deploy_cfn_template(
+        template_path=os.path.join(
+            os.path.dirname(__file__), "../../templates/iam_policy_updated_role.yaml"
+        ),
+        parameters={
+            "PolicyName": policy_name,
+            "UserName": user_name,
+            "RoleName": role_name,
+            "GroupName": group_name,
+        },
+        stack_name=stack.stack_name,
+        is_update=True,
+    )
 
-    # Verify that the snapshot matches the stack outputs
-    snapshot.add_transformer(snapshot.transform.iam_api())
-    snapshot.add_transformer(snapshot.transform.cloudformation_api())
-    snapshot.match("outputs", stack.outputs)
+    user_updated_inline_policy_response = iam_client.get_user_policy(
+        UserName=user_name, PolicyName=policy_name
+    )
+    group_updated_inline_policy_resource = iam_client.get_group_policy(
+        GroupName=group_name, PolicyName=policy_name
+    )
+    role_updated_inline_policy_resource = iam_client.get_role_policy(
+        RoleName=role_name, PolicyName=policy_name
+    )
 
-
+    snapshot.match("user_updated_inline_policy", user_updated_inline_policy_response)
+    snapshot.match("group_updated_inline_policy", group_updated_inline_policy_resource)
+    snapshot.match("role_updated_inline_policy", role_updated_inline_policy_resource)
 
 
 @pytest.mark.aws_validated
