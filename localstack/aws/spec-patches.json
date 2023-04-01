@@ -192,38 +192,6 @@
       }
     },
     {
-      "op": "remove",
-      "path": "/shapes/DeleteObjectsOutput"
-    },
-    {
-      "op": "add",
-      "path": "/shapes/DeleteResult",
-      "value": {
-        "type": "structure",
-        "members": {
-          "Deleted": {
-            "shape": "DeletedObjects",
-            "documentation": "<p>Container element for a successful delete. It identifies the object that was successfully deleted.</p>"
-          },
-          "RequestCharged": {
-            "shape": "RequestCharged",
-            "location": "header",
-            "locationName": "x-amz-request-charged"
-          },
-          "Errors": {
-            "shape": "Errors",
-            "documentation": "<p>Container for a failed delete action that describes the object that Amazon S3 attempted to delete and the error it encountered.</p>",
-            "locationName": "Error"
-          }
-        }
-      }
-    },
-    {
-      "op": "replace",
-      "path": "/operations/DeleteObjects/output/shape",
-      "value": "DeleteResult"
-    },
-    {
       "op": "add",
       "path": "/shapes/RestoreObjectOutputStatusCode",
       "value": {
@@ -755,48 +723,17 @@
       }
     },
     {
-      "op": "move",
-      "from": "/shapes/ListBucketsOutput",
-      "path": "/shapes/ListAllMyBucketsResult"
-    },
-    {
-        "op": "replace",
-        "path": "/operations/ListBuckets/output/shape",
-        "value": "ListAllMyBucketsResult"
-    },
-    {
-      "op": "replace",
-      "path": "/operations/ListObjects/output/shape",
-      "value": "ListBucketResult"
-    },
-    {
-      "op": "move",
-      "from": "/shapes/ListObjectsV2Output",
-      "path": "/shapes/ListBucketResult"
-    },
-    {
-      "op": "remove",
-      "path": "/shapes/ListObjectsOutput"
-    },
-    {
-        "op": "add",
-        "path": "/shapes/ListBucketResult/members/Marker",
-        "value": {
-            "shape": "Marker",
-            "documentation": "<p>Indicates where in the bucket listing begins. Marker is included in the response if it was sent with the request.</p>"
-        }
-    },
-    {
-        "op": "add",
-        "path": "/shapes/ListBucketResult/members/NextMarker",
-        "value": {
-            "shape": "NextMarker",
-            "documentation": "<p>When response is truncated (the IsTruncated element value in the response is true), you can use the key name in this field as marker in the subsequent request to get next set of objects. Amazon S3 lists objects in alphabetical order Note: This element is returned only if you have delimiter request parameter specified. If response does not include the NextMarker and it is truncated, you can use the value of the last Key in the response as the marker in the subsequent request to get the next set of object keys.</p>"
-        }
+      "op": "add",
+      "path": "/shapes/ListObjectsOutput/members/BucketRegion",
+      "value": {
+        "shape": "BucketRegion",
+        "location": "header",
+        "locationName": "x-amz-bucket-region"
+      }
     },
     {
       "op": "add",
-      "path": "/shapes/ListBucketResult/members/BucketRegion",
+      "path": "/shapes/ListObjectsV2Output/members/BucketRegion",
       "value": {
         "shape": "BucketRegion",
         "location": "header",
@@ -836,31 +773,6 @@
         "documentation": "<p>The specified method is not allowed against this resource.</p>",
         "exception": true
       }
-    },
-    {
-      "op": "replace",
-      "path": "/operations/ListObjectsV2/output/shape",
-      "value": "ListBucketResult"
-    },
-    {
-      "op": "replace",
-      "path": "/operations/ListMultipartUploads/output/shape",
-      "value": "ListMultipartUploadsResult"
-    },
-    {
-      "op": "move",
-      "from": "/shapes/ListMultipartUploadsOutput",
-      "path": "/shapes/ListMultipartUploadsResult"
-    },
-    {
-      "op": "replace",
-      "path": "/operations/GetObjectTagging/output/shape",
-      "value": "Tagging"
-    },
-    {
-      "op": "replace",
-      "path": "/operations/GetBucketTagging/output/shape",
-      "value": "Tagging"
     }
   ]
 }
