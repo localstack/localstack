@@ -429,18 +429,18 @@ class ASGIAdapter:
                     await self.event_loop.run_in_executor(
                         self.executor, self.lifespan_listener.on_startup
                     )
+                    await send({"type": "lifespan.startup.complete"})
                 except Exception as e:
                     await send({"type": "lifespan.startup.failed", "message": f"{e}"})
 
-                await send({"type": "lifespan.startup.complete"})
             elif message["type"] == "lifespan.shutdown":
                 try:
                     await self.event_loop.run_in_executor(
                         self.executor, self.lifespan_listener.on_shutdown
                     )
+                    await send({"type": "lifespan.shutdown.complete"})
                 except Exception as e:
                     await send({"type": "lifespan.shutdown.failed", "message": f"{e}"})
-                await send({"type": "lifespan.shutdown.complete"})
                 return
             else:
                 return
