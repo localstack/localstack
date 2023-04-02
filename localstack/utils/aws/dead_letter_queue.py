@@ -11,13 +11,27 @@ from localstack.utils.strings import convert_to_printable_chars, first_char_to_u
 LOG = logging.getLogger(__name__)
 
 
-def sns_error_to_dead_letter_queue(sns_subscriber: dict, message: str, error, msg_attrs=None):
-    # message should be of type str if coming from SNS, as it represents the message body being passed down
+def sns_error_to_dead_letter_queue(
+    sns_subscriber: dict,
+    message: str,
+    error: str,
+    **kwargs,
+):
     policy = json.loads(sns_subscriber.get("RedrivePolicy") or "{}")
     target_arn = policy.get("deadLetterTargetArn")
     if not target_arn:
         return
-    event = {"message": message, "message_attributes": msg_attrs or {}}
+    if not_supported := (
+        set(kwargs) - {"MessageAttributes", "MessageGroupId", "MessageDeduplicationId"}
+    ):
+        LOG.warning(
+            "Not publishing to the DLQ - invalid arguments passed to the DLQ '%s'", not_supported
+        )
+        return
+    event = {
+        "message": message,
+        **kwargs,
+    }
     return _send_to_dead_letter_queue(sns_subscriber["SubscriptionArn"], target_arn, event, error)
 
 
@@ -97,13 +111,14 @@ def _prepare_messages_to_dlq(source_arn: str, event: Dict, error) -> List[Dict]:
                 }
             )
     elif ":sns:" in source_arn:
-        messages.append(
-            {
-                "Id": str(uuid.uuid4()),
-                "MessageBody": event["message"],
-                "MessageAttributes": event.get("message_attributes", {}),
-            }
-        )
+        # event can also contain: MessageAttributes, MessageGroupId, MessageDeduplicationId
+        message = {
+            "Id": str(uuid.uuid4()),
+            "MessageBody": event.pop("message"),
+            **event,
+        }
+        messages.append(message)
+
     elif ":lambda:" in source_arn:
         custom_attrs["ErrorCode"]["DataType"] = "Number"
         # not sure about what type of error can come here

@@ -1421,8 +1421,6 @@ class TestSNSProvider:
             "$.topic-attrs.Attributes.DeliveryPolicy",
             "$.topic-attrs.Attributes.EffectiveDeliveryPolicy",
             "$.topic-attrs.Attributes.Policy.Statement..Action",  # SNS:Receive is added by moto but not returned in AWS
-            "$..Messages..Attributes.SequenceNumber",
-            "$..Successful..SequenceNumber",  # not added, need to be managed by SNS, different from SQS received
         ]
     )
     @pytest.mark.parametrize("content_based_deduplication", [True, False])
@@ -1554,12 +1552,9 @@ class TestSNSProvider:
             "$.topic-attrs.Attributes.DeliveryPolicy",
             "$.topic-attrs.Attributes.EffectiveDeliveryPolicy",
             "$.topic-attrs.Attributes.Policy.Statement..Action",  # SNS:Receive is added by moto but not returned in AWS
-            "$..Messages..Attributes.SequenceNumber",
-            "$..Successful..SequenceNumber",  # not added, need to be managed by SNS, different from SQS received
         ]
     )
     @pytest.mark.parametrize("raw_message_delivery", [True, False])
-    @pytest.mark.xfail(reason="DLQ behaviour for FIFO topic does not work yet")
     def test_publish_fifo_batch_messages_to_dlq(
         self,
         sns_client,
@@ -1881,15 +1876,6 @@ class TestSNSProvider:
         assert len(subscriptions_by_topic["Subscriptions"]) == 0
 
     @pytest.mark.aws_validated
-    @pytest.mark.skip_snapshot_verify(
-        paths=[
-            "$..Messages..Body.SignatureVersion",  # TODO: apparently, messages are not signed in fifo topics
-            "$..Messages..Body.Signature",
-            "$..Messages..Body.SigningCertURL",
-            "$..Messages..Body.SequenceNumber",
-            "$..Messages..Attributes.SequenceNumber",
-        ]
-    )
     @pytest.mark.parametrize("content_based_deduplication", [True, False])
     def test_message_to_fifo_sqs(
         self,
@@ -3301,14 +3287,6 @@ class TestSNSProvider:
 
     @pytest.mark.aws_validated
     @pytest.mark.parametrize("raw_message_delivery", [True, False])
-    @pytest.mark.skip_snapshot_verify(
-        paths=[
-            "$..Messages..Body.SignatureVersion",  # TODO: apparently, messages are not signed in fifo topics
-            "$..Messages..Body.Signature",
-            "$..Messages..Body.SigningCertURL",
-            "$..Messages..Body.SequenceNumber",
-        ]
-    )
     def test_publish_to_fifo_topic_to_sqs_queue_no_content_dedup(
         self,
         sns_client,
