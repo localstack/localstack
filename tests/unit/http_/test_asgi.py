@@ -297,7 +297,7 @@ def test_serve_multiple_apps(serve_asgi_adapter):
     assert result5.text == "ok1"
 
 
-def test_lifespan_startup(serve_asgi_adapter):
+def test_lifespan_listener(serve_asgi_adapter):
 
     events = Queue()
 
