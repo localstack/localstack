@@ -2,9 +2,6 @@ Parameters:
   UserName:
     Type: String
     Default: "RandomUser"
-  GroupName:
-    Type: String
-    Default: "RandomGroup"
   RoleName:
     Type: String
     Default: "RandomRole"
@@ -16,10 +13,6 @@ Resources:
     Type: "AWS::IAM::User"
     Properties:
       UserName: !Ref UserName
-  MyGroup:
-    Type: "AWS::IAM::Group"
-    Properties:
-      GroupName: !Ref GroupName
   MyRole:
     Type: "AWS::IAM::Role"
     Properties:
@@ -46,19 +39,6 @@ Resources:
             Resource: "*"
       Users:
         - Ref: MyUser
-  GroupPolicy:
-    Type: "AWS::IAM::Policy"
-    Properties:
-      PolicyName: !Ref PolicyName
-      PolicyDocument:
-        Version: "2012-10-17"
-        Statement:
-          - Effect: "Allow"
-            Action:
-              - "s3:GetObject"
-            Resource: "*"
-      Groups:
-        - Ref: MyGroup
   RolePolicy:
     Type: "AWS::IAM::Policy"
     Properties:

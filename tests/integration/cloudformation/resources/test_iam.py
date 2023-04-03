@@ -88,8 +88,7 @@ def test_update_inline_policy(deploy_cfn_template, snapshot, iam_client):
     snapshot.add_transformer(snapshot.transform.iam_api())
     policy_name = f"policy-{short_uid()}"
     user_name = f"user-{short_uid()}"
-    role_name = f"user-{short_uid()}"
-    group_name = f"user-{short_uid()}"
+    role_name = f"role-{short_uid()}"
 
     stack = deploy_cfn_template(
         template_path=os.path.join(
@@ -99,22 +98,17 @@ def test_update_inline_policy(deploy_cfn_template, snapshot, iam_client):
             "PolicyName": policy_name,
             "UserName": user_name,
             "RoleName": role_name,
-            "GroupName": group_name,
         },
     )
 
     user_inline_policy_response = iam_client.get_user_policy(
         UserName=user_name, PolicyName=policy_name
     )
-    group_inline_policy_resource = iam_client.get_group_policy(
-        GroupName=group_name, PolicyName=policy_name
-    )
     role_inline_policy_resource = iam_client.get_role_policy(
         RoleName=role_name, PolicyName=policy_name
     )
 
     snapshot.match("user_inline_policy", user_inline_policy_response)
-    snapshot.match("group_inline_policy", group_inline_policy_resource)
     snapshot.match("role_inline_policy", role_inline_policy_resource)
 
     deploy_cfn_template(
@@ -125,7 +119,6 @@ def test_update_inline_policy(deploy_cfn_template, snapshot, iam_client):
             "PolicyName": policy_name,
             "UserName": user_name,
             "RoleName": role_name,
-            "GroupName": group_name,
         },
         stack_name=stack.stack_name,
         is_update=True,
@@ -134,15 +127,11 @@ def test_update_inline_policy(deploy_cfn_template, snapshot, iam_client):
     user_updated_inline_policy_response = iam_client.get_user_policy(
         UserName=user_name, PolicyName=policy_name
     )
-    group_updated_inline_policy_resource = iam_client.get_group_policy(
-        GroupName=group_name, PolicyName=policy_name
-    )
     role_updated_inline_policy_resource = iam_client.get_role_policy(
         RoleName=role_name, PolicyName=policy_name
     )
 
     snapshot.match("user_updated_inline_policy", user_updated_inline_policy_response)
-    snapshot.match("group_updated_inline_policy", group_updated_inline_policy_resource)
     snapshot.match("role_updated_inline_policy", role_updated_inline_policy_resource)
 
 

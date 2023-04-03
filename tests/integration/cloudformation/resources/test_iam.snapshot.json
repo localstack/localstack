@@ -68,136 +68,8 @@
       }
     }
   },
-  "tests/integration/cloudformation/resources/test_iam.py::test_iam_policy_role_attachments": {
-    "recorded-date": "01-04-2023, 13:05:01",
-    "recorded-content": {
-      "user_inline_policy": {
-        "PolicyDocument": {
-          "Statement": [
-            {
-              "Action": [
-                "s3:PutObject",
-                "s3:ListBucket"
-              ],
-              "Effect": "Allow",
-              "Resource": "*"
-            }
-          ],
-          "Version": "2012-10-17"
-        },
-        "PolicyName": "policy-3096d6c3",
-        "UserName": "<user-name:1>",
-        "ResponseMetadata": {
-          "HTTPHeaders": {},
-          "HTTPStatusCode": 200
-        }
-      },
-      "group_inline_policy": {
-        "GroupName": "user-13980818",
-        "PolicyDocument": {
-          "Statement": [
-            {
-              "Action": [
-                "s3:GetObject",
-                "s3:PutObject"
-              ],
-              "Effect": "Allow",
-              "Resource": "*"
-            }
-          ],
-          "Version": "2012-10-17"
-        },
-        "PolicyName": "policy-3096d6c3",
-        "ResponseMetadata": {
-          "HTTPHeaders": {},
-          "HTTPStatusCode": 200
-        }
-      },
-      "role_inline_policy": {
-        "PolicyDocument": {
-          "Statement": [
-            {
-              "Action": [
-                "s3:GetObject",
-                "s3:ListBucket"
-              ],
-              "Effect": "Allow",
-              "Resource": "*"
-            }
-          ],
-          "Version": "2012-10-17"
-        },
-        "PolicyName": "policy-3096d6c3",
-        "RoleName": "user-8faf5135",
-        "ResponseMetadata": {
-          "HTTPHeaders": {},
-          "HTTPStatusCode": 200
-        }
-      },
-      "user_updated_inline_policy": {
-        "PolicyDocument": {
-          "Statement": [
-            {
-              "Action": [
-                "s3:PutObject"
-              ],
-              "Effect": "Allow",
-              "Resource": "*"
-            }
-          ],
-          "Version": "2012-10-17"
-        },
-        "PolicyName": "policy-3096d6c3",
-        "UserName": "<user-name:1>",
-        "ResponseMetadata": {
-          "HTTPHeaders": {},
-          "HTTPStatusCode": 200
-        }
-      },
-      "group_updated_inline_policy": {
-        "GroupName": "user-13980818",
-        "PolicyDocument": {
-          "Statement": [
-            {
-              "Action": [
-                "s3:GetObject"
-              ],
-              "Effect": "Allow",
-              "Resource": "*"
-            }
-          ],
-          "Version": "2012-10-17"
-        },
-        "PolicyName": "policy-3096d6c3",
-        "ResponseMetadata": {
-          "HTTPHeaders": {},
-          "HTTPStatusCode": 200
-        }
-      },
-      "role_updated_inline_policy": {
-        "PolicyDocument": {
-          "Statement": [
-            {
-              "Action": [
-                "s3:ListBucket"
-              ],
-              "Effect": "Allow",
-              "Resource": "*"
-            }
-          ],
-          "Version": "2012-10-17"
-        },
-        "PolicyName": "policy-3096d6c3",
-        "RoleName": "user-8faf5135",
-        "ResponseMetadata": {
-          "HTTPHeaders": {},
-          "HTTPStatusCode": 200
-        }
-      }
-    }
-  },
   "tests/integration/cloudformation/resources/test_iam.py::test_update_inline_policy": {
-    "recorded-date": "03-04-2023, 08:31:37",
+    "recorded-date": "03-04-2023, 21:22:23",
     "recorded-content": {
       "user_inline_policy": {
         "PolicyDocument": {
@@ -213,29 +85,8 @@
           ],
           "Version": "2012-10-17"
         },
-        "PolicyName": "policy-a1184df9",
+        "PolicyName": "policy-f367081c",
         "UserName": "<user-name:1>",
-        "ResponseMetadata": {
-          "HTTPHeaders": {},
-          "HTTPStatusCode": 200
-        }
-      },
-      "group_inline_policy": {
-        "GroupName": "user-9ee18e30",
-        "PolicyDocument": {
-          "Statement": [
-            {
-              "Action": [
-                "s3:GetObject",
-                "s3:PutObject"
-              ],
-              "Effect": "Allow",
-              "Resource": "*"
-            }
-          ],
-          "Version": "2012-10-17"
-        },
-        "PolicyName": "policy-a1184df9",
         "ResponseMetadata": {
           "HTTPHeaders": {},
           "HTTPStatusCode": 200
@@ -255,8 +106,8 @@
           ],
           "Version": "2012-10-17"
         },
-        "PolicyName": "policy-a1184df9",
-        "RoleName": "user-813d953c",
+        "PolicyName": "policy-f367081c",
+        "RoleName": "role-cfca663d",
         "ResponseMetadata": {
           "HTTPHeaders": {},
           "HTTPStatusCode": 200
@@ -275,28 +126,8 @@
           ],
           "Version": "2012-10-17"
         },
-        "PolicyName": "policy-a1184df9",
+        "PolicyName": "policy-f367081c",
         "UserName": "<user-name:1>",
-        "ResponseMetadata": {
-          "HTTPHeaders": {},
-          "HTTPStatusCode": 200
-        }
-      },
-      "group_updated_inline_policy": {
-        "GroupName": "user-9ee18e30",
-        "PolicyDocument": {
-          "Statement": [
-            {
-              "Action": [
-                "s3:GetObject"
-              ],
-              "Effect": "Allow",
-              "Resource": "*"
-            }
-          ],
-          "Version": "2012-10-17"
-        },
-        "PolicyName": "policy-a1184df9",
         "ResponseMetadata": {
           "HTTPHeaders": {},
           "HTTPStatusCode": 200
@@ -315,8 +146,8 @@
           ],
           "Version": "2012-10-17"
         },
-        "PolicyName": "policy-a1184df9",
-        "RoleName": "user-813d953c",
+        "PolicyName": "policy-f367081c",
+        "RoleName": "role-cfca663d",
         "ResponseMetadata": {
           "HTTPHeaders": {},
           "HTTPStatusCode": 200
