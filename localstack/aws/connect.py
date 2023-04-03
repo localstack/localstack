@@ -269,8 +269,8 @@ class ClientFactory(ABC):
         aws_access_key_id: Optional[str] = None,
         aws_secret_access_key: Optional[str] = None,
         aws_session_token: Optional[str] = None,
-        endpoint_url: str = None,
-        config: Config = None,
+        endpoint_url: Optional[str] = None,
+        config: Optional[Config] = None,
     ):
         raise NotImplementedError()
 
@@ -377,8 +377,8 @@ class InternalClientFactory(ClientFactory):
         aws_access_key_id: Optional[str] = None,
         aws_secret_access_key: Optional[str] = None,
         aws_session_token: Optional[str] = None,
-        endpoint_url: str = None,
-        config: Config = None,
+        endpoint_url: Optional[str] = None,
+        config: Optional[Config] = None,
     ) -> BaseClient:
         """
         Build and return client for connections originating within LocalStack.
@@ -432,8 +432,8 @@ class ExternalClientFactory(ClientFactory):
         aws_access_key_id: Optional[str] = None,
         aws_secret_access_key: Optional[str] = None,
         aws_session_token: Optional[str] = None,
-        endpoint_url: str = None,
-        config: Config = None,
+        endpoint_url: Optional[str] = None,
+        config: Optional[Config] = None,
     ) -> BaseClient:
         """
         Build and return client for connections originating outside LocalStack and targeting Localstack.
