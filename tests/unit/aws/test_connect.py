@@ -111,8 +111,8 @@ class TestClientFactory:
             use_ssl=True,
             verify=True,
             endpoint_url=None,
-            aws_access_key_id=None,
-            aws_secret_access_key=None,
+            aws_access_key_id="foo",
+            aws_secret_access_key="bar",
             aws_session_token=None,
             config=connect_to._config,
         )

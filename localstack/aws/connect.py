@@ -436,9 +436,9 @@ class ExternalClientFactory(ClientFactory):
         config: Config = None,
     ) -> BaseClient:
         """
-        Build and return client for connections originating outside LocalStack.
+        Build and return client for connections originating outside LocalStack and targeting Localstack.
 
-        If either of the access keys or region are set to None, they are loaded from following
+        If the region is set to None, it is loaded from following
         locations:
         - AWS environment variables
         - Credentials file `~/.aws/credentials`
@@ -448,9 +448,9 @@ class ExternalClientFactory(ClientFactory):
         :param region_name: Name of the AWS region to be associated with the client
             If set to None, loads from botocore session.
         :param aws_access_key_id: Access key to use for the client.
-            If set to None, loads from botocore session.
+            Defaults to dummy value ("test")
         :param aws_secret_access_key: Secret key to use for the client.
-            If set to None, loads from botocore session.
+            Defaults to "dummy value ("test")
         :param aws_session_token: Session token to use for the client.
             Not being used if not set.
         :param endpoint_url: Full endpoint URL to be used by the client.
@@ -525,9 +525,9 @@ class ExternalAwsClientFactory(ClientFactory):
             endpoint_url=endpoint_url,
             use_ssl=True,
             verify=True,
-            aws_access_key_id=None,
-            aws_secret_access_key=None,
-            aws_session_token=None,
+            aws_access_key_id=aws_access_key_id,
+            aws_secret_access_key=aws_secret_access_key,
+            aws_session_token=aws_session_token,
         )
 
 
