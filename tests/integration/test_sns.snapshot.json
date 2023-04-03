@@ -2361,7 +2361,7 @@
     }
   },
   "tests/integration/test_sns.py::TestSNSProvider::test_message_structure_json_exc": {
-    "recorded-date": "25-11-2022, 18:42:09",
+    "recorded-date": "03-04-2023, 21:23:54",
     "recorded-content": {
       "missing-default-key": {
         "Error": {
@@ -2390,6 +2390,17 @@
         "ResponseMetadata": {
           "HTTPHeaders": {},
           "HTTPStatusCode": 200
+        }
+      },
+      "key-is-not-string": {
+        "Error": {
+          "Code": "InvalidParameter",
+          "Message": "Invalid parameter: Message Structure - No default entry in JSON message body",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
         }
       }
     }
