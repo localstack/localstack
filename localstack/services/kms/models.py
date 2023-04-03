@@ -184,8 +184,7 @@ class KmsCryptoKey:
             self.key_material = os.urandom(random.randint(minimum_length, maximum_length))
             return
         else:
-            # Currently we do not support HMAC keys - symmetric keys that are used for GenerateMac / VerifyMac.
-            # We also do not support SM2 - asymmetric keys both suitable for ENCRYPT_DECRYPT and SIGN_VERIFY,
+            # We do not support SM2 - asymmetric keys both suitable for ENCRYPT_DECRYPT and SIGN_VERIFY,
             # but only used in China AWS regions.
             raise UnsupportedOperationException(f"KeySpec {key_spec} is not supported")
 
@@ -503,10 +502,8 @@ class KmsKey:
                     f"failed to satisfy constraint: Member must satisfy enum value set: "
                     f"[ENCRYPT_DECRYPT, SIGN_VERIFY, GENERATE_VERIFY_MAC]"
                 )
-            else:
-                return request_key_usage
         else:
-            return "ENCRYPT_DECRYPT"
+            return request_key_usage or "ENCRYPT_DECRYPT"
 
 
 class KmsGrant:
