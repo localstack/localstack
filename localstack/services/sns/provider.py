@@ -598,12 +598,10 @@ class SnsProvider(SnsApi, ServiceLifecycleHook):
                 # Keys in the JSON object that correspond to supported transport protocols must have
                 # simple JSON string values.
                 # Non-string values will cause the key to be ignored.
-                filtered_message = {
-                    key: field for key, field in message.items() if isinstance(field, str)
-                }
+                message = {key: field for key, field in message.items() if isinstance(field, str)}
                 # TODO: check no default key for direct TargetArn endpoint publish, need credentials
                 # see example: https://docs.aws.amazon.com/sns/latest/dg/sns-send-custom-platform-specific-payloads-mobile-devices.html
-                if "default" not in filtered_message and not is_endpoint_publish:
+                if "default" not in message and not is_endpoint_publish:
                     raise InvalidParameterException(
                         "Invalid parameter: Message Structure - No default entry in JSON message body"
                     )
