@@ -540,9 +540,9 @@ class KmsProvider(KmsApi, ServiceLifecycleHook):
 
     @handler("GenerateMac", expand=False)
     def generate_mac(
-            self,
-            context: RequestContext,
-            request: GenerateMacRequest,
+        self,
+        context: RequestContext,
+        request: GenerateMacRequest,
     ) -> GenerateMacResponse:
         msg = request.get("Message")
         self._validate_mac_msg_length(msg)
@@ -559,9 +559,9 @@ class KmsProvider(KmsApi, ServiceLifecycleHook):
 
     @handler("VerifyMac", expand=False)
     def verify_mac(
-            self,
-            context: RequestContext,
-            request: VerifyMacRequest,
+        self,
+        context: RequestContext,
+        request: VerifyMacRequest,
     ) -> VerifyMacResponse:
         msg = request.get("Message")
         self._validate_mac_msg_length(msg)
@@ -574,7 +574,9 @@ class KmsProvider(KmsApi, ServiceLifecycleHook):
 
         mac_valid = key.verify_mac(msg, request.get("Mac"), algorithm)
 
-        return VerifyMacResponse(KeyId=key.metadata.get("Arn"), MacValid=mac_valid, MacAlgorithm=algorithm)
+        return VerifyMacResponse(
+            KeyId=key.metadata.get("Arn"), MacValid=mac_valid, MacAlgorithm=algorithm
+        )
 
     @handler("Sign", expand=False)
     def sign(self, context: RequestContext, request: SignRequest) -> SignResponse:
@@ -955,7 +957,7 @@ class KmsProvider(KmsApi, ServiceLifecycleHook):
 
         key_spec = key.metadata["KeySpec"]
         if x := algorithm.split("_"):
-            if len(x) == 3 and x[0]+"_"+x[2] != key_spec:
+            if len(x) == 3 and x[0] + "_" + x[2] != key_spec:
                 raise InvalidKeyUsageException(
                     f"Algorithm {algorithm} is incompatible with key spec {key_spec}."
                 )
