@@ -52,6 +52,7 @@ from localstack.aws.api.sns import (
     PhoneNumberString,
     PublishBatchRequestEntryList,
     PublishBatchResponse,
+    PublishBatchResultEntry,
     PublishResponse,
     SetSMSAttributesResponse,
     SnsApi,
@@ -304,7 +305,7 @@ class SnsProvider(SnsApi, ServiceLifecycleHook):
                 "Two or more batch entries in the request have the same Id."
             )
 
-        if ".fifo" in topic_arn:
+        if is_fifo := (".fifo" in topic_arn):
             if not all(["MessageGroupId" in entry for entry in publish_batch_request_entries]):
                 raise InvalidParameterException(
                     "Invalid parameter: The MessageGroupId parameter is required for FIFO topics"
@@ -346,9 +347,15 @@ class SnsProvider(SnsApi, ServiceLifecycleHook):
 
         message_contexts = []
         for entry in publish_batch_request_entries:
-            msg_ctx = SnsMessage.from_batch_entry(entry)
+            msg_ctx = SnsMessage.from_batch_entry(entry, is_fifo=is_fifo)
             message_contexts.append(msg_ctx)
-            response["Successful"].append({"Id": entry["Id"], "MessageId": msg_ctx.message_id})
+            success = PublishBatchResultEntry(
+                Id=entry["Id"],
+                MessageId=msg_ctx.message_id,
+            )
+            if is_fifo:
+                success["SequenceNumber"] = msg_ctx.sequencer_number
+            response["Successful"].append(success)
         publish_ctx = SnsBatchPublishContext(
             messages=message_contexts,
             store=store,
@@ -561,7 +568,7 @@ class SnsProvider(SnsApi, ServiceLifecycleHook):
         # use any of them for topic validation
         topic_or_target_arn = topic_arn or target_arn
 
-        if topic_or_target_arn and ".fifo" in topic_or_target_arn:
+        if is_fifo := (topic_or_target_arn and ".fifo" in topic_or_target_arn):
             if not message_group_id:
                 raise InvalidParameterException(
                     "Invalid parameter: The MessageGroupId parameter is required for FIFO topics",
@@ -625,6 +632,7 @@ class SnsProvider(SnsApi, ServiceLifecycleHook):
             message_group_id=message_group_id,
             message_structure=message_structure,
             subject=subject,
+            is_fifo=is_fifo,
         )
         publish_ctx = SnsPublishContext(
             message=message_ctx, store=store, request_headers=context.request.headers

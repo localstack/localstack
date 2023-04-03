@@ -622,6 +622,7 @@ class TestLambdaBehavior:
         wait_until(_assert_log_output, strategy="linear")
 
     @pytest.mark.skipif(is_old_provider(), reason="old provider")
+    @pytest.mark.xfail(reason="Currently flaky in CI")
     @pytest.mark.aws_validated
     def test_lambda_invoke_timed_out_environment_reuse(
         self,

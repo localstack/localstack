@@ -78,6 +78,12 @@ class RegistryConnectionError(ContainerException):
         self.details = details
 
 
+class DockerNotAvailable(ContainerException):
+    def __init__(self, message=None, stdout=None, stderr=None) -> None:
+        message = message or "Docker not available"
+        super().__init__(message, stdout, stderr)
+
+
 class AccessDenied(ContainerException):
     def __init__(self, object_name: str, message=None, stdout=None, stderr=None) -> None:
         message = message or f"Access denied to {object_name}"

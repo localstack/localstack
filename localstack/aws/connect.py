@@ -22,8 +22,9 @@ from localstack.constants import (
     MAX_POOL_CONNECTIONS,
 )
 from localstack.utils.aws.aws_stack import get_local_service_url
-from localstack.utils.aws.client_types import TypedServiceClientFactory
+from localstack.utils.aws.client_types import ServicePrincipal, TypedServiceClientFactory
 from localstack.utils.aws.request_context import get_region_from_request_context
+from localstack.utils.strings import short_uid
 
 LOG = logging.getLogger(__name__)
 
@@ -211,6 +212,51 @@ class ClientFactory(ABC):
             "config": config,
         }
         return ServiceLevelClientFactory(factory=self, client_creation_params=params)
+
+    def with_assumed_role(
+        self,
+        *,
+        role_arn: str,
+        service_principal: Optional[ServicePrincipal] = None,
+        session_name: Optional[str] = None,
+        region_name: Optional[str] = None,
+        endpoint_url: Optional[str] = None,
+        config: Optional[Config] = None,
+    ) -> ServiceLevelClientFactory:
+        """
+        Create a service level client factory with credentials from assuming the given role ARN.
+        The service_principal will only be used for the assume_role call, for all succeeding calls it has to be provided
+        separately, either as call attribute or using request_metadata()
+
+        :param role_arn: Role to assume
+        :param service_principal: Service the role should be assumed as
+        :param session_name: Session name for the role session
+        :param region_name: Region for the returned client
+        :param endpoint_url: Endpoint for both the assume_role call and the returned client
+        :param config: Config for both the assume_role call and the returned client
+        :return: Service Level Client Factory
+        """
+        session_name = session_name or f"session-{short_uid()}"
+        sts_client = self(endpoint_url=endpoint_url, config=config).sts
+
+        metadata = {}
+        # TODO enable once IAM resource based policies are available
+        # if service_principal:
+        #     metadata["service_principal"] = service_principal
+
+        sts_client = sts_client.request_metadata(**metadata)
+        credentials = sts_client.assume_role(RoleArn=role_arn, RoleSessionName=session_name)[
+            "Credentials"
+        ]
+
+        return self(
+            region_name=region_name,
+            aws_access_key_id=credentials["AccessKeyId"],
+            aws_secret_access_key=credentials["SecretAccessKey"],
+            aws_session_token=credentials["SessionToken"],
+            endpoint_url=endpoint_url,
+            config=config,
+        )
 
     @abstractmethod
     def get_client(

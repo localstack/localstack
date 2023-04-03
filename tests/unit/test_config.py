@@ -47,6 +47,16 @@ class TestProviderConfig:
         provider_config.load_from_environment()
         assert provider_config.get_provider("sqs") == override_value
 
+    def test_empty_provider_config_override(self, monkeypatch):
+        default_value = "default_value"
+        override_value = ""
+        provider_config = config.ServiceProviderConfig(default_value=default_value)
+        monkeypatch.setenv("PROVIDER_OVERRIDE_S3", override_value)
+        monkeypatch.setenv("PROVIDER_OVERRIDE_LAMBDA", override_value)
+        provider_config.load_from_environment()
+        assert provider_config.get_provider("s3") == default_value
+        assert provider_config.get_provider("lambda") == default_value
+
     def test_bulk_set_if_not_exists(self):
         default_value = "default_value"
         custom_value = "custom_value"

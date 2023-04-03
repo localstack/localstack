@@ -240,6 +240,38 @@ class TestEvents:
             events_client, sqs_client, pattern=TEST_EVENT_PATTERN, entries_asserts=[(entries, True)]
         )
 
+    def test_put_events_with_values_in_array(self, events_client, sqs_client):
+        pattern = {"detail": {"event": {"data": {"type": ["1", "2"]}}}}
+        entries1 = [
+            {
+                "Source": "test",
+                "DetailType": "test",
+                "Detail": json.dumps({"event": {"data": {"type": ["3", "1"]}}}),
+            }
+        ]
+        entries2 = [
+            {
+                "Source": "test",
+                "DetailType": "test",
+                "Detail": json.dumps({"event": {"data": {"type": ["2"]}}}),
+            }
+        ]
+        entries3 = [
+            {
+                "Source": "test",
+                "DetailType": "test",
+                "Detail": json.dumps({"event": {"data": {"type": ["3"]}}}),
+            }
+        ]
+        entries_asserts = [(entries1, True), (entries2, True), (entries3, False)]
+        self._put_events_with_filter_to_sqs(
+            events_client,
+            sqs_client,
+            pattern=pattern,
+            entries_asserts=entries_asserts,
+            input_path="$.detail",
+        )
+
     @pytest.mark.aws_validated
     def test_put_events_with_nested_event_pattern(self, events_client, sqs_client):
         pattern = {"detail": {"event": {"data": {"type": ["1"]}}}}
@@ -464,11 +496,16 @@ class TestEvents:
 
         events_client.create_event_bus(Name=bus_name_1)
         resp = events_client.create_event_bus(Name=bus_name_2)
-        events_client.put_rule(
-            Name=rule_name,
-            EventBusName=bus_name_1,
-            EventPattern=json.dumps(TEST_EVENT_PATTERN),
-        )
+
+        for bus_name in (
+            bus_name_1,
+            bus_name_2,
+        ):
+            events_client.put_rule(
+                Name=rule_name,
+                EventBusName=bus_name,
+                EventPattern=json.dumps(TEST_EVENT_PATTERN),
+            )
 
         events_client.put_targets(
             Rule=rule_name,
@@ -1249,7 +1286,6 @@ class TestEvents:
         # put target
         events_client.put_targets(
             Rule=rule_name,
-            EventBusName=TEST_EVENT_BUS_NAME,
             Targets=[{"Id": target_id, "Arn": queue_arn, "InputPath": "$.detail"}],
         )
 

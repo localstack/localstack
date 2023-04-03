@@ -36,19 +36,33 @@ def parse_config_file(file_or_str: str, single_section: bool = True) -> Dict:
     return result
 
 
-def cache_dir() -> Path:
+def get_user_cache_dir() -> Path:
+    """
+    Returns the path of the user's cache dir (e.g., ~/.cache on Linux, or ~/Library/Caches on Mac).
+
+    :return: a Path pointing to the platform-specific cache dir of the user
+    """
     from localstack.utils.platform import is_linux, is_mac_os, is_windows
 
     if is_windows():
-        return Path(os.path.expandvars(r"%LOCALAPPDATA%\cache\localstack"))
+        return Path(os.path.expandvars(r"%LOCALAPPDATA%\cache"))
     if is_mac_os():
-        return Path.home() / "Library" / "Caches" / "localstack"
+        return Path.home() / "Library" / "Caches"
     if is_linux():
         string_path = os.environ.get("XDG_CACHE_HOME")
         if string_path and os.path.isabs(string_path):
             return Path(string_path)
     # Use the common place to store caches in Linux as a default
-    return Path.home() / ".cache" / "localstack"
+    return Path.home() / ".cache"
+
+
+def cache_dir() -> Path:
+    """
+    Returns the cache dir for localstack (e.g., ~/.cache/localstack)
+
+    :return: a Path pointing to the localstack cache dir
+    """
+    return get_user_cache_dir() / "localstack"
 
 
 def save_file(file, content, append=False, permissions=None):

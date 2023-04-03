@@ -1,0 +1,905 @@
+{
+  "tests/integration/apigateway/test_apigateway_lambda.py::test_lambda_aws_proxy_integration": {
+    "recorded-date": "31-03-2023, 10:49:13",
+    "recorded-content": {
+      "invocation-payload-without-trailing-slash": {
+        "body": null,
+        "headers": {
+          "Accept": "*/*",
+          "Accept-Encoding": "gzip, deflate",
+          "CloudFront-Forwarded-Proto": "https",
+          "CloudFront-Is-Desktop-Viewer": "true",
+          "CloudFront-Is-Mobile-Viewer": "false",
+          "CloudFront-Is-SmartTV-Viewer": "false",
+          "CloudFront-Is-Tablet-Viewer": "false",
+          "CloudFront-Viewer-ASN": "<cloudfront-asn:1>",
+          "CloudFront-Viewer-Country": "<cloudfront-country:1>",
+          "Host": "5muvrp9gkh.execute-api.<region>.amazonaws.com",
+          "User-Agent": "python-requests/testing",
+          "Via": "<via:1>",
+          "X-Amz-Cf-Id": "<cf-id:1>",
+          "X-Amzn-Trace-Id": "<trace-id:1>",
+          "X-Forwarded-For": "<source-ip:1>, <ip>",
+          "X-Forwarded-Port": "443",
+          "X-Forwarded-Proto": "https",
+          "tEsT-HEADeR": "aValUE"
+        },
+        "httpMethod": "GET",
+        "isBase64Encoded": false,
+        "multiValueHeaders": {
+          "Accept": [
+            "*/*"
+          ],
+          "Accept-Encoding": [
+            "gzip, deflate"
+          ],
+          "CloudFront-Forwarded-Proto": [
+            "https"
+          ],
+          "CloudFront-Is-Desktop-Viewer": [
+            "true"
+          ],
+          "CloudFront-Is-Mobile-Viewer": [
+            "false"
+          ],
+          "CloudFront-Is-SmartTV-Viewer": [
+            "false"
+          ],
+          "CloudFront-Is-Tablet-Viewer": [
+            "false"
+          ],
+          "CloudFront-Viewer-ASN": [
+            "<cloudfront-asn:1>"
+          ],
+          "CloudFront-Viewer-Country": [
+            "<cloudfront-country:1>"
+          ],
+          "Host": [
+            "5muvrp9gkh.execute-api.<region>.amazonaws.com"
+          ],
+          "User-Agent": [
+            "python-requests/testing"
+          ],
+          "Via": [
+            "<via:1>"
+          ],
+          "X-Amz-Cf-Id": [
+            "<cf-id:1>"
+          ],
+          "X-Amzn-Trace-Id": [
+            "<trace-id:1>"
+          ],
+          "X-Forwarded-For": [
+            "<source-ip:1>, <ip>"
+          ],
+          "X-Forwarded-Port": [
+            "443"
+          ],
+          "X-Forwarded-Proto": [
+            "https"
+          ],
+          "tEsT-HEADeR": [
+            "aValUE"
+          ]
+        },
+        "multiValueQueryStringParameters": null,
+        "path": "/test-path",
+        "pathParameters": {
+          "proxy": "test-path"
+        },
+        "queryStringParameters": null,
+        "requestContext": {
+          "accountId": "111111111111",
+          "apiId": "5muvrp9gkh",
+          "domainName": "5muvrp9gkh.execute-api.<region>.amazonaws.com",
+          "domainPrefix": "5muvrp9gkh",
+          "extendedRequestId": "<extended-request-id:1>",
+          "httpMethod": "GET",
+          "identity": {
+            "accessKey": null,
+            "accountId": null,
+            "caller": null,
+            "cognitoAuthenticationProvider": null,
+            "cognitoAuthenticationType": null,
+            "cognitoIdentityId": null,
+            "cognitoIdentityPoolId": null,
+            "principalOrgId": null,
+            "sourceIp": "<source-ip:1>",
+            "user": null,
+            "userAgent": "python-requests/testing",
+            "userArn": null
+          },
+          "path": "/test/test-path",
+          "protocol": "HTTP/1.1",
+          "requestId": "<uuid:1>",
+          "requestTime": "<request-time>",
+          "requestTimeEpoch": "<request-time-epoch>",
+          "resourceId": "<resource-id:1>",
+          "resourcePath": "/{proxy+}",
+          "stage": "test"
+        },
+        "resource": "/{proxy+}",
+        "stageVariables": null
+      },
+      "invocation-payload-with-trailing-slash": {
+        "body": null,
+        "headers": {
+          "Accept": "*/*",
+          "Accept-Encoding": "gzip, deflate",
+          "CloudFront-Forwarded-Proto": "https",
+          "CloudFront-Is-Desktop-Viewer": "true",
+          "CloudFront-Is-Mobile-Viewer": "false",
+          "CloudFront-Is-SmartTV-Viewer": "false",
+          "CloudFront-Is-Tablet-Viewer": "false",
+          "CloudFront-Viewer-ASN": "<cloudfront-asn:1>",
+          "CloudFront-Viewer-Country": "<cloudfront-country:1>",
+          "Host": "5muvrp9gkh.execute-api.<region>.amazonaws.com",
+          "User-Agent": "python-requests/testing",
+          "Via": "<via:2>",
+          "X-Amz-Cf-Id": "<cf-id:2>",
+          "X-Amzn-Trace-Id": "<trace-id:2>",
+          "X-Forwarded-For": "<source-ip:1>, <ip>",
+          "X-Forwarded-Port": "443",
+          "X-Forwarded-Proto": "https",
+          "tEsT-HEADeR": "aValUE"
+        },
+        "httpMethod": "GET",
+        "isBase64Encoded": false,
+        "multiValueHeaders": {
+          "Accept": [
+            "*/*"
+          ],
+          "Accept-Encoding": [
+            "gzip, deflate"
+          ],
+          "CloudFront-Forwarded-Proto": [
+            "https"
+          ],
+          "CloudFront-Is-Desktop-Viewer": [
+            "true"
+          ],
+          "CloudFront-Is-Mobile-Viewer": [
+            "false"
+          ],
+          "CloudFront-Is-SmartTV-Viewer": [
+            "false"
+          ],
+          "CloudFront-Is-Tablet-Viewer": [
+            "false"
+          ],
+          "CloudFront-Viewer-ASN": [
+            "<cloudfront-asn:1>"
+          ],
+          "CloudFront-Viewer-Country": [
+            "<cloudfront-country:1>"
+          ],
+          "Host": [
+            "5muvrp9gkh.execute-api.<region>.amazonaws.com"
+          ],
+          "User-Agent": [
+            "python-requests/testing"
+          ],
+          "Via": [
+            "<via:2>"
+          ],
+          "X-Amz-Cf-Id": [
+            "<cf-id:2>"
+          ],
+          "X-Amzn-Trace-Id": [
+            "<trace-id:2>"
+          ],
+          "X-Forwarded-For": [
+            "<source-ip:1>, <ip>"
+          ],
+          "X-Forwarded-Port": [
+            "443"
+          ],
+          "X-Forwarded-Proto": [
+            "https"
+          ],
+          "tEsT-HEADeR": [
+            "aValUE"
+          ]
+        },
+        "multiValueQueryStringParameters": null,
+        "path": "/test-path/",
+        "pathParameters": {
+          "proxy": "test-path"
+        },
+        "queryStringParameters": null,
+        "requestContext": {
+          "accountId": "111111111111",
+          "apiId": "5muvrp9gkh",
+          "domainName": "5muvrp9gkh.execute-api.<region>.amazonaws.com",
+          "domainPrefix": "5muvrp9gkh",
+          "extendedRequestId": "<extended-request-id:2>",
+          "httpMethod": "GET",
+          "identity": {
+            "accessKey": null,
+            "accountId": null,
+            "caller": null,
+            "cognitoAuthenticationProvider": null,
+            "cognitoAuthenticationType": null,
+            "cognitoIdentityId": null,
+            "cognitoIdentityPoolId": null,
+            "principalOrgId": null,
+            "sourceIp": "<source-ip:1>",
+            "user": null,
+            "userAgent": "python-requests/testing",
+            "userArn": null
+          },
+          "path": "/test/test-path/",
+          "protocol": "HTTP/1.1",
+          "requestId": "<uuid:2>",
+          "requestTime": "<request-time>",
+          "requestTimeEpoch": "<request-time-epoch>",
+          "resourceId": "<resource-id:1>",
+          "resourcePath": "/{proxy+}",
+          "stage": "test"
+        },
+        "resource": "/{proxy+}",
+        "stageVariables": null
+      },
+      "invocation-payload-without-trailing-slash-and-query-params": {
+        "body": null,
+        "headers": {
+          "Accept": "*/*",
+          "Accept-Encoding": "gzip, deflate",
+          "CloudFront-Forwarded-Proto": "https",
+          "CloudFront-Is-Desktop-Viewer": "true",
+          "CloudFront-Is-Mobile-Viewer": "false",
+          "CloudFront-Is-SmartTV-Viewer": "false",
+          "CloudFront-Is-Tablet-Viewer": "false",
+          "CloudFront-Viewer-ASN": "<cloudfront-asn:1>",
+          "CloudFront-Viewer-Country": "<cloudfront-country:1>",
+          "Host": "5muvrp9gkh.execute-api.<region>.amazonaws.com",
+          "User-Agent": "python-requests/testing",
+          "Via": "<via:3>",
+          "X-Amz-Cf-Id": "<cf-id:3>",
+          "X-Amzn-Trace-Id": "<trace-id:3>",
+          "X-Forwarded-For": "<source-ip:1>, <ip>",
+          "X-Forwarded-Port": "443",
+          "X-Forwarded-Proto": "https",
+          "tEsT-HEADeR": "aValUE"
+        },
+        "httpMethod": "GET",
+        "isBase64Encoded": false,
+        "multiValueHeaders": {
+          "Accept": [
+            "*/*"
+          ],
+          "Accept-Encoding": [
+            "gzip, deflate"
+          ],
+          "CloudFront-Forwarded-Proto": [
+            "https"
+          ],
+          "CloudFront-Is-Desktop-Viewer": [
+            "true"
+          ],
+          "CloudFront-Is-Mobile-Viewer": [
+            "false"
+          ],
+          "CloudFront-Is-SmartTV-Viewer": [
+            "false"
+          ],
+          "CloudFront-Is-Tablet-Viewer": [
+            "false"
+          ],
+          "CloudFront-Viewer-ASN": [
+            "<cloudfront-asn:1>"
+          ],
+          "CloudFront-Viewer-Country": [
+            "<cloudfront-country:1>"
+          ],
+          "Host": [
+            "5muvrp9gkh.execute-api.<region>.amazonaws.com"
+          ],
+          "User-Agent": [
+            "python-requests/testing"
+          ],
+          "Via": [
+            "<via:3>"
+          ],
+          "X-Amz-Cf-Id": [
+            "<cf-id:3>"
+          ],
+          "X-Amzn-Trace-Id": [
+            "<trace-id:3>"
+          ],
+          "X-Forwarded-For": [
+            "<source-ip:1>, <ip>"
+          ],
+          "X-Forwarded-Port": [
+            "443"
+          ],
+          "X-Forwarded-Proto": [
+            "https"
+          ],
+          "tEsT-HEADeR": [
+            "aValUE"
+          ]
+        },
+        "multiValueQueryStringParameters": {
+          "urlparam": [
+            "test"
+          ]
+        },
+        "path": "/test-path",
+        "pathParameters": {
+          "proxy": "test-path"
+        },
+        "queryStringParameters": {
+          "urlparam": "test"
+        },
+        "requestContext": {
+          "accountId": "111111111111",
+          "apiId": "5muvrp9gkh",
+          "domainName": "5muvrp9gkh.execute-api.<region>.amazonaws.com",
+          "domainPrefix": "5muvrp9gkh",
+          "extendedRequestId": "<extended-request-id:3>",
+          "httpMethod": "GET",
+          "identity": {
+            "accessKey": null,
+            "accountId": null,
+            "caller": null,
+            "cognitoAuthenticationProvider": null,
+            "cognitoAuthenticationType": null,
+            "cognitoIdentityId": null,
+            "cognitoIdentityPoolId": null,
+            "principalOrgId": null,
+            "sourceIp": "<source-ip:1>",
+            "user": null,
+            "userAgent": "python-requests/testing",
+            "userArn": null
+          },
+          "path": "/test/test-path",
+          "protocol": "HTTP/1.1",
+          "requestId": "<uuid:3>",
+          "requestTime": "<request-time>",
+          "requestTimeEpoch": "<request-time-epoch>",
+          "resourceId": "<resource-id:1>",
+          "resourcePath": "/{proxy+}",
+          "stage": "test"
+        },
+        "resource": "/{proxy+}",
+        "stageVariables": null
+      },
+      "invocation-payload-with-trailing-slash-and-query-params": {
+        "body": null,
+        "headers": {
+          "Accept": "*/*",
+          "Accept-Encoding": "gzip, deflate",
+          "CloudFront-Forwarded-Proto": "https",
+          "CloudFront-Is-Desktop-Viewer": "true",
+          "CloudFront-Is-Mobile-Viewer": "false",
+          "CloudFront-Is-SmartTV-Viewer": "false",
+          "CloudFront-Is-Tablet-Viewer": "false",
+          "CloudFront-Viewer-ASN": "<cloudfront-asn:1>",
+          "CloudFront-Viewer-Country": "<cloudfront-country:1>",
+          "Host": "5muvrp9gkh.execute-api.<region>.amazonaws.com",
+          "User-Agent": "python-requests/testing",
+          "Via": "<via:4>",
+          "X-Amz-Cf-Id": "<cf-id:4>",
+          "X-Amzn-Trace-Id": "<trace-id:4>",
+          "X-Forwarded-For": "<source-ip:1>, <ip>",
+          "X-Forwarded-Port": "443",
+          "X-Forwarded-Proto": "https",
+          "tEsT-HEADeR": "aValUE"
+        },
+        "httpMethod": "GET",
+        "isBase64Encoded": false,
+        "multiValueHeaders": {
+          "Accept": [
+            "*/*"
+          ],
+          "Accept-Encoding": [
+            "gzip, deflate"
+          ],
+          "CloudFront-Forwarded-Proto": [
+            "https"
+          ],
+          "CloudFront-Is-Desktop-Viewer": [
+            "true"
+          ],
+          "CloudFront-Is-Mobile-Viewer": [
+            "false"
+          ],
+          "CloudFront-Is-SmartTV-Viewer": [
+            "false"
+          ],
+          "CloudFront-Is-Tablet-Viewer": [
+            "false"
+          ],
+          "CloudFront-Viewer-ASN": [
+            "<cloudfront-asn:1>"
+          ],
+          "CloudFront-Viewer-Country": [
+            "<cloudfront-country:1>"
+          ],
+          "Host": [
+            "5muvrp9gkh.execute-api.<region>.amazonaws.com"
+          ],
+          "User-Agent": [
+            "python-requests/testing"
+          ],
+          "Via": [
+            "<via:4>"
+          ],
+          "X-Amz-Cf-Id": [
+            "<cf-id:4>"
+          ],
+          "X-Amzn-Trace-Id": [
+            "<trace-id:4>"
+          ],
+          "X-Forwarded-For": [
+            "<source-ip:1>, <ip>"
+          ],
+          "X-Forwarded-Port": [
+            "443"
+          ],
+          "X-Forwarded-Proto": [
+            "https"
+          ],
+          "tEsT-HEADeR": [
+            "aValUE"
+          ]
+        },
+        "multiValueQueryStringParameters": {
+          "urlparam": [
+            "test"
+          ]
+        },
+        "path": "/test-path/",
+        "pathParameters": {
+          "proxy": "test-path"
+        },
+        "queryStringParameters": {
+          "urlparam": "test"
+        },
+        "requestContext": {
+          "accountId": "111111111111",
+          "apiId": "5muvrp9gkh",
+          "domainName": "5muvrp9gkh.execute-api.<region>.amazonaws.com",
+          "domainPrefix": "5muvrp9gkh",
+          "extendedRequestId": "<extended-request-id:4>",
+          "httpMethod": "GET",
+          "identity": {
+            "accessKey": null,
+            "accountId": null,
+            "caller": null,
+            "cognitoAuthenticationProvider": null,
+            "cognitoAuthenticationType": null,
+            "cognitoIdentityId": null,
+            "cognitoIdentityPoolId": null,
+            "principalOrgId": null,
+            "sourceIp": "<source-ip:1>",
+            "user": null,
+            "userAgent": "python-requests/testing",
+            "userArn": null
+          },
+          "path": "/test/test-path/",
+          "protocol": "HTTP/1.1",
+          "requestId": "<uuid:4>",
+          "requestTime": "<request-time>",
+          "requestTimeEpoch": "<request-time-epoch>",
+          "resourceId": "<resource-id:1>",
+          "resourcePath": "/{proxy+}",
+          "stage": "test"
+        },
+        "resource": "/{proxy+}",
+        "stageVariables": null
+      },
+      "invocation-payload-with-path-encoded-email": {
+        "body": null,
+        "headers": {
+          "Accept": "*/*",
+          "Accept-Encoding": "gzip, deflate",
+          "CloudFront-Forwarded-Proto": "https",
+          "CloudFront-Is-Desktop-Viewer": "true",
+          "CloudFront-Is-Mobile-Viewer": "false",
+          "CloudFront-Is-SmartTV-Viewer": "false",
+          "CloudFront-Is-Tablet-Viewer": "false",
+          "CloudFront-Viewer-ASN": "<cloudfront-asn:1>",
+          "CloudFront-Viewer-Country": "<cloudfront-country:1>",
+          "Host": "5muvrp9gkh.execute-api.<region>.amazonaws.com",
+          "User-Agent": "python-requests/testing",
+          "Via": "<via:5>",
+          "X-Amz-Cf-Id": "<cf-id:5>",
+          "X-Amzn-Trace-Id": "<trace-id:5>",
+          "X-Forwarded-For": "<source-ip:1>, <ip>",
+          "X-Forwarded-Port": "443",
+          "X-Forwarded-Proto": "https",
+          "tEsT-HEADeR": "aValUE"
+        },
+        "httpMethod": "GET",
+        "isBase64Encoded": false,
+        "multiValueHeaders": {
+          "Accept": [
+            "*/*"
+          ],
+          "Accept-Encoding": [
+            "gzip, deflate"
+          ],
+          "CloudFront-Forwarded-Proto": [
+            "https"
+          ],
+          "CloudFront-Is-Desktop-Viewer": [
+            "true"
+          ],
+          "CloudFront-Is-Mobile-Viewer": [
+            "false"
+          ],
+          "CloudFront-Is-SmartTV-Viewer": [
+            "false"
+          ],
+          "CloudFront-Is-Tablet-Viewer": [
+            "false"
+          ],
+          "CloudFront-Viewer-ASN": [
+            "<cloudfront-asn:1>"
+          ],
+          "CloudFront-Viewer-Country": [
+            "<cloudfront-country:1>"
+          ],
+          "Host": [
+            "5muvrp9gkh.execute-api.<region>.amazonaws.com"
+          ],
+          "User-Agent": [
+            "python-requests/testing"
+          ],
+          "Via": [
+            "<via:5>"
+          ],
+          "X-Amz-Cf-Id": [
+            "<cf-id:5>"
+          ],
+          "X-Amzn-Trace-Id": [
+            "<trace-id:5>"
+          ],
+          "X-Forwarded-For": [
+            "<source-ip:1>, <ip>"
+          ],
+          "X-Forwarded-Port": [
+            "443"
+          ],
+          "X-Forwarded-Proto": [
+            "https"
+          ],
+          "tEsT-HEADeR": [
+            "aValUE"
+          ]
+        },
+        "multiValueQueryStringParameters": null,
+        "path": "/test-path/api/user/test%2Balias@gmail.com/plus/test+alias@gmail.com",
+        "pathParameters": {
+          "proxy": "test-path/api/user/test%2Balias@gmail.com/plus/test+alias@gmail.com"
+        },
+        "queryStringParameters": null,
+        "requestContext": {
+          "accountId": "111111111111",
+          "apiId": "5muvrp9gkh",
+          "domainName": "5muvrp9gkh.execute-api.<region>.amazonaws.com",
+          "domainPrefix": "5muvrp9gkh",
+          "extendedRequestId": "<extended-request-id:5>",
+          "httpMethod": "GET",
+          "identity": {
+            "accessKey": null,
+            "accountId": null,
+            "caller": null,
+            "cognitoAuthenticationProvider": null,
+            "cognitoAuthenticationType": null,
+            "cognitoIdentityId": null,
+            "cognitoIdentityPoolId": null,
+            "principalOrgId": null,
+            "sourceIp": "<source-ip:1>",
+            "user": null,
+            "userAgent": "python-requests/testing",
+            "userArn": null
+          },
+          "path": "/test/test-path/api/user/test%2Balias@gmail.com/plus/test+alias@gmail.com",
+          "protocol": "HTTP/1.1",
+          "requestId": "<uuid:5>",
+          "requestTime": "<request-time>",
+          "requestTimeEpoch": "<request-time-epoch>",
+          "resourceId": "<resource-id:1>",
+          "resourcePath": "/{proxy+}",
+          "stage": "test"
+        },
+        "resource": "/{proxy+}",
+        "stageVariables": null
+      },
+      "invocation-payload-with-params-encoding": {
+        "body": null,
+        "headers": {
+          "Accept": "*/*",
+          "Accept-Encoding": "gzip, deflate",
+          "CloudFront-Forwarded-Proto": "https",
+          "CloudFront-Is-Desktop-Viewer": "true",
+          "CloudFront-Is-Mobile-Viewer": "false",
+          "CloudFront-Is-SmartTV-Viewer": "false",
+          "CloudFront-Is-Tablet-Viewer": "false",
+          "CloudFront-Viewer-ASN": "<cloudfront-asn:1>",
+          "CloudFront-Viewer-Country": "<cloudfront-country:1>",
+          "Host": "5muvrp9gkh.execute-api.<region>.amazonaws.com",
+          "User-Agent": "python-requests/testing",
+          "Via": "<via:6>",
+          "X-Amz-Cf-Id": "<cf-id:6>",
+          "X-Amzn-Trace-Id": "<trace-id:6>",
+          "X-Forwarded-For": "<source-ip:1>, <ip>",
+          "X-Forwarded-Port": "443",
+          "X-Forwarded-Proto": "https",
+          "tEsT-HEADeR": "aValUE"
+        },
+        "httpMethod": "GET",
+        "isBase64Encoded": false,
+        "multiValueHeaders": {
+          "Accept": [
+            "*/*"
+          ],
+          "Accept-Encoding": [
+            "gzip, deflate"
+          ],
+          "CloudFront-Forwarded-Proto": [
+            "https"
+          ],
+          "CloudFront-Is-Desktop-Viewer": [
+            "true"
+          ],
+          "CloudFront-Is-Mobile-Viewer": [
+            "false"
+          ],
+          "CloudFront-Is-SmartTV-Viewer": [
+            "false"
+          ],
+          "CloudFront-Is-Tablet-Viewer": [
+            "false"
+          ],
+          "CloudFront-Viewer-ASN": [
+            "<cloudfront-asn:1>"
+          ],
+          "CloudFront-Viewer-Country": [
+            "<cloudfront-country:1>"
+          ],
+          "Host": [
+            "5muvrp9gkh.execute-api.<region>.amazonaws.com"
+          ],
+          "User-Agent": [
+            "python-requests/testing"
+          ],
+          "Via": [
+            "<via:6>"
+          ],
+          "X-Amz-Cf-Id": [
+            "<cf-id:6>"
+          ],
+          "X-Amzn-Trace-Id": [
+            "<trace-id:6>"
+          ],
+          "X-Forwarded-For": [
+            "<source-ip:1>, <ip>"
+          ],
+          "X-Forwarded-Port": [
+            "443"
+          ],
+          "X-Forwarded-Proto": [
+            "https"
+          ],
+          "tEsT-HEADeR": [
+            "aValUE"
+          ]
+        },
+        "multiValueQueryStringParameters": {
+          "dateTimeOffset": [
+            "2023-06-12T18:05:10.123456 00:00"
+          ],
+          "email": [
+            "test+alias@gmail.com"
+          ],
+          "plus": [
+            "test alias@gmail.com"
+          ],
+          "url": [
+            "https://www.google.com/"
+          ],
+          "whitespace": [
+            "foo bar"
+          ],
+          "zhash": [
+            "abort/"
+          ]
+        },
+        "path": "/test-path/api",
+        "pathParameters": {
+          "proxy": "test-path/api"
+        },
+        "queryStringParameters": {
+          "dateTimeOffset": "2023-06-12T18:05:10.123456 00:00",
+          "email": "test+alias@gmail.com",
+          "plus": "test alias@gmail.com",
+          "url": "https://www.google.com/",
+          "whitespace": "foo bar",
+          "zhash": "abort/"
+        },
+        "requestContext": {
+          "accountId": "111111111111",
+          "apiId": "5muvrp9gkh",
+          "domainName": "5muvrp9gkh.execute-api.<region>.amazonaws.com",
+          "domainPrefix": "5muvrp9gkh",
+          "extendedRequestId": "<extended-request-id:6>",
+          "httpMethod": "GET",
+          "identity": {
+            "accessKey": null,
+            "accountId": null,
+            "caller": null,
+            "cognitoAuthenticationProvider": null,
+            "cognitoAuthenticationType": null,
+            "cognitoIdentityId": null,
+            "cognitoIdentityPoolId": null,
+            "principalOrgId": null,
+            "sourceIp": "<source-ip:1>",
+            "user": null,
+            "userAgent": "python-requests/testing",
+            "userArn": null
+          },
+          "path": "/test/test-path/api",
+          "protocol": "HTTP/1.1",
+          "requestId": "<uuid:6>",
+          "requestTime": "<request-time>",
+          "requestTimeEpoch": "<request-time-epoch>",
+          "resourceId": "<resource-id:1>",
+          "resourcePath": "/{proxy+}",
+          "stage": "test"
+        },
+        "resource": "/{proxy+}",
+        "stageVariables": null
+      },
+      "invocation-payload-with-params-encoding-multi": {
+        "body": {
+          "message": "hello world"
+        },
+        "headers": {
+          "Accept": "*/*",
+          "Accept-Encoding": "gzip, deflate",
+          "Authorization": "Bearer token123;API key456",
+          "CloudFront-Forwarded-Proto": "https",
+          "CloudFront-Is-Desktop-Viewer": "true",
+          "CloudFront-Is-Mobile-Viewer": "false",
+          "CloudFront-Is-SmartTV-Viewer": "false",
+          "CloudFront-Is-Tablet-Viewer": "false",
+          "CloudFront-Viewer-ASN": "<cloudfront-asn:1>",
+          "CloudFront-Viewer-Country": "<cloudfront-country:1>",
+          "Content-Type": "application/json;charset=utf-8",
+          "Host": "5muvrp9gkh.execute-api.<region>.amazonaws.com",
+          "User-Agent": "python-requests/2.28.2",
+          "Via": "<via:7>",
+          "X-Amz-Cf-Id": "<cf-id:7>",
+          "X-Amzn-Trace-Id": "<trace-id:7>",
+          "X-Forwarded-For": "<source-ip:1>, <ip>",
+          "X-Forwarded-Port": "443",
+          "X-Forwarded-Proto": "https"
+        },
+        "httpMethod": "POST",
+        "isBase64Encoded": false,
+        "multiValueHeaders": {
+          "Accept": [
+            "*/*"
+          ],
+          "Accept-Encoding": [
+            "gzip, deflate"
+          ],
+          "Authorization": [
+            "Bearer token123;API key456"
+          ],
+          "CloudFront-Forwarded-Proto": [
+            "https"
+          ],
+          "CloudFront-Is-Desktop-Viewer": [
+            "true"
+          ],
+          "CloudFront-Is-Mobile-Viewer": [
+            "false"
+          ],
+          "CloudFront-Is-SmartTV-Viewer": [
+            "false"
+          ],
+          "CloudFront-Is-Tablet-Viewer": [
+            "false"
+          ],
+          "CloudFront-Viewer-ASN": [
+            "<cloudfront-asn:1>"
+          ],
+          "CloudFront-Viewer-Country": [
+            "<cloudfront-country:1>"
+          ],
+          "Content-Type": [
+            "application/json;charset=utf-8"
+          ],
+          "Host": [
+            "5muvrp9gkh.execute-api.<region>.amazonaws.com"
+          ],
+          "User-Agent": [
+            "python-requests/2.28.2"
+          ],
+          "Via": [
+            "<via:7>"
+          ],
+          "X-Amz-Cf-Id": [
+            "<cf-id:7>"
+          ],
+          "X-Amzn-Trace-Id": [
+            "<trace-id:7>"
+          ],
+          "X-Forwarded-For": [
+            "<source-ip:1>, <ip>"
+          ],
+          "X-Forwarded-Port": [
+            "443"
+          ],
+          "X-Forwarded-Proto": [
+            "https"
+          ]
+        },
+        "multiValueQueryStringParameters": {
+          "category": [
+            "electronics",
+            "books"
+          ],
+          "price": [
+            "10",
+            "20",
+            "30"
+          ]
+        },
+        "path": "/test-path",
+        "pathParameters": {
+          "proxy": "test-path"
+        },
+        "queryStringParameters": {
+          "category": "books",
+          "price": "30"
+        },
+        "requestContext": {
+          "accountId": "111111111111",
+          "apiId": "5muvrp9gkh",
+          "domainName": "5muvrp9gkh.execute-api.<region>.amazonaws.com",
+          "domainPrefix": "5muvrp9gkh",
+          "extendedRequestId": "<extended-request-id:7>",
+          "httpMethod": "POST",
+          "identity": {
+            "accessKey": null,
+            "accountId": null,
+            "caller": null,
+            "cognitoAuthenticationProvider": null,
+            "cognitoAuthenticationType": null,
+            "cognitoIdentityId": null,
+            "cognitoIdentityPoolId": null,
+            "principalOrgId": null,
+            "sourceIp": "<source-ip:1>",
+            "user": null,
+            "userAgent": "python-requests/2.28.2",
+            "userArn": null
+          },
+          "path": "/test/test-path",
+          "protocol": "HTTP/1.1",
+          "requestId": "<uuid:7>",
+          "requestTime": "<request-time>",
+          "requestTimeEpoch": "<request-time-epoch>",
+          "resourceId": "<resource-id:1>",
+          "resourcePath": "/{proxy+}",
+          "stage": "test"
+        },
+        "resource": "/{proxy+}",
+        "stageVariables": null
+      }
+    }
+  },
+  "tests/integration/apigateway/test_apigateway_lambda.py::test_lambda_aws_integration": {
+    "recorded-date": "31-03-2023, 10:49:36",
+    "recorded-content": {
+      "lambda-aws-integration": {
+        "message": "hello world"
+      }
+    }
+  }
+}

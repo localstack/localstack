@@ -177,6 +177,7 @@ from localstack.services.awslambda.invocation.lambda_service import (
     store_s3_bucket_archive,
 )
 from localstack.services.awslambda.invocation.models import LambdaStore
+from localstack.services.awslambda.invocation.runtime_executor import get_runtime_executor
 from localstack.services.awslambda.lambda_utils import validate_filters
 from localstack.services.awslambda.layerfetcher.layer_fetcher import LayerFetcher
 from localstack.services.awslambda.urlrouter import FunctionUrlRouter
@@ -262,6 +263,7 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
 
     def on_after_init(self):
         self.router.register_routes()
+        get_runtime_executor().validate_environment()
 
     def on_before_stop(self) -> None:
         # TODO: should probably unregister routes?
@@ -383,7 +385,11 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
                 Type="User",
             )
         current_hash = current_latest_version.config.code.code_sha256
-        if code_sha256 and current_hash != code_sha256:
+        if (
+            code_sha256
+            and current_hash != code_sha256
+            and not current_latest_version.config.code.is_hot_reloading()
+        ):
             raise InvalidParameterValueException(
                 f"CodeSHA256 ({code_sha256}) is different from current CodeSHA256 in $LATEST ({current_hash}). Please try again with the CodeSHA256 in $LATEST.",
                 Type="User",

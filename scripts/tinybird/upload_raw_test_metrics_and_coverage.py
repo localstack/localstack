@@ -73,6 +73,7 @@ import csv
 import datetime
 import json
 import os
+from pathlib import Path
 
 import requests
 
@@ -151,7 +152,7 @@ def send_metadata_for_build(build_id: str, timestamp: str):
     send_data_to_tinybird(data_to_send, data_name=DATA_SOURCE_RAW_BUILDS)
 
 
-def send_metric_report(path: str, timestamp: str):
+def send_metric_report(metric_path: str, timestamp: str):
     """
 
     SCHEMA >
@@ -173,36 +174,41 @@ def send_metric_report(path: str, timestamp: str):
     count: int = 0
     build_id = os.environ.get("CIRCLE_WORKFLOW_ID", "")
     send_metadata_for_build(build_id, timestamp)
-    with open(path, "r") as csv_obj:
-        reader_obj = csv.DictReader(csv_obj)
-        data_to_remove = [field for field in reader_obj.fieldnames if field not in DATA_TO_KEEP]
-        for row in reader_obj:
-            count = count + 1
 
-            # add timestamp, build_id, ls_source
-            row["timestamp"] = timestamp
-            row["build_id"] = build_id
-            row["ls_source"] = "community"
+    pathlist = Path(metric_path).rglob("metric-report-raw-data-*.csv")
+    for path in pathlist:
+        print(f"checking {str(path)}")
+        with open(path, "r") as csv_obj:
+            reader_obj = csv.DictReader(csv_obj)
+            data_to_remove = [field for field in reader_obj.fieldnames if field not in DATA_TO_KEEP]
+            for row in reader_obj:
+                count = count + 1
 
-            # remove data we are currently not interested in
-            for field in data_to_remove:
-                row.pop(field, None)
+                # add timestamp, build_id, ls_source
+                row["timestamp"] = timestamp
+                row["build_id"] = build_id
+                row["ls_source"] = "community"
 
-            # convert boolean values
-            for convert in CONVERT_TO_BOOL:
-                row[convert] = convert_to_bool(row[convert])
+                # remove data we are currently not interested in
+                for field in data_to_remove:
+                    row.pop(field, None)
 
-            tmp.append(json.dumps(row))
-            if len(tmp) == 500:
-                # send data in batches
-                send_data_to_tinybird(tmp, data_name=DATA_SOURCE_RAW_TESTS)
-                tmp.clear()
+                # convert boolean values
+                for convert in CONVERT_TO_BOOL:
+                    row[convert] = convert_to_bool(row[convert])
+
+                tmp.append(json.dumps(row))
+                if len(tmp) == 500:
+                    # send data in batches
+                    send_data_to_tinybird(tmp, data_name=DATA_SOURCE_RAW_TESTS)
+                    tmp.clear()
 
         if tmp:
             # send last batch
             send_data_to_tinybird(tmp, data_name=DATA_SOURCE_RAW_TESTS)
+            tmp.clear()
 
-    print(f"---> processed {count} rows from community test coverage {path}")
+    print(f"---> processed {count} rows from community test coverage {metric_path}")
 
 
 def send_implemented_coverage(file: str, timestamp: str, type: str):
@@ -250,7 +256,7 @@ def send_implemented_coverage(file: str, timestamp: str, type: str):
 
 def main():
     token = os.environ.get("TINYBIRD_PARITY_ANALYTICS_TOKEN", "")
-    metric_report = os.environ.get("METRIC_REPORT_PATH", "")
+    metric_report_dir = os.environ.get("METRIC_REPORT_DIR_PATH", "")
     community_impl_coverage = os.environ.get("COMMUNITY_IMPL_COV_PATH", "")
 
     missing_info = (
@@ -260,9 +266,9 @@ def main():
         print(missing_info)
         print("missing TINYBIRD_PARITY_ANALYTICS_TOKEN")
         return
-    if not metric_report:
+    if not metric_report_dir:
         print(missing_info)
-        print("missing METRIC_REPORT_PATH")
+        print("missing METRIC_REPORT_DIR_PATH")
         return
     if not community_impl_coverage:
         print(missing_info)
@@ -280,7 +286,7 @@ def main():
     #     return
     # send_implemented_coverage(pro_impl_coverage, timestamp=timestamp, type="pro")
 
-    send_metric_report(metric_report, timestamp)
+    send_metric_report(metric_report_dir, timestamp)
     send_implemented_coverage(community_impl_coverage, timestamp=timestamp, type="community")
 
 

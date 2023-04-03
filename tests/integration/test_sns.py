@@ -1421,8 +1421,6 @@ class TestSNSProvider:
             "$.topic-attrs.Attributes.DeliveryPolicy",
             "$.topic-attrs.Attributes.EffectiveDeliveryPolicy",
             "$.topic-attrs.Attributes.Policy.Statement..Action",  # SNS:Receive is added by moto but not returned in AWS
-            "$..Messages..Attributes.SequenceNumber",
-            "$..Successful..SequenceNumber",  # not added, need to be managed by SNS, different from SQS received
         ]
     )
     @pytest.mark.parametrize("content_based_deduplication", [True, False])
@@ -1554,12 +1552,9 @@ class TestSNSProvider:
             "$.topic-attrs.Attributes.DeliveryPolicy",
             "$.topic-attrs.Attributes.EffectiveDeliveryPolicy",
             "$.topic-attrs.Attributes.Policy.Statement..Action",  # SNS:Receive is added by moto but not returned in AWS
-            "$..Messages..Attributes.SequenceNumber",
-            "$..Successful..SequenceNumber",  # not added, need to be managed by SNS, different from SQS received
         ]
     )
     @pytest.mark.parametrize("raw_message_delivery", [True, False])
-    @pytest.mark.xfail(reason="DLQ behaviour for FIFO topic does not work yet")
     def test_publish_fifo_batch_messages_to_dlq(
         self,
         sns_client,
@@ -1881,15 +1876,6 @@ class TestSNSProvider:
         assert len(subscriptions_by_topic["Subscriptions"]) == 0
 
     @pytest.mark.aws_validated
-    @pytest.mark.skip_snapshot_verify(
-        paths=[
-            "$..Messages..Body.SignatureVersion",  # TODO: apparently, messages are not signed in fifo topics
-            "$..Messages..Body.Signature",
-            "$..Messages..Body.SigningCertURL",
-            "$..Messages..Body.SequenceNumber",
-            "$..Messages..Attributes.SequenceNumber",
-        ]
-    )
     @pytest.mark.parametrize("content_based_deduplication", [True, False])
     def test_message_to_fifo_sqs(
         self,
@@ -3210,7 +3196,7 @@ class TestSNSProvider:
         # see https://aws.amazon.com/blogs/compute/introducing-payload-based-message-filtering-for-amazon-sns/
         nested_filter_policy = {
             "object": {
-                "key": [{"prefix": "auto-"}],
+                "key": [{"prefix": "auto-"}, "hardcodedvalue"],
                 "nested_key": [{"exists": False}],
             },
             "test": [{"exists": False}],
@@ -3242,19 +3228,25 @@ class TestSNSProvider:
         # assert there are no messages in the queue
         assert "Messages" not in response
 
-        # publish message that satisfies the filter policy, assert that message is received
-        message = {"object": {"key": "auto-test"}}
-        sns_client.publish(
-            TopicArn=topic_arn,
-            Message=json.dumps(message),
-        )
+        # publish messages that satisfies the filter policy, assert that messages are received
+        messages = [
+            {"object": {"key": "auto-test"}},
+            {"object": {"key": "hardcodedvalue"}},
+        ]
+        for i, message in enumerate(messages):
+            sns_client.publish(
+                TopicArn=topic_arn,
+                Message=json.dumps(message),
+            )
 
-        response = sqs_client.receive_message(
-            QueueUrl=queue_url, VisibilityTimeout=0, WaitTimeSeconds=2
-        )
-        snapshot.match("recv-passed-msg", response)
-        receipt_handle = response["Messages"][0]["ReceiptHandle"]
-        sqs_client.delete_message(QueueUrl=queue_url, ReceiptHandle=receipt_handle)
+            response = sqs_client.receive_message(
+                QueueUrl=queue_url,
+                VisibilityTimeout=0,
+                WaitTimeSeconds=5 if is_aws_cloud() else 2,
+            )
+            snapshot.match(f"recv-passed-msg-{i}", response)
+            receipt_handle = response["Messages"][0]["ReceiptHandle"]
+            sqs_client.delete_message(QueueUrl=queue_url, ReceiptHandle=receipt_handle)
 
         # publish messages that do not satisfy the filter policy, assert those messages are not received
         messages = [
@@ -3295,14 +3287,6 @@ class TestSNSProvider:
 
     @pytest.mark.aws_validated
     @pytest.mark.parametrize("raw_message_delivery", [True, False])
-    @pytest.mark.skip_snapshot_verify(
-        paths=[
-            "$..Messages..Body.SignatureVersion",  # TODO: apparently, messages are not signed in fifo topics
-            "$..Messages..Body.Signature",
-            "$..Messages..Body.SigningCertURL",
-            "$..Messages..Body.SequenceNumber",
-        ]
-    )
     def test_publish_to_fifo_topic_to_sqs_queue_no_content_dedup(
         self,
         sns_client,

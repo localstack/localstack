@@ -98,6 +98,39 @@ class TestHotReloading:
         assert response_dict["counter"] == 1
         assert response_dict["constant"] == "value2"
 
+    def test_hot_reloading_publish_version(
+        self,
+        create_lambda_function_aws,
+        lambda_client,
+        lambda_su_role,
+        cleanups,
+    ):
+        """
+        Test if publish version code sha256s are ignored when using hot-reload (cannot be matched anyways)
+        Serverless, for example, will hash the code before publishing on the client side, which can brick the publish
+        version operation
+        """
+
+        function_name = f"test-hot-reloading-{short_uid()}"
+        hot_reloading_bucket = config.BUCKET_MARKER_LOCAL
+        tmp_path = config.dirs.tmp
+        hot_reloading_dir_path = os.path.join(tmp_path, f"hot-reload-{short_uid()}")
+        mkdir(hot_reloading_dir_path)
+        cleanups.append(lambda: rm_rf(hot_reloading_dir_path))
+        function_content = load_file(HOT_RELOADING_NODEJS_HANDLER)
+        with open(os.path.join(hot_reloading_dir_path, "handler.mjs"), mode="wt") as f:
+            f.write(function_content)
+
+        mount_path = get_host_path_for_path_in_docker(hot_reloading_dir_path)
+        create_lambda_function_aws(
+            FunctionName=function_name,
+            Handler="handler.handler",
+            Code={"S3Bucket": hot_reloading_bucket, "S3Key": mount_path},
+            Role=lambda_su_role,
+            Runtime=Runtime.nodejs18_x,
+        )
+        lambda_client.publish_version(FunctionName=function_name, CodeSha256="zipfilehash")
+
 
 @pytest.mark.skipif(condition=is_old_provider(), reason="Focussing on the new provider")
 class TestDockerFlags:

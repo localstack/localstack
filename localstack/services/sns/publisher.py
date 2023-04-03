@@ -18,6 +18,7 @@ from localstack import config
 from localstack.aws.api.lambda_ import InvocationType
 from localstack.aws.api.sns import MessageAttributeMap
 from localstack.aws.api.sqs import MessageBodyAttributeMap
+from localstack.aws.connect import connect_to
 from localstack.config import external_service_url
 from localstack.services.sns import constants as sns_constants
 from localstack.services.sns.models import (
@@ -167,16 +168,15 @@ class LambdaTopicPublisher(TopicPublisher):
 
     def _publish(self, context: SnsPublishContext, subscriber: SnsSubscription):
         try:
-            lambda_client = aws_stack.connect_to_service(
-                "lambda", region_name=extract_region_from_arn(subscriber["Endpoint"])
+            region = extract_region_from_arn(subscriber["Endpoint"])
+            lambda_client = connect_to(region_name=region).awslambda.request_metadata(
+                source_arn=subscriber["TopicArn"], service_principal="sns"
             )
             event = self.prepare_message(context.message, subscriber)
             inv_result = lambda_client.invoke(
                 FunctionName=subscriber["Endpoint"],
                 Payload=to_bytes(event),
-                InvocationType=InvocationType.RequestResponse
-                if config.SYNCHRONOUS_SNS_EVENTS
-                else InvocationType.Event,  # DEPRECATED
+                InvocationType=InvocationType.Event,
             )
             status_code = inv_result.get("StatusCode")
             payload = inv_result.get("Payload")
@@ -256,8 +256,11 @@ class SqsTopicPublisher(TopicPublisher):
             return
         try:
             queue_url: str = sqs_queue_url_for_arn(subscriber["Endpoint"])
-            parsed_arn = parse_arn(subscriber["Endpoint"])
-            sqs_client = aws_stack.connect_to_service("sqs", region_name=parsed_arn["region"])
+
+            region = extract_region_from_arn(subscriber["Endpoint"])
+            sqs_client = connect_to(region_name=region).sqs.request_metadata(
+                source_arn=subscriber["TopicArn"], service_principal="sns"
+            )
             kwargs = {}
             if message_context.message_group_id:
                 kwargs["MessageGroupId"] = message_context.message_group_id
@@ -283,7 +286,7 @@ class SqsTopicPublisher(TopicPublisher):
             LOG.info("Unable to forward SNS message to SQS: %s %s", exc, traceback.format_exc())
             store_delivery_log(message_context, subscriber, success=False)
             sns_error_to_dead_letter_queue(
-                subscriber, message_body, str(exc), msg_attrs=sqs_message_attrs
+                subscriber, message_body, str(exc), MessageAttributes=sqs_message_attrs
             )
             if "NonExistentQueue" in str(exc):
                 LOG.debug("The SQS queue endpoint does not exist anymore")
@@ -361,8 +364,11 @@ class SqsBatchTopicPublisher(SqsTopicPublisher):
 
         try:
             queue_url = sqs_queue_url_for_arn(subscriber["Endpoint"])
-            parsed_arn = parse_arn(subscriber["Endpoint"])
-            sqs_client = aws_stack.connect_to_service("sqs", region_name=parsed_arn["region"])
+
+            region = extract_region_from_arn(subscriber["Endpoint"])
+            sqs_client = connect_to(region_name=region).sqs.request_metadata(
+                source_arn=subscriber["TopicArn"], service_principal="sns"
+            )
             response = sqs_client.send_message_batch(QueueUrl=queue_url, Entries=entries)
 
             for message_ctx in context.messages:
@@ -377,24 +383,43 @@ class SqsBatchTopicPublisher(SqsTopicPublisher):
                         failed_msg["Message"],
                     )
                     store_delivery_log(failure_data["context"], subscriber, success=False)
+                    kwargs = {}
+                    if msg_attrs := failure_data["entry"].get("MessageAttributes"):
+                        kwargs["MessageAttributes"] = msg_attrs
+
+                    if msg_group_id := failure_data["context"].get("MessageGroupId"):
+                        kwargs["MessageGroupId"] = msg_group_id
+
+                    if msg_dedup_id := failure_data["context"].get("MessageDeduplicationId"):
+                        kwargs["MessageDeduplicationId"] = msg_dedup_id
+
                     sns_error_to_dead_letter_queue(
                         sns_subscriber=subscriber,
                         message=failure_data["entry"]["MessageBody"],
                         error=failed_msg["Code"],
-                        msg_attrs=failure_data["entry"]["MessageAttributes"],
+                        **kwargs,
                     )
 
         except Exception as exc:
             LOG.info("Unable to forward SNS message to SQS: %s %s", exc, traceback.format_exc())
-            for msg_context in context.messages:
-                store_delivery_log(msg_context, subscriber, success=False)
-                msg_body = self.prepare_message(msg_context, subscriber)
+            for message_ctx in context.messages:
+                store_delivery_log(message_ctx, subscriber, success=False)
+                msg_body = self.prepare_message(message_ctx, subscriber)
                 sqs_message_attrs = self.create_sqs_message_attributes(
-                    subscriber, msg_context.message_attributes
+                    subscriber, message_ctx.message_attributes
                 )
+                kwargs = {"MessageAttributes": sqs_message_attrs}
+                if message_ctx.message_group_id:
+                    kwargs["MessageGroupId"] = message_ctx.message_group_id
+
+                if message_ctx.message_deduplication_id:
+                    kwargs["MessageDeduplicationId"] = message_ctx.message_deduplication_id
                 # TODO: fix passing FIFO attrs to DLQ (MsgGroupId and such)
                 sns_error_to_dead_letter_queue(
-                    subscriber, msg_body, str(exc), msg_attrs=sqs_message_attrs
+                    subscriber,
+                    msg_body,
+                    str(exc),
+                    **kwargs,
                 )
             if "NonExistentQueue" in str(exc):
                 LOG.debug("The SQS queue endpoint does not exist anymore")
@@ -773,13 +798,21 @@ def create_sns_message_body(message_context: SnsMessage, subscriber: SnsSubscrip
         "TopicArn": subscriber["TopicArn"],
         "Message": message_content,
         "Timestamp": timestamp_millis(),
-        "SignatureVersion": "1",
-        # TODO Add a more sophisticated solution with an actual signature
-        #  check KMS for providing real cert and how to serve them
-        # Hardcoded
-        "Signature": "EXAMPLEpH+..",
-        "SigningCertURL": "https://sns.us-east-1.amazonaws.com/SimpleNotificationService-0000000000000000000000.pem",
     }
+    # FIFO topics do not add the signature in the message
+    if not subscriber.get("TopicArn", "").endswith(".fifo"):
+        data.update(
+            {
+                "SignatureVersion": "1",
+                # TODO Add a more sophisticated solution with an actual signature
+                #  check KMS for providing real cert and how to serve them
+                # Hardcoded
+                "Signature": "EXAMPLEpH+..",
+                "SigningCertURL": "https://sns.us-east-1.amazonaws.com/SimpleNotificationService-0000000000000000000000.pem",
+            }
+        )
+    else:
+        data["SequenceNumber"] = message_context.sequencer_number
 
     if message_type == "Notification":
         unsubscribe_url = create_unsubscribe_url(external_url, subscriber["SubscriptionArn"])
@@ -826,6 +859,10 @@ def prepare_message_attributes(
 
 def is_raw_message_delivery(subscriber: SnsSubscription) -> bool:
     return subscriber.get("RawMessageDelivery") in ("true", True, "True")
+
+
+def is_fifo_topic(subscriber: SnsSubscription) -> bool:
+    return subscriber.get("TopicArn", "").endswith(".fifo")
 
 
 def store_delivery_log(
@@ -942,11 +979,13 @@ class SubscriptionFilter:
                     return False
             else:
                 # else, values represents the list of conditions of the filter policy
-                for condition in values:
-                    if not self._evaluate_condition(
+                if not any(
+                    self._evaluate_condition(
                         payload.get(field_name), condition, field_exists=field_name in payload
-                    ):
-                        return False
+                    )
+                    for condition in values
+                ):
+                    return False
 
         return True
 

@@ -1,5 +1,7 @@
 blank_issues_enabled: true
 contact_links:
+  - name: 💡 Feature request
+    url: https://discuss.localstack.cloud/
   - name: ❓ Question
     url: https://discuss.localstack.cloud
     about: Ask a question about LocalStack

@@ -1,3 +1,4 @@
+import datetime
 import logging
 import os
 from typing import IO, Dict, List
@@ -29,9 +30,9 @@ from localstack.aws.api.s3 import (
     Delete,
     DeleteObjectOutput,
     DeleteObjectRequest,
+    DeleteObjectsOutput,
     DeleteObjectTaggingOutput,
     DeleteObjectTaggingRequest,
-    DeleteResult,
     ETag,
     GetBucketAclOutput,
     GetBucketCorsOutput,
@@ -55,11 +56,14 @@ from localstack.aws.api.s3 import (
     InvalidBucketName,
     InvalidPartOrder,
     InvalidStorageClass,
-    ListBucketResult,
+    ListMultipartUploadsOutput,
+    ListMultipartUploadsRequest,
+    ListObjectsOutput,
     ListObjectsRequest,
     ListObjectsV2Output,
     ListObjectsV2Request,
     MissingSecurityHeader,
+    MultipartUpload,
     NoSuchBucket,
     NoSuchKey,
     NoSuchLifecycleConfiguration,
@@ -86,6 +90,7 @@ from localstack.aws.api.s3 import (
     RequestPayer,
     S3Api,
     SkipValidation,
+    StorageClass,
 )
 from localstack.aws.api.s3 import Type as GranteeType
 from localstack.aws.api.s3 import WebsiteConfiguration
@@ -282,8 +287,8 @@ class S3Provider(S3Api, ServiceLifecycleHook):
         self,
         context: RequestContext,
         request: ListObjectsRequest,
-    ) -> ListBucketResult:
-        response: ListBucketResult = call_moto(context)
+    ) -> ListObjectsOutput:
+        response: ListObjectsOutput = call_moto(context)
 
         if "Marker" not in response:
             response["Marker"] = request.get("Marker") or ""
@@ -303,7 +308,7 @@ class S3Provider(S3Api, ServiceLifecycleHook):
             bucket = get_bucket_from_moto(moto_backend, bucket=request["Bucket"])
             response["BucketRegion"] = bucket.region_name
 
-        return ListBucketResult(**response)
+        return response
 
     @handler("ListObjectsV2", expand=False)
     def list_objects_v2(
@@ -483,7 +488,7 @@ class S3Provider(S3Api, ServiceLifecycleHook):
         bypass_governance_retention: BypassGovernanceRetention = None,
         expected_bucket_owner: AccountId = None,
         checksum_algorithm: ChecksumAlgorithm = None,
-    ) -> DeleteResult:
+    ) -> DeleteObjectsOutput:
         # TODO: implement DeleteMarker response
         objects: List[ObjectIdentifier] = delete.get("Objects")
         deleted_objects = {}
@@ -500,7 +505,7 @@ class S3Provider(S3Api, ServiceLifecycleHook):
             )
 
             deleted_objects[key] = s3_notification_ctx
-        result: DeleteResult = call_moto(context)
+        result: DeleteObjectsOutput = call_moto(context)
         for deleted in result.get("Deleted"):
             if deleted_objects.get(deleted["Key"]):
                 self._notify(context, deleted_objects.get(deleted["Key"]))
@@ -557,11 +562,68 @@ class S3Provider(S3Api, ServiceLifecycleHook):
         self._notify(context)
         return response
 
+    @handler("ListMultipartUploads", expand=False)
+    def list_multipart_uploads(
+        self,
+        context: RequestContext,
+        request: ListMultipartUploadsRequest,
+    ) -> ListMultipartUploadsOutput:
+
+        # TODO: implement KeyMarker and UploadIdMarker (using sort)
+        # implement Delimiter and MaxUploads
+        # see https://docs.aws.amazon.com/AmazonS3/latest/API/API_ListMultipartUploads.html
+        bucket = request["Bucket"]
+        moto_backend = get_moto_s3_backend(context)
+        # getting the bucket from moto to raise an error if the bucket does not exist
+        get_bucket_from_moto(moto_backend=moto_backend, bucket=bucket)
+
+        multiparts = list(moto_backend.get_all_multiparts(bucket).values())
+        if (prefix := request.get("Prefix")) is not None:
+            multiparts = [upload for upload in multiparts if upload.key_name.startswith(prefix)]
+
+        # TODO: this is taken from moto template, hardcoded strings.
+        uploads = [
+            MultipartUpload(
+                Key=upload.key_name,
+                UploadId=upload.id,
+                Initiator={
+                    "ID": f"arn:aws:iam::{context.account_id}:user/user1-11111a31-17b5-4fb7-9df5-b111111f13de",
+                    "DisplayName": "user1-11111a31-17b5-4fb7-9df5-b111111f13de",
+                },
+                Owner={
+                    "ID": "75aa57f09aa0c8caeab4f8c24e99d10f8e7faeebf76c078efc7c6caea54ba06a",
+                    "DisplayName": "webfile",
+                },
+                StorageClass=StorageClass.STANDARD,  # hardcoded in moto
+                Initiated=datetime.datetime.now(),  # hardcoded in moto
+            )
+            for upload in multiparts
+        ]
+
+        response = ListMultipartUploadsOutput(
+            Bucket=request["Bucket"],
+            MaxUploads=request.get("MaxUploads") or 1000,
+            IsTruncated=False,
+            Uploads=uploads,
+            UploadIdMarker=request.get("UploadIdMarker") or "",
+            KeyMarker=request.get("KeyMarker") or "",
+        )
+
+        if "Delimiter" in request:
+            response["Delimiter"] = request["Delimiter"]
+
+        # TODO: add NextKeyMarker and NextUploadIdMarker to response once implemented
+
+        return response
+
     @handler("GetObjectTagging", expand=False)
     def get_object_tagging(
         self, context: RequestContext, request: GetObjectTaggingRequest
     ) -> GetObjectTaggingOutput:
         response: GetObjectTaggingOutput = call_moto(context)
+        # FIXME: because of an issue with the serializer, we cannot return the VersionId for now
+        # the specs give a GetObjectTaggingOutput but the real return tag is `Tagging` which already exists as a shape
+        # we can't add the VersionId for now
         if (
             "VersionId" in response
             and request["Bucket"] not in self.get_store().bucket_versioning_status

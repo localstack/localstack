@@ -2965,7 +2965,7 @@
     }
   },
   "tests/integration/test_sns.py::TestSNSProvider::test_filter_policy_on_message_body[True]": {
-    "recorded-date": "02-01-2023, 20:03:47",
+    "recorded-date": "31-03-2023, 16:57:29",
     "recorded-content": {
       "recv-init": {
         "ResponseMetadata": {
@@ -2973,7 +2973,7 @@
           "HTTPStatusCode": 200
         }
       },
-      "recv-passed-msg": {
+      "recv-passed-msg-0": {
         "Messages": [
           {
             "Body": {
@@ -2990,11 +2990,29 @@
           "HTTPHeaders": {},
           "HTTPStatusCode": 200
         }
+      },
+      "recv-passed-msg-1": {
+        "Messages": [
+          {
+            "Body": {
+              "object": {
+                "key": "hardcodedvalue"
+              }
+            },
+            "MD5OfBody": "<md5-hash>",
+            "MessageId": "<uuid:2>",
+            "ReceiptHandle": "<receipt-handle:2>"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
       }
     }
   },
   "tests/integration/test_sns.py::TestSNSProvider::test_filter_policy_on_message_body[False]": {
-    "recorded-date": "02-01-2023, 20:03:59",
+    "recorded-date": "31-03-2023, 16:57:42",
     "recorded-content": {
       "recv-init": {
         "ResponseMetadata": {
@@ -3002,7 +3020,7 @@
           "HTTPStatusCode": 200
         }
       },
-      "recv-passed-msg": {
+      "recv-passed-msg-0": {
         "Messages": [
           {
             "Body": {
@@ -3019,6 +3037,30 @@
             "MD5OfBody": "<md5-hash>",
             "MessageId": "<uuid:2>",
             "ReceiptHandle": "<receipt-handle:1>"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "recv-passed-msg-1": {
+        "Messages": [
+          {
+            "Body": {
+              "Type": "Notification",
+              "MessageId": "<uuid:3>",
+              "TopicArn": "arn:aws:sns:<region>:111111111111:<resource:1>",
+              "Message": "{\"object\": {\"key\": \"hardcodedvalue\"}}",
+              "Timestamp": "date",
+              "SignatureVersion": "1",
+              "Signature": "<signature>",
+              "SigningCertURL": "https://sns.<region>.amazonaws.com/SimpleNotificationService-<signing-cert-file:1>",
+              "UnsubscribeURL": "<unsubscribe-domain>/?Action=Unsubscribe&SubscriptionArn=arn:aws:sns:<region>:111111111111:<resource:1>:<resource:2>"
+            },
+            "MD5OfBody": "<md5-hash>",
+            "MessageId": "<uuid:4>",
+            "ReceiptHandle": "<receipt-handle:2>"
           }
         ],
         "ResponseMetadata": {
