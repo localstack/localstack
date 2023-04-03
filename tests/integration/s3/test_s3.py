@@ -41,7 +41,6 @@ from localstack.services.awslambda.lambda_utils import (
 )
 from localstack.services.s3 import constants as s3_constants
 from localstack.testing.aws.util import is_aws_cloud
-from localstack.testing.pytest.fixtures import _client
 from localstack.testing.snapshots.transformer_utility import TransformerUtility
 from localstack.utils import testutil
 from localstack.utils.aws import aws_stack
@@ -117,16 +116,6 @@ def is_asf_provider():
 @pytest.fixture(scope="function")
 def patch_s3_skip_signature_validation_false(monkeypatch):
     monkeypatch.setattr(config, "S3_SKIP_SIGNATURE_VALIDATION", False)
-
-
-@pytest.fixture(scope="class")
-def s3_client_for_region():
-    def _s3_client(
-        region_name: str = None,
-    ):
-        return _client("s3", region_name=region_name)
-
-    return _s3_client
 
 
 @pytest.fixture
@@ -1556,7 +1545,7 @@ class TestS3:
         self,
         s3_client,
         s3_create_bucket,
-        s3_client_for_region,
+        aws_client_factory,
         s3_create_bucket_with_client,
         snapshot,
     ):
@@ -1570,7 +1559,7 @@ class TestS3:
         snapshot.match("get_bucket_location_bucket_1", response)
 
         region_2 = "us-east-2"
-        client_2 = s3_client_for_region(region_name=region_2)
+        client_2 = aws_client_factory(region_name=region_2).s3
         bucket_2_name = f"bucket-{short_uid()}"
         s3_create_bucket_with_client(
             client_2,

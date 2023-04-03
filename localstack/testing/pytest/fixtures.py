@@ -6,7 +6,7 @@ import os
 import re
 import socket
 import time
-from typing import TYPE_CHECKING, Any, Callable, Dict, List, Optional, Tuple
+from typing import Any, Callable, Dict, List, Optional, Tuple
 
 import boto3
 import botocore.auth
@@ -24,6 +24,7 @@ from werkzeug import Request, Response
 
 from localstack import config, constants
 from localstack.aws.accounts import get_aws_account_id
+from localstack.aws.connect import ExternalAwsClientFactory, ExternalClientFactory
 from localstack.constants import TEST_AWS_ACCESS_KEY_ID, TEST_AWS_SECRET_ACCESS_KEY
 from localstack.services.stores import (
     AccountRegionBundle,
@@ -47,68 +48,34 @@ from localstack.utils.strings import short_uid, to_str
 from localstack.utils.sync import ShortCircuitWaitException, poll_condition, retry, wait_until
 from localstack.utils.testutil import start_http_server
 
-if TYPE_CHECKING:
-    from mypy_boto3_acm import ACMClient
-    from mypy_boto3_apigateway import APIGatewayClient
-    from mypy_boto3_cloudformation import CloudFormationClient
-    from mypy_boto3_cloudwatch import CloudWatchClient
-    from mypy_boto3_cognito_idp import CognitoIdentityProviderClient
-    from mypy_boto3_dynamodb import DynamoDBClient, DynamoDBServiceResource
-    from mypy_boto3_dynamodbstreams import DynamoDBStreamsClient
-    from mypy_boto3_ec2 import EC2Client
-    from mypy_boto3_ecr import ECRClient
-    from mypy_boto3_es import ElasticsearchServiceClient
-    from mypy_boto3_events import EventBridgeClient
-    from mypy_boto3_firehose import FirehoseClient
-    from mypy_boto3_iam import IAMClient
-    from mypy_boto3_kinesis import KinesisClient
-    from mypy_boto3_kms import KMSClient
-    from mypy_boto3_lambda import LambdaClient
-    from mypy_boto3_logs import CloudWatchLogsClient
-    from mypy_boto3_opensearch import OpenSearchServiceClient
-    from mypy_boto3_redshift import RedshiftClient
-    from mypy_boto3_resource_groups import ResourceGroupsClient
-    from mypy_boto3_resourcegroupstaggingapi import ResourceGroupsTaggingAPIClient
-    from mypy_boto3_route53 import Route53Client
-    from mypy_boto3_route53resolver import Route53ResolverClient
-    from mypy_boto3_s3 import S3Client, S3ServiceResource
-    from mypy_boto3_s3control import S3ControlClient
-    from mypy_boto3_secretsmanager import SecretsManagerClient
-    from mypy_boto3_ses import SESClient
-    from mypy_boto3_sns import SNSClient
-    from mypy_boto3_sns.type_defs import GetTopicAttributesResponseTypeDef
-    from mypy_boto3_sqs import SQSClient
-    from mypy_boto3_ssm import SSMClient
-    from mypy_boto3_stepfunctions import SFNClient
-    from mypy_boto3_sts import STSClient
-    from mypy_boto3_transcribe import TranscribeClient
-
 LOG = logging.getLogger(__name__)
 
 # URL of public HTTP echo server, used primarily for AWS parity/snapshot testing
 PUBLIC_HTTP_ECHO_SERVER_URL = "http://httpbin.org"
 
 
-def _client(service, region_name=None, aws_access_key_id=None, *, additional_config=None):
-    config = botocore.config.Config()
+@pytest.fixture(scope="session")
+def aws_session():
+    return boto3.Session()
 
-    # can't set the timeouts to 0 like in the AWS CLI because the underlying http client requires values > 0
+
+@pytest.fixture(scope="session")
+def aws_client_factory(aws_session):
+    config = None
     if os.environ.get("TEST_DISABLE_RETRIES_AND_TIMEOUTS"):
-        config = config.merge(
-            botocore.config.Config(
-                connect_timeout=1_000, read_timeout=1_000, retries={"total_max_attempts": 1}
-            )
+        config = botocore.config.Config(
+            connect_timeout=1_000, read_timeout=1_000, retries={"total_max_attempts": 1}
         )
 
-    if additional_config:
-        config = config.merge(additional_config)
-
     if os.environ.get("TEST_TARGET") == "AWS_CLOUD":
-        return boto3.client(service, region_name=region_name, config=config)
+        return ExternalAwsClientFactory(session=aws_session, config=config)
+    else:
+        return ExternalClientFactory(session=aws_session, config=config)
 
-    return aws_stack.create_external_boto_client(
-        service, config=config, region_name=region_name, aws_access_key_id=aws_access_key_id
-    )
+
+@pytest.fixture(scope="session")
+def aws_client(aws_client_factory):
+    return aws_client_factory()
 
 
 def _resource(service):
@@ -125,9 +92,17 @@ def _resource(service):
     return aws_stack.connect_to_resource_external(service, config=config)
 
 
+# TODO: remove usage of this fixture
 @pytest.fixture(scope="class")
-def create_boto_client():
-    return _client
+def create_boto_client(aws_client_factory):
+    def _factory_client(
+        service, region_name=None, aws_access_key_id=None, *, additional_config=None
+    ):
+        return aws_client_factory.get_client(
+            service_name=service, region_name=region_name, config=additional_config
+        )
+
+    return _factory_client
 
 
 @pytest.fixture(scope="class")
@@ -189,214 +164,195 @@ def aws_http_client_factory(boto3_session):
     return factory
 
 
-@pytest.fixture(scope="class")
-def dynamodb_client() -> "DynamoDBClient":
-    return _client("dynamodb")
+# TODO: remove all these
 
 
 @pytest.fixture(scope="class")
-def dynamodb_resource() -> "DynamoDBServiceResource":
+def dynamodb_client(aws_client):
+    return aws_client.dynamodb
+
+
+@pytest.fixture(scope="class")
+def dynamodb_resource():
     return _resource("dynamodb")
 
 
 @pytest.fixture(scope="class")
-def dynamodbstreams_client() -> "DynamoDBStreamsClient":
-    return _client("dynamodbstreams")
+def dynamodbstreams_client(aws_client):
+    return aws_client.dynamodbstreams
 
 
 @pytest.fixture(scope="class")
-def apigateway_client() -> "APIGatewayClient":
-    return _client("apigateway")
+def apigateway_client(aws_client):
+    return aws_client.apigateway
 
 
 @pytest.fixture(scope="class")
-def cognito_idp_client() -> "CognitoIdentityProviderClient":
-    return _client("cognito-idp")
+def cognito_idp_client(aws_client):
+    return aws_client.cognito_idp
 
 
 @pytest.fixture(scope="class")
-def iam_client() -> "IAMClient":
-    return _client("iam")
+def iam_client(aws_client):
+    return aws_client.iam
 
 
 @pytest.fixture(scope="class")
-def s3_client() -> "S3Client":
-    return _client("s3")
+def s3_client(aws_client):
+    return aws_client.s3
 
 
 @pytest.fixture(scope="class")
-def s3_vhost_client() -> "S3Client":
-    boto_config = botocore.config.Config(s3={"addressing_style": "virtual"})
-    if os.environ.get("TEST_TARGET") == "AWS_CLOUD":
-        return boto3.client("s3", config=boto_config)
-    # can't set the timeouts to 0 like in the AWS CLI because the underlying http client requires values > 0
-    if os.environ.get("TEST_DISABLE_RETRIES_AND_TIMEOUTS"):
-        external_boto_config = botocore.config.Config(
-            connect_timeout=1_000, read_timeout=1_000, retries={"total_max_attempts": 1}
-        )
-        boto_config = boto_config.merge(external_boto_config)
+def s3_vhost_client(aws_client_factory):
+    return aws_client_factory(config=botocore.config.Config(s3={"addressing_style": "virtual"})).s3
 
-    return aws_stack.create_external_boto_client("s3", config=boto_config)
+
+# TODO: remove
+@pytest.fixture(scope="class")
+def s3_presigned_client(aws_client_factory):
+    return aws_client_factory(
+        aws_access_key_id=TEST_AWS_ACCESS_KEY_ID, aws_secret_access_key=TEST_AWS_SECRET_ACCESS_KEY
+    ).s3
 
 
 @pytest.fixture(scope="class")
-def s3_presigned_client() -> "S3Client":
-    if os.environ.get("TEST_TARGET") == "AWS_CLOUD":
-        return _client("s3")
-    # can't set the timeouts to 0 like in the AWS CLI because the underlying http client requires values > 0
-    boto_config = (
-        botocore.config.Config(
-            connect_timeout=1_000, read_timeout=1_000, retries={"total_max_attempts": 1}
-        )
-        if os.environ.get("TEST_DISABLE_RETRIES_AND_TIMEOUTS")
-        else None
-    )
-    return aws_stack.connect_to_service(
-        "s3",
-        config=boto_config,
-        aws_access_key_id=TEST_AWS_ACCESS_KEY_ID,
-        aws_secret_access_key=TEST_AWS_SECRET_ACCESS_KEY,
-    )
-
-
-@pytest.fixture(scope="class")
-def s3_resource() -> "S3ServiceResource":
+def s3_resource():
     return _resource("s3")
 
 
 @pytest.fixture(scope="class")
-def s3control_client() -> "S3ControlClient":
-    return _client("s3control")
+def s3control_client(aws_client):
+    return aws_client.s3control
 
 
 @pytest.fixture(scope="class")
-def sqs_client() -> "SQSClient":
-    return _client("sqs")
+def sqs_client(aws_client):
+    return aws_client.sqs
 
 
 @pytest.fixture(scope="class")
-def sns_client() -> "SNSClient":
-    return _client("sns")
+def sns_client(aws_client):
+    return aws_client.sns
 
 
 @pytest.fixture(scope="class")
-def cfn_client() -> "CloudFormationClient":
-    return _client("cloudformation")
+def cfn_client(aws_client):
+    return aws_client.cloudformation
 
 
 @pytest.fixture(scope="class")
-def ssm_client() -> "SSMClient":
-    return _client("ssm")
+def ssm_client(aws_client):
+    return aws_client.ssm
 
 
 @pytest.fixture(scope="class")
-def lambda_client() -> "LambdaClient":
-    return _client("lambda")
+def lambda_client(aws_client):
+    return aws_client.awslambda
 
 
 @pytest.fixture(scope="class")
-def kinesis_client() -> "KinesisClient":
-    return _client("kinesis")
+def kinesis_client(aws_client):
+    return aws_client.kinesis
 
 
 @pytest.fixture(scope="class")
-def kms_client() -> "KMSClient":
-    return _client("kms")
+def kms_client(aws_client):
+    return aws_client.kms
 
 
 @pytest.fixture(scope="class")
-def logs_client() -> "CloudWatchLogsClient":
-    return _client("logs")
+def logs_client(aws_client):
+    return aws_client.logs
 
 
 @pytest.fixture(scope="class")
-def events_client() -> "EventBridgeClient":
-    return _client("events")
+def events_client(aws_client):
+    return aws_client.events
 
 
 @pytest.fixture(scope="class")
-def secretsmanager_client() -> "SecretsManagerClient":
-    return _client("secretsmanager")
+def secretsmanager_client(aws_client):
+    return aws_client.secretsmanager
 
 
 @pytest.fixture(scope="class")
-def stepfunctions_client() -> "SFNClient":
-    return _client("stepfunctions")
+def stepfunctions_client(aws_client):
+    return aws_client.stepfunctions
 
 
 @pytest.fixture(scope="class")
-def ses_client() -> "SESClient":
-    return _client("ses")
+def ses_client(aws_client):
+    return aws_client.ses
 
 
 @pytest.fixture(scope="class")
-def acm_client() -> "ACMClient":
-    return _client("acm")
+def acm_client(aws_client):
+    return aws_client.acm
 
 
 @pytest.fixture(scope="class")
-def es_client() -> "ElasticsearchServiceClient":
-    return _client("es")
+def es_client(aws_client):
+    return aws_client.es
 
 
 @pytest.fixture(scope="class")
-def opensearch_client() -> "OpenSearchServiceClient":
-    return _client("opensearch")
+def opensearch_client(aws_client):
+    return aws_client.opensearch
 
 
 @pytest.fixture(scope="class")
-def redshift_client() -> "RedshiftClient":
-    return _client("redshift")
+def redshift_client(aws_client):
+    return aws_client.redshift
 
 
 @pytest.fixture(scope="class")
-def firehose_client() -> "FirehoseClient":
-    return _client("firehose")
+def firehose_client(aws_client):
+    return aws_client.firehose
 
 
 @pytest.fixture(scope="class")
-def cloudwatch_client() -> "CloudWatchClient":
-    return _client("cloudwatch")
+def cloudwatch_client(aws_client):
+    return aws_client.cloudwatch
 
 
 @pytest.fixture(scope="class")
-def sts_client() -> "STSClient":
-    return _client("sts")
+def sts_client(aws_client):
+    return aws_client.sts
 
 
 @pytest.fixture(scope="class")
-def ec2_client() -> "EC2Client":
-    return _client("ec2")
+def ec2_client(aws_client):
+    return aws_client.ec2
 
 
 @pytest.fixture(scope="class")
-def rg_client() -> "ResourceGroupsClient":
-    return _client("resource-groups")
+def rg_client(aws_client):
+    return aws_client.resource_groups
 
 
 @pytest.fixture(scope="class")
-def rgsa_client() -> "ResourceGroupsTaggingAPIClient":
-    return _client("resourcegroupstaggingapi")
+def rgsa_client(aws_client):
+    return aws_client.resourcegroupstaggingapi
 
 
 @pytest.fixture(scope="class")
-def route53_client() -> "Route53Client":
-    return _client("route53")
+def route53_client(aws_client):
+    return aws_client.route53
 
 
 @pytest.fixture(scope="class")
-def route53resolver_client() -> "Route53ResolverClient":
-    return _client("route53resolver")
+def route53resolver_client(aws_client):
+    return aws_client.route53resolver
 
 
 @pytest.fixture(scope="class")
-def transcribe_client() -> "TranscribeClient":
-    return _client("transcribe")
+def transcribe_client(aws_client):
+    return aws_client.transcribe
 
 
 @pytest.fixture(scope="class")
-def ecr_client() -> "ECRClient":
-    return _client("ecr")
+def ecr_client(aws_client):
+    return aws_client.ecr
 
 
 @pytest.fixture
@@ -668,7 +624,7 @@ def sns_subscription(sns_client):
 
 
 @pytest.fixture
-def sns_topic(sns_client, sns_create_topic) -> "GetTopicAttributesResponseTypeDef":
+def sns_topic(sns_client, sns_create_topic):
     topic_arn = sns_create_topic()["TopicArn"]
     return sns_client.get_topic_attributes(TopicArn=topic_arn)
 
@@ -1416,11 +1372,11 @@ def create_lambda_function_aws(
 
 
 @pytest.fixture
-def create_lambda_function(
-    lambda_client, logs_client, iam_client, wait_until_lambda_ready, lambda_su_role
-):
+def create_lambda_function(aws_client, wait_until_lambda_ready, lambda_su_role):
     lambda_arns_and_clients = []
     log_groups = []
+    lambda_client = aws_client.awslambda
+    logs_client = aws_client.logs
 
     def _create_lambda_function(*args, **kwargs):
         client = kwargs.get("client") or lambda_client
@@ -1665,7 +1621,7 @@ def create_secret(secretsmanager_client):
 # the domain name in the API request has to match the domain name used in certificate creation. Which means that with
 # pre-created certificates we would have to use specific domain names instead of random ones.
 @pytest.fixture
-def acm_request_certificate():
+def acm_request_certificate(aws_client_factory):
     certificate_arns = []
 
     def factory(**kwargs) -> str:
@@ -1673,7 +1629,7 @@ def acm_request_certificate():
             kwargs["DomainName"] = f"test-domain-{short_uid()}.localhost.localstack.cloud"
 
         region_name = kwargs.pop("region_name", None)
-        acm_client = _client("acm", region_name)
+        acm_client = aws_client_factory(region_name=region_name).acm
 
         response = acm_client.request_certificate(**kwargs)
         created_certificate_arn = response["CertificateArn"]
@@ -1685,7 +1641,7 @@ def acm_request_certificate():
     # cleanup
     for certificate_arn, region_name in certificate_arns:
         try:
-            acm_client = _client("acm", region_name)
+            acm_client = aws_client_factory(region_name=region_name).acm
             acm_client.delete_certificate(CertificateArn=certificate_arn)
         except Exception as e:
             LOG.debug("error cleaning up certificate %s: %s", certificate_arn, e)
@@ -1705,27 +1661,25 @@ role_policy_su = {
 
 
 @pytest.fixture(scope="session")
-def lambda_su_role():
-    iam_client: IAMClient = _client("iam")
-
+def lambda_su_role(aws_client):
     role_name = f"lambda-autogenerated-{short_uid()}"
-    role = iam_client.create_role(RoleName=role_name, AssumeRolePolicyDocument=role_assume_policy)[
-        "Role"
-    ]
+    role = aws_client.iam.create_role(
+        RoleName=role_name, AssumeRolePolicyDocument=role_assume_policy
+    )["Role"]
     policy_name = f"lambda-autogenerated-{short_uid()}"
-    policy_arn = iam_client.create_policy(
+    policy_arn = aws_client.iam.create_policy(
         PolicyName=policy_name, PolicyDocument=json.dumps(role_policy_su)
     )["Policy"]["Arn"]
-    iam_client.attach_role_policy(RoleName=role_name, PolicyArn=policy_arn)
+    aws_client.iam.attach_role_policy(RoleName=role_name, PolicyArn=policy_arn)
 
     if os.environ.get("TEST_TARGET", "") == "AWS_CLOUD":  # dirty but necessary
         time.sleep(10)
 
     yield role["Arn"]
 
-    run_safe(iam_client.detach_role_policy(RoleName=role_name, PolicyArn=policy_arn))
-    run_safe(iam_client.delete_role(RoleName=role_name))
-    run_safe(iam_client.delete_policy(PolicyArn=policy_arn))
+    run_safe(aws_client.iam.detach_role_policy(RoleName=role_name, PolicyArn=policy_arn))
+    run_safe(aws_client.iam.delete_role(RoleName=role_name))
+    run_safe(aws_client.iam.delete_policy(PolicyArn=policy_arn))
 
 
 @pytest.fixture
@@ -1929,8 +1883,8 @@ def cleanups(ec2_client):
 
 
 @pytest.fixture(scope="session")
-def account_id():
-    sts_client = _client("sts")
+def account_id(aws_client):
+    sts_client = aws_client.sts
     return sts_client.get_caller_identity()["Account"]
 
 
@@ -1975,12 +1929,12 @@ def sample_backend_dict() -> BackendDict:
 
 
 @pytest.fixture
-def create_rest_apigw():
+def create_rest_apigw(aws_client_factory):
     rest_apis = []
 
     def _create_apigateway_function(**kwargs):
         region_name = kwargs.pop("region_name", None)
-        apigateway_client = _client("apigateway", region_name)
+        apigateway_client = aws_client_factory(region_name=region_name).apigateway
 
         response = apigateway_client.create_rest_api(**kwargs)
         api_id = response.get("id")
@@ -1994,17 +1948,17 @@ def create_rest_apigw():
 
     for rest_api_id, region_name in rest_apis:
         with contextlib.suppress(Exception):
-            apigateway_client = _client("apigateway", region_name)
+            apigateway_client = aws_client_factory(region_name=region_name).apigateway
             apigateway_client.delete_rest_api(restApiId=rest_api_id)
 
 
 @pytest.fixture
-def create_rest_apigw_openapi():
+def create_rest_apigw_openapi(aws_client_factory):
     rest_apis = []
 
     def _create_apigateway_function(**kwargs):
         region_name = kwargs.pop("region_name", None)
-        apigateway_client = _client("apigateway", region_name)
+        apigateway_client = aws_client_factory(region_name=region_name).apigateway
 
         response = apigateway_client.import_rest_api(**kwargs)
         api_id = response.get("id")
@@ -2015,7 +1969,7 @@ def create_rest_apigw_openapi():
 
     for rest_api_id, region_name in rest_apis:
         with contextlib.suppress(Exception):
-            apigateway_client = _client("apigateway", region_name)
+            apigateway_client = aws_client_factory(region_name=region_name).apigateway
             apigateway_client.delete_rest_api(restApiId=rest_api_id)
 
 

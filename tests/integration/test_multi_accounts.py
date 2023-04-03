@@ -1,13 +1,17 @@
 import pytest
 
-from localstack.testing.pytest.fixtures import _client
 from localstack.utils.strings import short_uid
 
 
 @pytest.fixture
-def client_factory():
+def client_factory(aws_client_factory):
     def _client_factory(service: str, aws_access_key_id: str, region_name: str = "eu-central-1"):
-        return _client(service, region_name=region_name, aws_access_key_id=aws_access_key_id)
+        return aws_client_factory.get_client(
+            service_name=service,
+            region_name=region_name,
+            aws_access_key_id=aws_access_key_id,
+            aws_secret_access_key="test",
+        )
 
     yield _client_factory
 
